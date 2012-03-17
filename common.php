@@ -36,7 +36,7 @@ $license = "\n<!-- Creative Commons License -->\n<a rel='license' href='http://c
 // work.  This license text may not be removed nor altered in any way.
 // Please see the file LICENSE for a full textual description of the license.
 
-$logd_version = "1.2.3 +nb Edition";
+$logd_version = "1.2.4 +nb Edition daily built snapshot";
 
 
 // Include some commonly needed and useful routines

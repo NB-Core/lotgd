@@ -75,7 +75,7 @@ if (db_num_rows($result)>0){
 		rawoutput(htmlentities($next, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</td>");
 	}
 	rawoutput("</tr></table><br/>");
-	output_notl(str_replace("\n","`n",$row['body']));
+	output_notl(sanitize_mb(str_replace("\n","`n",$row['body'])));
 	$sql = "UPDATE $mail SET seen=1 WHERE  msgto=\"".$session['user']['acctid']."\" AND messageid=\"".$id."\"";
 	db_query($sql);
 	invalidatedatacache("mail-{$session['user']['acctid']}");

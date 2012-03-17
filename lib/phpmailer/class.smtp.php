@@ -418,7 +418,7 @@ class SMTP {
         if(strlen($line_out) > 0)
         {
           if(substr($line_out, 0, 1) == ".") {
-            $line_out = "." . $line_out;
+            $line_out = "." . $line_out;
           }
         }
         fputs($this->smtp_conn,$line_out . $this->CRLF);

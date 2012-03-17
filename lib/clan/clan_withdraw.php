@@ -43,7 +43,7 @@
 		$result = db_query($sql);
 		$withdraw_subj = array("`\$Clan Withdraw: `&%s`0",$session['user']['name']);
 		$msg = array("`^One of your clan members has resigned their membership.  `&%s`^ has surrendered their position within your clan!",$session['user']['name']);
-		$sql = "DELETE FROM " . db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='".serialize(addslashes($withdraw_subj))."'"; //addslashes for names with ' inside
+		$sql = "DELETE FROM " . db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='".addslashes(serialize($withdraw_subj))."'"; //addslashes for names with ' inside
 		db_query($sql);
 		while ($row = db_fetch_assoc($result)){
 			systemmail($row['acctid'],$withdraw_subj,$msg);

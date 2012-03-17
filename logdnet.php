@@ -241,6 +241,12 @@ if ($op==""){
 		if (strlen($row['description']) > 75)
 			$row['description'] = substr($row['description'], 0, 75);
 
+
+//make valid
+		$row['description']=sanitize_mb($row['description']);
+		$row['version']=sanitize_mb($row['version']);
+
+
 		$row['description'] = htmlentities(stripslashes($row['description']), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
 		$row['description'] = str_replace("`&amp;", "`&", $row['description']);
 

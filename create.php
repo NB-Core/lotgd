@@ -6,6 +6,7 @@ define("ALLOW_ANONYMOUS",true);
 require_once("common.php");
 require_once("lib/is_email.php");
 require_once("lib/checkban.php");
+require_once("lib/sanitize.php");
 require("lib/settings_extended.php");
 require_once("lib/serverfunctions.class.php");
 
@@ -239,7 +240,16 @@ if (getsetting("allowcreation",1)==0){
 			if (!$blockaccount){
 				$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE login='$shortname'";
 				$result = db_query($sql);
-				if (db_num_rows($result)>0){
+				$count=db_num_rows($result);
+				$sql = "SELECT playername FROM " . db_prefix("accounts") ;
+				$result = db_query($sql);
+				while ($row=db_fetch_assoc($result)) {
+					if (sanitize($row['playername'])==$shortname) {
+						$count++;
+						break;
+					}
+				}
+				if ($count>0){
 					output("`\$Error`^: Someone is already known by that name in this realm, please try again.");
 					$op="";
 				}else{

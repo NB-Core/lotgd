@@ -3,7 +3,8 @@
 define("OVERRIDE_FORCED_NAV",true);
 require("common.php");
 
-function mail_status($args) {
+function mail_status($args=false) {
+	if ($args===false) return;
 	$new=maillink();
 	$objResponse = new xajaxResponse();
 	$objResponse->assign("maillink","innerHTML", $new);

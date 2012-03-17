@@ -39,7 +39,7 @@ if ($row['name']!=""){
 	$sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . db_prefix("accounts") . " WHERE uniqueid='".addslashes($id)."' ORDER BY lastip";
 	$result = db_query($sql);
 	while ($row = db_fetch_assoc($result)){
-		output("`0• (%s) `%%s`0 - %s hits, last: %s`n", $row['lastip'],
+		output("`0* (%s) `%%s`0 - %s hits, last: %s`n", $row['lastip'],
 				$row['name'], $row['gentimecount'],
 				reltime(strtotime($row['laston'])));
 	}
@@ -54,14 +54,14 @@ if ($row['name']!=""){
 		//output("$sql`n");
 		$result = db_query($sql);
 		if (db_num_rows($result)>0){
-			output("• IP Filter: %s ", $thisip);
+			output("IP Filter: %s ", $thisip);
 			rawoutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
 			output("Use this filter");
 			rawoutput("</a>");
 			output_notl("`n");
 			while ($row=db_fetch_assoc($result)){
 				output("&nbsp;&nbsp;",true);
-				output("• (%s) [%s] `%%s`0 - %s hits, last: %s`n",
+				output("(%s) [%s] `%%s`0 - %s hits, last: %s`n",
 						$row['lastip'], $row['uniqueid'], $row['name'],
 						$row['gentimecount'],
 						reltime(strtotime($row['laston'])));

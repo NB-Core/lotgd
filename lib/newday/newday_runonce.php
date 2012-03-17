@@ -25,4 +25,14 @@
 		}
 	}
 
+	//only if not done by cron
+	if (!getsetting('newdaycron')) {
+
+		require_once("lib/newday/dbcleanup.php");
+		require("lib/newday/commentcleanup.php");
+		require("lib/newday/charcleanup.php");
+
+
+	}
+
 ?>

@@ -82,6 +82,13 @@ $setup = array(
 	"bard"=>"Name of the bard",
 	"clanregistrar"=>"Name of the clan registrar",
 	"deathoverlord"=>"Name of the death overlord",
+	
+	"SU titles,title",
+	"This will display tags to the name in chats,note",
+	"enable_chat_tags"=>"Enable chat tags in general,bool",
+	"chat_tag_megauser"=>"Title for the mega user",
+	"chat_tag_gm"=>"Name for a GM",
+	"chat_tag_mod"=>"Name for a Mod",
 
 	"Referral Settings,title",
 	"refereraward"=>"How many points will be awarded for a referral?,int",
