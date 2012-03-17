@@ -2,7 +2,7 @@
 		page_header("Update Clan Description / MoTD");
 		addnav("Clan Options");
 		if ($session['user']['clanrank']>=CLAN_OFFICER){
-			$clanmotd = substr(httppost('clanmotd'),0,4096);
+			$clanmotd = sanitize_mb(mb_substr(httppost('clanmotd'),0,4096));
 			if (httppostisset('clanmotd') &&
 					stripslashes($clanmotd)!=$claninfo['clanmotd']){
 				$sql = "UPDATE " . db_prefix("clans") . " SET clanmotd='$clanmotd',motdauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";

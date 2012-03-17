@@ -10,7 +10,7 @@ function lookup_user($query=false, $order=false, $fields=false, $where=false){
 	if ($query != "") {
 		// First try for an exact match on username or login
 		if ($where === false)
-			$sql_where = "WHERE login LIKE '$query' OR name LIKE '$query' OR acctid = 'query' OR emailaddress LIKE '$query' OR lastip LIKE '$query' OR uniqueid LIKE '$query'";
+			$sql_where = "WHERE login LIKE '$query' OR name LIKE '$query' OR acctid = '$query' OR emailaddress LIKE '$query' OR lastip LIKE '$query' OR uniqueid LIKE '$query'";
 		else
 			$sql_where = "WHERE $where";
 		$searchresult = db_query($sql . " $sql_where $order LIMIT 2");

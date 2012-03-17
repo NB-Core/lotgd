@@ -32,7 +32,13 @@ $stats[]=array("title"=>"Dragonkills:","value"=>$user['dragonkills']);
 $stats[]=array("title"=>"Total Pages generated for you:","value"=>$user['gentimecount']);
 $stats[]=array("title"=>"How long did these pages take to generate:","value"=>readabletime($user['gentime']));
 $stats[]=array("title"=>"You are Account Number:","value"=>($user['acctid']-1));
-
+//Add the count summary for DKs
+if ($user['dragonkills']>0) $dragonpointssummary=array_count_values($user['dragonpoints']);
+	else $dragonpointssummary=array();
+foreach ($dragonpointssummary as $key=>$value) {
+	$dksummary.="$key --> $value`n";
+}
+$stats[]=array("title"=>"Dragon Point Spending:","value"=>$dksummary);
 //translate...
 foreach ($stats as $entry) {
 	$entry['title']=translate_inline($entry['title']);

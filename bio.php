@@ -139,7 +139,7 @@ if ($target = db_fetch_assoc($result)) {
 				  date("D, M d", strtotime($row['newsdate'])));
 		  $odate=$row['newsdate'];
 	  }
-	  output_notl("`@$news`0`n");
+	  output_notl("`@".sanitize_mb($news)."`0`n");
   }
   tlschema();
 

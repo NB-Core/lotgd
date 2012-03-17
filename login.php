@@ -137,7 +137,8 @@ if ($name!=""){
 					if ($c>=10){
 						// 5 failed attempts for superuser, 10 for regular user
 						$banmessage=translate_inline("Automatic System Ban: Too many failed login attempts.");
-						$sql = "INSERT INTO " . db_prefix("bans") . " VALUES ('{$_SERVER['REMOTE_ADDR']}','','".date("Y-m-d H:i:s",strtotime("+".($c*3)." hours"))."','$banmessage','System','0000-00-00 00:00:00')";
+						//$sql = "INSERT INTO " . db_prefix("bans") . " VALUES ('{$_SERVER['REMOTE_ADDR']}','','".date("Y-m-d H:i:s",strtotime("+".($c*3)." hours"))."','$banmessage','System','0000-00-00 00:00:00')";
+						$sql = "INSERT INTO " . db_prefix("bans") . " VALUES ('{$_SERVER['REMOTE_ADDR']}','','".date("Y-m-d H:i:s",strtotime("+15 minutes"))."','$banmessage','System','0000-00-00 00:00:00')";
 						db_query($sql);
 						if ($su){
 							// send a system message to admins regarding

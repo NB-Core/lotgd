@@ -30,5 +30,5 @@ if (!get_magic_quotes_gpc()){
 }
 
 // magic_quotes_runtime is OFF
-set_magic_quotes_runtime(0);
-?>
+//set_magic_quotes_runtime(0);
+ini_set('magic_quotes_runtime', 0);

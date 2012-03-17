@@ -1,7 +1,14 @@
 Changes to 1.2.3 +nb
 [CHANGES]
 *login.php, superuser.php --> now superusers who logout to the fields will be brought to the grotto on login (no newday). So people who "just check in" won't be bothered with a new day unless they want it. In superuser.php I put in a logout for superusers. In login.php it checks if a superuser with (!) grotto access logs out.
+*login.php --> lowered the threshold for bans to 15 minutes
+*lib/sanitize.php --> new function sanitize_mb($str), which will cut a string until it is a valid encoding - or 0.
 [FIXES]
+Well, a big group of problems shows up with multibyte strings. substr breaks multibytes, hence causing errors.
+*battle.php --> line 404. Fixed an error where no $creature['experiencegained'] was defined. Causing errors in PHP 5.3.3
+*lib/commentary.php --> same here + added GM/MOD stuff to the names
+*lib/mail/case_*.php --> fixed substrs and added sanitize_mb if stuff breaks from httpget (length)
+*logdnet.php --> encoding fix for other servers
 [REMOVES]
 [NOTES]
 

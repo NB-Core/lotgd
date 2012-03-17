@@ -344,7 +344,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 				$x = explode("|", $val);
 			}
 
-			$type = split(",", $x[0]);
+			$type = explode(",", $x[0]);
 			if (isset($type[1])) $type = trim($type[1]);
 			else $type = "string";
 

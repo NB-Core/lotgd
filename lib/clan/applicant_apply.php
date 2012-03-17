@@ -11,7 +11,7 @@
 			$session['user']['clanjoindate']=date("Y-m-d H:i:s");
 			$sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE clanid='{$session['user']['clanid']}' AND clanrank>=".CLAN_OFFICER;
 			$result = db_query($sql);
-			$sql = "DELETE FROM . ".  db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='".serialize(addslashes($apply_subj))."'";
+			$sql = "DELETE FROM . ".  db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='".addslashes(serialize($apply_subj))."'";
 			db_query($sql);
 			while ($row = db_fetch_assoc($result)){
 				$msg = array("`^You have a new clan applicant!  `&%s`^ has completed a membership application for your clan!",$session['user']['name']);
@@ -29,7 +29,7 @@
 				$subject = "Clan Application Reminder";
 				$mail = "`&Did you remember to read the description of the clan of your choice before applying?  Note that some clans may have requirements that you have to fulfill before you can become a member.  If you are not accepted into the clan of your choice anytime soon, it may be because you have not fulfilled these requirements.  For your convenience, the description of the clan you are applying to is reproduced below.`n`n`c`#%s`@ <`^%s`@>`0`c`n%s";
 
-				systemmail($session['user']['acctid'],array($subject),array($mail, $row['clanname'], $row['clanshort'], nltoappon($row['clandesc'])));
+				systemmail($session['user']['acctid'],array($subject),array($mail, $row['clanname'], $row['clanshort'], addslashes(nltoappon($row['clandesc']))));
 			}
 		}else{
 			$order=(int)httpget('order');

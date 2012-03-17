@@ -76,10 +76,10 @@ function popup($page,$size="550x300"){
 			$usersize = &$session['user']['prefs']['popupsize'];
 			if ($usersize=='') $usersize='550x330';
 		}
-		$s=split("x",$usersize);
+		$s=explode("x",$usersize);
 		$s[0]=(int)max(50,$s[0]);
 		$s[1]=(int)max(50,$s[1]);
-	} else 	$s = split("x",$size);
+	} else 	$s = explode("x",$size);
 	//user prefs
   return "window.open('$page','".preg_replace("([^[:alnum:]])","",$page)."','scrollbars=yes,resizable=yes,width={$s[0]},height={$s[1]}').focus()";
 }

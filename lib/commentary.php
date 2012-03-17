@@ -247,6 +247,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		$sql = "SELECT ". db_prefix("commentary") . ".*, " .
 			db_prefix("accounts").".name, " .
 			db_prefix("accounts").".acctid, " .
+			db_prefix("accounts").".superuser, " .
 			db_prefix("accounts").".clanrank, " .
 			db_prefix("clans") .  ".clanshort FROM " .
 			db_prefix("commentary") . " LEFT JOIN " .
@@ -269,6 +270,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		$sql = "SELECT " . db_prefix("commentary") . ".*, " .
 			db_prefix("accounts").".name, " .
 			db_prefix("accounts").".acctid, " .
+			db_prefix("accounts").".superuser, " .
 			db_prefix("accounts").".clanrank, " .
 			db_prefix("clans").".clanshort FROM " .
 			db_prefix("commentary") . " LEFT JOIN " .
@@ -294,6 +296,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	for ($i=0; $i < $rowcount; $i++){
 		$row = $commentbuffer[$i];
 		$row['comment'] = comment_sanitize($row['comment']);
+		$row['comment'] = sanitize_mb($row['comment']); //bad storage or whatnot
 		$commentids[$i] = $row['commentid'];
 		if (date("Y-m-d",strtotime($row['postdate']))==date("Y-m-d")){
 			if ($row['name']==$session['user']['name']) $counttoday++;
@@ -322,6 +325,19 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		$row['name'] = holidayize($row['name'],'comment');
 		if ($row['clanrank']) {
 			$row['name'] = ($row['clanshort']>""?"{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&":"").$row['name'];
+		}
+		//chat tags
+		if (getsetting('enable_chat_tags',1)==1) {
+		if (($row['superuser']&SU_MEGAUSER)==SU_MEGAUSER) {
+			$row['name']="`\$".getsetting('chat_tag_megauser','[ADMIN]')."`0".$row['name'];			
+		} else { //disabled until I make the user prefs into their own good-fucking table because it is SO annoying to unserialize THEM!
+			if (($row['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) {
+				$row['name']="`\$".getsetting('chat_tag_gm','[GM]')."`0".$row['name'];
+			}
+			if (($row['superuser']&SU_EDIT_COMMENTS)==SU_EDIT_COMMENTS) {
+				$row['name']="`\$".getsetting('chat_tag_mod','[MOD]')."`0".$row['name'];
+			}
+		}
 		}
 		if ($ft=="::" || $ft=="/me" || $ft==":"){
 			$x = strpos($row['comment'],$ft);
