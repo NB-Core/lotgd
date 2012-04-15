@@ -130,13 +130,19 @@ if ($op==""){
 	$search="%";
 	$name = httppost('name');
 	if ($name=='') $name = httpget('name');
-	for ($i=0;$i<strlen($name);$i++){
-		$z = substr($name, $i, 1);
-		if ($z == "'") $z = "\'";
-		$search.=$z."%";
-	}
+	$search=str_replace("'","\'",$name);
 	$sql = "SELECT name,acctid,donation,donationspent FROM " . db_prefix("accounts") . " WHERE login LIKE '$search' or name LIKE '$search' LIMIT 100";
 	$result = db_query($sql);
+	if (db_num_rows($result)==0) {
+		for ($i=0;$i<strlen($name);$i++){
+			$z = substr($name, $i, 1);
+			if ($z == "'") $z = "\'";
+			$search.=$z."%";
+		}
+	
+		$sql = "SELECT name,acctid,donation,donationspent FROM " . db_prefix("accounts") . " WHERE login LIKE '$search' or name LIKE '$search' LIMIT 100";
+		$result = db_query($sql);
+	}
 	$ret = httpget('ret');
 	$amt = httppost('amt');
 	if ($amt=='') $amt = httpget("amt");

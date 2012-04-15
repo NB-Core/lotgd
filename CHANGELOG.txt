@@ -6,6 +6,7 @@ Changes to 1.2.3 +nb
 [FIXES]
 Well, a big group of problems shows up with multibyte strings. substr breaks multibytes, hence causing errors.
 *battle.php --> line 404. Fixed an error where no $creature['experiencegained'] was defined. Causing errors in PHP 5.3.3
+*donators.php --> now if the exact name is found, it will be returned instead of <=100 alternatives.
 *lib/commentary.php --> same here + added GM/MOD stuff to the names
 *lib/mail/case_*.php --> fixed substrs and added sanitize_mb if stuff breaks from httpget (length)
 *logdnet.php --> encoding fix for other servers
