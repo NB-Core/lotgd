@@ -156,7 +156,7 @@ function suspend_buffs($susp=false, $msg=false){
 			$msg = "`&The gods have suspended some of your enhancements!`n";
 		}
 		if ($schema) tlschema($schema);
-		output($msg);
+		output(sanitize_mb($msg));
 		if ($schema) tlschema();
 	}
 }

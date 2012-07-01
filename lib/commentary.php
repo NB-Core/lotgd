@@ -186,10 +186,17 @@ function commentdisplay($intro, $section, $message="Interject your own commentar
 	viewcommentary($section, $message, $limit, $talkline, $schema);
 }
 
-function viewcommentary($section,$message="Interject your own commentary?",$limit=10,$talkline="says",$schema=false,$viewonly=false) {
+function viewcommentary($section,$message="Interject your own commentary?",$limit=10,$talkline="says",$schema=false,$viewonly=false,$returnastext=false) {
  	global $session,$REQUEST_URI,$doublepost, $translation_namespace;
 	global $emptypost;
 
+	rawoutput("<div id='$section'>");
+	if ($returnastext!==false) {
+		// buffer
+		global $output;
+		$oldoutput=$output;
+		$output=new output_collector();
+	}
 
 	rawoutput("<a name='$section'></a>");
 	// Let's add a hook for modules to block commentary sections
@@ -330,7 +337,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		if (getsetting('enable_chat_tags',1)==1) {
 		if (($row['superuser']&SU_MEGAUSER)==SU_MEGAUSER) {
 			$row['name']="`\$".getsetting('chat_tag_megauser','[ADMIN]')."`0".$row['name'];			
-		} else { //disabled until I make the user prefs into their own good-fucking table because it is SO annoying to unserialize THEM!
+		} elseif(0) { //disabled until I make the user prefs into their own good-fucking table because it is SO annoying to unserialize THEM!
 			if (($row['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) {
 				$row['name']="`\$".getsetting('chat_tag_gm','[GM]')."`0".$row['name'];
 			}
@@ -517,6 +524,13 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	if (!$cc) db_free_result($result);
 	tlschema();
 	if ($needclose) modulehook("}collapse");
+	if ($returnastext!==false) {
+		$collected = $output->get_output();
+		$output=$oldoutput;
+		return $collected;
+
+	}
+	rawoutput("</div"); //close section
 }
 
 function talkline($section,$talkline,$limit,$schema,$counttoday,$message) {
