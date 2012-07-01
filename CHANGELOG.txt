@@ -1,3 +1,9 @@
+Changes to 1.2.4 +nb
+[CHANGES]
+[FIXES]
+[REMOVES]
+[NOTES]
+
 Changes to 1.2.3 +nb
 [CHANGES]
 *login.php, superuser.php --> now superusers who logout to the fields will be brought to the grotto on login (no newday). So people who "just check in" won't be bothered with a new day unless they want it. In superuser.php I put in a logout for superusers. In login.php it checks if a superuser with (!) grotto access logs out.
