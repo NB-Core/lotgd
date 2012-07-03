@@ -1,5 +1,6 @@
 Changes to 1.2.4 +nb
 [CHANGES]
+*home.php --> added a "forgotten password" link below the Login Button
 [FIXES]
 [REMOVES]
 [NOTES]

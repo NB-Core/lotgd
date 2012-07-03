@@ -107,6 +107,7 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 	$pass = translate_inline("<u>P</u>assword");
 	$butt = translate_inline("Log in");
 	rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">".templatereplace("login",array("username"=>$uname,"password"=>$pass,"button"=>$butt))."</form>");
+	output("Did you forget your password? Go <a href='create.php?op=forgot'>here</a> to retrieve a new one!`n",true);
 	output_notl("`c");
 	addnav("","login.php");
 } else {
