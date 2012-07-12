@@ -160,12 +160,26 @@ if ($op=="days") {
 $sexsel = "IF(sex,'`%Female`0','`!Male`0')";
 $racesel = "IF(race!='0' and race!='',race,'".RACE_UNKNOWN."')";
 
+//round modifier for gold	- equals left side of , rounding
+//				+ equals right side of , rounding
+$round_money="-2";
+
 if ($op=="money"){
-	$sql = "SELECT name,CAST((goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) as signed) AS data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY data1 $order, level $order, experience $order, acctid $order LIMIT $limit";
-	$me = "SELECT count(acctid) AS count FROM ".db_prefix("accounts")." WHERE $standardwhere AND CAST((goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) as signed) $meop ".($session['user']['goldinbank'] + $session['user']['gold']);
+	// works only in mysql 5+ due to the derived table stuff
+	$sql = "SELECT name,(round(
+						(CAST(goldinbank as signed)+cast(gold as signed))
+						*(1+0.05*(rand())),$round_money
+						)) as sort1 
+		FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY sort1 $order, level $order, experience $order, acctid $order LIMIT $limit";
+	// for formatting, we need another query...
+	$sql = "SELECT name,format(sort1,0) as data1 FROM ($sql) t";
+	$me = "SELECT count(acctid) AS count FROM ".db_prefix("accounts")." WHERE $standardwhere 
+		AND round((CAST(goldinbank as signed)+cast(gold as signed))*(1+0.05*(rand())),$round_money) 
+		$meop ".($session['user']['goldinbank'] + $session['user']['gold']);
 	//edward pointed out that a cast is necessary as signed+unsigned=boffo
 //	$sql = "SELECT name,(goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) AS data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY data1 $order, level $order, experience $order, acctid $order LIMIT $limit";
 //	$me = "SELECT count(acctid) AS count FROM ".db_prefix("accounts")." WHERE $standardwhere AND (goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) $meop ".($session['user']['goldinbank'] + $session['user']['gold']);
+debug($sql);
 	$adverb = "richest";
 	if ($subop == "least") $adverb = "poorest";
 	$title = "The $adverb warriors in the land";
