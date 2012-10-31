@@ -53,7 +53,7 @@ function pollitem($id,$subject,$body,$author,$date,$showpoll=true){
 	output_notl("`b`&%s `^%s`0`b", $poll, $subject);
 	if ($showpoll) motd_admin($id, true);
 	output_notl("`n`3%s`0 &#150; `#%s`0`n", $author, $date, true);
-	output_notl("`2%s`0`n", stripslashes($body['body']));
+	output_notl("`2%s`0`n", stripslashes($body['body']),true); // allow HTML
 	$sql = "SELECT count(resultid) AS c, choice FROM " . db_prefix("pollresults") . " WHERE motditem='$id' GROUP BY choice ORDER BY choice";
 	$result = db_query_cached($sql,"poll-$id");
 	$choices=array();
