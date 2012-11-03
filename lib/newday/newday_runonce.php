@@ -26,7 +26,7 @@
 	}
 
 	//only if not done by cron
-	if (!getsetting('newdaycron')) {
+	if (!getsetting('newdaycron',0)) {
 
 		require_once("lib/newday/dbcleanup.php");
 		require("lib/newday/commentcleanup.php");
