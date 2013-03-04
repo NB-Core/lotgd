@@ -305,9 +305,15 @@ function page_footer($saveuser=true){
 	//output the mail link
 	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
 		if ($session['user']['prefs']['ajax']) {
-			$header=str_replace("{mail}","<body onload=\"window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',15000)\"><div id='maillink'>".maillink()."</div><div id='notify'</div></body>",$header);
+			$add="<script type='text/javascript'>
+				$(window).ready(function(){
+					window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',1000);	});</script>";
+					
+			$header = str_replace("{script}","<script src=\"/templates/jquery.js\"></script>",$header);
+			$header=str_replace("{mail}","$add<div id='maillink'>".maillink()."</div><div id='notify'></div></body>",$header);
 		} else {
 			//no AJAX for slower browsers etc
+			$add="";
 			$header=str_replace("{mail}",maillink(),$header);
 		}
 		$footer=str_replace("{mail}",maillink(),$footer);
@@ -422,6 +428,13 @@ function popup_footer(){
 
 
 	$footer = $template['popupfoot'];
+	//add XAJAX mail stuff
+	if ($session['user']['prefs']['ajax']) {
+		require("mailinfo_common.php");
+		$xajax->printJavascript("lib/xajax");
+		addnav("","mailinfo_server.php");
+	}
+	//END XAJAX
 
 	// Pass the script file down into the footer so we can do something if
 	// we need to on certain pages (much like we do on the header.
@@ -437,12 +450,25 @@ function popup_footer(){
 
 	$z = $y2^$z2;
 	$footer = str_replace("{".($z)."}",$$z, $footer);
+	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
+		if ($session['user']['prefs']['ajax']) {
+			$header = str_replace("{headscript}","<script src=\"/templates/jquery.js\"></script>",$header);
+			$add="<script type='text/javascript'>
+				$(window).ready(function(){
+					window.setInterval('xajax_mail_status(this.document.getElementById(\'notify\').innerHTML);',1000);	});</script>";
+					
+			$add.="<div id='notify'></div>";
+		} else {
+			$add='';
+			//no AJAX for slower browsers etc
+		}
+	}
 
 	//clean up spare {fields}s from header and footer (in case they're not used)
 	$footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
 	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
-	$browser_output=$header.($output->get_output()).$footer;
+	$browser_output=$header.$add.($output->get_output()).$footer;
 	saveuser();
 	session_write_close();
 	echo $browser_output;
