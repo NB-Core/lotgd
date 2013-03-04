@@ -309,7 +309,7 @@ function page_footer($saveuser=true){
 				$(window).ready(function(){
 					window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',1000);	});</script>";
 					
-			$header = str_replace("{script}","<script src=\"/templates/jquery.js\"></script>",$header);
+			$script.="<script src=\"/templates/jquery.js\"></script>";
 			$header=str_replace("{mail}","$add<div id='maillink'>".maillink()."</div><div id='notify'></div></body>",$header);
 		} else {
 			//no AJAX for slower browsers etc
