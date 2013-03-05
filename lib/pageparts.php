@@ -307,7 +307,13 @@ function page_footer($saveuser=true){
 		if ($session['user']['prefs']['ajax']) {
 			$add="<script type='text/javascript'>
 				$(window).ready(function(){
-					window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',1000);	});</script>";
+					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',1000);
+					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
+				});
+				function clear_xajax() {
+					window.clearInterval(active_interval);
+				}
+			</script>";
 					
 			$script.="<script src=\"/templates/jquery.js\"></script>";
 			$header=str_replace("{mail}","$add<div id='maillink'>".maillink()."</div><div id='notify'></div></body>",$header);
@@ -455,7 +461,13 @@ function popup_footer(){
 			$header = str_replace("{headscript}","<script src=\"/templates/jquery.js\"></script>",$header);
 			$add="<script type='text/javascript'>
 				$(window).ready(function(){
-					window.setInterval('xajax_mail_status(this.document.getElementById(\'notify\').innerHTML);',1000);	});</script>";
+					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'notify\').innerHTML);',1000);
+					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
+				});
+				function clear_xajax() {
+					window.clearInterval(active_interval);
+				}
+			</script>";
 					
 			$add.="<div id='notify'></div>";
 		} else {
