@@ -9,8 +9,33 @@ function get_player_attack($player=false) {
 		if (!$row) return 0;
 		$user=$row;
 	} else $user =& $session['user'];
-	$attack = round((1/3)*$user['strength']+(1/3)*get_player_speed($player)+(1/6)*$user['wisdom']+(1/6)*$user['intelligence']+$user['attack']-9,1);
+	$strbonus=round((1/3)*$user['strength'],1);
+	$speedbonus=round((1/3)*get_player_speed($player),1);
+	$wisdombonus=round((1/6)*$user['wisdom'],1);
+	$intbonus=round((1/6)*$user['intelligence'],1);
+	$miscbonus=round($user['attack']-9,1);
+	$attack = $strbonus+$speedbonus+$wisdombonus+$intbonus+$miscbonus;
 	return max($attack,0);
+}
+
+
+function explained_get_player_attack($player=false) {
+	global $session;
+	if ($player!==false) {
+		$sql="SELECT strength,wisdom,intelligence,attack FROM ".db_prefix('accounts')." WHERE acctid=".((int)$player).";";
+		$result=db_query($sql);
+		$row=db_fetch_assoc($result);
+		if (!$row) return 0;
+		$user=$row;
+	} else $user =& $session['user'];
+	$strbonus=round((1/3)*$user['strength'],1);
+	$speedbonus=round((1/3)*get_player_speed($player),1);
+	$wisdombonus=round((1/6)*$user['wisdom'],1);
+	$intbonus=round((1/6)*$user['intelligence'],1);
+	$miscbonus=round($user['attack']-9,1);
+	$atk = $strbonus+$speedbonus+$wisdombonus+$intbonus+$miscbonus;
+	$explained=sprintf_translate("%s STR + %s SPD + %s WIS+ %s INT + %s MISC",$strbonus,$speedbonus,$wisdombonus,$intbonus,$miscbonus);
+	return $explained;
 }
 
 function get_player_defense($player=false) {
@@ -22,8 +47,30 @@ function get_player_defense($player=false) {
 		if (!$row) return 0;
 		$user=$row;
 	} else $user =& $session['user'];
-	$defense = round((1/4)*$user['wisdom']+(3/8)*$user['constitution']+(3/8)*get_player_speed($player)+$user['defense']-9,1);
+	$wisdombonus = round((1/4)*$user['wisdom'],1);
+	$constbonus = round((3/8)*$user['constitution'],1);
+	$speedbonus = round((3/8)*get_player_speed($player),1);
+	$miscbonus = round($user['defense']-9,1);
+	$defense = $wisdombonus+$speedbonus+$constbonus+$miscbonus;
 	return max($defense,0);
+}
+
+function explained_get_player_defense($player=false) {
+	global $session;
+	if ($player!==false) {
+		$sql="SELECT constitution,wisdom,defense FROM ".db_prefix('accounts')." WHERE acctid=".((int)$player).";";
+		$result=db_query($sql);
+		$row=db_fetch_assoc($result);
+		if (!$row) return 0;
+		$user=$row;
+	} else $user =& $session['user'];
+	$wisdombonus = round((1/4)*$user['wisdom'],1);
+	$constbonus = round((3/8)*$user['constitution'],1);
+	$speedbonus = round((3/8)*get_player_speed($player),1);
+	$miscbonus = round($user['defense']-9,1);
+	$defense = $wisdombonus+$speedbonus+$constbonus+$miscbonus;
+	$explained=sprintf_translate("%s WIS + %s CON + %s SPD+ %s MISC",$wisdombonus,$constbonus,$speedbonus,$miscbonus);
+	return $explained;
 }
 
 function get_player_speed($player=false) {

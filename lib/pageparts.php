@@ -307,9 +307,13 @@ function page_footer($saveuser=true){
 		if ($session['user']['prefs']['ajax']) {
 			$add="<script type='text/javascript'>
 				$(window).ready(function(){
-					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',1000);
+					window.setTimeout('set_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
+
 					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
 				});
+				function set_xajax() {
+					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',1000);
+				}
 				function clear_xajax() {
 					window.clearInterval(active_interval);
 				}
@@ -461,9 +465,13 @@ function popup_footer(){
 			$header = str_replace("{headscript}","<script src=\"/templates/jquery.js\"></script>",$header);
 			$add="<script type='text/javascript'>
 				$(window).ready(function(){
-					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'notify\').innerHTML);',1000);
+					window.setTimeout('set_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
+
 					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
 				});
+				function set_xajax() {
+					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'notify\').innerHTML);',1000);
+				}
 				function clear_xajax() {
 					window.clearInterval(active_interval);
 				}
@@ -708,8 +716,8 @@ function charstats(){
 			addcharstat("Intelligence", $u['intelligence'].check_temp_stat("intelligence",1));
 			addcharstat("Constitution", $u['constitution'].check_temp_stat("constitution",1));
 			addcharstat("Wisdom", $u['wisdom'].check_temp_stat("wisdom",1));
-			addcharstat("Attack", $atk.check_temp_stat("attack",1));
-			addcharstat("Defense", $def.check_temp_stat("defense",1));
+			addcharstat("Attack", $atk."`\$<span title='".explained_get_player_attack()."'>(?)</span>`0".check_temp_stat("attack",1));
+			addcharstat("Defense", $def."`\$<span title='".explained_get_player_defense()."'>(?)</span>`0".check_temp_stat("defense",1));
 			addcharstat("Speed", $spd.check_temp_stat("speed",1));
 		} else {
 			$maxsoul = 50 + 10 * $u['level']+$u['dragonkills']*2;
