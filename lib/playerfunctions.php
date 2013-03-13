@@ -34,7 +34,10 @@ function explained_get_player_attack($player=false) {
 	$intbonus=round((1/6)*$user['intelligence'],1);
 	$miscbonus=round($user['attack']-9,1);
 	$atk = $strbonus+$speedbonus+$wisdombonus+$intbonus+$miscbonus;
-	$explained=sprintf_translate("%s STR + %s SPD + %s WIS+ %s INT + %s MISC",$strbonus,$speedbonus,$wisdombonus,$intbonus,$miscbonus);
+	$weapondmg=(int)$user['weapondmg'];
+	$levelbonus=(int)$user['level']-1;
+	$miscbonus-=$weapondmg+$levelbonus;
+	$explained=sprintf_translate("%s STR + %s SPD + %s WIS+ %s INT + %s Weapon + %s Train + %s MISC ",$strbonus,$speedbonus,$wisdombonus,$intbonus,$weapondmg,$levelbonus,$miscbonus);
 	return $explained;
 }
 
@@ -69,7 +72,10 @@ function explained_get_player_defense($player=false) {
 	$speedbonus = round((3/8)*get_player_speed($player),1);
 	$miscbonus = round($user['defense']-9,1);
 	$defense = $wisdombonus+$speedbonus+$constbonus+$miscbonus;
-	$explained=sprintf_translate("%s WIS + %s CON + %s SPD+ %s MISC",$wisdombonus,$constbonus,$speedbonus,$miscbonus);
+	$armordef=(int)$user['armordef'];
+	$levelbonus=(int)$user['level']-1;
+	$miscbonus-=$armordef+$levelbonus;
+	$explained=sprintf_translate("%s WIS + %s CON + %s SPD + %s Armor + %s Train + %s MISC ",$wisdombonus,$constbonus,$speedbonus,$armordef,$levelbonus,$miscbonus);
 	return $explained;
 }
 
