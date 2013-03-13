@@ -1,6 +1,8 @@
 Changes to 1.2.4 +nb
 [CHANGES]
 *home.php --> added a "forgotten password" link below the Login Button
+*mailserver_info.php, lib/pageparts.php etc.  --> AJAX reworked, removed faulty body implementation, made JQuery compliant and added JQ
+*lib/playerfunctions.php, lib/pageparts.php --> Quality of life: added a atk/def explain how the value gets calculated.
 [FIXES]
 *hof.php --> money sorting did not work with the cast() commands in the mysql syntax anymore (since mysql 5.5). Redid that and it works now (included even number formatting to full hundreds)
 [REMOVES]
