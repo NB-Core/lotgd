@@ -307,15 +307,20 @@ function page_footer($saveuser=true){
 		if ($session['user']['prefs']['ajax']) {
 			$add="<script type='text/javascript'>
 				$(window).ready(function(){
-					window.setTimeout('set_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
+					set_mail_xajax();
+					window.setTimeout('set_timeout_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
 
 					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
 				});
-				function set_xajax() {
-					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',1000);
+				function set_mail_xajax() {
+					active_mail_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',15000);
+				}
+				function set_timeout_xajax() {
+					active_timeout_interval=window.setInterval('xajax_timeout_status(this.document.getElementById(\'notify\').innerHTML);',1000);
 				}
 				function clear_xajax() {
-					window.clearInterval(active_interval);
+					window.clearInterval(active_timeout_interval);
+					window.clearInterval(active_mail_interval);
 				}
 			</script>";
 					
