@@ -470,12 +470,12 @@ function popup_footer(){
 			$header = str_replace("{headscript}","<script src=\"/templates/jquery.js\"></script>",$header);
 			$add="<script type='text/javascript'>
 				$(window).ready(function(){
-					window.setTimeout('set_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
+					window.setTimeout('set_timeout_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
 
 					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
 				});
-				function set_xajax() {
-					active_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'notify\').innerHTML);',1000);
+				function set_timeout_xajax() {
+					active_timeout_interval=window.setInterval('xajax_timeout_status(this.document.getElementById(\'notify\').innerHTML);',1000);
 				}
 				function clear_xajax() {
 					window.clearInterval(active_interval);
