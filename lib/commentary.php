@@ -335,16 +335,20 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		}
 		//chat tags
 		if (getsetting('enable_chat_tags',1)==1) {
-		if (($row['superuser']&SU_MEGAUSER)==SU_MEGAUSER) {
-			$row['name']="`\$".getsetting('chat_tag_megauser','[ADMIN]')."`0".$row['name'];			
-		} elseif(0) { //disabled until I make the user prefs into their own good-fucking table because it is SO annoying to unserialize THEM!
-			if (($row['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) {
-				$row['name']="`\$".getsetting('chat_tag_gm','[GM]')."`0".$row['name'];
+			if (($row['superuser']&SU_MEGAUSER)==SU_MEGAUSER) {
+				$row['name']="`\$".getsetting('chat_tag_megauser','[ADMIN]')."`0".$row['name'];			
+			} else { 
+				// disabled until I make the user prefs into their own good-fucking table because it is SO annoying to unserialize THEM!
+				// update: you can now set empty - if there should be an option for *specific accounts* to hide/show the tag, I will ignore it for now (workload)
+				if (($row['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) {
+					$chat_tag=getsetting('chat_tag_gm','');
+					$row['name']="`\$".$chat_tag_gm."`0".$row['name'];
+				}
+				if (($row['superuser']&SU_EDIT_COMMENTS)==SU_EDIT_COMMENTS) {
+					$chat_tag_mod=getsetting('chat_tag_mod','');
+					$row['name']="`\$".$chat_tag_mod."`0".$row['name'];
+				}
 			}
-			if (($row['superuser']&SU_EDIT_COMMENTS)==SU_EDIT_COMMENTS) {
-				$row['name']="`\$".getsetting('chat_tag_mod','[MOD]')."`0".$row['name'];
-			}
-		}
 		}
 		if ($ft=="::" || $ft=="/me" || $ft==":"){
 			$x = strpos($row['comment'],$ft);
