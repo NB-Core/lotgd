@@ -10,6 +10,10 @@ require_once("lib/http.php");
 
 tlschema("payment");
 
+// Send an empty HTTP 200 OK response to acknowledge receipt of the notification 
+header('HTTP/1.1 200 OK'); 
+  
+
 // read the post from PayPal system and add 'cmd'
 $req = 'cmd=_notify-validate';
 
@@ -20,14 +24,18 @@ foreach ($post as $key => $value) {
 	$req .= "&$key=$value";
 }
 
-// post back to PayPal system to validate
-$header = "";
-$header .= "POST /cgi-bin/webscr HTTP/1.1\r\n";
+// Set up the acknowledgement request headers
+$header  = "POST /cgi-bin/webscr HTTP/1.1\r\n";                    // HTTP POST request
 $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
-$header .="Host: www.paypal.com\r\n";
-//$header .="Connection: close\r\n\r\n";
 $header .= "Content-Length: " . strlen($req) . "\r\n\r\n";
+$header .="Host: www.paypal.com\r\n";
+$header .="Connection: close\r\n\r\n";
+
+// Open a socket for the acknowledgement request
+
+//$fp = fsockopen ('ssl://www.paypal.com', 443, $errno, $errstr, 30);
 $fp = fsockopen ('www.paypal.com', 80, $errno, $errstr, 30);
+//$fp = fsockopen ('ssl://www.sandbox.paypal.com', 443, $errno, $errstr, 30);
 
 // assign posted variables to local variables
 $item_name = httppost('item_name');
