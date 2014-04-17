@@ -43,7 +43,7 @@ $limit = "";
 
 if ($op=="search"){
 	$search="%";
-	$n = httppost('name');
+	$n = mysql_real_escape_string(httppost('name'));
 	for ($x=0;$x<strlen($n);$x++){
 		$search .= substr($n,$x,1)."%";
 	}

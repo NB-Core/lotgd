@@ -27,14 +27,14 @@ foreach ($post as $key => $value) {
 // Set up the acknowledgement request headers
 $header  = "POST /cgi-bin/webscr HTTP/1.1\r\n";                    // HTTP POST request
 $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
-$header .= "Content-Length: " . strlen($req) . "\r\n\r\n";
+$header .= "Content-Length: " . strlen($req) . "\r\n";
 $header .="Host: www.paypal.com\r\n";
 $header .="Connection: close\r\n\r\n";
 
 // Open a socket for the acknowledgement request
 
-//$fp = fsockopen ('ssl://www.paypal.com', 443, $errno, $errstr, 30);
-$fp = fsockopen ('www.paypal.com', 80, $errno, $errstr, 30);
+$fp = fsockopen ('ssl://www.paypal.com', 443, $errno, $errstr, 30);
+//$fp = fsockopen ('www.paypal.com', 80, $errno, $errstr, 30);
 //$fp = fsockopen ('ssl://www.sandbox.paypal.com', 443, $errno, $errstr, 30);
 
 // assign posted variables to local variables
@@ -58,7 +58,7 @@ if (!$fp) {
 		$res = fgets ($fp, 1024);
 		$response .= $res;
 
-		if (strcmp ($res, "VERIFIED") == 0) {
+		if (strcmp (trim($res), "VERIFIED") == 0) {
 			// check the payment_status is Completed
 			// check that txn_id has not been previously processed
 			// check that receiver_email is your Primary PayPal email
@@ -89,7 +89,7 @@ if (!$fp) {
 				payment_error(E_ERROR,"Payment Status isn't 'Completed' it's '$payment_status'",__FILE__,__LINE__);
 			}
 		}
-		else if (strcmp ($res, "INVALID") == 0) {
+		else if (strcmp (trim($res), "INVALID") == 0) {
 			// log for manual investigation
 			payment_error(E_ERROR,"Payment Status is 'INVALID'!\n\nPOST data:`n".serialize($_POST),__FILE__,__LINE__);
 		}

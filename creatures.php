@@ -126,6 +126,7 @@ if ($op=="del"){
 	db_query($sql);
 	if (db_affected_rows()>0){
 		output("Creature deleted`n`n");
+		module_delete_objprefs('creatures',$id);
 	}else{
 		output("Creature not deleted: %s", db_error(LINK));
 	}
