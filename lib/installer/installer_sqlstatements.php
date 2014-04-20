@@ -908,6 +908,9 @@ $sql_upgrade_statements = array(
 "1.1.1.2 Dragonprime Edition +nb"=>array(),
 "1.2.0 +nb Edition"=>array(),
 "1.2.1 +nb Edition"=>array(),
-
+"1.2.2 +nb Edition"=>array(),
+"1.2.3 +nb Edition"=>array(),
+"1.2.4 +nb Edition"=>array(),
+"1.2.5 +nb Edition"=>array(),
 );
 ?>
