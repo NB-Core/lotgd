@@ -1,3 +1,9 @@
+Changes to 1.2.5 +nb
+
+[CHANGES]
+*lib/commentary.php --> added a new hook "gmcommentarea" with section and "allow_gm"=>false to handle module requests to allow /game comments 
+[FIXES]
+[REMOVES]
 Changes to 1.2.4 +nb
 [CHANGES]
 *home.php --> added a "forgotten password" link below the Login Button

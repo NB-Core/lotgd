@@ -12,8 +12,8 @@ class output_collector {
 
 	private $output; //!< the output to the template body
 	private $block_new_output; //!< is current output blocked? boolean
-	private static $colors; //!< the color codes=>CSS tags
-	private static $color_map,$colormap_esc; //!< the letters of color codes only, escaped and not escaped
+	private $colors; //!< the color codes=>CSS tags
+	private $color_map,$colormap_esc; //!< the letters of color codes only, escaped and not escaped
 	private $nestedtags; //!<open spans, or whatever...we need to make sure that we close them on output
 
 	/**
