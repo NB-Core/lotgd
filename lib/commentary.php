@@ -153,8 +153,11 @@ function injectcommentary($section, $talkline, $comment, $schema=false) {
 				substr($commentary,0,3)!="/me" &&
 				substr($commentary,0,5) != "/game") {
 			$commentary = ":`3$talkline, \\\"`#$commentary`3\\\"";
-		}
-		if (substr($commentary,0,5)=="/game" && ($session['user']['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) {
+		} 
+		//add a hook if a module wants to post a non-GM with /game (more power for modules)
+		$args = modulehook("gmcommentarea", array("section"=>$section,"allow_gm"=>false));
+		if (substr($commentary,0,5)=="/game" && ((($session['user']['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) || 
+							$args['allow_gm']===true)) {
 			//handle game master inserts now, allow double posts
 			injectsystemcomment($section,$commentary);
 		} else {
