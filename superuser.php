@@ -51,8 +51,10 @@ if ($session['user']['sex']==SEX_FEMALE){
 	output("Inside you are greeted by the sight of numerous scantily clad buxom women who wave palm fronds at you and offer to feed you grapes as you lounge on Greco-Roman couches draped with silk.`n`n");
 }
 //comment visible only for those who are MORE than translators
-
-if ($session['user']['superuser'] !=SU_IS_TRANSLATOR) commentdisplay("", "superuser","Engage in idle conversation with other gods:",25);
+//make section customizable for view / switching to different superuser chats possible
+$args = modulehook("superusertop", array("section"=>"superuser"));
+if ($session['user']['superuser'] !=SU_IS_TRANSLATOR)
+	commentdisplay("", $args['section'],"Engage in idle conversation with other gods:",25);
 
 addnav("Actions");
 if ($session['user']['superuser'] & SU_EDIT_PETITIONS) addnav("Petition Viewer","viewpetition.php");
