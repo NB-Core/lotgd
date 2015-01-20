@@ -291,9 +291,9 @@ if (!$skipvillagedesc) {
 		modulehook("}collapse");
 	}
 }
-modulehook("village",$texts);
+$texts = modulehook("village",$texts);
 //special hook for all villages... saves queries...
-modulehook("village-{$session['user']['location']}",$texts);
+$texts = modulehook("village-{$session['user']['location']}",$texts);
 
 if ($skipvillagedesc) output("`n");
 
