@@ -155,12 +155,13 @@ function injectcommentary($section, $talkline, $comment, $schema=false) {
 			$commentary = ":`3$talkline, \\\"`#$commentary`3\\\"";
 		} 
 		//add a hook if a module wants to post a non-GM with /game (more power for modules)
-		$args = modulehook("gmcommentarea", array("section"=>$section,"allow_gm"=>false));
+		$args = modulehook("gmcommentarea", array("section"=>$section,"allow_gm"=>false,"commentary"=>$commentary));
 		if (substr($commentary,0,5)=="/game" && ((($session['user']['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) || 
 							$args['allow_gm']===true)) {
 			//handle game master inserts now, allow double posts
-			injectsystemcomment($section,$commentary);
+			injectsystemcomment($section,$args['commentary']);
 		} else {
+			$commentary = $args['commentary'];
 			$sql = "SELECT comment,author FROM " . db_prefix("commentary") . " WHERE section='$section' ORDER BY commentid DESC LIMIT 1";
 			$result = db_query($sql);
 			$row = db_fetch_assoc($result);
@@ -344,7 +345,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 				// disabled until I make the user prefs into their own good-fucking table because it is SO annoying to unserialize THEM!
 				// update: you can now set empty - if there should be an option for *specific accounts* to hide/show the tag, I will ignore it for now (workload)
 				if (($row['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) {
-					$chat_tag=getsetting('chat_tag_gm','[GM]');
+					$chat_tag_gm=getsetting('chat_tag_gm','[GM]');
 					$row['name']="`\$".$chat_tag_gm."`0".$row['name'];
 				}
 				if (($row['superuser']&SU_EDIT_COMMENTS)==SU_EDIT_COMMENTS) {
@@ -537,7 +538,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		return $collected;
 
 	}
-	rawoutput("</div"); //close section
+	rawoutput("</div>"); //close section
 }
 
 function talkline($section,$talkline,$limit,$schema,$counttoday,$message) {
