@@ -282,6 +282,7 @@ function checknavs() {
 function buildnavs(){
 	global $navbysection, $navschema, $session, $navnocollapse;
 	$builtnavs="";
+	if ($session['user']['prefs']['sortedmenus']==1) navsort();
 	foreach ($navbysection as $key=>$val) {
 		$tkey = $key;
 		$navbanner="";
@@ -559,6 +560,38 @@ function clearnav(){
 	$session['allowednavs']=array();
 }
 
+function navsort(){
+	//sort each section
+	//user sorted by alphabet
+	global $session,$navbysection;
+	if (!is_array($navbysection)) return;
+	foreach ($navbysection as $key=>$val) {
+		if (is_array($val)) {
+			usort($val,"nav_a_sort");
+			$navbysection[$key] =$val;
+		}
+	}
+	return;
+}
+
+//sort function. mind the sprintf arrays in the structure and compare without the possible hotkey preset
+function nav_a_sort($a,$b) {
+	$a = $a[0];
+	$b = $b[0];
+	if (is_array($a)) $a=call_user_func_array("sprintf",$a);
+	if (is_array($b)) $b=call_user_func_array("sprintf",$b);
+	$a=sanitize($a);
+	$b=sanitize($b);
+	$pos = strpos(substr($a,0,2),"?");
+	$pos2 = strpos(substr($b,0,2),"?");
+	if ($pos===false) $pos=-1;
+	if ($pos2===false) $pos2=-1;	
+	$a = substr($a,$pos+1);
+	$b = substr($b,$pos2+1);
+	return strcmp($a,$b);
+}
+
+
 /**
  * Reset the output and wipe the navs
  *
@@ -572,4 +605,3 @@ function clearoutput(){
 	$nav="";
 }
 
-?>
