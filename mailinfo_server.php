@@ -26,10 +26,17 @@ function timeout_status($args=false) {
 	$timeout_setting=120; // seconds
 	global $session;
 	$warning='';
+	$never_timeout_if_browser_open=1;
+	if ($never_timeout_if_browser_open==1) {
+		$session['user']['laston']=date("Y-m-d H:i:s"); // set to now
+		//manual db update
+		$sql = "UPDATE ".db_prefix('accounts')." set laston='".$session['user']['laston']."' WHERE acctid=".$session['user']['acctid'];
+		db_query($sql);
+	}
 	$timeout=strtotime($session['user']['laston'])-strtotime(date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds")));
 	if ($timeout<=1) {
 		$warning="<br/>".appoencode("`\$`b")."Your session has timed out!".appoencode("`b");
-	} elseif ($timeout<120){
+	} elseif ($timeout<920){
 		$warning="<br/>".appoencode("`t").sprintf("TIMEOUT in %s seconds!",$timeout);
 	} else $warning='';
 	$objResponse = new xajaxResponse();
