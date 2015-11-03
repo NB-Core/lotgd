@@ -658,7 +658,7 @@ return array(
 			'extra'=>'auto_increment'
 			),
 		'section'=>array(
-			'name'=>'section', 'type'=>'varchar(20)', 'null'=>'1'
+			'name'=>'section', 'type'=>'varchar(30)', 'null'=>'1'
 			),
 		'author'=>array(
 			'name'=>'author', 'type'=>'int(11) unsigned', 'default'=>'0'
