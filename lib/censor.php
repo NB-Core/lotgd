@@ -12,7 +12,7 @@ function soap($input,$debug=false,$skiphook=false){
 	// the mask of displayable chars that should be masked out;
 	// X displays, _ masks.
 	$mix_mask = str_pad("",strlen($output),"X");
-	if (getsetting("soap",1)){
+	if (getsetting("soap",1)|| 1 ){
 		$search = nasty_word_list();
 		$exceptions = array_flip(good_word_list());
 		$changed_content = false;
@@ -91,7 +91,8 @@ function good_word_list(){
 }
 
 function nasty_word_list(){
-	$search = datacache("nastywordlist",600);
+	//$search = datacache("nastywordlist",600);
+	// won't work anymore, no clue why. returns mostly empty array entires. So deactivate for now.
 	if ($search!==false && is_array($search)) return $search;
 
 	$sql = "SELECT * FROM " . db_prefix("nastywords") . " WHERE type='nasty'";
