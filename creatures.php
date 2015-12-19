@@ -172,6 +172,8 @@ if ($op=="" || $op=="search"){
 	$diemsg = translate_inline("Die");
 	$cat = translate_inline("Category");
 	$script = translate_inline("Script?");
+	$forest_text = translate_inline("Forest?");
+	$graveyard_text = translate_inline("Graveyard?");
 	$author = translate_inline("Author");
 	$edit = translate_inline("Edit");
 	$yes = translate_inline("Yes");
@@ -181,7 +183,7 @@ if ($op=="" || $op=="search"){
 
 	rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
 	rawoutput("<tr class='trhead'>");
-	rawoutput("<td>$opshead</td><td>$idhead</td><td>$name</td><td>$cat</td><td>$lev</td><td>$weapon</td><td>$script</td><td>$winmsg</td><td>$diemsg</td><td>$author</td></tr>");
+	rawoutput("<td>$opshead</td><td>$idhead</td><td>$name</td><td>$cat</td><td>$lev</td><td>$weapon</td><td>$script</td><td>$winmsg</td><td>$diemsg</td><td>$forest_text</td><td>$graveyard_text</td><td>$author</td></tr>");
 	addnav("","creatures.php");
 	$i=true;
 	while ($row = db_fetch_assoc($result)) {
@@ -210,6 +212,10 @@ if ($op=="" || $op=="search"){
 		output_notl("%s", $row['creaturewin']);
 		rawoutput("</td><td>");
 		output_notl("%s", $row['creaturelose']);
+		rawoutput("</td><td>");
+		output_notl("%s", ($row['forest']?"Yes":"No"));
+		rawoutput("</td><td>");
+		output_notl("%s", ($row['graveyard']?"Yes":"No"));
 		rawoutput("</td><td>");
 		output_notl("%s", $row['createdby']);
 		rawoutput("</td></tr>");
