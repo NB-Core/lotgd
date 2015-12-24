@@ -1,4 +1,4 @@
-<?
+<?php
 /* Function send_mail
 * $to is an array of type "emailaddress"=>"Name of the Emailholder"
 * $from is an array of type "emailaddress"=>"Name of the Emailholder"

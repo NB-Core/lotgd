@@ -34,6 +34,7 @@ $setup = array(
 	"homenewdaytime"=>"Should the time till newday be shown?,bool",
 	"homenewestplayer"=>"Should the newest player be shown?,bool",
 	"defaultskin"=>"What skin should be the default?,theme",
+	"listonlyonline"=>"Show Warriors List with only online folks (prevent paging)?,bool",
 	"impressum"=>"Tell the world something about the person running this server. (e.g. name and address),textarea",
 
 	"Beta Setup,title",
@@ -219,7 +220,7 @@ $setup = array(
 	"PvP,title",
 	"pvp"=>"Enable Slay Other Players,bool",
 	"pvptimeout"=>"Timeout in seconds to wait after a player was PvP'd,int",
-	"pvpday"=>"Player Fights per day,range,1,10,1",
+	"pvpday"=>"Player Fights per day,range,1,30,1",
 	"pvpdragonoptout"=>"Can players be engaged in pvp after a DK until they visit the village again?,bool",
 	"pvprange"=>"How many levels can attacker & defender be different? (-1=any - lower limit is always +1),range,-1,15,1",
 	"Example: A setting of 1 means a level 12 player can attack level 12-13.. with setting 2 he can do level 11-14.. with setting 0 only his own level,note",

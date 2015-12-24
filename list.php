@@ -43,7 +43,7 @@ $limit = "";
 
 if ($op=="search"){
 	$search="%";
-	$n = mysql_real_escape_string(httppost('name'));
+	$n = mysqli_real_escape_string($mysqli_resource,httppost('name'));
 	for ($x=0;$x<strlen($n);$x++){
 		$search .= substr($n,$x,1)."%";
 	}
@@ -57,6 +57,7 @@ if ($op=="search"){
 
 	$limit=" LIMIT $pageoffset,$playersperpage ";
 }
+if (getsetting('listonlyonline',1)==0 || (getsetting('listonlyonline',1)==1 && $session['user']['loggedin'])) {
 addnav("Pages");
 for ($i=0;$i<$totalplayers;$i+=$playersperpage){
 	$pnum = $i/$playersperpage+1;
@@ -66,7 +67,7 @@ for ($i=0;$i<$totalplayers;$i+=$playersperpage){
 		addnav(array(" ?Page %s (%s-%s)", $pnum, $i+1, min($i+$playersperpage,$totalplayers)), "list.php?page=$pnum");
 	}
 }
-
+}
 // Order the list by level, dragonkills, name so that the ordering is total!
 // Without this, some users would show up on multiple pages and some users
 // wouldn't show up
