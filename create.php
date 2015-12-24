@@ -31,7 +31,7 @@ if ($op=='val' || $op=='forgotval') {
 
 if ($op=="forgotval"){
 	$id = httpget('id');
-	$sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation FROM ". db_prefix("accounts") . " WHERE forgottenpassword='".mysql_real_escape_string($id)."' AND forgottenpassword!=''";
+	$sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation FROM ". db_prefix("accounts") . " WHERE forgottenpassword='".db_real_escape_string($id)."' AND forgottenpassword!=''";
 	$result = db_query($sql);
 	if (db_num_rows($result)>0) {
 		$row = db_fetch_assoc($result);
@@ -67,7 +67,7 @@ if ($op=="forgotval"){
 	}
 } elseif ($op=="val"){
 	$id = httpget('id');
-	$sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress FROM ". db_prefix("accounts") . " WHERE emailvalidation='".mysql_real_escape_string($id)."' AND emailvalidation!=''";
+	$sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress FROM ". db_prefix("accounts") . " WHERE emailvalidation='".db_real_escape_string($id)."' AND emailvalidation!=''";
 	$result = db_query($sql);
 	if (db_num_rows($result)>0) {
 		$row = db_fetch_assoc($result);
@@ -131,7 +131,7 @@ if ($op=="forgotval"){
 if ($op=="forgot"){
 	$charname = httppost('charname');
 	if ($charname!=""){
-		$sql = "SELECT acctid,login,emailaddress,forgottenpassword,password FROM " . db_prefix("accounts") . " WHERE login='".mysql_real_escape_string($charname)."'";
+		$sql = "SELECT acctid,login,emailaddress,forgottenpassword,password FROM " . db_prefix("accounts") . " WHERE login='".db_real_escape_string($charname)."'";
 		$result = db_query($sql);
 		if (db_num_rows($result)>0){
 			$row = db_fetch_assoc($result);
@@ -197,7 +197,7 @@ if (getsetting("allowcreation",1)==0){
 			$pass1= httppost('pass1');
 			$pass2= httppost('pass2');
 			if (getsetting("blockdupeemail",0)==1 && getsetting("requireemail",0)==1){
-				$sql = "SELECT login FROM " . db_prefix("accounts") . " WHERE emailaddress='".mysql_real_escape_string($email)."'";
+				$sql = "SELECT login FROM " . db_prefix("accounts") . " WHERE emailaddress='".db_real_escape_string($email)."'";
 				$result = db_query($sql);
 				if (db_num_rows($result)>0){
 					$blockaccount=true;
@@ -264,7 +264,7 @@ if (getsetting("allowcreation",1)==0){
 					}
 					$refer = httpget('r');
 					if ($refer>""){
-						$sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='".mysql_real_escape_string($refer)."'";
+						$sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='".db_real_escape_string($refer)."'";
 						$result = db_query($sql);
 						$ref = db_fetch_assoc($result);
 						$referer=$ref['acctid'];

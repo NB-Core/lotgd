@@ -84,7 +84,7 @@ if ($op==""){
 		$admin = "unknown";
 
 	// See if we know this server.
-	$sql = "SELECT lastupdate,serverid,lastping,recentips FROM " . db_prefix("logdnet") . " WHERE address='".mysql_real_escape_string($addy)."'";
+	$sql = "SELECT lastupdate,serverid,lastping,recentips FROM " . db_prefix("logdnet") . " WHERE address='".db_real_escape_string($addy)."'";
 	$result = db_query($sql);
 	$row = db_fetch_assoc($result);
 

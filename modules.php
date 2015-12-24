@@ -129,7 +129,7 @@ if ($op==""){
 		addnav("","modules.php?cat=$cat&sortby=formalname&order=".($sortby=="formalname"?!$order:1));
 		addnav("","modules.php?cat=$cat&sortby=moduleauthor&order=".($sortby=="moduleauthor"?!$order:1));
 		addnav("","modules.php?cat=$cat&sortby=installdate&order=".($sortby=="installdate"?$order:0));
-		$sql = "SELECT * FROM " . db_prefix("modules") . " WHERE category='$cat' ORDER BY ".$sortby." ".($order?"ASC":"DESC");
+		$sql = "SELECT * FROM " . db_prefix("modules") . " WHERE category='".db_real_escape_string($cat)."' ORDER BY ".$sortby." ".($order?"ASC":"DESC");
 		$result = db_query($sql);
 		if (db_num_rows($result)==0){
 			rawoutput("<tr class='trlight'><td colspan='6' align='center'>");

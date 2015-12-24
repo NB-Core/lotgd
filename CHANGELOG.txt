@@ -9,6 +9,7 @@ Changes to 1.2.5 +nb
 *superuser.php --> new hook to make the section "switchable"
 [FIXES]
 *lib/commentary.php --> forgot a closing > at a </div> - section close
+*lib/dbwrapper_* + create.php + modules.php + list.php + logdnet.php --> mysql_real_escape_string depends on server type. made new function to wrappers for mysqli (mysql wrapper is now obsolete with ubuntu 15.04 LTS fyi)
 [REMOVES]
 
 Changes to 1.2.4 +nb
