@@ -5,6 +5,7 @@ Changes to 1.2.5 +nb
 *lib/commentary.php --> added a new hook "gmcommentarea" with section and "allow_gm"=>false to handle module requests to allow /game comments 
 	 		added a fix (GM titles didn't work due to wrong variable used)
 *lib/forest.php --> new hook "forest" to add stuff before the description (i.e. for mobile buttons that need to be top)
+*list.php --> new setting (in lib/data/configuration.php) added to show only online folks in list.php on the frontpage (default true). reason: online spiders grabbing playerlists in total makes no sense
 *superuser.php --> new hook to make the section "switchable"
 [FIXES]
 *lib/commentary.php --> forgot a closing > at a </div> - section close
