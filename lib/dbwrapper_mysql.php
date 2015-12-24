@@ -150,6 +150,12 @@ function db_select_db($dbname){
 	$r = $fname($dbname);
 	return $r;
 }
+
+function db_real_escape_string($string){
+	$r = mysql_real_escape_string($string);
+	return $r;
+}
+
 function db_free_result($result){
 	if (is_array($result)){
 		//cached data
