@@ -7,8 +7,18 @@ function mail_status($args=false) {
 	if ($args===false) return;
 	$timeout_setting=120; // seconds
 	$new=maillink();
+	$tabtext=maillinktabtext();
 	$objResponse = new xajaxResponse();
 	$objResponse->assign("maillink","innerHTML", $new);
+	if ($tabtext=='') { //empty
+		$tabtext=translate_inline('Legend of the Green Dragon','home');
+//		$objResponse->script("if (tab_oldtext!=='' && tab_oldtext!==document.title) {document.title=tab_oldtext; tab_oldtext='';}");
+		$objResponse->script("document.title=\"".$tabtext."\";");
+	} else {
+//		$objResponse->script("if (tab_oldtext==='') { tab_oldtext=document.title; }");
+//		$objResponse->script("console.log('Text: '+tab_oldtext)");
+		$objResponse->script("document.title=\"".$tabtext."\";");
+	}
 /*	global $session;
 	$warning='';
 	$timeout=strtotime($session['user']['laston'])-strtotime(date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds")));
