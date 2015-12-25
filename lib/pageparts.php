@@ -857,6 +857,22 @@ function maillink(){
 		return sprintf("<a href='mail.php' target='_blank' onClick=\"".popup("mail.php").";return false;\" class='motd'>".translate_inline("Ye Olde Mail: %s new, %s old","common")."</a>",$row['notseen'],$row['seencount']);
 	}
 }
+/* same, but only the text for the tab */
+function maillinktabtext(){
+	global $session;
+	$sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . db_prefix("mail") . " WHERE msgto=\"".$session['user']['acctid']."\"";
+	$result = db_query_cached($sql,"mail-{$session['user']['acctid']}",86400);
+	$row = db_fetch_assoc($result);
+	db_free_result($result);
+	$row['seencount']=(int)$row['seencount'];
+	$row['notseen']=(int)$row['notseen'];
+	if ($row['notseen']>0){
+		return sprintf(translate_inline("%s new mail(s)","common"),$row['notseen']);
+	}else{
+		return '';
+	}
+}
+
 
 /**
  * Returns a display formatted (and popup enabled) MOTD link - determines if unread MOTD items exist and highlights the link if needed
