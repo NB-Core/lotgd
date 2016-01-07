@@ -28,24 +28,29 @@ if ($op=="" || $op=="sql"){
 		} else {
 			if (db_affected_rows() > 0) {
 				output("`&%s rows affected.`n`n",db_affected_rows());
+			} else {
+				output("No rows have been changed.`n`n");
 			}
 			rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
-			$number = db_num_rows($r);
-			for ($i = 0; $i < $number; $i++) {
-				$row = db_fetch_assoc($r);
-				if ($i == 0) {
-					rawoutput("<tr class='trhead'>");
-					$keys = array_keys($row);
+			if ($r!==true) {
+				// if $r===true, it was an UPDATE or DELETE statement, which obviously has no result lines
+				$number = db_num_rows($r);
+				for ($i = 0; $i < $number; $i++) {
+					$row = db_fetch_assoc($r);
+					if ($i == 0) {
+						rawoutput("<tr class='trhead'>");
+						$keys = array_keys($row);
+						foreach ($keys as $value) {
+							rawoutput("<td>$value</td>");
+						}
+						rawoutput("</tr>");
+					}
+					rawoutput("<tr class='".($i%2==0?"trlight":"trdark")."'>");
 					foreach ($keys as $value) {
-						rawoutput("<td>$value</td>");
+						rawoutput("<td valign='top'>{$row[$value]}</td>");
 					}
 					rawoutput("</tr>");
 				}
-				rawoutput("<tr class='".($i%2==0?"trlight":"trdark")."'>");
-				foreach ($keys as $value) {
-					rawoutput("<td valign='top'>{$row[$value]}</td>");
-				}
-				rawoutput("</tr>");
 			}
 			rawoutput("</table>");
 		}

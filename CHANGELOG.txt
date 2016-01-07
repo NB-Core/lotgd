@@ -8,6 +8,7 @@ Changes to 1.2.5 +nb
 *lib/mail/case_default.php --> javascript security confirmation for move/delete of mail
 *lib/pageparts.php --> added ajax script for title change (in case of new mail), needed maillinktabtext() function
 *list.php --> new setting (in lib/data/configuration.php) added to show only online folks in list.php on the frontpage (default true). reason: online spiders grabbing playerlists in total makes no sense
+*rawsql.php --> small text adaption for when no changes are made. Also removed error text when an UPDATE/DELETE statement produced no affected rows to show (db_num_rows error on TRUE result)
 *superuser.php --> new hook to make the section "switchable"
 [FIXES]
 *lib/commentary.php --> forgot a closing > at a </div> - section close
