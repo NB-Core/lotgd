@@ -5,7 +5,7 @@ require("common.php");
 
 function mail_status($args=false) {
 	if ($args===false) return;
-	$timeout_setting=120; // seconds
+	$timeout_setting=getsetting("LOGINTIMEOUT",360); // seconds
 	$new=maillink();
 	$tabtext=maillinktabtext();
 	$objResponse = new xajaxResponse();
@@ -19,15 +19,22 @@ function mail_status($args=false) {
 //		$objResponse->script("console.log('Text: '+tab_oldtext)");
 		$objResponse->script("document.title=\"".$tabtext."\";");
 	}
-/*	global $session;
+	global $session;
 	$warning='';
 	$timeout=strtotime($session['user']['laston'])-strtotime(date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds")));
 	if ($timeout<=1) {
 		$warning="<br/>".appoencode("`\$`b")."Your session has timed out!".appoencode("`b");
-	} elseif ($timeout<120){
-		$warning="<br/>".appoencode("`t").sprintf("TIMEOUT in %s seconds!",$timeout);
+	} elseif ($timeout<12000){
+		if ($timeout>60) {
+			$min = floor($timeout/60);
+			$timeout = $timeout-$min*60;
+			$m = sprintf('%s minute',$min);
+			if ($min>1) $m.='s';
+			$m.=", ";
+		}
+		$warning="<br/>".appoencode("`t").sprintf("TIMEOUT in $m%s seconds!",$timeout);
 	} else $warning='';
-	$objResponse->assign("notify","innerHTML", $warning);*/
+	$objResponse->assign("notify","innerHTML", $warning);
 	return $objResponse;
 }
 
