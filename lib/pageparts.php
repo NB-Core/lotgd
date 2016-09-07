@@ -299,9 +299,14 @@ function page_footer($saveuser=true){
 	$header=str_replace("{nav}",$builtnavs,$header);
 	$footer=str_replace("{nav}",$builtnavs,$footer);
 	//output the motd
-
-	$header = str_replace("{motd}", motdlink(), $header);
-	$footer = str_replace("{motd}", motdlink(), $footer);
+	//use a modulehook to add more stuff by module or change the link
+	$motd_link = motdlink();
+	$motd_link = modulehook("motd-link",array("link"=>$motd_link));
+	$motd_link = $motd_link['link'];
+	//$header = str_replace("{motd}", motdlink(), $header);
+	//$footer = str_replace("{motd}", motdlink(), $footer);
+	$header = str_replace("{motd}", $motd_link, $header);
+	$footer = str_replace("{motd}", $motd_link, $footer);
 	//output the mail link
 	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
 		if ($session['user']['prefs']['ajax']) {

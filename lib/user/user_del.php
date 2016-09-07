@@ -5,7 +5,7 @@ require_once("lib/charcleanup.php");
 char_cleanup($userid, CHAR_DELETE_MANUAL);
 $fail=false;
 while ($row = db_fetch_assoc($res)) {
-	if ($res['superuser']>0 && ($session['user']['superuser']&SU_MEGAUSER)!=SU_MEGAUSER) {
+	if ($row['superuser']>0 && ($session['user']['superuser']&SU_MEGAUSER)!=SU_MEGAUSER) {
 		output("`\$You are trying to delete a user with superuser powers. Regardless of the type, ONLY a megauser can do so due to security reasons.");
 		$fail=true;
 		break;
