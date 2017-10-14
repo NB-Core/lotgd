@@ -1,6 +1,7 @@
 <?php
 
 define("OVERRIDE_FORCED_NAV",true);
+define("ALLOW_ANONYMOUS",true);
 require("common.php");
 
 function mail_status($args=false) {
@@ -79,7 +80,7 @@ function commentary_text($args=false) {
 
 
 
-require("mailinfo_common.php");
+require("mailinfo_base.php");
 $xajax->processRequest();
 
 
