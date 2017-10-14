@@ -100,7 +100,7 @@ function page_footer($saveuser=true){
 	$footer = $template['footer'];
 	//add XAJAX mail stuff
 	if ($session['user']['prefs']['ajax']) {
-		require("mailinfo_common.php");
+		require("mailinfo_base.php");
 		$xajax->printJavascript("lib/xajax");
 		addnav("","mailinfo_server.php");
 	}
@@ -450,7 +450,7 @@ function popup_footer(){
 	$footer = $template['popupfoot'];
 	//add XAJAX mail stuff
 	if ($session['user']['prefs']['ajax']) {
-		require("mailinfo_common.php");
+		require("mailinfo_base.php");
 		$xajax->printJavascript("lib/xajax");
 		addnav("","mailinfo_server.php");
 	}

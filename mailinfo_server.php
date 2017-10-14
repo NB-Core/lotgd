@@ -88,7 +88,7 @@ function commentary_text($args=false) {
 
 
 
-require("mailinfo_common.php");
+require("mailinfo_base.php");
 $xajax->processRequest();
 
 
