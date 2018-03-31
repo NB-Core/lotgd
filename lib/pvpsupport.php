@@ -29,10 +29,11 @@ function setup_target($name) {
 		}
 		//you cannot use any special stuff here, and when buffed up, players are just too strong on different levels. divide the dks 
 		output("As you both cannot use any special gimmicks, the more dragonkills your victim has the stronger he gets.`n");
+/*
 		if (abs($session['user']['level']-$row['creaturelevel'])>getsetting('pvprange',2)){
 			output("`\$Error:`4 That user is out of your level range!");
 			return false;
-		}elseif ($row['pvpflag'] > $pvptimeout){
+		}else*/if ($row['pvpflag'] > $pvptimeout){
 			output("`\$Oops:`4 That user is currently engaged by someone else, you'll have to wait your turn!");
 			return false;
 		}elseif (strtotime($row['laston']) >
@@ -40,9 +41,9 @@ function setup_target($name) {
 				$row['loggedin']){
 			output("`\$Error:`4 That user is now online, and cannot be attacked until they log off again.");
 			return false;
-		} elseif((int)$row['alive']!=1){
-			output("`\$Error:`4 That user is not alive.");
-			return false;
+//		} elseif((int)$row['alive']!=1){
+//			output("`\$Error:`4 That user is not alive.");
+//			return false;
 		}elseif ($session['user']['playerfights']>0){
 			$sql = "UPDATE " . db_prefix("accounts") . " SET pvpflag='".date("Y-m-d H:i:s")."' WHERE acctid={$row['acctid']}";
 			db_query($sql);

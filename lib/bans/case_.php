@@ -56,7 +56,7 @@ if ($display == 1){
 		output_notl("%s", $row['lastip']);
 		rawoutput("</td><td>");
 		output_notl("%s", $row['uniqueid']);
-		rawoutput("</td><td>");
+		rawoutput("</td>");
 		$gentimecount+=$row['gentimecount'];
 		$gentime+=$row['gentime'];
 	}

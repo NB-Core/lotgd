@@ -18,6 +18,8 @@ $setup = array(
 	"forcedmotdpopup"=>"Force a MOTD popup if an unseen motd is there?,bool",
 	"Note: popups are mostly blocked by new browsers and you get it displayed on the news page too),note",
 	"motditems"=>"How many items should be shown on the motdlist,int",
+	"ajax"=>"Turn on AJAX support?,bool",
+	"Ajax means you have refreshed content (mail;tab headline) without having ppl to reload the whole page,note",
 
 	"Server Maintenance / Debugging,title",
 	"debug"=>"Server runs in DEBUG mode?,bool",

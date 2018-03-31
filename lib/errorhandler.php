@@ -5,6 +5,7 @@ function logd_error_handler($errno, $errstr, $errfile, $errline){
 	static $in_error_handler = 0;
 	// If we have used the @ operator, just don't report anything!
 	if (!error_reporting()) return;
+	ini_set('display_errors', 1);
 	$in_error_handler++;
 	if ($in_error_handler > 1){//prevents the error handler from being re-called when we're already within a call of it.
 		if ($errno & (E_USER_WARNING | E_WARNING)){

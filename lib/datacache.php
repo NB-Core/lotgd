@@ -37,10 +37,10 @@ function datacache($name,$duration=60){
 			if (file_exists($fullname) &&
 					@filemtime($fullname) > strtotime("-$duration seconds")){
 				//the cache file *does* exist, and is not overly old.
-				//funny, without the @ in the filemtime it HAPPENED that the file_exists returned TRUE but the file already was deleted ;) great whoe to those milliseconds 
+				//funny, without the @ in the filemtime it HAPPENED that the file_exists returned TRUE but the file already was deleted ;) great woe to those milliseconds 
 				$fullfile = @file_get_contents($fullname);
 				if ($fullfile > ""){
-					$datacache[$name] = @unserialize($fullfile);
+					$datacache[$name] = @json_decode($fullfile,true);
 					return $datacache[$name];
 				}else{
 					return false;
@@ -61,7 +61,7 @@ function updatedatacache($name,$data){
 		$datacache[$name] = $data; //serialize($array);
 		$fp = fopen($fullname,"w");
 		if ($fp){
-			if (!fwrite($fp,serialize($data))){
+			if (!fwrite($fp,json_encode($data))){
 			}else{
 			}
 			fclose($fp);

@@ -1,0 +1,30 @@
+{
+    "name": "lemonphp/event",
+    "type": "library",
+    "description": "Simple event dispatcher",
+    "keywords": ["event", "event-dispatcher"],
+    "license": "MIT",
+    "homepage": "https://github.com/lemonphp/event",
+    "support": {
+        "issues": "https://github.com/lemonphp/event/issues",
+        "source": "https://github.com/lemonphp/event"
+    },
+    "authors": [
+        {
+            "name": "Oanh Nguyen",
+            "email": "oanhnn.bk@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Lemon\\Event\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.8|~5.0",
+        "squizlabs/php_codesniffer": "^2.5"
+    }
+}

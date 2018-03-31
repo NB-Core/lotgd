@@ -1,0 +1,43 @@
+{
+    "name": "jaxon-php/jaxon-core",
+    "type": "library",
+    "description": "Jaxon is an open source PHP library for easily creating Ajax web applications",
+    "authors": [
+        {"name": "Jared White"},
+        {"name": "J. Max Wilson"},
+        {"name": "Joseph Woolley"},
+        {"name": "Steffen Konerow"},
+        {"name": "Thierry Feuzeu"}
+    ],
+    "homepage": "http://jaxon-project.org",
+    "license": "BSD-3-Clause",
+    "keywords": ["Jaxon", "Xajax", "Ajax", "PHP", "Asynchronous"],
+    "support": {
+        "forum": "http://community.jaxon-project.org",
+        "irc": "irc://irc.freenode.org/jaxon",
+        "issues": "https://github.com/jaxon-php/jaxon-core/issues",
+        "source": "https://github.com/jaxon-php/jaxon-core"
+    },
+    "require": {
+        "php": ">=5.4.0",
+        "pimple/pimple": "3.0.*",
+        "lemonphp/event": "1.0.*",
+        "matthiasmullie/minify": "1.3.*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "5.7.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jaxon\\": "src/"
+        },
+        "files": [
+            "src/start.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jaxon\\Tests\\": "tests/"
+        }
+  }
+}

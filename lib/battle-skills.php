@@ -6,7 +6,7 @@ require_once("lib/bell_rand.php");
 require_once("lib/e_rand.php");
 require_once("lib/buffs.php");
 
-function rolldamage($badguy){
+function rolldamage(&$badguy){
 	global $session,$creatureattack,$creatureatkmod,$adjustment;
 	global $creaturedefmod,$defmod,$atkmod,$buffset,$atk,$def,$options;
 

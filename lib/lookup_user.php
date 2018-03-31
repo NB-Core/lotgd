@@ -36,7 +36,7 @@ function lookup_user($query=false, $order=false, $fields=false, $where=false){
 		}
 		if (db_num_rows($searchresult)<=0){
 			$err = "`\$No results found`0";
-		}elseif (db_num_rows($searchresult)>100){
+		}elseif (db_num_rows($searchresult)>300){
 			$err = "`\$Too many results found, narrow your search please.`0";
 		}else{
 			// Everything is good

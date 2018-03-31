@@ -1,0 +1,1 @@
+    <li class="active"><a href="javascript:;"><?php echo $this->text ?></a></li>

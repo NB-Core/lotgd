@@ -514,6 +514,9 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				$starttime = getmicrotime();
 /*******************************************************/
 				if (function_exists($row['function'])) {
+					if ($session['user']['superuser'] & SU_DEBUG_OUTPUT){
+					rawoutput("<!-- Hook: ".$hookname." on module ".$row['function']." called... -->");
+					}
 					$res = $row['function']($hookname, $args);
 				} else {
 					trigger_error("Unknown function {$row['function']} for hookname $hookname in module {$row['module']}.", E_USER_WARNING);

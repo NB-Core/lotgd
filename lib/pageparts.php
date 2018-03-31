@@ -98,13 +98,6 @@ function page_footer($saveuser=true){
 		$dbinfo;
 	$z = $y2^$z2;
 	$footer = $template['footer'];
-	//add XAJAX mail stuff
-	if ($session['user']['prefs']['ajax']) {
-		require("mailinfo_base.php");
-		$xajax->printJavascript("lib/xajax");
-		addnav("","mailinfo_server.php");
-	}
-	//END XAJAX
 	//page footer module hooks
 	$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
 	$replacementbits = array();
@@ -154,9 +147,16 @@ function page_footer($saveuser=true){
 	}else{
 		$session['needtoviewmotd']=false;
 	}
-	$pre_headscript = "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" TYPE=\"image/x-icon\"/>";
+	$pre_headscript = "<link rel=\"shortcut icon\" HREF=\"favicon.ico\" TYPE=\"image/x-icon\"/>";
+	//add AJAX notification stuff
+	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+		if (file_exists('ext/ajax_base_setup.php')) {
+			require("ext/ajax_base_setup.php");
+		}
+	}
+	//END AJAX
 	if ($headscript>""){
-		$header=str_replace("{headscript}",$pre_headscript."<script language='JavaScript'>".$headscript."</script>",$header);
+		$header=str_replace("{headscript}",$pre_headscript."<script type='text/javascript' charset='UTF-8'>".$headscript."</script>",$header);
 	}else{
 		$header = str_replace("{headscript}",$pre_headscript,$header);
 	}
@@ -167,7 +167,7 @@ function page_footer($saveuser=true){
 	if (!isset($session['user']['login'])) $session['user']['login']="";
 
 	//output keypress script
-	$script.="<script language='JavaScript'>
+	$script.="<script type='text/javascript' charset='UTF-8'>
 	<!--
 	document.onkeypress=keyevent;
 	function keyevent(e){
@@ -248,9 +248,9 @@ function page_footer($saveuser=true){
 		$e = rawurlencode($e);
 		$v = rawurlencode($v);
 		$u = rawurlencode($u);
-		$paypalstr .= "<script language='JavaScript' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
+		$paypalstr .= "<script type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
 	}else{
-		$paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
+		$paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">".'
 <input type="hidden" name="cmd" value="_xclick">
 <input type="hidden" name="business" value="logd@mightye.org">
 <input type="hidden" name="item_name" value="Legend of the Green Dragon Author Donation from '.full_sanitize($session['user']['name']).'">
@@ -309,31 +309,13 @@ function page_footer($saveuser=true){
 	$footer = str_replace("{motd}", $motd_link, $footer);
 	//output the mail link
 	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-		if ($session['user']['prefs']['ajax']) {
-			$add="<script type='text/javascript'>
-				$(window).ready(function(){
-					set_mail_xajax();
-					window.setTimeout('set_timeout_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
-
-					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
-				});
-				function set_mail_xajax() {
-					active_mail_interval=window.setInterval('xajax_mail_status(this.document.getElementById(\'maillink\').innerHTML);',15000);
-				}
-				function set_timeout_xajax() {
-					active_timeout_interval=window.setInterval('xajax_timeout_status(this.document.getElementById(\'notify\').innerHTML);',1000);
-				}
-				function clear_xajax() {
-					window.clearInterval(active_timeout_interval);
-					window.clearInterval(active_mail_interval);
-				}
-			</script>";
-					
-			$script.="<script src=\"/templates/jquery.js\"></script>";
-			$header=str_replace("{mail}","$add<div id='maillink'>".maillink()."</div><div id='notify'></div></body>",$header);
+		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+			if (file_exists('ext/ajax_maillink.php')) {
+				require('ext/ajax_maillink.php');
+			}
+			$header=str_replace("{mail}",$maillink_add_pre."<div id='maillink'>".maillink()."</div>".$maillink_add_after,$header);
 		} else {
 			//no AJAX for slower browsers etc
-			$add="";
 			$header=str_replace("{mail}",maillink(),$header);
 		}
 		$footer=str_replace("{mail}",maillink(),$footer);
@@ -398,8 +380,13 @@ function page_footer($saveuser=true){
 	tlschema();
 
 	//clean up spare {fields}s from header and footer (in case they're not used)
+	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
 	$footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
-	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+	$header = str_replace("{bodyad}","",$header);
+	$header = str_replace("{verticalad}","",$header);
+	$header = str_replace("{navad}","",$header);
+	$header = str_replace("{headerad}","",$header);
+//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
 	//finalize output
 	$browser_output=$header.($output->get_output()).$footer;
@@ -446,15 +433,15 @@ function popup_header($title="Legend of the Green Dragon"){
 function popup_footer(){
 	global $output,$header,$session,$y2,$z2,$copyright, $template;
 
-
+	$headscript='';
 	$footer = $template['popupfoot'];
-	//add XAJAX mail stuff
-	if ($session['user']['prefs']['ajax']) {
-		require("mailinfo_base.php");
-		$xajax->printJavascript("lib/xajax");
-		addnav("","mailinfo_server.php");
+	//add AJAX stuff
+	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+		if (file_exists('ext/ajax_base_setup.php')) {
+			require("ext/ajax_base_setup.php");
+		}
 	}
-	//END XAJAX
+	//END AJAX
 
 	// Pass the script file down into the footer so we can do something if
 	// we need to on certain pages (much like we do on the header.
@@ -471,34 +458,28 @@ function popup_footer(){
 	$z = $y2^$z2;
 	$footer = str_replace("{".($z)."}",$$z, $footer);
 	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-		if ($session['user']['prefs']['ajax']) {
-			$header = str_replace("{headscript}","<script src=\"/templates/jquery.js\"></script>",$header);
-			$add="<script type='text/javascript'>
-				$(window).ready(function(){
-					window.setTimeout('set_timeout_xajax()','".((getsetting("LOGINTIMEOUT",900)-120)*1000)."');
-
-					window.setTimeout('clear_xajax()','".((getsetting("LOGINTIMEOUT",900)+5)*1000)."');
-				});
-				function set_timeout_xajax() {
-					active_timeout_interval=window.setInterval('xajax_timeout_status(this.document.getElementById(\'notify\').innerHTML);',1000);
-				}
-				function clear_xajax() {
-					window.clearInterval(active_interval);
-				}
-			</script>";
-					
-			$add.="<div id='notify'></div>";
+	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+		if (file_exists('ext/ajax_maillink.php')) {
+			require("ext/ajax_maillink.php");
+		}
 		} else {
-			$add='';
+			$maillink_add_after='';
 			//no AJAX for slower browsers etc
 		}
 	}
+	$header = str_replace("{headscript}",$pre_headscript.$headscript,$header);
 
 	//clean up spare {fields}s from header and footer (in case they're not used)
+	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
 	$footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
-	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+	$header = str_replace("{bodyad}","",$header);
+	$header = str_replace("{verticalad}","",$header);
+	$header = str_replace("{navad}","",$header);
+	$header = str_replace("{headerad}","",$header);
+	$header = str_replace("{script}","",$header);
+//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
-	$browser_output=$header.$add.($output->get_output()).$footer;
+	$browser_output=$header.$maillink_add_after.($output->get_output()).$footer;
 	saveuser();
 	session_write_close();
 	echo $browser_output;

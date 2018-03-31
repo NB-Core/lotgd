@@ -282,7 +282,7 @@ function checknavs() {
 function buildnavs(){
 	global $navbysection, $navschema, $session, $navnocollapse;
 	$builtnavs="";
-	if ($session['user']['prefs']['sortedmenus']==1) navsort();
+	if (isset($session['user']['prefs']['sortedmenus']) && $session['user']['prefs']['sortedmenus']==1) navsort();
 	foreach ($navbysection as $key=>$val) {
 		$tkey = $key;
 		$navbanner="";

@@ -1,0 +1,26 @@
+{
+    "name": "jaxon-php/jaxon-sentry",
+    "type": "library",
+    "description": "Common classes providing advanced features to the Jaxon library",
+    "authors": [
+        {"name": "Thierry Feuzeu"}
+    ],
+    "homepage": "https://github.com/jaxon-php/jaxon-sentry",
+    "license": "BSD-3-Clause",
+    "keywords": ["Jaxon", "Xajax", "Ajax", "PHP", "Framework"],
+    "support": {
+        "issues": "https://github.com/jaxon-php/jaxon-sentry/issues",
+        "source": "https://github.com/jaxon-php/jaxon-sentry"
+    },
+    "require": {
+        "jaxon-php/jaxon-core": "~2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jaxon\\Sentry\\": "src/"
+        },
+        "files": [
+            "src/start.php"
+        ]
+    }
+}

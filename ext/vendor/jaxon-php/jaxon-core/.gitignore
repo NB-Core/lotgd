@@ -1,0 +1,4 @@
+# Do not commit Eclipse files
+.project
+.settings/*
+/jaxon-core.komodoproject

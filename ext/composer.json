@@ -1,0 +1,6 @@
+{
+    "require": {
+        "jaxon-php/jaxon-core": "~2.0",
+	"jaxon-php/jaxon-armada": "~2.0"
+    }
+}

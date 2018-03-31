@@ -290,7 +290,7 @@ function autosettarget($localenemies) {
  * @param string $activate The stage of activation. Can be one of these: "fight", "defend", "heal" or "magic".
  * @return array The changed companion
  */
-function report_companion_move($badguy,$companion, $activate="fight") {
+function report_companion_move(&$badguy,$companion, $activate="fight") {
 	global $session,$creatureattack,$creatureatkmod,$adjustment;
 	global $creaturedefmod,$defmod,$atkmod,$atk,$def,$count,$defended,$needtosstopfighting;
 
@@ -497,7 +497,7 @@ function report_companion_move($badguy,$companion, $activate="fight") {
  * @return array
  */
 
-function rollcompaniondamage($badguy,$companion){
+function rollcompaniondamage(&$badguy,$companion){
 	global $creatureattack,$creatureatkmod,$adjustment,$options;
 	global $creaturedefmod,$compdefmod,$compatkmod,$buffset,$atk,$def;
 

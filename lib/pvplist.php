@@ -41,7 +41,8 @@ function pvplist($location=false,$link=false,$extra=false,$sql=false){
 			"AND (slaydragon=0) AND " .
 			"(age>$days OR dragonkills>0 OR pk>0 OR experience>$exp) " .
 			($levdiff==-1?"":"AND (level>=$lev1 AND level<=$lev2)")." AND (alive=1) " .
-			"AND (laston<'$last' OR loggedin=0) AND (acctid<>$id) " .
+			"AND (laston<'$last' OR loggedin=0)". 
+			" AND (acctid<>$id) " .
 			"AND location='$loc' ".
 			"ORDER BY location='$loc' DESC, location, level DESC, " .
 			"experience DESC, dragonkills DESC";

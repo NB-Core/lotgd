@@ -71,7 +71,7 @@ function calculate_buff_fields(){
 				}else{
 					$val = $value;
 				}
-
+				
 				$session['user']['superuser'] = OLDSU;
 
 				//Avoiding PHP bug 27646
