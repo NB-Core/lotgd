@@ -25,7 +25,7 @@ $user=$session['user'];
 //pre-fill
 $stats=array();
 
-$stats[]=array("title"=>"Account created on:","value"=>($user['regdate']=="0000-00-00 00:00:00"?"Too old to be traced":$user['regdate']));
+$stats[]=array("title"=>"Account created on:","value"=>($user['regdate']==DATETIME_DATEMIN?"Too old to be traced":$user['regdate']));
 $stats[]=array("title"=>"Last Comment posted:","value"=>$user['recentcomments']);
 $stats[]=array("title"=>"Last PvP happened:","value"=>$user['pvpflag']);
 $stats[]=array("title"=>"Dragonkills:","value"=>$user['dragonkills']);

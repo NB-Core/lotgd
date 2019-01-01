@@ -76,6 +76,11 @@ myDefine("CHAR_DELETE_MANUAL",2);
 myDefine("CHAR_DELETE_PERMADEATH",3); //reserved for the future -- I don't have any plans this way currently, but it seemed appropriate to have it here.
 myDefine("CHAR_DELETE_SUICIDE",4);
 
+//Datetime Min/Max Definitions used for MySQL 
+myDefine("DATETIME_DATEMIN","1970-01-01 00:00:00");
+myDefine("DATETIME_DATEMAX","2159-01-01 00:00:00");
+
+
 // Constants used in lib/modules - for providing more information about the
 // status of the module
 myDefine("MODULE_NO_INFO",0);

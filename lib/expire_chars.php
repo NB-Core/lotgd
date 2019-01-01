@@ -6,7 +6,7 @@
 require_once("lib/constants.php");
 require_once("lib/settings_extended.php");
 
-$lastexpire = strtotime(getsetting("last_char_expire","0000-00-00 00:00:00"));
+$lastexpire = strtotime(getsetting("last_char_expire",DATETIME_DATEMIN));
 $needtoexpire = strtotime("-23 hours");
 if ($lastexpire < $needtoexpire){
 	savesetting("last_char_expire",date("Y-m-d H:i:s"));

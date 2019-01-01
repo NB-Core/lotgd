@@ -24,7 +24,7 @@ if ($op=="block"){
 	db_query($sql);
 }
 if ($op=="unblock"){
-	$sql = "UPDATE " . db_prefix("accounts") . " SET bio='',biotime='0000-00-00 00:00:00' WHERE acctid='$userid'";
+	$sql = "UPDATE " . db_prefix("accounts") . " SET bio='',biotime='".DATETIME_DATEMIN."' WHERE acctid='$userid'";
 	$subj = array("Your bio has been unblocked");
 	$msg = array("The system administrators have decided to unblock your bio.  You can once again enter a bio entry.");
 	systemmail($userid,$subj,$msg);

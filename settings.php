@@ -9,7 +9,7 @@ $game_dir='';
 // This DEPENDS on your hosting! It is 100% sure if you use shared hosting this is different
 // If you have a rootserver, you'd know what your directory is =)
 
-$DB_TYPE='mysql';
+$DB_TYPE='mysqli_proc';
 /* * * *
  * Avaiable values for DBTYPE:
  *

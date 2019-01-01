@@ -38,6 +38,8 @@ tlschema("nav");
 // there is no way for them to unmute themselves without this link.
 addnav("Other");
 addnav("??F.A.Q. (Frequently Asked Questions)", "petition.php?op=faq",false,true);
+addnav("A?Account Info","account.php");
+addnav("P?Preferences","prefs.php");
 
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS){
 	addnav("Superuser");

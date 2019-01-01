@@ -74,7 +74,7 @@ foreach ($modules as $key=>$module) {
 		invalidatedatacache("inject-$module");
 		massinvalidate("module-prepare");
 	}elseif($op=="reinstall"){
-		$sql = "UPDATE " . db_prefix("modules") . " SET filemoddate='0000-00-00 00:00:00' WHERE modulename='$module'";
+		$sql = "UPDATE " . db_prefix("modules") . " SET filemoddate='".DATETIME_DATEMIN."' WHERE modulename='$module'";
 		db_query($sql);
 		// We don't care about the return value here at all.
 		$op="";

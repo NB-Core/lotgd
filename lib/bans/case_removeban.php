@@ -22,24 +22,24 @@ if ($subop=="xml"){
 	echo "</xml>";
 	exit();
 }
-db_query("DELETE FROM " . db_prefix("bans") . " WHERE banexpire < \"".date("Y-m-d H:m:s")."\" AND banexpire>'0000-00-00 00:00:00'");
+db_query("DELETE FROM " . db_prefix("bans") . " WHERE banexpire < \"".date("Y-m-d H:m:s")."\" AND banexpire<'".DATETIME_DATEMAX."'");
 $duration =  httpget("duration");
 if (httpget('notbefore')) {
 	$operator=">=";
 } else $operator="<=";
 
 if ($duration=="") {
-	$since = " WHERE banexpire $operator '".date("Y-m-d H:i:s",strtotime("+2 weeks"))."' AND banexpire > '0000-00-00 00:00:00'";
+	$since = " WHERE banexpire $operator '".date("Y-m-d H:i:s",strtotime("+2 weeks"))."' AND banexpire < '".DATETIME_DATEMAX."'";
 		output("`bShowing bans that will expire within 2 weeks.`b`n`n");
 }else{
 	if ($duration=="forever") {
-		$since=" WHERE banexpire='0000-00-00 00:00:00'";
+		$since=" WHERE banexpire='".DATETIME_DATEMAX."'";
 		output("`bShowing all permanent bans`b`n`n");
 	} elseif ($duration=="all") {
 		$since="";
 		output("`bShowing all bans`b`n`n");
 	} else {
-		$since = " WHERE banexpire $operator '".date("Y-m-d H:i:s",strtotime("+".$duration))."' AND banexpire > '0000-00-00 00:00:00'";
+		$since = " WHERE banexpire $operator '".date("Y-m-d H:i:s",strtotime("+".$duration))."' AND banexpire < '".DATETIME_DATEMAX."'";
 		output("`bShowing bans that will expire within %s.`b`n`n",$duration);
 	}
 }
@@ -133,7 +133,7 @@ while ($row = db_fetch_assoc($result)) {
 	if (date("Y-m-d",strtotime($row['banexpire'])) ==
 			date("Y-m-d",strtotime("1 day")))
 		$expire=translate_inline("Tomorrow");
-	if ($row['banexpire']=="0000-00-00 00:00:00")
+	if ($row['banexpire']==DATETIME_DATEMAX)
 		$expire=translate_inline("Never");
 	output_notl("%s", $expire);
 	rawoutput("</td><td>");

@@ -73,7 +73,7 @@ return array(
 			'name'=>'spirits', 'type'=>'int(4)', 'default'=>'0' //in what spirits are you? up from -128 till +127 (I don't remember how SQL calculates that), basically gives the + or - turns a day
 			),
 		'laston'=>array(
-			'name'=>'laston', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00' //last on
+			'name'=>'laston', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00' //last on
 			),
 		'hitpoints'=>array(
 			'name'=>'hitpoints', 'type'=>'int(11)', 'default'=>'10' //user hitpoints he currently has
@@ -144,13 +144,13 @@ return array(
 		'lastmotd'=>array(
 			'name'=>'lastmotd',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			), //explains itself
 		'playerfights'=>array(
 			'name'=>'playerfights', 'type'=>'int(11) unsigned', 'default'=>'3' //number of PvP
 			),
 		'lasthit'=>array(
-			'name'=>'lasthit', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00' //last pagehit when?
+			'name'=>'lasthit', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00' //last pagehit when?
 			),
 		'seendragon'=>array(
 			'name'=>'seendragon', 'type'=>'tinyint(4) unsigned', 'default'=>'0' //already seen the dragon today?
@@ -207,7 +207,7 @@ return array(
 			'name'=>'prefs', 'type'=>'text'
 			),
 		'pvpflag'=>array(
-			'name'=>'pvpflag', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'pvpflag', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'transferredtoday'=>array(
 			'name'=>'transferredtoday', 'type'=>'smallint(2) unsigned', 'default'=>'0'
@@ -230,7 +230,7 @@ return array(
 		'recentcomments'=>array(
 			'name'=>'recentcomments',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'donation'=>array(
 			'name'=>'donation', 'type'=>'int(11) unsigned', 'default'=>'0'
@@ -254,7 +254,7 @@ return array(
 			'name'=>'race', 'type'=>'varchar(50)', 'default'=>'0'
 			),
 		'biotime'=>array(
-			'name'=>'biotime', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'biotime', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'banoverride'=>array(
 			'name'=>'banoverride',
@@ -292,7 +292,7 @@ return array(
 		'regdate'=>array(
 			'name'=>'regdate',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'clanid'=>array(
 			'name'=>'clanid', 'type'=>'int(11) unsigned', 'default'=>'0'
@@ -303,7 +303,7 @@ return array(
 		'clanjoindate'=>array(
 			'name'=>'clanjoindate',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -353,7 +353,7 @@ return array(
 			'name'=>'acctid', 'type'=>'int(11) unsigned'
 			),
 		'output'=>array(
-			'name'=>'output', 'type'=>'mediumtext'
+			'name'=>'output', 'type'=>'blob'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -551,7 +551,7 @@ return array(
 			'default'=>'0.00'
 			),
 		'processdate'=>array(
-			'name'=>'processdate', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'processdate', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -605,7 +605,7 @@ return array(
 			'name'=>'banner', 'type'=>'varchar(50)'
 			),
 		'lasthit'=>array(
-			'name'=>'lasthit', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'lasthit', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -669,7 +669,7 @@ return array(
 		'postdate'=>array(
 			'name'=>'postdate',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -754,7 +754,7 @@ return array(
 			'name'=>'id', 'type'=>'int(11) unsigned', 'extra'=>'auto_increment'
 			),
 		'date'=>array(
-			'name'=>'date', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'date', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'actor'=>array(
 			'name'=>'actor', 'type'=>'int(11) unsigned', 'null'=>'1'
@@ -792,7 +792,7 @@ return array(
 			'name'=>'id', 'type'=>'int(11) unsigned', 'extra'=>'auto_increment'
 			),
 		'date'=>array(
-			'name'=>'date', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'date', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'actor'=>array(
 			'name'=>'actor', 'type'=>'int(11) unsigned', 'null'=>'1'
@@ -832,7 +832,7 @@ return array(
 			'extra'=>'auto_increment'
 			),
 		'date'=>array(
-			'name'=>'date', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'date', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'post'=>array(
 			'name'=>'post', 'type'=>'tinytext'
@@ -884,7 +884,7 @@ return array(
 		'date'=>array(
 			'name'=>'date',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00',
+			'default'=>'1970-01-01 00:00:00',
 			),
 		'who'=>array(
 			'name'=>'who',
@@ -927,7 +927,7 @@ return array(
 		'lastupdate'=>array(
 			'name'=>'lastupdate',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'version'=>array(
 			'name'=>'version', 'type'=>'varchar(255)', 'default'=>'Unknown'
@@ -938,7 +938,7 @@ return array(
 		'lastping'=>array(
 			'name'=>'lastping',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'recentips'=>array(
 			'name'=>'recentips',
@@ -981,7 +981,7 @@ return array(
 			'name'=>'body', 'type'=>'text'
 			),
 		'sent'=>array(
-			'name'=>'sent', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'sent', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'seen'=>array(
 			'name'=>'seen', 'type'=>'tinyint(1)', 'default'=>'0'
@@ -1053,7 +1053,7 @@ return array(
 			'name'=>'moderator', 'type'=>'int(11) unsigned', 'default'=>'0'
 			),
 		'moddate'=>array(
-			'name'=>'moddate', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'moddate', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -1191,7 +1191,7 @@ return array(
 		'installdate'=>array(
 			'name'=>'installdate',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'installedby'=>array(
 			'name'=>'installedby', 'type'=>'varchar(50)'
@@ -1199,7 +1199,7 @@ return array(
 		'filemoddate'=>array(
 			'name'=>'filemoddate',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'type'=>array(
 			'name'=>'type', 'type'=>'tinyint(4)', 'default'=>'0'
@@ -1328,7 +1328,7 @@ return array(
 			'name'=>'newstext', 'type'=>'text'
 			),
 		'newsdate'=>array(
-			'name'=>'newsdate', 'type'=>'date', 'default'=>'0000-00-00'
+			'name'=>'newsdate', 'type'=>'date', 'default'=>'1970-01-01'
 			),
 		'accountid'=>array(
 			'name'=>'accountid', 'type'=>'int(11) unsigned', 'default'=>'0'
@@ -1362,7 +1362,7 @@ return array(
 			'name'=>'author', 'type'=>'int(11) unsigned', 'default'=>'0'
 			),
 		'date'=>array(
-			'name'=>'date', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'
+			'name'=>'date', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'
 			),
 		'status'=>array(
 			'name'=>'status', 'type'=>'int(11) unsigned', 'default'=>'0'
@@ -1376,7 +1376,7 @@ return array(
 		'closedate'=>array(
 			'name'=>'closedate',
 			'type'=>'datetime',
-			'default'=>'0000-00-00 00:00:00'
+			'default'=>'1970-01-01 00:00:00'
 			),
 		'closeuserid'=>array(
 			'name'=>'closeuserid', 'type'=>'int(11) unsigned', 'default'=>'0'

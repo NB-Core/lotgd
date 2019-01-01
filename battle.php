@@ -57,7 +57,6 @@ if ($auto == 'full') {
 } else if ($auto == 'ten') {
 	$count = 10;
 }
-
 $enemycounter = count($enemies);
 $enemies = autosettarget($enemies);
 
@@ -206,7 +205,7 @@ if ($op != "newtarget") {
 								$newcompanions = array();
 								foreach ($companions as $name=>$companion) {
 									if ($companion['hitpoints'] > 0) {
-										$buffer = report_companion_move(&$badguy,$companion, "heal");
+										$buffer = report_companion_move($badguy,$companion, "heal");
 										if ($buffer !== false) {
 											$newcompanions[$name] = $buffer;
 											unset($buffer);
@@ -226,7 +225,7 @@ if ($op != "newtarget") {
 
 						if ($op=="fight" || $op=="run" || $surprised){
 							// Grab an initial roll.
-							$roll = rolldamage(&$badguy);
+							$roll = rolldamage($badguy);
 							if ($op=="fight" && !$surprised){
 								$ggchancetodouble = $session['user']['dragonkills'];
 								$bgchancetodouble = $session['user']['dragonkills'];
@@ -238,7 +237,7 @@ if ($op != "newtarget") {
 											$newcompanions = array();
 											foreach ($companions as $name=>$companion) {
 												if ($companion['hitpoints'] > 0) {
-													$buffer = report_companion_move(&$badguy,$companion, "magic");
+													$buffer = report_companion_move($badguy,$companion, "magic");
 													if ($buffer !== false) {
 														$newcompanions[$name] = $buffer;
 														unset($buffer);
@@ -276,13 +275,13 @@ if ($op != "newtarget") {
 												$newcompanions = $companions;
 												$needtostopfighting = true;
 											}else{
-												$needtostopfighting = battle_player_attacks(&$badguy);
+												$needtostopfighting = battle_player_attacks($badguy);
 											}
 											$r = mt_rand(0,100);
 											if ($r < $ggchancetodouble && $badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && !$needtostopfighting){
 												$additionalattack = true;
 												$ggchancetodouble -= ($r+5);
-												$roll = rolldamage(&$badguy);
+												$roll = rolldamage($badguy);
 											}else{
 												$additionalattack = false;
 											}
@@ -307,13 +306,13 @@ if ($op != "newtarget") {
 								$buffset = activate_buffs("defense");
 								do {
 									$defended = false;
-									$needtostopfighting = battle_badguy_attacks(&$badguy);
+									$needtostopfighting = battle_badguy_attacks($badguy);
 									$r = mt_rand(0,100);
 									if (!isset($bgchancetodouble)) $bgchancetodouble = 0;
 									if ($r < $bgchancetodouble && $badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && !$needtostopfighting){
 										$additionalattack = true;
 										$bgchancetodouble -= ($r+5);
-										$roll = rolldamage(&$badguy);
+										$roll = rolldamage($badguy);
 									}else{
 										$additionalattack = false;
 									}
@@ -324,7 +323,7 @@ if ($op != "newtarget") {
 								if (is_array($companions)) {
 									foreach ($companions as $name=>$companion) {
 										if ($companion['hitpoints'] > 0) {
-											$buffer = report_companion_move(&$badguy,$companion, "fight");
+											$buffer = report_companion_move($badguy,$companion, "fight");
 											if ($buffer !== false) {
 												$newcompanions[$name] = $buffer;
 												unset($buffer);
@@ -397,10 +396,13 @@ if ($op != "newtarget") {
 					// experience for graveyard fights.
 					if (getsetting("instantexp",false) == true && $session['user']['alive'] && $options['type'] != "pvp" && $options['type'] != "train") {
 						if (!isset($badguy['expgained']) || $badguy['expgained'] == false) {
-							$session['user']['experience'] += round($badguy['creatureexp']/count($newenemies));
-							if (isset($badguy['creatureexp'])) output("`#You receive `^%s`# experience!`n`0",round($badguy['creatureexp']/count($newenemies)));
+							$cr_xp_gain = round($badguy['creatureexp']/count($newenemies));
+							$args = modulehook("forest-victory-xp",$args=array('experience'=>$cr_xp_gain));
+							$cr_xp_gain = $args['experience'];
+							$session['user']['experience'] += $cr_xp_gain;
+							if (isset($badguy['creatureexp'])) output("`#You receive `^%s`# experience!`n`0",$cr_xp_gain);
 							$options['experience'][$index] = $badguy['creatureexp'];
-							$options['experiencegained'][$index] = round($badguy['creatureexp']/count($newenemies));
+							$options['experiencegained'][$index] = $cr_xp_gain;
 							$badguy['expgained']=true;
 						}
 					} else {
@@ -537,7 +539,7 @@ $session['user']['badguy']=createstring($attackstack);
 $session['user']['companions']=createstring($companions);
 tlschema();
 
-function battle_player_attacks($badguy) {
+function battle_player_attacks(&$badguy) {
 	global $enemies,$newenemies,$session,$creatureattack,$creatureatkmod, $beta;
 	global $creaturedefmod,$adjustment,$defmod,$atkmod,$compatkmod,$compdefmod,$buffset,$atk,$def,$options;
 	global $companions,$companion,$newcompanions,$roll,$count,$needtostopfighting;
@@ -578,7 +580,7 @@ function battle_player_attacks($badguy) {
 	return $break;
 }
 
-function battle_badguy_attacks($badguy) {
+function battle_badguy_attacks(&$badguy) {
 	global $enemies,$newenemies,$session,$creatureattack,$creatureatkmod, $beta;
 	global $creaturedefmod,$adjustment,$defmod,$atkmod,$compatkmod,$compdefmod,$buffset,$atk,$def,$options;
 	global $companions,$companion,$newcompanions,$roll,$count,$index,$defended,$needtostopfighting;
@@ -603,7 +605,7 @@ function battle_badguy_attacks($badguy) {
 			if (is_array($companions)) {
 			foreach ($companions as $name=>$companion) {
 				if ($companion['hitpoints'] > 0) {
-					$buffer = report_companion_move(&$badguy,$companion, "defend");
+					$buffer = report_companion_move($badguy,$companion, "defend");
 					if ($buffer !== false) {
 						$newcompanions[$name] = $buffer;
 						unset($buffer);

@@ -105,7 +105,7 @@ function relativedate($indate){
 		$laston=translate_inline("Today");
 	elseif (date("Y-m-d",strtotime($laston)) == date("Y-m-d",strtotime("-1 day")))
 		$laston=translate_inline("Yesterday");
-	elseif (strpos($indate,"0000-00-00")!==false)
+	elseif (strpos($indate,DATETIME_DATEMIN)!==false)
 		$laston = translate_inline("Never");
 	else {
 		$laston= sprintf_translate("%s days", round((strtotime("now")-strtotime($indate)) / 86400,0));
@@ -132,7 +132,7 @@ function checkday() {
 function is_new_day($now=0){
 	global $session;
 
-	if ($session['user']['lasthit'] == "0000-00-00 00:00:00") {
+	if ($session['user']['lasthit'] == DATETIME_DATEMIN) {
 		return true;
 	}
 	$t1 = gametime();

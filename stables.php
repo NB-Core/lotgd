@@ -114,6 +114,7 @@ if ($op==""){
 		output($texts['finebeast'][$t]);
 		tlschema();
 		$mount = db_fetch_assoc($result);
+		$mount=modulehook("mount-modifycosts",$mount);
 		output("`7Creature: `&%s`0`n", $mount['mountname']);
 		output("`7Description: `&%s`0`n", $mount['mountdesc']);
 		output("`7Cost: `^%s`& gold, `%%s`& gems`n`n", $mount['mountcostgold'], $mount['mountcostgems']);
@@ -144,6 +145,7 @@ if ($op == 'confirmbuy') {
 		tlschema();
 	}else{
 		$mount = db_fetch_assoc($result);
+		$mount=modulehook("mount-modifycosts",$mount);
 		if (($session['user']['gold']+$repaygold) < $mount['mountcostgold'] ||
 			($session['user']['gems']+$repaygems) < $mount['mountcostgems']){
 			tlschema($schemas['toolittle']);
@@ -291,6 +293,7 @@ if ($confirm == 0) {
 		}
 		if ($row['mountdkcost'] <= $session['user']['dragonkills'])
 			addnav(array("Examine %s`0", $row['mountname']),"stables.php?op=examine&id={$row['mountid']}");
+			
 	}
 }
 

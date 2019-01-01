@@ -285,7 +285,7 @@ if ($dp < $dkills) {
 
 	if (!getsetting("newdaycron",0)) {
 		//check last time we did this vs now to see if it was a different game day.
-		$lastnewdaysemaphore = convertgametime(strtotime(getsetting("newdaySemaphore","0000-00-00 00:00:00") . " +0000"));
+		$lastnewdaysemaphore = convertgametime(strtotime(getsetting("newdaySemaphore",DATETIME_DATEMIN) . " +0000"));
 		$gametoday = gametime();
 		if (gmdate("Ymd",$gametoday)!=gmdate("Ymd",$lastnewdaysemaphore)){
 				// it appears to be a different game day, acquire semaphore and
@@ -293,7 +293,7 @@ if ($dp < $dkills) {
             $sql = "LOCK TABLES " . db_prefix("settings") . " WRITE";
             db_query($sql);
             clearsettings();
-            $lastnewdaysemaphore = convertgametime(strtotime(getsetting("newdaySemaphore","0000-00-00 00:00:00") . " +0000"));
+            $lastnewdaysemaphore = convertgametime(strtotime(getsetting("newdaySemaphore",DATETIME_DATEMIN) . " +0000"));
                 $gametoday = gametime();
             if (gmdate("Ymd",$gametoday)!=gmdate("Ymd",$lastnewdaysemaphore)){
                 //we need to run the hook, update the setting, and unlock.

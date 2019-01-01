@@ -31,7 +31,7 @@ modulehook("paylog",array());
 
 $op = httpget('op');
 if ($op==""){
-	$sql = "SELECT info,txnid FROM ".db_prefix("paylog")." WHERE processdate='0000-00-00'";
+	$sql = "SELECT info,txnid FROM ".db_prefix("paylog")." WHERE processdate='".DATETIME_DATEMIN."'";
 	$result = db_query($sql);
 	while ($row = db_fetch_assoc($result)){
 		$info = unserialize($row['info']);

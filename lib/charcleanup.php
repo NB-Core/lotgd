@@ -53,7 +53,7 @@ function char_cleanup($id, $type)
 				// deleted clan  This shouldn't be important, but.
 				require_once("lib/gamelog.php");
 				gamelog("Clan $cid has been disbanded as the last member left","clan");
-				$sql = "UPDATE " . db_prefix("accounts") . " SET clanid=0,clanrank=0,clanjoindate='0000-00-00 00:00;00' WHERE clanid=$cid";
+				$sql = "UPDATE " . db_prefix("accounts") . " SET clanid=0,clanrank=0,clanjoindate='".DATETIME_DATEMIN."' WHERE clanid=$cid";
 				db_query($sql);
 			}
 		}

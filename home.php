@@ -64,9 +64,10 @@ addnav("List Warriors","list.php");
 addnav("Daily News", "news.php");
 addnav("Other Info");
 addnav("About LoGD","about.php");
-if (getsetting('impressum','')!='') addnav("Imprint","about.php");
 addnav("Game Setup Info", "about.php?op=setup");
 addnav("LoGD Net","logdnet.php?op=list");
+addnav("Legal");
+if (getsetting('impressum','')!='') addnav("Imprint","about.php");
 
 modulehook("index", array());
 
@@ -143,4 +144,8 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("</tr></table></form>");
 }
 page_footer();
+if ($op=="timeout") {
+	session_unset();    
+	session_destroy(); // destroy if timeout
+}
 ?>

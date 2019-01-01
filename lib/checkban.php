@@ -22,8 +22,8 @@ function checkban($login=false){
 		$id=$row['uniqueid'];
 	}
 	//first, remove bans, then select them.
-	db_query("DELETE FROM " . db_prefix("bans") . " WHERE banexpire < \"".date("Y-m-d H:m:s")."\" AND banexpire>'0000-00-00 00:00:00'");
-	$sql = "SELECT * FROM " . db_prefix("bans") . " where ((substring('$ip',1,length(ipfilter))=ipfilter AND ipfilter<>'') OR (uniqueid='$id' AND uniqueid<>'')) AND (banexpire='0000-00-00 00:00:00' OR banexpire>='".date("Y-m-d H:m:s")."')";
+	db_query("DELETE FROM " . db_prefix("bans") . " WHERE banexpire < \"".date("Y-m-d H:m:s")."\" AND banexpire<'".DATETIME_DATEMAX."'");
+	$sql = "SELECT * FROM " . db_prefix("bans") . " where ((substring('$ip',1,length(ipfilter))=ipfilter AND ipfilter<>'') OR (uniqueid='$id' AND uniqueid<>'')) AND banexpire>='".date("Y-m-d H:m:s")."'";
 	$result = db_query($sql);
 	if (db_num_rows($result)>0){
 		$session=array();
@@ -31,7 +31,7 @@ function checkban($login=false){
 		$session['message'].=translate_inline("`n`4You fall under a ban currently in place on this website:`n");
 		while ($row = db_fetch_assoc($result)) {
 			$session['message'].=$row['banreason']."`n";
-			if ($row['banexpire']=='0000-00-00 00:00:00')
+			if ($row['banexpire']==DATETIME_DATEMAX)
 				$session['message'].=translate_inline("`\$This ban is permanent!`0");
 				else {
 					$leftover=strtotime($row['banexpire'])-strtotime("now");
