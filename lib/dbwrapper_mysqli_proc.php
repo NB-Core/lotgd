@@ -83,8 +83,11 @@ function db_error(){
 function db_fetch_assoc(&$result){
 	if (is_array($result)){
 		//cached data
-		if (list($key,$val)=each($result))
+		if (is_array($result)) {
+			$val = current($result);
+			next($result);
 			return $val;
+		}
 		else
 			return false;
 	}else{

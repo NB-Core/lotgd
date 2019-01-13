@@ -9,7 +9,7 @@ error_reporting (E_ALL ^ E_NOTICE);
 function set_magic_quotes(&$vars) {
 	if (is_array($vars)) {
 		reset($vars);
-		while (list($key,$val) = each($vars))
+		foreach ($vars as $key=>$val)
 			set_magic_quotes($vars[$key]);
 	}else{
 		$vars = addslashes($vars);

@@ -914,44 +914,44 @@ $sql_upgrade_statements = array(
 "1.2.5 +nb Edition"=>array(),
 "1.2.6 +n Edition"=>array(
 	//conversion lotgd tables to mysql 5.7 which is already in all_tables.php
-	"UPDATE ".db_prefix'accounts'." SET laston='1970-01-01 00:00:00' WHERE laston='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET lasthit='1970-01-01 00:00:00' WHERE lasthit='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET pvpflag='1970-01-01 00:00:00' WHERE pvpflag='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET recentcomments='1970-01-01 00:00:00' WHERE recentcomments='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET biotime='1970-01-01 00:00:00' WHERE biotime='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET clanjoindate='1970-01-01 00:00:00' WHERE clanjoindate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET regdate='1970-01-01 00:00:00' WHERE regdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET laston='1970-01-01 00:00:00' WHERE laston='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lasthit='1970-01-01 00:00:00' WHERE lasthit='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET pvpflag='1970-01-01 00:00:00' WHERE pvpflag='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET recentcomments='1970-01-01 00:00:00' WHERE recentcomments='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET biotime='1970-01-01 00:00:00' WHERE biotime='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET clanjoindate='1970-01-01 00:00:00' WHERE clanjoindate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET regdate='1970-01-01 00:00:00' WHERE regdate='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'paylog'." SET processdate='1970-01-01 00:00:00' WHERE processdate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'accounts'." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('paylog')." SET processdate='1970-01-01 00:00:00' WHERE processdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'bans'." SET banexpire='2159-01-01 00:00:00' WHERE banexpire='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'bans'." SET lasthit='2159-01-01 00:00:00' WHERE lasthit='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('bans')." SET banexpire='2159-01-01 00:00:00' WHERE banexpire='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('bans')." SET lasthit='2159-01-01 00:00:00' WHERE lasthit='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'commentary'." SET postdate='1970-01-01 00:00:00' WHERE postdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('commentary')." SET postdate='1970-01-01 00:00:00' WHERE postdate='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'debuglog'." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'debuglog_archive'." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('debuglog')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('debuglog_archive')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'faillog'." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'gamelog'." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('faillog')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('gamelog')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'logdnet'." SET lastupdate='1970-01-01 00:00:00' WHERE lastupdate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'logdnet'." SET lastping='1970-01-01 00:00:00' WHERE lastping='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('logdnet')." SET lastupdate='1970-01-01 00:00:00' WHERE lastupdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('logdnet')." SET lastping='1970-01-01 00:00:00' WHERE lastping='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'mail'." SET sent='1970-01-01 00:00:00' WHERE sent='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('mail')." SET sent='1970-01-01 00:00:00' WHERE sent='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'moderatedcomments'." SET moddate='1970-01-01 00:00:00' WHERE moddate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('moderatedcomments')." SET moddate='1970-01-01 00:00:00' WHERE moddate='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'modules'." SET installdate='1970-01-01 00:00:00' WHERE installdate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'modules'." SET filemoddate='1970-01-01 00:00:00' WHERE filemoddate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('modules')." SET installdate='1970-01-01 00:00:00' WHERE installdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('modules')." SET filemoddate='1970-01-01 00:00:00' WHERE filemoddate='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'news'." SET newsdate='1970-01-01 00:00:00' WHERE newsdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('news')." SET newsdate='1970-01-01 00:00:00' WHERE newsdate='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix'petitions'." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix'petitions'." SET closedate='1970-01-01 00:00:00' WHERE closedate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('petitions')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('petitions')." SET closedate='1970-01-01 00:00:00' WHERE closedate='0000-00-00 00:00:00'",
 	),
 );
 ?>

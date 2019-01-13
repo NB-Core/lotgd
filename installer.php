@@ -18,7 +18,7 @@ $mysql_met=true;
 if (version_compare(PHP_VERSION, '5.0.0') < 0) {
 	$requirements_met=false;
 	$php_met=false;
-} elseif (version_compare(mysql_get_client_info(), '5.0.3') < 0) {
+} elseif (function_exists("mysql_get_client_info") && version_compare(mysql_get_client_info(), '5.0.3') < 0) {
 	$requirements_met=false;
 	$mysql_met=false;
 }
@@ -27,7 +27,7 @@ if (!$requirements_met) {
 	//we have NO output object possibly :( hence no nice formatting
 	echo "<h1>Requirements not sufficient<br/><br/>";
 	if (!$php_met) echo sprintf("You need PHP5 to install this version. Please upgrade from your existing PHP version %s.<br/>",PHP_VERSION);
-	if (!$mysql_met) echo sprintf("You need Mysql 5.0 to install this version. Please upgrade from your existing Mysql version %s.<br/>",mysql_get_client_info());
+	if (!$mysql_met && function_exists("mysql_get_client_info")) echo sprintf("You need Mysql 5.0 to install this version. Please upgrade from your existing Mysql version %s.<br/>",mysql_get_client_info());
 	exit(1);
 }
 
