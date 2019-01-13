@@ -948,7 +948,7 @@ $sql_upgrade_statements = array(
 	"UPDATE ".db_prefix('modules')." SET installdate='1970-01-01 00:00:00' WHERE installdate='0000-00-00 00:00:00'",
 	"UPDATE ".db_prefix('modules')." SET filemoddate='1970-01-01 00:00:00' WHERE filemoddate='0000-00-00 00:00:00'",
 
-	"UPDATE ".db_prefix('news')." SET newsdate='1970-01-01 00:00:00' WHERE newsdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('news')." SET newsdate='1970-01-01' WHERE newsdate='0000-00-00'",
 
 	"UPDATE ".db_prefix('petitions')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
 	"UPDATE ".db_prefix('petitions')." SET closedate='1970-01-01 00:00:00' WHERE closedate='0000-00-00 00:00:00'",
