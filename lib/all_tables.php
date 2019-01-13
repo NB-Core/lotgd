@@ -162,7 +162,7 @@ return array(
 			'name'=>'locked', 'type'=>'tinyint(4) unsigned', 'default'=>'0'
 			),
 		'restorepage'=>array(
-			'name'=>'restorepage', 'type'=>'varchar(128)', 'null'=>'1'
+			'name'=>'restorepage', 'type'=>'varchar(255)', 'null'=>'1'
 			),
 		'hashorse'=>array(
 			'name'=>'hashorse', 'type'=>'tinyint(4) unsigned', 'default'=>'0'
