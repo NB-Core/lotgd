@@ -296,9 +296,9 @@ if ($logd_version != getsetting("installer_version","-1") && !defined("IS_INSTAL
 
 
 if (isset($session['user']['hitpoints']) && $session['user']['hitpoints']>0){
-	$session['user']['alive']=true;
+	$session['user']['alive']=1;
 }else{
-	$session['user']['alive']=false;
+	$session['user']['alive']=0;
 }
 
 if (isset($session['user']['bufflist']))

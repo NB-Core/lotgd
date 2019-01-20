@@ -203,7 +203,7 @@ function pvpdefeat($badguy, $killedloc, $taunt, $options=false)
 		db_query($sql);
 	}
 
-	$session['user']['alive']=false;
+	$session['user']['alive']=0;
 	debuglog("lost {$session['user']['gold']} ($winamount to winner) gold and $lostexp exp ($wonexp to winner) being slain by ", $badguy['acctid']);
 	$session['user']['gold']=0;
 	$session['user']['hitpoints']=0;

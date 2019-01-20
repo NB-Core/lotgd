@@ -291,7 +291,7 @@ if ($battle){
 			}else{
 				addnews("`%%s`5 has been slain when he encountered `@%s`5!!!  His bones now litter the cave entrance, just like the bones of those who came before.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			}
-			$session['user']['alive']=false;
+			$session['user']['alive']=0;
 			debuglog("lost {$session['user']['gold']} gold when they were slain");
 			$session['user']['gold']=0;
 			$session['user']['hitpoints']=0;
