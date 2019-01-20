@@ -30,6 +30,7 @@ use Jaxon\Request\Manager as RequestManager;
 use Jaxon\Response\Manager as ResponseManager;
 
 use Jaxon\Utils\URI;
+use Jaxon\Utils\Container;
 use Exception;
 use Closure;
 
@@ -52,7 +53,7 @@ class Jaxon
      *
      * @var string
      */
-    private $sVersion = 'Jaxon 2.1.3';
+    private $sVersion = 'Jaxon 2.1.6';
 
     /*
      * Processing events
@@ -438,6 +439,16 @@ class Jaxon
      */
     public function getOutput()
     {
-        $this->getResponseManager()->getOutput();
+        return $this->getResponseManager()->getOutput();
+    }
+
+    /**
+     * Get the DI container
+     *
+     * @return Jaxon\Utils\Container
+     */
+    public function di()
+    {
+        return Container::getInstance();
     }
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Config.php - Upload Trait
+ * Config.php - Config Trait
  *
  * The Jaxon class uses a modular plug-in system to facilitate the processing
  * of special Ajax requests made by a PHP page.
@@ -44,6 +44,8 @@ trait Config
             // 'core.request.uri'               => '',
             'core.request.mode'                 => 'asynchronous',
             'core.request.method'               => 'POST',    // W3C: Method is case sensitive
+            'core.response.merge.ap'            => true,
+            'core.response.merge.js'            => true,
             'core.debug.on'                     => false,
             'core.debug.verbose'                => false,
             'core.process.exit'                 => true,

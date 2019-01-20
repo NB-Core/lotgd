@@ -118,16 +118,16 @@
         },
         {
             "name": "jaxon-php/jaxon-core",
-            "version": "v2.1.4",
+            "version": "v2.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jaxon-php/jaxon-core.git",
-                "reference": "6c3ce883f6fbe4733a6fe83f7c7ed161d1409dfc"
+                "reference": "3123e63234f126bdb74f68e921643d8632ed1879"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/6c3ce883f6fbe4733a6fe83f7c7ed161d1409dfc",
-                "reference": "6c3ce883f6fbe4733a6fe83f7c7ed161d1409dfc",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/3123e63234f126bdb74f68e921643d8632ed1879",
+                "reference": "3123e63234f126bdb74f68e921643d8632ed1879",
                 "shasum": ""
             },
             "require": {
@@ -178,7 +178,7 @@
                 "php",
                 "xajax"
             ],
-            "time": "2017-12-09 12:30:04"
+            "time": "2018-10-17 01:14:59"
         },
         {
             "name": "jaxon-php/jaxon-sentry",
