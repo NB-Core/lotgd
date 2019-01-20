@@ -14,6 +14,7 @@ function saveuser(){
 
 		$session['user']['allowednavs']=serialize($session['allowednavs']);
 		$session['user']['bufflist']=serialize($session['bufflist']);
+		$session['user']['alive']=(int)$session['user']['alive']; //legacy reasons, so you can still use false/true without breaking anything
 		//if (isset($companions)&& is_array($companions)) $session['user']['companions']=serialize($companions);
 		$sql="";
 		foreach ($session['user'] as $key=>$val) {
