@@ -58,10 +58,16 @@ if ($op=="") {
 	/*
 	motditem("Beta!","Please see the beta message below.","","", "");
 	*/
-	$m = httppost("month");
-	if ($m > ""){
-		$sql = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor WHERE motddate >= '{$m}-01' AND motddate <= '{$m}-31' ORDER BY motddate DESC";
-		$result = db_query_cached($sql,"motd-$m");
+	$month_post = httppost("month");
+	//SQL Injection attack possible -> kill it off after 7 letters as format is i.e. "2000-05"
+	$month_post = substr($month_post,0,7);
+	if (preg_match("/[0-9][0-9][0-9][0-9]-[0-9][0-9]/",$month_post)!==1) {
+		//hack attack
+		$month_post="";
+	}
+	if ($month_post > ""){
+		$sql = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor WHERE motddate >= '{$month_post}-01' AND motddate <= '{$month_post}-31' ORDER BY motddate DESC";
+		$result = db_query_cached($sql,"motd-$month_post");
 	}else{
 		$sql = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor ORDER BY motddate DESC limit $newcount,".($newcount+$count);
 		if ($newcount=0) //cache only the last x items
@@ -97,7 +103,7 @@ if ($op=="") {
 	while ($row = db_fetch_assoc($result)){
 		$time = strtotime("{$row['d']}-01");
 		$m = translate_inline(date("M",$time));
-		rawoutput ("<option value='{$row['d']}'".(httpget("month")==$row['d']?" selected":"").">$m".date(", Y",$time)." ({$row['c']})</option>");
+		rawoutput ("<option value='{$row['d']}'".($month_post==$row['d']?" selected":"").">$m".date(", Y",$time)." ({$row['c']})</option>");
 	}
 	rawoutput("</select>".tlbutton_clear());
 	$showmore=translate_inline("Show more");
