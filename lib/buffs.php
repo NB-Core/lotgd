@@ -151,6 +151,35 @@ function apply_buff($name,$buff){
 	calculate_buff_fields();
 }
 
+//not only add but also strip companions
+//why? because in add_companion the session['user']['companions'] is ignored (!) if the global var is used.
+//hence it can (and will) happen if you try to remove a companion and then add one, that you forget
+//to remove it from the global var, and then it still persists -> awkward
+//let's give ppl for companions (who are permanent by default!) an option to strip them safely
+function strip_companion($name){
+	global $session, $companions;
+	//$name can be an array of companions you want to remove, too
+	$remove_result = false;
+	if (!is_array($companions)) {
+		$companions = @unserialize($session['user']['companions']);
+	}
+	if (is_array($name)) {
+		foreach ($name as $remove_comp_name) {
+			if (in_array($remove_comp_name,array_keys($companions))) {
+				unset($companions[$remove_comp_name]);
+				$remove_result=true;
+			}
+		}
+	} else {
+		$remove_comp_name = $name;
+		if (in_array($remove_comp_name,array_keys($companions))) {
+			unset($companions[$remove_comp_name]);
+			$remove_result=true;
+		}
+	}
+	return $remove_result;
+}
+
 function apply_companion($name,$companion,$ignorelimit=false){
 	global $session, $companions;
 	if (!is_array($companions)) {
