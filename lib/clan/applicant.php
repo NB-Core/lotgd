@@ -19,7 +19,7 @@
 		if ($op=="withdraw"){
 			$session['user']['clanid']=0;
 			$session['user']['clanrank']=CLAN_APPLICANT;
-			$session['user']['clanjoindate']='0000-00-00 00:00:00';
+			$session['user']['clanjoindate']=DATETIME_DATEMIN;
 			output("`7You tell `%%s`7 that you're no longer interested in joining %s.",$registrar, $claninfo['clanname']);
 			output("She reaches into her desk, withdraws your application, and tears it up.  \"`5You wouldn't have been happy there anyhow, I don't think,`7\" as she tosses the shreds in her trash can.");
 			$claninfo = array();

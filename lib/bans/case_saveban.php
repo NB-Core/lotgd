@@ -17,7 +17,7 @@ if ($type=="ip"){
 	$sql.="\"".httppost("id")."\"";
 }
 $duration = (int)httppost("duration");
-if ($duration == 0) $duration="0000-00-00";
+if ($duration == 0) $duration=DATETIME_DATEMAX;
 else $duration = date("Y-m-d", strtotime("+$duration days"));
 	$sql.=",\"$duration\",";
 $sql.="\"".httppost("reason")."\")";

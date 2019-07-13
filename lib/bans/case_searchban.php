@@ -116,7 +116,7 @@ while ($row = db_fetch_assoc($result)) {
 	if (date("Y-m-d",strtotime($row['banexpire'])) ==
 			date("Y-m-d",strtotime("1 day")))
 		$expire=translate_inline("Tomorrow");
-	if ($row['banexpire']=="0000-00-00 00:00:00")
+	if ($row['banexpire']==DATETIME_DATEMAX)
 		$expire=translate_inline("Never");
 	output_notl("%s", $expire);
 	rawoutput("</td><td>");
