@@ -458,14 +458,15 @@ function popup_footer(){
 	$z = $y2^$z2;
 	$footer = str_replace("{".($z)."}",$$z, $footer);
 	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+// in a popup it is not necessary to refresh the maillink - there is none
+/*	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 		if (file_exists('ext/ajax_maillink.php')) {
 			require("ext/ajax_maillink.php");
 		}
 		} else {
-			$maillink_add_after='';
+*/			$maillink_add_after='';
 			//no AJAX for slower browsers etc
-		}
+//		}
 	}
 	$header = str_replace("{headscript}",$pre_headscript.$headscript,$header);
 
