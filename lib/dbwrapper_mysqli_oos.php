@@ -3,6 +3,16 @@
 // translator ready
 // mail ready
 
+function db_set_charset($charset) {
+	global $mysqli_resource;
+	/* change character set to requested */
+	if (!$mysqli_resource->set_charset($charset)) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 function db_query($sql, $die=true){
  	if (defined("DB_NODB") && !defined("LINK")) return array();
 	global $session,$dbinfo,$mysqli_resource;

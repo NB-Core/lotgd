@@ -1,5 +1,14 @@
 <?php
 
+function db_set_charset($charset) {
+	/* change character set to requested */
+	if (!$mysql_set_charset($charset)) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 function db_query($sql, $die=true){
  	if (defined("DB_NODB") && !defined("LINK")) return array();
 	global $session,$dbinfo;
