@@ -147,6 +147,11 @@ if (file_exists("dbconnect.php")){
 //
 //$link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
 $link = db_connect($DB_HOST, $DB_USER, $DB_PASS);
+//set charset to utf8 (table default, don't change that!)
+if (!db_set_charset("utf8")) {
+	echo "Error setting db connection charset to utf8...please check your db connection!";
+	exit(0);
+}
 
 $out = ob_get_contents();
 ob_end_clean();

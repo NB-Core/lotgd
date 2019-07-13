@@ -146,6 +146,11 @@ if (file_exists("dbconnect.php")){
 //
 //$link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
 $link = db_connect($DB_HOST, $DB_USER, $DB_PASS);
+//set charset to utf8 (table default, don't change that!)
+if (!db_set_charset("utf8")) {
+	echo "Error setting db connection charset to utf8...please check your db connection!";
+	exit(0);
+}
 
 $out = ob_get_contents();
 ob_end_clean();
@@ -296,9 +301,9 @@ if ($logd_version != getsetting("installer_version","-1") && !defined("IS_INSTAL
 
 
 if (isset($session['user']['hitpoints']) && $session['user']['hitpoints']>0){
-	$session['user']['alive']=1;
+	$session['user']['alive']=true;
 }else{
-	$session['user']['alive']=0;
+	$session['user']['alive']=false;
 }
 
 if (isset($session['user']['bufflist']))
