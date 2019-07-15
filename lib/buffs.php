@@ -177,6 +177,7 @@ function strip_companion($name){
 			$remove_result=true;
 		}
 	}
+	$session['user']['companions'] = createstring($companions);
 	return $remove_result;
 }
 
