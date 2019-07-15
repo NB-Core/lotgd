@@ -229,12 +229,17 @@ if ($dp < $dkills) {
 	}
 
 	$session['user']['laston'] = date("Y-m-d H:i:s");
-	$bgold = $session['user']['goldinbank'];
-	$session['user']['goldinbank']*=$interestrate;
-	$nbgold = $session['user']['goldinbank'] - $bgold;
+	$interest_amount = $session['user']['goldinbank'] * $interestrate;
+	$debtfloor = getsetting("debtfloor",-50000);
+	if ($session['user']['goldinbank']+$interest_amount < $debtfloor) {
+		//debtfloor reached set to floor
+		$session['user']['goldinbank']=$debtfloor;
+		output("You are so much in debt, the elders won't let you drop further. Your bank gold has been set to %s gold.`n",$debtfloor);
+		debug("Set debtfloor in bank ".$debtfloor);
+	}
 
-	if ($nbgold != 0) {
-		debuglog(($nbgold >= 0 ? "earned " : "paid ") . abs($nbgold) . " gold in interest");
+	if ($interest_amount != 0) {
+		debuglog(($interest_amount >= 0 ? "earned " : "paid ") . abs($interest_amount) . " gold in interest");
 	}
 	$turnstoday .= ", Spirits: $resurrectionturns, DK: $dkff";
 	$session['user']['turns']=$turnsperday+$resurrectionturns+$dkff;

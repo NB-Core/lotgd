@@ -64,7 +64,7 @@ return array(
 			'name'=>'alive', 'type'=>'tinyint(1) unsigned', 'default'=>'1' //is he alive? redundant as hitpoints<=0 is the exact same thing.
 			),
 		'goldinbank'=>array(
-			'name'=>'goldinbank', 'type'=>'int(11)', 'default'=>'0' //gold stored in the bank
+			'name'=>'goldinbank', 'type'=>'bigint(20)', 'default'=>'0' //gold stored in the bank
 			),
 		'marriedto'=>array(
 			'name'=>'marriedto', 'type'=>'int(11) unsigned', 'default'=>'0' //married to? note: core does not allow you to marry players, you need a module that can do that

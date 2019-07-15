@@ -204,6 +204,7 @@ $setup = array(
 	"maxinterest"=>"Max Interest Rate (%),range,5,10,1",
 	"mininterest"=>"Min Interest Rate (%),range,0,5,1",
 	"maxgoldforinterest"=>"Over what amount of gold does the bank cease paying interest? (0 for unlimited),int",
+	"debtfloor"=>"What is the lowest the bankbalance can drop (with interest),int,-50000",
 	"borrowperlevel"=>"Max player can borrow per level (val * level for max),range,5,200,5",
 	"allowgoldtransfer"=>"Allow players to transfer gold,bool",
 	"transferperlevel"=>"Max player can receive from a transfer (val * level),range,5,100,5",
@@ -275,7 +276,7 @@ $setup = array(
 	"curservertime"=>"Current Server Time,viewonly",
 	"lastnewday"=>"Last new day,viewonly",
 	"nextnewday"=>"Next new day,viewonly",
-	"gameoffsetseconds"=>"Real time to offset new day,$enum",
+	"gameoffsetseconds"=>"Real time to offset new day,enum",
 
 	"Translation & Language Setup,title",
 	"enabletranslation"=>"Enable the use of the translation engine,bool",
