@@ -3,6 +3,8 @@
 // addnews ready
 // mail ready
 
+require_once("ext/ajax_server.php");
+
 $baseaccount = array();
 function do_forced_nav($anonymous,$overrideforced){
 	global $baseaccount, $session,$REQUEST_URI;
