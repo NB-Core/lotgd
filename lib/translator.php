@@ -94,9 +94,13 @@ function sprintf_translate(){
 			tlschema();
 		}
  	}
-	$translate_array = $args;
-	array_shift($translate_array);//skip the first entry which is the output text
-	foreach ($translate_array as $key=>$val) {
+	//skip the first entry which is the output text
+	$skipped = false;
+	foreach ($args as $key=>$val) {
+		if (!$skipped) {
+			$skipped = true;
+			continue;
+		}
 		if (is_array($val)){
 			//When passed a sub-array this represents an independant
 			//translation to happen then be inserted in the master string.
@@ -106,8 +110,9 @@ function sprintf_translate(){
 	ob_start();
 	if (is_array($args) && count($args)>0) {
 		//if it is an array
+		//which it should be
 		$return = call_user_func_array("sprintf",$args);
-	} else $return = $args;
+	} else $return=$args;
 	$err = ob_get_contents();
 	ob_end_clean();
 	if ($err > ""){

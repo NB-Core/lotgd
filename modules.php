@@ -258,7 +258,7 @@ if ($op==""){
 			for ($a=0;$a<count($moduleinfo);$a++) {
 				$i=$numberarray[$a];
 				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'>");
-				if ($moduleinfo[$i]['invalid']===true) {
+				if (isset($moduleinfo[$i]['invalid']) && $moduleinfo[$i]['invalid']===true) {
 					rawoutput("<td></td><td nowrap valign='top'>");
 					output("Not installable");
 					rawoutput("</td>");
