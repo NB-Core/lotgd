@@ -172,11 +172,15 @@ function activate_buffs($tag) {
 			if (isset($buff['maxbadguydamage']) &&
 					$buff['maxbadguydamage']  <> 0) {
 				$max = $buff['maxbadguydamage'];
-				$min = $buff['minbadguydamage'];
+				if (isset($buff['minbadguydamage'])) {
+					$min = $buff['minbadguydamage'];
+				} else $min = 0;
 				$who = 0;
-			} else {
+			} elseif (isset($buff['maxgoodguydamage']) && $buff['maxgoodguydamage']<>0) {
 				$max = $buff['maxgoodguydamage'];
-				$min = $buff['mingoodguydamage'];
+				if (isset($buff['mingoodguydamage'])) {
+					$min = $buff['mingoodguydamage'];
+				} else $min = 0;
 				$who = 1;
 			}
 			$minioncounter = 1;
@@ -193,11 +197,17 @@ function activate_buffs($tag) {
 					$session['user']['hitpoints'] -= $damage;
 				}
 				if ($damage < 0) {
-					$msg = $buff['effectfailmsg'];
+					if (isset($buff['effectfailmsg'])) {
+						$msg = $buff['effectfailmsg'];
+					}
 				} else if ($damage == 0) {
-					$msg = $buff['effectnodmgmsg'];
+					if (isset($buff['effectnodmgmsg'])) {				
+						$msg = $buff['effectnodmgmsg'];
+					}
 				} else if ($damage > 0) {
-					$msg = $buff['effectmsg'];
+					if (isset($buff['effectmsg'])) {
+						$msg = $buff['effectmsg'];
+					}
 				}
 				if (is_array($msg)) {
 					$msg = sprintf_translate($msg);

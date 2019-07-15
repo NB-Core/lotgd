@@ -7,5 +7,9 @@ $jaxon = jaxon();
 $s_css=$jaxon->getCss();
 $s_js=($jaxon->getJs());
 $s_script=($jaxon->getScript());
-$pre_headscript.=$s_css."<script src=\"/ext/js/jquery-3.3.1.min.js\"></script>";
+if (isset($pre_headscript)) {
+	$pre_headscript.=$s_css."<script src=\"/ext/js/jquery-3.3.1.min.js\"></script>";
+} else {
+	$pre_headscript = "";
+}
 addnav("","ext/ajax_process.php");

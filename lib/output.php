@@ -26,6 +26,7 @@ class output_collector {
 		$this->block_new_output=false;
 		$this->nestedtags['font']=false;
 		$this->nestedtags['div']=false;
+		$this->nestedtags['span']=false;
 		$this->nestedtags['i']=false;
 		$this->nestedtags['b']=false;
 		$this->nestedtags['<']=false;

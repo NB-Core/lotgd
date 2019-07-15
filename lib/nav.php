@@ -5,7 +5,7 @@ $blockednavs = array(
 		'blockfull'=>array(),
 		'unblockpartial'=>array(),
 		'unblockfull'=>array()
-	);
+		);
 
 /**
  * Called to block the display of a nav
@@ -302,8 +302,12 @@ function buildnavs(){
 
 			if ($tkey > "" && (!array_key_exists($tkey,$navnocollapse) || !$navnocollapse[$tkey])) {
 				// Generate the collapsable section header
-				$args = array("name"=>"nh-{$key}",
-						"title"=>($key ? $key : "Unnamed Navs"));
+				// check for array as navs
+				if (is_array($key)) {
+					$key_string = call_user_func_array("sprintf",$key);
+				} else $key_string = $key;
+				$args = array("name"=>"nh-{$key_string}",
+						"title"=>($key_string ? $key_string : "Unnamed Navs"));
 				$args = modulehook("collapse-nav{", $args);
 				if (isset($args['content']))
 					$collapseheader = $args['content'];
@@ -329,19 +333,19 @@ function buildnavs(){
 			}
 
 			switch ($style) {
-			case "classic":
-				$navbanner = str_replace("</tr>","",$navbanner);
-				$navbanner = str_replace("</td>","",$navbanner);
-				// Build the nav section
-				$builtnavs .= "{$navbanner}{$collapseheader}<table align='left'>{$sublinks}</table>{$collapsefooter}</tr></td>\n";
-				break;
-			case "default":
-			default:
-				// Is style isn't set (should the module not be active)
-				// - this catches it
-				// Build the nav section
-				$builtnavs .= "{$navbanner}{$collapseheader}{$sublinks}{$collapsefooter}\n";
-				break;
+				case "classic":
+					$navbanner = str_replace("</tr>","",$navbanner);
+					$navbanner = str_replace("</td>","",$navbanner);
+					// Build the nav section
+					$builtnavs .= "{$navbanner}{$collapseheader}<table align='left'>{$sublinks}</table>{$collapsefooter}</tr></td>\n";
+					break;
+				case "default":
+				default:
+					// Is style isn't set (should the module not be active)
+					// - this catches it
+					// Build the nav section
+					$builtnavs .= "{$navbanner}{$collapseheader}{$sublinks}{$collapsefooter}\n";
+					break;
 			}
 		}//end if
 	}//end foreach
@@ -378,7 +382,9 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 			if ($link === false) $schema = "!array!" . serialize($text);
 			else $schema = $text[0];
 			if ($translate) {
-				tlschema($navschema[$schema]);
+				if (isset($navschema[$schema])) {
+					tlschema($navschema[$schema]);
+				}
 				$unschema = 1;
 			}
 		}
@@ -390,7 +396,9 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 		}
 	}else{
 		if ($text && $session['loggedin'] && $translate) {
-			tlschema($navschema[$text]);
+			if (isset($navschema[$text])) {
+				tlschema($navschema[$text]);
+			}
 			$unschema = 1;
 		}
 		if ($link != "!!!addraw!!!" && $text>"" && $translate) $text = translate($text); //leave the hack in here for now, use addnav_notl please
@@ -511,12 +519,12 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 				}
 			}
 			$n= templatereplace("navitem",array(
-				"text"=>appoencode($text,$priv),
-				"link"=>HTMLEntities($link.($pop!=true?$extra:""), ENT_COMPAT, getsetting("charset", "ISO-8859-1")),
-				"accesskey"=>$keyrep,
-				"popup"=>($pop==true ? "target='_blank'".($popsize>""?" onClick=\"".popup($link,$popsize)."; return false;\"":"") : "")
-				));
-				
+						"text"=>appoencode($text,$priv),
+						"link"=>HTMLEntities($link.($pop!=true?$extra:""), ENT_COMPAT, getsetting("charset", "ISO-8859-1")),
+						"accesskey"=>$keyrep,
+						"popup"=>($pop==true ? "target='_blank'".($popsize>""?" onClick=\"".popup($link,$popsize)."; return false;\"":"") : "")
+						));
+
 
 			$n = str_replace("<a ",tlbutton_pop()."<a ",$n);
 			$thisnav.=$n;

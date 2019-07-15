@@ -21,7 +21,7 @@ function db_query($sql, $die=true){
 			//online if the installer is running ignore this, else THROW error
 	 		return array();
 		}else{
-			if ($session['user']['superuser'] & SU_DEVELOPER || 1){
+			if ($session['user']['superuser'] & SU_DEVELOPER){
 				require_once("lib/show_backtrace.php");
 				die(
 					"<pre>".HTMLEntities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</pre>"

@@ -204,7 +204,7 @@ if ($op != "newtarget") {
 							if (is_array($companions)) {
 								$newcompanions = array();
 								foreach ($companions as $name=>$companion) {
-									if ($companion['hitpoints'] > 0) {
+									if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
 										$buffer = report_companion_move($badguy,$companion, "heal");
 										if ($buffer !== false) {
 											$newcompanions[$name] = $buffer;
@@ -236,7 +236,7 @@ if ($op != "newtarget") {
 										if (is_array($companions)) {
 											$newcompanions = array();
 											foreach ($companions as $name=>$companion) {
-												if ($companion['hitpoints'] > 0) {
+												if (isset($companion['hitpoits']) && $companion['hitpoints'] > 0) {
 													$buffer = report_companion_move($badguy,$companion, "magic");
 													if ($buffer !== false) {
 														$newcompanions[$name] = $buffer;
@@ -322,7 +322,7 @@ if ($op != "newtarget") {
 							if ($badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && $badguy['istarget']){
 								if (is_array($companions)) {
 									foreach ($companions as $name=>$companion) {
-										if ($companion['hitpoints'] > 0) {
+										if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
 											$buffer = report_companion_move($badguy,$companion, "fight");
 											if ($buffer !== false) {
 												$newcompanions[$name] = $buffer;
@@ -604,7 +604,7 @@ function battle_badguy_attacks(&$badguy) {
 		if ($badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && $badguy['istarget']){
 			if (is_array($companions)) {
 			foreach ($companions as $name=>$companion) {
-				if ($companion['hitpoints'] > 0) {
+				if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
 					$buffer = report_companion_move($badguy,$companion, "defend");
 					if ($buffer !== false) {
 						$newcompanions[$name] = $buffer;

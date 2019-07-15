@@ -275,7 +275,7 @@ $setup = array(
 	"curservertime"=>"Current Server Time,viewonly",
 	"lastnewday"=>"Last new day,viewonly",
 	"nextnewday"=>"Next new day,viewonly",
-	"gameoffsetseconds"=>"Real time to offset new day,$enum",
+	"gameoffsetseconds"=>"Real time to offset new day,enum",
 
 	"Translation & Language Setup,title",
 	"enabletranslation"=>"Enable the use of the translation engine,bool",

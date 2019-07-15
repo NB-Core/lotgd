@@ -81,7 +81,6 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			  * Set up the mime bits
 			 **/
 			require_once("sanitize.php");
-			$notice_text = "This is a multi-part message in MIME format.";
 			$userstr = "";
 			if ($session && isset($session['user']['name']) && isset($sesson['user']['acctid'])) {
 				$userstr = "Error triggered by user " . $session['user']['name'] . " (" . $session['user']['acctid'] . ")\n";
@@ -90,37 +89,21 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			$html_text = "<html><body>$errstr in $errfile ($errline)<hr>$backtrace</body></html>";
 
 			$semi_rand = md5(time());
-			$mime_boundary = "==MULTIPART_BOUNDARY_$semi_rand";
-			$mime_boundary_header = chr(34) . $mime_boundary . chr(34);
-			$subject = "{$_SERVER['HTTP_HOST']} $level";
+			$subject = "{$_SERVER['HTTP_HOST']} $errno";
 
-			$body = "$notice_text
-
---$mime_boundary
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-
-$plain_text
-
---$mime_boundary
-Content-Type: text/html; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-
-$html_text
-
---$mime_boundary--";
-			/***
-			  * Mime bits are set up,
-			 **/
-			while (list($key,$email)=each($sendto)){
+			$body = $html_text; //send as html
+			foreach ($sendto as $key=>$email) {
 				debug("Notifying $email of this error.");
 
-				mail($email, $subject, $body,
+				require_once("lib/sendmail.php");
+				$from=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+				send_email(array($email=>$email),$body,$subject,$from,false,"text/html");
+/*				mail($email, $subject, $body,
 					"From: " . $from . "\n" .
 					"MIME-Version: 1.0\n" .
 					"Content-Type: multipart/alternative;\n" .
 					"     boundary=" . $mime_boundary_header);
-			}
+*/			}
 			//mark the time that notice was last sent for this error.
 			$data['errors'][$errstr] = strtotime("now");
 		}else{

@@ -150,7 +150,9 @@ if ($op=="search"){
 			if ($mintargetlevel > $targetlevel) $mintargetlevel = $targetlevel;
 			debug("Creatures: $multi Targetlevel: $targetlevel Mintargetlevel: $mintargetlevel");
 			if ($multi > 1) {
-				if (getsetting('allowpackmonsters',0)) $packofmonsters = (e_rand(0,5) == 0); // true or false
+				if (getsetting('allowpackmonsters',0)) {
+					$packofmonsters = (e_rand(0,5) == 0); // true or false
+				} else $packofmonsters = false; //set for later use
 				switch($packofmonsters) {
 					case false:
 						$multicat=(getsetting('multicategory',0)?"GROUP BY creaturecategory":"");

@@ -93,6 +93,7 @@ function show_enemies($enemies) {
 	}
 	if ($u['alive']){
 		$hitpointstext=$u['name']."`0";
+		$dead=false;
 	} else {
 		$hitpointstext=sprintf_translate("Soul of %s",$u['name']);
 		$dead=true;
@@ -332,8 +333,11 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 			$hptoheal = min($companion['abilities']['heal'], $session['user']['maxhitpoints'] - $session['user']['hitpoints']);
 			$session['user']['hitpoints'] += $hptoheal;
 			$companion['used'] = true;
-			$msg = $companion['healmsg'];
-			if ($msg == "") $msg = "{companion} heals your wounds. You regenerate {damage} hitpoint(s).";
+			if (isset($companion['healmsg']) && $companion['healmsg']!="") {
+				$msg = $companion['healmsg'];
+			} else {
+				$msg = "{companion} heals your wounds. You regenerate {damage} hitpoint(s).";
+			}
 			$msg = substitute_array("`)".$msg."`0`n", array("{companion}","{damage}"),array($companion['name'],$hptoheal));
 			tlschema(isset($companion['schema'])?$companion['schema']:"battle");
 			output($msg);

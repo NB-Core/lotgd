@@ -38,7 +38,13 @@ function exp_for_next_level($curlevel, $curdk) {
 		}
 		updatedatacache("exparraydk".$curdk,$exparray);
 	}
-	$exprequired = $exparray[$curlevel-1];
+	//if we are at max level and it's no more progress
+	if (count($exparray)>$curlevel) {
+		$exprequired = $exparray[$curlevel-1];
+	} else {
+		//return last entry
+		$exprequired = array_pop($exparray);
+	}
 	return $exprequired;
 }
 
