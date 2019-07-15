@@ -93,7 +93,7 @@ function good_word_list(){
 function nasty_word_list(){
 	//$search = datacache("nastywordlist",600);
 	// won't work anymore, no clue why. returns mostly empty array entires. So deactivate for now.
-	if ($search!==false && is_array($search)) return $search;
+	//if ($search!==false && is_array($search)) return $search;
 
 	$sql = "SELECT * FROM " . db_prefix("nastywords") . " WHERE type='nasty'";
 	$result = db_query($sql);
