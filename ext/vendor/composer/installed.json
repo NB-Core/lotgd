@@ -1,213 +1,5 @@
 [
     {
-        "name": "matthiasmullie/path-converter",
-        "version": "1.1.1",
-        "version_normalized": "1.1.1.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/matthiasmullie/path-converter.git",
-            "reference": "3082a6838be02b930239a97d38b5c9da4d693aca"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/matthiasmullie/path-converter/zipball/3082a6838be02b930239a97d38b5c9da4d693aca",
-            "reference": "3082a6838be02b930239a97d38b5c9da4d693aca",
-            "shasum": ""
-        },
-        "require": {
-            "ext-pcre": "*",
-            "php": ">=5.3.0"
-        },
-        "require-dev": {
-            "phpunit/phpunit": "~4.8"
-        },
-        "time": "2018-02-02 11:30:10",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "MatthiasMullie\\PathConverter\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Matthias Mullie",
-                "email": "pathconverter@mullie.eu",
-                "homepage": "http://www.mullie.eu",
-                "role": "Developer"
-            }
-        ],
-        "description": "Relative path converter",
-        "homepage": "http://github.com/matthiasmullie/path-converter",
-        "keywords": [
-            "converter",
-            "path",
-            "paths",
-            "relative"
-        ]
-    },
-    {
-        "name": "matthiasmullie/minify",
-        "version": "1.3.59",
-        "version_normalized": "1.3.59.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/matthiasmullie/minify.git",
-            "reference": "62dac3bce06de66f0d71fe6490cf1c508d3c3ff7"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/matthiasmullie/minify/zipball/62dac3bce06de66f0d71fe6490cf1c508d3c3ff7",
-            "reference": "62dac3bce06de66f0d71fe6490cf1c508d3c3ff7",
-            "shasum": ""
-        },
-        "require": {
-            "ext-pcre": "*",
-            "matthiasmullie/path-converter": "~1.1",
-            "php": ">=5.3.0"
-        },
-        "require-dev": {
-            "friendsofphp/php-cs-fixer": "~2.0",
-            "matthiasmullie/scrapbook": "~1.0",
-            "phpunit/phpunit": "~4.8"
-        },
-        "suggest": {
-            "psr/cache-implementation": "Cache implementation to use with Minify::cache"
-        },
-        "time": "2018-02-02 12:44:18",
-        "bin": [
-            "bin/minifycss",
-            "bin/minifyjs"
-        ],
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "MatthiasMullie\\Minify\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Matthias Mullie",
-                "email": "minify@mullie.eu",
-                "homepage": "http://www.mullie.eu",
-                "role": "Developer"
-            }
-        ],
-        "description": "CSS & JavaScript minifier, in PHP. Removes whitespace, strips comments, combines files (incl. @import statements and small assets in CSS files), and optimizes/shortens a few common programming patterns.",
-        "homepage": "http://www.minifier.org",
-        "keywords": [
-            "JS",
-            "css",
-            "javascript",
-            "minifier",
-            "minify"
-        ]
-    },
-    {
-        "name": "lemonphp/event",
-        "version": "v1.0.0",
-        "version_normalized": "1.0.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/lemonphp/event.git",
-            "reference": "57d9ffcc551febca967068668dd9f005d989d94b"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/lemonphp/event/zipball/57d9ffcc551febca967068668dd9f005d989d94b",
-            "reference": "57d9ffcc551febca967068668dd9f005d989d94b",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.4.0"
-        },
-        "require-dev": {
-            "phpunit/phpunit": "~4.8|~5.0",
-            "squizlabs/php_codesniffer": "^2.5"
-        },
-        "time": "2016-08-10 16:12:53",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Lemon\\Event\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Oanh Nguyen",
-                "email": "oanhnn.bk@gmail.com"
-            }
-        ],
-        "description": "Simple event dispatcher",
-        "homepage": "https://github.com/lemonphp/event",
-        "keywords": [
-            "event",
-            "event-dispatcher"
-        ]
-    },
-    {
-        "name": "pimple/pimple",
-        "version": "v3.0.2",
-        "version_normalized": "3.0.2.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/silexphp/Pimple.git",
-            "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/silexphp/Pimple/zipball/a30f7d6e57565a2e1a316e1baf2a483f788b258a",
-            "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.3.0"
-        },
-        "time": "2015-09-11 15:10:35",
-        "type": "library",
-        "extra": {
-            "branch-alias": {
-                "dev-master": "3.0.x-dev"
-            }
-        },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-0": {
-                "Pimple": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
-            }
-        ],
-        "description": "Pimple, a simple Dependency Injection Container",
-        "homepage": "http://pimple.sensiolabs.org",
-        "keywords": [
-            "container",
-            "dependency injection"
-        ]
-    },
-    {
         "name": "aura/session",
         "version": "2.1.0",
         "version_normalized": "2.1.0.0",
@@ -234,7 +26,7 @@
             "ircmaxell/random-lib": "A Library For Generating Secure Random Numbers",
             "paragonie/random_compat": "PHP 5.x polyfill for random_bytes() and random_int() from PHP 7"
         },
-        "time": "2016-10-03 20:28:32",
+        "time": "2016-10-03T20:28:32+00:00",
         "type": "library",
         "extra": {
             "aura": {
@@ -272,54 +64,6 @@
         ]
     },
     {
-        "name": "jaxon-php/jaxon-sentry",
-        "version": "v2.0.7",
-        "version_normalized": "2.0.7.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/jaxon-php/jaxon-sentry.git",
-            "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/jaxon-php/jaxon-sentry/zipball/ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
-            "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
-            "shasum": ""
-        },
-        "require": {
-            "jaxon-php/jaxon-core": "~2.0"
-        },
-        "time": "2017-12-09 17:16:30",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Jaxon\\Sentry\\": "src/"
-            },
-            "files": [
-                "src/start.php"
-            ]
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "BSD-3-Clause"
-        ],
-        "authors": [
-            {
-                "name": "Thierry Feuzeu"
-            }
-        ],
-        "description": "Common classes providing advanced features to the Jaxon library",
-        "homepage": "https://github.com/jaxon-php/jaxon-sentry",
-        "keywords": [
-            "Jaxon",
-            "ajax",
-            "framework",
-            "php",
-            "xajax"
-        ]
-    },
-    {
         "name": "jaxon-php/jaxon-armada",
         "version": "v2.0.1",
         "version_normalized": "2.0.1.0",
@@ -338,7 +82,7 @@
             "aura/session": "~2.0",
             "jaxon-php/jaxon-sentry": "~2.0"
         },
-        "time": "2017-12-09 17:16:46",
+        "time": "2017-12-09T17:16:46+00:00",
         "type": "library",
         "installation-source": "dist",
         "autoload": {
@@ -392,7 +136,7 @@
         "require-dev": {
             "phpunit/phpunit": "5.7.*"
         },
-        "time": "2018-10-17 01:14:59",
+        "time": "2018-10-17T01:14:59+00:00",
         "type": "library",
         "installation-source": "dist",
         "autoload": {
@@ -432,6 +176,330 @@
             "asynchronous",
             "php",
             "xajax"
+        ]
+    },
+    {
+        "name": "jaxon-php/jaxon-sentry",
+        "version": "v2.0.7",
+        "version_normalized": "2.0.7.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/jaxon-php/jaxon-sentry.git",
+            "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/jaxon-php/jaxon-sentry/zipball/ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
+            "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
+            "shasum": ""
+        },
+        "require": {
+            "jaxon-php/jaxon-core": "~2.0"
+        },
+        "time": "2017-12-09T17:16:30+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Jaxon\\Sentry\\": "src/"
+            },
+            "files": [
+                "src/start.php"
+            ]
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "authors": [
+            {
+                "name": "Thierry Feuzeu"
+            }
+        ],
+        "description": "Common classes providing advanced features to the Jaxon library",
+        "homepage": "https://github.com/jaxon-php/jaxon-sentry",
+        "keywords": [
+            "Jaxon",
+            "ajax",
+            "framework",
+            "php",
+            "xajax"
+        ]
+    },
+    {
+        "name": "lemonphp/event",
+        "version": "v1.0.0",
+        "version_normalized": "1.0.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/lemonphp/event.git",
+            "reference": "57d9ffcc551febca967068668dd9f005d989d94b"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/lemonphp/event/zipball/57d9ffcc551febca967068668dd9f005d989d94b",
+            "reference": "57d9ffcc551febca967068668dd9f005d989d94b",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.4.0"
+        },
+        "require-dev": {
+            "phpunit/phpunit": "~4.8|~5.0",
+            "squizlabs/php_codesniffer": "^2.5"
+        },
+        "time": "2016-08-10T16:12:53+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Lemon\\Event\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Oanh Nguyen",
+                "email": "oanhnn.bk@gmail.com"
+            }
+        ],
+        "description": "Simple event dispatcher",
+        "homepage": "https://github.com/lemonphp/event",
+        "keywords": [
+            "event",
+            "event-dispatcher"
+        ]
+    },
+    {
+        "name": "matthiasmullie/minify",
+        "version": "1.3.59",
+        "version_normalized": "1.3.59.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/matthiasmullie/minify.git",
+            "reference": "62dac3bce06de66f0d71fe6490cf1c508d3c3ff7"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/matthiasmullie/minify/zipball/62dac3bce06de66f0d71fe6490cf1c508d3c3ff7",
+            "reference": "62dac3bce06de66f0d71fe6490cf1c508d3c3ff7",
+            "shasum": ""
+        },
+        "require": {
+            "ext-pcre": "*",
+            "matthiasmullie/path-converter": "~1.1",
+            "php": ">=5.3.0"
+        },
+        "require-dev": {
+            "friendsofphp/php-cs-fixer": "~2.0",
+            "matthiasmullie/scrapbook": "~1.0",
+            "phpunit/phpunit": "~4.8"
+        },
+        "suggest": {
+            "psr/cache-implementation": "Cache implementation to use with Minify::cache"
+        },
+        "time": "2018-02-02T12:44:18+00:00",
+        "bin": [
+            "bin/minifycss",
+            "bin/minifyjs"
+        ],
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "MatthiasMullie\\Minify\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Matthias Mullie",
+                "email": "minify@mullie.eu",
+                "homepage": "http://www.mullie.eu",
+                "role": "Developer"
+            }
+        ],
+        "description": "CSS & JavaScript minifier, in PHP. Removes whitespace, strips comments, combines files (incl. @import statements and small assets in CSS files), and optimizes/shortens a few common programming patterns.",
+        "homepage": "http://www.minifier.org",
+        "keywords": [
+            "JS",
+            "css",
+            "javascript",
+            "minifier",
+            "minify"
+        ]
+    },
+    {
+        "name": "matthiasmullie/path-converter",
+        "version": "1.1.1",
+        "version_normalized": "1.1.1.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/matthiasmullie/path-converter.git",
+            "reference": "3082a6838be02b930239a97d38b5c9da4d693aca"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/matthiasmullie/path-converter/zipball/3082a6838be02b930239a97d38b5c9da4d693aca",
+            "reference": "3082a6838be02b930239a97d38b5c9da4d693aca",
+            "shasum": ""
+        },
+        "require": {
+            "ext-pcre": "*",
+            "php": ">=5.3.0"
+        },
+        "require-dev": {
+            "phpunit/phpunit": "~4.8"
+        },
+        "time": "2018-02-02T11:30:10+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "MatthiasMullie\\PathConverter\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Matthias Mullie",
+                "email": "pathconverter@mullie.eu",
+                "homepage": "http://www.mullie.eu",
+                "role": "Developer"
+            }
+        ],
+        "description": "Relative path converter",
+        "homepage": "http://github.com/matthiasmullie/path-converter",
+        "keywords": [
+            "converter",
+            "path",
+            "paths",
+            "relative"
+        ]
+    },
+    {
+        "name": "phpmailer/phpmailer",
+        "version": "v6.0.7",
+        "version_normalized": "6.0.7.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/PHPMailer/PHPMailer.git",
+            "reference": "0c41a36d4508d470e376498c1c0c527aa36a2d59"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/0c41a36d4508d470e376498c1c0c527aa36a2d59",
+            "reference": "0c41a36d4508d470e376498c1c0c527aa36a2d59",
+            "shasum": ""
+        },
+        "require": {
+            "ext-ctype": "*",
+            "ext-filter": "*",
+            "php": ">=5.5.0"
+        },
+        "require-dev": {
+            "doctrine/annotations": "1.2.*",
+            "friendsofphp/php-cs-fixer": "^2.2",
+            "phpdocumentor/phpdocumentor": "2.*",
+            "phpunit/phpunit": "^4.8 || ^5.7",
+            "zendframework/zend-eventmanager": "3.0.*",
+            "zendframework/zend-i18n": "2.7.3",
+            "zendframework/zend-serializer": "2.7.*"
+        },
+        "suggest": {
+            "ext-mbstring": "Needed to send email in multibyte encoding charset",
+            "hayageek/oauth2-yahoo": "Needed for Yahoo XOAUTH2 authentication",
+            "league/oauth2-google": "Needed for Google XOAUTH2 authentication",
+            "psr/log": "For optional PSR-3 debug logging",
+            "stevenmaguire/oauth2-microsoft": "Needed for Microsoft XOAUTH2 authentication",
+            "symfony/polyfill-mbstring": "To support UTF-8 if the Mbstring PHP extension is not enabled (^1.2)"
+        },
+        "time": "2019-02-01T15:04:28+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "PHPMailer\\PHPMailer\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "LGPL-2.1"
+        ],
+        "authors": [
+            {
+                "name": "Jim Jagielski",
+                "email": "jimjag@gmail.com"
+            },
+            {
+                "name": "Marcus Bointon",
+                "email": "phpmailer@synchromedia.co.uk"
+            },
+            {
+                "name": "Andy Prevost",
+                "email": "codeworxtech@users.sourceforge.net"
+            },
+            {
+                "name": "Brent R. Matzelle"
+            }
+        ],
+        "description": "PHPMailer is a full-featured email creation and transfer class for PHP"
+    },
+    {
+        "name": "pimple/pimple",
+        "version": "v3.0.2",
+        "version_normalized": "3.0.2.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/silexphp/Pimple.git",
+            "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/silexphp/Pimple/zipball/a30f7d6e57565a2e1a316e1baf2a483f788b258a",
+            "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.3.0"
+        },
+        "time": "2015-09-11T15:10:35+00:00",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "3.0.x-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-0": {
+                "Pimple": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Fabien Potencier",
+                "email": "fabien@symfony.com"
+            }
+        ],
+        "description": "Pimple, a simple Dependency Injection Container",
+        "homepage": "http://pimple.sensiolabs.org",
+        "keywords": [
+            "container",
+            "dependency injection"
         ]
     }
 ]

@@ -4,8 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "4ab0d3d57151daaa7e88e1813c2175f2",
-    "content-hash": "e8e7cbe8f837f64fe46968b5d1817759",
+    "content-hash": "c2315fd84152623f96982a199911b0af",
     "packages": [
         {
             "name": "aura/session",
@@ -67,7 +66,7 @@
                 "session",
                 "sessions"
             ],
-            "time": "2016-10-03 20:28:32"
+            "time": "2016-10-03T20:28:32+00:00"
         },
         {
             "name": "jaxon-php/jaxon-armada",
@@ -114,7 +113,7 @@
                 "php",
                 "xajax"
             ],
-            "time": "2017-12-09 17:16:46"
+            "time": "2017-12-09T17:16:46+00:00"
         },
         {
             "name": "jaxon-php/jaxon-core",
@@ -178,7 +177,7 @@
                 "php",
                 "xajax"
             ],
-            "time": "2018-10-17 01:14:59"
+            "time": "2018-10-17T01:14:59+00:00"
         },
         {
             "name": "jaxon-php/jaxon-sentry",
@@ -224,7 +223,7 @@
                 "php",
                 "xajax"
             ],
-            "time": "2017-12-09 17:16:30"
+            "time": "2017-12-09T17:16:30+00:00"
         },
         {
             "name": "lemonphp/event",
@@ -269,7 +268,7 @@
                 "event",
                 "event-dispatcher"
             ],
-            "time": "2016-08-10 16:12:53"
+            "time": "2016-08-10T16:12:53+00:00"
         },
         {
             "name": "matthiasmullie/minify",
@@ -329,7 +328,7 @@
                 "minifier",
                 "minify"
             ],
-            "time": "2018-02-02 12:44:18"
+            "time": "2018-02-02T12:44:18+00:00"
         },
         {
             "name": "matthiasmullie/path-converter",
@@ -378,7 +377,73 @@
                 "paths",
                 "relative"
             ],
-            "time": "2018-02-02 11:30:10"
+            "time": "2018-02-02T11:30:10+00:00"
+        },
+        {
+            "name": "phpmailer/phpmailer",
+            "version": "v6.0.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPMailer/PHPMailer.git",
+                "reference": "0c41a36d4508d470e376498c1c0c527aa36a2d59"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/0c41a36d4508d470e376498c1c0c527aa36a2d59",
+                "reference": "0c41a36d4508d470e376498c1c0c527aa36a2d59",
+                "shasum": ""
+            },
+            "require": {
+                "ext-ctype": "*",
+                "ext-filter": "*",
+                "php": ">=5.5.0"
+            },
+            "require-dev": {
+                "doctrine/annotations": "1.2.*",
+                "friendsofphp/php-cs-fixer": "^2.2",
+                "phpdocumentor/phpdocumentor": "2.*",
+                "phpunit/phpunit": "^4.8 || ^5.7",
+                "zendframework/zend-eventmanager": "3.0.*",
+                "zendframework/zend-i18n": "2.7.3",
+                "zendframework/zend-serializer": "2.7.*"
+            },
+            "suggest": {
+                "ext-mbstring": "Needed to send email in multibyte encoding charset",
+                "hayageek/oauth2-yahoo": "Needed for Yahoo XOAUTH2 authentication",
+                "league/oauth2-google": "Needed for Google XOAUTH2 authentication",
+                "psr/log": "For optional PSR-3 debug logging",
+                "stevenmaguire/oauth2-microsoft": "Needed for Microsoft XOAUTH2 authentication",
+                "symfony/polyfill-mbstring": "To support UTF-8 if the Mbstring PHP extension is not enabled (^1.2)"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PHPMailer\\PHPMailer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-2.1"
+            ],
+            "authors": [
+                {
+                    "name": "Jim Jagielski",
+                    "email": "jimjag@gmail.com"
+                },
+                {
+                    "name": "Marcus Bointon",
+                    "email": "phpmailer@synchromedia.co.uk"
+                },
+                {
+                    "name": "Andy Prevost",
+                    "email": "codeworxtech@users.sourceforge.net"
+                },
+                {
+                    "name": "Brent R. Matzelle"
+                }
+            ],
+            "description": "PHPMailer is a full-featured email creation and transfer class for PHP",
+            "time": "2019-02-01T15:04:28+00:00"
         },
         {
             "name": "pimple/pimple",
@@ -424,7 +489,7 @@
                 "container",
                 "dependency injection"
             ],
-            "time": "2015-09-11 15:10:35"
+            "time": "2015-09-11T15:10:35+00:00"
         }
     ],
     "packages-dev": [],
