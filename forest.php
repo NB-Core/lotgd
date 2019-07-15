@@ -155,7 +155,8 @@ if ($op=="search"){
 				} else $packofmonsters = false; //set for later use
 				switch($packofmonsters) {
 					case false:
-						$multicat=(getsetting('multicategory',0)?"GROUP BY creaturecategory":"");
+						$multicat = "";
+						//$multicat=(getsetting('multicategory',0)?"GROUP BY creaturecategory":"");   //grouping like that is against newer sql policies, leave it for now
 						$sql = "SELECT * FROM " . db_prefix("creatures") . " WHERE creaturelevel <= $targetlevel AND creaturelevel >= $mintargetlevel AND forest=1 $multicat ORDER BY rand(".e_rand().") LIMIT $multi";
 						break;
 					case true:

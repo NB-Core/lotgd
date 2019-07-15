@@ -107,7 +107,7 @@ function sprintf_translate(){
 	if (is_array($args) && count($args)>0) {
 		//if it is an array
 		$return = call_user_func_array("sprintf",$args);
-	} else return $args;
+	} else $return = $args;
 	$err = ob_get_contents();
 	ob_end_clean();
 	if ($err > ""){
