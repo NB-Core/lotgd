@@ -89,7 +89,7 @@ function systemmail($to,$subject,$body,$from=0,$noemail=false){
 			"{sendername}"=>$fromline,
 			"{receivername}"=>$toline,
 			"{body}"=>stripslashes($body),
-			"{gameurl}"=>($_SERVER['SERVER_PORT']==443?"https":"http")."://".($_SERVER['SERVER_NAME'].dirname($_SERVER['SCRIPT_NAME'])),
+			"{gameurl}"=>getsetting("serverurl","https://lotgd.com"),
 			);
 		$keys=array_keys($replace);
 		$values=array_values($replace);

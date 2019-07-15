@@ -3,10 +3,11 @@
 // addnews ready
 // mail ready
 function fightnav($allowspecial=true, $allowflee=true,$script=false){
-	global $PHP_SELF,$session,$newenemies,$companions;
+	global $session,$newenemies,$companions;
 	tlschema("fightnav");
 	if ($script===false){
-		$script = substr($PHP_SELF,strrpos($PHP_SELF,"/")+1)."?";
+		//$script = substr($PHP_SELF,strrpos($PHP_SELF,"/")+1)."?"; //$PHP_SELF is deprecated and gone
+		$script = substr($_SERVER['PHP_SELF'],strrpos($_SERVER['PHP_SELF'],"/")+1)."?";
 	}else{
 		if (!strpos($script,"?")) {
 			$script.="?";

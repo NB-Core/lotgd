@@ -1073,14 +1073,12 @@ function module_collect_events($type, $allowinactive=false)
 
 function module_events($eventtype, $basechance, $baseLink = false) {
 	if ($baseLink === false){
-		global $PHP_SELF;
-		$baseLink = substr($PHP_SELF,strrpos($PHP_SELF,"/")+1)."?";
+		$baseLink = substr($_SERVER['PHP_SELF'],strrpos($_SERVER['PHP_SELF'],"/")+1)."?";
 	}else{
 		//debug("Base link was specified as $baseLink");
 		//debug(debug_backtrace());
 	}
 	if (e_rand(1, 100) <= $basechance) {
-		global $PHP_SELF;
 		$events = module_collect_events($eventtype,false);
 		$chance = r_rand(1, 100);
 		reset($events);
@@ -1111,8 +1109,7 @@ function module_do_event($type, $module, $allowinactive=false, $baseLink=false)
 	global $navsection;
 
 	if ($baseLink === false){
-		global $PHP_SELF;
-		$baseLink = substr($PHP_SELF,strrpos($PHP_SELF,"/")+1)."?";
+		$baseLink = substr($_SERVER['PHP_SELF'],strrpos($_SERVER['PHP_SELF'],"/")+1)."?";
 	}else{
 		//debug("Base link was specified as $baseLink");
 		//debug(debug_backtrace());
@@ -1146,7 +1143,7 @@ function module_display_events($eventtype, $forcescript=false) {
 	global $PHP_SELF, $session;
 	if (!($session['user']['superuser'] & SU_DEVELOPER)) return;
 	if ($forcescript === false)
-		$script = substr($PHP_SELF,strrpos($PHP_SELF,"/")+1);
+		$script = substr($_SERVER['PHP_SELF'],strrpos($_SERVER['PHP_SELF'],"/")+1);
 	else
 		$script = $forcescript;
 	$events = module_collect_events($eventtype,true);

@@ -722,7 +722,7 @@ function charstats(){
 		}else {
 			addcharstat("Race", translate_inline(RACE_UNKNOWN,"race"));
 		}
-		if (count($companions)>0) {
+		if (is_array($companions) && count($companions)>0) {
 			addcharstat("Companions");
 			foreach ($companions as $name=>$companion) {
 				if ($companion['hitpoints'] > 0 ||(isset($companion['cannotdie']) && $companion['cannotdie'] == true)) {

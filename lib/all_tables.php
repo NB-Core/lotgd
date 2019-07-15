@@ -225,7 +225,7 @@ return array(
 			'name'=>'deathpower', 'type'=>'int(11) unsigned', 'default'=>'0'
 			),
 		'gensize'=>array(
-			'name'=>'gensize', 'type'=>'int(11) unsigned', 'default'=>'0'
+			'name'=>'gensize', 'type'=>'bigint(20) unsigned', 'default'=>'0'
 			),
 		'recentcomments'=>array(
 			'name'=>'recentcomments',
@@ -1093,7 +1093,7 @@ return array(
 			'name'=>'whenactive', 'type'=>'text'
 			),
 		'priority'=>array(
-			'name'=>'priority','type'=>'int(11)','default'=>'50'
+			'name'=>'priority','type'=>'bigint(20)','default'=>'50'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
