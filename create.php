@@ -21,11 +21,11 @@ $op = httpget('op');
 if ($op=='val' || $op=='forgotval') {
 	if (ServerFunctions::isTheServerFull()==true) {
 		//server is full, your "cheat" does not work here buddy ;) you can't bypass this!
-                page_header("Account Validation");
+		page_header("Account Validation");
 		output("Sorry, there are too many people online. Click at the link you used to get here later on. Thank you.");
-                addnav("Login","index.php");
+		addnav("Login","index.php");
 
-                page_footer();
+		page_footer();
 	} 
 }
 
@@ -141,23 +141,27 @@ if ($op=="forgot"){
 					$sql = "UPDATE " . db_prefix("accounts") . " SET forgottenpassword='{$row['forgottenpassword']}' where login='{$row['login']}'";
 					db_query($sql);
 				}
-				
+
 				$subj = translate_mail($settings_extended->getSetting('forgottenpasswordmailsubject'),$row['acctid']);
 				$msg = translate_mail($settings_extended->getSetting('forgottenpasswordmailtext'),$row['acctid']);
 				$replace=array(
-					"{login}"=>$row['login'],
-					"{acctid}"=>$row['acctid'],
-					"{emailaddress}"=>$row['emailaddress'],
-					"{requester_ip}"=>$_SERVER['REMOTE_ADDR'],
-					"{gameurl}"=>($_SERVER['SERVER_PORT']==443?"https":"http")."://".($_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']),
-					"{forgottenid}"=>$row['forgottenpassword'],
-					);
-				
+						"{login}"=>$row['login'],
+						"{acctid}"=>$row['acctid'],
+						"{emailaddress}"=>$row['emailaddress'],
+						"{requester_ip}"=>$_SERVER['REMOTE_ADDR'],
+						"{gameurl}"=>getsetting("serverurl","https://lotgd.com"),
+						"{forgottenid}"=>$row['forgottenpassword'],
+					      );
+
 				$keys=array_keys($replace);
 				$values=array_values($replace);
 				$msg=str_replace($keys,$values,$msg);
-	
-				mail($row['emailaddress'],$subj,str_replace("`n","\n",$msg),translate_inline("From:").getsetting("gameadminemail","postmaster@localhost.com"));
+				$msg=str_replace("`n","\n",$msg);
+
+				require_once("lib/sendmail.php");
+				$to_array=array($row['emailaddress']=>$row['login']);
+				$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+				send_email($to_array,$msg,$subj,$from_array,false,"text/plain");
 				output("`#Sent a new validation email to the address on file for that account.");
 				output("You may use the validation email to log in and change your password.");
 			}else{
@@ -211,7 +215,7 @@ if (getsetting("allowcreation",1)==0){
 				$passlen = strlen($pass1);
 			}
 			if ($passlen<=3){
-					$msg.=translate_inline("Your password must be at least 4 characters long.`n");
+				$msg.=translate_inline("Your password must be at least 4 characters long.`n");
 				$blockaccount=true;
 			}
 			if ($pass1!=$pass2){
@@ -299,17 +303,21 @@ if (getsetting("allowcreation",1)==0){
 							$subj = translate_mail($settings_extended->getSetting('verificationmailsubject'),0);
 							$msg = translate_mail($settings_extended->getSetting('verificationmailtext'),0);
 							$replace=array(
-								"{login}"=>$shortname,
-								"{acctid}"=>$row['acctid'],
-								"{emailaddress}"=>$row['emailaddress'],
-								"{gameurl}"=>($_SERVER['SERVER_PORT']==443?"https":"http")."://".($_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']),
-								"{validationid}"=>$emailverification,
-								);
-							
+									"{login}"=>$shortname,
+									"{acctid}"=>$row['acctid'],
+									"{emailaddress}"=>$row['emailaddress'],
+									"{gameurl}"=>getsetting("serverurl","https://lotgd.com"),
+									"{validationid}"=>$emailverification,
+								      );
+
 							$keys=array_keys($replace);
 							$values=array_values($replace);
 							$msg=str_replace($keys,$values,$msg);						
-							mail($email,$subj,str_replace("`n","\n",$msg),"From: ".getsetting("gameadminemail","postmaster@localhost.com"));
+							$msg=str_replace("`n","\n",$msg);
+							require_once("lib/sendmail.php");
+							$to_array=array($email=>$shortname);
+							$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+							send_email($to_array,$msg,$subj,$from_array,false,"text/plain");
 							output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
 						}else{
 							rawoutput("<form action='login.php' method='POST'>");
@@ -346,66 +354,66 @@ if (getsetting("allowcreation",1)==0){
 
 		rawoutput("<script language='JavaScript' src='lib/md5.js'></script>");
 		rawoutput("<script language='JavaScript'>
-		<!--
-		function md5pass(){
-			// encode passwords
-			var plen = document.getElementById('passlen');
-			var pass1 = document.getElementById('pass1');
-			plen.value = pass1.value.length;
+				<!--
+				function md5pass(){
+				// encode passwords
+				var plen = document.getElementById('passlen');
+				var pass1 = document.getElementById('pass1');
+				plen.value = pass1.value.length;
 
-			if(pass1.value.substring(0, 5) != '!md5!') {
+				if(pass1.value.substring(0, 5) != '!md5!') {
 				pass1.value = '!md5!'+hex_md5(pass1.value);
-			}
-			var pass2 = document.getElementById('pass2');
-			if(pass2.value.substring(0, 5) != '!md5!') {
+				}
+				var pass2 = document.getElementById('pass2');
+				if(pass2.value.substring(0, 5) != '!md5!') {
 				pass2.value = '!md5!'+hex_md5(pass2.value);
-			}
+				}
 
-		}
-		//-->
-		</script>");
-		rawoutput("<form action=\"create.php?op=create$refer\" method='POST' onSubmit=\"md5pass();\">");
-		// this is the first thing a new player will se, so let's make it look
-		// better
-		rawoutput("<input type='hidden' name='passlen' id='passlen' value='0'>");
-		rawoutput("<table><tr valign='top'><td>");
-		output("How will you be known to this world? ");
-		rawoutput("</td><td><input name='name'></td></tr><tr valign='top'><td>");
-		output("Enter a password: ");
-		rawoutput("</td><td><input type='password' name='pass1' id='pass1'></td></tr><tr valign='top'><td>");
-		output("Re-enter it for confirmation: ");
-		rawoutput("</td><td><input type='password' name='pass2' id='pass2'></td></tr><tr valign='top'><td>");
-		output("Enter your email address: ");
-		$r1 = translate_inline("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
-		$r2 = translate_inline("`\$(required)`0");
-		$r3 = translate_inline("`\$(required, an email will be sent to this address to verify it before you can log in)`0");
-		if (getsetting("requireemail", 0) == 0) {
-			$req = $r1;
-		} elseif (getsetting("requirevalidemail", 0) == 0) {
-			$req = $r2;
-		} else {
-			$req = $r3;
-		}
-		rawoutput("</td><td><input name='email'>");
-		output_notl("%s", $req);
-		rawoutput("</td></tr></table>");
-		output("`nAnd are you a %s Female or a %s Male?`n",
-				"<input type='radio' name='sex' value='1'>",
-				"<input type='radio' name='sex' value='0' checked>",true);
-		modulehook("create-form");
-		$createbutton = translate_inline("Create your character");
-		rawoutput("<input type='submit' class='button' value='$createbutton'>");
-		output_notl("`n`n");
-		if ($trash > 0) {
-			output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
-		}
-		if ($new > 0) {
-			output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0",$new);
-		}
-		if ($old > 0) {
-			output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
-		}
-		rawoutput("</form>");
+				}
+				//-->
+				</script>");
+				rawoutput("<form action=\"create.php?op=create$refer\" method='POST' onSubmit=\"md5pass();\">");
+				// this is the first thing a new player will se, so let's make it look
+				// better
+				rawoutput("<input type='hidden' name='passlen' id='passlen' value='0'>");
+				rawoutput("<table><tr valign='top'><td>");
+				output("How will you be known to this world? ");
+				rawoutput("</td><td><input name='name'></td></tr><tr valign='top'><td>");
+				output("Enter a password: ");
+				rawoutput("</td><td><input type='password' name='pass1' id='pass1'></td></tr><tr valign='top'><td>");
+				output("Re-enter it for confirmation: ");
+				rawoutput("</td><td><input type='password' name='pass2' id='pass2'></td></tr><tr valign='top'><td>");
+				output("Enter your email address: ");
+				$r1 = translate_inline("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
+				$r2 = translate_inline("`\$(required)`0");
+				$r3 = translate_inline("`\$(required, an email will be sent to this address to verify it before you can log in)`0");
+				if (getsetting("requireemail", 0) == 0) {
+					$req = $r1;
+				} elseif (getsetting("requirevalidemail", 0) == 0) {
+					$req = $r2;
+				} else {
+					$req = $r3;
+				}
+				rawoutput("</td><td><input name='email'>");
+				output_notl("%s", $req);
+				rawoutput("</td></tr></table>");
+				output("`nAnd are you a %s Female or a %s Male?`n",
+						"<input type='radio' name='sex' value='1'>",
+						"<input type='radio' name='sex' value='0' checked>",true);
+				modulehook("create-form");
+				$createbutton = translate_inline("Create your character");
+				rawoutput("<input type='submit' class='button' value='$createbutton'>");
+				output_notl("`n`n");
+				if ($trash > 0) {
+					output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
+				}
+				if ($new > 0) {
+					output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0",$new);
+				}
+				if ($old > 0) {
+					output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+				}
+				rawoutput("</form>");
 	}
 }
 addnav("Login","index.php");
