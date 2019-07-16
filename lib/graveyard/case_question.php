@@ -40,7 +40,9 @@ foreach ($actions as $key=>$row) {
 	$overlord[$key]=$row['titletext']; //text if this is the highest possible buy
 }
 
-$length=count($linktext);
+if (isset($linktext) && is_array($linktext)) {
+	$length=count($linktext);
+} else $length=0;
 
 //sort entries low to high
 if ($length>0) array_multisort($favorcostlist, SORT_ASC, $linklist,$textlist,$overlord,$linktext);
