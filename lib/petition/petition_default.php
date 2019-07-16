@@ -20,7 +20,7 @@ if (count($post)>0){
 		//$post['cancelpetition'] = false;
 		//$post['cancelreason'] = 'The admins here decided they didn\'t like something about how you submitted your petition.  They were also too lazy to give a real reason.';
 		$post = modulehook("addpetition",$post);
-		if (!$post['cancelpetition']){
+		if (!isset($post['cancelpetition']) || !$post['cancelpetition']){
 			$sql = "INSERT INTO " . db_prefix("petitions") . " (author,date,body,pageinfo,ip,id) VALUES (".(int)$session['user']['acctid'].",'$date',\"".addslashes(output_array($post))."\",\"".addslashes(output_array($session,"Session:"))."\",'{$_SERVER['REMOTE_ADDR']}','".addslashes($_COOKIE['lgi'])."')";
 			db_query($sql);
 			// If the admin wants it, email the petitions to them.
