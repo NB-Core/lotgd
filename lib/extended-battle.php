@@ -589,6 +589,7 @@ function battle_spawn($creature) {
 	global $enemies, $newenemies, $badguy,$nextindex;
 	if (!is_array($newenemies)) $newenemies=array();
 	if (!isset($nextindex)) {
+		if (!isset($enemies) || !is_array($enemies)) $enemies=array();
 		$nextindex = count($enemies);
 	} else {
 		$nextindex++;

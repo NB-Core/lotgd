@@ -99,9 +99,9 @@ function systemmail($to,$subject,$body,$from=0,$noemail=false){
 		$mailbody=str_replace("`n","\n\n",$mailbody);
 
 		require_once("lib/sendmail.php");
-		$to=array($emailadd=>$toline);
-		$from=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-		send_email($to,$mailbody,$mailsubj,$from,false,"text/plain");
+		$to_array=array($emailadd=>$toline);
+		$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+		send_email($to_array,$mailbody,$mailsubj,$from_array,false,"text/plain");
 //		mail($row['emailaddress'],$mailsubj,str_replace("`n","\n",$mailbody),$header);
 	}
 	invalidatedatacache("mail-$to");

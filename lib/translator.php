@@ -135,7 +135,8 @@ function translate_mail($in,$to=0){
 	//this is done by sprintf_translate.
 	//$in[0] = str_replace("`%","`%%",$in[0]);
 	if ($to>0){
-		$language = db_fetch_assoc(db_query("SELECT prefs FROM ".db_prefix("accounts")." WHERE acctid=$to"));
+		$result = db_query("SELECT prefs FROM ".db_prefix("accounts")." WHERE acctid=$to");
+		$language = db_fetch_assoc($result);
 		$language['prefs'] = unserialize($language['prefs']);
 		$session['tlanguage'] = $language['prefs']['language']?$language['prefs']['language']:getsetting("defaultlanguage","en");
 	}
