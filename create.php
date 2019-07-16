@@ -149,7 +149,7 @@ if ($op=="forgot"){
 						"{acctid}"=>$row['acctid'],
 						"{emailaddress}"=>$row['emailaddress'],
 						"{requester_ip}"=>$_SERVER['REMOTE_ADDR'],
-						"{gameurl}"=>getsetting("serverurl","https://lotgd.com"),
+						"{gameurl}"=>getsetting("serverurl","https://lotgd.com")."/create.php",
 						"{forgottenid}"=>$row['forgottenpassword'],
 					      );
 
@@ -306,7 +306,7 @@ if (getsetting("allowcreation",1)==0){
 									"{login}"=>$shortname,
 									"{acctid}"=>$row['acctid'],
 									"{emailaddress}"=>$row['emailaddress'],
-									"{gameurl}"=>getsetting("serverurl","https://lotgd.com"),
+									"{gameurl}"=>getsetting("serverurl","https://lotgd.com")."/create.php",
 									"{validationid}"=>$emailverification,
 								      );
 
