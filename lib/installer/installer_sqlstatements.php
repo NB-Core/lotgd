@@ -912,7 +912,7 @@ $sql_upgrade_statements = array(
 "1.2.3 +nb Edition"=>array(),
 "1.2.4 +nb Edition"=>array(),
 "1.2.5 +nb Edition"=>array(),
-"1.2.6 +n Edition"=>array(
+"1.2.6 +nb Edition"=>array(
 	//conversion lotgd tables to mysql 5.7 which is already in all_tables.php
 	"UPDATE ".db_prefix('accounts')." SET laston='1970-01-01 00:00:00' WHERE laston='0000-00-00 00:00:00'",
 	"UPDATE ".db_prefix('accounts')." SET lasthit='1970-01-01 00:00:00' WHERE lasthit='0000-00-00 00:00:00'",
@@ -952,6 +952,8 @@ $sql_upgrade_statements = array(
 
 	"UPDATE ".db_prefix('petitions')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
 	"UPDATE ".db_prefix('petitions')." SET closedate='1970-01-01 00:00:00' WHERE closedate='0000-00-00 00:00:00'",
+	),
+"1.2.7 +nb Edition"=>array(
 	),
 );
 ?>
