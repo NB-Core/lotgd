@@ -1,6 +1,7 @@
 Changes to 1.2.7 +nb
 [CHANGES]
 [FIXES]
+*prefs.php -> mail address defaulting to 127.0.0.1 in email change email (not nice, not critical), changed
 [REMOVES]
 
 Changes to 1.2.6 +nb
