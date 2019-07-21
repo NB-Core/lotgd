@@ -90,11 +90,13 @@ function lovers_dohook($hookname, $args){
 					"runmodule.php?module=lovers&op=flirt");
 			addnav(array("Chat with %s",translate_inline(getsetting("bard", "`^Seth"))),
 					"runmodule.php?module=lovers&op=chat");
+			output("`)(Your partner preference is 'Female')`0");
 		}else{
 			addnav(array("F?Flirt with %s", $partner),
 					"runmodule.php?module=lovers&op=flirt");
 			addnav(array("Gossip with %s",translate_inline(getsetting("barmaid", "`%Violet"))),
 					"runmodule.php?module=lovers&op=chat");
+			output("`)(Your partner preference is 'Male')`0");
 		}
 		break;
 	}

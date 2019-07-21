@@ -3,6 +3,7 @@ Changes to 1.2.7 +nb
 [FIXES]
 *battle.php -> isset() needs to check for index values not existing
 *prefs.php -> mail address defaulting to 127.0.0.1 in email change email (not nice, not critical), changed
+*modules/* -> modules updated to current
 [REMOVES]
 
 Changes to 1.2.6 +nb

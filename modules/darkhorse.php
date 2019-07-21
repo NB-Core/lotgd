@@ -100,6 +100,9 @@ function darkhorse_checkday(){
 function darkhorse_bartender($from){
 	global $session;
 	$what = httpget('what');
+	addnav("Navigation");
+	addnav("Return to the Main Room",$from."op=tavern");
+	addnav("Actions");
 	if ($what==""){
 		output("The grizzled old man behind the bar reminds you very much of a strip of beef jerky.`n`n");
 		$dname = translate_inline($session['user']['sex']?"lasshie":"shon");
@@ -107,11 +110,32 @@ function darkhorse_bartender($from){
 		output("\"`7Don't shee the likesh of your short too offen 'round theshe partsh.`0\"");
 		addnav("Learn about my enemies",$from."op=bartender&what=enemies");
 		addnav("Learn about colors",$from."op=bartender&what=colors");
+		modulehook("darkhorse-learning",array());
 	}elseif($what=="colors"){
 		output("The old man leans on the bar.");
 		output("\"`%Sho you want to know about colorsh, do you?`0\" he asks.`n`n");
 		output("You are about to answer when you realize the question was rhetorical.`n`n");
-		output("He continues, \"`%To do colorsh, here'sh what you need to do.  Firsht, you ushe a &#0096; mark (found right above the tab key) followed by 1, 2, 3, 4, 5, 6, 7, !, @, #, $, %, ^, &, ), q or Q.  Each of thoshe correshpondsh with a color to look like this: `n`1&#0096;1 `2&#0096;2 `3&#0096;3 `4&#0096;4 `5&#0096;5 `6&#0096;6 `7&#0096;7 `n`!&#0096;! `@&#0096;@ `#&#0096;# `\$&#0096;\$ `%&#0096;% `^&#0096;^ `&&#0096;& `n `)&#0096;) `q&#0096;q `Q&#0096;Q `n`% got it?`0\"`n  You can practice below:", true);
+		output("He continues, \"`%To do colorsh, here'sh what you need to do.  Firsht, you ushe a &#0096; mark (found right above the tab key) followed by 1, 2, 3, 4, 5, 6, 7, !, @, #, $, %, ^, &, ), q or Q.");
+		output("They are not written into shtone, you know, and may change at any time later on....`0\"`n`n");
+		output("`lEach of thoshe correshpondsh with a color to look like this: `n");
+		global $output;
+		$colors = $output->get_colormap_escaped_array();
+		rawoutput("<table><tr><td>");
+		output("`2Color Code");
+		rawoutput("</td><td>");
+		output("`@Example");
+		rawoutput("</td></tr>");	
+		$i=0;
+		foreach ($colors as $code) {
+			if ($i==0) rawoutput("<tr>");
+			output_notl("<td>&#0096;".stripslashes($code)."</td><td>`".stripslashes($code)."This is the example</td>",true);
+			if ($i==5) rawoutput("</tr>"); 
+			$i++;
+			$i=$i%5;
+		}
+		if ($i!=0) rawoutput("</tr>"); 
+		rawoutput("</tr></table>");
+//		output("`1&#0096;1 `2&#0096;2 `3&#0096;3 `4&#0096;4 `5&#0096;5 `6&#0096;6 `7&#0096;7 `n`!&#0096;! `@&#0096;@ `#&#0096;# `\$&#0096;\$ `%&#0096;% `^&#0096;^ `&&#0096;& `n `)&#0096;) `q&#0096;q `Q&#0096;Q `n`% got it?`0\"`n  You can practice below:", true);
 		rawoutput("<form action=\"".$from."op=bartender&what=colors\" method='POST'>");
 		$testtext = httppost('testtext');
 		$try = translate_inline("Try");
@@ -126,7 +150,7 @@ function darkhorse_bartender($from){
 	}else if($what=="enemies"){
 		$who = httpget('who');
 		if ($who==""){
-			output("\"`7Sho, you want to learn about your enemiesh, do you?  Who do you want to know about?  Well?  Shpeak up!  It only costs `^100`7 gold per person for information.`0\"");
+			output("\"`7Sho, you want to learn about your enemiesh, do you?  Who do you want to know about?  Well?  Shpeak up!  It only costs `^100`7 gold per person for information.`0\"`n`n");
 			$subop = httpget('subop');
 			if ($subop!="search"){
 				$search = translate_inline("Search");
@@ -135,14 +159,18 @@ function darkhorse_bartender($from){
 				rawoutput("<script language='JavaScript'>document.getElementById('name').focus();</script>");
 			}else{
 				addnav("Search Again",$from."op=bartender&what=enemies");
-				$search = "%";
 				$name = httppost('name');
+/*				$search = "%";
 				for ($i=0;$i<strlen($name);$i++){
 					$search.=substr($name,$i,1)."%";
 				}
 				$sql = "SELECT name,alive,location,sex,level,laston,loggedin,login FROM " . db_prefix("accounts") . " WHERE (locked=0 AND name LIKE '$search') ORDER BY level DESC";
-				$result = db_query($sql);
-				$max = db_num_rows($result);
+		//		$result = db_query($sql);
+*/				require_once("lib/lookup_user.php");
+				$results = lookup_user($name);
+				$result= $results[0];
+				//$max = db_num_rows($result);
+				$max = count($result);
 				if ($max > 100) {
 					output("`n`n\"`7Hey, whatsh you think yoush doin'.  That'sh too many namesh to shay.  I'll jusht tell you 'bout shome of them.`0`n");
 					$max = 100;
@@ -262,7 +290,6 @@ function darkhorse_bartender($from){
 			}
 		}
 	}
-	addnav("Return to the Main Room",$from."op=tavern");
 }
 
 function darkhorse_stat($value) {
@@ -302,6 +329,9 @@ function darkhorse_runevent($type, $link){
 		break;
 	case "tavern":
 		darkhorse_checkday();
+		addnav("Navigation");
+		addnav("Exit the tavern",$from."op=leave");
+		addnav("Actions");
 		output("You stand near the entrance of the tavern and survey the scene before you.");
 		output("Whereas most taverns are noisy and raucous, this one is quiet and nearly empty.");
 		output("In the corner, an old man plays with some dice.");
@@ -315,13 +345,13 @@ function darkhorse_runevent($type, $link){
 		if (!isset($args['block']) || $args['block'] != 'yes') {
 			addnav("Examine the tables",$from."op=tables");
 		}
-		addnav("Exit the tavern",$from."op=leave");
 		break;
 	case "tables":
 		require_once("lib/commentary.php");
 		addcommentary();
 		commentdisplay("You examine the etchings in the table:`n`n",
 				"darkhorse","Add your own etching:");
+		addnav("Navigation");
 		addnav("Return to the Main Room",$from."op=tavern");
 		break;
 	case "bartender":
@@ -330,6 +360,9 @@ function darkhorse_runevent($type, $link){
 	case "oldman":
 		darkhorse_checkday();
 		addnav("Old Man");
+		addnav("Navigation");
+		addnav("Return to the Main Room",$from."op=tavern");
+		addnav("Actions");
 		modulehook("darkhorsegame", array("return"=>$gameret));
 		output("The old man looks up at you, his eyes sunken and hollow.");
 		output("His red eyes make it seem that he may have been crying recently so you ask him what is bothering him.");
@@ -345,7 +378,6 @@ function darkhorse_runevent($type, $link){
 			else output(" Shall we play a game?`0\"");
 		}
 		$session['user']['specialmisc']="";
-		addnav("Return to the Main Room",$from."op=tavern");
 		break;
 	case "leave":
 		output("You duck out of the tavern, and wander into the thick foliage around you.");

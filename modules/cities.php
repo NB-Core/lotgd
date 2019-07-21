@@ -8,7 +8,7 @@ function cities_getmoduleinfo(){
 		"name"=>"Multiple Cities",
 		"version"=>"1.0",
 		"author"=>"Eric Stevens",
-		"category"=>"Village",
+		"category"=>"Cities",
 		"download"=>"core_module",
 		"allowanonymous"=>true,
 		"override_forced_nav"=>true,

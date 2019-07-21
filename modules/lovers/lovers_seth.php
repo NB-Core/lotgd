@@ -33,6 +33,10 @@ function lovers_seth(){
 				$session['user']['charm']++;
 				output("`n`n`^You gain a charm point!");
 			}
+
+		} elseif ($session['user']['marriedto']!=0) {
+			//married to someone else
+			output("You think it might not be wise to flirt with other men...");	
 		}else{
 			//not married.
 			if (httpget("flirt")==""){
