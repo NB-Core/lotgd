@@ -101,7 +101,8 @@ $races = modulehook("racenames");
 if ($op=='edit' || $op=='save') {
 	//add the race
 	$sql="SELECT race FROM ".db_prefix('accounts')." WHERE acctid=$userid LIMIT 1;";
-	$row=db_fetch_assoc(db_query($sql));
+	$result = db_query($sql);
+	$row=db_fetch_assoc($result);
 	$racesenum=",".translate_inline("Undecided","race").",";
 	foreach ($races as $race) {
 		$racesenum.=$race.",".$race.",";

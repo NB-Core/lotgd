@@ -34,7 +34,7 @@ return array(
 			),			
 		//these are the main stats. buffed up attack or defense will be reset eventually =)
 		'specialty'=>array(
-			'name'=>'specialty', 'type'=>'varchar(20)', //normally 2 chars are used only
+			'name'=>'specialty', 'type'=>'varchar(20)', 'default'=>'', //normally 2 chars are used only
 			),
 		'experience'=>array(
 			'name'=>'experience', 'type'=>'bigint(11) unsigned', 'default'=>'0' //the amount of experience

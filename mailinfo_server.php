@@ -1,4 +1,5 @@
 <?php
+exit(0);
 
 define("OVERRIDE_FORCED_NAV",true);
 /* you need to check if somebody timed out.
@@ -8,7 +9,27 @@ which will (called in 1s intervals) download a lot of useless traffic to him and
 therefore, a common.php is used that will not do a DO_FORCED_NAVIGATION.
 This will just make our mailinfo return a small string in case of a timeout, not an entire error page
 */ 
-require("mailinfo_common.php");
+//if ($_SERVER['REMOTE_ADDR']=="86.123.157.144") {
+#	$s=print_r($_POST,true);
+#	$s=$_SERVER['REMOTE_ADDR'].$s;
+#	file_put_contents("/var/www/html/naruto/debug.txt",$s, FILE_APPEND);
+//}
+
+function mail_expired($args=false) {
+	if ($args===false) return;
+	$new="Expired";
+	$tabtext="Expired";
+	$objResponse = new xajaxResponse();
+	$objResponse->assign("maillink","innerHTML", $new);
+	$objResponse->script("document.title=\"".$tabtext."\";");
+	global $session;
+	$warning='';
+	$warning="<br/>".appoencode("`\$`b")."Your session has timed out!".appoencode("`b");
+	session_unset();    
+	session_destroy(); // destroy if timeout
+	$objResponse->assign("notify","innerHTML", $warning);
+	return $objResponse;
+}
 
 function mail_status($args=false) {
 	if ($args===false) return;
@@ -86,6 +107,7 @@ function commentary_text($args=false) {
 	$objResponse->assign($section,"innerHTML", $new);
 }
 
+require("mailinfo_common.php");
 
 
 require("mailinfo_base.php");

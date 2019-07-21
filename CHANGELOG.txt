@@ -6,6 +6,9 @@ Changes to 1.2.7 +nb
 *modules/* -> modules updated to current
 [REMOVES]
 
+[NEW]
+*modules/charrestore.hp -> added char restorer
+
 Changes to 1.2.6 +nb
 [CHANGES]
 *lib/buffs.php -> added strip_companion($name) which removes one or more companions safely
