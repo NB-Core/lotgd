@@ -177,7 +177,7 @@ return array(
 			'name'=>'gentimecount', 'type'=>'int(11) unsigned', 'default'=>'0'
 			),
 		'lastip'=>array(
-			'name'=>'lastip', 'type'=>'varchar(40)'
+			'name'=>'lastip', 'type'=>'varchar(40)', 'default'=>''
 			),
 		'uniqueid'=>array(
 			'name'=>'uniqueid', 'type'=>'varchar(32)', 'null'=>'1'
@@ -636,7 +636,7 @@ return array(
 			'name'=>'descauthor', 'type'=>'int(11) unsigned', 'default'=>'0'
 			),
 		'customsay'=>array(
-			'name'=>'customsay', 'type'=>'varchar(15)'
+			'name'=>'customsay', 'type'=>'varchar(15)', 'default'=>''
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',

@@ -393,6 +393,7 @@ function charrestore_run(){
 				//sanity fill ups due to empty values and no default values set
 				$default_fill = array(
 					"allowednavs",
+					"lastip",
 					);
 				foreach ($default_fill as $defval) {
 					if (!in_array($defval,$user['account'])) {
