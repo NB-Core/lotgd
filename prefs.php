@@ -160,16 +160,10 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 						//cut last char, won't be salved in the DB else!
 						$subj = translate_mail("LoGD Account Verification",0);
 						$shortname=$session['user']['login'];
-						if ($_SERVER['SERVER_PORT']==443) {
-							//assume SSL
-							$serveraddress=sprintf("http://%s?op=val&id=%s",$_SERVER['SERVER_NAME']."/create.php",$emailverification);
-							$serverurl=sprintf("http://%s",$_SERVER['SERVER_NAME']);
-
-						} else {
-							//assume non-SSL
-							$serveraddress=sprintf("http://%s?op=val&id=%s",$_SERVER['SERVER_NAME']."/create.php",$emailverification);
-							$serverurl=sprintf("http://%s",$_SERVER['SERVER_NAME']);
-						}
+						$gameurl=getsetting("serverurl","https://lotgd.com");
+						$serveraddress=$gameurl."/create.php";
+						$serveraddress=sprintf("%s?op=val&id=%s",$serveraddress,$emailverification);
+						$serverurl=$gameurl;
 						
 						$msg = translate_mail(array("An email change has been requested to this email account.`n`nLogin name: %s `n`n",$shortname));
 						$confirm = translate_mail(array("In order to confirm it, you will need to click on the link below.`n`n %s`n`nNote: You need to be LOGGED OUT of the game to do so. If you are logged in while clicking, log out and try again.`n`n",$serveraddress,$emailverification),0);
@@ -192,9 +186,19 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 							$msg.=$confirm.$footer;
 							$ownermsg.=$newvalidationsent.$footer;
 						}
+						//mail new emailaddress
+				require_once("lib/sendmail.php");
+				$to_array=array($email=>$email);
+				$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+				send_email($to_array,str_replace("`n","\n",$msg),$subj,$from_array,false,"text/plain");
 
-						mail($email,$subj,str_replace("`n","\n",$msg),"From: ".getsetting("gameadminemail","postmaster@localhost.com"));
-						mail($session['user']['emailaddress'],$subj,str_replace("`n","\n",$ownermsg),"From: ".getsetting("gameadminemail","postmaster@localhost.com"));
+						//mail old email address
+				require_once("lib/sendmail.php");
+				$to_array=array($session['user']['emailaddress']=>$session['user']['login']);
+				$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+				send_email($to_array,str_replace("`n","\n",$ownermsg),$subj,$from_array,false,"text/plain");
+
+						//save replacemail
 						$session['user']['replaceemail']=$email."|".date("Y-m-d H:i:s");
 						$session['user']['emailvalidation']=$emailverification;
 						debuglog("Email Change requested from ".$session['user']['emailaddress']." to ".$email,$session['user']['acctid'],$session['user']['acctid'],"Email");

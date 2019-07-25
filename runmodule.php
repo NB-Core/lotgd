@@ -35,6 +35,13 @@ if (injectmodule(httpget('module'), (httpget('admin')?true:false))){
 	if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))){
 		//On a side note, you won't ever see this text. A normal module calls page_footer(), which ends execution here....
 		debug("Slow Module (".round($endtime-$starttime,2)."s): $mostrecentmodule`n");
+		$stats = array (
+			"modulename"=>$mostrecentmodule,
+			"date"=>date("Y-m-d H:i:s"),
+			"duration"=>round($endtime-$starttime,5),
+			);
+		//remember, this gets only called if you're a user with debug output triggering this!
+		modulehook("modules_slowmodule",$stats);
 	}
 	tlschema();
 }else{

@@ -113,6 +113,10 @@ if ($enemycounter > 0) {
 	show_enemies($enemies);
 }
 
+if (!isset($options['type'])) {
+	// no type set, do it for them, to pve
+	$options['type'] = 'forest';
+}
 suspend_buffs((($options['type'] == 'pvp')?"allowinpvp":false));
 suspend_companions((($options['type'] == 'pvp')?"allowinpvp":false));
 
@@ -394,6 +398,7 @@ if ($op != "newtarget") {
 					// experience would stay the same
 					// We'll also check if the user is actually alive. If we didn't, we would hand out
 					// experience for graveyard fights.
+					if (!isset($badguy['creatureexp'])) $badguy['creatureexp']=0; //if this was not set, make it
 					if (getsetting("instantexp",false) == true && $session['user']['alive'] && $options['type'] != "pvp" && $options['type'] != "train") {
 						if (!isset($badguy['expgained']) || $badguy['expgained'] == false) {
 							$cr_xp_gain = round($badguy['creatureexp']/count($newenemies));

@@ -31,6 +31,9 @@ function lovers_violet(){
 				output("`n`n`^You gain a charm point!");
 			}
 			$seenlover = 1;
+		} elseif ($session['user']['marriedto']!=0) {
+			//married to someone else
+			output("You think it might not be wise to flirt with other women...");	
 		}elseif (httpget('flirt')==""){
 			output("You stare dreamily across the room at %s`0, who leans across a table to serve a patron a drink.",$partner);
 			output("In doing so, she shows perhaps a bit more skin than is necessary, but you don't feel the need to object.");
