@@ -236,6 +236,9 @@ if ($dp < $dkills) {
 		$session['user']['goldinbank']=$debtfloor;
 		output("You are so much in debt, the elders won't let you drop further. Your bank gold has been set to %s gold.`n",$debtfloor);
 		debug("Set debtfloor in bank ".$debtfloor);
+	} else {
+		//manage interest
+		$session['user']['goldinbank']+=$interest_amount;
 	}
 
 	if ($interest_amount != 0) {
