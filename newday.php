@@ -15,8 +15,8 @@ modulehook("newday-intercept",array());
  **  SETTINGS **
  ***************/
 $turnsperday = getsetting("turns",10);
-$maxinterest = ((float)getsetting("maxinterest",10)/100) + 1; //1.1;
-$mininterest = ((float)getsetting("mininterest",1)/100) + 1; //1.1;
+$maxinterest = ((float)getsetting("maxinterest",10)/100); //0.1;
+$mininterest = ((float)getsetting("mininterest",1)/100); //0.1;
 $dailypvpfights = getsetting("pvpday",3);
 
 $resline = (httpget('resurrection')=="true") ? "&resurrection=true" : "" ;
@@ -129,17 +129,17 @@ if ($dp < $dkills) {
 
 	$interestrate = e_rand($mininterest*100,$maxinterest*100)/(float)100;
 	if ($session['user']['turns']>getsetting("fightsforinterest",4) && $session['user']['goldinbank']>=0) {
-		$interestrate=1;
+		$interestrate=0;
 		output("`2Today's interest rate: `^0% (Bankers in this village only give interest to those who work for it)`2.`n");
 	} elseif (getsetting("maxgoldforinterest", 100000) && $session['user']['goldinbank']>=getsetting("maxgoldforinterest", 100000)) {
-		$interestrate=1;
+		$interestrate=0;
 		output("`2Today's interest rate: `^0%% (The bank will not pay interest on accounts equal or greater than %s to retain solvency)`2.`n", getsetting("maxgoldforinterest", 100000));
 	}else{
-		output("`2Today's interest rate: `^%s%% `n",($interestrate-1)*100);
+		output("`2Today's interest rate: `^%s%% `n",($interestrate)*100);
 		if ($session['user']['goldinbank']>=0){
-			output("`2Gold earned from interest: `^%s`2.`n",(int)($session['user']['goldinbank']*($interestrate-1)));
+			output("`2Gold earned from interest: `^%s`2.`n",(int)($session['user']['goldinbank']*($interestrate)));
 		}else{
-			output("`2Interest Accrued on Debt: `^%s`2 gold.`n",-(int)($session['user']['goldinbank']*($interestrate-1)));
+			output("`2Interest Accrued on Debt: `^%s`2 gold.`n",-(int)($session['user']['goldinbank']*($interestrate)));
 		}
 	}
 
