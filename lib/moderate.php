@@ -213,7 +213,7 @@ function viewmoderatedcommentary($section,$message="Interject your own commentar
 		if (isset($rawc[$i])) {
 			$rawc[$i] = full_sanitize($rawc[$i]);
 			$rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES, getsetting("charset", "ISO-8859-1"));
-		}
+		} else $rawc[$i] = "";
 	}
 	$i--;
 	$outputcomments=array();
@@ -234,7 +234,7 @@ function viewmoderatedcommentary($section,$message="Interject your own commentar
 		if ($moderating){
 			if ($session['user']['superuser'] & SU_EDIT_USERS){
 				$out.="`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> | <a href='user.php?op=setupban&userid=".$auth[$i]."&reason=".rawurlencode($rawc[$i])."'>Ban</a> ]&nbsp;";
-				addnav("","user.php?op=setupban&userid=$auth[$i]&reason=".rawurlencode($rawc[$i]));
+				addnav("","user.php?op=setupban&userid=".$auth[$i]."&reason=".rawurlencode($rawc[$i]));
 			}else{
 				$out.="`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> ]&nbsp;";
 			}
