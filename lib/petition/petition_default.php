@@ -2,7 +2,7 @@
 tlschema("petition");
 popup_header("Petition for Help");
 $post = httpallpost();
-if (count($post)>0){
+if (count($post)>0 && httppost('abuse')!="yes"){
 	$ip = explode(".",$_SERVER['REMOTE_ADDR']);
 	array_pop($ip);
 	$ip = join($ip,".").".";
@@ -93,12 +93,14 @@ if (count($post)>0){
 	rawoutput("</select><br/>");
 	output("`nDescription of the problem:`n");
 	$abuse = httpget("abuse");
+	if ($abuse == "") 
+		$abuse = httppost("abuse");
 	if ($abuse == "yes") {
 		rawoutput("<textarea name='description' cols='55' rows='7' class='input'></textarea>");
-		rawoutput("<input type='hidden' name='abuse' value=\"".stripslashes_deep(htmlentities(httpget("problem"), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."\"><br><hr><pre>".stripslashes(htmlentities(httpget("problem")))."</pre><hr><br>");
-		rawoutput("<input type='hidden' name='abuseplayer' value=\"".httpget('abuseplayer')."\">");
+		rawoutput("<input type='hidden' name='abuse' value=\"".stripslashes_deep(httppost("problem"))."\"><br><hr><pre>".stripslashes(rawurldecode(httppost("problem")))."</pre><hr><br>");
+		rawoutput("<input type='hidden' name='abuseplayer' value=\"".httppost('abuseplayer')."\">");
 	} else {
-		rawoutput("<textarea name='description' cols='55' rows='7' class='input'>".stripslashes_deep(htmlentities(httpget("problem"), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."</textarea>");
+		rawoutput("<textarea name='description' cols='55' rows='7' class='input'>".stripslashes_deep((httppost("problem")))."</textarea>");
 	}
 	modulehook("petitionform",array());
 	$submit = translate_inline("Submit");

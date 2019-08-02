@@ -86,7 +86,7 @@ if (db_num_rows($result)>0){
 		<td><a href='mail.php?op=unread&id={$row['messageid']}' class='motd'>$unread</a></td>");
 	// Don't allow reporting of system messages as abuse.
 	if ((int)$row['msgfrom']!=0) {
-		rawoutput("<td><a href=\"petition.php?problem=".rawurlencode($problem)."&abuse=yes&abuseplayer=$problemplayer\" class='motd'>$report</a></td>");
+		rawoutput("<td><form action=\"petition.php\" method='post'><input type='hidden' name='problem' value=\"".htmlentities($problem, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"/><input type='hidden' name='abuse' value=\"yes\"/><input type='hidden' name='abuseplayer' value=\"".$problemplayer."\"/><input type='submit' class='motd' value='$report'/></form></td>");
 	} else {
 		rawoutput("<td>&nbsp;</td>");
 	}
