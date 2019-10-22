@@ -3,6 +3,7 @@ Changes to 1.2.7 +nb
 [FIXES]
 *battle.php -> isset() needs to check for index values not existing
 *prefs.php -> mail address defaulting to 127.0.0.1 in email change email (not nice, not critical), changed
+*lib/mail/case_read.php, lib/petitions/petition_default.php -> instead of GET (report to admin), POST works better with long mails and won't break
 *modules/* -> modules updated to current
 [REMOVES]
 

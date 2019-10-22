@@ -229,7 +229,7 @@ if ($dp < $dkills) {
 	}
 
 	$session['user']['laston'] = date("Y-m-d H:i:s");
-	$interest_amount = $session['user']['goldinbank'] * $interestrate;
+	$interest_amount = round($session['user']['goldinbank'] * $interestrate,0);
 	$debtfloor = getsetting("debtfloor",-50000);
 	if ($session['user']['goldinbank']+$interest_amount < $debtfloor) {
 		//debtfloor reached set to floor
