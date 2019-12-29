@@ -23,7 +23,7 @@ $cost*=$result['alterpct'];
 $cost = round($cost,0);
 
 tlschema("nav");
-addnav("`bReturn`b");
+addnav("`bNavigation`b");
 tlschema();
 
 $op = httpget('op');
@@ -119,7 +119,7 @@ foreach($companions as $name => $companion){
 }
 //needs to be after the code 
 tlschema("nav");
-addnav("Return");
+addnav("`bNavigation`b");
 if ($return==""){
 	if($playerheal || $compheal){
 		addnav("F?Back to the Forest", "forest.php");
