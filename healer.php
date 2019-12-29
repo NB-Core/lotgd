@@ -24,23 +24,11 @@ $cost = round($cost,0);
 
 tlschema("nav");
 addnav("`bReturn`b");
-if ($return==""){
-	if($playerheal || $compheal){
-		addnav("F?Back to the Forest", "forest.php");
-		villagenav();
-	}else{
-		forest(true);
-	}
-}elseif ($return=="village.php"){
-	villagenav();
-}else{
-	addnav("R?Return whence you came",$return);
-}
 tlschema();
 
 $op = httpget('op');
 if ($op==""){
-  	checkday();
+	checkday();
 	output("`3You duck into the small smoke-filled grass hut.");
 	output("The pungent aroma makes you cough, attracting the attention of a grizzled old person that does a remarkable job of reminding you of a rock, which probably explains why you didn't notice them until now.");
 	output("Couldn't be your failure as a warrior.");
@@ -88,7 +76,7 @@ if ($op==""){
 	}
 }elseif ($op=="companion"){
 	$compcost = httpget('compcost');
-	
+
 	if($session['user']['gold'] < $compcost){
 		output("`3The old creature pierces you with a gaze hard and cruel.`n");
 		output("Your lightning quick reflexes enable you to dodge the blow from its gnarled staff.`n");
@@ -119,14 +107,32 @@ $compheal = false;
 foreach($companions as $name => $companion){
 	if(isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true){
 	}else{
-		$points = $companion['maxhitpoints'] - $companion['hitpoints'];
-		if($points > 0){
-			$compcost = round(log($session['user']['level']+1) * ($points + 10)*1.33);
-			addnav(array("%s`0 (`^%s Gold`0)", $companion['name'], $compcost), "healer.php?op=companion&name=".rawurlencode($name)."&compcost=$compcost$returnline");
-			$compheal = true;
+		if (isset($companion['maxhitpoints']) && isset($companion['hitpoints'])) {
+			$points = $companion['maxhitpoints'] - $companion['hitpoints'];
+			if($points > 0){
+				$compcost = round(log($session['user']['level']+1) * ($points + 10)*1.33);
+				addnav(array("%s`0 (`^%s Gold`0)", $companion['name'], $compcost), "healer.php?op=companion&name=".rawurlencode($name)."&compcost=$compcost$returnline");
+				$compheal = true;
+			}
 		}
 	}
 }
+//needs to be after the code 
+tlschema("nav");
+addnav("Return");
+if ($return==""){
+	if($playerheal || $compheal){
+		addnav("F?Back to the Forest", "forest.php");
+		villagenav();
+	}else{
+		forest(true);
+	}
+}elseif ($return=="village.php"){
+	villagenav();
+}else{
+	addnav("R?Return whence you came",$return);
+}
+tlschema("");
 output_notl("`0");
 page_footer();
 ?>
