@@ -353,7 +353,7 @@ return array(
 			'name'=>'acctid', 'type'=>'int(11) unsigned'
 			),
 		'output'=>array(
-			'name'=>'output', 'type'=>'blob'
+			'name'=>'output', 'type'=>'longblob'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -763,7 +763,7 @@ return array(
 			'name'=>'target', 'type'=>'int(11) unsigned', 'null'=>'1'
 			),
 		'message'=>array(
-			'name'=>'message', 'type'=>'text'
+			'name'=>'message', 'type'=>'longtext'
 			),
 		'field'=>array(
 			'name'=>'field', 'type'=>'varchar(20)', 'null'=>'0', 'default'=>''
@@ -1371,7 +1371,7 @@ return array(
 			'name'=>'body', 'type'=>'text', 'null'=>'1'
 			),
 		'pageinfo'=>array(
-			'name'=>'pageinfo', 'type'=>'text', 'null'=>'1'
+			'name'=>'pageinfo', 'type'=>'longtext', 'null'=>'1'
 			),
 		'closedate'=>array(
 			'name'=>'closedate',

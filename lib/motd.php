@@ -133,7 +133,7 @@ function motd_form($id) {
 		if ($preview>""){
 			if (httppost('changeauthor') || $row['motdauthorname']=="")
 				$row['motdauthorname']=$session['user']['name'];
-			if (httppost('changedate') || $row['motddate']=="")
+			if (httppost('changedate') || !isset($row['motddate']) || $row['motddate']=="")
 				$row['motddate']=date("Y-m-d H:i:s");
 			motditem($row['motdtitle'], $row['motdbody'],
 					$row['motdauthorname'],$row['motddate'], "");

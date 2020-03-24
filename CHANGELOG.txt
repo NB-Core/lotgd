@@ -1,5 +1,6 @@
 Changes to 1.2.7 +nb
 [CHANGES]
+*healer.php -> IamCanDoit pointed out that the level 1 healing costs 0 and doesn't require a partial heal. Changed. Also the IFs and Else in companion heal wasn't looking good. Comments on commit 97c74f9
 [FIXES]
 *battle.php -> isset() needs to check for index values not existing
 *prefs.php -> mail address defaulting to 127.0.0.1 in email change email (not nice, not critical), changed

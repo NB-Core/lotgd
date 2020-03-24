@@ -97,16 +97,19 @@ if($session['user']['hitpoints'] < $session['user']['maxhitpoints']){
 	$playerheal = true;
 	addnav("Potions");
 	addnav("`^Complete Healing`0","healer.php?op=buy&pct=100$returnline");
-	for ($i=90;$i>0;$i-=10){
-		addnav(array("%s%% - %s gold", $i, round($cost*$i/100,0)),"healer.php?op=buy&pct=$i$returnline");
+	//if cost is 0, usually on level 1 due to log algorithm, a free full healing is always preferred instead of a partial one
+	if ($cost >= 0) {
+		for ($i=90;$i>0;$i-=10){
+			addnav(array("%s%% - %s gold", $i, round($cost*$i/100,0)),"healer.php?op=buy&pct=$i$returnline");
+		}
 	}
 	modulehook('potion');
 }
 addnav("`bHeal Companions`b");
 $compheal = false;
 foreach($companions as $name => $companion){
-	if(isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true){
-	}else{
+	//inverse logic to if it set and value is true
+	if(!isset($companion['cannotbehealed']) || $companion['cannotbehealed'] === false){
 		if (isset($companion['maxhitpoints']) && isset($companion['hitpoints'])) {
 			$points = $companion['maxhitpoints'] - $companion['hitpoints'];
 			if($points > 0){
