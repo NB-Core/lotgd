@@ -43,7 +43,7 @@ class Manager
     public function __construct()
     {
         $this->xResponse = null;
-        $this->aDebugMessages = array();
+        $this->aDebugMessages = [];
     }
 
     /**
@@ -56,6 +56,16 @@ class Manager
     public function clear()
     {
         $this->xResponse = null;
+    }
+
+    /**
+     * Check if there is currently no response
+     *
+     * @return boolean
+     */
+    public function hasNoResponse()
+    {
+        return ($this->xResponse == null);
     }
 
     /**
@@ -116,7 +126,7 @@ class Manager
             {
                 $this->xResponse->debug($sMessage);
             }
-            $this->aDebugMessages = array();
+            $this->aDebugMessages = [];
         }
     }
 
