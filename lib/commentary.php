@@ -68,10 +68,10 @@ function addcommentary() {
 		invalidatedatacache("comments-or11");
 		$session['user']['specialinc']==''; //just to make sure he was not in a special
 		$return = cmd_sanitize($return);
-		$return = substr($return,strrpos($return,"/")+1);
+		$return = mb_substr($return,strrpos($return,"/")+1);
 		if (strpos($return,"?")===false && strpos($return,"&")!==false){
 			$x = strpos($return,"&");
-			$return = substr($return,0,$x-1)."?".substr($return,$x+1);
+			$return = mb_substr($return,0,$x-1)."?".mb_substr($return,$x+1);
 		}
 		redirect($return);
 	}
@@ -124,10 +124,10 @@ function injectcommentary($section, $talkline, $comment, $schema=false) {
 		$commentary = str_replace("`n","",soap($comment));
 		$y = strlen($commentary);
 		for ($x=0;$x<$y;$x++){
-			if (substr($commentary,$x,1)=="`"){
+			if (mb_substr($commentary,$x,1)=="`"){
 				$colorcount++;
 				if ($colorcount>=getsetting("maxcolors",10)){
-					$commentary = substr($commentary,0,$x).color_sanitize(substr($commentary,$x));
+					$commentary = mb_substr($commentary,0,$x).color_sanitize(mb_substr($commentary,$x));
 					$x=$y;
 				}
 				$x++;
@@ -143,20 +143,20 @@ function injectcommentary($section, $talkline, $comment, $schema=false) {
 		tlschema();
 
 		if (getsetting('soap',1)) {
-			$commentary = preg_replace("'([^[:space:]]{45,45})([^[:space:]])'","\\1 \\2",$commentary);
+			$commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'","\\1 \\2",$commentary);
 		}
 		$commentary = addslashes($commentary);
 		// do an emote if the area has a custom talkline and the user
 		// isn't trying to emote already.
-		if ($talkline!="says" && substr($commentary,0,1)!=":" &&
-				substr($commentary,0,2)!="::" &&
-				substr($commentary,0,3)!="/me" &&
-				substr($commentary,0,5) != "/game") {
+		if ($talkline!="says" && mb_substr($commentary,0,1)!=":" &&
+				mb_substr($commentary,0,2)!="::" &&
+				mb_substr($commentary,0,3)!="/me" &&
+				mb_substr($commentary,0,5) != "/game") {
 			$commentary = ":`3$talkline, \\\"`#$commentary`3\\\"";
 		} 
 		//add a hook if a module wants to post a non-GM with /game (more power for modules)
 		$args = modulehook("gmcommentarea", array("section"=>$section,"allow_gm"=>false,"commentary"=>$commentary));
-		if (substr($commentary,0,5)=="/game" && ((($session['user']['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) || 
+		if (mb_substr($commentary,0,5)=="/game" && ((($session['user']['superuser']&SU_IS_GAMEMASTER)==SU_IS_GAMEMASTER) || 
 							$args['allow_gm']===true)) {
 			//handle game master inserts now, allow double posts
 			injectsystemcomment($section,$args['commentary']);
@@ -190,11 +190,32 @@ function commentdisplay($intro, $section, $message="Interject your own commentar
 	viewcommentary($section, $message, $limit, $talkline, $schema);
 }
 
-function viewcommentary($section,$message="Interject your own commentary?",$limit=10,$talkline="says",$schema=false,$viewonly=false,$returnastext=false) {
+function viewcommentary($section,$message="Interject your own commentary?",$limit=10,$talkline="says",$schema=false,$viewonly=false,$returnastext=false,$scriptname_pre=false) {
  	global $session,$REQUEST_URI,$doublepost, $translation_namespace;
 	global $emptypost;
 
-	rawoutput("<div id='$section'>");
+	//some words on AJAX requests
+	//the handling here is easy for website admins, not very great for developer
+	//SCRIPT_NAME is bad if you want to use an AJAX handling, also we need the return value for our object response
+	if ($scriptname_pre===false) {
+		//most likely no ajax
+		$scriptname = $_SERVER['SCRIPT_NAME'];
+	} else {
+		$scriptname = $scriptname_pre;
+	}
+
+	if ($_SERVER['REQUEST_URI']=="/ext/ajax_process.php") {
+		//this is an AJAX call, set request uri from last uri known in session for chat
+		$real_request_uri = $session['last_comment_request_uri'];
+	} else {
+		$real_request_uri = $_SERVER['REQUEST_URI'];
+		$session['last_comment_request_uri'] = $real_request_uri;
+	}
+
+	$session['last_comment_section'] = $section;
+	$session['last_comment_scriptname'] = $scriptname;
+
+	rawoutput("<div id='$section-comment'>");
 	if ($returnastext!==false) {
 		// buffer
 		global $output;
@@ -213,8 +234,8 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	tlschema("commentary");
 
 	$nobios = array("motd.php"=>true);
-	if (!array_key_exists(basename($_SERVER['SCRIPT_NAME']),$nobios)) $nobios[basename($_SERVER['SCRIPT_NAME'])] = false;
-	if ($nobios[basename($_SERVER['SCRIPT_NAME'])])
+	if (!array_key_exists(basename($scriptname),$nobios)) $nobios[basename($scriptname)] = false;
+	if ($nobios[basename($scriptname)])
 		$linkbios=false;
 	else
 		$linkbios=true;
@@ -272,7 +293,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 			"( ".db_prefix("accounts") . ".locked=0 OR ".db_prefix("accounts") .".locked is null ) ".
 			"ORDER BY commentid DESC LIMIT " .
 			($com*$limit).",$limit";
-		if ($com==0 && strstr( $_SERVER['REQUEST_URI'], "/moderate.php" ) !== $_SERVER['REQUEST_URI'] )
+		if ($com==0 && strstr( $real_request_uri, "/moderate.php" ) !== $real_request_uri )
 			$result = db_query_cached($sql,"comments-{$section}");
 		else
 			$result = db_query($sql);
@@ -315,22 +336,22 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		$x=0;
 		$ft="";
 		for ($x=0;strlen($ft)<5 && $x<strlen($row['comment']);$x++){
-			if (substr($row['comment'],$x,1)=="`" && strlen($ft)==0) {
+			if (mb_substr($row['comment'],$x,1)=="`" && strlen($ft)==0) {
 				$x++;
 			}else{
-				$ft.=substr($row['comment'],$x,1);
+				$ft.=mb_substr($row['comment'],$x,1);
 			}
 		}
 
 		$link = "bio.php?char=" . $row['acctid'] .
-			"&ret=".URLEncode($_SERVER['REQUEST_URI']);
+			"&ret=".URLEncode($real_request_uri);
 
-		if (substr($ft,0,2)=="::")
-			$ft = substr($ft,0,2);
-		elseif (substr($ft,0,1)==":")
-			$ft = substr($ft,0,1);
-		elseif (substr($ft,0,3)=="/me")
-			$ft = substr($ft,0,3);
+		if (mb_substr($ft,0,2)=="::")
+			$ft = mb_substr($ft,0,2);
+		elseif (mb_substr($ft,0,1)==":")
+			$ft = mb_substr($ft,0,1);
+		elseif (mb_substr($ft,0,3)=="/me")
+			$ft = mb_substr($ft,0,3);
 
 		$row['comment'] = holidayize($row['comment'],'comment');
 		$row['name'] = holidayize($row['name'],'comment');
@@ -358,23 +379,23 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 			$x = strpos($row['comment'],$ft);
 			if ($x!==false){
 				if ($linkbios)
-					$op[$i] = str_replace("&amp;","&",HTMLEntities(substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& ".str_replace("&amp;","&",HTMLEntities(substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
+					$op[$i] = str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& ".str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
 				else
-					$op[$i] = str_replace("&amp;","&",HTMLEntities(substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`&{$row['name']}`0`& ".str_replace("&amp;","&",HTMLEntities(substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
-				$rawc[$i] = str_replace("&amp;","&",HTMLEntities(substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`&{$row['name']}`0`& ".str_replace("&amp;","&",HTMLEntities(substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
+					$op[$i] = str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`&{$row['name']}`0`& ".str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
+				$rawc[$i] = str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`&{$row['name']}`0`& ".str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
 			}
 		}
 		if ($ft=="/game" && !$row['name']) {
 			$x = strpos($row['comment'],$ft);
 			if ($x!==false){
-			 $op[$i] = str_replace("&amp;","&",HTMLEntities(substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`&".str_replace("&amp;","&",HTMLEntities(substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
+			 $op[$i] = str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],0,$x), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`&".str_replace("&amp;","&",HTMLEntities(mb_substr($row['comment'],$x+strlen($ft)), ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`0`n";
 			}
 		}
 		if (!isset($op) || !is_array($op)) $op = array();
 		if (!array_key_exists($i,$op) || $op[$i] == "")  {
 			if ($linkbios)
 				$op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#".str_replace("&amp;","&",HTMLEntities($row['comment'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`3\"`0`n";
-			elseif (substr($ft,0,5)=='/game' && !$row['name'])
+			elseif (mb_substr($ft,0,5)=='/game' && !$row['name'])
 				$op[$i] = str_replace("&amp;","&",HTMLEntities($row['comment'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")));
 			else
 				$op[$i] = "`&{$row['name']}`3 says, \"`#".str_replace("&amp;","&",HTMLEntities($row['comment'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`3\"`0`n";
@@ -410,9 +431,9 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	$sect="x";
 
 	$del=translate_inline("Del");
-	$scriptname=substr($_SERVER['SCRIPT_NAME'],strrpos($_SERVER['SCRIPT_NAME'],"/")+1);
-	$pos=strpos($_SERVER['REQUEST_URI'],"?");
-	$return=$scriptname.($pos==false?"":substr($_SERVER['REQUEST_URI'],$pos));
+	$scriptname=mb_substr($scriptname,strrpos($scriptname,"/")+1);
+	$pos=strpos($real_request_uri,"?");
+	$return=$scriptname.($pos==false?"":mb_substr($real_request_uri,$pos));
 	$one=(strstr($return,"?")==false?"?":"&");
 
 	$editrights=($session['user']['superuser'] & SU_EDIT_COMMENTS?1:0);
@@ -427,6 +448,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 			$outputcomments[$sect]=array();
 		array_push($outputcomments[$sect],$out);
 	}
+
 
 	//output the comments
 	ksort($outputcomments);
@@ -455,10 +477,20 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		}
 	}
 
+	//if we only need the comments, we are done here
+	if ($returnastext!==false) {
+		$collected = $output->get_output();
+		$output=$oldoutput;
+		return $collected;
+
+	}
+	rawoutput("</div>");
+	rawoutput("<div id='$section-talkline'>"); //close section
+
 	if ($session['user']['loggedin'] && !$viewonly) {
 		talkline($section,$talkline,$limit,$schema,$counttoday,$message);
 	}
-
+	rawoutput("</div><div id='$section-nav'>");
 	$jump = false;
 	if (!isset($session['user']['prefs']['nojump']) || $session['user']['prefs']['nojump'] == false) {
 		$jump = true;
@@ -532,13 +564,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	if (!$cc) db_free_result($result);
 	tlschema();
 	if ($needclose) modulehook("}collapse");
-	if ($returnastext!==false) {
-		$collected = $output->get_output();
-		$output=$oldoutput;
-		return $collected;
-
-	}
-	rawoutput("</div>"); //close section
+	rawoutput("</div>"); //close nav section
 }
 
 function talkline($section,$talkline,$limit,$schema,$counttoday,$message) {
@@ -576,7 +602,7 @@ function talkform($section,$talkline,$limit=10,$schema=false){
 	}
 
 	$counttoday=0;
-	if (substr($section,0,5)!="clan-"){
+	if (mb_substr($section,0,5)!="clan-"){
 		$sql = "SELECT author FROM " . db_prefix("commentary") . " WHERE section='$section' AND postdate>'".date("Y-m-d 00:00:00")."' ORDER BY commentid DESC LIMIT $limit";
 		$result = db_query($sql);
 		while ($row=db_fetch_assoc($result)){
