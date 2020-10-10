@@ -345,9 +345,10 @@ function page_footer($saveuser=true){
 			$p = "<a href='viewpetition.php'>$pet</a>";
 			addnav("", "viewpetition.php");
 		}
-		$p .= "`n `\${$petitions[5]}`0|`^{$petitions[4]}`0|`b{$petitions[0]}`b|{$petitions[1]}|`!{$petitions[3]}`0|`#{$petitions[7]}`0|`%{$petitions[6]}`0|`i{$petitions[2]}`i";
-		$ret_args = modulehook("petitioncount",array("petitioncount"=>$p));
-		$p = $ret_args['petitioncount'];
+		$pets = "`n `\${$petitions[5]}`0|`^{$petitions[4]}`0|`b{$petitions[0]}`b|{$petitions[1]}|`!{$petitions[3]}`0|`#{$petitions[7]}`0|`%{$petitions[6]}`0|`i{$petitions[2]}`i";
+		$ret_args = modulehook("petitioncount",array("petitioncount"=>$pets));
+		$pets = $ret_args['petitioncount'];
+		$p .= $pets;
 		$pcount = templatereplace("petitioncount", array("petitioncount"=>appoencode($p, true)));
 		$footer = str_replace("{petitiondisplay}", $pcount, $footer);
 		$header = str_replace("{petitiondisplay}", $pcount, $header);
