@@ -346,6 +346,8 @@ function page_footer($saveuser=true){
 			addnav("", "viewpetition.php");
 		}
 		$p .= "`n `\${$petitions[5]}`0|`^{$petitions[4]}`0|`b{$petitions[0]}`b|{$petitions[1]}|`!{$petitions[3]}`0|`#{$petitions[7]}`0|`%{$petitions[6]}`0|`i{$petitions[2]}`i";
+		$ret_args = modulehook("petitioncount",array("petitioncount"=>$p));
+		$p = $ret_args['petitioncount'];
 		$pcount = templatereplace("petitioncount", array("petitioncount"=>appoencode($p, true)));
 		$footer = str_replace("{petitiondisplay}", $pcount, $footer);
 		$header = str_replace("{petitiondisplay}", $pcount, $header);
@@ -748,9 +750,12 @@ function charstats(){
 			addcharstat("Turns", $u['turns'].check_temp_stat("turns",1));
 			addcharstat("PvP", $u['playerfights']);
 			addcharstat("Spirits", translate_inline("`b".$spirits[(int)$u['spirits']]."`b"));
+			addcharstat("Currency");
 			addcharstat("Gold", number_format($u['gold'].check_temp_stat("gold",1),0,$point,$sep));
+			addcharstat("Bankgold", number_format($u['goldinbank'].check_temp_stat("goldinbank",1),0,$point,$sep));
 		} else {
 			addcharstat("Favor", $u['deathpower'].check_temp_stat("deathpower",1));
+			addcharstat("Currency");
 		}
 		addcharstat("Gems", number_format($u['gems'].check_temp_stat("gems",1),0,$point,$sep));
 		addcharstat("Equipment Info");
