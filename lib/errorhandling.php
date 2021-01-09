@@ -18,7 +18,9 @@ function set_magic_quotes(&$vars) {
 
 
 //do some cleanup here to make sure magic_quotes_gpc is ON
-if (!get_magic_quotes_gpc()){
+//magic quotes are always false since php5.4
+//if (!get_magic_quotes_gpc()){
+if (1) {
 	set_magic_quotes($_GET);
 	set_magic_quotes($_POST);
 	set_magic_quotes($_SESSION);
