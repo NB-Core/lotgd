@@ -1,501 +1,550 @@
-[
-    {
-        "name": "aura/session",
-        "version": "2.1.0",
-        "version_normalized": "2.1.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/auraphp/Aura.Session.git",
-            "reference": "7d2f7d41ad693970b5b6b83facca0961d3378883"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/auraphp/Aura.Session/zipball/7d2f7d41ad693970b5b6b83facca0961d3378883",
-            "reference": "7d2f7d41ad693970b5b6b83facca0961d3378883",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.3.0"
-        },
-        "require-dev": {
-            "aura/di": "~2.0"
-        },
-        "suggest": {
-            "ext-mcrypt": "Mcrypt generates the next best secure CSRF tokens.",
-            "ext-openssl": "OpenSSL generates the best secure CSRF tokens.",
-            "ircmaxell/random-lib": "A Library For Generating Secure Random Numbers",
-            "paragonie/random_compat": "PHP 5.x polyfill for random_bytes() and random_int() from PHP 7"
-        },
-        "time": "2016-10-03T20:28:32+00:00",
-        "type": "library",
-        "extra": {
-            "aura": {
-                "type": "library",
-                "config": {
-                    "common": "Aura\\Session\\_Config\\Common"
+{
+    "packages": [
+        {
+            "name": "aura/session",
+            "version": "2.1.0",
+            "version_normalized": "2.1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/auraphp/Aura.Session.git",
+                "reference": "7d2f7d41ad693970b5b6b83facca0961d3378883"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/auraphp/Aura.Session/zipball/7d2f7d41ad693970b5b6b83facca0961d3378883",
+                "reference": "7d2f7d41ad693970b5b6b83facca0961d3378883",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "aura/di": "~2.0"
+            },
+            "suggest": {
+                "ext-mcrypt": "Mcrypt generates the next best secure CSRF tokens.",
+                "ext-openssl": "OpenSSL generates the best secure CSRF tokens.",
+                "ircmaxell/random-lib": "A Library For Generating Secure Random Numbers",
+                "paragonie/random_compat": "PHP 5.x polyfill for random_bytes() and random_int() from PHP 7"
+            },
+            "time": "2016-10-03T20:28:32+00:00",
+            "type": "library",
+            "extra": {
+                "aura": {
+                    "type": "library",
+                    "config": {
+                        "common": "Aura\\Session\\_Config\\Common"
+                    }
                 }
-            }
-        },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Aura\\Session\\": "src/",
-                "Aura\\Session\\_Config\\": "config/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "BSD-2-Clause"
-        ],
-        "authors": [
-            {
-                "name": "Aura.Session Contributors",
-                "homepage": "https://github.com/auraphp/Aura.Session/contributors"
-            }
-        ],
-        "description": "Provides session management functionality, including lazy session starting, session segments, next-request-only (\"flash\") values, and CSRF tools.",
-        "homepage": "https://github.com/auraphp/Aura.Session",
-        "keywords": [
-            "csrf",
-            "flash",
-            "flash message",
-            "session",
-            "sessions"
-        ]
-    },
-    {
-        "name": "jaxon-php/jaxon-armada",
-        "version": "v2.0.1",
-        "version_normalized": "2.0.1.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/jaxon-php/jaxon-armada.git",
-            "reference": "20b8557fe2703fa35acaea671cbf52ed36955ee8"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/jaxon-php/jaxon-armada/zipball/20b8557fe2703fa35acaea671cbf52ed36955ee8",
-            "reference": "20b8557fe2703fa35acaea671cbf52ed36955ee8",
-            "shasum": ""
-        },
-        "require": {
-            "aura/session": "~2.0",
-            "jaxon-php/jaxon-sentry": "~2.0"
-        },
-        "time": "2017-12-09T17:16:46+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Jaxon\\Armada\\": "src/"
             },
-            "files": [
-                "src/start.php"
-            ]
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "BSD-3-Clause"
-        ],
-        "authors": [
-            {
-                "name": "Thierry Feuzeu"
-            }
-        ],
-        "description": "Advanced features for the Jaxon library",
-        "homepage": "https://github.com/jaxon-php/jaxon-armada",
-        "keywords": [
-            "Jaxon",
-            "ajax",
-            "framework",
-            "php",
-            "xajax"
-        ]
-    },
-    {
-        "name": "jaxon-php/jaxon-core",
-        "version": "v2.2.14",
-        "version_normalized": "2.2.14.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/jaxon-php/jaxon-core.git",
-            "reference": "55d774cd062a29c2ab570134a412edaaed23cda5"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/55d774cd062a29c2ab570134a412edaaed23cda5",
-            "reference": "55d774cd062a29c2ab570134a412edaaed23cda5",
-            "shasum": ""
-        },
-        "require": {
-            "lemonphp/event": "1.0.*",
-            "matthiasmullie/minify": "1.3.*",
-            "php": ">=5.4.0",
-            "pimple/pimple": "3.0.*"
-        },
-        "require-dev": {
-            "phpunit/phpunit": "5.7.*"
-        },
-        "time": "2019-12-28T07:44:21+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Jaxon\\": "src/"
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Aura\\Session\\": "src/",
+                    "Aura\\Session\\_Config\\": "config/"
+                }
             },
-            "files": [
-                "src/start.php"
-            ]
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Aura.Session Contributors",
+                    "homepage": "https://github.com/auraphp/Aura.Session/contributors"
+                }
+            ],
+            "description": "Provides session management functionality, including lazy session starting, session segments, next-request-only (\"flash\") values, and CSRF tools.",
+            "homepage": "https://github.com/auraphp/Aura.Session",
+            "keywords": [
+                "csrf",
+                "flash",
+                "flash message",
+                "session",
+                "sessions"
+            ],
+            "install-path": "../aura/session"
         },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "BSD-3-Clause"
-        ],
-        "authors": [
-            {
-                "name": "Jared White"
+        {
+            "name": "jaxon-php/jaxon-armada",
+            "version": "v2.0.1",
+            "version_normalized": "2.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jaxon-php/jaxon-armada.git",
+                "reference": "20b8557fe2703fa35acaea671cbf52ed36955ee8"
             },
-            {
-                "name": "J. Max Wilson"
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-armada/zipball/20b8557fe2703fa35acaea671cbf52ed36955ee8",
+                "reference": "20b8557fe2703fa35acaea671cbf52ed36955ee8",
+                "shasum": ""
             },
-            {
-                "name": "Joseph Woolley"
+            "require": {
+                "aura/session": "~2.0",
+                "jaxon-php/jaxon-sentry": "~2.0"
             },
-            {
-                "name": "Steffen Konerow"
+            "time": "2017-12-09T17:16:46+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Jaxon\\Armada\\": "src/"
+                },
+                "files": [
+                    "src/start.php"
+                ]
             },
-            {
-                "name": "Thierry Feuzeu"
-            }
-        ],
-        "description": "Jaxon is an open source PHP library for easily creating Ajax web applications",
-        "homepage": "http://jaxon-project.org",
-        "keywords": [
-            "Jaxon",
-            "ajax",
-            "asynchronous",
-            "php",
-            "xajax"
-        ]
-    },
-    {
-        "name": "jaxon-php/jaxon-sentry",
-        "version": "v2.0.7",
-        "version_normalized": "2.0.7.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/jaxon-php/jaxon-sentry.git",
-            "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b"
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Thierry Feuzeu"
+                }
+            ],
+            "description": "Advanced features for the Jaxon library",
+            "homepage": "https://github.com/jaxon-php/jaxon-armada",
+            "keywords": [
+                "Jaxon",
+                "ajax",
+                "framework",
+                "php",
+                "xajax"
+            ],
+            "install-path": "../jaxon-php/jaxon-armada"
         },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/jaxon-php/jaxon-sentry/zipball/ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
-            "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
-            "shasum": ""
-        },
-        "require": {
-            "jaxon-php/jaxon-core": "~2.0"
-        },
-        "time": "2017-12-09T17:16:30+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Jaxon\\Sentry\\": "src/"
+        {
+            "name": "jaxon-php/jaxon-core",
+            "version": "v2.2.16",
+            "version_normalized": "2.2.16.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jaxon-php/jaxon-core.git",
+                "reference": "386b24725ec28ca29280b15e0f0895a910aeed3a"
             },
-            "files": [
-                "src/start.php"
-            ]
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "BSD-3-Clause"
-        ],
-        "authors": [
-            {
-                "name": "Thierry Feuzeu"
-            }
-        ],
-        "description": "Common classes providing advanced features to the Jaxon library",
-        "homepage": "https://github.com/jaxon-php/jaxon-sentry",
-        "keywords": [
-            "Jaxon",
-            "ajax",
-            "framework",
-            "php",
-            "xajax"
-        ]
-    },
-    {
-        "name": "lemonphp/event",
-        "version": "v1.0.0",
-        "version_normalized": "1.0.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/lemonphp/event.git",
-            "reference": "57d9ffcc551febca967068668dd9f005d989d94b"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/lemonphp/event/zipball/57d9ffcc551febca967068668dd9f005d989d94b",
-            "reference": "57d9ffcc551febca967068668dd9f005d989d94b",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.4.0"
-        },
-        "require-dev": {
-            "phpunit/phpunit": "~4.8|~5.0",
-            "squizlabs/php_codesniffer": "^2.5"
-        },
-        "time": "2016-08-10T16:12:53+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Lemon\\Event\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Oanh Nguyen",
-                "email": "oanhnn.bk@gmail.com"
-            }
-        ],
-        "description": "Simple event dispatcher",
-        "homepage": "https://github.com/lemonphp/event",
-        "keywords": [
-            "event",
-            "event-dispatcher"
-        ]
-    },
-    {
-        "name": "matthiasmullie/minify",
-        "version": "1.3.63",
-        "version_normalized": "1.3.63.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/matthiasmullie/minify.git",
-            "reference": "9ba1b459828adc13430f4dd6c49dae4950dc4117"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/matthiasmullie/minify/zipball/9ba1b459828adc13430f4dd6c49dae4950dc4117",
-            "reference": "9ba1b459828adc13430f4dd6c49dae4950dc4117",
-            "shasum": ""
-        },
-        "require": {
-            "ext-pcre": "*",
-            "matthiasmullie/path-converter": "~1.1",
-            "php": ">=5.3.0"
-        },
-        "require-dev": {
-            "friendsofphp/php-cs-fixer": "~2.0",
-            "matthiasmullie/scrapbook": "~1.0",
-            "phpunit/phpunit": "~4.8"
-        },
-        "suggest": {
-            "psr/cache-implementation": "Cache implementation to use with Minify::cache"
-        },
-        "time": "2020-01-21T20:21:08+00:00",
-        "bin": [
-            "bin/minifycss",
-            "bin/minifyjs"
-        ],
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "MatthiasMullie\\Minify\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Matthias Mullie",
-                "email": "minify@mullie.eu",
-                "homepage": "http://www.mullie.eu",
-                "role": "Developer"
-            }
-        ],
-        "description": "CSS & JavaScript minifier, in PHP. Removes whitespace, strips comments, combines files (incl. @import statements and small assets in CSS files), and optimizes/shortens a few common programming patterns.",
-        "homepage": "http://www.minifier.org",
-        "keywords": [
-            "JS",
-            "css",
-            "javascript",
-            "minifier",
-            "minify"
-        ]
-    },
-    {
-        "name": "matthiasmullie/path-converter",
-        "version": "1.1.3",
-        "version_normalized": "1.1.3.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/matthiasmullie/path-converter.git",
-            "reference": "e7d13b2c7e2f2268e1424aaed02085518afa02d9"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/matthiasmullie/path-converter/zipball/e7d13b2c7e2f2268e1424aaed02085518afa02d9",
-            "reference": "e7d13b2c7e2f2268e1424aaed02085518afa02d9",
-            "shasum": ""
-        },
-        "require": {
-            "ext-pcre": "*",
-            "php": ">=5.3.0"
-        },
-        "require-dev": {
-            "phpunit/phpunit": "~4.8"
-        },
-        "time": "2019-02-05T23:41:09+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "MatthiasMullie\\PathConverter\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Matthias Mullie",
-                "email": "pathconverter@mullie.eu",
-                "homepage": "http://www.mullie.eu",
-                "role": "Developer"
-            }
-        ],
-        "description": "Relative path converter",
-        "homepage": "http://github.com/matthiasmullie/path-converter",
-        "keywords": [
-            "converter",
-            "path",
-            "paths",
-            "relative"
-        ]
-    },
-    {
-        "name": "phpmailer/phpmailer",
-        "version": "v6.1.6",
-        "version_normalized": "6.1.6.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/PHPMailer/PHPMailer.git",
-            "reference": "c2796cb1cb99d7717290b48c4e6f32cb6c60b7b3"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/c2796cb1cb99d7717290b48c4e6f32cb6c60b7b3",
-            "reference": "c2796cb1cb99d7717290b48c4e6f32cb6c60b7b3",
-            "shasum": ""
-        },
-        "require": {
-            "ext-ctype": "*",
-            "ext-filter": "*",
-            "php": ">=5.5.0"
-        },
-        "require-dev": {
-            "doctrine/annotations": "^1.2",
-            "friendsofphp/php-cs-fixer": "^2.2",
-            "phpunit/phpunit": "^4.8 || ^5.7"
-        },
-        "suggest": {
-            "ext-mbstring": "Needed to send email in multibyte encoding charset",
-            "hayageek/oauth2-yahoo": "Needed for Yahoo XOAUTH2 authentication",
-            "league/oauth2-google": "Needed for Google XOAUTH2 authentication",
-            "psr/log": "For optional PSR-3 debug logging",
-            "stevenmaguire/oauth2-microsoft": "Needed for Microsoft XOAUTH2 authentication",
-            "symfony/polyfill-mbstring": "To support UTF-8 if the Mbstring PHP extension is not enabled (^1.2)"
-        },
-        "time": "2020-05-27T12:24:03+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "PHPMailer\\PHPMailer\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "LGPL-2.1-only"
-        ],
-        "authors": [
-            {
-                "name": "Marcus Bointon",
-                "email": "phpmailer@synchromedia.co.uk"
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/386b24725ec28ca29280b15e0f0895a910aeed3a",
+                "reference": "386b24725ec28ca29280b15e0f0895a910aeed3a",
+                "shasum": ""
             },
-            {
-                "name": "Jim Jagielski",
-                "email": "jimjag@gmail.com"
+            "require": {
+                "lemonphp/event": "1.0.*",
+                "matthiasmullie/minify": "1.3.*",
+                "php": ">=5.4.0",
+                "pimple/pimple": "3.0.*"
             },
-            {
-                "name": "Andy Prevost",
-                "email": "codeworxtech@users.sourceforge.net"
+            "require-dev": {
+                "phpunit/phpunit": "5.7.*"
             },
-            {
-                "name": "Brent R. Matzelle"
-            }
-        ],
-        "description": "PHPMailer is a full-featured email creation and transfer class for PHP"
-    },
-    {
-        "name": "pimple/pimple",
-        "version": "v3.0.2",
-        "version_normalized": "3.0.2.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/silexphp/Pimple.git",
-            "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a"
+            "time": "2020-09-24T05:20:26+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Jaxon\\": "src/"
+                },
+                "files": [
+                    "src/start.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Jared White"
+                },
+                {
+                    "name": "J. Max Wilson"
+                },
+                {
+                    "name": "Joseph Woolley"
+                },
+                {
+                    "name": "Steffen Konerow"
+                },
+                {
+                    "name": "Thierry Feuzeu"
+                }
+            ],
+            "description": "Jaxon is an open source PHP library for easily creating Ajax web applications",
+            "homepage": "http://jaxon-project.org",
+            "keywords": [
+                "Jaxon",
+                "ajax",
+                "asynchronous",
+                "php",
+                "xajax"
+            ],
+            "support": {
+                "issues": "https://github.com/jaxon-php/jaxon-core/issues",
+                "source": "https://github.com/jaxon-php/jaxon-core"
+            },
+            "install-path": "../jaxon-php/jaxon-core"
         },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/silexphp/Pimple/zipball/a30f7d6e57565a2e1a316e1baf2a483f788b258a",
-            "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a",
-            "shasum": ""
+        {
+            "name": "jaxon-php/jaxon-sentry",
+            "version": "v2.0.7",
+            "version_normalized": "2.0.7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jaxon-php/jaxon-sentry.git",
+                "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-sentry/zipball/ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
+                "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
+                "shasum": ""
+            },
+            "require": {
+                "jaxon-php/jaxon-core": "~2.0"
+            },
+            "time": "2017-12-09T17:16:30+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Jaxon\\Sentry\\": "src/"
+                },
+                "files": [
+                    "src/start.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Thierry Feuzeu"
+                }
+            ],
+            "description": "Common classes providing advanced features to the Jaxon library",
+            "homepage": "https://github.com/jaxon-php/jaxon-sentry",
+            "keywords": [
+                "Jaxon",
+                "ajax",
+                "framework",
+                "php",
+                "xajax"
+            ],
+            "install-path": "../jaxon-php/jaxon-sentry"
         },
-        "require": {
-            "php": ">=5.3.0"
+        {
+            "name": "lemonphp/event",
+            "version": "v1.0.0",
+            "version_normalized": "1.0.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/lemonphp/event.git",
+                "reference": "57d9ffcc551febca967068668dd9f005d989d94b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/lemonphp/event/zipball/57d9ffcc551febca967068668dd9f005d989d94b",
+                "reference": "57d9ffcc551febca967068668dd9f005d989d94b",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.8|~5.0",
+                "squizlabs/php_codesniffer": "^2.5"
+            },
+            "time": "2016-08-10T16:12:53+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Lemon\\Event\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Oanh Nguyen",
+                    "email": "oanhnn.bk@gmail.com"
+                }
+            ],
+            "description": "Simple event dispatcher",
+            "homepage": "https://github.com/lemonphp/event",
+            "keywords": [
+                "event",
+                "event-dispatcher"
+            ],
+            "install-path": "../lemonphp/event"
         },
-        "time": "2015-09-11T15:10:35+00:00",
-        "type": "library",
-        "extra": {
-            "branch-alias": {
-                "dev-master": "3.0.x-dev"
-            }
+        {
+            "name": "matthiasmullie/minify",
+            "version": "1.3.66",
+            "version_normalized": "1.3.66.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/matthiasmullie/minify.git",
+                "reference": "45fd3b0f1dfa2c965857c6d4a470bea52adc31a6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/matthiasmullie/minify/zipball/45fd3b0f1dfa2c965857c6d4a470bea52adc31a6",
+                "reference": "45fd3b0f1dfa2c965857c6d4a470bea52adc31a6",
+                "shasum": ""
+            },
+            "require": {
+                "ext-pcre": "*",
+                "matthiasmullie/path-converter": "~1.1",
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "~2.0",
+                "matthiasmullie/scrapbook": "dev-master",
+                "phpunit/phpunit": ">=4.8"
+            },
+            "suggest": {
+                "psr/cache-implementation": "Cache implementation to use with Minify::cache"
+            },
+            "time": "2021-01-06T15:18:10+00:00",
+            "bin": [
+                "bin/minifycss",
+                "bin/minifyjs"
+            ],
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "MatthiasMullie\\Minify\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Matthias Mullie",
+                    "email": "minify@mullie.eu",
+                    "homepage": "http://www.mullie.eu",
+                    "role": "Developer"
+                }
+            ],
+            "description": "CSS & JavaScript minifier, in PHP. Removes whitespace, strips comments, combines files (incl. @import statements and small assets in CSS files), and optimizes/shortens a few common programming patterns.",
+            "homepage": "http://www.minifier.org",
+            "keywords": [
+                "JS",
+                "css",
+                "javascript",
+                "minifier",
+                "minify"
+            ],
+            "support": {
+                "issues": "https://github.com/matthiasmullie/minify/issues",
+                "source": "https://github.com/matthiasmullie/minify/tree/1.3.66"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/[user1",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/matthiasmullie] # Replace with up to 4 GitHub Sponsors-enabled usernames e.g.",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/user2",
+                    "type": "github"
+                }
+            ],
+            "install-path": "../matthiasmullie/minify"
         },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-0": {
-                "Pimple": "src/"
-            }
+        {
+            "name": "matthiasmullie/path-converter",
+            "version": "1.1.3",
+            "version_normalized": "1.1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/matthiasmullie/path-converter.git",
+                "reference": "e7d13b2c7e2f2268e1424aaed02085518afa02d9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/matthiasmullie/path-converter/zipball/e7d13b2c7e2f2268e1424aaed02085518afa02d9",
+                "reference": "e7d13b2c7e2f2268e1424aaed02085518afa02d9",
+                "shasum": ""
+            },
+            "require": {
+                "ext-pcre": "*",
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.8"
+            },
+            "time": "2019-02-05T23:41:09+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "MatthiasMullie\\PathConverter\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Matthias Mullie",
+                    "email": "pathconverter@mullie.eu",
+                    "homepage": "http://www.mullie.eu",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Relative path converter",
+            "homepage": "http://github.com/matthiasmullie/path-converter",
+            "keywords": [
+                "converter",
+                "path",
+                "paths",
+                "relative"
+            ],
+            "install-path": "../matthiasmullie/path-converter"
         },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
-            }
-        ],
-        "description": "Pimple, a simple Dependency Injection Container",
-        "homepage": "http://pimple.sensiolabs.org",
-        "keywords": [
-            "container",
-            "dependency injection"
-        ]
-    }
-]
+        {
+            "name": "phpmailer/phpmailer",
+            "version": "v6.2.0",
+            "version_normalized": "6.2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPMailer/PHPMailer.git",
+                "reference": "e38888a75c070304ca5514197d4847a59a5c853f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/e38888a75c070304ca5514197d4847a59a5c853f",
+                "reference": "e38888a75c070304ca5514197d4847a59a5c853f",
+                "shasum": ""
+            },
+            "require": {
+                "ext-ctype": "*",
+                "ext-filter": "*",
+                "ext-hash": "*",
+                "php": ">=5.5.0"
+            },
+            "require-dev": {
+                "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
+                "doctrine/annotations": "^1.2",
+                "phpcompatibility/php-compatibility": "^9.3.5",
+                "roave/security-advisories": "dev-latest",
+                "squizlabs/php_codesniffer": "^3.5.6",
+                "yoast/phpunit-polyfills": "^0.2.0"
+            },
+            "suggest": {
+                "ext-mbstring": "Needed to send email in multibyte encoding charset",
+                "hayageek/oauth2-yahoo": "Needed for Yahoo XOAUTH2 authentication",
+                "league/oauth2-google": "Needed for Google XOAUTH2 authentication",
+                "psr/log": "For optional PSR-3 debug logging",
+                "stevenmaguire/oauth2-microsoft": "Needed for Microsoft XOAUTH2 authentication",
+                "symfony/polyfill-mbstring": "To support UTF-8 if the Mbstring PHP extension is not enabled (^1.2)"
+            },
+            "time": "2020-11-25T15:24:57+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "PHPMailer\\PHPMailer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-2.1-only"
+            ],
+            "authors": [
+                {
+                    "name": "Marcus Bointon",
+                    "email": "phpmailer@synchromedia.co.uk"
+                },
+                {
+                    "name": "Jim Jagielski",
+                    "email": "jimjag@gmail.com"
+                },
+                {
+                    "name": "Andy Prevost",
+                    "email": "codeworxtech@users.sourceforge.net"
+                },
+                {
+                    "name": "Brent R. Matzelle"
+                }
+            ],
+            "description": "PHPMailer is a full-featured email creation and transfer class for PHP",
+            "support": {
+                "issues": "https://github.com/PHPMailer/PHPMailer/issues",
+                "source": "https://github.com/PHPMailer/PHPMailer/tree/v6.2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/Synchro",
+                    "type": "github"
+                }
+            ],
+            "install-path": "../phpmailer/phpmailer"
+        },
+        {
+            "name": "pimple/pimple",
+            "version": "v3.0.2",
+            "version_normalized": "3.0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/silexphp/Pimple.git",
+                "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/silexphp/Pimple/zipball/a30f7d6e57565a2e1a316e1baf2a483f788b258a",
+                "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "time": "2015-09-11T15:10:35+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.0.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-0": {
+                    "Pimple": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                }
+            ],
+            "description": "Pimple, a simple Dependency Injection Container",
+            "homepage": "http://pimple.sensiolabs.org",
+            "keywords": [
+                "container",
+                "dependency injection"
+            ],
+            "install-path": "../pimple/pimple"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}
