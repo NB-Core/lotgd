@@ -1,3 +1,13 @@
+Changes to 1.2.8 +nb
+[FIXES]
+*forest.php -> $packofmonsters set to false by default
+*lib/dbwrapper.php -> was missing somewhere.. my bad
+*lib/errorhandling.php -> fixes stuff that brakes in php 7.x, no magic quotes anymore!
+*lib/modules.php -> "function" is now a reserved keyword, which suckes in the module_hooks table... as it is a row there.
+*lib/pageparts.php -> petitions are now able to be hooked into and resorted (page display), allows now resorting
+*lib/commentary.php -> multibyte fixes to substr functions
+
+
 Changes to 1.2.7 +nb
 [CHANGES]
 *healer.php -> IamCanDoit pointed out that the level 1 healing costs 0 and doesn't require a partial heal. Changed. Also the IFs and Else in companion heal wasn't looking good. Comments on commit 97c74f9
