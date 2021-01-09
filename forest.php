@@ -149,6 +149,7 @@ if ($op=="search"){
 			if ($mintargetlevel<1) $mintargetlevel=1;
 			if ($mintargetlevel > $targetlevel) $mintargetlevel = $targetlevel;
 			debug("Creatures: $multi Targetlevel: $targetlevel Mintargetlevel: $mintargetlevel");
+			$packofmonsters=false;
 			if ($multi > 1) {
 				if (getsetting('allowpackmonsters',0)) {
 					$packofmonsters = (e_rand(0,5) == 0); // true or false
