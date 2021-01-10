@@ -34,7 +34,7 @@
 			output_notl(nltoappon($claninfo['clandesc']));
 			modulehook("}collapse");
 		}
-		$sql = "SELECT count(acctid) AS c, clanrank FROM " . db_prefix("accounts") . " WHERE clanid={$claninfo['clanid']} GROUP BY clanrank DESC";
+		$sql = "SELECT count(acctid) AS c, clanrank FROM " . db_prefix("accounts") . " WHERE clanid={$claninfo['clanid']} GROUP BY clanrank ORDER BY clanrank DESC";
 		$result = db_query($sql);
 		// begin collapse
 		modulehook("collapse{", array("name"=>"clanmemberdet"));

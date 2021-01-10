@@ -1,3 +1,7 @@
+Changes to 1.2.9 +nb
+[FIXES]
+*lib/clan/clan_default.php -> GROUP BY condition again (see mysql 8 issues) does not accept an order anymore (rightfully)
+
 Changes to 1.2.8 +nb
 [FIXES]
 *forest.php -> $packofmonsters set to false by default
