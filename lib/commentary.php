@@ -502,7 +502,11 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	$next = translate_inline("Next &gt;");
 	$lastu = translate_inline("Last Page &gt;&gt;");
 	if ($rowcount>=$limit || $cid>0){
-		$sql = "SELECT count(commentid) AS c FROM " . db_prefix("commentary") . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
+		if (isset($session['user']['recentcomments']) && $session['user']['recentcomments'] != '') {
+			$sql = "SELECT count(commentid) AS c FROM " . db_prefix("commentary") . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
+		} else {	
+			$sql = "SELECT count(commentid) AS c FROM " . db_prefix("commentary") . " WHERE section='$section' AND postdate > '".DATETIME_DATEMIN."'";
+		}
 		$r = db_query($sql);
 		$val = db_fetch_assoc($r);
 		$val = round($val['c'] / $limit + 0.5,0) - 1;

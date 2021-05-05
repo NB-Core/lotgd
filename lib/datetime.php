@@ -203,5 +203,32 @@ function getmicrotime(){
 	return ((float)$usec + (float)$sec);
 }
 
+//real datetime functions as daydifferences occur frequently
+//requires PHP7
+function datedifference($date_1 , $date_2 = DATETIME_TODAY , $differenceFormat = '%a' )
+{
+    $datetime1 = date_create($date_1);
+    $datetime2 = date_create($date_2);
+   
+    $interval = date_diff($datetime1, $datetime2);
+   
+    return $interval->format($differenceFormat);
+   
+}
 
-?>
+//input format is MM-DD
+function datedifference_events($date_1) {
+	//we need the closest year for the event, could overlap into last year or next year
+	$year = date("Y");
+	$diff1 = datedifference($year."-".$date_1);
+	$diff2 = datedifference(($year+1)."-".$date_1);
+	$diff3 = datedifference(($year-1)."-".$date_1);
+	if (abs($diff1)<abs($diff2) && abs($diff1)<abs($diff3)) {
+		return $diff1;
+	} elseif (abs($diff2)<abs($diff1) && abs($diff2)<abs($diff3)) {
+		return $diff2;
+	} else {
+		return $diff3;
+	}
+}
+

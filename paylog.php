@@ -38,7 +38,7 @@ if ($op==""){
 		$sql = "UPDATE ".db_prefix('paylog')." SET processdate='".date("Y-m-d H:i:s",strtotime($info['payment_date']))."' WHERE txnid='".addslashes($row['txnid'])."'";
 		db_query($sql);
 	}
-	$sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM ".db_prefix('paylog')." GROUP BY month DESC";
+	$sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM ".db_prefix('paylog')." GROUP BY month ORDER BY month DESC";
 	$result = db_query($sql);
 	addnav("Months");
 	while ($row = db_fetch_assoc($result)){

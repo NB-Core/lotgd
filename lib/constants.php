@@ -79,6 +79,8 @@ myDefine("CHAR_DELETE_SUICIDE",4);
 //Datetime Min/Max Definitions used for MySQL 
 myDefine("DATETIME_DATEMIN","1970-01-01 00:00:00");
 myDefine("DATETIME_DATEMAX","2159-01-01 00:00:00");
+$date = new DateTime();
+myDefine("DATETIME_TODAY",$date->format('Y-m-d H:i:s'));
 
 
 // Constants used in lib/modules - for providing more information about the

@@ -198,7 +198,7 @@ return array(
 			'name'=>'emailvalidation', 'type'=>'varchar(32)'
 			),
 		'forgottenpassowrd'=>array(
-			'name'=>'forgottenpassword', 'type'=>'varchar(32)'
+			'name'=>'forgottenpassword', 'type'=>'varchar(32)', 'default'=>''
 			),
 		'sentnotice'=>array(
 			'name'=>'sentnotice', 'type'=>'tinyint(1)', 'default'=>'0'
