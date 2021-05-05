@@ -6,7 +6,7 @@
     'aliases' => 
     array (
     ),
-    'reference' => 'b7efd8f04f53a79008b868c439fca6f4b3684a95',
+    'reference' => '0a66380422295c1ae4548c319d959a4d4e0fb44f',
     'name' => '__root__',
   ),
   'versions' => 
@@ -18,7 +18,7 @@
       'aliases' => 
       array (
       ),
-      'reference' => 'b7efd8f04f53a79008b868c439fca6f4b3684a95',
+      'reference' => '0a66380422295c1ae4548c319d959a4d4e0fb44f',
     ),
     'aura/session' => 
     array (
@@ -85,12 +85,12 @@
     ),
     'phpmailer/phpmailer' => 
     array (
-      'pretty_version' => 'v6.2.0',
-      'version' => '6.2.0.0',
+      'pretty_version' => 'v6.4.1',
+      'version' => '6.4.1.0',
       'aliases' => 
       array (
       ),
-      'reference' => 'e38888a75c070304ca5514197d4847a59a5c853f',
+      'reference' => '9256f12d8fb0cd0500f93b19e18c356906cbed3d',
     ),
     'pimple/pimple' => 
     array (
