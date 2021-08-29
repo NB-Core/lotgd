@@ -66,8 +66,13 @@ if ($op=="") {
 		$month_post="";
 	}
 	if ($month_post > ""){
-		$sql = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor WHERE motddate >= '{$month_post}-01' AND motddate <= '{$month_post}-31' ORDER BY motddate DESC";
-		$result = db_query_cached($sql,"motd-$month_post");
+		$date_array = explode("-",$month_post);
+		$p_year = $date_array[0];
+		$p_month = $date_array[1];
+		$month_post_end = date("Y-m-t", strtotime($p_year."-".$p_month."-"."01")); // get last day of month this way, it's a valid DATETIME now
+		$sql = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor WHERE motddate >= '{$month_post}-01' AND motddate <= '{$month_post_end}' ORDER BY motddate DESC";
+		$result = db_query_cached($sql,"motd-$month_post");output($month_post_end);
+		$result = db_query($sql);
 	}else{
 		$sql = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor ORDER BY motddate DESC limit $newcount,".($newcount+$count);
 		if ($newcount=0) //cache only the last x items
