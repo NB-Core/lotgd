@@ -324,9 +324,14 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	if ($rowcount > 0)
 		$session['lastcommentid'] = $commentbuffer[0]['commentid'];
 
+	//GMs can delete their own sentences
+	$is_gm =($session['user']['superuser']&SU_IS_GAMEMASTER?1:0);
+	$gm_array=array();
+
 	$counttoday=0;
 	for ($i=0; $i < $rowcount; $i++){
 		$row = $commentbuffer[$i];
+		if ($row['acctid']===$session['user']['acctid'] && $is_gm) $gm_array[]=$i;
 		$row['comment'] = comment_sanitize($row['comment']);
 		$row['comment'] = sanitize_mb($row['comment']); //bad storage or whatnot
 		$commentids[$i] = $row['commentid'];
@@ -439,7 +444,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	$editrights=($session['user']['superuser'] & SU_EDIT_COMMENTS?1:0);
 	for (;$i>=0;$i--){
 		$out="";
-		if ($editrights) {
+		if ($editrights || in_array($i,$gm_array)) {
 				$out.="`2[<a href='".$return.$one."removecomment={$commentids[$i]}&section=$section&returnpath=/".URLEncode($return)."'>$del</a>`2]`0&nbsp;";
 				addnav("",$return.$one."removecomment={$commentids[$i]}&section=$section&returnpath=/".URLEncode($return)."");
 		}
