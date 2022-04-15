@@ -143,6 +143,8 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("</td><td><br>&nbsp;<input type='submit' class='button' value='$submit'></td>");
 	rawoutput("</tr></table></form>");
 }
+modulehook("index_bottom", array());
+
 page_footer();
 if ($op=="timeout") {
 	session_unset();    

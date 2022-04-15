@@ -91,7 +91,12 @@ function substitute_array($string, $extra=false, $extrarep=false){
 		"{armor}",
 		"{creatureweapon}",
 	);
-
+	if (!isset($badguy)) {
+		$badguy=array(
+			"creatureweapon"=>'',
+			"creaturename"=>'',
+			);
+	}
 	$replace = array(
 		$session['user']['weapon'],
 		$badguy['creatureweapon'],
