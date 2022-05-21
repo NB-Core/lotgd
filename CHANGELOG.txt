@@ -2,9 +2,11 @@ Changes to 1.2.9 +nb
 [FIXES]
 *motd.php --> month is now a valid DATETIME, so set to 31 as last day returns an error
 *lib/clan/clan_default.php -> GROUP BY condition again (see mysql 8 issues) does not accept an order anymore (rightfully)
+*lib/tabledescriptor.php -> Default values that were number 0 (equals empty string) or empty strings were not synctable()'d into the database
 [CHANGES]
 *lib/commentary.php --> GMs can now delete their own comments
 *home.php --> new hook for bottom display "index_bottom"
+*modules.php --> modules can now have categories for headlines in navigations. Catgory "Easter|Egg" will set a headline "Easter" and then list "Egg" in module manager view
 
 Changes to 1.2.8 +nb
 [FIXES]

@@ -94,7 +94,16 @@ $ucount = $install_status['uninstcount'];
 ksort($seencats);
 addnav(array(" ?Uninstalled - (%s modules)", $ucount), "modules.php");
 foreach ($seencats as $cat=>$count) {
-	addnav(array(" ?%s - (%s modules)", $cat, $count), "modules.php?cat=$cat");
+	$category = $cat;
+	if (strpos($cat,"|") !== false) {
+		//header included
+		$m_header = strtok($cat,"|");
+		$category = strtok("|");
+		addnav($m_header);
+	} else {
+		addnav("Module Categories");
+	}
+	addnav(array(" ?%s - (%s modules)", $category, $count), "modules.php?cat=$cat");
 }
 
 $cat = httpget('cat');
