@@ -169,7 +169,6 @@ function table_create_descriptor($tablename){
 		$item['name']=$row['Field'];
 		$item['type']=$row['Type'];
 		if ($row['Null']=="Yes") $item['null'] = true;
-debug($row['Field']."-".$row['Default']);
 		if (trim($row['Default'])!="") $item['default']=$row['Default'];
 		if (trim($row['Extra'])!=="") $item['extra']=$row['Extra'];
 		$descriptor[$item['name']] = $item;
