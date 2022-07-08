@@ -26,7 +26,7 @@ $userinfo = array(
 
 	"Stats,title",
 	"level"=>"Level,int",
-	"race"=>"Race,enumpretrans,$racesenum",
+	"race"=>"Race,enumpretrans,".(isset($racesenum)&&$racesenum>""?$racesenum:""),
 	"experience"=>"Experience,int",
 	"hitpoints"=>"Current Hitpoints,int",
 	"maxhitpoints"=>"Max Hitpoints,int",
