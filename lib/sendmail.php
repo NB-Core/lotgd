@@ -16,6 +16,12 @@ function send_email($to, $body, $subject, $from, $cc=false,$contenttype="text/pl
 	 * @version $Id$
 	 */
 
+	$host = getsetting('gamemailhost','localhost');
+	$mailusername = getsetting('gamemailusername','');
+	$mailpassword = getsetting('gamemailpassword','');
+	$smtpauth = getsetting('gamemailsmtpauth',false);
+	$smtpsecure = getsetting('gamemailsmtpsecure','tls');
+	$port = getsetting('gamemailsmtpport','587');
 
 	try {
 		$mail = new PHPMailer(true); //New instance, with exceptions enabled
@@ -23,7 +29,18 @@ function send_email($to, $body, $subject, $from, $cc=false,$contenttype="text/pl
 		$body             = preg_replace('/\\\\/','', $body); //Strip backslashes
 
 		$mail->IsSendmail();  // tell the class to use Sendmail
-
+		if ($mailpassword !== '') {
+		//if no password is given, it will be considered standard server send
+			$mail->isSMTP();
+			$mail->Host = $host;;
+			$mail->Username = $mailusername;
+			$mail->Password = $mailpassword;
+			if ($smtpauth != false) {
+				$mail->SMTPAuth = $smtpauth;
+				$mail->SMTPSecure = 'tls';
+				$mail->Port = $port;
+			}
+		}
 		//only one
 		foreach ($from as $add=>$name) {
 			$mail->AddReplyTo($add,$name);

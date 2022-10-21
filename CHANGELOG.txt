@@ -5,6 +5,8 @@ Changes to 1.2.9 +nb
 *lib/tabledescriptor.php -> Default values that were number 0 (equals empty string) or empty strings were not synctable()'d into the database
 [CHANGES]
 *lib/commentary.php --> GMs can now delete their own comments
+*lib/data/configuration.php --> added settings for SMTP sending
+*lib/sendmail.php --> added SMTP support to send out
 *home.php --> new hook for bottom display "index_bottom"
 *modules.php --> modules can now have categories for headlines in navigations. Catgory "Easter|Egg" will set a headline "Easter" and then list "Egg" in module manager view
 

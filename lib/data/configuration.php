@@ -5,7 +5,6 @@ $setup = array(
 	"loginbanner"=>"Login Banner (under login prompt: 255 chars)",
 	"maxonline"=>"Max # of players online (0 for unlimited), int",
 	"allowcreation"=>"Allow creation of new characters,bool",
-	"gameadminemail"=>"Admin Email",
 	"serverurl"=>"Server URL",
 	"emailpetitions"=>"Should submitted petitions be emailed to Admin Email address?,bool",
 	"petition_types"=>"What types can petitions be?",
@@ -20,6 +19,17 @@ $setup = array(
 	"motditems"=>"How many items should be shown on the motdlist,int",
 	"ajax"=>"Turn on AJAX support?,bool",
 	"Ajax means you have refreshed content (mail;tab headline) without having ppl to reload the whole page,note",
+
+	"SMTP Mail Settings,title",
+	"gameadminemail"=>"Admin Email",
+	"gamemailhost"=>"SMTP Hostname",
+	"gamemailsmtpauth"=>"SMTP Auth,bool",
+	"gamemailusername"=>"SMTP Username",
+	"gamemailpassword"=>"SMTP Password",
+	"If you have smtpsecureauth active give the mechanism type,note",
+	"gamemailsmtpsecure"=>"SMTP Securemechanism,enum,starttls,STARTTLS,tls,TLS",
+	"gamemailsmtpport"=>"SMTP port to use,int",
+
 
 	"Server Maintenance / Debugging,title",
 	"debug"=>"Server runs in DEBUG mode?,bool",
