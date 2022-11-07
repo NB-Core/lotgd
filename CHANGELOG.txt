@@ -6,6 +6,7 @@ Changes to 1.2.9 +nb
 [CHANGES]
 *lib/commentary.php --> GMs can now delete their own comments
 *lib/data/configuration.php --> added settings for SMTP sending
+*lib/expire_chars.php --> added access to sendmail() instead of the old mail() function which doesn't work well enough
 *lib/sendmail.php --> added SMTP support to send out
 *home.php --> new hook for bottom display "index_bottom"
 *modules.php --> modules can now have categories for headlines in navigations. Catgory "Easter|Egg" will set a headline "Easter" and then list "Egg" in module manager view
