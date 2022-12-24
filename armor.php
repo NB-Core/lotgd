@@ -24,7 +24,7 @@ $basetext=array(
 	),
 	"tradein"		=>	array(
 		"`5You look over the various pieces of apparel, and wonder if `#Pegasus`5 would be so good as to try some of them on for you, when you realize that she is busy staring dreamily at `!MightyE`5 through the window of his shop as he, bare-chested, demonstrates the use of one of his fine wares to a customer.",
-		array("Noticing for a moment that you are browsing her wares, she glances at your `&%s`5 and says that she'll give you `^%s`5 for them.`0`n`n",$session['user']['armor'], $tradeinvalue),
+		array("Noticing for a moment that you are browsing her wares, she glances at your `&%s`5 and says that she'll give you `^%s`5 for them.`0`n`n",str_replace("`%","`2",$session['user']['armor']), $tradeinvalue), //because of `%s messing up stuff
 	),
 	"nosuchweapon"	=>	"`#Pegasus`5 looks at you, confused for a second, then realizes that you've apparently taken one too many bonks on the head, and nods and smiles.",
 	"tryagain"		=>	"Try again?",

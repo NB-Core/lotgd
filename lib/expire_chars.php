@@ -76,7 +76,7 @@ if ($lastexpire < $needtoexpire){
 	$cc_array=array();
 	while ($row = db_fetch_assoc($result)) {
 		$to_array=array($row['emailaddress']=>$row['emailaddress']);
-		$body=str_replace("{charname}",$row['login']);
+		$body=str_replace("{charname}",$row['login'],$message);
 		$mail_sent = send_email($to_array,$body,$subject,$from_array,$cc_array,"text/html");
 		$collector[]=$row['acctid'];
 	}
