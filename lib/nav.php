@@ -288,12 +288,12 @@ function buildnavs(){
 		$navbanner="";
 		if (count_viable_navs($key)>0){
 			if ($key>"") {
-				if ($session['loggedin']) tlschema($navschema[$key]);
+				if (isset($session['loggedin']) && $session['loggedin']) tlschema($navschema[$key]);
 				if (substr($key,0,7)=="!array!"){
 					$key = unserialize(substr($key,7));
 				}
 				$navbanner = private_addnav($key);
-				if ($session['loggedin']) tlschema();
+				if (isset($session['loggedin']) && $session['loggedin']) tlschema();
 			}
 
 			$style = "default";
@@ -396,7 +396,7 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 			$text = call_user_func_array("sprintf",$text);
 		}
 	}else{
-		if ($text && $session['loggedin'] && $translate) {
+		if ($text && isset($session['loggedin']) && $session['loggedin'] && $translate) {
 			if (isset($navschema[$text])) {
 				tlschema($navschema[$text]);
 			}

@@ -12,15 +12,12 @@ $game=0;
 $missing=0;
 $conflict = array();
 
-//Note: this is mysql only, we should maybe rewrite that part. :/
-//Or we could save ourselves the dbtype stuff
-
-$link = mysql_connect($session['dbinfo']['DB_HOST'],$session['dbinfo']['DB_USER'],$session['dbinfo']['DB_PASS']);
-mysql_select_db($session['dbinfo']['DB_NAME']);
+$link = db_connect($session['dbinfo']['DB_HOST'],$session['dbinfo']['DB_USER'],$session['dbinfo']['DB_PASS']);
+db_select_db($session['dbinfo']['DB_NAME']);
 $sql = "SHOW TABLES";
-$result = mysql_query($sql);
+$result = db_query($sql);
 //the conflicts seems not to work - we should check this.
-while ($row = mysql_fetch_assoc($result)){
+while ($row = db_fetch_assoc($result)){
 	foreach ($row as $key=>$val){
 		if (isset($descriptors[$val])){
 			$game++;
@@ -67,12 +64,12 @@ if ($upgrade){
 
 //Display rights - I won't parse them, sue me for laziness, and this should work nicely to explain any errors
 $sql="SHOW GRANTS FOR CURRENT_USER()";
-$result=mysql_query($sql);
+$result=db_query($sql);
 output("`2These are the rights for your mysql user, `\$make sure you have the 'LOCK TABLES' privileges OR a \"GRANT ALL PRIVLEGES\" on the tables.`2`n`n");
 output("If you do not know what this means, ask your hosting provider that supplied you with the database credentials.`n`n");
 rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
 $i=0;
-while ($row=mysql_fetch_assoc($result)) {
+while ($row=db_fetch_assoc($result)) {
 	if ($i == 0) {
 		rawoutput("<tr class='trhead'>");
 		$keys = array_keys($row);

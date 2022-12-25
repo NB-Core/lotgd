@@ -196,7 +196,7 @@ function tlbutton_push($indata,$hot=false,$namespace=FALSE){
 	global $translation_is_enabled,$seentlbuttons,$session,$language;
 	if (!$translation_is_enabled) return;
 	if (!$namespace) $namespace="unknown";
-	if ($session['user']['superuser'] & SU_IS_TRANSLATOR){
+	if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
 		if (!in_array($language,explode(',',$session['user']['translatorlanguages']))) return true;
 		if (preg_replace("/[ 	\n\r]|`./",'',$indata)>""){
 			if (isset($seentlbuttons[$namespace][$indata])){
@@ -223,7 +223,7 @@ function tlbutton_push($indata,$hot=false,$namespace=FALSE){
 
 function tlbutton_pop(){
 	global $translatorbuttons,$session;
-	if ($session['user']['superuser'] & SU_IS_TRANSLATOR){
+	if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
 		return array_pop($translatorbuttons);
 	}else{
 		return "";

@@ -196,7 +196,7 @@ $sql_upgrade_statements = array(
 "INSERT INTO " . db_prefix("masters") . " VALUES (2,'Fie',2,'Short Sword','Well done {goodguy}`&, you really know how to use your {weapon}.','You should have known you were no match for my {creatureweapon}',NULL,NULL,22,4,4)",
 "INSERT INTO " . db_prefix("masters") . " VALUES (3,'Glynyc',3,'Hugely Spiked Mace','Aah, defeated by the likes of you!  Next thing you know, Mireraband will be hunting me down!','Haha, maybe you should go back to Mireraband\\'s class.',NULL,NULL,33,6,6)",
 "INSERT INTO " . db_prefix("masters") . " VALUES (4,'Guth',4,'Spiked Club','Ha!  Hahaha, excellent fight {goodguy}`&!  Haven\\'t had a battle like that since I was in the guard!','Back there, we\\'d have eaten the likes of you alive!  Go work on your skills some old boy!',NULL,NULL,44,8,8)",
-"INSERT INTO " . db_prefix("masters") . " VALUES (5,'Unélith',5,'Thought Control','Your mind is greater than mine.  I concede defeat.','Your mental powers are lacking.  Meditate on this failure and perhaps some day you will defeat me.',NULL,NULL,55,10,10)",
+"INSERT INTO " . db_prefix("masters") . " VALUES (5,'UnÃ©lith',5,'Thought Control','Your mind is greater than mine.  I concede defeat.','Your mental powers are lacking.  Meditate on this failure and perhaps some day you will defeat me.',NULL,NULL,55,10,10)",
 "INSERT INTO " . db_prefix("masters") . " VALUES (6,'Adwares',6,'Dwarven Battle Axe','Ach!  Y\\' do hold yer {weapon} with skeel!','Har!  Y\\' do be needin moore praktise y\\' wee cub!',NULL,NULL,66,12,12)",
 "INSERT INTO " . db_prefix("masters") . " VALUES (7,'Gerrard',7,'Battle Bow','Hmm, mayhaps I underestimated you.','As I thought.',NULL,NULL,77,14,14)",
 "INSERT INTO " . db_prefix("masters") . " VALUES (8,'Ceiloth',8,'Orkos Broadsword','Well done {goodguy}`&, I can see that great things lie in the future for you!','You are becoming powerful, but not yet that powerful.',NULL,NULL,88,16,16)",
@@ -761,7 +761,7 @@ $sql_upgrade_statements = array(
 "INSERT INTO " . db_prefix("creatures") . " $creaturefields VALUES (317, 'A Hell Hound', 9, 'Fiery Breath', 'He bursts into flames and is sucked into the earth.', NULL, 336, 101, 94, 17, 13, NULL, 'Hank', 1, 1, NULL)",
 "INSERT INTO " . db_prefix("creatures") . " $creaturefields VALUES (318, 'Corporate Lackey', 7, 'Buzzwords', 'Well, you sure reprioritized his downsizing.', NULL, 268, 77, 74, 13, 10, NULL, 'Moonchilde', 1, 0, NULL)",
 "INSERT INTO " . db_prefix("creatures") . " $creaturefields VALUES (319, 'SCO Lawyer', 8, 'Court Papers', 'There''s one lawyer who''ll never trouble you again!', NULL, 302, 89, 84, 15, 11, NULL, 'Moonchilde', 1, 1, NULL)",
-'INSERT INTO ' . db_prefix("nastywords") . ' VALUES ("*damn* *dyke *fuck* *nigger* *phuck* *shit* amcik andskota arschloch arse* ass asshole atouche ayir bastard bitch* boiolas bollock* buceta butt* butt-pirate cabron cawk cazzo chink chraa chuj cipa clit cock* cum cunt* dago daygo dego dick* dike dildo dirsa dupa dziwka ejaculate ejackulate ekrem* ekto enculer faen fag* fanculo fanny fatass fcuk feces feg felcher ficken fitta fitte flikker foreskin phuck fuk* fut futkretzn fuxor gay gook guiena hell helvete hoer* honkey honky hor hore huevon hui injun jism jizz kanker* kawk kike klootzak knulle kraut kuk kuksuger kurac kurwa kusi* kyrpä* leitch lesbian lesbo mamhoon masturbat* merd merde mibun monkleigh mouliewop muie mulkku muschi nazis nepesaurio nigga* nigger nutsack orospu paska* pendejo penis perse phuck picka pierdol* pillu* pimmel pimpis piss* pizda poontsee poop porn preteen preud prick pron pula pule pusse pussy puta puto qahbeh queef* queer* qweef rautenberg schaffer scheiss* scheisse schlampe schmuck screw scrotum sharmuta sharmute shemale shipal shiz skribz skurwysyn slut smut sphencter shpincter spic spierdalaj splooge suka teets teez testicle tits titties titty twat twaty vittu votze wank* wetback* whoar whore wichser woose wop yed zabourah", "nasty")',
+'INSERT INTO ' . db_prefix("nastywords") . ' VALUES ("*damn* *dyke *fuck* *nigger* *phuck* *shit* amcik andskota arschloch arse* ass asshole atouche ayir bastard bitch* boiolas bollock* buceta butt* butt-pirate cabron cawk cazzo chink chraa chuj cipa clit cock* cum cunt* dago daygo dego dick* dike dildo dirsa dupa dziwka ejaculate ejackulate ekrem* ekto enculer faen fag* fanculo fanny fatass fcuk feces feg felcher ficken fitta fitte flikker foreskin phuck fuk* fut futkretzn fuxor gay gook guiena hell helvete hoer* honkey honky hor hore huevon hui injun jism jizz kanker* kawk kike klootzak knulle kraut kuk kuksuger kurac kurwa kusi* kyrpÃ¤* leitch lesbian lesbo mamhoon masturbat* merd merde mibun monkleigh mouliewop muie mulkku muschi nazis nepesaurio nigga* nigger nutsack orospu paska* pendejo penis perse phuck picka pierdol* pillu* pimmel pimpis piss* pizda poontsee poop porn preteen preud prick pron pula pule pusse pussy puta puto qahbeh queef* queer* qweef rautenberg schaffer scheiss* scheisse schlampe schmuck screw scrotum sharmuta sharmute shemale shipal shiz skribz skurwysyn slut smut sphencter shpincter spic spierdalaj splooge suka teets teez testicle tits titties titty twat twaty vittu votze wank* wetback* whoar whore wichser woose wop yed zabourah", "nasty")',
 "INSERT INTO " . db_prefix("mounts") . " VALUES (1, 'Pony', 'This docile beast is young yet.', 'Horses', 'a:5:{s:4:\"name\";s:13:\"`&Pony Attack\";s:8:\"roundmsg\";s:26:\"Your pony fights with you!\";s:6:\"rounds\";s:2:\"20\";s:6:\"atkmod\";s:3:\"1.2\";s:8:\"activate\";s:7:\"offense\";}', 6, 0, 1, 1, 'You strap your {weapon} to your pony\\'s saddle bags, and head out for some adventure!', '`&Remembering that is has been quite some time since you last fed your pony, you decide this is a perfect time to relax and allow it to graze the field a bit. You doze off enjoying this peaceful serenity.`0', '`&You dismount in the field to allow your pony to graze for a moment even though it has recently been fully fed.  As you lean back in the grass to watch the clouds, your pony whickers softly and trots off into the underbrush.  You search for a while before returning to the fields hoping that it\\'ll return.  A short time later, your pony trots back into the clearing holding its head high, looking much more energized and with a very equine grin on its face.`0', 20, 'all', 0)",
 "INSERT INTO " . db_prefix("mounts") . " VALUES (2, 'Gelding', 'This powerful beast is fiercely loyal.', 'Horses', 'a:5:{s:4:\"name\";s:16:\"`&Gelding Attack\";s:8:\"roundmsg\";s:29:\"Your gelding fights with you!\";s:6:\"rounds\";s:2:\"40\";s:6:\"atkmod\";s:3:\"1.2\";s:8:\"activate\";s:7:\"offense\";}', 10, 0, 1, 2, 'You strap your {weapon} to your gelding\\'s saddle bags, and head out for some adventure!', '`&Remembering that is has been quite some time since you last fed your gelding, you decide this is a perfect time to relax and allow it to graze the field a bit. You doze off enjoying this peaceful serenity.`0', '`&You dismount in the field to allow your gelding to graze for a moment even though it has recently been fully fed.  As you lean back in the grass to watch the clouds, your gelding whickers softly and trots off into the underbrush.  You search for a while before returning to the fields hoping that it\\'ll return.  A short time later, your gelding trots back into the clearing holding its head high, looking much more energized and with a very equine grin on its face.`n`nAnd here you thought geldings weren\\'t equipped that way any longer!`0', 25, 'all', 0)",
 "INSERT INTO " . db_prefix("mounts") . " VALUES (3, 'Stallion', 'This noble beast is huge and powerful!', 'Horses', 'a:5:{s:4:\"name\";s:17:\"`&Stallion Attack\";s:8:\"roundmsg\";s:30:\"Your stallion fights with you!\";s:6:\"rounds\";s:2:\"60\";s:6:\"atkmod\";s:3:\"1.2\";s:8:\"activate\";s:7:\"offense\";}', 16, 0, 1, 3, 'You strap your {weapon} to your stallion\\'s saddle bags, and head out for some adventure!', '`&Remembering that is has been quite some time since you last fed your stallion, you decide this is a perfect time to relax and allow it to graze the field a bit. You doze off enjoying this peaceful serenity.`0', '`&You dismount in the field to allow your stallion to graze for a moment even though it has recently been fully fed.  As you lean back in the grass to watch the clouds, your stallion whickers softly and trots off into the underbrush.  You search for a while before returning to the fields hoping that it\\'ll return.  A short time later, your stallion trots back into the clearing holding its head high, looking much more energized and with a very equine grin on its face.`0', 30, 'all', 0)",
@@ -865,7 +865,7 @@ $sql_upgrade_statements = array(
 
 "ALTER TABLE " . db_prefix("creatures"). " DROP oldcreatureexp;",
 
-"INSERT INTO " . db_prefix("settings") . " VALUES ('serverlanguages','en,English,fr,Français,dk,Danish,de,Deutsch,es,Español,it,Italian')",
+"INSERT INTO " . db_prefix("settings") . " VALUES ('serverlanguages','en,English,fr,Francais,dk,Danish,de,Deutsch,es,Espanol,it,Italian')",
 "INSERT INTO " . db_prefix("creatures") . " $creaturefields111 VALUES (320, 'Gypsy Bandit', 14, 'Gemmed Dagger', 'You''re dead, he''s free to take what he will.', 'That will put an end to his thieving days.', 499, 172, 145, 27, 20, 'global \$badguy, \$session;\r\n\r\nif (!isset(\$badguy[\\'spellpoints\\'])) {\r\n	\$badguy[\\'spellpoints\\'] = 1;\r\n}\r\n\r\n\$gold = round(\$session[\\'user\\'][\\'gold\\'] * 0.2);\r\nif (e_rand(0,7) == 0 && \$gold > 200 && \$badguy[\\'spellpoints\\'] == 1) {\r\n	rawoutput(\"<br /><b><span style=''color: white''>The pickpocket takes <span style=''color: gold''>\$gold gold</span>!</span></b><br /><br />\");\r\n	\$session[\\'user\\'][\\'gold\\'] -= \$gold;\r\n	\$badguy[\\'creaturegold\\'] += \$gold;\r\n	\$badguy[\\'spellpoints\\']--;\r\n}', 'Talisman', 1, 0)",
 
 "INSERT INTO " . db_prefix("companions") . " (`companionid`, `name`, `category`, `description`, `attack`, `attackperlevel`, `defense`, `defenseperlevel`, `maxhitpoints`, `maxhitpointsperlevel`, `abilities`, `cannotdie`, `cannotbehealed`, `companionlocation`, `companionactive`, `companioncostdks`, `companioncostgems`, `companioncostgold`, `jointext`, `dyingtext`, `allowinshades`, `allowinpvp`, `allowintrain`) VALUES (1, 'Mortimer teh javelin man', 'Knight', 'A rough and ready warrior.  Beneath his hardened exterior, one can detect a man of strong honour.', 5, 2, 1, 2, 20, 20, 'a:4:{s:5:\"fight\";s:1:\"1\";s:4:\"heal\";s:1:\"0\";s:5:\"magic\";s:1:\"0\";s:6:\"defend\";b:0;}', 0, 0, '".getsetting("villagename", LOCATION_FIELDS)."', 1, 0, 4, 573, '`^Greetings unto thee, my friend.  Let us go forth and conquer the evils of this world together!', '`4Argggggh!  I am slain!  Shuffling off my mortal coil.  Fare thee well, my friends.', 1, 0, 0)",
@@ -914,44 +914,44 @@ $sql_upgrade_statements = array(
 "1.2.5 +nb Edition"=>array(),
 "1.2.6 +nb Edition"=>array(
 	//conversion lotgd tables to mysql 5.7 which is already in all_tables.php
-	"UPDATE ".db_prefix('accounts')." SET laston='1970-01-01 00:00:00' WHERE laston='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET lasthit='1970-01-01 00:00:00' WHERE lasthit='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET pvpflag='1970-01-01 00:00:00' WHERE pvpflag='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET recentcomments='1970-01-01 00:00:00' WHERE recentcomments='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET biotime='1970-01-01 00:00:00' WHERE biotime='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET clanjoindate='1970-01-01 00:00:00' WHERE clanjoindate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET regdate='1970-01-01 00:00:00' WHERE regdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET laston='1970-01-01 00:00:00' WHERE laston<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lasthit='1970-01-01 00:00:00' WHERE lasthit<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET pvpflag='1970-01-01 00:00:00' WHERE pvpflag<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET recentcomments='1970-01-01 00:00:00' WHERE recentcomments<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET biotime='1970-01-01 00:00:00' WHERE biotime<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET clanjoindate='1970-01-01 00:00:00' WHERE clanjoindate<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET regdate='1970-01-01 00:00:00' WHERE regdate<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('paylog')." SET processdate='1970-01-01 00:00:00' WHERE processdate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('paylog')." SET processdate='1970-01-01 00:00:00' WHERE processdate<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('accounts')." SET lastmotd='1970-01-01 00:00:00' WHERE lastmotd<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('bans')." SET banexpire='2159-01-01 00:00:00' WHERE banexpire='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('bans')." SET lasthit='2159-01-01 00:00:00' WHERE lasthit='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('bans')." SET banexpire='2159-01-01 00:00:00' WHERE banexpire<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('bans')." SET lasthit='2159-01-01 00:00:00' WHERE lasthit<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('commentary')." SET postdate='1970-01-01 00:00:00' WHERE postdate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('commentary')." SET postdate='1970-01-01 00:00:00' WHERE postdate<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('debuglog')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('debuglog_archive')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('debuglog')." SET date='1970-01-01 00:00:00' WHERE date<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('debuglog_archive')." SET date='1970-01-01 00:00:00' WHERE date<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('faillog')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('gamelog')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('faillog')." SET date='1970-01-01 00:00:00' WHERE date<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('gamelog')." SET date='1970-01-01 00:00:00' WHERE date<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('logdnet')." SET lastupdate='1970-01-01 00:00:00' WHERE lastupdate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('logdnet')." SET lastping='1970-01-01 00:00:00' WHERE lastping='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('logdnet')." SET lastupdate='1970-01-01 00:00:00' WHERE lastupdate<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('logdnet')." SET lastping='1970-01-01 00:00:00' WHERE lastping<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('mail')." SET sent='1970-01-01 00:00:00' WHERE sent='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('mail')." SET sent='1970-01-01 00:00:00' WHERE sent<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('moderatedcomments')." SET moddate='1970-01-01 00:00:00' WHERE moddate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('moderatedcomments')." SET moddate='1970-01-01 00:00:00' WHERE moddate<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('modules')." SET installdate='1970-01-01 00:00:00' WHERE installdate='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('modules')." SET filemoddate='1970-01-01 00:00:00' WHERE filemoddate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('modules')." SET installdate='1970-01-01 00:00:00' WHERE installdate<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('modules')." SET filemoddate='1970-01-01 00:00:00' WHERE filemoddate<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('news')." SET newsdate='1970-01-01' WHERE newsdate='0000-00-00'",
+	"UPDATE ".db_prefix('news')." SET newsdate='1970-01-01' WHERE newsdate<'1970-01-01 00:00:00'",
 
-	"UPDATE ".db_prefix('petitions')." SET date='1970-01-01 00:00:00' WHERE date='0000-00-00 00:00:00'",
-	"UPDATE ".db_prefix('petitions')." SET closedate='1970-01-01 00:00:00' WHERE closedate='0000-00-00 00:00:00'",
+	"UPDATE ".db_prefix('petitions')." SET date='1970-01-01 00:00:00' WHERE date<'1970-01-01 00:00:00'",
+	"UPDATE ".db_prefix('petitions')." SET closedate='1970-01-01 00:00:00' WHERE closedate<'1970-01-01 00:00:00'",
 	),
 "1.2.7 +nb Edition"=>array(
 	),
