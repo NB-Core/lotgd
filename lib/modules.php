@@ -321,7 +321,7 @@ function mass_module_prepare($hooknames){
 		"SELECT
 		$Pmodule_hooks.modulename,
 		$Pmodule_hooks.location,
-		$Pmodule_hooks.mfunction,
+		$Pmodule_hooks.`function`,
 		$Pmodule_hooks.whenactive
 			FROM
 			$Pmodule_hooks
@@ -347,7 +347,7 @@ function mass_module_prepare($hooknames){
 		//$modulehook_queries the same way that db_query_cached
 		//returns query results.
 		array_push($modulehook_queries[$row['location']],$row);
-		$module_preload[$row['location']][$row['modulename']] = $row['mfunction'];
+		$module_preload[$row['location']][$row['modulename']] = $row['function'];
 	}
 	//SQL IN() syntax for the modules involved here.
 	$modulelist = "'".implode("', '",$modulenames)."'";
@@ -451,7 +451,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 			"SELECT
 			" . db_prefix("module_hooks") . ".modulename,
 			" . db_prefix("module_hooks") . ".location,
-			" . db_prefix("module_hooks") . ".mfunction,
+			" . db_prefix("module_hooks") . ".`function`,
 			" . db_prefix("module_hooks") . ".whenactive
 				FROM
 				" . db_prefix("module_hooks") . "
@@ -519,13 +519,13 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				/*******************************************************/
 				$starttime = getmicrotime();
 				/*******************************************************/
-				if (function_exists($row['mfunction'])) {
+				if (function_exists($row['function'])) {
 					if ($session['user']['superuser'] & SU_DEBUG_OUTPUT){
-						rawoutput("<!-- Hook: ".$hookname." on module ".$row['mfunction']." called... -->");
+						rawoutput("<!-- Hook: ".$hookname." on module ".$row['function']." called... -->");
 					}
-					$res = $row['mfunction']($hookname, $args);
+					$res = $row['function']($hookname, $args);
 				} else {
-					trigger_error("Unknown function {$row['mfunction']} for hookname $hookname in module {$row['module']}.", E_USER_WARNING);
+					trigger_error("Unknown function {$row['function']} for hookname $hookname in module {$row['modulename']}.", E_USER_WARNING);
 				}
 				/*******************************************************/
 				$endtime = getmicrotime();
@@ -543,7 +543,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				// us to collapse it
 				//$testout = trim(sanitize_html($outputafterhook->get_rawoutput()));
 				if (!is_array($res)) {
-					trigger_error("<b>{$row['mfunction']}</b> did not return an array in the module <b>{$row['modulename']}</b> for hook <b>$hookname</b>.",E_USER_WARNING);
+					trigger_error("<b>{$row['function']}</b> did not return an array in the module <b>{$row['modulename']}</b> for hook <b>$hookname</b>.",E_USER_WARNING);
 					$res = $args;
 				}
 				// if ($testout >"" &&
@@ -955,7 +955,7 @@ function module_drophook($hookname,$functioncall=false){
 	global $mostrecentmodule;
 	if ($functioncall===false)
 		$functioncall=$mostrecentmodule."_dohook";
-	$sql = "DELETE FROM " . db_prefix("module_hooks") . " WHERE modulename='$mostrecentmodule' AND location='".addslashes($hookname)."' AND `mfunction`='".addslashes($functioncall)."'";
+	$sql = "DELETE FROM " . db_prefix("module_hooks") . " WHERE modulename='$mostrecentmodule' AND location='".addslashes($hookname)."' AND `function`='".addslashes($functioncall)."'";
 	db_query($sql);
 	invalidatedatacache("hook-".$hookname);
 	invalidatedatacache("module_prepare");
@@ -994,7 +994,7 @@ function module_addhook_priority($hookname,$priority=50,$functioncall=false,$whe
 	debug("Adding a hook at $hookname for $mostrecentmodule to $functioncall which is active on condition '$whenactive'");
 	//we want to do a replace in case there's any garbage left in this table which might block new clean data from going in.
 	//normally that won't be the case, and so this doesn't have any performance implications.
-	$sql = "REPLACE INTO " . db_prefix("module_hooks") . " (modulename,location,`mfunction`,whenactive,priority) VALUES ('$mostrecentmodule','".addslashes($hookname)."','".addslashes($functioncall)."','".addslashes($whenactive)."','".addslashes($priority)."')";
+	$sql = "REPLACE INTO " . db_prefix("module_hooks") . " (modulename,location,`function`,whenactive,priority) VALUES ('$mostrecentmodule','".addslashes($hookname)."','".addslashes($functioncall)."','".addslashes($whenactive)."','".addslashes($priority)."')";
 	db_query($sql);
 	invalidatedatacache("hook-".$hookname);
 	invalidatedatacache("module_prepare");

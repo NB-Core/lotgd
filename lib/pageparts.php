@@ -140,9 +140,8 @@ function page_footer($saveuser=true){
 		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
-		db_free_result($result);
 		$headscript = "";
-		if (isset($session['user']['lastmotd']) &&
+		if (db_num_rows($result)>0 && isset($session['user']['lastmotd']) &&
 				($row['motddate']>$session['user']['lastmotd']) &&
 				(!isset($nopopup[$SCRIPT_NAME]) || $nopopups[$SCRIPT_NAME]!=1) &&
 				$session['user']['loggedin']){

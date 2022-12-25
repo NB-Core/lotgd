@@ -1086,8 +1086,8 @@ return array(
 		'location'=>array(
 			'name'=>'location', 'type'=>'varchar(50)'
 			),
-		'mfunction'=>array(
-			'name'=>'mfunction', 'type'=>'varchar(50)'
+		'function'=>array(
+			'name'=>'`function`', 'type'=>'varchar(50)'
 			),
 		'whenactive'=>array(
 			'name'=>'whenactive', 'type'=>'text'
