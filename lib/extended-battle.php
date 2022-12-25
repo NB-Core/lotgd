@@ -525,7 +525,7 @@ function rollcompaniondamage(&$badguy,$companion){
 		debug("Adjusted creature attack: $creatureattack");
 		debug("Adjusted self defense: $adjustedselfdefense");
 		*/
-
+$bad_check=1;
 		while(!isset($creaturedmg) || !isset($selfdmg) || $creaturedmg==0 && $selfdmg==0){
 			$atk = $companion['attack']*$compatkmod;
 			if (e_rand(1,20)==1 && $options['type'] != "pvp") $atk*=3;
@@ -567,6 +567,12 @@ function rollcompaniondamage(&$badguy,$companion){
 			if ($selfdmg > 0) {
 				$selfdmg = round($selfdmg*$buffset['badguydmgmod'], 0);
 			}
+$bad_check++;
+if ($bad_check>50) {
+	//we're getting nowhere
+	$selfdmg=0;
+	$creaturedmg=1;
+}
 		}
 	}else{
 		$creaturedmg=0;

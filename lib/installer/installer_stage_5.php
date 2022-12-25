@@ -21,12 +21,13 @@ $sql = "SHOW TABLES";
 $result = mysql_query($sql);
 //the conflicts seems not to work - we should check this.
 while ($row = mysql_fetch_assoc($result)){
-	list($key,$val)=each($row);
-	if (isset($descriptors[$val])){
-		$game++;
-		array_push($conflict,$val);
-	}else{
-		$unique++;
+	foreach ($row as $key=>$val){
+		if (isset($descriptors[$val])){
+			$game++;
+			array_push($conflict,$val);
+		}else{
+			$unique++;
+		}
 	}
 }
 
@@ -41,7 +42,7 @@ if ($missing*10 < $game){
 if (httpget("type")=="install") $upgrade=false;
 if (httpget("type")=="upgrade") $upgrade=true;
 $session['dbinfo']['upgrade']=$upgrade;
-	if ($upgrade){
+if ($upgrade){
 	output("`@This looks like a game upgrade.");
 	output("`^If this is not an upgrade from a previous version of LoGD, <a href='installer.php?stage=5&type=install'>click here</a>.",true);
 	output("`2Otherwise, continue on to the next step.");

@@ -73,7 +73,7 @@ if (isset($row['login']) && $row['login']!=""){
 		$string="%";
 		$to_len = strlen($to);
 		for($x=0; $x < $to_len; ++$x) {
-			$string .= $to{$x}."%";
+			$string .= $to[$x]."%";
 		}
 		$sql = "SELECT login,name,superuser FROM " . db_prefix("accounts") . " WHERE name LIKE '".addslashes($string)."' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
 		$result = db_query($sql);

@@ -336,7 +336,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 		$tempsettings = array();
 		$tempdata = array();
 		$found = 0;
-		while (list($key, $val) = each($info['prefs'])) {
+		foreach($info['prefs'] as $key=>$val) {
 			$isuser = preg_match("/^user_/", $key);
 			$ischeck = preg_match("/^check_/", $key);
 

@@ -232,7 +232,7 @@ function tlbutton_pop(){
 
 function tlbutton_clear(){
 	global $translatorbuttons,$session;
-	if ($session['user']['superuser'] & SU_IS_TRANSLATOR){
+	if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
 		$return = tlbutton_pop().join("",$translatorbuttons);
 		$translatorbuttons = array();
 		return $return;

@@ -118,8 +118,8 @@ function page_footer($saveuser=true){
 	//output any template part replacements that above hooks need (eg,
 	//advertising)
 	foreach ($replacementbits as $key=>$val) {
-		$header = str_replace("{".$key."}","{".$key."}".join($val,""),$header);
-		$footer = str_replace("{".$key."}","{".$key."}".join($val,""),$footer);
+		$header = str_replace("{".$key."}","{".$key."}".implode("",$val),$header);
+		$footer = str_replace("{".$key."}","{".$key."}".implode("",$val),$footer);
 	}
 
 	$builtnavs = buildnavs();
@@ -330,9 +330,9 @@ function page_footer($saveuser=true){
 	if ($session['user']['superuser'] & SU_EDIT_PETITIONS){
 		$sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix("petitions") . " GROUP BY status";
 		$result = db_query_cached($sql,"petition_counts");
-		$petitions=array(0=>0,1=>0,2=>0,3=>0,4=>0,5=>0,6=>0,7=>0);
+		$petitions=array("P5"=>0,"P4"=>0,"P0"=>0,"P1"=>0,"P3"=>0,"P7"=>0,"P6"=>0,"P2"=>0);
 		while ($row = db_fetch_assoc($result)) {
-			$petitions[(int)$row['status']] = $row['c'];
+			$petitions["P".$row['status']] = $row['c'];
 		}
 		$pet = translate_inline("`0`bPetitions:`b");
 		$ued = translate_inline("`0`bUser Editor`b");
@@ -345,7 +345,15 @@ function page_footer($saveuser=true){
 			$p = "<a href='viewpetition.php'>$pet</a>";
 			addnav("", "viewpetition.php");
 		}
-		$pets = "`n `\${$petitions[5]}`0|`^{$petitions[4]}`0|`b{$petitions[0]}`b|{$petitions[1]}|`!{$petitions[3]}`0|`#{$petitions[7]}`0|`%{$petitions[6]}`0|`i{$petitions[2]}`i";
+		$pcolors = array("`\$","`^","`6","`!","`#","`%","`v");
+		$pets = "`n";
+		foreach($petitions as $val) {
+			if ($pets!="`n") $pets.="|";
+			$color = array_shift($pcolors);
+			if (!isset($color) || $color==null || $color=="") $color="`1";
+			$pets.=$color.$val."`0";
+		}
+		$ret_args=array("petitioncount"=>$pets);
 		$ret_args = modulehook("petitioncount",array("petitioncount"=>$pets));
 		$pets = $ret_args['petitioncount'];
 		$p .= $pets;
@@ -369,7 +377,9 @@ function page_footer($saveuser=true){
 	$footer=str_replace("{version}", "Version: $logd_version", $footer);
 	//output page generation time
 	$gentime = getmicrotime()-$pagestarttime;
+	if (!isset($session['user']['gentime'])) $session['user']['gentime']=0;
 	$session['user']['gentime']+=$gentime;
+	if (!isset($session['user']['gentimecount'])) $session['user']['gentimecount']=0;
 	$session['user']['gentimecount']++;
 	if (getsetting('debug',0)) {	
 		global $SCRIPT_NAME;
@@ -393,6 +403,7 @@ function page_footer($saveuser=true){
 
 	//finalize output
 	$browser_output=$header.($output->get_output()).$footer;
+	if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
 	$session['user']['gensize']+=strlen($browser_output);
 	$session['output']=$browser_output;
 	if ($saveuser === true) {
@@ -454,8 +465,8 @@ function popup_footer(){
 	//output any template part replacements that above hooks need
 	reset($replacementbits);
 	foreach ($replacementbits as $key=>$val) {
-		$header = str_replace("{".$key."}","{".$key."}".join($val,""),$header);
-		$footer = str_replace("{".$key."}","{".$key."}".join($val,""),$footer);
+		$header = str_replace("{".$key."}","{".$key."}".implode("",$val),$header);
+		$footer = str_replace("{".$key."}","{".$key."}".implode("",$val),$footer);
 	}
 
 	$z = $y2^$z2;

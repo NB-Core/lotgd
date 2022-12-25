@@ -9,8 +9,7 @@ output("`n`@Table Synchronization Logs:`n");
 rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
 $descriptors = descriptors($DB_PREFIX);
 require_once("lib/tabledescriptor.php");
-reset($descriptors);
-while (list($tablename,$descriptor)=each($descriptors)){
+foreach($descriptors as $tablename=>$descriptor){
 	output("`3Synchronizing table `#$tablename`3..`n");
 	synctable($tablename,$descriptor,true);
 	if ($session['dbinfo']['upgrade']==false){
@@ -30,7 +29,7 @@ foreach ($sql_upgrade_statements as $key=>$val) {
 			output("`^Doing: `6");
 			reset($val);
 			$count=0;
-			while (list($id,$sql)=each($val)){
+			foreach($val as $id=>$sql){
 				$onlyupgrade = 0;
 				if (substr($sql, 0, 2) == "1|") {
 					$sql = substr($sql, 2);
@@ -43,85 +42,84 @@ foreach ($sql_upgrade_statements as $key=>$val) {
 				}
 				$count++;
 				if ($count%10==0 && $count!=count($val))
-				output_notl("`6$count...");
+					output_notl("`6$count...");
 				if (!db_query($sql)) {
 					output("`n`\$Error: `^'%s'`7 executing `#'%s'`7.`n",
-					db_error(), $sql);
+							db_error(), $sql);
 				}
 			}
 			output("$count.`n");
 		}
 	}
 	if ($key == $session['fromversion'] ||
-	$session['dbinfo']['upgrade'] == false) $dosql=true;
+			$session['dbinfo']['upgrade'] == false) $dosql=true;
 }
 rawoutput("</div>");
-	/*
-output("`n`2Now I'll install the recommended modules.");
-output("Please note that these modules will be installed, but not activated.");
-output("Once installation is complete, you should use the Module Manager found in the superuser grotto to activate those modules you wish to use.");
-reset($recommended_modules);
-rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-while (list($key,$modulename)=each($recommended_modules)){
-output("`3Installing `#$modulename`\$`n");
-install_module($modulename, false);
-}
-rawoutput("</div>");
-*/
+/*
+   output("`n`2Now I'll install the recommended modules.");
+   output("Please note that these modules will be installed, but not activated.");
+   output("Once installation is complete, you should use the Module Manager found in the superuser grotto to activate those modules you wish to use.");
+   reset($recommended_modules);
+   rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
+   while (list($key,$modulename)=each($recommended_modules)){
+   output("`3Installing `#$modulename`\$`n");
+   install_module($modulename, false);
+   }
+   rawoutput("</div>");
+ */
 if (!$session['skipmodules']) {
-  output("`n`2Now I'll install and configure your modules.");
-  reset($session['moduleoperations']);
-  rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-  while (list($modulename,$val) = each($session['moduleoperations'])){
-	  $ops = explode(",",$val);
-	  reset($ops);
-	  while (list($trash,$op) = each($ops)){
-		  switch($op){
-			  case "uninstall":
-			  output("`3Uninstalling `#$modulename`3: ");
-			  if (uninstall_module($modulename)){
-				  output("`@OK!`0`n");
-			  }else{
-				  output("`\$Failed!`0`n");
-			  }
-			  break;
-			  case "install":
-			  output("`3Installing `#$modulename`3: ");
-			  if (install_module($modulename)){
-				  output("`@OK!`0`n");
-			  }else{
-				  output("`\$Failed!`0`n");
-			  }
-			  install_module($modulename);
-			  break;
-			  case "activate":
-			  output("`3Activating `#$modulename`3: ");
-			  if (activate_module($modulename)){
-				  output("`@OK!`0`n");
-			  }else{
-				  output("`\$Failed!`0`n");
-			  }
-			  break;
-			  case "deactivate":
-			  output("`3Deactivating `#$modulename`3: ");
-			  if (deactivate_module($modulename)){
-				  output("`@OK!`0`n");
-			  }else{
-				  output("`\$Failed!`0`n");
-			  }
-			  break;
-			  case "donothing":
-			  break;
-		  }
-	  }
-	  $session['moduleoperations'][$modulename] = "donothing";
-  }
-  rawoutput("</div>");
+	output("`n`2Now I'll install and configure your modules.");
+	reset($session['moduleoperations']);
+	rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
+	foreach($session['moduleoperations'] as $modulename=>$val){
+		$ops = explode(",",$val);
+		reset($ops);
+		foreach($ops as $op){
+			switch($op){
+				case "uninstall":
+					output("`3Uninstalling `#$modulename`3: ");
+					if (uninstall_module($modulename)){
+						output("`@OK!`0`n");
+					}else{
+						output("`\$Failed!`0`n");
+					}
+					break;
+				case "install":
+					output("`3Installing `#$modulename`3: ");
+					if (install_module($modulename)){
+						output("`@OK!`0`n");
+					}else{
+						output("`\$Failed!`0`n");
+					}
+					install_module($modulename);
+					break;
+				case "activate":
+					output("`3Activating `#$modulename`3: ");
+					if (activate_module($modulename)){
+						output("`@OK!`0`n");
+					}else{
+						output("`\$Failed!`0`n");
+					}
+					break;
+				case "deactivate":
+					output("`3Deactivating `#$modulename`3: ");
+					if (deactivate_module($modulename)){
+						output("`@OK!`0`n");
+					}else{
+						output("`\$Failed!`0`n");
+					}
+					break;
+				case "donothing":
+					break;
+			}
+		}
+		$session['moduleoperations'][$modulename] = "donothing";
+	}
+	rawoutput("</div>");
 }
 output("`n`2Finally, I'll clean up old data.`n");
 rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-reset($descriptors);
-while (list($tablename,$descriptor)=each($descriptors)){
+foreach($descriptors as $tablename=>$descriptor){
 	output("`3Cleaning up `#$tablename`3...`n");
 	synctable($tablename,$descriptor);
 }

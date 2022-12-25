@@ -89,9 +89,18 @@ function calculate_buff_fields(){
 						$val = $value;
 				}
 				if (!isset($output)) $output = "";
-				if ($output == "" && (string)$val != (string)$origstring){
-					$buffreplacements[$buffname][$property] = $origstring;
-					$session['bufflist'][$buffname][$property] = $val;
+				if ($output == "") {
+					$overwrite=true;
+					if (is_string($val) && is_string($origstring)) {
+						if ($val == $origstring) $overwrite=false;
+					}
+					if (is_array($val) && is_array($origstring)) {
+						if (array_diff($val,$origstring)==array()) $overwrite=false;
+					}
+					if ($overwrite) {
+						$buffreplacements[$buffname][$property] = $origstring;
+						$session['bufflist'][$buffname][$property] = $val;
+					}
 				}//end if
 				unset($val);
 			}//end foreach

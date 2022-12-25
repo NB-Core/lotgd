@@ -32,17 +32,19 @@ function show_backtrace(){
 		if ($x > 0 && $val['function'] != 'logd_error_handler'){
 			$return .= "<b>$x:</b> <span class='function'>{$val['function']}(";
 			$y=0;
-			if ($val['args'] && is_array($val['args'])) {
+			if (isset($val['args']) && $val['args'] && is_array($val['args'])) {
 				reset($val['args']);
 				foreach ($val['args'] as $k=>$v) {
 					if ($y > 0) $return.=", ";
 					$return.=backtrace_getType($v);
 					$y++;
 				}
-			} elseif ($val['args']) {
+			} elseif (isset($val['args']) && $val['args']) {
 				// If for some reason it's not an array, don't barf.
 				$return.=backtrace_getType($val['args']);
 			}
+			if (!isset($val['file'])) $val['file']="NO_FILE";
+			if (!isset($val['line'])) $val['line']="NO_LINE";
 			$return.=")</span>&nbsp;called from <b>{$val['file']}</b> on line <b>{$val['line']}</b><br>";
 		}
 		$x++;

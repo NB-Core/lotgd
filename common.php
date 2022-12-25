@@ -312,7 +312,7 @@ if (isset($session['user']['bufflist']))
 else
 	$session['bufflist'] = array();
 if (!is_array($session['bufflist'])) $session['bufflist']=array();
-$session['user']['lastip']=$REMOTE_ADDR;
+if (isset($REMOTE_ADDR)) $session['user']['lastip']=$REMOTE_ADDR;   //cron i.e. doesn't have an $REMOTE_ADDR
 if (!isset($_COOKIE['lgi']) || strlen($_COOKIE['lgi'])<32){
 	if (!isset($session['user']['uniqueid']) || strlen($session['user']['uniqueid'])<32){
 		$u=md5(microtime());
@@ -327,10 +327,16 @@ if (!isset($_COOKIE['lgi']) || strlen($_COOKIE['lgi'])<32){
 		$session['user']['uniqueid']=$_COOKIE['lgi'];
 	} 
 }
-$url = "http://".$_SERVER['SERVER_NAME'].dirname($_SERVER['REQUEST_URI']);
-$url = substr($url,0,strlen($url)-1);
-$urlport = "http://".$_SERVER['SERVER_NAME'].":".$_SERVER['SERVER_PORT'].dirname($_SERVER['REQUEST_URI']);
-$urlport = substr($urlport,0,strlen($urlport)-1);
+if (isset($_SERVER['SERVER_NAME'])) {
+	$url = "http://".$_SERVER['SERVER_NAME'].dirname($_SERVER['REQUEST_URI']);
+	$url = substr($url,0,strlen($url)-1);
+	$urlport = "http://".$_SERVER['SERVER_NAME'].":".$_SERVER['SERVER_PORT'].dirname($_SERVER['REQUEST_URI']);
+	$urlport = substr($urlport,0,strlen($urlport)-1);
+} else {
+	//cron access or such via cli
+	$url="";
+	$urlport="";
+}
 
 if (!isset($_SERVER['HTTP_REFERER'])) $_SERVER['HTTP_REFERER'] = "";
 

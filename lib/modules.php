@@ -78,7 +78,7 @@ function injectmodule($modulename,$force=false){
 				$result = db_query($sql);
 				$row = db_fetch_assoc($result);
 				if ($row['filemoddate']!=$filemoddate ||
-						$row['infokeys']=="" || $row['infokeys'][0] != '|' ||
+						!isset($row['infokeys']) || $row['infokeys']=="" || $row['infokeys'][0] != '|' ||
 						$row['version']==''){
 					//the file mod time is still different from that
 					//recorded in the database, time to update the database
@@ -100,7 +100,7 @@ function injectmodule($modulename,$force=false){
 					//we'll update, and on their second check, they'll fail.
 					//Only we will update the table.
 
-					$keys = "|".join(array_keys($info), "|")."|";
+					$keys = "|".implode("|",array_keys($info))."|";
 
 					$sql = "UPDATE ". db_prefix("modules") . " SET moduleauthor='".addslashes($info['author'])."', category='".addslashes($info['category'])."', formalname='".addslashes($info['name'])."', description='".addslashes($info['description'])."', filemoddate='$filemoddate', infokeys='$keys',version='".addslashes($info['version'])."',download='".addslashes($info['download'])."' WHERE modulename='$modulename'";
 					db_query($sql);
@@ -328,12 +328,12 @@ function mass_module_prepare($hooknames){
 		ON	$Pmodules.modulename = $Pmodule_hooks.modulename
 		WHERE
 			active = 1
-		AND	location IN ('".join("', '",$hooknames)."')
+		AND	location IN ('".implode("', '",$hooknames)."')
 		ORDER BY
 			$Pmodule_hooks.location,
 			$Pmodule_hooks.priority,
 			$Pmodule_hooks.modulename";
-	$result = db_query_cached($sql,"module_prepare-".md5(join($hooknames)));
+	$result = db_query_cached($sql,"module_prepare-".md5(implode("",$hooknames)));
 	$modulenames = array();
 	while ($row = db_fetch_assoc($result)){
 		$modulenames[$row['modulename']] = $row['modulename'];
@@ -348,7 +348,7 @@ function mass_module_prepare($hooknames){
 		$module_preload[$row['location']][$row['modulename']] = $row['function'];
 	}
 	//SQL IN() syntax for the modules involved here.
-	$modulelist = "'".join("', '",$modulenames)."'";
+	$modulelist = "'".implode("', '",$modulenames)."'";
 
 	//Load the settings for the modules on these hooks.
 	$sql =
@@ -737,16 +737,18 @@ function get_all_module_prefs($module=false,$user=false){
 function get_module_pref($name,$module=false,$user=false){
 	global $module_prefs,$mostrecentmodule,$session;
 	if ($module === false) $module = $mostrecentmodule;
-	if ($user===false) $user = $session['user']['acctid'];
+	if ($user===false) {
+		if (isset($session['user']['acctid'])) $user = $session['user']['acctid'];
+	}
 
-	if (isset($module_prefs[$user][$module][$name])) {
+	if ($user!==false && isset($module_prefs[$user][$module][$name])) {
 		return $module_prefs[$user][$module][$name];
 	}
 
 	//load here, not before
-	load_module_prefs($module,$user);
+	if ($user!== false) load_module_prefs($module,$user);
 	//check if *now* it's loaded
-	if (isset($module_prefs[$user][$module][$name])) {
+	if ($user!== false && isset($module_prefs[$user][$module][$name])) {
 		return $module_prefs[$user][$module][$name];
 	}
 
@@ -761,7 +763,7 @@ function get_module_pref($name,$module=false,$user=false){
 		} else {
 			$x = explode("|",$info['prefs'][$name]);
 		}
-		if (isset($x[1])){
+		if ($user!==false && isset($x[1])){
 			set_module_pref($name,$x[1],$module,$user);
 			return $x[1];
 		}
@@ -1350,7 +1352,7 @@ function install_module($module, $force=true){
 				output("`\$Module could not installed -- it did not meet its prerequisites.`n");
 				return false;
 			}else{
-				$keys = "|".join(array_keys($info), "|")."|";
+				$keys = "|".implode("|", array_keys($info))."|";
 				$sql = "INSERT INTO " . db_prefix("modules") . " (modulename,formalname,moduleauthor,active,filename,installdate,installedby,category,infokeys,version,download,description) VALUES ('$mostrecentmodule','".addslashes($info['name'])."','".addslashes($info['author'])."',0,'{$mostrecentmodule}.php','".date("Y-m-d H:i:s")."','".addslashes($name)."','".addslashes($info['category'])."','$keys','".addslashes($info['version'])."','".addslashes($info['download'])."', '".addslashes($info['description'])."')";
 				$result=db_query($sql);
 				if (!$result) {

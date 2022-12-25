@@ -60,8 +60,9 @@ if ($db_num_rows>0){
 		if ((int)$row['msgfrom']==0){
 			$row['name']=translate_inline("`i`^System`0`i");
 			// Only translate the subject if it's an array, ie, it came from the game.
-			$row_subject = @unserialize($row['subject']);
-			if ($row_subject !== false) {
+			if (isset($row['subject'])) $row_subject = @unserialize($row['subject']);
+				else $row_subject="";
+			if ($row_subject !== false && $row_subject!=null) {
 				$row['subject'] = call_user_func_array("sprintf_translate", $row_subject);
 			}
 		} elseif ($row['name']=='') {

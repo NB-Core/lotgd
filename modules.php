@@ -91,7 +91,6 @@ $uninstmodules = $install_status['uninstalledmodules'];
 $seencats = $install_status['installedcategories'];
 $ucount = $install_status['uninstcount'];
 
-ksort($seencats);
 addnav(array(" ?Uninstalled - (%s modules)", $ucount), "modules.php");
 foreach ($seencats as $cat=>$count) {
 	$category = $cat;

@@ -12,7 +12,7 @@ function set_magic_quotes(&$vars) {
 		foreach ($vars as $key=>$val)
 			set_magic_quotes($vars[$key]);
 	}else{
-		$vars = addslashes($vars);
+		if (isset($vars))$vars = addslashes($vars);
 	}
 }
 

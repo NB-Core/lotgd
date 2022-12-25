@@ -1,6 +1,6 @@
 <?php
 class ServerFunctions {
-	function isTheServerFull() {
+	public static function isTheServerFull() {
 		if (abs(getsetting("OnlineCountLast",0) - strtotime("now")) > 60){
 			$sql="SELECT count(acctid) as counter FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."'";
 			$result = db_query($sql);
@@ -15,7 +15,7 @@ class ServerFunctions {
 		return false;
 	}
 
-	function resetAllDragonkillPoints($acctid=false) {
+	public static function resetAllDragonkillPoints($acctid=false) {
 		if ($acctid===false) {
 			$where="";
 		} elseif (is_array($acctid)) {

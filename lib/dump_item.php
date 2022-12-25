@@ -4,11 +4,9 @@
 // mail ready
 function dump_item($item){
 	$out = "";
-	if (is_array($item)) $temp = $item;
-	else $temp = @unserialize($item);
-	if (is_array($temp)) {
-		$out .= "array(" . count($temp) . ") {<div style='padding-left: 20pt;'>";
-		foreach ($temp as $key=>$val) {
+	if (is_array($item)) {
+		$out .= "array(" . count($item) . ") {<div style='padding-left: 20pt;'>";
+		foreach ($item as $key=>$val) {
 			$out .= "'$key' = '" . dump_item($val) . "'`n";
 		}
 		$out .= "</div>}";

@@ -122,14 +122,12 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			$pretrans = 1;
 			// FALLTHROUGH
 		case "checklist":
-			reset($info);
-			list($k,$v)=each($info);
-			list($k,$v)=each($info);
+			$inf_list = $info;
+			array_shift($inf_list);
+			array_shift($inf_list);
 			$select="";
-			while (list($k,$v)=each($info)){
-				$optval = $v;
-				list($k,$v)=each($info);
-				$optdis = $v;
+			while($optval = array_shift($inf_list)){
+				$optdis = $array_shift($inf_list);
 				if (!$pretrans) $optdis = translate_inline($optdis);
 				if (is_array($row[$key])){
 					if ($row[$key][$optval]) {
@@ -150,14 +148,12 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			$pretrans = 1;
 			// FALLTHROUGH
 		case "radio":
-			reset($info);
-			list($k,$v)=each($info);
-			list($k,$v)=each($info);
+			$inf_list = $info;
+			array_shift($inf_list);
+			array_shift($inf_list);
 			$select="";
-			while (list($k,$v)=each($info)){
-				$optval = $v;
-				list($k,$v)=each($info);
-				$optdis = $v;
+			while($optval = array_shift($inf_list)){
+				$optdis = $array_shift($inf_list);
 				if (!$pretrans) $optdis = translate_inline($optdis);
 				$select.=("<input type='radio' name='$keyout' value='$optval'".($row[$key]==$optval?" checked":"").">&nbsp;".("$optdis")."<br>");
 			}
@@ -215,17 +211,17 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			//DisplayName,bitfield,disablemask,(highbit,display)+
 			//1-26-03 added disablemask so this field type can be used
 			// on bitfields other than superuser.
-			reset($info);
-			list($k,$v)=each($info);
-			list($k,$v)=each($info);
-			list($k,$disablemask)=each($info);
+			$inf_list = $info;
+			array_shift($inf_list);
+			array_shift($inf_list);
+			$disablemask = array_shift($inf_list);
 			rawoutput("<input type='hidden' name='$keyout"."[0]' value='1'>", true);
-			while (list($k,$v)=each($info)){
+			while($v = array_shift($inf_list)){
 				rawoutput("<input type='checkbox' name='$keyout"."[$v]'"
 					.((int)$row[$key] & (int)$v?" checked":"")
 					.($disablemask & (int)$v?"":" disabled")
 					." value='1'> ");
-				list($k,$v)=each($info);
+				$v = array_shift($inf_list);
 				if (!$pretrans) $v = translate_inline($v);
 				output_notl("%s`n",$v,true);
 			}
@@ -262,18 +258,14 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			$pretrans = 1;
 		    // FALLTHROUGH
 		case "enum":
-			reset($info);
-			list($k,$v)=each($info);
-			list($k,$v)=each($info);
+			$inf_list = $info;
+			array_shift($inf_list);
+			array_shift($inf_list);
 			$select="";
 			$select.=("<select name='$keyout'>");
-			while (list($k,$v)=each($info)){
-				$optval = $v;
-				list($k,$v)=each($info);
-				$optdis = $v;
-				if (!$pretrans) {
-					$optdis = translate_inline($optdis);
-				}
+			while($optval = array_shift($inf_list)){
+				$optdis = $array_shift($inf_list);
+				if (!$pretrans) $optdis = translate_inline($optdis);
 				$selected = 0;
 				if (isset($row[$key]) && $row[$key] == $optval)
 					$selected = 1;

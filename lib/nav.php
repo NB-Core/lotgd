@@ -321,6 +321,7 @@ function buildnavs(){
 			$sublinks = "";
 			foreach ($val as $v) {
 				if (is_array($v) && count($v)>0){
+					unset($v['translate']); // not a parameter for private_addnav, we need to remove it
 					$sublinks .=   call_user_func_array("private_addnav",$v);
 				}//end if
 			}//end foreach

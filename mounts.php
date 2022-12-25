@@ -83,7 +83,7 @@ if ($op=="deactivate"){
 		$mount = httppost('mount');
 		if ($mount) {
 			reset($mount['mountbuff']);
-			while (list($key,$val)=each($mount['mountbuff'])){
+			foreach($mount['mountbuff'] as $key=>$val){
 				if ($val>""){
 					$buff[$key]=stripslashes($val);
 				}
@@ -112,8 +112,7 @@ if ($op=="deactivate"){
 		$module = httpget("module");
 		$post = httpallpost();
 		unset($post['showFormTabIndex']);
-		reset($post);
-		while(list($key, $val) = each($post)) {
+		foreach($post as $key=>$val) {
 			set_module_objpref("mounts", $id, $key, $val, $module);
 		}
 		output("`^Saved!`0`n");
@@ -227,7 +226,7 @@ if ($op==""){
 		}
 		rawoutput("</td><td nowrap>");
 		$file = "mounts.php?op=xml&id=".$row['mountid'];
-		rawoutput("<div id='mountusers$i'><a href='$file' target='_blank' onClick=\"getUserInfo('".$row{'mountid'}."', $i); return false\">");
+		rawoutput("<div id='mountusers$i'><a href='$file' target='_blank' onClick=\"getUserInfo('".$row['mountid']."', $i); return false\">");
  		output_notl("`#%s`0", $mounts[$row['mountid']]);
 		addnav("", $file);
 		rawoutput("</a></div>");

@@ -12,7 +12,9 @@ require_once("common.php");
 $cron_args=$argv;
 array_shift($cron_args);
 
-if (is_array($cron_args) && $count($cron_args)<1) {
+exit();
+
+if (is_array($cron_args) && count($cron_args)<1) {
 	$executionstyle=CRON_NEWDAY | CRON_DBCLEANUP | CRON_COMMENTCLEANUP | CRON_CHARCLEANUP;
 } else {
 	//write in the first argument the style - the defines above will guide your way. No argument means "do all now"

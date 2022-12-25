@@ -194,6 +194,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
  	global $session,$REQUEST_URI,$doublepost, $translation_namespace;
 	global $emptypost;
 
+	if ($section==null) return; //nothing to do
 	//some words on AJAX requests
 	//the handling here is easy for website admins, not very great for developer
 	//SCRIPT_NAME is bad if you want to use an AJAX handling, also we need the return value for our object response
