@@ -127,7 +127,7 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			array_shift($inf_list);
 			$select="";
 			while($optval = array_shift($inf_list)){
-				$optdis = $array_shift($inf_list);
+				$optdis = array_shift($inf_list);
 				if (!$pretrans) $optdis = translate_inline($optdis);
 				if (is_array($row[$key])){
 					if ($row[$key][$optval]) {
@@ -153,7 +153,7 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			array_shift($inf_list);
 			$select="";
 			while($optval = array_shift($inf_list)){
-				$optdis = $array_shift($inf_list);
+				$optdis = array_shift($inf_list);
 				if (!$pretrans) $optdis = translate_inline($optdis);
 				$select.=("<input type='radio' name='$keyout' value='$optval'".($row[$key]==$optval?" checked":"").">&nbsp;".("$optdis")."<br>");
 			}
@@ -264,7 +264,7 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			$select="";
 			$select.=("<select name='$keyout'>");
 			while($optval = array_shift($inf_list)){
-				$optdis = $array_shift($inf_list);
+				$optdis = array_shift($inf_list);
 				if (!$pretrans) $optdis = translate_inline($optdis);
 				$selected = 0;
 				if (isset($row[$key]) && $row[$key] == $optval)
