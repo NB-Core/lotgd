@@ -45,8 +45,10 @@ if (getsetting("homenewestplayer", 1)) {
 	if ($newplayer != 0) {
 		$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid='$newplayer'";
 		$result = db_query_cached($sql, "newest");
-		$row = db_fetch_assoc($result);
-		$name = $row['name'];
+		if (db_num_rows($result)>0) {
+			$row = db_fetch_assoc($result);
+			$name = $row['name'];
+		}
 	} else {
 		$name = $newplayer;
 	}
