@@ -7,7 +7,8 @@ require_once("lib/settings.class.php");
 
 function savesetting($settingname,$value){
 	global $settings;
-	if (is_a($settings,"settings")) $settings->saveSetting($settingname,$value);
+	if (!is_a($settings,"settings")) $settings=new settings("settings");
+	$settings->saveSetting($settingname,$value);
 }
 
 function loadsettings(){
