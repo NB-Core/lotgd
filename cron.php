@@ -12,8 +12,6 @@ require_once("common.php");
 $cron_args=$argv;
 array_shift($cron_args);
 
-exit();
-
 if (is_array($cron_args) && count($cron_args)<1) {
 	$executionstyle=CRON_NEWDAY | CRON_DBCLEANUP | CRON_COMMENTCLEANUP | CRON_CHARCLEANUP;
 } else {
