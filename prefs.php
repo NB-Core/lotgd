@@ -332,7 +332,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	while ($row = db_fetch_assoc($result)) {
 		$module = $row['modulename'];
 		$info = get_module_info($module);
-		if (count($info['prefs']) <= 0) continue;
+		if (!isset($info['prefs']) || count($info['prefs']) <= 0) continue;
 		$tempsettings = array();
 		$tempdata = array();
 		$found = 0;
