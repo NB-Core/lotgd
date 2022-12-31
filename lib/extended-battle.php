@@ -25,13 +25,13 @@ function show_enemies($enemies) {
 			$ccode = "`#";
 		else
 			$ccode = "`2";
+		if (!isset($badguy['creaturemaxhealth']) && isset($badguy['creaturehealth'])) $badguy['creaturemaxhealth'] = $badguy['creaturehealth'];
 		if (isset($badguy['hidehitpoints']) && $badguy['hidehitpoints'] == true) {
 			$maxhealth = $health = "???";
 		} else {
 			$health = $badguy['creaturehealth'];
 			$maxhealth = $badguy['creaturemaxhealth'];
 		}
-		if (!isset($badguy['creaturemaxhealth']) && isset($badguy['creaturehealth'])) $badguy['creaturemaxhealth'] = $badguy['creaturehealth'];
 		if (isset($session['user']['prefs']['forestcreaturebar'])) {
 			$barDisplay=(int)$session['user']['prefs']['forestcreaturebar'];
 		} else {

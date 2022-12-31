@@ -33,6 +33,7 @@ $stats[]=array("title"=>"Total Pages generated for you:","value"=>$user['gentime
 $stats[]=array("title"=>"How long did these pages take to generate:","value"=>readabletime($user['gentime']));
 $stats[]=array("title"=>"You are Account Number:","value"=>($user['acctid']-1));
 //Add the count summary for DKs
+$dksummary="";
 if ($user['dragonkills']>0) $dragonpointssummary=array_count_values($user['dragonpoints']);
 	else $dragonpointssummary=array();
 foreach ($dragonpointssummary as $key=>$value) {

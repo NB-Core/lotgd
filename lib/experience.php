@@ -13,6 +13,7 @@
  */
 function exp_for_next_level($curlevel, $curdk) {
 	require_once("lib/datacache.php");
+	if ($curlevel < 1) $curlevel = 1; //seems sometimes it gets called with 0 after an oro kill
 	$stored=datacache("exparraydk".$curdk); //fetch all for that DK if already calculated!
 	if ($stored!== false && is_array($stored)) { //check if datacache is here 
 		//fine
@@ -26,7 +27,6 @@ function exp_for_next_level($curlevel, $curdk) {
 		$exparray=explode(',',$expstring);
 		if (count($exparray)<getsetting('maxlevel',15))
 	
-		if ($curlevel < 1) return 0;
 
 		foreach ($exparray as $key=>$val) {
 			$exparray[$key] = round($val + ($curdk/4) * ($key+1) * 100, 0);
