@@ -769,7 +769,7 @@ return array(
 			'name'=>'field', 'type'=>'varchar(20)', 'null'=>'0', 'default'=>''
 			),
 		'value'=>array(
-			'name'=>'value', 'type'=>'float(9,2)', 'null'=>'0', 'default'=>'0.00'
+			'name'=>'value', 'type'=>'float(13,2)', 'null'=>'0', 'default'=>'0.00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -807,7 +807,7 @@ return array(
 			'name'=>'field', 'type'=>'varchar(20)', 'null'=>'0', 'default'=>''
 			),
 		'value'=>array(
-			'name'=>'value', 'type'=>'float(9,2)', 'null'=>'0', 'default'=>'0.00'
+			'name'=>'value', 'type'=>'float(13,2)', 'null'=>'0', 'default'=>'0.00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',

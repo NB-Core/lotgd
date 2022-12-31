@@ -349,7 +349,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 			if (!is_array($mynewcompanions)) $mynewcompanions = array();
 			$healed = false;
 			foreach ($mynewcompanions as $myname => $mycompanion) {
-				if ($mycompanion['hitpoints'] >= $mycompanion['maxhitpoints'] || $healed || (isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true)) {
+				if (!isset($mycompanion['hitpoints']) || !isset($mycompanion['maxhitpoints']) || $mycompanion['hitpoints'] >= $mycompanion['maxhitpoints'] || $healed || (isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true)) {
 					continue;
 				} else {
 					$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints]']);

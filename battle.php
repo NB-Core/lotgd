@@ -435,7 +435,7 @@ if ($op != "newtarget") {
 				$enemiesflown=true;
 				$needtostopfighting=true;
 			}
-			if (getsetting("instantexp",false) == true) {
+			if (getsetting("instantexp",false) == true && isset($verynewenemies)) {
 				$newenemies = $verynewenemies;
 			}
 		}

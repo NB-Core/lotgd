@@ -520,7 +520,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				$starttime = getmicrotime();
 				/*******************************************************/
 				if (function_exists($row['function'])) {
-					if ($session['user']['superuser'] & SU_DEBUG_OUTPUT){
+					if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_DEBUG_OUTPUT){
 						rawoutput("<!-- Hook: ".$hookname." on module ".$row['function']." called... -->");
 					}
 					$res = $row['function']($hookname, $args);

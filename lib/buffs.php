@@ -88,7 +88,7 @@ function calculate_buff_fields(){
 					if ((substr($l, 3) == "nan") || (substr($l, -3) == "inf"))
 						$val = $value;
 				}
-				if (!isset($output)) $output = "";
+				if (!isset($output)) $output = ""; //not global, not locally defined, so never defined? what is this doing here?
 				if ($output == "") {
 					$overwrite=true;
 					if (is_string($val) && is_string($origstring)) {
@@ -96,6 +96,11 @@ function calculate_buff_fields(){
 					}
 					if (is_array($val) && is_array($origstring)) {
 						if (array_diff($val,$origstring)==array()) $overwrite=false;
+					} else {
+						//hopefully 
+						//cause dumbo lotgd only stores numbers as strings, which in php8 are of course not the same, and I hate casting everything to string
+						//in this instance, bufflist 'rounds' were used as number, but always stored as string, causing them to always get overwritten
+						if ((string)$val == (string) $origstring) $overwrite=false;
 					}
 					if ($overwrite) {
 						$buffreplacements[$buffname][$property] = $origstring;
@@ -107,15 +112,12 @@ function calculate_buff_fields(){
 			$session['bufflist'][$buffname]['fields_calculated']=true;
 		}//end if
 	}//end foreach
-
 }//end function
 
 function restore_buff_fields(){
 	global $session, $buffreplacements;
-	if (is_array($buffreplacements)){
-		reset($buffreplacements);
+	if (isset($buffreplacements) && is_array($buffreplacements)){
 		foreach ($buffreplacements as $buffname=>$val) {
-			reset($val);
 			foreach ($val as $property=>$value) {
 				if (isset($session['bufflist'][$buffname])){
 					$session['bufflist'][$buffname][$property] = $value;
@@ -127,10 +129,9 @@ function restore_buff_fields(){
 	}//end if
 
 	//restore temp stats
-	if (!isset($session['bufflist']) || !$session['bufflist']) $session['bufflist'] = array();
+	if (!isset($session['bufflist']) || !is_array($session['bufflist'])) $session['bufflist'] = array();
 	foreach ($session['bufflist'] as $buffname=>$buff) {
 		if (array_key_exists("tempstats_calculated",$buff) && $buff['tempstats_calculated']){
-			reset($buff);
 			foreach ($buff as $property=>$value) {
 				if (substr($property,0,9)=='tempstat-'){
 					apply_temp_stat(substr($property,9),-$value);
