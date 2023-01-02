@@ -18,8 +18,15 @@ function apply_temp_stat($name,$value,$type="add"){
 		else
 			$temp[$name] += $value;
 
-		if (!$temp_user_stats['is_suspended'])
-			$session['user'][$name] += $value;
+		if (!$temp_user_stats['is_suspended']) {
+			if (isset($session['user'][$name])) {
+				$session['user'][$name] += $value;
+			} else {
+				//tried to buff something that cannot be buffed
+				debug("Temp stat $name is not supported to $type.");
+				return false;
+			}
+		}
 		return true;
 	}else{
 		debug("Temp stat type $type is not supported.");
@@ -68,7 +75,7 @@ function restore_temp_stats(){
 	global $session, $temp_user_stats;
 	if ($temp_user_stats['is_suspended']){
 		reset($temp_user_stats);
-		 foreach ($temp_user_stats as $type=>$collection) {
+		foreach ($temp_user_stats as $type=>$collection) {
 			if ($type=='add'){
 				reset($collection);
 				foreach ($collection as $attribute=>$value) {
