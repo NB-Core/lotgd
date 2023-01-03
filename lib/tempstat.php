@@ -24,6 +24,7 @@ function apply_temp_stat($name,$value,$type="add"){
 			} else {
 				//tried to buff something that cannot be buffed
 				debug("Temp stat $name is not supported to $type.");
+				unset($temp[$name]);
 				return false;
 			}
 		}

@@ -9,7 +9,7 @@
 		$setrank = (int) httppost('setrank');
 		if ($setrank===0) $setrank = (int) httpget('setrank');
 		$whoacctid = (int)httpget('whoacctid');
-		if ($setrank>=0 && $setrank<=$session['user']['clanrank']) {
+		if ($whoacctid>0 && $setrank>=0 && $setrank<=$session['user']['clanrank']) {
 			$sql="SELECT name,login,clanrank FROM ".db_prefix("accounts")." WHERE acctid=$whoacctid LIMIT 1";
 			$result=db_query($sql);
 			$row=db_fetch_assoc($result);
