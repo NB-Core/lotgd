@@ -456,6 +456,8 @@ function popup_footer(){
 
 	$headscript='';
 	$footer = $template['popupfoot'];
+	$pre_headscript='';
+	$maillink_add_after='';
 	//add AJAX stuff
 	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 		if (file_exists('ext/ajax_base_setup.php')) {

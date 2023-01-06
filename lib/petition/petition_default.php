@@ -5,7 +5,7 @@ $post = httpallpost();
 if (count($post)>0 && httppost('abuse')!="yes"){
 	$ip = explode(".",$_SERVER['REMOTE_ADDR']);
 	array_pop($ip);
-	$ip = join($ip,".").".";
+	$ip = implode(".",$ip).".";
 	$sql = "SELECT count(petitionid) AS c FROM ".db_prefix("petitions")." WHERE (ip LIKE '$ip%' OR id = '".addslashes($_COOKIE['lgi'])."') AND date > '".date("Y-m-d H:i:s",strtotime("-1 day"))."'";
 	$result = db_query($sql);
 	$row = db_fetch_assoc($result);
@@ -75,9 +75,9 @@ if (count($post)>0 && httppost('abuse')!="yes"){
 		rawoutput("<input type='hidden' name='email' value=\"".htmlentities($session['user']['emailaddress'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
 	} else {
 		output("Your Character's Name: ");
-		rawoutput("<input name='charname' value=\"".htmlentities($session['user']['name'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\" size='46'>");
+		rawoutput("<input name='charname' size='46'>");
 		output("`nYour email address: ");
-		rawoutput("<input name='email' value=\"".htmlentities($session['user']['emailaddress'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\" size='50'>");
+		rawoutput("<input name='email' size='50'>");
 		$nolog = translate_inline("Character is not logged in!!");
 		rawoutput("<input name='unverified' type='hidden' value='$nolog'>");
 	}
