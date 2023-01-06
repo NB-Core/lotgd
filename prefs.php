@@ -310,10 +310,10 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	if ($prefs['sexuality'] == "") {
 		$prefs['sexuality'] = !$session['user']['sex'];
 	}
-	if ($prefs['mailwidth'] == "") {
+	if (!isset($prefs['mailwidth']) || $prefs['mailwidth'] == "") {
 		$prefs['mailwidth'] = 60;
 	}
-	if ($prefs['mailheight'] == "") {
+	if (!isset($prefs['mailheight']) || $prefs['mailheight'] == "") {
 		$prefs['mailheight'] = 9;
 	}
 	$prefs['email'] = $session['user']['emailaddress'];
