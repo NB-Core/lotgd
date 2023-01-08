@@ -86,6 +86,7 @@ if (abs(getsetting("OnlineCountLast",0) - strtotime("now")) > 60){
 if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 	output("Enter your name and password to enter the realm.`n");
 	if ($op=="timeout"){
+		if (!isset($session['message'])) $session['message']='';
 		$session['message'].= translate_inline(" Your session has timed out, you must log in again.`n");
 	}
 	if (!isset($_COOKIE['lgi'])){
