@@ -263,14 +263,19 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			array_shift($inf_list);
 			$select="";
 			$select.=("<select name='$keyout'>");
-			while($optval = array_shift($inf_list)){
-				$optdis = array_shift($inf_list);
+			$optval='';
+			foreach($inf_list as $optdis) {
+				if ($optval=='') {
+					$optval = $optdis;
+					continue;
+				}
 				if (!$pretrans) $optdis = translate_inline($optdis);
 				$selected = 0;
 				if (isset($row[$key]) && $row[$key] == $optval)
 					$selected = 1;
 
 				$select.=("<option value='$optval'".($selected?" selected":"").">".HTMLEntities("$optdis", ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</option>");
+				$optval='';
 			}
 			$select.="</select>";
 			rawoutput($select);

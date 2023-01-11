@@ -126,8 +126,11 @@ function activate_buffs($tag) {
 			$session['user']['hitpoints'] += $hptoregen;
 			// Now, take abs value just incase this was a damaging buff
 			$hptoregen = abs($hptoregen);
-			if ($hptoregen == 0) $msg = (isset($buff['effectnodmgmsg'])?$buff['effectnodmgmsg']:translate_inline("No damage, hosé"));
-			else $msg = $buff['effectmsg'];
+			if ($hptoregen == 0) {
+				$msg = (isset($buff['effectnodmgmsg'])?$buff['effectnodmgmsg']:translate_inline("No damage, hosé"));
+			} else {
+				$msg = (isset($buff['effectgmsg'])?$buff['effectmsg']:translate_inline("Tons of damage, hosé"));
+			}
 
 			if (is_array($msg)) {
 				$msg = sprintf_translate($msg);

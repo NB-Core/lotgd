@@ -57,13 +57,13 @@ if (is_array($row)){
 rawoutput("<form action='mail.php?op=send' method='post'>");
 rawoutput("<input type='hidden' name='returnto' value=\"".htmlentities(stripslashes($msgid), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
 $superusers = array();
-if (isset($row['login']) && $row['login']!=""){
+if (isset($row['login']) && $row['login']!="" && $forwardto==0){
 	output_notl("<input type='hidden' name='to' id='to' value=\"".htmlentities($row['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">",true);
 	output("`2To: `^%s`n",$row['name']);
 	if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
 		array_push($superusers,$row['login']);
 	}
-}else{
+}else{ 
 	output("`2To: ");
 	$to = httppost('to');
 	$sql = "SELECT login,name,superuser FROM ".db_prefix('accounts')." WHERE login = '".addslashes($to)."' AND locked = 0";
