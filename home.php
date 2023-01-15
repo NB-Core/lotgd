@@ -20,6 +20,7 @@ if (!isset($session['loggedin'])) $session['loggedin']=false;
 if ($session['loggedin']){
 	redirect("badnav.php");
 }
+if (!isset($session['message'])) $session['message']='';
 
 tlschema("home");
 

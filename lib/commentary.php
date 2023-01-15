@@ -164,15 +164,16 @@ function injectcommentary($section, $talkline, $comment, $schema=false) {
 			$commentary = $args['commentary'];
 			$sql = "SELECT comment,author FROM " . db_prefix("commentary") . " WHERE section='$section' ORDER BY commentid DESC LIMIT 1";
 			$result = db_query($sql);
-			$row = db_fetch_assoc($result);
-			db_free_result($result);
-			if ($row['comment']!=stripslashes($commentary) ||
-					$row['author']!=$session['user']['acctid']){
-				injectrawcomment($section, $session['user']['acctid'],
-						$commentary);
-				$session['user']['laston']=date("Y-m-d H:i:s");
-			} else {
-				$doublepost = 1;
+			if (db_num_rows($result)>0) {
+				$row = db_fetch_assoc($result);
+				if ($row['comment']!=stripslashes($commentary) ||
+						$row['author']!=$session['user']['acctid']){
+					injectrawcomment($section, $session['user']['acctid'],
+							$commentary);
+					$session['user']['laston']=date("Y-m-d H:i:s");
+				} else {
+					$doublepost = 1;
+				}
 			}
 		}
 		tlschema();

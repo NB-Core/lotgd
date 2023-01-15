@@ -25,7 +25,6 @@ page_header("Preferences");
 $op = httpget('op');
 
 addnav("Navigation");
-
 if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	$userid = httpget('userid');
 	require_once("lib/charcleanup.php");
@@ -304,7 +303,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	//
 	$prefs = $session['user']['prefs'];
 	$prefs['bio'] = $session['user']['bio'];
-	$prefs['template'] = $_COOKIE['template'];
+	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
 	if ($prefs['template'] == "")
 		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
 	if ($prefs['sexuality'] == "") {
