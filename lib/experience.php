@@ -13,7 +13,6 @@
  */
 function exp_for_next_level($curlevel, $curdk) {
 	require_once("lib/datacache.php");
-	if ($curlevel < 1) $curlevel = 1; //seems sometimes it gets called with 0 after an oro kill
 	$stored=datacache("exparraydk".$curdk); //fetch all for that DK if already calculated!
 	if ($stored!== false && is_array($stored)) { //check if datacache is here 
 						     //fine
@@ -42,7 +41,7 @@ function exp_for_next_level($curlevel, $curdk) {
 	}
 	//if we are at max level and it's no more progress
 	if (count($exparray)>$curlevel) {
-		$exprequired = $exparray[$curlevel-1];
+		$exprequired = $exparray[max(0,$curlevel-1)]; //if you are level 1 and want to get the exp for level "0", it won't work. it's level 1
 	} else {
 		//return last entry
 		$exprequired = array_pop($exparray);

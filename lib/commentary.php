@@ -174,6 +174,9 @@ function injectcommentary($section, $talkline, $comment, $schema=false) {
 				} else {
 					$doublepost = 1;
 				}
+			} else {
+				injectrawcomment($section, $session['user']['acctid'],
+							$commentary);
 			}
 		}
 		tlschema();
@@ -333,7 +336,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	$counttoday=0;
 	for ($i=0; $i < $rowcount; $i++){
 		$row = $commentbuffer[$i];
-		if ($row['acctid']===$session['user']['acctid'] && $is_gm) $gm_array[]=$i;
+		if (isset($row['acctid']) && isset($session['user']['acctid']) && $row['acctid']===$session['user']['acctid'] && $is_gm) $gm_array[]=$i;
 		$row['comment'] = comment_sanitize($row['comment']);
 		$row['comment'] = sanitize_mb($row['comment']); //bad storage or whatnot
 		$commentids[$i] = $row['commentid'];
@@ -408,7 +411,8 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 				$op[$i] = "`&{$row['name']}`3 says, \"`#".str_replace("&amp;","&",HTMLEntities($row['comment'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`3\"`0`n";
 			$rawc[$i] = "`&{$row['name']}`3 says, \"`#".str_replace("&amp;","&",HTMLEntities($row['comment'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."`3\"`0`n";
 		}
-		$session['user']['prefs']['timeoffset'] = round($session['user']['prefs']['timeoffset'],1);
+		if (isset($session['user']['prefs']['timeoffset'])) $session['user']['prefs']['timeoffset'] = round($session['user']['prefs']['timeoffset'],1);
+			else $session['user']['prefs']['timeoffset']=0;
 
 		if (!array_key_exists('timestamp', $session['user']['prefs']))
 			$session['user']['prefs']['timestamp'] = 0;
@@ -424,7 +428,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		}
 		if ($message=="X")
 			$op[$i]="`0({$row['section']}) ".$op[$i];
-		if ($row['postdate']>=$session['user']['recentcomments'])
+		if (isset($session['user']['recentcomments']) && $row['postdate']>=$session['user']['recentcomments'])
 			$op[$i]="<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> ".$op[$i];
 		addnav("",$link);
 		$auth[$i] = $row['author'];
