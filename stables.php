@@ -194,7 +194,7 @@ if ($op == 'confirmbuy') {
 	} elseif($session['user']['gold']>=$grubprice) {
 		$buff = unserialize($playermount['mountbuff']);
 		if ($buff['schema'] == "") $buff['schema'] = "mounts";
-		if ($session['bufflist']['mount']['rounds'] == $buff['rounds']) {
+		if (isset($session['bufflist']['mount']['rounds']) && $session['bufflist']['mount']['rounds'] == $buff['rounds']) {
 			tlschema($schemas['nothungry']);
 			output($texts['nothungry'],$name);
 			tlschema();

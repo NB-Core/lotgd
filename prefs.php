@@ -304,9 +304,9 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	$prefs = $session['user']['prefs'];
 	$prefs['bio'] = $session['user']['bio'];
 	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
-	if ($prefs['template'] == "")
+	if (!isset($prefs['template']) || $prefs['template'] == "")
 		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-	if ($prefs['sexuality'] == "") {
+	if (!isset($prefs['sexuality']) || $prefs['sexuality'] == "") {
 		$prefs['sexuality'] = !$session['user']['sex'];
 	}
 	if (!isset($prefs['mailwidth']) || $prefs['mailwidth'] == "") {

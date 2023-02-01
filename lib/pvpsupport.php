@@ -175,7 +175,7 @@ function pvpdefeat($badguy, $killedloc, $taunt, $options=false)
 
 	$lostexp = round($session['user']['experience'] * getsetting("pvpattlose",15) / 100,0);
 
-	$args=array('pvpmessageadd'=>"", 'taunt'=>$taunt, 'handled'=>false, 'badguy'=>$badguy, 'options'=>$options);
+	$args=array('pvpmsgadd'=>"", 'taunt'=>$taunt, 'handled'=>false, 'badguy'=>$badguy, 'options'=>$options);
 	$args = modulehook("pvploss", $args);
 
 	$msg = "`^%s`2 attacked you while you were in %s`2, but you were victorious!`n`n";

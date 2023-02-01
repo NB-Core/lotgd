@@ -381,7 +381,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 							if ($mycompanion['hitpoints'] >= $mycompanion['maxhitpoints'] || $healed) {
 								continue;
 							} else {
-								$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints]']);
+								$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints']);
 								$mycompanion['hitpoints'] += $hptoheal;
 								$companion['used'] = true;
 								$msg = $companion['healcompanionmsg'];
