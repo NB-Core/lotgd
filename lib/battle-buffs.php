@@ -240,7 +240,7 @@ function process_lifetaps($ltaps, $damage) {
 			$session['user']['hitpoints'];
 		if ($healhp < 0) $healhp = 0;
 		if ($healhp == 0) {
-			$msg = $buff['effectnodmgmsg'];
+			$msg = (isset($buff['effectnodmgmsg'])?$buff['effectnodmgmsg']:'');
 		} else {
 			if ($healhp > $damage * $buff['lifetap'])
 				$healhp = round($damage * $buff['lifetap'], 0);
