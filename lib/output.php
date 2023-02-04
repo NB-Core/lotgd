@@ -230,13 +230,14 @@ class output_collector {
 		if( ($pos = strpos($data, "`")) !== false) {
 			do {
 				++$pos;
+				if (!isset($data[$pos])) continue; // fetched ` at the end of the description
 				if ($priv === false){
 					$out .= HTMLEntities(substr($data, $start, $pos - $start - 1), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
 				} else {
 					$out .= substr($data, $start, $pos - $start - 1);
 				}
 				$start = $pos + 1;
-				if(isset($this->colors[$data[$pos]])) {
+				if(isset($data[$pos]) && isset($this->colors[$data[$pos]])) {
 					if ($this->nestedtags['font']) $out.="</span>";
 					else $this->nestedtags['font']=true;
 					$out.="<span class='".$this->colors[$data[$pos]]."'>";
