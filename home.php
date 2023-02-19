@@ -138,8 +138,8 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("<form action='home.php' method='POST'>");
 	rawoutput("<table align='center'><tr><td>");
 	$form = array("template"=>"Choose a different display skin:,theme");
-	$prefs['template'] = $_COOKIE['template'];
-	if ($prefs['template'] == "")
+	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
+		else 
 		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
 	require_once("lib/showform.php");
 	showform($form, $prefs, true);
