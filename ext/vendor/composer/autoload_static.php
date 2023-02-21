@@ -8,73 +8,75 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
 {
     public static $files = array (
         '800196073909aa5a35e71b8a8265de59' => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src/start.php',
-        '2103658b5d292b594535b3879cc050df' => __DIR__ . '/..' . '/jaxon-php/jaxon-sentry/src/start.php',
-        '4eec1ebb0ccf564f78f3cc99f74c0f09' => __DIR__ . '/..' . '/jaxon-php/jaxon-armada/src/start.php',
     );
 
     public static $prefixLengthsPsr4 = array (
         'P' => 
         array (
+            'Psr\\Log\\' => 8,
+            'Psr\\Http\\Server\\' => 16,
+            'Psr\\Http\\Message\\' => 17,
+            'Psr\\Container\\' => 14,
             'PHPMailer\\PHPMailer\\' => 20,
         ),
-        'M' => 
+        'N' => 
         array (
-            'MatthiasMullie\\PathConverter\\' => 29,
-            'MatthiasMullie\\Minify\\' => 22,
-        ),
-        'L' => 
-        array (
-            'Lemon\\Event\\' => 12,
+            'Nyholm\\Psr7\\' => 12,
+            'Nyholm\\Psr7Server\\' => 18,
         ),
         'J' => 
         array (
-            'Jaxon\\Sentry\\' => 13,
-            'Jaxon\\Armada\\' => 13,
+            'Jaxon\\Utils\\' => 12,
             'Jaxon\\' => 6,
         ),
-        'A' => 
+        'H' => 
         array (
-            'Aura\\Session\\_Config\\' => 21,
-            'Aura\\Session\\' => 13,
+            'Http\\Message\\' => 13,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
+        'Psr\\Log\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
+        ),
+        'Psr\\Http\\Server\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/http-server-handler/src',
+            1 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
+        ),
+        'Psr\\Http\\Message\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/http-message/src',
+            1 => __DIR__ . '/..' . '/psr/http-factory/src',
+        ),
+        'Psr\\Container\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/container/src',
+        ),
         'PHPMailer\\PHPMailer\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
-        'MatthiasMullie\\PathConverter\\' => 
+        'Nyholm\\Psr7\\' => 
         array (
-            0 => __DIR__ . '/..' . '/matthiasmullie/path-converter/src',
+            0 => __DIR__ . '/..' . '/nyholm/psr7/src',
         ),
-        'MatthiasMullie\\Minify\\' => 
+        'Nyholm\\Psr7Server\\' => 
         array (
-            0 => __DIR__ . '/..' . '/matthiasmullie/minify/src',
+            0 => __DIR__ . '/..' . '/nyholm/psr7-server/src',
         ),
-        'Lemon\\Event\\' => 
+        'Jaxon\\Utils\\' => 
         array (
-            0 => __DIR__ . '/..' . '/lemonphp/event/src',
-        ),
-        'Jaxon\\Sentry\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/jaxon-php/jaxon-sentry/src',
-        ),
-        'Jaxon\\Armada\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/jaxon-php/jaxon-armada/src',
+            0 => __DIR__ . '/..' . '/jaxon-php/jaxon-utils/src',
         ),
         'Jaxon\\' => 
         array (
             0 => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src',
         ),
-        'Aura\\Session\\_Config\\' => 
+        'Http\\Message\\' => 
         array (
-            0 => __DIR__ . '/..' . '/aura/session/config',
-        ),
-        'Aura\\Session\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/aura/session/src',
+            0 => __DIR__ . '/..' . '/php-http/message-factory/src',
         ),
     );
 
@@ -84,6 +86,13 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
             'Pimple' => 
             array (
                 0 => __DIR__ . '/..' . '/pimple/pimple/src',
+            ),
+        ),
+        'J' => 
+        array (
+            'JShrink' => 
+            array (
+                0 => __DIR__ . '/..' . '/tedivm/jshrink/src',
             ),
         ),
     );

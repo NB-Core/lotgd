@@ -6,13 +6,14 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Psr\\Log\\' => array($vendorDir . '/psr/log/Psr/Log'),
+    'Psr\\Http\\Server\\' => array($vendorDir . '/psr/http-server-handler/src', $vendorDir . '/psr/http-server-middleware/src'),
+    'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-message/src', $vendorDir . '/psr/http-factory/src'),
+    'Psr\\Container\\' => array($vendorDir . '/psr/container/src'),
     'PHPMailer\\PHPMailer\\' => array($vendorDir . '/phpmailer/phpmailer/src'),
-    'MatthiasMullie\\PathConverter\\' => array($vendorDir . '/matthiasmullie/path-converter/src'),
-    'MatthiasMullie\\Minify\\' => array($vendorDir . '/matthiasmullie/minify/src'),
-    'Lemon\\Event\\' => array($vendorDir . '/lemonphp/event/src'),
-    'Jaxon\\Sentry\\' => array($vendorDir . '/jaxon-php/jaxon-sentry/src'),
-    'Jaxon\\Armada\\' => array($vendorDir . '/jaxon-php/jaxon-armada/src'),
+    'Nyholm\\Psr7\\' => array($vendorDir . '/nyholm/psr7/src'),
+    'Nyholm\\Psr7Server\\' => array($vendorDir . '/nyholm/psr7-server/src'),
+    'Jaxon\\Utils\\' => array($vendorDir . '/jaxon-php/jaxon-utils/src'),
     'Jaxon\\' => array($vendorDir . '/jaxon-php/jaxon-core/src'),
-    'Aura\\Session\\_Config\\' => array($vendorDir . '/aura/session/config'),
-    'Aura\\Session\\' => array($vendorDir . '/aura/session/src'),
+    'Http\\Message\\' => array($vendorDir . '/php-http/message-factory/src'),
 );

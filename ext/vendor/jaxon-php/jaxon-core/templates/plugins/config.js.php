@@ -27,7 +27,7 @@ jaxon.debug.verbose.active = true;
 <?php endif ?>
 <?php if(($this->sCsrfMetaName)): ?>
 metaTags = document.getElementsByTagName('meta');
-for(i = 0; i < metaTags.length; i++)
+for(let i = 0; i < metaTags.length; i++)
 {
     if(metaTags[i].getAttribute('name') == '<?php echo $this->sCsrfMetaName ?>')
     {
@@ -39,5 +39,3 @@ for(i = 0; i < metaTags.length; i++)
     }
 }
 <?php endif ?>
-
-<?php echo $this->sConfirmScript ?>
