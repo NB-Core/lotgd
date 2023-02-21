@@ -7,7 +7,7 @@ I'd like to add a few words, primarily why this fork was made and how the curren
 The fork was mostly made for personal purposes, as many small or big things have been replaced or changed, compared to the core version on Dragonprime.
 Most things that were done on the fork are backwards compatible, means you can safely use modules from non-fork-development.
 
-The base DP version this fork derived off was 1.1 dragonprime edition.
+The base DP version this fork derived off was 1.1.1 +dragonprime edition.
 
 Some things to consider:
 - more hooks were added to this version
