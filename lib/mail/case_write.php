@@ -124,10 +124,10 @@ rawoutput("<script type=\"text/javascript\">function cincrease(target, value){  
 $key=1;
 $keyout='body';
 $prefs=&$session['user']['prefs'];
-if ($prefs['mailwidth'] == "") {
+if (!isset($prefs['mailwidth']) || $prefs['mailwidth'] == "") {
 	$prefs['mailwidth'] = 60;
 }
-if ($prefs['mailheight'] == "") {
+if (!isset($prefs['mailheight']) || $prefs['mailheight'] == "") {
 	$prefs['mailheight'] = 9;
 }
 

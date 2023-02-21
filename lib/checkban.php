@@ -8,7 +8,10 @@ function checkban($login=false){
 		return false;
 	if ($login===false){
 		$ip=$_SERVER['REMOTE_ADDR'];
-		$id=$_COOKIE['lgi'];
+		if (isset($_COOKIE['lgi']))
+			$id=$_COOKIE['lgi'];
+			else
+			$id='';
 	}else{
 		$sql = "SELECT lastip,uniqueid,banoverride,superuser FROM " . db_prefix("accounts") . " WHERE login='$login'";
 		$result = db_query($sql);

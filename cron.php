@@ -34,6 +34,7 @@ if ($game_dir!='') {
 	if ($executionstyle & CRON_DBCLEANUP) {
 		//db optimization every day, I think we should leave it here
 		//edit: we may force this issue by setting the second argument to 1 in the commandline
+		$force_db=0;
 		if (isset($cron_args[1])) {
 			$force_db=(((int)$cron_args[1])?1:0);
 		}

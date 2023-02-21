@@ -56,6 +56,7 @@ function mail_status($args=false) {
 		session_unset();    
 		session_destroy(); // destroy if timeout
 	} elseif ($timeout<$start_timeout_show_seconds){
+		$m='';
 		if ($timeout>60) {
 			$min = floor($timeout/60);
 			$timeout = $timeout-$min*60;

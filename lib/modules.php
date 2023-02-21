@@ -421,7 +421,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 		}
 		debug("Args parameter to modulehook $hookname from $where is not an array.");
 	}
-	if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_DEBUG_OUTPUT && !isset($hookcomment[$hookname])){
+	if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT) && !isset($hookcomment[$hookname])){
 		rawoutput("<!--Module Hook: $hookname; allow inactive: ".($allowinactive?"true":"false")."; only this module: ".($only!==false?$only:"any module"));
 		if (!is_array($args)) {
 			$arg = $args . " (NOT AN ARRAY!)";
@@ -520,7 +520,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				$starttime = getmicrotime();
 				/*******************************************************/
 				if (function_exists($row['function'])) {
-					if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_DEBUG_OUTPUT){
+					if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT)){
 						rawoutput("<!-- Hook: ".$hookname." on module ".$row['function']." called... -->");
 					}
 					$res = $row['function']($hookname, $args);
@@ -529,7 +529,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				}
 				/*******************************************************/
 				$endtime = getmicrotime();
-				if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))){
+				if (($endtime - $starttime >= 1.00 && (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT==SU_DEBUG_OUTPUT)))){
 					debug("Slow Hook (".round($endtime-$starttime,2)."s): $hookname - {$row['modulename']}`n");
 				}
 				if (getsetting('debug',0) ) {
@@ -779,6 +779,8 @@ function get_module_pref($name,$module=false,$user=false){
 
 function set_module_pref($name,$value,$module=false,$user=false){
 	global $module_prefs,$mostrecentmodule,$session;
+	if (!isset($session['user']['acctid'])) //no user? then we can't do prefs
+		return;
 	if ($module === false) $module = $mostrecentmodule;
 	if ($user === false) $uid=$session['user']['acctid'];
 	else $uid = $user;

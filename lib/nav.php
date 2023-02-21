@@ -379,7 +379,7 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 		if (in_array(array($text,$link),$notranslate)) $translate=false;
 
 	if (is_array($text)){
-		if ($text[0] && $session['loggedin']) {
+		if ($text[0] && (isset($session['loggedin']) && $session['loggedin'])) {
 			if ($link === false) $schema = "!array!" . serialize($text);
 			else $schema = $text[0];
 			if ($translate) {
@@ -418,6 +418,7 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 	}else{
 		if ($text!=""){
 			$extra="";
+			if (!isset($session['counter'])) $session['counter']='';
 			if (strpos($link,"?")){
 				$extra="&c={$session['counter']}";
 			}else{

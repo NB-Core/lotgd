@@ -6,7 +6,7 @@ function gamelog($message,$category="general",$filed=false){
 		'".addslashes($category)."',
 		'".($filed?"1":"0")."',
 		'".date("Y-m-d H:i:s")."',
-		'".(int)$session['user']['acctid']."'
+		'".(int)(isset($session['user']['acctid'])?$session['user']['acctid']:0)."'
 	)";
 	db_query($sql);
 }

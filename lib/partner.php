@@ -2,7 +2,7 @@
 function get_partner($player=false)
 {
 	global $session;
-	if ($session['user']['prefs']['sexuality']=='') 
+	if (!isset($session['user']['prefs']['sexuality']) || $session['user']['prefs']['sexuality']=='') 
 		$session['user']['prefs']['sexuality']=!$session['user']['sex'];
 	if ($player === false) {
 		$partner = getsetting("barmaid", "`%Violet");

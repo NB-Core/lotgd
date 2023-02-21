@@ -289,10 +289,12 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			tlschema("showform");
 			$yes = translate_inline("Yes");
 			$no = translate_inline("No");
+			if (isset($row[$key])) $boolval=$row[$key];
+				else $boolval=0;
 			tlschema();
 			rawoutput("<select name='$keyout'>");
-			rawoutput("<option value='0'".($row[$key]==0?" selected":"").">$no</option>");
-			rawoutput("<option value='1'".($row[$key]==1?" selected":"").">$yes</option>");
+			rawoutput("<option value='0'".($boolval==0?" selected":"").">$no</option>");
+			rawoutput("<option value='1'".($boolval==1?" selected":"").">$yes</option>");
 			rawoutput("</select>", true);
 			break;
 		case "hidden":
