@@ -305,7 +305,7 @@ if (getsetting("allowcreation",1)==0){
 							$replace=array(
 									"{login}"=>$shortname,
 									"{acctid}"=>$row['acctid'],
-									"{emailaddress}"=>$row['emailaddress'],
+									"{emailaddress}"=>$email,
 									"{gameurl}"=>getsetting("serverurl","https://lotgd.com")."/create.php",
 									"{validationid}"=>$emailverification,
 								      );
