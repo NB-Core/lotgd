@@ -1,3 +1,41 @@
+This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
+
+The original readme and license texts follow below, also the installation + upgrade routines which haven't changed much.
+
+I'd like to add a few words, primarily why this fork was made and how the current status ist.
+
+The fork was mostly made for personal purposes, as many small or big things have been replaced or changed, compared to the core version on Dragonprime.
+Most things that were done on the fork are backwards compatible, means you can safely use modules from non-fork-development.
+
+The base DP version this fork derived off was 1.1 dragonprime edition.
+
+Some things to consider:
+- more hooks were added to this version
+- the stat system with strength/dexterity/etc. was added
+- (many things I forgot already that were added or changed, that's what the release notes are for, you can read them up in CHANGELOG.txt)
+
+Mostly, technical stuff is now new:
+- this version was modified to work with php8 (which did incur numerous bugfixes and stuff)
+- the sendmail-system was replaced by phpmailer()
+- the mail notification feature an auto-refresh via ajax now
+- composer was integrated for sensible (see above) third party modules
+- mysqli is now standard, so it's used primarily, the old ones won't be tested (and really, most things didn't work when you switched the db provider in lotgd)
+
+So, it should work on every modern PHP enviroment.
+
+If somebody really has time, there are still things to do:
+- replace the template system with a state-of-the-art system (like smarty)
+- integrate refreshing chats (I did some tests with jaxon a few years ago, worked OK, but slow)
+- make some horrible things objects and not array, the isset() tests drive me nuts ffs
+- ?
+
+Contact me on github via issue if you like https://github.com/NB-Core/lotgd
+
+Kind regards,
+Oliver
+
+----------------------------------------------------------------------
+
 Legend of the Green Dragon
 by  Eric "MightyE" Stevens (http://www.mightye.org)
 and JT "Kendaer" Traub (http://www.dragoncat.net)
