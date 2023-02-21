@@ -7,7 +7,7 @@ I'd like to add a few words, primarily why this fork was made and how the curren
 The fork was mostly made for personal purposes, as many small or big things have been replaced or changed, compared to the core version on Dragonprime.
 Most things that were done on the fork are backwards compatible, means you can safely use modules from non-fork-development.
 
-The base DP version this fork derived off was 1.1 dragonprime edition.
+The base DP version this fork derived off was 1.1.1 +dragonprime edition.
 
 Some things to consider:
 - more hooks were added to this version
@@ -27,6 +27,7 @@ If somebody really has time, there are still things to do:
 - replace the template system with a state-of-the-art system (like smarty)
 - integrate refreshing chats (I did some tests with jaxon a few years ago, worked OK, but slow)
 - make some horrible things objects and not array, the isset() tests drive me nuts ffs
+- the error sending via mail has an issue with datacache+firstrun key in array. Not sure why. Also outputting PHP warnings to a user should not be done, but those should be logged somewhere in a real log
 - ?
 
 Contact me on github via issue if you like https://github.com/NB-Core/lotgd
