@@ -27,6 +27,7 @@ If somebody really has time, there are still things to do:
 - replace the template system with a state-of-the-art system (like smarty)
 - integrate refreshing chats (I did some tests with jaxon a few years ago, worked OK, but slow)
 - make some horrible things objects and not array, the isset() tests drive me nuts ffs
+- the error sending via mail has an issue with datacache+firstrun key in array. Not sure why. Also outputting PHP warnings to a user should not be done, but those should be logged somewhere in a real log
 - ?
 
 Contact me on github via issue if you like https://github.com/NB-Core/lotgd
