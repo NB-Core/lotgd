@@ -131,7 +131,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 				$key = $x[1];
 				modulehook("notifyuserprefchange",
 						array("name"=>$key,
-							"old"=>$oldvalues[$module."___".$key],
+							"old"=>(isset($oldvalues[$module."___".$key])?$oldvalues[$module."___".$key]:''),
 							"new"=>$val));
 				set_module_pref($key, $val, $module);
 				continue;

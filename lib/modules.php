@@ -822,6 +822,7 @@ function increment_module_pref($name,$value=1,$module=false,$user=false){
 		$sql = "UPDATE " . db_prefix("module_userprefs") . " SET value=value+$value WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
 		db_query($sql);
 	}else{
+		$module_prefs[$uid][$module][$name] = $value;
 		$sql = "INSERT INTO " . db_prefix("module_userprefs"). " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','".addslashes($value)."')";
 		db_query($sql);
 	}
