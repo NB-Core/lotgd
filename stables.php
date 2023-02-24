@@ -163,8 +163,10 @@ if ($op == 'confirmbuy') {
 				output($texts['newmount'], $mount['mountname']);
 				tlschema();
 			}
-			$debugmount1=$playermount['mountname'];
-			if ($debugmount1) $debugmount1="a ".$debugmount1;
+			if (isset($playermount['mountname'])) {
+				$debugmount1=$playermount['mountname'];
+				if ($debugmount1) $debugmount1="a ".$debugmount1;
+			} else $debugmount1 = '';
 			$session['user']['hashorse']=$mount['mountid'];
 			$debugmount2=$mount['mountname'];
 			$goldcost = $repaygold-$mount['mountcostgold'];

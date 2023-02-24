@@ -16,6 +16,8 @@ $trash = getsetting("expiretrashacct",1);
 $new = getsetting("expirenewacct",10);
 $old = getsetting("expireoldacct",45);
 
+$msg = '';
+
 checkban();
 $op = httpget('op');
 if ($op=='val' || $op=='forgotval') {
