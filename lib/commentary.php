@@ -257,6 +257,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 	$com=(int)httpget("comscroll");
 	if ($com < 0) $com = 0;
 	$cc = false;
+	if (!isset($session['lastcom'])) $session['lastcom']=0;
 	if (httpget("comscroll") !==false && (int)$session['lastcom']==$com+1)
 		$cid = (int)$session['lastcommentid'];
 	else

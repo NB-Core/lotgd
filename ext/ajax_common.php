@@ -19,5 +19,5 @@ $jaxon->setOption('core.request.uri', 'ext/ajax_process.php');
 
 // Register an instance of the class with Jaxon
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'mail_status');
-$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_text', ['class'=>'lotgdAjax']);
-$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'timeout_status', ['class'=>'lotgdAjax']);
+$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_text');
+$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'timeout_status');

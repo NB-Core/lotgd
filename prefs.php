@@ -414,6 +414,10 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	if ($session['user']['replaceemail']!='') {
 		//we have an email change request here
 		$replacearray=explode("|",$session['user']['replaceemail']);	
+		if (count($replacearray)<2) {
+			//something awry going on, we have max 1 element there
+			$replacearray = array($replacearray[0],'(raw data)');
+		}
 		output("`\$There is an email change request pending to the email address `q\"%s`\$\" that was given at the timestamp %s (Server Time Zone).`n",$replacearray[0],$replacearray[1]);
 		$expirationdate=strtotime("+ ".getsetting('playerchangeemaildays',3)." days",strtotime($replacearray[1]));
 		$left=$expirationdate-strtotime("now");
