@@ -1,5 +1,6 @@
 <?php
 $pdks = array();
+$pdktotal = 0;
 reset($labels);
 foreach($labels as $type=>$label) {
 	$head=explode(",",$label);

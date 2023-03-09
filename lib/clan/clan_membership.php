@@ -71,7 +71,11 @@
 			$tot += $row['dragonkills'];
 			rawoutput("<tr class='".($i?"trlight":"trdark")."'>");
 			rawoutput("<td>");
-			output_notl($ranks[$row['clanrank']]);
+			if (isset($ranks[$row['clanrank']])) {
+				output_notl($ranks[$row['clanrank']]);
+			} else {
+				output("-unset clan rank-");
+			}
 			rawoutput("</td><td>");
 			$link = "bio.php?char=".$row['acctid']."&ret=".urlencode($_SERVER['REQUEST_URI']);
 			rawoutput("<a href='$link'>", true);

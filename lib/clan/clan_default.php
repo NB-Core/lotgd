@@ -44,7 +44,7 @@
 		output("`n`n`bMembership Details:`b`n");
 		$leaders = 0;
 		while ($row = db_fetch_assoc($result)){
-			output_notl($ranks[$row['clanrank']].": `0".$row['c']."`n");
+			output_notl((isset($ranks[$row['clanrank']])?$ranks[$row['clanrank']]:'Undefined').": `0".$row['c']."`n");
 			if ($row['clanrank']>=CLAN_LEADER) $leaders += $row['c'];
 		}
 		output("`n");

@@ -266,7 +266,7 @@ if ($op == 'confirmbuy') {
 
 	tlschema($schemas['mountsold']);
 	output($texts['mountsold'],
-			($playermount['newname']?
+			(isset($playermount['newname'])?
 			   $playermount['newname']:$playermount['mountname']),
 			$amtstr);
 	tlschema();

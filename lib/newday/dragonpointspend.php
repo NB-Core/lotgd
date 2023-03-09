@@ -65,7 +65,7 @@ if ($dkills-$dp > 1) {
 			output($label);
 			output_notl(":");
 			rawoutput("</td><td>");
-			rawoutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$pdks[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
+			rawoutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$canbuy[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
 			rawoutput("</td></tr>");
 		}
 	}
