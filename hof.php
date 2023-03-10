@@ -47,6 +47,7 @@ $pageoffset *= $playersperpage;
 $from = $pageoffset+1;
 $to = min($pageoffset+$playersperpage, $totalplayers);
 $limit = "$pageoffset,$playersperpage";
+$me = ''; //query at the end
 
 addnav("Warrior Rankings");
 addnav("Dragon Kills", "hof.php?op=kills&subop=$subop&page=1");
@@ -179,7 +180,6 @@ if ($op=="money"){
 	//edward pointed out that a cast is necessary as signed+unsigned=boffo
 //	$sql = "SELECT name,(goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) AS data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY data1 $order, level $order, experience $order, acctid $order LIMIT $limit";
 //	$me = "SELECT count(acctid) AS count FROM ".db_prefix("accounts")." WHERE $standardwhere AND (goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) $meop ".($session['user']['goldinbank'] + $session['user']['gold']);
-debug($sql);
 	$adverb = "richest";
 	if ($subop == "least") $adverb = "poorest";
 	$title = "The $adverb warriors in the land";
