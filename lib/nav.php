@@ -288,12 +288,12 @@ function buildnavs(){
 		$navbanner="";
 		if (count_viable_navs($key)>0){
 			if ($key>"") {
-				if ($session['loggedin']) tlschema($navschema[$key]);
+				if (isset($session['loggedin']) && $session['loggedin']) tlschema($navschema[$key]);
 				if (substr($key,0,7)=="!array!"){
 					$key = unserialize(substr($key,7));
 				}
 				$navbanner = private_addnav($key);
-				if ($session['loggedin']) tlschema();
+				if (isset($session['loggedin']) && $session['loggedin']) tlschema();
 			}
 
 			$style = "default";
@@ -321,6 +321,7 @@ function buildnavs(){
 			$sublinks = "";
 			foreach ($val as $v) {
 				if (is_array($v) && count($v)>0){
+					unset($v['translate']); // not a parameter for private_addnav, we need to remove it
 					$sublinks .=   call_user_func_array("private_addnav",$v);
 				}//end if
 			}//end foreach
@@ -378,7 +379,7 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 		if (in_array(array($text,$link),$notranslate)) $translate=false;
 
 	if (is_array($text)){
-		if ($text[0] && $session['loggedin']) {
+		if ($text[0] && (isset($session['loggedin']) && $session['loggedin'])) {
 			if ($link === false) $schema = "!array!" . serialize($text);
 			else $schema = $text[0];
 			if ($translate) {
@@ -395,7 +396,7 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 			$text = call_user_func_array("sprintf",$text);
 		}
 	}else{
-		if ($text && $session['loggedin'] && $translate) {
+		if ($text && isset($session['loggedin']) && $session['loggedin'] && $translate) {
 			if (isset($navschema[$text])) {
 				tlschema($navschema[$text]);
 			}
@@ -417,6 +418,7 @@ function private_addnav($text,$link=false,$priv=false,$pop=false,$popsize="500x3
 	}else{
 		if ($text!=""){
 			$extra="";
+			if (!isset($session['counter'])) $session['counter']='';
 			if (strpos($link,"?")){
 				$extra="&c={$session['counter']}";
 			}else{

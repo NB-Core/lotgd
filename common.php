@@ -36,7 +36,7 @@ $license = "\n<!-- Creative Commons License -->\n<a rel='license' href='http://c
 // work.  This license text may not be removed nor altered in any way.
 // Please see the file LICENSE for a full textual description of the license.
 
-$logd_version = "1.2.10 +nb Edition";
+$logd_version = "1.2.8 +nb Edition";
 
 
 // Include some commonly needed and useful routines
@@ -63,7 +63,7 @@ require_once("lib/playerfunctions.php");
 
 //start the gzip compression
 if (isset ($gz_handler_on) && $gz_handler_on) ob_start('ob_gzhandler');
-	else ob_start();
+else ob_start();
 
 $pagestarttime = getmicrotime();
 
@@ -103,11 +103,11 @@ $timeout_duration = 60*60;
  * blow away any previous $_SESSION data and start a new one.
  */
 if (isset($_SESSION['LAST_ACTIVITY']) && ($time - $_SESSION['LAST_ACTIVITY']) > $timeout_duration) {
-  session_unset();    
-  session_destroy();
+	session_unset();    
+	session_destroy();
 }
-  session_start();    
-   
+session_start();    
+
 /**
  * Finally, update LAST_ACTIVITY so that our timeout
  * is based on it and not the user.s login time.
@@ -126,8 +126,8 @@ if (file_exists("dbconnect.php")){
 	require_once("dbconnect.php");
 }else{
 	if (!defined("IS_INSTALLER")){
-	 	if (!defined("DB_NODB")) define("DB_NODB",true);
-	 	page_header("The game has not yet been installed");
+		if (!defined("DB_NODB")) define("DB_NODB",true);
+		page_header("The game has not yet been installed");
 		output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
 		output("You must run the game's installer, and follow its instructions in order to set up LoGD.  You can go to the installer <a href='installer.php'>here</a>.",true);
 		output("`n`nIf you're not sure why you're seeing this message, it's because this game is not properly configured right now. ");
@@ -146,21 +146,26 @@ if (file_exists("dbconnect.php")){
 // http://php.net/manual/en/features.persistent-connections.php
 //
 //$link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
-$link = db_connect($DB_HOST, $DB_USER, $DB_PASS);
-//set charset to utf8 (table default, don't change that!)
-if (!db_set_charset("utf8")) {
-	echo "Error setting db connection charset to utf8...please check your db connection!";
-	exit(0);
+if (!defined("DB_NODB")) {
+	$link = db_connect($DB_HOST, $DB_USER, $DB_PASS);
+
+	//set charset to utf8 (table default, don't change that!)
+	if (!db_set_charset("utf8mb4")) {
+		echo "Error setting db connection charset to utf8...please check your db connection!";
+		exit(0);
+	}
 }
 
 $out = ob_get_contents();
 ob_end_clean();
-unset($DB_HOST);
-unset($DB_USER);
-unset($DB_PASS);
+if (!defined("DB_NODB")) {
+	unset($DB_HOST);
+	unset($DB_USER);
+	unset($DB_PASS);
+}
 
 if ($link===false){
- 	if (!defined("IS_INSTALLER")){
+	if (!defined("IS_INSTALLER")){
 		// Ignore this bit.  It's only really for Eric's server
 		//I won't, because all people can use it //Oliver
 		//Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
@@ -172,7 +177,7 @@ if ($link===false){
 		}
 		// And tell the user it died.  No translation here, we need the DB for
 		// translation.
-	 	if (!defined("DB_NODB")) define("DB_NODB",true);
+		if (!defined("DB_NODB")) define("DB_NODB",true);
 		page_header("Database Connection Error");
 		output("`c`\$Database Connection Error`0`c`n`n");
 		output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
@@ -196,45 +201,48 @@ if ($link===false){
 	define("DB_CONNECTED",true);
 }
 
-if (!DB_CONNECTED || !db_select_db ($DB_NAME)){
-	if (!defined("IS_INSTALLER") && DB_CONNECTED){
-		// Ignore this bit.  It's only really for Eric's server
-		if (file_exists("lib/smsnotify.php")) {
-			$smsmessage = "Cant Attach to DB: " . db_error();
-			require_once("lib/smsnotify.php");
-			$notified=true;
+if (!defined("DB_NODB")) {
+	if (!DB_CONNECTED || !@db_select_db ($DB_NAME)){
+		if (!defined("IS_INSTALLER") && DB_CONNECTED){
+			// Ignore this bit.  It's only really for Eric's server or people that want to trigger something when the database is jerky
+			if (file_exists("lib/smsnotify.php")) {
+				$smsmessage = "Cant Attach to DB: " . db_error();
+				require_once("lib/smsnotify.php");
+				$notified=true;
+			}
+			// And tell the user it died.  No translation here, we need the DB for
+			// translation.
+			if (!defined("DB_NODB")) define("DB_NODB",true);
+			page_header("Database Connection Error");
+			output("`c`\$Database Connection Error`0`c`n`n");
+			output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
+			if (!$notified) {
+				//the admin did not want to notify him with a script
+				output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
+				//add the message as it was not enclosed and posted to the smsnotify file
+				output("Please give them the following error message:`n");
+				output("`i`1%s`0`i`n`n",$smsmessage,true);
+			} else {
+				//in any other case
+				output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
+			}
+			output("Sorry for the inconvenience,`n");
+			output("Staff of %s",$_SERVER['SERVER_NAME']);
+			addnav("Home","index.php");
+			page_footer();
 		}
-		// And tell the user it died.  No translation here, we need the DB for
-		// translation.
-	 	if (!defined("DB_NODB")) define("DB_NODB",true);
-		page_header("Database Connection Error");
-		output("`c`\$Database Connection Error`0`c`n`n");
-		output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
-		if (!$notified) {
-			//the admin did not want to notify him with a script
-			output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
-			//add the message as it was not enclosed and posted to the smsnotify file
-			output("Please give them the following error message:`n");
-			output("`i`1%s`0`i`n`n",$smsmessage,true);
-		} else {
-			//in any other case
-			output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
-		}
-		output("Sorry for the inconvenience,`n");
-		output("Staff of %s",$_SERVER['SERVER_NAME']);
-		addnav("Home","index.php");
-		page_footer();
+		define("DB_CHOSEN",false);
+	}else{
+		define("LINK",$link);
+		define("DB_CHOSEN",true);
 	}
-	define("DB_CHOSEN",false);
-}else{
-	define("LINK",$link);
-	define("DB_CHOSEN",true);
 }
+
 if ($logd_version == getsetting("installer_version","-1")) {
 	define("IS_INSTALLER", false);
 }
 //Generate our settings object
-$settings=new settings("settings");
+if (!defined("IS_INSTALLER")) $settings=new settings("settings");
 
 header("Content-Type: text/html; charset=".getsetting('charset','ISO-8859-1'));
 
@@ -257,12 +265,13 @@ php_generic_environment();
 do_forced_nav(ALLOW_ANONYMOUS,OVERRIDE_FORCED_NAV);
 
 $script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
-mass_module_prepare(array(
-	'template-header','template-footer','template-statstart','template-stathead','template-statrow','template-statbuff','template-statend',
-	'template-navhead','template-navitem','template-petitioncount','template-adwrapper','template-login','template-loginfull','everyhit',
-	"header-$script","footer-$script",'holiday','collapse{','collapse-nav{','}collapse-nav','}collapse','charstats'
-	));
-
+if (!defined("IS_INSTALLER")) {
+	mass_module_prepare(array(
+				'template-header','template-footer','template-statstart','template-stathead','template-statrow','template-statbuff','template-statend',
+				'template-navhead','template-navitem','template-petitioncount','template-adwrapper','template-login','template-loginfull','everyhit',
+				"header-$script","footer-$script",'holiday','collapse{','collapse-nav{','}collapse-nav','}collapse','charstats'
+				));
+}
 // In the event of redirects, we want to have a version of their session we
 // can revert to:
 $revertsession=$session;
@@ -277,7 +286,7 @@ $session['counter']++;
 $nokeeprestore=array("newday.php"=>1,"badnav.php"=>1,"motd.php"=>1,"mail.php"=>1,"petition.php"=>1);
 if (OVERRIDE_FORCED_NAV) $nokeeprestore[$SCRIPT_NAME]=1;
 if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
-  $session['user']['restorepage']=$REQUEST_URI;
+	$session['user']['restorepage']=$REQUEST_URI;
 }else{
 
 }
@@ -293,7 +302,7 @@ if ($logd_version != getsetting("installer_version","-1") && !defined("IS_INSTAL
 	define("NO_SAVE_USER",true);
 	page_footer();
 } elseif ($logd_version == getsetting("installer_version","-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'],-13)!="installer.php") {
-// here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
+	// here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
 	page_header("Major Security Risk");
 	output("`\$Remove the file named 'installer.php' from your main game directory! You need to comply in order to get the game up and running.");
 	addnav("Home","index.php");
@@ -308,11 +317,11 @@ if (isset($session['user']['hitpoints']) && $session['user']['hitpoints']>0){
 }
 
 if (isset($session['user']['bufflist']))
-	$session['bufflist']=unserialize($session['user']['bufflist']);
+$session['bufflist']=unserialize($session['user']['bufflist']);
 else
-	$session['bufflist'] = array();
+$session['bufflist'] = array();
 if (!is_array($session['bufflist'])) $session['bufflist']=array();
-$session['user']['lastip']=$REMOTE_ADDR;
+if (isset($REMOTE_ADDR)) $session['user']['lastip']=$REMOTE_ADDR;   //cron i.e. doesn't have an $REMOTE_ADDR
 if (!isset($_COOKIE['lgi']) || strlen($_COOKIE['lgi'])<32){
 	if (!isset($session['user']['uniqueid']) || strlen($session['user']['uniqueid'])<32){
 		$u=md5(microtime());
@@ -327,19 +336,25 @@ if (!isset($_COOKIE['lgi']) || strlen($_COOKIE['lgi'])<32){
 		$session['user']['uniqueid']=$_COOKIE['lgi'];
 	} 
 }
-$url = "http://".$_SERVER['SERVER_NAME'].dirname($_SERVER['REQUEST_URI']);
-$url = substr($url,0,strlen($url)-1);
-$urlport = "http://".$_SERVER['SERVER_NAME'].":".$_SERVER['SERVER_PORT'].dirname($_SERVER['REQUEST_URI']);
-$urlport = substr($urlport,0,strlen($urlport)-1);
+if (isset($_SERVER['SERVER_NAME'])) {
+	$url = "http://".$_SERVER['SERVER_NAME'].dirname($_SERVER['REQUEST_URI']);
+	$url = substr($url,0,strlen($url)-1);
+	$urlport = "http://".$_SERVER['SERVER_NAME'].":".$_SERVER['SERVER_PORT'].dirname($_SERVER['REQUEST_URI']);
+	$urlport = substr($urlport,0,strlen($urlport)-1);
+} else {
+	//cron access or such via cli
+	$url="";
+	$urlport="";
+}
 
 if (!isset($_SERVER['HTTP_REFERER'])) $_SERVER['HTTP_REFERER'] = "";
 
 if (
-	substr($_SERVER['HTTP_REFERER'],0,strlen($url))==$url ||
-	substr($_SERVER['HTTP_REFERER'],0,strlen($urlport))==$urlport ||
-	$_SERVER['HTTP_REFERER']=="" ||
-	strtolower(substr($_SERVER['HTTP_REFERER'],0,7))!="http://"
-	){
+		substr($_SERVER['HTTP_REFERER'],0,strlen($url))==$url ||
+		substr($_SERVER['HTTP_REFERER'],0,strlen($urlport))==$urlport ||
+		$_SERVER['HTTP_REFERER']=="" ||
+		strtolower(substr($_SERVER['HTTP_REFERER'],0,7))!="http://"
+   ){
 
 }else{
 	$site = str_replace("http://","",$_SERVER['HTTP_REFERER']);
@@ -392,50 +407,54 @@ if ($session['user']['superuser']==0){
 
 prepare_template();
 
-if (!isset($session['user']['hashorse'])) $session['user']['hashorse']=0;
-$playermount = getmount($session['user']['hashorse']);
-$temp_comp = @unserialize($session['user']['companions']);
-$companions = array();
-if(is_array($temp_comp)) {
-	foreach ($temp_comp as $name => $companion) {
-		if (is_array($companion)) {
-			$companions[$name] = $companion;
+if(!defined("IS_INSTALLER")) {
+	if (!isset($session['user']['hashorse'])) $session['user']['hashorse']=0;
+	$playermount = getmount($session['user']['hashorse']);
+	$temp_comp = @unserialize($session['user']['companions']);
+	$companions = array();
+	if(is_array($temp_comp)) {
+		foreach ($temp_comp as $name => $companion) {
+			if (is_array($companion)) {
+				$companions[$name] = $companion;
+			}
 		}
 	}
-}
-unset($temp_comp);
+	unset($temp_comp);
 
-$beta = getsetting("beta", 0);
-if (!$beta && getsetting("betaperplayer", 1) == 1)
-	if (isset($session['user']['beta'])) $beta = $session['user']['beta'];
+	$beta = getsetting("beta", 0);
+	if (!$beta && getsetting("betaperplayer", 1) == 1)
+		if (isset($session['user']['beta'])) $beta = $session['user']['beta'];
 		else $beta=0;
 
-if (isset($session['user']['clanid'])) {
-	$sql = "SELECT * FROM " . db_prefix("clans") . " WHERE clanid='{$session['user']['clanid']}'";
-	$result = db_query_cached($sql, "clandata-{$session['user']['clanid']}", 3600);
-	if (db_num_rows($result)>0){
-		$claninfo = db_fetch_assoc($result);
-	}else{
+	if (isset($session['user']['clanid'])) {
+		$sql = "SELECT * FROM " . db_prefix("clans") . " WHERE clanid='{$session['user']['clanid']}'";
+		$result = db_query_cached($sql, "clandata-{$session['user']['clanid']}", 3600);
+		if (db_num_rows($result)>0){
+			$claninfo = db_fetch_assoc($result);
+		}else{
+			$claninfo = array();
+			$session['user']['clanid']=0;
+			$session['user']['clanrank']=0;
+		}
+	} else {
 		$claninfo = array();
 		$session['user']['clanid']=0;
 		$session['user']['clanrank']=0;
 	}
-} else {
-	$claninfo = array();
-	$session['user']['clanid']=0;
-	$session['user']['clanrank']=0;
+
+	if ($session['user']['superuser'] & SU_MEGAUSER)
+		$session['user']['superuser'] =
+			$session['user']['superuser'] | SU_EDIT_USERS;
+
+	translator_setup();
+
 }
 
-if ($session['user']['superuser'] & SU_MEGAUSER)
-	$session['user']['superuser'] =
-		$session['user']['superuser'] | SU_EDIT_USERS;
-
-translator_setup();
 //set up the error handler after the intial setup (since it does require a
 //db call for notification)
 require_once("lib/errorhandler.php");
 
-if (getsetting('debug',0)) {
+if (!defined("IS_INSTALLER") && getsetting('debug',0)) {
 	//Server runs in Debug mode, tell the superuser about it
 	if (($session['user']['superuser']&SU_EDIT_CONFIG)==SU_EDIT_CONFIG) {
 		tlschema("debug");
@@ -453,5 +472,5 @@ if (getsetting('debug',0)) {
 // This however is the only context where blockmodule can be called safely!
 // You should do as LITTLE as possible here and consider if you can hook on
 // a page header instead.
-modulehook("everyhit");
+if (!defined("IS_INSTALLER")) modulehook("everyhit");
 ?>

@@ -19,6 +19,7 @@ if (file_exists("dbconnect.php")){
 	."\$DB_DATACACHEPATH = \"{$session['dbinfo']['DB_DATACACHEPATH']}\";\n"
 	."?>\n";
 	$fp = @fopen("dbconnect.php","w+");
+	$failure=false;
 	if ($fp){
 		if (fwrite($fp, $dbconnect)!==false){
 			output("`n`@Success!`2  I was able to write your dbconnect.php file, you can continue on to the next step.");
@@ -46,8 +47,6 @@ if ($success && !$initial){
 	$sub = substr($version, 0, 5);
 	$sub = (int)str_replace(".", "", $sub);
 	if ($sub < 110) {
-		$sql = "SELECT setting, value FROM ".db_prefix("settings")." WHERE setting IN ('usedatacache', 'datacachepath')";
-		$result = db_query($sql);
 		$fp = @fopen("dbconnect.php","r+");
 		if ($fp){
 			while(!feof($fp)) {
@@ -57,14 +56,6 @@ if ($success && !$initial){
 				}
 			}
 			fclose($fp);
-		}
-		while ($row = db_fetch_assoc($result)) {
-			if ($row['setting'] == 'datacachepath') {
-				$DB_DATACACHEPATH = $row['value'];
-			}
-			if ($row['setting'] == 'usedatacache') {
-				$DB_USEDATACACHE = $row['value'];
-			}
 		}
 		$dbconnect =
 			"<?php\n"
@@ -80,6 +71,7 @@ if ($success && !$initial){
 		// Check if the file is writeable for us. If yes, we will change the file and notice the admin
 		// if not, they have to change the file themselves...
 		$fp = @fopen("dbconnect.php","w+");
+		$failure = false;
 		if ($fp){
 			if (fwrite($fp, $dbconnect)!==false){
 				output("`n`@Success!`2  I was able to write your dbconnect.php file.");

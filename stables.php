@@ -38,6 +38,8 @@ $basetext=array(
 	"confirmsale"=>"`n`n`7Merick whistles.  \"`&Yer mount shure is a foyne one, %s. Are ye sure ye wish t' part wae it?`7\"`n`nHe waits for your answer.`0",
 	"mountsold"=>"`7As sad as it is to do so, you give up your precious %s`7, and a lone tear escapes your eye.`n`nHowever, the moment you spot the %s, you find that you're feeling quite a bit better.",
 	"offer"=>"`n`nMerick offers you `^%s`& gold and `%%s`& gems for %s`7.",
+	"lad"=>"lad",
+	"lass"=>"lass",
 );
 $schemas = array(
 	'title'=>'stables',
@@ -161,8 +163,10 @@ if ($op == 'confirmbuy') {
 				output($texts['newmount'], $mount['mountname']);
 				tlschema();
 			}
-			$debugmount1=$playermount['mountname'];
-			if ($debugmount1) $debugmount1="a ".$debugmount1;
+			if (isset($playermount['mountname'])) {
+				$debugmount1=$playermount['mountname'];
+				if ($debugmount1) $debugmount1="a ".$debugmount1;
+			} else $debugmount1 = '';
 			$session['user']['hashorse']=$mount['mountid'];
 			$debugmount2=$mount['mountname'];
 			$goldcost = $repaygold-$mount['mountcostgold'];
@@ -194,12 +198,12 @@ if ($op == 'confirmbuy') {
 	} elseif($session['user']['gold']>=$grubprice) {
 		$buff = unserialize($playermount['mountbuff']);
 		if ($buff['schema'] == "") $buff['schema'] = "mounts";
-		if ($session['bufflist']['mount']['rounds'] == $buff['rounds']) {
+		if (isset($session['bufflist']['mount']['rounds']) && $session['bufflist']['mount']['rounds'] == $buff['rounds']) {
 			tlschema($schemas['nothungry']);
 			output($texts['nothungry'],$name);
 			tlschema();
 		} else {
-			if ($session['bufflist']['mount']['rounds'] > $buff['rounds']*.5) {
+			if (isset($session['bufflist']['mount']['rounds']) && $session['bufflist']['mount']['rounds'] > $buff['rounds']*.5) {
 				$grubprice=round($grubprice/2,0);
 				tlschema($schemas['halfhungry']);
 				output($texts['halfhungry'], $name, $name, $grubprice);
@@ -217,7 +221,7 @@ if ($op == 'confirmbuy') {
 			tlschema($schemas['mountfull']);
 			output($texts['mountfull'],
 				translate_inline($session['user']['sex']?$texts["lass"]:$texts["lad"]),
-				($playermount['basename']?
+				(isset($playermount['basename']) && $playermount['basename']?
 				 $playermount['basename']:$playermount['mountname']));
 			tlschema();
 		}
@@ -262,7 +266,7 @@ if ($op == 'confirmbuy') {
 
 	tlschema($schemas['mountsold']);
 	output($texts['mountsold'],
-			($playermount['newname']?
+			(isset($playermount['newname'])?
 			   $playermount['newname']:$playermount['mountname']),
 			$amtstr);
 	tlschema();

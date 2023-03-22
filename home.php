@@ -20,6 +20,7 @@ if (!isset($session['loggedin'])) $session['loggedin']=false;
 if ($session['loggedin']){
 	redirect("badnav.php");
 }
+if (!isset($session['message'])) $session['message']='';
 
 tlschema("home");
 
@@ -45,8 +46,10 @@ if (getsetting("homenewestplayer", 1)) {
 	if ($newplayer != 0) {
 		$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid='$newplayer'";
 		$result = db_query_cached($sql, "newest");
-		$row = db_fetch_assoc($result);
-		$name = $row['name'];
+		if (db_num_rows($result)>0) {
+			$row = db_fetch_assoc($result);
+			$name = $row['name'];
+		}
 	} else {
 		$name = $newplayer;
 	}
@@ -84,13 +87,14 @@ if (abs(getsetting("OnlineCountLast",0) - strtotime("now")) > 60){
 if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 	output("Enter your name and password to enter the realm.`n");
 	if ($op=="timeout"){
+		if (!isset($session['message'])) $session['message']='';
 		$session['message'].= translate_inline(" Your session has timed out, you must log in again.`n");
 	}
 	if (!isset($_COOKIE['lgi'])){
 		$session['message'].=translate_inline("It appears that you may be blocking cookies from this site.  At least session cookies must be enabled in order to use this site.`n");
 		$session['message'].=translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
 	}
-	if ($session['message']>"")
+	if (isset($session['message']) && $session['message']>"")
 		output_notl("`b`\$%s`b`n", $session['message'],true);
 	rawoutput("<script language='JavaScript' src='lib/md5.js'></script>");
 	rawoutput("<script language='JavaScript'>
@@ -134,8 +138,8 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("<form action='home.php' method='POST'>");
 	rawoutput("<table align='center'><tr><td>");
 	$form = array("template"=>"Choose a different display skin:,theme");
-	$prefs['template'] = $_COOKIE['template'];
-	if ($prefs['template'] == "")
+	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
+		else 
 		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
 	require_once("lib/showform.php");
 	showform($form, $prefs, true);

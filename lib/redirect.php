@@ -19,6 +19,7 @@ function redirect($location,$reason=false){
 		$session['output']="<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000'>$text</body></html>";
 	}
 	restore_buff_fields();
+	if (!isset($session['debug'])) $session['debug']='';
 	$session['debug'].="Redirected to $location from $REQUEST_URI.  $reason<br>";
 	saveuser();
 	//header("Location: $location");

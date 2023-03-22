@@ -30,7 +30,7 @@ foreach ($post as $key=>$val) {
 			}
 		}elseif ($key=="superuser"){
 			$value = 0;
-			while (list($k,$v)=each($val)){
+			foreach ($val as $k=>$v){
 				if ($v) $value += (int)$k;
 			}
 				//strip off an attempt to set privs that the user doesn't

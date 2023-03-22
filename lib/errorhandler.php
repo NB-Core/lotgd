@@ -72,6 +72,7 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 	}elseif (strtotime("now") - ($data['errors'][$errstr]) > $howoften * 60) {
 		$do_notice = true;
 	}
+$data['firstrun']=false;
 	if ($data['firstrun']){
 		debug("First run, not notifying users.");
 	}else{
@@ -89,7 +90,8 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			$html_text = "<html><body>$errstr in $errfile ($errline)<hr>$backtrace</body></html>";
 
 			$semi_rand = md5(time());
-			$subject = "{$_SERVER['HTTP_HOST']} $errno";
+			$hostname = (isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:'not called from browser, no hostname');
+			$subject = "$hostname $errno";
 
 			$body = $html_text; //send as html
 			foreach ($sendto as $key=>$email) {

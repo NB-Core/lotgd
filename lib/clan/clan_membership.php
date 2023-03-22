@@ -9,7 +9,7 @@
 		$setrank = (int) httppost('setrank');
 		if ($setrank===0) $setrank = (int) httpget('setrank');
 		$whoacctid = (int)httpget('whoacctid');
-		if ($setrank>=0 && $setrank<=$session['user']['clanrank']) {
+		if ($whoacctid>0 && $setrank>=0 && $setrank<=$session['user']['clanrank']) {
 			$sql="SELECT name,login,clanrank FROM ".db_prefix("accounts")." WHERE acctid=$whoacctid LIMIT 1";
 			$result=db_query($sql);
 			$row=db_fetch_assoc($result);
@@ -71,7 +71,11 @@
 			$tot += $row['dragonkills'];
 			rawoutput("<tr class='".($i?"trlight":"trdark")."'>");
 			rawoutput("<td>");
-			output_notl($ranks[$row['clanrank']]);
+			if (isset($ranks[$row['clanrank']])) {
+				output_notl($ranks[$row['clanrank']]);
+			} else {
+				output("-unset clan rank-");
+			}
 			rawoutput("</td><td>");
 			$link = "bio.php?char=".$row['acctid']."&ret=".urlencode($_SERVER['REQUEST_URI']);
 			rawoutput("<a href='$link'>", true);

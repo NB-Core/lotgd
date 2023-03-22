@@ -284,7 +284,7 @@ function viewmoderatedcommentary($section,$message="Interject your own commentar
 	$sections = commentarylocs();
 	$needclose = 0;
 
-	while (list($sec,$v)=each($outputcomments)){
+	foreach ($outputcomments as $sec=>$v){
 		if ($sec!="x") {
 			if($needclose) modulehook("}collapse");
 			output_notl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n",
@@ -297,7 +297,7 @@ function viewmoderatedcommentary($section,$message="Interject your own commentar
 			$needclose = 1;
 		}
 		reset($v);
-		while (list($key,$val)=each($v)){
+		foreach ($v as $key=>$val){
 			$args = array('commentline'=>$val);
 			$args = modulehook("viewcommentary", $args);
 			$val = $args['commentline'];

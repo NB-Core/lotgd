@@ -207,7 +207,7 @@ class output_collector {
 		global $session;
 		$temp = $this->get_block_new_output();
 		$this->set_block_new_output(false);
-		if ($force || $session['user']['superuser'] & SU_DEBUG_OUTPUT){
+		if ($force || (isset($session['user']['superuser']) && $session['user']['superuser']) & SU_DEBUG_OUTPUT){
 			if (is_array($text)){
 				require_once("lib/dump_item.php");
 				$text = appoencode(dump_item($text),true);
@@ -230,13 +230,14 @@ class output_collector {
 		if( ($pos = strpos($data, "`")) !== false) {
 			do {
 				++$pos;
+				if (!isset($data[$pos])) continue; // fetched ` at the end of the description
 				if ($priv === false){
 					$out .= HTMLEntities(substr($data, $start, $pos - $start - 1), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
 				} else {
 					$out .= substr($data, $start, $pos - $start - 1);
 				}
 				$start = $pos + 1;
-				if(isset($this->colors[$data[$pos]])) {
+				if(isset($data[$pos]) && isset($this->colors[$data[$pos]])) {
 					if ($this->nestedtags['font']) $out.="</span>";
 					else $this->nestedtags['font']=true;
 					$out.="<span class='".$this->colors[$data[$pos]]."'>";

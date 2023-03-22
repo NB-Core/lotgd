@@ -40,14 +40,14 @@ if ($op=="search" || $op== ""){
 
 output("`\$`cWelcome to the Ban Editor`c`0`n`n");
 
-rawoutput("<form action='bans.php?op=search$m' method='POST'>");
+rawoutput("<form action='bans.php?op=search' method='POST'>");
 output("Search users by any field: ");
 rawoutput("<input name='q' id='q'>");
 $se = translate_inline("Search");
 rawoutput("<input type='submit' class='button' value='$se'>");
 rawoutput("</form>");
 rawoutput("<script language='JavaScript'>document.getElementById('q').focus();</script>");
-addnav("","bans.php?op=search$m");
+addnav("","bans.php?op=search");
 
 
 

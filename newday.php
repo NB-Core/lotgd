@@ -170,7 +170,7 @@ if ($dp < $dkills) {
 
 	reset($session['user']['dragonpoints']);
 	$dkff=0;
-	while(list($key,$val)=each($session['user']['dragonpoints'])){
+	foreach($session['user']['dragonpoints'] as $val){
 		if ($val=="ff"){
 			$dkff++;
 		}
@@ -229,7 +229,7 @@ if ($dp < $dkills) {
 	}
 
 	$session['user']['laston'] = date("Y-m-d H:i:s");
-	$interest_amount = round($session['user']['goldinbank'] * $interestrate,0);
+	$interest_amount = (int) round($session['user']['goldinbank'] * $interestrate,0);
 	$debtfloor = getsetting("debtfloor",-50000);
 	if ($session['user']['goldinbank']+$interest_amount < $debtfloor) {
 		//debtfloor reached set to floor

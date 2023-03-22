@@ -11,7 +11,7 @@
 			$session['user']['clanjoindate']=date("Y-m-d H:i:s");
 			$sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE clanid='{$session['user']['clanid']}' AND clanrank>=".CLAN_OFFICER;
 			$result = db_query($sql);
-			$sql = "DELETE FROM . ".  db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='".addslashes(serialize($apply_subj))."'";
+			$sql = "DELETE FROM ".  db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='".db_real_escape_string(serialize($apply_subj))."'";
 			db_query($sql);
 			while ($row = db_fetch_assoc($result)){
 				$msg = array("`^You have a new clan applicant!  `&%s`^ has completed a membership application for your clan!",$session['user']['name']);

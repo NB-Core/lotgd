@@ -9,10 +9,10 @@ return array(
 			'name'=>'acctid', 'type'=>'int(11) unsigned', 'extra'=>'auto_increment' //the unique account ID
 			),
 		'name'=>array(
-			'name'=>'name', 'type'=>'varchar(100)' //100 chars as UTF-8 take more space, control that yourself in the module or whatnot where you save name/etc
+			'name'=>'name', 'type'=>'varchar(100)', 'default'=>'' //100 chars as UTF-8 take more space, control that yourself in the module or whatnot where you save name/etc
 			),
 		'playername'=>array(
-			'name'=>'playername', 'type'=>'varchar(40)' // this is the raw name of the player to modify, use the lib/names.php to do so, it does the work for you.
+			'name'=>'playername', 'type'=>'varchar(40)', 'default'=>'' // this is the raw name of the player to modify, use the lib/names.php to do so, it does the work for you.
 			),
 		'sex'=>array(
 			'name'=>'sex', 'type'=>'tinyint(4) unsigned', 'default'=>'0' //use SEX_MALE, SEX_FEMALE constnats to check  this!
@@ -97,7 +97,7 @@ return array(
 			'name'=>'turns', 'type'=>'int(11) unsigned', 'default'=>'10' //amount of turns he has
 			),
 		'title'=>array(
-			'name'=>'title', 'type'=>'varchar(50)' //the dragonkilltitle the user has
+			'name'=>'title', 'type'=>'varchar(50)', 'default'=>'' //the dragonkilltitle the user has
 			),
 		'password'=>array(
 			'name'=>'password', 'type'=>'varchar(32)' //the password stored as MD5 hash
@@ -133,10 +133,10 @@ return array(
 			'name'=>'charm', 'type'=>'int(11) unsigned', 'default'=>'0' //amount of charm points he has
 			),
 		'specialinc'=>array(
-			'name'=>'specialinc', 'type'=>'varchar(50)' // used to tell the core a special needs to be executed like module:fairy which is used in the forest i.e.
+			'name'=>'specialinc', 'type'=>'varchar(50)', 'default'=>'' // used to tell the core a special needs to be executed like module:fairy which is used in the forest i.e.
 			),
 		'specialmisc'=>array(
-			'name'=>'specialmisc', 'type'=>'varchar(1000)' //put anything in you want, but it can be overwritten by modules that need it!
+			'name'=>'specialmisc', 'type'=>'varchar(1000)', 'default'=>'' //put anything in you want, but it can be overwritten by modules that need it!
 			),
 		'login'=>array(
 			'name'=>'login', 'type'=>'varchar(50)' //login name ... might differ from playername!
@@ -394,7 +394,7 @@ return array(
 			'name'=>'maxhitpointsperlevel', 'type'=>'int(6) unsigned', 'null'=>'0', 'default'=>'10'
 			),
 		'abilities'=>array(
-			'name'=>'abilities', 'type'=>'text', 'null'=>'0', 'default'=>''
+			'name'=>'abilities', 'type'=>'text', 'null'=>'0'
 			),
 		'cannotdie'=>array(
 			'name'=>'cannotdie', 'type'=>'tinyint(4)', 'null'=>'0', 'default'=>'0'
@@ -418,7 +418,7 @@ return array(
 			'name'=>'companioncostgold', 'type'=>'int(10)', 'default'=>'0'
 			),
 		'jointext'=>array(
-			'name'=>'jointext', 'type'=>'text', 'default'=>''
+			'name'=>'jointext', 'type'=>'text'
 			),
 		'dyingtext'=>array(
 			'name'=>'dyingtext', 'type'=>'varchar(255)', 'default'=>''
@@ -769,7 +769,7 @@ return array(
 			'name'=>'field', 'type'=>'varchar(20)', 'null'=>'0', 'default'=>''
 			),
 		'value'=>array(
-			'name'=>'value', 'type'=>'float(9,2)', 'null'=>'0', 'default'=>'0.00'
+			'name'=>'value', 'type'=>'float(13,2)', 'null'=>'0', 'default'=>'0.00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -807,7 +807,7 @@ return array(
 			'name'=>'field', 'type'=>'varchar(20)', 'null'=>'0', 'default'=>''
 			),
 		'value'=>array(
-			'name'=>'value', 'type'=>'float(9,2)', 'null'=>'0', 'default'=>'0.00'
+			'name'=>'value', 'type'=>'float(13,2)', 'null'=>'0', 'default'=>'0.00'
 			),
 		'key-PRIMARY'=>array(
 			'name'=>'PRIMARY',
@@ -1087,7 +1087,7 @@ return array(
 			'name'=>'location', 'type'=>'varchar(50)'
 			),
 		'function'=>array(
-			'name'=>'function', 'type'=>'varchar(50)'
+			'name'=>'`function`', 'type'=>'varchar(50)'
 			),
 		'whenactive'=>array(
 			'name'=>'whenactive', 'type'=>'text'
@@ -1099,7 +1099,7 @@ return array(
 			'name'=>'PRIMARY',
 			'type'=>'primary key',
 			'unique'=>'1',
-			'columns'=>'modulename,location,function'
+			'columns'=>'modulename,location,mfunction'
 			),
 		'key-location'=>array(
 			'name'=>'location', 'type'=>'key', 'columns'=>'location'

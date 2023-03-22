@@ -131,8 +131,7 @@ switch ($type_setting) {
 							output("Unable to change settings:`\$%s`0",
 									$post['validation_error']);
 						} else {
-							reset($post);
-							while (list($key,$val)=each($post)){
+							foreach ($post as $key=>$val){
 								$key = stripslashes($key);
 								$val = stripslashes($val);
 								set_module_setting($key,$val);
@@ -157,7 +156,7 @@ switch ($type_setting) {
 						if (count($info['settings'])>0){
 							load_module_settings($mostrecentmodule);
 							$msettings=array();
-							while (list($key,$val)=each($info['settings'])){
+							foreach($info['settings'] as $key=>$val){
 								if (is_array($val)) {
 									$v = $val[0];
 									$x = explode("|", $v);

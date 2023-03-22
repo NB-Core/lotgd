@@ -27,7 +27,7 @@ if (db_num_rows($result)==0){
 			$pass = md5(md5(stripslashes(httppost("pass1"))));
 			$sql = "DELETE FROM ".db_prefix("accounts")." WHERE login='$name'";
 			db_query($sql);
-			$sql = "INSERT INTO " .db_prefix("accounts") ." (login,password,superuser,name,ctitle,regdate) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin', NOW())";
+			$sql = "INSERT INTO " .db_prefix("accounts") ." (login,password,superuser,name,playername,ctitle,title,regdate,badguy,companions, allowednavs, bufflist, dragonpoints, prefs, donationconfig,specialinc,specialmisc,emailaddress,replaceemail,emailvalidation,hauntedby,bio) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin `&$name`0','`%Admin','', NOW(),'','','','','','','','','','','','','','')";
 			$result=db_query($sql);
 			if (db_affected_rows($result)==0) {
 				print_r($sql);
