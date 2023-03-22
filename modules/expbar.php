@@ -33,6 +33,7 @@ function expbar_dohook($hookname,$args){
 	global $session;
 	switch($hookname){
 	case "charstats":
+		if (!$session['user']['alive']) break;
 		require_once("lib/experience.php");
 		$level = $session['user']['level'];
 		$dks = $session['user']['dragonkills'];

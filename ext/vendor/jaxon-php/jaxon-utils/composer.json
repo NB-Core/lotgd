@@ -1,0 +1,35 @@
+{
+    "name": "jaxon-php/jaxon-utils",
+    "type": "library",
+    "description": "Utilities for the Jaxon library.",
+    "authors": [
+        {"name": "Thierry Feuzeu"}
+    ],
+    "homepage": "https://www.jaxon-php.org",
+    "license": "BSD-3-Clause",
+    "keywords": ["Config", "Minifier", "Template", "Translation", "Validation"],
+    "support": {
+        "issues": "https://github.com/jaxon-php/jaxon-utils/issues",
+        "source": "https://github.com/jaxon-php/jaxon-utils"
+    },
+    "require": {
+        "php": ">=7.1",
+        "ext-json": "*",
+        "tedivm/jshrink": "^1.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "php-coveralls/php-coveralls": "^2.5",
+        "phpunit/phpcov": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jaxon\\Utils\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jaxon\\Utils\\Tests\\": "tests/"
+        }
+    }
+}

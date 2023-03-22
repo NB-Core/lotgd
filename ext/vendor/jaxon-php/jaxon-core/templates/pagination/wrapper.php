@@ -1,13 +1,14 @@
-<ul class="pagination">
-<?php
+<ul class="pagination"><?php
     if(($this->prev))
     {
         echo $this->prev;
     }
-    echo $this->links;
+    foreach($this->links as $link)
+    {
+        echo $link;
+    }
     if(($this->next))
     {
         echo $this->next;
     }
-?>
-</ul>
+?></ul>

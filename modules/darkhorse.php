@@ -169,15 +169,19 @@ function darkhorse_bartender($from){
 */				require_once("lib/lookup_user.php");
 				$results = lookup_user($name);
 				$result= $results[0];
-				//$max = db_num_rows($result);
-				$max = count($result);
+				if ($result != false) {
+					$max = db_num_rows($result);
+				} else {
+					$max = 0;
+				}
+
 				if ($max > 100) {
 					output("`n`n\"`7Hey, whatsh you think yoush doin'.  That'sh too many namesh to shay.  I'll jusht tell you 'bout shome of them.`0`n");
 					$max = 100;
 				}
 				$n = translate_inline("Name");
 				$lev = translate_inline("Level");
-				rawoutput("<table border=0 cellpadding=0><tr><td>$n</td><td>$lev</td></tr>");
+				rawoutput("<table border=1 cellpadding=0><tr><td style='min-width:150px;'>$n</td><td style='min-width:50px;'>$lev</td></tr>");
 				for ($i=0;$i<$max;$i++){
 					$row = db_fetch_assoc($result);
 					rawoutput("<tr><td><a href='".$from."op=bartender&what=enemies&who=".rawurlencode($row['login'])."'>");

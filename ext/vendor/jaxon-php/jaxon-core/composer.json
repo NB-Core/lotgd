@@ -3,13 +3,13 @@
     "type": "library",
     "description": "Jaxon is an open source PHP library for easily creating Ajax web applications",
     "authors": [
+        {"name": "Thierry Feuzeu"},
         {"name": "Jared White"},
         {"name": "J. Max Wilson"},
         {"name": "Joseph Woolley"},
-        {"name": "Steffen Konerow"},
-        {"name": "Thierry Feuzeu"}
+        {"name": "Steffen Konerow"}
     ],
-    "homepage": "http://jaxon-project.org",
+    "homepage": "https://www.jaxon-php.org",
     "license": "BSD-3-Clause",
     "keywords": ["Jaxon", "Xajax", "Ajax", "PHP", "Asynchronous"],
     "support": {
@@ -17,13 +17,26 @@
         "source": "https://github.com/jaxon-php/jaxon-core"
     },
     "require": {
-        "php": ">=5.4.0",
-        "pimple/pimple": "3.0.*",
-        "lemonphp/event": "1.0.*",
-        "matthiasmullie/minify": "1.3.*"
+        "php": ">=7.1",
+        "ext-json": "*",
+        "psr/log": "^1.0",
+        "psr/container": "^1.0",
+        "psr/http-message": "^1.0",
+        "psr/http-server-handler": "^1.0",
+        "psr/http-server-middleware": "^1.0",
+        "pimple/pimple": "^3.0",
+        "nyholm/psr7": "^1.5",
+        "nyholm/psr7-server": "^1.0",
+        "jaxon-php/jaxon-utils": "^1.1.2"
     },
     "require-dev": {
-        "phpunit/phpunit": "5.7.*"
+        "phpunit/phpunit": "^8.5",
+        "php-coveralls/php-coveralls": "^2.5",
+        "phpunit/phpcov": "6.*",
+        "jaxon-php/jaxon-annotations": "dev-test",
+        "jaxon-php/jaxon-dialogs": "dev-test",
+        "jaxon-php/jaxon-upload": "dev-test",
+        "lagdo/twitter-feed": "dev-test"
     },
     "autoload": {
         "psr-4": {
@@ -35,7 +48,18 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Jaxon\\Tests\\": "tests/"
+            "Jaxon\\Tests\\": "tests/",
+            "Jaxon\\Tests\\Ns\\": "tests/src/Ns/"
         }
-  }
+    },
+    "scripts": {
+        "test": [
+            "@clearCache",
+            "@putenv XDEBUG_MODE=coverage",
+            "vendor/bin/phpunit"
+        ],
+        "clearCache": "rm -rf cache/*"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

@@ -28,10 +28,10 @@ function logd_error_handler($errno, $errstr, $errfile, $errline){
 	case E_USER_WARNING:
 		require_once("lib/show_backtrace.php");
 		tlschema("errorhandler");
-		output("PHP Warning: \"%s\"`nin `b%s`b at `b%s`b.`n",$errstr,$errfile,$errline,true);
+//		output("PHP Warning: \"%s\"`nin `b%s`b at `b%s`b.`n",$errstr,$errfile,$errline,true);
 		tlschema();
 		$backtrace = show_backtrace();
-		rawoutput($backtrace);
+//		rawoutput($backtrace);
 		if (getsetting("notify_on_warn",0) > ""){
 			//$args = func_get_args();
 			//call_user_func_array("logd_error_notify",$args);

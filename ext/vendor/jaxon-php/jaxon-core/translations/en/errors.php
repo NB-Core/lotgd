@@ -7,6 +7,12 @@ return [
             'write-log' => "Jaxon was unable to write to the error log file: :file",
             'message' => "PHP Error Messages: :message",
         ],
+        'class' => [
+            'invalid' => "Unable to find class with name :name.",
+            'implements' => "The class :name does not implement the interface :interface.",
+            'container' => "Unable to get an instance of class :name from the DI container.",
+            'method' => "Unable to call method :method in class :class.",
+        ],
         'response' => [
             'result.invalid' => "An invalid response was returned while processing this request.",
             'data.invalid' => "The Jaxon response object could not load commands as the data provided was not valid.",
@@ -20,6 +26,7 @@ return [
         ],
         'request' => [
             'conversion' => "The incoming Jaxon data could not be converted from UTF-8.",
+            'plugin' => "Jaxon failed to find a plugin to process the request.",
         ],
         'mismatch' => [
             'content-types' => "Cannot mix content types in a single response: :type",
@@ -37,8 +44,10 @@ return [
         'objects' => [
             'invalid' => "Invalid object request received; no object :class or method :method found.",
             'instance' => "To register a callable object, please provide an instance of the desired class.",
+            'invalid-declaration' => "Invalid object declaration.",
         ],
         'register' => [
+            'plugin' => "No plugin with name :name to register a callable class or function.",
             'method' => "Failed to locate registration method for the following: :args",
             'invalid' => "Attempt to register invalid plugin: :name; " .
                 "should be derived from Jaxon\\Plugin\\Request or Jaxon\\Plugin\\Response.",
@@ -53,6 +62,9 @@ return [
         'magic' => [
             'get' => "Trying to read unknown property :name with magic property __get at line :line in file :file.",
             'set' => "Trying to write unknown property :name with magic property __set at line :line in file :file.",
+        ],
+        'dialog' => [
+            'library' => "There is no :type library with name :name",
         ],
     ],
 ];

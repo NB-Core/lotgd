@@ -12,13 +12,14 @@
 #	file_put_contents("/var/www/html/naruto/debug.txt",$s, FILE_APPEND);
 //}
 use Jaxon\Response\Response;          // and the Response class
+use function Jaxon\jaxon;
 
 function mail_expired($args=false) {
 	if ($args===false) return;
 	chdir("..");
 	$new="Expired";
 	$tabtext="Expired";
-	$objResponse = new Response();
+	$objResponse = jaxon()->newResponse();
 	$objResponse->assign("maillink","innerHTML", $new);
 	$objResponse->script("document.title=\"".$tabtext."\";");
 	global $session;
@@ -37,7 +38,7 @@ function mail_status($args=false) {
 	$timeout_setting=getsetting("LOGINTIMEOUT",360); // seconds
 	$new=maillink();
 	$tabtext=maillinktabtext();
-	$objResponse = new Response();
+	$objResponse = jaxon()->newResponse();
 	$objResponse->assign("maillink","innerHTML", $new);
 	if ($tabtext=='') { //empty
 		$tabtext=translate_inline('Legend of the Green Dragon','home');
@@ -56,6 +57,7 @@ function mail_status($args=false) {
 		session_unset();    
 		session_destroy(); // destroy if timeout
 	} elseif ($timeout<$start_timeout_show_seconds){
+		$m='';
 		if ($timeout>60) {
 			$min = floor($timeout/60);
 			$timeout = $timeout-$min*60;
@@ -87,7 +89,7 @@ function timeout_status($args=false) {
 	} elseif ($timeout<$start_timeout_show_seconds){
 		$warning="".appoencode("`t").sprintf("TIMEOUT in %s seconds!",$timeout);
 	} else $warning=':-)';
-	$objResponse = new Response();
+	$objResponse = jaxon()->newResponse();
 	$objResponse->assign("notify","innerHTML", $warning);
 	return $objResponse;
 }
@@ -104,7 +106,6 @@ function commentary_text($args=false) {
 	$viewonly=$args['viewonly'];	
 	$new=viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
 	$new=maillink();
-	$objResponse = new Response();
+	$objResponse = jaxon()->newResponse();
 	$objResponse->assign($section,"innerHTML", $new);
 }
-

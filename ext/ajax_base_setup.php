@@ -2,7 +2,7 @@
 require_once(__DIR__ . '/ajax_common.php');
 
 // Get the Jaxon singleton object
-$jaxon = jaxon();
+//$jaxon = jaxon();
 
 $s_css=$jaxon->getCss();
 $s_js=($jaxon->getJs());

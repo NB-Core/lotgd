@@ -1,99 +1,52 @@
 {
     "packages": [
         {
-            "name": "aura/session",
-            "version": "2.1.0",
-            "version_normalized": "2.1.0.0",
+            "name": "jaxon-php/jaxon-core",
+            "version": "v4.1.1",
+            "version_normalized": "4.1.1.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/auraphp/Aura.Session.git",
-                "reference": "7d2f7d41ad693970b5b6b83facca0961d3378883"
+                "url": "https://github.com/jaxon-php/jaxon-core.git",
+                "reference": "c158b7f542fc40bc2be3086d2fd80aebaf2cb44b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/auraphp/Aura.Session/zipball/7d2f7d41ad693970b5b6b83facca0961d3378883",
-                "reference": "7d2f7d41ad693970b5b6b83facca0961d3378883",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/c158b7f542fc40bc2be3086d2fd80aebaf2cb44b",
+                "reference": "c158b7f542fc40bc2be3086d2fd80aebaf2cb44b",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3.0"
+                "ext-json": "*",
+                "jaxon-php/jaxon-utils": "^1.1.2",
+                "nyholm/psr7": "^1.5",
+                "nyholm/psr7-server": "^1.0",
+                "php": ">=7.1",
+                "pimple/pimple": "^3.0",
+                "psr/container": "^1.0",
+                "psr/http-message": "^1.0",
+                "psr/http-server-handler": "^1.0",
+                "psr/http-server-middleware": "^1.0",
+                "psr/log": "^1.0"
             },
             "require-dev": {
-                "aura/di": "~2.0"
+                "jaxon-php/jaxon-annotations": "dev-test",
+                "jaxon-php/jaxon-dialogs": "dev-test",
+                "jaxon-php/jaxon-upload": "dev-test",
+                "lagdo/twitter-feed": "dev-test",
+                "php-coveralls/php-coveralls": "^2.5",
+                "phpunit/phpcov": "6.*",
+                "phpunit/phpunit": "^8.5"
             },
-            "suggest": {
-                "ext-mcrypt": "Mcrypt generates the next best secure CSRF tokens.",
-                "ext-openssl": "OpenSSL generates the best secure CSRF tokens.",
-                "ircmaxell/random-lib": "A Library For Generating Secure Random Numbers",
-                "paragonie/random_compat": "PHP 5.x polyfill for random_bytes() and random_int() from PHP 7"
-            },
-            "time": "2016-10-03T20:28:32+00:00",
-            "type": "library",
-            "extra": {
-                "aura": {
-                    "type": "library",
-                    "config": {
-                        "common": "Aura\\Session\\_Config\\Common"
-                    }
-                }
-            },
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "Aura\\Session\\": "src/",
-                    "Aura\\Session\\_Config\\": "config/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-2-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Aura.Session Contributors",
-                    "homepage": "https://github.com/auraphp/Aura.Session/contributors"
-                }
-            ],
-            "description": "Provides session management functionality, including lazy session starting, session segments, next-request-only (\"flash\") values, and CSRF tools.",
-            "homepage": "https://github.com/auraphp/Aura.Session",
-            "keywords": [
-                "csrf",
-                "flash",
-                "flash message",
-                "session",
-                "sessions"
-            ],
-            "install-path": "../aura/session"
-        },
-        {
-            "name": "jaxon-php/jaxon-armada",
-            "version": "v2.0.1",
-            "version_normalized": "2.0.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/jaxon-php/jaxon-armada.git",
-                "reference": "20b8557fe2703fa35acaea671cbf52ed36955ee8"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-armada/zipball/20b8557fe2703fa35acaea671cbf52ed36955ee8",
-                "reference": "20b8557fe2703fa35acaea671cbf52ed36955ee8",
-                "shasum": ""
-            },
-            "require": {
-                "aura/session": "~2.0",
-                "jaxon-php/jaxon-sentry": "~2.0"
-            },
-            "time": "2017-12-09T17:16:46+00:00",
+            "time": "2023-02-12T23:08:35+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
-                "psr-4": {
-                    "Jaxon\\Armada\\": "src/"
-                },
                 "files": [
                     "src/start.php"
-                ]
+                ],
+                "psr-4": {
+                    "Jaxon\\": "src/"
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
@@ -102,59 +55,7 @@
             "authors": [
                 {
                     "name": "Thierry Feuzeu"
-                }
-            ],
-            "description": "Advanced features for the Jaxon library",
-            "homepage": "https://github.com/jaxon-php/jaxon-armada",
-            "keywords": [
-                "Jaxon",
-                "ajax",
-                "framework",
-                "php",
-                "xajax"
-            ],
-            "install-path": "../jaxon-php/jaxon-armada"
-        },
-        {
-            "name": "jaxon-php/jaxon-core",
-            "version": "v2.2.16",
-            "version_normalized": "2.2.16.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/jaxon-php/jaxon-core.git",
-                "reference": "386b24725ec28ca29280b15e0f0895a910aeed3a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/386b24725ec28ca29280b15e0f0895a910aeed3a",
-                "reference": "386b24725ec28ca29280b15e0f0895a910aeed3a",
-                "shasum": ""
-            },
-            "require": {
-                "lemonphp/event": "1.0.*",
-                "matthiasmullie/minify": "1.3.*",
-                "php": ">=5.4.0",
-                "pimple/pimple": "3.0.*"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "5.7.*"
-            },
-            "time": "2020-09-24T05:20:26+00:00",
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "Jaxon\\": "src/"
                 },
-                "files": [
-                    "src/start.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "authors": [
                 {
                     "name": "Jared White"
                 },
@@ -166,13 +67,10 @@
                 },
                 {
                     "name": "Steffen Konerow"
-                },
-                {
-                    "name": "Thierry Feuzeu"
                 }
             ],
             "description": "Jaxon is an open source PHP library for easily creating Ajax web applications",
-            "homepage": "http://jaxon-project.org",
+            "homepage": "https://www.jaxon-php.org",
             "keywords": [
                 "Jaxon",
                 "ajax",
@@ -187,33 +85,37 @@
             "install-path": "../jaxon-php/jaxon-core"
         },
         {
-            "name": "jaxon-php/jaxon-sentry",
-            "version": "v2.0.7",
-            "version_normalized": "2.0.7.0",
+            "name": "jaxon-php/jaxon-utils",
+            "version": "v1.1.2",
+            "version_normalized": "1.1.2.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/jaxon-php/jaxon-sentry.git",
-                "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b"
+                "url": "https://github.com/jaxon-php/jaxon-utils.git",
+                "reference": "aab19361c114dd11d98f3ddb924b2e67bef1ea03"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-sentry/zipball/ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
-                "reference": "ab768cc2fe5c636c4e403f1288c83899ed1ffa1b",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-utils/zipball/aab19361c114dd11d98f3ddb924b2e67bef1ea03",
+                "reference": "aab19361c114dd11d98f3ddb924b2e67bef1ea03",
                 "shasum": ""
             },
             "require": {
-                "jaxon-php/jaxon-core": "~2.0"
+                "ext-json": "*",
+                "php": ">=7.1",
+                "tedivm/jshrink": "^1.4"
             },
-            "time": "2017-12-09T17:16:30+00:00",
+            "require-dev": {
+                "php-coveralls/php-coveralls": "^2.5",
+                "phpunit/phpcov": "^8.2",
+                "phpunit/phpunit": "^9.5"
+            },
+            "time": "2022-04-05T05:03:25+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
                 "psr-4": {
-                    "Jaxon\\Sentry\\": "src/"
-                },
-                "files": [
-                    "src/start.php"
-                ]
+                    "Jaxon\\Utils\\": "src/"
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
@@ -224,166 +126,132 @@
                     "name": "Thierry Feuzeu"
                 }
             ],
-            "description": "Common classes providing advanced features to the Jaxon library",
-            "homepage": "https://github.com/jaxon-php/jaxon-sentry",
+            "description": "Utilities for the Jaxon library.",
+            "homepage": "https://www.jaxon-php.org",
             "keywords": [
-                "Jaxon",
-                "ajax",
-                "framework",
-                "php",
-                "xajax"
-            ],
-            "install-path": "../jaxon-php/jaxon-sentry"
-        },
-        {
-            "name": "lemonphp/event",
-            "version": "v1.0.0",
-            "version_normalized": "1.0.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/lemonphp/event.git",
-                "reference": "57d9ffcc551febca967068668dd9f005d989d94b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/lemonphp/event/zipball/57d9ffcc551febca967068668dd9f005d989d94b",
-                "reference": "57d9ffcc551febca967068668dd9f005d989d94b",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.4.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "~4.8|~5.0",
-                "squizlabs/php_codesniffer": "^2.5"
-            },
-            "time": "2016-08-10T16:12:53+00:00",
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "Lemon\\Event\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Oanh Nguyen",
-                    "email": "oanhnn.bk@gmail.com"
-                }
-            ],
-            "description": "Simple event dispatcher",
-            "homepage": "https://github.com/lemonphp/event",
-            "keywords": [
-                "event",
-                "event-dispatcher"
-            ],
-            "install-path": "../lemonphp/event"
-        },
-        {
-            "name": "matthiasmullie/minify",
-            "version": "1.3.69",
-            "version_normalized": "1.3.69.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/matthiasmullie/minify.git",
-                "reference": "a61c949cccd086808063611ef9698eabe42ef22f"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/matthiasmullie/minify/zipball/a61c949cccd086808063611ef9698eabe42ef22f",
-                "reference": "a61c949cccd086808063611ef9698eabe42ef22f",
-                "shasum": ""
-            },
-            "require": {
-                "ext-pcre": "*",
-                "matthiasmullie/path-converter": "~1.1",
-                "php": ">=5.3.0"
-            },
-            "require-dev": {
-                "friendsofphp/php-cs-fixer": "~2.0",
-                "matthiasmullie/scrapbook": "dev-master",
-                "phpunit/phpunit": ">=4.8"
-            },
-            "suggest": {
-                "psr/cache-implementation": "Cache implementation to use with Minify::cache"
-            },
-            "time": "2022-08-01T09:00:18+00:00",
-            "bin": [
-                "bin/minifycss",
-                "bin/minifyjs"
-            ],
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "MatthiasMullie\\Minify\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Matthias Mullie",
-                    "email": "minify@mullie.eu",
-                    "homepage": "http://www.mullie.eu",
-                    "role": "Developer"
-                }
-            ],
-            "description": "CSS & JavaScript minifier, in PHP. Removes whitespace, strips comments, combines files (incl. @import statements and small assets in CSS files), and optimizes/shortens a few common programming patterns.",
-            "homepage": "http://www.minifier.org",
-            "keywords": [
-                "JS",
-                "css",
-                "javascript",
+                "config",
                 "minifier",
-                "minify"
+                "template",
+                "translation",
+                "validation"
             ],
             "support": {
-                "issues": "https://github.com/matthiasmullie/minify/issues",
-                "source": "https://github.com/matthiasmullie/minify/tree/1.3.69"
+                "issues": "https://github.com/jaxon-php/jaxon-utils/issues",
+                "source": "https://github.com/jaxon-php/jaxon-utils"
+            },
+            "install-path": "../jaxon-php/jaxon-utils"
+        },
+        {
+            "name": "nyholm/psr7",
+            "version": "1.5.1",
+            "version_normalized": "1.5.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Nyholm/psr7.git",
+                "reference": "f734364e38a876a23be4d906a2a089e1315be18a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Nyholm/psr7/zipball/f734364e38a876a23be4d906a2a089e1315be18a",
+                "reference": "f734364e38a876a23be4d906a2a089e1315be18a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1",
+                "php-http/message-factory": "^1.0",
+                "psr/http-factory": "^1.0",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-factory-implementation": "1.0",
+                "psr/http-message-implementation": "1.0"
+            },
+            "require-dev": {
+                "http-interop/http-factory-tests": "^0.9",
+                "php-http/psr7-integration-tests": "^1.0",
+                "phpunit/phpunit": "^7.5 || 8.5 || 9.4",
+                "symfony/error-handler": "^4.4"
+            },
+            "time": "2022-06-22T07:13:36+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.4-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Nyholm\\Psr7\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Tobias Nyholm",
+                    "email": "tobias.nyholm@gmail.com"
+                },
+                {
+                    "name": "Martijn van der Ven",
+                    "email": "martijn@vanderven.se"
+                }
+            ],
+            "description": "A fast PHP7 implementation of PSR-7",
+            "homepage": "https://tnyholm.se",
+            "keywords": [
+                "psr-17",
+                "psr-7"
+            ],
+            "support": {
+                "issues": "https://github.com/Nyholm/psr7/issues",
+                "source": "https://github.com/Nyholm/psr7/tree/1.5.1"
             },
             "funding": [
                 {
-                    "url": "https://github.com/matthiasmullie",
+                    "url": "https://github.com/Zegnat",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nyholm",
                     "type": "github"
                 }
             ],
-            "install-path": "../matthiasmullie/minify"
+            "install-path": "../nyholm/psr7"
         },
         {
-            "name": "matthiasmullie/path-converter",
-            "version": "1.1.3",
-            "version_normalized": "1.1.3.0",
+            "name": "nyholm/psr7-server",
+            "version": "1.0.2",
+            "version_normalized": "1.0.2.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/matthiasmullie/path-converter.git",
-                "reference": "e7d13b2c7e2f2268e1424aaed02085518afa02d9"
+                "url": "https://github.com/Nyholm/psr7-server.git",
+                "reference": "b846a689844cef114e8079d8c80f0afd96745ae3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/matthiasmullie/path-converter/zipball/e7d13b2c7e2f2268e1424aaed02085518afa02d9",
-                "reference": "e7d13b2c7e2f2268e1424aaed02085518afa02d9",
+                "url": "https://api.github.com/repos/Nyholm/psr7-server/zipball/b846a689844cef114e8079d8c80f0afd96745ae3",
+                "reference": "b846a689844cef114e8079d8c80f0afd96745ae3",
                 "shasum": ""
             },
             "require": {
-                "ext-pcre": "*",
-                "php": ">=5.3.0"
+                "php": "^7.1 || ^8.0",
+                "psr/http-factory": "^1.0",
+                "psr/http-message": "^1.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "~4.8"
+                "nyholm/nsa": "^1.1",
+                "nyholm/psr7": "^1.3",
+                "phpunit/phpunit": "^7.0 || ^8.5 || ^9.3"
             },
-            "time": "2019-02-05T23:41:09+00:00",
+            "time": "2021-05-12T11:11:27+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
                 "psr-4": {
-                    "MatthiasMullie\\PathConverter\\": "src/"
+                    "Nyholm\\Psr7Server\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -392,35 +260,106 @@
             ],
             "authors": [
                 {
-                    "name": "Matthias Mullie",
-                    "email": "pathconverter@mullie.eu",
-                    "homepage": "http://www.mullie.eu",
-                    "role": "Developer"
+                    "name": "Tobias Nyholm",
+                    "email": "tobias.nyholm@gmail.com"
+                },
+                {
+                    "name": "Martijn van der Ven",
+                    "email": "martijn@vanderven.se"
                 }
             ],
-            "description": "Relative path converter",
-            "homepage": "http://github.com/matthiasmullie/path-converter",
+            "description": "Helper classes to handle PSR-7 server requests",
+            "homepage": "http://tnyholm.se",
             "keywords": [
-                "converter",
-                "path",
-                "paths",
-                "relative"
+                "psr-17",
+                "psr-7"
             ],
-            "install-path": "../matthiasmullie/path-converter"
+            "support": {
+                "issues": "https://github.com/Nyholm/psr7-server/issues",
+                "source": "https://github.com/Nyholm/psr7-server/tree/1.0.2"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/Zegnat",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nyholm",
+                    "type": "github"
+                }
+            ],
+            "install-path": "../nyholm/psr7-server"
         },
         {
-            "name": "phpmailer/phpmailer",
-            "version": "v6.6.5",
-            "version_normalized": "6.6.5.0",
+            "name": "php-http/message-factory",
+            "version": "v1.0.2",
+            "version_normalized": "1.0.2.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/PHPMailer/PHPMailer.git",
-                "reference": "8b6386d7417526d1ea4da9edb70b8352f7543627"
+                "url": "https://github.com/php-http/message-factory.git",
+                "reference": "a478cb11f66a6ac48d8954216cfed9aa06a501a1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/8b6386d7417526d1ea4da9edb70b8352f7543627",
-                "reference": "8b6386d7417526d1ea4da9edb70b8352f7543627",
+                "url": "https://api.github.com/repos/php-http/message-factory/zipball/a478cb11f66a6ac48d8954216cfed9aa06a501a1",
+                "reference": "a478cb11f66a6ac48d8954216cfed9aa06a501a1",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4",
+                "psr/http-message": "^1.0"
+            },
+            "time": "2015-12-19T14:08:53+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Http\\Message\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Márk Sági-Kazár",
+                    "email": "mark.sagikazar@gmail.com"
+                }
+            ],
+            "description": "Factory interfaces for PSR-7 HTTP Message",
+            "homepage": "http://php-http.org",
+            "keywords": [
+                "factory",
+                "http",
+                "message",
+                "stream",
+                "uri"
+            ],
+            "support": {
+                "issues": "https://github.com/php-http/message-factory/issues",
+                "source": "https://github.com/php-http/message-factory/tree/master"
+            },
+            "install-path": "../php-http/message-factory"
+        },
+        {
+            "name": "phpmailer/phpmailer",
+            "version": "v6.8.0",
+            "version_normalized": "6.8.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPMailer/PHPMailer.git",
+                "reference": "df16b615e371d81fb79e506277faea67a1be18f1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/df16b615e371d81fb79e506277faea67a1be18f1",
+                "reference": "df16b615e371d81fb79e506277faea67a1be18f1",
                 "shasum": ""
             },
             "require": {
@@ -430,24 +369,26 @@
                 "php": ">=5.5.0"
             },
             "require-dev": {
-                "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
-                "doctrine/annotations": "^1.2",
+                "dealerdirect/phpcodesniffer-composer-installer": "^0.7.2",
+                "doctrine/annotations": "^1.2.6 || ^1.13.3",
                 "php-parallel-lint/php-console-highlighter": "^1.0.0",
                 "php-parallel-lint/php-parallel-lint": "^1.3.2",
                 "phpcompatibility/php-compatibility": "^9.3.5",
                 "roave/security-advisories": "dev-latest",
-                "squizlabs/php_codesniffer": "^3.6.2",
-                "yoast/phpunit-polyfills": "^1.0.0"
+                "squizlabs/php_codesniffer": "^3.7.1",
+                "yoast/phpunit-polyfills": "^1.0.4"
             },
             "suggest": {
                 "ext-mbstring": "Needed to send email in multibyte encoding charset or decode encoded addresses",
+                "ext-openssl": "Needed for secure SMTP sending and DKIM signing",
+                "greew/oauth2-azure-provider": "Needed for Microsoft Azure XOAUTH2 authentication",
                 "hayageek/oauth2-yahoo": "Needed for Yahoo XOAUTH2 authentication",
                 "league/oauth2-google": "Needed for Google XOAUTH2 authentication",
                 "psr/log": "For optional PSR-3 debug logging",
                 "symfony/polyfill-mbstring": "To support UTF-8 if the Mbstring PHP extension is not enabled (^1.2)",
                 "thenetworg/oauth2-azure": "Needed for Microsoft XOAUTH2 authentication"
             },
-            "time": "2022-10-07T12:23:10+00:00",
+            "time": "2023-03-06T14:43:22+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -479,7 +420,7 @@
             "description": "PHPMailer is a full-featured email creation and transfer class for PHP",
             "support": {
                 "issues": "https://github.com/PHPMailer/PHPMailer/issues",
-                "source": "https://github.com/PHPMailer/PHPMailer/tree/v6.6.5"
+                "source": "https://github.com/PHPMailer/PHPMailer/tree/v6.8.0"
             },
             "funding": [
                 {
@@ -491,27 +432,31 @@
         },
         {
             "name": "pimple/pimple",
-            "version": "v3.0.2",
-            "version_normalized": "3.0.2.0",
+            "version": "v3.5.0",
+            "version_normalized": "3.5.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/silexphp/Pimple.git",
-                "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a"
+                "reference": "a94b3a4db7fb774b3d78dad2315ddc07629e1bed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silexphp/Pimple/zipball/a30f7d6e57565a2e1a316e1baf2a483f788b258a",
-                "reference": "a30f7d6e57565a2e1a316e1baf2a483f788b258a",
+                "url": "https://api.github.com/repos/silexphp/Pimple/zipball/a94b3a4db7fb774b3d78dad2315ddc07629e1bed",
+                "reference": "a94b3a4db7fb774b3d78dad2315ddc07629e1bed",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3.0"
+                "php": ">=7.2.5",
+                "psr/container": "^1.1 || ^2.0"
             },
-            "time": "2015-09-11T15:10:35+00:00",
+            "require-dev": {
+                "symfony/phpunit-bridge": "^5.4@dev"
+            },
+            "time": "2021-10-28T11:13:42+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "3.0.x-dev"
+                    "dev-master": "3.4.x-dev"
                 }
             },
             "installation-source": "dist",
@@ -531,12 +476,416 @@
                 }
             ],
             "description": "Pimple, a simple Dependency Injection Container",
-            "homepage": "http://pimple.sensiolabs.org",
+            "homepage": "https://pimple.symfony.com",
             "keywords": [
                 "container",
                 "dependency injection"
             ],
+            "support": {
+                "source": "https://github.com/silexphp/Pimple/tree/v3.5.0"
+            },
             "install-path": "../pimple/pimple"
+        },
+        {
+            "name": "psr/container",
+            "version": "1.1.2",
+            "version_normalized": "1.1.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/container.git",
+                "reference": "513e0666f7216c7459170d56df27dfcefe1689ea"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/container/zipball/513e0666f7216c7459170d56df27dfcefe1689ea",
+                "reference": "513e0666f7216c7459170d56df27dfcefe1689ea",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.4.0"
+            },
+            "time": "2021-11-05T16:50:12+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Container\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "https://www.php-fig.org/"
+                }
+            ],
+            "description": "Common Container Interface (PHP FIG PSR-11)",
+            "homepage": "https://github.com/php-fig/container",
+            "keywords": [
+                "PSR-11",
+                "container",
+                "container-interface",
+                "container-interop",
+                "psr"
+            ],
+            "support": {
+                "issues": "https://github.com/php-fig/container/issues",
+                "source": "https://github.com/php-fig/container/tree/1.1.2"
+            },
+            "install-path": "../psr/container"
+        },
+        {
+            "name": "psr/http-factory",
+            "version": "1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/http-factory.git",
+                "reference": "12ac7fcd07e5b077433f5f2bee95b3a771bf61be"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/http-factory/zipball/12ac7fcd07e5b077433f5f2bee95b3a771bf61be",
+                "reference": "12ac7fcd07e5b077433f5f2bee95b3a771bf61be",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.0.0",
+                "psr/http-message": "^1.0"
+            },
+            "time": "2019-04-30T12:38:16+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Http\\Message\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "http://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interfaces for PSR-7 HTTP message factories",
+            "keywords": [
+                "factory",
+                "http",
+                "message",
+                "psr",
+                "psr-17",
+                "psr-7",
+                "request",
+                "response"
+            ],
+            "support": {
+                "source": "https://github.com/php-fig/http-factory/tree/master"
+            },
+            "install-path": "../psr/http-factory"
+        },
+        {
+            "name": "psr/http-message",
+            "version": "1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/http-message.git",
+                "reference": "f6561bf28d520154e4b0ec72be95418abe6d9363"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/http-message/zipball/f6561bf28d520154e4b0ec72be95418abe6d9363",
+                "reference": "f6561bf28d520154e4b0ec72be95418abe6d9363",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "time": "2016-08-06T14:39:51+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Http\\Message\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "http://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for HTTP messages",
+            "homepage": "https://github.com/php-fig/http-message",
+            "keywords": [
+                "http",
+                "http-message",
+                "psr",
+                "psr-7",
+                "request",
+                "response"
+            ],
+            "support": {
+                "source": "https://github.com/php-fig/http-message/tree/master"
+            },
+            "install-path": "../psr/http-message"
+        },
+        {
+            "name": "psr/http-server-handler",
+            "version": "1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/http-server-handler.git",
+                "reference": "aff2f80e33b7f026ec96bb42f63242dc50ffcae7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/http-server-handler/zipball/aff2f80e33b7f026ec96bb42f63242dc50ffcae7",
+                "reference": "aff2f80e33b7f026ec96bb42f63242dc50ffcae7",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.0",
+                "psr/http-message": "^1.0"
+            },
+            "time": "2018-10-30T16:46:14+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Http\\Server\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "http://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for HTTP server-side request handler",
+            "keywords": [
+                "handler",
+                "http",
+                "http-interop",
+                "psr",
+                "psr-15",
+                "psr-7",
+                "request",
+                "response",
+                "server"
+            ],
+            "support": {
+                "issues": "https://github.com/php-fig/http-server-handler/issues",
+                "source": "https://github.com/php-fig/http-server-handler/tree/master"
+            },
+            "install-path": "../psr/http-server-handler"
+        },
+        {
+            "name": "psr/http-server-middleware",
+            "version": "1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/http-server-middleware.git",
+                "reference": "2296f45510945530b9dceb8bcedb5cb84d40c5f5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/http-server-middleware/zipball/2296f45510945530b9dceb8bcedb5cb84d40c5f5",
+                "reference": "2296f45510945530b9dceb8bcedb5cb84d40c5f5",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.0",
+                "psr/http-message": "^1.0",
+                "psr/http-server-handler": "^1.0"
+            },
+            "time": "2018-10-30T17:12:04+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Http\\Server\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "http://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for HTTP server-side middleware",
+            "keywords": [
+                "http",
+                "http-interop",
+                "middleware",
+                "psr",
+                "psr-15",
+                "psr-7",
+                "request",
+                "response"
+            ],
+            "support": {
+                "issues": "https://github.com/php-fig/http-server-middleware/issues",
+                "source": "https://github.com/php-fig/http-server-middleware/tree/master"
+            },
+            "install-path": "../psr/http-server-middleware"
+        },
+        {
+            "name": "psr/log",
+            "version": "1.1.4",
+            "version_normalized": "1.1.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/log.git",
+                "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/d49695b909c3b7628b6289db5479a1c204601f11",
+                "reference": "d49695b909c3b7628b6289db5479a1c204601f11",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "time": "2021-05-03T11:20:27+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.1.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Log\\": "Psr/Log/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "https://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for logging libraries",
+            "homepage": "https://github.com/php-fig/log",
+            "keywords": [
+                "log",
+                "psr",
+                "psr-3"
+            ],
+            "support": {
+                "source": "https://github.com/php-fig/log/tree/1.1.4"
+            },
+            "install-path": "../psr/log"
+        },
+        {
+            "name": "tedivm/jshrink",
+            "version": "v1.6.5",
+            "version_normalized": "1.6.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tedious/JShrink.git",
+                "reference": "aa786b10f012fc0e15b5147c22bdb8c765fac76a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tedious/JShrink/zipball/aa786b10f012fc0e15b5147c22bdb8c765fac76a",
+                "reference": "aa786b10f012fc0e15b5147c22bdb8c765fac76a",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.0|^8.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "php-coveralls/php-coveralls": "^2.5.0",
+                "phpunit/phpunit": "^9|^10"
+            },
+            "time": "2023-03-12T15:19:34+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-0": {
+                    "JShrink": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Robert Hafner",
+                    "email": "tedivm@tedivm.com"
+                }
+            ],
+            "description": "Javascript Minifier built in PHP",
+            "homepage": "http://github.com/tedious/JShrink",
+            "keywords": [
+                "javascript",
+                "minifier"
+            ],
+            "support": {
+                "issues": "https://github.com/tedious/JShrink/issues",
+                "source": "https://github.com/tedious/JShrink/tree/v1.6.5"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/tedivm",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/tedivm/jshrink",
+                    "type": "tidelift"
+                }
+            ],
+            "install-path": "../tedivm/jshrink"
         }
     ],
     "dev": true,
