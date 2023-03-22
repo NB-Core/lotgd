@@ -8,10 +8,10 @@ $(window).ready(function(){
 		window.setTimeout('clear_ajax()','".((getsetting("LOGINTIMEOUT",900)-$clear_script_execution_seconds)*1000)."');
 		});
 function set_mail_ajax() {
-	active_mail_interval=window.setInterval('".rq()->call('mail_status',1)."',".($check_mail_timeout_seconds*1000).");
+	active_mail_interval=window.setInterval('jaxon_mail_status(1)',".($check_mail_timeout_seconds*1000).");
 }
 function set_timeout_ajax() {
-	active_timeout_interval=window.setInterval('".rq()->call('timeout_status',1)."',".($check_timeout_seconds*1000).");
+	active_timeout_interval=window.setInterval('jaxon_timeout_status(1)',".($check_timeout_seconds*1000).");
 }
 function clear_ajax() {
 	window.clearInterval(active_timeout_interval);

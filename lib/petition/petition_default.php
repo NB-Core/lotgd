@@ -5,8 +5,9 @@ $post = httpallpost();
 if (count($post)>0 && httppost('abuse')!="yes"){
 	$ip = explode(".",$_SERVER['REMOTE_ADDR']);
 	array_pop($ip);
-	$ip = join($ip,".").".";
-	$sql = "SELECT count(petitionid) AS c FROM ".db_prefix("petitions")." WHERE (ip LIKE '$ip%' OR id = '".addslashes($_COOKIE['lgi'])."') AND date > '".date("Y-m-d H:i:s",strtotime("-1 day"))."'";
+	$ip = implode(".",$ip).".";
+	$cookie_lgi = isset($_COOKIE['lgi'])?$_COOKIE['lgi']:'';
+	$sql = "SELECT count(petitionid) AS c FROM ".db_prefix("petitions")." WHERE (ip LIKE '$ip%' OR id = '".addslashes($cookie_lgi)."') AND date > '".date("Y-m-d H:i:s",strtotime("-1 day"))."'";
 	$result = db_query($sql);
 	$row = db_fetch_assoc($result);
 	if ($row['c'] < 5 || (isset($session['user']['superuser']) && $session['user']['superuser']&~SU_DOESNT_GIVE_GROTTO)){
@@ -21,7 +22,7 @@ if (count($post)>0 && httppost('abuse')!="yes"){
 		//$post['cancelreason'] = 'The admins here decided they didn\'t like something about how you submitted your petition.  They were also too lazy to give a real reason.';
 		$post = modulehook("addpetition",$post);
 		if (!isset($post['cancelpetition']) || !$post['cancelpetition']){
-			$sql = "INSERT INTO " . db_prefix("petitions") . " (author,date,body,pageinfo,ip,id) VALUES (".(int)$session['user']['acctid'].",'$date',\"".addslashes(output_array($post))."\",\"".addslashes(output_array($session,"Session:"))."\",'{$_SERVER['REMOTE_ADDR']}','".addslashes($_COOKIE['lgi'])."')";
+			$sql = "INSERT INTO " . db_prefix("petitions") . " (author,date,body,pageinfo,ip,id) VALUES (".(int)$session['user']['acctid'].",'$date',\"".addslashes(output_array($post))."\",\"".addslashes(output_array($session,"Session:"))."\",'{$_SERVER['REMOTE_ADDR']}','".addslashes($cookie_lgi)."')";
 			db_query($sql);
 			// If the admin wants it, email the petitions to them.
 			if (getsetting("emailpetitions", 0)) {
@@ -75,9 +76,9 @@ if (count($post)>0 && httppost('abuse')!="yes"){
 		rawoutput("<input type='hidden' name='email' value=\"".htmlentities($session['user']['emailaddress'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
 	} else {
 		output("Your Character's Name: ");
-		rawoutput("<input name='charname' value=\"".htmlentities($session['user']['name'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\" size='46'>");
+		rawoutput("<input name='charname' size='46'>");
 		output("`nYour email address: ");
-		rawoutput("<input name='email' value=\"".htmlentities($session['user']['emailaddress'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\" size='50'>");
+		rawoutput("<input name='email' size='50'>");
 		$nolog = translate_inline("Character is not logged in!!");
 		rawoutput("<input name='unverified' type='hidden' value='$nolog'>");
 	}

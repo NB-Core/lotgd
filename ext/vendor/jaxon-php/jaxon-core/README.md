@@ -1,6 +1,7 @@
-[![Build Status](https://travis-ci.org/jaxon-php/jaxon-core.svg?branch=master)](https://travis-ci.org/jaxon-php/jaxon-core)
+[![Build Status](https://github.com/jaxon-php/jaxon-core/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/jaxon-php/jaxon-core/actions)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/jaxon-php/jaxon-core/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/jaxon-php/jaxon-core/?branch=master)
 [![StyleCI](https://styleci.io/repos/60390067/shield?branch=master)](https://styleci.io/repos/60390067)
+[![codecov](https://codecov.io/gh/jaxon-php/jaxon-core/branch/master/graph/badge.svg?token=MKqDVnW7eJ)](https://codecov.io/gh/jaxon-php/jaxon-core)
 
 [![Latest Stable Version](https://poser.pugx.org/jaxon-php/jaxon-core/v/stable)](https://packagist.org/packages/jaxon-php/jaxon-core)
 [![Total Downloads](https://poser.pugx.org/jaxon-php/jaxon-core/downloads)](https://packagist.org/packages/jaxon-php/jaxon-core)
@@ -27,15 +28,15 @@ Features
 - The javascript library is provided in a separated and javascript-only package, loaded by default from the [jsDelivr CDN](https://www.jsdelivr.com/projects/jaxon).
 - The generated javascript classes are named according to their namespace or the subdirectory where they are located.
 - All PHP packages install with `Composer`, are fully namespaced, and implement `PSR-4` autoloading.
-- Starting from release 2.1, the library natively implements Ajax file upload.
-- The Jaxon library runs on PHP versions 5.4 to 7.0.
+- The library natively implements Ajax file upload.
+- Up to version 3, the library runs on PHP versions 5.4 to 7.X. The version 4 runs on PHP versions 7.1 to 8.X.
 
 Documentation
 -------------
 
 The project documentation is available in [English](http://www.jaxon-php.org/en/docs/) and [French](http://www.jaxon-php.org/fr/docs/).
 
-Some sample codes are provided in the [jaxon-php/jaxon-examples](https://github.com/jaxon-php/jaxon-examples) package, and demonstrated in [the website](http://www.jaxon-php.org/examples/).
+Some sample codes (only for version 2.x) are provided in the [jaxon-php/jaxon-examples](https://github.com/jaxon-php/jaxon-examples) package, and demonstrated in [the website](http://www.jaxon-php.org/examples/).
 
 Contribute
 ----------

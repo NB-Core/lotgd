@@ -7,7 +7,7 @@ require_once("lib/arraytourl.php");
 
 $injected_modules = array(1=>array(),0=>array());
 
-function injectmodule($modulename,$force=false){
+function injectmodule($modulename,$force=false,$with_db=true){
 	global $mostrecentmodule,$injected_modules;
 	//try to circumvent the array_key_exists() problem we've been having.
 	if ($force) $force = 1; else $force = 0;
@@ -23,26 +23,28 @@ function injectmodule($modulename,$force=false){
 	$modulefilename = "modules/{$modulename}.php";
 	if (file_exists($modulefilename)){
 		tlschema("module-{$modulename}");
-		$sql = "SELECT active,filemoddate,infokeys,version FROM " . db_prefix("modules") . " WHERE modulename='$modulename'";
-		$result = db_query_cached($sql, "inject-$modulename", 3600);
-		if (!$force) {
-			//our chance to abort if this module isn't currently installed
-			//or doesn't meet the prerequisites.
-			if (db_num_rows($result)==0) {
-				tlschema();
-			 	debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n",$modulename));
-				//alright, error case. on some occasions the cache might become polluted if the DB i.e. returns nothing. Then we need to rebuild the cache
-				massinvalidate();
-				$injected_modules[$force][$modulename]=false;
-				return false;
-			}
-			$row = db_fetch_assoc($result);
-			if ($row['active']){ } else {
-				tlschema();
-			 	debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n",$modulename));
-				$injected_modules[$force][$modulename]=false;
-				return false;
-			}
+		if ($with_db) {
+			$sql = "SELECT active,filemoddate,infokeys,version FROM " . db_prefix("modules") . " WHERE modulename='$modulename'";
+			$result = db_query_cached($sql, "inject-$modulename", 3600);
+			if (!$force) {
+				//our chance to abort if this module isn't currently installed
+				//or doesn't meet the prerequisites.
+				if (db_num_rows($result)==0) {
+					tlschema();
+					debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n",$modulename));
+					//alright, error case. on some occasions the cache might become polluted if the DB i.e. returns nothing. Then we need to rebuild the cache
+					massinvalidate();
+					$injected_modules[$force][$modulename]=false;
+					return false;
+				}
+				$row = db_fetch_assoc($result);
+				if ($row['active']){ } else {
+					tlschema();
+					debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n",$modulename));
+					$injected_modules[$force][$modulename]=false;
+					return false;
+				}
+			}	
 		}
 		require_once($modulefilename);
 		$mostrecentmodule = $modulename;
@@ -63,7 +65,7 @@ function injectmodule($modulename,$force=false){
 			}
 		}
 		//check to see if the module needs to be upgraded.
-		if (db_num_rows($result)>0){
+		if ($with_db && db_num_rows($result)>0){
 			if (!isset($row)) $row = db_fetch_assoc($result);
 			$filemoddate = date("Y-m-d H:i:s",filemtime($modulefilename));
 			if ($row['filemoddate']!=$filemoddate || $row['infokeys']=="" ||
@@ -78,7 +80,7 @@ function injectmodule($modulename,$force=false){
 				$result = db_query($sql);
 				$row = db_fetch_assoc($result);
 				if ($row['filemoddate']!=$filemoddate ||
-						$row['infokeys']=="" || $row['infokeys'][0] != '|' ||
+						!isset($row['infokeys']) || $row['infokeys']=="" || $row['infokeys'][0] != '|' ||
 						$row['version']==''){
 					//the file mod time is still different from that
 					//recorded in the database, time to update the database
@@ -100,7 +102,7 @@ function injectmodule($modulename,$force=false){
 					//we'll update, and on their second check, they'll fail.
 					//Only we will update the table.
 
-					$keys = "|".join(array_keys($info), "|")."|";
+					$keys = "|".implode("|",array_keys($info))."|";
 
 					$sql = "UPDATE ". db_prefix("modules") . " SET moduleauthor='".addslashes($info['author'])."', category='".addslashes($info['category'])."', formalname='".addslashes($info['name'])."', description='".addslashes($info['description'])."', filemoddate='$filemoddate', infokeys='$keys',version='".addslashes($info['version'])."',download='".addslashes($info['download'])."' WHERE modulename='$modulename'";
 					db_query($sql);
@@ -123,7 +125,7 @@ function injectmodule($modulename,$force=false){
 		$injected_modules[$force][$modulename]=true;
 		return true;
 	}else{
-	 	output("`n`\$Module `^%s`\$ was not found in the modules directory.`n",$modulename);
+		output("`n`\$Module `^%s`\$ was not found in the modules directory.`n",$modulename);
 		$injected_modules[$force][$modulename]=false;
 		return false;
 	}
@@ -317,23 +319,23 @@ function mass_module_prepare($hooknames){
 	//collect the modules who attach to these hooks.
 	$sql =
 		"SELECT
-			$Pmodule_hooks.modulename,
-			$Pmodule_hooks.location,
-			$Pmodule_hooks.function,
-			$Pmodule_hooks.whenactive
-		FROM
+		$Pmodule_hooks.modulename,
+		$Pmodule_hooks.location,
+		$Pmodule_hooks.`function`,
+		$Pmodule_hooks.whenactive
+			FROM
 			$Pmodule_hooks
-		INNER JOIN
+			INNER JOIN
 			$Pmodules
-		ON	$Pmodules.modulename = $Pmodule_hooks.modulename
-		WHERE
+			ON	$Pmodules.modulename = $Pmodule_hooks.modulename
+			WHERE
 			active = 1
-		AND	location IN ('".join("', '",$hooknames)."')
-		ORDER BY
+			AND	location IN ('".implode("', '",$hooknames)."')
+			ORDER BY
 			$Pmodule_hooks.location,
-			$Pmodule_hooks.priority,
-			$Pmodule_hooks.modulename";
-	$result = db_query_cached($sql,"module_prepare-".md5(join($hooknames)));
+		$Pmodule_hooks.priority,
+		$Pmodule_hooks.modulename";
+	$result = db_query_cached($sql,"module_prepare-".md5(implode("",$hooknames)));
 	$modulenames = array();
 	while ($row = db_fetch_assoc($result)){
 		$modulenames[$row['modulename']] = $row['modulename'];
@@ -348,17 +350,17 @@ function mass_module_prepare($hooknames){
 		$module_preload[$row['location']][$row['modulename']] = $row['function'];
 	}
 	//SQL IN() syntax for the modules involved here.
-	$modulelist = "'".join("', '",$modulenames)."'";
+	$modulelist = "'".implode("', '",$modulenames)."'";
 
 	//Load the settings for the modules on these hooks.
 	$sql =
 		"SELECT
-			modulename,
-			setting,
-			value
-		FROM
+		modulename,
+		setting,
+		value
+			FROM
 			$Pmodule_settings
-		WHERE
+			WHERE
 			modulename IN ($modulelist)";
 	$result = db_query($sql);
 	while ($row = db_fetch_assoc($result)){
@@ -370,15 +372,15 @@ function mass_module_prepare($hooknames){
 	// nothing to do if there is no user logged in
 	$sql =
 		"SELECT
-			modulename,
-			setting,
-			userid,
-			value
-		FROM
+		modulename,
+		setting,
+		userid,
+		value
+			FROM
 			$Pmodule_userprefs
-		WHERE
+			WHERE
 			modulename IN ($modulelist)
-		AND	userid = ".(int)$session['user']['acctid'];
+			AND	userid = ".(int)$session['user']['acctid'];
 	$result = db_query($sql);
 	while ($row = db_fetch_assoc($result)){
 		$module_prefs[$row['userid']][$row['modulename']][$row['setting']] = $row['value'];
@@ -401,6 +403,10 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 	global $blocked_modules, $block_all_modules, $unblocked_modules;
 	global $output, $session, $modulehook_queries;
 	global $currenthook;
+
+	//if we're in the installer, modulehooks are moo
+	if (defined("IS_INSTALLER")) return $args;
+
 	$lasthook = $currenthook;
 	$currenthook = $hookname;
 	static $hookcomment = array();
@@ -415,7 +421,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 		}
 		debug("Args parameter to modulehook $hookname from $where is not an array.");
 	}
-	if ($session['user']['superuser'] & SU_DEBUG_OUTPUT && !isset($hookcomment[$hookname])){
+	if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT) && !isset($hookcomment[$hookname])){
 		rawoutput("<!--Module Hook: $hookname; allow inactive: ".($allowinactive?"true":"false")."; only this module: ".($only!==false?$only:"any module"));
 		if (!is_array($args)) {
 			$arg = $args . " (NOT AN ARRAY!)";
@@ -437,27 +443,27 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 		$hookcomment[$hookname]=true;
 	}
 	if (isset($modulehook_queries[$hookname]) //This data was pre fetched in mass_module_prepare
-		&& $allowinactive == false //We only ever prefetch for active modules, if we're doing inactive, do the regular query.
-		){
+			&& $allowinactive == false //We only ever prefetch for active modules, if we're doing inactive, do the regular query.
+	   ){
 		$result = $modulehook_queries[$hookname];
 	}else{
 		$sql =
 			"SELECT
-				" . db_prefix("module_hooks") . ".modulename,
-				" . db_prefix("module_hooks") . ".location,
-				" . db_prefix("module_hooks") . ".function,
-				" . db_prefix("module_hooks") . ".whenactive
-			FROM
+			" . db_prefix("module_hooks") . ".modulename,
+			" . db_prefix("module_hooks") . ".location,
+			" . db_prefix("module_hooks") . ".`function`,
+			" . db_prefix("module_hooks") . ".whenactive
+				FROM
 				" . db_prefix("module_hooks") . "
-			INNER JOIN
+				INNER JOIN
 				" . db_prefix("modules") . "
-			ON	" . db_prefix("modules") . ".modulename = " . db_prefix("module_hooks") . ".modulename
-			WHERE
+				ON	" . db_prefix("modules") . ".modulename = " . db_prefix("module_hooks") . ".modulename
+				WHERE
 				$active
 				" . db_prefix("module_hooks") . ".location='$hookname'
-			ORDER BY
+				ORDER BY
 				" . db_prefix("module_hooks") . ".priority,
-				" . db_prefix("module_hooks") . ".modulename";
+			" . db_prefix("module_hooks") . ".modulename";
 		$result = db_query_cached($sql,"hook-".$hookname);
 	}
 	// $args is an array passed by value and we take the output and pass it
@@ -508,29 +514,29 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				// $outputbeforehook=$output;
 				// $output=new output_collector();
 				//before, this was just string switching, NOW we make new objects everytime Oo craaaazy load, I am removing this. if you want to collapse, put it in, it's a MODULE
-				
-				
-/*******************************************************/
+
+
+				/*******************************************************/
 				$starttime = getmicrotime();
-/*******************************************************/
+				/*******************************************************/
 				if (function_exists($row['function'])) {
-					if ($session['user']['superuser'] & SU_DEBUG_OUTPUT){
-					rawoutput("<!-- Hook: ".$hookname." on module ".$row['function']." called... -->");
+					if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT)){
+						rawoutput("<!-- Hook: ".$hookname." on module ".$row['function']." called... -->");
 					}
 					$res = $row['function']($hookname, $args);
 				} else {
-					trigger_error("Unknown function {$row['function']} for hookname $hookname in module {$row['module']}.", E_USER_WARNING);
+					trigger_error("Unknown function {$row['function']} for hookname $hookname in module {$row['modulename']}.", E_USER_WARNING);
 				}
-/*******************************************************/
+				/*******************************************************/
 				$endtime = getmicrotime();
-				if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))){
+				if (($endtime - $starttime >= 1.00 && (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT==SU_DEBUG_OUTPUT)))){
 					debug("Slow Hook (".round($endtime-$starttime,2)."s): $hookname - {$row['modulename']}`n");
 				}
 				if (getsetting('debug',0) ) {
 					$sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'hooktime','".$hookname."','".$row['modulename']."','".($endtime-$starttime)."');";
 					$resultdebug=db_query($sql);
 				}
-/*******************************************************/
+				/*******************************************************/
 				// $outputafterhook = $output;
 				// $output=$outputbeforehook;
 				// test to see if we had any output and if the module allows
@@ -541,18 +547,18 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 					$res = $args;
 				}
 				// if ($testout >"" &&
-						// $hookname!="collapse{" &&
-						// $hookname!="}collapse" &&
-						// $hookname!="collapse-nav{" &&
-						// $hookname!="}collapse-nav" &&
-						// !array_key_exists('nocollapse',$res)) {
-					//restore the original output's reference
-					// modulehook("collapse{",
-						// array("name"=>'a-'.$row['modulename']));
-					// $output->rawoutput($outputafterhook->get_rawoutput());
-					// modulehook("}collapse");
+				// $hookname!="collapse{" &&
+				// $hookname!="}collapse" &&
+				// $hookname!="collapse-nav{" &&
+				// $hookname!="}collapse-nav" &&
+				// !array_key_exists('nocollapse',$res)) {
+				//restore the original output's reference
+				// modulehook("collapse{",
+				// array("name"=>'a-'.$row['modulename']));
+				// $output->rawoutput($outputafterhook->get_rawoutput());
+				// modulehook("}collapse");
 				// } else {
-					//$output->rawoutput($outputafterhook->get_rawoutput());
+				//$output->rawoutput($outputafterhook->get_rawoutput());
 				// }
 				// Clear the collapse flag
 				unset($res['nocollapse']);
@@ -737,16 +743,18 @@ function get_all_module_prefs($module=false,$user=false){
 function get_module_pref($name,$module=false,$user=false){
 	global $module_prefs,$mostrecentmodule,$session;
 	if ($module === false) $module = $mostrecentmodule;
-	if ($user===false) $user = $session['user']['acctid'];
+	if ($user===false) {
+		if (isset($session['user']['acctid'])) $user = $session['user']['acctid'];
+	}
 
-	if (isset($module_prefs[$user][$module][$name])) {
+	if ($user!==false && isset($module_prefs[$user][$module][$name])) {
 		return $module_prefs[$user][$module][$name];
 	}
 
 	//load here, not before
-	load_module_prefs($module,$user);
+	if ($user!== false) load_module_prefs($module,$user);
 	//check if *now* it's loaded
-	if (isset($module_prefs[$user][$module][$name])) {
+	if ($user!== false && isset($module_prefs[$user][$module][$name])) {
 		return $module_prefs[$user][$module][$name];
 	}
 
@@ -761,7 +769,7 @@ function get_module_pref($name,$module=false,$user=false){
 		} else {
 			$x = explode("|",$info['prefs'][$name]);
 		}
-		if (isset($x[1])){
+		if ($user!==false && isset($x[1])){
 			set_module_pref($name,$x[1],$module,$user);
 			return $x[1];
 		}
@@ -771,6 +779,8 @@ function get_module_pref($name,$module=false,$user=false){
 
 function set_module_pref($name,$value,$module=false,$user=false){
 	global $module_prefs,$mostrecentmodule,$session;
+	if (!isset($session['user']['acctid'])) //no user? then we can't do prefs
+		return;
 	if ($module === false) $module = $mostrecentmodule;
 	if ($user === false) $uid=$session['user']['acctid'];
 	else $uid = $user;
@@ -812,6 +822,7 @@ function increment_module_pref($name,$value=1,$module=false,$user=false){
 		$sql = "UPDATE " . db_prefix("module_userprefs") . " SET value=value+$value WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
 		db_query($sql);
 	}else{
+		$module_prefs[$uid][$module][$name] = $value;
 		$sql = "INSERT INTO " . db_prefix("module_userprefs"). " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','".addslashes($value)."')";
 		db_query($sql);
 	}
@@ -819,7 +830,7 @@ function increment_module_pref($name,$value=1,$module=false,$user=false){
 }
 
 function clear_module_pref($name,$module=false,$user=false){
- 	global $module_prefs,$mostrecentmodule,$session;
+	global $module_prefs,$mostrecentmodule,$session;
 	if ($module === false) $module = $mostrecentmodule;
 	if ($user === false) $uid=$session['user']['acctid'];
 	else $uid = $user;
@@ -853,7 +864,7 @@ function load_module_prefs($module, $user=false){
 	}//end if
 }//end function
 
-function get_module_info($shortname){
+function get_module_info($shortname,$with_db=true){
 	global $mostrecentmodule;
 
 	$moduleinfo = array();
@@ -861,7 +872,7 @@ function get_module_info($shortname){
 	// Save off the mostrecent module.
 	$mod = $mostrecentmodule;
 
-	if(injectmodule($shortname,true)) {
+	if(injectmodule($shortname,true,$with_db)) {
 		$fname = $shortname."_getmoduleinfo";
 		if (function_exists($fname)){
 			tlschema("module-$shortname");
@@ -895,7 +906,7 @@ function get_module_info($shortname){
 					"author"=>"$mf ({$shortname}_getmoduleinfo)",
 					"category"=>"$mf ({$shortname}_getmoduleinfo)",
 					"download"=>"",
-				);
+					);
 		}
 	} else {
 		// This module couldn't be injected at all.
@@ -954,28 +965,28 @@ function module_drophook($hookname,$functioncall=false){
 }
 
 /**
-  * Called by modules to register themselves for a game module hook point, with default priority.
-  * Modules with identical priorities will execute alphabetically.  Modules can only have one hook on a given hook name,
-  * even if they call this function multiple times, unless they specify different values for the functioncall argument.
-  *
-  * @param string $hookname The hook to receive a notification for
-  * @param string $functioncall The function that should be called, if not specified, use {modulename}_dohook() as the function
-  * @param string $whenactive An expression that should be evaluated before triggering the event, if not specified, none.
-   */
+ * Called by modules to register themselves for a game module hook point, with default priority.
+ * Modules with identical priorities will execute alphabetically.  Modules can only have one hook on a given hook name,
+ * even if they call this function multiple times, unless they specify different values for the functioncall argument.
+ *
+ * @param string $hookname The hook to receive a notification for
+ * @param string $functioncall The function that should be called, if not specified, use {modulename}_dohook() as the function
+ * @param string $whenactive An expression that should be evaluated before triggering the event, if not specified, none.
+ */
 function module_addhook($hookname,$functioncall=false,$whenactive=false){
 	module_addhook_priority($hookname,50,$functioncall,$whenactive);
 }
 
 /**
-  * Called by modules to register themselves for a game module hook point, with a given priority -- lower numbers execute first.
-  * Modules with identical priorities will execute alphabetically.  Modules can only have one hook on a given hook name,
-  * even if they call this function multiple times, unless they specify different values for the functioncall argument.
-  *
-  * @param string $hookname The hook to receive a notification for
-  * @param integer $priority The priority for this hooking -- lower numbers execute first.  < 50 means earlier-than-normal execution, > 50 means later than normal execution.  Priority only affects execution order compared to other events registered on the same hook, all events on a given hook will execute before the game resumes execution.
-  * @param string $functioncall The function that should be called, if not specified, use {modulename}_dohook() as the function
-  * @param string $whenactive An expression that should be evaluated before triggering the event, if not specified, none.
-   */
+ * Called by modules to register themselves for a game module hook point, with a given priority -- lower numbers execute first.
+ * Modules with identical priorities will execute alphabetically.  Modules can only have one hook on a given hook name,
+ * even if they call this function multiple times, unless they specify different values for the functioncall argument.
+ *
+ * @param string $hookname The hook to receive a notification for
+ * @param integer $priority The priority for this hooking -- lower numbers execute first.  < 50 means earlier-than-normal execution, > 50 means later than normal execution.  Priority only affects execution order compared to other events registered on the same hook, all events on a given hook will execute before the game resumes execution.
+ * @param string $functioncall The function that should be called, if not specified, use {modulename}_dohook() as the function
+ * @param string $whenactive An expression that should be evaluated before triggering the event, if not specified, none.
+ */
 function module_addhook_priority($hookname,$priority=50,$functioncall=false,$whenactive=false){
 	global $mostrecentmodule;
 	module_drophook($hookname,$functioncall);
@@ -1324,7 +1335,7 @@ function uninstall_module($module){
 }
 
 function install_module($module, $force=true){
- 	global $mostrecentmodule, $session;
+	global $mostrecentmodule, $session;
 	$name = $session['user']['name'];
 	if (!$name) $name = '`@System`0';
 
@@ -1350,7 +1361,7 @@ function install_module($module, $force=true){
 				output("`\$Module could not installed -- it did not meet its prerequisites.`n");
 				return false;
 			}else{
-				$keys = "|".join(array_keys($info), "|")."|";
+				$keys = "|".implode("|", array_keys($info))."|";
 				$sql = "INSERT INTO " . db_prefix("modules") . " (modulename,formalname,moduleauthor,active,filename,installdate,installedby,category,infokeys,version,download,description) VALUES ('$mostrecentmodule','".addslashes($info['name'])."','".addslashes($info['author'])."',0,'{$mostrecentmodule}.php','".date("Y-m-d H:i:s")."','".addslashes($name)."','".addslashes($info['category'])."','$keys','".addslashes($info['version'])."','".addslashes($info['download'])."', '".addslashes($info['description'])."')";
 				$result=db_query($sql);
 				if (!$result) {
@@ -1389,33 +1400,35 @@ function install_module($module, $force=true){
 }
 
 /**
-  * Evaluates a PHP Expression
-  *
-  * @param string $condition The PHP condition to evaluate
-  * @return bool The result of the evaluated expression
-  */
+ * Evaluates a PHP Expression
+ *
+ * @param string $condition The PHP condition to evaluate
+ * @return bool The result of the evaluated expression
+ */
 function module_condition($condition) {
 	global $session;
 	$result = eval($condition);
 	return (bool)$result;
 }
 
-function get_module_install_status(){
+function get_module_install_status($with_db=true){
+	global $session;
 	// Collect the names of all installed modules.
 	$seenmodules = array();
 	$seencats = array();
-	$sql = "SELECT modulename,category FROM " . db_prefix("modules");
-	$result = @db_query($sql);
-	if ($result !== false){
-		while ($row = db_fetch_assoc($result)) {
-			$seenmodules[$row['modulename'].".php"] = true;
-			if (!array_key_exists($row['category'], $seencats))
-				$seencats[$row['category']] = 1;
-			else
-				$seencats[$row['category']]++;
+	if ($with_db) {
+		$sql = "SELECT modulename,category FROM " . db_prefix("modules");
+		$result = @db_query($sql);
+		if ($result !== false){
+			while ($row = db_fetch_assoc($result)) {
+				$seenmodules[$row['modulename'].".php"] = true;
+				if (!array_key_exists($row['category'], $seencats))
+					$seencats[$row['category']] = 1;
+				else
+					$seencats[$row['category']]++;
+			}
 		}
 	}
-
 	$uninstmodules = array();
 	if ($handle = opendir("modules")){
 		$ucount=0;

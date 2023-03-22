@@ -354,7 +354,7 @@ if ($op==""){
 	}
 	rawoutput("<script language='JavaScript'>
 	var superusers = new Array();");
-	while (list($key,$val)=each($superusers)){
+	foreach($superusers as $key=>$val){
 		rawoutput("	superusers['".addslashes($val)."'] = true;");
 	}
 	rawoutput("</script>");

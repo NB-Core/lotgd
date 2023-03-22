@@ -608,7 +608,7 @@ function bell_rand($min=false,$max=false){
 	return $min + $val * ($max-$min);
 
 	//below optomizations don't work atm.
-	echo $r." = ";
+	#echo $r." = ";
 	$index="0.00000";
 	for ($n = 0; $n<strlen($r); $n++){
 		$f = substr($r,0,$n);
@@ -624,7 +624,7 @@ function bell_rand($min=false,$max=false){
 		if (isset($bell_curve[(float)($f+$x)])) return $min + $bell_curve[(float)($f+$x)] * ($max-$min);
 		if (isset($bell_curve[(float)($f-$x)])) return $min + $bell_curve[(float)($f-$x)] * ($max-$min);
 	}
-	echo "\n<br>Unable to locate random value, \$r was $r<br>\n";
+	#echo "\n<br>Unable to locate random value, \$r was $r<br>\n";
 }
 
 ?>

@@ -30,12 +30,17 @@ if ($session['user']['loggedin'] && $session['loggedin']){
 	}
 	$sql="SELECT output FROM ".db_prefix("accounts_output")." WHERE acctid={$session['user']['acctid']};";
 	$result=db_query($sql);
-	$row=db_fetch_assoc($result);
-	if ($row['output']>"") $row['output']=gzuncompress($row['output']);
-	if (strpos("HTML",$row['output'])!==false && $row['output']!='') 
+	if (db_num_rows($result)<1) {
+		//no output found, nothing to set
+		$row = array ("output"=>'');
+	} else {
+		$row=db_fetch_assoc($result);
+		if ($row['output']>"") $row['output']=gzuncompress($row['output']);
+		if (strpos("HTML",$row['output'])!==false && $row['output']!='') 
 		$row['output']=gzuncompress($row['output']);
 		//check if the output needs to be unzipped again 
 		//and make sure '' is not within gzuncompress -> error
+	}
 	if (!is_array($session['allowednavs']) ||
 			count($session['allowednavs'])==0 || $row['output']=="") {
 		$session['allowednavs']=array();

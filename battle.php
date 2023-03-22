@@ -385,7 +385,7 @@ if ($op != "newtarget") {
 			$fleeable = 0;
 			$leaderisdead = false;
 			foreach ($newenemies as $index => $badguy) {
-				if ($badguy['dead'] == true || $badguy['creaturehealth'] <= 0){
+				if ((isset($badguy['dead']) && $badguy['dead'] == true) || $badguy['creaturehealth'] <= 0){
 					if (isset($badguy['essentialleader']) && $badguy['essentialleader'] == true) {
 						$defeat = false;
 						$victory = true;
@@ -435,7 +435,7 @@ if ($op != "newtarget") {
 				$enemiesflown=true;
 				$needtostopfighting=true;
 			}
-			if (getsetting("instantexp",false) == true) {
+			if (getsetting("instantexp",false) == true && isset($verynewenemies)) {
 				$newenemies = $verynewenemies;
 			}
 		}
@@ -520,7 +520,7 @@ if ($victory || $defeat){
 	}
 	foreach($companions as $index => $companion) {
 		if(isset($companion['expireafterfight']) && $companion['expireafterfight']) {
-			output($companion['dyingtext']);
+			if (isset($companion['dyingtext'])) output($companion['dyingtext']);
 			unset($companions[$index]);
 		}
 	}

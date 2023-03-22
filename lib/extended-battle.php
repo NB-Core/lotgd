@@ -25,13 +25,13 @@ function show_enemies($enemies) {
 			$ccode = "`#";
 		else
 			$ccode = "`2";
+		if (!isset($badguy['creaturemaxhealth']) && isset($badguy['creaturehealth'])) $badguy['creaturemaxhealth'] = $badguy['creaturehealth'];
 		if (isset($badguy['hidehitpoints']) && $badguy['hidehitpoints'] == true) {
 			$maxhealth = $health = "???";
 		} else {
 			$health = $badguy['creaturehealth'];
 			$maxhealth = $badguy['creaturemaxhealth'];
 		}
-		if (!isset($badguy['creaturemaxhealth']) && isset($badguy['creaturehealth'])) $badguy['creaturemaxhealth'] = $badguy['creaturehealth'];
 		if (isset($session['user']['prefs']['forestcreaturebar'])) {
 			$barDisplay=(int)$session['user']['prefs']['forestcreaturebar'];
 		} else {
@@ -349,7 +349,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 			if (!is_array($mynewcompanions)) $mynewcompanions = array();
 			$healed = false;
 			foreach ($mynewcompanions as $myname => $mycompanion) {
-				if ($mycompanion['hitpoints'] >= $mycompanion['maxhitpoints'] || $healed || (isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true)) {
+				if (!isset($mycompanion['hitpoints']) || !isset($mycompanion['maxhitpoints']) || $mycompanion['hitpoints'] >= $mycompanion['maxhitpoints'] || $healed || (isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true)) {
 					continue;
 				} else {
 					$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints]']);
@@ -381,7 +381,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 							if ($mycompanion['hitpoints'] >= $mycompanion['maxhitpoints'] || $healed) {
 								continue;
 							} else {
-								$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints]']);
+								$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints']);
 								$mycompanion['hitpoints'] += $hptoheal;
 								$companion['used'] = true;
 								$msg = $companion['healcompanionmsg'];
@@ -525,7 +525,7 @@ function rollcompaniondamage(&$badguy,$companion){
 		debug("Adjusted creature attack: $creatureattack");
 		debug("Adjusted self defense: $adjustedselfdefense");
 		*/
-
+$bad_check=1;
 		while(!isset($creaturedmg) || !isset($selfdmg) || $creaturedmg==0 && $selfdmg==0){
 			$atk = $companion['attack']*$compatkmod;
 			if (e_rand(1,20)==1 && $options['type'] != "pvp") $atk*=3;
@@ -567,6 +567,12 @@ function rollcompaniondamage(&$badguy,$companion){
 			if ($selfdmg > 0) {
 				$selfdmg = round($selfdmg*$buffset['badguydmgmod'], 0);
 			}
+$bad_check++;
+if ($bad_check>50) {
+	//we're getting nowhere
+	$selfdmg=0;
+	$creaturedmg=1;
+}
 		}
 	}else{
 		$creaturedmg=0;

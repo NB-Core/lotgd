@@ -25,7 +25,6 @@ page_header("Preferences");
 $op = httpget('op');
 
 addnav("Navigation");
-
 if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	$userid = httpget('userid');
 	require_once("lib/charcleanup.php");
@@ -132,7 +131,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 				$key = $x[1];
 				modulehook("notifyuserprefchange",
 						array("name"=>$key,
-							"old"=>$oldvalues[$module."___".$key],
+							"old"=>(isset($oldvalues[$module."___".$key])?$oldvalues[$module."___".$key]:''),
 							"new"=>$val));
 				set_module_pref($key, $val, $module);
 				continue;
@@ -304,16 +303,16 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	//
 	$prefs = $session['user']['prefs'];
 	$prefs['bio'] = $session['user']['bio'];
-	$prefs['template'] = $_COOKIE['template'];
-	if ($prefs['template'] == "")
+	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
+	if (!isset($prefs['template']) || $prefs['template'] == "")
 		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-	if ($prefs['sexuality'] == "") {
+	if (!isset($prefs['sexuality']) || $prefs['sexuality'] == "") {
 		$prefs['sexuality'] = !$session['user']['sex'];
 	}
-	if ($prefs['mailwidth'] == "") {
+	if (!isset($prefs['mailwidth']) || $prefs['mailwidth'] == "") {
 		$prefs['mailwidth'] = 60;
 	}
-	if ($prefs['mailheight'] == "") {
+	if (!isset($prefs['mailheight']) || $prefs['mailheight'] == "") {
 		$prefs['mailheight'] = 9;
 	}
 	$prefs['email'] = $session['user']['emailaddress'];
@@ -332,11 +331,11 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	while ($row = db_fetch_assoc($result)) {
 		$module = $row['modulename'];
 		$info = get_module_info($module);
-		if (count($info['prefs']) <= 0) continue;
+		if (!isset($info['prefs']) || count($info['prefs']) <= 0) continue;
 		$tempsettings = array();
 		$tempdata = array();
 		$found = 0;
-		while (list($key, $val) = each($info['prefs'])) {
+		foreach($info['prefs'] as $key=>$val) {
 			$isuser = preg_match("/^user_/", $key);
 			$ischeck = preg_match("/^check_/", $key);
 
@@ -415,6 +414,10 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	if ($session['user']['replaceemail']!='') {
 		//we have an email change request here
 		$replacearray=explode("|",$session['user']['replaceemail']);	
+		if (count($replacearray)<2) {
+			//something awry going on, we have max 1 element there
+			$replacearray = array($replacearray[0],'(raw data)');
+		}
 		output("`\$There is an email change request pending to the email address `q\"%s`\$\" that was given at the timestamp %s (Server Time Zone).`n",$replacearray[0],$replacearray[1]);
 		$expirationdate=strtotime("+ ".getsetting('playerchangeemaildays',3)." days",strtotime($replacearray[1]));
 		$left=$expirationdate-strtotime("now");

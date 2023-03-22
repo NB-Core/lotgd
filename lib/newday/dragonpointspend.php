@@ -65,7 +65,7 @@ if ($dkills-$dp > 1) {
 			output($label);
 			output_notl(":");
 			rawoutput("</td><td>");
-			rawoutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$pdks[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
+			rawoutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$canbuy[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
 			rawoutput("</td></tr>");
 		}
 	}
@@ -121,7 +121,7 @@ if ($dkills-$dp > 1) {
 
 	foreach ($labels as $type=>$label) {
 		$head=explode(",",$label);
-		if ($dist[$type]==0) continue;
+		if (isset($type) && $type>0 && (!isset($dist[$type]) || $dist[$type]==0)) continue;
 		if (count($head)>1) {
 			rawoutput("<tr><td colspan='2' nowrap>");
 			output("`b`4%s`0`b`n",translate_inline($head[0])); //got a headline here

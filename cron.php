@@ -12,7 +12,7 @@ require_once("common.php");
 $cron_args=$argv;
 array_shift($cron_args);
 
-if (is_array($cron_args) && $count($cron_args)<1) {
+if (is_array($cron_args) && count($cron_args)<1) {
 	$executionstyle=CRON_NEWDAY | CRON_DBCLEANUP | CRON_COMMENTCLEANUP | CRON_CHARCLEANUP;
 } else {
 	//write in the first argument the style - the defines above will guide your way. No argument means "do all now"
@@ -34,6 +34,7 @@ if ($game_dir!='') {
 	if ($executionstyle & CRON_DBCLEANUP) {
 		//db optimization every day, I think we should leave it here
 		//edit: we may force this issue by setting the second argument to 1 in the commandline
+		$force_db=0;
 		if (isset($cron_args[1])) {
 			$force_db=(((int)$cron_args[1])?1:0);
 		}

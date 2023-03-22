@@ -5,7 +5,7 @@
 function villagenav($extra=false)
 {
 	global $session;
-	$loc = $session['user']['location'];
+	$loc = (isset($session['user']['location'])?$session['user']['location']:'');
 	if ($extra === false) $extra="";
 	$args = modulehook("villagenav");
 	if (array_key_exists('handled', $args) && $args['handled']) return;

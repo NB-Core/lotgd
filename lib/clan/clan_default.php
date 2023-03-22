@@ -5,13 +5,16 @@
 
 		$sql = "SELECT name FROM " . db_prefix("accounts")  . " WHERE acctid={$claninfo['motdauthor']}";
 		$result = db_query($sql);
-		$row = db_fetch_assoc($result);
-		$motdauthname = $row['name'];
-
+		if (db_num_rows($result)>0) {
+			$row = db_fetch_assoc($result);
+ 			$motdauthname = $row['name'];
+		} else $motdauthname = translate_inline("Nobody");
 		$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid={$claninfo['descauthor']}";
 		$result = db_query($sql);
-		$row = db_fetch_assoc($result);
-		$descauthname = $row['name'];
+		if (db_num_rows($result)>0) {
+			$row = db_fetch_assoc($result);
+			$descauthname = $row['name'];
+		} else $descauthname = translate_inline("Nobody");
 
 		if ($claninfo['clanmotd'] != '') {
 			rawoutput("<div style='margin-left: 15px; padding-left: 15px;'>");
@@ -41,7 +44,7 @@
 		output("`n`n`bMembership Details:`b`n");
 		$leaders = 0;
 		while ($row = db_fetch_assoc($result)){
-			output_notl($ranks[$row['clanrank']].": `0".$row['c']."`n");
+			output_notl((isset($ranks[$row['clanrank']])?$ranks[$row['clanrank']]:'Undefined').": `0".$row['c']."`n");
 			if ($row['clanrank']>=CLAN_LEADER) $leaders += $row['c'];
 		}
 		output("`n");

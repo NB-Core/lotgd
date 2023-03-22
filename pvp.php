@@ -80,7 +80,6 @@ if ($op=="fight" || $op=="run"){
 if ($battle){
 
 	require_once("battle.php");
-
 	if ($victory){
 		$killedin = $badguy['location'];
 		$handled = pvpvictory($badguy, $killedin, $options);

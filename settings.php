@@ -2,12 +2,8 @@
 
 #This is the lotgd configuration file which you have to edit for several settings
 
-$game_dir='';
-// enter the directory of your game installation, this cannot be done elsewhere
-// for example 
-// $game_dir='/var/www/html/lotgd';
-// This DEPENDS on your hosting! It is 100% sure if you use shared hosting this is different
-// If you have a rootserver, you'd know what your directory is =)
+$game_dir='/var/www/html/naruto';
+//enter here the directory of your datacache, this cannot be done elsewhere
 
 $DB_TYPE='mysqli_proc';
 /* * * *
@@ -35,6 +31,5 @@ This will also be used in cases of database outages and so forth
 
 */
 $_defaultskin="modern.htm";
-
 
 ?>

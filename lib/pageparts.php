@@ -37,9 +37,9 @@ function page_header(){
 		if (!array_key_exists($script,$runheaders))
 			$runheaders[$script] = false;
 		if (!$runheaders[$script]) {
-			modulehook("everyheader", array('script'=>$script));
+			if (!defined("IS_INSTALLER")) modulehook("everyheader", array('script'=>$script));
 			$runheaders[$script] = true;
-			modulehook("header-$script");
+			if (!defined("IS_INSTALLER")) modulehook("header-$script");
 		}
 	}
 
@@ -69,7 +69,7 @@ function page_header(){
 function popup($page,$size="550x300"){
 	// user prefs
 	global $session;
-	if ($size==="550x300" && $session['loggedin']) {
+	if ($size==="550x300" && isset($session['loggedin']) && $session['loggedin']) {
 		if (!isset($session['user']['prefs'])) {
 			$usersize='550x330';
 		} else {
@@ -81,7 +81,7 @@ function popup($page,$size="550x300"){
 		$s[1]=(int)max(50,$s[1]);
 	} else 	$s = explode("x",$size);
 	//user prefs
-  return "window.open('$page','".preg_replace("([^[:alnum:]])","",$page)."','scrollbars=yes,resizable=yes,width={$s[0]},height={$s[1]}').focus()";
+	return "window.open('$page','".preg_replace("([^[:alnum:]])","",$page)."','scrollbars=yes,resizable=yes,width={$s[0]},height={$s[1]}').focus()";
 }
 
 /**
@@ -93,13 +93,16 @@ function popup($page,$size="550x300"){
  */
 function page_footer($saveuser=true){
 	global $output,$header,$nav,$session,$REMOTE_ADDR,
-		$REQUEST_URI,$pagestarttime,$quickkeys,$template,$y2,$z2,
-		$logd_version,$copyright,$SCRIPT_NAME,$nopopups, $footer,
-		$dbinfo;
+	       $REQUEST_URI,$pagestarttime,$quickkeys,$template,$y2,$z2,
+	       $logd_version,$copyright,$SCRIPT_NAME,$nopopups, $footer,
+	       $dbinfo;
 	$z = $y2^$z2;
 	$footer = $template['footer'];
 	//page footer module hooks
-	$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
+	if (isset($SCRIPT_NAME) && $SCRIPT_NAME>"") 
+		$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
+	else
+		$script = "";
 	$replacementbits = array();
 	$replacementbits = modulehook("footer-$script",$replacementbits);
 	if ($script == "runmodule" && (($module = httpget('module'))) > "") {
@@ -118,8 +121,8 @@ function page_footer($saveuser=true){
 	//output any template part replacements that above hooks need (eg,
 	//advertising)
 	foreach ($replacementbits as $key=>$val) {
-		$header = str_replace("{".$key."}","{".$key."}".join($val,""),$header);
-		$footer = str_replace("{".$key."}","{".$key."}".join($val,""),$footer);
+		$header = str_replace("{".$key."}","{".$key."}".implode("",$val),$header);
+		$footer = str_replace("{".$key."}","{".$key."}".implode("",$val),$footer);
 	}
 
 	$builtnavs = buildnavs();
@@ -133,28 +136,32 @@ function page_footer($saveuser=true){
 
 	restore_buff_fields();
 
-	$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
-	$result = db_query($sql);
-	$row = db_fetch_assoc($result);
-	db_free_result($result);
-	$headscript = "";
-	if (isset($session['user']['lastmotd']) &&
-			($row['motddate']>$session['user']['lastmotd']) &&
-			(!isset($nopopup[$SCRIPT_NAME]) || $nopopups[$SCRIPT_NAME]!=1) &&
-			$session['user']['loggedin']){
-		if (getsetting('forcedmotdpopup',0)) $headscript.=popup("motd.php");
+	if (!defined("IS_INSTALLER")) { 
+		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
+		$result = db_query($sql);
+		$row = db_fetch_assoc($result);
+		$headscript = "";
+		if (db_num_rows($result)>0 && isset($session['user']['lastmotd']) &&
+				($row['motddate']>$session['user']['lastmotd']) &&
+				(!isset($nopopup[$SCRIPT_NAME]) || $nopopups[$SCRIPT_NAME]!=1) &&
+				$session['user']['loggedin']){
+			if (getsetting('forcedmotdpopup',0)) $headscript.=popup("motd.php");
 			$session['needtoviewmotd']=true;
-	}else{
-		$session['needtoviewmotd']=false;
-	}
-	$pre_headscript = "<link rel=\"shortcut icon\" HREF=\"favicon.ico\" TYPE=\"image/x-icon\"/>";
-	//add AJAX notification stuff
-	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-		if (file_exists('ext/ajax_base_setup.php')) {
-			require("ext/ajax_base_setup.php");
+		}else{
+			$session['needtoviewmotd']=false;
 		}
+		$pre_headscript = "<link rel=\"shortcut icon\" HREF=\"favicon.ico\" TYPE=\"image/x-icon\"/>";
+		//add AJAX notification stuff
+		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+			if (file_exists('ext/ajax_base_setup.php')) {
+				require("ext/ajax_base_setup.php");
+			}
+		}
+		//END AJAX
+	} else {
+		$pre_headscript = "";
+		$headscript = "";
 	}
-	//END AJAX
 	if ($headscript>""){
 		$header=str_replace("{headscript}",$pre_headscript."<script type='text/javascript' charset='UTF-8'>".$headscript."</script>",$header);
 	}else{
@@ -168,8 +175,8 @@ function page_footer($saveuser=true){
 
 	//output keypress script
 	$script.="<script type='text/javascript' charset='UTF-8'>
-	<!--
-	document.onkeypress=keyevent;
+		<!--
+		document.onkeypress=keyevent;
 	function keyevent(e){
 		var c;
 		var target;
@@ -190,11 +197,11 @@ function page_footer($saveuser=true){
 			target=e.originalTarget;
 		if (target.nodeName.toUpperCase()=='INPUT' || target.nodeName.toUpperCase()=='TEXTAREA' || altKey || ctrlKey){
 		}else{";
-	reset($quickkeys);
-	foreach ($quickkeys as $key=>$val) {
-		$script.="\n			if (c == '".strtoupper($key)."') { $val; return false; }";
-	}
-	$script.="
+			reset($quickkeys);
+			foreach ($quickkeys as $key=>$val) {
+				$script.="\n			if (c == '".strtoupper($key)."') { $val; return false; }";
+			}
+			$script.="
 		}
 	}
 	//-->
@@ -251,39 +258,39 @@ function page_footer($saveuser=true){
 		$paypalstr .= "<script type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
 	}else{
 		$paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">".'
-<input type="hidden" name="cmd" value="_xclick">
-<input type="hidden" name="business" value="logd@mightye.org">
-<input type="hidden" name="item_name" value="Legend of the Green Dragon Author Donation from '.full_sanitize($session['user']['name']).'">
-<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")).":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
-<input type="hidden" name="no_shipping" value="1">
-<input type="hidden" name="notify_url" value="http://lotgd.net/payment.php">
-<input type="hidden" name="cn" value="Your Character Name">
-<input type="hidden" name="cs" value="1">
-<input type="hidden" name="currency_code" value="USD">
-<input type="hidden" name="tax" value="0">
-<input type="image" src="images/paypal1.gif" border="0" name="submit" alt="Donate to Eric Stevens">
-</form>';
+			<input type="hidden" name="cmd" value="_xclick">
+			<input type="hidden" name="business" value="logd@mightye.org">
+			<input type="hidden" name="item_name" value="Legend of the Green Dragon Author Donation from '.full_sanitize($session['user']['name']).'">
+			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")).":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
+			<input type="hidden" name="no_shipping" value="1">
+			<input type="hidden" name="notify_url" value="http://lotgd.net/payment.php">
+			<input type="hidden" name="cn" value="Your Character Name">
+			<input type="hidden" name="cs" value="1">
+			<input type="hidden" name="currency_code" value="USD">
+			<input type="hidden" name="tax" value="0">
+			<input type="image" src="images/paypal1.gif" border="0" name="submit" alt="Donate to Eric Stevens">
+			</form>';
 	}
 	$paysite = getsetting("paypalemail", "");
 	if ($paysite != "") {
 		$paypalstr .= '</td><td>';
 		$paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
-<input type="hidden" name="cmd" value="_xclick">
-<input type="hidden" name="business" value="'.$paysite.'">
-<input type="hidden" name="item_name" value="'.getsetting("paypaltext","Legend of the Green Dragon Site Donation from").' '.full_sanitize($session['user']['name']).'">
-<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")).":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
-<input type="hidden" name="no_shipping" value="1">';
+			<input type="hidden" name="cmd" value="_xclick">
+			<input type="hidden" name="business" value="'.$paysite.'">
+			<input type="hidden" name="item_name" value="'.getsetting("paypaltext","Legend of the Green Dragon Site Donation from").' '.full_sanitize($session['user']['name']).'">
+			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")).":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
+			<input type="hidden" name="no_shipping" value="1">';
 		if (file_exists("payment.php")) {
 			$paypalstr .= '<input type="hidden" name="notify_url" value="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER['REQUEST_URI']).'/payment.php">';
 		}
 		$paypalstr .= '<input type="hidden" name="cn" value="Your Character Name">
-<input type="hidden" name="cs" value="1">
-<input type="hidden" name="currency_code" value="'.$currency.'">
-<input type="hidden" name="lc" value="'.getsetting("paypalcountry-code","US").'">
-<input type="hidden" name="bn" value="PP-DonationsBF">
-<input type="hidden" name="tax" value="0">
-<input type="image" src="images/paypal2.gif" border="0" name="submit" alt="Donate to the Site">
-</form>';
+			<input type="hidden" name="cs" value="1">
+			<input type="hidden" name="currency_code" value="'.$currency.'">
+			<input type="hidden" name="lc" value="'.getsetting("paypalcountry-code","US").'">
+			<input type="hidden" name="bn" value="PP-DonationsBF">
+			<input type="hidden" name="tax" value="0">
+			<input type="image" src="images/paypal2.gif" border="0" name="submit" alt="Donate to the Site">
+			</form>';
 	}
 	$paypalstr .= '</td></tr></table>';
 	$footer=str_replace($palreplace,(strpos($palreplace,"paypal")?"":"{stats}").$paypalstr,$footer);
@@ -295,7 +302,7 @@ function page_footer($saveuser=true){
 	//NOTICE |
 
 	//output the nav
-	$footer = str_replace("{".($z)."}",$$z,$footer);
+	$footer = str_replace("{".($z)."}",$z,$footer);
 	$header=str_replace("{nav}",$builtnavs,$header);
 	$footer=str_replace("{nav}",$builtnavs,$footer);
 	//output the motd
@@ -327,12 +334,12 @@ function page_footer($saveuser=true){
 
 	$header=str_replace("{petition}","<a href='petition.php' onClick=\"".popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".translate_inline("Petition for Help")."</a>",$header);
 	$footer=str_replace("{petition}","<a href='petition.php' onClick=\"".popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".translate_inline("Petition for Help")."</a>",$footer);
-	if ($session['user']['superuser'] & SU_EDIT_PETITIONS){
+	if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS){
 		$sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix("petitions") . " GROUP BY status";
 		$result = db_query_cached($sql,"petition_counts");
-		$petitions=array(0=>0,1=>0,2=>0,3=>0,4=>0,5=>0,6=>0,7=>0);
+		$petitions=array("P5"=>0,"P4"=>0,"P0"=>0,"P1"=>0,"P3"=>0,"P7"=>0,"P6"=>0,"P2"=>0);
 		while ($row = db_fetch_assoc($result)) {
-			$petitions[(int)$row['status']] = $row['c'];
+			$petitions["P".$row['status']] = $row['c'];
 		}
 		$pet = translate_inline("`0`bPetitions:`b");
 		$ued = translate_inline("`0`bUser Editor`b");
@@ -345,7 +352,15 @@ function page_footer($saveuser=true){
 			$p = "<a href='viewpetition.php'>$pet</a>";
 			addnav("", "viewpetition.php");
 		}
-		$pets = "`n `\${$petitions[5]}`0|`^{$petitions[4]}`0|`b{$petitions[0]}`b|{$petitions[1]}|`!{$petitions[3]}`0|`#{$petitions[7]}`0|`%{$petitions[6]}`0|`i{$petitions[2]}`i";
+		$pcolors = array("`\$","`^","`6","`!","`#","`%","`v");
+		$pets = "`n";
+		foreach($petitions as $val) {
+			if ($pets!="`n") $pets.="|";
+			$color = array_shift($pcolors);
+			if (!isset($color) || $color==null || $color=="") $color="`1";
+			$pets.=$color.$val."`0";
+		}
+		$ret_args=array("petitioncount"=>$pets);
 		$ret_args = modulehook("petitioncount",array("petitioncount"=>$pets));
 		$pets = $ret_args['petitioncount'];
 		$p .= $pets;
@@ -369,7 +384,9 @@ function page_footer($saveuser=true){
 	$footer=str_replace("{version}", "Version: $logd_version", $footer);
 	//output page generation time
 	$gentime = getmicrotime()-$pagestarttime;
+	if (!isset($session['user']['gentime'])) $session['user']['gentime']=0;
 	$session['user']['gentime']+=$gentime;
+	if (!isset($session['user']['gentimecount'])) $session['user']['gentimecount']=0;
 	$session['user']['gentimecount']++;
 	if (getsetting('debug',0)) {	
 		global $SCRIPT_NAME;
@@ -389,10 +406,11 @@ function page_footer($saveuser=true){
 	$header = str_replace("{verticalad}","",$header);
 	$header = str_replace("{navad}","",$header);
 	$header = str_replace("{headerad}","",$header);
-//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
 	//finalize output
 	$browser_output=$header.($output->get_output()).$footer;
+	if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
 	$session['user']['gensize']+=strlen($browser_output);
 	$session['output']=$browser_output;
 	if ($saveuser === true) {
@@ -438,6 +456,8 @@ function popup_footer(){
 
 	$headscript='';
 	$footer = $template['popupfoot'];
+	$pre_headscript='';
+	$maillink_add_after='';
 	//add AJAX stuff
 	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 		if (file_exists('ext/ajax_base_setup.php')) {
@@ -454,17 +474,17 @@ function popup_footer(){
 	//output any template part replacements that above hooks need
 	reset($replacementbits);
 	foreach ($replacementbits as $key=>$val) {
-		$header = str_replace("{".$key."}","{".$key."}".join($val,""),$header);
-		$footer = str_replace("{".$key."}","{".$key."}".join($val,""),$footer);
+		$header = str_replace("{".$key."}","{".$key."}".implode("",$val),$header);
+		$footer = str_replace("{".$key."}","{".$key."}".implode("",$val),$footer);
 	}
 
 	$z = $y2^$z2;
 	$footer = str_replace("{".($z)."}",$$z, $footer);
 	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-		if (file_exists('ext/ajax_maillink.php')) {
-			require("ext/ajax_maillink.php");
-		}
+		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+			if (file_exists('ext/ajax_maillink.php')) {
+				require("ext/ajax_maillink.php");
+			}
 		} else {
 			$maillink_add_after='';
 			//no AJAX for slower browsers etc
@@ -480,7 +500,7 @@ function popup_footer(){
 	$header = str_replace("{navad}","",$header);
 	$header = str_replace("{headerad}","",$header);
 	$header = str_replace("{script}","",$header);
-//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
 	$browser_output=$header.$maillink_add_after.($output->get_output()).$footer;
 	saveuser();
@@ -617,11 +637,13 @@ function getcharstat_value($section,$title){
 function charstats(){
 	global $session, $playermount, $companions;
 
+	if (defined("IS_INSTALLER")) return "";
+
 	wipe_charstats();
 
 	$u =& $session['user'];
 
-	if ($session['loggedin']){
+	if (isset($session['loggedin']) && $session['loggedin']){
 		$u['hitpoints']=round($u['hitpoints'],0);
 		$u['experience']=round($u['experience'],0);
 		$u['maxhitpoints']=round($u['maxhitpoints'],0);
@@ -630,9 +652,9 @@ function charstats(){
 		//calculate_buff_fields();
 		reset($session['bufflist']);
 		/*not so easy anymore
-		$atk=$u['attack'];
-		$def=$u['defense'];
-		*/
+		  $atk=$u['attack'];
+		  $def=$u['defense'];
+		 */
 		require_once("lib/playerfunctions.php");
 		$o_atk=$atk=get_player_attack();
 		$o_def=$def=get_player_defense();
@@ -649,11 +671,11 @@ function charstats(){
 				$def *= $val['defmod'];
 			}
 			// Short circuit if the name is blank
-			if ($val['name'] > "" || $session['user']['superuser'] & SU_DEBUG_OUTPUT){
+			if ((isset($val['name']) && $val['name'] > "") || $session['user']['superuser'] & SU_DEBUG_OUTPUT){
 				tlschema($val['schema']);
-			//	if ($val['name']=="")
-			//		$val['name'] = "DEBUG: {$key}";
-			//	removed due to performance reasons. foreach is better with only $val than to have $key ONLY for the short happiness of one debug. much greater performance gain here
+				//	if ($val['name']=="")
+				//		$val['name'] = "DEBUG: {$key}";
+				//	removed due to performance reasons. foreach is better with only $val than to have $key ONLY for the short happiness of one debug. much greater performance gain here
 				if (is_array($val['name'])) {
 					$val['name'][0] = str_replace("`%","`%%",$val['name'][0]);
 					$val['name']=call_user_func_array("sprintf_translate", $val['name']);
@@ -780,7 +802,7 @@ function charstats(){
 			// If a module wants to do it's own display of the online chars,
 			// let it.
 			$list = modulehook("onlinecharlist", array());
-			if ($list['handled']) {
+			if (isset($list['handled']) && $list['handled']) {
 				$onlinecount = $list['count'];
 				$ret = $list['list'];
 			} else {
@@ -823,7 +845,7 @@ function loadtemplate($templatename){
 		$fieldname=substr($val,0,strpos($val,"-->"));
 		if ($fieldname!=""){
 			$template[$fieldname]=substr($val,strpos($val,"-->")+3);
-			modulehook("template-{$fieldname}",
+			if (!defined("IS_INSTALLER")) modulehook("template-{$fieldname}",
 					array("content"=>$template[$fieldname]));
 		}
 	}

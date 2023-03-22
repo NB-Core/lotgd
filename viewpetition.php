@@ -65,7 +65,6 @@ if ($op==""){
 			db_query($sql);
 		}
 	}
-	reset($statuses);
 	$sort = "";
 	$pos = 0;
 	foreach ($statuses as $key=>$val) {
@@ -259,8 +258,7 @@ if ($op==""){
 	addnav("User Ops");
 
 	addnav("Petition Ops");
-	reset($statuses);
-	while (list($key,$val)=each($statuses)){
+	foreach ($statuses as $key=>$val){
 		$plain = full_sanitize($val);
 		addnav(array("%s?Mark %s", substr($plain,0,1), $val),
 				"viewpetition.php?setstat=$key&id=$id");

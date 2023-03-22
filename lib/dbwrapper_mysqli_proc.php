@@ -14,7 +14,7 @@ function db_set_charset($charset) {
 }
 
 function db_query($sql, $die=true){
- 	if (defined("DB_NODB") && !defined("LINK")) return array();
+	if (defined("DB_NODB") && !defined("LINK")) return array();
 	global $session,$dbinfo,$mysqli_resource;
 	$dbinfo['queriesthishit']++;
 	// $fname = DBTYPE."_query";
@@ -23,16 +23,16 @@ function db_query($sql, $die=true){
 	$r = mysqli_Query($mysqli_resource, $sql);
 
 	if (!$r && $die === true) {
-	 	if (defined("IS_INSTALLER") && IS_INSTALLER){
-	 		return array();
+		if (defined("IS_INSTALLER") && IS_INSTALLER){
+			return array();
 		}else{
-			if ($session['user']['superuser'] & SU_DEVELOPER){
+			if (($session['user']['superuser'] & SU_DEVELOPER)){
 				require_once("lib/show_backtrace.php");
 				die(
-					"<pre>".HTMLEntities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</pre>"
-					.db_error(LINK)
-					.show_backtrace()
-					);
+						"<pre>".HTMLEntities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</pre>"
+						.db_error(LINK)
+						.show_backtrace()
+				   );
 			}else{
 				die("A most bogus error has occurred.  I apologise, but the page you were trying to access is broken.  Please use your browser's back button and try again.");
 			}
@@ -46,6 +46,7 @@ function db_query($sql, $die=true){
 	}
 	unset($dbinfo['affected_rows']);
 	$dbinfo['affected_rows']=db_affected_rows();
+	if (!isset($dbinfo['querytime'])) $dbinfo['querytime']=0;
 	$dbinfo['querytime'] += $endtime-$starttime;
 	return $r;
 }
@@ -86,7 +87,7 @@ function db_error(){
 	global $mysqli_resource;
 
 	$r = mysqli_error($mysqli_resource);
- 	if ($r=="" && defined("DB_NODB") && !defined("DB_INSTALLER_STAGE4")) return "The database connection was never established";
+	if ($r=="" && defined("DB_NODB") && !defined("DB_INSTALLER_STAGE4")) return "The database connection was never established";
 	return $r;
 }
 
@@ -107,8 +108,8 @@ function db_fetch_assoc(&$result){
 }
 
 function db_insert_id(){
-  global $mysqli_resource;
- 	if (defined("DB_NODB") && !defined("LINK")) return -1;
+	global $mysqli_resource;
+	if (defined("DB_NODB") && !defined("LINK")) return -1;
 	$r = mysqli_insert_id($mysqli_resource);
 	return $r;
 }
@@ -117,8 +118,8 @@ function db_num_rows($result){
 	if (is_array($result)){
 		return count($result);
 	}else{
-	 	if (defined("DB_NODB") && !defined("LINK")) return 0;
-	 	$r = mysqli_num_rows($result);
+		if (defined("DB_NODB") && !defined("LINK")) return 0;
+		$r = mysqli_num_rows($result);
 		return $r;
 	}
 }
@@ -128,36 +129,44 @@ function db_affected_rows($link=false){
 	if (isset($dbinfo['affected_rows'])) {
 		return $dbinfo['affected_rows'];
 	}
- 	if (defined("DB_NODB") && !defined("LINK")) return 0;
+	if (defined("DB_NODB") && !defined("LINK")) return 0;
 
- 	$r = mysqli_affected_rows($mysqli_resource);
+	$r = mysqli_affected_rows($mysqli_resource);
 
 	return $r;
 }
 
 function db_pconnect($host,$user,$pass){
-  global $mysqli_resource;
-
-	$mysqli_resource = mysqli_connect($host, $user, $pass);
+	global $mysqli_resource;
+	try {
+		$mysqli_resource = mysqli_connect($host, $user, $pass);
+	} catch (Exception $e) {
+		echo "Critical error while connecting to database: ",$e->getMessage();
+		exit(1);
+	}
 
 	if($mysqli_resource) {
-	  return true;
+		return true;
 	}
 	else {
-	  return false;
+		return false;
 	}
 }
 
 function db_connect($host,$user,$pass){
 	global $mysqli_resource;
-
-	$mysqli_resource = mysqli_connect($host, $user, $pass);
+	try {
+		$mysqli_resource = mysqli_connect($host, $user, $pass);
+	} catch (Exception $e) {
+		echo "Critical error while connecting to database: ",$e->getMessage();
+		exit(1);
+	}
 
 	if($mysqli_resource) {
-	  return true;
+		return true;
 	}
 	else {
-	  return false;
+		return false;
 	}
 }
 
@@ -183,17 +192,17 @@ function db_free_result($result){
 		//cached data
 		unset($result);
 	}else{
-	 	if (defined("DB_NODB") && !defined("LINK")) return false;
+		if (defined("DB_NODB") && !defined("LINK")) return false;
 		mysqli_free_result($result);
 		return true;
 	}
 }
 
 function db_table_exists($tablename){
-  global $mysqli_resource;
- 	if (defined("DB_NODB") && !defined("LINK")) return false;
-	$exists = $mysqli_resource->Query("SELECT 1 FROM `$tablename` LIMIT 0");
-	if ($exists) return true;
+	global $mysqli_resource;
+	if (defined("DB_NODB") && !defined("LINK")) return false;
+	$result = $mysqli_resource->Query("SHOW TABLES LIKE '$tablename'");
+	if (mysqli_num_rows($result)>0) return true;
 	return false;
 }
 

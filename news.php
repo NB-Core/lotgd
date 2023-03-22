@@ -74,7 +74,7 @@ while ($row = db_fetch_assoc($result)) {
 		$news = translate_inline($row['newstext']);
 	}
 	tlschema();
-	output_notl($news."`n");
+	output_notl("`c".$news."`c`n");
 }
 if (db_num_rows($result)==0){
 	output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");

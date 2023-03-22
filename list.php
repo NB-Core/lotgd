@@ -127,7 +127,7 @@ for($i=0;$i<$max;$i++){
 	rawoutput("<tr class='".($i%2?"trdark":"trlight")."'><td>",true);
 	if ($row['alive'] == true) {
 		$a = $alive;
-	} else if ($row['hitpoints'] > 0) {
+	} else if (isset($row['hitpoints']) && $row['hitpoints'] > 0) {
 		$a = $unconscious;
 	} else {
 		$a = $dead;

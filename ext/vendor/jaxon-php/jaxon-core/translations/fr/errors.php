@@ -7,6 +7,12 @@ return [
             'write-log' => "Jaxon n'a pas pu écrire dans le fichier de log: :file",
             'message' => "Messages d'erreur PHP: :message",
         ],
+        'class' => [
+            'invalid' => "La classe :name n'existe pas.",
+            'implements' => "La classe :name n'implémente pas l'interface :interface.",
+            'container' => "Impossible de trouver une instance de la classe :name dans le conteneur DI.",
+            'method' => "Impossible d'appeler la méthode :method de la classe :class.",
+        ],
         'response' => [
             'result.invalid' => "Une réponse invalide a été renvoyée lors du traitement de la requête.",
             'data.invalid' => "La réponse Jaxon ne peut traiter les commandes car les données fournies sont invalides.",
@@ -20,6 +26,7 @@ return [
         ],
         'request' => [
             'conversion' => "Les données Jaxon reçues n'ont pas pu être converties de l'UTF-8.",
+            'plugin' => "Jaxon n'a pas pu trouver un plugin pour traiter la requête.",
         ],
         'mismatch' => [
             'content-types' => "Il ne peut y avoir des types de contenu différents dans une seule réponse: :type",
@@ -37,8 +44,10 @@ return [
         'objects' => [
             'invalid' => "La requête indique un objet invalide; il n'existe pas de classe :class ou de méthode :method.",
             'instance' => "Pour enregistrer un objet, vous devez fournir une instance de la classe correspondante.",
+            'invalid-declaration' => "La déclaration d'objet est invalide.",
         ],
         'register' => [
+            'plugin' => "Aucun plugin nommé :name pour enregistrer une classs ou une fonction.",
             'method' => "Une fonction d'enregistrement n'a pas pu être trouvée pour cet élément: :args",
             'invalid' => "Tentative d'enregistrer un plugin invalide: :name; " .
                 "le plugin doit dériver de Jaxon\\Plugin\\Request ou Jaxon\\Plugin\\Response.",
@@ -53,6 +62,9 @@ return [
         'magic' => [
             'get' => "Accès à la propriété inconnue :name avec la surcharge magique __get à la ligne :line du fichier :file.",
             'set' => "Accès à la propriété inconnue :name avec la surcharge magique __set à la ligne :line du fichier :file.",
+        ],
+        'dialog' => [
+            'library' => "There is no :type library with name :name",
         ],
     ],
 ];
