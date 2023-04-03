@@ -779,8 +779,6 @@ function get_module_pref($name,$module=false,$user=false){
 
 function set_module_pref($name,$value,$module=false,$user=false){
 	global $module_prefs,$mostrecentmodule,$session;
-	if (!isset($session['user']['acctid'])) //no user? then we can't do prefs
-		return;
 	if ($module === false) $module = $mostrecentmodule;
 	if ($user === false) $uid=$session['user']['acctid'];
 	else $uid = $user;
