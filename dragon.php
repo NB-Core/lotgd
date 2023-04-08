@@ -273,7 +273,7 @@ if ($battle){
 
 	if ($victory){
 		$flawless = 0;
-		if ($badguy['diddamage'] != 1) $flawless = 1;
+		if (isset($badguy['diddamage']) && $badguy['diddamage'] != 1) $flawless = 1;
 		$session['user']['dragonkills']++;
 		output("`&With a mighty final blow, `@%s`& lets out a tremendous bellow and falls at your feet, dead at last.",$badguy['creaturename']);
 		addnews("`&%s has slain the hideous creature known as `@%s`&.  All across the land, people rejoice!",$session['user']['name'],$badguy['creaturename']);

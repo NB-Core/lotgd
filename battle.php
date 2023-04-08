@@ -472,7 +472,7 @@ if ($op != "newtarget") {
 				$msg = substitute($msg);
 				output_notl($msg); //Here it's already translated
 			}else{
-				if ($badguy['essentialleader'] === true) {
+				if (isset($badguy['essentialleader']) && $badguy['essentialleader'] === true) {
 					$msg = "All other other enemies flee in panic as `^{badguy}`5 falls to the ground.";
 				} else {
 					$msg = $badguy['essentialleader'];
