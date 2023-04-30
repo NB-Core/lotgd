@@ -134,7 +134,7 @@ function injectcommentary($section, $talkline, $comment, $schema=false) {
 			}
 		}
 
-		$args = array('commentline'=>$commentary, 'commenttalk'=>$talkline);
+		$args = array('section'=>$section, 'commentline'=>$commentary, 'commenttalk'=>$talkline);
 		$args = modulehook("commentary", $args);
 		$commentary = $args['commentline'];
 		$talkline = $args['commenttalk'];

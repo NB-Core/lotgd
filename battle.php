@@ -467,12 +467,12 @@ if ($op != "newtarget") {
 				}
 			}
 		} else if ($leaderisdead) {
-			if (is_array($badguy['essentialleader'])) {
+			if (isset($badguy['essentialleader']) && is_array($badguy['essentialleader'])) {
 				$msg = sprintf_translate($badguy['essentialleader']);
 				$msg = substitute($msg);
 				output_notl($msg); //Here it's already translated
-			}else{
-				if (isset($badguy['essentialleader']) && $badguy['essentialleader'] === true) {
+			}elseif (isset($badguy['essentialleader'])){
+				if ($badguy['essentialleader'] === true) {
 					$msg = "All other other enemies flee in panic as `^{badguy}`5 falls to the ground.";
 				} else {
 					$msg = $badguy['essentialleader'];

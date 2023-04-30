@@ -780,12 +780,13 @@ function get_module_pref($name,$module=false,$user=false){
 function set_module_pref($name,$value,$module=false,$user=false){
 	global $module_prefs,$mostrecentmodule,$session;
 	if ($module === false) $module = $mostrecentmodule;
-	if ($user === false) $uid=$session['user']['acctid'];
+	if ($user === false) $uid=isset($session['user']['acctid'])?$session['user']['acctid']:0;
 	else $uid = $user;
 	load_module_prefs($module, $uid);
 
 	//don't write to the DB if the user isn't logged in.
-	if (!$session['user']['loggedin'] && !$user) {
+	//edit OB: I have no idea what that garbage below does, it will most likely never be true
+	if (!$user && !$session['user']['loggedin']) {
 		// We do need to save to the loaded copy here however
 		$module_prefs[$uid][$module][$name] = $value;
 		return;

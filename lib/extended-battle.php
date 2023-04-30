@@ -352,10 +352,10 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 				if (!isset($mycompanion['hitpoints']) || !isset($mycompanion['maxhitpoints']) || $mycompanion['hitpoints'] >= $mycompanion['maxhitpoints'] || $healed || (isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true)) {
 					continue;
 				} else {
-					$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints]']);
+					$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints']);
 					$mycompanion['hitpoints'] += $hptoheal;
 					$companion['used'] = true;
-					$msg = $companion['healcompanionmsg'];
+					$msg = isset($companion['healcompanionmsg'])?$companion['healcompanionmsg']:"";
 					if ($msg == "") $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
 					$msg = substitute_array("`)".$msg."`0`n", array("{companion}","{damage}","{target}"),array($companion['name'],$hptoheal,$mycompanion['name']));
 					tlschema(isset($companion['schema'])?$companion['schema']:"battle");
@@ -384,7 +384,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 								$hptoheal = min($companion['abilities']['heal'], $mycompanion['maxhitpoints'] - $mycompanion['hitpoints']);
 								$mycompanion['hitpoints'] += $hptoheal;
 								$companion['used'] = true;
-								$msg = $companion['healcompanionmsg'];
+								$msg = (isset($companion['healcompanionmsg'])?$companion['healcompanionmsg']:"");
 								if ($msg == "") $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
 								$msg = substitute_array("`)".$msg."`0`n", array("{companion}","{damage}","{target}"),array($companion['name'],$hptoheal,$mycompanion['name']));
 								tlschema(isset($companion['schema'])?$companion['schema']:"battle");

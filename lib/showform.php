@@ -181,20 +181,20 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 		case "range":
 			$min = (int)$info[2];
 			$max = (int)$info[3];
-			$step = (int)$info[4];
+			$step = round((float)(isset($info[4])?$info[4]:1),2);
 			if ($step == 0) $step = 1;
 			rawoutput("<select name='$keyout'>");
 			if ($min<$max && ($max-$min)/$step>300)
 				$step=max(1,(int)(($max-$min)/300));
 			for($j = $min; $j <= $max; $j += $step) {
-				rawoutput("<option value='$j'".($row[$key]==$j?" selected":"").">".HTMLEntities("$j", ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</option>");
+				rawoutput("<option value='$j'".((isset($row[$key])?$row[$key]:"")==$j?" selected":"").">".HTMLEntities("$j", ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</option>");
 			}
 			rawoutput("</select>");
 			break;
 		case "floatrange":
 			$min = round((float)$info[2],2);
 			$max = round((float)$info[3],2);
-			$step = round((float)$info[4],2);
+			$step = round((float)(isset($info[4])?$info[4]:1),2);
 			if ($step==0) $step=1;
 			rawoutput("<select name='$keyout'>", true);
 			$val = round((float)$row[$key], 2);

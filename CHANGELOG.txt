@@ -2,6 +2,12 @@ Changes to 1.3.0 +nb
 [FIXES]
 *battle.php --> another unset nightmare
 *dragon.php --> another unset nightmare
+*lib/clan/clan_motd.php --> rank setting not fully correct if ranks were missing, unset issue
+*lib/commentary --> added the section to the commentline-hook
+*lib/extended-battle.php --> another unset nightmare, also a typo
+*lib/output.php --> bug, output for debug did not show anymore, typo in binary comparison
+*lib/showform.php --> unset nightmare
+
 [CHANGES]
 
 Changes to 1.2.10 +nb

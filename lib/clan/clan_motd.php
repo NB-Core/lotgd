@@ -34,12 +34,20 @@
 			$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid={$claninfo['motdauthor']}";
 			$result = db_query($sql);
 			$row = db_fetch_assoc($result);
-			$motdauthname = $row['name'];
+			if (isset($row['name'])) {
+				$motdauthname = $row['name'];
+			} else {
+				$motdauthname = translate_inline("Lost in memory");
+			}
 
 			$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid={$claninfo['descauthor']}";
 			$result = db_query($sql);
 			$row = db_fetch_assoc($result);
-			$descauthname = $row['name'];
+			if (isset($row['name'])) {
+				$descauthname = $row['name'];
+			} else {
+				$descauthname = translate_inline("Lost in memory");
+			}
 
 			output("`&`bCurrent MoTD:`b `#by %s`2`n",$motdauthname);
 			output_notl(nltoappon($claninfo['clanmotd'])."`n");
