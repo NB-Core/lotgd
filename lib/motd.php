@@ -39,14 +39,16 @@ function motditem($subject,$body,$author,$date,$id){
 
 function pollitem($id,$subject,$body,$author,$date,$showpoll=true){
 	global $session;
-	$sql = "SELECT count(resultid) AS c, MAX(choice) AS choice FROM " . db_prefix("pollresults") . " WHERE motditem='$id' AND account='{$session['user']['acctid']}'";
-	$result = db_query($sql);
-	$row = db_fetch_assoc($result);
-	$choice = $row['choice'];
+	if (isset($session['user']['acctid'])) {
+		$sql = "SELECT count(resultid) AS c, MAX(choice) AS choice FROM " . db_prefix("pollresults") . " WHERE motditem='$id' AND account='{$session['user']['acctid']}'";
+		$result = db_query($sql);
+		$row = db_fetch_assoc($result);
+		$choice = $row['choice'];
+	} else $choice = 0;
 	$body = unserialize($body);
 
 	$poll = translate_inline("Poll:");
-	if ($session['user']['loggedin'] && $showpoll) {
+	if (isset($session['user']['loggedin']) && $session['user']['loggedin'] && $showpoll) {
 		rawoutput("<form action='motd.php?op=vote' method='POST'>");
 		rawoutput("<input type='hidden' name='motditem' value='$id'>",true);
 	}
@@ -71,7 +73,7 @@ function pollitem($id,$subject,$body,$author,$date,$showpoll=true){
 			if(isset($choices[$key])) {
 				$percent = round($choices[$key] / $totalanswers * 100,1);
 			}
-			if ($session['user']['loggedin'] && $showpoll) {
+			if (isset($session['user']['loggedin']) && $session['user']['loggedin'] && $showpoll) {
 				rawoutput("<input type='radio' name='choice' value='$key'".($choice==$key?" checked":"").">");
 			}
 			output_notl("%s (%s - %s%%)`n", stripslashes($val),
@@ -85,7 +87,7 @@ function pollitem($id,$subject,$body,$author,$date,$showpoll=true){
 			rawoutput("<img src='images/rule.gif' width='$width' height='2' alt='$percent'><br>");
 		}
 	}
-	if ($session['user']['loggedin'] && $showpoll) {
+	if (isset($session['user']['loggedin']) && $session['user']['loggedin'] && $showpoll) {
 		$vote = translate_inline("Vote");
 		rawoutput("<input type='submit' class='button' value='$vote'></form>");
 	}

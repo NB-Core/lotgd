@@ -164,8 +164,8 @@ function suspend_buffs($susp=false, $msg=false){
 function suspend_buff_by_name($name, $msg=false) {
 	global $session;
 	// If it's not already suspended.
-	if ($session['bufflist'][$name] &&
-			!$session['bufflist'][$name]['suspended']) {
+	if (isset($session['bufflist'][$name]) && $session['bufflist'][$name] &&
+			isset($session['bufflist'][$name]) && (!isset($session['bufflist'][$name]['suspended']) || !$session['bufflist'][$name]['suspended'])) {
 		$session['bufflist'][$name]['suspended'] = 1;
 
 		// And notify.

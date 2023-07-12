@@ -104,7 +104,7 @@ function writelog($response){
 	global $payment_fee,$txn_type;
 	$match = array();
 	preg_match("'([^:]*):([^/])*'",$item_number,$match);
-	if ($match[1]>""){
+	if (isset($match[1]) && $match[1]>""){
 		$sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='{$match[1]}'";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
@@ -133,7 +133,7 @@ function writelog($response){
 			}
 			if (db_affected_rows()>0) $processed = 1;
 		}
-	}
+	} else $match[1] = "";
 	$sql = "
 		INSERT INTO " . db_prefix("paylog") . " (
 			info,
@@ -152,8 +152,8 @@ function writelog($response){
 			'$txn_id',
 			'$payment_amount',
 			'{$match[1]}',
-			".(int)$acctid.",
-			".(int)$processed.",
+			".(int)(isset($acctid)?$acctid:0).",
+			".(int)(isset($processed)?$processed:0).",
 			0,
 			'$payment_fee',
 			'".date("Y-m-d H:i:s")."'
