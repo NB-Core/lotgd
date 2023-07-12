@@ -1,9 +1,8 @@
 .project
 .settings/*
-jaxon-core.komodoproject
+.idea/
 vendor/
 composer.lock
-.idea
-tests/minifier/dst.min.js
-.phpunit.result.cache
 build/
+.phpunit.result.cache
+tests/minifier/dst.min.js

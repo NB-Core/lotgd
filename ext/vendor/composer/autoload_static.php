@@ -29,10 +29,6 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
             'Jaxon\\Utils\\' => 12,
             'Jaxon\\' => 6,
         ),
-        'H' => 
-        array (
-            'Http\\Message\\' => 13,
-        ),
     );
 
     public static $prefixDirsPsr4 = array (
@@ -73,10 +69,6 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'Jaxon\\' => 
         array (
             0 => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src',
-        ),
-        'Http\\Message\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/php-http/message-factory/src',
         ),
     );
 

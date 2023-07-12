@@ -15,5 +15,4 @@ return array(
     'Nyholm\\Psr7Server\\' => array($vendorDir . '/nyholm/psr7-server/src'),
     'Jaxon\\Utils\\' => array($vendorDir . '/jaxon-php/jaxon-utils/src'),
     'Jaxon\\' => array($vendorDir . '/jaxon-php/jaxon-core/src'),
-    'Http\\Message\\' => array($vendorDir . '/php-http/message-factory/src'),
 );

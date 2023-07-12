@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @exclude(false)
- */
 class Annotated
 {
     /**
@@ -24,16 +21,6 @@ class Annotated
      * @upload('field' => 'user-files')
      */
     public function saveFiles()
-    {
-    }
-}
-
-/**
- * @exclude(true)
- */
-class Excluded
-{
-    public function action()
     {
     }
 }

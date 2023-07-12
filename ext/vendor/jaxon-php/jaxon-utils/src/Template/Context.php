@@ -26,6 +26,11 @@ class Context
     private $__engine__;
 
     /**
+     * @var array
+     */
+    private $__properties__ = [];
+
+    /**
      * The constructor
      *
      * @param TemplateEngine $engine
@@ -36,9 +41,29 @@ class Context
         $this->__engine__ = $engine;
         foreach($aVars as $sName => $xValue)
         {
-            $sName = (string)$sName;
-            $this->$sName = $xValue;
+            $this->__set((string)$sName, $xValue);
         }
+    }
+
+    /**
+     * @param string $sName
+     *
+     * @return mixed
+     */
+    public function __get(string $sName)
+    {
+        return $this->__properties__[$sName];
+    }
+
+    /**
+     * @param string $sName
+     * @param mixed $xValue
+     *
+     * @return void
+     */
+    public function __set(string $sName, $xValue)
+    {
+        $this->__properties__[$sName] = $xValue;
     }
 
     /**
