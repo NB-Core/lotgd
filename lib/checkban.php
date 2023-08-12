@@ -31,6 +31,7 @@ function checkban($login=false){
 	if (db_num_rows($result)>0){
 		$session=array();
 		tlschema("ban");
+		if (!isset($session['message'])) $session['message']='';
 		$session['message'].=translate_inline("`n`4You fall under a ban currently in place on this website:`n");
 		while ($row = db_fetch_assoc($result)) {
 			$session['message'].=$row['banreason']."`n";
@@ -45,7 +46,7 @@ function checkban($login=false){
 					$session['message'].=sprintf_translate("`^This ban will be removed `\$after`^ %s.`n`0",date("M d, Y",strtotime($row['banexpire'])));
 					$session['message'].=sprintf_translate("`^(This means in %s %s and %s %s)`0",$hours,$tl_hours,$mins,$tl_mins);
 				}
-			$sql = "UPDATE " . db_prefix("bans") . " SET lasthit='".date("Y-m-d H:i:s")."' WHERE ipfilter='{$row['ipfilter']}' AND uniqueid='{$row['uniqueidid']}'";
+			$sql = "UPDATE " . db_prefix("bans") . " SET lasthit='".date("Y-m-d H:i:s")."' WHERE ipfilter='{$row['ipfilter']}' AND uniqueid='{$row['uniqueid']}'";
 			db_query($sql);
 			$session['message'].="`n";
 			$session['message'].=sprintf_translate("`n`4The ban was issued by %s`^.`n",$row['banner']);

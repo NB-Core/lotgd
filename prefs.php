@@ -238,6 +238,8 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 
 	if (!isset($session['user']['prefs']['timeformat'])) $session['user']['prefs']['timeformat'] = "[m/d h:ia]";
 
+	if (!isset($session['user']['prefs']['timeoffset'])) $session['user']['prefs']['timeoffset'] = 0;
+
 	$form=array(
 		"Account Preferences,title",
 		"pass1"=>"Password,password",

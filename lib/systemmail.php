@@ -11,7 +11,7 @@ function systemmail($to,$subject,$body,$from=0,$noemail=false){
 	$result = db_query($sql);
 	$row = db_fetch_assoc($result);
 	db_free_result($result);
-	$prefs = unserialize($row['prefs']);
+	$prefs = @unserialize($row['prefs']);
 	$serialized=0;
 	if ($from==0){
 		if (is_array($subject)){

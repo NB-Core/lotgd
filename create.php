@@ -272,8 +272,14 @@ if (getsetting("allowcreation",1)==0){
 					if ($refer>""){
 						$sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='".db_real_escape_string($refer)."'";
 						$result = db_query($sql);
-						$ref = db_fetch_assoc($result);
-						$referer=$ref['acctid'];
+						if (db_num_rows($result)>0) {
+							$ref = db_fetch_assoc($result);
+							$referer=$ref['acctid'];
+						} else {
+							//expired, deleted...
+							output("`\$The referral code you used is not active anymore - please get in touch with the provider, if you want the referral to count. Thank you!`n`nThen either create a new char or let us now in a timely manner who referred you!`n`n");
+							$referer=0;
+						}
 					}else{
 						$referer=0;
 					}
