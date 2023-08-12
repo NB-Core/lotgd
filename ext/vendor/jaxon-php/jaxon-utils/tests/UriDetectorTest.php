@@ -181,6 +181,12 @@ final class UriDetectorTest extends TestCase
     {
         $this->assertEquals('http://example.test/?query1234',
             $this->xUriDetector->redirect('http://example.test/?query1234', []));
+
+        $this->assertEquals('http://example.test/?query1234=',
+            $this->xUriDetector->redirect('http://example.test/?query1234=', []));
+
+        $this->assertEquals('http://example.test/?param=value&query1234=0',
+            $this->xUriDetector->redirect('http://example.test/?param=value&query1234=0', []));
     }
 
     public function testRedirectEncodedUrl()

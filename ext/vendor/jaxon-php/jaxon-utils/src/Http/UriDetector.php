@@ -233,6 +233,19 @@ class UriDetector
 
     /**
      * @param string $sQueryPart
+     * @param string $sKey
+     * @param string $sValue
+     *
+     * @return string
+     */
+    private function makeQueryPart(string $sQueryPart, string $sKey, string $sValue): string
+    {
+        return $sValue === '' && strpos($sQueryPart, "$sKey=") === false ?
+            rawurlencode($sKey) : rawurlencode($sKey) . '=' . rawurlencode($sValue);
+    }
+
+    /**
+     * @param string $sQueryPart
      * @param array $aServerParams
      *
      * @return string
@@ -253,8 +266,7 @@ class UriDetector
             $aNewQueryParts = [];
             foreach($aQueryParts as $sKey => $sValue)
             {
-                $sValue = rawurlencode($sValue);
-                $aNewQueryParts[] = rawurlencode($sKey) . ($sValue ? '=' . $sValue : $sValue);
+                $aNewQueryParts[] = $this->makeQueryPart($sQueryPart, $sKey, $sValue);
             }
             return '?' . implode('&', $aNewQueryParts);
         }

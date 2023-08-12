@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "jaxon-php/jaxon-core",
-            "version": "v4.3.1",
-            "version_normalized": "4.3.1.0",
+            "version": "v4.3.2",
+            "version_normalized": "4.3.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jaxon-php/jaxon-core.git",
-                "reference": "adc336136ef82301ca6a926f3bb324707d7a84ad"
+                "reference": "63e84714fde684a28926c8d09d7df3315f56f129"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/adc336136ef82301ca6a926f3bb324707d7a84ad",
-                "reference": "adc336136ef82301ca6a926f3bb324707d7a84ad",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/63e84714fde684a28926c8d09d7df3315f56f129",
+                "reference": "63e84714fde684a28926c8d09d7df3315f56f129",
                 "shasum": ""
             },
             "require": {
@@ -37,7 +37,7 @@
                 "phpunit/phpcov": "^8.2",
                 "phpunit/phpunit": "^9.5"
             },
-            "time": "2023-06-11T23:22:33+00:00",
+            "time": "2023-07-22T17:41:36+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -86,17 +86,17 @@
         },
         {
             "name": "jaxon-php/jaxon-utils",
-            "version": "v1.1.4",
-            "version_normalized": "1.1.4.0",
+            "version": "v1.1.5",
+            "version_normalized": "1.1.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jaxon-php/jaxon-utils.git",
-                "reference": "872c27e7a849e5ad0613251d5ce7e90886f10791"
+                "reference": "a023d6e2733d1ffde4c8822c8471615dd56a64b9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-utils/zipball/872c27e7a849e5ad0613251d5ce7e90886f10791",
-                "reference": "872c27e7a849e5ad0613251d5ce7e90886f10791",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-utils/zipball/a023d6e2733d1ffde4c8822c8471615dd56a64b9",
+                "reference": "a023d6e2733d1ffde4c8822c8471615dd56a64b9",
                 "shasum": ""
             },
             "require": {
@@ -109,7 +109,7 @@
                 "phpunit/phpcov": "^8.2",
                 "phpunit/phpunit": "^9.5"
             },
-            "time": "2023-04-28T04:20:29+00:00",
+            "time": "2023-08-04T14:07:16+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
