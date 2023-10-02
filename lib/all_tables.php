@@ -1099,7 +1099,7 @@ return array(
 			'name'=>'PRIMARY',
 			'type'=>'primary key',
 			'unique'=>'1',
-			'columns'=>'modulename,location,mfunction'
+			'columns'=>'modulename,location,`function`'
 			),
 		'key-location'=>array(
 			'name'=>'location', 'type'=>'key', 'columns'=>'location'
