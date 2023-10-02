@@ -145,7 +145,8 @@ if (file_exists("dbconnect.php")){
 // For more details, see
 // http://php.net/manual/en/features.persistent-connections.php
 //
-//$link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
+// Line is important for installer only, step 5
+$link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
 if (!defined("DB_NODB")) {
 	$link = db_connect($DB_HOST, $DB_USER, $DB_PASS);
 

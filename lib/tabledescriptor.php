@@ -161,19 +161,26 @@ function table_create_descriptor($tablename){
 	//through db_prefix.
 	$descriptor = array();
 
+	//reserved function words, expand if necessary, currently not a global setting
+	$reserved_words = array('function', 'table','key');
+
 	//fetch column desc's
 	$sql = "DESCRIBE $tablename";
 	$result = db_query($sql);
 	while ($row = db_fetch_assoc($result)){
 		$item = array();
-		$item['name']=$row['Field'];
+		// check for reserved 
+		if (in_array($row['Field'],$reserved_words)) {
+			$item['name']='`'.$row['Field'].'`';
+		} else {
+			$item['name']=$row['Field'];
+		}
 		$item['type']=$row['Type'];
 		if ($row['Null']=="Yes") $item['null'] = true;
 		if (trim($row['Default'])!="") $item['default']=$row['Default'];
 		if (trim($row['Extra'])!=="") $item['extra']=$row['Extra'];
 		$descriptor[$item['name']] = $item;
 	}
-
 	$sql = "SHOW KEYS FROM $tablename";
 	$result = db_query($sql);
 	while ($row = db_fetch_assoc($result)){

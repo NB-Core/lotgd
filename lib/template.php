@@ -86,6 +86,7 @@ function prepare_template($force=false){
 	// I am sick of the hash stuff ... that does not seem to work :-/
 	//	$$z = $x;
 		}
+		if (!isset($$z)) $$z = '';
 		$$z = $lc . $$z . "<br />";
 	}
 
