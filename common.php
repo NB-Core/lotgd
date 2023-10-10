@@ -466,6 +466,17 @@ if (!defined("IS_INSTALLER") && getsetting('debug',0)) {
 
 }
 
+// After setup, allow modification of colors and nested tags
+$colors = modulehook("core-colors",$output->get_colors());
+$output->set_colors($colors);
+// and nested tag handling
+$nestedtags = modulehook("core-nestedtags",$output->get_nested_tags());
+$output->set_nested_tags($nestedtags);
+// and nested tag eval
+$nestedeval = modulehook("core-nestedtags-eval",$output->get_nested_tag_eval());
+$output->set_nested_tag_eval($nestedeval);
+
+
 // WARNING:
 // do not hook on this modulehook unless you really need your module to run
 // on every single page hit.  This is called even when the user is not

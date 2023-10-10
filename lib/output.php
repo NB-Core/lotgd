@@ -15,6 +15,7 @@ class output_collector {
 	private $colors; //!< the color codes=>CSS tags
 	private $color_map,$colormap_esc; //!< the letters of color codes only, escaped and not escaped
 	private $nestedtags; //!<open spans, or whatever...we need to make sure that we close them on output
+	private $nestedeval; //!< if we need to execute module code, it is handled in this variable
 
 	/**
 	* Constructor. Fill our class with the colors and set all up.
@@ -23,6 +24,7 @@ class output_collector {
 	public function __construct() {
 		$this->output='';
 		$this->nestedtags=array();
+		$this->nestedtags_eval=array();
 		$this->block_new_output=false;
 		$this->nestedtags['font']=false;
 		$this->nestedtags['div']=false;
@@ -76,15 +78,9 @@ class output_collector {
 			"M" => "coltan",
  		);
 		//*cough* if you choose color codes like \ or whatnot... SENSITIVE codes like special programmer chars... then escape them. Sadly we have % (breaks sprintf i.e.) AND ) in it... (breaks regular expressions)
-		$cols=$this->colors;
-		$escape=array(')','$',"(","[","]","{","}");
-		foreach ($escape as $letter) {
-			if (isset($cols[$letter])) $cols["\\".$letter]=$cols[$letter];
-			unset($cols[$letter]);	
-		}		
-		$this->colormap_esc=array_keys($cols); //please, no empty color array.
-		$this->colormap=array_keys($this->colors);
+		$this->set_color_map();
 	}
+
 	/**
 	 * Raw output (unprocessed) appended to the output buffer
 	 *
@@ -242,6 +238,12 @@ class output_collector {
 					else $this->nestedtags['font']=true;
 					$out.="<span class='".$this->colors[$data[$pos]]."'>";
 				} else {
+					// Check if we have special nested tags
+					if (isset($this->nestedtags_eval[$data[$pos]])) {
+						$func = $this->nestedtags_eval[$data[$pos]];
+						eval($func);
+						continue;
+					}
 					switch($data[$pos]){
 					case "n":
 						$out.="<br>\n";
@@ -336,14 +338,63 @@ class output_collector {
 		}
 		return $out;
 	}
+
+	public function set_color_map() {
+		// internal array to escape special chars
+		$escape=array(')','$',"(","[","]","{","}");
+		$cols=$this->colors;
+		foreach ($escape as $letter) {
+			if (isset($cols[$letter])) $cols["\\".$letter]=$cols[$letter];
+			unset($cols[$letter]);	
+		}		
+		$this->colormap_esc=array_keys($cols); //please, no empty color array.
+		$this->colormap=array_keys($this->colors);
+	}
 		
 	/**
 	* Returns the complete color array
 	* @return an array with $colorcode=>$csstag format
 	*/
-
 	public function get_colors() {
 		return $this->colors;
+	}
+
+	/**
+	* allow external setting of colors 
+	*/
+	public function set_colors($colors) {
+		$this->colors = $colors;
+		$this->set_color_map();
+	}
+
+	/**
+	* Returns the nested tags array
+	* @return an array with $tagname=>$open format
+	*/
+	public function get_nested_tags() {
+		return $this->nestedtags;
+	}
+
+	/**
+	* Sets the nested tags array
+	*/
+	public function set_nested_tags($tags) {
+		$this->nestedtags = $tags;
+	}
+
+	/**
+	* Sets the nested tag eval array
+	*/
+	public function set_nested_tag_eval($nested_eval) {
+		$this->nestedtags_eval = $nested_eval;
+	}
+
+	/**
+	* Returns the nested tag eval array
+	* @return an array with $colorcode=>$csstag format
+	*/
+	public function get_nested_tag_eval() {
+		return $this->nestedtags_eval;
 	}
 
 	/**
@@ -456,7 +507,3 @@ function appoencode($data,$priv=false) {
 	global $output;
 	return $output->appoencode($data,$priv);
 }
-
-
-
-?>
