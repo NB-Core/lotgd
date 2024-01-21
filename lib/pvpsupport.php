@@ -72,6 +72,8 @@ function pvpvictory($badguy, $killedloc, $options=false)
 	$sql = "SELECT gold FROM " . db_prefix("accounts") . " WHERE acctid='".(int)$badguy['acctid']."'";
 	$result = db_query($sql);
 	$row = db_fetch_assoc($result);
+	if (!isset($row['gold'])) $row['gold']=0;
+	if (!isset($badguy['creaturegold'])) $badguy['creaturegold']=0;
 	$badguy['creaturegold'] =
 		((int)$row['gold']>(int)$badguy['creaturegold']?
 		 (int)$badguy['creaturegold']:(int)$row['gold']);
