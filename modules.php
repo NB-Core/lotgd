@@ -292,7 +292,7 @@ if ($op==""){
 				rawoutput($moduleinfo[$i]['shortname'] . ".php");
 				rawoutput("</td>");
 				rawoutput("</tr>");
-				if (count($moduleinfo[$i]['requires'])){
+				if (isset($moduleinfo[$i]['requires']) && is_array($moduleinfo[$i]['requires']) && count($moduleinfo[$i]['requires']) > 0){
 					rawoutput("<tr class='".($i%2?"trlight":"trdark")."'>");
 					rawoutput("<td>&nbsp;</td>");
 					rawoutput("<td colspan='6'>");
