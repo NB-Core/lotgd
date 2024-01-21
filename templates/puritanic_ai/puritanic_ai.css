@@ -12,6 +12,17 @@ td {
 	font-size: 12px;
 }
 
+.main-body {
+	background-color: #000;
+	color: '#777474';
+	margin: 0;
+}
+
+.popup-body {
+	background-color: #000;
+	color: '#777474';
+}
+
 /* Navigation Table */
 table.nav {
 	border: 1px solid #000000;
