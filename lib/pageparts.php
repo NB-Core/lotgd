@@ -302,6 +302,8 @@ function page_footer($saveuser=true){
 	//NOTICE |
 
 	//output the nav
+	$z = $y2^$z2;
+	$footer = str_replace("{".($z)."}",$$z, $footer);
 	$footer = str_replace("{".($z)."}",$z,$footer);
 	$header=str_replace("{nav}",$builtnavs,$header);
 	$footer=str_replace("{nav}",$builtnavs,$footer);
@@ -784,7 +786,7 @@ function charstats(){
 		addcharstat("Equipment Info");
 		addcharstat("Weapon", $u['weapon']);
 		addcharstat("Armor", $u['armor']);
-		if ($u['hashorse'])
+		if ($u['hashorse'] && isset($playermount['mountname']))
 			addcharstat("Creature", $playermount['mountname'] . "`0");
 
 		modulehook("charstats");
