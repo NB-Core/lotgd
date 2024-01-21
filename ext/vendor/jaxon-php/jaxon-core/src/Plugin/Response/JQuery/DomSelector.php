@@ -23,12 +23,14 @@ namespace Jaxon\Plugin\Response\JQuery;
 use Jaxon\Plugin\Response\JQuery\Call\AttrGet;
 use Jaxon\Plugin\Response\JQuery\Call\AttrSet;
 use Jaxon\Plugin\Response\JQuery\Call\Method;
+use Jaxon\Request\Call\JsCall;
 use Jaxon\Request\Call\ParameterInterface;
 
 use JsonSerializable;
 
 use function count;
 use function implode;
+use function is_a;
 use function trim;
 
 class DomSelector implements JsonSerializable, ParameterInterface
@@ -55,6 +57,13 @@ class DomSelector implements JsonSerializable, ParameterInterface
     protected $bToInt = false;
 
     /**
+     * True if this selector is a callback
+     *
+     * @var bool|null
+     */
+    protected $bIsCallback = null;
+
+    /**
      * The constructor.
      *
      * @param string $jQueryNs    The jQuery symbol
@@ -79,8 +88,8 @@ class DomSelector implements JsonSerializable, ParameterInterface
     {
         if(!$sPath)
         {
-            // If an empty selector is given, use javascript "this" instead
-            return "$jQueryNs(this)";
+            // If an empty selector is given, use the event target instead
+            return "$jQueryNs(e.currentTarget)";
         }
         if(!$xContext)
         {
@@ -101,6 +110,17 @@ class DomSelector implements JsonSerializable, ParameterInterface
      */
     public function __call(string $sMethod, array $aArguments)
     {
+        if(count($aArguments) === 1)
+        {
+            // If the only parameter is a selector, and the first call
+            // on that selector is a method, then the selector is a callback.
+            $xArgument = $aArguments[0];
+            if(is_a($xArgument, self::class) && $xArgument->bIsCallback === null &&
+                count($xArgument->aCalls) > 0 && is_a($xArgument->aCalls[0], JsCall::class))
+            {
+                $xArgument->bIsCallback = true;
+            }
+        }
         // Push the action into the array
         $this->aCalls[] = new Method($sMethod, $aArguments);
         // Return $this so the calls can be chained
@@ -139,6 +159,19 @@ class DomSelector implements JsonSerializable, ParameterInterface
     }
 
     /**
+     * Explicitely declare the selector as a callback.
+     *
+     * @param bool $bIsCallback
+     *
+     * @return DomSelector
+     */
+    public function cb(bool $bIsCallback = true): DomSelector
+    {
+        $this->bIsCallback = $bIsCallback;
+        return $this;
+    }
+
+    /**
      * @return DomSelector
      */
     public function toInt(): DomSelector
@@ -159,7 +192,8 @@ class DomSelector implements JsonSerializable, ParameterInterface
         {
             $sScript .= '.' . implode('.', $this->aCalls);
         }
-        return $this->bToInt ? "parseInt($sScript)" : $sScript;
+        return $this->bIsCallback ? '(e) => {' . $sScript . '}' :
+            ($this->bToInt ? "parseInt($sScript)" : $sScript);
     }
 
     /**

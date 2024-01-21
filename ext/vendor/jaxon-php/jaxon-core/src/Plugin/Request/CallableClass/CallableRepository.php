@@ -188,6 +188,7 @@ class CallableRepository
                 $aClassOptions[$sOption] = $xValue;
             }
         }
+        $aClassOptions['excluded'] = (bool)($aClassOptions['excluded'] ?? false); // Convert to bool.
         if(is_string($aClassOptions['protected']))
         {
             $aClassOptions['protected'] = [$aClassOptions['protected']]; // Convert to array.
@@ -203,7 +204,11 @@ class CallableRepository
         {
             if(isset($aOptionGroup['separator']))
             {
-                $aClassOptions['separator'] = $aOptionGroup['separator'];
+                $aClassOptions['separator'] = (string)$aOptionGroup['separator'];
+            }
+            if(isset($aOptionGroup['excluded']))
+            {
+                $aClassOptions['excluded'] = (bool)$aOptionGroup['excluded'];
             }
             if(isset($aOptionGroup['protected']))
             {
@@ -324,10 +329,7 @@ class CallableRepository
         $aCallableObjects = [];
         foreach($this->aClasses as $sClassName => $aOptions)
         {
-            if(!$this->di->h($sClassName))
-            {
-                $this->di->registerCallableClass($sClassName, $aOptions);
-            }
+            $this->di->registerCallableClass($sClassName, $aOptions);
             $aCallableObjects[$sClassName] = $this->di->getCallableObject($sClassName);
         }
         return $aCallableObjects;

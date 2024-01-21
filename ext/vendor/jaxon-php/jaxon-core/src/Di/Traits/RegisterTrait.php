@@ -11,88 +11,68 @@ use Jaxon\Exception\SetupException;
 use Jaxon\Plugin\AnnotationReaderInterface;
 use Jaxon\Plugin\Request\CallableClass\CallableClassHelper;
 use Jaxon\Plugin\Request\CallableClass\CallableObject;
+use Jaxon\Plugin\Request\CallableClass\CallableRepository;
 use Jaxon\Request\Call\Paginator;
 use Jaxon\Request\Factory\Factory;
 use Jaxon\Request\Factory\RequestFactory;
 use Jaxon\Request\Handler\CallbackManager;
+use Jaxon\Request\Target;
 use Jaxon\Utils\Config\Config;
-
 use ReflectionClass;
 use ReflectionException;
 
-use function array_merge;
 use function call_user_func;
-use function explode;
-use function substr;
 
 trait RegisterTrait
 {
     /**
-     * @param array $aConfigOptions
-     * @param array $aAnnotationOptions
-     *
-     * @return array
-     */
-    private function getCallableObjectOptions(array $aConfigOptions, array $aAnnotationOptions): array
-    {
-        $aOptions = [];
-        foreach($aConfigOptions as $sNames => $aFunctionOptions)
-        {
-            $aFunctionNames = explode(',', $sNames); // Names are in comma-separated list.
-            foreach($aFunctionNames as $sFunctionName)
-            {
-                $aOptions[$sFunctionName] = array_merge($aOptions[$sFunctionName] ?? [], $aFunctionOptions);
-            }
-        }
-        foreach($aAnnotationOptions as $sFunctionName => $aFunctionOptions)
-        {
-            $aOptions[$sFunctionName] = array_merge($aOptions[$sFunctionName] ?? [], $aFunctionOptions);
-        }
-        return $aOptions;
-    }
-
-    /**
-     * @param string $sClassName
-     * @param CallableObject $xCallableObject
-     * @param array $aOptions
+     * @param mixed $xRegisteredObject
+     * @param array $aDiOptions
      *
      * @return void
      */
-    private function setCallableObjectOptions(string $sClassName, CallableObject $xCallableObject, array $aOptions)
+    private function setDiAttributes($xRegisteredObject, array $aDiOptions)
     {
-        $aProtectedMethods = $this->getCallableRepository()->getProtectedMethods($sClassName);
-        // Annotations options
-        $xAnnotationReader = $this->g(AnnotationReaderInterface::class);
-        $aMethods = $xCallableObject->getPublicMethods($aProtectedMethods);
-        $aProperties = $xCallableObject->getProperties();
-        [$bExcluded, $aAnnotationOptions, $aAnnotationProtected] = $xAnnotationReader->getAttributes($sClassName, $aMethods, $aProperties);
-        if($bExcluded)
+        foreach($aDiOptions as $sName => $sClass)
         {
-            $xCallableObject->configure('excluded', true);
-            return;
+            // Set the protected attributes of the object
+            $cSetter = function($xInjectedObject) use($sName) {
+                // Warning: dynamic properties will be deprecated in PHP8.2.
+                $this->$sName = $xInjectedObject;
+            };
+            // Can now access protected attributes
+            call_user_func($cSetter->bindTo($xRegisteredObject, $xRegisteredObject), $this->get($sClass));
         }
+    }
 
-        $xCallableObject->configure('separator', $aOptions['separator']);
-        $xCallableObject->configure('protected', array_merge($aOptions['protected'], $aAnnotationProtected));
+    /**
+     * Get a callable object when one of its method needs to be called
+     *
+     * @param CallableObject $xCallableObject
+     * @param Target $xTarget
+     *
+     * @return mixed
+     */
+    public function getRegisteredObject(CallableObject $xCallableObject, Target $xTarget)
+    {
+        // Set attributes from the DI container.
+        // The class level DI options were set when creating the object instance.
+        // We now need to set the method level DI options.
+        $aDiOptions = $xCallableObject->getMethodDiOptions($xTarget->getMethodName());
+        $xRegisteredObject = $this->g($xCallableObject->getClassName());
+        $this->setDiAttributes($xRegisteredObject, $aDiOptions);
 
-        // Functions options
-        $aCallableOptions = [];
-        $aOptions = $this->getCallableObjectOptions($aOptions['functions'], $aAnnotationOptions);
-        foreach($aOptions as $sFunctionName => $aFunctionOptions)
+        // Set the Jaxon request target in the helper
+        if($xRegisteredObject instanceof CallableClass)
         {
-            foreach($aFunctionOptions as $sOptionName => $xOptionValue)
-            {
-                if(substr($sOptionName, 0, 2) !== '__')
-                {
-                    // Options for javascript code.
-                    $aCallableOptions[$sFunctionName][$sOptionName] = $xOptionValue;
-                    continue;
-                }
-                // Options for PHP classes. They start with "__".
-                $xCallableObject->configure($sOptionName, [$sFunctionName => $xOptionValue]);
-            }
+            // Set the protected attributes of the object
+            $cSetter = function() use($xTarget) {
+                $this->xCallableClassHelper->xTarget = $xTarget;
+            };
+            // Can now access protected attributes
+            call_user_func($cSetter->bindTo($xRegisteredObject, $xRegisteredObject));
         }
-        $xCallableObject->setOptions($aCallableOptions);
+        return $xRegisteredObject;
     }
 
     /**
@@ -109,6 +89,12 @@ trait RegisterTrait
         $sRequestFactory = $sClassName . '_RequestFactory';
         $sCallableObject = $sClassName . '_CallableObject';
         $sReflectionClass = $sClassName . '_ReflectionClass';
+
+        // Prevent duplication
+        if($this->h($sReflectionClass)) // It's important not to use the class name here.
+        {
+            return;
+        }
 
         // Make sure the registered class exists
         if(isset($aOptions['include']))
@@ -128,41 +114,56 @@ trait RegisterTrait
         }
 
         // Register the callable object
-        $this->set($sCallableObject, function($c) use($sClassName, $sReflectionClass, $aOptions) {
-            $xCallableObject = new CallableObject($this, $c->g($sReflectionClass));
-            $this->setCallableObjectOptions($sClassName, $xCallableObject, $aOptions);
-            return $xCallableObject;
+        $this->set($sCallableObject, function($di) use($sReflectionClass, $sClassName, $aOptions) {
+            $xRepository = $di->g(CallableRepository::class);
+            $aProtectedMethods = $xRepository->getProtectedMethods($sClassName);
+            return new CallableObject($di, $di->g(AnnotationReaderInterface::class),
+                $di->g($sReflectionClass), $aOptions, $aProtectedMethods);
         });
 
         // Register the request factory
-        $this->set($sRequestFactory, function($c) use($sCallableObject) {
-            $xConfigManager = $c->g(ConfigManager::class);
-            $xCallable = $c->g($sCallableObject);
+        $this->set($sRequestFactory, function($di) use($sCallableObject) {
+            $xConfigManager = $di->g(ConfigManager::class);
+            $xCallable = $di->g($sCallableObject);
             $sJsClass = $xConfigManager->getOption('core.prefix.class') . $xCallable->getJsName() . '.';
-            return new RequestFactory($sJsClass, $c->g(DialogLibraryManager::class), $c->g(Paginator::class));
+            return new RequestFactory($sJsClass, $di->g(DialogLibraryManager::class), $di->g(Paginator::class));
         });
 
-        // Register the user class
-        $this->set($sClassName, function($c) use($sClassName, $sReflectionClass) {
-            $xRegisteredObject = $this->make($c->g($sReflectionClass));
-            // Initialize the object
+        // Register the user class, but only if the user didn't already.
+        if(!$this->h($sClassName))
+        {
+            $this->set($sClassName, function($di) use($sReflectionClass) {
+                return $this->make($di->g($sReflectionClass));
+            });
+        }
+        // Initialize the user class instance
+        $this->xLibContainer->extend($sClassName, function($xRegisteredObject)
+            use($sCallableObject, $sClassName) {
             if($xRegisteredObject instanceof CallableClass)
             {
-                // Set the protected attributes of the object
-                $cSetter = function($c, $sClassName) {
-                    $this->xCallableClassHelper = new CallableClassHelper($c, $sClassName);
-                    $this->response = $c->getResponse();
+                $cSetter = function($di) use($sClassName) {
+                    // Set the protected attributes of the object
+                    $this->xCallableClassHelper = new CallableClassHelper($di, $sClassName);
+                    $this->response = $di->getResponse();
                 };
                 // Can now access protected attributes
-                call_user_func($cSetter->bindTo($xRegisteredObject, $xRegisteredObject), $c, $sClassName);
+                call_user_func($cSetter->bindTo($xRegisteredObject, $xRegisteredObject), $this);
             }
 
-            // Run the callback for class initialisation
-            $aCallbacks = $c->g(CallbackManager::class)->getInitCallbacks();
+            // Run the callbacks for class initialisation
+            $aCallbacks = $this->g(CallbackManager::class)->getInitCallbacks();
             foreach($aCallbacks as $xCallback)
             {
                 call_user_func($xCallback, $xRegisteredObject);
             }
+
+            // Set attributes from the DI container.
+            // The class level DI options are set when creating the object instance.
+            // The method level DI options are set only when calling the method in the ajax request.
+            /** @var CallableObject */
+            $xCallableObject = $this->g($sCallableObject);
+            $this->setDiAttributes($xRegisteredObject, $xCallableObject->getClassDiOptions());
+
             return $xRegisteredObject;
         });
     }
@@ -202,30 +203,22 @@ trait RegisterTrait
      */
     public function registerPackage(string $sClassName, Config $xPkgConfig)
     {
-        $this->val($sClassName . '_config', $xPkgConfig);
-        $this->set($sClassName, function($c) use($sClassName) {
-            $xPackage = $this->make($sClassName);
-            // Set the protected attributes of the object
-            $cSetter = function($c, $sClassName) {
-                $this->xPkgConfig = $c->g($sClassName . '_config');
-                $this->xFactory = $c->g(Factory::class);
-                $this->xRenderer = $c->g(ViewRenderer::class);
+        // Register the user class, but only if the user didn't already.
+        if(!$this->h($sClassName))
+        {
+            $this->set($sClassName, function() use($sClassName) {
+                return $this->make($sClassName);
+            });
+        }
+        $this->xLibContainer->extend($sClassName, function($xPackage) use($xPkgConfig) {
+            $cSetter = function($di) use($xPkgConfig) {
+                // Set the protected attributes of the object
+                $this->_init($xPkgConfig, $di->g(Factory::class), $di->g(ViewRenderer::class));
             };
             // Can now access protected attributes
-            call_user_func($cSetter->bindTo($xPackage, $xPackage), $c, $sClassName);
+            call_user_func($cSetter->bindTo($xPackage, $xPackage), $this);
+            $xPackage->init();
             return $xPackage;
         });
-    }
-
-    /**
-     * Get a package config
-     *
-     * @param string $sClassName    The package class name
-     *
-     * @return Config
-     */
-    public function getPackageConfig(string $sClassName): Config
-    {
-        return $this->g($sClassName . '_config');
     }
 }

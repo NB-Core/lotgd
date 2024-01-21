@@ -8,6 +8,7 @@ use Jaxon\Di\Container;
 use Jaxon\Plugin\Manager\PluginManager;
 use Jaxon\Response\Manager\ResponseManager;
 use Jaxon\Response\Response;
+use Jaxon\Response\ResponseInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -23,14 +24,14 @@ trait ResponseTrait
     private function registerResponses()
     {
         // Global Response
-        $this->set(Response::class, function($c) {
-            return new Response($c->g(PluginManager::class),
-                $c->g(Psr17Factory::class), $c->g(ServerRequestInterface::class));
+        $this->set(Response::class, function($di) {
+            return new Response($di->g(PluginManager::class),
+                $di->g(Psr17Factory::class), $di->g(ServerRequestInterface::class));
         });
         // Response Manager
-        $this->set(ResponseManager::class, function($c) {
-            return new ResponseManager(trim($c->g(ConfigManager::class)->getOption('core.encoding', '')),
-                $c->g(Container::class), $c->g(Translator::class));
+        $this->set(ResponseManager::class, function($di) {
+            return new ResponseManager(trim($di->g(ConfigManager::class)->getOption('core.encoding', '')),
+                $di->g(Container::class), $di->g(Translator::class));
         });
     }
 
@@ -47,9 +48,9 @@ trait ResponseTrait
     /**
      * Get the global Response object
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function getResponse(): Response
+    public function getResponse(): ResponseInterface
     {
         return $this->g(Response::class);
     }
@@ -57,9 +58,9 @@ trait ResponseTrait
     /**
      * Create a new Jaxon response object
      *
-     * @return Response
+     * @return ResponseInterface
      */
-    public function newResponse(): Response
+    public function newResponse(): ResponseInterface
     {
         return new Response($this->g(PluginManager::class),
             $this->g(Psr17Factory::class), $this->g(ServerRequestInterface::class));
