@@ -151,11 +151,7 @@ trait RegisterTrait
             }
 
             // Run the callbacks for class initialisation
-            $aCallbacks = $this->g(CallbackManager::class)->getInitCallbacks();
-            foreach($aCallbacks as $xCallback)
-            {
-                call_user_func($xCallback, $xRegisteredObject);
-            }
+            $this->g(CallbackManager::class)->onInit($xRegisteredObject);
 
             // Set attributes from the DI container.
             // The class level DI options are set when creating the object instance.
@@ -193,6 +189,16 @@ trait RegisterTrait
     }
 
     /**
+     * @param string $sClassName    The package class name
+     *
+     * @return string
+     */
+    private function getPackageConfigKey(string $sClassName): string
+    {
+        return $sClassName . '_config';
+    }
+
+    /**
      * Register a package
      *
      * @param string $sClassName    The package class name
@@ -203,6 +209,8 @@ trait RegisterTrait
      */
     public function registerPackage(string $sClassName, Config $xPkgConfig)
     {
+        $sPkgConfigKey = $this->getPackageConfigKey($sClassName);
+        $this->val($sPkgConfigKey, $xPkgConfig);
         // Register the user class, but only if the user didn't already.
         if(!$this->h($sClassName))
         {
@@ -210,15 +218,28 @@ trait RegisterTrait
                 return $this->make($sClassName);
             });
         }
-        $this->xLibContainer->extend($sClassName, function($xPackage) use($xPkgConfig) {
-            $cSetter = function($di) use($xPkgConfig) {
+        $this->xLibContainer->extend($sClassName, function($xPackage) use($sPkgConfigKey) {
+            $di = $this;
+            $cSetter = function() use($di, $sPkgConfigKey) {
                 // Set the protected attributes of the object
-                $this->_init($xPkgConfig, $di->g(Factory::class), $di->g(ViewRenderer::class));
+                $this->_init($di->g($sPkgConfigKey), $di->g(Factory::class), $di->g(ViewRenderer::class));
+                $this->init();
             };
             // Can now access protected attributes
-            call_user_func($cSetter->bindTo($xPackage, $xPackage), $this);
-            $xPackage->init();
+            call_user_func($cSetter->bindTo($xPackage, $xPackage));
             return $xPackage;
         });
+    }
+
+    /**
+     * Get the config of a package
+     *
+     * @param string $sClassName    The package class name
+     *
+     * @return Config
+     */
+    public function getPackageConfig(string $sClassName): Config
+    {
+        return $this->g($this->getPackageConfigKey($sClassName));
     }
 }
