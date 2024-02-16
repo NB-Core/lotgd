@@ -24,7 +24,7 @@ function char_cleanup($id, $type)
 	if ($row['clanid'] != 0 && ($row['clanrank'] == CLAN_LEADER || $row['clanrank'] ==CLAN_FOUNDER)) {
 		$cid = $row['clanid'];
 		//check if there are any leaders or founders left
-		$sql = "SELECT count(acctid) FROM " . db_prefix("accounts") .
+		$sql = "SELECT count(acctid) as counter FROM " . db_prefix("accounts") .
 			" WHERE clanid=$cid AND clanrank >= " . CLAN_LEADER . " AND acctid<>$id ORDER BY clanrank DESC, clanjoindate";
 		$res = db_query($sql);
 		$row = db_fetch_assoc($res);

@@ -78,6 +78,7 @@ if ($op=="search"){
 				page_footer();
 			}
 		}else{
+			modulehook("forestsearch_noevent",array());
 			$session['user']['turns']--;
 			$battle=true;
 			if (e_rand(0,2)==1){
@@ -311,6 +312,7 @@ if ($battle){
 if ($op==""){
 	// Need to pass the variable here so that we show the forest message
 	// sometimes, but not others.
+	modulehook("forest_enter",array());
 	forest($dontdisplayforestmessage);
 }
 page_footer();
