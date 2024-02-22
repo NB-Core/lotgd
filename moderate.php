@@ -192,6 +192,12 @@ if ($op==""){
 		rawoutput("</td>");
 		rawoutput("<td>");
 		$comment = unserialize($row['comment']);
+		if (!is_array($comment) || !isset($comment['section'])) {
+			output("---no comment found---");
+			rawoutput("</td>");
+			rawoutput("</tr>");
+			continue; //whatever we did here 
+		}
 		output_notl("`0(%s)", $comment['section']);
 
 		if ($comment['clanrank']>0)

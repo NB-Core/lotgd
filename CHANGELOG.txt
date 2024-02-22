@@ -3,6 +3,7 @@ Changes to 1.3.0 +nb
 *battle.php --> another unset nightmare
 *dragon.php --> another unset nightmare
 *forest.php --> added a hook forestsearch_noevent to have one only going in fight mode, not events, and one for the main page forest_enter
+*moderate.php --> strange error, checking now if moderated table holds a comment, if not, says so
 *lib/all_tables.php --> module_hooks has a wrongly named key field 'mfunction' which was a remnant of a rename for the now-reserved word 'function'
 *lib/clan/clan_motd.php --> rank setting not fully correct if ranks were missing, unset issue
 *lib/charcleanup.php --> counter as not defined, hence clan couldn't auto-disband
