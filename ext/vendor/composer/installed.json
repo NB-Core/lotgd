@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "jaxon-php/jaxon-core",
-            "version": "v4.7.0",
-            "version_normalized": "4.7.0.0",
+            "version": "v4.7.1",
+            "version_normalized": "4.7.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jaxon-php/jaxon-core.git",
-                "reference": "2226e2252861c40bcce9a50d7fc0755527052fb4"
+                "reference": "d76b125840b078c4abd5662d303e8aeb0d231dc6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/2226e2252861c40bcce9a50d7fc0755527052fb4",
-                "reference": "2226e2252861c40bcce9a50d7fc0755527052fb4",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/d76b125840b078c4abd5662d303e8aeb0d231dc6",
+                "reference": "d76b125840b078c4abd5662d303e8aeb0d231dc6",
                 "shasum": ""
             },
             "require": {
@@ -37,7 +37,7 @@
                 "phpunit/phpcov": "^8.2",
                 "phpunit/phpunit": "^9.5"
             },
-            "time": "2024-02-01T08:10:52+00:00",
+            "time": "2024-02-19T03:04:49+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
