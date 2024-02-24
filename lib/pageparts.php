@@ -343,17 +343,23 @@ function page_footer($saveuser=true){
 		while ($row = db_fetch_assoc($result)) {
 			$petitions["P".$row['status']] = $row['c'];
 		}
+		// add short links for the admin, depending on superuser rights (technically we could move this out of petitions and make it general, but alas...)
 		$pet = translate_inline("`0`bPetitions:`b");
 		$ued = translate_inline("`0`bUser Editor`b");
+		$mod = translate_inline("`0`bManage Modules`b");
 		db_free_result($result);
+		$admin_array=array();
 		if ($session['user']['superuser'] & SU_EDIT_USERS){
-			$p = "<a href='user.php'>$ued</a>|<a href='viewpetition.php'>$pet</a>";
+			$admin_array[] = "<a href='user.php'>$ued</a>";
 			addnav("", "user.php");
-			addnav("", "viewpetition.php");
-		} else {
-			$p = "<a href='viewpetition.php'>$pet</a>";
-			addnav("", "viewpetition.php");
 		}
+		if ($session['user']['superuser'] & SU_MANAGE_MODULES) {
+			$admin_array[] = "<a href='modules.php'>$mod</a>";
+			addnav("", "modules.php");
+		}
+		$admin_array[] = "<a href='viewpetition.php'>$pet</a>";
+		addnav("", "viewpetition.php");
+		$p = implode("|",$admin_array);
 		$pcolors = array("`\$","`^","`6","`!","`#","`%","`v");
 		$pets = "`n";
 		foreach($petitions as $val) {

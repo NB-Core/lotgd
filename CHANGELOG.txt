@@ -11,6 +11,7 @@ Changes to 1.3.0 +nb
 *lib/commentary --> added the section to the commentline-hook
 *lib/extended-battle.php --> another unset nightmare, also a typo
 *lib/output.php --> bug, output for debug did not show anymore, typo in binary comparison
+*lib/pageparts.php --> added "Manage Modules" shortlink to top right corner (petitiondisplay)
 *lib/showform.php --> unset nightmare
 
 [CHANGES]
