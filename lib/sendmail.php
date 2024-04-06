@@ -51,12 +51,20 @@ function send_email($to, $body, $subject, $from, $cc=false,$contenttype="text/pl
 
 		if ($cc!==false) {
 			foreach ($cc as $add=>$name) {
+				if (!filter_var($add, FILTER_VALIDATE_EMAIL)) {
+					// not a valid email address, skip it
+					continue;
+				}
 				$mail->AddCC($add,$name);
 			}
 		}
 
 
 		foreach ($to as $add=>$name) {
+			if (!filter_var($add, FILTER_VALIDATE_EMAIL)) {
+				// not a valid email address, skip it
+				continue;
+			}
 			$mail->AddAddress($add,$name);
 		}
 

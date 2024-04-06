@@ -134,6 +134,7 @@ function writelog($response){
 			if (db_affected_rows()>0) $processed = 1;
 		}
 	} else $match[1] = "";
+	if ($match[1]>"" && $acctid>0) modulehook("donation", array("id"=>$acctid, "amt"=>$donation*getsetting('dpointspercurrencyunit',100), "manual"=>false));
 	$sql = "
 		INSERT INTO " . db_prefix("paylog") . " (
 			info,
@@ -158,8 +159,8 @@ function writelog($response){
 			'$payment_fee',
 			'".date("Y-m-d H:i:s")."'
 		)";
+	if (isset($acctid)) debuglog($sql,false,$acctid,"donation",0,false);
 	$result = db_query($sql);
-	if ($match[1]>"" && $acctid>0) modulehook("donation", array("id"=>$acctid, "amt"=>$donation*getsetting('dpointspercurrencyunit',100), "manual"=>false));
 	modulehook("donation-processed",$post);
 	$err = db_error();
 	if ($err) {
