@@ -809,7 +809,7 @@ function charstats(){
 			$onlinecount=0;
 			// If a module wants to do it's own display of the online chars,
 			// let it.
-			$list = modulehook("onlinecharlist", array());
+			$list = modulehook("onlinecharlist", array("count"=>0, "list"=>""));
 			if (isset($list['handled']) && $list['handled']) {
 				$onlinecount = $list['count'];
 				$ret = $list['list'];
