@@ -13,6 +13,7 @@ tlschema("creatures");
 $creaturetats=array();
 $creatureexp=14;
 $creaturegold=36;
+$creaturedefense=0;
 for ($i=1;$i<=(getsetting('maxlevel',15)+4);$i++) {
 	//apply algorithmic creature generation.
 	$level=$i;

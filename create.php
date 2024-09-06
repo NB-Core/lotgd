@@ -93,6 +93,7 @@ if ($op=="forgotval"){
 				$alert = translate_mail(array("Email change request validated by link to %s from %s originally for login '%s'.",$replaceemail,$row['emailaddress'],$row['login']),0);
 				while ($row2 = db_fetch_assoc($result2)) {
 					$msg = translate_mail(array("This message is generated as a result of an email change to a superuser account.  Log Follows:`n`n%s",$alert),0);
+					if (db_affected_rows()>0) $noemail = true; else $noemail = false;
 					systemmail($row2['acctid'],$subj,$msg,0,$noemail);
 				}
 			}
