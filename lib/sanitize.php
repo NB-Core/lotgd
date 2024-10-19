@@ -5,16 +5,19 @@
 
 function sanitize($in){
 	global $output;
+	if ($in == "" || $in == null) return "";
 	$out = preg_replace("/[`][0".$output->get_colormap_escaped()."bicnHw]/", "", $in);
 	return $out;
 }
 
 function newline_sanitize($in){
+	if ($in == "" || $in == null) return "";
 	$out = preg_replace("/`n/", "", $in);
 	return $out;
 }
 
 function color_sanitize($in){
+	if ($in == "" || $in == null) return "";
 	global $output;
 	$out = preg_replace("/[`][0".$output->get_colormap_escaped()."cbi]/", "", $in);
 	return $out;
@@ -22,6 +25,7 @@ function color_sanitize($in){
 
 function comment_sanitize($in) {
 	global $output;
+	if ($in == "" || $in == null) return "";
 	// to keep the regexp from boinging this, we need to make sure
 	// that we're not replacing in with the ` mark.
 	//no italic, nor centered, nor newlines allowed here
@@ -41,16 +45,19 @@ function logdnet_sanitize($in)
 }
 
 function full_sanitize($in) {
+	if ($in == "" || $in == null) return "";
 	$out = preg_replace("/[`]./", "", $in);
 	return $out;
 }
 
 function cmd_sanitize($in) {
+	if ($in == "" || $in == null) return "";
 	$out = preg_replace("'[&?]c=[[:digit:]-]+'", "", $in);
 	return $out;
 }
 
 function comscroll_sanitize($in) {
+	if ($in == "" || $in == null) return "";
 	$out = preg_replace("'&c(omscroll)?=([[:digit:]]|-)*'", "", $in);
 	$out = preg_replace("'\\?c(omscroll)?=([[:digit:]]|-)*'", "?", $out);
 	$out = preg_replace("'&(refresh|comment)=1'", "", $out);

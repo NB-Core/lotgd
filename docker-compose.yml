@@ -1,0 +1,31 @@
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - lotgd-network
+
+  db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: lotgd
+      MYSQL_USER: lotgduser
+      MYSQL_PASSWORD: lotgdpass
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - lotgd-network
+
+volumes:
+  db_data:
+
+networks:
+  lotgd-network:

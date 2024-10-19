@@ -82,7 +82,7 @@ function prepare_template($force=false){
 	}else {
 		$y = 0;
 		$z = $y2^$z2;
-		if ($session['user']['loggedin'] && $x > ''){
+		if (isset($session['user']['loggedin']) && $session['user']['loggedin'] && $x > ''){
 	// I am sick of the hash stuff ... that does not seem to work :-/
 	//	$$z = $x;
 		}

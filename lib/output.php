@@ -13,9 +13,10 @@ class output_collector {
 	private $output; //!< the output to the template body
 	private $block_new_output; //!< is current output blocked? boolean
 	private $colors; //!< the color codes=>CSS tags
-	private $color_map,$colormap_esc; //!< the letters of color codes only, escaped and not escaped
+	private $colormap; //!< the letters of color codes only
+	private $colormap_esc; //!< the letters of color codes only escaped
 	private $nestedtags; //!<open spans, or whatever...we need to make sure that we close them on output
-	private $nestedeval; //!< if we need to execute module code, it is handled in this variable
+	private $nestedtags_eval; //!< if we need to execute module code, it is handled in this variable
 
 	/**
 	* Constructor. Fill our class with the colors and set all up.

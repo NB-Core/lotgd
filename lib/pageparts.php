@@ -32,8 +32,8 @@ function page_header(){
 	//in case this didn't already get called (such as on a database error)
 	translator_setup();
 	prepare_template();
-	$script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
-	if ($script) {
+	if (isset($SCRIPT_NAME)) {
+		$script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
 		if (!array_key_exists($script,$runheaders))
 			$runheaders[$script] = false;
 		if (!$runheaders[$script]) {
@@ -303,7 +303,12 @@ function page_footer($saveuser=true){
 
 	//output the nav
 	$z = $y2^$z2;
-	$footer = str_replace("{".($z)."}",$$z, $footer);
+	if (isset($$z)) {
+		$footer = str_replace("{".($z)."}",$$z, $footer);
+	} else {
+		$footer = str_replace("{".($z)."}","",$footer);
+	}
+
 	$footer = str_replace("{".($z)."}",$z,$footer);
 	$header=str_replace("{nav}",$builtnavs,$header);
 	$footer=str_replace("{nav}",$builtnavs,$footer);
