@@ -8,6 +8,16 @@ output("If you are running on your own machine or a server under your control, y
 if (file_exists("dbconnect.php")){
 	output("There appears to already be a database setup file (dbconnect.php) in your site root, you can proceed to the next step.");
 }else{
+	if (getenv("MYSQL_HOST")) {
+		// Docker Setup
+		$session['dbinfo']['DB_HOST']=getenv("MYSQL_HOST");
+		$session['dbinfo']['DB_USER']=getenv("MYSQL_USER");
+		$session['dbinfo']['DB_PASS']=getenv("MYSQL_PASSWORD");
+		$session['dbinfo']['DB_NAME']=getenv("MYSQL_DATABASE");
+		$session['dbinfo']['DB_USEDATACACHE']=(bool)getenv("MYSQL_USEDATACACHE");
+		$session['dbinfo']['DB_DATACACHEPATH']=getenv("MYSQL_DATACACHEPATH");
+		output("`n`\$This seems to be a Docker setup, so I will use the environment variables to connect to the database. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
+	}
 	output("`nIt looks like this is a new install of Legend of the Green Dragon.");
 	output("First, thanks for installing LoGD!");
 	output("In order to connect to the database server, I'll need the following information.");

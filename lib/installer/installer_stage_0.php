@@ -5,6 +5,11 @@ output("`nIn order to install and use Legend of the Green Dragon (LoGD), you mus
 output("`n`&This game is a small project into which we have invested a tremendous amount of personal effort, and we provide this to you absolutely free of charge.`2");
 output("Please understand that if you modify our copyright, or otherwise violate the license, you are not only breaking international copyright law (which includes penalties which are defined in whichever country you live), but you're also defeating the spirit of open source, and ruining any good faith which we have demonstrated by providing our blood, sweat, and tears to you free of charge.  You should also know that by breaking the license even one time, it is within our rights to require you to permanently cease running LoGD forever.`n");
 output("`nPlease note that in order to use the installer, you must have cookies enabled in your browser.`n");
+if (getenv("MYSQL_HOST")) {
+	output("`n`\$This seems to be a Docker setup, which means the database will be provided by the environment variables. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
+	output("Also, you need to take care of other hosting issues, like SSL, possibly Let's encrypt and other things.");
+	output("`n`nNote that the entire html folder is volume-linked, so the database connection file and more will be stored there, too.");
+}
 if (defined("DB_CHOSEN") && DB_CHOSEN){
 	$sql = "SELECT count(*) AS c FROM ".db_prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
 	$result = db_query($sql);
