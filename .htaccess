@@ -1,0 +1,17 @@
+# Deny access to .env and dbconnect.php files
+<FilesMatch "^(\.env|dbconnect\.php)$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to the 'ext' directory
+RewriteEngine On
+RewriteRule ^ext/ - [F,L]
+
+# Disable directory indexing
+Options -Indexes
+
+# Deny access to files with unknown extensions other than .php
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !\.php$
+RewriteRule ^ - [F,L]
