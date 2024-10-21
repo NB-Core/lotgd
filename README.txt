@@ -1,3 +1,4 @@
+# +nb fork explanation
 This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
 
 The original readme and license texts follow below, also the installation + upgrade routines which haven't changed much.
@@ -37,7 +38,7 @@ Oliver
 
 ----------------------------------------------------------------------
 
-Legend of the Green Dragon
+# Legend of the Green Dragon
 by  Eric "MightyE" Stevens (http://www.mightye.org)
 and JT "Kendaer" Traub (http://www.dragoncat.net)
 
@@ -52,9 +53,9 @@ For a new installation, see INSTALLATION below.
 For upgrading a new installation, see UPGRADING below.
 If you have problems, please visit Dragonprime at the address above.
 
-----------------------------------------------
--- UPGRADING: --------------------------------
-----------------------------------------------
+
+## UPGRADING
+
 ALWAYS extract the new distribution into a new directory!
 
 BEFORE ANYTHING ELSE, read and understand the new code license.  This code
@@ -100,9 +101,8 @@ specials.save) and work on converting them.  Most specials should convert
 easily and you can look at existing examples.  If you haven't created (or
 modified) specials on your server, just remove this directory.
 
-----------------------------------------------
--- INSTALLATION: -----------------------------
-----------------------------------------------
+## INSTALLATION:
+
 These instructions cover a new LoGD installation.
 You will need access to a MySQL database and a PHP hosting
 location to run this game. Your SQL user needs the LOCK TABLES 
@@ -130,9 +130,8 @@ Once you have completed the installation, read the POST INSTALLATION section
 below.
 
 
-----------------------------------------------
--- POST INSTALLATION: ------------------------
-----------------------------------------------
+
+# POST INSTALLATION:
 
 Now that you have the game installed, you need to take a couple of sensible
 precautions.
@@ -169,3 +168,264 @@ Once you have things configured to your liking, you should go back to the
 manage modules page and ACTIVATE any modules that you want to have running.
 
 Good luck and enjoy your new LotGD server!
+
+# LOTGD Docker Environment
+
+This guide explains how to containerize and run the LOTGD application using Docker. The provided Docker environment is configured for development and testing purposes. Additional configurations are required for production use, particularly regarding security and SSL encryption.
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Step 1: Clone the Repository](#step-1-clone-the-repository)
+  - [Step 2: Set Up the Docker Environment](#step-2-set-up-the-docker-environment)
+  - [Step 3: Build and Start the Containers](#step-3-build-and-start-the-containers)
+- [Configuration Files](#configuration-files)
+  - [Dockerfile](#dockerfile)
+  - [docker-compose.yml](#docker-composeyml)
+  - [.env File](#env-file)
+  - [.htaccess](#htaccess)
+- [Notes](#notes)
+  - [Port Configuration](#port-configuration)
+  - [SSL/TLS](#ssltls)
+  - [Persistent Volumes](#persistent-volumes)
+  - [Security](#security)
+- [Useful Commands](#useful-commands)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+---
+
+## Prerequisites
+
+- **Docker** installed
+- **Docker Compose** installed
+- Basic knowledge of Docker and command-line operations
+
+---
+
+## Installation
+
+### Step 1: Clone the Repository
+
+Clone the LOTGD repository to your local machine:
+
+```bash
+git clone https://github.com/NB-Core/lotgd.git
+cd lotgd
+```
+
+### Step 2: Set Up the Docker Environment
+
+Create the following files in the root directory of the project if they don't already exist:
+
+1. **Dockerfile**
+2. **docker-compose.yml**
+3. **.env**
+4. **.htaccess**
+
+The contents of these files are detailed in the [Configuration Files](#configuration-files) section.
+
+### Step 3: Build and Start the Containers
+
+Build the Docker containers and start the environment:
+
+```bash
+docker-compose up -d --build
+```
+
+---
+
+## Configuration Files
+
+### Dockerfile
+
+```Dockerfile
+# Base image with PHP 8.1 and Apache
+FROM php:8.1-apache
+
+# Install required PHP extensions
+RUN docker-php-ext-install mysqli pdo pdo_mysql
+
+# Enable mod_rewrite
+RUN a2enmod rewrite
+
+# Adjust Apache configuration to allow .htaccess
+RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy source code
+COPY . /var/www/html
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html
+
+# Enable PHP error display for development purposes
+RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
+RUN echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
+RUN echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini
+RUN echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
+RUN echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
+
+# Expose port 80
+EXPOSE 80
+
+# Start Apache in the foreground
+CMD ["apache2-foreground"]
+```
+
+### docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - db
+    networks:
+      - lotgd-network
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - lotgd-network
+
+volumes:
+  db_data:
+
+networks:
+  lotgd-network:
+```
+
+### .env File
+
+Create a `.env` file in the root directory with the following content:
+
+```env
+MYSQL_DATABASE=lotgd
+MYSQL_USER=lotgduser
+MYSQL_PASSWORD=lotgdpass
+MYSQL_ROOT_PASSWORD=rootpass
+```
+
+> **Note:** Change these default passwords for production use.
+
+### .htaccess
+
+Create a `.htaccess` file in the root directory of your application (`/var/www/html`) with the following content to prevent access to sensitive files and disable directory listings:
+
+```apacheconf
+# Deny access to .env file
+<Files .env>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Disable directory listing
+Options -Indexes
+```
+
+---
+
+## Notes
+
+### Port Configuration
+
+- The container exposes **port 80**. Ensure this port is available on your host machine.
+- For production use, you should employ a reverse proxy (e.g., Nginx) and configure SSL/TLS.
+
+### SSL/TLS
+
+- The current configuration **does not support SSL/TLS**.
+- **SSL/TLS must be configured separately**, especially for production environments.
+- Consider using Let's Encrypt or another certificate provider.
+
+### Persistent Volumes
+
+- The `db_data` volume ensures that database data is stored persistently.
+- **Adjusting Volumes:**
+  - Modify the volumes in `docker-compose.yml` as needed.
+  - Consider using named volumes or mounting a host directory for backups.
+
+### Security
+
+- **Change Passwords:** Update the default passwords in the `.env` file.
+- **Access Rights:** Ensure that sensitive files are not publicly accessible.
+- **Updates:** Keep your Docker images and dependencies up to date.
+- **Firewall:** Configure your firewall appropriately to prevent unauthorized access.
+
+---
+
+## Useful Commands
+
+- **Stop Containers:**
+
+  ```bash
+  docker-compose down
+  ```
+
+- **Restart Containers:**
+
+  ```bash
+  docker-compose restart
+  ```
+
+- **View Logs:**
+
+  ```bash
+  docker-compose logs -f
+  ```
+
+- **Access the Web Container:**
+
+  ```bash
+  docker-compose exec web bash
+  ```
+
+- **Access the Database Container:**
+
+  ```bash
+  docker-compose exec db bash
+  ```
+
+---
+
+## Troubleshooting
+
+- **Web Container Fails to Start:**
+  - Check logs with `docker-compose logs web`.
+  - Ensure the base image is correct (`php:8.1-apache`).
+
+- **Database Connection Fails:**
+  - Verify that the environment variables in the `.env` file are correct.
+  - Check the database settings in your application.
+
+- **Code Changes Not Reflected:**
+  - Ensure you have rebuilt the container after making changes to the Dockerfile.
+  - Clear your application's cache or your browser's cache if necessary.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+**Note:** This Docker environment is intended for development and testing purposes. Additional configurations and security measures are required for production use.
+
+# Enjoy running LOTGD with Docker!
