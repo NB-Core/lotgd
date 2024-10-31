@@ -8,7 +8,7 @@ Changes to 1.3.0 +nb
 *lib/clan/clan_motd.php --> rank setting not fully correct if ranks were missing, unset issue
 *lib/charcleanup.php --> counter as not defined, hence clan couldn't auto-disband
 *lib/checkban.php --> uniqueid typo, also some isset() again for uninitalized stuff
-*lib/commentary --> added the section to the commentline-hook
+*lib/commentary --> added the section to the commentline-hook, one more isset() check
 *lib/extended-battle.php --> another unset nightmare, also a typo
 *lib/output.php --> bug, output for debug did not show anymore, typo in binary comparison
 *lib/pageparts.php --> added "Manage Modules" shortlink to top right corner (petitiondisplay)
