@@ -150,7 +150,9 @@ function page_footer($saveuser=true){
 		}else{
 			$session['needtoviewmotd']=false;
 		}
-		$pre_headscript = "<link rel=\"shortcut icon\" HREF=\"favicon.ico\" TYPE=\"image/x-icon\"/>";
+		$favicon = array ("favicon-link"=>"<link rel=\"shortcut icon\" HREF=\"favicon.ico\" TYPE=\"image/x-icon\"/>");
+		$favicon = modulehook("pageparts-favicon", $favicon);
+		$pre_headscript = $favicon['favicon-link'];
 		//add AJAX notification stuff
 		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 			if (file_exists('ext/ajax_base_setup.php')) {

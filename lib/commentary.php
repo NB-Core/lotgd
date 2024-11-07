@@ -342,7 +342,7 @@ function viewcommentary($section,$message="Interject your own commentary?",$limi
 		$row['comment'] = sanitize_mb($row['comment']); //bad storage or whatnot
 		$commentids[$i] = $row['commentid'];
 		if (date("Y-m-d",strtotime($row['postdate']))==date("Y-m-d")){
-			if ($row['name']==$session['user']['name']) $counttoday++;
+			if (isset($session['user']['name']) && $row['name']==$session['user']['name']) $counttoday++;
 		}
 		$x=0;
 		$ft="";
