@@ -62,9 +62,9 @@ if ($name!=""){
 				$session['loggedin']=true;
 				$session['laston']=date("Y-m-d H:i:s");
 				$session['sentnotice']=0;
-				$session['user']['dragonpoints']=unserialize($session['user']['dragonpoints']);
-				$session['user']['prefs']=unserialize($session['user']['prefs']);
-				$session['bufflist']=unserialize($session['user']['bufflist']);
+				$session['user']['dragonpoints']=safe_unserialize($session['user']['dragonpoints']);
+				$session['user']['prefs']=safe_unserialize($session['user']['prefs']);
+				$session['bufflist']=safe_unserialize($session['user']['bufflist']);
 				if (!is_array($session['bufflist']))
 					$session['bufflist'] = array();
 				if (!is_array($session['user']['dragonpoints'])) $session['user']['dragonpoints']=array();
@@ -81,7 +81,7 @@ if ($name!=""){
 				modulehook("player-login");
 
 				if ($session['user']['loggedin']){
-					$session['allowednavs']=unserialize($session['user']['allowednavs']);
+					$session['allowednavs']=safe_unserialize($session['user']['allowednavs']);
 					$link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
 
 					$str = sprintf_translate("Sending you to %s, have a safe journey", $link);
