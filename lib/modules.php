@@ -125,7 +125,9 @@ function injectmodule($modulename,$force=false,$with_db=true){
 		$injected_modules[$force][$modulename]=true;
 		return true;
 	}else{
-		output("`n`\$Module `^%s`\$ was not found in the modules directory.`n",$modulename);
+		output("`n`\$Module '`^%s`\$' (%s) was not found in the modules directory.`n",$modulename,$modulefilename);
+		require_once("lib/show_backtrace.php");
+		output_notl(show_backtrace(),true);
 		$injected_modules[$force][$modulename]=false;
 		return false;
 	}
@@ -403,7 +405,6 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 	global $blocked_modules, $block_all_modules, $unblocked_modules;
 	global $output, $session, $modulehook_queries;
 	global $currenthook;
-
 	//if we're in the installer, modulehooks are moo
 	if (defined("IS_INSTALLER")) return $args;
 
@@ -1169,7 +1170,7 @@ function module_display_events($eventtype, $forcescript=false) {
 	$nchance = translate_inline("Normalized Chance");
 	rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
 	rawoutput("<tr class='trhead'>");
-	rawoutput("<td>$name</td><td>$rchance</td><td>nchance</td>");
+	rawoutput("<td>$name</td><td>$rchance</td><td>nchance</td><td>Filename</td><td>exists</td>");
 	rawoutput("</tr>");
 	$i = 0;
 	foreach($events as $event) {
@@ -1180,6 +1181,9 @@ function module_display_events($eventtype, $forcescript=false) {
 		if ($event['modulename']) {
 			$link = "module-{$event['modulename']}";
 			$name = $event['modulename'];
+			$filename = $event['modulename'].".php";
+			$fullpath = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "modules" . DIRECTORY_SEPARATOR . $filename;
+			$exists = (int)file_exists($fullpath);
 		}
 		$rlink = "$script?eventhandler=$link";
 		$rlink = str_replace("?&","?",$rlink);
@@ -1192,6 +1196,8 @@ function module_display_events($eventtype, $forcescript=false) {
 		addnav("", "$rlink");
 		rawoutput("<td>{$event['rawchance']}</td>");
 		rawoutput("<td>{$event['normchance']}</td>");
+		rawoutput("<td>{$filename}</td>");
+		rawoutput("<td>{$exists}</td>");
 		rawoutput("</tr>");
 	}
 	rawoutput("</table>");

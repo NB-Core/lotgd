@@ -29,7 +29,7 @@ if (db_num_rows($result)>0){
 		if ($row_body !== false && is_array($row_body)) {
 			$row['body'] = call_user_func_array("sprintf_translate", $row_body);
 		} else {
-			$row['body'] = $row_subject;
+			$row['body'] = $row_body;
 		}
 	} elseif ($row['name']=="") {
 		$row['name']=translate_inline("`^Deleted User");
