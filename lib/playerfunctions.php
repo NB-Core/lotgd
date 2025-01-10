@@ -116,7 +116,7 @@ function is_player_online($player=false) {
 		$user = &$checked_users[$player];
 	} else {
 		//fetch the data from the DB
-		$sql="SELECT laston,loggedin FROM ".db_prefix('accounts')." WHERE acctid=".((int)$player).";";
+		$sql="SELECT acctid,laston,loggedin FROM ".db_prefix('accounts')." WHERE acctid=".((int)$player).";";
 		$result=db_query($sql);
 		$row=db_fetch_assoc($result);
 		$row = modulehook("is-player-online", $row);
