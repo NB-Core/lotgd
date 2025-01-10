@@ -813,25 +813,31 @@ function charstats(){
 		if ($ret = datacache("charlisthomepage")){
 
 		}else{
-			$onlinecount=0;
-			// If a module wants to do it's own display of the online chars,
-			// let it.
-			$list = modulehook("onlinecharlist", array("count"=>0, "list"=>""));
-			if (isset($list['handled']) && $list['handled']) {
-				$onlinecount = $list['count'];
-				$ret = $list['list'];
-			} else {
-				$sql="SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."' ORDER BY level DESC";
-				$result = db_query($sql);
-				$ret.=appoencode(sprintf(translate_inline("`bOnline Characters (%s players):`b`n"),db_num_rows($result)));
-				while ($row = db_fetch_assoc($result)) {
-					$ret.=appoencode("`^{$row['name']}`n");
-					$onlinecount++;
-				}
-				db_free_result($result);
-				if ($onlinecount==0)
-					$ret.=appoencode(translate_inline("`iNone`i"));
-			}
+            $onlinecount=0;
+            // If a module wants to do it's own display of the online chars,
+            // let it.
+            $list = modulehook("onlinecharlist", array("count"=>0, "list"=>""));
+            if (isset($list['handled']) && $list['handled']) {
+                $onlinecount = $list['count'];
+                $ret = $list['list'];
+            } else {
+                $sql="SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."' ORDER BY level DESC";
+                $result = db_query($sql);
+                $rows = array();
+                while ($row = db_fetch_assoc($result)) {
+                    $rows[] = $row;
+                }
+                db_free_result($result);
+                $rows = modulehook("loggedin", $rows);
+                $ret .= appoencode(sprintf(translate_inline("`bOnline Characters (%s players):`b`n"), count($rows)));
+                foreach ($rows as $row) {
+                    $ret .= appoencode("`^{$row['name']}`n");
+                    $onlinecount++;
+                }
+                if ($onlinecount == 0) {
+                    $ret .= appoencode(translate_inline("`iNone`i"));
+                }
+            }
 			savesetting("OnlineCount",$onlinecount);
 			savesetting("OnlineCountLast",strtotime("now"));
 			updatedatacache("charlisthomepage",$ret);

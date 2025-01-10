@@ -32,6 +32,8 @@ if (is_numeric($char)){
 $sql = "SELECT login, name, level, sex, title, specialty, hashorse, acctid, resurrections, bio, dragonkills, race, clanname, clanshort, clanrank, ".db_prefix("accounts").".clanid, laston, loggedin FROM " . db_prefix("accounts") . " LEFT JOIN " . db_prefix("clans") . " ON " . db_prefix("accounts") . ".clanid = " . db_prefix("clans") . ".clanid WHERE $where";
 $result = db_query($sql);
 if ($target = db_fetch_assoc($result)) {
+  // Let a module get the values if necessary
+  $target = modulehook("bioinfo", $target);
   $target['login'] = rawurlencode($target['login']);
   $id = $target['acctid'];
   $target['return_link']=$return;

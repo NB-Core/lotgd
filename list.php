@@ -122,8 +122,18 @@ $writemail = translate_inline("Write Mail");
 $alive = translate_inline("`1Yes`0");
 $dead = translate_inline("`4No`0");
 $unconscious = translate_inline("`6Unconscious`0");
-for($i=0;$i<$max;$i++){
-	$row = db_fetch_assoc($result);
+
+$rows = array();
+while ($row = db_fetch_assoc($result)) {
+	$rows[] = $row;
+}
+// cut to max size
+$rows = array_slice($rows, 0, $max);
+
+// let modules modify the data before we display it
+$rows = modulehook("warriorlist", $rows);
+
+foreach ($rows as $i => $row) {
 	rawoutput("<tr class='".($i%2?"trdark":"trlight")."'><td>",true);
 	if ($row['alive'] == true) {
 		$a = $alive;
