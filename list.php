@@ -71,6 +71,7 @@ for ($i=0;$i<$totalplayers;$i+=$playersperpage){
 // Order the list by level, dragonkills, name so that the ordering is total!
 // Without this, some users would show up on multiple pages and some users
 // wouldn't show up
+$remove_offline = true;
 if ($page=="" && $op==""){
 	$title = translate_inline("Warriors Currently Online");
 	$sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."' ORDER BY level DESC, dragonkills DESC, login ASC";
@@ -80,6 +81,7 @@ if ($page=="" && $op==""){
 	$sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."' AND clanid='{$session['user']['clanid']}' ORDER BY level DESC, dragonkills DESC, login ASC";
 	$result = db_query($sql);
 }else{
+	$remove_offline = false;
 	if ($totalplayers > $playersperpage && $op != "search") {
 		$title = sprintf_translate("Warriors of the realm (Page %s: %s-%s of %s)", ($pageoffset/$playersperpage+1), $from, $to, $totalplayers);
 	} else {
@@ -103,8 +105,24 @@ if ($max>getsetting("maxlistsize", 100)) {
 	$max = getsetting("maxlistsize", 100);
 }
 
+// prepare for hook
+$rows = array();
+while ($row = db_fetch_assoc($result)) {
+	$rows[] = $row;
+}
+// cut to max size
+$rows = array_slice($rows, 0, $max);
+
+// let modules modify the data before we display it
+$rows = modulehook("warriorlist", $rows);
+
 if ($page=="" && $op==""){
-	$title .= sprintf_translate(" (%s warriors)", $max);
+	// Count how many warriors are online by the loggedin field in the $rows array
+	$loggedin = 0;
+	foreach ($rows as $row) {
+		if ($row['loggedin']) $loggedin++;
+	}
+	$title .= sprintf_translate(" (%s warriors online)", $loggedin);
 }
 output_notl("`c`b".$title."`b");
 
@@ -123,17 +141,10 @@ $alive = translate_inline("`1Yes`0");
 $dead = translate_inline("`4No`0");
 $unconscious = translate_inline("`6Unconscious`0");
 
-$rows = array();
-while ($row = db_fetch_assoc($result)) {
-	$rows[] = $row;
-}
-// cut to max size
-$rows = array_slice($rows, 0, $max);
-
-// let modules modify the data before we display it
-$rows = modulehook("warriorlist", $rows);
-
 foreach ($rows as $i => $row) {
+	if ($remove_offline === true && !$row['loggedin']) {
+		continue;
+	}
 	rawoutput("<tr class='".($i%2?"trdark":"trlight")."'><td>",true);
 	if ($row['alive'] == true) {
 		$a = $alive;

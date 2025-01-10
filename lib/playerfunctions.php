@@ -119,6 +119,7 @@ function is_player_online($player=false) {
 		$sql="SELECT laston,loggedin FROM ".db_prefix('accounts')." WHERE acctid=".((int)$player).";";
 		$result=db_query($sql);
 		$row=db_fetch_assoc($result);
+		$row = modulehook("is-player-online", $row);
 		if (!$row) return false;
 		$checked_users[$player]=$row;
 		$user=$row;
@@ -132,8 +133,6 @@ function is_player_online($player=false) {
 }
 
 function mass_is_player_online($players=false) {
-	//don't call this with like 100 people on a screen, it's pretty high load, 1 query each call
-	//do mass_is_player_online($array_of_ids) instead
 	$users=array();
 	if ($players===false || $players==array() || !is_array($players)) {
 		return array(); //nothing to do
@@ -141,7 +140,13 @@ function mass_is_player_online($players=false) {
 		//fetch the data from the DB
 		$sql="SELECT acctid,laston,loggedin FROM ".db_prefix('accounts')." WHERE acctid IN (".addslashes(implode(",",$players)).")";
 		$result=db_query($sql);
+		$rows = array();
 		while ($user=db_fetch_assoc($result)) {
+			$rows[] = $user;
+		}
+		// let modules modify the data before we display it
+		$rows = modulehook("warriorlist", $rows);
+		foreach ($rows as $user) {
 			$users[$user['acctid']]=1;
 			if (isset($user['laston']) && isset($user['loggedin'])) {
 				if (strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds") > strtotime($user['laston']) && $user['laston']>"")  $users[$user['acctid']]=0;
