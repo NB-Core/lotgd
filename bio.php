@@ -33,7 +33,7 @@ $sql = "SELECT login, name, level, sex, title, specialty, hashorse, acctid, resu
 $result = db_query($sql);
 if ($target = db_fetch_assoc($result)) {
   // Let a module get the values if necessary
-  $target = modulehook("bioinfo", $target);
+  $target = modulehook("biotarget", $target);
   $target['login'] = rawurlencode($target['login']);
   $id = $target['acctid'];
   $target['return_link']=$return;
