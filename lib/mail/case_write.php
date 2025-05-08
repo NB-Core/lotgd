@@ -57,6 +57,7 @@ if (is_array($row)){
 rawoutput("<form action='mail.php?op=send' method='post'>");
 rawoutput("<input type='hidden' name='returnto' value=\"".htmlentities(stripslashes($msgid), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
 $superusers = array();
+$acctid_to = 0; //only for hook right now
 if (isset($row['login']) && $row['login']!="" && $forwardto==0){
 	output_notl("<input type='hidden' name='to' id='to' value=\"".htmlentities($row['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">",true);
 	output("`2To: `^%s`n",$row['name']);
@@ -66,7 +67,7 @@ if (isset($row['login']) && $row['login']!="" && $forwardto==0){
 }else{ 
 	output("`2To: ");
 	$to = httppost('to');
-	$sql = "SELECT login,name,superuser FROM ".db_prefix('accounts')." WHERE login = '".addslashes($to)."' AND locked = 0";
+	$sql = "SELECT acctid,login,name,superuser FROM ".db_prefix('accounts')." WHERE login = '".addslashes($to)."' AND locked = 0";
 	$result = db_query($sql);
 	$db_num_rows = db_num_rows($result);
 	if($db_num_rows != 1) {
@@ -86,6 +87,7 @@ if (isset($row['login']) && $row['login']!="" && $forwardto==0){
 		if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
 			array_push($superusers,$row['login']);
 		}
+		$acctid_to = $row['acctid'];
 	}elseif ($db_num_rows==0){
 		output("`\$No one was found who matches \"%s\".`n",stripslashes($to));
 		output("`@Please try again.`n");
@@ -117,6 +119,8 @@ rawoutput("<input name='subject' value=\"".htmlentities($subject,ENT_COMPAT, get
 rawoutput("<div id='warning' style='visibility: hidden; display: none;'>");
 //superuser messages do not get translated.
 output("`2Notice: `^%s`n",$superusermessage);
+// Give modules a chance to put info in here to this user
+modulehook("mail-write-notify",array("acctid_to" => $acctid_to));
 rawoutput("</div>");
 output("`2Body:`n");
 rawoutput("<script type=\"text/javascript\">function increase(target, value){  if (target.rows + value > 3 && target.rows + value < 50) target.rows = target.rows + value;}</script>");

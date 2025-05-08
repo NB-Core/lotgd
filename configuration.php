@@ -272,6 +272,7 @@ switch ($type_setting) {
 				$useful_vals = array(
 					"datacachepath"=>$DB_DATACACHEPATH,
 					"usedatacache"=>$DB_USEDATACACHE,
+					"defaultsuperuser"=>getsetting('defaultsuperuser',0), // this needs to be there as the showform loads from the database; so a value has to be present if it's not set, and this is a technical field
 					"dayduration"=>round(($details['dayduration']/60/60),0)." hours",
 					"gziphandler"=>$gz_handler_on,
 					"databasetype"=>$DB_TYPE,

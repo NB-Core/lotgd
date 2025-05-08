@@ -76,7 +76,7 @@ if ($op==""){
 	$desc = httpget('desc');
 	$vers = httpget('version');
 	$admin = httpget('admin');
-	$count = httpget('c')*1;
+	$count = (int)httpget('c');
 	$lang = httpget('l');
 
 	if ($vers == "") $vers = "Unknown";
@@ -214,7 +214,8 @@ if ($op==""){
 		$u = $u . "/";
 		savesetting("logdnetserver", $u);
 	}
-	$servers=pullurl($u."logdnet.php?op=net");
+//	$servers=pullurl($u."logdnet.php?op=net");
+$servers=array();
 	if (!$servers) $servers = array();
 	$i = 0;
 	foreach($servers as $val){
