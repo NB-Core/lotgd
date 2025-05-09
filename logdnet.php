@@ -214,11 +214,12 @@ if ($op==""){
 		$u = $u . "/";
 		savesetting("logdnetserver", $u);
 	}
-//	$servers=pullurl($u."logdnet.php?op=net");
-$servers=array();
+	$servers=pullurl($u."logdnet.php?op=net");
 	if (!$servers) $servers = array();
 	$i = 0;
 	foreach($servers as $val){
+		// remove newlines from the pulled content
+		$val = trim($val);
 		$row=unserialize($val);
 
 		// If we aren't given an address, continue on.

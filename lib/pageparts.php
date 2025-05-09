@@ -34,12 +34,14 @@ function page_header(){
 	prepare_template();
 	if (isset($SCRIPT_NAME)) {
 		$script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
-		if (!array_key_exists($script,$runheaders))
-			$runheaders[$script] = false;
-		if (!$runheaders[$script]) {
-			if (!defined("IS_INSTALLER")) modulehook("everyheader", array('script'=>$script));
-			$runheaders[$script] = true;
-			if (!defined("IS_INSTALLER")) modulehook("header-$script");
+		if ($script) {
+			if (!array_key_exists($script,$runheaders))
+				$runheaders[$script] = false;
+			if (!$runheaders[$script]) {
+				if (!defined("IS_INSTALLER")) modulehook("everyheader", array('script'=>$script));
+				$runheaders[$script] = true;
+				if (!defined("IS_INSTALLER")) modulehook("header-$script");
+			}
 		}
 	}
 
@@ -310,7 +312,6 @@ function page_footer($saveuser=true){
 	} else {
 		$footer = str_replace("{".($z)."}","",$footer);
 	}
-
 	$footer = str_replace("{".($z)."}",$z,$footer);
 	$header=str_replace("{nav}",$builtnavs,$header);
 	$footer=str_replace("{nav}",$builtnavs,$footer);
@@ -813,9 +814,7 @@ function charstats(){
 		if ($ret = datacache("charlisthomepage")){
 
 		}else{
-            $onlinecount=0;
-            // If a module wants to do it's own display of the online chars,
-            // let it.
+			$onlinecount=0;
             $list = modulehook("onlinecharlist", array("count"=>0, "list"=>""));
             if (isset($list['handled']) && $list['handled']) {
                 $onlinecount = $list['count'];
@@ -836,8 +835,8 @@ function charstats(){
                 }
                 if ($onlinecount == 0) {
                     $ret .= appoencode(translate_inline("`iNone`i"));
-                }
-            }
+               	}
+            	}
 			savesetting("OnlineCount",$onlinecount);
 			savesetting("OnlineCountLast",strtotime("now"));
 			updatedatacache("charlisthomepage",$ret);
