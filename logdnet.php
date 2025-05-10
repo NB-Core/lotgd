@@ -209,12 +209,15 @@ if ($op==""){
 	output("Version");
 	rawoutput("</td>");
 	require_once("lib/pullurl.php");
+	$servers = array();
 	$u = getsetting("logdnetserver", "http://logdnet.logd.com/");
 	if (!preg_match("/\/$/", $u)) {
 		$u = $u . "/";
 		savesetting("logdnetserver", $u);
 	}
-	$servers=pullurl($u."logdnet.php?op=net");
+	if ($u != "") {
+		$servers=pullurl($u."logdnet.php?op=net");
+	} 
 	if (!$servers) $servers = array();
 	$i = 0;
 	foreach($servers as $val){
