@@ -218,6 +218,12 @@ if ($op==""){
 	if ($u != "") {
 		$servers=pullurl($u."logdnet.php?op=net");
 	} 
+	else
+	{
+		rawoutput("<tr><td colspan='2')>");
+		output("Sorry, no logdnet host server was defined in the game settings");
+		rawoutput("</td></tr>");
+	}
 	if (!$servers) $servers = array();
 	$i = 0;
 	foreach($servers as $val){
