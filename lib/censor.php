@@ -87,6 +87,7 @@ function good_word_list(){
 	$sql = "SELECT * FROM " . db_prefix("nastywords") . " WHERE type='good'";
 	$result = db_query_cached($sql,"goodwordlist");
 	$row = db_fetch_assoc($result);
+	if (!isset($row['words'])) return array();
 	return explode(" ",$row['words']);
 }
 
