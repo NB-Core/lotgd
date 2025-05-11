@@ -74,7 +74,8 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 	}elseif (strtotime("now") - ($data['errors'][$errstr]) > $howoften * 60) {
 		$do_notice = true;
 	}
-$data['firstrun']=false;
+	if (!isset($data['firstrun']))
+		$data['firstrun']=false;
 	if ($data['firstrun']){
 		debug("First run, not notifying users.");
 	}else{
