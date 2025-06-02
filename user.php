@@ -103,7 +103,8 @@ if ($op=='edit' || $op=='save') {
 	$sql="SELECT race FROM ".db_prefix('accounts')." WHERE acctid=$userid LIMIT 1;";
 	$result = db_query($sql);
 	$row=db_fetch_assoc($result);
-	$racesenum=",".translate_inline("Undecided","race").",";
+	// Unknown race, else it will scramble the array
+	$racesenum=RACE_UNKNOWN.",".translate_inline("Undecided","race").",";
 	foreach ($races as $race) {
 		$racesenum.=$race.",".$race.",";
 	}
