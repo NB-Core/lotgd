@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
 // translator ready
 // addnews ready
 // mail ready
 
-function darkhorse_getmoduleinfo(){
+function darkhorse_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Dark Horse Tavern",
 		"version"=>"1.1",
@@ -36,7 +37,7 @@ function darkhorse_tavernmount() {
 	return $tavern;
 }
 
-function darkhorse_install(){
+function darkhorse_install(): bool{
 	module_addeventhook("forest",
 			"require_once(\"modules/darkhorse.php\");
 			return (darkhorse_tavernmount() ? 0 : 100);");
@@ -61,11 +62,11 @@ function darkhorse_install(){
 	return true;
 }
 
-function darkhorse_uninstall(){
+function darkhorse_uninstall(): bool{
 	return true;
 }
 
-function darkhorse_dohook($hookname,$args){
+function darkhorse_dohook(string $hookname, array $args): array{
 	switch($hookname) {
 	case "moderate":
 		$args['darkhorse'] = get_module_setting("tavernname");
@@ -302,7 +303,7 @@ function darkhorse_stat($value) {
 	return (int) $value;
 }
 
-function darkhorse_runevent($type, $link){
+function darkhorse_runevent(string $type, string $link): void{
 	global $session;
 	$from = $link;
 	$gameret = substr($link, 0, -1);
@@ -400,7 +401,7 @@ function darkhorse_runevent($type, $link){
 	rawoutput("</span>");
 }
 
-function darkhorse_run(){
+function darkhorse_run(): void{
 	$op = httpget('op');
 	if ($op == "enter") {
 		httpset("op", "tavern");

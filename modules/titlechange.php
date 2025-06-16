@@ -1,6 +1,7 @@
 <?php
+declare(strict_types=1);
 
-function titlechange_getmoduleinfo(){
+function titlechange_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Title Change",
 		"author"=>"JT Traub, modified by `2Oliver Brendel",
@@ -24,16 +25,16 @@ function titlechange_getmoduleinfo(){
 	return $info;
 }
 
-function titlechange_install(){
+function titlechange_install(): bool{
 	module_addhook("lodge");
 	module_addhook("pointsdesc");
 	return true;
 }
-function titlechange_uninstall(){
+function titlechange_uninstall(): bool{
 	return true;
 }
 
-function titlechange_dohook($hookname,$args){
+function titlechange_dohook(string $hookname, array $args): array{
 	global $session;
 	$times = get_module_pref("timespurchased");
 	$threshold = get_module_setting("initialpoints") + ($times * get_module_setting("extrapoints"));
@@ -61,7 +62,7 @@ function titlechange_dohook($hookname,$args){
 	return $args;
 }
 
-function titlechange_run(){
+function titlechange_run(): void{
 	require_once("lib/sanitize.php");
 	require_once("lib/names.php");
 	global $session;

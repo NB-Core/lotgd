@@ -1,6 +1,7 @@
 <?php
+declare(strict_types=1);
 
-function smallcaptcha_111_getmoduleinfo(){
+function smallcaptcha_111_getmoduleinfo(): array{
 $info = array(
 	"name"=>"Small Petition Captcha",
 	"version"=>"1.0",
@@ -18,17 +19,17 @@ $info = array(
 	return $info;
 }
 
-function smallcaptcha_111_install(){
+function smallcaptcha_111_install(): bool{
 	module_addhook_priority("addpetition",50);
 	module_addhook_priority("petitionform",50);
 	return true;
 }
 
-function smallcaptcha_111_uninstall(){
+function smallcaptcha_111_uninstall(): bool{
 	return true;
 }
 
-function smallcaptcha_111_dohook($hookname, $args){
+function smallcaptcha_111_dohook(string $hookname, array $args): array{
 	global $session;
 	switch ($hookname) {
 		case "addpetition": 
@@ -51,7 +52,7 @@ function smallcaptcha_111_dohook($hookname, $args){
 	return $args;
 }
 
-function smallcaptcha_111_run(){
+function smallcaptcha_111_run(): void{
 }
 
 # Von Rene Schmidt (rene@reneschmidt.de) fuer DrWeb.de 18855 original 7

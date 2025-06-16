@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
 // translator ready
 // addnews ready
 // mail ready
 
-function cities_getmoduleinfo(){
+function cities_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Multiple Cities",
 		"version"=>"1.0",
@@ -37,7 +38,7 @@ function cities_getmoduleinfo(){
 	return $info;
 }
 
-function cities_install(){
+function cities_install(): bool{
 	module_addhook("villagetext");
 	module_addhook("village");
 	module_addhook("travel");
@@ -55,7 +56,7 @@ function cities_install(){
 	return true;
 }
 
-function cities_uninstall(){
+function cities_uninstall(): bool{
 	// This is semi-unsafe -- If a player is in the process of a page
 	// load it could get the location, uninstall the cities and then
 	// save their location from their session back into the database
@@ -68,7 +69,7 @@ function cities_uninstall(){
 	return true;
 }
 
-function cities_dohook($hookname,$args){
+function cities_dohook(string $hookname, array $args): array{
 	global $session;
 	$city = getsetting("villagename", LOCATION_FIELDS);
 	$home = $session['user']['location']==get_module_pref("homecity");
@@ -264,7 +265,7 @@ function cities_dangerscale($danger) {
 	return $dlevel;
 }
 
-function cities_run(){
+function cities_run(): void{
 	global $session;
 	require("modules/cities/run.php");
 }
