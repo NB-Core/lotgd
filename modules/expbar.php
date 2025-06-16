@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
 // addnews ready
 // mail ready
 // translator ready
 
-function expbar_getmoduleinfo(){
+function expbar_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Experience Bar",
 		"version"=>"1.0",
@@ -20,16 +21,16 @@ function expbar_getmoduleinfo(){
 	return $info;
 }
 
-function expbar_install(){
+function expbar_install(): bool{
 	module_addhook("charstats");
 	return true;
 }
 
-function expbar_uninstall(){
+function expbar_uninstall(): bool{
 	return true;
 }
 
-function expbar_dohook($hookname,$args){
+function expbar_dohook(string $hookname, array $args): array{
 	global $session;
 	switch($hookname){
 	case "charstats":
@@ -79,7 +80,7 @@ function expbar_dohook($hookname,$args){
 	return $args;
 }
 
-function expbar_run(){
+function expbar_run(): void{
 
 }
 ?>
