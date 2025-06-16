@@ -1,6 +1,7 @@
 <?php
+declare(strict_types=1);
 
-function graveyard_haunt_getmoduleinfo(){
+function graveyard_haunt_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Graveyard Haunting",
 		"version"=>"1.0",
@@ -18,17 +19,17 @@ function graveyard_haunt_getmoduleinfo(){
 	return $info;
 }
 
-function graveyard_haunt_install(){
+function graveyard_haunt_install(): bool{
 	module_addhook("deathoverlord_actions");
 	module_addhook("newday");
 	return true;
 }
 
-function graveyard_haunt_uninstall(){
+function graveyard_haunt_uninstall(): bool{
 	return true;
 }
 
-function graveyard_haunt_dohook($hookname,$args){
+function graveyard_haunt_dohook(string $hookname, array $args): array{
 	global $session;
 	if ($session['user']['acctid']!=7) return $args;
 	switch ($hookname) {
@@ -61,7 +62,7 @@ function graveyard_haunt_dohook($hookname,$args){
 	return $args;
 }
 
-function graveyard_haunt_run(){
+function graveyard_haunt_run(): void{
 	global $session;
 	$deathoverlord=getsetting('deathoverlord','`$Ramius');
 	page_header("%s's little haunting",sanitize($deathoverlord));

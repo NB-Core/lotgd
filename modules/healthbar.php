@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
 // addnews ready
 // mail ready
 // translator ready
 
-function healthbar_getmoduleinfo(){
+function healthbar_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Health Bar",
 		"version"=>"1.0",
@@ -20,16 +21,16 @@ function healthbar_getmoduleinfo(){
 	return $info;
 }
 
-function healthbar_install(){
+function healthbar_install(): bool{
 	module_addhook("charstats");
 	return true;
 }
 
-function healthbar_uninstall(){
+function healthbar_uninstall(): bool{
 	return true;
 }
 
-function healthbar_dohook($hookname,$args){
+function healthbar_dohook(string $hookname, array $args): array{
 	global $session;
 	switch($hookname){
 	case "charstats":
@@ -94,7 +95,7 @@ function healthbar_dohook($hookname,$args){
 	return $args;
 }
 
-function healthbar_run(){
+function healthbar_run(): void{
 
 }
 ?>

@@ -1,41 +1,78 @@
 <?php
+declare(strict_types=1);
 // addnews ready
 // translator ready
 // mail ready
-function make_seed(){
-	list($usec, $sec) = explode(' ', microtime());
-	return (float) $sec + ((float) $usec * 100000);
+
+/**
+ * Legacy random number helper.
+ *
+ * This function emulates the old behaviour of `e_rand()` but uses
+ * `random_int()` for better randomness and adds strict typing.
+ */
+function e_rand(?int $min = null, ?int $max = null): int
+{
+        if ($min === null) {
+                return random_int(0, mt_getrandmax());
+        }
+
+        $min = (int) round($min);
+
+        if ($max === null) {
+                return random_int(0, $min);
+        }
+
+        $max = (int) round($max);
+
+        if ($min === $max) {
+                return $min;
+        }
+
+        // Do NOT ask me why the following line can be executed, it makes no sense,
+        // but it *does* get executed.
+        if ($min == 0 && $max == 0) {
+                return 0;
+        }
+
+        if ($min < $max) {
+                return random_int($min, $max);
+        }
+
+        return random_int($max, $min);
 }
 
-function e_rand($min=false,$max=false){
-	if ($min===false) return @mt_rand();
-	$min = round($min);
-	if ($max===false) return @mt_rand($min);
-	$max = round($max);
-	if ($min==$max) return $min;
-	//do NOT ask me why the following line can be executed, it makes no sense,
-	// but it *does* get executed.
-	if ($min==0 && $max==0) return 0;
-	if ($min<$max){
-		return @mt_rand($min,$max);
-	}else if($min>$max){
-		return @mt_rand($max,$min);
-	}
+/**
+ * Random float helper with three decimal precision.
+ */
+function r_rand(?float $min = null, ?float $max = null): float
+{
+        if ($min === null) {
+                return random_int(0, mt_getrandmax());
+        }
+
+        $min *= 1000;
+
+        if ($max === null) {
+                return random_int(0, (int) $min) / 1000;
+        }
+
+        $max *= 1000;
+
+        if ($min == $max) {
+                return $min / 1000;
+        }
+
+        // Do NOT ask me why the following line can be executed, it makes no sense,
+        // but it *does* get executed.
+        if ($min == 0 && $max == 0) {
+                return 0;
+        }
+
+        if ($min < $max) {
+                return random_int((int) $min, (int) $max) / 1000;
+        }
+
+        return random_int((int) $max, (int) $min) / 1000;
 }
 
-function r_rand($min=false,$max=false){
-	if ($min===false) return mt_rand();
-	$min*=1000;
-	if ($max===false) return (mt_rand($min)/1000);
-	$max*=1000;
-	if ($min==$max) return ($min/1000);
-	//do NOT ask me why the following line can be executed, it makes no sense,
-	// but it *does* get executed.
-	if ($min==0 && $max==0) return 0;
-	if ($min<$max){
-		return (@mt_rand($min,$max)/1000);
-	}else if($min>$max){
-		return (@mt_rand($max,$min)/1000);
-	}
-}
 ?>

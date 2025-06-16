@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 //addnews ready
 // translator ready
 // mail ready
@@ -7,7 +8,7 @@ require_once("lib/partner.php");
 //should we move charm here?
 //should we move marriedto here?
 
-function lovers_getmoduleinfo(){
+function lovers_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Violet and Seth Lovers",
 		"author"=>"Eric Stevens",
@@ -22,7 +23,7 @@ function lovers_getmoduleinfo(){
 	return $info;
 }
 
-function lovers_install(){
+function lovers_install(): bool{
 	module_addhook("newday");
 	module_addhook("inn");
 
@@ -47,11 +48,11 @@ function lovers_install(){
 	return true;
 }
 
-function lovers_uninstall(){
+function lovers_uninstall(): bool{
 	return true;
 }
 
-function lovers_dohook($hookname, $args){
+function lovers_dohook(string $hookname, array $args): array{
 	global $session;
 	$partner = get_partner();
 	switch($hookname){
@@ -103,7 +104,7 @@ function lovers_dohook($hookname, $args){
 	return $args;
 }
 
-function lovers_run(){
+function lovers_run(): void{
 	global $session;
 	require_once("lib/villagenav.php");
 	$iname = getsetting("innname", LOCATION_INN);

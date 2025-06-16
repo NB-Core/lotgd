@@ -1,6 +1,7 @@
 <?php
+declare(strict_types=1);
 
-function recaptcha_getmoduleinfo(){
+function recaptcha_getmoduleinfo(): array{
 	$info = array(
 			"name"=>"Google ReCaptcha Plugin",
 			"version"=>"1.0",
@@ -17,7 +18,7 @@ function recaptcha_getmoduleinfo(){
 	return $info;
 }
 
-function recaptcha_install(){
+function recaptcha_install(): bool{
 	if (extension_loaded('curl')) {
 		debug("CURL is necessary to make this work and is loaded.`n");
 	} else {
@@ -31,11 +32,11 @@ function recaptcha_install(){
 	return true;
 }
 
-function recaptcha_uninstall(){
+function recaptcha_uninstall(): bool{
 	return true;
 }
 
-function recaptcha_dohook($hookname, $args){
+function recaptcha_dohook(string $hookname, array $args): array{
 	global $session;
 	if (!extension_loaded('curl')) {
 		output("Verification by Captcha disabled. Code #154 Order 66`n");
@@ -86,6 +87,6 @@ function recaptcha_dohook($hookname, $args){
 	return $args;
 }
 
-function recaptcha_run(){
+function recaptcha_run(): void{
 }
 

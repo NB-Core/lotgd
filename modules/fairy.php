@@ -1,8 +1,9 @@
 <?php
+declare(strict_types=1);
 // mail ready
 // addnews ready
 // translator ready
-function fairy_getmoduleinfo(){
+function fairy_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Forest Fairy",
 		"version"=>"1.1",
@@ -23,17 +24,17 @@ function fairy_getmoduleinfo(){
 	return $info;
 }
 
-function fairy_install(){
+function fairy_install(): bool{
 	module_addeventhook("forest", "return 100;");
 	module_addhook("hprecalc");
 	return true;
 }
 
-function fairy_uninstall(){
+function fairy_uninstall(): bool{
 	return true;
 }
 
-function fairy_dohook($hookname,$args){
+function fairy_dohook(string $hookname, array $args): array{
 	switch($hookname){
 	case "hprecalc":
 		$args['total'] -= get_module_pref("extrahps");
@@ -46,7 +47,7 @@ function fairy_dohook($hookname,$args){
 	return $args;
 }
 
-function fairy_runevent($type)
+function fairy_runevent(string $type): void
 {
 	require_once("lib/increment_specialty.php");
 	global $session;
@@ -121,6 +122,6 @@ function fairy_runevent($type)
 	}
 }
 
-function fairy_run(){
+function fairy_run(): void{
 }
 ?>
