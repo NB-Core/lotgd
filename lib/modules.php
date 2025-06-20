@@ -213,7 +213,7 @@ function is_module_active(string $modulename): bool{
 function is_module_installed(string $modulename, $version=false): bool{
 	// Status will say the version is okay if we don't care about the
 	// version or if the version is actually correct
-	return (module_status($modulename, $version) &
+	return (bool)(module_status($modulename, $version) &
 			(MODULE_INSTALLED|MODULE_VERSION_OK));
 }
 
@@ -436,7 +436,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				}elseif (is_object($val)){
 					$arg.="object(".get_class($val).")";
 				}else{
-					$arg.=htmlentities(substr($val,0,25), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+					$arg.=htmlentities(substr((string)$val,0,25), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
 				}
 				rawoutput("  arg: $arg");
 			}
@@ -621,7 +621,7 @@ function set_module_setting($name,$value,$module=false){
 	if ($module === false) $module = $mostrecentmodule;
 	load_module_settings($module);
 	if (isset($module_settings[$module][$name])){
-		$sql = "UPDATE " . db_prefix("module_settings") . " SET value='".addslashes($value)."' WHERE modulename='$module' AND setting='".addslashes($name)."'";
+		$sql = "UPDATE " . db_prefix("module_settings") . " SET value='".addslashes((string)$value)."' WHERE modulename='$module' AND setting='".addslashes($name)."'";
 		db_query($sql);
 	}else{
 		$sql = "INSERT INTO " . db_prefix("module_settings") . " (modulename,setting,value) VALUES ('$module','".addslashes($name)."','".addslashes($value)."')";
@@ -795,7 +795,7 @@ function set_module_pref($name,$value,$module=false,$user=false){
 	}
 
 	if (isset($module_prefs[$uid][$module][$name])){
-		$sql = "UPDATE " . db_prefix("module_userprefs") . " SET value='".addslashes($value)."' WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
+		$sql = "UPDATE " . db_prefix("module_userprefs") . " SET value='".addslashes((string)$value)."' WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
 		db_query($sql);
 	}else{
 		$sql = "INSERT INTO " . db_prefix("module_userprefs"). " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','".addslashes($value)."')";
