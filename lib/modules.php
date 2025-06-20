@@ -200,7 +200,7 @@ function module_status(string $modulename, $version=false): int {
  * @return bool If the module is active or not
  */
 function is_module_active(string $modulename): bool{
-	return (module_status($modulename) & MODULE_ACTIVE);
+	return (bool)(module_status($modulename) & MODULE_ACTIVE);
 }
 
 /**
