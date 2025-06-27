@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
 // translator ready
 // addnews ready
 // mail ready
 
-function charrestore_getmoduleinfo(){
+function charrestore_getmoduleinfo(): array{
 	$info = array(
 			"name"=>"Character Restorer",
 			"category"=>"Administrative",
@@ -37,7 +38,7 @@ function charrestore_getmoduleinfo(){
 	return $info;
 }
 
-function charrestore_install(){
+function charrestore_install(): bool{
 	module_addhook_priority("village-desc",5000);
 	module_addhook("delete_character");
 	module_addhook("superuser");
@@ -47,11 +48,11 @@ function charrestore_install(){
 	return true;
 }
 
-function charrestore_uninstall(){
-	return true;
+function charrestore_uninstall(): bool{
+       return true;
 }
 
-function charrestore_dohook($hookname,$args){
+function charrestore_dohook(string $hookname, array $args): array{
 	switch ($hookname) {
 		case "village-desc":
 			global $session;
@@ -210,7 +211,7 @@ function charrestore_dohook($hookname,$args){
 		return $path;
 	}
 
-	function charrestore_run(){
+       function charrestore_run(): void{
 		global $session;
 		//	check_su_access(SU_EDIT_USERS);
 		require_once("lib/superusernav.php");

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // translator ready
 // addnews ready
 // mail ready
@@ -7,7 +8,7 @@ require_once("lib/arraytourl.php");
 
 $injected_modules = array(1=>array(),0=>array());
 
-function injectmodule($modulename,$force=false,$with_db=true){
+function injectmodule(string $modulename, bool $force=false, bool $with_db=true): bool{
 	global $mostrecentmodule,$injected_modules;
 	//try to circumvent the array_key_exists() problem we've been having.
 	if ($force) $force = 1; else $force = 0;
@@ -140,7 +141,7 @@ function injectmodule($modulename,$force=false,$with_db=true){
  * @param string $version The version to check for (false for don't care)
  * @return int The status codes for the module
  */
-function module_status($modulename, $version=false) {
+function module_status(string $modulename, $version=false): int {
 	global $injected_modules;
 
 	$modulename = modulename_sanitize($modulename);
@@ -198,8 +199,8 @@ function module_status($modulename, $version=false) {
  * @param string $modulename The module name
  * @return bool If the module is active or not
  */
-function is_module_active($modulename){
-	return (module_status($modulename) & MODULE_ACTIVE);
+function is_module_active(string $modulename): bool{
+	return (bool)(module_status($modulename) & MODULE_ACTIVE);
 }
 
 /**
@@ -209,10 +210,10 @@ function is_module_active($modulename){
  * @param string $version The version to check for
  * @return bool If the module is installed
  */
-function is_module_installed($modulename,$version=false){
+function is_module_installed(string $modulename, $version=false): bool{
 	// Status will say the version is okay if we don't care about the
 	// version or if the version is actually correct
-	return (module_status($modulename, $version) &
+	return (bool)(module_status($modulename, $version) &
 			(MODULE_INSTALLED|MODULE_VERSION_OK));
 }
 
@@ -223,7 +224,7 @@ function is_module_installed($modulename,$version=false){
  * @param array $reqs Requirements of a module from _getmoduleinfo()
  * @return bool If successful or not
  */
-function module_check_requirements($reqs, $forceinject=false){
+function module_check_requirements(array $reqs, bool $forceinject=false): bool{
 	// Since we can inject here, we need to save off the module we're on
 	global $mostrecentmodule;
 
@@ -264,7 +265,7 @@ function module_check_requirements($reqs, $forceinject=false){
  */
 $block_all_modules = false;
 $blocked_modules = array();
-function blockmodule($modulename) {
+function blockmodule(string $modulename): void {
 	global $blocked_modules, $block_all_modules, $currenthook;
 
 	if ($modulename === true) {
@@ -287,7 +288,7 @@ function blockmodule($modulename) {
  * @return void
  */
 $unblocked_modules = array();
-function unblockmodule($modulename) {
+function unblockmodule(string $modulename): void {
 	global $unblocked_modules, $block_all_modules;
 
 	if ($modulename === true) {
@@ -435,7 +436,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 				}elseif (is_object($val)){
 					$arg.="object(".get_class($val).")";
 				}else{
-					$arg.=htmlentities(substr($val,0,25), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+					$arg.=htmlentities(substr((string)$val,0,25), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
 				}
 				rawoutput("  arg: $arg");
 			}
@@ -620,7 +621,7 @@ function set_module_setting($name,$value,$module=false){
 	if ($module === false) $module = $mostrecentmodule;
 	load_module_settings($module);
 	if (isset($module_settings[$module][$name])){
-		$sql = "UPDATE " . db_prefix("module_settings") . " SET value='".addslashes($value)."' WHERE modulename='$module' AND setting='".addslashes($name)."'";
+		$sql = "UPDATE " . db_prefix("module_settings") . " SET value='".addslashes((string)$value)."' WHERE modulename='$module' AND setting='".addslashes($name)."'";
 		db_query($sql);
 	}else{
 		$sql = "INSERT INTO " . db_prefix("module_settings") . " (modulename,setting,value) VALUES ('$module','".addslashes($name)."','".addslashes($value)."')";
@@ -794,7 +795,7 @@ function set_module_pref($name,$value,$module=false,$user=false){
 	}
 
 	if (isset($module_prefs[$uid][$module][$name])){
-		$sql = "UPDATE " . db_prefix("module_userprefs") . " SET value='".addslashes($value)."' WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
+		$sql = "UPDATE " . db_prefix("module_userprefs") . " SET value='".addslashes((string)$value)."' WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
 		db_query($sql);
 	}else{
 		$sql = "INSERT INTO " . db_prefix("module_userprefs"). " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','".addslashes($value)."')";

@@ -1,7 +1,8 @@
 <?php
+declare(strict_types=1);
 //addnews ready
 // mail ready
-function namecolor_getmoduleinfo(){
+function namecolor_getmoduleinfo(): array{
 	$info = array(
 		"name"=>"Name Colorization",
 		"author"=>"Eric Stevens",
@@ -24,16 +25,16 @@ function namecolor_getmoduleinfo(){
 	return $info;
 }
 
-function namecolor_install(){
+function namecolor_install(): bool{
 	module_addhook("lodge");
 	module_addhook("pointsdesc");
 	return true;
 }
-function namecolor_uninstall(){
+function namecolor_uninstall(): bool{
 	return true;
 }
 
-function namecolor_dohook($hookname,$args){
+function namecolor_dohook(string $hookname, array $args): array{
 	global $session;
 	switch($hookname){
 	case "pointsdesc":
@@ -72,7 +73,7 @@ function namecolor_form() {
 	addnav("","runmodule.php?module=namecolor&op=namepreview");
 }
 
-function namecolor_run(){
+function namecolor_run(): void{
 	require_once("lib/sanitize.php");
 	require_once("lib/names.php");
 	global $session;
