@@ -134,7 +134,7 @@ function page_footer($saveuser=true){
 
 	tlschema("common");
 
-	$charstats = charstats();
+        $charstats_display = charstats();
 
 	restore_buff_fields();
 
@@ -388,8 +388,8 @@ function page_footer($saveuser=true){
 		$header = str_replace("{petitiondisplay}", "", $header);
 	}
 	//output character stats
-	$footer=str_replace("{stats}",$charstats,$footer);
-	$header=str_replace("{stats}",$charstats,$header);
+        $footer=str_replace("{stats}",$charstats_display,$footer);
+        $header=str_replace("{stats}",$charstats_display,$header);
 	//do something -- I don't know what
 	$header=str_replace("{script}",$script,$header);
 	//output view PHP source link
@@ -524,17 +524,15 @@ function popup_footer(){
 	echo $browser_output;
 	exit();
 }
-
-$charstat_info = array();
-$last_charstat_label = "";
+global $charstats;
+$charstats = new \Lotgd\Page\CharStats();
 /**
  * Resets the character stats array
  *
  */
 function wipe_charstats(){
-	global $charstat_info, $last_charstat_label;
-	$last_charstat_label = "";
-	$charstat_info = array();
+        global $charstats;
+        $charstats->wipe();
 }
 
 /**
@@ -544,18 +542,8 @@ function wipe_charstats(){
  * @param mixed $value (optional) value to display
  */
 function addcharstat($label, $value=false) {
-	global $charstat_info, $last_charstat_label;
-	if ($value === false) {
-		if (!isset($charstat_info[$label]))
-			$charstat_info[$label] = array();
-		$last_charstat_label=$label;
-	} else {
-		if ($last_charstat_label=="") {
-			$last_charstat_label = "Other Info";
-			addcharstat($last_charstat_label);
-		}
-		$charstat_info[$last_charstat_label][$label]=$value;
-	}
+        global $charstats;
+        $charstats->add($label, $value);
 }
 
 /**
@@ -566,8 +554,8 @@ function addcharstat($label, $value=false) {
  * @return mixed The value associated with the stat
  */
 function getcharstat($cat, $label) {
-	global $charstat_info;
-	return $charstat_info[$cat][$label];
+        global $charstats;
+        return $charstats->get($cat, $label);
 }
 
 /**
@@ -578,15 +566,8 @@ function getcharstat($cat, $label) {
  * @param mixed $val The value of the attribute
  */
 function setcharstat($cat, $label, $val) {
-	global $charstat_info, $last_charstat_label;
-	if (!isset($charstat_info[$cat][$label])) {
-		$oldlabel = $last_charstat_label;
-		addcharstat($cat);
-		addcharstat($label, $val);
-		$last_charstat_label = $oldlabel;
-	} else {
-		$charstat_info[$cat][$label] = $val;
-	}
+        global $charstats;
+        $charstats->set($cat, $label, $val);
 }
 
 /**
@@ -596,35 +577,8 @@ function setcharstat($cat, $label, $val) {
  * @return string
  */
 function getcharstats($buffs){
-	//returns output formatted character statistics.
-	global $charstat_info;
-	$charstat_str = templatereplace("statstart");
-	reset($charstat_info);
-	foreach ($charstat_info as $label=>$section) {
-		if (count($section)) {
-			$arr = array("title"=>translate_inline($label));
-			$sectionhead = templatereplace("stathead", $arr);
-			reset($section);
-			foreach ($section as $name=>$val) {
-				if ($name==$label){
-					// when the section and stat name are equal, use
-					// 'statbuff' template piece.
-					$a2 = array("title"=>translate_inline("`0$name"),
-							"value"=>"`^$val`0");
-					$charstat_str .= templatereplace("statbuff", $a2);
-				}else{
-					$a2 = array("title"=>translate_inline("`&$name`0"),
-							"value"=>"`^$val`0");
-					$charstat_str .= $sectionhead.templatereplace("statrow", $a2);
-					$sectionhead = "";
-				}
-			}
-		}
-	}
-	$charstat_str .= templatereplace("statbuff",
-			array("title"=>translate_inline("`0Buffs"),"value"=>$buffs));
-	$charstat_str .= templatereplace("statend");
-	return appoencode($charstat_str,true);
+        global $charstats;
+        return $charstats->render($buffs);
 }
 
 /**
@@ -635,12 +589,8 @@ function getcharstats($buffs){
  * @return mixed The value associated with the stat
  */
 function getcharstat_value($section,$title){
-	global $charstat_info;
-	if (isset($charstat_info[$section][$title])){
-		return $charstat_info[$section][$title];
-	}else{
-		return "";
-	}
+        global $charstats;
+        return $charstats->value($section, $title);
 }
 
 /**

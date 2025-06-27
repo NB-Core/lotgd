@@ -40,6 +40,7 @@ $logd_version = "1.3.1 +nb Edition";
 
 
 // Include some commonly needed and useful routines
+require_once("lib/autoload.php");
 require_once("lib/output.php");
 $output=new output_collector();
 require_once("lib/nav.php");
