@@ -580,7 +580,7 @@ class Buffs
                     $msg = $buff['effectmsg'];
                 }
             } elseif ($realdamage == 0) {
-                if (isset($buf['effectnodmgmsg'])) {
+                if (isset($buff['effectnodmgmsg'])) {
                     $msg = $buff['effectnodmgmsg'];
                 }
             } elseif ($realdamage < 0) {
