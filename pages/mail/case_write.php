@@ -93,7 +93,7 @@ if (isset($row['login']) && $row['login']!="" && $forwardto==0){
 		output("`@Please try again.`n");
 		httpset('prepop', $to, true);
 		rawoutput("</form>");
-		require("lib/mail/case_address.php");
+                require("pages/mail/case_address.php");
 		popup_footer();
 	}else{
 		output_notl("<select name='to' id='to' onchange='check_su_warning();'>",true);

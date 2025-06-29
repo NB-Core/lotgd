@@ -28,8 +28,8 @@ $favortoheal = (int)$favortoheal['favor'];
 
 $op = httpget('op');
 switch ($op) {
-	case "search":
-		require_once("lib/graveyard/case_battle_search.php");
+        case "search":
+                require_once("pages/graveyard/case_battle_search.php");
 
 		break;
 case "run":
@@ -116,30 +116,30 @@ modulehook("deathoverlord",array());
 switch ($op) {
 	case "search": case "run": case "fight":
 		break;
-	case "enter":
-		require_once("lib/graveyard/case_enter.php");
-		break;
-	case "restore":
-		require_once("lib/graveyard/case_restore.php");
-		break;
-	case "resurrection":
-		require_once("lib/graveyard/case_resurrection.php");
-		break;
-	case "question":
-		require_once("lib/graveyard/case_question.php");
-		break;
-	case "haunt":
-		require_once("lib/graveyard/case_haunt.php");
-		break;
-	case "haunt2":
-		require_once("lib/graveyard/case_haunt2.php");
-		break;
-	case "haunt3":
-		require_once("lib/graveyard/case_haunt3.php");
-		break;
-	default:
-		require_once("lib/graveyard/case_default.php");
-		break;
+        case "enter":
+                require_once("pages/graveyard/case_enter.php");
+                break;
+        case "restore":
+                require_once("pages/graveyard/case_restore.php");
+                break;
+        case "resurrection":
+                require_once("pages/graveyard/case_resurrection.php");
+                break;
+        case "question":
+                require_once("pages/graveyard/case_question.php");
+                break;
+        case "haunt":
+                require_once("pages/graveyard/case_haunt.php");
+                break;
+        case "haunt2":
+                require_once("pages/graveyard/case_haunt2.php");
+                break;
+        case "haunt3":
+                require_once("pages/graveyard/case_haunt3.php");
+                break;
+        default:
+                require_once("pages/graveyard/case_default.php");
+                break;
 }
 
 page_footer();

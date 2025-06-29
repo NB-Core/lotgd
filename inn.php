@@ -49,19 +49,19 @@ villagenav();
 addnav("I?Return to the Inn","inn.php");
 
 switch ($op) {
-	case "": case "strolldown": case "fleedragon":
-		require("lib/inn/inn_default.php");
-		blocknav("inn.php");
-		break;
+        case "": case "strolldown": case "fleedragon":
+                require("pages/inn/inn_default.php");
+                blocknav("inn.php");
+                break;
 	case "converse":
 		commentdisplay("You stroll over to a table, place your foot up on the bench and listen in on the conversation:`n", "inn","Add to the conversation?",20);
 		break;
-	case "bartender":
-		require("lib/inn/inn_bartender.php");
-		break;
-	case "room":
-		require("lib/inn/inn_room.php");
-		break;
+        case "bartender":
+                require("pages/inn/inn_bartender.php");
+                break;
+        case "room":
+                require("pages/inn/inn_room.php");
+                break;
 }
 
 if (!$skipinndesc) rawoutput("</span>");

@@ -12,12 +12,12 @@ require_once("lib/stripslashes_deep.php");
 $op = httpget('op');
 
 switch ($op) {
-	case "primer": case "faq": case "faq1": case "faq2": case "faq3":
-		require("lib/petition/petition_$op.php");
-		break;
-	default:
-		require("lib/petition/petition_default.php");
-		break;
+        case "primer": case "faq": case "faq1": case "faq2": case "faq3":
+                require("pages/petition/petition_$op.php");
+                break;
+        default:
+                require("pages/petition/petition_default.php");
+                break;
 }
 popup_footer();
 ?>

@@ -59,7 +59,7 @@
 		rawoutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$lev</td><td>$dk</td><td>$jd</td><td>$lo</td><td>$ops</td></tr>",true);
 		$i=false;
 		$tot = 0;
-		require_once("lib/clan/func.php");
+                require_once("pages/clan/func.php");
 		$validranks=array_intersect_key($ranks,range(0,$session['user']['clanrank']));
 		while ($row=db_fetch_assoc($result)){
 			$i=!$i;
