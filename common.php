@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/autoload.php';
 // translator ready
 // addnews ready
 // mail ready

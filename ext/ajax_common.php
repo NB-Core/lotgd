@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__ . '/vendor/autoload.php'); // Start autoload 
+require_once __DIR__ . '/../autoload.php'; // Start autoload
 
 use Jaxon\Jaxon;                      // Use the jaxon core class
 use Jaxon\Response\Response;          // and the Response class
