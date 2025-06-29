@@ -128,48 +128,48 @@ while ($row=db_fetch_assoc($result)){
 }
 
 switch ($op) {
-	case "lasthit":
-		require("lib/user/user_lasthit.php");
-		break;
-	case "savemodule":
-		require("lib/user/user_savemodule.php");
-		break;
-	case "special":
-		require("lib/user/user_special.php");
-		break;
-	case "save":
-		require("lib/user/user_save.php");
-		break;
+        case "lasthit":
+                require("pages/user/user_lasthit.php");
+                break;
+        case "savemodule":
+                require("pages/user/user_savemodule.php");
+                break;
+        case "special":
+                require("pages/user/user_special.php");
+                break;
+        case "save":
+                require("pages/user/user_save.php");
+                break;
 }
 
 switch($op) {
-	case "edit":
-		require("lib/user/user_edit.php");
-		break;
-	case "setupban":
-		require("lib/user/user_setupban.php");
-		break;
-	case "del":
-		require("lib/user/user_del.php");
-		break;
-	case "saveban":
-		require("lib/user/user_saveban.php");
-		break;
-	case "delban":
-		require("lib/user/user_delban.php");
-		break;
-	case "removeban":
-		require("lib/user/user_removeban.php");
-		break;
-	case "searchban":
-		require("lib/user/user_searchban.php");
-		break;
-	case "debuglog":
-		require("lib/user/user_debuglog.php");
-		break;
-	case "":
-		require("lib/user/user_.php");
-		break;
+        case "edit":
+                require("pages/user/user_edit.php");
+                break;
+        case "setupban":
+                require("pages/user/user_setupban.php");
+                break;
+        case "del":
+                require("pages/user/user_del.php");
+                break;
+        case "saveban":
+                require("pages/user/user_saveban.php");
+                break;
+        case "delban":
+                require("pages/user/user_delban.php");
+                break;
+        case "removeban":
+                require("pages/user/user_removeban.php");
+                break;
+        case "searchban":
+                require("pages/user/user_searchban.php");
+                break;
+        case "debuglog":
+                require("pages/user/user_debuglog.php");
+                break;
+        case "":
+                require("pages/user/user_.php");
+                break;
 }
 page_footer();
 

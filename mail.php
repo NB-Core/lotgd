@@ -75,18 +75,18 @@ switch (httpget('even')) {
 }
 
 if($op=="send"){
-	//needs to be handled first.
-	require("lib/mail/case_send.php");
+        //needs to be handled first.
+        require("pages/mail/case_send.php");
 }
 
 switch ($op) {
 case "read":
 case "address":
 case "write":
-	require("lib/mail/case_".$op.".php");
+        require("pages/mail/case_".$op.".php");
 	break;
 default:
-	require("lib/mail/case_default.php");
+        require("pages/mail/case_default.php");
 	break;
 }
 popup_footer();
