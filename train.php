@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Battle;
 //addnews ready
 // mail ready
 // translator ready
@@ -164,9 +165,8 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 	}
 
 	if($battle){
-		require_once("lib/battle-skills.php");
-		require_once("lib/extended-battle.php");
-		suspend_buffs('allowintrain', "`&Your pride prevents you from using extra abilities during the fight!`0`n");
+                require_once("lib/extended-battle.php");
+                Battle::suspendBuffs('allowintrain', "`&Your pride prevents you from using extra abilities during the fight!`0`n");
 		suspend_companions("allowintrain");
 		if (!$victory) {
 			require_once("battle.php");
@@ -263,7 +263,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 		  fightnav(false,false, "train.php?master=$mid");
 		}
 		if ($victory || $defeat) {
-			unsuspend_buffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");
+                    Battle::unsuspendBuffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");
 			unsuspend_companions("allowintrain");
 		}
 	}

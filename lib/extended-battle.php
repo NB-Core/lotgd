@@ -1,4 +1,5 @@
 <?php
+use Lotgd\FightBar;
 // addnews ready
 // mail ready
 // translation ready
@@ -10,14 +11,13 @@
  * @param array $enemies The enemies to be displayed.
  */
 function show_enemies($enemies) {
-	global $enemycounter, $session;
-	require_once("lib/battle-functions.php");
-	$u=&$session['user']; //fast and better, by pointer
-	static $fightbar=NULL;
-	if ($fightbar===NULL) {
-		//only once per fight
-		$fightbar=new fightbar();
-	}
+        global $enemycounter, $session;
+        $u=&$session['user']; //fast and better, by pointer
+        static $fightbar=NULL;
+        if ($fightbar===NULL) {
+                //only once per fight
+                $fightbar=new FightBar();
+        }
 
 	//show all enemies including their stats
 	foreach ($enemies as $index => $badguy) {

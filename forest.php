@@ -8,7 +8,7 @@ require_once("lib/fightnav.php");
 require_once("lib/http.php");
 require_once("lib/taunt.php");
 require_once("lib/events.php");
-require_once("lib/battle-skills.php");
+use Lotgd\Battle;
 
 tlschema("forest");
 
@@ -25,7 +25,7 @@ if ($op=="run"){
 		output ("`c`b`&You have successfully fled your opponent!`0`b`c`n");
 		$op="";
 		httpset('op', "");
-		unsuspend_buffs();
+                Battle::unsuspendBuffs();
 		foreach($companions as $index => $companion) {
 			if(isset($companion['expireafterfight']) && $companion['expireafterfight']) {
 				unset($companions[$index]);
