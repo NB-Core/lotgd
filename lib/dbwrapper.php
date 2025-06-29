@@ -3,7 +3,6 @@
 // translator ready
 // mail ready
 require_once("lib/errorhandling.php");
-require_once("lib/datacache.php");
 require_once("settings.php");
 
 $dbinfo = array();

@@ -1,4 +1,5 @@
 <?php
+use Lotgd\DateTime;
 // translator ready
 // addnews ready
 // mail ready
@@ -255,7 +256,6 @@ switch ($type_setting) {
 
 			case "":
 				$enum="enumpretrans";
-				require_once("lib/datetime.php");
 				$details = gametimedetails();
 				$offset = getsetting("gameoffsetseconds",0);
 				for ($i=0;$i<=86400 / getsetting("daysperday",4);$i+=300){
