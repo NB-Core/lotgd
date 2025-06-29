@@ -48,7 +48,7 @@ if (defined("DB_CHOSEN") && DB_CHOSEN){
 				$needsauthentication = false;
 			}
 			if ($needsauthentication === false) {
-				redirect("installer.php?stage=1");
+                               redirect("install/index.php?stage=1");
 			}
 			output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
 		}else{
@@ -72,7 +72,7 @@ if (defined("DB_CHOSEN") && DB_CHOSEN){
 if ($session['user']['superuser'] & SU_MEGAUSER) $needsauthentication=false;
 if ($needsauthentication){
 	$session['stagecompleted']=-1;
-	rawoutput("<form action='installer.php?stage=0' method='POST'>");
+       rawoutput("<form action='install/index.php?stage=0' method='POST'>");
 	output("`%In order to upgrade this LoGD installation, you will need to provide the username and password of a superuser account with the MEGAUSER privilege`n");
 	output("`^Username: `0");
 	rawoutput("<input name='username'><br>");
