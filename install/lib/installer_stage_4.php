@@ -36,7 +36,7 @@ if (!$link){
 			output("`2It looks like the database for LoGD hasn't been created yet.");
 			output("I can attempt to create it for you if you like, but in order for that to work, the account you provided has to have permissions to create a new database.");
 			output("If you're not sure what this means, it's safe to try to create this database, but you should double check that you've typed the name correctly by returning to the previous stage before you try it.`n");
-			output("`nTo try to create the database, <a href='installer.php?stage=4&op=trycreate'>click here</a>.`n",true);
+                       output("`nTo try to create the database, <a href='install/index.php?stage=4&op=trycreate'>click here</a>.`n",true);
 		}else{
 			output("`2This is probably because the username and password you provided doesn't have permission to connect to the database.`n");
 		}

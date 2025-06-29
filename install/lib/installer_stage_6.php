@@ -9,7 +9,7 @@ if (file_exists("dbconnect.php")){
 	output("This file tells LoGD how to connect to the database, and is necessary to continue installation.`n");
 	$dbconnect =
 	"<?php\n"
-	."//This file automatically created by installer.php on ".date("M d, Y h:i a")."\n"
+       ."//This file automatically created by install/index.php on ".date("M d, Y h:i a")."\n"
 	."\$DB_HOST = \"{$session['dbinfo']['DB_HOST']}\";\n"
 	."\$DB_USER = \"{$session['dbinfo']['DB_USER']}\";\n"
 	."\$DB_PASS = \"{$session['dbinfo']['DB_PASS']}\";\n"
@@ -59,7 +59,7 @@ if ($success && !$initial){
 		}
 		$dbconnect =
 			"<?php\n"
-			."//This file automatically created by installer.php on ".date("M d, Y h:i a")."\n"
+                       ."//This file automatically created by install/index.php on ".date("M d, Y h:i a")."\n"
 			."\$DB_HOST = \"{$DB_HOST}\";\n"
 			."\$DB_USER = \"{$DB_USER}\";\n"
 			."\$DB_PASS = \"{$DB_PASS}\";\n"

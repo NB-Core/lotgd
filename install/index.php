@@ -32,11 +32,13 @@ if (!$requirements_met) {
 }
 
 if (!file_exists("dbconnect.php")){
-	define("DB_NODB",true);
+       define("DB_NODB",true);
 }
+chdir(__DIR__ . '/..');
+
 require_once("common.php");
 if (file_exists("dbconnect.php")){
-	require_once("dbconnect.php");
+       require_once("dbconnect.php");
 }
 
 $noinstallnavs=false;
@@ -149,10 +151,10 @@ if ($stage > $session['stagecompleted']) $session['stagecompleted'] = $stage;
 page_header("LoGD Installer &#151; %s",$stages[$stage]);
 switch($stage) {
 	case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10:
-		require_once("lib/installer/installer_stage_$stage.php");
+               require_once("install/lib/installer_stage_$stage.php");
 		break;
 	default:
-		require_once("lib/installer/installer_stage_default.php");
+               require_once("install/lib/installer_stage_default.php");
 		break;
 }
 
@@ -163,7 +165,7 @@ if (!$noinstallnavs){
 
 	for ($x=0; $x<=min(count($stages)-1,$session['stagecompleted']+1); $x++){
 		if ($x == $stage) $stages[$x]="`^{$stages[$x]} <----";
-		addnav($stages[$x],"installer.php?stage=$x");
+               addnav($stages[$x],"install/index.php?stage=$x");
 	}
 }
 page_footer(false);

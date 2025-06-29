@@ -1,5 +1,5 @@
 <?php
-require("lib/installer/installer_sqlstatements.php");
+require(__DIR__ . "/installer_sqlstatements.php");
 if (httppost("type")>""){
 	if (httppost("type")=="install") {
 		$session['fromversion']="-1";
@@ -13,7 +13,7 @@ if (httppost("type")>""){
 if (!isset($session['fromversion']) || $session['fromversion']==""){
 	output("`@`c`bConfirmation`b`c");
 	output("`2Please confirm the following:`0`n");
-	rawoutput("<form action='installer.php?stage=7' method='POST'>");
+       rawoutput("<form action='install/index.php?stage=7' method='POST'>");
 	rawoutput("<table border='0' cellpadding='0' cellspacing='0'><tr><td valign='top'>");
 	output("`2I should:`0");
 	rawoutput("</td><td>");
@@ -39,7 +39,7 @@ if (!isset($session['fromversion']) || $session['fromversion']==""){
 	$session['stagecompleted']=$stage - 1;
 }else{
 	$session['stagecompleted']=$stage;
-	header("Location: installer.php?stage=".($stage+1));
+       header("Location: install/index.php?stage=".($stage+1));
 	exit();
 }
 ?>

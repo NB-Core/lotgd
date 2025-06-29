@@ -1,6 +1,6 @@
 <?php
-require_once("lib/installer/installer_functions.php");
-rawoutput("<form action='installer.php?stage=4' method='POST'>");
+require_once(__DIR__ . "/installer_functions.php");
+rawoutput("<form action='install/index.php?stage=4' method='POST'>");
 output("`@`c`bDatabase Connection Information`b`c`2");
 output("In order to run Legend of the Green Dragon, your server must have access to a MySQL database.");
 output("If you are not sure if you meet this need, talk to server's Internet Service Provider (ISP), and make sure they offer MySQL databases.");

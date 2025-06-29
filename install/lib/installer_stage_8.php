@@ -1,9 +1,9 @@
 <?php
-require_once("lib/installer/installer_functions.php");
+require_once(__DIR__ . "/installer_functions.php");
 if (array_key_exists('modulesok',$_POST)){
 	$session['moduleoperations'] = $_POST['modules'];
 	$session['stagecompleted'] = $stage;
-	header("Location: installer.php?stage=".($stage+1));
+       header("Location: install/index.php?stage=".($stage+1));
 	exit();
 }elseif (array_key_exists('moduleoperations',$session) && is_array($session['moduleoperations'])){
 	$session['stagecompleted'] = $stage;
@@ -95,7 +95,7 @@ if (return_bytes($phpram) < 12582912 && $phpram!=-1 && !$session['overridememory
 		$all_modules[$row['category']][$row['modulename']] = $row;
 	}
 	output_notl("`0");
-	rawoutput("<form action='installer.php?stage=".$stage."' method='POST'>");
+       rawoutput("<form action='install/index.php?stage=".$stage."' method='POST'>");
 	rawoutput("<input type='submit' name='modulesok' value='$submit' class='button'>");
 	rawoutput("<input type='button' onClick='chooseRecommendedModules();' class='button' value='$install' class='button'>");
 	rawoutput("<input type='reset' value='$reset' class='button'><br>");
