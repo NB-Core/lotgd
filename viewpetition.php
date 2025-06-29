@@ -1,10 +1,10 @@
 <?php
+use Lotgd\Commentary;
 // translator ready
 // addnews ready
 // mail ready
 
 require_once("common.php");
-require_once("lib/commentary.php");
 require_once("lib/http.php");
 
 tlschema("petition");

@@ -1,10 +1,10 @@
 <?php
+use Lotgd\Commentary;
 use Lotgd\Buffs;
 // addnews ready
 // translator ready
 // mail ready
 require_once("common.php");
-require_once("lib/commentary.php");
 require_once("lib/pvpwarning.php");
 require_once("lib/sanitize.php");
 require_once("lib/pvplist.php");

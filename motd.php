@@ -1,11 +1,11 @@
 <?php
+use Lotgd\Commentary;
 // addnews ready
 // translator ready
 // mail ready
 define("ALLOW_ANONYMOUS",true);
 define("OVERRIDE_FORCED_NAV",true);
 require_once("common.php");
-require_once("lib/commentary.php");
 require_once("lib/nltoappon.php");
 require_once("lib/http.php");
 require_once("lib/motd.php");

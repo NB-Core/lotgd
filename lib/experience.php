@@ -1,4 +1,5 @@
 <?php
+use Lotgd\DataCache;
 // translator ready
 // addnews ready
 // mail ready
@@ -12,8 +13,7 @@
  * @return int The amount of experience needed to advance to the next level.
  */
 function exp_for_next_level($curlevel, $curdk) {
-	require_once("lib/datacache.php");
-	$stored=datacache("exparraydk".$curdk); //fetch all for that DK if already calculated!
+	$stored=DataCache::datacache("exparraydk".$curdk); //fetch all for that DK if already calculated!
 	if ($stored!== false && is_array($stored)) { //check if datacache is here 
 						     //fine
 		$exparray=$stored;
@@ -37,7 +37,7 @@ function exp_for_next_level($curlevel, $curdk) {
 				$exparray[$i]=round($exparray[$i-1]*1.2);
 			}
 		}
-		updatedatacache("exparraydk".$curdk,$exparray);
+		DataCache::updatedatacache("exparraydk".$curdk,$exparray);
 	}
 	//if we are at max level and it's no more progress
 	if (count($exparray)>$curlevel) {
