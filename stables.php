@@ -1,10 +1,10 @@
 <?php
+use Lotgd\Buffs;
 // translator ready
 // addnews ready
 // mail ready
 require_once("common.php");
 require_once("lib/http.php");
-require_once("lib/buffs.php");
 require_once("lib/sanitize.php");
 require_once("lib/villagenav.php");
 
@@ -176,7 +176,7 @@ if ($op == 'confirmbuy') {
 			debuglog(($goldcost <= 0?"spent ":"gained ") . abs($goldcost) . " gold and " . ($gemcost <= 0?"spent ":"gained ") . abs($gemcost) . " gems trading $debugmount1 for a new mount, a $debugmount2");
 			$buff = unserialize($mount['mountbuff']);
 			if ($buff['schema'] == "") $buff['schema'] = "mounts";
-			apply_buff('mount',unserialize($mount['mountbuff']));
+			Buffs::applyBuff('mount', $buff);
 			// Recalculate so the selling stuff works right
 			$playermount = getmount($mount['mountid']);
 			$repaygold = round($playermount['mountcostgold']*2/3,0);
@@ -216,7 +216,7 @@ if ($op == 'confirmbuy') {
 				tlschema();
 			}
 			debuglog("spent $grubprice feeding their mount");
-			apply_buff('mount',$buff);
+			Buffs::applyBuff('mount',$buff);
 			$session['user']['fedmount'] = 1;
 			tlschema($schemas['mountfull']);
 			output($texts['mountfull'],
@@ -244,7 +244,7 @@ if ($op == 'confirmbuy') {
 	$session['user']['gems']+=$repaygems;
 	$debugmount=$playermount['mountname'];
 	debuglog("gained $repaygold gold and $repaygems gems selling their mount, a $debugmount");
-	strip_buff('mount');
+	Buffs::stripBuff('mount');
 	$session['user']['hashorse']=0;
 	modulehook("soldmount");
 

@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__."/../autoload.php";
+use Lotgd\AddNews;
+use Lotgd\Buffs;
 // translator ready
 // addnews ready
 // mail ready
@@ -51,7 +53,6 @@ require_once("lib/datacache.php");
 require_once("lib/modules.php");
 require_once("lib/http.php");
 require_once("lib/e_rand.php");
-require_once("lib/buffs.php");
 require_once("lib/pageparts.php");
 require_once("lib/sanitize.php");
 require_once("lib/tempstat.php");
@@ -80,7 +81,6 @@ require_once("lib/redirect.php");
 require_once("lib/censor.php");
 require_once("lib/saveuser.php");
 require_once("lib/arrayutil.php");
-require_once("lib/addnews.php");
 require_once("lib/sql.php");
 require_once("lib/mounts.php");
 require_once("lib/debuglog.php");

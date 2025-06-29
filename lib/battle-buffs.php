@@ -326,7 +326,7 @@ function expire_buffs() {
 					}
 				}
 				//unset($session['bufflist'][$key]);
-				strip_buff($key);
+				Buffs::stripBuff($key);
 			}
 		}
 		if ($buff['schema']) tlschema();
@@ -358,7 +358,7 @@ function expire_buffs_afterbattle() {
 					}
 				}
 				//unset($session['bufflist'][$key]);
-				strip_buff($key);
+				Buffs::stripBuff($key);
 			}
 		}
 		if ($buff['schema']) tlschema();

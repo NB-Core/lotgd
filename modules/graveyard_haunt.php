@@ -127,13 +127,13 @@ if (db_num_rows($result)>0){
 		if ($roll2>$roll1){
 			output("You have successfully haunted `7%s`)!", $row['name']);
 			set_module_pref('hauntedby',$session['user']['acctid'],'graveyard_haunt');
-			addnews("`7%s`) haunted `7%s`)!",$session['user']['name'],$row['name']);
+			AddNews::add("`7%s`) haunted `7%s`)!",$session['user']['name'],$row['name']);
 			$subj = array("`)You have been haunted");
 			$body = array("`)You have been haunted by `&%s`).",$session['user']['name']);
 			require("lib/systemmail.php");
 			systemmail($row['acctid'], $subj, $body);
 		}else{
-			addnews("`7%s`) unsuccessfully haunted `7%s`)!",$session['user']['name'],$row['name']);
+			AddNews::add("`7%s`) unsuccessfully haunted `7%s`)!",$session['user']['name'],$row['name']);
 			switch (e_rand(0,5)){
 			case 0:
 				$msg = "Just as you were about to haunt `7%s`) good, they sneezed, and missed it completely.";

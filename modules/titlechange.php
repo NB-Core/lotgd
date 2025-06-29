@@ -134,7 +134,7 @@ function titlechange_run(): void{
 			$newname = change_player_ctitle($ntitle);
 			$session['user']['ctitle'] = $ntitle;
 			$session['user']['name'] = $newname;
-			addnews("%s`^ has become known as %s.",$fromname,$session['user']['name']);
+			AddNews::add("%s`^ has become known as %s.",$fromname,$session['user']['name']);
 			debuglog("changed the player title from $fromname to ".$session['user']['name']);
 			set_module_pref("timespurchased", get_module_pref("timespurchased")+1);
 			output("Your custom title has been set.");
@@ -155,7 +155,7 @@ function titlechange_run(): void{
 			$newname = change_player_ctitle($ntitle);
 			$session['user']['ctitle'] = $ntitle;
 			$session['user']['name'] = $newname;
-			addnews("%s`^ has become known as %s.",$fromname,$session['user']['name']);
+			AddNews::add("%s`^ has become known as %s.",$fromname,$session['user']['name']);
 			debuglog("reset his/her title from $fromname to ".$session['user']['name']);
 			break;
 	}

@@ -1,10 +1,10 @@
 <?php
+use Lotgd\Buffs;
 // translator ready
 // addnews ready
 // mail ready
 require_once("lib/bell_rand.php");
 require_once("lib/e_rand.php");
-require_once("lib/buffs.php");
 
 function rolldamage(&$badguy){
 	global $session,$creatureattack,$creatureatkmod,$adjustment;
@@ -260,7 +260,7 @@ function apply_bodyguard($level){
 			$rounds=-1;
 			break;
 		}
-		apply_buff('bodyguard' , array(
+		Buffs::applyBuff('bodyguard' , array(
 				"startmsg"=>"`\${badguy}'s bodyguard protects them!",
 				"name"=>"`&Bodyguard",
 				"wearoff"=>"The bodyguard seems to have fallen asleep.",
@@ -278,7 +278,7 @@ function apply_bodyguard($level){
 function apply_skill($skill,$l){
 	global $session;
 	if ($skill=="godmode"){
-		apply_buff('godmode',array(
+		Buffs::applyBuff('godmode',array(
 			"name"=>"`&GOD MODE",
 			"rounds"=>1,
 			"wearoff"=>"You feel mortal again.",

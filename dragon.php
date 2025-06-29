@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Buffs;
 // addnews ready
 // translator ready
 // mail ready
@@ -6,7 +7,6 @@ require_once("common.php");
 require_once("lib/fightnav.php");
 require_once("lib/titles.php");
 require_once("lib/http.php");
-require_once("lib/buffs.php");
 require_once("lib/taunt.php");
 require_once("lib/names.php");
 
@@ -82,7 +82,7 @@ if ($op==""){
 		output("`n`nYou fall forward, and remember at the last moment that you at least managed to grab some of the dragon's treasure, so maybe it wasn't all a total loss.");
 	}
 	addnav("It is a new day","news.php");
-	strip_all_buffs();
+	Buffs::stripAllBuffs();
 	$sql = "DESCRIBE " . db_prefix("accounts");
 	$result = db_query($sql);
 
@@ -248,7 +248,7 @@ if ($op==""){
 
 
 	$howoften=($session['user']['dragonkills']>1?"times":"time"); // no translation, we never know who is viewing...
-	addnews("`#%s`# has earned the title `&%s`# for having slain `@%s`& `^%s`# %s!",$regname,$session['user']['title'],$badguy['creaturename'],$session['user']['dragonkills'],$howoften);
+	AddNews::add("`#%s`# has earned the title `&%s`# for having slain `@%s`& `^%s`# %s!",$regname,$session['user']['title'],$badguy['creaturename'],$session['user']['dragonkills'],$howoften);
 	output("`n`n`^You are now known as `&%s`^!!",$session['user']['name']);
 	output("`n`n`&Because you have slain %s`& %s %s, you start with some extras.  You also keep additional permanent hitpoints you've earned.`n",$badguy['creaturename'],$session['user']['dragonkills'],$howoften);
 	$session['user']['charm']+=5;
@@ -276,7 +276,7 @@ if ($battle){
 		if (isset($badguy['diddamage']) && $badguy['diddamage'] != 1) $flawless = 1;
 		$session['user']['dragonkills']++;
 		output("`&With a mighty final blow, `@%s`& lets out a tremendous bellow and falls at your feet, dead at last.",$badguy['creaturename']);
-		addnews("`&%s has slain the hideous creature known as `@%s`&.  All across the land, people rejoice!",$session['user']['name'],$badguy['creaturename']);
+		AddNews::add("`&%s has slain the hideous creature known as `@%s`&.  All across the land, people rejoice!",$session['user']['name'],$badguy['creaturename']);
 		tlschema("nav");
 		addnav("Continue","dragon.php?op=prologue1&flawless=$flawless");
 		tlschema();
@@ -287,9 +287,9 @@ if ($battle){
 			tlschema();
 			$taunt = select_taunt_array();
 			if ($session['user']['sex']){
-				addnews("`%%s`5 has been slain when she encountered `@%s`5!!!  Her bones now litter the cave entrance, just like the bones of those who came before.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
+				AddNews::add("`%%s`5 has been slain when she encountered `@%s`5!!!  Her bones now litter the cave entrance, just like the bones of those who came before.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			}else{
-				addnews("`%%s`5 has been slain when he encountered `@%s`5!!!  His bones now litter the cave entrance, just like the bones of those who came before.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
+				AddNews::add("`%%s`5 has been slain when he encountered `@%s`5!!!  His bones now litter the cave entrance, just like the bones of those who came before.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			}
 			$session['user']['alive']=0;
 			debuglog("lost {$session['user']['gold']} gold when they were slain");

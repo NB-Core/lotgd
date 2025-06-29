@@ -31,7 +31,7 @@ function check_su_access($level){
 		// wipes all buffs when you enter it.  This means that you never really
 		// have this effect unless you log out without going to the graveyard
 		// for some odd reason.
-//		apply_buff('angrygods',
+//		Buffs::applyBuff('angrygods',
 //			array(
 //				"name"=>"`^The gods are angry!",
 //				"rounds"=>10,
@@ -48,7 +48,7 @@ function check_su_access($level){
 //		);
 		output("For attempting to defile the gods, you have been smitten down!`n`n");
 		output("%s`\$, Overlord of Death`) appears before you in a vision, seizing your mind with his, and wordlessly telling you that he finds no favor with you.`n`n",getsetting('deathoverlord','`$Ramius'));
-		addnews("`&%s was smitten down for attempting to defile the gods (they tried to hack superuser pages).",$session['user']['name']);
+		AddNews::add("`&%s was smitten down for attempting to defile the gods (they tried to hack superuser pages).",$session['user']['name']);
 		debuglog("Lost {$session['user']['gold']} and ".($session['user']['experience']*0.25)." experience trying to hack superuser pages.");
 		$session['user']['hitpoints']=0;
 		$session['user']['alive']=0;

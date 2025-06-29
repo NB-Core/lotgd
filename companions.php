@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Buffs;
 // addnews ready
 // mail ready
 // translator ready
@@ -52,8 +53,7 @@ if ($op=="deactivate"){
 		$row['hitpoints'] = $row['maxhitpoints'];
 		$row = modulehook("alter-companion", $row);
 		$row['abilities'] = @unserialize($row['abilities']);
-		require_once("lib/buffs.php");
-		if (apply_companion($row['name'], $row)) {
+		if (Buffs::applyCompanion($row['name'], $row)) {
 			output("`\$Successfully taken `^%s`\$ as companion.", $row['name']);
 		} else {
 			output("`\$Companion not taken due to global limit.`0");

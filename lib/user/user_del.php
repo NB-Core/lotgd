@@ -10,7 +10,7 @@ while ($row = db_fetch_assoc($res)) {
 		$fail=true;
 		break;
 	}
-	addnews("`#%s was unmade by the gods.", $row['name'], true);
+	AddNews::add("`#%s was unmade by the gods.", $row['name'], true);
 	debuglog("deleted user" . $row['name'] . "'0");
 }
 if ($fail!==true) {
