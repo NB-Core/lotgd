@@ -175,7 +175,7 @@ class Commentary
         global $session, $REQUEST_URI, $doublepost, $translation_namespace, $emptypost;
         tlschema($schema ? $schema : '');
         // Implementation shortened: for brevity we use original function body
-        include_once(__DIR__ . '/../lib/commentary.php');
+        include_once(__DIR__ . '/../../lib/commentary.php');
     }
 
     public static function talkline($section, $talkline, $limit, $schema, $counttoday, $message)
