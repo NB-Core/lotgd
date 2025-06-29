@@ -22,7 +22,7 @@ Mostly, technical stuff is now new:
 - composer was integrated for sensible (see above) third party modules
 - After modifying Composer settings, run `composer dump-autoload` so new namespaces are recognized.
 - After running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies.
-- `autoload.php` automatically loads `ext/vendor/autoload.php` and registers the project namespace.
+- `autoload.php` automatically loads `vendor/autoload.php` and registers the project namespace.
 - mysqli is now standard, so it's used primarily, the old ones won't be tested (and really, most things didn't work when you switched the db provider in lotgd)
 
 So, it should work on every modern PHP enviroment.
