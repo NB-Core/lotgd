@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Buffs;
+use Lotgd\Battle;
 // translator ready
 // addnews ready
 // mail ready
@@ -14,8 +15,7 @@ use Lotgd\Buffs;
 require_once("lib/bell_rand.php");
 require_once("common.php");
 require_once("lib/http.php");
-require_once("lib/battle-buffs.php");
-require_once("lib/battle-skills.php");
+
 require_once("lib/extended-battle.php");
 
 //just in case we're called from within a function.Yuck is this ugly.
@@ -66,7 +66,7 @@ $l=httpget("l");
 $newtarget = httpget('newtarget');
 if ($newtarget != "") $op = "newtarget";
 if ($op=="fight"){
-	apply_skill($skill,$l);
+    Battle::applySkill($skill,$l);
 } else if ($op=="newtarget") {
 	foreach ($enemies as $index=>$badguy){
 		if ($index == (int)$newtarget) {
@@ -117,13 +117,13 @@ if (!isset($options['type'])) {
 	// no type set, do it for them, to pve
 	$options['type'] = 'forest';
 }
-suspend_buffs((($options['type'] == 'pvp')?"allowinpvp":false));
+Battle::suspendBuffs((($options['type'] == 'pvp')?"allowinpvp":false));
 suspend_companions((($options['type'] == 'pvp')?"allowinpvp":false));
 
 // Now that the bufflist is sane, see if we should add in the bodyguard.
 $inn = (int)httpget('inn');
 if ($options['type']=='pvp' && $inn==1) {
-	apply_bodyguard($badguy['bodyguardlevel']);
+    Battle::applyBodyguard($badguy['bodyguardlevel']);
 }
 
 $surprised = false;
@@ -180,7 +180,7 @@ if ($op != "newtarget") {
 				if (($roundcounter > $options['maxattacks']) && $badguy['istarget'] == false) {
 					$newcompanions = $companions;
 				} else {
-					$buffset = activate_buffs("roundstart");
+                                   $buffset = Buffs::activateBuffs("roundstart");
 					if ($badguy['creaturehealth']<=0 || $session['user']['hitpoints']<=0){
 						$creaturedmg = 0;
 						$selfdmg = 0;
@@ -229,13 +229,13 @@ if ($op != "newtarget") {
 
 						if ($op=="fight" || $op=="run" || $surprised){
 							// Grab an initial roll.
-							$roll = rolldamage($badguy);
+                                                    $roll = Battle::rollDamage($badguy);
 							if ($op=="fight" && !$surprised){
 								$ggchancetodouble = $session['user']['dragonkills'];
 								$bgchancetodouble = $session['user']['dragonkills'];
 
 								if ($badguy['creaturehealth']>0 && $session['user']['hitpoints']>0) {
-									$buffset = activate_buffs("offense");
+                                                                   $buffset = Buffs::activateBuffs("offense");
 									if ($badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && $badguy['istarget']){
 										if (is_array($companions)) {
 											$newcompanions = array();
@@ -285,7 +285,7 @@ if ($op != "newtarget") {
 											if ($r < $ggchancetodouble && $badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && !$needtostopfighting){
 												$additionalattack = true;
 												$ggchancetodouble -= ($r+5);
-												$roll = rolldamage($badguy);
+                                                                           $roll = Battle::rollDamage($badguy);
 											}else{
 												$additionalattack = false;
 											}
@@ -307,7 +307,7 @@ if ($op != "newtarget") {
 							// the user can win a battle by a RIPOSTE after he has gone <= 0 HP.
 							//-- Gunnar Kreitz
 							if ($badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && $roundcounter <= $options['maxattacks']){
-								$buffset = activate_buffs("defense");
+                                                           $buffset = Buffs::activateBuffs("defense");
 								do {
 									$defended = false;
 									$needtostopfighting = battle_badguy_attacks($badguy);
@@ -316,7 +316,7 @@ if ($op != "newtarget") {
 									if ($r < $bgchancetodouble && $badguy['creaturehealth']>0 && $session['user']['hitpoints']>0 && !$needtostopfighting){
 										$additionalattack = true;
 										$bgchancetodouble -= ($r+5);
-										$roll = rolldamage($badguy);
+                                                                           $roll = Battle::rollDamage($badguy);
 									}else{
 										$additionalattack = false;
 									}
@@ -512,7 +512,7 @@ if ($victory || $defeat){
 	// expire any buffs which cannot persist across fights
 	expire_buffs_afterbattle();
 	//unsuspend any suspended buffs
-	unsuspend_buffs((($options['type']=='pvp')?"allowinpvp":false));
+    Battle::unsuspendBuffs((($options['type']=='pvp')?"allowinpvp":false));
 
 
 	if ($session['user']['alive']) {
@@ -552,7 +552,7 @@ function battle_player_attacks(&$badguy) {
 	$break = false;
 	$creaturedmg = $roll['creaturedmg'];
 	if ($options['type'] != "pvp") {
-		$creaturedmg = report_power_move($atk, $creaturedmg);
+            $creaturedmg = Battle::reportPowerMove($atk, $creaturedmg);
 	}
 	if ($creaturedmg==0){
 		output("`4You try to hit `^%s`4 but `\$MISS!`n",$badguy['creaturename']);

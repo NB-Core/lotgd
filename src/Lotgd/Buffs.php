@@ -242,4 +242,443 @@ class Buffs
         global $session;
         return isset($session['bufflist'][$name]);
     }
+
+    public static function activateBuffs($tag)
+    {
+        global $session, $badguy, $count;
+
+        tlschema('buffs');
+        reset($session['bufflist']);
+
+        $result = [
+            'invulnerable' => 0,
+            'dmgmod' => 1,
+            'compdmgmod' => 1,
+            'badguydmgmod' => 1,
+            'atkmod' => 1,
+            'compatkmod' => 1,
+            'badguyatkmod' => 1,
+            'defmod' => 1,
+            'compdefmod' => 1,
+            'badguydefmod' => 1,
+            'lifetap' => [],
+            'dmgshield' => [],
+        ];
+
+        foreach ($session['bufflist'] as $key => $buff) {
+            if (array_key_exists('suspended', $buff) && $buff['suspended']) {
+                continue;
+            }
+
+            if ($buff['schema']) {
+                tlschema($buff['schema']);
+            }
+
+            if (isset($buff['startmsg'])) {
+                if (is_array($buff['startmsg'])) {
+                    $buff['startmsg'] = str_replace('`%', '`%%', $buff['startmsg']);
+                    $msg = sprintf_translate($buff['startmsg']);
+                    $msg = substitute("`5" . $msg . "`0`n");
+                    output_notl($msg);
+                } else {
+                    $msg = substitute_array("`5" . $buff['startmsg'] . "`0`n");
+                    output($msg);
+                }
+
+                unset($session['bufflist'][$key]['startmsg']);
+            }
+
+            $activate = false;
+            if ($tag == 'roundstart') {
+                if (isset($buff['regen'])) {
+                    $activate = true;
+                }
+                if (isset($buff['minioncount'])) {
+                    $activate = true;
+                }
+            } elseif ($tag == 'offense') {
+                if (isset($buff['invulnerable']) && $buff['invulnerable']) {
+                    $activate = true;
+                }
+                if (isset($buff['atkmod'])) {
+                    $activate = true;
+                }
+                if (isset($buff['dmgmod'])) {
+                    $activate = true;
+                }
+                if (isset($buff['badguydefmod'])) {
+                    $activate = true;
+                }
+                if (isset($buff['lifetap'])) {
+                    $activate = true;
+                }
+                if (isset($buff['damageshield'])) {
+                    $activate = true;
+                }
+            } elseif ($tag == 'defense') {
+                if (isset($buff['invulnerable']) && $buff['invulnerable']) {
+                    $activate = true;
+                }
+                if (isset($buff['defmod'])) {
+                    $activate = true;
+                }
+                if (isset($buff['badguyatkmod'])) {
+                    $activate = true;
+                }
+                if (isset($buff['badguydmgmod'])) {
+                    $activate = true;
+                }
+                if (isset($buff['lifetap'])) {
+                    $activate = true;
+                }
+                if (isset($buff['damageshield'])) {
+                    $activate = true;
+                }
+            }
+
+            if ($activate && (!array_key_exists('used', $buff) || !$buff['used'])) {
+                $session['bufflist'][$key]['used'] = 1;
+                if (isset($buff['roundmsg'])) {
+                    if (is_array($buff['roundmsg'])) {
+                        $buff['roundmsg'] = str_replace('`%', '`%%', $buff['roundmsg']);
+                        $msg = sprintf_translate($buff['roundmsg']);
+                        $msg = substitute("`5" . $msg . "`0`n");
+                        output_notl($msg);
+                    } else {
+                        $msg = substitute_array("`5" . $buff['roundmsg'] . "`0`n");
+                        output($msg);
+                    }
+                }
+            }
+
+            if (isset($buff['invulnerable']) && $buff['invulnerable']) {
+                $result['invulnerable'] = 1;
+            }
+            if (isset($buff['atkmod'])) {
+                $result['atkmod'] *= $buff['atkmod'];
+                if (isset($buff['aura']) && $buff['aura']) {
+                    $result['compatkmod'] *= $buff['atkmod'];
+                }
+            }
+            if (isset($buff['badguyatkmod'])) {
+                $result['badguyatkmod'] *= $buff['badguyatkmod'];
+            }
+            if (isset($buff['defmod'])) {
+                $result['defmod'] *= $buff['defmod'];
+                if (isset($buff['aura']) && $buff['aura']) {
+                    $result['compdefmod'] *= $buff['defmod'];
+                }
+            }
+            if (isset($buff['badguydefmod'])) {
+                $result['badguydefmod'] *= $buff['badguydefmod'];
+            }
+            if (isset($buff['dmgmod'])) {
+                $result['dmgmod'] *= $buff['dmgmod'];
+                if (isset($buff['aura']) && $buff['aura']) {
+                    $result['compdmgmod'] *= $buff['dmgmod'];
+                }
+            }
+            if (isset($buff['badguydmgmod'])) {
+                $result['badguydmgmod'] *= $buff['badguydmgmod'];
+            }
+            if (isset($buff['lifetap'])) {
+                $result['lifetap'][] = $buff;
+            }
+            if (isset($buff['damageshield'])) {
+                $result['dmgshield'][] = $buff;
+            }
+            if (isset($buff['regen']) && $tag == 'roundstart' && $badguy['istarget'] == true) {
+                $hptoregen = (int) $buff['regen'];
+                $hpdiff = $session['user']['maxhitpoints'] - $session['user']['hitpoints'];
+                if ($hpdiff < 0) {
+                    $hpdiff = 0;
+                }
+                if ($hpdiff < $hptoregen) {
+                    $hptoregen = $hpdiff;
+                }
+                $session['user']['hitpoints'] += $hptoregen;
+                $hptoregen = abs($hptoregen);
+                if ($hptoregen == 0) {
+                    $msg = (isset($buff['effectnodmgmsg']) ? $buff['effectnodmgmsg'] : translate_inline('No damage, hosé'));
+                } else {
+                    $msg = (isset($buff['effectgmsg']) ? $buff['effectmsg'] : translate_inline('Tons of damage, hosé'));
+                }
+
+                if (is_array($msg)) {
+                    $msg = sprintf_translate($msg);
+                    $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
+                    output_notl($msg);
+                } elseif ($msg != '') {
+                    $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
+                    output($msg);
+                }
+                if (isset($buff['aura']) && $buff['aura'] == true) {
+                    global $companions;
+                    $auraeffect = (int) round($buff['regen'] / 3);
+                    if (is_array($companions) && count($companions) > 0 && $auraeffect != 0) {
+                        foreach ($companions as $name => $companion) {
+                            $unset = false;
+                            if (
+                                $companion['hitpoints'] < $companion['maxhitpoints'] &&
+                                ($companion['hitpoints'] > 0 || ($companion['cannotdie'] == true && $auraeffect > 0))
+                            ) {
+                                $hptoregen = min($auraeffect, $companion['maxhitpoints'] - $companion['hitpoints']);
+                                $companions[$name]['hitpoints'] += $hptoregen;
+                                $msg = substitute_array('`)' . $buff['auramsg'] . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
+                                output($msg);
+                                if ($hptoregen < 0 && $companion['hitpoints'] <= 0) {
+                                    if (isset($companion['dyingtext'])) {
+                                        tlschema('battle');
+                                        output($companion['dyingtext']);
+                                        tlschema();
+                                    }
+                                    if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
+                                        $companion['hitpoints'] = 0;
+                                    } else {
+                                        $unset = true;
+                                    }
+                                }
+                            }
+                            if (!$unset) {
+                                $newcompanions[$name] = $companion;
+                            }
+                        }
+                    }
+                }
+            }
+            if (
+                isset($buff['minioncount']) &&
+                $tag == 'roundstart' &&
+                ((isset($buff['areadamage']) && $buff['areadamage'] == true) || $badguy['istarget'] == true) &&
+                $badguy['dead'] == false
+            ) {
+                $who = -1;
+                if (isset($buff['maxbadguydamage']) && $buff['maxbadguydamage'] != 0) {
+                    $max = $buff['maxbadguydamage'];
+                    $min = $buff['minbadguydamage'] ?? 0;
+                    $who = 0;
+                } elseif (isset($buff['maxgoodguydamage']) && $buff['maxgoodguydamage'] != 0) {
+                    $max = $buff['maxgoodguydamage'];
+                    $min = $buff['mingoodguydamage'] ?? 0;
+                    $who = 1;
+                }
+                $minioncounter = 1;
+                while ($minioncounter <= $buff['minioncount'] && $who >= 0) {
+                    $damage = e_rand($min, $max);
+                    if ($who == 0) {
+                        $badguy['creaturehealth'] -= $damage;
+                        if ($badguy['creaturehealth'] <= 0) {
+                            $badguy['istarget'] = false;
+                            $badguy['dead'] = true;
+                            $count = 1;
+                        }
+                    } elseif ($who == 1) {
+                        $session['user']['hitpoints'] -= $damage;
+                    }
+                    if ($damage < 0) {
+                        if (isset($buff['effectfailmsg'])) {
+                            $msg = $buff['effectfailmsg'];
+                        }
+                    } elseif ($damage == 0) {
+                        if (isset($buff['effectnodmgmsg'])) {
+                            $msg = $buff['effectnodmgmsg'];
+                        }
+                    } elseif ($damage > 0) {
+                        if (isset($buff['effectmsg'])) {
+                            $msg = $buff['effectmsg'];
+                        }
+                    }
+                    if (is_array($msg)) {
+                        $msg = sprintf_translate($msg);
+                        $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
+                        output_notl($msg);
+                    } elseif ($msg > '') {
+                        $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
+                        output($msg);
+                    }
+                    if ($badguy['dead'] == true) {
+                        break;
+                    }
+                    $minioncounter++;
+                }
+            }
+            if ($buff['schema']) {
+                tlschema();
+            }
+        }
+        tlschema();
+
+        return $result;
+    }
+
+    public static function processLifetaps($ltaps, $damage)
+    {
+        global $session, $badguy;
+        tlschema('buffs');
+        foreach ($ltaps as $buff) {
+            if (isset($buff['suspended']) && $buff['suspended']) {
+                continue;
+            }
+            if ($buff['schema']) {
+                tlschema($buff['schema']);
+            }
+            $healhp = $session['user']['maxhitpoints'] - $session['user']['hitpoints'];
+            if ($healhp < 0) {
+                $healhp = 0;
+            }
+            if ($healhp == 0) {
+                $msg = (isset($buff['effectnodmgmsg']) ? $buff['effectnodmgmsg'] : '');
+            } else {
+                if ($healhp > $damage * $buff['lifetap']) {
+                    $healhp = round($damage * $buff['lifetap'], 0);
+                }
+                if ($healhp < 0) {
+                    $healhp = 0;
+                }
+                if ($damage > 0) {
+                    $msg = $buff['effectmsg'];
+                } elseif ($damage == 0) {
+                    $msg = $buff['effectfailmsg'];
+                } elseif ($damage < 0) {
+                    $msg = $buff['effectfailmsg'];
+                }
+            }
+            $session['user']['hitpoints'] += $healhp;
+            if (is_array($msg)) {
+                $msg = sprintf_translate($msg);
+                $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
+                output_notl($msg);
+            } elseif ($msg > '') {
+                $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
+                output($msg);
+            }
+            if ($buff['schema']) {
+                tlschema();
+            }
+        }
+        tlschema();
+    }
+
+    public static function processDmgshield($dshield, $damage)
+    {
+        global $session, $badguy;
+        tlschema('buffs');
+        foreach ($dshield as $buff) {
+            if (isset($buff['suspended']) && $buff['suspended']) {
+                continue;
+            }
+            if ($buff['schema']) {
+                tlschema($buff['schema']);
+            }
+            $realdamage = round($damage * $buff['damageshield'], 0);
+            if ($realdamage < 0) {
+                $realdamage = 0;
+            }
+            $msg = '';
+            if ($realdamage > 0) {
+                if (isset($buff['effectmsg'])) {
+                    $msg = $buff['effectmsg'];
+                }
+            } elseif ($realdamage == 0) {
+                if (isset($buff['effectnodmgmsg'])) {
+                    $msg = $buff['effectnodmgmsg'];
+                }
+            } elseif ($realdamage < 0) {
+                if (isset($buff['effectfailmsg'])) {
+                    $msg = $buff['effectfailmsg'];
+                }
+            }
+            $badguy['creaturehealth'] -= $realdamage;
+            if ($badguy['creaturehealth'] <= 0) {
+                $badguy['istarget'] = false;
+                $badguy['dead'] = true;
+                $count = 1;
+            }
+            if (is_array($msg)) {
+                $msg = sprintf_translate($msg);
+                $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
+                output_notl($msg);
+            } elseif ($msg > '') {
+                $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
+                output($msg);
+            }
+            if ($buff['schema']) {
+                tlschema();
+            }
+        }
+        tlschema();
+    }
+
+    public static function expireBuffs()
+    {
+        global $session, $badguy;
+        tlschema('buffs');
+        foreach ($session['bufflist'] as $key => $buff) {
+            if (array_key_exists('suspended', $buff) && $buff['suspended']) {
+                continue;
+            }
+            if ($buff['schema']) {
+                tlschema($buff['schema']);
+            }
+            if (array_key_exists('used', $buff) && $buff['used']) {
+                $session['bufflist'][$key]['used'] = 0;
+                if ($session['bufflist'][$key]['rounds'] > 0) {
+                    $session['bufflist'][$key]['rounds']--;
+                }
+                if ((int) $session['bufflist'][$key]['rounds'] == 0) {
+                    if (isset($buff['wearoff']) && $buff['wearoff']) {
+                        if (is_array($buff['wearoff'])) {
+                            $buff['wearoff'] = str_replace('`%', '`%%', $buff['wearoff']);
+                            $msg = sprintf_translate($buff['wearoff']);
+                            $msg = substitute('`5' . $msg . '`0`n');
+                            output_notl($msg);
+                        } else {
+                            $msg = substitute_array('`5' . $buff['wearoff'] . '`0`n');
+                            output($msg);
+                        }
+                    }
+                    self::stripBuff($key);
+                }
+            }
+            if ($buff['schema']) {
+                tlschema();
+            }
+        }
+        tlschema();
+    }
+
+    public static function expireBuffsAfterbattle()
+    {
+        global $session, $badguy;
+        tlschema('buffs');
+        reset($session['bufflist']);
+        foreach ($session['bufflist'] as $key => $buff) {
+            if (array_key_exists('suspended', $buff) && $buff['suspended']) {
+                continue;
+            }
+            if ($buff['schema']) {
+                tlschema($buff['schema']);
+            }
+            if (array_key_exists('used', $buff) && $buff['used']) {
+                if (array_key_exists('expireafterfight', $buff) && (int) $buff['expireafterfight'] == 1) {
+                    if (isset($buff['wearoff']) && $buff['wearoff']) {
+                        if (is_array($buff['wearoff'])) {
+                            $buff['wearoff'] = str_replace('`%', '`%%', $buff['wearoff']);
+                            $msg = sprintf_translate($buff['wearoff']);
+                            $msg = substitute('`5' . $msg . '`0`n');
+                            output_notl($msg);
+                        } else {
+                            $msg = substitute_array('`5' . $buff['wearoff'] . '`0`n');
+                            output($msg);
+                        }
+                    }
+                    self::stripBuff($key);
+                }
+            }
+            if ($buff['schema']) {
+                tlschema();
+            }
+        }
+        tlschema();
+    }
 }
