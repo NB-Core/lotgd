@@ -44,7 +44,7 @@ if ($op == "add" || $op == "addpoll" || $op == "del")  {
 		if ($session['user']['loggedin']){
 			$session['user']['experience'] =
 				round($session['user']['experience']*0.9,0);
-			addnews("%s was penalized for attempting to defile the gods.",
+			AddNews::add("%s was penalized for attempting to defile the gods.",
 					$session['user']['name']);
 			output("You've attempted to defile the gods.  You are struck with a wand of forgetfulness.  Some of what you knew, you no longer know.");
 			saveuser();

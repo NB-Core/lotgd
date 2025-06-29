@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Buffs;
 // translator ready
 // addnews ready
 // mail ready
@@ -15,7 +16,6 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/battle-buffs.php");
 require_once("lib/battle-skills.php");
-require_once("lib/buffs.php");
 require_once("lib/extended-battle.php");
 
 //just in case we're called from within a function.Yuck is this ugly.

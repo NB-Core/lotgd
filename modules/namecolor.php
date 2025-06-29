@@ -162,7 +162,7 @@ function namecolor_run(): void{
 		$newname = change_player_name($basename);
 		$session['user']['playername'] = $basename;
 		$session['user']['name'] = $newname;
-		addnews("%s`^ has become known as %s.",$fromname,$session['user']['name']);
+		AddNews::add("%s`^ has become known as %s.",$fromname,$session['user']['name']);
 		output("`7Congratulations, your name is now {$session['user']['name']}`7!`n`n");
 		modulehook("namechange", array());
 		addnav("L?Return to the Lodge","lodge.php");

@@ -1,11 +1,11 @@
 <?php
+use Lotgd\Buffs;
 // translator ready
 // addnews ready
 // mail ready
 require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/sanitize.php");
-require_once("lib/buffs.php");
 
 tlschema("newday");
 //mass_module_prepare(array("newday-intercept", "newday"));
@@ -146,7 +146,7 @@ if ($dp < $dkills) {
 	//clear all standard buffs
 	$tempbuf = unserialize($session['user']['bufflist']);
 	$session['user']['bufflist']="";
-	strip_all_buffs();
+	Buffs::stripAllBuffs();
 	tlschema("buffs");
 	foreach ($tempbuf as $key=>$val) {
 		if (array_key_exists('survivenewday', $val) &&
@@ -154,7 +154,7 @@ if ($dp < $dkills) {
 			//$session['bufflist'][$key]=$val;
 			if (array_key_exists('schema', $val) && $val['schema'])
 				tlschema($val['schema']);
-			apply_buff($key,$val);
+			Buffs::applyBuff($key,$val);
 			if (array_key_exists('newdaymessage', $val) &&
 					$val['newdaymessage']) {
 				output($val['newdaymessage']);
@@ -179,7 +179,7 @@ if ($dp < $dkills) {
 		$buff = unserialize($playermount['mountbuff']);
 		if (!isset($buff['schema']) || $buff['schema'] == "")
 			$buff['schema']="mounts";
-		apply_buff('mount',$buff);
+		Buffs::applyBuff('mount',$buff);
 	}
 	if ($dkff>0) {
 		output("`n`2You gain `^%s`2 forest %s from spent dragon points!",
@@ -190,7 +190,7 @@ if ($dp < $dkills) {
 	$spirits = $r1+$r2;
 	$resurrectionturns=$spirits;
 	if ($resurrection=="true"){
-		addnews("`&%s`& has been resurrected by %s`&.",$session['user']['name'],getsetting('deathoverlord','`$Ramius'));
+		AddNews::add("`&%s`& has been resurrected by %s`&.",$session['user']['name'],getsetting('deathoverlord','`$Ramius'));
 		$spirits=-6;
 		$resurrectionturns=getsetting('resurrectionturns',-6);
 		if (strstr($resurrectionturns,'%')) {

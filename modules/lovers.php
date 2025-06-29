@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
+use Lotgd\Buffs;
 //addnews ready
 // translator ready
 // mail ready
-require_once("lib/buffs.php");
 require_once("lib/partner.php");
 //should we move charm here?
 //should we move marriedto here?
@@ -75,7 +75,7 @@ function lovers_dohook(string $hookname, array $args): array{
 				output("There are other warriors in the land, and I think some of them are really hot.");
 				output("So it's not you, it's me, etcetera etcetera.`n`n");
 				output("No hard feelings, Love,`n%s`b`n",$partner);
-				addnews("`\$%s`\$ has left %s`\$ to pursue \"other interests.\"`0",$partner, $session['user']['name']);
+				AddNews::add("`\$%s`\$ has left %s`\$ to pursue \"other interests.\"`0",$partner, $session['user']['name']);
 				$session['user']['marriedto']=0;
 				$session['user']['charm']=0;
 			}

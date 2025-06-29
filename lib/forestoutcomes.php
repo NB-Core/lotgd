@@ -154,9 +154,9 @@ function forestdefeat($enemies,$where="in the forest"){
 	}*/
 	$deathmessage=select_deathmessage_array(true,array("{where}"),array($where));
 	if ($deathmessage['taunt']==1) {
-		addnews("%s`n%s",$deathmessage['deathmessage'],$taunt);
+		AddNews::add("%s`n%s",$deathmessage['deathmessage'],$taunt);
 	} else {
-		addnews("%s",$deathmessage['deathmessage']);
+		AddNews::add("%s",$deathmessage['deathmessage']);
 	}
 	$session['user']['alive']=0;
 	debuglog("lost gold when they were slain $where",false,false,"forestlose",-$session['user']['gold']);

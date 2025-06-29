@@ -73,7 +73,7 @@ if ($op=="deactivate"){
 	$row = db_fetch_assoc($result);
 	$buff = unserialize($row['mountbuff']);
 	if ($buff['schema'] == "") $buff['schema'] = "mounts";
-	apply_buff("mount",$buff);
+	Buffs::applyBuff("mount",$buff);
 	$op="";
 	httpset("op", "");
 }elseif ($op=="save"){

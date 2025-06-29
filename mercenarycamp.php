@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Buffs;
 // translator ready
 // addnews ready
 // mail ready
@@ -180,8 +181,7 @@ if ($op==""){
 		$row['hitpoints'] = $row['maxhitpoints'];
 		$row = modulehook("alter-companion", $row);
 		$row['abilities'] = @unserialize($row['abilities']);
-		require_once("lib/buffs.php");
-		if (apply_companion($row['name'], $row)) {
+		if (Buffs::applyCompanion($row['name'], $row)) {
 			output("`QYou hand over `^%s gold`Q and `%%s %s`Q.`n`n", (int)$row['companioncostgold'], (int)$row['companioncostgems'],translate_inline($row['companioncostgems'] == 1?"gem":"gems"));
 			if (isset($row['jointext']) && $row['jointext'] > "") {
 				output($row['jointext']);

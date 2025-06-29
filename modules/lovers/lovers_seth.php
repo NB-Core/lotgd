@@ -29,7 +29,7 @@ function lovers_seth(){
 				output("`n`n`^You LOSE a charm point!");
 			}else{
 				output("You and %s`0 take some time to yourselves, and you leave the inn, positively glowing!",$partner);
-				apply_buff('lover',lovers_getbuff());
+				Buffs::applyBuff('lover',lovers_getbuff());
 				$session['user']['charm']++;
 				output("`n`n`^You gain a charm point!");
 			}
@@ -108,7 +108,7 @@ function lovers_seth(){
 							if ($session['user']['turns']<0)
 								$session['user']['turns']=0;
 						}
-						addnews("`@%s`@ and %s`@ were seen heading up the stairs in the inn together.`0",$session['user']['name'],$partner);
+						AddNews::add("`@%s`@ and %s`@ were seen heading up the stairs in the inn together.`0",$session['user']['name'],$partner);
 						if ($c<25) $c++;
 					}else{
 						output("\"`^I'm sorry m'lady, but I have a show in 5 minutes`0\"");
@@ -121,9 +121,9 @@ function lovers_seth(){
 					if ($c>=22){
 						output("\"`^Of course my love!`0\" he says.");
 						output("The next weeks are a blur as you plan the most wonderous wedding, paid for entirely by %s`0, and head on off to the deep forest for your honeymoon.",$partner);
-						addnews("`&%s`& and %s`& are joined today in joyous matrimony!!!",$session['user']['name'],$partner);
+						AddNews::add("`&%s`& and %s`& are joined today in joyous matrimony!!!",$session['user']['name'],$partner);
 						$session['user']['marriedto']=INT_MAX;
-						apply_buff('lover',lovers_getbuff());
+						Buffs::applyBuff('lover',lovers_getbuff());
 					}else{
 						output("%s`0 says, \"`^I'm sorry, apparently I've given you the wrong impression, I think we should just be friends.`0\"", $partner);
 						output("Depressed, you have no more desire to fight in the forest today.");

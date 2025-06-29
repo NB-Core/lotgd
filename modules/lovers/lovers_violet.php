@@ -26,7 +26,7 @@ function lovers_violet(){
 				output("`^You LOSE a charm point!");
 			}else{
 				output("You and %s`0 take some time to yourselves, and you leave the inn, positively glowing!",$partner);
-				apply_buff('lover',lovers_getbuff());
+				Buffs::applyBuff('lover',lovers_getbuff());
 				$session['user']['charm']++;
 				output("`n`n`^You gain a charm point!");
 			}
@@ -108,7 +108,7 @@ function lovers_violet(){
 							$session['user']['turns']-=2;
 							if ($session['user']['turns']<0) $session['user']['turns']=0;
 						}
-						addnews("`@%s`@ and %s`@ were seen heading up the stairs in the inn together.`0",$session['user']['name'],$partner);
+						AddNews::add("`@%s`@ and %s`@ were seen heading up the stairs in the inn together.`0",$session['user']['name'],$partner);
 						if ($c<25) $c++;
 					}else{
 						output("Like a whirlwind, you sweep through the inn, and grab for %s`0.",$partner);
@@ -128,9 +128,9 @@ function lovers_violet(){
 						output("\"`%Yes!`0\" she says, \"`%Yes, yes yes!!!`0\"");
 						output("Her final confirmations are buried in a flurry of kisses about your face and neck.`n`n");
 						output("The next days are a blur; you and %s`0 are married in the abbey down the street, in a gorgeous ceremony with many frilly girly things.",$partner);
-						addnews("`&%s`& and %s`& are joined today in joyous matrimony!!!",$session['user']['name'],$partner);
+						AddNews::add("`&%s`& and %s`& are joined today in joyous matrimony!!!",$session['user']['name'],$partner);
 						$session['user']['marriedto']=INT_MAX;
-						apply_buff('lover',lovers_getbuff());
+						Buffs::applyBuff('lover',lovers_getbuff());
 					}else{
 						output("It is a look of sadness.");
 						output("\"`%No`0,\" she says, \"`%I'm not yet ready to settle down`0.\"`n`n");

@@ -1,10 +1,10 @@
 <?php
+use Lotgd\Buffs;
 // addnews ready.
 // translator ready
 // mail ready
 require_once("common.php");
 require_once("lib/http.php");
-require_once("lib/buffs.php");
 require_once("lib/events.php");
 
 tlschema("graveyard");
@@ -20,7 +20,7 @@ if (!$skipgraveyardtext) {
 	checkday();
 }
 $battle = false;
-strip_all_buffs();
+Buffs::stripAllBuffs();
 $max = $session['user']['level'] * 10 +$session['user']['dragonkills']*2 + 50;
 $favortoheal = modulehook("favortoheal",array("favor"=>round(10 * ($max-$session['user']['soulpoints'])/$max)));
 
@@ -93,11 +93,11 @@ if ($battle){
 			$where = translate_inline("in the graveyard");
 			$deathmessage=select_deathmessage_array(false,array("{where}"),array($where));
 			if ($deathmessage['taunt']==1) {
-				addnews("%s`n%s",$deathmessage['deathmessage'],$taunt);
+				AddNews::add("%s`n%s",$deathmessage['deathmessage'],$taunt);
 			} else {
-				addnews("%s",$deathmessage['deathmessage']);
+				AddNews::add("%s",$deathmessage['deathmessage']);
 			}
-//			addnews("`)%s`) has been defeated in the graveyard by %s.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
+//			AddNews::add("`)%s`) has been defeated in the graveyard by %s.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			output("`b`&You have been defeated by `%%s`&!!!`n", $badguy['creaturename']);
 			output("You may not torment any more souls today.");
 			$session['user']['gravefights']=0;
