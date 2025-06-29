@@ -610,7 +610,7 @@ function getcharstat_value(string $section,string $title){
  * Hooks provided:
  *		charstats
  *
- * @return array The current stats for this character or the list of online players
+ * @return string The current stats for this character or the list of online players
  */
 function charstats(): string{
 	global $session, $playermount, $companions;
