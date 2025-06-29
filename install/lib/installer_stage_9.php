@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__ . "/installer_sqlstatements.php");
+require_once(__DIR__ . "/../data/installer_sqlstatements.php");
 require_once(__DIR__ . "/installer_functions.php");
 output("`@`c`bBuilding the Tables`b`c");
 output("`2I'm now going to build the tables.");

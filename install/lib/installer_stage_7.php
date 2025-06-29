@@ -1,5 +1,5 @@
 <?php
-require(__DIR__ . "/installer_sqlstatements.php");
+require(__DIR__ . "/../data/installer_sqlstatements.php");
 if (httppost("type")>""){
 	if (httppost("type")=="install") {
 		$session['fromversion']="-1";

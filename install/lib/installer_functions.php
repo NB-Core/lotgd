@@ -33,7 +33,7 @@ function tip(){
 }
 
 function descriptors($prefix=""){
-	require_once("lib/all_tables.php");
+        require_once(__DIR__ . "/../data/tables.php");
 	$array = get_all_tables();
 	$out = array();
 	foreach($array as $key=>$val){
