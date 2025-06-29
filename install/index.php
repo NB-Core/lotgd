@@ -149,14 +149,8 @@ if (file_exists("dbconnect.php") && (
 if ($stage > $session['stagecompleted']) $session['stagecompleted'] = $stage;
 
 page_header("LoGD Installer &#151; %s",$stages[$stage]);
-switch($stage) {
-	case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10:
-               require_once("install/lib/installer_stage_$stage.php");
-		break;
-	default:
-               require_once("install/lib/installer_stage_default.php");
-		break;
-}
+$installer = new \Lotgd\Installer\Installer();
+$installer->runStage($stage);
 
 
 if (!$noinstallnavs){

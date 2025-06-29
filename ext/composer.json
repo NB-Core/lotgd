@@ -1,6 +1,0 @@
-{
-    "require": {
-        "jaxon-php/jaxon-core": "~4.0",
-        "phpmailer/phpmailer": "^6.7"
-    }
-}
