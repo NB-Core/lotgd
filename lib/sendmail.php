@@ -7,7 +7,7 @@
  */
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-require_once('ext/vendor/autoload.php');
+require_once __DIR__ . '/../autoload.php';
 
 function send_email($to, $body, $subject, $from, $cc=false,$contenttype="text/plain") {
 	/**
