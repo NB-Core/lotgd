@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Buffs;
 use Lotgd\CharStats;
 /**
  * Library (supporting) functions for page output
@@ -53,7 +54,7 @@ function page_header(){
 	}
 	$title = call_user_func_array("sprintf_translate", $arguments);
 	$title = sanitize(holidayize($title,'title'));
-	calculate_buff_fields();
+	Buffs::calculateBuffFields();
 
 	$header = $template['header'];
 	$header=str_replace("{title}",$title,$header);
@@ -131,14 +132,14 @@ function page_footer($saveuser=true){
 
 	$builtnavs = buildnavs();
 
-	restore_buff_fields();
-	calculate_buff_fields();
+	Buffs::restoreBuffFields();
+	Buffs::calculateBuffFields();
 
 	tlschema("common");
 
 	$charstats = charstats();
 
-	restore_buff_fields();
+	Buffs::restoreBuffFields();
 
 	if (!defined("IS_INSTALLER")) { 
 		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
@@ -588,7 +589,7 @@ function setcharstat(string $cat, string $label, mixed $val): void {
  * @param array $buffs
  * @return string
  */
-function getcharstats(array $buffs): string{
+function getcharstats(string $buffs): string{
         global $charstats;
         return $charstats?->render($buffs) ?? '';
 }

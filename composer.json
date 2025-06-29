@@ -1,7 +1,7 @@
 {
     "autoload": {
         "psr-4": {
-            "Lotgd\\": "src/"
+            "Lotgd\\": "src/Lotgd/"
         }
     }
 }

@@ -63,6 +63,10 @@ require_once("lib/translator.php");
 require_once("lib/playerfunctions.php");
 require_once("lib/serialization.php");
 
+// Legacy, because modules may rely on that, but those files are already migrated to namespace structure
+require_once("lib/buffs.php");
+require_once("lib/addnews.php");
+
 
 //start the gzip compression
 if (isset ($gz_handler_on) && $gz_handler_on) ob_start('ob_gzhandler');

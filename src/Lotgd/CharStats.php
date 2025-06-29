@@ -30,7 +30,7 @@ class CharStats
         return $this->stats[$section][$label] ?? null;
     }
 
-    public function render(array $buffs): string
+    public function render(string $buffs): string
     {
         $charstat_str = templatereplace('statstart');
         foreach ($this->stats as $label => $section) {
