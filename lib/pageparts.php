@@ -1,4 +1,6 @@
 <?php
+
+use Lotgd\CharStats;
 /**
  * Library (supporting) functions for page output
  *		addnews ready
@@ -525,16 +527,17 @@ function popup_footer(){
 	exit();
 }
 
-$charstat_info = array();
+/** @var CharStats|null */
+$charstats = null;
 $last_charstat_label = "";
 /**
  * Resets the character stats array
  *
  */
-function wipe_charstats(){
-	global $charstat_info, $last_charstat_label;
-	$last_charstat_label = "";
-	$charstat_info = array();
+function wipe_charstats(): void {
+        global $charstats, $last_charstat_label;
+        $charstats = new CharStats();
+        $last_charstat_label = "";
 }
 
 /**
@@ -543,19 +546,16 @@ function wipe_charstats(){
  * @param string $label The label to use
  * @param mixed $value (optional) value to display
  */
-function addcharstat($label, $value=false) {
-	global $charstat_info, $last_charstat_label;
-	if ($value === false) {
-		if (!isset($charstat_info[$label]))
-			$charstat_info[$label] = array();
-		$last_charstat_label=$label;
-	} else {
-		if ($last_charstat_label=="") {
-			$last_charstat_label = "Other Info";
-			addcharstat($last_charstat_label);
-		}
-		$charstat_info[$last_charstat_label][$label]=$value;
-	}
+function addcharstat(string $label, mixed $value = null): void {
+        global $charstats, $last_charstat_label;
+        if ($value === null) {
+                $last_charstat_label = $label;
+        } else {
+                if ($last_charstat_label === '') {
+                        $last_charstat_label = 'Other Info';
+                }
+                $charstats?->addStat($last_charstat_label, $label, $value);
+        }
 }
 
 /**
@@ -565,9 +565,9 @@ function addcharstat($label, $value=false) {
  * @param string $label The label of the character stat
  * @return mixed The value associated with the stat
  */
-function getcharstat($cat, $label) {
-	global $charstat_info;
-	return $charstat_info[$cat][$label];
+function getcharstat(string $cat, string $label) {
+        global $charstats;
+        return $charstats?->getStat($cat, $label);
 }
 
 /**
@@ -577,16 +577,9 @@ function getcharstat($cat, $label) {
  * @param string $label The label associated with the value
  * @param mixed $val The value of the attribute
  */
-function setcharstat($cat, $label, $val) {
-	global $charstat_info, $last_charstat_label;
-	if (!isset($charstat_info[$cat][$label])) {
-		$oldlabel = $last_charstat_label;
-		addcharstat($cat);
-		addcharstat($label, $val);
-		$last_charstat_label = $oldlabel;
-	} else {
-		$charstat_info[$cat][$label] = $val;
-	}
+function setcharstat(string $cat, string $label, mixed $val): void {
+        global $charstats;
+        $charstats?->setStat($cat, $label, $val);
 }
 
 /**
@@ -595,36 +588,9 @@ function setcharstat($cat, $label, $val) {
  * @param array $buffs
  * @return string
  */
-function getcharstats($buffs){
-	//returns output formatted character statistics.
-	global $charstat_info;
-	$charstat_str = templatereplace("statstart");
-	reset($charstat_info);
-	foreach ($charstat_info as $label=>$section) {
-		if (count($section)) {
-			$arr = array("title"=>translate_inline($label));
-			$sectionhead = templatereplace("stathead", $arr);
-			reset($section);
-			foreach ($section as $name=>$val) {
-				if ($name==$label){
-					// when the section and stat name are equal, use
-					// 'statbuff' template piece.
-					$a2 = array("title"=>translate_inline("`0$name"),
-							"value"=>"`^$val`0");
-					$charstat_str .= templatereplace("statbuff", $a2);
-				}else{
-					$a2 = array("title"=>translate_inline("`&$name`0"),
-							"value"=>"`^$val`0");
-					$charstat_str .= $sectionhead.templatereplace("statrow", $a2);
-					$sectionhead = "";
-				}
-			}
-		}
-	}
-	$charstat_str .= templatereplace("statbuff",
-			array("title"=>translate_inline("`0Buffs"),"value"=>$buffs));
-	$charstat_str .= templatereplace("statend");
-	return appoencode($charstat_str,true);
+function getcharstats(array $buffs): string{
+        global $charstats;
+        return $charstats?->render($buffs) ?? '';
 }
 
 /**
@@ -634,13 +600,9 @@ function getcharstats($buffs){
  * @param string $title The stat display label
  * @return mixed The value associated with the stat
  */
-function getcharstat_value($section,$title){
-	global $charstat_info;
-	if (isset($charstat_info[$section][$title])){
-		return $charstat_info[$section][$title];
-	}else{
-		return "";
-	}
+function getcharstat_value(string $section,string $title){
+        global $charstats;
+        return $charstats?->getStat($section, $title) ?? "";
 }
 
 /**
@@ -650,7 +612,7 @@ function getcharstat_value($section,$title){
  *
  * @return array The current stats for this character or the list of online players
  */
-function charstats(){
+function charstats(): string{
 	global $session, $playermount, $companions;
 
 	if (defined("IS_INSTALLER")) return "";
