@@ -34,7 +34,7 @@ class Newday
         if ($ok) {
             $sql = 'DELETE FROM ' . db_prefix('debuglog') . " WHERE date <'$timestamp'";
             db_query($sql);
-            $timestamp = date('Y-m-d H:i:s', strtotime('-' . round(getsetting('expiredebuglog', 18), 0) . ' days'));
+            $timestamp = self::calculateExpirationTimestamp(round(getsetting('expiredebuglog', 18), 0) . ' days');
             $sql = 'DELETE FROM ' . db_prefix('debuglog_archive') . " WHERE date <'$timestamp'";
             if (getsetting('expiredebuglog', 18) > 0) db_query($sql);
             gamelog('Moved ' . db_affected_rows() . ' from ' . db_prefix('debuglog') . ' to ' . db_prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');
@@ -42,46 +42,51 @@ class Newday
             gamelog('ERROR, problems with moving the debuglog to the archive', 'maintenance');
         }
 
-        $timestamp = date('Y-m-d H:i:s', strtotime('-' . round(getsetting('oldmail', 14), 0) . ' days'));
+        $timestamp = self::calculateExpirationTimestamp(round(getsetting('oldmail', 14), 0) . ' days');
         $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE sent<'$timestamp'";
         db_query($sql);
         gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('mails') . " older than $timestamp.", 'maintenance');
         massinvalidate('mail');
 
         if ((int) getsetting('expirecontent', 180) > 0) {
-            $timestamp = date('Y-m-d H:i:s', strtotime('-' . round(getsetting('expirecontent', 180), 0) . ' days'));
+            $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
             $sql = 'DELETE FROM ' . db_prefix('news') . " WHERE newsdate<'$timestamp'";
             gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('news') . " older than $timestamp.", 'comment expiration');
             db_query($sql);
         }
 
-        $timestamp = date('Y-m-d H:i:s', strtotime('-' . round(getsetting('expiregamelog', 30), 0) . ' days'));
+        $timestamp = self::calculateExpirationTimestamp(round(getsetting('expiregamelog', 30), 0) . ' days');
         $sql = 'DELETE FROM ' . db_prefix('gamelog') . " WHERE date < '$timestamp' ";
         if (getsetting('expiregamelog', 30) > 0) {
             db_query($sql);
             gamelog('Cleaned up ' . db_prefix('gamelog') . ' table removing ' . db_affected_rows() . " older than $timestamp.", 'maintenance');
         }
 
-        $sql = 'DELETE FROM ' . db_prefix('commentary') . " WHERE postdate<'" . date('Y-m-d H:i:s', strtotime('-' . getsetting('expirecontent', 180) . ' days')) . "'";
+        $sql = 'DELETE FROM ' . db_prefix('commentary') . " WHERE postdate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
         if (getsetting('expirecontent', 180) > 0) {
-            $timestamp = date('Y-m-d H:i:s', strtotime('-' . round(getsetting('expirecontent', 180), 0) . ' days'));
+            $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
             db_query($sql);
             gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('commentary') . " older than $timestamp.", 'comment expiration');
         }
 
-        $sql = 'DELETE FROM ' . db_prefix('moderatedcomments') . " WHERE moddate<'" . date('Y-m-d H:i:s', strtotime('-' . getsetting('expirecontent', 180) . ' days')) . "'";
+        $sql = 'DELETE FROM ' . db_prefix('moderatedcomments') . " WHERE moddate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
         if (getsetting('expirecontent', 180) > 0) {
-            $timestamp = date('Y-m-d H:i:s', strtotime('-' . round(getsetting('expirecontent', 180), 0) . ' days'));
+            $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
             db_query($sql);
             gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('moderatedcomments') . " older than $timestamp.", 'comment expiration');
         }
 
-        $sql = 'DELETE FROM ' . db_prefix('faillog') . " WHERE date<'" . date('Y-m-d H:i:s', strtotime('-' . round(getsetting('expirefaillog', 1), 0) . ' days')) . "'";
+        $sql = 'DELETE FROM ' . db_prefix('faillog') . " WHERE date<'" . self::calculateExpirationTimestamp(round(getsetting('expirefaillog', 1), 0) . ' days') . "'";
         if (getsetting('expirefaillog', 1) > 0) {
             db_query($sql);
-            $timestamp = date('Y-m-d H:i:s', strtotime('-' . round(getsetting('expirecontent', 180), 0) . ' days'));
+            $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
             gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('faillog') . " older than $timestamp.", 'maintenance');
         }
+    }
+
+    private static function calculateExpirationTimestamp(string $offset): string
+    {
+        return date('Y-m-d H:i:s', strtotime("-$offset"));
     }
 
     public static function charCleanup(): void
