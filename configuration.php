@@ -221,8 +221,8 @@ addnav("Extended settings", "configuration.php?settings=extended");
 addnav("",$REQUEST_URI);
 
 //get arrays
-require("lib/data/configuration.php");
-require("lib/data/configuration_extended.php");
+require("config/configuration.php");
+require("config/configuration_extended.php");
 
 
 module_editor_navs('settings', 'configuration.php?op=modulesettings&module=');
