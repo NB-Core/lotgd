@@ -11,10 +11,14 @@ if ($session['user']['loggedin']){
 savesetting("installer_version",$logd_version);
 $file = __DIR__ . '/../index.php';
 	if (file_exists($file)) {
-		if (@unlink($file)) {
-			output("`2Installer file install/index.php removed.`n");
-		} else {
-			output("`\$Unable to delete install/index.php. Please remove it manually.`n");
+		try {
+			if (unlink($file)) {
+				output("`2Installer file install/index.php removed.`n");
+			} else {
+				output("`\$Unable to delete install/index.php. Please remove it manually.`n");
+			}
+		} catch (Throwable $e) {
+			output("`\$Error deleting install/index.php: " . $e->getMessage() . "`n");
 		}
 	}
 $noinstallnavs=true;
