@@ -9,25 +9,28 @@ define("OVERRIDE_FORCED_NAV",true);
 define("IS_INSTALLER",true);
 
 
-//php 5 is required for this version
-//mysql 5.0.3 is required for this version
+//PHP 7.4 or higher is required for this version
+//MySQL 5.0.3 and the mysqli extension are required for this version
 $requirements_met=true;
 $php_met=true;
 $mysql_met=true;
 
-if (version_compare(PHP_VERSION, '5.0.0') < 0) {
-	$requirements_met=false;
-	$php_met=false;
-} elseif (function_exists("mysql_get_client_info") && version_compare(mysql_get_client_info(), '5.0.3') < 0) {
-	$requirements_met=false;
-	$mysql_met=false;
+if (version_compare(PHP_VERSION, '7.4.0') < 0) {
+        $requirements_met=false;
+        $php_met=false;
+} elseif (!extension_loaded('mysqli')) {
+        $requirements_met=false;
+        $mysql_met=false;
+} elseif (function_exists('mysqli_get_client_version') && mysqli_get_client_version() < 50003) {
+        $requirements_met=false;
+        $mysql_met=false;
 }
 
 if (!$requirements_met) {
 	//we have NO output object possibly :( hence no nice formatting
-	echo "<h1>Requirements not sufficient<br/><br/>";
-	if (!$php_met) echo sprintf("You need PHP5 to install this version. Please upgrade from your existing PHP version %s.<br/>",PHP_VERSION);
-	if (!$mysql_met && function_exists("mysql_get_client_info")) echo sprintf("You need Mysql 5.0 to install this version. Please upgrade from your existing Mysql version %s.<br/>",mysql_get_client_info());
+    echo "<h1>Requirements not sufficient<br/><br/>";
+    if (!$php_met) echo sprintf("You need PHP 7.4 or higher to install this version. Please upgrade from your existing PHP version %s.<br/>",PHP_VERSION);
+        if (!$mysql_met && function_exists('mysqli_get_client_info')) echo sprintf("You need MySQL 5.0 or higher and the mysqli extension to install this version. Your current MySQL client version is %s.<br/>",mysqli_get_client_info());
 	exit(1);
 }
 
