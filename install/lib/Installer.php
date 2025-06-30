@@ -514,27 +514,40 @@ class Installer
         		}else{
         			output("`2Result: `@Pass`n");
         		}
-        		output("`n`^Test: `#Checking datacache`n");
-        		if (!$session['dbinfo']['DB_USEDATACACHE']) {
-        			output("-----skipping, not selected-----`n");
-        		} else {
-        			$fp = @fopen($session['dbinfo']['DB_DATACACHEPATH']."/dummy.php","w+");
-        			if ($fp){
-				$dummyContent = "<?php //test ?>";
-        				if (fwrite($fp, $dummyContent)!==false){
-        					output("`2Result: `@Pass`n");
-        				}else{
-        					output("`2Result: `$Fail`n");
-        					rawoutput("<blockquote></blockquote>");
-        					array_push($issues,"`^I was not able to write to your datacache directory!`n");
-        				}
-        				fclose($fp);
-        				@unlink($session['dbinfo']['DB_DATACACHEPATH']."/dummy.php");
-        			}else{
-        				output("`2Result: `$Fail`n");
-        				array_push($issues,"`^I was not able to write to your datacache directory! Check your permissions there!`n");
-        			}
-        		}
+                        output("`n`^Test: `#Checking datacache`n");
+                        if (!$session['dbinfo']['DB_USEDATACACHE']) {
+                                output("-----skipping, not selected-----`n");
+                        } else {
+                                $datacache = $session['dbinfo']['DB_DATACACHEPATH'];
+                                if (!is_dir($datacache)) {
+                                        output("`2Result: `$Fail`n");
+                                        array_push($issues, "`^The datacache path '".htmlentities($datacache, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))."' does not exist or is not a directory.`n");
+                                        $session['stagecompleted'] = 3;
+                                } elseif (!is_writable($datacache)) {
+                                        output("`2Result: `$Fail`n");
+                                        array_push($issues, "`^The datacache path '".htmlentities($datacache, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))."' is not writable.`n");
+                                        $session['stagecompleted'] = 3;
+                                } else {
+                                        $fp = @fopen($datacache."/dummy.php", "w+");
+                                        if ($fp) {
+                                                $dummyContent = "<?php //test ?>";
+                                                if (fwrite($fp, $dummyContent) !== false) {
+                                                        output("`2Result: `@Pass`n");
+                                                } else {
+                                                        output("`2Result: `$Fail`n");
+                                                        rawoutput("<blockquote></blockquote>");
+                                                        array_push($issues, "`^I was not able to write to your datacache directory!`n");
+                                                        $session['stagecompleted'] = 3;
+                                                }
+                                                fclose($fp);
+                                                @unlink($datacache."/dummy.php");
+                                        } else {
+                                                output("`2Result: `$Fail`n");
+                                                array_push($issues, "`^I was not able to write to your datacache directory! Check your permissions there!`n");
+                                                $session['stagecompleted'] = 3;
+                                        }
+                                }
+                        }
         		output("`n`^Overall results:`2`n");
         		if (count($issues)==0){
         			output("You've passed all the tests, you're ready for the next stage.");
