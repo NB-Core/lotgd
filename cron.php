@@ -7,7 +7,7 @@ define('CRON_CHARCLEANUP',8);
 
 define("ALLOW_ANONYMOUS",true);
 require("settings.php");
-$result=chdir($game_dir);
+$result = chdir($GAME_DIR);
 require_once("common.php");
 
 $cron_args=$argv;
@@ -20,7 +20,7 @@ if (is_array($cron_args) && count($cron_args)<1) {
 	$executionstyle=(int)$cron_args[0];
 }
 
-if (!$result || $game_dir=='') {
+if (!$result || $GAME_DIR=='') {
 	//ERROR, could not change the directory or directory empty
 	$email=getsetting('gameadminemail','');
 	if ($email=='') exit(0); //well, we can't go further
@@ -29,7 +29,7 @@ if (!$result || $game_dir=='') {
 }
 
 /* Prevent execution if no value has been entered... if it is a wrong value, it will still break!*/
-if ($game_dir!='') {
+if ($GAME_DIR!='') {
         savesetting("newdaySemaphore",gmdate("Y-m-d H:i:s"));
         if ($executionstyle & CRON_NEWDAY) Newday::runOnce();
         if ($executionstyle & CRON_DBCLEANUP) {

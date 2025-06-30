@@ -1,24 +1,15 @@
 <?php
-
-#This is the lotgd configuration file which you have to edit for several settings
-
-$game_dir='/var/www/html/naruto';
-//enter here the directory of your datacache, this cannot be done elsewhere
-
-$DB_TYPE='mysqli_proc';
-/* * * *
- * Avaiable values for DBTYPE:
+/**
+ * Settings for CLI cron execution.
  *
- * - mysql:				The default value. Are you unsure take this.
- * - mysqli_oos:		The MySQLi extension of PHP5, object oriented style
- * - mysqli_proc:		The MySQLi extension of PHP5, procedural style
- *
- If you encounter problems with one of them, please let the developer know at http://nb-core.org
- Any other than "mysql" seem to be not perfectly integrated somehow, but work most of the time.
+ * cron.php reads this file to know where the game is installed.
+ * Set $GAME_DIR to the absolute path to your installation.
  */
+$GAME_DIR = '/PATH/TO/GAME';
+// enter here the directory of your datacache, this cannot be done elsewhere
 
 $gz_handler_on=0;
-/* set to 1 if you want to enable gzip compression to save bandwith (~30-50%), but it costs slightly more processor power for PHP to get it done. z_lib in apache is favoured if you have direct access to your machine. 
+/* set to 1 if you want to enable gzip compression to save bandwidth (~30-50%), but it costs slightly more processor power for PHP to get it done. z_lib in apache is favoured if you have direct access to your machine.
 Actually, if you can set this to 0 and add these lines in i.e. /etc/php5/apache2/conf.d into a randomly named .ini file:
 zlib.output_compression = 1
 zlib.output_compression_level = 7
