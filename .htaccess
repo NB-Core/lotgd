@@ -1,4 +1,40 @@
-<Files *.php>
-deny from all
-</Files>
+# LOTGD Apache configuration (Apache 2.4+)
+# Custom error documents
+ErrorDocument 403 /errors/403.html
+ErrorDocument 404 /errors/404.html
+ErrorDocument 500 /errors/5xx.html
+ErrorDocument 501 /errors/5xx.html
+ErrorDocument 502 /errors/5xx.html
+ErrorDocument 503 /errors/5xx.html
+ErrorDocument 504 /errors/5xx.html
+ErrorDocument 505 /errors/5xx.html
+ErrorDocument 506 /errors/5xx.html
+ErrorDocument 507 /errors/5xx.html
+ErrorDocument 508 /errors/5xx.html
+ErrorDocument 509 /errors/5xx.html
 
+# Disable directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^(\.env|.*\.bak)$">
+    Require all denied
+</FilesMatch>
+
+# Protect the installer directory when index.php is missing
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} ^/install/ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/install/index.php !-f
+    RewriteRule ^install/ - [F,L]
+</IfModule>
+
+# ----------------------------------------------------------------------
+# Nginx equivalent (add to your server block):
+#   error_page 403 /errors/403.html;
+#   error_page 404 /errors/404.html;
+#   error_page 500 501 502 503 504 505 506 507 508 509 /errors/5xx.html;
+#   location /install/ {
+#       if (!-f $document_root/install/index.php) { return 403; }
+#   }
+# ----------------------------------------------------------------------

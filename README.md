@@ -143,10 +143,8 @@ Firstly, make SURE that your dbconnect.php is not writeable.  Under unix,
 you do this by typing
    chmod -w dbconnect.php
 This is to keep you from making unintentional changes to this file.
+The installer attempts to remove `install/index.php` after installation. If this file remains, delete it to prevent accidental reuse. An `.htaccess` file in the `install/` directory (and the root `.htaccess`) deny access when that index file is gone. You may remove the entire `install/` folder once setup is complete.
 
-The installer also attempts to remove `install/index.php` once installation
-finishes. If this file remains, delete it manually to prevent accidental
-reinstallation.
 
 The installer will have installed, but not activated, some common modules
 which we feel make for a good baseline of the game.
@@ -333,18 +331,7 @@ MYSQL_ROOT_PASSWORD=rootpass
 
 ### .htaccess
 
-Create a `.htaccess` file in the root directory of your application (`/var/www/html`) with the following content to prevent access to sensitive files and disable directory listings:
-
-```apacheconf
-# Deny access to .env file
-<Files .env>
-    Order allow,deny
-    Deny from all
-</Files>
-
-# Disable directory listing
-Options -Indexes
-```
+The root `.htaccess` file configures custom error pages, disables directory listings, protects sensitive files, and blocks the `install/` folder when `index.php` is removed. Nginx equivalents are provided as comments in that file.
 
 ---
 
