@@ -5,6 +5,7 @@
 require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/sanitize.php");
+use Lotgd\ModuleManager;
 check_su_access(SU_MANAGE_MODULES);
 tlschema("modulemanage");
 
@@ -34,62 +35,41 @@ if (is_array($module)){
 	if ($module) $modules = array($module);
 	else $modules = array();
 }
-foreach ($modules as $key=>$module) {
-	$op = $theOp;
-	output("`2Performing `^%s`2 on `%%s`0`n", translate_inline($op), $module);
-	if($op=="install"){
-		if (install_module($module)){
-
-		}else{
-			httpset('cat','');
-			output("`\$Error, module could not be installed!`n`n");
-		}
-		$op="";
-		httpset('op', "");
-		massinvalidate("hook");
-		massinvalidate("module-prepare");
-	}elseif($op=="uninstall"){
-		if (uninstall_module($module)) {
-		} else {
-			output("`\$Error, module could not be uninstalled!`n`n");
-			output("Unable to inject module.  Module not uninstalled.`n");
-		}
-		$op="";
-		httpset('op', "");
-		massinvalidate("hook");
-		massinvalidate("module-prepare");
-		invalidatedatacache("inject-$module");
-	}elseif($op=="activate"){
-		activate_module($module);
-		$op="";
-		httpset('op', "");
-		invalidatedatacache("inject-$module");
-		massinvalidate("hook");
-		massinvalidate("module-prepare");
-		injectmodule($module, true);
-	}elseif($op=="deactivate"){
-		deactivate_module($module);
-		$op="";
-		httpset('op', "");
-		invalidatedatacache("inject-$module");
-		massinvalidate("module-prepare");
-	}elseif($op=="reinstall"){
-		$sql = "UPDATE " . db_prefix("modules") . " SET filemoddate='".DATETIME_DATEMIN."' WHERE modulename='$module'";
-		db_query($sql);
-		// We don't care about the return value here at all.
-		$op="";
-		httpset('op', "");
-		invalidatedatacache("inject-$module");
-		massinvalidate("hook");
-		massinvalidate("module-prepare");
-		injectmodule($module, true);
-	}
+foreach ($modules as $key => $module) {
+        $op = $theOp;
+        output("`2Performing `^%s`2 on `%%s`0`n", translate_inline($op), $module);
+        if ($op == "install") {
+                if (!ModuleManager::install($module)) {
+                        httpset('cat','');
+                        output("`$Error, module could not be installed!`n`n");
+                }
+                $op = "";
+                httpset('op', "");
+        } elseif ($op == "uninstall") {
+                if (!ModuleManager::uninstall($module)) {
+                        output("`$Error, module could not be uninstalled!`n`n");
+                        output("Unable to inject module.  Module not uninstalled.`n");
+                }
+                $op = "";
+                httpset('op', "");
+        } elseif ($op == "activate") {
+                ModuleManager::activate($module);
+                $op = "";
+                httpset('op', "");
+        } elseif ($op == "deactivate") {
+                ModuleManager::deactivate($module);
+                $op = "";
+                httpset('op', "");
+        } elseif ($op == "reinstall") {
+                ModuleManager::reinstall($module);
+                $op = "";
+                httpset('op', "");
+        }
 }
 
-$install_status = get_module_install_status();
-$uninstmodules = $install_status['uninstalledmodules'];
-$seencats = $install_status['installedcategories'];
-$ucount = $install_status['uninstcount'];
+$uninstmodules = ModuleManager::listUninstalled();
+$seencats = ModuleManager::getInstalledCategories();
+$ucount = count($uninstmodules);
 
 addnav(array(" ?Uninstalled - (%s modules)", $ucount), "modules.php");
 foreach ($seencats as $cat=>$count) {
@@ -137,16 +117,15 @@ if ($op==""){
 		addnav("","modules.php?cat=$cat&sortby=formalname&order=".($sortby=="formalname"?!$order:1));
 		addnav("","modules.php?cat=$cat&sortby=moduleauthor&order=".($sortby=="moduleauthor"?!$order:1));
 		addnav("","modules.php?cat=$cat&sortby=installdate&order=".($sortby=="installdate"?$order:0));
-		$sql = "SELECT * FROM " . db_prefix("modules") . " WHERE category='".db_real_escape_string($cat)."' ORDER BY ".$sortby." ".($order?"ASC":"DESC");
-		$result = db_query($sql);
-		if (db_num_rows($result)==0){
-			rawoutput("<tr class='trlight'><td colspan='6' align='center'>");
-			output("`i-- No Modules Installed--`i");
-			rawoutput("</td></tr>");
-		}
-		$number=db_num_rows($result);
-		for ($i=0;$i<$number;$i++){
-			$row = db_fetch_assoc($result);
+                $rows = ModuleManager::listInstalled($cat, $sortby, (bool)$order);
+                if (count($rows) == 0){
+                        rawoutput("<tr class='trlight'><td colspan='6' align='center'>");
+                        output("`i-- No Modules Installed--`i");
+                        rawoutput("</td></tr>");
+                }
+                $number=count($rows);
+                for ($i=0;$i<$number;$i++){
+                        $row = $rows[$i];
 			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'>",true);
 			rawoutput("<td nowrap valign='top'>");
 			rawoutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
