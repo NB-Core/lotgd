@@ -23,7 +23,7 @@ class Newday
     public static function commentCleanup(): void
     {
         require_once('lib/gamelog.php');
-        $timestamp = date('Y-m-d H:i:s', strtotime('-2 month'));
+        $timestamp = self::calculateExpirationTimestamp('2 month');
         db_query('DELETE FROM ' . db_prefix('referers') . " WHERE last < '$timestamp'");
         gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('referers') . " older than $timestamp.", 'maintenance');
 
