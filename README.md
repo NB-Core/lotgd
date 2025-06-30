@@ -1,4 +1,7 @@
-# +nb fork explanation
+# Legend of the Green Dragon Fork
+
+![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-blue)
+![License](https://img.shields.io/badge/license-CC%20BY--SA-lightgrey)
 This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
 
 The original readme and license texts follow below, also the installation + upgrade routines which haven't changed much.
@@ -38,6 +41,17 @@ Contact me on github via issue if you like https://github.com/NB-Core/lotgd
 
 Kind regards,
 Oliver
+
+## Table of Contents
+- [Read Me First](#read-me-first)
+- [Quick Install](#quick-install)
+- [Cron Job Setup](#cron-job-setup)
+- [After Upgrading](#after-upgrading)
+- [Upgrading](#upgrading)
+- [Installation](#installation)
+- [Post Installation](#post-installation)
+- [LOTGD Docker Environment](#lotgd-docker-environment)
+- [License](#license)
 
 ## Read Me First
 
@@ -93,50 +107,19 @@ If you have problems, please visit Dragonprime at the address above.
 
 ## UPGRADING
 
-ALWAYS extract the new distribution into a new directory!
+Always back up your database and existing source files before upgrading.
 
-BEFORE ANYTHING ELSE, read and understand the new code license.  This code
-is no longer under the GPL!  Be aware that if you install this new version
-on a publically accessible web server you are bound by the terms of the
-license.
+1. Copy the new code into your site directory, replacing the old files.
+2. Log out of the game if it is running.
+3. Open `install/index.php` in your browser and choose **Upgrade**.
+4. Follow the installer steps to migrate your database.
 
-We also *STRONGLY* recommend that you shut down access to your game and
-BACK UP your game database AND existing logd source files before attempting
-an upgrade as most of the changes are NOT easily reversible!
+If you are upgrading from **0.9.7** or earlier, move the deprecated
+`specials` directory aside and convert those scripts to modules.
 
-If you are running a previous pre-release of 0.9.8 you can do this by going
-into the manage modules, installing the serversuspend module and then
-activating it.  If you are running a 0.9.7 version, you will need to do
-this some other way, such as via .htaccess under apache.  Consult the
-documentation for your web server.
+After the upgrade completes, read the [Post Installation](#post-installation)
+section to verify your configuration.
 
-Once you have done this, copy the new code into the site directory. Due to
-the need of the installer, you have to do this before running the
-installer!  Make sure that you copy all of the files from all of the
-subdirectories.
-
-As of 0.9.8-prerelease.11, the only way to install or upgrade the game is
-via the included installer.   To access the installer, log out of the game and
-then access install/index.php (for instance, if your game was installed at
-http://logd.dragoncat.net, you would access the installer at
-http://logd.dragoncat.net/install/index.php)
-
-From here, it should be a simple matter of walking through the steps!
-Choose upgrade as the type of install (it defaults to *new* install, so
-watch out for this!!) and choose the version you currently have installed and
-it will perform an upgrade.
-
-Once this is done, read the note for upgrading from 0.9.7 if you are, and
-then go read the POST INSTALLATION section below.
-
-*** NOTE FOR THOSE UPGRADING FROM 0.9.7 ***
-In 0.9.8 and above, the 'specials' directory has been removed and that
-functionality is now handled by modules.  If you have specials which are not
-yet converted to modules, they will be unavailable until you convert them.
-Move your specials directory to another directory name (for instance
-specials.save) and work on converting them.  Most specials should convert
-easily and you can look at existing examples.  If you haven't created (or
-modified) specials on your server, just remove this directory.
 
 ## INSTALLATION:
 
