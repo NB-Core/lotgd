@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Newday;
 define('CRON_NEWDAY',1);
 define('CRON_DBCLEANUP',2);
 define('CRON_COMMENTCLEANUP',4);
@@ -29,21 +30,21 @@ if (!$result || $game_dir=='') {
 
 /* Prevent execution if no value has been entered... if it is a wrong value, it will still break!*/
 if ($game_dir!='') {
-	savesetting("newdaySemaphore",gmdate("Y-m-d H:i:s"));
-	if ($executionstyle & CRON_NEWDAY) require("lib/newday/newday_runonce.php");
-	if ($executionstyle & CRON_DBCLEANUP) {
+        savesetting("newdaySemaphore",gmdate("Y-m-d H:i:s"));
+        if ($executionstyle & CRON_NEWDAY) Newday::runOnce();
+        if ($executionstyle & CRON_DBCLEANUP) {
 		//db optimization every day, I think we should leave it here
 		//edit: we may force this issue by setting the second argument to 1 in the commandline
 		$force_db=0;
 		if (isset($cron_args[1])) {
 			$force_db=(((int)$cron_args[1])?1:0);
 		}
-		if (strtotime(getsetting("lastdboptimize", date("Y-m-d H:i:s", strtotime("-1 day")))) < strtotime("-1 day") || $force_db) {
-			require_once("lib/newday/dbcleanup.php");
-		}
-	}
-	if ($executionstyle & CRON_COMMENTCLEANUP) require("lib/newday/commentcleanup.php");
-	if ($executionstyle & CRON_CHARCLEANUP) require("lib/newday/charcleanup.php");
+                if (strtotime(getsetting("lastdboptimize", date("Y-m-d H:i:s", strtotime("-1 day")))) < strtotime("-1 day") || $force_db) {
+                        Newday::dbCleanup();
+                }
+        }
+        if ($executionstyle & CRON_COMMENTCLEANUP) Newday::commentCleanup();
+        if ($executionstyle & CRON_CHARCLEANUP) Newday::charCleanup();
 }
 
 

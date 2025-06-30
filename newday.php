@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Buffs;
+use Lotgd\Newday;
 // translator ready
 // addnews ready
 // mail ready
@@ -94,15 +95,15 @@ $dp = count($session['user']['dragonpoints']);
 $dkills = $session['user']['dragonkills'];
 
 if ($pdk==1){
-	require("lib/newday/dp_recalc.php");
+        Newday::dragonPointRecalc($labels, $dkills, $dp);
 }
 
 if ($dp < $dkills) {
-	require("lib/newday/dragonpointspend.php");
+        Newday::dragonPointSpend($labels, $canbuy, $dkills, $dp, $resline);
 } elseif (!$session['user']['race'] || $session['user']['race']==RACE_UNKNOWN){
-	require("lib/newday/setrace.php");
+        Newday::setRace($resline);
 }elseif ($session['user']['specialty']==""){
-	require("lib/newday/setspecialty.php");
+        Newday::setSpecialty($resline);
 }else{
 	page_header("It is a new day!");
 	rawoutput("<font size='+1'>");
@@ -308,7 +309,7 @@ if ($dp < $dkills) {
                 savesetting("newdaySemaphore",gmdate("Y-m-d H:i:s"));
                 $sql = "UNLOCK TABLES";
                 db_query($sql);
-				require("lib/newday/newday_runonce.php");
+                                Newday::runOnce();
 			}else{
 	            //someone else beat us to it, unlock.
                 $sql = "UNLOCK TABLES";
