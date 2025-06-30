@@ -119,7 +119,7 @@ if ($op=='edit' || $op=='save') {
 	$racesenum=substr($racesenum,0,strlen($racesenum)-1);
 	//later on: enumpretrans, because races are already translated in a way...
 }
-require("lib/data/user_account.php");
+require("config/user_account.php");
 $sql = "SELECT clanid,clanname,clanshort FROM " . db_prefix("clans") ." ORDER BY clanshort";
 $result = db_query($sql);
 while ($row=db_fetch_assoc($result)){

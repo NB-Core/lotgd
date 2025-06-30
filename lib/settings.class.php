@@ -18,7 +18,7 @@ class settings {
 
 	function saveSetting($settingname,$value){
 		$this->loadSettings();
-		if (!isset($this->settings[$settingname]) && $value){ //value needs to be elimintated - once we have our defaults in lib/data/settings.php ... this can GO
+               if (!isset($this->settings[$settingname]) && $value){ //value needs to be elimintated - once we have our defaults in config/settings.php ... this can GO
 				$sql = "INSERT INTO " . $this->tablename . " (setting,value) VALUES (\"".addslashes($settingname)."\",\"".addslashes($value)."\")";
 		}elseif (isset($this->settings[$settingname])) {
 				$sql = "UPDATE " . $this->tablename . " SET value=\"".addslashes($value)."\" WHERE setting=\"".addslashes($settingname)."\"";
@@ -68,7 +68,7 @@ class settings {
 		}
 		if (!isset($this->settings[$settingname])){
 			//nothing set, we have to use the default value
-			if (file_exists("lib/data/".$this->tablename.".php")) require("lib/data/".$this->tablename.".php");
+                       if (file_exists("config/".$this->tablename.".php")) require("config/".$this->tablename.".php");
 			if ($default===false) {
 				if (isset($defaults[$settingname])) $setDefault=$defaults[$settingname];
 					else $setDefault='';
