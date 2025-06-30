@@ -24,6 +24,11 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
             'Nyholm\\Psr7\\' => 12,
             'Nyholm\\Psr7Server\\' => 18,
         ),
+        'L' => 
+        array (
+            'Lotgd\\Installer\\' => 16,
+            'Lotgd\\' => 6,
+        ),
         'J' => 
         array (
             'Jaxon\\Utils\\' => 12,
@@ -38,8 +43,8 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         ),
         'Psr\\Http\\Server\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-server-handler/src',
-            1 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
+            0 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
+            1 => __DIR__ . '/..' . '/psr/http-server-handler/src',
         ),
         'Psr\\Http\\Message\\' => 
         array (
@@ -61,6 +66,14 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'Nyholm\\Psr7Server\\' => 
         array (
             0 => __DIR__ . '/..' . '/nyholm/psr7-server/src',
+        ),
+        'Lotgd\\Installer\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/install/lib',
+        ),
+        'Lotgd\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src/Lotgd',
         ),
         'Jaxon\\Utils\\' => 
         array (
