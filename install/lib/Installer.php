@@ -1,8 +1,23 @@
 <?php
 namespace Lotgd\Installer;
 
+/**
+ * Handles the multi step installation of Legend of the Green Dragon.
+ *
+ * Each public stage method represents a step in the installer wizard.
+ */
 class Installer
 {
+    /**
+     * Counter for unique HTML tip identifiers used by the tip() helper.
+     *
+     * @var int
+     */
+    private int $tipid = 0;
+
+    /**
+     * Dynamically call one of the stage methods by number.
+     */
     public function runStage(int $stage): void
     {
         $method = 'stage' . $stage;
@@ -13,6 +28,11 @@ class Installer
         }
     }
 
+    // region Stage Methods
+
+    /**
+     * Stage 0 - Display welcome text and verify upgrade credentials if needed.
+     */
     public function stage0(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -103,6 +123,9 @@ class Installer
         }
     }
 
+    /**
+     * Stage 1 - Show the license agreement that must be accepted.
+     */
     public function stage1(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -151,6 +174,9 @@ class Installer
         }
     }
 
+    /**
+     * Stage 10 - Create or verify the initial superuser account.
+     */
     public function stage10(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -213,6 +239,9 @@ class Installer
         }
     }
 
+    /**
+     * Stage 11 - Final completion message and clean up actions.
+     */
     public function stage11(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -241,16 +270,21 @@ class Installer
         $noinstallnavs=true;
     }
 
+    /**
+     * Stage 2 - Confirm acceptance of the license agreement.
+     */
     public function stage2(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         output("`#By continuing with this installation, you indicate your agreement with the terms of the license found on the previous page (License Agreement).");
     }
 
+    /**
+     * Stage 3 - Gather database connection information from the user.
+     */
     public function stage3(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        require_once(__DIR__ . "/installer_functions.php");
         rawoutput("<form action='install/index.php?stage=4' method='POST'>");
         output("`@`c`bDatabase Connection Information`b`c`2");
         output("In order to run Legend of the Green Dragon, your server must have access to a MySQL database.");
@@ -276,37 +310,37 @@ class Installer
         
         	output("`nWhat is the address of your database server?`n");
         	rawoutput("<input name='DB_HOST' value=\"".htmlentities($session['dbinfo']['DB_HOST'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
-        	tip("If you are running LoGD from the same server as your database, use 'localhost' here.  Otherwise, you will have to find out what the address is of your database server.  Your server's ISP might be able to provide this information.");
+        	$this->tip("If you are running LoGD from the same server as your database, use 'localhost' here.  Otherwise, you will have to find out what the address is of your database server.  Your server's ISP might be able to provide this information.");
         
         	output("`nWhat is the username you use to connect to the database server?`n");
         	rawoutput("<input name='DB_USER' value=\"".htmlentities($session['dbinfo']['DB_USER'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
-        	tip("This username does not have to be the same one you use to connect to the database server for administrative reasons.  However, in order to use this installer, and to install some of the modules, the account you provide here must have the ability to create, modify, and drop tables.  If you want the installer to create a new database for LoGD, the account will also have to have the ability to create databases.  Finally, to run the game, this account must at a minimum be able to select, insert, update, and delete records, and be able to lock tables.  If you're uncertain, grant the account the following privileges: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, and ALTER.");
+        	$this->tip("This username does not have to be the same one you use to connect to the database server for administrative reasons.  However, in order to use this installer, and to install some of the modules, the account you provide here must have the ability to create, modify, and drop tables.  If you want the installer to create a new database for LoGD, the account will also have to have the ability to create databases.  Finally, to run the game, this account must at a minimum be able to select, insert, update, and delete records, and be able to lock tables.  If you're uncertain, grant the account the following privileges: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, and ALTER.");
         
         	output("`nWhat is the password for this username?`n");
         	rawoutput("<input name='DB_PASS' value=\"".htmlentities($session['dbinfo']['DB_PASS'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
-        	tip("The password is necessary here in order for the game to successfully connect to the database server.  This information is not shared with anyone, it is simply used to configure the game.");
+        	$this->tip("The password is necessary here in order for the game to successfully connect to the database server.  This information is not shared with anyone, it is simply used to configure the game.");
         
         	output("`nWhat is the name of the database you wish to install LoGD in?`n");
         	rawoutput("<input name='DB_NAME' value=\"".htmlentities($session['dbinfo']['DB_NAME'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
-        	tip("Database servers such as MySQL can control many different databases.  This is very useful if you have many different programs each needing their own database.  Each database has a unique name.  Provide the name you wish to use for LoGD in this field.");
+        	$this->tip("Database servers such as MySQL can control many different databases.  This is very useful if you have many different programs each needing their own database.  Each database has a unique name.  Provide the name you wish to use for LoGD in this field.");
         
         	output("`nDo you want to use datacaching (high load optimization)?`n");
         	rawoutput("<select name='DB_USEDATACACHE'>");
         	rawoutput("<option value=\"1\" ".($session['dbinfo']['DB_USEDATACACHE']?'selected=\"selected\"':'').">".translate_inline("Yes")."</option>");
         	rawoutput("<option value=\"0\" ".(!$session['dbinfo']['DB_USEDATACACHE']?'selected=\"selected\"':'').">".translate_inline("No")."</option>");
         	rawoutput("</select>");
-        	tip("Do you want to use a datacache for the sql queries? Many internal queries produce the same results and can be cached. This feature is *highly* recommended to use as the MySQL server is usually high frequented. When using in an environment where Safe Mode is enabled; this needs to be a path that has the same UID as the web server runs.");
+        	$this->tip("Do you want to use a datacache for the sql queries? Many internal queries produce the same results and can be cached. This feature is *highly* recommended to use as the MySQL server is usually high frequented. When using in an environment where Safe Mode is enabled; this needs to be a path that has the same UID as the web server runs.");
         
         	output("`nIf yes, what is the path to the datacache directory?`n");
         	rawoutput("<input name='DB_DATACACHEPATH' value=\"".htmlentities($session['dbinfo']['DB_DATACACHEPATH'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
-        	tip("If you have chosen to use the datacache function, you have to enter a path here to where temporary files may be stored. Verify that you have the proper permission (777) set to this folder, else you will have lots of errors. Do NOT end with a slash / ... just enter the dir");
+        	$this->tip("If you have chosen to use the datacache function, you have to enter a path here to where temporary files may be stored. Verify that you have the proper permission (777) set to this folder, else you will have lots of errors. Do NOT end with a slash / ... just enter the dir");
         
         	/*
         		$yes = translate_inline("Yes");
         		$no = translate_inline("No");
         		output("`nShould I attempt to create this database if it does not exist?`n");
         		rawoutput("<select name='DB_CREATE'><option value='1'>$yes</option><option value='0'>$no</option></select>");
-        		tip("If this database doesn't exist, I'll try to create it for you if you like.");
+        		$this->tip("If this database doesn't exist, I'll try to create it for you if you like.");
         	*/
         	$submit="Test this connection information.";
         	output_notl("`n`n<input type='submit' value='$submit' class='button'>",true);
@@ -314,6 +348,9 @@ class Installer
         rawoutput("</form>");
     }
 
+    /**
+     * Stage 4 - Test the provided database connection settings.
+     */
     public function stage4(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -344,9 +381,9 @@ class Installer
         	output("`^Yahoo, I was able to connect to the database server!");
         	output("`2This means that the database server address, database username, and database password you provided were probably accurate, and that your database server is running and accepting connections.`n");
         	output("`nI'm now going to attempt to connect to the LoGD database you provided.`n");
-        	if (httpget("op")=="trycreate"){
-        		create_db($session['dbinfo']['DB_NAME']);
-        	}
+                if (httpget("op")=="trycreate"){ 
+                        $this->createDb($session['dbinfo']['DB_NAME']);
+                }
         	if (!db_select_db($session['dbinfo']['DB_NAME'])){
         		output("`$Rats!  I was not able to connect to the database.");
         		$error = db_error();
@@ -512,17 +549,19 @@ class Installer
         }
     }
 
+    /**
+     * Stage 5 - Detect existing tables and gather table prefix.
+     */
     public function stage5(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        require_once(__DIR__ . "/installer_functions.php");
         if (httppostisset("DB_PREFIX") > ""){
         	$session['dbinfo']['DB_PREFIX'] = httppost("DB_PREFIX");
         }
         if ($session['dbinfo']['DB_PREFIX'] > "" && substr($session['dbinfo']['DB_PREFIX'],-1)!="_")
         $session['dbinfo']['DB_PREFIX'] .= "_";
         
-        $descriptors = descriptors($session['dbinfo']['DB_PREFIX']);
+        $descriptors = $this->descriptors($session['dbinfo']['DB_PREFIX']);
         $unique=0;
         $game=0;
         $missing=0;
@@ -619,6 +658,9 @@ class Installer
         output("If you don't need a prefix, just select the next step now.");
     }
 
+    /**
+     * Stage 6 - Create the dbconnect.php configuration file.
+     */
     public function stage6(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -723,6 +765,9 @@ class Installer
         }
     }
 
+    /**
+     * Stage 7 - Choose between new installation or upgrade.
+     */
     public function stage7(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -771,10 +816,12 @@ class Installer
         }
     }
 
+    /**
+     * Stage 8 - Select which modules to install and activate.
+     */
     public function stage8(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        require_once(__DIR__ . "/installer_functions.php");
         if (array_key_exists('modulesok',$_POST)){
         	$session['moduleoperations'] = $_POST['modules'];
         	$session['stagecompleted'] = $stage;
@@ -793,7 +840,7 @@ class Installer
         output("`n`n`^If you are not familiar with Legend of the Green Dragon, and how the game is played, it is probably wisest to choose the default set of modules to be installed.");
         output("`n`n`@There is an extensive community of users who write modules for LoGD at <a href='http://dragonprime.net/'>http://dragonprime.net/</a>.",true);
         $phpram = ini_get("memory_limit");
-        if (return_bytes($phpram) < 12582912 && $phpram!=-1 && !$session['overridememorylimit'] && !$session['dbinfo']['upgrade']) {// 12 MBytes
+        if ($this->returnBytes($phpram) < 12582912 && $phpram!=-1 && !$session['overridememorylimit'] && !$session['dbinfo']['upgrade']) {// 12 MBytes
         															    // enter this ONLY if it's not an upgrade and if the limit is really too low
         	output("`n`n`$Warning: Your PHP memory limit is set to a very low level.");
         	output("Smaller servers should not be affected by this during normal gameplay but for this installation step you should assign at least 12 Megabytes of RAM for your PHP process.");
@@ -993,18 +1040,20 @@ class Installer
         }
     }
 
+    /**
+     * Stage 9 - Build or upgrade the game tables.
+     */
     public function stage9(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         require_once(__DIR__ . "/../data/installer_sqlstatements.php");
-        require_once(__DIR__ . "/installer_functions.php");
         output("`@`c`bBuilding the Tables`b`c");
         output("`2I'm now going to build the tables.");
         output("If this is an upgrade, your current tables will be brought in line with the current version.");
         output("If it's an install, the necessary tables will be placed in your database.`n");
         output("`n`@Table Synchronization Logs:`n");
         rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-        $descriptors = descriptors($DB_PREFIX);
+        $descriptors = $this->descriptors($DB_PREFIX);
         require_once("lib/tabledescriptor.php");
         foreach($descriptors as $tablename=>$descriptor){
         	output("`3Synchronizing table `#$tablename`3..`n");
@@ -1124,6 +1173,9 @@ class Installer
         output("`n`n`^You're ready for the next step.");
     }
 
+    /**
+     * Fallback stage handler when an unknown stage is requested.
+     */
     public function stageDefault(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
@@ -1131,4 +1183,89 @@ class Installer
         output("`2Restarting at stage 1...`n");
         redirect("install/index.php?stage=1");
     }
+
+    // endregion
+
+    // region Helper Methods
+
+    /**
+     * Attempt to create a new database and connect to it.
+     *
+     * Displays success or failure messages to the user.
+     */
+    private function createDb(string $dbname): void
+    {
+        output("`n`2Attempting to create your database...`n");
+        $sql = "CREATE DATABASE `" . $dbname . "`";
+        db_query($sql);
+        $error = db_error();
+        if ($error == "") {
+            if (db_select_db($dbname)) {
+                output("`@Success!`2  I was able to create the database and connect to it!`n");
+            } else {
+                output("`$It seems I was not successful.`2  I didn't get any errors trying to create the database, but I was not able to connect to it.");
+                output("I'm not sure what would have caused this error, you might try asking around in <a href='http://lotgd.net/forum/' target='_blank'>the LotGD.net forums</a>.");
+            }
+        } else {
+            output("`$It seems I was not successful.`2 ");
+            output("The error returned by the database server was:");
+            rawoutput("<blockquote>$error</blockquote>");
+        }
+    }
+
+    /**
+     * Render a mouse over tip containing the supplied messages.
+     *
+     * Accepts the same parameters as output().
+     */
+    private function tip(...$args): void
+    {
+        $tip = translate_inline("Tip");
+        output_notl("<div style='cursor: pointer; cursor: hand; display: inline;' onMouseOver=\"tip{$this->tipid}.style.visibility='visible'; tip{$this->tipid}.style.display='inline';\" onMouseOut=\"tip{$this->tipid}.style.visibility='hidden'; tip{$this->tipid}.style.display='none';\">`i[ `b{$tip}`b ]`i", true);
+        rawoutput("<div class='debug' id='tip{$this->tipid}' style='position: absolute; width: 200px; max-width: 200px; float: right;'>");
+        call_user_func_array('output', $args);
+        rawoutput("</div></div>");
+        rawoutput("<script language='JavaScript'>var tip{$this->tipid} = document.getElementById('tip{$this->tipid}'); tip{$this->tipid}.style.visibility='hidden'; tip{$this->tipid}.style.display='none';</script>");
+        $this->tipid++;
+    }
+
+    /**
+     * Retrieve table descriptors and optionally prefix table names.
+     *
+     * @param string $prefix Table name prefix
+     */
+    private function descriptors(string $prefix = ''): array
+    {
+        require_once(__DIR__ . '/../data/tables.php');
+        $array = get_all_tables();
+        $out = [];
+        foreach ($array as $key => $val) {
+            $out[$prefix . $key] = $val;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Convert a PHP ini memory value (like '8M') into an integer of bytes.
+     */
+    private function returnBytes($val): int
+    {
+        $val  = trim($val);
+        $last = strtolower($val[strlen($val) - 1]);
+        $val  = (int) $val[strlen($val) - 1];
+        switch ($last) {
+            // The 'G' modifier is available since PHP 5.1.0
+            case 'g':
+                $val *= 1024;
+            case 'm':
+                $val *= 1024;
+            case 'k':
+                $val *= 1024;
+        }
+
+        return $val;
+    }
+
+    // endregion
 }
