@@ -1262,8 +1262,8 @@ class Installer
             case 'k':
                 $numericPart *= 1024;
         }
-
         return $numericPart;
+
     }
 
     // endregion
