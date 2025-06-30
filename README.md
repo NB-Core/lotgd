@@ -83,9 +83,9 @@ subdirectories.
 
 As of 0.9.8-prerelease.11, the only way to install or upgrade the game is
 via the included installer.   To access the installer, log out of the game and
-then access installer.php (for instance, if your game was installed at
+then access install/index.php (for instance, if your game was installed at
 http://logd.dragoncat.net, you would access the installer at
-http://logd.dragoncat.net/installer.php)
+http://logd.dragoncat.net/install/index.php)
 
 From here, it should be a simple matter of walking through the steps!
 Choose upgrade as the type of install (it defaults to *new* install, so
@@ -123,9 +123,9 @@ an account to access the database on behalf of the site; this account
 should have full permissions on the database.
 
 After you have the database created, point your browser at the location you
-have the logd files installed at and load up installer.php (for instance,
+have the logd files installed at and load up install/index.php (for instance,
 if the files are accessible as http://logd.dragoncat.net, you will want to
-load http://logd.dragoncat.net/installer.php in the browser).  The installer
+load http://logd.dragoncat.net/install/index.php in the browser).  The installer
 will walk you through a complete setup from the ground up.  Make sure to
 follow all instructions!
 
