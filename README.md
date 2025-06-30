@@ -48,7 +48,7 @@ See `CHANGELOG.txt` for a list of changes.
 
 Want to have this running in no time?
 
-- Requirements: MySQL 5.x, PHP 5.x and the `LOCK TABLES` privilege for your database user.
+- Requirements: PHP 7.4 or higher and MySQL 5.0 or higher, plus the `LOCK TABLES` privilege for your database user.
 - Upload the files with the directory structure intact.
 - Run `install/index.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
