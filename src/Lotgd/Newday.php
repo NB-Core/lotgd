@@ -95,16 +95,21 @@ class Newday
 
         if (getsetting('usedatacache', 0)) {
             $path = getsetting('datacachepath', '/tmp');
-            $handle = opendir($path);
-            while (($file = readdir($handle)) !== false) {
-                if (substr($file, 0, strlen(DATACACHE_FILENAME_PREFIX)) == DATACACHE_FILENAME_PREFIX) {
-                    $fn = $path . '/' . $file;
-                    $fn = preg_replace("'//'", '/', $fn);
-                    $fn = preg_replace("'\\\\'", '\\', $fn);
-                    if (is_file($fn) && filemtime($fn) < strtotime('-24 hours')) {
-                        unlink($fn);
+            $handle = @opendir($path);
+            if ($handle === false) {
+                trigger_error("Unable to open datacache directory: $path", E_USER_WARNING);
+            } else {
+                while (($file = readdir($handle)) !== false) {
+                    if (substr($file, 0, strlen(DATACACHE_FILENAME_PREFIX)) == DATACACHE_FILENAME_PREFIX) {
+                        $fn = $path . '/' . $file;
+                        $fn = preg_replace("'//'", '/', $fn);
+                        $fn = preg_replace("'\\\\'", '\\', $fn);
+                        if (is_file($fn) && filemtime($fn) < strtotime('-24 hours')) {
+                            unlink($fn);
+                        }
                     }
                 }
+                closedir($handle);
             }
         }
 
