@@ -30,5 +30,6 @@ class Installer
     public function stage8(): void { $this->includeStage(8); }
     public function stage9(): void { $this->includeStage(9); }
     public function stage10(): void { $this->includeStage(10); }
+    public function stage11(): void { $this->includeStage(11); }
     public function stageDefault(): void { $this->includeStage('default'); }
 }

@@ -144,6 +144,10 @@ you do this by typing
    chmod -w dbconnect.php
 This is to keep you from making unintentional changes to this file.
 
+The installer also attempts to remove `install/index.php` once installation
+finishes. If this file remains, delete it manually to prevent accidental
+reinstallation.
+
 The installer will have installed, but not activated, some common modules
 which we feel make for a good baseline of the game.
 
