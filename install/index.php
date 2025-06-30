@@ -30,7 +30,8 @@ if (!$requirements_met) {
 	//we have NO output object possibly :( hence no nice formatting
     echo "<h1>Requirements not sufficient<br/><br/>";
     if (!$php_met) echo sprintf("You need PHP 7.4 or higher to install this version. Please upgrade from your existing PHP version %s.<br/>",PHP_VERSION);
-        if (!$mysql_met && function_exists('mysqli_get_client_info')) echo sprintf("You need MySQL 5.0 or higher and the mysqli extension to install this version. Your current MySQL client version is %s.<br/>",mysqli_get_client_info());
+    if (!$mysqli_extension_met) echo "The mysqli extension is missing. You need to enable the mysqli extension to install this version.<br/>";
+    if (!$mysql_met && function_exists('mysqli_get_client_info')) echo sprintf("You need MySQL 5.0 or higher to install this version. Your current MySQL client version is %s.<br/>",mysqli_get_client_info());
 	exit(1);
 }
 
