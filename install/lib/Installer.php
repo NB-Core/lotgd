@@ -1199,11 +1199,7 @@ class Installer
         output("`n`2Attempting to create your database...`n");
         $sql = "CREATE DATABASE `$dbname`";
         if ($connection->query($sql) === TRUE) {
-            if (method_exists($connection, 'select_db')) {
-                $selected = $connection->select_db($dbname);
-            } else {
-                $selected = $connection->selectDb($dbname);
-            }
+            $selected = $this->selectDatabase($connection, $dbname);
             if ($selected) {
                 output("`@Success!`2  I was able to create the database and connect to it!`n");
             } else {
