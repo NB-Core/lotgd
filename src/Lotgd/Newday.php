@@ -102,8 +102,8 @@ class Newday
                 while (($file = readdir($handle)) !== false) {
                     if (substr($file, 0, strlen(DATACACHE_FILENAME_PREFIX)) == DATACACHE_FILENAME_PREFIX) {
                         $fn = $path . '/' . $file;
-                        $fn = preg_replace("'//'", '/', $fn);
-                        $fn = preg_replace("'\\\\'", '\\', $fn);
+                        $fn = str_replace('//', DIRECTORY_SEPARATOR, $fn);
+                        $fn = str_replace('\\\\', DIRECTORY_SEPARATOR, $fn);
                         if (is_file($fn) && filemtime($fn) < strtotime('-24 hours')) {
                             unlink($fn);
                         }
