@@ -366,10 +366,10 @@ class Installer
         output("`@`c`bTesting the Database Connection`b`c`2");
         output("Trying to establish a connection with the database:`n");
         ob_start();
-        $link = db_connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
+        $connected = db_connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
         $error = ob_get_contents();
         ob_end_clean();
-        if (!$link){
+        if (!$connected){
         	output("`$Blast!  I wasn't able to connect to the database server with the information you provided!");
         	output("`2This means that either the database server address, database username, or database password you provided were wrong, or else the database server isn't running.");
         	output("The specific error the database returned was:");
@@ -381,8 +381,9 @@ class Installer
         	output("`^Yahoo, I was able to connect to the database server!");
         	output("`2This means that the database server address, database username, and database password you provided were probably accurate, and that your database server is running and accepting connections.`n");
         	output("`nI'm now going to attempt to connect to the LoGD database you provided.`n");
+                $link = db_get_instance();
                 if (httpget("op")=="trycreate"){ 
-                        $this->createDb($session['dbinfo']['DB_NAME']);
+                        $this->createDb($link, $session['dbinfo']['DB_NAME']);
                 }
         	if (!db_select_db($session['dbinfo']['DB_NAME'])){
         		output("`$Rats!  I was not able to connect to the database.");
@@ -1193,19 +1194,28 @@ class Installer
      *
      * Displays success or failure messages to the user.
      */
-    private function createDb(mysqli $connection, string $dbname): void
+    private function createDb($connection, string $dbname): void
     {
         output("`n`2Attempting to create your database...`n");
         $sql = "CREATE DATABASE `$dbname`";
         if ($connection->query($sql) === TRUE) {
-            if ($connection->select_db($dbname)) {
+            if (method_exists($connection, 'select_db')) {
+                $selected = $connection->select_db($dbname);
+            } else {
+                $selected = $connection->selectDb($dbname);
+            }
+            if ($selected) {
                 output("`@Success!`2  I was able to create the database and connect to it!`n");
             } else {
                 output("`$It seems I was not successful.`2  I didn't get any errors trying to create the database, but I was not able to connect to it.");
                 output("I'm not sure what would have caused this error, you might try asking around in <a href='http://lotgd.net/forum/' target='_blank'>the LotGD.net forums</a>.");
             }
         } else {
-            $error = $connection->error;
+            if ($connection instanceof \mysqli && property_exists($connection, 'error')) {
+                $error = $connection->error;
+            } else {
+                $error = $connection->error();
+            }
             output("`$It seems I was not successful.`2 ");
             output("The error returned by the database server was:");
             rawoutput("<blockquote>$error</blockquote>");
