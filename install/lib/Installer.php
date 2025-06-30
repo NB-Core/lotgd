@@ -688,8 +688,10 @@ class Installer
                 $failure=false;
                 $dir = __DIR__;
                 if (is_writable($dir)) {
+                        error_clear_last();
                         $fp = fopen('dbconnect.php', 'w+');
                         if ($fp){
+                                error_clear_last();
                                 if (fwrite($fp, $dbconnect)!==false){
                                         output("`n`@Success!`2  I was able to write your dbconnect.php file, you can continue on to the next step.");
                                 }else{
