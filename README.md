@@ -39,6 +39,40 @@ Contact me on github via issue if you like https://github.com/NB-Core/lotgd
 Kind regards,
 Oliver
 
+## Read Me First
+
+Thank you for downloading the modified version of Legend Of the Green Dragon.
+See `CHANGELOG.txt` for a list of changes.
+
+## Quick Install
+
+Want to have this running in no time?
+
+- Requirements: MySQL 5.x, PHP 5.x and the `LOCK TABLES` privilege for your database user.
+- Upload the files with the directory structure intact.
+- Run `install/index.php` in your browser and follow the installer.
+- If unsure about features you can activate them later.
+
+## Cron Job Setup
+
+`cron.php` handles automated tasks such as new day resets. It runs from the command line and reads `settings.php` to determine the game directory.
+Edit `$GAME_DIR` in `settings.php` to the absolute path of your installation before creating the cron job.  Modules like namecolor/namechange no longer work; set `playername` instead.
+
+## After Upgrading
+
+After upgrading from versions prior to **1.1.1 DP Edition** you should:
+
+- Check your races and remove any `charstats` hooks that only output the race under Vital Info.
+- Users with data cache enabled must edit `dbconnect.php` and add:
+
+```php
+$DB_USEDATACACHE = 1;
+$DB_DATACACHEPATH = "/your/caching/dir"; // without trailing slash
+```
+
+- Translators should replace hard coded names in dialogues with `%s` using the Translation Wizard.
+- Verify that the server supported languages are configured correctly.
+
 ----------------------------------------------------------------------
 
 # Legend of the Green Dragon

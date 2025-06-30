@@ -1,5 +1,16 @@
 # Robot Control
 User-agent: *
-Disallow: /lib
-Disallow: /modules
+Disallow: /lib/
+Disallow: /modules/
+Disallow: /install/
+Disallow: /scripts/
+Disallow: /vendor/
+Disallow: /config/
+Disallow: /ext/
+Disallow: /errors/
+Disallow: /pages/
+Disallow: /templates/
+Disallow: /images/
+Disallow: /rawsql.php
+Disallow: /settings.php
 Disallow: /payment.php
