@@ -520,11 +520,12 @@ class Installer
         		} else {
         			$fp = @fopen($session['dbinfo']['DB_DATACACHEPATH']."/dummy.php","w+");
         			if ($fp){
-        				if (fwrite($fp,	$dbconnect)!==false){
+				$dummyContent = "<?php //test ?>";
+        				if (fwrite($fp, $dummyContent)!==false){
         					output("`2Result: `@Pass`n");
         				}else{
         					output("`2Result: `$Fail`n");
-        					rawoutput("<blockquote>");
+        					rawoutput("<blockquote></blockquote>");
         					array_push($issues,"`^I was not able to write to your datacache directory!`n");
         				}
         				fclose($fp);
