@@ -685,21 +685,37 @@ class Installer
         	."$DB_USEDATACACHE = ". ((int)$session['dbinfo']['DB_USEDATACACHE']) .";\n"
         	."$DB_DATACACHEPATH = \"{$session['dbinfo']['DB_DATACACHEPATH']}\";\n"
         	."?>\n";
-        	$fp = @fopen("dbconnect.php","w+");
-        	$failure=false;
-        	if ($fp){
-        		if (fwrite($fp, $dbconnect)!==false){
-        			output("`n`@Success!`2  I was able to write your dbconnect.php file, you can continue on to the next step.");
-        		}else{
-        			$failure=true;
-        		}
-        		fclose($fp);
-        	}else{
-        		$failure=true;
-        	}
-        	if ($failure){
-        		output("`n`$Unfortunately, I was not able to write your dbconnect.php file.");
-        		output("`2You will have to create this file yourself, and upload it to your web server.");
+                $failure=false;
+                $dir = dirname('dbconnect.php');
+                if (is_writable($dir)) {
+                        $fp = fopen('dbconnect.php', 'w+');
+                        if ($fp){
+                                if (fwrite($fp, $dbconnect)!==false){
+                                        output("`n`@Success!`2  I was able to write your dbconnect.php file, you can continue on to the next step.");
+                                }else{
+                                        $failure=true;
+                                        $err = error_get_last();
+                                        if ($err) {
+                                                error_log($err['message']);
+                                                output("`n`$Failed to write to dbconnect.php:`2 %s", $err['message']);
+                                        }
+                                }
+                                fclose($fp);
+                        }else{
+                                $failure=true;
+                                $err = error_get_last();
+                                if ($err) {
+                                        error_log($err['message']);
+                                        output("`n`$Failed to create dbconnect.php:`2 %s", $err['message']);
+                                }
+                        }
+                } else {
+                        $failure=true;
+                        output("`n`$Directory not writable:`2 %s", $dir);
+                }
+                if ($failure){
+                        output("`n`$Unfortunately, I was not able to write your dbconnect.php file.");
+                        output("`2You will have to create this file yourself, and upload it to your web server.");
         		output("The contents of this file should be as follows:`3");
         		rawoutput("<blockquote><pre>".htmlentities($dbconnect, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</pre></blockquote>");
         		output("`2Create a new file, past the entire contents from above into it (everything from and including `3<?php`2 up to and including `3?>`2 ).");
@@ -714,7 +730,7 @@ class Installer
         	$sub = substr($version, 0, 5);
         	$sub = (int)str_replace(".", "", $sub);
         	if ($sub < 110) {
-        		$fp = @fopen("dbconnect.php","r+");
+                        $fp = fopen("dbconnect.php","r+");
         		if ($fp){
         			while(!feof($fp)) {
         				$buffer = fgets($fp, 4096);
@@ -737,18 +753,34 @@ class Installer
         			."?>\n";
         		// Check if the file is writeable for us. If yes, we will change the file and notice the admin
         		// if not, they have to change the file themselves...
-        		$fp = @fopen("dbconnect.php","w+");
-        		$failure = false;
-        		if ($fp){
-        			if (fwrite($fp, $dbconnect)!==false){
-        				output("`n`@Success!`2  I was able to write your dbconnect.php file.");
-        			}else{
-        				$failure=true;
-        			}
-        			fclose($fp);
-        		}else{
-        			$failure=true;
-        		}
+                        $failure = false;
+                        $dir = dirname('dbconnect.php');
+                        if (is_writable($dir)) {
+                                $fp = fopen('dbconnect.php','w+');
+                                if ($fp){
+                                        if (fwrite($fp, $dbconnect)!==false){
+                                                output("`n`@Success!`2  I was able to write your dbconnect.php file.");
+                                        }else{
+                                                $failure=true;
+                                                $err = error_get_last();
+                                                if ($err) {
+                                                        error_log($err['message']);
+                                                        output("`n`$Failed to write to dbconnect.php:`2 %s", $err['message']);
+                                                }
+                                        }
+                                        fclose($fp);
+                                } else {
+                                        $failure=true;
+                                        $err = error_get_last();
+                                        if ($err) {
+                                                error_log($err['message']);
+                                                output("`n`$Failed to create dbconnect.php:`2 %s", $err['message']);
+                                        }
+                                }
+                        } else {
+                                $failure=true;
+                                output("`n`$Directory not writable:`2 %s", $dir);
+                        }
         		if ($failure) {
         			output("`2With this new version the settings for datacaching had to be moved to `idbconnect.php`i.");
         			output("Due to your system settings and privleges for this file, I was not able to perform the changes by myself.");
