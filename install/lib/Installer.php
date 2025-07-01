@@ -547,7 +547,18 @@ class Installer
                                                         $session['stagecompleted'] = 3;
                                                 }
                                                 fclose($fp);
-                                                @unlink($datacache . "/dummy.php");
+                                                $dummyFile = $datacache . "/dummy.php";
+                                                if (file_exists($dummyFile)) {
+                                                    if (!unlink($dummyFile)) {
+                                                        $err = error_get_last();
+                                                        if ($err) {
+                                                            error_log($err['message']);
+                                                            rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
+                                                        } else {
+                                                            rawoutput("<blockquote>`^Failed to delete the dummy file.`</blockquote>");
+                                                        }
+                                                    }
+                                                }
                                         } else {
                                                 output("`2Result: `$Fail`n");
                                                 $err = error_get_last();
