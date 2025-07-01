@@ -9,7 +9,7 @@ class InstallerLogger
     {
         $logDir = __DIR__ . '/../../errors';
         if (!is_dir($logDir)) {
-            if (!mkdir($logDir, 0777, true) && !is_dir($logDir)) {
+            if (!mkdir($logDir, 0755, true) && !is_dir($logDir)) {
                 throw new \RuntimeException(sprintf('Directory "%s" was not created', $logDir));
             }
         }
