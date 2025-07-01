@@ -722,7 +722,7 @@ class Installer
         	."$DB_DATACACHEPATH = \"{$session['dbinfo']['DB_DATACACHEPATH']}\";\n"
         	."?>\n";
                 $failure=false;
-                $dir = __DIR__;
+                $dir = dirname('dbconnect.php');
                 if (is_writable($dir)) {
                         error_clear_last();
                         $fp = fopen('dbconnect.php', 'w+');
