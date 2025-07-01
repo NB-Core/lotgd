@@ -256,17 +256,18 @@ class Installer
         }
         savesetting("installer_version",$logd_version);
         $file = __DIR__ . '/../index.php';
-        	if (file_exists($file)) {
-        		try {
-        			if (unlink($file)) {
-        				output("`2Installer file install/index.php removed.`n");
-        			} else {
-        				output("`$Unable to delete install/index.php. Please remove it manually.`n");
-        			}
-        		} catch (Throwable $e) {
-        			output("`$Error deleting install/index.php: " . $e->getMessage() . "`n");
-        		}
-        	}
+                if (file_exists($file)) {
+                        try {
+                                if (unlink($file)) {
+                                        output("`2Installer file install/index.php removed.`n");
+                                } else {
+                                        output("`$Unable to delete install/index.php. Please remove it manually.`n");
+                                }
+                        } catch (Throwable $e) {
+                                output("`$Error deleting install/index.php: " . $e->getMessage() . "`n");
+                        }
+                }
+        $this->checkDbconnectPermissions();
         $noinstallnavs=true;
     }
 
@@ -810,8 +811,9 @@ class Installer
         		output("`n`^You are ready for the next step.");
         	}
         }else if(!$success) {
-        	$session['stagecompleted']=5;
+                $session['stagecompleted']=5;
         }
+        $this->checkDbconnectPermissions();
     }
 
     /**
@@ -1297,6 +1299,21 @@ class Installer
         }
 
         return $out;
+    }
+
+    /**
+     * Check permissions on dbconnect.php and warn if it is world writable.
+     */
+    private function checkDbconnectPermissions(): void
+    {
+        $file = __DIR__ . '/../dbconnect.php';
+        if (file_exists($file)) {
+            $perms = @fileperms($file);
+            if ($perms !== false && ($perms & 0o002)) {
+                output("`^Warning:`2 dbconnect.php is world-writable and may allow unauthorized changes.");
+                output("`2Use `#chmod 640 dbconnect.php`2 or `#chmod 600 dbconnect.php`2 to secure this file.`n");
+            }
+        }
     }
 
     /**
