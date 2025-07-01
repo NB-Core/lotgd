@@ -540,7 +540,12 @@ class Installer
                                                         output("`2Result: `$Fail`n");
                                                         $err = error_get_last();
                                                         if ($err) {
-                                                                error_log($err['message']);
+                                                                \Lotgd\Installer\InstallerLogger::log(sprintf(
+                                                                    "Error: %s in %s on line %d",
+                                                                    $err['message'],
+                                                                    $err['file'],
+                                                                    $err['line']
+                                                                ));
                                                                 rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
                                                         }
                                                         array_push($issues, "`^I was not able to write to your datacache directory!`n");
@@ -552,7 +557,12 @@ class Installer
                                                     if (!unlink($dummyFile)) {
                                                         $err = error_get_last();
                                                         if ($err) {
-                                                            error_log($err['message']);
+                                                            \Lotgd\Installer\InstallerLogger::log(sprintf(
+                                                                "Error: %s in %s on line %d",
+                                                                $err['message'],
+                                                                $err['file'],
+                                                                $err['line']
+                                                            ));
                                                             rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
                                                         } else {
                                                             rawoutput("<blockquote>`^Failed to delete the dummy file.`</blockquote>");
@@ -563,7 +573,12 @@ class Installer
                                                 output("`2Result: `$Fail`n");
                                                 $err = error_get_last();
                                                 if ($err) {
-                                                        error_log($err['message']);
+                                                        \Lotgd\Installer\InstallerLogger::log(sprintf(
+                                                            "Error: %s in %s on line %d",
+                                                            $err['message'],
+                                                            $err['file'],
+                                                            $err['line']
+                                                        ));
                                                         rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
                                                 }
                                                 array_push($issues, "`^I was not able to write to your datacache directory! Check your permissions there!`n");
