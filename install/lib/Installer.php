@@ -712,7 +712,7 @@ class Installer
                                         $failure=true;
                                         $err = error_get_last();
                                         if ($err) {
-                                                error_log($err['message']);
+                                                \Lotgd\Installer\InstallerLogger::log($err['message']);
                                                 output("`n`$Failed to write to dbconnect.php:`2 %s", $err['message']);
                                         }
                                 }
@@ -721,7 +721,7 @@ class Installer
                                 $failure=true;
                                 $err = error_get_last();
                                 if ($err) {
-                                        error_log($err['message']);
+                                        \Lotgd\Installer\InstallerLogger::log($err['message']);
                                         output("`n`$Failed to create dbconnect.php:`2 %s", $err['message']);
                                 }
                         }
@@ -780,7 +780,7 @@ class Installer
                                                 $failure=true;
                                                 $err = error_get_last();
                                                 if ($err) {
-                                                        error_log($err['message']);
+                                                        \Lotgd\Installer\InstallerLogger::log($err['message']);
                                                         output("`n`$Failed to write to dbconnect.php:`2 %s", $err['message']);
                                                 }
                                         }
@@ -789,7 +789,7 @@ class Installer
                                         $failure=true;
                                         $err = error_get_last();
                                         if ($err) {
-                                                error_log($err['message']);
+                                                \Lotgd\Installer\InstallerLogger::log($err['message']);
                                                 output("`n`$Failed to create dbconnect.php:`2 %s", $err['message']);
                                         }
                                 }
