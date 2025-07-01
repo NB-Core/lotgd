@@ -529,21 +529,34 @@ class Installer
                                         array_push($issues, "`^The datacache path '".htmlentities($datacache, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))."' is not writable.`n");
                                         $session['stagecompleted'] = 3;
                                 } else {
-                                        $fp = @fopen($datacache."/dummy.php", "w+");
+                                        error_clear_last();
+                                        $fp = fopen($datacache . "/dummy.php", "w+");
                                         if ($fp) {
                                                 $dummyContent = "<?php //test ?>";
+                                                error_clear_last();
                                                 if (fwrite($fp, $dummyContent) !== false) {
                                                         output("`2Result: `@Pass`n");
                                                 } else {
                                                         output("`2Result: `$Fail`n");
-                                                        rawoutput("<blockquote></blockquote>");
+                                                        $err = error_get_last();
+                                                        if ($err) {
+                                                                error_log($err['message']);
+                                                                rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
+                                                        } else {
+                                                                rawoutput("<blockquote></blockquote>");
+                                                        }
                                                         array_push($issues, "`^I was not able to write to your datacache directory!`n");
                                                         $session['stagecompleted'] = 3;
                                                 }
                                                 fclose($fp);
-                                                @unlink($datacache."/dummy.php");
+                                                @unlink($datacache . "/dummy.php");
                                         } else {
                                                 output("`2Result: `$Fail`n");
+                                                $err = error_get_last();
+                                                if ($err) {
+                                                        error_log($err['message']);
+                                                        rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
+                                                }
                                                 array_push($issues, "`^I was not able to write to your datacache directory! Check your permissions there!`n");
                                                 $session['stagecompleted'] = 3;
                                         }
