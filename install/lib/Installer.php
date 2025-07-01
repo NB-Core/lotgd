@@ -1306,7 +1306,7 @@ class Installer
      */
     private function checkDbconnectPermissions(): void
     {
-        $file = __DIR__ . '/../dbconnect.php';
+        $file = __DIR__ . '/../../dbconnect.php';
         if (file_exists($file)) {
             $perms = @fileperms($file);
             if ($perms !== false && ($perms & 0o002)) {
