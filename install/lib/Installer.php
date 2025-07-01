@@ -712,8 +712,8 @@ class Installer
                                         $failure=true;
                                         $err = error_get_last();
                                         if ($err) {
-                                                \Lotgd\Installer\InstallerLogger::log($err['message']);
-                                                output("`n`$Failed to write to dbconnect.php:`2 %s", $err['message']);
+                                                \Lotgd\Installer\InstallerLogger::log(sprintf("Error: %s in %s on line %d", $err['message'], $err['file'], $err['line']));
+                                                output("`n`$Failed to write to dbconnect.php:`2 %s in %s on line %d", $err['message'], $err['file'], $err['line']);
                                         }
                                 }
                                 fclose($fp);
