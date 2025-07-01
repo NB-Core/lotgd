@@ -16,6 +16,6 @@ class InstallerLogger
         $logFile = $logDir . '/install.log';
         $date = date('Y-m-d H:i:s');
         $entry = sprintf("[%s] %s\n", $date, $message);
-        error_log($entry, 3, $logFile);
+        file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
     }
 }
