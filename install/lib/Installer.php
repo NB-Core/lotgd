@@ -542,8 +542,6 @@ class Installer
                                                         if ($err) {
                                                                 error_log($err['message']);
                                                                 rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
-                                                        } else {
-                                                                rawoutput("<blockquote></blockquote>");
                                                         }
                                                         array_push($issues, "`^I was not able to write to your datacache directory!`n");
                                                         $session['stagecompleted'] = 3;
