@@ -45,6 +45,7 @@ Oliver
 ## Table of Contents
 - [Read Me First](#read-me-first)
 - [Quick Install](#quick-install)
+- [Install from Release Archive](#install-from-release-archive)
 - [Cron Job Setup](#cron-job-setup)
 - [After Upgrading](#after-upgrading)
 - [Upgrading](#upgrading)
@@ -66,6 +67,14 @@ Want to have this running in no time?
 - Upload the files with the directory structure intact.
 - Run `install/index.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
+
+## Install from Release Archive
+
+Official releases include the `vendor/` directory so no additional commands are
+required. Download `lotgd-<version>.tar.gz` or `lotgd-<version>.zip` from the
+[Releases](https://github.com/NB-Core/lotgd/releases) page, upload the contents
+to your web server and open `install/index.php` in your browser. The installer
+will guide you through the setup.
 
 ## Cron Job Setup
 

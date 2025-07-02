@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Extract version
+        id: vars
+        run: |
+          VERSION=$(grep -oP '[0-9]+\.[0-9]+\.[0-9]+' common.php | head -1)
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Create archives
+        run: |
+          VERSION=${{ steps.vars.outputs.VERSION }}
+          tar --exclude='.git*' --exclude='.github' -czf "lotgd-${VERSION}.tar.gz" .
+          zip -r "lotgd-${VERSION}.zip" . -x '*.git*' -x '.github/*'
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: lotgd-${{ steps.vars.outputs.VERSION }}
+          path: |
+            lotgd-${{ steps.vars.outputs.VERSION }}.tar.gz
+            lotgd-${{ steps.vars.outputs.VERSION }}.zip
