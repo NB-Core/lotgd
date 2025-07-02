@@ -42,6 +42,7 @@ Oliver
 ## Table of Contents
 - [Read Me First](#read-me-first)
 - [Quick Install](#quick-install)
+- [Quick Start](#quick-start)
 - [Install from Release Archive](#install-from-release-archive)
 - [Cron Job Setup](#cron-job-setup)
 - [After Upgrading](#after-upgrading)
@@ -49,6 +50,7 @@ Oliver
 - [Installation](#installation)
 - [Post Installation](#post-installation)
 - [LOTGD Docker Environment](#lotgd-docker-environment)
+- [Contributing & Support](#contributing--support)
 - [License](#license)
 
 ## Read Me First
@@ -64,6 +66,12 @@ Want to have this running in no time?
 - Upload the files with the directory structure intact.
 - Run `install/index.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
+
+### Quick Start
+
+1. Clone the repository with `git clone https://github.com/NB-Core/lotgd.git`
+2. Run `composer install` to install PHP dependencies.
+3. Start the containers using `docker-compose up -d`.
 
 ## Install from Release Archive
 
@@ -436,6 +444,11 @@ The root `.htaccess` file configures custom error pages, disables directory list
   - Clear your application's cache or your browser's cache if necessary.
 
 ---
+
+## Contributing & Support
+
+Found a bug or have a feature request? Open an issue on GitHub.
+Pull requests are welcome for improvements or fixes.
 
 ## License
 
