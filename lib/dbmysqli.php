@@ -8,12 +8,30 @@ class DbMysqli {
     protected $link;
 
     public function connect($host, $user, $pass) {
-        $this->link = @mysqli_connect($host, $user, $pass);
+        $this->link = mysqli_connect($host, $user, $pass);
+
+        if (!$this->link) {
+            $error = mysqli_connect_error();
+            if (defined('IS_INSTALLER') && IS_INSTALLER && class_exists('Lotgd\\Installer\\InstallerLogger')) {
+                \Lotgd\Installer\InstallerLogger::log($error);
+            }
+            echo $error;
+        }
+
         return $this->link ? true : false;
     }
 
     public function pconnect($host, $user, $pass) {
-        $this->link = @mysqli_connect($host, $user, $pass);
+        $this->link = mysqli_connect($host, $user, $pass);
+
+        if (!$this->link) {
+            $error = mysqli_connect_error();
+            if (defined('IS_INSTALLER') && IS_INSTALLER && class_exists('Lotgd\\Installer\\InstallerLogger')) {
+                \Lotgd\Installer\InstallerLogger::log($error);
+            }
+            echo $error;
+        }
+
         return $this->link ? true : false;
     }
 
