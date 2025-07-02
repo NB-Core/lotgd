@@ -13,7 +13,7 @@ if (isset($post['validation_error']) && $post['validation_error']) {
 } else {
 	output_notl("`n");
 	foreach ($post as $key=>$val) {
-		output("`\$Setting '`2%s`\$' to '`2%s`\$'`n", $key, stripslashes($val));
+		output("`\$Setting '`2%s`\$' to '`2%s`\$'`n", $key, htmlspecialchars($val, ENT_QUOTES, 'UTF-8'));
                $sql = "REPLACE INTO " . db_prefix("module_userprefs") .
                        " (modulename,userid,setting,value) VALUES ('" .
                        db_real_escape_string($module) . "',$userid,'" .
