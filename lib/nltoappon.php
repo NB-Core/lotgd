@@ -1,11 +1,14 @@
 <?php
+// Legacy wrapper for Nltoappon class
 // translator ready
 // addnews ready
 // mail ready
-function nltoappon($in){
-	$out = str_replace("\r\n","\n",$in);
-	$out = str_replace("\r","\n",$out);
-	$out = str_replace("\n","`n",$out);
-	return $out;
+
+use Lotgd\Nltoappon;
+
+function nltoappon($in)
+{
+    return Nltoappon::convert($in);
 }
+
 ?>
