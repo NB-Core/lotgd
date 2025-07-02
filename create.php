@@ -3,9 +3,9 @@
 // addnews ready
 // mail ready
 define("ALLOW_ANONYMOUS",true);
+use Lotgd\CheckBan;
 require_once("common.php");
 require_once("lib/is_email.php");
-require_once("lib/checkban.php");
 require_once("lib/sanitize.php");
 require("lib/settings_extended.php");
 require_once("lib/serverfunctions.class.php");
@@ -18,7 +18,7 @@ $old = getsetting("expireoldacct",45);
 
 $msg = '';
 
-checkban();
+CheckBan::check();
 $op = httpget('op');
 if ($op=='val' || $op=='forgotval') {
 	if (ServerFunctions::isTheServerFull()==true) {

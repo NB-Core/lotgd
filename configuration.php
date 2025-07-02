@@ -1,4 +1,5 @@
 <?php
+use Lotgd\DateTime;
 // translator ready
 // addnews ready
 // mail ready
@@ -220,8 +221,8 @@ addnav("Extended settings", "configuration.php?settings=extended");
 addnav("",$REQUEST_URI);
 
 //get arrays
-require("lib/data/configuration.php");
-require("lib/data/configuration_extended.php");
+require("config/configuration.php");
+require("config/configuration_extended.php");
 
 
 module_editor_navs('settings', 'configuration.php?op=modulesettings&module=');
@@ -255,7 +256,6 @@ switch ($type_setting) {
 
 			case "":
 				$enum="enumpretrans";
-				require_once("lib/datetime.php");
 				$details = gametimedetails();
 				$offset = getsetting("gameoffsetseconds",0);
 				for ($i=0;$i<=86400 / getsetting("daysperday",4);$i+=300){

@@ -1,43 +1,105 @@
-# +nb fork explanation
+# Legend of the Green Dragon Fork
+
+![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-blue)
+![License](https://img.shields.io/badge/license-CC%20BY--SA-lightgrey)
 This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
 
 The original readme and license texts follow below, also the installation + upgrade routines which haven't changed much.
 
-I'd like to add a few words, primarily why this fork was made and how the current status ist.
+I'd like to add a few words, primarily why this fork was made and how the current status is.
 
-The fork was mostly made for personal purposes, as many small or big things have been replaced or changed, compared to the core version on Dragonprime.
-Most things that were done on the fork are backwards compatible, means you can safely use modules from non-fork-development.
+The fork was mostly made for personal purposes, as many small or big things have been replaced or changed compared to the core version on Dragonprime.
+Most things that were done on the fork are backwards compatible, which means you can safely use modules from non-fork development.
 
-The base DP version this fork derived off was 1.1.1 +dragonprime edition.
+The base DP version this fork derived from was 1.1.1 +dragonprime edition.
 
-Some things to consider:
-- more hooks were added to this version
-- the stat system with strength/dexterity/etc. was added
-- (many things I forgot already that were added or changed, that's what the release notes are for, you can read them up in CHANGELOG.txt)
+Features of this fork include:
+- additional hooks
+- a stat system with strength, dexterity, and other attributes
+- numerous other changes documented in `CHANGELOG.txt`
+- compatibility with PHP 8
+- PHPMailer replacing the sendmail system
+- mail notifications that auto-refresh via Ajax
+- Composer integration for third-party modules
+  - after modifying Composer settings, run `composer dump-autoload` to recognize new namespaces
+  - after running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies
+  - `autoload.php` automatically loads `vendor/autoload.php` and registers the project namespace
+- mysqli is now the default database layer
 
-Mostly, technical stuff is now new:
-- this version was modified to work with php8 (which did incur numerous bugfixes and stuff)
-- the sendmail-system was replaced by phpmailer()
-- the mail notification feature an auto-refresh via ajax now
-- composer was integrated for sensible (see above) third party modules
-- After modifying Composer settings, run `composer dump-autoload` so new namespaces are recognized.
-- After running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies.
-- `autoload.php` automatically loads `ext/vendor/autoload.php` and registers the project namespace.
-- mysqli is now standard, so it's used primarily, the old ones won't be tested (and really, most things didn't work when you switched the db provider in lotgd)
-
-So, it should work on every modern PHP enviroment.
+So, it should work on every modern PHP environment.
 
 If somebody really has time, there are still things to do:
-- replace the template system with a state-of-the-art system (like smarty)
-- integrate refreshing chats (I did some tests with jaxon a few years ago, worked OK, but slow)
-- make some horrible things objects and not array, the isset() tests drive me nuts ffs
-- the error sending via mail has an issue with datacache+firstrun key in array. Not sure why. Also outputting PHP warnings to a user should not be done, but those should be logged somewhere in a real log
-- ?
+- replace the template system with a state-of-the-art system such as Smarty
+- integrate refreshing chats (tests with Jaxon worked but were slow)
+- convert arrays into objects to avoid extensive `isset()` checks
+- configure the `datacachepath` setting in `dbconnect.php` to a writable directory so errors can be cached for email notifications
 
 Contact me on github via issue if you like https://github.com/NB-Core/lotgd
 
 Kind regards,
 Oliver
+
+## Table of Contents
+- [Read Me First](#read-me-first)
+- [Quick Install](#quick-install)
+- [Quick Start](#quick-start)
+- [Install from Release Archive](#install-from-release-archive)
+- [Cron Job Setup](#cron-job-setup)
+- [After Upgrading](#after-upgrading)
+- [Upgrading](#upgrading)
+- [Installation](#installation)
+- [Post Installation](#post-installation)
+- [LOTGD Docker Environment](#lotgd-docker-environment)
+- [Contributing & Support](#contributing--support)
+- [License](#license)
+
+## Read Me First
+
+Thank you for downloading the modified version of Legend Of the Green Dragon.
+See `CHANGELOG.txt` for a list of changes.
+
+## Quick Install
+
+Want to have this running in no time?
+
+- Requirements: PHP 7.4 or higher and MySQL 5.0 or higher, plus the `LOCK TABLES` privilege for your database user.
+- Upload the files with the directory structure intact.
+- Run `install/index.php` in your browser and follow the installer.
+- If unsure about features you can activate them later.
+
+### Quick Start
+
+1. Clone the repository with `git clone https://github.com/NB-Core/lotgd.git`
+2. Run `composer install` to install PHP dependencies.
+3. Start the containers using `docker-compose up -d`.
+
+## Install from Release Archive
+
+Official releases include the `vendor/` directory so no additional commands are
+required. Download `lotgd-<version>.tar.gz` or `lotgd-<version>.zip` from the
+[Releases](https://github.com/NB-Core/lotgd/releases) page, upload the contents
+to your web server and open `install/index.php` in your browser. The installer
+will guide you through the setup.
+
+## Cron Job Setup
+
+`cron.php` handles automated tasks such as new day resets. It runs from the command line and reads `settings.php` to determine the game directory.
+Edit `$GAME_DIR` in `settings.php` to the absolute path of your installation before creating the cron job.  Modules like namecolor/namechange no longer work; set `playername` instead.
+
+## After Upgrading
+
+After upgrading from versions prior to **1.1.1 DP Edition** you should:
+
+- Check your races and remove any `charstats` hooks that only output the race under Vital Info.
+- Users with data cache enabled must edit `dbconnect.php` and add:
+
+```php
+$DB_USEDATACACHE = 1;
+$DB_DATACACHEPATH = "/your/caching/dir"; // without trailing slash
+```
+
+- Translators should replace hard coded names in dialogues with `%s` using the Translation Wizard.
+- Verify that the server supported languages are configured correctly.
 
 ----------------------------------------------------------------------
 
@@ -59,63 +121,32 @@ If you have problems, please visit Dragonprime at the address above.
 
 ## UPGRADING
 
-ALWAYS extract the new distribution into a new directory!
+Always back up your database and existing source files before upgrading.
 
-BEFORE ANYTHING ELSE, read and understand the new code license.  This code
-is no longer under the GPL!  Be aware that if you install this new version
-on a publically accessible web server you are bound by the terms of the
-license.
+1. Copy the new code into your site directory, replacing the old files.
+2. Log out of the game if it is running.
+3. Open `install/index.php` in your browser and choose **Upgrade**.
+4. Follow the installer steps to migrate your database.
 
-We also *STRONGLY* recommend that you shut down access to your game and
-BACK UP your game database AND existing logd source files before attempting
-an upgrade as most of the changes are NOT easily reversible!
+If you are upgrading from **0.9.7** or earlier, move the deprecated
+`specials` directory aside and convert those scripts to modules.
 
-If you are running a previous pre-release of 0.9.8 you can do this by going
-into the manage modules, installing the serversuspend module and then
-activating it.  If you are running a 0.9.7 version, you will need to do
-this some other way, such as via .htaccess under apache.  Consult the
-documentation for your web server.
+After the upgrade completes, read the [Post Installation](#post-installation)
+section to verify your configuration.
 
-Once you have done this, copy the new code into the site directory. Due to
-the need of the installer, you have to do this before running the
-installer!  Make sure that you copy all of the files from all of the
-subdirectories.
-
-As of 0.9.8-prerelease.11, the only way to install or upgrade the game is
-via the included installer.   To access the installer, log out of the game and
-then access installer.php (for instance, if your game was installed at
-http://logd.dragoncat.net, you would access the installer at
-http://logd.dragoncat.net/installer.php)
-
-From here, it should be a simple matter of walking through the steps!
-Choose upgrade as the type of install (it defaults to *new* install, so
-watch out for this!!) and choose the version you currently have installed and
-it will perform an upgrade.
-
-Once this is done, read the note for upgrading from 0.9.7 if you are, and
-then go read the POST INSTALLATION section below.
-
-*** NOTE FOR THOSE UPGRADING FROM 0.9.7 ***
-In 0.9.8 and above, the 'specials' directory has been removed and that
-functionality is now handled by modules.  If you have specials which are not
-yet converted to modules, they will be unavailable until you convert them.
-Move your specials directory to another directory name (for instance
-specials.save) and work on converting them.  Most specials should convert
-easily and you can look at existing examples.  If you haven't created (or
-modified) specials on your server, just remove this directory.
 
 ## INSTALLATION:
 
 These instructions cover a new LoGD installation.
 You will need access to a MySQL database and a PHP hosting
-location to run this game. Your SQL user needs the LOCK TABLES 
-privelege in order to run the game correct.
+location to run this game. Your SQL user needs the LOCK TABLES
+privilege in order to run the game correctly.
 
 Extract the files into the directory where you will want the code to live.
 
 BEFORE ANYTHING ELSE, read and understand the license that this game is
 released under.  You are legally bound by the license if you install this
-game on a publically accessible web server!
+game on a publicly accessible web server!
 
 MySQL Setup:
 Setup should be pretty straightforward, create the database, create
@@ -123,9 +154,9 @@ an account to access the database on behalf of the site; this account
 should have full permissions on the database.
 
 After you have the database created, point your browser at the location you
-have the logd files installed at and load up installer.php (for instance,
+have the logd files installed at and load up install/index.php (for instance,
 if the files are accessible as http://logd.dragoncat.net, you will want to
-load http://logd.dragoncat.net/installer.php in the browser).  The installer
+load http://logd.dragoncat.net/install/index.php in the browser).  The installer
 will walk you through a complete setup from the ground up.  Make sure to
 follow all instructions!
 
@@ -143,6 +174,8 @@ Firstly, make SURE that your dbconnect.php is not writeable.  Under unix,
 you do this by typing
    chmod -w dbconnect.php
 This is to keep you from making unintentional changes to this file.
+The installer attempts to remove `install/index.php` after installation. If this file remains, delete it to prevent accidental reuse. An `.htaccess` file in the `install/` directory (and the root `.htaccess`) deny access when that index file is gone. You may remove the entire `install/` folder once setup is complete.
+
 
 The installer will have installed, but not activated, some common modules
 which we feel make for a good baseline of the game.
@@ -220,14 +253,14 @@ cd lotgd
 
 ### Step 2: Set Up the Docker Environment
 
-Create the following files in the root directory of the project if they don't already exist:
+This repository already includes the essential Docker and configuration files. Review these files and adjust them as needed:
 
 1. **Dockerfile**
 2. **docker-compose.yml**
 3. **.env**
 4. **.htaccess**
 
-The contents of these files are detailed in the [Configuration Files](#configuration-files) section.
+The details of each file are covered in the [Configuration Files](#configuration-files) section.
 
 ### Step 3: Build and Start the Containers
 
@@ -329,18 +362,7 @@ MYSQL_ROOT_PASSWORD=rootpass
 
 ### .htaccess
 
-Create a `.htaccess` file in the root directory of your application (`/var/www/html`) with the following content to prevent access to sensitive files and disable directory listings:
-
-```apacheconf
-# Deny access to .env file
-<Files .env>
-    Order allow,deny
-    Deny from all
-</Files>
-
-# Disable directory listing
-Options -Indexes
-```
+The root `.htaccess` file configures custom error pages, disables directory listings, protects sensitive files, and blocks the `install/` folder when `index.php` is removed. Nginx equivalents are provided as comments in that file.
 
 ---
 
@@ -422,6 +444,11 @@ Options -Indexes
   - Clear your application's cache or your browser's cache if necessary.
 
 ---
+
+## Contributing & Support
+
+Found a bug or have a feature request? Open an issue on GitHub.
+Pull requests are welcome for improvements or fixes.
 
 ## License
 

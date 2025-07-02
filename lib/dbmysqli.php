@@ -1,4 +1,5 @@
 <?php
+use Lotgd\DataCache;
 // addnews ready
 // translator ready
 // mail ready
@@ -7,12 +8,30 @@ class DbMysqli {
     protected $link;
 
     public function connect($host, $user, $pass) {
-        $this->link = @mysqli_connect($host, $user, $pass);
+        $this->link = mysqli_connect($host, $user, $pass);
+
+        if (!$this->link) {
+            $error = mysqli_connect_error();
+            if (defined('IS_INSTALLER') && IS_INSTALLER && class_exists('Lotgd\\Installer\\InstallerLogger')) {
+                \Lotgd\Installer\InstallerLogger::log($error);
+            }
+            echo $error;
+        }
+
         return $this->link ? true : false;
     }
 
     public function pconnect($host, $user, $pass) {
-        $this->link = @mysqli_connect($host, $user, $pass);
+        $this->link = mysqli_connect($host, $user, $pass);
+
+        if (!$this->link) {
+            $error = mysqli_connect_error();
+            if (defined('IS_INSTALLER') && IS_INSTALLER && class_exists('Lotgd\\Installer\\InstallerLogger')) {
+                \Lotgd\Installer\InstallerLogger::log($error);
+            }
+            echo $error;
+        }
+
         return $this->link ? true : false;
     }
 
@@ -116,7 +135,7 @@ function db_query($sql, $die=true){
 
 function &db_query_cached($sql,$name,$duration=900){
     global $dbinfo;
-    $data = datacache($name,$duration);
+    $data = DataCache::datacache($name,$duration);
     if (is_array($data)){
         reset($data);
         $dbinfo['affected_rows']=-1;
@@ -127,7 +146,7 @@ function &db_query_cached($sql,$name,$duration=900){
         while ($row = db_fetch_assoc($result)) {
             $data[] = $row;
         }
-        updatedatacache($name,$data);
+        DataCache::updatedatacache($name,$data);
         reset($data);
         return $data;
     }

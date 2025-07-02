@@ -1,4 +1,6 @@
 <?php
+use Lotgd\FightBar;
+use Lotgd\BellRand;
 // addnews ready
 // mail ready
 // translation ready
@@ -10,14 +12,13 @@
  * @param array $enemies The enemies to be displayed.
  */
 function show_enemies($enemies) {
-	global $enemycounter, $session;
-	require_once("lib/battle-functions.php");
-	$u=&$session['user']; //fast and better, by pointer
-	static $fightbar=NULL;
-	if ($fightbar===NULL) {
-		//only once per fight
-		$fightbar=new fightbar();
-	}
+        global $enemycounter, $session;
+        $u=&$session['user']; //fast and better, by pointer
+        static $fightbar=NULL;
+        if ($fightbar===NULL) {
+                //only once per fight
+                $fightbar=new FightBar();
+        }
 
 	//show all enemies including their stats
 	foreach ($enemies as $index => $badguy) {
@@ -533,14 +534,14 @@ $bad_check=1;
 			debug("Attack score: $atk");
 			*/
 
-			$patkroll = bell_rand(0,$atk);
+			$patkroll = BellRand::generate(0,$atk);
 			/*
 			debug("Player Attack roll: $patkroll");
 			*/
 
 			// Set up for crit detection
 			$atk = $patkroll;
-			$catkroll = bell_rand(0,$adjustedcreaturedefense);
+			$catkroll = BellRand::generate(0,$adjustedcreaturedefense);
 			/*
 			debug("Creature defense roll: $catkroll");
 			*/
@@ -553,8 +554,8 @@ $bad_check=1;
 			if ($creaturedmg > 0) {
 				$creaturedmg = round($buffset['compdmgmod']*$creaturedmg,0);
 			}
-			$pdefroll = bell_rand(0,$adjustedselfdefense);
-			$catkroll = bell_rand(0,$creatureattack);
+			$pdefroll = BellRand::generate(0,$adjustedselfdefense);
+			$catkroll = BellRand::generate(0,$creatureattack);
 			/*
 			   debug("Creature attack roll: $catkroll");
 			   debug("Player defense roll: $pdefroll");

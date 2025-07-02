@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Commentary;
 declare(strict_types=1);
 // translator ready
 // addnews ready
@@ -352,7 +353,6 @@ function darkhorse_runevent(string $type, string $link): void{
 		}
 		break;
 	case "tables":
-		require_once("lib/commentary.php");
 		addcommentary();
 		commentdisplay("You examine the etchings in the table:`n`n",
 				"darkhorse","Add your own etching:");

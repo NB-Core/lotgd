@@ -2,6 +2,8 @@
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Buffs;
+
 function redirect($location,$reason=false){
 	global $session,$REQUEST_URI;
 	// This function is deliberately not localized.  It is meant as error
@@ -18,7 +20,7 @@ function redirect($location,$reason=false){
 		$text=$failoutput->get_output();
 		$session['output']="<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000'>$text</body></html>";
 	}
-	restore_buff_fields();
+	Buffs::restoreBuffFields();
 	if (!isset($session['debug'])) $session['debug']='';
 	$session['debug'].="Redirected to $location from $REQUEST_URI.  $reason<br>";
 	saveuser();

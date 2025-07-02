@@ -1,0 +1,189 @@
+<?php
+namespace Lotgd;
+
+class DateTime
+{
+    public static function reltime($date, bool $short = true)
+    {
+        $now = strtotime("now");
+        $x = abs($now - $date);
+        return self::readabletime($x, $short);
+    }
+
+    public static function readabletime($date, bool $short = true)
+    {
+        $x = abs($date);
+        $d = (int)($x / 86400);
+        $x %= 86400;
+        $h = (int)($x / 3600);
+        $x %= 3600;
+        $m = (int)($x / 60);
+        $x %= 60;
+        $s = (int)$x;
+        if ($short) {
+            $array = ['d' => 'd', 'h' => 'h', 'm' => 'm', 's' => 's'];
+            $array = translate_inline($array, 'datetime');
+            if ($d > 0) {
+                $o = $d . $array['d'] . ($h > 0 ? $h . $array['h'] : '');
+            } elseif ($h > 0) {
+                $o = $h . $array['h'] . ($m > 0 ? $m . $array['m'] : '');
+            } elseif ($m > 0) {
+                $o = $m . $array['m'] . ($s > 0 ? $s . $array['s'] : '');
+            } else {
+                $o = $s . $array['s'];
+            }
+        } else {
+            $array = [
+                'day' => 'day',
+                'days' => 'days',
+                'hour' => 'hour',
+                'hours' => 'hours',
+                'minute' => 'minute',
+                'minutes' => 'minutes',
+                'second' => 'second',
+                'seconds' => 'second',
+            ];
+            $array = translate_inline($array, 'datetime');
+            if ($d > 0) {
+                $o = "$d " . ($d > 1 ? $array['days'] : $array['day']) . ($h > 0 ? ", $h " . ($h > 1 ? $array['hours'] : $array['hour']) : '');
+            } elseif ($h > 0) {
+                $o = "$h " . ($h > 1 ? $array['hours'] : $array['hour']) . ($m > 0 ? ", $m " . ($m > 1 ? $array['minutes'] : $array['minute']) : '');
+            } elseif ($m > 0) {
+                $o = "$m " . ($m > 1 ? $array['minutes'] : $array['minute']) . ($s > 0 ? ", $s " . ($s > 1 ? $array['seconds'] : $array['second']) : '');
+            } else {
+                $o = "$s " . ($s > 0 ? $array['seconds'] : $array['second']);
+            }
+        }
+        return $o;
+    }
+
+    public static function relativedate($indate)
+    {
+        $laston = round((strtotime('now') - strtotime($indate)) / 86400, 0) . ' days';
+        tlschema('datetime');
+        if (substr($laston, 0, 2) == '1 ') {
+            $laston = translate_inline('1 day');
+        } elseif (date('Y-m-d', strtotime($laston)) == date('Y-m-d')) {
+            $laston = translate_inline('Today');
+        } elseif (date('Y-m-d', strtotime($laston)) == date('Y-m-d', strtotime('-1 day'))) {
+            $laston = translate_inline('Yesterday');
+        } elseif (strpos($indate, DATETIME_DATEMIN) !== false) {
+            $laston = translate_inline('Never');
+        } else {
+            $laston = sprintf_translate('%s days', round((strtotime('now') - strtotime($indate)) / 86400, 0));
+            rawoutput(tlbutton_clear());
+        }
+        tlschema();
+        return $laston;
+    }
+
+    public static function checkday()
+    {
+        global $session, $revertsession, $REQUEST_URI;
+        if ($session['user']['loggedin']) {
+            output_notl('<!--CheckNewDay()-->', true);
+            if (self::is_new_day()) {
+                $session = $revertsession;
+                $session['user']['restorepage'] = $REQUEST_URI;
+                $session['allowednavs'] = [];
+                addnav('', 'newday.php');
+                redirect('newday.php');
+            }
+        }
+    }
+
+    public static function is_new_day($now = 0)
+    {
+        global $session;
+        if ($session['user']['lasthit'] == DATETIME_DATEMIN) {
+            return true;
+        }
+        $t1 = self::gametime();
+        $t2 = self::convertgametime(strtotime($session['user']['lasthit'] . ' +0000'));
+        $d1 = gmdate('Y-m-d', $t1);
+        $d2 = gmdate('Y-m-d', $t2);
+        return $d1 != $d2;
+    }
+
+    public static function getgametime()
+    {
+        return gmdate(getsetting('gametime', 'g:i a'), self::gametime());
+    }
+
+    public static function gametime()
+    {
+        $time = self::convertgametime(strtotime('now'));
+        return $time;
+    }
+
+    public static function convertgametime($intime, bool $debug = false)
+    {
+        $intime -= getsetting('gameoffsetseconds', 0);
+        $epoch = strtotime(getsetting('game_epoch', gmdate('Y-m-d 00:00:00 O', strtotime('-30 days'))));
+        $now = strtotime(gmdate('Y-m-d H:i:s O', $intime));
+        $logd_timestamp = ($now - $epoch) * getsetting('daysperday', 4);
+        if ($debug) {
+            echo 'Game Timestamp: ' . $logd_timestamp . ', which makes it ' . gmdate('Y-m-d H:i:s', $logd_timestamp) . '<br>';
+        }
+        return $logd_timestamp;
+    }
+
+    public static function gametimedetails()
+    {
+        $ret = [];
+        $ret['now'] = date('Y-m-d 00:00:00');
+        $ret['gametime'] = self::gametime();
+        $ret['daysperday'] = getsetting('daysperday', 4);
+        $ret['secsperday'] = 86400 / $ret['daysperday'];
+        $ret['today'] = strtotime(gmdate('Y-m-d 00:00:00 O', $ret['gametime']));
+        $ret['tomorrow'] = strtotime(gmdate('Y-m-d H:i:s O', $ret['gametime']) . ' + 1 day');
+        $ret['tomorrow'] = strtotime(gmdate('Y-m-d 00:00:00 O', $ret['tomorrow']));
+        $ret['secssofartoday'] = $ret['gametime'] - $ret['today'];
+        $ret['secstotomorrow'] = $ret['tomorrow'] - $ret['gametime'];
+        $ret['realsecssofartoday'] = $ret['secssofartoday'] / $ret['daysperday'];
+        $ret['realsecstotomorrow'] = $ret['secstotomorrow'] / $ret['daysperday'];
+        $ret['dayduration'] = ($ret['tomorrow'] - $ret['today']) / $ret['daysperday'];
+        return $ret;
+    }
+
+    public static function secondstonextgameday($details = false)
+    {
+        if ($details === false) {
+            $details = self::gametimedetails();
+        }
+        return strtotime("{$details['now']} + {$details['realsecstotomorrow']} seconds");
+    }
+
+    public static function getmicrotime()
+    {
+        list($usec, $sec) = explode(' ', microtime());
+        return ((float)$usec + (float)$sec);
+    }
+
+    public static function datedifference($date_1, $date_2 = DATETIME_TODAY, $differenceFormat = '%R%a')
+    {
+        $datetime1 = date_create($date_1);
+        $datetime2 = date_create($date_2);
+        $interval = date_diff($datetime2, $datetime1);
+        return $interval->format($differenceFormat);
+    }
+
+    public static function datedifference_events($date_1, bool $abs = false)
+    {
+        $year = date('Y');
+        $diff1 = self::datedifference($year . '-' . $date_1);
+        $diff2 = self::datedifference(($year + 1) . '-' . $date_1);
+        $diff3 = self::datedifference(($year - 1) . '-' . $date_1);
+        if (abs($diff1) < abs($diff2) && abs($diff1) < abs($diff3)) {
+            $d_return = $diff1;
+        } elseif (abs($diff2) < abs($diff1) && abs($diff2) < abs($diff3)) {
+            $d_return = $diff2;
+        } else {
+            $d_return = $diff3;
+        }
+        if ($abs === true) {
+            return abs($d_return);
+        }
+        return $d_return;
+    }
+}

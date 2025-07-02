@@ -1,7 +1,12 @@
 {
+    "require": {
+        "jaxon-php/jaxon-core": "~4.0",
+        "phpmailer/phpmailer": "^6.7"
+    },
     "autoload": {
         "psr-4": {
-            "Lotgd\\": "src/"
+            "Lotgd\\": "src/Lotgd/",
+            "Lotgd\\Installer\\": "install/lib/"
         }
     }
 }

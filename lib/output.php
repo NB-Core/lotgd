@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\DumpItem;
 /**
 * \class output_collector
 * \brief Library Functions for page output stored in the class
@@ -206,8 +207,7 @@ class output_collector {
 		$this->set_block_new_output(false);
 		if ($force || (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_DEBUG_OUTPUT)){
 			if (is_array($text)){
-				require_once("lib/dump_item.php");
-				$text = appoencode(dump_item($text),true);
+				$text = appoencode(DumpItem::dump($text),true);
 			}
 			$this->rawoutput("<div class='debug'>$text</div>");
 		}

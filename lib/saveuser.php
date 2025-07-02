@@ -2,6 +2,7 @@
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Buffs;
 
 function saveuser(){
 	global $session,$dbqueriesthishit,$baseaccount,$companions;
@@ -10,7 +11,7 @@ function saveuser(){
 	if (isset($session['loggedin']) && $session['loggedin'] && $session['user']['acctid']!=""){
 		// Any time we go to save a user, make SURE that any tempstat changes
 		// are undone.
-		restore_buff_fields();
+		Buffs::restoreBuffFields();
 
 		$session['user']['allowednavs']=serialize($session['allowednavs']);
 		$session['user']['bufflist']=serialize($session['bufflist']);

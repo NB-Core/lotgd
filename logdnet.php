@@ -72,12 +72,12 @@ function lotgdsort($a, $b)
 
 $op = httpget('op');
 if ($op==""){
-	$addy = httpget('addy');
-	$desc = httpget('desc');
-	$vers = httpget('version');
-	$admin = httpget('admin');
-	$count = (int)httpget('c');
-	$lang = httpget('l');
+       $addy  = httpget('addy');
+       $desc  = httpget('desc');
+       $vers  = httpget('version');
+       $admin = httpget('admin');
+       $count = (int)httpget('c');
+       $lang  = httpget('l');
 
 	if ($vers == "") $vers = "Unknown";
 	if ($admin == "" || $admin=="postmaster@localhost.com")
@@ -118,14 +118,27 @@ if ($op==""){
 			// Only one update per minute allowed.
 			if (strtotime($row['lastping'])<strtotime("-1 minutes")){
 				// Increase the popularity of this server
-				$sql = "UPDATE " . db_prefix("logdnet") . " SET lang='$lang',count='$count',recentips='$ips',priority=priority+1,description='$desc',version='$vers',admin='$admin',lastupdate='$date',lastping='$date' WHERE serverid={$row['serverid']}";
-				db_query($sql);
+                               $sql = "UPDATE " . db_prefix("logdnet") .
+                                       " SET lang='" . db_real_escape_string($lang) .
+                                       "',count='" . (int)$count . "',recentips='" . db_real_escape_string($ips) .
+                                       "',priority=priority+1,description='" . db_real_escape_string($desc) .
+                                       "',version='" . db_real_escape_string($vers) .
+                                       "',admin='" . db_real_escape_string($admin) .
+                                       "',lastupdate='$date',lastping='$date' WHERE serverid=" . (int)$row['serverid'];
+                               db_query($sql);
 			}
 	//	}
 	}else{
 		// This is a new server, so add it and give it a small priority boost.
-		$sql = "INSERT INTO " . db_prefix("logdnet") . " (address,description,version,admin,priority,lastupdate,lastping,count,recentips,lang) VALUES ('$addy','$desc','$vers','$admin',10,'$date','$date','$count','{$_SERVER['REMOTE_ADDR']}','$lang')";
-		$result = db_query($sql);
+               $sql = "INSERT INTO " . db_prefix("logdnet") .
+                       " (address,description,version,admin,priority,lastupdate,lastping,count,recentips,lang) VALUES ('" .
+                       db_real_escape_string($addy) . "','" .
+                       db_real_escape_string($desc) . "','" .
+                       db_real_escape_string($vers) . "','" .
+                       db_real_escape_string($admin) . "',10,'$date','$date','$count','" .
+                       db_real_escape_string($_SERVER['REMOTE_ADDR']) . "','" .
+                       db_real_escape_string($lang) . "')";
+               $result = db_query($sql);
 	}
 
 	// Do these next two things whether we've added a new server or

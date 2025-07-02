@@ -1,4 +1,5 @@
 <?php
+use Lotgd\DateTime;
 // translator ready
 // addnews ready
 // mail ready
@@ -7,7 +8,6 @@ require_once("lib/pvplist.php");
 require_once("lib/pvpwarning.php");
 require_once("lib/substitute.php");
 require_once("lib/systemmail.php");
-require_once("lib/datetime.php");
 
 // This contains functions to support pvp
 function setup_target($name) {
