@@ -48,7 +48,7 @@ require_once("lib/nav.php");
 require_once("lib/local_config.php");
 require_once("lib/dbwrapper.php");
 require_once("lib/holiday_texts.php");
-require_once("lib/constants.php");
+require_once("config/constants.php");
 require_once("lib/datacache.php");
 require_once("lib/modules.php");
 require_once("lib/http.php");
