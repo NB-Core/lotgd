@@ -62,12 +62,20 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 	$sendto = explode(";",getsetting("notify_address",""));
 	$howoften = getsetting("notify_every",30);
 	reset($sendto);
-	$data = datacache("error_notify",86400);
-	if (!is_array($data)){
-		$data = array('firstrun'=>true,'errors'=>array());
-	}else{
-		$data['firstrun'] = false;
-	}
+       $data = datacache("error_notify",86400);
+       if (!is_array($data)){
+               $data = array('firstrun'=>false,'errors'=>array());
+               if (!updatedatacache("error_notify", $data)) {
+                       error_log('Unable to write datacache for error_notify');
+               }
+       } else {
+               if (!isset($data['errors']) || !is_array($data['errors'])){
+                       $data['errors'] = array();
+               }
+               if (!array_key_exists('firstrun',$data)){
+                       $data['firstrun'] = false;
+               }
+       }
 	$do_notice = false;
 	if (!array_key_exists($errstr,$data['errors'])){
 		$do_notice = true;
@@ -115,8 +123,10 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			debug("Not notifying users for this error, it's only been ".round((strtotime("now") - $data['errors'][$errstr]) / 60,2)." minutes.");
 		}
 	}
-	updatedatacache("error_notify",$data);
-	debug($data);
+       if (!updatedatacache("error_notify", $data)) {
+               error_log('Unable to write datacache for error_notify');
+       }
+       debug($data);
 }
 set_error_handler("logd_error_handler");
 ?>

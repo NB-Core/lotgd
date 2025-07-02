@@ -32,7 +32,7 @@ If somebody really has time, there are still things to do:
 - replace the template system with a state-of-the-art system such as Smarty
 - integrate refreshing chats (tests with Jaxon worked but were slow)
 - convert arrays into objects to avoid extensive `isset()` checks
-- the error sending via mail has an issue with the datacache+firstrun key in the array. Not sure why. Also outputting PHP warnings to a user should not be done, but those should be logged somewhere in a real log
+- configure the `datacachepath` setting in `dbconnect.php` to a writable directory so errors can be cached for email notifications
 
 Contact me on github via issue if you like https://github.com/NB-Core/lotgd
 
