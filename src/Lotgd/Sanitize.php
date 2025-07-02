@@ -133,7 +133,7 @@ class Sanitize
 
     public static function sanitizeHtml($str)
     {
-        $str = preg_replace('/<script[^>]*>.+<\/script[^>]*>/', '', $str);
+        $str = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $str);
         $str = preg_replace('/<style[^>]*>.+<\/style[^>]*>/', '', $str);
         $str = preg_replace('/<!--.*-->/', '', $str);
         $str = strip_tags($str);
