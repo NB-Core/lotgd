@@ -3,7 +3,7 @@
 // addnews ready
 // mail ready
 
-require_once("lib/constants.php");
+require_once("config/constants.php");
 require_once("lib/settings_extended.php");
 
 $lastexpire = strtotime(getsetting("last_char_expire",DATETIME_DATEMIN));
