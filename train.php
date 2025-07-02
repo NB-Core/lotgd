@@ -6,7 +6,7 @@ use Lotgd\Battle;
 require_once("common.php");
 require_once("lib/systemmail.php");
 require_once("lib/increment_specialty.php");
-require_once("lib/fightnav.php");
+use Lotgd\FightNav;
 require_once("lib/http.php");
 require_once("lib/taunt.php");
 require_once("lib/substitute.php");
@@ -260,7 +260,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 			}
 			modulehook("training-defeat", $badguy);
 		}else{
-		  fightnav(false,false, "train.php?master=$mid");
+                  FightNav::fightnav(false,false, "train.php?master=$mid");
 		}
 		if ($victory || $defeat) {
                     Battle::unsuspendBuffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");

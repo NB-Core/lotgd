@@ -1,0 +1,33 @@
+<?php
+namespace Lotgd;
+
+/**
+ * Text helper to replace certain messages with seasonal variants.
+ */
+class HolidayText
+{
+    /**
+     * Apply holiday replacements to a given text string.
+     */
+    public static function holidayize(string $text, string $type = 'unknown'): string
+    {
+        global $session;
+        if (isset($session['user'])) {
+            if (!isset($session['user']['prefs'])) {
+                $session['user']['prefs'] = [];
+            }
+            if (!isset($session['user']['prefs']['ihavenocheer'])) {
+                $session['user']['prefs']['ihavenocheer'] = 0;
+            }
+            if ($session['user']['prefs']['ihavenocheer']) {
+                return $text;
+            }
+        }
+        $args = ['text' => $text, 'type' => $type];
+        if (!defined('IS_INSTALLER')) {
+            $args = modulehook('holiday', $args);
+        }
+        $text = $args['text'];
+        return $text;
+    }
+}

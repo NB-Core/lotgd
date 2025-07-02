@@ -2,6 +2,8 @@
 require_once __DIR__ . '/autoload.php';
 use Lotgd\AddNews;
 use Lotgd\Buffs;
+use Lotgd\Mounts;
+use Lotgd\HolidayText;
 // translator ready
 // addnews ready
 // mail ready
@@ -48,7 +50,6 @@ $output=new output_collector();
 require_once("lib/nav.php");
 require_once("lib/local_config.php");
 require_once("lib/dbwrapper.php");
-require_once("lib/holiday_texts.php");
 require_once("config/constants.php");
 require_once("lib/datacache.php");
 require_once("lib/modules.php");
@@ -88,7 +89,6 @@ require_once("lib/censor.php");
 require_once("lib/saveuser.php");
 require_once("lib/arrayutil.php");
 require_once("lib/sql.php");
-require_once("lib/mounts.php");
 require_once("lib/debuglog.php");
 require_once("lib/forcednavigation.php");
 require_once("lib/php_generic_environment.php");
@@ -418,7 +418,7 @@ prepare_template();
 
 if(!defined("IS_INSTALLER")) {
 	if (!isset($session['user']['hashorse'])) $session['user']['hashorse']=0;
-	$playermount = getmount($session['user']['hashorse']);
+        $playermount = Mounts::getmount($session['user']['hashorse']);
 	$temp_comp = @unserialize($session['user']['companions']);
 	$companions = array();
 	if(is_array($temp_comp)) {

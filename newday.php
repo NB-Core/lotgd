@@ -1,6 +1,8 @@
 <?php
 use Lotgd\Buffs;
 use Lotgd\Newday;
+use Lotgd\MountName;
+use Lotgd\Names;
 // translator ready
 // addnews ready
 // mail ready
@@ -268,8 +270,7 @@ if ($dp < $dkills) {
 		require_once("lib/substitute.php");
 		$msg = substitute_array("`n`&".$msg."`0`n");
 		output($msg);
-		require_once("lib/mountname.php");
-		list($name, $lcname) = getmountname();
+                list($name, $lcname) = MountName::getmountname();
 
 		$mff = (int)$playermount['mountforestfights'];
 		$session['user']['turns'] += $mff;
@@ -326,8 +327,7 @@ if ($dp < $dkills) {
 	//legacy support if you have no playername set
 	if ($session['user']['playername']=='') {
 		//set it
-		require_once("lib/names.php");
-		$session['user']['playername']=get_player_basename(false);
+                $session['user']['playername'] = Names::get_player_basename(false);
 	}
 
 }

@@ -4,11 +4,11 @@ use Lotgd\Buffs;
 // translator ready
 // mail ready
 require_once("common.php");
-require_once("lib/fightnav.php");
+use Lotgd\FightNav;
 require_once("lib/titles.php");
 require_once("lib/http.php");
 require_once("lib/taunt.php");
-require_once("lib/names.php");
+use Lotgd\Names;
 
 tlschema("dragon");
 $battle = false;
@@ -305,7 +305,7 @@ if ($battle){
 
 			page_footer();
 		}else{
-		  fightnav(true,false);
+                  FightNav::fightnav(true,false);
 		}
 	}
 }

@@ -5,7 +5,7 @@
 require_once("common.php");
 require_once("lib/sanitize.php");
 require_once("lib/http.php");
-require_once("lib/moderate.php");
+use Lotgd\Moderate;
 
 tlschema("moderate");
 
@@ -114,10 +114,10 @@ if ($op==""){
 	if ($area==""){
 		talkform("X","says");
 		//commentdisplay("", "' or '1'='1","X",100); //sure, encourage hacking...
-		commentmoderate('','','X',100,'says',false,true);
+                Moderate::commentmoderate('', '', 'X', 100, 'says', false, true);
 
 	}else{
-		commentmoderate("", $area,"X",100);
+                Moderate::commentmoderate("", $area, "X", 100);
 		talkform($area,"says");
 	}
 }elseif ($op=="audit"){

@@ -3,7 +3,7 @@
 // addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/fightnav.php");
+use Lotgd\FightNav;
 require_once("lib/pvpwarning.php");
 require_once("lib/pvplist.php");
 require_once("lib/pvpsupport.php");
@@ -123,7 +123,7 @@ if ($battle){
 	}else{
 		$extra = "";
 		if (httpget('inn')) $extra = "?inn=1";
-		fightnav(false,false, "pvp.php$extra");
+                FightNav::fightnav(false,false, "pvp.php$extra");
 	}
 }
 page_footer();

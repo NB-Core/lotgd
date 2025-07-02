@@ -1,5 +1,6 @@
 <?php
-	$op = httpget("op");
+use Lotgd\FightNav;
+        $op = httpget("op");
 	$city = urldecode(httpget("city"));
 	$continue = httpget("continue");
 	$danger = httpget("d");
@@ -181,8 +182,7 @@
 			require_once("lib/forestoutcomes.php");
 			forestdefeat($newenemies,array("travelling to %s",$city));
 		}else{
-			require_once("lib/fightnav.php");
-			fightnav(true,true,"runmodule.php?module=cities&city=".urlencode($city)."&d=$danger");
+                        FightNav::fightnav(true,true,"runmodule.php?module=cities&city=".urlencode($city)."&d=$danger");
 		}
 		page_footer();
 	}

@@ -3,8 +3,8 @@
 // translator ready
 // mail ready
 require_once("common.php");
-require_once("lib/forest.php");
-require_once("lib/fightnav.php");
+use Lotgd\Forest;
+use Lotgd\FightNav;
 require_once("lib/http.php");
 require_once("lib/taunt.php");
 require_once("lib/events.php");
@@ -305,7 +305,7 @@ if ($battle){
 		require_once("lib/forestoutcomes.php");
 		forestdefeat($newenemies);
 	}else{
-		fightnav();
+                FightNav::fightnav();
 	}
 }
 
@@ -313,7 +313,7 @@ if ($op==""){
 	// Need to pass the variable here so that we show the forest message
 	// sometimes, but not others.
 	modulehook("forest_enter",array());
-	forest($dontdisplayforestmessage);
+        Forest::forest($dontdisplayforestmessage);
 }
 page_footer();
 ?>
