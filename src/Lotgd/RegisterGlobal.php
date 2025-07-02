@@ -8,9 +8,6 @@ class RegisterGlobal
      */
     public static function register(array $var): void
     {
-        if (!is_array($var)) {
-            return;
-        }
         foreach ($var as $key => $val) {
             $GLOBALS[$key] = $val;
         }
