@@ -1,5 +1,6 @@
 <?php
 use Lotgd\FightBar;
+use Lotgd\BellRand;
 // addnews ready
 // mail ready
 // translation ready
@@ -533,14 +534,14 @@ $bad_check=1;
 			debug("Attack score: $atk");
 			*/
 
-			$patkroll = bell_rand(0,$atk);
+			$patkroll = BellRand::generate(0,$atk);
 			/*
 			debug("Player Attack roll: $patkroll");
 			*/
 
 			// Set up for crit detection
 			$atk = $patkroll;
-			$catkroll = bell_rand(0,$adjustedcreaturedefense);
+			$catkroll = BellRand::generate(0,$adjustedcreaturedefense);
 			/*
 			debug("Creature defense roll: $catkroll");
 			*/
@@ -553,8 +554,8 @@ $bad_check=1;
 			if ($creaturedmg > 0) {
 				$creaturedmg = round($buffset['compdmgmod']*$creaturedmg,0);
 			}
-			$pdefroll = bell_rand(0,$adjustedselfdefense);
-			$catkroll = bell_rand(0,$creatureattack);
+			$pdefroll = BellRand::generate(0,$adjustedselfdefense);
+			$catkroll = BellRand::generate(0,$creatureattack);
 			/*
 			   debug("Creature attack roll: $catkroll");
 			   debug("Player defense roll: $pdefroll");

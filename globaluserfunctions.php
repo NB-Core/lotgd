@@ -1,6 +1,5 @@
 <?php
 require_once("common.php");
-require_once("lib/dhms.php");
 
 tlschema("globaluserfunctions");
 

@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Buffs;
+use Lotgd\DeathMessage;
 // addnews ready.
 // translator ready
 // mail ready
@@ -88,10 +89,9 @@ if ($battle){
 	}else{
 		if ($defeat){
 			require_once("lib/taunt.php");
-			require_once("lib/deathmessage.php");
 			$taunt = select_taunt_array();
 			$where = translate_inline("in the graveyard");
-			$deathmessage=select_deathmessage_array(false,array("{where}"),array($where));
+			$deathmessage=DeathMessage::selectArray(false,array("{where}"),array($where));
 			if ($deathmessage['taunt']==1) {
 				AddNews::add("%s`n%s",$deathmessage['deathmessage'],$taunt);
 			} else {

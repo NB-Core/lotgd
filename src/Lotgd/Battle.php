@@ -3,6 +3,7 @@ namespace Lotgd;
 
 use Lotgd\Buffs;
 
+use Lotgd\BellRand;
 class Battle
 {
     public static function rollDamage(&$badguy)
@@ -34,9 +35,9 @@ class Battle
                 if (e_rand(1, 20) == 1 && $options['type'] != 'pvp') {
                     $atk *= 2;
                 }
-                $patkroll = bell_rand(0, $atk);
+                $patkroll = BellRand::generate(0, $atk);
                 $atk = $patkroll;
-                $catkroll = bell_rand(0, $adjustedcreaturedefense);
+                $catkroll = BellRand::generate(0, $adjustedcreaturedefense);
                 $creaturedmg = 0 - (int) ($catkroll - $patkroll);
                 if ($creaturedmg < 0) {
                     $creaturedmg = (int) ($creaturedmg / 2);
@@ -47,8 +48,8 @@ class Battle
                     $creaturedmg = round($buffset['dmgmod'] * $creaturedmg, 0);
                     $creaturedmg = max(0, round($creaturedmg - $badguy['physicalresistance']));
                 }
-                $pdefroll = bell_rand(0, $adjustedselfdefense);
-                $catkroll = bell_rand(0, $creatureattack);
+                $pdefroll = BellRand::generate(0, $adjustedselfdefense);
+                $catkroll = BellRand::generate(0, $creatureattack);
                 if ($powerattack != 0 && $options['type'] != 'pvp') {
                     if (e_rand(1, $powerattack) == 1) {
                         $catkroll *= $powerattackmulti;

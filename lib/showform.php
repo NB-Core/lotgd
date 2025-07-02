@@ -2,7 +2,7 @@
 // translator ready
 // addnews ready
 // mail ready
-require_once("lib/dump_item.php");
+use Lotgd\DumpItem;
 
 function showform($layout,$row,$nosave=false,$keypref=false){
 	global $session;
@@ -304,13 +304,13 @@ function showform($layout,$row,$nosave=false,$keypref=false){
 			//don't unset it. it does not change, so nothing lost
 			unset($returnvalues[$key]);
 			if (isset($row[$key])) {
-				output_notl(dump_item($row[$key]),true);
+				output_notl(DumpItem::dump($row[$key]),true);
 			}
 			break;
 		case "viewhiddenonly":
 			//don't unset it, transfer it, hide it. This is now used for legacy support of playernames that are empty and showform won't carry the name over to extract the real one
 			if (isset($row[$key])) {
-				output_notl(dump_item($row[$key]),true);
+				output_notl(DumpItem::dump($row[$key]),true);
 				rawoutput("<input type='hidden' name='".addslashes($key)."' value='".addslashes($row[$key])."'>");
 			}
 			break;

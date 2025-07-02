@@ -2,8 +2,8 @@
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Dhms;
 require_once("common.php");
-require_once("lib/dhms.php");
 require_once("lib/http.php");
 
 tlschema("referers");
@@ -54,7 +54,7 @@ while ($row = db_fetch_assoc($result)) {
 	rawoutput("</td><td valign='top'>");
 	$diffsecs = strtotime("now")-strtotime($row['last']);
 	//output((int)($diffsecs/86400)."d ".(int)($diffsecs/3600%3600)."h ".(int)($diffsecs/60%60)."m ".(int)($diffsecs%60)."s");
-	output_notl("`b".dhms($diffsecs)."`b");
+	output_notl("`b".Dhms::format($diffsecs)."`b");
 	rawoutput("</td><td valign='top' colspan='3'>");
 	output_notl("`b".($row['site']==""?$none:$row['site'])."`b");
 	rawoutput("</td></tr>");
@@ -72,7 +72,7 @@ while ($row = db_fetch_assoc($result)) {
 			output_notl($row1['count']);
 			rawoutput("</td><td valign='top'>");
 			//output((int)($diffsecs/86400)."d".(int)($diffsecs/3600%3600)."h".(int)($diffsecs/60%60)."m".(int)($diffsecs%60)."s");
-			output_notl(dhms($diffsecs));
+			output_notl(Dhms::format($diffsecs));
 			rawoutput("</td><td valign='top'>");
 			if ($row1['uri']>"")
 				rawoutput("<a href='".HTMLEntities($row1['uri'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."' target='_blank'>".HTMLEntities(substr($row1['uri'],0,100))."</a>");

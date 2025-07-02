@@ -1,11 +1,11 @@
 <?php
 // mail ready
 // addnews ready
+use Lotgd\CheckBan;
 // translator ready
 define("ALLOW_ANONYMOUS",true);
 require_once("common.php");
 require_once("lib/systemmail.php");
-require_once("lib/checkban.php");
 require_once("lib/http.php");
 require_once("lib/serverfunctions.class.php");
 
@@ -40,8 +40,8 @@ if ($name!=""){
 		if (db_num_rows($result)==1){
 			$session['user']=db_fetch_assoc($result);
 			$baseaccount = $session['user'];
-			checkban($session['user']['login']); //check if this account is banned
-			checkban(); //check if this computer is banned
+			CheckBan::check($session['user']['login']); //check if this account is banned
+			CheckBan::check(); //check if this computer is banned
 			// If the player isn't allowed on for some reason, anything on
 			// this hook should automatically call page_footer and exit
 			// itself.
@@ -113,7 +113,7 @@ if ($name!=""){
 			//now we'll log the failed attempt and begin to issue bans if
 			//there are too many, plus notify the admins.
 			$sql = "DELETE FROM " . db_prefix("faillog") . " WHERE date<'".date("Y-m-d H:i:s",strtotime("-".(getsetting("expirecontent",180)/4)." days"))."'";
-			checkban();
+			CheckBan::check();
 			//db_query($sql);
 			$sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='$name'";
 			$result = db_query($sql);
