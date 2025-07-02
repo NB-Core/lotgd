@@ -1,6 +1,11 @@
 <?php
 namespace Lotgd;
 
+
+/**
+ * Lightweight file based data cache helper.
+ */
+
 class DataCache
 {
     private static array $cache = [];
