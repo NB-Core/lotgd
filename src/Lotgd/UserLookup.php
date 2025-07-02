@@ -30,7 +30,7 @@ class UserLookup
                     $sql_where="WHERE login LIKE '%$query%' OR acctid LIKE '%$query%' OR name LIKE '%$name_query%' OR emailaddress LIKE '%$query%' OR lastip LIKE '%$query%' OR uniqueid LIKE '%$query%' OR gentimecount LIKE '%$query%' OR level LIKE '%$query%'";
                 else
                     $sql_where = "WHERE $where";
-                $searchresult = db_query($sql . " $sql_where $order LIMIT 101");
+                $searchresult = db_query($sql . " $sql_where $order LIMIT 301");
             }
             if (db_num_rows($searchresult)<=0){
                 $err = "`\$No results found`0";
