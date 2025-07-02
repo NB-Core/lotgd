@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Commentary;
+use Lotgd\MountName;
 declare(strict_types=1);
 // translator ready
 // addnews ready
@@ -81,8 +82,7 @@ function darkhorse_dohook(string $hookname, array $args): array{
 			// add the nav
 			addnav("Other");
 			$iname = get_module_setting("tavernname");
-			require_once("lib/mountname.php");
-			list($name, $lcname) = getmountname();
+                        list($name, $lcname) = MountName::getmountname();
 			addnav(array("D?Take %s`0 to %s", $lcname, $iname),
 					"runmodule.php?module=darkhorse&op=enter");
 		}
@@ -324,8 +324,7 @@ function darkhorse_runevent(string $type, string $link): void{
 		output("You're sure you've seen this place before.");
 		output("As you approach the grove, a strange mist creeps in around you; your mind begins to buzz, and you're no longer sure exactly how you got here.");
 		if(darkhorse_tavernmount()) {
-			require_once("lib/mountname.php");
-			list($name, $lcname) = getmountname();
+                        list($name, $lcname) = MountName::getmountname();
 			output("%s`0 seems to have known the way, however.", $name);
 		}
 		output("`n`nThe mist clears, and before you is a log building with smoke trailing from its chimney.");

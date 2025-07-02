@@ -3,7 +3,7 @@
 // translator ready
 // mail ready
 require_once("common.php");
-require_once("lib/forest.php");
+use Lotgd\Forest;
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
@@ -128,7 +128,7 @@ if ($return==""){
 		addnav("F?Back to the Forest", "forest.php");
 		villagenav();
 	}else{
-		forest(true);
+                Forest::forest(true);
 	}
 }elseif ($return=="village.php"){
 	villagenav();

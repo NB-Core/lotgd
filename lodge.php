@@ -7,7 +7,7 @@ require_once("common.php");
 require_once("lib/sanitize.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
-require_once("lib/names.php");
+use Lotgd\Names;
 
 tlschema("lodge");
 
