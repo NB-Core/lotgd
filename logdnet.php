@@ -120,7 +120,7 @@ if ($op==""){
 				// Increase the popularity of this server
                                $sql = "UPDATE " . db_prefix("logdnet") .
                                        " SET lang='" . db_real_escape_string($lang) .
-                                       "',count='$count',recentips='" . db_real_escape_string($ips) .
+                                       "',count='" . (int)$count . "',recentips='" . db_real_escape_string($ips) .
                                        "',priority=priority+1,description='" . db_real_escape_string($desc) .
                                        "',version='" . db_real_escape_string($vers) .
                                        "',admin='" . db_real_escape_string($admin) .
