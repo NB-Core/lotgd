@@ -245,14 +245,14 @@ cd lotgd
 
 ### Step 2: Set Up the Docker Environment
 
-Create the following files in the root directory of the project if they don't already exist:
+This repository already includes the essential Docker and configuration files. Review these files and adjust them as needed:
 
 1. **Dockerfile**
 2. **docker-compose.yml**
 3. **.env**
 4. **.htaccess**
 
-The contents of these files are detailed in the [Configuration Files](#configuration-files) section.
+The details of each file are covered in the [Configuration Files](#configuration-files) section.
 
 ### Step 3: Build and Start the Containers
 
