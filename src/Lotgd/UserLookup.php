@@ -12,10 +12,10 @@ class UserLookup
         $sql = 'SELECT ' . $fields . ' FROM ' . db_prefix('accounts');
         if ($query != '') {
             if ($where === false)
-                $sql_where = "WHERE login LIKE '$query' OR name LIKE '$query' OR acctid = '$query' OR emailaddress LIKE '$query' OR lastip LIKE '$query' OR uniqueid LIKE '$query'";
+                $sql_where = "WHERE login LIKE ? OR name LIKE ? OR acctid = ? OR emailaddress LIKE ? OR lastip LIKE ? OR uniqueid LIKE ?";
             else
                 $sql_where = "WHERE $where";
-            $searchresult = db_query($sql . " $sql_where $order LIMIT 2");
+            $searchresult = db_query($sql . " $sql_where $order LIMIT 2", [$query, $query, $query, $query, $query, $query]);
         }
         if ($query !== false || $searchresult) {
             if (db_num_rows($searchresult) != 1) {
