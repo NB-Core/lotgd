@@ -23,7 +23,7 @@ class SendMail
      */
     public static function send($to, $body, $subject, $from, $cc = false, string $contenttype = 'text/plain')
     {
-        require_once __DIR__ . '/../autoload.php';
+        // Autoloader is assumed to be globally registered via Composer.
 
         $host = getsetting('gamemailhost', 'localhost');
         $mailusername = getsetting('gamemailusername', '');
