@@ -27,7 +27,7 @@ class Settings
     public function saveSetting($settingname, $value)
     {
         $this->loadSettings();
-        if (!isset($this->settings[$settingname]) && $value) {
+        if (!isset($this->settings[$settingname])) {
             $sql = "INSERT INTO " . $this->tablename . " (setting,value) VALUES ('" . addslashes($settingname) . "','" . addslashes($value) . "')";
         } elseif (isset($this->settings[$settingname])) {
             $sql = "UPDATE " . $this->tablename . " SET value='" . addslashes($value) . "' WHERE setting='" . addslashes($settingname) . "'";
