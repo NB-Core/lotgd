@@ -35,9 +35,6 @@ class Http
     public static function postIsset(string $var): bool
     {
         $res = isset($_POST[$var]) ? 1 : 0;
-        if ($res === '') {
-            $res = isset($GLOBALS['HTTP_POST_VARS'][$var]) ? 1 : 0;
-        }
         return (bool)$res;
     }
 
