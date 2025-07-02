@@ -132,7 +132,7 @@ section to verify your configuration.
 These instructions cover a new LoGD installation.
 You will need access to a MySQL database and a PHP hosting
 location to run this game. Your SQL user needs the LOCK TABLES
-privilege in order to run the game correct.
+privilege in order to run the game correctly.
 
 Extract the files into the directory where you will want the code to live.
 
