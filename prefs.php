@@ -26,10 +26,10 @@ $op = httpget('op');
 
 addnav("Navigation");
 if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
-	$userid = httpget('userid');
+       $userid = (int)httpget('userid');
 	require_once("lib/charcleanup.php");
 	char_cleanup($userid, CHAR_DELETE_SUICIDE);
-	$sql = "DELETE FROM " . db_prefix("accounts") . " WHERE acctid='$userid'";
+       $sql = "DELETE FROM " . db_prefix("accounts") . " WHERE acctid=$userid";
 	db_query($sql);
 	output("Your character has been deleted!");
 	AddNews::add("`#%s quietly passed from this world.",$session['user']['name']);

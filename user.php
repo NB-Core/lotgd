@@ -12,7 +12,7 @@ tlschema("user");
 check_su_access(SU_EDIT_USERS);
 
 $op = httpget('op');
-$userid=httpget("userid");
+$userid=(int)httpget("userid");
 
 if ($op == "lasthit") {
 	// Try and keep user editor and captcha from breaking each other.

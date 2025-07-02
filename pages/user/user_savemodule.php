@@ -1,6 +1,6 @@
 <?php
 //save module settings.
-$userid = httpget('userid');
+$userid = (int)httpget('userid');
 $module = httpget('module');
 $post = httpallpost();
 $post = modulehook("validateprefs", $post, true, $module);
@@ -13,8 +13,12 @@ if (isset($post['validation_error']) && $post['validation_error']) {
 } else {
 	output_notl("`n");
 	foreach ($post as $key=>$val) {
-		output("`\$Setting '`2%s`\$' to '`2%s`\$'`n", $key, stripslashes($val));
-		$sql = "REPLACE INTO " . db_prefix("module_userprefs") . " (modulename,userid,setting,value) VALUES ('$module','$userid','$key','$val')";
+		output("`\$Setting '`2%s`\$' to '`2%s`\$'`n", $key, htmlspecialchars($val, ENT_QUOTES, 'UTF-8'));
+               $sql = "REPLACE INTO " . db_prefix("module_userprefs") .
+                       " (modulename,userid,setting,value) VALUES ('" .
+                       db_real_escape_string($module) . "',$userid,'" .
+                       db_real_escape_string($key) . "','" .
+                       db_real_escape_string($val) . "')";
 		db_query($sql);
 	}
 	output("`^Preferences for module %s saved.`n", $module);
