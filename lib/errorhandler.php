@@ -69,7 +69,7 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
                        error_log('Unable to write datacache for error_notify');
                }
        } else {
-               if (!array_key_exists('errors',$data) || !is_array($data['errors'])){
+               if (!isset($data['errors']) || !is_array($data['errors'])){
                        $data['errors'] = array();
                }
                if (!array_key_exists('firstrun',$data)){
