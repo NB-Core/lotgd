@@ -3,7 +3,7 @@
 // translator ready
 // mail ready
 require_once("lib/taunt.php");
-require_once("lib/deathmessage.php");
+use Lotgd\DeathMessage;
 require_once("lib/e_rand.php");
 require_once("lib/pageparts.php");
 require_once("lib/output.php");
@@ -152,7 +152,7 @@ function forestdefeat($enemies,$where="in the forest"){
 	} else {
 		$where=translate_inline($where);
 	}*/
-	$deathmessage=select_deathmessage_array(true,array("{where}"),array($where));
+	$deathmessage=DeathMessage::selectArray(true,array("{where}"),array($where));
 	if ($deathmessage['taunt']==1) {
 		AddNews::add("%s`n%s",$deathmessage['deathmessage'],$taunt);
 	} else {

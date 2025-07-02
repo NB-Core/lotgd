@@ -1,5 +1,6 @@
 <?php
 if ($session['user']['gravefights']<=0){
+use Lotgd\BellRand;
 	output("`\$`bYour soul can bear no more torment in this afterlife.`b`0");
 	$op="";
 	httpset('op', "");
@@ -40,14 +41,13 @@ if ($session['user']['gravefights']<=0){
 			}
 		}
 		require_once("lib/playerfunctions.php");
-		require_once("lib/bell_rand.php");
 		$atk=get_player_attack();
 		$def=get_player_defense();
 		//$badguy['creatureattack']*=1.7+round($atk/(10 + round(($session['user']['level'] - 1) )));
 		//$badguy['creaturedefense']*=1.6+round($def/(10 + round(($session['user']['level'] - 1))));
 		$modificator = 1.5;
-		$badguy['creatureattack']=max(2,$atk-bell_rand(2,ceil($level/$modificator)+$modificator*sqrt($session['user']['dragonkills'])));
-		$badguy['creaturedefense']=max(2,$def-bell_rand(2,ceil($level/$modificator)+$modificator*sqrt($session['user']['dragonkills'])));
+		$badguy['creatureattack']=max(2,$atk-BellRand::generate(2,ceil($level/$modificator)+$modificator*sqrt($session['user']['dragonkills'])));
+		$badguy['creaturedefense']=max(2,$def-BellRand::generate(2,ceil($level/$modificator)+$modificator*sqrt($session['user']['dragonkills'])));
 		$badguy['creaturehealth'] = $level * 5 + 50+ round($session['user']['dragonkills']*2);
 		$badguy['creatureexp'] = e_rand(10,15)+round($level/3);
 		$badguy['creaturelevel'] = $level;

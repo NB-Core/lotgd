@@ -2,8 +2,8 @@
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Dhms;
 require_once("common.php");
-require_once("lib/dhms.php");
 
 tlschema("stats");
 
@@ -27,9 +27,9 @@ if ($op=="stats" || $op==""){
 	output("`b`%For existing accounts:`b`n");
 	output("`@Total Accounts: `^%s`n",number_format($row['a']));
 	output("`@Total Hits: `^%s`n",number_format($row['c']));
-	output("`@Total Page Gen Time: `^%s`n",dhms($row['t']));
+	output("`@Total Page Gen Time: `^%s`n",Dhms::format($row['t']));
 	output("`@Total Page Gen Size: `^%sb`n",number_format($row['s']));
-	output("`@Average Page Gen Time: `^%s`n",dhms($row['t']/$row['c'],true));
+	output("`@Average Page Gen Time: `^%s`n",Dhms::format($row['t']/$row['c'],true));
 	output("`@Average Page Gen Size: `^%s`n",number_format($row['s']/$row['c']));
 }elseif ($op=="referers"){
 	output("`n`%`bTop Referers:`b`0`n");
