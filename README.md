@@ -6,36 +6,33 @@ This is a fork of the original Legend of the Green Dragon game by Eric "MightyE"
 
 The original readme and license texts follow below, also the installation + upgrade routines which haven't changed much.
 
-I'd like to add a few words, primarily why this fork was made and how the current status ist.
+I'd like to add a few words, primarily why this fork was made and how the current status is.
 
-The fork was mostly made for personal purposes, as many small or big things have been replaced or changed, compared to the core version on Dragonprime.
-Most things that were done on the fork are backwards compatible, means you can safely use modules from non-fork-development.
+The fork was mostly made for personal purposes, as many small or big things have been replaced or changed compared to the core version on Dragonprime.
+Most things that were done on the fork are backwards compatible, which means you can safely use modules from non-fork development.
 
-The base DP version this fork derived off was 1.1.1 +dragonprime edition.
+The base DP version this fork derived from was 1.1.1 +dragonprime edition.
 
-Some things to consider:
-- more hooks were added to this version
-- the stat system with strength/dexterity/etc. was added
-- (many things I forgot already that were added or changed, that's what the release notes are for, you can read them up in CHANGELOG.txt)
+Features of this fork include:
+- additional hooks
+- a stat system with strength, dexterity, and other attributes
+- numerous other changes documented in `CHANGELOG.txt`
+- compatibility with PHP 8
+- PHPMailer replacing the sendmail system
+- mail notifications that auto-refresh via Ajax
+- Composer integration for third-party modules
+  - after modifying Composer settings, run `composer dump-autoload` to recognize new namespaces
+  - after running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies
+  - `autoload.php` automatically loads `vendor/autoload.php` and registers the project namespace
+- mysqli is now the default database layer
 
-Mostly, technical stuff is now new:
-- this version was modified to work with php8 (which did incur numerous bugfixes and stuff)
-- the sendmail-system was replaced by phpmailer()
-- the mail notification feature an auto-refresh via ajax now
-- composer was integrated for sensible (see above) third party modules
-- After modifying Composer settings, run `composer dump-autoload` so new namespaces are recognized.
-- After running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies.
-- `autoload.php` automatically loads `vendor/autoload.php` and registers the project namespace.
-- mysqli is now standard, so it's used primarily, the old ones won't be tested (and really, most things didn't work when you switched the db provider in lotgd)
-
-So, it should work on every modern PHP enviroment.
+So, it should work on every modern PHP environment.
 
 If somebody really has time, there are still things to do:
-- replace the template system with a state-of-the-art system (like smarty)
-- integrate refreshing chats (I did some tests with jaxon a few years ago, worked OK, but slow)
-- make some horrible things objects and not array, the isset() tests drive me nuts ffs
-- the error sending via mail has an issue with datacache+firstrun key in array. Not sure why. Also outputting PHP warnings to a user should not be done, but those should be logged somewhere in a real log
-- ?
+- replace the template system with a state-of-the-art system such as Smarty
+- integrate refreshing chats (tests with Jaxon worked but were slow)
+- convert arrays into objects to avoid extensive `isset()` checks
+- the error sending via mail has an issue with the datacache+firstrun key in the array. Not sure why. Also outputting PHP warnings to a user should not be done, but those should be logged somewhere in a real log
 
 Contact me on github via issue if you like https://github.com/NB-Core/lotgd
 
@@ -134,14 +131,14 @@ section to verify your configuration.
 
 These instructions cover a new LoGD installation.
 You will need access to a MySQL database and a PHP hosting
-location to run this game. Your SQL user needs the LOCK TABLES 
-privelege in order to run the game correct.
+location to run this game. Your SQL user needs the LOCK TABLES
+privilege in order to run the game correct.
 
 Extract the files into the directory where you will want the code to live.
 
 BEFORE ANYTHING ELSE, read and understand the license that this game is
 released under.  You are legally bound by the license if you install this
-game on a publically accessible web server!
+game on a publicly accessible web server!
 
 MySQL Setup:
 Setup should be pretty straightforward, create the database, create
