@@ -1,5 +1,5 @@
 <?php
-$sql = "SELECT name,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE acctid=\"$userid\"";
+$sql = "SELECT name,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE acctid=" . (int)$userid;
 $result = db_query($sql);
 $row = db_fetch_assoc($result);
 if ($row['name']!="")
