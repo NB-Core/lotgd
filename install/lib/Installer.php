@@ -255,7 +255,7 @@ class Installer
         	addnav("Login Screen","./");
         }
         savesetting("installer_version",$logd_version);
-        $file = __DIR__ . '/../installer.php';
+        $file = __DIR__ . '/../../installer.php';
                 if (file_exists($file)) {
                         try {
                                 if (unlink($file)) {
