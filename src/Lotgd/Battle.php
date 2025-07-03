@@ -331,7 +331,7 @@ class Battle
         }
         modulehook('apply-specialties');
     }
-    public static function show_enemies($enemies) {
+
     public static function fightnav(bool $allowSpecial = true, bool $allowFlee = true, $script = false): void
     {
         global $session, $newenemies, $companions;
@@ -392,8 +392,10 @@ class Battle
             }
         }
         tlschema();
-    }
-}
+	}
+
+	public static function showEnemies($enemies = [])
+	{
         global $enemycounter, $session;
         $u=&$session['user']; //fast and better, by pointer
         static $fightbar=NULL;
@@ -402,123 +404,123 @@ class Battle
                 $fightbar=new FightBar();
         }
 
-	//show all enemies including their stats
-	foreach ($enemies as $index => $badguy) {
-		if ((isset($badguy['istarget']) && $badguy['istarget'] == true) && $enemycounter > 1)
-			$ccode = "`#";
-		else
-			$ccode = "`2";
-		if (!isset($badguy['creaturemaxhealth']) && isset($badguy['creaturehealth'])) $badguy['creaturemaxhealth'] = $badguy['creaturehealth'];
-		if (isset($badguy['hidehitpoints']) && $badguy['hidehitpoints'] == true) {
-			$maxhealth = $health = "???";
-		} else {
-			$health = $badguy['creaturehealth'];
-			$maxhealth = $badguy['creaturemaxhealth'];
-		}
-		if (isset($session['user']['prefs']['forestcreaturebar'])) {
-			$barDisplay=(int)$session['user']['prefs']['forestcreaturebar'];
-		} else {
-			$barDisplay=getsetting('forestcreaturebar',0); //get default
-			$session['user']['prefs']['forestcreaturebar']=$barDisplay;
+		//show all enemies including their stats
+		foreach ($enemies as $index => $badguy) {
+			if ((isset($badguy['istarget']) && $badguy['istarget'] == true) && $enemycounter > 1)
+				$ccode = "`#";
+			else
+				$ccode = "`2";
+			if (!isset($badguy['creaturemaxhealth']) && isset($badguy['creaturehealth'])) $badguy['creaturemaxhealth'] = $badguy['creaturehealth'];
+			if (isset($badguy['hidehitpoints']) && $badguy['hidehitpoints'] == true) {
+				$maxhealth = $health = "???";
+			} else {
+				$health = $badguy['creaturehealth'];
+				$maxhealth = $badguy['creaturemaxhealth'];
+			}
+			if (isset($session['user']['prefs']['forestcreaturebar'])) {
+				$barDisplay=(int)$session['user']['prefs']['forestcreaturebar'];
+			} else {
+				$barDisplay=getsetting('forestcreaturebar',0); //get default
+				$session['user']['prefs']['forestcreaturebar']=$barDisplay;
+			}
+			if ($u['alive']){
+				$hitpointstext=translate_inline("Hitpoints");
+				$healthtext=appoencode(translate_inline("`^Health"));
+			} else {
+				$hitpointstext=translate_inline("Soulpoints");
+				$healthtext=appoencode(translate_inline("`)Soul"));
+			}
+			switch ($barDisplay) {
+				case 2:
+				output("%s%s%s%s (Level %s)`n",
+					$ccode,
+					(isset($badguy['istarget'])&&$badguy['istarget']&&$enemycounter>1)?"*":"", 
+					$badguy['creaturename'],
+					$ccode, 
+					$badguy['creaturelevel']);
+				rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+				output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
+				rawoutput("</td><td>");
+				rawoutput($fightbar->getBar($badguy['creaturehealth'],$badguy['creaturemaxhealth']));
+				rawoutput("</td><td>");
+				output_notl("(%s/%s) %s`0`n",$health,$maxhealth,$badguy['creaturehealth']>0?"":translate_inline("`7DEFEATED`0"),true);
+				rawoutput("</td></tr></table>");
+				break;
+
+				case 1:
+				output("%s%s%s%s (Level %s)`n",
+					$ccode,
+					(isset($badguy['istarget'])&&$badguy['istarget']&&$enemycounter>1)?"*":"", 
+					$badguy['creaturename'],
+					$ccode, 
+					$badguy['creaturelevel']);
+				rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+				output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
+				rawoutput("</td><td>");
+				rawoutput($fightbar->getBar($badguy['creaturehealth'],$badguy['creaturemaxhealth']));
+				rawoutput("</td><td>");
+				output_notl("%s`0`n",$badguy['creaturehealth']>0?"":translate_inline("`7DEFEATED`0"),true);
+				rawoutput("</td></tr></table>");
+
+
+				default:
+				output("%s%s%s%s's %s%s (Level %s): `6%s`0`n",
+					$ccode,
+					(isset($badguy['istarget'])&&$badguy['istarget']&&$enemycounter>1)?"*":"", 
+					$badguy['creaturename'],
+					$ccode,
+					$hitpointstext,
+					$ccode, 
+					$badguy['creaturelevel'],
+					($badguy['creaturehealth']>0?$health:translate_inline("`7DEFEATED`0"))
+				);
+			}
 		}
 		if ($u['alive']){
-			$hitpointstext=translate_inline("Hitpoints");
-			$healthtext=appoencode(translate_inline("`^Health"));
+			$hitpointstext=$u['name']."`0";
+			$dead=false;
 		} else {
-			$hitpointstext=translate_inline("Soulpoints");
-			$healthtext=appoencode(translate_inline("`)Soul"));
+			$hitpointstext=sprintf_translate("Soul of %s",$u['name']);
+			$dead=true;
+			$maxsoul= 50 + 10 * $u['level']+$u['dragonkills']*2;
+
 		}
+		//your faction display (companions?)
 		switch ($barDisplay) {
 			case 2:
-			output("%s%s%s%s (Level %s)`n",
-				$ccode,
-				(isset($badguy['istarget'])&&$badguy['istarget']&&$enemycounter>1)?"*":"", 
-				$badguy['creaturename'],
-				$ccode, 
-				$badguy['creaturelevel']);
+			output("`l%s:`n",
+				$hitpointstext
+				);
 			rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
 			output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
 			rawoutput("</td><td>");
-			rawoutput($fightbar->getBar($badguy['creaturehealth'],$badguy['creaturemaxhealth']));
+			if (!$dead) rawoutput($fightbar->getBar($u['hitpoints'],$u['maxhitpoints']));
+				else rawoutput($fightbar->getBar($u['hitpoints'],$maxsoul));
 			rawoutput("</td><td>");
-			output_notl("(%s/%s) %s`0`n",$health,$maxhealth,$badguy['creaturehealth']>0?"":translate_inline("`7DEFEATED`0"),true);
+			if (!$dead) output_notl("(%s/%s) %s`0`n",$u['hitpoints'],$u['maxhitpoints'],$u['hitpoints']>0?"":translate_inline("`7DEFEATED`0"),true);
+				else output_notl("(%s/%s) %s`0`n",$u['hitpoints'],$maxsoul,$u['hitpoints']>0?"":translate_inline("`7DEFEATED`0"),true);
+
 			rawoutput("</td></tr></table>");
 			break;
 
 			case 1:
-			output("%s%s%s%s (Level %s)`n",
-				$ccode,
-				(isset($badguy['istarget'])&&$badguy['istarget']&&$enemycounter>1)?"*":"", 
-				$badguy['creaturename'],
-				$ccode, 
-				$badguy['creaturelevel']);
+			output("`l%s:`n",
+				$hitpointstext
+				);
 			rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
 			output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
 			rawoutput("</td><td>");
-			rawoutput($fightbar->getBar($badguy['creaturehealth'],$badguy['creaturemaxhealth']));
+			if (!$dead) rawoutput($fightbar->getBar($u['hitpoints'],$u['maxhitpoints']));
+				else rawoutput($fightbar->getBar($u['hitpoints'],$maxsoul));
 			rawoutput("</td><td>");
-			output_notl("%s`0`n",$badguy['creaturehealth']>0?"":translate_inline("`7DEFEATED`0"),true);
+
 			rawoutput("</td></tr></table>");
 
 
 			default:
-			output("%s%s%s%s's %s%s (Level %s): `6%s`0`n",
-				$ccode,
-				(isset($badguy['istarget'])&&$badguy['istarget']&&$enemycounter>1)?"*":"", 
-				$badguy['creaturename'],
-				$ccode,
-				$hitpointstext,
-				$ccode, 
-				$badguy['creaturelevel'],
-				($badguy['creaturehealth']>0?$health:translate_inline("`7DEFEATED`0"))
-			);
+			output("`l%s: `6%s`0`n",$hitpointstext,$u['hitpoints']);
 		}
 	}
-	if ($u['alive']){
-		$hitpointstext=$u['name']."`0";
-		$dead=false;
-	} else {
-		$hitpointstext=sprintf_translate("Soul of %s",$u['name']);
-		$dead=true;
-		$maxsoul= 50 + 10 * $u['level']+$u['dragonkills']*2;
-
-	}
-	//your faction display (companions?)
-	switch ($barDisplay) {
-		case 2:
-		output("`l%s:`n",
-			$hitpointstext
-			);
-		rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-		output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
-		rawoutput("</td><td>");
-		if (!$dead) rawoutput($fightbar->getBar($u['hitpoints'],$u['maxhitpoints']));
-			else rawoutput($fightbar->getBar($u['hitpoints'],$maxsoul));
-		rawoutput("</td><td>");
-		if (!$dead) output_notl("(%s/%s) %s`0`n",$u['hitpoints'],$u['maxhitpoints'],$u['hitpoints']>0?"":translate_inline("`7DEFEATED`0"),true);
-			else output_notl("(%s/%s) %s`0`n",$u['hitpoints'],$maxsoul,$u['hitpoints']>0?"":translate_inline("`7DEFEATED`0"),true);
-
-		rawoutput("</td></tr></table>");
-		break;
-
-		case 1:
-		output("`l%s:`n",
-			$hitpointstext
-			);
-		rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-		output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
-		rawoutput("</td><td>");
-		if (!$dead) rawoutput($fightbar->getBar($u['hitpoints'],$u['maxhitpoints']));
-			else rawoutput($fightbar->getBar($u['hitpoints'],$maxsoul));
-		rawoutput("</td><td>");
-
-		rawoutput("</td></tr></table>");
-
-
-		default:
-		output("`l%s: `6%s`0`n",$hitpointstext,$u['hitpoints']);
-	}
-}
 
 /**
  * This function prepares the fight, sets up options and gives hook a hook to change options on a per-player basis.

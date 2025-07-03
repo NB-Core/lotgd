@@ -284,7 +284,7 @@ class PlayerFunctions
         }
         return $dk;
     }
-}
+
     /**
      * Calculate experience required for the next level.
      */

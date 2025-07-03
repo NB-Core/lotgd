@@ -1,18 +1,17 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Http;
+
+require_once("config/constants.php");
+
 class Events
 {
-// addnews ready
-// translator ready
-// mail ready
-require_once("config/constants.php");
-require_once("lib/http.php");
 
 // This file encapsulates all the special event handling for most locations
 
 // Returns whether or not the description should be skipped
-    public static function handle_event($location, $baseLink=false, $needHeader=false)
+    public static function handleEvent($location, $baseLink=false, $needHeader=false)
 {
 	if ($baseLink === false){
 		$baseLink = substr($_SERVER['PHP_SELF'],strrpos($_SERVER['PHP_SELF'],"/")+1)."?";
@@ -25,7 +24,7 @@ require_once("lib/http.php");
 
 	tlschema("events");
 	$allowinactive = false;
-	$eventhandler = httpget('eventhandler');
+	$eventhandler = Http::get('eventhandler');
 	if (($session['user']['superuser'] & SU_DEVELOPER) && $eventhandler!=""){
 		$allowinactive = true;
 		$array = preg_split("/[:-]/", $eventhandler);
@@ -62,7 +61,7 @@ require_once("lib/http.php");
 			$skipdesc=true;
 			$session['user']['specialinc'] = "";
 			$session['user']['specialmisc'] = "";
-			httpset("op", "");
+			Http::set("op", "");
 		}
 	}
 	tlschema();

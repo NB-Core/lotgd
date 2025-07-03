@@ -180,12 +180,87 @@ class Commentary
 
     public static function talkline($section, $talkline, $limit, $schema, $counttoday, $message)
     {
-        // not ported fully; call legacy
-        return talkline($section, $talkline, $limit, $schema, $counttoday, $message);
+        $args = modulehook("insertcomment", array("section"=>$section));
+        if (array_key_exists("mute",$args) && $args['mute'] &&
+                        !($session['user']['superuser'] & SU_EDIT_COMMENTS)) {
+                output_notl("%s", $args['mutemsg']);
+        } elseif ($counttoday<($limit/2)
+                        || ($session['user']['superuser']&~SU_DOESNT_GIVE_GROTTO)
+                        || ($session['user']['superuser']&SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER
+                        || !getsetting('postinglimit',1)){
+                if ($message!="X"){
+                        $message="`n`@$message`n";
+                        output($message);
+                        talkform($section,$talkline,$limit,$schema);
+                }
+        }else{
+                $message="`n`@$message`n";
+                output($message);
+                output("Sorry, you've exhausted your posts in this section for now.`0`n");
+        }
     }
 
     public static function talkform($section, $talkline, $limit = 10, $schema = false)
     {
-        return talkform($section, $talkline, $limit, $schema);
+      global $REQUEST_URI,$session,$translation_namespace;
+        if ($schema===false) $schema=$translation_namespace;
+        tlschema("commentary");
+
+        $jump = false;
+        if (isset($session['user']['prefs']['nojump']) && $session['user']['prefs']['nojump'] == true) {
+                $jump = true;
+        }
+
+        $counttoday=0;
+        if (mb_substr($section,0,5)!="clan-"){
+                $sql = "SELECT author FROM " . db_prefix("commentary") . " WHERE section='$section' AND postdate>'".date("Y-m-d 00:00:00")."' ORDER BY commentid DESC LIMIT $limit";
+                $result = db_query($sql);
+                while ($row=db_fetch_assoc($result)){
+                        if ($row['author']==$session['user']['acctid']) $counttoday++;
+                }
+                if (round($limit/2,0)-$counttoday <= 0 && getsetting('postinglimit',1)){
+                        if ($session['user']['superuser']&~SU_DOESNT_GIVE_GROTTO){
+                                output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
+                        }else{
+                                output("`n`)(You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.)`n");
+                                return false;
+                        }
+                }
+        }
+        if (translate_inline($talkline,$schema)!="says")
+                $tll = strlen(translate_inline($talkline,$schema))+11;
+                else $tll=0;
+        $req = comscroll_sanitize($REQUEST_URI)."&comment=1";
+        if (strpos($req,"?")===false) $req = str_replace("&","?",$req);
+        if (preg_match('/[&\?]section=/',$req)==0) $req.="&section=".rawurlencode($section); //add only if not present, and only if in the right form
+        $req = str_replace("?&","?",$req);
+        if ($jump) {
+                $req .= "#$section";
+        }
+        addnav("",$req);
+        output_notl("<form action=\"$req\" method='POST' autocomplete='false'>",true);
+        Forms::previewfield("insertcommentary", $session['user']['name'], $talkline, true, array("size"=>getsetting('chatlinelength',40), "maxlength"=>getsetting('maxchars',200)-$tll));
+        rawoutput("<input type='hidden' name='talkline' value='$talkline'>");
+        rawoutput("<input type='hidden' name='schema' value='$schema'>");
+        rawoutput("<input type='hidden' name='counter' value='{$session['counter']}'>");
+        $session['commentcounter'] = $session['counter'];
+        if ($section=="X"){
+                $vname = getsetting("villagename", LOCATION_FIELDS);
+                $iname = getsetting("innname", LOCATION_INN);
+                $sections = commentarylocs();
+                reset ($sections);
+                output_notl("<select name='section'>",true);
+                foreach ($sections as $key=>$val) {
+                        output_notl("<option value='$key'>$val</option>",true);
+                }
+                output_notl("</select>",true);
+        }else{
+                output_notl("<input type='hidden' name='section' value='$section'>",true);
+        }
+        if (round($limit/2,0)-$counttoday < 3 && getsetting('postinglimit',1)){
+                output("`)(You have %s posts left today)`n`0",(round($limit/2,0)-$counttoday));
+        }
+        rawoutput("<div id='previewtext'></div></form>");
+        tlschema();
     }
 }

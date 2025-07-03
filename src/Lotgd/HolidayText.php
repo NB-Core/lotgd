@@ -13,7 +13,7 @@ class HolidayText
     {
         global $session;
         if (isset($session['user'])) {
-            if (!isset($session['user']['prefs'])) {
+            if (!isset($session['user']['prefs']) || !is_array($session['user']['prefs'])) {
                 $session['user']['prefs'] = [];
             }
             if (!isset($session['user']['prefs']['ihavenocheer'])) {

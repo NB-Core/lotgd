@@ -798,7 +798,7 @@ function set_module_pref($name,$value,$module=false,$user=false){
 		$sql = "UPDATE " . db_prefix("module_userprefs") . " SET value='".addslashes((string)$value)."' WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
 		db_query($sql);
 	}else{
-		$sql = "INSERT INTO " . db_prefix("module_userprefs"). " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','".addslashes($value)."')";
+		$sql = "INSERT INTO " . db_prefix("module_userprefs"). " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','".addslashes((string)$value)."')";
 		db_query($sql);
 	}
 	$module_prefs[$uid][$module][$name] = $value;
