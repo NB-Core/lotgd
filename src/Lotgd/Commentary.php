@@ -466,7 +466,7 @@ class Commentary
 
         ksort($outputcomments);
         reset($outputcomments);
-        $sections = commentarylocs();
+        $sections = self::commentarylocs();
         $needclose = 0;
 
         foreach ($outputcomments as $sec => $v) {
