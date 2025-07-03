@@ -12,6 +12,7 @@
 #	file_put_contents("/var/www/html/naruto/debug.txt",$s, FILE_APPEND);
 //}
 use Jaxon\Response\Response;          // and the Response class
+use Lotgd\Commentary;
 use function Jaxon\jaxon;
 
 function mail_expired($args=false) {
@@ -104,7 +105,7 @@ function commentary_text($args=false) {
 	$talkline="says";
 	$schema=$args['schema'];
 	$viewonly=$args['viewonly'];	
-	$new=viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
+	$new=Commentary::viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
 	$new=maillink();
 	$objResponse = jaxon()->newResponse();
 	$objResponse->assign($section,"innerHTML", $new);

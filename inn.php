@@ -13,7 +13,7 @@ require_once("lib/villagenav.php");
 
 tlschema("inn");
 
-addcommentary();
+Commentary::addcommentary();
 $iname = getsetting("innname", LOCATION_INN);
 $vname = getsetting("villagename", LOCATION_FIELDS);
 $barkeep = getsetting('barkeep','`tCedrik');

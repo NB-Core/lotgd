@@ -9,7 +9,7 @@ require_once("common.php");
 tlschema("shades");
 
 page_header("Land of the Shades");
-addcommentary();
+Commentary::addcommentary();
 checkday();
 
 if ($session['user']['alive']) redirect("village.php");

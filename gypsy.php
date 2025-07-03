@@ -9,7 +9,7 @@ require_once("lib/villagenav.php");
 
 tlschema("gypsy");
 
-addcommentary();
+Commentary::addcommentary();
 
 $cost = $session['user']['level']*20;
 $op = httpget('op');

@@ -1,6 +1,7 @@
 <?php
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Commentary;
 // translator ready
 // addnews ready
 // mail ready
@@ -11,7 +12,7 @@ use Lotgd\Moderate;
 
 tlschema("moderate");
 
-addcommentary();
+Commentary::addcommentary();
 
 SuAccess::check(SU_EDIT_COMMENTS);
 

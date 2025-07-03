@@ -11,7 +11,7 @@ tlschema("rock");
 // This idea is Imusade's from lotgd.net
 if ($session['user']['dragonkills']>0 ||
 		$session['user']['superuser'] & SU_EDIT_COMMENTS){
-	addcommentary();
+	Commentary::addcommentary();
 }
 
 checkday();

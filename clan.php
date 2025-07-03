@@ -24,7 +24,7 @@ addnav("Village");
 villagenav();
 addnav("Clan Options");
 addnav("C?List Clans","clan.php?op=list");
-addcommentary();
+Commentary::addcommentary();
 $gold = getsetting("goldtostartclan",10000);
 $gems = getsetting("gemstostartclan",15);
 $ranks = array(CLAN_APPLICANT=>"`!Applicant`0",CLAN_MEMBER=>"`#Member`0",CLAN_OFFICER=>"`^Officer`0",CLAN_ADMINISTRATIVE=>"`\$Administrative`0",CLAN_LEADER=>"`&Leader`0", CLAN_FOUNDER=>"`\$Founder");
