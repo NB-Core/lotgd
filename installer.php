@@ -71,7 +71,7 @@ $stages=array(
 );
 
 // Get the recommended modules 
-require_once 'installer/data/recommended_modules.php';
+require_once 'install/data/recommended_modules.php';
 
 $DB_USEDATACACHE=0; //Necessary
 
