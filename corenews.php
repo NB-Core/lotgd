@@ -1,14 +1,15 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 
 require("common.php");
 
 tlschema("corenews");
-check_su_access(SU_MEGAUSER);
+SuAccess::check(SU_MEGAUSER);
 
 page_header("Core News");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 output("`4This section gets the newest information about the +nb Core Editions from the nb-core.org website.`n`n");
 

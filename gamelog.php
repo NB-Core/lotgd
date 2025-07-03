@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -8,14 +10,13 @@
 require_once("common.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_CONFIG);
+SuAccess::check(SU_EDIT_CONFIG);
 
 tlschema("gamelog");
 
 page_header("Game Log");
 addnav("Navigation");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 $step= 500; // hardcoded stepping
 $category = httpget('cat');

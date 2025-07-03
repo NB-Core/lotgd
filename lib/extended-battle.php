@@ -3,6 +3,7 @@ use Lotgd\FightBar;
 use Lotgd\BellRand;
 // addnews ready
 // mail ready
+use Lotgd\Substitute;
 // translation ready
 //
 
@@ -339,7 +340,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 			} else {
 				$msg = "{companion} heals your wounds. You regenerate {damage} hitpoint(s).";
 			}
-			$msg = substitute_array("`)".$msg."`0`n", array("{companion}","{damage}"),array($companion['name'],$hptoheal));
+			$msg = Substitute::applyArray("`)".$msg."`0`n", array("{companion}","{damage}"),array($companion['name'],$hptoheal));
 			tlschema(isset($companion['schema'])?$companion['schema']:"battle");
 			output($msg);
 			tlschema();
@@ -358,7 +359,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 					$companion['used'] = true;
 					$msg = isset($companion['healcompanionmsg'])?$companion['healcompanionmsg']:"";
 					if ($msg == "") $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
-					$msg = substitute_array("`)".$msg."`0`n", array("{companion}","{damage}","{target}"),array($companion['name'],$hptoheal,$mycompanion['name']));
+					$msg = Substitute::applyArray("`)".$msg."`0`n", array("{companion}","{damage}","{target}"),array($companion['name'],$hptoheal,$mycompanion['name']));
 					tlschema(isset($companion['schema'])?$companion['schema']:"battle");
 					output($msg);
 					tlschema();
@@ -387,7 +388,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 								$companion['used'] = true;
 								$msg = (isset($companion['healcompanionmsg'])?$companion['healcompanionmsg']:"");
 								if ($msg == "") $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
-								$msg = substitute_array("`)".$msg."`0`n", array("{companion}","{damage}","{target}"),array($companion['name'],$hptoheal,$mycompanion['name']));
+								$msg = Substitute::applyArray("`)".$msg."`0`n", array("{companion}","{damage}","{target}"),array($companion['name'],$hptoheal,$mycompanion['name']));
 								tlschema(isset($companion['schema'])?$companion['schema']:"battle");
 								output($msg);
 								tlschema();
@@ -449,7 +450,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 		if ($damage_done==0){
 			$msg = $companion['magicfailmsg'];
 			if ($msg == "") $msg = "{companion} shoots a magical arrow at {badguy} but misses.";
-			$msg = substitute_array("`)".$msg."`0`n", array("{companion}"), array($companion['name']));
+			$msg = Substitute::applyArray("`)".$msg."`0`n", array("{companion}"), array($companion['name']));
 			tlschema(isset($companion['schema'])?$companion['schema']:"battle");
 			output($msg);
 			tlschema();
@@ -459,7 +460,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 			} else {
 				$msg = "{companion} shoots a magical arrow at {badguy} and deals {damage} damage.";
 			}
-			$msg = substitute_array("`)".$msg."`0`n", array("{companion}","{damage}"), array($companion['name'],$damage_done));
+			$msg = Substitute::applyArray("`)".$msg."`0`n", array("{companion}","{damage}"), array($companion['name'],$damage_done));
 			tlschema(isset($companion['schema'])?$companion['schema']:"battle");
 			output($msg);
 			tlschema();
@@ -480,7 +481,7 @@ function report_companion_move(&$badguy,$companion, $activate="fight") {
 		} else {
 			$msg = "`5Your companion catches his last breath before it dies.";
 		}
-		$msg = substitute_array("`)".$msg."`0`n", array("{companion}"), array($companion['name']));
+		$msg = Substitute::applyArray("`)".$msg."`0`n", array("{companion}"), array($companion['name']));
 		tlschema(isset($companion['schema'])?$companion['schema']:"battle");
 		output($msg);
 		output_notl("`0`n");

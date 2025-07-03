@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Stripslashes;
 tlschema("petition");
 popup_header("Petition for Help");
 $post = httpallpost();
@@ -98,10 +99,10 @@ if (count($post)>0 && httppost('abuse')!="yes"){
 		$abuse = httppost("abuse");
 	if ($abuse == "yes") {
 		rawoutput("<textarea name='description' cols='55' rows='7' class='input'></textarea>");
-		rawoutput("<input type='hidden' name='abuse' value=\"".stripslashes_deep(httppost("problem"))."\"><br><hr><pre>".stripslashes(rawurldecode(httppost("problem")))."</pre><hr><br>");
+		rawoutput("<input type='hidden' name='abuse' value=\"".Stripslashes::deep(httppost("problem"))."\"><br><hr><pre>".stripslashes(rawurldecode(httppost("problem")))."</pre><hr><br>");
 		rawoutput("<input type='hidden' name='abuseplayer' value=\"".httppost('abuseplayer')."\">");
 	} else {
-		rawoutput("<textarea name='description' cols='55' rows='7' class='input'>".stripslashes_deep((httppost("problem")))."</textarea>");
+		rawoutput("<textarea name='description' cols='55' rows='7' class='input'>".Stripslashes::deep((httppost("problem")))."</textarea>");
 	}
 	modulehook("petitionform",array());
 	$submit = translate_inline("Submit");

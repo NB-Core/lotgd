@@ -2,8 +2,8 @@
 namespace Lotgd;
 
 use Lotgd\Buffs;
-
 use Lotgd\BellRand;
+use Lotgd\Substitute;
 class Battle
 {
     public static function rollDamage(&$badguy)
@@ -270,6 +270,47 @@ class Battle
                 'schema' => 'pvp',
             ]);
         }
+    }
+
+    /**
+     * Select a random taunt and substitute battle variables.
+     */
+    public static function selectTaunt(): string
+    {
+        $sql = 'SELECT taunt FROM ' . db_prefix('taunts') .
+            ' ORDER BY rand(' . e_rand() . ') LIMIT 1';
+
+        $result = db_query($sql);
+        if ($result) {
+            $row = db_fetch_assoc($result);
+            $taunt = $row['taunt'];
+        } else {
+            $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
+        }
+
+        return Substitute::apply($taunt);
+    }
+
+    /**
+     * Variant of selectTaunt() returning values for sprintf.
+     */
+    public static function selectTauntArray(): array
+    {
+        $sql = 'SELECT taunt FROM ' . db_prefix('taunts') .
+            ' ORDER BY rand(' . e_rand() . ') LIMIT 1';
+
+        $result = db_query($sql);
+        if ($result) {
+            $row = db_fetch_assoc($result);
+            $taunt = $row['taunt'];
+        } else {
+            $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
+        }
+
+        $taunt = Substitute::applyArray($taunt);
+        array_unshift($taunt, true, 'taunts');
+
+        return $taunt;
     }
 
     public static function applySkill($skill, $l)

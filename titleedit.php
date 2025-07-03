@@ -1,11 +1,13 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\Names;
 //Author: Lonny Luberts - 3/18/2005
 //Heavily modified by JT Traub
 require_once("common.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_USERS);
+SuAccess::check(SU_EDIT_USERS);
 
 tlschema("retitle");
 
@@ -21,8 +23,7 @@ $editarray=array(
 	"female"=>"Female Title,text|",
 );
 addnav("Other");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Functions");
 
 switch ($op) {

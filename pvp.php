@@ -5,8 +5,8 @@
 require_once("common.php");
 use Lotgd\FightNav;
 use Lotgd\Pvp;
+use Lotgd\Battle;
 require_once("lib/http.php");
-require_once("lib/taunt.php");
 require_once("lib/villagenav.php");
 
 tlschema("pvp");
@@ -105,7 +105,7 @@ if ($battle){
 		}
 	}elseif($defeat){
 		$killedin = $badguy['location'];
-		$taunt = select_taunt_array();
+                $taunt = Battle::selectTauntArray();
 		// This is okay because system mail which is all it's used for is
 		// not translated
                 $handled = Pvp::defeat($badguy, $killedin, $taunt, $options);

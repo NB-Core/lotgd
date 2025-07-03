@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -7,11 +9,10 @@ require_once("lib/http.php");
 
 tlschema("rawsql");
 
-check_su_access(SU_RAW_SQL);
+SuAccess::check(SU_RAW_SQL);
 
 page_header("Raw SQL/PHP execution");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Execution");
 addnav("SQL","rawsql.php");
 addnav("PHP","rawsql.php?op=php");

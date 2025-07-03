@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -213,12 +215,11 @@ function charrestore_dohook(string $hookname, array $args): array{
 
        function charrestore_run(): void{
 		global $session;
-		//	check_su_access(SU_EDIT_USERS);
-		require_once("lib/superusernav.php");
+		SuAccess::check(SU_EDIT_USERS);
 		$retid = (int)httpget('returnpetition');
 		//allow backlink to petition
 		page_header("Character Restore");
-		superusernav();
+		SuperuserNav::render();
 		if ($retid>0) {
 			addnav("Petition");
 			addnav("Return to petition","viewpetition.php?op=view&id=$retid");
@@ -571,7 +572,7 @@ function charrestore_dohook(string $hookname, array $args): array{
                                 $to_array = array($to => $to);
                                 $from_array = array($fromaddress => $fromname);
                                 $cc_array = false;
-                                return \Lotgd\SendMail::send($to_array, $body, $subject, $from_array, $cc_array, "text/html");
+                                return \Lotgd\Mail::send($to_array, $body, $subject, $from_array, $cc_array, "text/html");
                         }
 
 			function charrestore_gethash($value) {

@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -7,11 +9,10 @@ require_once("common.php");
 
 tlschema("stats");
 
-check_su_access(SU_EDIT_CONFIG);
+SuAccess::check(SU_EDIT_CONFIG);
 
 page_header("Stats");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 //addnav("Refresh the stats","stats.php");
 addnav("Stats Types");
 addnav("Totals & Averages","stats.php?op=stats");

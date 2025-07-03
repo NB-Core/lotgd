@@ -1,8 +1,11 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
 define("ALLOW_ANONYMOUS",true);
+use Lotgd\Mail;
 use Lotgd\CheckBan;
 require_once("common.php");
 require_once("lib/is_email.php");
@@ -86,7 +89,6 @@ if ($op=="forgotval"){
 			if ($row['superuser']>0) {
 				// 5 failed attempts for superuser, 10 for regular user
 				// send a system message to admin
-				require_once("lib/systemmail.php");
 				$sql = "SELECT acctid FROM " . db_prefix("accounts") ." WHERE (superuser&".SU_EDIT_USERS.")";
 				$result2 = db_query($sql);
 				$subj = translate_mail(array("`#%s`j has changed the email address",$row['name']),0);
@@ -94,7 +96,7 @@ if ($op=="forgotval"){
 				while ($row2 = db_fetch_assoc($result2)) {
 					$msg = translate_mail(array("This message is generated as a result of an email change to a superuser account.  Log Follows:`n`n%s",$alert),0);
 					if (db_affected_rows()>0) $noemail = true; else $noemail = false;
-					systemmail($row2['acctid'],$subj,$msg,0,$noemail);
+					Mail::systemMail($row2['acctid'],$subj,$msg,0,$noemail);
 				}
 			}
 
@@ -163,7 +165,7 @@ if ($op=="forgot"){
 
                                 $to_array=array($row['emailaddress']=>$row['login']);
                                 $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-                                \Lotgd\SendMail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
+                                \Lotgd\Mail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
 				output("`#Sent a new validation email to the address on file for that account.");
 				output("You may use the validation email to log in and change your password.");
 			}else{
@@ -324,7 +326,7 @@ if (getsetting("allowcreation",1)==0){
 							$msg=str_replace("`n","\n",$msg);
                                                         $to_array=array($email=>$shortname);
                                                         $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-                                                        \Lotgd\SendMail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
+                                                        \Lotgd\Mail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
 							output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
 						}else{
 							rawoutput("<form action='login.php' method='POST'>");

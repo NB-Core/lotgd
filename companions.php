@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\Buffs;
 // addnews ready
 // mail ready
@@ -9,14 +11,13 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/showform.php");
 
-check_su_access(SU_EDIT_MOUNTS);
+SuAccess::check(SU_EDIT_MOUNTS);
 
 tlschema("companions");
 
 page_header("Companion Editor");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 addnav("Companion Editor");
 addnav("Add a companion","companions.php?op=add");

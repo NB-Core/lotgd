@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -7,10 +9,9 @@ require_once("lib/http.php");
 
 tlschema("debug");
 
-check_su_access(SU_EDIT_CONFIG);
+SuAccess::check(SU_EDIT_CONFIG);
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Debug Options");
 addnav("",$_SERVER['REQUEST_URI']);
 $sort = httpget('sort');

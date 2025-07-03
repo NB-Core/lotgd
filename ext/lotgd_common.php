@@ -1,4 +1,5 @@
 <?php
+use Lotgd\SuAccess;
 require_once __DIR__."/../autoload.php";
 use Lotgd\AddNews;
 use Lotgd\Buffs;
@@ -57,7 +58,6 @@ require_once("lib/e_rand.php");
 require_once("lib/pageparts.php");
 require_once("lib/sanitize.php");
 require_once("lib/tempstat.php");
-require_once("lib/su_access.php");
 require_once("lib/datetime.php");
 require_once("lib/translator.php");
 require_once("lib/playerfunctions.php");

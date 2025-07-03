@@ -1,12 +1,14 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // mail ready
 // addnews ready
 use Lotgd\CheckBan;
+use Lotgd\Mail;
 use Lotgd\Serialization;
 // translator ready
 define("ALLOW_ANONYMOUS",true);
 require_once("common.php");
-require_once("lib/systemmail.php");
 require_once("lib/http.php");
 use Lotgd\ServerFunctions;
 
@@ -153,7 +155,7 @@ if ($name!=""){
 								db_query($sql);
 								if (db_affected_rows()>0) $noemail = true; else $noemail = false;
 								$msg = translate_mail(array("This message is generated as a result of one or more of the accounts having been a superuser account.  Log Follows:`n`n%s",$alert),0);
-								systemmail($row2['acctid'],$subj,$msg,0,$noemail);
+								Mail::systemMail($row2['acctid'],$subj,$msg,0,$noemail);
 							}//end for
 						}//end if($su)
 					}//end if($c>=10)

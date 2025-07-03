@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // addnews ready
 // translator ready
 // mail ready
@@ -6,13 +8,12 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/sanitize.php");
 use Lotgd\ModuleManager;
-check_su_access(SU_MANAGE_MODULES);
+SuAccess::check(SU_MANAGE_MODULES);
 tlschema("modulemanage");
 
 page_header("Module Manager");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 addnav("Module Categories");
 

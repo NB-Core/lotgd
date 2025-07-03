@@ -2,7 +2,7 @@
 // addnews ready
 // translator ready
 // mail ready
-require_once("lib/taunt.php");
+use Lotgd\Battle;
 use Lotgd\DeathMessage;
 require_once("lib/e_rand.php");
 require_once("lib/pageparts.php");
@@ -145,7 +145,7 @@ function forestdefeat($enemies,$where="in the forest"){
 	$enemystring = join(", ", $names);
 	$and = translate_inline("and");
 	if (isset($lastname) && $lastname > "") $enemystring = "$enemystring $and $lastname";
-	$taunt = select_taunt_array();
+       $taunt = Battle::selectTauntArray();
 	//leave it for now, it's tricky 
 	/*if (is_array($where)) {
 		$where=sprintf_translate($where);

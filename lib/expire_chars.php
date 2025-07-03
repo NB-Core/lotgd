@@ -76,7 +76,7 @@ if ($lastexpire < $needtoexpire){
         while ($row = db_fetch_assoc($result)) {
                 $to_array=array($row['emailaddress']=>$row['emailaddress']);
                 $body=str_replace("{charname}",$row['login'],$message);
-                $mail_sent = \Lotgd\SendMail::send($to_array,$body,$subject,$from_array,$cc_array,"text/html");
+                $mail_sent = \Lotgd\Mail::send($to_array,$body,$subject,$from_array,$cc_array,"text/html");
 		$collector[]=$row['acctid'];
 	}
 	if ($collector!=array()) {

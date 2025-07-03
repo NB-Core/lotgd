@@ -1,4 +1,7 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Substitute;
 // addnews ready
 // mail ready
 // translator ready
@@ -7,11 +10,10 @@ require_once("lib/http.php");
 
 tlschema("taunt");
 
-check_su_access(SU_EDIT_CREATURES);
+SuAccess::check(SU_EDIT_CREATURES);
 
 page_header("Taunt Editor");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 $op = httpget('op');
 $tauntid = httpget('tauntid');
 if ($op=="edit"){
@@ -23,9 +25,8 @@ if ($op=="edit"){
 		$sql = "SELECT * FROM " . db_prefix("taunts") . " WHERE tauntid=\"$tauntid\"";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
-		require_once("lib/substitute.php");
 		$badguy=array('creaturename'=>'Baron Munchausen', 'creatureweapon'=>'Bad Puns');
-		$taunt = substitute_array($row['taunt']);
+		$taunt = Substitute::applyArray($row['taunt']);
 		$taunt = call_user_func_array("sprintf_translate", $taunt);
 		output("Preview: %s`0`n`n", $taunt);
 	} else {
