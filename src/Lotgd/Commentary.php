@@ -91,7 +91,7 @@ class Commentary
 
     public static function injectrawcomment(string $section, int $author, string $comment): void
     {
-        $sql = 'INSERT INTO ' . db_prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,\"$comment\")";
+        $sql = 'INSERT INTO ' . db_prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'".db_real_escape_string($comment)."')";
         db_query($sql);
         invalidatedatacache("comments-{$section}");
         invalidatedatacache('comments-or11');
@@ -352,8 +352,8 @@ class Commentary
                 $ft = mb_substr($ft, 0, 3);
             }
 
-            $row['comment'] = holidayize($row['comment'], 'comment');
-            $row['name'] = holidayize($row['name'], 'comment');
+            $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
+            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
             if ($row['clanrank']) {
                 $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
             }
@@ -601,7 +601,7 @@ class Commentary
                 if ($message!="X"){
                         $message="`n`@$message`n";
                         output($message);
-                        talkform($section,$talkline,$limit,$schema);
+                        self::talkform($section,$talkline,$limit,$schema);
                 }
         }else{
                 $message="`n`@$message`n";

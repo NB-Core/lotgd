@@ -89,7 +89,8 @@ class Censor
         $result = db_query($sql);
         $row = db_fetch_assoc($result);
         $search = ' ' . $row['words'] . ' ';
-//         $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
+        $search = preg_replace('/(?<=.)(?<!\\\\)\'(?=.)/', '\\\'', $search);
+
         $search = str_replace('b', '[b]', $search);
         $search = str_replace('d', '[d]', $search);
         $search = str_replace('e', '[e3]', $search);
@@ -97,7 +98,7 @@ class Censor
         $search = str_replace('o', '[o0]', $search);
         $search = str_replace('p', '[p]', $search);
         $search = str_replace('r', '[r]', $search);
-        $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
+
         $search = str_replace('t', '[t7+]', $search);
         $search = str_replace('u', '[u]', $search);
         $search = str_replace('x', '[xפ]', $search);
@@ -108,15 +109,20 @@ class Censor
         $search = str_replace('c', '[c\\(k穢]', $search);
         $start = '\'\\b';
         $end = '\\b\'iU';
-        $ws = '[^[:space:]\\t]*';
-        $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
-        $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
-        $search = str_replace('* ', ")+$ws$end ", $search);
-        $search = str_replace(' *', " $start$ws(", $search);
-        $search = "$start(" . trim($search) . ")+$end";
-        $search = str_replace("$start()+$end", '', $search);
-        $search = explode(' ', $search);
-        updatedatacache('nastywordlist', $search);
+        $ws = "[^[:space:]\\t]*"; //whitespace (\w is not hungry enough)
+        //space not preceeded by a star
+        $search = preg_replace("'(?<!\\*) '",")+$end ",$search);
+        //space not anteceeded by a star
+        $search = preg_replace("' (?!\\*)'"," $start(",$search);
+        //space preceeded by a star
+        $search = str_replace("* ",")+$ws$end ",$search);
+        //space anteceeded by a star
+        $search = str_replace(" *"," $start$ws(",$search);
+        $search = "$start(".trim($search).")+$end";
+        $search = str_replace("$start()+$end","",$search);
+        $search = explode(" ",$search);
+        updatedatacache("nastywordlist",$search);
+
         return $search;
     }
 }
