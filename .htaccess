@@ -20,11 +20,11 @@ Options -Indexes
     Require all denied
 </FilesMatch>
 
-# Protect the installer directory when index.php is missing
+# Protect the installer directory when installer.php is missing
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteCond %{REQUEST_URI} ^/install/ [NC]
-    RewriteCond %{DOCUMENT_ROOT}/install/index.php !-f
+    RewriteCond %{DOCUMENT_ROOT}/installer.php !-f
     RewriteRule ^install/ - [F,L]
 </IfModule>
 
@@ -34,6 +34,6 @@ Options -Indexes
 #   error_page 404 /errors/404.html;
 #   error_page 500 501 502 503 504 505 506 507 508 /errors/5xx.html;
 #   location /install/ {
-#       if (!-f $document_root/install/index.php) { return 403; }
+#       if (!-f $document_root/installer.php) { return 403; }
 #   }
 # ----------------------------------------------------------------------

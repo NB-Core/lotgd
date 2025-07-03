@@ -74,7 +74,7 @@ Want to have this running in no time?
 
 - Requirements: Apache 2 (or another web server), PHP 8.0 or higher, and MySQL 5.0+ or MariaDB. Ensure the database user has the `LOCK TABLES` privilege.
 - Upload the files with the directory structure intact.
-- Run `install/index.php` in your browser and follow the installer.
+- Run `installer.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
 
 ### Quick Start
@@ -88,7 +88,7 @@ Want to have this running in no time?
 Official releases include the `vendor/` directory so no additional commands are
 required. Download `lotgd-<version>.tar.gz` or `lotgd-<version>.zip` from the
 [Releases](https://github.com/NB-Core/lotgd/releases) page, upload the contents
-to your web server and open `install/index.php` in your browser. The installer
+to your web server and open `installer.php` in your browser. The installer
 will guide you through the setup.
 
 ## Cron Job Setup
@@ -135,7 +135,7 @@ Always back up your database and existing source files before upgrading.
 
 1. Copy the new code into your site directory, replacing the old files.
 2. Log out of the game if it is running.
-3. Open `install/index.php` in your browser and choose **Upgrade**.
+3. Open `installer.php` in your browser and choose **Upgrade**.
 4. Follow the installer steps to migrate your database.
 
 If you are upgrading from **0.9.7** or earlier, move the deprecated
@@ -164,9 +164,9 @@ an account to access the database on behalf of the site; this account
 should have full permissions on the database.
 
 After you have the database created, point your browser at the location you
-have the logd files installed at and load up install/index.php (for instance,
+have the logd files installed at and load up installer.php (for instance,
 if the files are accessible as http://logd.dragoncat.net, you will want to
-load http://logd.dragoncat.net/install/index.php in the browser).  The installer
+load http://logd.dragoncat.net/installer.php in the browser).  The installer
 will walk you through a complete setup from the ground up.  Make sure to
 follow all instructions!
 
@@ -184,7 +184,7 @@ Firstly, make SURE that your dbconnect.php is not writeable.  Under unix,
 you do this by typing
    chmod -w dbconnect.php
 This is to keep you from making unintentional changes to this file.
-The installer attempts to remove `install/index.php` after installation. If this file remains, delete it to prevent accidental reuse. An `.htaccess` file in the `install/` directory (and the root `.htaccess`) deny access when that index file is gone. You may remove the entire `install/` folder once setup is complete.
+The installer attempts to remove `installer.php` after installation. If this file remains, delete it to prevent accidental reuse. An `.htaccess` file in the `install/` directory (and the root `.htaccess`) deny access when that file is gone. You may remove the entire `install/` folder once setup is complete.
 
 
 The installer will have installed, but not activated, some common modules

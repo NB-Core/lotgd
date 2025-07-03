@@ -85,7 +85,7 @@ class Installer
         				$needsauthentication = false;
         			}
         			if ($needsauthentication === false) {
-                                       redirect("install/index.php?stage=1");
+                                       redirect("installer.php?stage=1");
         			}
         			output("`$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
         		}else{
@@ -109,7 +109,7 @@ class Installer
         if ($session['user']['superuser'] & SU_MEGAUSER) $needsauthentication=false;
         if ($needsauthentication){
         	$session['stagecompleted']=-1;
-               rawoutput("<form action='install/index.php?stage=0' method='POST'>");
+               rawoutput("<form action='installer.php?stage=0' method='POST'>");
         	output("`%In order to upgrade this LoGD installation, you will need to provide the username and password of a superuser account with the MEGAUSER privilege`n");
         	output("`^Username: `0");
         	rawoutput("<input name='username'><br>");
@@ -222,7 +222,7 @@ class Installer
         		savesetting("installer_version",$logd_version);
         	}
         	if ($showform){
-                       rawoutput("<form action='install/index.php?stage=$stage' method='POST'>");
+                       rawoutput("<form action='installer.php?stage=$stage' method='POST'>");
         		output("Enter a name for your superuser account:");
         		rawoutput("<input name='name' value=\"".htmlentities(httppost("name"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
         		output("`nEnter a password: ");
@@ -255,16 +255,16 @@ class Installer
         	addnav("Login Screen","./");
         }
         savesetting("installer_version",$logd_version);
-        $file = __DIR__ . '/../index.php';
+        $file = __DIR__ . '/../../installer.php';
                 if (file_exists($file)) {
                         try {
                                 if (unlink($file)) {
-                                        output("`2Installer file install/index.php removed.`n");
+                                        output("`2Installer file installer.php removed.`n");
                                 } else {
-                                        output("`$Unable to delete install/index.php. Please remove it manually.`n");
+                                        output("`$Unable to delete installer.php. Please remove it manually.`n");
                                 }
                         } catch (Throwable $e) {
-                                output("`$Error deleting install/index.php: " . $e->getMessage() . "`n");
+                                output("`$Error deleting installer.php: " . $e->getMessage() . "`n");
                         }
                 }
         $this->checkDbconnectPermissions();
@@ -286,7 +286,7 @@ class Installer
     public function stage3(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        rawoutput("<form action='install/index.php?stage=4' method='POST'>");
+        rawoutput("<form action='installer.php?stage=4' method='POST'>");
         output("`@`c`bDatabase Connection Information`b`c`2");
         output("In order to run Legend of the Green Dragon, your server must have access to a MySQL database.");
         output("If you are not sure if you meet this need, talk to server's Internet Service Provider (ISP), and make sure they offer MySQL databases.");
@@ -393,7 +393,7 @@ class Installer
         			output("`2It looks like the database for LoGD hasn't been created yet.");
         			output("I can attempt to create it for you if you like, but in order for that to work, the account you provided has to have permissions to create a new database.");
         			output("If you're not sure what this means, it's safe to try to create this database, but you should double check that you've typed the name correctly by returning to the previous stage before you try it.`n");
-                               output("`nTo try to create the database, <a href='install/index.php?stage=4&op=trycreate'>click here</a>.`n",true);
+                               output("`nTo try to create the database, <a href='installer.php?stage=4&op=trycreate'>click here</a>.`n",true);
         		}else{
         			output("`2This is probably because the username and password you provided doesn't have permission to connect to the database.`n");
         		}
@@ -649,13 +649,13 @@ class Installer
         $session['dbinfo']['upgrade']=$upgrade;
         if ($upgrade){
         	output("`@This looks like a game upgrade.");
-               output("`^If this is not an upgrade from a previous version of LoGD, <a href='install/index.php?stage=5&type=install'>click here</a>.",true);
+               output("`^If this is not an upgrade from a previous version of LoGD, <a href='installer.php?stage=5&type=install'>click here</a>.",true);
         	output("`2Otherwise, continue on to the next step.");
         }else{
         	//looks like a clean install
         	$upgrade=false;
         	output("`@This looks like a fresh install.");
-               output("`2If this is not a fresh install, but rather an upgrade from a previous version of LoGD, chances are that you installed LoGD with a table prefix.  If that's the case, enter the prefix below.  If you are still getting this message, it's possible that I'm just spooked by how few tables are common to the current version, and in which case, I can try an upgrade if you <a href='install/index.php?stage=5&type=upgrade'>click here</a>.`n",true);
+               output("`2If this is not a fresh install, but rather an upgrade from a previous version of LoGD, chances are that you installed LoGD with a table prefix.  If that's the case, enter the prefix below.  If you are still getting this message, it's possible that I'm just spooked by how few tables are common to the current version, and in which case, I can try an upgrade if you <a href='installer.php?stage=5&type=upgrade'>click here</a>.`n",true);
         	if (count($conflict)>0){
         		output("`n`n`$There are table conflicts.`2");
         		output("If you continue with an install, the following tables will be overwritten with the game's tables.  If the listed tables belong to LoGD, they will be upgraded, otherwise all existing data in those tables will be destroyed.  Once this is done, this cannot be undone unless you have a backup!`n");
@@ -663,7 +663,7 @@ class Installer
         		if (httpget("op")=="confirm_overwrite") $session['sure i want to overwrite the tables']=true;
         		if (!$session['sure i want to overwrite the tables']){
         			$session['stagecompleted']=4;
-                               output("`nIf you are sure that you wish to overwrite these tables, <a href='install/index.php?stage=5&op=confirm_overwrite'>click here</a>.`n",true);
+                               output("`nIf you are sure that you wish to overwrite these tables, <a href='installer.php?stage=5&op=confirm_overwrite'>click here</a>.`n",true);
         		}
         	}
         	output("`nYou can avoid table conflicts with other applications in the same database by providing a table name prefix.");
@@ -697,7 +697,7 @@ class Installer
         
         //done
         
-        rawoutput("<form action='install/index.php?stage=5' method='POST'>");
+        rawoutput("<form action='installer.php?stage=5' method='POST'>");
         output("`nTo provide a table prefix, enter it here.");
         output("If you don't know what this means, you should either leave it blank, or enter an intuitive value such as \"logd\".`n");
         rawoutput("<input name='DB_PREFIX' value=\"".htmlentities($session['dbinfo']['DB_PREFIX'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"><br>");
@@ -727,7 +727,7 @@ class Installer
         	output("This file tells LoGD how to connect to the database, and is necessary to continue installation.`n");
         	$dbconnect =
         	"<?php\n"
-               ."//This file automatically created by install/index.php on ".date("M d, Y h:i a")."\n"
+               ."//This file automatically created by installer.php on ".date("M d, Y h:i a")."\n"
         	."$DB_HOST = \"{$session['dbinfo']['DB_HOST']}\";\n"
         	."$DB_USER = \"{$session['dbinfo']['DB_USER']}\";\n"
         	."$DB_PASS = \"{$session['dbinfo']['DB_PASS']}\";\n"
@@ -795,7 +795,7 @@ class Installer
         		}
         		$dbconnect =
         			"<?php\n"
-                               ."//This file automatically created by install/index.php on ".date("M d, Y h:i a")."\n"
+                               ."//This file automatically created by installer.php on ".date("M d, Y h:i a")."\n"
         			."$DB_HOST = \"{$DB_HOST}\";\n"
         			."$DB_USER = \"{$DB_USER}\";\n"
         			."$DB_PASS = \"{$DB_PASS}\";\n"
@@ -873,7 +873,7 @@ class Installer
         if (!isset($session['fromversion']) || $session['fromversion']==""){
         	output("`@`c`bConfirmation`b`c");
         	output("`2Please confirm the following:`0`n");
-               rawoutput("<form action='install/index.php?stage=7' method='POST'>");
+               rawoutput("<form action='installer.php?stage=7' method='POST'>");
         	rawoutput("<table border='0' cellpadding='0' cellspacing='0'><tr><td valign='top'>");
         	output("`2I should:`0");
         	rawoutput("</td><td>");
@@ -899,7 +899,7 @@ class Installer
         	$session['stagecompleted']=$stage - 1;
         }else{
         	$session['stagecompleted']=$stage;
-               header("Location: install/index.php?stage=".($stage+1));
+               header("Location: installer.php?stage=".($stage+1));
         	exit();
         }
     }
@@ -913,7 +913,7 @@ class Installer
         if (array_key_exists('modulesok',$_POST)){
         	$session['moduleoperations'] = $_POST['modules'];
         	$session['stagecompleted'] = $stage;
-               header("Location: install/index.php?stage=".($stage+1));
+               header("Location: installer.php?stage=".($stage+1));
         	exit();
         }elseif (array_key_exists('moduleoperations',$session) && is_array($session['moduleoperations'])){
         	$session['stagecompleted'] = $stage;
@@ -1005,7 +1005,7 @@ class Installer
         		$all_modules[$row['category']][$row['modulename']] = $row;
         	}
         	output_notl("`0");
-               rawoutput("<form action='install/index.php?stage=".$stage."' method='POST'>");
+               rawoutput("<form action='installer.php?stage=".$stage."' method='POST'>");
         	rawoutput("<input type='submit' name='modulesok' value='$submit' class='button'>");
         	rawoutput("<input type='button' onClick='chooseRecommendedModules();' class='button' value='$install'>");
         	rawoutput("<input type='reset' value='$reset' class='button'><br>");
@@ -1269,7 +1269,7 @@ class Installer
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         output("`$Requested installer step not found.`n");
         output("`2Restarting at stage 1...`n");
-        redirect("install/index.php?stage=1");
+        redirect("installer.php?stage=1");
     }
 
     // endregion

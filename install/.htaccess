@@ -1,5 +1,5 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteCond %{DOCUMENT_ROOT}/install/index.php !-f
+    RewriteCond %{DOCUMENT_ROOT}/installer.php !-f
     RewriteRule ^ - [F,L]
 </IfModule>
