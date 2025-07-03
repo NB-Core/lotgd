@@ -184,7 +184,7 @@ if ($payment_errors>"") {
         mail($adminEmail,$subj,$payment_errors."\n".$sanitizedInfo,"From: " . getsetting("gameadminemail", "postmaster@localhost.com"));
 }
 $output = ob_get_contents();
-if ($output > ""){
+if (!empty($output)){
         error_log("Unexpected payment output: " . $output);
         $sanitizedInfo = sprintf(
                 "Txn ID: %s\nStatus: %s\nAmount: %s %s\nPayer: %s\nReceiver: %s",
