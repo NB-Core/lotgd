@@ -6,249 +6,33 @@ declare(strict_types=1);
 
 require_once("lib/arraytourl.php");
 
-$injected_modules = array(1=>array(),0=>array());
+use Lotgd\Modules;
 
-function injectmodule(string $modulename, bool $force=false, bool $with_db=true): bool{
-	global $mostrecentmodule,$injected_modules;
-	//try to circumvent the array_key_exists() problem we've been having.
-	if ($force) $force = 1; else $force = 0;
+$injected_modules = array(1 => array(), 0 => array());
 
-	//early escape if we already called injectmodule this hit with the
-	//same args.
-	if (isset($injected_modules[$force][$modulename])) {
-		$mostrecentmodule=$modulename;
-		return $injected_modules[$force][$modulename];
-	}
-
-	$modulename = modulename_sanitize($modulename);
-	$modulefilename = "modules/{$modulename}.php";
-	if (file_exists($modulefilename)){
-		tlschema("module-{$modulename}");
-		if ($with_db) {
-			$sql = "SELECT active,filemoddate,infokeys,version FROM " . db_prefix("modules") . " WHERE modulename='$modulename'";
-			$result = db_query_cached($sql, "inject-$modulename", 3600);
-			if (!$force) {
-				//our chance to abort if this module isn't currently installed
-				//or doesn't meet the prerequisites.
-				if (db_num_rows($result)==0) {
-					tlschema();
-					debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n",$modulename));
-					//alright, error case. on some occasions the cache might become polluted if the DB i.e. returns nothing. Then we need to rebuild the cache
-					massinvalidate();
-					$injected_modules[$force][$modulename]=false;
-					return false;
-				}
-				$row = db_fetch_assoc($result);
-				if ($row['active']){ } else {
-					tlschema();
-					debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n",$modulename));
-					$injected_modules[$force][$modulename]=false;
-					return false;
-				}
-			}	
-		}
-		require_once($modulefilename);
-		$mostrecentmodule = $modulename;
-		$info = "";
-		if (!$force){
-			//avoid calling the function if we're forcing the module
-			$fname = $modulename."_getmoduleinfo";
-			$info = $fname();
-			if (!isset($info['requires'])) $info['requires'] = array();
-			if (!is_array($info['requires'])) $info['requires'] = array();
-			if (!isset($info['download'])) $info['download']="";
-			if (!isset($info['description'])) $info['description']="";
-			if (!module_check_requirements($info['requires'])) {
-				$injected_modules[$force][$modulename]=false;
-				tlschema();
-				output_notl("`n`3Module `#%s`3 does not meet its prerequisites.`n",$modulename);
-				return false;
-			}
-		}
-		//check to see if the module needs to be upgraded.
-		if ($with_db && db_num_rows($result)>0){
-			if (!isset($row)) $row = db_fetch_assoc($result);
-			$filemoddate = date("Y-m-d H:i:s",filemtime($modulefilename));
-			if ($row['filemoddate']!=$filemoddate || $row['infokeys']=="" ||
-					$row['infokeys'][0] != '|' || $row['version']==''){
-				//The file has recently been modified, lock tables and
-				//check again (knowing we're the only one who can do this
-				//at one shot)
-				$sql = "LOCK TABLES " . db_prefix("modules") . " WRITE";
-				db_query($sql);
-				//check again after the table has been locked.
-				$sql = "SELECT filemoddate FROM " . db_prefix("modules") . " WHERE modulename='$modulename'";
-				$result = db_query($sql);
-				$row = db_fetch_assoc($result);
-				if ($row['filemoddate']!=$filemoddate ||
-						!isset($row['infokeys']) || $row['infokeys']=="" || $row['infokeys'][0] != '|' ||
-						$row['version']==''){
-					//the file mod time is still different from that
-					//recorded in the database, time to update the database
-					//and upgrade the module.
-					debug("The module $modulename was found to have updated, upgrading the module now.");
-					if (!is_array($info)){
-						//we might have gotten this info above, if not,
-						//we need it now.
-						$fname = $modulename."_getmoduleinfo";
-						$info = $fname();
-						if (!isset($info['download']))
-							$info['download']="";
-						if (!isset($info['version']))
-							$info['version']="0.0";
-						if (!isset($info['description']))
-							$info['description'] = '';
-					}
-					//Everyone else will block at the initial lock tables,
-					//we'll update, and on their second check, they'll fail.
-					//Only we will update the table.
-
-					$keys = "|".implode("|",array_keys($info))."|";
-
-					$sql = "UPDATE ". db_prefix("modules") . " SET moduleauthor='".addslashes($info['author'])."', category='".addslashes($info['category'])."', formalname='".addslashes($info['name'])."', description='".addslashes($info['description'])."', filemoddate='$filemoddate', infokeys='$keys',version='".addslashes($info['version'])."',download='".addslashes($info['download'])."' WHERE modulename='$modulename'";
-					db_query($sql);
-					debug($sql);
-					$sql = "UNLOCK TABLES";
-					db_query($sql);
-					// Remove any old hooks (install will reset them)
-					module_wipehooks();
-					$fname = $modulename."_install";
-					$fname();
-					invalidatedatacache("inject-$modulename");
-
-				}else{
-					$sql = "UNLOCK TABLES";
-					db_query($sql);
-				}
-			}
-		}
-		tlschema();
-		$injected_modules[$force][$modulename]=true;
-		return true;
-	}else{
-		output("`n`\$Module '`^%s`\$' (%s) was not found in the modules directory.`n",$modulename,$modulefilename);
-		require_once("lib/show_backtrace.php");
-		output_notl(show_backtrace(),true);
-		$injected_modules[$force][$modulename]=false;
-		return false;
-	}
+function injectmodule(string $modulename, bool $force = false, bool $with_db = true): bool
+{
+    return Modules::inject($modulename, $force, $with_db);
 }
 
-/*
- * Returns the status of a module as a bitfield
- *
- * @param string $modulename The module name
- * @param string $version The version to check for (false for don't care)
- * @return int The status codes for the module
- */
-function module_status(string $modulename, $version=false): int {
-	global $injected_modules;
-
-	$modulename = modulename_sanitize($modulename);
-	$modulefilename = "modules/$modulename.php";
-	$status = MODULE_NO_INFO;
-	if (file_exists($modulefilename)) {
-		$sql = "SELECT active,filemoddate,infokeys,version FROM " . db_prefix("modules") . " WHERE modulename='$modulename'";
-		$result = db_query_cached($sql, "inject-$modulename", 3600);
-		if (db_num_rows($result) > 0) {
-			// The module is installed
-			$status = MODULE_INSTALLED;
-			$row = db_fetch_assoc($result);
-			if ($row['active']) {
-				// Module is here and active
-				$status |= MODULE_ACTIVE;
-				// In this case, the module could have been force injected or
-				// not.  We still want to mark it either way.
-				if (array_key_exists($modulename, $injected_modules[0]) &&
-						$injected_modules[0][$modulename])
-					$status |= MODULE_INJECTED;
-				if (array_key_exists($modulename, $injected_modules[1]) &&
-						$injected_modules[1][$modulename])
-					$status |= MODULE_INJECTED;
-			} else {
-				// Force-injected modules can be injected but not active.
-				if (array_key_exists($modulename, $injected_modules[1]) &&
-						$injected_modules[1][$modulename])
-					$status |= MODULE_INJECTED;
-			}
-			// Check the version number
-			if ($version===false) {
-				$status |= MODULE_VERSION_OK;
-			} else {
-				if (module_compare_versions($row['version'], $version) < 0) {
-					$status |= MODULE_VERSION_TOO_LOW;
-				} else {
-					$status |= MODULE_VERSION_OK;
-				}
-			}
-		} else {
-			// The module isn't installed
-			$status = MODULE_NOT_INSTALLED;
-		}
-	} else {
-		// The module file doesn't exist.
-		$status = MODULE_FILE_NOT_PRESENT;
-	}
-	return $status;
+function module_status(string $modulename, $version = false): int
+{
+    return Modules::getStatus($modulename, $version);
 }
 
-
-/**
- * Determines if a module is activated
- *
- * @param string $modulename The module name
- * @return bool If the module is active or not
- */
-function is_module_active(string $modulename): bool{
-	return (bool)(module_status($modulename) & MODULE_ACTIVE);
+function is_module_active(string $modulename): bool
+{
+    return Modules::isActive($modulename);
 }
 
-/**
- * Determines if a module is installed
- *
- * @param string $modulename The module name
- * @param string $version The version to check for
- * @return bool If the module is installed
- */
-function is_module_installed(string $modulename, $version=false): bool{
-	// Status will say the version is okay if we don't care about the
-	// version or if the version is actually correct
-	return (bool)(module_status($modulename, $version) &
-			(MODULE_INSTALLED|MODULE_VERSION_OK));
+function is_module_installed(string $modulename, $version = false): bool
+{
+    return Modules::isInstalled($modulename, $version);
 }
 
-/**
- * Checks if the module requirements are satisfied.  Should a module require
- * other modules to be installed and active, then optionally makes them so
- *
- * @param array $reqs Requirements of a module from _getmoduleinfo()
- * @return bool If successful or not
- */
-function module_check_requirements(array $reqs, bool $forceinject=false): bool{
-	// Since we can inject here, we need to save off the module we're on
-	global $mostrecentmodule;
-
-	$oldmodule = $mostrecentmodule;
-	$result = true;
-
-	if (!is_array($reqs)) return false;
-
-	// Check the requirements.
-	foreach ($reqs as $key=>$val) {
-		$info = explode("|",$val);
-		if (!is_module_installed($key,$info[0])) {
-			return false;
-		}
-		// This is actually cheap since we cache the result
-		$status = module_status($key);
-		// If it's not injected and we should force it, do so.
-		if (!($status & MODULE_INJECTED) && $forceinject) {
-			$result = $result && injectmodule($key);
-		}
-	}
-
-	$mostrecentmodule = $oldmodule;
-	return $result;
+function module_check_requirements(array $reqs, bool $forceinject = false): bool
+{
+    return Modules::checkRequirements($reqs, $forceinject);
 }
 
 /**
