@@ -179,7 +179,7 @@ $adminEmail = getsetting("gameadminemail", "postmaster@localhost.com");
 if ($payment_errors>"") {
 	$subj = translate_mail("Payment Error",0);
 	// $payment_errors not translated
-        $sanitizedInfo = sprintf("Txn ID: %s\nStatus: %s\nAmount: %s %s\nPayer: %s\nReceiver: %s", $txn_id, $payment_status, $payment_amount, $payment_currency, $payer_email, $receiver_email);
+        $sanitizedInfo = sprintf("Txn ID: %s\nStatus: %s\nAmount: %0.2f %s\nPayer: %s\nReceiver: %s", $txn_id, $payment_status, (float)$payment_amount, $payment_currency, $payer_email, $receiver_email);
         error_log($payment_errors . "\n" . $sanitizedInfo);
         mail($adminEmail,$subj,$payment_errors."\n".$sanitizedInfo,"From: " . getsetting("gameadminemail", "postmaster@localhost.com"));
 }
