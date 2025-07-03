@@ -41,6 +41,7 @@ Oliver
 
 ## Table of Contents
 - [Read Me First](#read-me-first)
+- [System Requirements](#system-requirements)
 - [Quick Install](#quick-install)
 - [Quick Start](#quick-start)
 - [Install from Release Archive](#install-from-release-archive)
@@ -58,11 +59,20 @@ Oliver
 Thank you for downloading the modified version of Legend Of the Green Dragon.
 See `CHANGELOG.txt` for a list of changes.
 
+## System Requirements
+
+To run Legend of the Green Dragon on a typical web host you will need:
+
+- **Web server:** Apache 2 (or another server capable of running PHP)
+- **PHP:** version 8.0 or newer (7.4 is the minimum supported)
+- **Database:** MySQL 5.0 or later. MariaDB is a compatible alternative.
+- The database user must have the `LOCK TABLES` privilege.
+
 ## Quick Install
 
 Want to have this running in no time?
 
-- Requirements: PHP 7.4 or higher and MySQL 5.0 or higher, plus the `LOCK TABLES` privilege for your database user.
+- Requirements: Apache 2 (or another web server), PHP 8.0 or higher, and MySQL 5.0+ or MariaDB. Ensure the database user has the `LOCK TABLES` privilege.
 - Upload the files with the directory structure intact.
 - Run `install/index.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
