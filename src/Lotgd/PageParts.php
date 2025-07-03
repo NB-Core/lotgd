@@ -123,7 +123,7 @@ public static function pageFooter(bool $saveuser=true){
 	$z = $y2^$z2;
 	$footer = $template['footer'];
 	//page footer module hooks
-	if (isset($SCRIPT_NAME) && $SCRIPT_NAME>"") 
+	if (!empty($SCRIPT_NAME)) 
 		$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
 	else
 		$script = "";
