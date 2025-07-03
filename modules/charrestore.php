@@ -566,15 +566,13 @@ function charrestore_dohook(string $hookname, array $args): array{
 			page_footer();
 			}
 
-			function charrestore_sendmail($to, $body, $subject, $fromaddress, $fromname, $attachments=false)
-			{
-				require_once("lib/sendmail.php");
-				$to_array=array($to=>$to);
-				$from_array=array($fromaddress=>$fromname);
-				$cc_array=false;
-				$mail_sent = send_email($to_array,$body,$subject,$from_array,$cc_array,"text/html");
-				return $mail_sent;
-			}
+                        function charrestore_sendmail($to, $body, $subject, $fromaddress, $fromname, $attachments=false)
+                        {
+                                $to_array = array($to => $to);
+                                $from_array = array($fromaddress => $fromname);
+                                $cc_array = false;
+                                return \Lotgd\SendMail::send($to_array, $body, $subject, $from_array, $cc_array, "text/html");
+                        }
 
 			function charrestore_gethash($value) {
 				return hash('sha512',$value.get_module_setting('email_hash_salt','charrestore'));

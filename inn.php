@@ -5,9 +5,8 @@ use Lotgd\Buffs;
 // translator ready
 // mail ready
 require_once("common.php");
-require_once("lib/pvpwarning.php");
+use Lotgd\Pvp;
 require_once("lib/sanitize.php");
-require_once("lib/pvplist.php");
 require_once("lib/http.php");
 require_once("lib/events.php");
 require_once("lib/villagenav.php");

@@ -7,7 +7,7 @@ check_su_access(SU_MEGAUSER);
 
 page_header("Global User Functions");
 require_once("lib/superusernav.php");
-require_once("lib/serverfunctions.class.php");
+use Lotgd\ServerFunctions;
 superusernav();
 //addnav("Refresh the stats","stats.php");
 addnav("Actions");
