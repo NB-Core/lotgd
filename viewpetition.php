@@ -13,7 +13,7 @@ tlschema("petition");
 
 SuAccess::check(SU_EDIT_PETITIONS);
 
-addcommentary();
+Commentary::addcommentary();
 
 SuperuserNav::render();
 

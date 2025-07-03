@@ -10,7 +10,7 @@ require_once("lib/sanitize.php");
 require_once("lib/http.php");
 
 SuAccess::check(0xFFFFFFFF &~ SU_DOESNT_GIVE_GROTTO);
-addcommentary();
+Commentary::addcommentary();
 tlschema("superuser");
 
 SuperuserNav::render();

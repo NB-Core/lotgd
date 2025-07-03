@@ -352,7 +352,7 @@ function darkhorse_runevent(string $type, string $link): void{
 		}
 		break;
 	case "tables":
-		addcommentary();
+		Commentary::addcommentary();
 		commentdisplay("You examine the etchings in the table:`n`n",
 				"darkhorse","Add your own etching:");
 		addnav("Navigation");

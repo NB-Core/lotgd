@@ -13,6 +13,7 @@ This will just make our mailinfo return a small string in case of a timeout, not
 #	$s=print_r($_POST,true);
 #	$s=$_SERVER['REMOTE_ADDR'].$s;
 #	file_put_contents("/var/www/html/naruto/debug.txt",$s, FILE_APPEND);
+use Lotgd\Commentary;
 //}
 
 function mail_expired($args=false) {
@@ -101,7 +102,7 @@ function commentary_text($args=false) {
 	$talkline="says";
 	$schema=$args['schema'];
 	$viewonly=$args['viewonly'];	
-	$new=viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
+	$new=Commentary::viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
 	$new=maillink();
 	$objResponse = new xajaxResponse();
 	$objResponse->assign($section,"innerHTML", $new);

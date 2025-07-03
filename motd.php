@@ -15,7 +15,7 @@ tlschema("motd");
 $op = httpget('op');
 $id = httpget('id');
 
-addcommentary();
+Commentary::addcommentary();
 popup_header("LoGD Message of the Day (MoTD)");
 
 if ($session['user']['superuser'] & SU_POST_MOTD) {

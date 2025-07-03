@@ -10,7 +10,7 @@ require_once("lib/sanitize.php");
 require_once("lib/http.php");
 
 SuAccess::check(SU_IS_TRANSLATOR);
-addcommentary();
+Commentary::addcommentary();
 tlschema("translatorlounge");
 
 SuperuserNav::render();
