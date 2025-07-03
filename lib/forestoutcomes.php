@@ -4,8 +4,7 @@
 // mail ready
 use Lotgd\Battle;
 use Lotgd\DeathMessage;
-require_once("lib/e_rand.php");
-require_once("lib/pageparts.php");
+use Lotgd\PageParts;
 require_once("lib/output.php");
 require_once("lib/nav.php");
 require_once("lib/playerfunctions.php");
