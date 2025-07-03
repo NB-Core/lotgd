@@ -1,14 +1,12 @@
 <?php
-// addnews ready
-// translator ready
-// mail ready
-require_once("lib/errorhandling.php");
-require_once("settings.php");
+require_once "lib/errorhandling.php";
+require_once "settings.php";
 
-$dbinfo = array();
-$dbinfo['queriesthishit']=0;
-$dbinfo['querytime']=0;
-$dbinfo['DB_DATACACHEPATH']="";
+$dbinfo = [];
+$dbinfo['queriesthishit'] = 0;
+$dbinfo['querytime'] = 0;
+$dbinfo['DB_DATACACHEPATH'] = '';
 
-require_once("lib/dbmysqli.php");
-?>
+// Legacy compatibility - database functions now reside in Lotgd\MySQL
+require_once 'lib/dbmysqli.php';
+
