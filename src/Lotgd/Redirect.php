@@ -1,6 +1,8 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Output;
+
 class Redirect
 {
     /**
@@ -15,7 +17,7 @@ class Redirect
         if (strpos($location, 'badnav.php') === false) {
             $session['allowednavs'] = [];
             addnav('', $location);
-            $failoutput = new output_collector();
+            $failoutput = new Output();
             $failoutput->output_notl("`lWhoops, your navigation is broken. Hopefully we can restore it.`n`n");
             $failoutput->output_notl('`$');
             $failoutput->rawoutput("<a href=\"" . HTMLEntities($location, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">" . translate_inline('Click here to continue.', 'badnav') . "</a>");

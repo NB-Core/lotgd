@@ -5,6 +5,7 @@ use Lotgd\AddNews;
 use Lotgd\Buffs;
 use Lotgd\Mounts;
 use Lotgd\HolidayText;
+use Lotgd\Output;
 // translator ready
 // addnews ready
 // mail ready
@@ -47,7 +48,7 @@ $logd_version = "1.3.1 +nb Edition";
 
 // Include some commonly needed and useful routines
 require_once("lib/output.php");
-$output=new output_collector();
+$output = new Output();
 require_once("lib/nav.php");
 require_once("lib/local_config.php");
 require_once("lib/dbwrapper.php");
