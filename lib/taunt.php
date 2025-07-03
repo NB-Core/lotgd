@@ -1,45 +1,13 @@
 <?php
-// translator ready
-// addnews ready
-// mail ready
-require_once("lib/dbwrapper.php");
-require_once("lib/e_rand.php");
-require_once("lib/substitute.php");
+// Legacy wrapper for Battle class taunt helpers
+use Lotgd\Battle;
 
-function select_taunt() {
-	global $session, $badguy;
-
-	$sql = "SELECT taunt FROM " . db_prefix("taunts") .
-		" ORDER BY rand(".e_rand() . ") LIMIT 1";
-
-	$result = db_query($sql);
-	if ($result) {
-		$row = db_fetch_assoc($result);
-		$taunt = $row['taunt'];
-	} else {
-		$taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
-	}
-
-	$taunt = substitute($taunt);
-	return $taunt;
+function select_taunt()
+{
+    return Battle::selectTaunt();
 }
 
-function select_taunt_array(){
-	global $session, $badguy;
-
-	$sql = "SELECT taunt FROM " . db_prefix("taunts") .
-		" ORDER BY rand(".e_rand() . ") LIMIT 1";
-
-	$result = db_query($sql);
-	if ($result) {
-		$row = db_fetch_assoc($result);
-		$taunt = $row['taunt'];
-	} else {
-		$taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
-	}
-
-	$taunt = substitute_array($taunt);
-	array_unshift($taunt, true, "taunts");
-	return $taunt;
+function select_taunt_array()
+{
+    return Battle::selectTauntArray();
 }
-?>

@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\Commentary;
 // translator ready
 // addnews ready
@@ -7,12 +9,11 @@ require_once("common.php");
 require_once("lib/sanitize.php");
 require_once("lib/http.php");
 
-check_su_access(0xFFFFFFFF &~ SU_DOESNT_GIVE_GROTTO);
+SuAccess::check(0xFFFFFFFF &~ SU_DOESNT_GIVE_GROTTO);
 addcommentary();
 tlschema("superuser");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Q?`%Quit`0 to the heavens","login.php?op=logout",true);
 
 $op = httpget('op');

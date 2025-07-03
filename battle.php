@@ -1,6 +1,7 @@
 <?php
 use Lotgd\Buffs;
 use Lotgd\Battle;
+use Lotgd\Substitute;
 // translator ready
 // addnews ready
 // mail ready
@@ -75,7 +76,7 @@ if ($op=="fight"){
 			}else{
 				if (is_array($badguy['cannotbetarget'])) {
 					$msg = sprintf_translate($badguy['cannotbetarget']);
-					$msg = substitute($msg);
+					$msg = Substitute::apply($msg);
 					output_notl($msg); //Here it's already translated
 				}else{
 					if ($badguy['cannotbetarget'] === true) {
@@ -83,7 +84,7 @@ if ($op=="fight"){
 					} else {
 						$msg = $badguy['cannotbetarget'];
 					}
-					$msg = substitute_array("`5".$msg."`0`n");
+					$msg = Substitute::applyArray("`5".$msg."`0`n");
 					output($msg);
 				}
 			}
@@ -451,7 +452,7 @@ if ($op != "newtarget") {
 				if (isset($badguy['fleesifalone']) && $badguy['fleesifalone'] == true) {
 					if (is_array($badguy['fleesifalone'])) {
 						$msg = sprintf_translate($badguy['fleesifalone']);
-						$msg = substitute($msg);
+						$msg = Substitute::apply($msg);
 						output_notl($msg); //Here it's already translated
 					}else{
 						if ($badguy['fleesifalone'] === true) {
@@ -459,7 +460,7 @@ if ($op != "newtarget") {
 						} else {
 							$msg = $badguy['fleesifalone'];
 						}
-						$msg = substitute_array("`5".$msg."`0`n");
+						$msg = Substitute::applyArray("`5".$msg."`0`n");
 						output($msg);
 					}
 				} else {
@@ -469,7 +470,7 @@ if ($op != "newtarget") {
 		} else if ($leaderisdead) {
 			if (isset($badguy['essentialleader']) && is_array($badguy['essentialleader'])) {
 				$msg = sprintf_translate($badguy['essentialleader']);
-				$msg = substitute($msg);
+				$msg = Substitute::apply($msg);
 				output_notl($msg); //Here it's already translated
 			}elseif (isset($badguy['essentialleader'])){
 				if ($badguy['essentialleader'] === true) {
@@ -477,7 +478,7 @@ if ($op != "newtarget") {
 				} else {
 					$msg = $badguy['essentialleader'];
 				}
-				$msg = substitute_array("`5".$msg."`0`n");
+				$msg = Substitute::applyArray("`5".$msg."`0`n");
 				output($msg);
 			}
 		}

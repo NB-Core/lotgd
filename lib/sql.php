@@ -1,12 +1,8 @@
 <?php
-// translator ready
-// addnews ready
-// mail ready
+// Legacy wrapper for Sql class
+use Lotgd\Sql;
 
-// A slightly higher level SQL error reporting function.
-function sql_error($sql){
-	global $session;
-	return output_array($session)."SQL = <pre>$sql</pre>".db_error(LINK);
+function sql_error($sql)
+{
+    return Sql::error($sql);
 }
-
-?>

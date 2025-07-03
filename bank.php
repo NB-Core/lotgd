@@ -1,14 +1,16 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Mail;
 /**
 * \file bank.php
 * This file holds the entire bank code for the village bank. You can withdraw or depost gold here as user.
 * @see village.php
 */
 require_once("common.php");
-require_once("lib/systemmail.php");
 require_once("lib/sanitize.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
@@ -139,7 +141,7 @@ if ($op==""){
 				output("`@Elessa`6 smiles, \"`@The transfer has been completed!`6\"");
 				$subj = array("`^You have received a money transfer!`0");
 				$body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!",$session['user']['name'],$amt);
-				systemmail($row['acctid'],$subj,$body);
+				Mail::systemMail($row['acctid'],$subj,$body);
 			}
 		}else{
 			output("`@Elessa`6 looks up from her ledger with a bit of surprise on her face, \"`@I'm terribly sorry, but I seem to have run into an accounting error, would you please try telling me what you wish to transfer again?`6\"");

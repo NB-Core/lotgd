@@ -1,11 +1,13 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
 require_once("common.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_CREATURES);
+SuAccess::check(SU_EDIT_CREATURES);
 
 tlschema("creatures");
 
@@ -37,8 +39,7 @@ for ($i=1;$i<=(getsetting('maxlevel',15)+4);$i++) {
 
 page_header("Creature Editor");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 $op = httpget("op");
 $subop = httpget("subop");

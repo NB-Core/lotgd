@@ -2,6 +2,7 @@
 namespace Lotgd;
 
 use Lotgd\DateTime;
+use Lotgd\Mail;
 
 /**
  * Collection of Player versus Player helper routines.
@@ -158,7 +159,7 @@ class Pvp
             reltime((int) $badguy['fightstartdate'])
         ];
 
-        systemmail($badguy['acctid'], ['`2You were killed while in %s`2', $killedloc], $mailmessage);
+        Mail::systemMail($badguy['acctid'], ['`2You were killed while in %s`2', $killedloc], $mailmessage);
 
         $sql = "UPDATE " . db_prefix('accounts') . " SET alive=0, goldinbank=(goldinbank+IF(gold<{$badguy['creaturegold']},gold-{$badguy['creaturegold']},0)),gold=IF(gold<{$badguy['creaturegold']},0,gold-{$badguy['creaturegold']}), experience=IF(experience>=$lostexp,experience-$lostexp,0) WHERE acctid=" . (int) $badguy['acctid'];
         debuglog($sql, (int) $badguy['acctid'], $session['user']['acctid']);
@@ -213,7 +214,7 @@ class Pvp
             $msg .= 'You received `^%s`2 experience and `^%s`2 gold';
         }
         $msg .= '!`n%s`n`0';
-        systemmail($badguy['acctid'], ['`2You were successful while you were in %s`2', $killedloc], [$msg, $session['user']['name'], $killedloc, $wonexp, $winamount, $args['pvpmsgadd']]);
+        Mail::systemMail($badguy['acctid'], ['`2You were successful while you were in %s`2', $killedloc], [$msg, $session['user']['name'], $killedloc, $wonexp, $winamount, $args['pvpmsgadd']]);
 
         if ($row['level'] >= $badguy['creaturelevel']) {
             $sql = "UPDATE " . db_prefix('accounts') . " SET gold=gold+" . $winamount . ", experience=experience+" . $wonexp . " WHERE acctid=" . (int) $badguy['acctid'];

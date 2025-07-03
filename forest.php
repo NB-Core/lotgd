@@ -6,7 +6,6 @@ require_once("common.php");
 use Lotgd\Forest;
 use Lotgd\FightNav;
 require_once("lib/http.php");
-require_once("lib/taunt.php");
 require_once("lib/events.php");
 use Lotgd\Battle;
 

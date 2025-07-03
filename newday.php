@@ -3,6 +3,7 @@ use Lotgd\Buffs;
 use Lotgd\Newday;
 use Lotgd\MountName;
 use Lotgd\Names;
+use Lotgd\Substitute;
 // translator ready
 // addnews ready
 // mail ready
@@ -267,8 +268,7 @@ if ($dp < $dkills) {
 	$session['user']['lasthit'] = gmdate("Y-m-d H:i:s");
 	if ($session['user']['hashorse']){
 		$msg = $playermount['newday'];
-		require_once("lib/substitute.php");
-		$msg = substitute_array("`n`&".$msg."`0`n");
+		$msg = Substitute::applyArray("`n`&".$msg."`0`n");
 		output($msg);
                 list($name, $lcname) = MountName::getmountname();
 

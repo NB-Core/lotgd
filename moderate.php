@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -11,10 +13,9 @@ tlschema("moderate");
 
 addcommentary();
 
-check_su_access(SU_EDIT_COMMENTS);
+SuAccess::check(SU_EDIT_COMMENTS);
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 addnav("Other");
 addnav("Commentary Overview","moderate.php");

@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // mail ready
 // addnews ready
 // translator ready
@@ -7,7 +9,7 @@ require_once("lib/http.php");
 
 tlschema("paylog");
 
-check_su_access(SU_EDIT_PAYLOG);
+SuAccess::check(SU_EDIT_PAYLOG);
 /*
 +-----------+---------------------+------+-----+---------+----------------+
 | Field     | Type                | Null | Key | Default | Extra          |
@@ -25,8 +27,7 @@ check_su_access(SU_EDIT_PAYLOG);
 +-----------+---------------------+------+-----+---------+----------------+
 */
 page_header("Payment Log");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 modulehook("paylog",array());
 
 $op = httpget('op');

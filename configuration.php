@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
 // translator ready
 // addnews ready
@@ -9,7 +11,7 @@ require_once("common.php");
 require_once("lib/showform.php");
 require("lib/settings_extended.php");
 
-check_su_access(SU_EDIT_CONFIG);
+SuAccess::check(SU_EDIT_CONFIG);
 
 tlschema("configuration");
 
@@ -207,8 +209,7 @@ switch ($type_setting) {
 
 
 page_header("Game Settings");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Module Manager", "modules.php");
 if ($module) {
 	$cat = $info['category'];

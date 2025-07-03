@@ -1,14 +1,15 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Stripslashes;
+use Lotgd\Nav\SuperuserNav;
 // addnews ready
 // translator ready
 // mail ready
 define("ALLOW_ANONYMOUS",true);
 define("OVERRIDE_FORCED_NAV",true);
 require_once("common.php");
-require_once("lib/systemmail.php");
 require_once("lib/output_array.php");
 require_once("lib/http.php");
-require_once("lib/stripslashes_deep.php");
 $op = httpget('op');
 
 switch ($op) {

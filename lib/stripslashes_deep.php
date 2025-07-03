@@ -1,10 +1,8 @@
 <?php
-function stripslashes_deep($input){
-	if (!is_array($input)) return stripslashes($input);
-	reset($input);
-	foreach($input as $key=>$val){
-		$input[$key] = stripslashes_deep($val);
-	}
-	return $input;
+// Legacy wrapper for Stripslashes class
+use Lotgd\Stripslashes;
+
+function stripslashes_deep($input)
+{
+    return Stripslashes::deep($input);
 }
-?>

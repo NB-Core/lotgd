@@ -1,18 +1,19 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
 require_once("common.php");
+use Lotgd\Mail;
 require_once("lib/http.php");
-require_once("lib/systemmail.php");
 
-check_su_access(SU_EDIT_DONATIONS);
+SuAccess::check(SU_EDIT_DONATIONS);
 
 tlschema("donation");
 
 page_header("Donator's Page");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 
 $ret=httpget('ret');
@@ -97,7 +98,7 @@ if ($op=="add2"){
 	}else{
 		debuglog("Received donator points -- Manually assigned, not based on a known dollar donation [$reason]",false,$id,"donation",$amt,false);
 	}
-	systemmail($id,array("Donation Points Added"),array("`2You have received %s donation points for %s.",$points,$reason));
+	Mail::systemMail($id,array("Donation Points Added"),array("`2You have received %s donation points for %s.",$points,$reason));
 	httpset('op', "");
 	$op = "";
 }

@@ -188,12 +188,12 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 						//mail new emailaddress
                                 $to_array=array($email=>$email);
                                 $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-                                \Lotgd\SendMail::send($to_array,str_replace("`n","\n",$msg),$subj,$from_array,false,"text/plain");
+                                \Lotgd\Mail::send($to_array,str_replace("`n","\n",$msg),$subj,$from_array,false,"text/plain");
 
 						//mail old email address
                                 $to_array=array($session['user']['emailaddress']=>$session['user']['login']);
                                 $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-                                \Lotgd\SendMail::send($to_array,str_replace("`n","\n",$ownermsg),$subj,$from_array,false,"text/plain");
+                                \Lotgd\Mail::send($to_array,str_replace("`n","\n",$ownermsg),$subj,$from_array,false,"text/plain");
 
 						//save replacemail
 						$session['user']['replaceemail']=$email."|".date("Y-m-d H:i:s");

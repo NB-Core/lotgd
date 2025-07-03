@@ -7,7 +7,7 @@ require_once("common.php");
 use Lotgd\FightNav;
 require_once("lib/titles.php");
 require_once("lib/http.php");
-require_once("lib/taunt.php");
+use Lotgd\Battle;
 use Lotgd\Names;
 
 tlschema("dragon");
@@ -285,7 +285,7 @@ if ($battle){
 			tlschema("nav");
 			addnav("Daily news","news.php");
 			tlschema();
-			$taunt = select_taunt_array();
+                        $taunt = Battle::selectTauntArray();
 			if ($session['user']['sex']){
 				AddNews::add("`%%s`5 has been slain when she encountered `@%s`5!!!  Her bones now litter the cave entrance, just like the bones of those who came before.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			}else{

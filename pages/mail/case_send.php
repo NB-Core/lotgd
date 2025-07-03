@@ -1,4 +1,7 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Mail;
 $to = httppost('to');
 $sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='$to'";
 $result = db_query($sql);
@@ -21,8 +24,7 @@ if(db_num_rows($result)>0){
 		$body = str_replace("\r\n","\n",$body);
 		$body = str_replace("\r","\n",$body);
 		$body = addslashes(substr(stripslashes($body),0,(int)getsetting("mailsizelimit",1024)));
-		require_once("lib/systemmail.php");
-		systemmail($row1['acctid'],$subject,$body,$session['user']['acctid']);
+		Mail::systemMail($row1['acctid'],$subject,$body,$session['user']['acctid']);
 		invalidatedatacache("mail-{$row1['acctid']}");
 		output("Your message was sent!`n");
 		if (httppost('sendclose')) rawoutput("<script language='javascript'>window.close();</script>");

@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -6,14 +8,13 @@ require_once("common.php");
 require_once("lib/showform.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_EQUIPMENT);
+SuAccess::check(SU_EDIT_EQUIPMENT);
 
 tlschema("weapon");
 
 page_header("Weapon Editor");
 $weaponlevel = (int)httpget("level");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 addnav("Editor");
 addnav("Weapon Editor Home","weaponeditor.php?level=$weaponlevel");

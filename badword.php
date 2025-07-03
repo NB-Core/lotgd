@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -10,7 +12,7 @@
 require_once("common.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_COMMENTS);
+SuAccess::check(SU_EDIT_COMMENTS);
 
 tlschema("badword");
 
@@ -18,8 +20,7 @@ $op = httpget('op');
 //yuck, this page is a mess, but it gets the job done.
 page_header("Bad word editor");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Bad Word Editor");
 
 addnav("Refresh the list","badword.php");

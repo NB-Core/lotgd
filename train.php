@@ -1,15 +1,16 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Substitute;
 use Lotgd\Battle;
+use Lotgd\Mail;
 //addnews ready
 // mail ready
 // translator ready
 require_once("common.php");
-require_once("lib/systemmail.php");
 require_once("lib/increment_specialty.php");
 use Lotgd\FightNav;
 require_once("lib/http.php");
-require_once("lib/taunt.php");
-require_once("lib/substitute.php");
 require_once("lib/villagenav.php");
 require_once("lib/experience.php");
 
@@ -172,7 +173,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 			require_once("battle.php");
 		}
 		if ($victory){
-			$badguy['creaturelose']=substitute_array($badguy['creaturelose']);
+			$badguy['creaturelose']=Substitute::applyArray($badguy['creaturelose']);
 			output_notl("`b`&");
  	 	 	output($badguy['creaturelose']);
  	 	 	output_notl("`0`b`n");
@@ -203,7 +204,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 				$session['user']['refererawarded']=1;
 				$subj=array("`%One of your referrals advanced!`0");
 				$body=array("`&%s`# has advanced to level `^%s`#, and so you have earned `^%s`# points!", $session['user']['name'], $session['user']['level'], getsetting("refereraward", 25));
-				systemmail($session['user']['referer'],$subj,$body);
+				Mail::systemMail($session['user']['referer'],$subj,$body);
 			}
 			increment_specialty("`^");
 
@@ -240,13 +241,13 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 				$session['user']['hitpoints'] = $session['user']['maxhitpoints'];
 			modulehook("training-victory", $badguy);
 		}elseif($defeat){
-			$taunt = select_taunt_array();
+                        $taunt = Battle::selectTauntArray();
 
 			if (getsetting('displaymasternews',1)) AddNews::add("`%%s`5 has challenged their master, %s and lost!`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			$session['user']['hitpoints']=$session['user']['maxhitpoints'];
 			output("`&`bYou have been defeated by `%%s`&!`b`n",$badguy['creaturename']);
 			output("`%%s`\$ halts just before delivering the final blow, and instead extends a hand to help you to your feet, and hands you a complementary healing potion.`n",$badguy['creaturename']);
-			$badguy['creaturewin']=substitute_array($badguy['creaturewin']);
+			$badguy['creaturewin']=Substitute::applyArray($badguy['creaturewin']);
 			output_notl("`^`b");
 			output($badguy['creaturewin']);
 			output_notl("`b`0`n");
