@@ -418,7 +418,9 @@ function page_footer($saveuser=true){
 		$sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','dbtime','".$SCRIPT_NAME."','".(round($dbinfo['querytime'],3))."');";
 		$resultdebug=db_query($sql);
 	}
-	$footer=str_replace("{pagegen}","Page gen: ".round($gentime,3)."s / ".$dbinfo['queriesthishit']." queries (".round($dbinfo['querytime'],3)."s), Ave: ".round($session['user']['gentime']/$session['user']['gentimecount'],3)."s - ".round($session['user']['gentime'],3)."/".round($session['user']['gentimecount'],3)."",$footer);
+    $queriesthishit = isset($dbinfo['queriesthishit']) ? $dbinfo['queriesthishit'] : 0;
+    $querytime = isset($dbinfo['querytime']) ? $dbinfo['querytime'] : 0;
+    $footer=str_replace("{pagegen}","Page gen: ".round($gentime,3)."s / ".$queriesthishit." queries (".round($querytime,3)."s), Ave: ".round($session['user']['gentime']/$session['user']['gentimecount'],3)."s - ".round($session['user']['gentime'],3)."/".round($session['user']['gentimecount'],3)."",$footer);
 
 	tlschema();
 

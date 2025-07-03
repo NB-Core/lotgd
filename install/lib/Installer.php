@@ -214,7 +214,7 @@ class Installer
         		savesetting("installer_version",$logd_version);
         	}
         	if ($showform){
-                       rawoutput("<form action='installer.php?stage=$stage' method='POST'>");
+                rawoutput("<form action='installer.php?stage=$stage' method='POST'>");
         		output("Enter a name for your superuser account:");
         		rawoutput("<input name='name' value=\"".htmlentities(httppost("name"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">");
         		output("`nEnter a password: ");
