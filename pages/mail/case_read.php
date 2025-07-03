@@ -18,14 +18,14 @@ if (db_num_rows($result)>0){
 	if ((int)$row['msgfrom']==0){
 		$row['name']=translate_inline("`i`^System`0`i");
 		// No translation for subject if it's not an array
-		$row_subject = safe_unserialize($row['subject']);
+                $row_subject = \Lotgd\Serialization::safeUnserialize($row['subject']);
 		if ($row_subject !== false && is_array($row_subject)) {
 			$row['subject'] = call_user_func_array("sprintf_translate", $row_subject);
 		} else {
 			$row['subject'] = $row_subject;
 		}
 		// No translation for body if it's not an array
-		$row_body = safe_unserialize($row['body']);
+                $row_body = \Lotgd\Serialization::safeUnserialize($row['body']);
 		if ($row_body !== false && is_array($row_body)) {
 			$row['body'] = call_user_func_array("sprintf_translate", $row_body);
 		} else {

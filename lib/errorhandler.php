@@ -108,9 +108,8 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			foreach ($sendto as $key=>$email) {
 				debug("Notifying $email of this error.");
 
-				require_once("lib/sendmail.php");
-				$from=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-				send_email(array($email=>$email),$body,$subject,$from,false,"text/html");
+                                $from = array(getsetting("gameadminemail", "postmaster@localhost") => getsetting("gameadminemail", "postmaster@localhost"));
+                                \Lotgd\SendMail::send(array($email => $email), $body, $subject, $from, false, "text/html");
 /*				mail($email, $subject, $body,
 					"From: " . $from . "\n" .
 					"MIME-Version: 1.0\n" .

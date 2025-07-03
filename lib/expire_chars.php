@@ -70,14 +70,13 @@ if ($lastexpire < $needtoexpire){
 	$_SERVER['SERVER_NAME'].($_SERVER['SERVER_PORT']==80?"":":".$_SERVER['SERVER_PORT']).$_SERVER['SCRIPT_NAME']." is about to expire.  If you wish to keep this character, you should log on to him or her soon!",
 	*/
 
-	require_once("lib/sendmail.php");
-	$collector=array();
-	$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-	$cc_array=array();
-	while ($row = db_fetch_assoc($result)) {
-		$to_array=array($row['emailaddress']=>$row['emailaddress']);
-		$body=str_replace("{charname}",$row['login'],$message);
-		$mail_sent = send_email($to_array,$body,$subject,$from_array,$cc_array,"text/html");
+        $collector=array();
+        $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+        $cc_array=array();
+        while ($row = db_fetch_assoc($result)) {
+                $to_array=array($row['emailaddress']=>$row['emailaddress']);
+                $body=str_replace("{charname}",$row['login'],$message);
+                $mail_sent = \Lotgd\SendMail::send($to_array,$body,$subject,$from_array,$cc_array,"text/html");
 		$collector[]=$row['acctid'];
 	}
 	if ($collector!=array()) {

@@ -8,7 +8,7 @@ require_once("common.php");
 require_once("lib/is_email.php");
 require_once("lib/sanitize.php");
 require("lib/settings_extended.php");
-require_once("lib/serverfunctions.class.php");
+use Lotgd\ServerFunctions;
 
 tlschema("create");
 
@@ -161,10 +161,9 @@ if ($op=="forgot"){
 				$msg=str_replace($keys,$values,$msg);
 				$msg=str_replace("`n","\n",$msg);
 
-				require_once("lib/sendmail.php");
-				$to_array=array($row['emailaddress']=>$row['login']);
-				$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-				send_email($to_array,$msg,$subj,$from_array,false,"text/plain");
+                                $to_array=array($row['emailaddress']=>$row['login']);
+                                $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+                                \Lotgd\SendMail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
 				output("`#Sent a new validation email to the address on file for that account.");
 				output("You may use the validation email to log in and change your password.");
 			}else{
@@ -323,10 +322,9 @@ if (getsetting("allowcreation",1)==0){
 							$values=array_values($replace);
 							$msg=str_replace($keys,$values,$msg);						
 							$msg=str_replace("`n","\n",$msg);
-							require_once("lib/sendmail.php");
-							$to_array=array($email=>$shortname);
-							$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-							send_email($to_array,$msg,$subj,$from_array,false,"text/plain");
+                                                        $to_array=array($email=>$shortname);
+                                                        $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+                                                        \Lotgd\SendMail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
 							output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
 						}else{
 							rawoutput("<form action='login.php' method='POST'>");
