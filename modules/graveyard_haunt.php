@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Mail;
 
 function graveyard_haunt_getmoduleinfo(): array{
 	$info = array(
@@ -130,8 +133,7 @@ if (db_num_rows($result)>0){
 			AddNews::add("`7%s`) haunted `7%s`)!",$session['user']['name'],$row['name']);
 			$subj = array("`)You have been haunted");
 			$body = array("`)You have been haunted by `&%s`).",$session['user']['name']);
-			require("lib/systemmail.php");
-			systemmail($row['acctid'], $subj, $body);
+			Mail::systemMail($row['acctid'], $subj, $body);
 		}else{
 			AddNews::add("`7%s`) unsuccessfully haunted `7%s`)!",$session['user']['name'],$row['name']);
 			switch (e_rand(0,5)){

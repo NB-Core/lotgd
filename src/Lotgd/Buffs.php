@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Substitute;
 class Buffs
 {
     private static array $buffReplacements = [];
@@ -278,10 +279,10 @@ class Buffs
                 if (is_array($buff['startmsg'])) {
                     $buff['startmsg'] = str_replace('`%', '`%%', $buff['startmsg']);
                     $msg = sprintf_translate($buff['startmsg']);
-                    $msg = substitute("`5" . $msg . "`0`n");
+                    $msg = Substitute::apply("`5" . $msg . "`0`n");
                     output_notl($msg);
                 } else {
-                    $msg = substitute_array("`5" . $buff['startmsg'] . "`0`n");
+                    $msg = Substitute::applyArray("`5" . $buff['startmsg'] . "`0`n");
                     output($msg);
                 }
 
@@ -342,10 +343,10 @@ class Buffs
                     if (is_array($buff['roundmsg'])) {
                         $buff['roundmsg'] = str_replace('`%', '`%%', $buff['roundmsg']);
                         $msg = sprintf_translate($buff['roundmsg']);
-                        $msg = substitute("`5" . $msg . "`0`n");
+                        $msg = Substitute::apply("`5" . $msg . "`0`n");
                         output_notl($msg);
                     } else {
-                        $msg = substitute_array("`5" . $buff['roundmsg'] . "`0`n");
+                        $msg = Substitute::applyArray("`5" . $buff['roundmsg'] . "`0`n");
                         output($msg);
                     }
                 }
@@ -406,10 +407,10 @@ class Buffs
 
                 if (is_array($msg)) {
                     $msg = sprintf_translate($msg);
-                    $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
+                    $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
                     output_notl($msg);
                 } elseif ($msg != '') {
-                    $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
+                    $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
                     output($msg);
                 }
                 if (isset($buff['aura']) && $buff['aura'] == true) {
@@ -424,7 +425,7 @@ class Buffs
                             ) {
                                 $hptoregen = min($auraeffect, $companion['maxhitpoints'] - $companion['hitpoints']);
                                 $companions[$name]['hitpoints'] += $hptoregen;
-                                $msg = substitute_array('`)' . $buff['auramsg'] . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
+                                $msg = Substitute::applyArray('`)' . $buff['auramsg'] . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
                                 output($msg);
                                 if ($hptoregen < 0 && $companion['hitpoints'] <= 0) {
                                     if (isset($companion['dyingtext'])) {
@@ -490,10 +491,10 @@ class Buffs
                     }
                     if (is_array($msg)) {
                         $msg = sprintf_translate($msg);
-                        $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
+                        $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
                         output_notl($msg);
                     } elseif ($msg > '') {
-                        $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
+                        $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
                         output($msg);
                     }
                     if ($badguy['dead'] == true) {
@@ -546,10 +547,10 @@ class Buffs
             $session['user']['hitpoints'] += $healhp;
             if (is_array($msg)) {
                 $msg = sprintf_translate($msg);
-                $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
+                $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
                 output_notl($msg);
             } elseif ($msg > '') {
-                $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
+                $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
                 output($msg);
             }
             if ($buff['schema']) {
@@ -596,10 +597,10 @@ class Buffs
             }
             if (is_array($msg)) {
                 $msg = sprintf_translate($msg);
-                $msg = substitute('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
+                $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
                 output_notl($msg);
             } elseif ($msg > '') {
-                $msg = substitute_array('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
+                $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
                 output($msg);
             }
             if ($buff['schema']) {
@@ -630,10 +631,10 @@ class Buffs
                         if (is_array($buff['wearoff'])) {
                             $buff['wearoff'] = str_replace('`%', '`%%', $buff['wearoff']);
                             $msg = sprintf_translate($buff['wearoff']);
-                            $msg = substitute('`5' . $msg . '`0`n');
+                            $msg = Substitute::apply('`5' . $msg . '`0`n');
                             output_notl($msg);
                         } else {
-                            $msg = substitute_array('`5' . $buff['wearoff'] . '`0`n');
+                            $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
                             output($msg);
                         }
                     }
@@ -665,10 +666,10 @@ class Buffs
                         if (is_array($buff['wearoff'])) {
                             $buff['wearoff'] = str_replace('`%', '`%%', $buff['wearoff']);
                             $msg = sprintf_translate($buff['wearoff']);
-                            $msg = substitute('`5' . $msg . '`0`n');
+                            $msg = Substitute::apply('`5' . $msg . '`0`n');
                             output_notl($msg);
                         } else {
-                            $msg = substitute_array('`5' . $buff['wearoff'] . '`0`n');
+                            $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
                             output($msg);
                         }
                     }

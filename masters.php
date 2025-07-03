@@ -1,11 +1,13 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // Initially written as a module by Chris Vorndran.
 // Moved into core by JT Traub
 
 require_once("common.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_CREATURES);
+SuAccess::check(SU_EDIT_CREATURES);
 
 tlschema("masters");
 
@@ -14,8 +16,7 @@ $id = (int)httpget('id');
 $act = httpget('act');
 
 page_header("Masters Editor");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 if ($op == "del") {
 	$sql = "DELETE FROM " . db_prefix("masters") . " WHERE creatureid=$id";

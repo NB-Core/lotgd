@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -12,14 +14,13 @@ require_once("common.php");
 require_once("lib/showform.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_EQUIPMENT);
+SuAccess::check(SU_EDIT_EQUIPMENT);
 
 tlschema("armor");
 
 page_header("Armor Editor");
 $armorlevel = (int)httpget('level');
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Armor Editor");
 addnav("Armor Editor Home","armoreditor.php?level=$armorlevel");
 

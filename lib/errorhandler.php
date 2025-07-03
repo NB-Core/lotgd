@@ -109,7 +109,7 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 				debug("Notifying $email of this error.");
 
                                 $from = array(getsetting("gameadminemail", "postmaster@localhost") => getsetting("gameadminemail", "postmaster@localhost"));
-                                \Lotgd\SendMail::send(array($email => $email), $body, $subject, $from, false, "text/html");
+                                \Lotgd\Mail::send(array($email => $email), $body, $subject, $from, false, "text/html");
 /*				mail($email, $subject, $body,
 					"From: " . $from . "\n" .
 					"MIME-Version: 1.0\n" .
