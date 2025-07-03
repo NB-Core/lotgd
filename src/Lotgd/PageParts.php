@@ -468,7 +468,7 @@ public static function pageFooter(bool $saveuser=true){
  *
  * @param string $title The title of the popup window
  */
-public static function popupHeader(string $title="Legend of the Green Dragon"){
+public static function popupHeader(...$args): void {
 	global $header, $template;
 
 	translator_setup();
