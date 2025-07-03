@@ -39,7 +39,7 @@ class SendMail
                 $mail->Password = $mailpassword;
                 if ($smtpauth != false) {
                     $mail->SMTPAuth = $smtpauth;
-                    $mail->SMTPSecure = 'tls';
+                    $mail->SMTPSecure = $smtpsecure;
                     $mail->Port = $port;
                 }
             }
