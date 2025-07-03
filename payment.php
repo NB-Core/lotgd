@@ -179,37 +179,32 @@ $adminEmail = getsetting("gameadminemail", "postmaster@localhost.com");
 if ($payment_errors>"") {
 	$subj = translate_mail("Payment Error",0);
 	// $payment_errors not translated
-	ob_start();
-	echo "<b>GET:</b><pre>";
-	reset($_GET);
-	var_dump($_GET);
-	echo "</pre><b>POST:</b><pre>";
-	reset($_POST);
-	var_dump($_POST);
-	echo "</pre><b>SERVER:</b><pre>";
-	reset($_SERVER);
-	var_dump($_SERVER);
-	echo "</pre>";
-	$contents = ob_get_contents();
-	ob_end_clean();
-	$payment_errors .= "<hr>".$contents;
-
-	mail($adminEmail,$subj,$payment_errors."<hr>","From: " . getsetting("gameadminemail", "postmaster@localhost.com"));
+        $sanitizedInfo = sprintf("Txn ID: %s\nStatus: %s\nAmount: %s %s\nPayer: %s\nReceiver: %s", $txn_id, $payment_status, $payment_amount, $payment_currency, $payer_email, $receiver_email);
+        error_log($payment_errors . "\n" . $sanitizedInfo);
+        mail($adminEmail,$subj,$payment_errors."\n".$sanitizedInfo,"From: " . getsetting("gameadminemail", "postmaster@localhost.com"));
 }
 $output = ob_get_contents();
 if ($output > ""){
-	if ($adminEmail == "") $adminEmail = "trash@mightye.org";
-	echo "<b>GET:</b><pre>";
-	reset($_GET);
-	var_dump($_GET);
-	echo "</pre><b>POST:</b><pre>";
-	reset($_POST);
-	var_dump($_POST);
-	echo "</pre><b>SERVER:</b><pre>";
-	reset($_SERVER);
-	var_dump($_SERVER);
-	echo "</pre>";
-	mail($adminEmail,"Serious LoGD Payment Problems on {$_SERVER['HTTP_HOST']}",ob_get_contents(),"Content-Type: text/html");
+        error_log("Unexpected payment output: " . $output);
+        $sanitizedInfo = sprintf(
+                "Txn ID: %s\nStatus: %s\nAmount: %s %s\nPayer: %s\nReceiver: %s",
+                $txn_id,
+                $payment_status,
+                $payment_amount,
+                $payment_currency,
+                $payer_email,
+                $receiver_email
+        );
+        if ($adminEmail == "") {
+                error_log("Admin email not configured; payment issue details: " . $sanitizedInfo);
+        } else {
+                mail(
+                        $adminEmail,
+                        "Serious LoGD Payment Problems on {$_SERVER['HTTP_HOST']}",
+                        $sanitizedInfo,
+                        "From: " . getsetting("gameadminemail", "postmaster@localhost.com")
+                );
+        }
 }
 ob_end_clean();
 ?>
