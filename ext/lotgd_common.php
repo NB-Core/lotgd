@@ -235,7 +235,7 @@ if ($logd_version == getsetting("installer_version","-1")) {
 	define("IS_INSTALLER", false);
 }
 //Generate our settings object
-$settings=new settings("settings");
+$settings=new Settings("settings");
 
 header("Content-Type: text/html; charset=".getsetting('charset','ISO-8859-1'));
 

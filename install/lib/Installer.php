@@ -373,7 +373,7 @@ class Installer
         output("`@`c`bTesting the Database Connection`b`c`2");
         output("Trying to establish a connection with the database:`n");
         ob_start();
-        $connected = db_connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
+        $connected = Database::connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
         $error = ob_get_contents();
         ob_end_clean();
         if (!$connected){
@@ -381,18 +381,28 @@ class Installer
         	output("`2This means that either the database server address, database username, or database password you provided were wrong, or else the database server isn't running.");
         	output("The specific error the database returned was:");
         	rawoutput("<blockquote>".$error."</blockquote>");
-        	output("If you believe you provided the correct information, make sure that the database server is running (check documentation for how to determine this).");
+        	output("If you believe you provided the correct information, make sure that the database server is running (check documentation for how to determine this).`n`n");
         	output("Otherwise, you should return to the previous step, \"Database Info\" and double-check that the information provided there is accurate.");
         	$session['stagecompleted']=3;
         }else{
-        	output("`^Yahoo, I was able to connect to the database server!");
+        	output("`^Yahoo, I was able to connect to the database server!`n`n");
         	output("`2This means that the database server address, database username, and database password you provided were probably accurate, and that your database server is running and accepting connections.`n");
         	output("`nI'm now going to attempt to connect to the LoGD database you provided.`n");
             $link = Database::getInstance();
+            define("LINK",$link);
             if (httpget("op")=="trycreate"){ 
-                    $this->createDb($link, $session['dbinfo']['DB_NAME']);
+                $this->createDb($link, $session['dbinfo']['DB_NAME']);
             }
-        	if (!db_select_db($session['dbinfo']['DB_NAME'])){
+            $dbName = $session['dbinfo']['DB_NAME'];
+            $sql = "SHOW DATABASES LIKE '" . addslashes($dbName) . "';";
+            $dbExistsResult = Database::query($sql);
+            $dbExists = Database::numRows($dbExistsResult) > 0;
+
+        	if (!$dbExists) {
+                output("`n`^It looks like the database `%{$session['dbinfo']['DB_NAME']}`^ does not exist yet.`n");
+                output("`2If you would like me to create it for you, please click the button below.`nIf you do not want me to create it, please return to the previous step and provide a different database name.`n");
+                output("`nTo create the database, <a href='installer.php?stage=4&op=trycreate'>click here</a>.`n", true);
+            } elseif (!db_select_db($session['dbinfo']['DB_NAME'])) {
         		output("`\$Rats!  I was not able to connect to the database.");
         		$error = db_error();
         		if ($error=="Unknown database '{$session['dbinfo']['DB_NAME']}'"){
@@ -406,7 +416,7 @@ class Installer
         		output("`nThe exact error returned from the database server was:");
         		rawoutput("<blockquote>$error</blockquote>");
         		$session['stagecompleted']=3;
-        	}else{
+        	} else {
         		output("`n`^Excellent, I was able to connect to the database!`n");
         		define("DB_INSTALLER_STAGE4", true);
         		output("`n`@Tests`2`n");
@@ -1298,13 +1308,7 @@ class Installer
         output("`n`2Attempting to create your database...`n");
         $sql = "CREATE DATABASE `$dbname`";
         if ($connection->query($sql) === TRUE) {
-            $selected = $this->selectDatabase($connection, $dbname);
-            if ($selected) {
-                output("`@Success!`2  I was able to create the database and connect to it!`n");
-            } else {
-                output("`\$It seems I was not successful.`2  I didn't get any errors trying to create the database, but I was not able to connect to it.");
-                output("I'm not sure what would have caused this error, you might try asking around in <a href='http://lotgd.net/forum/' target='_blank'>the LotGD.net forums</a>.");
-            }
+            output("`@Success!`2  I was able to create the database and connect to it!`n");
         } else {
             if ($connection instanceof \mysqli && property_exists($connection, 'error')) {
                 $error = $connection->error;
