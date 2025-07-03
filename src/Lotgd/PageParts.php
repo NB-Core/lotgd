@@ -16,39 +16,55 @@ use Lotgd\HolidayText;
  *
  */
 class PageParts {
+    /**
+     * Tracks scripts that should not display popups.
+     * @var array<string,bool>
+     */
     private static array $noPopups = [];
+
+    /**
+     * Keeps track of which headers have already run to avoid duplicates.
+     * @var array<string,bool>
+     */
     private static array $runHeaders = [];
+
+    /** Holds the character statistics for the current page. */
     private static ?CharStats $charstats = null;
+
+    /** Name of the current stat section when building char stats. */
     private static string $lastCharstatLabel = "";
 
- * @param array|string $title
- * Hooks provided:
- *		everyheader
- *		header-{scriptname}
- */
+    /**
+     * Starts page output. Initializes the template and translator modules.
+     *
+     * @param array|string $title
+     * Hooks provided:
+     *      everyheader
+     *      header-{scriptname}
+     */
 public static function pageHeader(){
-	global $header,$SCRIPT_NAME,$session,$template, $runheaders, $nopopups;
-	$nopopups["login.php"]=1;
-	$nopopups["motd.php"]=1;
-	$nopopups["index.php"]=1;
-	$nopopups["create.php"]=1;
-	$nopopups["about.php"]=1;
-	$nopopups["mail.php"]=1;
+        global $header,$SCRIPT_NAME,$session,$template;
+        self::$noPopups["login.php"]=1;
+        self::$noPopups["motd.php"]=1;
+        self::$noPopups["index.php"]=1;
+        self::$noPopups["create.php"]=1;
+        self::$noPopups["about.php"]=1;
+        self::$noPopups["mail.php"]=1;
 
 	//in case this didn't already get called (such as on a database error)
 	translator_setup();
 	prepare_template();
 	if (isset($SCRIPT_NAME)) {
 		$script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
-		if ($script) {
-			if (!array_key_exists($script,$runheaders))
-				$runheaders[$script] = false;
-			if (!$runheaders[$script]) {
-				if (!defined("IS_INSTALLER")) modulehook("everyheader", array('script'=>$script));
-				$runheaders[$script] = true;
-				if (!defined("IS_INSTALLER")) modulehook("header-$script");
-			}
-		}
+                if ($script) {
+                        if (!array_key_exists($script,self::$runHeaders))
+                                self::$runHeaders[$script] = false;
+                        if (!self::$runHeaders[$script]) {
+                                if (!defined("IS_INSTALLER")) modulehook("everyheader", array('script'=>$script));
+                                self::$runHeaders[$script] = true;
+                                if (!defined("IS_INSTALLER")) modulehook("header-$script");
+                        }
+                }
 	}
 
 	$arguments = func_get_args();
@@ -100,10 +116,10 @@ public static function popup(string $page, string $size="550x300"){
  *
  */
 public static function pageFooter(bool $saveuser=true){
-	global $output,$header,$nav,$session,$REMOTE_ADDR,
-	       $REQUEST_URI,$pagestarttime,$quickkeys,$template,$y2,$z2,
-	       $logd_version,$copyright,$SCRIPT_NAME,$nopopups, $footer,
-	       $dbinfo;
+        global $output,$header,$nav,$session,$REMOTE_ADDR,
+               $REQUEST_URI,$pagestarttime,$quickkeys,$template,$y2,$z2,
+               $logd_version,$copyright,$SCRIPT_NAME, $footer,
+               $dbinfo;
 	$z = $y2^$z2;
 	$footer = $template['footer'];
 	//page footer module hooks
@@ -140,7 +156,7 @@ public static function pageFooter(bool $saveuser=true){
 
 	tlschema("common");
 
-	$charstats = self::charStats();
+        $statsOutput = self::charStats();
 
 	Buffs::restoreBuffFields();
 
@@ -149,10 +165,10 @@ public static function pageFooter(bool $saveuser=true){
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
 		$headscript = "";
-		if (db_num_rows($result)>0 && isset($session['user']['lastmotd']) &&
-				($row['motddate']>$session['user']['lastmotd']) &&
-				(!isset($nopopup[$SCRIPT_NAME]) || $nopopups[$SCRIPT_NAME]!=1) &&
-				$session['user']['loggedin']){
+                if (db_num_rows($result)>0 && isset($session['user']['lastmotd']) &&
+                                ($row['motddate']>$session['user']['lastmotd']) &&
+                                (!isset(self::$noPopups[$SCRIPT_NAME]) || self::$noPopups[$SCRIPT_NAME]!=1) &&
+                                $session['user']['loggedin']){
 			if (getsetting('forcedmotdpopup',0)) $headscript.=self::popup("motd.php");
 			$session['needtoviewmotd']=true;
 		}else{
@@ -394,8 +410,8 @@ public static function pageFooter(bool $saveuser=true){
 		$header = str_replace("{petitiondisplay}", "", $header);
 	}
 	//output character stats
-	$footer=str_replace("{stats}",$charstats,$footer);
-	$header=str_replace("{stats}",$charstats,$header);
+        $footer=str_replace("{stats}",$statsOutput,$footer);
+        $header=str_replace("{stats}",$statsOutput,$header);
 	//do something -- I don't know what
 	$header=str_replace("{script}",$script,$header);
 	//output view PHP source link
@@ -533,17 +549,13 @@ public static function popupFooter(){
 	exit();
 }
 
-/** @var CharStats|null */
-$charstats = null;
-$last_charstat_label = "";
 /**
  * Resets the character stats array
  *
  */
 public static function wipeCharStats(): void {
-        global $charstats, $last_charstat_label;
-        $charstats = new CharStats();
-        $last_charstat_label = "";
+        self::$charstats = new CharStats();
+        self::$lastCharstatLabel = "";
 }
 
 /**
@@ -553,14 +565,13 @@ public static function wipeCharStats(): void {
  * @param mixed $value (optional) value to display
  */
 public static function addCharStat(string $label, mixed $value = null): void {
-        global $charstats, $last_charstat_label;
         if ($value === null) {
-                $last_charstat_label = $label;
+                self::$lastCharstatLabel = $label;
         } else {
-                if ($last_charstat_label === '') {
-                        $last_charstat_label = 'Other Info';
+                if (self::$lastCharstatLabel === '') {
+                        self::$lastCharstatLabel = 'Other Info';
                 }
-                $charstats?->addStat($last_charstat_label, $label, $value);
+                self::$charstats?->addStat(self::$lastCharstatLabel, $label, $value);
         }
 }
 
@@ -572,8 +583,7 @@ public static function addCharStat(string $label, mixed $value = null): void {
  * @return mixed The value associated with the stat
  */
 public static function getCharStat(string $cat, string $label) {
-        global $charstats;
-        return $charstats?->getStat($cat, $label);
+        return self::$charstats?->getStat($cat, $label);
 }
 
 /**
@@ -584,8 +594,7 @@ public static function getCharStat(string $cat, string $label) {
  * @param mixed $val The value of the attribute
  */
 public static function setCharStat(string $cat, string $label, mixed $val): void {
-        global $charstats;
-        $charstats?->setStat($cat, $label, $val);
+        self::$charstats?->setStat($cat, $label, $val);
 }
 
 /**
@@ -595,8 +604,7 @@ public static function setCharStat(string $cat, string $label, mixed $val): void
  * @return string
  */
 public static function getCharStats(string $buffs): string{
-        global $charstats;
-        return $charstats?->render($buffs) ?? '';
+        return self::$charstats?->render($buffs) ?? '';
 }
 
 /**
@@ -607,8 +615,7 @@ public static function getCharStats(string $buffs): string{
  * @return mixed The value associated with the stat
  */
 public static function getCharStatValue(string $section,string $title){
-        global $charstats;
-        return $charstats?->getStat($section, $title) ?? "";
+        return self::$charstats?->getStat($section, $title) ?? "";
 }
 
 /**
