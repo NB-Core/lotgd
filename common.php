@@ -6,6 +6,7 @@ use Lotgd\Buffs;
 use Lotgd\Mounts;
 use Lotgd\HolidayText;
 use Lotgd\Output;
+use Lotgd\Settings;
 // translator ready
 // addnews ready
 // mail ready
@@ -252,7 +253,7 @@ if ($logd_version == getsetting("installer_version","-1")) {
 	define("IS_INSTALLER", false);
 }
 //Generate our settings object
-if (!defined("IS_INSTALLER")) $settings=new settings("settings");
+if (!defined("IS_INSTALLER")) $settings=new Settings("settings");
 
 header("Content-Type: text/html; charset=".getsetting('charset','ISO-8859-1'));
 

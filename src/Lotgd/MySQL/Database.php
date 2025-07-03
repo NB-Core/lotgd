@@ -38,6 +38,9 @@ class Database
             return [];
         }
         global $session, $dbinfo;
+        if (!isset($dbinfo['queriesthishit'])) {
+            $dbinfo['queriesthishit'] = 0;
+        }
         $dbinfo['queriesthishit']++;
         $starttime = getmicrotime();
         $r = self::getInstance()->query($sql);
