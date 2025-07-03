@@ -42,7 +42,7 @@ class PageParts {
      *      everyheader
      *      header-{scriptname}
      */
-public static function pageHeader(){
+public static function pageHeader(...$args): void {
         global $header,$SCRIPT_NAME,$session,$template;
         self::$noPopups["login.php"]=1;
         self::$noPopups["motd.php"]=1;
