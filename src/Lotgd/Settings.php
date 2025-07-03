@@ -1,6 +1,6 @@
 <?php
 namespace Lotgd;
-
+use Lotgd\MySQL\Database;
 /**
  * Lightweight wrapper around the settings table.
  */
@@ -20,9 +20,13 @@ class Settings
     {
         $this->loadSettings();
         if (!isset($this->settings[$settingname]) && $value) {
-            $sql = "INSERT INTO " . $this->tablename . " (setting,value) VALUES (\"" . addslashes($settingname) . "\",\"" . addslashes($value) . "\")";
+            $settingValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
+            $settingName = is_string($settingname) ? '"' . addslashes($settingname) . '"' : $settingname;
+            $sql = "INSERT INTO " . $this->tablename . " (setting,value) VALUES ($settingName,$settingValue)";
         } elseif (isset($this->settings[$settingname])) {
-            $sql = "UPDATE " . $this->tablename . " SET value=\"" . addslashes($value) . "\" WHERE setting=\"" . addslashes($settingname) . "\"";
+            $settingValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
+            $settingName = is_string($settingname) ? '"' . addslashes($settingname) . '"' : $settingname;
+            $sql = "UPDATE " . $this->tablename . " SET value=$settingValue WHERE setting=$settingName";
         } else {
             return false;
         }

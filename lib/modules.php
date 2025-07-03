@@ -877,6 +877,7 @@ function module_events($eventtype, $basechance, $baseLink = false) {
 	if (e_rand(1, 100) <= $basechance) {
 		$events = module_collect_events($eventtype,false);
 		$chance = r_rand(1, 100);
+		output("C:".$chance); return 0;
 		reset($events);
 		$sum = 0;
 		foreach($events as $event) {

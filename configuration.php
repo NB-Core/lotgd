@@ -2,6 +2,7 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
+use Lotgd\Settings;
 // translator ready
 // addnews ready
 // mail ready
@@ -33,8 +34,8 @@ switch ($type_setting) {
 					if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
 						if (!isset($old[$key]))
 							$old[$key] = "";
-						$settings_extended->saveSetting($key,stripslashes($val));
-						output("Setting %s to %s`n", $key, stripslashes($val));
+						$hasSaved = $settings_extended->saveSetting($key,stripslashes($val));
+						output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved);
 						gamelog("`@Changed core setting (extended)`^$key`@ from `#".substr($old[$key],25)."...`@ to `&".substr($val,25)."...`0","settings");
 						// Notify every module
 						modulehook("changesetting",
@@ -105,8 +106,12 @@ switch ($type_setting) {
 					if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
 						if (!isset($old[$key]))
 							$old[$key] = "";
-						savesetting($key,stripslashes($val));
-						output("Setting %s to %s`n", $key, stripslashes($val));
+						// If key and old key have empty content, don't save it
+						if (empty($val) && empty($old[$key])) {
+							continue;
+						}
+						$hasSaved = $settings->saveSetting($key,stripslashes($val));
+						output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved ? "`2Yes`0" : "`\$No`0");
 						gamelog("`@Changed core setting `^$key`@ from `#{$old[$key]}`@ to `&$val`0","settings");
 						// Notify every module
 						modulehook("changesetting",
@@ -276,7 +281,7 @@ switch ($type_setting) {
 					"defaultsuperuser"=>getsetting('defaultsuperuser',0), // this needs to be there as the showform loads from the database; so a value has to be present if it's not set, and this is a technical field
 					"dayduration"=>round(($details['dayduration']/60/60),0)." hours",
 					"gziphandler"=>$gz_handler_on,
-					"databasetype"=>$DB_TYPE,
+					"databasetype"=>"MySQLi",
 					"curgametime"=>getgametime(),
 					"curservertime"=>date("Y-m-d h:i:s a"),
 					"lastnewday"=>date("h:i:s a",

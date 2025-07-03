@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Nav\VillageNav;
 /**
  * Wrapper around the old forest() function.
  */
@@ -14,7 +15,7 @@ class Forest
         global $session, $playermount;
         tlschema('forest');
         addnav('Navigation');
-        villagenav();
+        VillageNav::render();
         addnav('Heal');
         addnav('H?Healer\'s Hut', 'healer.php');
         addnav('Fight');
