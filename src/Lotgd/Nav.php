@@ -2,6 +2,7 @@
 namespace Lotgd;
 
 use Lotgd\HolidayText;
+use Lotgd\Output;
 
 // Maintain global state for modules
 global $blockednavs;
@@ -503,7 +504,7 @@ class Nav
     {
         global $output, $nestedtags, $header, $nav, $session;
         self::clearNav();
-        $output = new output_collector();
+        $output = new Output();
         $header = '';
         $nav = '';
     }
