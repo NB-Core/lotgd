@@ -85,7 +85,7 @@ class Output
     /**
      * Append raw text to the output buffer.
      */
-    public function rawoutput($indata)
+    public function rawoutput(string $indata): void
     {
         if ($this->block_new_output) {
             return;
