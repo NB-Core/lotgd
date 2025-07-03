@@ -44,12 +44,12 @@ class PageParts {
      */
 public static function pageHeader(...$args): void {
         global $header,$SCRIPT_NAME,$session,$template;
-        self::$noPopups["login.php"]=1;
-        self::$noPopups["motd.php"]=1;
-        self::$noPopups["index.php"]=1;
-        self::$noPopups["create.php"]=1;
-        self::$noPopups["about.php"]=1;
-        self::$noPopups["mail.php"]=1;
+        self::$noPopups["login.php"] = true;
+        self::$noPopups["motd.php"] = true;
+        self::$noPopups["index.php"] = true;
+        self::$noPopups["create.php"] = true;
+        self::$noPopups["about.php"] = true;
+        self::$noPopups["mail.php"] = true;
 
 	//in case this didn't already get called (such as on a database error)
 	translator_setup();
