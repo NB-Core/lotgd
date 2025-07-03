@@ -998,7 +998,7 @@ function module_addhook_priority($hookname,$priority=50,$functioncall=false,$whe
 	debug("Adding a hook at $hookname for $mostrecentmodule to $functioncall which is active on condition '$whenactive'");
 	//we want to do a replace in case there's any garbage left in this table which might block new clean data from going in.
 	//normally that won't be the case, and so this doesn't have any performance implications.
-	$sql = "REPLACE INTO " . db_prefix("module_hooks") . " (modulename,location,`function`,whenactive,priority) VALUES ('$mostrecentmodule','".addslashes($hookname)."','".addslashes($functioncall)."','".addslashes($whenactive)."','".addslashes($priority)."')";
+	$sql = "REPLACE INTO " . db_prefix("module_hooks") . " (modulename,location,`function`,whenactive,priority) VALUES ('$mostrecentmodule','".addslashes($hookname)."','".addslashes($functioncall)."','".addslashes($whenactive)."','".$priority."')";
 	db_query($sql);
 	invalidatedatacache("hook-".$hookname);
 	invalidatedatacache("module_prepare");

@@ -1,6 +1,6 @@
 <?php
-use Lotgd\Names;
 declare(strict_types=1);
+use Lotgd\Names;
 
 function titlechange_getmoduleinfo(): array{
 	$info = array(

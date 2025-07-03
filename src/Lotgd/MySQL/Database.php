@@ -3,6 +3,10 @@ namespace Lotgd\MySQL;
 
 use Lotgd\DataCache;
 
+global $dbinfo;
+
+$dbinfo = [];
+
 /**
  * Collection of database helper methods.
  */
@@ -15,7 +19,7 @@ class Database
         'DB_DATACACHEPATH' => '',
     ];
 
-    protected static function getInstance(): DbMysqli
+    public static function getInstance(): DbMysqli
     {
         if (!self::$instance) {
             self::$instance = new DbMysqli();

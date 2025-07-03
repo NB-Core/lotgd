@@ -1,6 +1,6 @@
 <?php
-use Lotgd\Names;
 declare(strict_types=1);
+use Lotgd\Names;
 //addnews ready
 // mail ready
 function namecolor_getmoduleinfo(): array{

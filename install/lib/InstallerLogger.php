@@ -7,7 +7,7 @@ class InstallerLogger
 {
     public static function log(string $message): void
     {
-        $logDir = __DIR__ . '/../../errors';
+        $logDir = __DIR__ . '/../errors';
         if (!is_dir($logDir)) {
             if (!mkdir($logDir, 0755, true) && !is_dir($logDir)) {
                 throw new RuntimeException(sprintf('Directory "%s" was not created', $logDir));

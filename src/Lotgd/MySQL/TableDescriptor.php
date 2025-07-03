@@ -114,7 +114,7 @@ class TableDescriptor
 	}//end if
 }//end function
 
-    public static function table_create_from_descriptor($tablename,$descriptor){
+    public static function tableCreateFromDescriptor($tablename,$descriptor){
 	$sql = "CREATE TABLE $tablename (\n";
 	$type = "INNODB";
 	reset($descriptor);
@@ -160,7 +160,7 @@ class TableDescriptor
 	return $sql;
 }
 
-    public static function table_create_descriptor($tablename){
+    public static function tableCreateDescriptor($tablename){
 	//this function assumes that $tablename is already passed
 	//through db_prefix.
 	$descriptor = array();
@@ -216,7 +216,7 @@ class TableDescriptor
 	return $descriptor;
 }
 
-    public static function descriptor_createsql($input){
+    public static function descriptorCreateSql($input){
 	$input['type'] = descriptor_sanitize_type($input['type']);
 	if ($input['type']=="key" || $input['type']=='unique key'){
 		//this is a standard index
@@ -256,7 +256,7 @@ class TableDescriptor
 	return $return;
 }
 
-    public static function descriptor_sanitize_type($type){
+    public static function descriptorSanitizeType($type){
 	$type = strtolower($type);
 	$changes = array(
 		"primary index"=>"primary key",

@@ -170,7 +170,7 @@ class Mail
             $mail->Send();
             return true;
         } catch (Exception $e) {
-            output("`$An error has been encountered, please report this: %s`n`n", $mail->ErrorInfo);
+            output("`\$An error has been encountered, please report this: %s`n`n", $mail->ErrorInfo);
             return false;
         }
     }

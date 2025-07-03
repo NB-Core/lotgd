@@ -42,13 +42,13 @@ foreach ($modules as $key => $module) {
         if ($op == "install") {
                 if (!ModuleManager::install($module)) {
                         httpset('cat','');
-                        output("`$Error, module could not be installed!`n`n");
+                        output("`\$Error, module could not be installed!`n`n");
                 }
                 $op = "";
                 httpset('op', "");
         } elseif ($op == "uninstall") {
                 if (!ModuleManager::uninstall($module)) {
-                        output("`$Error, module could not be uninstalled!`n`n");
+                        output("`\$Error, module could not be uninstalled!`n`n");
                         output("Unable to inject module.  Module not uninstalled.`n");
                 }
                 $op = "";

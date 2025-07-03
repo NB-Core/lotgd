@@ -1,6 +1,8 @@
 <?php
 namespace Lotgd\Installer;
 
+use Lotgd\MySQL\Database;
+
 /**
  * Handles the multi step installation of Legend of the Green Dragon.
  *
@@ -43,13 +45,13 @@ class Installer
         output("Please understand that if you modify our copyright, or otherwise violate the license, you are not only breaking international copyright law (which includes penalties which are defined in whichever country you live), but you're also defeating the spirit of open source, and ruining any good faith which we have demonstrated by providing our blood, sweat, and tears to you free of charge.  You should also know that by breaking the license even one time, it is within our rights to require you to permanently cease running LoGD forever.`n");
         output("`nPlease note that in order to use the installer, you must have cookies enabled in your browser.`n");
         if (getenv("MYSQL_HOST")) {
-        	output("`n`$This seems to be a Docker setup, which means the database will be provided by the environment variables. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
+        	output("`n`\$This seems to be a Docker setup, which means the database will be provided by the environment variables. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
         	output("Also, you need to take care of other hosting issues, like SSL, possibly Let's encrypt and other things.");
         	output("`n`nNote that the entire html folder is volume-linked, so the database connection file and more will be stored there, too.");
         }
         if (defined("DB_CHOSEN") && DB_CHOSEN){
         	$sql = "SELECT count(*) AS c FROM ".db_prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
-        	$result = db_query($sql);
+        	$result = Database::query($sql);
         	$row = db_fetch_assoc($result);
         	if ($row['c'] == 0){
         		$needsauthentication = false;
@@ -87,10 +89,10 @@ class Installer
         			if ($needsauthentication === false) {
                                        redirect("installer.php?stage=1");
         			}
-        			output("`$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
+        			output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
         		}else{
         			$needsauthentication=true;
-        			output("`$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
+        			output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
         		}
         	}else{
         		$sql = "SELECT count(*) AS c FROM ".db_prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
@@ -129,33 +131,14 @@ class Installer
     public function stage1(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        require_once("lib/pullurl.php");
-        $license = join("",pullurl("http://creativecommons.org/licenses/by-nc-sa/2.0/legalcode"));
-        $license = str_replace("\n","",$license);
-        $license = str_replace("\r","",$license);
-        $shortlicense=array();
-        preg_match_all("'<body[^>]*>(.*)</body>'",$license,$shortlicense);
-        $license = $shortlicense[1][0];
         output("`@`c`bLicense Agreement`b`c`0");
         output("`2Before continuing, you must read and understand the following license agreement.`0`n`n");
-        if (md5($license)=="484d213db9a69e79321feafb85915ff1"){
-        	rawoutput("<div style='width: 100%; height; 350px; max-height: 350px; overflow: auto; color: #FFFFFF; background-color: #000000; padding: 10px;'>");
-        	rawoutput("<base href='http://creativecommons.org/licenses/by-nc-sa/2.0/legalcode'>");
-        	rawoutput("<base target='_blank'>");
-        	rawoutput($license);
-        	rawoutput("</div>");
-        	rawoutput("<base href='http://".$_SERVER["HTTP_HOST"].$_SERVER["REQUEST_URI"]."'>");
-        	rawoutput("<base target='_self'>");
-        }else{
-        	output("`^Warning, the Creative Commons license has changed, or could not be retrieved from the Creative Commons server.");
-        	output("You should check with the game authors to ensure that the below license agrees with the license under which it was released.");
-        	output("The license may be referenced at <a target='_blank' href='http://creativecommons.org/licenses/by-nc-sa/2.0/legalcode'>the Creative Commons site</a>.",true);
-        }
+       	output("The license may be referenced at <a target='_blank' href='http://creativecommons.org/licenses/by-nc-sa/2.0/legalcode'>the Creative Commons site</a>.",true);
 
         // Check LICENSE.txt file for integrity
         $licenseFile = __DIR__ . '/../../LICENSE.txt';
         if (!file_exists($licenseFile)) {
-            output("`$The license file (LICENSE.txt) could not be found.`n");
+            output("`\$The license file (LICENSE.txt) could not be found.`n");
             output("`2Please make sure that the LICENSE.txt file is located in the root directory of your installation.`n");
             output("`2Without this file, the installation cannot continue.`n");
             $stage = 1; // Stay on this stage
@@ -197,10 +180,10 @@ class Installer
         	if (httppost("name")>""){
         		$showform=false;
         		if (httppost("pass1")!=httppost("pass2")){
-        			output("`$Oops, your passwords don't match.`2`n");
+        			output("`\$Oops, your passwords don't match.`2`n");
         			$showform=true;
         		}elseif (strlen(httppost("pass1"))<6){
-        			output("`$Whoa, that's a short password, you really should make it longer.`2`n");
+        			output("`\$Whoa, that's a short password, you really should make it longer. At least 6 letters.`2`n");
         			$showform=true;
         		}else{
         			// Give the superuser a decent set of privs so they can
@@ -257,7 +240,7 @@ class Installer
         output("`@`c`bAll Done!`b`c");
         output("Your install of Legend of the Green Dragon has been completed!`n");
         output("`nRemember us when you have hundreds of users on your server, enjoying the game.");
-        output("Eric, JT, and a lot of others put a lot of work into this world, so please don't disrespect that by violating the license.");
+        output("Eric, JT, and a lot of others put a lot of work into this world, so please don't disrespect that by violating the license.`n`n");
         if ($session['user']['loggedin']){
         	addnav("Continue",$session['user']['restorepage']);
         }else{
@@ -268,12 +251,12 @@ class Installer
                 if (file_exists($file)) {
                         try {
                                 if (unlink($file)) {
-                                        output("`2Installer file installer.php removed.`n");
+                                        output("`\$Installer file installer.php removed.`n");
                                 } else {
-                                        output("`$Unable to delete installer.php. Please remove it manually.`n");
+                                        output("`\$Unable to delete installer.php. Please remove it manually.`n");
                                 }
                         } catch (Throwable $e) {
-                                output("`$Error deleting installer.php: " . $e->getMessage() . "`n");
+                                output("`\$Error deleting installer.php: " . $e->getMessage() . "`n");
                         }
                 }
         $this->checkDbconnectPermissions();
@@ -311,7 +294,7 @@ class Installer
         		$session['dbinfo']['DB_NAME']=getenv("MYSQL_DATABASE");
         		$session['dbinfo']['DB_USEDATACACHE']=(bool)getenv("MYSQL_USEDATACACHE");
         		$session['dbinfo']['DB_DATACACHEPATH']=getenv("MYSQL_DATACACHEPATH");
-        		output("`n`$This seems to be a Docker setup, so I will use the environment variables to connect to the database. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
+        		output("`n`\$This seems to be a Docker setup, so I will use the environment variables to connect to the database. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
         	}
         	output("`nIt looks like this is a new install of Legend of the Green Dragon.");
         	output("First, thanks for installing LoGD!");
@@ -380,7 +363,7 @@ class Installer
         $error = ob_get_contents();
         ob_end_clean();
         if (!$connected){
-        	output("`$Blast!  I wasn't able to connect to the database server with the information you provided!");
+        	output("`\$Blast!  I wasn't able to connect to the database server with the information you provided!");
         	output("`2This means that either the database server address, database username, or database password you provided were wrong, or else the database server isn't running.");
         	output("The specific error the database returned was:");
         	rawoutput("<blockquote>".$error."</blockquote>");
@@ -391,12 +374,12 @@ class Installer
         	output("`^Yahoo, I was able to connect to the database server!");
         	output("`2This means that the database server address, database username, and database password you provided were probably accurate, and that your database server is running and accepting connections.`n");
         	output("`nI'm now going to attempt to connect to the LoGD database you provided.`n");
-                $link = db_get_instance();
-                if (httpget("op")=="trycreate"){ 
-                        $this->createDb($link, $session['dbinfo']['DB_NAME']);
-                }
+            $link = Database::getInstance();
+            if (httpget("op")=="trycreate"){ 
+                    $this->createDb($link, $session['dbinfo']['DB_NAME']);
+            }
         	if (!db_select_db($session['dbinfo']['DB_NAME'])){
-        		output("`$Rats!  I was not able to connect to the database.");
+        		output("`\$Rats!  I was not able to connect to the database.");
         		$error = db_error();
         		if ($error=="Unknown database '{$session['dbinfo']['DB_NAME']}'"){
         			output("`2It looks like the database for LoGD hasn't been created yet.");
@@ -422,7 +405,7 @@ class Installer
         		$sql = "CREATE TABLE logd_environment_test (a int(11) unsigned not null)";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
         			array_push($issues,"`^Warning:`2 The installer will not be able to create the tables necessary to install LoGD.  If these tables already exist, or you have created them manually, then you can ignore this.  Also, many modules rely on being able to create tables, so you will not be able to use these modules.");
         		}else{
@@ -432,7 +415,7 @@ class Installer
         		$sql = "ALTER TABLE logd_environment_test CHANGE a b varchar(50) not null";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
         			array_push($issues,"`^Warning:`2 The installer will not be able to modify existing tables (if any) to line up with new configurations.  Also, many modules rely on table modification permissions, so you will not be able to use these modules.");
         		}else{
@@ -442,7 +425,7 @@ class Installer
         		$sql = "ALTER TABLE logd_environment_test ADD INDEX(b)";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
         			array_push($issues,"`^Warning:`2 The installer will not be able to create indices on your tables.  Indices are extremely important for an active server, but can be done without on a small server.");
         		}else{
@@ -452,9 +435,9 @@ class Installer
         		$sql = "INSERT INTO logd_environment_test (b) VALUES ('testing')";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
-        			array_push($issues,"`$Critical:`2 The game will not be able to function with out the ability to insert rows.");
+        			array_push($issues,"`\$Critical:`2 The game will not be able to function with out the ability to insert rows.");
         			$session['stagecompleted']=3;
         		}else{
         			output("`2Result: `@Pass`n");
@@ -463,9 +446,9 @@ class Installer
         		$sql = "SELECT * FROM logd_environment_test";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
-        			array_push($issues,"`$Critical:`2 The game will not be able to function with out the ability to select rows.");
+        			array_push($issues,"`\$Critical:`2 The game will not be able to function with out the ability to select rows.");
         			$session['stagecompleted']=3;
         		}else{
         			output("`2Result: `@Pass`n");
@@ -474,9 +457,9 @@ class Installer
         		$sql = "UPDATE logd_environment_test SET b='MightyE'";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
-        			array_push($issues,"`$Critical:`2 The game will not be able to function with out the ability to update rows.");
+        			array_push($issues,"`\$Critical:`2 The game will not be able to function with out the ability to update rows.");
         			$session['stagecompleted']=3;
         		}else{
         			output("`2Result: `@Pass`n");
@@ -485,9 +468,9 @@ class Installer
         		$sql = "DELETE FROM logd_environment_test";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
-        			array_push($issues,"`$Critical:`2 The game database will grow very large with out the ability to delete rows.");
+        			array_push($issues,"`\$Critical:`2 The game database will grow very large with out the ability to delete rows.");
         			$session['stagecompleted']=3;
         		}else{
         			output("`2Result: `@Pass`n");
@@ -496,9 +479,9 @@ class Installer
         		$sql = "LOCK TABLES logd_environment_test WRITE";
         		db_query($sql);
         		if ($error = db_error()) {
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
-        			array_push($issues,"`$Critical:`2 The game will not run correctly without the ability to lock tables.");
+        			array_push($issues,"`\$Critical:`2 The game will not run correctly without the ability to lock tables.");
         			$session['stagecompleted']=3;
         		} else {
         			output("`2Result: `@Pass`n");
@@ -507,9 +490,9 @@ class Installer
         		$sql = "UNLOCK TABLES";
         		db_query($sql);
         		if ($error = db_error()) {
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
-        			array_push($issues,"`$Critical:`2 The game will not run correctly without the ability to unlock tables.");
+        			array_push($issues,"`\$Critical:`2 The game will not run correctly without the ability to unlock tables.");
         			$session['stagecompleted']=3;
         		} else {
         			output("`2Result: `@Pass`n");
@@ -518,7 +501,7 @@ class Installer
         		$sql = "DROP TABLE logd_environment_test";
         		db_query($sql);
         		if ($error=db_error()){
-        			output("`2Result: `$Fail`n");
+        			output("`2Result: `\$Fail`n");
         			rawoutput("<blockquote>$error</blockquote>");
         			array_push($issues,"`^Warning:`2 The installer will not be able to delete old tables (if any).  Also, many modules need to be able to delete the tables they put in place when they are uninstalled.  Although the game will function, you may end up with a lot of old data sitting around.");
         		}else{
@@ -530,11 +513,11 @@ class Installer
                         } else {
                                 $datacache = $session['dbinfo']['DB_DATACACHEPATH'];
                                 if (!is_dir($datacache)) {
-                                        output("`2Result: `$Fail`n");
+                                        output("`2Result: `\$Fail`n");
                                         array_push($issues, "`^The datacache path '".htmlentities($datacache, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))."' does not exist or is not a directory.`n");
                                         $session['stagecompleted'] = 3;
                                 } elseif (!is_writable($datacache)) {
-                                        output("`2Result: `$Fail`n");
+                                        output("`2Result: `\$Fail`n");
                                         array_push($issues, "`^The datacache path '".htmlentities($datacache, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))."' is not writable.`n");
                                         $session['stagecompleted'] = 3;
                                 } else {
@@ -546,7 +529,7 @@ class Installer
                                                 if (fwrite($fp, $dummyContent) !== false) {
                                                         output("`2Result: `@Pass`n");
                                                 } else {
-                                                        output("`2Result: `$Fail`n");
+                                                        output("`2Result: `\$Fail`n");
                                                         $err = error_get_last();
                                                         if ($err) {
                                                                 \Lotgd\Installer\InstallerLogger::log(sprintf(
@@ -579,7 +562,7 @@ class Installer
                                                     }
                                                 }
                                         } else {
-                                                output("`2Result: `$Fail`n");
+                                                output("`2Result: `\$Fail`n");
                                                 $err = error_get_last();
                                                 if ($err) {
                                                         \Lotgd\Installer\InstallerLogger::log(sprintf(
@@ -617,12 +600,14 @@ class Installer
     public function stage5(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        if (httppostisset("DB_PREFIX") > ""){
-        	$session['dbinfo']['DB_PREFIX'] = httppost("DB_PREFIX");
+        if (!empty(httppost("DB_PREFIX"))) {
+            $session['dbinfo']['DB_PREFIX'] = httppost("DB_PREFIX");
+            if (substr($session['dbinfo']['DB_PREFIX'], -1) != "_") {
+                $session['dbinfo']['DB_PREFIX'] .= "_";
+            }
+        } else {
+            $session['dbinfo']['DB_PREFIX'] = "";
         }
-        if ($session['dbinfo']['DB_PREFIX'] > "" && substr($session['dbinfo']['DB_PREFIX'],-1)!="_")
-        $session['dbinfo']['DB_PREFIX'] .= "_";
-        
         $descriptors = $this->descriptors($session['dbinfo']['DB_PREFIX']);
         $unique=0;
         $game=0;
@@ -666,7 +651,7 @@ class Installer
         	output("`@This looks like a fresh install.");
                output("`2If this is not a fresh install, but rather an upgrade from a previous version of LoGD, chances are that you installed LoGD with a table prefix.  If that's the case, enter the prefix below.  If you are still getting this message, it's possible that I'm just spooked by how few tables are common to the current version, and in which case, I can try an upgrade if you <a href='installer.php?stage=5&type=upgrade'>click here</a>.`n",true);
         	if (count($conflict)>0){
-        		output("`n`n`$There are table conflicts.`2");
+        		output("`n`n`\$There are table conflicts.`2");
         		output("If you continue with an install, the following tables will be overwritten with the game's tables.  If the listed tables belong to LoGD, they will be upgraded, otherwise all existing data in those tables will be destroyed.  Once this is done, this cannot be undone unless you have a backup!`n");
         		output("`nThese tables conflict: `^".join(", ",$conflict)."`2`n");
         		if (httpget("op")=="confirm_overwrite") $session['sure i want to overwrite the tables']=true;
@@ -682,7 +667,7 @@ class Installer
         //Display rights - I won't parse them, sue me for laziness, and this should work nicely to explain any errors
         $sql="SHOW GRANTS FOR CURRENT_USER()";
         $result=db_query($sql);
-        output("`2These are the rights for your mysql user, `$make sure you have the 'LOCK TABLES' privileges OR a \"GRANT ALL PRIVLEGES\" on the tables.`2`n`n");
+        output("`2These are the rights for your mysql user, `\$make sure you have the 'LOCK TABLES' privileges OR a \"GRANT ALL PRIVLEGES\" on the tables.`2`n`n");
         output("If you do not know what this means, ask your hosting provider that supplied you with the database credentials.`n`n");
         rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
         $i=0;
@@ -737,13 +722,13 @@ class Installer
         	$dbconnect =
         	"<?php\n"
                ."//This file automatically created by installer.php on ".date("M d, Y h:i a")."\n"
-        	."$DB_HOST = \"{$session['dbinfo']['DB_HOST']}\";\n"
-        	."$DB_USER = \"{$session['dbinfo']['DB_USER']}\";\n"
-        	."$DB_PASS = \"{$session['dbinfo']['DB_PASS']}\";\n"
-        	."$DB_NAME = \"{$session['dbinfo']['DB_NAME']}\";\n"
-        	."$DB_PREFIX = \"{$session['dbinfo']['DB_PREFIX']}\";\n"
-        	."$DB_USEDATACACHE = ". ((int)$session['dbinfo']['DB_USEDATACACHE']) .";\n"
-        	."$DB_DATACACHEPATH = \"{$session['dbinfo']['DB_DATACACHEPATH']}\";\n"
+        	."\$DB_HOST = \"{$session['dbinfo']['DB_HOST']}\";\n"
+        	."\$DB_USER = \"{$session['dbinfo']['DB_USER']}\";\n"
+        	."\$DB_PASS = \"{$session['dbinfo']['DB_PASS']}\";\n"
+        	."\$DB_NAME = \"{$session['dbinfo']['DB_NAME']}\";\n"
+        	."\$DB_PREFIX = \"{$session['dbinfo']['DB_PREFIX']}\";\n"
+        	."\$DB_USEDATACACHE = ". ((int)$session['dbinfo']['DB_USEDATACACHE']) .";\n"
+        	."\$DB_DATACACHEPATH = \"{$session['dbinfo']['DB_DATACACHEPATH']}\";\n"
         	."?>\n";
                 $failure=false;
                 $dir = dirname('dbconnect.php');
@@ -759,7 +744,7 @@ class Installer
                                         $err = error_get_last();
                                         if ($err) {
                                                 \Lotgd\Installer\InstallerLogger::log(sprintf("Error: %s in %s on line %d", $err['message'], $err['file'], $err['line']));
-                                                output("`n`$Failed to write to dbconnect.php:`2 %s in %s on line %d", $err['message'], $err['file'], $err['line']);
+                                                output("`n`\$Failed to write to dbconnect.php:`2 %s in %s on line %d", $err['message'], $err['file'], $err['line']);
                                         }
                                 }
                                 fclose($fp);
@@ -768,15 +753,15 @@ class Installer
                                 $err = error_get_last();
                                 if ($err) {
                                         \Lotgd\Installer\InstallerLogger::log($err['message']);
-                                        output("`n`$Failed to create dbconnect.php:`2 %s", $err['message']);
+                                        output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
                                 }
                         }
                 } else {
                         $failure=true;
-                        output("`n`$Directory not writable:`2 %s", $dir);
+                        output("`n`\$Directory not writable:`2 %s", $dir);
                 }
                 if ($failure){
-                        output("`n`$Unfortunately, I was not able to write your dbconnect.php file.");
+                        output("`n`\$Unfortunately, I was not able to write your dbconnect.php file.");
                         output("`2You will have to create this file yourself, and upload it to your web server.");
         		output("The contents of this file should be as follows:`3");
         		rawoutput("<blockquote><pre>".htmlentities($dbconnect, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</pre></blockquote>");
@@ -827,7 +812,7 @@ class Installer
                                                 $err = error_get_last();
                                                 if ($err) {
                                                         \Lotgd\Installer\InstallerLogger::log($err['message']);
-                                                        output("`n`$Failed to write to dbconnect.php:`2 %s", $err['message']);
+                                                        output("`n`\$Failed to write to dbconnect.php:`2 %s", $err['message']);
                                                 }
                                         }
                                         fclose($fp);
@@ -836,12 +821,12 @@ class Installer
                                         $err = error_get_last();
                                         if ($err) {
                                                 \Lotgd\Installer\InstallerLogger::log($err['message']);
-                                                output("`n`$Failed to create dbconnect.php:`2 %s", $err['message']);
+                                                output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
                                         }
                                 }
                         } else {
                                 $failure=true;
-                                output("`n`$Directory not writable:`2 %s", $dir);
+                                output("`n`\$Directory not writable:`2 %s", $dir);
                         }
         		if ($failure) {
         			output("`2With this new version the settings for datacaching had to be moved to `idbconnect.php`i.");
@@ -929,6 +914,7 @@ class Installer
         }else{
         	$session['stagecompleted'] = $stage - 1;
         }
+
         output("`@`c`bManage Modules`b`c");
         output("Legend of the Green Dragon supports an extensive module system.");
         output("Modules are small self-contained files that perform a specific function or event within the game.");
@@ -939,7 +925,7 @@ class Installer
         $phpram = ini_get("memory_limit");
         if ($this->returnBytes($phpram) < 12582912 && $phpram!=-1 && !$session['overridememorylimit'] && !$session['dbinfo']['upgrade']) {// 12 MBytes
         															    // enter this ONLY if it's not an upgrade and if the limit is really too low
-        	output("`n`n`$Warning: Your PHP memory limit is set to a very low level.");
+        	output("`n`n`\$Warning: Your PHP memory limit is set to a very low level.");
         	output("Smaller servers should not be affected by this during normal gameplay but for this installation step you should assign at least 12 Megabytes of RAM for your PHP process.");
         	output("For now we will skip this step, but before installing any module, make sure to increase you memory limit.");
         	output("`nYou can proceed at your own risk. Be aware that a blank screen indicates you *must* increase the memory limit.");
@@ -995,7 +981,7 @@ class Installer
         				strpos($file,$modulename."_install")===false ||
         				strpos($file,$modulename."_uninstall")===false) {
         			//here the files has neither do_hook nor getinfo, which means it won't execute as a module here --> block it + notify the admin who is the manage modules section
-        			$moduleinfo=array_merge($invalidmodule,array("name"=>$modulename.".php ".appoencode(translate_inline("(`$Invalid Module! Contact Author or check file!`0)"))));
+        			$moduleinfo=array_merge($invalidmodule,array("name"=>$modulename.".php ".appoencode(translate_inline("(`\$Invalid Module! Contact Author or check file!`0)"))));
         		} else {
         			$moduleinfo= get_module_info($modulename,false,false);
         		}
@@ -1014,7 +1000,7 @@ class Installer
         		$all_modules[$row['category']][$row['modulename']] = $row;
         	}
         	output_notl("`0");
-               rawoutput("<form action='installer.php?stage=".$stage."' method='POST'>");
+            rawoutput("<form action='installer.php?stage=".$stage."' method='POST'>");
         	rawoutput("<input type='submit' name='modulesok' value='$submit' class='button'>");
         	rawoutput("<input type='button' onClick='chooseRecommendedModules();' class='button' value='$install'>");
         	rawoutput("<input type='reset' value='$reset' class='button'><br>");
@@ -1091,7 +1077,7 @@ class Installer
         				rawoutput("<td><input type='radio' name='modules[$modulename]' id='install-$modulename' value='$installop'".($installcheck?" checked":"")."></td>");
         				rawoutput("<td><input type='radio' name='modules[$modulename]' id='activate-$modulename' value='$activateop'".($activatecheck?" checked":"")."></td>");
         			}
-        			output_notl("<td>".(in_array($modulename,$recommended_modules)?tl("`^Yes`0"):tl("`$No`0"))."</td>",true);
+        			output_notl("<td>".(in_array($modulename,$recommended_modules)?tl("`^Yes`0"):tl("`\$No`0"))."</td>",true);
         			require_once("lib/sanitize.php");
         			rawoutput("<td><span title=\"" .
         					(isset($moduleinfo['description']) &&
@@ -1116,18 +1102,18 @@ class Installer
         	rawoutput("<input type='button' onClick='chooseRecommendedModules();' class='button' value='$install' class='button'>");
         	rawoutput("<input type='reset' value='$reset' class='button'>");
         	rawoutput("</form>");
-        	rawoutput("<script language='JavaScript'>
-        			function chooseRecommendedModules(){
-        			var thisItem;
-        			var selectedCount = 0;
-        			");
-        			foreach($recommended_modules as $key=>$val){
-        				rawoutput("thisItem = document.getElementById('activate-$val'); ");
-        				rawoutput("if (!thisItem.checked) { selectedCount++; thisItem.checked=true; }\n");
-        			}
-        			rawoutput("
-        					alert('I selected '+selectedCount+' modules that I recommend, but which were not already selected.');
-        					}");
+            rawoutput("<script language='JavaScript'>
+            function chooseRecommendedModules(){
+            var thisItem;
+            var selectedCount = 0;
+            ");
+            foreach($recommended_modules as $key=>$val){
+            rawoutput("thisItem = document.getElementById('activate-$val'); ");
+            rawoutput("if (thisItem && !thisItem.checked) { selectedCount++; thisItem.checked=true; }\n");
+            }
+            rawoutput("
+													alert('I selected '+selectedCount+' modules that I recommend, but which were not already selected.');
+													}");
         	if (!$session['dbinfo']['upgrade']){
         		rawoutput("
         				chooseRecommendedModules();");
@@ -1142,7 +1128,7 @@ class Installer
      */
     public function stage9(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX;
         require_once(__DIR__ . "/../data/installer_sqlstatements.php");
         output("`@`c`bBuilding the Tables`b`c");
         output("`2I'm now going to build the tables.");
@@ -1150,6 +1136,9 @@ class Installer
         output("If it's an install, the necessary tables will be placed in your database.`n");
         output("`n`@Table Synchronization Logs:`n");
         rawoutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
+        if (empty($DB_PREFIX)) {
+            $DB_PREFIX = $session['dbinfo']['DB_PREFIX'] ?? '';
+        }
         $descriptors = $this->descriptors($DB_PREFIX);
         require_once("lib/tabledescriptor.php");
         foreach($descriptors as $tablename=>$descriptor){
@@ -1187,7 +1176,7 @@ class Installer
         				if ($count%10==0 && $count!=count($val))
         					output_notl("`6$count...");
         				if (!db_query($sql)) {
-        					output("`n`$Error: `^'%s'`7 executing `#'%s'`7.`n",
+        					output("`n`\$Error: `^'%s'`7 executing `#'%s'`7.`n",
         							db_error(), $sql);
         				}
         			}
@@ -1224,7 +1213,7 @@ class Installer
         					if (uninstall_module($modulename)){
         						output("`@OK!`0`n");
         					}else{
-        						output("`$Failed!`0`n");
+        						output("`\$Failed!`0`n");
         					}
         					break;
         				case "install":
@@ -1232,7 +1221,7 @@ class Installer
         					if (install_module($modulename)){
         						output("`@OK!`0`n");
         					}else{
-        						output("`$Failed!`0`n");
+        						output("`\$Failed!`0`n");
         					}
         					install_module($modulename);
         					break;
@@ -1241,7 +1230,7 @@ class Installer
         					if (activate_module($modulename)){
         						output("`@OK!`0`n");
         					}else{
-        						output("`$Failed!`0`n");
+        						output("`\$Failed!`0`n");
         					}
         					break;
         				case "deactivate":
@@ -1249,7 +1238,7 @@ class Installer
         					if (deactivate_module($modulename)){
         						output("`@OK!`0`n");
         					}else{
-        						output("`$Failed!`0`n");
+        						output("`\$Failed!`0`n");
         					}
         					break;
         				case "donothing":
@@ -1276,7 +1265,7 @@ class Installer
     public function stageDefault(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        output("`$Requested installer step not found.`n");
+        output("`\$Requested installer step not found.`n");
         output("`2Restarting at stage 1...`n");
         redirect("installer.php?stage=1");
     }
@@ -1299,7 +1288,7 @@ class Installer
             if ($selected) {
                 output("`@Success!`2  I was able to create the database and connect to it!`n");
             } else {
-                output("`$It seems I was not successful.`2  I didn't get any errors trying to create the database, but I was not able to connect to it.");
+                output("`\$It seems I was not successful.`2  I didn't get any errors trying to create the database, but I was not able to connect to it.");
                 output("I'm not sure what would have caused this error, you might try asking around in <a href='http://lotgd.net/forum/' target='_blank'>the LotGD.net forums</a>.");
             }
         } else {
@@ -1308,7 +1297,7 @@ class Installer
             } else {
                 $error = $connection->error();
             }
-            output("`$It seems I was not successful.`2 ");
+            output("`\$It seems I was not successful.`2 ");
             output("The error returned by the database server was:");
             rawoutput("<blockquote>$error</blockquote>");
         }

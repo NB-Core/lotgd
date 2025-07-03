@@ -1,7 +1,7 @@
 <?php
+declare(strict_types=1);
 use Lotgd\Commentary;
 use Lotgd\MountName;
-declare(strict_types=1);
 // translator ready
 // addnews ready
 // mail ready

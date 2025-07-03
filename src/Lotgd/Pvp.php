@@ -25,10 +25,10 @@ class Pvp
             $session['user']['experience'] <= $exp
         ) {
             if ($dokill) {
-                output("`$Warning!`^ Since you were still under PvP immunity, but have chosen to attack another player, you have lost this immunity!!`n`n");
+                output("`\$Warning!`^ Since you were still under PvP immunity, but have chosen to attack another player, you have lost this immunity!!`n`n");
                 $session['user']['pk'] = 1;
             } else {
-                output("`$Warning!`^ Players are immune from Player vs Player (PvP) combat for their first %s days in the game or until they have earned %s experience, or until they attack another player.  If you choose to attack another player, you will lose this immunity!`n`n", $days, $exp);
+                output("`\$Warning!`^ Players are immune from Player vs Player (PvP) combat for their first %s days in the game or until they have earned %s experience, or until they attack another player.  If you choose to attack another player, you will lose this immunity!`n`n", $days, $exp);
             }
         }
         modulehook('pvpwarning', ['dokill' => $dokill]);
@@ -64,10 +64,10 @@ class Pvp
             }
             output('As you both cannot use any special gimmicks, the more dragonkills your victim has the stronger he gets.`n');
             if ($row['pvpflag'] > $pvptimeout) {
-                output("`$Oops:`4 That user is currently engaged by someone else, you'll have to wait your turn!");
+                output("`\$Oops:`4 That user is currently engaged by someone else, you'll have to wait your turn!");
                 return false;
             } elseif (strtotime($row['laston']) > strtotime('-' . getsetting('LOGINTIMEOUT', 900) . ' sec') && $row['loggedin']) {
-                output("`$Error:`4 That user is now online, and cannot be attacked until they log off again.");
+                output("`\$Error:`4 That user is now online, and cannot be attacked until they log off again.");
                 return false;
             } elseif ($session['user']['playerfights'] > 0) {
                 $sql = "UPDATE " . db_prefix('accounts') . " SET pvpflag='" . date('Y-m-d H:i:s') . "' WHERE acctid={$row['acctid']}";
@@ -82,7 +82,7 @@ class Pvp
             output('`4Judging by how tired you are, you think you had best not engage in battle against other players right now.');
             return false;
         }
-        output("`$Error:`4 That user was not found!  It's likely that their account expired just now.");
+        output("`\$Error:`4 That user was not found!  It's likely that their account expired just now.");
         return false;
     }
 
@@ -109,7 +109,7 @@ class Pvp
         }
 
         $winamount = round(10 * $badguy['creaturelevel'] * log(max(1, $badguy['creaturegold'])), 0);
-        output("`b`$You have slain %s!`0`b`n", $badguy['creaturename']);
+        output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
         if ($session['user']['level'] == 15) {
             $winamount = 0;
         }
