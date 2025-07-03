@@ -174,9 +174,7 @@ class Commentary
     {
         global $session, $REQUEST_URI, $doublepost, $translation_namespace, $emptypost;
 
-        if ($section === null) {
-            return null;
-        }
+        // The guard for null is removed as $section is declared as string and cannot be null.
 
         if ($scriptname_pre === false) {
             $scriptname = $_SERVER['SCRIPT_NAME'];
