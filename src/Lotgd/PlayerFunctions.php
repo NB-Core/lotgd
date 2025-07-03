@@ -285,3 +285,155 @@ class PlayerFunctions
         return $dk;
     }
 }
+    /**
+     * Calculate experience required for the next level.
+     */
+    public static function expForNextLevel($curlevel, $curdk)
+    {
+        $stored = DataCache::datacache('exparraydk' . $curdk);
+        if ($stored !== false && is_array($stored)) {
+            $exparray = $stored;
+        } else {
+            $expstring = getsetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930');
+            if ($expstring == '') return 0;
+            $exparray = explode(',', $expstring);
+            if (count($exparray) < getsetting('maxlevel', 15)) {
+                for ($i = count($exparray)-1; $i < getsetting('maxlevel', 15); $i++) {
+                    $exparray[] = $exparray[count($exparray)-1] * 1.3;
+                }
+            }
+            foreach ($exparray as $key => $val) {
+                $exparray[$key] = round($val + ($curdk/4) * ($key+1) * 100, 0);
+            }
+            if (getsetting('maxlevel', 15) > count($exparray)) {
+                for ($i = count($exparray); $i < getsetting('maxlevel', 15); $i++) {
+                    $exparray[$i] = round($exparray[$i-1]*1.2);
+                }
+            }
+            DataCache::updatedatacache('exparraydk' . $curdk, $exparray);
+        }
+        if (count($exparray) > $curlevel) {
+            $exprequired = $exparray[max(0,$curlevel-1)];
+        } else {
+            $exprequired = array_pop($exparray);
+        }
+        return $exprequired;
+    }
+
+    public static function applyTempStat($name, $value, $type = 'add')
+    {
+        global $session, $temp_user_stats;
+        if ($type == 'add') {
+            if (!isset($temp_user_stats['add'])) {
+                $temp_user_stats['add'] = [];
+            }
+            $temp =& $temp_user_stats['add'];
+            if (!isset($temp[$name])) {
+                $temp[$name] = $value;
+            } else {
+                $temp[$name] += $value;
+            }
+            if (!$temp_user_stats['is_suspended']) {
+                if (isset($session['user'][$name])) {
+                    $session['user'][$name] += $value;
+                } else {
+                    debug("Temp stat $name is not supported to $type.");
+                    unset($temp[$name]);
+                    return false;
+                }
+            }
+            return true;
+        }
+        debug("Temp stat type $type is not supported.");
+        return false;
+    }
+
+    public static function checkTempStat($name, $color = false)
+    {
+        global $temp_user_stats, $session;
+        $v = $temp_user_stats['add'][$name] ?? 0;
+        if ($color === false) {
+            return ($v == 0 ? '' : $v);
+        }
+        if ($v > 0) {
+            return " `&(" . ($session['user'][$name] - round($v,1)) . "`@+" . round($v,1) . "`&)";
+        }
+        return ($v == 0 ? '' : " `&(" . ($session['user'][$name] + round($v,1)) . "`$-" . round($v,1) . "`&)");
+    }
+
+    public static function suspendTempStats()
+    {
+        global $session, $temp_user_stats;
+        if (!$temp_user_stats['is_suspended']) {
+            foreach ($temp_user_stats as $type => $collection) {
+                if ($type == 'add') {
+                    foreach ($collection as $attribute => $value) {
+                        $session['user'][$attribute] -= $value;
+                    }
+                }
+            }
+            $temp_user_stats['is_suspended'] = true;
+            return true;
+        }
+        return false;
+    }
+
+    public static function restoreTempStats()
+    {
+        global $session, $temp_user_stats;
+        if ($temp_user_stats['is_suspended']) {
+            foreach ($temp_user_stats as $type => $collection) {
+                if ($type == 'add') {
+                    foreach ($collection as $attribute => $value) {
+                        $session['user'][$attribute] += $value;
+                    }
+                }
+            }
+            $temp_user_stats['is_suspended'] = false;
+            return true;
+        }
+        return false;
+    }
+
+    public static function validDkTitle($title, $dks, $gender)
+    {
+        $sql = 'SELECT dk,male,female FROM ' . db_prefix('titles') . " WHERE dk <= $dks ORDER by dk DESC";
+        $res = db_query($sql);
+        $d = -1;
+        while ($row = db_fetch_assoc($res)) {
+            if ($d == -1) { $d = $row['dk']; }
+            if ($row['dk'] != $d) break;
+            if ($gender && ($row['female'] == $title)) return true;
+            if (!$gender && ($row['male'] == $title)) return true;
+        }
+        return false;
+    }
+
+    public static function getDkTitle($dks, $gender, $ref = false)
+    {
+        $refdk = -1;
+        if ($ref !== false) {
+            $sql = 'SELECT max(dk) as dk FROM ' . db_prefix('titles') . " WHERE dk<='$dks' and ref='$ref'";
+            $res = db_query($sql);
+            $row = db_fetch_assoc($res);
+            $refdk = $row['dk'];
+        }
+        $sql = 'SELECT max(dk) as dk FROM ' . db_prefix('titles') . " WHERE dk<='$dks'";
+        $res = db_query($sql);
+        $row = db_fetch_assoc($res);
+        $anydk = $row['dk'];
+        $useref = '';
+        $targetdk = $anydk;
+        if ($refdk >= $anydk) {
+            $useref = "AND ref='$ref'";
+            $targetdk = $refdk;
+        }
+        $sql = 'SELECT male,female FROM ' . db_prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . e_rand() . ") LIMIT 1";
+        $res = db_query($sql);
+        $row = ['male' => 'God', 'female' => 'Goddess'];
+        if (db_num_rows($res) != 0) {
+            $row = db_fetch_assoc($res);
+        }
+        return ($gender == SEX_MALE) ? $row['male'] : $row['female'];
+    }
+}

@@ -1,8 +1,9 @@
 <?php
-// Legacy wrapper for FightNav class
-use Lotgd\FightNav;
+// Legacy wrapper for Battle::fightnav
+use Lotgd\Battle;
 
 function fightnav($allowspecial = true, $allowflee = true, $script = false)
 {
-    FightNav::fightnav($allowspecial, $allowflee, $script);
+    Battle::fightnav($allowspecial, $allowflee, $script);
 }
+
