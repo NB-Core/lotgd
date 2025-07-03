@@ -5,7 +5,7 @@ class Commentary
 {
     public static array $comsecs = [];
 
-    public static function commentarylocs()
+    public static function commentarylocs(): array
     {
         global $session;
         if (is_array(self::$comsecs) && count(self::$comsecs)) {
@@ -35,7 +35,7 @@ class Commentary
         return self::$comsecs;
     }
 
-    public static function addcommentary()
+    public static function addcommentary(): void
     {
         global $session, $emptypost;
         $section = httppost('section');
@@ -81,7 +81,7 @@ class Commentary
         }
     }
 
-    public static function injectsystemcomment($section, $comment)
+    public static function injectsystemcomment(string $section, string $comment): void
     {
         if (strncmp($comment, '/game', 5) !== 0) {
             $comment = '/game' . $comment;
@@ -89,7 +89,7 @@ class Commentary
         self::injectrawcomment($section, 0, $comment);
     }
 
-    public static function injectrawcomment($section, $author, $comment)
+    public static function injectrawcomment(string $section, int $author, string $comment): void
     {
         $sql = 'INSERT INTO ' . db_prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,\"$comment\")";
         db_query($sql);
@@ -97,7 +97,7 @@ class Commentary
         invalidatedatacache('comments-or11');
     }
 
-    public static function injectcommentary($section, $talkline, $comment, $schema = false)
+    public static function injectcommentary(string $section, string $talkline, string $comment, $schema = false): void
     {
         global $session, $doublepost, $translation_namespace;
         if ($schema === false) {
@@ -158,7 +158,7 @@ class Commentary
         }
     }
 
-    public static function commentdisplay($intro, $section, $message = 'Interject your own commentary?', $limit = 10, $talkline = 'says', $schema = false)
+    public static function commentdisplay(string $intro, string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false): void
     {
         $args = modulehook('blockcommentarea', ['section' => $section]);
         if (isset($args['block']) && ($args['block'] == 'yes')) {
@@ -170,15 +170,427 @@ class Commentary
         self::viewcommentary($section, $message, $limit, $talkline, $schema);
     }
 
-    public static function viewcommentary($section, $message = 'Interject your own commentary?', $limit = 10, $talkline = 'says', $schema = false, $viewonly = false, $returnastext = false, $scriptname_pre = false)
+    public static function viewcommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false, bool $viewonly = false, bool $returnastext = false, $scriptname_pre = false): ?string
     {
         global $session, $REQUEST_URI, $doublepost, $translation_namespace, $emptypost;
-        tlschema($schema ? $schema : '');
-        // Implementation shortened: for brevity we use original function body
-        include_once(__DIR__ . '/../../lib/commentary.php');
+
+        if ($section === null) {
+            return null;
+        }
+
+        if ($scriptname_pre === false) {
+            $scriptname = $_SERVER['SCRIPT_NAME'];
+        } else {
+            $scriptname = $scriptname_pre;
+        }
+
+        if ($_SERVER['REQUEST_URI'] == '/ext/ajax_process.php') {
+            $real_request_uri = $session['last_comment_request_uri'];
+        } else {
+            $real_request_uri = $_SERVER['REQUEST_URI'];
+            $session['last_comment_request_uri'] = $real_request_uri;
+        }
+
+        $session['last_comment_section'] = $section;
+        $session['last_comment_scriptname'] = $scriptname;
+
+        rawoutput("<div id='$section-comment'>");
+        if ($returnastext !== false) {
+            global $output;
+            $oldoutput = $output;
+            $output = new output_collector();
+        }
+
+        rawoutput("<a name='$section'></a>");
+
+        $args = modulehook('blockcommentarea', ['section' => $section]);
+        if (isset($args['block']) && ($args['block'] == 'yes')) {
+            return null;
+        }
+
+        if ($schema === false) {
+            $schema = $translation_namespace;
+        }
+        tlschema('commentary');
+
+        $nobios = ['motd.php' => true];
+        if (!array_key_exists(basename($scriptname), $nobios)) {
+            $nobios[basename($scriptname)] = false;
+        }
+        $linkbios = !$nobios[basename($scriptname)];
+
+        if ($message == 'X') {
+            $linkbios = true;
+        }
+
+        if ($doublepost) {
+            output("`$`bDouble post?`b`0`n");
+        }
+        if ($emptypost) {
+            output("`$`bWell, they say silence is a virtue.`b`0`n");
+        }
+
+        $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
+
+        $com = (int)httpget('comscroll');
+        if ($com < 0) {
+            $com = 0;
+        }
+        $cc = false;
+        if (!isset($session['lastcom'])) {
+            $session['lastcom'] = 0;
+        }
+        if (httpget('comscroll') !== false && (int)$session['lastcom'] == $com + 1) {
+            $cid = (int)$session['lastcommentid'];
+        } else {
+            $cid = 0;
+        }
+
+        $session['lastcom'] = $com;
+
+        if ($com > 0 || $cid > 0) {
+            $sql = 'SELECT COUNT(commentid) AS newadded FROM '
+                . db_prefix('commentary') . ' LEFT JOIN '
+                . db_prefix('accounts') . ' ON '
+                . db_prefix('accounts') . '.acctid = '
+                . db_prefix('commentary') . '.author WHERE section=\'' . $section . "' AND "
+                . '(' . db_prefix('accounts') . '.locked=0 or ' . db_prefix('accounts') . '.locked is null) AND commentid > \'' . $cid . "'";
+            $result = db_query($sql);
+            $row = db_fetch_assoc($result);
+            $newadded = $row['newadded'];
+        } else {
+            $newadded = 0;
+        }
+
+        $commentbuffer = [];
+        if ($cid == 0) {
+            $sql = "SELECT " . db_prefix("commentary") . ".*, " .
+                db_prefix("accounts") . ".name, " .
+                db_prefix("accounts") . ".acctid, " .
+                db_prefix("accounts") . ".superuser, " .
+                db_prefix("accounts") . ".clanrank, " .
+                db_prefix("clans") .  ".clanshort FROM " .
+                db_prefix("commentary") . " LEFT JOIN " .
+                db_prefix("accounts") . " ON " .
+                db_prefix("accounts") .  ".acctid = " .
+                db_prefix("commentary") . ".author LEFT JOIN " .
+                db_prefix("clans") . " ON " .
+                db_prefix("clans") . ".clanid=" .
+                db_prefix("accounts") .
+                ".clanid WHERE section = '$section' AND " .
+                "( " . db_prefix("accounts") . ".locked=0 OR " . db_prefix("accounts") . ".locked is null ) " .
+                "ORDER BY commentid DESC LIMIT " .
+                ($com * $limit) . ",$limit";
+            if ($com == 0 && strstr($real_request_uri, '/moderate.php') !== $real_request_uri) {
+                $result = db_query_cached($sql, "comments-{$section}");
+            } else {
+                $result = db_query($sql);
+            }
+            while ($row = db_fetch_assoc($result)) {
+                $commentbuffer[] = $row;
+            }
+        } else {
+            $sql = "SELECT " . db_prefix("commentary") . ".*, " .
+                db_prefix("accounts") . ".name, " .
+                db_prefix("accounts") . ".acctid, " .
+                db_prefix("accounts") . ".superuser, " .
+                db_prefix("accounts") . ".clanrank, " .
+                db_prefix("clans") . ".clanshort FROM " . db_prefix("commentary") .
+                " LEFT JOIN " . db_prefix("accounts") . " ON " .
+                db_prefix("accounts") . ".acctid = " .
+                db_prefix("commentary") . ".author LEFT JOIN " .
+                db_prefix("clans") . " ON " . db_prefix("clans") . ".clanid=" .
+                db_prefix("accounts") .
+                ".clanid WHERE section = '$section' AND " .
+                "( " . db_prefix("accounts") . ".locked=0 OR " . db_prefix("accounts") . ".locked is null ) " .
+                "AND commentid > '$cid' " .
+                "ORDER BY commentid ASC LIMIT $limit";
+            $result = db_query($sql);
+            while ($row = db_fetch_assoc($result)) {
+                $commentbuffer[] = $row;
+            }
+            $commentbuffer = array_reverse($commentbuffer);
+        }
+
+        $rowcount = count($commentbuffer);
+        if ($rowcount > 0) {
+            $session['lastcommentid'] = $commentbuffer[0]['commentid'];
+        }
+
+        $is_gm = ($session['user']['superuser'] & SU_IS_GAMEMASTER ? 1 : 0);
+        $gm_array = [];
+
+        $counttoday = 0;
+        for ($i = 0; $i < $rowcount; $i++) {
+            $row = $commentbuffer[$i];
+            if (isset($row['acctid']) && isset($session['user']['acctid']) && $row['acctid'] === $session['user']['acctid'] && $is_gm) {
+                $gm_array[] = $i;
+            }
+            $row['comment'] = comment_sanitize($row['comment']);
+            $row['comment'] = sanitize_mb($row['comment']);
+            $commentids[$i] = $row['commentid'];
+            if (date('Y-m-d', strtotime($row['postdate'])) == date('Y-m-d')) {
+                if (isset($session['user']['name']) && $row['name'] == $session['user']['name']) {
+                    $counttoday++;
+                }
+            }
+            $x = 0;
+            $ft = '';
+            for ($x = 0; strlen($ft) < 5 && $x < strlen($row['comment']); $x++) {
+                if (mb_substr($row['comment'], $x, 1) == '`' && strlen($ft) == 0) {
+                    $x++;
+                } else {
+                    $ft .= mb_substr($row['comment'], $x, 1);
+                }
+            }
+
+            $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($real_request_uri);
+
+            if (mb_substr($ft, 0, 2) == '::') {
+                $ft = mb_substr($ft, 0, 2);
+            } elseif (mb_substr($ft, 0, 1) == ':') {
+                $ft = mb_substr($ft, 0, 1);
+            } elseif (mb_substr($ft, 0, 3) == '/me') {
+                $ft = mb_substr($ft, 0, 3);
+            }
+
+            $row['comment'] = holidayize($row['comment'], 'comment');
+            $row['name'] = holidayize($row['name'], 'comment');
+            if ($row['clanrank']) {
+                $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
+            }
+
+            if (getsetting('enable_chat_tags', 1) == 1) {
+                if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
+                    $row['name'] = '`$' . getsetting('chat_tag_megauser', '[ADMIN]') . '`0' . $row['name'];
+                } else {
+                    if (($row['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
+                        $chat_tag_gm = getsetting('chat_tag_gm', '[GM]');
+                        $row['name'] = '`$' . $chat_tag_gm . '`0' . $row['name'];
+                    }
+                    if (($row['superuser'] & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
+                        $chat_tag_mod = getsetting('chat_tag_mod', '[MOD]');
+                        $row['name'] = '`$' . $chat_tag_mod . '`0' . $row['name'];
+                    }
+                }
+            }
+
+            if ($ft == '::' || $ft == '/me' || $ft == ':') {
+                $x = strpos($row['comment'], $ft);
+                if ($x !== false) {
+                    if ($linkbios) {
+                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                    } else {
+                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                    }
+                    $rawc[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                }
+            }
+
+            if ($ft == '/game' && !$row['name']) {
+                $x = strpos($row['comment'], $ft);
+                if ($x !== false) {
+                    $op[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                }
+            }
+
+            if (!isset($op) || !is_array($op)) {
+                $op = [];
+            }
+            if (!array_key_exists($i, $op) || $op[$i] == '') {
+                if ($linkbios) {
+                    $op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
+                } elseif (mb_substr($ft, 0, 5) == '/game' && !$row['name']) {
+                    $op[$i] = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+                } else {
+                    $op[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
+                }
+                $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
+            }
+
+            if (isset($session['user']['prefs']['timeoffset'])) {
+                $session['user']['prefs']['timeoffset'] = round($session['user']['prefs']['timeoffset'], 1);
+            } else {
+                $session['user']['prefs']['timeoffset'] = 0;
+            }
+
+            if (!array_key_exists('timestamp', $session['user']['prefs'])) {
+                $session['user']['prefs']['timestamp'] = 0;
+            }
+
+            if ($session['user']['prefs']['timestamp'] == 1) {
+                if (!isset($session['user']['prefs']['timeformat'])) {
+                    $session['user']['prefs']['timeformat'] = '[m/d h:ia]';
+                }
+                $time = strtotime($row['postdate']) + ($session['user']['prefs']['timeoffset'] * 60 * 60);
+                $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', $time);
+                $op[$i] = $s . $op[$i];
+            } elseif ($session['user']['prefs']['timestamp'] == 2) {
+                $s = reltime(strtotime($row['postdate']));
+                $op[$i] = "`7($s)`0 " . $op[$i];
+            }
+            if ($message == 'X') {
+                $op[$i] = "`0({$row['section']}) " . $op[$i];
+            }
+            if (isset($session['user']['recentcomments']) && $row['postdate'] >= $session['user']['recentcomments']) {
+                $op[$i] = "<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> " . $op[$i];
+            }
+            addnav('', $link);
+            $auth[$i] = $row['author'];
+            if (isset($rawc[$i])) {
+                $rawc[$i] = full_sanitize($rawc[$i]);
+                $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+            }
+        }
+        $i--;
+        $outputcomments = [];
+        $sect = 'x';
+
+        $del = translate_inline('Del');
+        $scriptname = mb_substr($scriptname, strrpos($scriptname, '/') + 1);
+        $pos = strpos($real_request_uri, '?');
+        $return = $scriptname . ($pos == false ? '' : mb_substr($real_request_uri, $pos));
+        $one = (strstr($return, '?') == false ? '?' : '&');
+
+        $editrights = ($session['user']['superuser'] & SU_EDIT_COMMENTS ? 1 : 0);
+        for (; $i >= 0; $i--) {
+            $out = '';
+            if ($editrights || in_array($i, $gm_array)) {
+                $out .= "`2[<a href='" . $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return) . "'>$del</a>`2]`0&nbsp;";
+                addnav('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
+            }
+            $out .= $op[$i];
+            if (!array_key_exists($sect, $outputcomments) || !is_array($outputcomments[$sect])) {
+                $outputcomments[$sect] = [];
+            }
+            array_push($outputcomments[$sect], $out);
+        }
+
+        ksort($outputcomments);
+        reset($outputcomments);
+        $sections = commentarylocs();
+        $needclose = 0;
+
+        foreach ($outputcomments as $sec => $v) {
+            if ($sec != 'x') {
+                if ($needclose) {
+                    modulehook('}collapse');
+                }
+                output_notl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
+                addnav('', "moderate.php?area=$sec");
+                modulehook('collapse{', ['name' => 'com-' . $sec]);
+                $needclose = 1;
+            } else {
+                modulehook('collapse{', ['name' => 'com-' . $section]);
+                $needclose = 1;
+            }
+            reset($v);
+            foreach ($v as $key => $val) {
+                $args = ['commentline' => $val];
+                $args = modulehook('viewcommentary', $args);
+                $val = $args['commentline'];
+                output_notl($val, true);
+            }
+        }
+
+        if ($returnastext !== false) {
+            $collected = $output->get_output();
+            $output = $oldoutput;
+            return $collected;
+        }
+        rawoutput('</div>');
+        rawoutput("<div id='$section-talkline'>");
+
+        if ($session['user']['loggedin'] && !$viewonly) {
+            self::talkline($section, $talkline, $limit, $schema, $counttoday, $message);
+        }
+        rawoutput("</div><div id='$section-nav'>");
+        $jump = false;
+        if (!isset($session['user']['prefs']['nojump']) || $session['user']['prefs']['nojump'] == false) {
+            $jump = true;
+        }
+
+        $firstu = translate_inline('&lt;&lt; First Unseen');
+        $prev = translate_inline('&lt; Previous');
+        $ref = translate_inline('Refresh');
+        $next = translate_inline('Next &gt;');
+        $lastu = translate_inline('Last Page &gt;&gt;');
+        if ($rowcount >= $limit || $cid > 0) {
+            if (isset($session['user']['recentcomments']) && $session['user']['recentcomments'] != '') {
+                $sql = 'SELECT count(commentid) AS c FROM ' . db_prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
+            } else {
+                $sql = 'SELECT count(commentid) AS c FROM ' . db_prefix('commentary') . " WHERE section='$section' AND postdate > '" . DATETIME_DATEMIN . "'";
+            }
+            $r = db_query($sql);
+            $val = db_fetch_assoc($r);
+            $val = round($val['c'] / $limit + 0.5, 0) - 1;
+            if ($val > 0) {
+                $first = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($val);
+                $first = str_replace('?&', '?', $first);
+                if (!strpos($first, '?')) {
+                    $first = str_replace('&', '?', $first);
+                }
+                $first .= '&refresh=1';
+                if ($jump) {
+                    $first .= "#$section";
+                }
+                output_notl("<a href=\"$first\">$firstu</a>", true);
+                addnav('', $first);
+            } else {
+                output_notl($firstu, true);
+            }
+            $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
+            $req = str_replace('?&', '?', $req);
+            if (!strpos($req, '?')) {
+                $req = str_replace('&', '?', $req);
+            }
+            $req .= '&refresh=1';
+            if ($jump) {
+                $req .= "#$section";
+            }
+            output_notl("<a href=\"$req\">$prev</a>", true);
+            addnav('', $req);
+        } else {
+            output_notl("$firstu $prev", true);
+        }
+        $last = appendlink(comscroll_sanitize($REQUEST_URI), 'refresh=1');
+
+        $last = appendcount($last);
+
+        $last = str_replace('?&', '?', $last);
+        if ($jump) {
+            $last .= "#$section";
+        }
+        output_notl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
+        addnav('', $last);
+        if ($com > 0 || ($cid > 0 && $newadded > $limit)) {
+            $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
+            $req = str_replace('?&', '?', $req);
+            if (!strpos($req, '?')) {
+                $req = str_replace('&', '?', $req);
+            }
+            $req .= '&refresh=1';
+            if ($jump) {
+                $req .= "#$section";
+            }
+            output_notl(" <a href=\"$req\">$next</a>", true);
+            addnav('', $req);
+            output_notl(" <a href=\"$last\">$lastu</a>", true);
+        } else {
+            output_notl("$next $lastu", true);
+        }
+        if (!$cc) {
+            db_free_result($result);
+        }
+        tlschema();
+        if ($needclose) {
+            modulehook('}collapse');
+        }
+        rawoutput('</div>');
+        return null;
     }
 
-    public static function talkline($section, $talkline, $limit, $schema, $counttoday, $message)
+    public static function talkline(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
     {
         $args = modulehook("insertcomment", array("section"=>$section));
         if (array_key_exists("mute",$args) && $args['mute'] &&
@@ -200,7 +612,7 @@ class Commentary
         }
     }
 
-    public static function talkform($section, $talkline, $limit = 10, $schema = false)
+    public static function talkform(string $section, string $talkline, int $limit = 10, $schema = false)
     {
       global $REQUEST_URI,$session,$translation_namespace;
         if ($schema===false) $schema=$translation_namespace;
