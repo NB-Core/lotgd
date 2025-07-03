@@ -40,7 +40,7 @@ if (!$requirements_met) {
 if (!file_exists("dbconnect.php")){
        define("DB_NODB",true);
 }
-chdir(__DIR__ . '/..');
+chdir(__DIR__);
 
 require_once("common.php");
 if (file_exists("dbconnect.php")){
@@ -165,7 +165,7 @@ if (!$noinstallnavs){
 
 	for ($x=0; $x<=min(count($stages)-1,$session['stagecompleted']+1); $x++){
 		if ($x == $stage) $stages[$x]="`^{$stages[$x]} <----";
-               addnav($stages[$x],"install/index.php?stage=$x");
+               addnav($stages[$x],"installer.php?stage=$x");
 	}
 }
 page_footer(false);
