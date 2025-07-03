@@ -14,6 +14,9 @@ use Lotgd\HolidayText;
  *
  */
 
+global $nopopups;
+global $runheaders;
+
 $nopopups = array();
 $runheaders = array();
 /**

@@ -2,12 +2,24 @@
 namespace Lotgd;
 
 // Old Global Variables
+global $translation_table;
 $translation_table = array();
+
+global $translatorbuttons;
 $translatorbuttons = array();
+
+global $seentlbuttons;
 $seentlbuttons = array();
+
+global $translation_is_enabled;
 $translation_is_enabled = true;
+
+global $translation_namespace;
 $translation_namespace = "";
+
+global $translation_namespace_stack;
 $translation_namespace_stack = array();
+
 
 class Translator
 {

@@ -151,24 +151,33 @@ class Installer
         	output("You should check with the game authors to ensure that the below license agrees with the license under which it was released.");
         	output("The license may be referenced at <a target='_blank' href='http://creativecommons.org/licenses/by-nc-sa/2.0/legalcode'>the Creative Commons site</a>.",true);
         }
-        $license = join("",file("LICENSE.txt"));
+
+        // Check LICENSE.txt file for integrity
+        $licenseFile = __DIR__ . '/../../LICENSE.txt';
+        if (!file_exists($licenseFile)) {
+            output("`$The license file (LICENSE.txt) could not be found.`n");
+            output("`2Please make sure that the LICENSE.txt file is located in the root directory of your installation.`n");
+            output("`2Without this file, the installation cannot continue.`n");
+            $stage = 1; // Stay on this stage
+            $session['stagecompleted'] = $stage - 1;
+            return;
+        }
+        $license = file_get_contents($licenseFile);
         $license = preg_replace("/[^\na-zA-Z0-9!?.,;:'\"\/\\()@ -\]\[]/","",$license);
         $licensemd5s = array(
-        'e281e13a86d4418a166d2ddfcd1e8032'=>true, //old for DP
-        'bc9f6fb23e352600d6c1c948298cbd82'=>true, //new for +nb
+            'e281e13a86d4418a166d2ddfcd1e8032'=>true, //old for DP
+            'bc9f6fb23e352600d6c1c948298cbd82'=>true, //new for +nb
+            '072d59d3dc6722cb8557575953cd0b34'=> true, //new for +nb with no line breaks
         );
         if (isset($licensemd5s[md5($license)])){
-        	// Reload it so we get the right line breaks, etc.
-        	//$license = file("LICENSE.txt");
-        	$license = htmlentities($license, ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-        	$license = nl2br($license);
-        	//$license = preg_replace("/<br[^>]*>\s+<br[^>]*>/i","<p>",$license);
-        	//$license = preg_replace("/<br[^>]*>/i","",$license);
-        	output("`n`n`b`@Plain Text:`b`n`7");
-        	rawoutput($license);
+			// Reload it so we get the right line breaks, etc.
+			$license = htmlentities($license, ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+			$license = nl2br($license);
+			output("`n`n`b`@Plain Text:`b`n`7");
+			rawoutput($license);
         }else{
-        	output("`^The license file (LICENSE.txt) has been modified.  Please obtain a new copy of the game's code, this file has been tampered with.");
-        	output("Expected MD5 in (".join(array_keys($licensemd5s),",")."), but got ".md5($license));
+			output("`^The license file (LICENSE.txt) has been modified.  Please obtain a new copy of the game's code, this file has been tampered with.");
+            output("Expected MD5 in (" . implode(", ", array_keys($licensemd5s)) . "), but got " . md5($license));
         	$stage=-1;
         	$session['stagecompleted']=-1;
         }

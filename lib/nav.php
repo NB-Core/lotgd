@@ -3,21 +3,6 @@
 
 use Lotgd\Nav;
 
-// Maintain global state for modules
-$blockednavs = [
-    'blockpartial' => [],
-    'blockfull' => [],
-    'unblockpartial' => [],
-    'unblockfull' => [],
-];
-$navsection = '';
-$navbysection = [];
-$navschema = [];
-$navnocollapse = [];
-$block_new_navs = false;
-$accesskeys = [];
-$quickkeys = [];
-
 function blocknav(string $link, bool $partial = false)
 {
     Nav::blockNav($link, $partial);

@@ -291,7 +291,7 @@ if ($session['user']['loggedin']!=true && !ALLOW_ANONYMOUS){
 }
 
 if (!isset($session['counter'])) $session['counter']=0;
-$session['counter']++;
+$session['counter']=(int)$session['counter']++;
 $nokeeprestore=array("newday.php"=>1,"badnav.php"=>1,"motd.php"=>1,"mail.php"=>1,"petition.php"=>1);
 if (OVERRIDE_FORCED_NAV) $nokeeprestore[$SCRIPT_NAME]=1;
 if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {

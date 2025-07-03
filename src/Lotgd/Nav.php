@@ -1,6 +1,31 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\HolidayText;
+
+// Maintain global state for modules
+global $blockednavs;
+$blockednavs = [
+    'blockpartial' => [],
+    'blockfull' => [],
+    'unblockpartial' => [],
+    'unblockfull' => [],
+];
+global $navsection;
+$navsection = '';
+global $navbysection;
+$navbysection = [];
+global $navschema;
+$navschema = [];
+global $navnocollapse;
+$navnocollapse = [];
+global $block_new_navs;
+$block_new_navs = false;
+global $accesskeys;
+$accesskeys = [];
+global $quickkeys;
+$quickkeys = [];
+
 /**
  * Navigation helper functions.
  */
@@ -301,10 +326,10 @@ class Nav
         $extra = '';
         $ignoreuntil = '';
         if ($link === false) {
-            $text = holidayize($text, 'nav');
+            $text = HolidayText::holidayize($text, 'nav');
             $thisnav .= tlbutton_pop() . templatereplace('navhead', ['title' => appoencode($text, $priv)]);
         } elseif ($link === '') {
-            $text = holidayize($text, 'nav');
+            $text = HolidayText::holidayize($text, 'nav');
             $thisnav .= tlbutton_pop() . templatereplace('navhelp', ['text' => appoencode($text, $priv)]);
         } elseif ($link == '!!!addraw!!!') {
             $thisnav .= $text;
@@ -323,12 +348,12 @@ class Nav
                     $hchar = strtolower($text[0]);
                     if ($hchar == ' ' || array_key_exists($hchar, $accesskeys) && $accesskeys[$hchar] == 1) {
                         $text = substr($text, 2);
-                        $text = holidayize($text, 'nav');
+                        $text = HolidayText::holidayize($text, 'nav');
                         if ($hchar == ' ') $key = ' ';
                     } else {
                         $key = $text[0];
                         $text = substr($text, 2);
-                        $text = holidayize($text, 'nav');
+                        $text = HolidayText::holidayize($text, 'nav');
                         $found = false;
                         $text_len = strlen($text);
                         for ($i = 0; $i < $text_len; ++$i) {
@@ -358,7 +383,7 @@ class Nav
                         }
                     }
                 } else {
-                    $text = holidayize($text, 'nav');
+                    $text = HolidayText::holidayize($text, 'nav');
                 }
                 if ($key == '') {
                     for ($i = 0; $i < strlen($text); $i++) {
