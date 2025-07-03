@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\DumpItem;
+use Lotgd\HolidayText;
 /**
 * \class output_collector
 * \brief Library Functions for page output stored in the class
@@ -121,7 +122,7 @@ class output_collector {
 			$out = call_user_func_array("sprintf",$args);
 		}
 		//holiday text
-		if ($priv==false) $out = holidayize($out,'output');
+		if ($priv==false) $out = HolidayText::holidayize($out,'output');
 		//`1`2 etc color & formatting
 		$out = $this->appoencode($out,$priv);
 		//apply to the page.

@@ -21,7 +21,7 @@ RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
 # Quellcode kopieren
 COPY . /var/www/html
 #RUN cd /var/www/html && mv dbconnect.docker.php dbconnect.php
-RUN cd /var/www/html/ext && composer install && composer update
+RUN cd /var/www/html && composer install && composer update
 
 # Berechtigungen setzen
 RUN chown -R www-data:www-data /var/www/html

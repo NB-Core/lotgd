@@ -2,6 +2,7 @@
 
 use Lotgd\Buffs;
 use Lotgd\CharStats;
+use Lotgd\HolidayText;
 /**
  * Library (supporting) functions for page output
  *		addnews ready
@@ -53,7 +54,7 @@ function page_header(){
 		$arguments = array("Legend of the Green Dragon");
 	}
 	$title = call_user_func_array("sprintf_translate", $arguments);
-	$title = sanitize(holidayize($title,'title'));
+	$title = sanitize(HolidayText::holidayize($title,'title'));
 	Buffs::calculateBuffFields();
 
 	$header = $template['header'];
@@ -460,7 +461,7 @@ function popup_header($title="Legend of the Green Dragon"){
 		$arguments = array("Legend of the Green Dragon");
 	}
 	$title = call_user_func_array("sprintf_translate", $arguments);
-	$title = holidayize($title,'title');
+	$title = HolidayText::holidayize($title,'title');
 
 	$header = $template['popuphead'];
 	$header = str_replace("{title}", $title, $header);

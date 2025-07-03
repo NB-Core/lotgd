@@ -4,9 +4,6 @@
 use Lotgd\MySQL\DbMysqli;
 use Lotgd\MySQL\Database;
 
-// expose class for backward compatibility
-class DbMysqli extends DbMysqli {}
-
 function db_set_charset($charset){return Database::setCharset($charset);} 
 function db_query($sql,$die=true){return Database::query($sql,$die);} 
 function db_query_cached($sql,$name,$duration=900){return Database::queryCached($sql,$name,$duration);} 
