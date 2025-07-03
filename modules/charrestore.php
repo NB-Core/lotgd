@@ -215,7 +215,7 @@ function charrestore_dohook(string $hookname, array $args): array{
 
        function charrestore_run(): void{
 		global $session;
-		//	SuAccess::check(SU_EDIT_USERS);
+		SuAccess::check(SU_EDIT_USERS);
 		$retid = (int)httpget('returnpetition');
 		//allow backlink to petition
 		page_header("Character Restore");
