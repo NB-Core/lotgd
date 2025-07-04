@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Accounts;
 use Lotgd\Output;
 
 class Redirect
@@ -30,7 +31,7 @@ class Redirect
             $session['debug'] = '';
         }
         $session['debug'] .= "Redirected to $location from $REQUEST_URI.  $reason<br>";
-        saveuser();
+        Accounts::saveUser();
         $host = $_SERVER['HTTP_HOST'];
         $http = $_SERVER['SERVER_PORT'] == 443 ? 'https' : 'http';
         $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');

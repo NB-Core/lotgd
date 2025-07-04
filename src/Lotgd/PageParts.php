@@ -3,6 +3,7 @@ namespace Lotgd;
 
 use Lotgd\Buffs;
 use Lotgd\CharStats;
+use Lotgd\Accounts;
 use Lotgd\PlayerFunctions;
 use Lotgd\HolidayText;
 /**
@@ -454,7 +455,7 @@ public static function pageFooter(bool $saveuser=true){
 	$session['user']['gensize']+=strlen($browser_output);
 	$session['output']=$browser_output;
 	if ($saveuser === true) {
-		saveuser();
+		Accounts::saveUser();
 	}
 	unset($session['output']);
 	//this somehow allows some frames to load before the user's navs say it can
@@ -543,7 +544,7 @@ public static function popupFooter(){
 	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
 	$browser_output=$header.$maillink_add_after.($output->get_output()).$footer;
-	saveuser();
+	Accounts::saveUser();
 	session_write_close();
 	echo $browser_output;
 	exit();

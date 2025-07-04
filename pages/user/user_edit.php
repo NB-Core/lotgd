@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Forms;
 $result = db_query("SELECT * FROM " . db_prefix("accounts") . " WHERE acctid=" . (int)$userid);
 $row = db_fetch_assoc($result);
 $petition=httpget("returnpetition");
@@ -56,7 +57,7 @@ if (httpget("subop")==""){
 	$args['user']['test'] = "Is out there???";
 	*/
 	$showformargs = modulehook("modifyuserview", array("userinfo"=>$userinfo, "user"=>$row));
-	$info = showform($showformargs['userinfo'],$showformargs['user']);
+	$info = Forms::showForm($showformargs['userinfo'],$showformargs['user']);
 	rawoutput("<input type='hidden' value=\"".htmlentities(serialize($info), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\" name='oldvalues'>");
 	rawoutput("</form>");
 		output("`n`nLast Page Viewed:`n");
@@ -95,7 +96,7 @@ if (httpget("subop")==""){
 		rawoutput("<form action='user.php?op=savemodule&module=$module&userid=$userid$returnpetition' method='POST'>");
 		addnav("","user.php?op=savemodule&module=$module&userid=$userid$returnpetition");
 		tlschema("module-$module");
-		showform($msettings,$data);
+		Forms::showForm($msettings,$data);
 		tlschema();
 		rawoutput("</form>");
 	}else{

@@ -2,6 +2,7 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 // translator ready
+use Lotgd\Forms;
 // addnews ready
 // mail ready
 require_once("common.php");
@@ -227,7 +228,6 @@ if ($op=="" || $op=="search"){
 	if (!$level) $level=(int)httppost('level');
 	if (!$level) $level = 1;
 	if ($op=="edit" || $op=="add"){
-		require_once("lib/showform.php");
 		addnav("Edit");
 		addnav("Creature properties", "creatures.php?op=edit&creatureid=$id");
 		addnav("Add");
@@ -304,7 +304,7 @@ if ($op=="" || $op=="search"){
 				"creatureaiscript"=>"Creature's A.I.,enum".$scriptenum,
 			);
 			rawoutput("<form action='creatures.php?op=save' method='POST'>");
-			showform($form, $row);
+			Forms::showForm($form, $row);
 			$refresh=translate_inline("Refresh");
 			rawoutput("<input type='submit' class='button' name='refresh' value='$refresh'>");
 			rawoutput("</form>");

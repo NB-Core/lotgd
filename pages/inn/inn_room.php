@@ -1,5 +1,6 @@
 <?php
 $config = unserialize($session['user']['donationconfig']);
+use Lotgd\Accounts;
 $expense = round(($session['user']['level']*(10+log($session['user']['level']))),0);
 $pay = httpget('pay');
 if ($pay){
@@ -23,7 +24,7 @@ if ($pay){
 			$session['user']['location']=$iname;
 			$session['user']['loggedin']=0;
 			$session['user']['restorepage']="inn.php?op=strolldown";
-			saveuser();
+			Accounts::saveUser();
 		}
 		$session=array();
 		redirect("index.php");

@@ -1,5 +1,6 @@
 <?php
 // translator ready
+use Lotgd\Forms;
 // addnews ready
 // mail ready
 
@@ -142,8 +143,7 @@ if (getsetting("homeskinselect", 1)) {
 	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
 		else 
 		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-	require_once("lib/showform.php");
-	showform($form, $prefs, true);
+	Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
 	rawoutput("</td><td><br>&nbsp;<input type='submit' class='button' value='$submit'></td>");
 	rawoutput("</tr></table></form>");

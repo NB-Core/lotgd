@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\Backtrace;
 
 // ensure global tracking array exists when the class loads
 if (!isset($GLOBALS['injected_modules'])) {
@@ -127,8 +128,7 @@ class Modules
         }
 
         output("`n`\$Module '`^%s`\$' (%s) was not found in the modules directory.`n", $moduleName, $modulefilename);
-        require_once 'lib/show_backtrace.php';
-        output_notl(show_backtrace(), true);
+        output_notl(Backtrace::show(), true);
         $injected_modules[$force][$moduleName] = false;
         return false;
     }

@@ -2,10 +2,10 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 // translator ready
+use Lotgd\Forms;
 // addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/showform.php");
 require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_EQUIPMENT);
@@ -49,7 +49,7 @@ if($op=="edit" || $op=="add"){
 	}
 	rawoutput("<form action='weaponeditor.php?op=save&level=$weaponlevel' method='POST'>");
 	addnav("","weaponeditor.php?op=save&level=$weaponlevel");
-	showform($weaponarray,$row);
+	Forms::showForm($weaponarray,$row);
 	rawoutput("</form>");
 }else if($op=="del"){
 	$sql = "DELETE FROM " . db_prefix("weapons") . " WHERE weaponid='$id'";

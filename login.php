@@ -1,6 +1,7 @@
 <?php
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Accounts;
 // mail ready
 // addnews ready
 use Lotgd\CheckBan;
@@ -89,7 +90,7 @@ if ($name!=""){
 
 					$str = sprintf_translate("Sending you to %s, have a safe journey", $link);
 					header("Location: {$session['user']['restorepage']}");
-					saveuser();
+					Accounts::saveUser();
 					echo $str;
 					exit();
 				}

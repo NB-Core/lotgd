@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\Forms;
 
 /**
  * Tools for comment moderation.
@@ -104,7 +105,7 @@ class Moderate
         }
         tlschema($schema);
         output("`c`b%s`b`c", translate_inline($message, $schema));
-        showform($section, $cid, $limit, $talkline, $linkbios, true, $cc);
+        Forms::showForm($section, $cid, $limit, $talkline);
         tlschema();
     }
 }

@@ -9,7 +9,6 @@ use Lotgd\Buffs;
 // hilarious copy of mounts.php
 require_once("common.php");
 require_once("lib/http.php");
-require_once("lib/showform.php");
 
 SuAccess::check(SU_EDIT_MOUNTS);
 

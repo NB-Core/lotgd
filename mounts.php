@@ -6,7 +6,6 @@ use Lotgd\Nav\SuperuserNav;
 // translator ready
 require_once("common.php");
 require_once("lib/http.php");
-require_once("lib/showform.php");
 
 $op = httpget('op');
 $id = httpget('id');
