@@ -4,6 +4,7 @@ namespace Lotgd;
 /**
  * Placeholder class for future mail handling refactoring.
  */
+use Lotgd\Settings;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -85,7 +86,7 @@ class Mail
             $body = preg_replace("'[`]n'", "\n", $body);
             $body = full_sanitize($body);
             $subject = htmlentities(full_sanitize($subject), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
-            require 'lib/settings_extended.php';
+            $settings_extended = new Settings('settings_extended');
             $subj = translate_mail($settings_extended->getSetting('notificationmailsubject'), $to);
             $msg = translate_mail($settings_extended->getSetting('notificationmailtext'), $to);
             $replace = [

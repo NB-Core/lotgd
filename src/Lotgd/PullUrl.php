@@ -1,6 +1,8 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Settings;
+
 /**
  * Helper methods to fetch remote URLs using different mechanisms.
  */
@@ -18,8 +20,10 @@ class PullUrl
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $val = 5;
         if (defined('DB_CONNECTED') && DB_CONNECTED === true) {
-            require_once 'lib/settings.php';
-            $val = getsetting('curltimeout', 5);
+            global $settings;
+            if ($settings instanceof Settings) {
+                $val = $settings->getSetting('curltimeout', 5);
+            }
         }
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $val);
         curl_setopt($ch, CURLOPT_TIMEOUT, $val);

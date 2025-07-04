@@ -1,14 +1,15 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Sanitize;
+
 class Censor
 {
     public static function soap($input, $debug = false, $skiphook = false)
     {
         global $session;
-        require_once('lib/sanitize.php');
         $final_output = $input;
-        $output = full_sanitize($input);
+        $output = Sanitize::fullSanitize($input);
         $mix_mask = str_pad('', strlen($output), 'X');
         if (getsetting('soap', 1)) {
             $search = self::nasty_word_list();
@@ -37,7 +38,7 @@ class Censor
                             }
                         } else {
                             if ($debug) {
-                                output("`7This word is not ok: \"`%%s`7\"; it blocks on the pattern `i%s`i at \"`\$%s`7\".`n", sanitize_mb($longword), $word, $shortword);
+                                output("`7This word is not ok: \"`%%s`7\"; it blocks on the pattern `i%s`i at \"`\$%s`7\".`n", Sanitize::sanitizeMb($longword), $word, $shortword);
                             }
                             $len = strlen($shortword);
                             $pad = str_pad('', $len, '_');
