@@ -111,7 +111,7 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			  * Set up the mime bits
 			 **/
                         $userstr = "";
-			if ($session && isset($session['user']['name']) && isset($sesson['user']['acctid'])) {
+			if ($session && isset($session['user']['name']) && isset($session['user']['acctid'])) {
 				$userstr = "Error triggered by user " . $session['user']['name'] . " (" . $session['user']['acctid'] . ")\n";
 			}
                         $plain_text = "$userstr$errstr in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
