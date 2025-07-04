@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Backtrace;
+use Lotgd\Sanitize;
 
 /**
  * Render an error message using simple HTML styling.
@@ -109,12 +110,11 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			/***
 			  * Set up the mime bits
 			 **/
-			require_once("sanitize.php");
-			$userstr = "";
-			if ($session && isset($session['user']['name']) && isset($sesson['user']['acctid'])) {
+                        $userstr = "";
+			if ($session && isset($session['user']['name']) && isset($session['user']['acctid'])) {
 				$userstr = "Error triggered by user " . $session['user']['name'] . " (" . $session['user']['acctid'] . ")\n";
 			}
-			$plain_text = "$userstr$errstr in $errfile ($errline)\n".sanitize_html($backtrace);
+                        $plain_text = "$userstr$errstr in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
 			$html_text = "<html><body>$errstr in $errfile ($errline)<hr>$backtrace</body></html>";
 
 			$semi_rand = md5(time());
