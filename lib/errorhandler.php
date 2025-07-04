@@ -1,5 +1,27 @@
 <?php
 use Lotgd\Backtrace;
+use ErrorException;
+
+/**
+ * Render an error message using simple HTML styling.
+ */
+function lotgd_render_error(string $message, string $file, int $line, string $backtrace): void
+{
+    http_response_code(500);
+    echo "<!DOCTYPE html>\n";
+    echo "<html lang='en'><head>\n";
+    echo "<meta charset='UTF-8'>\n";
+    echo "<title>Application Error</title>\n";
+    echo "<style>body{background:#000;color:#fff;font-family:sans-serif;padding:20px;}a{color:#fff;}pre{background:#111;padding:10px;overflow:auto;}</style>\n";
+    echo "</head><body>\n";
+    echo "<h1>Application Error</h1>\n";
+    echo sprintf('<p>%s</p>', HTMLEntities($message, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+    echo sprintf('<p>in <b>%s</b> at <b>%s</b></p>', HTMLEntities($file, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')), $line);
+    echo $backtrace;
+    echo "<p>If the problem persists, please <a href='/petition.php'>submit a petition</a>.</p>\n";
+    echo "</body></html>";
+}
+
 
 function logd_error_handler($errno, $errstr, $errfile, $errline){
 	global $session;
@@ -40,18 +62,15 @@ function logd_error_handler($errno, $errstr, $errfile, $errline){
 			logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace);
 		}
 		break;
-	case E_ERROR:
-	case E_USER_ERROR:
-		echo sprintf("PHP ERROR: \"%s\"<br>in <b>%s</b> at <b>%s</b>.<br>",$errstr,$errfile,$errline);
-		$backtrace = Backtrace::show();
-		echo $backtrace;
-		if (getsetting("notify_on_error",0) > ""){
-			//$args = func_get_args();
-			//call_user_func_array("logd_error_notify",$args);
-			logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace);
-		}
-		die();
-		break;
+        case E_ERROR:
+        case E_USER_ERROR:
+                $backtrace = Backtrace::show();
+                lotgd_render_error($errstr, $errfile, $errline, $backtrace);
+                if (getsetting("notify_on_error",0) > ""){
+                        logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace);
+                }
+                die();
+                break;
 	}
 	$in_error_handler--;
 }
@@ -127,4 +146,27 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
        debug($data);
 }
 set_error_handler("logd_error_handler");
+
+/**
+ * Handle uncaught exceptions with formatted output.
+ */
+function lotgd_exception_handler($exception): void
+{
+    $trace = Backtrace::show();
+    lotgd_render_error($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
+}
+set_exception_handler('lotgd_exception_handler');
+
+/**
+ * Catch fatal errors that are not handled by set_error_handler.
+ */
+function lotgd_fatal_shutdown(): void
+{
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        $trace = Backtrace::show();
+        lotgd_render_error($error['message'], $error['file'], $error['line'], $trace);
+    }
+}
+register_shutdown_function('lotgd_fatal_shutdown');
 ?>
