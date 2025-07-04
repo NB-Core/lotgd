@@ -108,7 +108,7 @@ class Moderate
                 . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = ' . db_prefix('commentary') . '.author LEFT JOIN '
                 . db_prefix('clans') . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid WHERE '
                 . "$sectselect (" . db_prefix('accounts') . ".locked=0 OR " . db_prefix('accounts') . ".locked is null ) ORDER BY commentid DESC LIMIT " . ($com * $limit) . ",$limit";
-            if ($com == 0 && strstr($_SERVER['REQUEST_URI'], '/moderate.php') !== $_SERVER['REQUEST_URI']) {
+            if ($com == 0 && strpos($_SERVER['REQUEST_URI'], '/moderate.php') === false) {
                 $result = db_query_cached($sql, "comments-{$section}");
             } else {
                 $result = db_query($sql);
