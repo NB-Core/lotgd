@@ -1,4 +1,6 @@
 Changes to 1.3.0 +nb
+[FEATURES]
+* lib/errorhandler.php now formats uncaught exceptions and fatal errors in a styled HTML page.
 [FIXES]
 *battle.php --> another unset nightmare
 *dragon.php --> another unset nightmare
