@@ -1,6 +1,5 @@
 <?php
 use Lotgd\Backtrace;
-use ErrorException;
 
 /**
  * Render an error message using simple HTML styling.
