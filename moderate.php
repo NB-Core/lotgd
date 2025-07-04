@@ -116,10 +116,10 @@ if ($op==""){
 	if ($area==""){
 		Commentary::talkform("X","says");
 		//commentdisplay("", "' or '1'='1","X",100); //sure, encourage hacking...
-                Moderate::commentmoderate('', '', 'X', 100, 'says', false, true);
+        Moderate::commentmoderate('', '', 'X', 100, 'says', false, true);
 
 	}else{
-                Moderate::commentmoderate("", $area, "X", 100);
+        Moderate::commentmoderate("", $area, "X", 100);
 		Commentary::talkform($area,"says");
 	}
 }elseif ($op=="audit"){

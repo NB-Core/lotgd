@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 use Lotgd\Forms;
+use Lotgd\MySQL\Database;
 
 /**
  * Tools for comment moderation.
@@ -76,6 +77,7 @@ class Moderate
             $cid = 0;
         }
         $session['lastcom'] = $com;
+        $newadded = 0;
         if ($com > 0 || $cid > 0) {
             $sql = "SELECT COUNT(commentid) AS newadded FROM " . db_prefix('commentary') . " LEFT JOIN " . db_prefix('accounts') . " ON " . db_prefix('accounts') . ".acctid = " . db_prefix('commentary') . ".author WHERE $sectselect (" . db_prefix('accounts') . ".locked=0 or " . db_prefix('accounts') . ".locked is null) AND commentid > '$cid'";
             $result = db_query($sql);
@@ -94,9 +96,13 @@ class Moderate
         }
         $result = db_query($sql);
         $row = db_fetch_assoc($result);
-        if ($row !== false) {
+        output($sql);
+        if (Database::numRows($result) > 0) {
             $cid = (int)$row['commentid'];
-            $newadded = (int)$session['lastcommentid'] - $cid;
+            $newadded = 0;
+            if (isset($session['lastcommentid']) && $session['lastcommentid'] > $cid) {
+                $newadded = (int)$session['lastcommentid'] - $cid;
+            }
             if ($newadded < 0) {
                 $newadded = 0;
             }
@@ -105,7 +111,14 @@ class Moderate
         }
         tlschema($schema);
         output("`c`b%s`b`c", translate_inline($message, $schema));
-        Forms::showForm($section, $cid, $limit, $talkline);
+        // Check if $section is empty, if so, don't display the form
+        if (empty($section)) {
+            output("`n`n`c`b%s`b`c", translate_inline('No section specified for commentary. Please check your configuration.'));
+            return;
+        }
+        else {
+            Forms::showForm($section, $cid, $limit, $talkline);
+        }
         tlschema();
     }
 }
