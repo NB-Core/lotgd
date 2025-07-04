@@ -262,12 +262,12 @@ class Translator
                 global $REQUEST_URI;
                 $stack =& self::$translation_namespace_stack;
                 if ($schema===false){
-                        self::$translation_namespace = array_pop($stack);
+                        self::$translation_namespace = (string)array_pop($stack);
                         if (empty(self::$translation_namespace))
                                 self::$translation_namespace = translator_uri($REQUEST_URI);
                 }else{
                         array_push($stack,self::$translation_namespace);
-                        self::$translation_namespace = $schema;
+                        self::$translation_namespace = (string)$schema;
                 }
 	}
 
