@@ -13,7 +13,7 @@ use Lotgd\GameLog;
 class ExpireChars
 {
     /** @var Settings */
-    private static $settingsExtended;
+    private static Settings $settingsExtended;
 
     /** Execute the full expiration routine. */
     public static function expire(): void

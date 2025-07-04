@@ -118,7 +118,7 @@ public static function popup(string $page, string $size="550x300"){
  */
 public static function pageFooter(bool $saveuser=true){
         global $output,$header,$nav,$session,$REMOTE_ADDR,
-               $REQUEST_URI,$pagestarttime,$quickkeys,$template,$y2,$z2,
+               $REQUEST_URI,$pagestarttime,$template,$y2,$z2,
                $logd_version,$copyright,$SCRIPT_NAME, $footer,
                $dbinfo;
 	$z = $y2^$z2;
@@ -224,7 +224,7 @@ public static function pageFooter(bool $saveuser=true){
 			target=e.originalTarget;
 		if (target.nodeName.toUpperCase()=='INPUT' || target.nodeName.toUpperCase()=='TEXTAREA' || altKey || ctrlKey){
 		}else{";
-			reset($quickkeys);
+			$quickkeys = Nav::getQuickKeys();
 			foreach ($quickkeys as $key=>$val) {
 				$script.="\n			if (c == '".strtoupper($key)."') { $val; return false; }";
 			}

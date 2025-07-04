@@ -3,11 +3,6 @@ namespace Lotgd;
 
 use Lotgd\Sanitize;
 
-// Maintain translation state within the class
-global $translation_namespace;
-$translation_namespace = "";
-
-
 class Translator
 {
     private static array $translation_table = [];
@@ -15,6 +10,8 @@ class Translator
     private static array $seentlbuttons = [];
     private static bool $translation_is_enabled = true;
     private static array $translation_namespace_stack = [];
+	// Maintain translation state within the class
+	private static string $translation_namespace = "";
 // translator ready
 // addnews ready
 // mail ready
@@ -40,8 +37,8 @@ class Translator
 
     public static function translate($indata,$namespace=FALSE){
 		if (getsetting("enabletranslation", true) == false) return $indata;
-                global $session,$translation_namespace;
-		if (!$namespace) $namespace=$translation_namespace;
+                global $session;
+		if (!$namespace) $namespace=self::$translation_namespace;
 		$outdata = $indata;
 		if (!isset($namespace) || $namespace=="")
 			tlschema();
@@ -262,15 +259,15 @@ class Translator
 
 
     public static function tlschema($schema=false){
-                global $translation_namespace,$REQUEST_URI;
+                global $REQUEST_URI;
                 $stack =& self::$translation_namespace_stack;
                 if ($schema===false){
-                        $translation_namespace = array_pop($stack);
-                        if ($translation_namespace=="")
-                                $translation_namespace = translator_uri($REQUEST_URI);
+                        self::$translation_namespace = array_pop($stack);
+                        if (empty(self::$translation_namespace))
+                                self::$translation_namespace = translator_uri($REQUEST_URI);
                 }else{
-                        array_push($stack,$translation_namespace);
-                        $translation_namespace = $schema;
+                        array_push($stack,self::$translation_namespace);
+                        self::$translation_namespace = $schema;
                 }
 	}
 

@@ -47,6 +47,16 @@ class Nav
     }
 
     /**
+     * Get the quick keys array.
+     *
+     * @return array
+     */
+    public static function getQuickKeys(): array
+    {
+        return self::$quickkeys;
+    }
+
+    /**
      * Unblock a navigation link.
      */
     public static function unblockNav(string $link, bool $partial = false): void
