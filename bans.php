@@ -5,7 +5,6 @@ use Lotgd\DateTime;
 //addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/showform.php");
 require_once("lib/sanitize.php");
 use Lotgd\Names;
 

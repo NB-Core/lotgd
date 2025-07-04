@@ -6,6 +6,7 @@ use Lotgd\Buffs;
 use Lotgd\Mounts;
 use Lotgd\HolidayText;
 use Lotgd\Output;
+use Lotgd\Accounts;
 // translator ready
 // addnews ready
 // mail ready
@@ -81,7 +82,6 @@ require_once("lib/template.php");
 require_once("lib/settings.php");
 require_once("lib/redirect.php");
 require_once("lib/censor.php");
-require_once("lib/saveuser.php");
 require_once("lib/arrayutil.php");
 require_once("lib/sql.php");
 require_once("lib/debuglog.php");

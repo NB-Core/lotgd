@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Backtrace;
 
 function logd_error_handler($errno, $errstr, $errfile, $errline){
 	global $session;
@@ -26,12 +27,11 @@ function logd_error_handler($errno, $errstr, $errfile, $errline){
 		break;
 	case E_WARNING:
 	case E_USER_WARNING:
-		require_once("lib/show_backtrace.php");
 		tlschema("errorhandler");
 		if ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT) {
 			output("PHP Warning: \"%s\"`nin `b%s`b at `b%s`b.`n",$errstr,$errfile,$errline,true);
 			tlschema();
-			$backtrace = show_backtrace();
+			$backtrace = Backtrace::show();
 			rawoutput($backtrace);
 		} else $backtrace="";
 		if (getsetting("notify_on_warn",0) > ""){
@@ -42,9 +42,8 @@ function logd_error_handler($errno, $errstr, $errfile, $errline){
 		break;
 	case E_ERROR:
 	case E_USER_ERROR:
-		require_once("lib/show_backtrace.php");
 		echo sprintf("PHP ERROR: \"%s\"<br>in <b>%s</b> at <b>%s</b>.<br>",$errstr,$errfile,$errline);
-		$backtrace = show_backtrace();
+		$backtrace = Backtrace::show();
 		echo $backtrace;
 		if (getsetting("notify_on_error",0) > ""){
 			//$args = func_get_args();

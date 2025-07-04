@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Commentary;
+use Lotgd\Accounts;
 // addnews ready
 // translator ready
 // mail ready
@@ -47,7 +48,7 @@ if ($op == "add" || $op == "addpoll" || $op == "del")  {
 			AddNews::add("%s was penalized for attempting to defile the gods.",
 					$session['user']['name']);
 			output("You've attempted to defile the gods.  You are struck with a wand of forgetfulness.  Some of what you knew, you no longer know.");
-			saveuser();
+			Accounts::saveUser();
 		}
 	}
 }

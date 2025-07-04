@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Forms;
 /**
  * Helpers for MOTD administration.
  */
@@ -73,7 +74,7 @@ class Motd
             'motdtype'  => array('Type', 'checkbox', 'value' => $poll),
         );
         output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
-        showform($form, array('motdtitle' => $title, 'motdbody' => $body, 'motdtype' => $poll));
+        Forms::showForm($form, array('motdtitle' => $title, 'motdbody' => $body, 'motdtype' => $poll));
         rawoutput('</form>');
     }
 
@@ -87,7 +88,7 @@ class Motd
             'motdtype'  => array('Type', 'hidden', 'value' => 1),
         );
         output('<form action="motd.php?op=savenew" method="post">', true);
-        showform($form);
+        Forms::showForm($form);
         rawoutput('</form>');
     }
 

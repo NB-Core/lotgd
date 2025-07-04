@@ -2,6 +2,7 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Names;
+use Lotgd\Forms;
 //Author: Lonny Luberts - 3/18/2005
 //Heavily modified by JT Traub
 require_once("common.php");
@@ -113,7 +114,6 @@ switch ($op) {
 		break;
 
 	case "edit": case "add":
-		require_once("lib/showform.php");
 		if ($op=="edit"){
 			output("`\$Editing an existing title`n`n");
 			$sql = "SELECT * FROM ".db_prefix("titles")." WHERE titleid='$id'";
@@ -126,7 +126,7 @@ switch ($op) {
 		}
 		rawoutput("<form action='titleedit.php?op=save&id=$id' method='POST'>");
 		addnav("","titleedit.php?op=save&id=$id");
-		showform($editarray,$row);
+		Forms::showForm($editarray,$row);
 		rawoutput("</form>");
 		addnav("Functions");
 		addnav("Main Title Editor", "titleedit.php");

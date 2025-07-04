@@ -3,6 +3,7 @@ declare(strict_types=1);
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 // translator ready
+use Lotgd\Forms;
 // addnews ready
 // mail ready
 
@@ -69,7 +70,6 @@ function charrestore_dohook(string $hookname, array $args): array{
 			break;
 				case "petitionform":
 			//add some fields to the petition for charrestore
-			require_once("lib/showform.php");
 			$charrestore = httpget('charrestore');
 			if ($charrestore==1) {
 				$fields = array(
@@ -81,7 +81,7 @@ function charrestore_dohook(string $hookname, array $args): array{
 						"custom_name"=>"Custom Name (if any)",
 					       );
 				$vals = array();
-				showform($fields,$vals,true);
+				Forms::showForm($fields,$vals,true);
 			} else {
 				output("`n`\$If you are trying to restore a character, click here: ");
 				rawoutput("<a href='petition.php?charrestore=1'>".translate_inline("Character Restore Form","petition")."</a>");

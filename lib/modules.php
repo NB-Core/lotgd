@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 // translator ready
+use Lotgd\Forms;
 // addnews ready
 // mail ready
 
@@ -1032,7 +1033,7 @@ function module_objpref_edit($type, $module, $id)
 			$data[$row['setting']] = $row['value'];
 		}
 		tlschema("module-$module");
-		showform($msettings, $data);
+		Forms::showForm($msettings, $data);
 		tlschema();
 	}
 }

@@ -3,13 +3,13 @@ use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
+use Lotgd\Forms;
 // translator ready
 // addnews ready
 // mail ready
 
 
 require_once("common.php");
-require_once("lib/showform.php");
 require("lib/settings_extended.php");
 
 SuAccess::check(SU_EDIT_CONFIG);
@@ -198,7 +198,7 @@ switch ($type_setting) {
 							rawoutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>",true);
 							addnav("","configuration.php?op=modulesettings&module=$module&save=1");
 							tlschema("module-$module");
-							showform($msettings,$module_settings[$mostrecentmodule]);
+							Forms::showForm($msettings,$module_settings[$mostrecentmodule]);
 							tlschema();
 							rawoutput("</form>",true);
 						}else{
@@ -252,7 +252,7 @@ switch ($type_setting) {
 
 				rawoutput("<form action='configuration.php?settings=extended&op=save' method='POST'>");
 				addnav("","configuration.php?settings=extended&op=save");
-				showform($setup_extended,$vals);
+				Forms::showForm($setup_extended,$vals);
 				rawoutput("</form>");		
 				break;
 		}
@@ -300,7 +300,7 @@ switch ($type_setting) {
 
 				rawoutput("<form action='configuration.php?op=save' method='POST'>");
 				addnav("","configuration.php?op=save");
-				showform($setup,$vals);
+				Forms::showForm($setup,$vals);
 				rawoutput("</form>");
 				break;
 		}

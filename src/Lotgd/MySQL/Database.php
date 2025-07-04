@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd\MySQL;
 
+use Lotgd\Backtrace;
 use Lotgd\DataCache;
 
 global $dbinfo;
@@ -50,8 +51,7 @@ class Database
                 return [];
             }
             if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEVELOPER)) {
-                require_once 'lib/show_backtrace.php';
-                die("<pre>" . HTMLEntities($sql, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</pre>' . self::error() . show_backtrace());
+                die("<pre>" . HTMLEntities($sql, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</pre>' . self::error() . Backtrace::show());
             }
             die('A most bogus error has occurred.  I apologise, but the page you were trying to access is broken.  Please use your browser\'s back button and try again.');
         }

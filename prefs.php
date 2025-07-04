@@ -1,5 +1,6 @@
 <?php
 // addnews ready
+use Lotgd\Forms;
 // mail ready
 // translator ready
 
@@ -17,7 +18,6 @@ require_once("common.php");
 tlschema("prefs");
 
 require_once("lib/is_email.php");
-require_once("lib/showform.php");
 require_once("lib/sanitize.php");
 
 page_header("Preferences");
@@ -444,7 +444,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	}
 
 	rawoutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
-	$info = showform($form,$prefs);
+	$info = Forms::showForm($form,$prefs);
 	rawoutput("<input type='hidden' value=\"" .
 			htmlentities(serialize($info), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\" name='oldvalues'>");
 
