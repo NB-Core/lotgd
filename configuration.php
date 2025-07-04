@@ -10,7 +10,8 @@ use Lotgd\Forms;
 
 
 require_once("common.php");
-require("lib/settings_extended.php");
+// legacy wrapper removed, instantiate settings directly
+$settings_extended = new Settings('settings_extended');
 
 SuAccess::check(SU_EDIT_CONFIG);
 

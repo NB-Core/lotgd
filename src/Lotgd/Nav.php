@@ -4,50 +4,43 @@ namespace Lotgd;
 use Lotgd\HolidayText;
 use Lotgd\Output;
 
-// Maintain global state for modules
-global $blockednavs;
-$blockednavs = [
-    'blockpartial' => [],
-    'blockfull' => [],
-    'unblockpartial' => [],
-    'unblockfull' => [],
-];
-global $navsection;
-$navsection = '';
-global $navbysection;
-$navbysection = [];
-global $navschema;
-$navschema = [];
-global $navnocollapse;
-$navnocollapse = [];
-global $block_new_navs;
-$block_new_navs = false;
-global $accesskeys;
-$accesskeys = [];
-global $quickkeys;
-$quickkeys = [];
+// Maintain state within the class instead of the global namespace
+
 
 /**
  * Navigation helper functions.
  */
 class Nav
 {
+    private static array $blockednavs = [
+        'blockpartial' => [],
+        'blockfull' => [],
+        'unblockpartial' => [],
+        'unblockfull' => [],
+    ];
+    private static string $navsection = '';
+    private static array $navbysection = [];
+    private static array $navschema = [];
+    private static array $navnocollapse = [];
+    private static bool $block_new_navs = false;
+    private static array $accesskeys = [];
+    private static array $quickkeys = [];
     /**
      * Block a navigation link.
      */
     public static function blockNav(string $link, bool $partial = false): void
     {
-        global $blockednavs;
+        
         $p = ($partial ? 'partial' : 'full');
-        $blockednavs["block$p"][$link] = true;
-        if (isset($blockednavs["unblock$p"][$link])) {
-            unset($blockednavs["unblock$p"][$link]);
+        self::$blockednavs["block$p"][$link] = true;
+        if (isset(self::$blockednavs["unblock$p"][$link])) {
+            unset(self::$blockednavs["unblock$p"][$link]);
         }
         if ($partial) {
-            foreach ($blockednavs['unblockpartial'] as $val) {
+            foreach (self::$blockednavs['unblockpartial'] as $val) {
                 if (substr($link, 0, strlen($val)) == $val ||
                     substr($val, 0, strlen($link)) == $link) {
-                    unset($blockednavs['unblockpartial'][$val]);
+                    unset(self::$blockednavs['unblockpartial'][$val]);
                 }
             }
         }
@@ -58,17 +51,17 @@ class Nav
      */
     public static function unblockNav(string $link, bool $partial = false): void
     {
-        global $blockednavs;
+        
         $p = ($partial ? 'partial' : 'full');
-        $blockednavs["unblock$p"][$link] = true;
-        if (isset($blockednavs["block$p"][$link])) {
-            unset($blockednavs["block$p"][$link]);
+        self::$blockednavs["unblock$p"][$link] = true;
+        if (isset(self::$blockednavs["block$p"][$link])) {
+            unset(self::$blockednavs["block$p"][$link]);
         }
         if ($partial) {
-            foreach ($blockednavs['blockpartial'] as $val) {
+            foreach (self::$blockednavs['blockpartial'] as $val) {
                 if (substr($link, 0, strlen($val)) == $val ||
                     substr($val, 0, strlen($link)) == $link) {
-                    unset($blockednavs['blockpartial'][$val]);
+                    unset(self::$blockednavs['blockpartial'][$val]);
                 }
             }
         }
@@ -93,8 +86,8 @@ class Nav
      */
     public static function setBlockNewNavs(bool $block): void
     {
-        global $block_new_navs;
-        $block_new_navs = $block;
+        
+        self::$block_new_navs = $block;
     }
 
     /**
@@ -102,20 +95,20 @@ class Nav
      */
     public static function addHeader($text, bool $collapse = true, bool $translate = true): void
     {
-        global $navsection, $navbysection, $translation_namespace, $navschema, $navnocollapse, $block_new_navs, $notranslate;
-        if ($block_new_navs) return;
+        global $translation_namespace, $notranslate;
+        if (self::$block_new_navs) return;
         if (is_array($text)) {
             $text = '!array!' . serialize($text);
         }
-        $navsection = $text;
-        if (!array_key_exists($text, $navschema)) {
-            $navschema[$text] = $translation_namespace;
+        self::$navsection = $text;
+        if (!array_key_exists($text, self::$navschema)) {
+            self::$navschema[$text] = $translation_namespace;
         }
-        if (!isset($navbysection[$navsection])) {
-            $navbysection[$navsection] = [];
+        if (!isset(self::$navbysection[self::$navsection])) {
+            self::$navbysection[self::$navsection] = [];
         }
         if ($collapse === false) {
-            $navnocollapse[$text] = true;
+            self::$navnocollapse[$text] = true;
         }
         if ($translate === false) {
             if (!isset($notranslate)) {
@@ -127,8 +120,8 @@ class Nav
 
     public static function addNotl($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
     {
-        global $navsection, $navbysection, $navschema, $notranslate, $block_new_navs;
-        if ($block_new_navs) return;
+        global $notranslate;
+        if (self::$block_new_navs) return;
         if ($link === false) {
             if ($text != '') {
                 self::addHeader($text, true, false);
@@ -138,13 +131,13 @@ class Nav
             if ($text == '') {
                 call_user_func_array([self::class, 'privateAddNav'], $args);
             } else {
-                if (!isset($navbysection[$navsection])) {
-                    $navbysection[$navsection] = [];
+                if (!isset(self::$navbysection[self::$navsection])) {
+                    self::$navbysection[self::$navsection] = [];
                 }
                 if (!isset($notranslate)) {
                     $notranslate = [];
                 }
-                array_push($navbysection[$navsection], $args);
+                array_push(self::$navbysection[self::$navsection], $args);
                 array_push($notranslate, $args);
             }
         }
@@ -152,8 +145,8 @@ class Nav
 
     public static function add($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
     {
-        global $navsection, $navbysection, $translation_namespace, $navschema, $block_new_navs;
-        if ($block_new_navs) return;
+        global $translation_namespace;
+        if (self::$block_new_navs) return;
         if ($link === false) {
             if ($text != '') {
                 self::addHeader($text);
@@ -163,29 +156,29 @@ class Nav
             if ($text == '') {
                 call_user_func_array([self::class, 'privateAddNav'], $args);
             } else {
-                if (!isset($navbysection[$navsection])) {
-                    $navbysection[$navsection] = [];
+                if (!isset(self::$navbysection[self::$navsection])) {
+                    self::$navbysection[self::$navsection] = [];
                 }
                 $t = $args[0];
                 if (is_array($t)) {
                     $t = $t[0];
                 }
-                if (!array_key_exists($t, $navschema)) {
-                    $navschema[$t] = $translation_namespace;
+                if (!array_key_exists($t, self::$navschema)) {
+                    self::$navschema[$t] = $translation_namespace;
                 }
-                array_push($navbysection[$navsection], array_merge($args, ['translate' => false]));
+                array_push(self::$navbysection[self::$navsection], array_merge($args, ['translate' => false]));
             }
         }
     }
 
     public static function isBlocked(string $link): bool
     {
-        global $blockednavs;
-        if (isset($blockednavs['blockfull'][$link])) return true;
-        foreach ($blockednavs['blockpartial'] as $l => $dummy) {
+        
+        if (isset(self::$blockednavs['blockfull'][$link])) return true;
+        foreach (self::$blockednavs['blockpartial'] as $l => $dummy) {
             if (substr($link, 0, strlen($l)) == $l) {
-                if (isset($blockednavs['unblockfull'][$link]) && $blockednavs['unblockfull'][$link]) return false;
-                foreach ($blockednavs['unblockpartial'] as $l2 => $dummy2) {
+                if (isset(self::$blockednavs['unblockfull'][$link]) && self::$blockednavs['unblockfull'][$link]) return false;
+                foreach (self::$blockednavs['unblockpartial'] as $l2 => $dummy2) {
                     if (substr($link, 0, strlen($l2)) == $l2) {
                         return false;
                     }
@@ -198,9 +191,9 @@ class Nav
 
     public static function countViableNavs($section): int
     {
-        global $navbysection;
+        
         $count = 0;
-        $val = $navbysection[$section];
+        $val = self::$navbysection[$section];
         if (count($val) > 0) {
             foreach ($val as $nav) {
                 if (is_array($nav) && count($nav) > 0) {
@@ -214,9 +207,9 @@ class Nav
 
     public static function checkNavs(): bool
     {
-        global $navbysection, $session;
+        global $session;
         if (is_array($session['allowednavs']) && count($session['allowednavs']) > 0) return true;
-        foreach ($navbysection as $key => $val) {
+        foreach (self::$navbysection as $key => $val) {
             if (self::countViableNavs($key) > 0) {
                 foreach ($val as $v) {
                     if (is_array($v) && count($v) > 0) return true;
@@ -228,15 +221,15 @@ class Nav
 
     public static function buildNavs(): string
     {
-        global $navbysection, $navschema, $session, $navnocollapse;
+        global $session;
         $builtnavs = '';
         if (isset($session['user']['prefs']['sortedmenus']) && $session['user']['prefs']['sortedmenus'] == 1) self::navSort();
-        foreach ($navbysection as $key => $val) {
+        foreach (self::$navbysection as $key => $val) {
             $tkey = $key;
             $navbanner = '';
             if (self::countViableNavs($key) > 0) {
                 if ($key > '') {
-                    if (isset($session['loggedin']) && $session['loggedin']) tlschema($navschema[$key]);
+                    if (isset($session['loggedin']) && $session['loggedin']) tlschema(self::$navschema[$key]);
                     if (substr($key, 0, 7) == '!array!') {
                         $key = unserialize(substr($key, 7));
                     }
@@ -246,7 +239,7 @@ class Nav
                 $style = 'default';
                 $collapseheader = '';
                 $collapsefooter = '';
-                if ($tkey > '' && (!array_key_exists($tkey, $navnocollapse) || !$navnocollapse[$tkey])) {
+                if ($tkey > '' && (!array_key_exists($tkey, self::$navnocollapse) || !self::$navnocollapse[$tkey])) {
                     if (is_array($key)) {
                         $key_string = call_user_func_array('sprintf', $key);
                     } else {
@@ -267,7 +260,7 @@ class Nav
                         $sublinks .= call_user_func_array([self::class, 'privateAddNav'], $v);
                     }
                 }
-                if ($tkey > '' && (!array_key_exists($tkey, $navnocollapse) || !$navnocollapse[$tkey])) {
+                if ($tkey > '' && (!array_key_exists($tkey, self::$navnocollapse) || !self::$navnocollapse[$tkey])) {
                     $args = modulehook('}collapse-nav');
                     if (isset($args['content'])) $collapsefooter = $args['content'];
                 }
@@ -284,13 +277,13 @@ class Nav
                 }
             }
         }
-        $navbysection = [];
+        self::$navbysection = [];
         return $builtnavs;
     }
 
     protected static function privateAddNav($text, $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
-        global $nav, $session, $accesskeys, $REQUEST_URI, $quickkeys, $navschema, $notranslate;
+        global $nav, $session, $REQUEST_URI, $notranslate;
         if (self::isBlocked($link)) return false;
         $thisnav = '';
         $unschema = 0;
@@ -303,8 +296,8 @@ class Nav
                 if ($link === false) $schema = '!array!' . serialize($text);
                 else $schema = $text[0];
                 if ($translate) {
-                    if (isset($navschema[$schema])) {
-                        tlschema($navschema[$schema]);
+                    if (isset(self::$navschema[$schema])) {
+                        tlschema(self::$navschema[$schema]);
                     }
                     $unschema = 1;
                 }
@@ -317,8 +310,8 @@ class Nav
             }
         } else {
             if ($text && isset($session['loggedin']) && $session['loggedin'] && $translate) {
-                if (isset($navschema[$text])) {
-                    tlschema($navschema[$text]);
+                if (isset(self::$navschema[$text])) {
+                    tlschema(self::$navschema[$text]);
                 }
                 $unschema = 1;
             }
@@ -347,7 +340,7 @@ class Nav
                 $key = '';
                 if ($text[1] == '?') {
                     $hchar = strtolower($text[0]);
-                    if ($hchar == ' ' || array_key_exists($hchar, $accesskeys) && $accesskeys[$hchar] == 1) {
+                    if ($hchar == ' ' || array_key_exists($hchar, self::$accesskeys) && self::$accesskeys[$hchar] == 1) {
                         $text = substr($text, 2);
                         $text = HolidayText::holidayize($text, 'nav');
                         if ($hchar == ' ') $key = ' ';
@@ -392,7 +385,7 @@ class Nav
                         if ($ignoreuntil == $char) {
                             $ignoreuntil = '';
                         } else {
-                            if ((isset($accesskeys[strtolower($char)]) && $accesskeys[strtolower($char)] == 1) || (strpos('abcdefghijklmnopqrstuvwxyz0123456789', strtolower($char)) === false) || $ignoreuntil <> '') {
+                            if ((isset(self::$accesskeys[strtolower($char)]) && self::$accesskeys[strtolower($char)] == 1) || (strpos('abcdefghijklmnopqrstuvwxyz0123456789', strtolower($char)) === false) || $ignoreuntil <> '') {
                                 if ($char == '<') $ignoreuntil = '>';
                                 if ($char == '&') $ignoreuntil = ';';
                                 if ($char == '`') $ignoreuntil = substr($text, $i + 1, 1);
@@ -405,7 +398,7 @@ class Nav
                 if (!isset($i)) $i = 0;
                 if ($i < strlen($text) && $key != ' ') {
                     $key = substr($text, $i, 1);
-                    $accesskeys[strtolower($key)] = 1;
+                    self::$accesskeys[strtolower($key)] = 1;
                     $keyrep = " accesskey=\"$key\" ";
                 } else {
                     $key = '';
@@ -423,12 +416,12 @@ class Nav
                     }
                     if ($pop) {
                         if ($popsize == '') {
-                            $quickkeys[$key] = "window.open('$link')";
+                            self::$quickkeys[$key] = "window.open('$link')";
                         } else {
-                            $quickkeys[$key] = popup($link, $popsize);
+                            self::$quickkeys[$key] = popup($link, $popsize);
                         }
                     } else {
-                        $quickkeys[$key] = "window.location='$link$extra'";
+                        self::$quickkeys[$key] = "window.location='$link$extra'";
                     }
                 }
                 $n = templatereplace('navitem', [
@@ -455,10 +448,10 @@ class Nav
 
     public static function navCount(): int
     {
-        global $session, $navbysection;
+        global $session;
         $c = count($session['allowednavs']);
-        if (!is_array($navbysection)) return $c;
-        foreach ($navbysection as $val) {
+        if (!is_array(self::$navbysection)) return $c;
+        foreach (self::$navbysection as $val) {
             if (is_array($val)) $c += count($val);
         }
         return $c;
@@ -472,12 +465,12 @@ class Nav
 
     public static function navSort(): void
     {
-        global $session, $navbysection;
-        if (!is_array($navbysection)) return;
-        foreach ($navbysection as $key => $val) {
+        global $session;
+        if (!is_array(self::$navbysection)) return;
+        foreach (self::$navbysection as $key => $val) {
             if (is_array($val)) {
                 usort($val, [self::class, 'navASort']);
-                $navbysection[$key] = $val;
+                self::$navbysection[$key] = $val;
             }
         }
         return;

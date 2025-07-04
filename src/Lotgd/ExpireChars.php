@@ -12,11 +12,13 @@ use Lotgd\GameLog;
  */
 class ExpireChars
 {
+    /** @var Settings */
+    private static $settingsExtended;
+
     /** Execute the full expiration routine. */
     public static function expire(): void
     {
-        global $settings_extended;
-        $settings_extended = new Settings('settings_extended');
+        self::$settingsExtended = new Settings('settings_extended');
 
         if (!self::needsExpiration()) {
             return;
@@ -138,16 +140,14 @@ class ExpireChars
      */
     private static function notifyUpcomingExpirations(): void
     {
-        global $settings_extended;
-
         $old = max(1, getsetting('expireoldacct', 45) - getsetting('notifydaysbeforedeletion', 5));
         $sql = 'SELECT login,acctid,emailaddress FROM ' . db_prefix('accounts') .
             " WHERE 1=0 " . ($old > 0 ? "OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '') .
             " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
         $result = db_query($sql);
 
-        $subject = translate_inline($settings_extended->getSetting('expirationnoticesubject'));
-        $message = translate_inline($settings_extended->getSetting('expirationnoticetext'));
+        $subject = translate_inline(self::$settingsExtended->getSetting('expirationnoticesubject'));
+        $message = translate_inline(self::$settingsExtended->getSetting('expirationnoticetext'));
         $message = str_replace('{server}', getsetting('serverurl', 'http://nodomain.notd'), $message);
 
         $collector = [];
