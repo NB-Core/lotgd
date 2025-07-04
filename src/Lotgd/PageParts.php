@@ -647,10 +647,9 @@ public static function charStats(): string{
 		  $atk=$u['attack'];
 		  $def=$u['defense'];
 		 */
-		require_once("lib/playerfunctions.php");
-		$o_atk=$atk=get_player_attack();
-		$o_def=$def=get_player_defense();
-		$spd=get_player_speed();
+                $o_atk=$atk=PlayerFunctions::getPlayerAttack();
+                $o_def=$def=PlayerFunctions::getPlayerDefense();
+                $spd=PlayerFunctions::getPlayerSpeed();
 
 		$buffcount = 0;
 		$buffs = "";
@@ -724,8 +723,8 @@ public static function charStats(): string{
 			self::addCharStat("Intelligence", $u['intelligence'].check_temp_stat("intelligence",1));
 			self::addCharStat("Constitution", $u['constitution'].check_temp_stat("constitution",1));
 			self::addCharStat("Wisdom", $u['wisdom'].check_temp_stat("wisdom",1));
-			self::addCharStat("Attack", $atk."`\$<span title='".explained_get_player_attack()."'>(?)</span>`0".check_temp_stat("attack",1));
-			self::addCharStat("Defense", $def."`\$<span title='".explained_get_player_defense()."'>(?)</span>`0".check_temp_stat("defense",1));
+                        self::addCharStat("Attack", $atk."`\$<span title='".PlayerFunctions::explainedGetPlayerAttack()."'>(?)</span>`0".check_temp_stat("attack",1));
+                        self::addCharStat("Defense", $def."`\$<span title='".PlayerFunctions::explainedGetPlayerDefense()."'>(?)</span>`0".check_temp_stat("defense",1));
 			self::addCharStat("Speed", $spd.check_temp_stat("speed",1));
 		} else {
 			$maxsoul = 50 + 10 * $u['level']+$u['dragonkills']*2;

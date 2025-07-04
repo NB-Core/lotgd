@@ -1,6 +1,8 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Sanitize;
+
 // Old Global Variables
 global $translation_table;
 $translation_table = array();
@@ -224,10 +226,9 @@ class Translator
 				if (isset($seentlbuttons[$namespace][$indata])){
 					$link = "";
 				}else{
-					$seentlbuttons[$namespace][$indata] = true;
-					require_once("lib/sanitize.php");
-					$uri = cmd_sanitize($namespace);
-					$uri = comscroll_sanitize($uri);
+                                $seentlbuttons[$namespace][$indata] = true;
+                                        $uri = Sanitize::cmdSanitize($namespace);
+                                        $uri = Sanitize::comscrollSanitize($uri);
 					$link = "translatortool.php?u=".
 						rawurlencode($uri)."&t=".rawurlencode($indata);
 					$link = "<a href='$link' target='_blank' onClick=\"".
