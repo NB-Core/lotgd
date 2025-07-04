@@ -105,7 +105,7 @@ class Moderate
         }
         tlschema($schema);
         output("`c`b%s`b`c", translate_inline($message, $schema));
-        Forms::showForm($section, $cid, $limit, $talkline, $linkbios, true, $cc);
+        Forms::showForm($section, $cid, $limit, $talkline);
         tlschema();
     }
 }
