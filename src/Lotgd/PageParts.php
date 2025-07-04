@@ -634,7 +634,8 @@ public static function charStats(): string{
 
 	$u =& $session['user'];
 
-	if (isset($session['loggedin']) && $session['loggedin']){
+	if (isset($session['loggedin']) && $session['loggedin'])
+	{
 		$u['hitpoints']=round($u['hitpoints'],0);
 		$u['experience']=round($u['experience'],0);
 		$u['maxhitpoints']=round($u['maxhitpoints'],0);
@@ -784,7 +785,9 @@ public static function charStats(): string{
 
 		if (!is_array($session['bufflist'])) $session['bufflist']=array();
 		return $charstat;
-	}else{
+	}
+	else
+	{
 		$ret = "";
 		if ($ret = datacache("charlisthomepage")){
 
