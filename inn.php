@@ -1,6 +1,7 @@
 <?php
 use Lotgd\Commentary;
 use Lotgd\Buffs;
+use Lotgd\Nav\Villagenav;
 // addnews ready
 // translator ready
 // mail ready
@@ -44,7 +45,7 @@ $comment = httppost('insertcommentary');
 require_once("lib/partner.php");
 $partner = get_partner();
 addnav("Other");
-villagenav();
+VillageNav::render();
 addnav("I?Return to the Inn","inn.php");
 
 switch ($op) {
@@ -53,7 +54,7 @@ switch ($op) {
                 blocknav("inn.php");
                 break;
 	case "converse":
-		commentdisplay("You stroll over to a table, place your foot up on the bench and listen in on the conversation:`n", "inn","Add to the conversation?",20);
+		Commentary::commentdisplay("You stroll over to a table, place your foot up on the bench and listen in on the conversation:`n", "inn","Add to the conversation?",20);
 		break;
         case "bartender":
                 require("pages/inn/inn_bartender.php");

@@ -29,7 +29,7 @@ addnav("Return to the news","news.php");
 
 modulehook("shades", array()); // if this is too low, you can use footer-shades...
 
-commentdisplay("`n`QNearby, some lost souls lament:`n", "shade","Despair",25,"despairs");
+Commentary::commentdisplay("`n`QNearby, some lost souls lament:`n", "shade","Despair",25,"despairs");
 
 tlschema("nav");
 

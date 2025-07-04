@@ -24,7 +24,7 @@ if ($session['user']['sex']){
 }else{
 	output("Inside you are greeted by the sight of numerous scantily clad buxom women who wave palm fronds at you and offer to feed you grapes as you lounge on Greco-Roman couches draped with silk.`n`n");
 }
-commentdisplay("", "trans-lounge","Engage in idle conversation with other translators:",25);
+Commentary::commentdisplay("", "trans-lounge","Engage in idle conversation with other translators:",25);
 addnav("Actions");
 if ($session['user']['superuser'] & SU_IS_TRANSLATOR) addnav("U?Untranslated Texts", "untranslated.php");
 

@@ -27,7 +27,7 @@
 		// you can modify the displayed clanchat here. more control for modules
 		$clan_commentary = modulehook("clan-commentary",array("section"=>"clan-{$claninfo['clanid']}","clanid"=>$claninfo['clanid']));
 		$clan_section_name = $clan_commentary['section'];
-		commentdisplay("", $clan_section_name, "Speak",25,($claninfo['customsay']>''?$claninfo['customsay']:"says"));
+		Commentary::commentdisplay("", $clan_section_name, "Speak",25,($claninfo['customsay']>''?$claninfo['customsay']:"says"));
 
 		modulehook("clanhall");
 

@@ -657,7 +657,7 @@ class Commentary
         if ($section=="X"){
                 $vname = getsetting("villagename", LOCATION_FIELDS);
                 $iname = getsetting("innname", LOCATION_INN);
-                $sections = commentarylocs();
+                $sections = self::commentarylocs();
                 reset ($sections);
                 output_notl("<select name='section'>",true);
                 foreach ($sections as $key=>$val) {

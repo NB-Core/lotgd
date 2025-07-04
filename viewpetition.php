@@ -329,7 +329,7 @@ if ($op==""){
 			if ($search!=0) modulehook("petition-abuse",array("acctid"=>$search,"abused"=>$row['author']));
 		}
 	}
-	commentdisplay("`n`@Commentary:`0`n", "pet-$id","Add information",200);
+	Commentary::commentdisplay("`n`@Commentary:`0`n", "pet-$id","Add information",200);
 	if ($viewpageinfo){
 		output("`n`n`@Page Info:`&`n");
 		$row['pageinfo']=stripslashes($row['pageinfo']);

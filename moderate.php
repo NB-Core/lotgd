@@ -114,13 +114,13 @@ if ($op==""){
 	rawoutput("</form>");
 	addnav("", "$link");
 	if ($area==""){
-		talkform("X","says");
+		Commentary::talkform("X","says");
 		//commentdisplay("", "' or '1'='1","X",100); //sure, encourage hacking...
                 Moderate::commentmoderate('', '', 'X', 100, 'says', false, true);
 
 	}else{
                 Moderate::commentmoderate("", $area, "X", 100);
-		talkform($area,"says");
+		Commentary::talkform($area,"says");
 	}
 }elseif ($op=="audit"){
 	$subop = httpget("subop");

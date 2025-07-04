@@ -13,7 +13,7 @@ page_header("Account Information");
 Commentary::addcommentary();
 checkday();
 
-output("`\$Some stats concerning your account. Note that this in the timezone of the server.`0`n`n.");
+output("`\$Some stats concerning your account. Note that this in the timezone of the server.`0`n`n");
 addnav("Navigation");
 require_once("lib/villagenav.php");
 villagenav();

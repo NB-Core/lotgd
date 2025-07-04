@@ -32,7 +32,7 @@ if ($session['user']['dragonkills']>0 ||
 
 	modulehook("rock");
 
-	commentdisplay("", "veterans","Boast here",30,"boasts");
+	Commentary::commentdisplay("", "veterans","Boast here",30,"boasts");
 }else{
 	page_header("Curious looking rock");
 	output("You approach the curious looking rock.  ");

@@ -4,7 +4,7 @@
 // mail ready
 require_once("common.php");
 use Lotgd\Forest;
-use Lotgd\FightNav;
+use Lotgd\Buffs;
 require_once("lib/http.php");
 require_once("lib/events.php");
 use Lotgd\Battle;
@@ -266,7 +266,7 @@ if ($op=="search"){
 					}
 				}
 			}
-			calculate_buff_fields();
+			Buffs::calculateBufffields();
 			$attackstack = array(
 				"enemies"=>$stack,
 				"options"=>array(
@@ -304,7 +304,7 @@ if ($battle){
 		require_once("lib/forestoutcomes.php");
 		forestdefeat($newenemies);
 	}else{
-                FightNav::fightnav();
+		Battle::fightnav();
 	}
 }
 

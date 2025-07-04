@@ -1,7 +1,7 @@
 <?php
 use Lotgd\Battle;
 
-function show_enemies($enemies){ return Battle::show_enemies($enemies); }
+function show_enemies($enemies){ return Battle::showEnemies($enemies); }
 function prepare_fight($options=false){ return Battle::prepare_fight($options); }
 function prepare_companions(){ return Battle::prepare_companions(); }
 function suspend_companions($s,$n=false){ return Battle::suspend_companions($s,$n); }
