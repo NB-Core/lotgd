@@ -3,28 +3,18 @@ namespace Lotgd;
 
 use Lotgd\Sanitize;
 
-// Old Global Variables
-global $translation_table;
-$translation_table = array();
-
-global $translatorbuttons;
-$translatorbuttons = array();
-
-global $seentlbuttons;
-$seentlbuttons = array();
-
-global $translation_is_enabled;
-$translation_is_enabled = true;
-
+// Maintain translation state within the class
 global $translation_namespace;
 $translation_namespace = "";
-
-global $translation_namespace_stack;
-$translation_namespace_stack = array();
 
 
 class Translator
 {
+    private static array $translation_table = [];
+    private static array $translatorbuttons = [];
+    private static array $seentlbuttons = [];
+    private static bool $translation_is_enabled = true;
+    private static array $translation_namespace_stack = [];
 // translator ready
 // addnews ready
 // mail ready
@@ -50,7 +40,7 @@ class Translator
 
     public static function translate($indata,$namespace=FALSE){
 		if (getsetting("enabletranslation", true) == false) return $indata;
-		global $session,$translation_table,$translation_namespace;
+                global $session,$translation_namespace;
 		if (!$namespace) $namespace=$translation_namespace;
 		$outdata = $indata;
 		if (!isset($namespace) || $namespace=="")
@@ -58,10 +48,10 @@ class Translator
 
 		$foundtranslation = false;
 		if ($namespace != "notranslate") {
-			if (!isset($translation_table[$namespace]) ||
-					!is_array($translation_table[$namespace])){
+                        if (!isset(self::$translation_table[$namespace]) ||
+                                        !is_array(self::$translation_table[$namespace])){
 				//build translation table for this page hit.
-				$translation_table[$namespace] =
+                                self::$translation_table[$namespace] =
 					translate_loadnamespace($namespace,(isset($session['tlanguage'])?$session['tlanguage']:false));
 			}
 		}
@@ -74,8 +64,8 @@ class Translator
 			}
 		}else{
 			if ($namespace != "notranslate") {
-				if (isset($translation_table[$namespace][$indata])) {
-					$outdata = $translation_table[$namespace][$indata];
+                                if (isset(self::$translation_table[$namespace][$indata])) {
+                                        $outdata = self::$translation_table[$namespace][$indata];
 					$foundtranslation = true;
 					// Remove this from the untranslated texts table if it is
 					// in there and we are collecting texts
@@ -216,9 +206,10 @@ class Translator
 
 
 	public static function tlbutton_push($indata,$hot=false,$namespace=FALSE){
-		global $translatorbuttons;
-		global $translation_is_enabled,$seentlbuttons,$session,$language;
-		if (!$translation_is_enabled) return;
+                global $session,$language;
+                if (!self::$translation_is_enabled) return;
+                $seentlbuttons =& self::$seentlbuttons;
+                $translatorbuttons =& self::$translatorbuttons;
 		if (!$namespace) $namespace="unknown";
 		if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
 			if (!in_array($language,explode(',',$session['user']['translatorlanguages']))) return true;
@@ -235,7 +226,7 @@ class Translator
 						popup($link).";return false;\" class='t".
 						($hot?"hot":"")."'>T</a>";
 				}
-				array_push($translatorbuttons,$link);
+                                array_push($translatorbuttons,$link);
 			}
 			return true;
 		}else{
@@ -245,42 +236,42 @@ class Translator
 	}
 
     public static function tlbutton_pop(){
-		global $translatorbuttons,$session;
-		if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
-			return array_pop($translatorbuttons);
-		}else{
-			return "";
-		}
-	}
+                global $session;
+                if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
+                        return array_pop(self::$translatorbuttons);
+                }else{
+                        return "";
+                }
+        }
 
     public static function tlbutton_clear(){
-		global $translatorbuttons,$session;
-		if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
-			$return = tlbutton_pop().join("",$translatorbuttons);
-			$translatorbuttons = array();
-			return $return;
-		}else{
-			return "";
-		}
-	}
+                global $session;
+                if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
+                        $return = tlbutton_pop().join("",self::$translatorbuttons);
+                        self::$translatorbuttons = array();
+                        return $return;
+                }else{
+                        return "";
+                }
+        }
 
 
     public static function enable_translation($enable=true){
-		global $translation_is_enabled;
-		$translation_is_enabled = $enable;
-	}
+                self::$translation_is_enabled = $enable;
+        }
 
 
     public static function tlschema($schema=false){
-		global $translation_namespace,$translation_namespace_stack,$REQUEST_URI;
-		if ($schema===false){
-			$translation_namespace = array_pop($translation_namespace_stack);
-			if ($translation_namespace=="")
-				$translation_namespace = translator_uri($REQUEST_URI);
-		}else{
-			array_push($translation_namespace_stack,$translation_namespace);
-			$translation_namespace = $schema;
-		}
+                global $translation_namespace,$REQUEST_URI;
+                $stack =& self::$translation_namespace_stack;
+                if ($schema===false){
+                        $translation_namespace = array_pop($stack);
+                        if ($translation_namespace=="")
+                                $translation_namespace = translator_uri($REQUEST_URI);
+                }else{
+                        array_push($stack,$translation_namespace);
+                        $translation_namespace = $schema;
+                }
 	}
 
     public static function translator_check_collect_texts()

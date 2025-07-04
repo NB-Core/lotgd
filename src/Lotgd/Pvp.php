@@ -42,7 +42,9 @@ class Pvp
      */
     public static function setupTarget($name)
     {
-        global $pvptimeout, $session;
+        global $session;
+        $pvptime = getsetting('pvptimeout', 600);
+        $pvptimeout = date('Y-m-d H:i:s', strtotime("-$pvptime seconds"));
 
         // Legacy support for numeric id or login name
         if (is_numeric($name)) {
@@ -244,8 +246,7 @@ class Pvp
      */
     public static function listTargets($location = false, $link = false, $extra = false, $sql = false): void
     {
-        global $session, $pvptime, $pvptimeout;
-
+        global $session;
         $pvptime = getsetting('pvptimeout', 600);
         $pvptimeout = date('Y-m-d H:i:s', strtotime("-$pvptime seconds"));
 

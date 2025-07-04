@@ -7,10 +7,12 @@ use Lotgd\Nav\SuperuserNav;
 define("ALLOW_ANONYMOUS",true);
 use Lotgd\Mail;
 use Lotgd\CheckBan;
+use Lotgd\Settings;
 require_once("common.php");
 require_once("lib/is_email.php");
 require_once("lib/sanitize.php");
-require("lib/settings_extended.php");
+// legacy wrapper removed, instantiate settings directly
+$settings_extended = new Settings('settings_extended');
 use Lotgd\ServerFunctions;
 
 tlschema("create");
