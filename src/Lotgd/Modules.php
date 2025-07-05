@@ -236,10 +236,6 @@ class Modules
      */
     public static function block(string $moduleName): void
     {
-        if ($moduleName === true) {
-            self::$blockAllModules = true;
-            return;
-        }
         self::$blockedModules[$moduleName] = 1;
     }
 
