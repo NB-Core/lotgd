@@ -35,6 +35,10 @@ class InstallerLogger
             return false;
         }
 
+        if (function_exists('output')) {
+            output("`n`^See %s for a detailed error log.`n", self::getLogFilePath());
+        }
+
         return true;
     }
 }
