@@ -143,7 +143,7 @@ class Database
     /**
      * Get the last inserted ID.
      */
-    public static function insertId(): int
+    public static function insertId(): int|string
     {
         if (defined('DB_NODB') && !defined('LINK')) {
             return -1;
