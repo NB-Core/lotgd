@@ -456,6 +456,11 @@ The root `.htaccess` file configures custom error pages, disables directory list
   - The installer writes to `install/errors/install.log`. If you see a warning
     that the log could not be written, ensure this path is writable.
 
+### Where to find installer logs
+
+Installer errors are saved to `install/errors/install.log`. Check this file if
+the installer fails or reports problems.
+
 ---
 
 ## Contributing & Support
