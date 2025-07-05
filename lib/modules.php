@@ -10,8 +10,6 @@ require_once("lib/arraytourl.php");
 
 use Lotgd\Modules;
 
-$injected_modules = array(1 => array(), 0 => array());
-
 function injectmodule(string $modulename, bool $force = false, bool $with_db = true): bool
 {
     return Modules::inject($modulename, $force, $with_db);
@@ -48,17 +46,9 @@ function module_check_requirements(array $reqs, bool $forceinject = false): bool
  *
  * @param mixed $modulename The name of the module you wish to block or true if you want to block all modules.
  * @return void
- */
-$block_all_modules = false;
-$blocked_modules = array();
+*/
 function blockmodule(string $modulename): void {
-	global $blocked_modules, $block_all_modules, $currenthook;
-
-	if ($modulename === true) {
-		$block_all_modules = true;
-		return;
-	}
-	$blocked_modules[$modulename]=1;
+    Modules::block($modulename);
 }
 
 /**
@@ -73,18 +63,10 @@ function blockmodule(string $modulename): void {
  * @param mixed $modulename The name of the module you wish to unblock or true if you want to unblock all modules.
  * @return void
  */
-$unblocked_modules = array();
 function unblockmodule(string $modulename): void {
-	global $unblocked_modules, $block_all_modules;
-
-	if ($modulename === true) {
-		$block_all_modules = false;
-		return;
-	}
-	$unblocked_modules[$modulename]=1;
+    Modules::unblock($modulename);
 }
 
-$module_preload = array();
 /**
  * Preloads data for multiple modules in one shot rather than
  * having to make SQL calls for each hook, when many of the hooks
@@ -93,89 +75,9 @@ $module_preload = array();
  * @return bool Success
  */
 function mass_module_prepare($hooknames){
-	sort($hooknames);
-	$Pmodules = db_prefix("modules");
-	$Pmodule_hooks = db_prefix("module_hooks");
-	$Pmodule_settings = db_prefix("module_settings");
-	$Pmodule_userprefs = db_prefix("module_userprefs");
-
-	global $modulehook_queries;
-	global $module_preload;
-	global $module_settings;
-	global $module_prefs;
-	global $session;
-
-	//collect the modules who attach to these hooks.
-	$sql =
-		"SELECT
-		$Pmodule_hooks.modulename,
-		$Pmodule_hooks.location,
-		$Pmodule_hooks.`function`,
-		$Pmodule_hooks.whenactive
-			FROM
-			$Pmodule_hooks
-			INNER JOIN
-			$Pmodules
-			ON	$Pmodules.modulename = $Pmodule_hooks.modulename
-			WHERE
-			active = 1
-			AND	location IN ('".implode("', '",$hooknames)."')
-			ORDER BY
-			$Pmodule_hooks.location,
-		$Pmodule_hooks.priority,
-		$Pmodule_hooks.modulename";
-	$result = db_query_cached($sql,"module_prepare-".md5(implode("",$hooknames)));
-	$modulenames = array();
-	while ($row = db_fetch_assoc($result)){
-		$modulenames[$row['modulename']] = $row['modulename'];
-		if (!isset($module_preload[$row['location']])) {
-			$module_preload[$row['location']] = array();
-			$modulehook_queries[$row['location']] = array();
-		}
-		//a little black magic trickery: formatting entries in
-		//$modulehook_queries the same way that db_query_cached
-		//returns query results.
-		array_push($modulehook_queries[$row['location']],$row);
-		$module_preload[$row['location']][$row['modulename']] = $row['function'];
-	}
-	//SQL IN() syntax for the modules involved here.
-	$modulelist = "'".implode("', '",$modulenames)."'";
-
-	//Load the settings for the modules on these hooks.
-	$sql =
-		"SELECT
-		modulename,
-		setting,
-		value
-			FROM
-			$Pmodule_settings
-			WHERE
-			modulename IN ($modulelist)";
-	$result = db_query($sql);
-	while ($row = db_fetch_assoc($result)){
-		$module_settings[$row['modulename']][$row['setting']] = $row['value'];
-	}
-
-	//Load the current user's prefs for the modules on these hooks.
-	if (!isset($session['user']['acctid'])) return true; 
-	// nothing to do if there is no user logged in
-	$sql =
-		"SELECT
-		modulename,
-		setting,
-		userid,
-		value
-			FROM
-			$Pmodule_userprefs
-			WHERE
-			modulename IN ($modulelist)
-			AND	userid = ".(int)$session['user']['acctid'];
-	$result = db_query($sql);
-	while ($row = db_fetch_assoc($result)){
-		$module_prefs[$row['userid']][$row['modulename']][$row['setting']] = $row['value'];
-	}
-	return true;
+    return Modules::massPrepare($hooknames);
 }
+
 
 /**
  * An event that should be triggered
@@ -187,186 +89,10 @@ function mass_module_prepare($hooknames){
  * @return array The args modified by the event handlers
  */
 $currenthook = "";
-function modulehook(string $hookname, array $args=array(), bool $allowinactive=false, bool $only=false){
-	global $navsection, $mostrecentmodule;
-	global $blocked_modules, $block_all_modules, $unblocked_modules;
-	global $output, $session, $modulehook_queries;
-	global $currenthook;
-	//if we're in the installer, modulehooks are moo
-	if (defined("IS_INSTALLER")) return $args;
-
-	$lasthook = $currenthook;
-	$currenthook = $hookname;
-	static $hookcomment = array();
-	if ($args===false) $args = array();
-	$active = "";
-	if (!$allowinactive) $active = " ". db_prefix("modules") .".active=1 AND";
-	if (!is_array($args)){
-		$where = $mostrecentmodule;
-		if (!$where) {
-			global $SCRIPT_NAME;
-			$where = $SCRIPT_NAME;
-		}
-		debug("Args parameter to modulehook $hookname from $where is not an array.");
-	}
-	if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT) && !isset($hookcomment[$hookname])){
-		rawoutput("<!--Module Hook: $hookname; allow inactive: ".($allowinactive?"true":"false")."; only this module: ".($only!==false?$only:"any module"));
-		if (!is_array($args)) {
-			$arg = $args . " (NOT AN ARRAY!)";
-			rawoutput("  arg: $arg");
-		} else {
-			foreach ($args as $key=>$val) {
-				$arg = $key." = ";
-				if (is_array($val)){
-					$arg.="array(".count($val).")";
-				}elseif (is_object($val)){
-					$arg.="object(".get_class($val).")";
-				}else{
-					$arg.=htmlentities(substr((string)$val,0,25), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-				}
-				rawoutput("  arg: $arg");
-			}
-		}
-		rawoutput("  -->");
-		$hookcomment[$hookname]=true;
-	}
-	if (isset($modulehook_queries[$hookname]) //This data was pre fetched in mass_module_prepare
-			&& $allowinactive == false //We only ever prefetch for active modules, if we're doing inactive, do the regular query.
-	   ){
-		$result = $modulehook_queries[$hookname];
-	}else{
-		$sql =
-			"SELECT
-			" . db_prefix("module_hooks") . ".modulename,
-			" . db_prefix("module_hooks") . ".location,
-			" . db_prefix("module_hooks") . ".`function`,
-			" . db_prefix("module_hooks") . ".whenactive
-				FROM
-				" . db_prefix("module_hooks") . "
-				INNER JOIN
-				" . db_prefix("modules") . "
-				ON	" . db_prefix("modules") . ".modulename = " . db_prefix("module_hooks") . ".modulename
-				WHERE
-				$active
-				" . db_prefix("module_hooks") . ".location='$hookname'
-				ORDER BY
-				" . db_prefix("module_hooks") . ".priority,
-			" . db_prefix("module_hooks") . ".modulename";
-		$result = db_query_cached($sql,"hook-".$hookname);
-	}
-	// $args is an array passed by value and we take the output and pass it
-	// back through
-	// Try at least and fix up a bogus arg so it doesn't cause additional
-	// problems later.
-	if (!is_array($args)) {
-		$args = array('bogus_args'=>$args);
-	}
-
-	// Save off the mostrecent module since having that change can change
-	// behaviour especially if a module calls modulehooks itself or calls
-	// library functions which cause them to be called.
-	$mod = $mostrecentmodule;
-
-	while ($row = db_fetch_assoc($result)){
-		// If we are only running hooks for a specific module, skip all
-		// others.
-		if ($only !== false && $row['modulename']!=$only) continue;
-		// Skip any module invocations which should be blocked.
-
-		if (!array_key_exists($row['modulename'],$blocked_modules)){
-			$blocked_modules[$row['modulename']] = false;
-		}
-		if (!array_key_exists($row['modulename'],$unblocked_modules)){
-			$unblocked_modules[$row['modulename']] = false;
-		}
-		if (($block_all_modules || $blocked_modules[$row['modulename']]) &&
-				!$unblocked_modules[$row['modulename']]) {
-			continue;
-		}
-
-		if (injectmodule($row['modulename'], $allowinactive)) {
-			$oldnavsection = $navsection;
-			Translator::tlschema("module-{$row['modulename']}");
-			// Pass the args into the function and reassign them to the
-			// result of the function.
-			// Note: each module gets the previous module's modified return
-			// value if more than one hook here.
-			// Order of operations could become an issue, modules are called
-			// in alphabetical order by their module name (not display name).
-
-			// Test the condition code
-			if (!array_key_exists('whenactive',$row)) $row['whenactive'] = '';
-			$cond = trim($row['whenactive']);
-			if ($cond == "" || module_condition($cond) == true) {
-				// call the module's hook code
-				// $outputbeforehook=$output;
-				// $output=new output_collector();
-				//before, this was just string switching, NOW we make new objects everytime Oo craaaazy load, I am removing this. if you want to collapse, put it in, it's a MODULE
-
-
-				/*******************************************************/
-				$starttime = getmicrotime();
-				/*******************************************************/
-				if (function_exists($row['function'])) {
-					if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT)){
-						rawoutput("<!-- Hook: ".$hookname." on module ".$row['function']." called... -->");
-					}
-					$res = $row['function']($hookname, $args);
-				} else {
-					trigger_error("Unknown function {$row['function']} for hookname $hookname in module {$row['modulename']}.", E_USER_WARNING);
-				}
-				/*******************************************************/
-				$endtime = getmicrotime();
-				if (($endtime - $starttime >= 1.00 && (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT==SU_DEBUG_OUTPUT)))){
-					debug("Slow Hook (".round($endtime-$starttime,2)."s): $hookname - {$row['modulename']}`n");
-				}
-				if (getsetting('debug',0) ) {
-					$sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'hooktime','".$hookname."','".$row['modulename']."','".($endtime-$starttime)."');";
-					$resultdebug=db_query($sql);
-				}
-				/*******************************************************/
-				// $outputafterhook = $output;
-				// $output=$outputbeforehook;
-				// test to see if we had any output and if the module allows
-				// us to collapse it
-				//$testout = trim(sanitize_html($outputafterhook->get_rawoutput()));
-				if (!is_array($res)) {
-					trigger_error("<b>{$row['function']}</b> did not return an array in the module <b>{$row['modulename']}</b> for hook <b>$hookname</b>.",E_USER_WARNING);
-					$res = $args;
-				}
-				// if ($testout >"" &&
-				// $hookname!="collapse{" &&
-				// $hookname!="}collapse" &&
-				// $hookname!="collapse-nav{" &&
-				// $hookname!="}collapse-nav" &&
-				// !array_key_exists('nocollapse',$res)) {
-				//restore the original output's reference
-				// modulehook("collapse{",
-				// array("name"=>'a-'.$row['modulename']));
-				// $output->rawoutput($outputafterhook->get_rawoutput());
-				// modulehook("}collapse");
-				// } else {
-				//$output->rawoutput($outputafterhook->get_rawoutput());
-				// }
-				// Clear the collapse flag
-				unset($res['nocollapse']);
-				//handle return arguments.
-				if (is_array($res)) $args = $res;
-			}
-
-			//revert the translation namespace
-			Translator::tlschema();
-			//revert nav section after we're done here.
-			$navsection = $oldnavsection;
-		}
-	}
-
-	$mostrecentmodule=$mod;
-	$currenthook = $lasthook;
-
-	// And hand them back so they can be used.
-	return $args;
+function modulehook(string $hookname, array $args=array(), bool $allowinactive=false, $only=false){
+    return Modules::hook($hookname, $args, $allowinactive, $only);
 }
+
 
 $module_settings = array();
 function get_all_module_settings($module=false){
@@ -818,10 +544,9 @@ function module_sem_release(){
 
 function module_collect_events($type, $allowinactive=false)
 {
-	global $session, $playermount;
-	global $blocked_modules, $block_all_modules, $unblocked_modules;
-	$active = "";
-	$events = array();
+        global $session, $playermount;
+        $active = "";
+        $events = array();
 	if (!$allowinactive) $active = " active=1 AND";
 
 	$sql = "SELECT " . db_prefix("module_event_hooks") . ".* FROM " . db_prefix("module_event_hooks") . " INNER JOIN " . db_prefix("modules") . " ON ". db_prefix("modules") . ".modulename = " . db_prefix("module_event_hooks") . ".modulename WHERE $active event_type='$type' ORDER BY RAND(".e_rand().")";
@@ -839,11 +564,10 @@ function module_collect_events($type, $allowinactive=false)
 			debug(array("error"=>$err,"Eval code"=>$row['event_chance']));
 		}
 		if ($chance < 0) $chance = 0;
-		if ($chance > 100) $chance = 100;
-		if (($block_all_modules || array_key_exists($row['modulename'],$blocked_modules) && $blocked_modules[$row['modulename']]) &&
-				(!array_key_exists($row['modulename'],$unblocked_modules) || !$unblocked_modules[$row['modulename']])) {
-			$chance = 0;
-		}
+                if ($chance > 100) $chance = 100;
+                if (Modules::isModuleBlocked($row['modulename'])) {
+                        $chance = 0;
+                }
 		$events[] = array('modulename'=>$row['modulename'],
 				'rawchance' => $chance);
 	}
