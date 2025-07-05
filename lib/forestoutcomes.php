@@ -14,6 +14,12 @@ function forestvictory($enemies, $denyflawless = false): void
 
 function forestdefeat($enemies, $where = 'in the forest'): void
 {
+    // Normalize $where to ensure it is always a string
+    if (is_array($where)) {
+        $where = implode(', ', $where); // Convert array to string
+    } elseif (!is_string($where)) {
+        $where = 'in the forest'; // Fallback to default value
+    }
     Outcomes::defeat($enemies, $where);
 }
 
