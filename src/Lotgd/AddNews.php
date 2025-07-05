@@ -3,14 +3,31 @@ namespace Lotgd;
 
 class AddNews
 {
-    public static function add(string $text, ...$replacements)
+    /**
+     * Add a news entry for the current user.
+     *
+     * @param string $text         News text with placeholders
+     * @param mixed  ...$replacements Replacement values
+     *
+     * @return mixed Database query result
+     */
+    public static function add(string $text, mixed ...$replacements): mixed
     {
         global $session;
         $args = [$session['user']['acctid'], $text, ...$replacements];
         return call_user_func_array([self::class, 'addForUser'], $args);
     }
 
-    public static function addForUser(int $user, string $news, ...$args)
+    /**
+     * Create a news entry for a given account.
+     *
+     * @param int    $user  Account id
+     * @param string $news  News text
+     * @param mixed  ...$args Additional arguments
+     *
+     * @return mixed Database query result
+     */
+    public static function addForUser(int $user, string $news, mixed ...$args): mixed
     {
         global $translation_namespace;
         $hidefrombio = false;

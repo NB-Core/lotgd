@@ -157,29 +157,50 @@ class Buffs
         self::calculateBuffFields();
     }
 
-    public static function stripCompanion($name)
+    /**
+     * Remove a single companion by name.
+     *
+     * @param string $name Companion identifier
+     *
+     * @return bool True when removed
+     */
+    public static function stripCompanion(string $name): bool
     {
         global $session, $companions;
         $remove_result = false;
         if (!is_array($companions)) {
             $companions = @unserialize($session['user']['companions']);
         }
-        if (is_array($name)) {
-            foreach ($name as $remove_comp_name) {
-                if (in_array($remove_comp_name, array_keys($companions))) {
-                    unset($companions[$remove_comp_name]);
-                    $remove_result = true;
-                }
-            }
-        } else {
-            $remove_comp_name = $name;
-            if (in_array($remove_comp_name, array_keys($companions))) {
-                unset($companions[$remove_comp_name]);
-                $remove_result = true;
-            }
+        if (in_array($name, array_keys($companions))) {
+            unset($companions[$name]);
+            $remove_result = true;
         }
         $session['user']['companions'] = createstring($companions);
         return $remove_result;
+    }
+
+    /**
+     * Remove multiple companions at once.
+     *
+     * @param string[] $names List of names
+     *
+     * @return bool True when at least one was removed
+     */
+    public static function stripCompanions(array $names): bool
+    {
+        global $session, $companions;
+        $removed = false;
+        if (!is_array($companions)) {
+            $companions = @unserialize($session['user']['companions']);
+        }
+        foreach ($names as $remove_comp_name) {
+            if (in_array($remove_comp_name, array_keys($companions))) {
+                unset($companions[$remove_comp_name]);
+                $removed = true;
+            }
+        }
+        $session['user']['companions'] = createstring($companions);
+        return $removed;
     }
 
     public static function applyCompanion($name, $companion, $ignorelimit = false)

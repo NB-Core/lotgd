@@ -5,7 +5,16 @@ use Lotgd\Sanitize;
 
 class Censor
 {
-    public static function soap($input, $debug = false, $skiphook = false)
+    /**
+     * Filter a text string for banned words.
+     *
+     * @param string $input    Input string
+     * @param bool   $debug    Output debug information
+     * @param bool   $skiphook Skip module hook
+     *
+     * @return string Filtered string
+     */
+    public static function soap(string $input, bool $debug = false, bool $skiphook = false): string
     {
         global $session;
         $final_output = $input;
@@ -73,7 +82,12 @@ class Censor
         return $final_output;
     }
 
-    public static function goodWordList()
+    /**
+     * Retrieve exception words that bypass the filter.
+     *
+     * @return array<string> List of allowed words
+     */
+    public static function goodWordList(): array
     {
         $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='good'";
         $result = db_query_cached($sql, 'goodwordlist');
@@ -84,7 +98,12 @@ class Censor
         return explode(' ', $row['words']);
     }
 
-    public static function nastyWordList()
+    /**
+     * List of banned words used by the filter.
+     *
+     * @return array<string> Compiled regexes
+     */
+    public static function nastyWordList(): array
     {
         $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='nasty'";
         $result = db_query($sql);

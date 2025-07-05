@@ -16,7 +16,7 @@ class DebugLog
      * @param int|false    $value   Optional value
      * @param bool         $consolidate Consolidate values for same day
      */
-    public static function add($message, $target = false, $user = false, $field = false, $value = false, $consolidate = true)
+    public static function add(string $message, int|false $target = false, int|false $user = false, string|false $field = false, int|false $value = false, bool $consolidate = true): void
     {
         if ($target === false) {
             $target = 0;
