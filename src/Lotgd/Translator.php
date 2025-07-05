@@ -170,7 +170,7 @@ class Translator
      *
      * @return string Translated string
      */
-    public static function translateInline(string $in,string|false $namespace=FALSE)
+    public static function translateInline(string $in,string|false $namespace=FALSE): string
     {
 		$out = self::translate($in,$namespace);
             rawoutput(self::tlbuttonClear());
