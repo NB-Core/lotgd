@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd\Forest;
 
 use Lotgd\AddNews;
@@ -17,11 +18,10 @@ class Outcomes
     /**
      * Apply rewards and penalties for winning a forest battle.
      *
-     * @param array $enemies      List of encountered enemies
-     * @param mixed $denyflawless Custom text to deny flawless bonus
-     * @return void
+     * @param array       $enemies      List of encountered enemies
+     * @param bool|string $denyflawless Custom text to deny flawless bonus
      */
-    public static function victory(array $enemies, $denyflawless = false): void
+    public static function victory(array $enemies, bool|string $denyflawless = false): void
     {
         global $session, $options, $settings;
         $diddamage = false;
@@ -148,9 +148,8 @@ class Outcomes
      *
      * @param array  $enemies List of enemies that defeated the player
      * @param string $where   Description of where the defeat happened
-     * @return void
      */
-    public static function defeat(array $enemies, $where = 'in the forest'): void
+    public static function defeat(array $enemies, string $where = 'in the forest'): void
     {
         global $session, $settings;
         $percent = isset($settings) && $settings instanceof Settings

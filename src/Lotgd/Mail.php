@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 /**
@@ -15,32 +16,20 @@ class Mail
     /**
      * Send a system generated mail to a user.
      */
-    public static function systemMail($to, $subject, $body, $from = 0, $noemail = false): void
+    public static function systemMail(int $to, string $subject, string $body, int $from = 0, bool $noemail = false): void
     {
         $sql = 'SELECT prefs,emailaddress FROM ' . db_prefix('accounts') . " WHERE acctid='$to'";
         $result = db_query($sql);
         $row = db_fetch_assoc($result);
         db_free_result($result);
         $prefs = isset($row['prefs']) ? @unserialize($row['prefs']) : [];
-        $serialized = 0;
-        if ($from == 0) {
-            if (is_array($subject)) {
-                $subject = serialize($subject);
-                $serialized = 1;
-            }
-            if (is_array($body)) {
-                $body = serialize($body);
-                $serialized += 2;
-            }
-            $subject = SafeEscape::escape($subject);
+        $subject = SafeEscape::escape($subject);
+        if ($from === 0) {
             $body = SafeEscape::escape($body);
         } else {
-            $subject = SafeEscape::escape($subject);
-            $subject = str_replace("\n", '', $subject);
-            $subject = str_replace('`n', '', $subject);
+            $subject = str_replace(["\n", '`n'], '', $subject);
             $body = SafeEscape::escape($body);
-            if ((isset($prefs['dirtyemail']) && $prefs['dirtyemail']) || $from == 0) {
-            } else {
+            if (!(isset($prefs['dirtyemail']) && $prefs['dirtyemail'])) {
                 $subject = soap($subject, false, 'mail');
                 $body = soap($body, false, 'mail');
             }
@@ -62,14 +51,6 @@ class Mail
             $email = false;
         }
         if ($email && !$noemail) {
-            if ($serialized & 2) {
-                $body = unserialize(stripslashes($body));
-                $body = translate_mail($body, $to);
-            }
-            if ($serialized & 1) {
-                $subject = unserialize(stripslashes($subject));
-                $subject = translate_mail($subject, $to);
-            }
             $sql = 'SELECT name FROM ' . db_prefix('accounts') . " WHERE acctid='$from'";
             $result = db_query($sql);
             $row1 = db_fetch_assoc($result);

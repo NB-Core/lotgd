@@ -1,8 +1,15 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
+/**
+ * Simple wrapper around the gamelog table.
+ */
 class GameLog
 {
+    /**
+     * Insert a log message into the database.
+     */
     public static function log(string $message, string $category = 'general', bool $filed = false): void
     {
         global $session;

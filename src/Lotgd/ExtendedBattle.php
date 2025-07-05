@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 class ExtendedBattle
@@ -16,7 +17,7 @@ use Lotgd\Substitute;
  *
  * @param array $enemies The enemies to be displayed.
  */
-    public static function showEnemies($enemies) {
+    public static function showEnemies(array $enemies): void {
         global $enemycounter, $session;
         $u=&$session['user']; //fast and better, by pointer
         static $fightbar=NULL;
@@ -146,11 +147,11 @@ use Lotgd\Substitute;
 /**
  * This function prepares the fight, sets up options and gives hook a hook to change options on a per-player basis.
  *
- * @param array $options The options given by a module or basics.
+ * @param array|null $options The options given by a module or basics.
  * @return array The complete options.
  */
-    public static function prepareFight($options=false) {
-	global $companions;
+    public static function prepareFight(?array $options = null): array {
+        global $companions;
 	$basicoptions = array(
 		"maxattacks"=>getsetting("maxattacks", 4),
 	);
@@ -169,7 +170,7 @@ use Lotgd\Substitute;
  * This functions prepares companions to be able to take part in a fight. Uses global copies.
  *
  */
-    public static function prepareCompanions() {
+    public static function prepareCompanions(): void {
 	global $companions;
 	$newcompanions = array();
 	if (is_array($companions)) {
@@ -186,10 +187,10 @@ use Lotgd\Substitute;
 /**
  * Suspends companions on a given parameter.
  *
- * @param string $susp The type of suspension
- * @param mixed $nomsg The message to be displayed upon suspending. If false, no message will be displayed.
+ * @param string      $susp  The type of suspension
+ * @param string|bool $nomsg Message to display or boolean to disable output
  */
-    public static function suspendCompanions($susp, $nomsg=false) {
+    public static function suspendCompanions(string $susp, string|bool $nomsg=false): void {
 	global $companions;
 	$newcompanions = array();
 	$suspended = false;
@@ -227,10 +228,10 @@ use Lotgd\Substitute;
 /**
  * Enables suspended companions.
  *
- * @param string $susp The type of suspension
- * @param mixed $nomsg The message to be displayed upon unsuspending. If false, no message will be displayed.
+ * @param string      $susp  The type of suspension
+ * @param string|bool $nomsg Message to display or boolean to disable output
  */
-    public static function unsuspendCompanions($susp, $nomsg=false) {
+    public static function unsuspendCompanions(string $susp, string|bool $nomsg=false): void {
 	global $companions;
 	$notify = false;
 	$newcompanions = array();
@@ -265,7 +266,7 @@ use Lotgd\Substitute;
  * @param array $localenemies The stack of enemies to find a valid one from.
  * @return array $localenemies The stack with changed targetting.
  */
-    public static function autoSetTarget($localenemies) {
+    public static function autoSetTarget(array $localenemies): array {
 	$targetted = 0;
 	if (is_array($localenemies)) {
 		foreach ($localenemies as $index=>$badguy) {
@@ -293,11 +294,11 @@ use Lotgd\Substitute;
 /**
  * Based upon the type of the companion different actions are performed and the companion is marked as "used" after that.
  *
- * @param array $companion The companion itself
- * @param string $activate The stage of activation. Can be one of these: "fight", "defend", "heal" or "magic".
+ * @param array  $companion The companion itself
+ * @param string $activate  Stage of activation: fight, defend, heal or magic
  * @return array The changed companion
  */
-    public static function reportCompanionMove(&$badguy,$companion, $activate="fight") {
+    public static function reportCompanionMove(array &$badguy, array $companion, string $activate="fight"): array {
 	global $session,$creatureattack,$creatureatkmod,$adjustment;
 	global $creaturedefmod,$defmod,$atkmod,$atk,$def,$count,$defended,$needtosstopfighting;
 
@@ -507,7 +508,7 @@ use Lotgd\Substitute;
  * @return array
  */
 
-    public static function rollCompanionDamage(&$badguy,$companion){
+    public static function rollCompanionDamage(array &$badguy, array $companion): array{
 	global $creatureattack,$creatureatkmod,$adjustment,$options;
 	global $creaturedefmod,$compdefmod,$compatkmod,$buffset,$atk,$def;
 
@@ -595,9 +596,9 @@ if ($bad_check>50) {
 /**
  * Adds a new creature to the badguy array.
  *
- * @param mixed $creature A standard badguy array. If numeric, the corresponding badguy will be loaded from the database.
+ * @param array|int $creature A standard badguy array or creature id
  */
-    public static function battleSpawn($creature) {
+    public static function battleSpawn(array|int $creature): void {
 	global $enemies, $newenemies, $badguy,$nextindex;
 	if (!is_array($newenemies)) $newenemies=array();
 	if (!isset($nextindex)) {
@@ -622,10 +623,10 @@ if ($bad_check>50) {
 /**
  * Allows creatures to heal themselves or another badguy.
  *
- * @param int $amount Amount of helath to be restored
- * @param mixed $target If false badguy will heal itself otherwise the enemy with this index.
+ * @param int       $amount Amount of health to be restored
+ * @param int|false $target If false badguy heals itself otherwise enemy index
  */
-    public static function battleHeal($amount, $target=false) {
+    public static function battleHeal(int $amount, int|false $target=false): void {
 	global $newenemies, $enemies, $badguy;
 	if ($amount > 0) {
 		if ($target === false) {
@@ -653,7 +654,7 @@ if ($bad_check>50) {
  *
  * @param string $script the script to be executed.
  */
-    public static function executeAiScript($script) {
+    public static function executeAiScript(string $script): void {
 	global $unsetme;
 	if ($script > "") {
 		eval($script);
