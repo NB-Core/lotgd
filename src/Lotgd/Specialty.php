@@ -1,9 +1,19 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 class Specialty
 {
-    public static function increment(string $colorcode, $spec=false): void
+    /**
+     * Trigger a specialty increment hook.
+     *
+     * @param string      $colorcode Colour code for output
+     * @param string|bool $spec       Temporary specialty override
+     *
+     * @return void
+     */
+    public static function increment(string $colorcode, string|bool $spec = false): void
     {
         global $session;
         if ($spec !== false) {

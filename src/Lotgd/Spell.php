@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -19,7 +21,7 @@ class Spell
      *
      * @return string Processed string
      */
-    public static function check(string $input, $words = false, string $prefix = "<span style='border: 1px dotted #FF0000;'>", string $postfix = "</span>"): string
+    public static function check(string $input, string|false $words = false, string $prefix = "<span style='border: 1px dotted #FF0000;'>", string $postfix = "</span>"): string
     {
         $dict =& self::$dictionary;
         if ($words === false) {

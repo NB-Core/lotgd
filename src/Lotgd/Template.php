@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -6,7 +8,15 @@ namespace Lotgd;
  */
 class Template
 {
-    public static function templateReplace($itemname, $vals = false)
+    /**
+     * Replace placeholders within a template section.
+     *
+     * @param string      $itemname Template section name
+     * @param array|false $vals     Replacement values
+     *
+     * @return string Processed template part
+     */
+    public static function templateReplace(string $itemname, array|false $vals = false): string
     {
         global $template;
         if (!isset($template[$itemname])) {
@@ -27,7 +37,14 @@ class Template
         return $out;
     }
 
-    public static function prepareTemplate($force = false)
+    /**
+     * Load the active template into memory.
+     *
+     * @param bool $force Force reload even if already loaded
+     *
+     * @return void
+     */
+    public static function prepareTemplate(bool $force = false): void
     {
         global $settings;
         if (!$force) {
@@ -71,7 +88,15 @@ class Template
      * @see Templates
      * @todo Template Help
      */
-    public static function loadTemplate($templatename){
+    /**
+     * Load a template file and split it into sections.
+     *
+     * @param string $templatename Template file name
+     *
+     * @return array Parsed template array
+     */
+    public static function loadTemplate(string $templatename): array
+    {
 	    if ($templatename=="" || !file_exists("templates/$templatename"))
 		    $templatename=getsetting("defaultskin",$_defaultskin);
 	    if ($templatename=="" || !file_exists("templates/$templatename"))

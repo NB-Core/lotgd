@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 use Lotgd\Accounts;
@@ -13,8 +15,10 @@ class Redirect
      *
      * @param string      $location Target location
      * @param string|bool $reason   Optional reason for redirect
+     *
+     * @return void
      */
-    public static function redirect(string $location, $reason = false): void
+    public static function redirect(string $location, string|bool $reason = false): void
     {
         global $session, $REQUEST_URI, $settings;
         if (strpos($location, 'badnav.php') === false) {

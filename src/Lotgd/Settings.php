@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
@@ -8,16 +10,30 @@ use Lotgd\DataCache;
 class Settings
 {
     private string $tablename;
+    /** @var array|null */
     private $settings = null;
 
-    public function __construct($tablename = false)
+    /**
+     * Initialize the settings handler.
+     *
+     * @param string|false $tablename Optional table name
+     */
+    public function __construct(string|false $tablename = false)
     {
         $this->tablename = $tablename === false ? db_prefix('settings') : db_prefix($tablename);
         $this->settings = null;
         $this->loadSettings();
     }
 
-    public function saveSetting($settingname, $value): bool
+    /**
+     * Persist a setting value.
+     *
+     * @param string|int $settingname Setting identifier
+     * @param mixed      $value       Value to store
+     *
+     * @return bool True on success
+     */
+    public function saveSetting(string|int $settingname, mixed $value): bool
     {
         $this->loadSettings();
         if (!isset($this->settings[$settingname]) && $value) {
@@ -37,6 +53,11 @@ class Settings
         return db_affected_rows() > 0;
     }
 
+    /**
+     * Load all settings from the database.
+     *
+     * @return void
+     */
     public function loadSettings(): void
     {
         if (!is_array($this->settings)) {
@@ -54,13 +75,26 @@ class Settings
         }
     }
 
+    /**
+     * Clear cached settings forcing a reload on next access.
+     *
+     * @return void
+     */
     public function clearSettings(): void
     {
         DataCache::invalidatedatacache('game' . $this->tablename);
         $this->settings = null;
     }
 
-    public function getSetting($settingname, $default = false)
+    /**
+     * Retrieve a specific setting value.
+     *
+     * @param string|int $settingname Name of the setting
+     * @param mixed      $default     Default when missing
+     *
+     * @return mixed Setting value
+     */
+    public function getSetting(string|int $settingname, mixed $default = false): mixed
     {
         global $DB_USEDATACACHE, $DB_DATACACHEPATH;
         if ($settingname == 'usedatacache') {
@@ -88,6 +122,11 @@ class Settings
         return $this->settings[$settingname];
     }
 
+    /**
+     * Get all loaded settings as an array.
+     *
+     * @return array List of settings
+     */
     public function getArray(): array
     {
         return (array) $this->settings;

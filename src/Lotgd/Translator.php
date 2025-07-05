@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 use Lotgd\Sanitize;
@@ -16,7 +18,13 @@ class Translator
 // addnews ready
 // mail ready
 
-    public static function translatorSetup(){
+    /**
+     * Initialise language settings for the translation system.
+     *
+     * @return void
+     */
+    public static function translatorSetup(): void
+    {
 		global $settings;
 		//Determine what language to use
 		if (defined("TRANSLATOR_IS_SET_UP")) return;
@@ -38,7 +46,16 @@ class Translator
 		define("LANGUAGE",preg_replace("/[^a-z]/i","",$language));
 	}
 
-    public static function translate($indata,$namespace=FALSE){
+    /**
+     * Translate a string or array within an optional namespace.
+     *
+     * @param mixed       $indata    Text or array to translate
+     * @param string|false $namespace Translation namespace
+     *
+     * @return mixed Translated value
+     */
+    public static function translate(mixed $indata, string|false $namespace=FALSE): mixed
+    {
         global $session,$settings;
 
 		if (!isset($settings) || $settings->getSetting("enabletranslation", true) == false) return $indata;
@@ -93,7 +110,13 @@ class Translator
 		return $outdata;
 	}
 
-    public static function sprintfTranslate(){
+    /**
+     * Wrapper around sprintf which translates arguments first.
+     *
+     * @return string Result of sprintf translation
+     */
+    public static function sprintfTranslate(): string
+    {
 		$args = func_get_args();
 		$setschema = false;
 		// Handle if an array is passed in as the first arg
@@ -139,13 +162,31 @@ class Translator
 		return $return;
 	}
 
-    public static function translateInline($in,$namespace=FALSE){
+    /**
+     * Translate text and append translator controls inline.
+     *
+     * @param string      $in        Text to translate
+     * @param string|false $namespace Translation namespace
+     *
+     * @return string Translated string
+     */
+    public static function translateInline(string $in,string|false $namespace=FALSE): string
+    {
 		$out = self::translate($in,$namespace);
             rawoutput(self::tlbuttonClear());
 		return $out;
 	}
 
-    public static function translateMail($in,$to=0){
+    /**
+     * Translate mail text for a specific user.
+     *
+     * @param mixed $in Message or parameter array
+     * @param int   $to Recipient account id
+     *
+     * @return string Translated message
+     */
+    public static function translateMail(mixed $in,int $to=0): string
+    {
 		global $session;
 		tlschema("mail"); // should be same schema like systemmails!
 		if (!is_array($in)) $in=array($in);
@@ -170,12 +211,29 @@ class Translator
 		return $out;
 	}
 
-    public static function tl($in){
+    /**
+     * Translate a string and return with translation control button.
+     *
+     * @param string $in Text to translate
+     *
+     * @return string Translated string
+     */
+    public static function tl(string $in): string
+    {
 			$out = self::translate($in);
             return self::tlbuttonClear().$out;
 	}
 
-    public static function translateLoadNamespace($namespace,$language=false){
+    /**
+     * Load all translations for a namespace.
+     *
+     * @param string      $namespace Namespace identifier
+     * @param string|false $language  Language to load
+     *
+     * @return array Translation table
+     */
+    public static function translateLoadNamespace(string $namespace,string|false $language=false)
+    {
 		global $language, $session;
 		if (defined("LANGUAGE")) {
 			if ($language===false) $language = LANGUAGE;
@@ -208,7 +266,17 @@ class Translator
 	}
 
 
-   public static function tlbuttonPush($indata,$hot=false,$namespace=FALSE){
+   /**
+    * Display a translate button for a given string.
+    *
+    * @param string      $indata    Text to translate
+    * @param bool        $hot       Highlight button
+    * @param string|false $namespace Namespace identifier
+    *
+    * @return bool True when button shown
+    */
+   public static function tlbuttonPush(string $indata,bool $hot=false,string|false $namespace=FALSE)
+   {
                 global $session,$language;
                 if (!self::$translation_is_enabled) return;
                 $seentlbuttons =& self::$seentlbuttons;
@@ -238,7 +306,13 @@ class Translator
 		}
 	}
 
-    public static function tlbuttonPop(){
+    /**
+     * Pop the last translator button from the stack.
+     *
+     * @return string Button HTML
+     */
+    public static function tlbuttonPop(): string
+    {
                 global $session;
                 if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
                         return array_pop(self::$translatorbuttons);
@@ -247,7 +321,13 @@ class Translator
                 }
         }
 
-    public static function tlbuttonClear(){
+    /**
+     * Clear and return all queued translator buttons.
+     *
+     * @return string Buttons HTML
+     */
+    public static function tlbuttonClear(): string
+    {
                 global $session;
                 if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
                         $return = tlbuttonPop().join("",self::$translatorbuttons);
@@ -259,12 +339,28 @@ class Translator
         }
 
 
-    public static function enableTranslation($enable=true){
+    /**
+     * Enable or disable the translator output.
+     *
+     * @param bool $enable Enable state
+     *
+     * @return void
+     */
+    public static function enableTranslation(bool $enable=true): void
+    {
                 self::$translation_is_enabled = $enable;
         }
 
 
-    public static function tlschema($schema=false){
+    /**
+     * Manage the translation namespace stack.
+     *
+     * @param string|false $schema New namespace or false to pop
+     *
+     * @return void
+     */
+    public static function tlschema(string|false $schema=false): void
+    {
                 global $REQUEST_URI;
                 $stack =& self::$translation_namespace_stack;
                 if ($schema===false){
@@ -277,8 +373,13 @@ class Translator
                 }
 	}
 
-    public static function translatorCheckCollectTexts()
-	{
+    /**
+     * Periodically enable or disable text collection based on configuration.
+     *
+     * @return void
+     */
+    public static function translatorCheckCollectTexts(): void
+    {
 		global $session, $settings;
 		if (!isset($settings)) return; // not yet setup most likely
 

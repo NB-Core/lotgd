@@ -1,9 +1,18 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 class Sanitize
 {
-    public static function sanitize($in)
+    /**
+     * Strip game colour codes from a string.
+     *
+     * @param string|null $in Input string
+     *
+     * @return string Sanitized value
+     */
+    public static function sanitize(?string $in): string
     {
         global $output;
         if ($in == '' || $in === null) {
@@ -13,7 +22,14 @@ class Sanitize
         return $out;
     }
 
-    public static function newlineSanitize($in)
+    /**
+     * Remove new line codes from a string.
+     *
+     * @param string|null $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function newlineSanitize(?string $in): string
     {
         if ($in == '' || $in === null) {
             return '';
@@ -22,7 +38,14 @@ class Sanitize
         return $out;
     }
 
-    public static function colorSanitize($in)
+    /**
+     * Remove colour codes except text formatting.
+     *
+     * @param string|null $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function colorSanitize(?string $in): string
     {
         if ($in == '' || $in === null) {
             return '';
@@ -32,7 +55,14 @@ class Sanitize
         return $out;
     }
 
-    public static function commentSanitize($in)
+    /**
+     * Prepare a comment string for output.
+     *
+     * @param string|null $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function commentSanitize(?string $in): string
     {
         global $output;
         if ($in == '' || $in === null) {
@@ -43,7 +73,14 @@ class Sanitize
         return $out;
     }
 
-    public static function logdnetSanitize($in)
+    /**
+     * Sanitize string for sending via Logdnet.
+     *
+     * @param string $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function logdnetSanitize(string $in): string
     {
         global $output;
         $out = preg_replace('/[`](?=[^0' . $output->getColormapEscaped() . 'bicn])/', chr(1) . chr(1), $in);
@@ -51,7 +88,14 @@ class Sanitize
         return $out;
     }
 
-    public static function fullSanitize($in)
+    /**
+     * Remove all colour codes from a string.
+     *
+     * @param string|null $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function fullSanitize(?string $in): string
     {
         if ($in == '' || $in === null) {
             return '';
@@ -60,7 +104,14 @@ class Sanitize
         return $out;
     }
 
-    public static function cmdSanitize($in)
+    /**
+     * Strip colour information from a command string.
+     *
+     * @param string|null $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function cmdSanitize(?string $in): string
     {
         if ($in == '' || $in === null) {
             return '';
@@ -69,7 +120,14 @@ class Sanitize
         return $out;
     }
 
-    public static function comscrollSanitize($in)
+    /**
+     * Remove commentary scroll parameters from a URI.
+     *
+     * @param string|null $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function comscrollSanitize(?string $in): string
     {
         if ($in == '' || $in === null) {
             return '';
@@ -81,12 +139,26 @@ class Sanitize
         return $out;
     }
 
-    public static function preventColors($in)
+    /**
+     * Escape colour markers to prevent rendering.
+     *
+     * @param string $in Input value
+     *
+     * @return string Sanitized value
+     */
+    public static function preventColors(string $in): string
     {
         return str_replace('`', '&#0096;', $in);
     }
 
-    public static function translatorUri($in)
+    /**
+     * Clean a URI for translator usage.
+     *
+     * @param string $in Input URI
+     *
+     * @return string Sanitized URI
+     */
+    public static function translatorUri(string $in): string
     {
         $uri = self::comscrollSanitize($in);
         $uri = self::cmdSanitize($uri);
@@ -96,7 +168,14 @@ class Sanitize
         return $uri;
     }
 
-    public static function translatorPage($in)
+    /**
+     * Extract the page path from a URI.
+     *
+     * @param string $in Input URI
+     *
+     * @return string Page path
+     */
+    public static function translatorPage(string $in): string
     {
         $page = $in;
         if (strpos($page, '?') !== false) {
@@ -105,23 +184,54 @@ class Sanitize
         return $page;
     }
 
-    public static function modulenameSanitize($in)
+    /**
+     * Sanitize a module name.
+     *
+     * @param string $in Module name
+     *
+     * @return string Sanitized name
+     */
+    public static function modulenameSanitize(string $in): string
     {
         return preg_replace("'[^0-9A-Za-z_]'", '', $in);
     }
 
-    public static function stripslashesArray($given)
+    /**
+     * Recursively stripslashes input values.
+     *
+     * @param array|string $given Input value
+     *
+     * @return array|string Cleaned value
+     */
+    public static function stripslashesArray(array|string $given): array|string
     {
         return is_array($given) ? array_map([self::class, 'stripslashesArray'], $given) : stripslashes($given);
     }
 
-    public static function sanitizeName($spaceallowed, $inname)
+    /**
+     * Strip non alphabetic characters from a name.
+     *
+     * @param bool   $spaceallowed Allow spaces
+     * @param string $inname       Input name
+     *
+     * @return string Sanitized name
+     */
+    public static function sanitizeName(bool $spaceallowed, string $inname): string
     {
         $expr = $spaceallowed ? '([^[:alpha:] _-])' : '([^[:alpha:]])';
         return preg_replace($expr, '', $inname);
     }
 
-    public static function sanitizeColorname($spaceallowed, $inname, $admin = false)
+    /**
+     * Sanitize a color name respecting admin settings.
+     *
+     * @param bool   $spaceallowed Allow spaces
+     * @param string $inname       Name to sanitize
+     * @param bool   $admin        Whether admin overrides are allowed
+     *
+     * @return string Sanitized name
+     */
+    public static function sanitizeColorname(bool $spaceallowed, string $inname, bool $admin = false): string
     {
         global $output;
         if ($admin && getsetting('allowoddadminrenames', 0)) {
@@ -131,7 +241,14 @@ class Sanitize
         return preg_replace($expr, '', $inname);
     }
 
-    public static function sanitizeHtml($str)
+    /**
+     * Remove HTML, script and style tags from a string.
+     *
+     * @param string $str Input HTML
+     *
+     * @return string Sanitized string
+     */
+    public static function sanitizeHtml(string $str): string
     {
         $str = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $str);
         $str = preg_replace('/<style[^>]*>.+<\/style[^>]*>/', '', $str);
@@ -140,7 +257,14 @@ class Sanitize
         return $str;
     }
 
-    public static function sanitizeMb($str)
+    /**
+     * Ensure a multibyte string is valid for the current charset.
+     *
+     * @param string $str Input string
+     *
+     * @return string Sanitized string
+     */
+    public static function sanitizeMb(string $str): string
     {
         if ($str == '') {
             return '';
