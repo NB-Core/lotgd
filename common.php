@@ -62,7 +62,8 @@ require_once("lib/output.php");
 $output = new Output();
 LocalConfig::apply();
 require_once("config/constants.php");
-require_once("lib/errorhandler.php");
+use Lotgd\ErrorHandler;
+ErrorHandler::register();
 
 // Legacy, because modules may rely on that, but those files are already migrated to namespace structure
 require_once("lib/dbwrapper.php");

@@ -5,6 +5,7 @@
 require_once("common.php");
 use Lotgd\Forest;
 use Lotgd\Buffs;
+use Lotgd\Forest\Outcomes;
 require_once("lib/http.php");
 require_once("lib/events.php");
 use Lotgd\Battle;
@@ -185,13 +186,13 @@ if ($op=="search"){
 				$badguy['creaturedefense']=$session['user']['defense'];
 				$stack[] = $badguy;
 			} else {
-				require_once("lib/forestoutcomes.php");
+                               
 				if ($packofmonsters == true) {
 					$initialbadguy = db_fetch_assoc($result);
 					$prefixs = array("Elite","Dangerous","Lethal","Savage","Deadly","Malevolent","Malignant");
 					for($i=0;$i<$multi;$i++) {
 						$initialbadguy['creaturelevel'] = e_rand($mintargetlevel, $targetlevel);
-						$badguy = buffbadguy($initialbadguy);
+                                               $badguy = Outcomes::buffBadguy($initialbadguy);
 						if ($type == "thrill") {
 							// 10% more experience
 							$badguy['creatureexp'] = round($badguy['creatureexp']*1.1, 0);
@@ -232,7 +233,7 @@ if ($op=="search"){
 							$badguy['creatureaiscript']="require('".$aiscriptfile."');";
 						}
 						//AI setup
-						$badguy = buffbadguy($badguy);
+                                               $badguy = Outcomes::buffBadguy($badguy);
 						// Okay, they are thrillseeking, let's give them a bit extra
 						// exp and gold.
 						if ($type == "thrill") {
@@ -292,17 +293,15 @@ if ($op=="fight" || $op=="run" || $op == "newtarget"){
 
 if ($battle){
 
-	require_once("battle.php");
+        require_once("battle.php");
 
-	if ($victory){
-		require_once("lib/forestoutcomes.php");
-		$op="";
-		httpset('op', "");
-		forestvictory($newenemies,isset($options['denyflawless'])?$options['denyflawless']:false);
-		$dontdisplayforestmessage=true;
-	}elseif($defeat){
-		require_once("lib/forestoutcomes.php");
-		forestdefeat($newenemies);
+        if ($victory){
+                $op="";
+                httpset('op', "");
+                Outcomes::victory($newenemies,isset($options['denyflawless'])?$options['denyflawless']:false);
+                $dontdisplayforestmessage=true;
+        }elseif($defeat){
+                Outcomes::defeat($newenemies);
 	}else{
 		Battle::fightnav();
 	}
