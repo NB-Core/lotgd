@@ -8,9 +8,10 @@ define("ALLOW_ANONYMOUS",true);
 use Lotgd\Mail;
 use Lotgd\CheckBan;
 use Lotgd\Settings;
+use Lotgd\Sanitize;
+use Lotgd\DebugLog;
 require_once("common.php");
 require_once("lib/is_email.php");
-require_once("lib/sanitize.php");
 // legacy wrapper removed, instantiate settings directly
 $settings_extended = new Settings('settings_extended');
 use Lotgd\ServerFunctions;
@@ -85,8 +86,7 @@ if ($op=="forgotval"){
 			$sql="UPDATE ".db_prefix("accounts")." SET emailaddress='".$replaceemail."', replaceemail='',forgottenpassword='' WHERE emailvalidation='$id';";
 			db_query($sql);
 			output("`#`c Email changed successfully!`c`0`n");
-			require_once("lib/debuglog.php");
-			debuglog("Email change request validated by link from ".$row['emailaddress']." to ".$replaceemail,$row['acctid'],$row['acctid'],"Email");
+                        DebugLog::add("Email change request validated by link from ".$row['emailaddress']." to ".$replaceemail,$row['acctid'],$row['acctid'],"Email");
 			//If a superuser changes email, we want to know about it... at least those who can ee it anyway, the user editors...
 			if ($row['superuser']>0) {
 				// 5 failed attempts for superuser, 10 for regular user
@@ -196,7 +196,7 @@ if (getsetting("allowcreation",1)==0){
 }else{
 	if ($op=="create"){
 		$emailverification="";
-		$shortname = sanitize_name(getsetting("spaceinname", 0), httppost('name'));
+                $shortname = Sanitize::sanitizeName(getsetting("spaceinname", 0), httppost('name'));
 
 		if (soap($shortname)!=$shortname){
 			output("`\$Error`^: Bad language was found in your name, please consider revising it.`n");
@@ -254,7 +254,7 @@ if (getsetting("allowcreation",1)==0){
 				$sql = "SELECT playername FROM " . db_prefix("accounts") ;
 				$result = db_query($sql);
 				while ($row=db_fetch_assoc($result)) {
-					if (sanitize($row['playername'])==$shortname) {
+                                        if (Sanitize::sanitize($row['playername'])==$shortname) {
 						$count++;
 						break;
 					}
