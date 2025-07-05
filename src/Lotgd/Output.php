@@ -3,6 +3,7 @@ namespace Lotgd;
 
 use Lotgd\DumpItem;
 use Lotgd\HolidayText;
+use Lotgd\Translator;
 
 /**
  * Collects formatted page output which can later be rendered by the template.
@@ -79,7 +80,7 @@ class Output
             'M' => 'coltan',
         ];
         // build maps used by sanitize functions
-        $this->set_color_map();
+        $this->setColorMap();
     }
 
     /**
@@ -119,7 +120,7 @@ class Output
             $out = HolidayText::holidayize($out, 'output');
         }
         $out = $this->appoencode($out, $priv);
-        $this->output .= tlbutton_pop() . $out . "\n";
+        $this->output .= Translator::tlbuttonPop() . $out . "\n";
     }
 
     /**
@@ -136,9 +137,9 @@ class Output
         }
         if (is_bool($args[0]) && array_shift($args)) {
             $schema  = array_shift($args);
-            $args[0] = translate($args[0], $schema);
+            $args[0] = Translator::translate($args[0], $schema);
         } else {
-            $args[0] = translate($args[0]);
+            $args[0] = Translator::translate($args[0]);
         }
         call_user_func_array([$this, 'outputNotl'], $args);
     }
@@ -206,6 +207,15 @@ class Output
      */
     public function appoencode($data, $priv = false)
     {
+        global $settings;
+        if (!isset($settings))
+        {
+            $charset = 'utf8';
+        }
+        else
+        {
+            $charset = $settings->getSetting('charset', 'ISO-8859-1');
+        }
         $start = 0;
         $out   = '';
         if (($pos = strpos($data, '`')) !== false) {
@@ -215,7 +225,7 @@ class Output
                     continue;
                 }
                 if ($priv === false) {
-                    $out .= HTMLEntities(substr($data, $start, $pos - $start - 1), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+                    $out .= HTMLEntities(substr($data, $start, $pos - $start - 1), ENT_COMPAT, $charset);
                 } else {
                     $out .= substr($data, $start, $pos - $start - 1);
                 }
@@ -324,7 +334,7 @@ class Output
             } while (($pos = strpos($data, '`', $pos)) !== false);
         }
         if ($priv === false) {
-            $out .= HTMLEntities(substr($data, $start), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+            $out .= HTMLEntities(substr($data, $start), ENT_COMPAT, $charset);
         } else {
             $out .= substr($data, $start);
         }

@@ -29,6 +29,7 @@ class Template
 
     public static function prepareTemplate($force = false)
     {
+        global $settings;
         if (!$force) {
             if (defined('TEMPLATE_IS_PREPARED')) {
                 return;
@@ -46,12 +47,41 @@ class Template
             $templatename = $_COOKIE['template'];
         }
         if ($templatename == '' || !file_exists("templates/$templatename")) {
-            $templatename = getsetting('defaultskin', $_defaultskin);
+            $templatename = $settings->getsetting('defaultskin', $_defaultskin);
         }
         if ($templatename == '' || !file_exists("templates/$templatename")) {
             $templatename = $_defaultskin;
         }
-        $template = loadtemplate($templatename);
+        $template = self::loadTemplate($templatename);
     }
+
+     /**
+     * Loads the template into the current session.  If the template doesn't
+     * exist - uses the default (admin-defined) template, and then falls back
+     * to jade.htm
+     *
+     * @param string $templatename The template name (minus the path)
+     * @return array The template split into the sections defined by <!--!
+     * @see Templates
+     * @todo Template Help
+     */
+    public static function loadTemplate($templatename){
+	    if ($templatename=="" || !file_exists("templates/$templatename"))
+		    $templatename=getsetting("defaultskin",$_defaultskin);
+	    if ($templatename=="" || !file_exists("templates/$templatename"))
+		    $templatename=$_defaultskin;
+	    $fulltemplate = file_get_contents("templates/$templatename");
+	    $fulltemplate = explode("<!--!",$fulltemplate);
+	    foreach ($fulltemplate as $val) {
+		    $fieldname=substr($val,0,strpos($val,"-->"));
+		    if ($fieldname!=""){
+			    $template[$fieldname]=substr($val,strpos($val,"-->")+3);
+			    if (!defined("IS_INSTALLER")) modulehook("template-{$fieldname}",
+					    array("content"=>$template[$fieldname]));
+		    }
+	    }
+	    return $template;
+    }
+
 }
 

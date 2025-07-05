@@ -17,9 +17,12 @@ class Translator
 // mail ready
 
     public static function translatorSetup(){
+		global $settings;
 		//Determine what language to use
 		if (defined("TRANSLATOR_IS_SET_UP")) return;
 		define("TRANSLATOR_IS_SET_UP",true);
+
+		if (!isset($settings)) return; // not yet setup most likely
 
 		global $language, $session;
 		$language = "";
@@ -29,19 +32,21 @@ class Translator
 			$language = $_COOKIE['language'];
 		}
 		if ($language=="") {
-			$language=getsetting("defaultlanguage","en");
+			$language=$settings->getsetting("defaultlanguage","en");
 		}
 
 		define("LANGUAGE",preg_replace("/[^a-z]/i","",$language));
 	}
 
     public static function translate($indata,$namespace=FALSE){
-		if (getsetting("enabletranslation", true) == false) return $indata;
-                global $session;
+        global $session,$settings;
+
+		if (!isset($settings) || $settings->getSetting("enabletranslation", true) == false) return $indata;
+
 		if (!$namespace) $namespace=self::$translation_namespace;
 		$outdata = $indata;
 		if (!isset($namespace) || $namespace=="")
-			tlschema();
+			self::tlschema();
 
 		$foundtranslation = false;
 		if ($namespace != "notranslate") {
@@ -49,7 +54,7 @@ class Translator
                                         !is_array(self::$translation_table[$namespace])){
 				//build translation table for this page hit.
                                 self::$translation_table[$namespace] =
-					translate_loadnamespace($namespace,(isset($session['tlanguage'])?$session['tlanguage']:false));
+					self::translateLoadnamespace($namespace,(isset($session['tlanguage'])?$session['tlanguage']:false));
 			}
 		}
 
@@ -76,11 +81,11 @@ class Translator
 						db_query($sql);
 					}
 					*/
-				} elseif (getsetting("collecttexts", false)) {
+				} elseif ($settings->getsetting("collecttexts", false)) {
 					$sql = "INSERT IGNORE INTO " .  db_prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . LANGUAGE . "', " .  "'$namespace')";
 					db_query($sql,false);
 				}
-                                tlbuttonPush($indata,!$foundtranslation,$namespace);
+                                self::tlbuttonPush($indata,!$foundtranslation,$namespace);
 			} else {
 				$outdata = $indata;
 			}
@@ -101,7 +106,7 @@ class Translator
 				$setschema = true;
 			}
 			$args[0] = str_replace("`%","`%%",$args[0]);
-			$args[0] = translate($args[0]);
+			$args[0] = self::translate($args[0]);
 			if ($setschema) {
 				tlschema();
 			}
@@ -135,8 +140,8 @@ class Translator
 	}
 
     public static function translateInline($in,$namespace=FALSE){
-		$out = translate($in,$namespace);
-            rawoutput(tlbuttonClear());
+		$out = self::translate($in,$namespace);
+            rawoutput(self::tlbuttonClear());
 		return $out;
 	}
 
@@ -171,13 +176,14 @@ class Translator
 	}
 
     public static function translateLoadNamespace($namespace,$language=false){
+		global $language, $session;
 		if (defined("LANGUAGE")) {
 			if ($language===false) $language = LANGUAGE;
 		} else {
                     translatorSetup();
 		}
-		$page = translator_page($namespace);
-		$uri = translator_uri($namespace);
+		$page = Sanitize::translatorPage($namespace);
+		$uri = Sanitize::translatorUri($namespace);
 		if ($page==$uri)
 			$where = "uri = '$page'";
 		else
@@ -188,7 +194,7 @@ class Translator
 			WHERE language='$language'
 				AND $where";
 	/*	debug(nl2br(htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1")))); */
-		if (!getsetting("cachetranslations",0)) {
+		if (isset($settings) && !$settings->getSetting("cachetranslations",0)) {
 			$result = db_query($sql);
 		} else {
 			$result = db_query_cached($sql,"translations-".$namespace."-".$language,600);
@@ -264,7 +270,7 @@ class Translator
                 if ($schema===false){
                         self::$translation_namespace = (string)array_pop($stack);
                         if (empty(self::$translation_namespace))
-                                self::$translation_namespace = translator_uri($REQUEST_URI);
+                                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI);
                 }else{
                         array_push($stack,self::$translation_namespace);
                         self::$translation_namespace = (string)$schema;
@@ -273,14 +279,17 @@ class Translator
 
     public static function translatorCheckCollectTexts()
 	{
-		$tlmax = getsetting("tl_maxallowed",0);
+		global $session, $settings;
+		if (!isset($settings)) return; // not yet setup most likely
 
-		if (getsetting("permacollect", 0))
-			savesetting("collecttexts", 1);
+		$tlmax = $settings->getSetting("tl_maxallowed",0);
+
+		if ($settings->getSetting("permacollect", 0))
+			$settings->saveSetting("collecttexts", 1);
 		elseif ($tlmax && getsetting("OnlineCount", 0) <= $tlmax)
-			savesetting("collecttexts", 1);
+			$settings->saveSetting("collecttexts", 1);
 		else
-			savesetting("collecttexts", 0);
+			$settings->saveSetting("collecttexts", 0);
 	}
 
 }

@@ -3,6 +3,7 @@ namespace Lotgd;
 
 use Lotgd\HolidayText;
 use Lotgd\Output;
+use Lotgd\Translator;
 
 // Maintain state within the class instead of the global namespace
 
@@ -293,7 +294,7 @@ class Nav
 
     protected static function privateAddNav($text, $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
-        global $nav, $session, $REQUEST_URI, $notranslate;
+        global $nav, $session, $REQUEST_URI, $notranslate, $settings;
         if (self::isBlocked($link)) return false;
         $thisnav = '';
         $unschema = 0;
@@ -325,7 +326,7 @@ class Nav
                 }
                 $unschema = 1;
             }
-            if ($link != '!!!addraw!!!' && $text > '' && $translate) $text = translate($text);
+            if ($link != '!!!addraw!!!' && $text > '' && $translate) $text = Translator::translate($text);
         }
         $extra = '';
         $ignoreuntil = '';
@@ -434,13 +435,13 @@ class Nav
                         self::$quickkeys[$key] = "window.location='$link$extra'";
                     }
                 }
-                $n = templatereplace('navitem', [
+                $n = Template::templateReplace('navitem', [
                     'text' => appoencode($text, $priv),
-                    'link' => HTMLEntities($link . ($pop != true ? $extra : ''), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')),
+                    'link' => HTMLEntities($link . ($pop != true ? $extra : ''), ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'utf8'),
                     'accesskey' => $keyrep,
                     'popup' => ($pop == true ? "target='_blank'" . ($popsize > '' ? " onClick=\"" . popup($link, $popsize) . "; return false;\"" : '') : ''),
                 ]);
-                $n = str_replace('<a ', tlbutton_pop() . '<a ', $n);
+                $n = str_replace('<a ', Translator::tlbuttonPop() . '<a ', $n);
                 $thisnav .= $n;
             }
             $session['allowednavs'][$link . $extra] = true;

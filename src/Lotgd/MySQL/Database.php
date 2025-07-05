@@ -3,7 +3,7 @@ namespace Lotgd\MySQL;
 
 use Lotgd\Backtrace;
 use Lotgd\DataCache;
-
+use Lotgd\DateTime;
 global $dbinfo;
 
 $dbinfo = [];
@@ -43,7 +43,7 @@ class Database
             $dbinfo['queriesthishit'] = 0;
         }
         $dbinfo['queriesthishit']++;
-        $starttime = getmicrotime();
+        $starttime = DateTime::getMicroTime();
         $r = self::getInstance()->query($sql);
 
         if (!$r && $die === true) {
@@ -55,7 +55,7 @@ class Database
             }
             die('A most bogus error has occurred.  I apologise, but the page you were trying to access is broken.  Please use your browser\'s back button and try again.');
         }
-        $endtime = getmicrotime();
+        $endtime = DateTime::getMicroTime();
         if ($endtime - $starttime >= 1.00 && isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT)) {
             $s = trim($sql);
             if (strlen($s) > 800) {

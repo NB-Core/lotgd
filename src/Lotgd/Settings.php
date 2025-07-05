@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 use Lotgd\MySQL\Database;
+use Lotgd\DataCache;
 /**
  * Lightweight wrapper around the settings table.
  */
@@ -32,14 +33,14 @@ class Settings
         }
         db_query($sql);
         $this->settings[$settingname] = $value;
-        invalidatedatacache('game' . $this->tablename);
+        DataCache::invalidatedatacache('game' . $this->tablename);
         return db_affected_rows() > 0;
     }
 
     public function loadSettings(): void
     {
         if (!is_array($this->settings)) {
-            $this->settings = datacache('game' . $this->tablename);
+            $this->settings = DataCache::datacache('game' . $this->tablename);
             if (!is_array($this->settings)) {
                 $this->settings = [];
                 $sql = 'SELECT * FROM ' . $this->tablename;
@@ -48,14 +49,14 @@ class Settings
                     $this->settings[$row['setting']] = $row['value'];
                 }
                 db_free_result($result);
-                updatedatacache('game' . $this->tablename, $this->settings);
+                DataCache::updatedatacache('game' . $this->tablename, $this->settings);
             }
         }
     }
 
     public function clearSettings(): void
     {
-        invalidatedatacache('game' . $this->tablename);
+        DataCache::invalidatedatacache('game' . $this->tablename);
         $this->settings = null;
     }
 

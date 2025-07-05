@@ -14,8 +14,10 @@ class DataCache
 
     public static function datacache(string $name, int $duration = 60)
     {
-        global $datacache;
-        if (getsetting('usedatacache', 0)) {
+        global $datacache, $settings;
+        if (!isset($settings)) return false; // not yet setup most likely
+        
+        if ($settings->getSetting('usedatacache', 0)) {
             if (isset(self::$cache[$name])) {
                 return self::$cache[$name];
             }
@@ -34,7 +36,9 @@ class DataCache
 
     public static function updatedatacache(string $name, $data)
     {
-        if (getsetting('usedatacache', 0)) {
+        global $settings;
+        if (!isset($settings)) return false; // not yet setup most likely
+        if ($settings->getSetting('usedatacache', 0)) {
             $fullname = self::makecachetempname($name);
             self::$cache[$name] = $data;
             $fp = fopen($fullname, 'w');
@@ -49,7 +53,9 @@ class DataCache
 
     public static function invalidatedatacache(string $name, bool $withpath = true)
     {
-        if (getsetting('usedatacache', 0)) {
+        global $settings;
+        if (!isset($settings)) return false; // not yet setup most likely
+        if ($settings->getSetting('usedatacache', 0)) {
             $fullname = $withpath ? self::makecachetempname($name) : $name;
             if (file_exists($fullname)) {
                 unlink($fullname);
@@ -62,10 +68,12 @@ class DataCache
 
     public static function massinvalidate(string $name = '')
     {
-        if (getsetting('usedatacache', 0)) {
+        global $settings;
+        if (!isset($settings)) return false; // not yet setup most likely
+        if ($settings->getSetting('usedatacache', 0)) {
             $name = DATACACHE_FILENAME_PREFIX . $name;
             if (self::$path == '') {
-                self::$path = getsetting('datacachepath', '/tmp');
+                self::$path = $settings->getSetting('datacachepath', '/tmp');
             }
             $dir = dir(self::$path);
             while (false !== ($file = $dir->read())) {
@@ -79,8 +87,10 @@ class DataCache
 
     public static function makecachetempname(string $name)
     {
+        global $settings;
+        if (!isset($settings)) return false; // not yet setup most likely
         if (self::$path == '') {
-            self::$path = getsetting('datacachepath', '/tmp');
+            self::$path = $settings->getSetting('datacachepath', '/tmp');
         }
         $name = rawurlencode($name);
         $name = str_replace('_', '-', $name);

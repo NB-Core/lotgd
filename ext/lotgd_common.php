@@ -15,6 +15,7 @@ use Lotgd\LocalConfig;
 use Lotgd\PageParts;
 use Lotgd\MySQL\Database;
 use Lotgd\Template;
+use Lotgd\DateTime;
 // translator ready
 // addnews ready
 // mail ready
@@ -67,7 +68,7 @@ require_once("lib/modules.php");
 if (isset ($gz_handler_on) && $gz_handler_on) ob_start('ob_gzhandler');
 	else ob_start();
 
-$pagestarttime = getmicrotime();
+$pagestarttime =DateTime::getMicroTime();
 
 // Set some constant defaults in case they weren't set before the inclusion of
 // common.php
@@ -225,15 +226,15 @@ if (!DB_CONNECTED || !Database::selectDb($DB_NAME)){
 	define("LINK",$link);
 	define("DB_CHOSEN",true);
 }
-if ($logd_version == getsetting("installer_version","-1")) {
-	define("IS_INSTALLER", false);
-}
+
 //Generate our settings object
 $settings=new Settings("settings");
+if ($logd_version == $settings->getSetting("installer_version","-1")) {
+	define("IS_INSTALLER", false);
+}
+header("Content-Type: text/html; charset=".$settings->getSetting('charset','ISO-8859-1'));
 
-header("Content-Type: text/html; charset=".getsetting('charset','ISO-8859-1'));
-
-if (isset($session['lasthit']) && isset($session['loggedin']) && strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds") > $session['lasthit'] && $session['lasthit']>0 && $session['loggedin']){
+if (isset($session['lasthit']) && isset($session['loggedin']) && strtotime("-".$settings->getSetting("LOGINTIMEOUT",900)." seconds") > $session['lasthit'] && $session['lasthit']>0 && $session['loggedin']){
 	// force the abandoning of the session when the user should have been
 	// sent to the fields.
 	$session=array();
@@ -277,7 +278,7 @@ if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
 
 }
 
-if ($logd_version != getsetting("installer_version","-1") && !defined("IS_INSTALLER")){
+if ($logd_version != $settings->getSetting("installer_version","-1") && !defined("IS_INSTALLER")){
         PageParts::pageHeader("Upgrade Needed");
 	output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
 	output("In order to perform the upgrade, an admin will have to run through the installer.");
@@ -287,7 +288,7 @@ if ($logd_version != getsetting("installer_version","-1") && !defined("IS_INSTAL
     Nav::add("Installer (Admins only!)","installer.php");
 	define("NO_SAVE_USER",true);
         PageParts::pageFooter();
-} elseif ($logd_version == getsetting("installer_version","-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'],-13)!="installer.php") {
+} elseif ($logd_version == $settings->getSetting("installer_version","-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'],-13)!="installer.php") {
 // here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
         PageParts::pageHeader("Major Security Risk");
     output("`\$Remove the file named 'installer.php' from your main game directory! You need to comply in order to get the game up and running.");
@@ -400,8 +401,8 @@ if(is_array($temp_comp)) {
 }
 unset($temp_comp);
 
-$beta = getsetting("beta", 0);
-if (!$beta && getsetting("betaperplayer", 1) == 1)
+$beta = $settings->getSetting("beta", 0);
+if (!$beta && $settings->getSetting("betaperplayer", 1) == 1)
 	if (isset($session['user']['beta'])) $beta = $session['user']['beta'];
 		else $beta=0;
 
@@ -430,7 +431,7 @@ Translator::translatorSetup();
 //db call for notification)
 require_once("lib/errorhandler.php");
 
-if (getsetting('debug',0)) {
+if ($settings->getSetting('debug',0)) {
 	//Server runs in Debug mode, tell the superuser about it
 	if (($session['user']['superuser']&SU_EDIT_CONFIG)==SU_EDIT_CONFIG) {
 		tlschema("debug");

@@ -6,6 +6,12 @@ use Lotgd\CharStats;
 use Lotgd\Accounts;
 use Lotgd\PlayerFunctions;
 use Lotgd\HolidayText;
+use Lotgd\Template;
+use Lotgd\Translator;
+use Lotgd\Sanitize;
+use Lotgd\Nav;
+use Lotgd\DateTime;
+
 /**
  * Library (supporting) functions for page output
  *		addnews ready
@@ -53,8 +59,8 @@ public static function pageHeader(...$args): void {
         self::$noPopups["mail.php"] = true;
 
 	//in case this didn't already get called (such as on a database error)
-	translator_setup();
-	prepare_template();
+	Translator::translatorSetup();
+	Template::prepareTemplate();
 	if (isset($SCRIPT_NAME)) {
 		$script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
                 if ($script) {
@@ -72,14 +78,14 @@ public static function pageHeader(...$args): void {
 	if (!$arguments || count($arguments) == 0) {
 		$arguments = array("Legend of the Green Dragon");
 	}
-	$title = call_user_func_array("sprintf_translate", $arguments);
-	$title = sanitize(HolidayText::holidayize($title,'title'));
+    $title = call_user_func_array([Translator::class, 'sprintfTranslate'], $arguments);
+	$title = Sanitize::sanitize(HolidayText::holidayize($title,'title'));
 	Buffs::calculateBuffFields();
 
 	$header = $template['header'];
 	$header=str_replace("{title}",$title,$header);
-	$header.=tlbutton_pop();
-	if (getsetting('debug',0)) {
+	$header.=Translator::tlbuttonPop();
+	if (isset($settings) && $settings->getSetting('debug',0)) {
 		$session['debugstart']=microtime();
 	}
 }
@@ -120,7 +126,7 @@ public static function pageFooter(bool $saveuser=true){
         global $output,$header,$nav,$session,$REMOTE_ADDR,
                $REQUEST_URI,$pagestarttime,$template,$y2,$z2,
                $logd_version,$copyright,$SCRIPT_NAME, $footer,
-               $dbinfo;
+               $dbinfo, $settings;
 	$z = $y2^$z2;
 	$footer = $template['footer'];
 	//page footer module hooks
@@ -150,12 +156,12 @@ public static function pageFooter(bool $saveuser=true){
 		$footer = str_replace("{".$key."}","{".$key."}".implode("",$val),$footer);
 	}
 
-	$builtnavs = buildnavs();
+	$builtnavs = Nav::buildNavs();
 
 	Buffs::restoreBuffFields();
 	Buffs::calculateBuffFields();
 
-	tlschema("common");
+	Translator::tlschema("common");
 
         $statsOutput = self::charStats();
 
@@ -170,7 +176,7 @@ public static function pageFooter(bool $saveuser=true){
                                 ($row['motddate']>$session['user']['lastmotd']) &&
                                 (!isset(self::$noPopups[$SCRIPT_NAME]) || self::$noPopups[$SCRIPT_NAME]!=1) &&
                                 $session['user']['loggedin']){
-			if (getsetting('forcedmotdpopup',0)) $headscript.=self::popup("motd.php");
+			if (isset($settings) && $settings->getSetting('forcedmotdpopup',0)) $headscript.=self::popup("motd.php");
 			$session['needtoviewmotd']=true;
 		}else{
 			$session['needtoviewmotd']=false;
@@ -179,7 +185,7 @@ public static function pageFooter(bool $saveuser=true){
 		$favicon = modulehook("pageparts-favicon", $favicon);
 		$pre_headscript = $favicon['favicon-link'];
 		//add AJAX notification stuff
-		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+		if (isset($settings) && $settings->getSetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 			if (file_exists('ext/ajax_base_setup.php')) {
 				require("ext/ajax_base_setup.php");
 			}
@@ -243,7 +249,7 @@ public static function pageFooter(bool $saveuser=true){
 	//NOTICE | which I have made freely available to you, that you leave it in.
 	//NOTICE |
 	$paypalstr = '<table align="center"><tr><td>';
-	$currency = getsetting("paypalcurrency", "USD");
+	$currency = isset($settings) ? $settings->getSetting("paypalcurrency", "USD") : "USD";
 
 	if (!isset($_SESSION['logdnet']) || !isset($_SESSION['logdnet']['']) || $_SESSION['logdnet']['']=="" || date("Y-m-d H:i:s",strtotime("-1 hour"))>$session['user']['laston']){
 		$already_registered_logdnet = false;
@@ -251,22 +257,22 @@ public static function pageFooter(bool $saveuser=true){
 		$already_registered_logdnet = true;
 	}
 
-	if (getsetting("logdnet",0) && $session['user']['loggedin'] && !$already_registered_logdnet){
+	if (isset($settings) && $settings->getSetting("logdnet",0) && $session['user']['loggedin'] && !$already_registered_logdnet){
 		//account counting, just for my own records, I don't use this in the calculation for server order.
 		$sql = "SELECT count(acctid) AS c FROM " . db_prefix("accounts");
 		$result = db_query_cached($sql,"acctcount",600);
 		$row = db_fetch_assoc($result);
 		$c = $row['c'];
-		$a = getsetting("serverurl","http://".$_SERVER['SERVER_NAME'].($_SERVER['SERVER_PORT'] == 80?"":":".$_SERVER['SERVER_PORT']).dirname($_SERVER['REQUEST_URI']));
+		$a = $settings->getSetting("serverurl","http://".$_SERVER['SERVER_NAME'].($_SERVER['SERVER_PORT'] == 80?"":":".$_SERVER['SERVER_PORT']).dirname($_SERVER['REQUEST_URI']));
 		if (!preg_match("/\/$/", $a)) {
 			$a = $a . "/";
-			savesetting("serverurl", $a);
+			$settings->saveSetting("serverurl", $a);
 		}
 
-		$l = getsetting("defaultlanguage","en");
-		$d = getsetting("serverdesc","Another LoGD Server");
-		$e = getsetting("gameadminemail", "postmaster@localhost.com");
-		$u = getsetting("logdnetserver","http://logdnet.logd.com/");
+		$l = $settings->getSetting("defaultlanguage","en");
+		$d = $settings->getSetting("serverdesc","Another LoGD Server");
+		$e = $settings->getSetting("gameadminemail", "postmaster@localhost.com");
+		$u = $settings->getSetting("logdnetserver","http://logdnet.logd.com/");
 		if (!preg_match("/\/$/", $u)) {
 			$u = $u . "/";
 			savesetting("logdnetserver", $u);
@@ -287,8 +293,8 @@ public static function pageFooter(bool $saveuser=true){
 		$paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">".'
 			<input type="hidden" name="cmd" value="_xclick">
 			<input type="hidden" name="business" value="logd@mightye.org">
-			<input type="hidden" name="item_name" value="Legend of the Green Dragon Author Donation from '.full_sanitize($session['user']['name']).'">
-			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")).":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
+			<input type="hidden" name="item_name" value="Legend of the Green Dragon Author Donation from '.Sanitize::fullSanitize($session['user']['name']).'">
+			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting("charset", "ISO-8859-1") : "utf8").":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
 			<input type="hidden" name="no_shipping" value="1">
 			<input type="hidden" name="notify_url" value="http://lotgd.net/payment.php">
 			<input type="hidden" name="cn" value="Your Character Name">
@@ -298,14 +304,14 @@ public static function pageFooter(bool $saveuser=true){
 			<input type="image" src="images/paypal1.gif" border="0" name="submit" alt="Donate to Eric Stevens">
 			</form>';
 	}
-	$paysite = getsetting("paypalemail", "");
+	$paysite = isset($settings) ? $settings->getSetting("paypalemail", "") : "";
 	if ($paysite != "") {
 		$paypalstr .= '</td><td>';
 		$paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
 			<input type="hidden" name="cmd" value="_xclick">
 			<input type="hidden" name="business" value="'.$paysite.'">
-			<input type="hidden" name="item_name" value="'.getsetting("paypaltext","Legend of the Green Dragon Site Donation from").' '.full_sanitize($session['user']['name']).'">
-			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")).":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
+			<input type="hidden" name="item_name" value="'.(isset($settings) ? $settings->getSetting("paypaltext","Legend of the Green Dragon Site Donation from") : "Legend of the Gren Dragon Site Donation From").' '.full_Sanitize::sanitize($session['user']['name']).'">
+			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting("charset", "ISO-8859-1") : "utf8").":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
 			<input type="hidden" name="no_shipping" value="1">';
 		if (file_exists("payment.php")) {
 			$paypalstr .= '<input type="hidden" name="notify_url" value="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER['REQUEST_URI']).'/payment.php">';
@@ -365,8 +371,8 @@ public static function pageFooter(bool $saveuser=true){
 	}
 	//output petition count
 
-	$header=str_replace("{petition}","<a href='petition.php' onClick=\"".self::popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".translate_inline("Petition for Help")."</a>",$header);
-	$footer=str_replace("{petition}","<a href='petition.php' onClick=\"".self::popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".translate_inline("Petition for Help")."</a>",$footer);
+	$header=str_replace("{petition}","<a href='petition.php' onClick=\"".self::popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline("Petition for Help")."</a>",$header);
+	$footer=str_replace("{petition}","<a href='petition.php' onClick=\"".self::popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline("Petition for Help")."</a>",$footer);
 	if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS){
 		$sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix("petitions") . " GROUP BY status";
 		$result = db_query_cached($sql,"petition_counts");
@@ -375,9 +381,9 @@ public static function pageFooter(bool $saveuser=true){
 			$petitions["P".$row['status']] = $row['c'];
 		}
 		// add short links for the admin, depending on superuser rights (technically we could move this out of petitions and make it general, but alas...)
-		$pet = translate_inline("`0`bPetitions:`b");
-		$ued = translate_inline("`0`bUser Editor`b");
-		$mod = translate_inline("`0`bManage Modules`b");
+		$pet = Translator::translateInline("`0`bPetitions:`b");
+		$ued = Translator::translateInline("`0`bUser Editor`b");
+		$mod = Translator::translateInline("`0`bManage Modules`b");
 		db_free_result($result);
 		$admin_array=array();
 		if ($session['user']['superuser'] & SU_EDIT_USERS){
@@ -417,17 +423,17 @@ public static function pageFooter(bool $saveuser=true){
 	$header=str_replace("{script}",$script,$header);
 	//output view PHP source link
 	$sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
-	$footer=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".translate_inline("View PHP Source")."</a>",$footer);
-	$header=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".translate_inline("View PHP Source")."</a>",$header);
+	$footer=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",$footer);
+	$header=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",$header);
 	//output version
 	$footer=str_replace("{version}", "Version: $logd_version", $footer);
 	//output page generation time
-	$gentime = getmicrotime()-$pagestarttime;
+	$gentime = DateTime::getMicroTime()-$pagestarttime;
 	if (!isset($session['user']['gentime'])) $session['user']['gentime']=0;
 	$session['user']['gentime']+=$gentime;
 	if (!isset($session['user']['gentimecount'])) $session['user']['gentimecount']=0;
 	$session['user']['gentimecount']++;
-	if (getsetting('debug',0)) {	
+	if (isset($settings) && $settings->getSetting('debug',0)) {	
 		global $SCRIPT_NAME;
 		$sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','runtime','".$SCRIPT_NAME."','".($gentime)."');";
 		$resultdebug=db_query($sql);
@@ -438,7 +444,7 @@ public static function pageFooter(bool $saveuser=true){
     $querytime = isset($dbinfo['querytime']) ? $dbinfo['querytime'] : 0;
     $footer=str_replace("{pagegen}","Page gen: ".round($gentime,3)."s / ".$queriesthishit." queries (".round($querytime,3)."s), Ave: ".round($session['user']['gentime']/$session['user']['gentimecount'],3)."s - ".round($session['user']['gentime'],3)."/".round($session['user']['gentimecount'],3)."",$footer);
 
-	tlschema();
+	Translator::tlschema();
 
 	//clean up spare {fields}s from header and footer (in case they're not used)
 	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
@@ -627,7 +633,7 @@ public static function getCharStatValue(string $section,string $title){
  * @return string The current stats for this character or the list of online players
  */
 public static function charStats(): string{
-	global $session, $playermount, $companions;
+	global $session, $playermount, $companions, $settings;
 
 	if (defined("IS_INSTALLER")) return "";
 
@@ -641,7 +647,7 @@ public static function charStats(): string{
 		$u['experience']=round($u['experience'],0);
 		$u['maxhitpoints']=round($u['maxhitpoints'],0);
 		$spirits=array(-6=>"Resurrected",-2=>"Very Low",-1=>"Low","0"=>"Normal",1=>"High",2=>"Very High");
-		if ($u['alive']){ }else{ $spirits[(int)$u['spirits']] = translate_inline("DEAD","stats"); }
+		if ($u['alive']){ }else{ $spirits[(int)$u['spirits']] = Translator::translateInline("DEAD","stats"); }
 		//calculate_buff_fields();
 		reset($session['bufflist']);
 		/*not so easy anymore
@@ -672,13 +678,13 @@ public static function charStats(): string{
 					$val['name'][0] = str_replace("`%","`%%",$val['name'][0]);
 					$val['name']=call_user_func_array("sprintf_translate", $val['name']);
 				} else { //in case it's a string
-					$val['name']=translate_inline($val['name']);
+					$val['name']=Translator::translateInline($val['name']);
 				}
 				if ($val['rounds']>=0){
 					// We're about to sprintf, so, let's makes sure that
 					// `% is handled.
-					//$n = translate_inline(str_replace("`%","`%%",$val['name']));
-					$b = translate_inline("`#%s `7(%s rounds left)`n","buffs");
+					//$n = Translator::translateInline(str_replace("`%","`%%",$val['name']));
+					$b = Translator::translateInline("`#%s `7(%s rounds left)`n","buffs");
 					$b = sprintf($b, $val['name'], $val['rounds']);
 					$buffs.=appoencode($b, true);
 				}else{
@@ -689,7 +695,7 @@ public static function charStats(): string{
 			}
 		}
 		if ($buffcount==0){
-			$buffs.=appoencode(translate_inline("`^None`0"),true);
+			$buffs.=appoencode(Translator::translateInline("`^None`0"),true);
 		}
 
 		$atk = round($atk, 2);
@@ -735,9 +741,9 @@ public static function charStats(): string{
 			self::addCharStat("Spirit", 10+round(($u['level']-1)*1.5));
 		}
 		if ($u['race'] != RACE_UNKNOWN) {
-			self::addCharStat("Race", translate_inline($u['race'],"race"));
+			self::addCharStat("Race", Translator::translateInline($u['race'],"race"));
 		}else {
-			self::addCharStat("Race", translate_inline(RACE_UNKNOWN,"race"));
+			self::addCharStat("Race", Translator::translateInline(RACE_UNKNOWN,"race"));
 		}
 		if (is_array($companions) && count($companions)>0) {
 			self::addCharStat("Companions");
@@ -764,7 +770,7 @@ public static function charStats(): string{
 		if ($u['alive']) {
 			self::addCharStat("Turns", $u['turns'].check_temp_stat("turns",1));
 			self::addCharStat("PvP", $u['playerfights']);
-			self::addCharStat("Spirits", translate_inline("`b".$spirits[(int)$u['spirits']]."`b"));
+			self::addCharStat("Spirits", Translator::translateInline("`b".$spirits[(int)$u['spirits']]."`b"));
 			self::addCharStat("Currency");
 			self::addCharStat("Gold", number_format($u['gold'].check_temp_stat("gold",1),0,$point,$sep));
 			self::addCharStat("Bankgold", number_format($u['goldinbank'].check_temp_stat("goldinbank",1),0,$point,$sep));
@@ -789,7 +795,7 @@ public static function charStats(): string{
 	else
 	{
 		$ret = "";
-		if ($ret = datacache("charlisthomepage")){
+		if ($ret = Datacache::datacache("charlisthomepage")){
 
 		}else{
 			$onlinecount=0;
@@ -798,7 +804,14 @@ public static function charStats(): string{
                 $onlinecount = $list['count'];
                 $ret = $list['list'];
             } else {
-                $sql="SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."' ORDER BY level DESC";
+				if (isset($settings))
+				{
+					$loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
+				} else {
+					$loginTimeout = 90; //default to 90 seconds if not set
+				}
+
+                $sql="SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".$loginTimeout." seconds"))."' ORDER BY level DESC";
                 $result = db_query($sql);
                 $rows = array();
                 while ($row = db_fetch_assoc($result)) {
@@ -806,48 +819,24 @@ public static function charStats(): string{
                 }
                 db_free_result($result);
                 $rows = modulehook("loggedin", $rows);
-                $ret .= appoencode(sprintf(translate_inline("`bOnline Characters (%s players):`b`n"), count($rows)));
+                $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
                 foreach ($rows as $row) {
                     $ret .= appoencode("`^{$row['name']}`n");
                     $onlinecount++;
                 }
                 if ($onlinecount == 0) {
-                    $ret .= appoencode(translate_inline("`iNone`i"));
+                    $ret .= appoencode(Translator::translateInline("`iNone`i"));
                	}
-            	}
-			savesetting("OnlineCount",$onlinecount);
-			savesetting("OnlineCountLast",strtotime("now"));
-			updatedatacache("charlisthomepage",$ret);
+			}
+			if (isset($settings))
+			{
+				$settings->saveSetting("OnlineCount",$onlinecount);
+				$settings->saveSetting("OnlineCountLast",strtotime("now"));
+			}
+			Datacache::updatedatacache("charlisthomepage",$ret);
 		}
 		return $ret;
 	}
-}
-/**
- * Loads the template into the current session.  If the template doesn't
- * exist - uses the default (admin-defined) template, and then falls back
- * to jade.htm
- *
- * @param string $templatename The template name (minus the path)
- * @return array The template split into the sections defined by <!--!
- * @see Templates
- * @todo Template Help
- */
-public static function loadTemplate($templatename){
-	if ($templatename=="" || !file_exists("templates/$templatename"))
-		$templatename=getsetting("defaultskin",$_defaultskin);
-	if ($templatename=="" || !file_exists("templates/$templatename"))
-		$templatename=$_defaultskin;
-	$fulltemplate = file_get_contents("templates/$templatename");
-	$fulltemplate = explode("<!--!",$fulltemplate);
-	foreach ($fulltemplate as $val) {
-		$fieldname=substr($val,0,strpos($val,"-->"));
-		if ($fieldname!=""){
-			$template[$fieldname]=substr($val,strpos($val,"-->")+3);
-			if (!defined("IS_INSTALLER")) modulehook("template-{$fieldname}",
-					array("content"=>$template[$fieldname]));
-		}
-	}
-	return $template;
 }
 
 /**
@@ -864,9 +853,9 @@ public static function mailLink(){
 	$row['seencount']=(int)$row['seencount'];
 	$row['notseen']=(int)$row['notseen'];
 	if ($row['notseen']>0){
-		return sprintf("<a href='mail.php' target='_blank' onClick=\"".self::popup("mail.php").";return false;\" class='hotmotd'>".translate_inline("Ye Olde Mail: %s new, %s old","common")."</a>",$row['notseen'],$row['seencount']);
+		return sprintf("<a href='mail.php' target='_blank' onClick=\"".self::popup("mail.php").";return false;\" class='hotmotd'>".Translator::translateInline("Ye Olde Mail: %s new, %s old","common")."</a>",$row['notseen'],$row['seencount']);
 	}else{
-		return sprintf("<a href='mail.php' target='_blank' onClick=\"".self::popup("mail.php").";return false;\" class='motd'>".translate_inline("Ye Olde Mail: %s new, %s old","common")."</a>",$row['notseen'],$row['seencount']);
+		return sprintf("<a href='mail.php' target='_blank' onClick=\"".self::popup("mail.php").";return false;\" class='motd'>".Translator::translateInline("Ye Olde Mail: %s new, %s old","common")."</a>",$row['notseen'],$row['seencount']);
 	}
 }
 /* same, but only the text for the tab */
@@ -894,9 +883,9 @@ public static function mailLinkTabText(){
 public static function motdLink(){
 	global $session;
 	if ($session['needtoviewmotd']){
-		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='hotmotd'><b>".translate_inline("MoTD")."</b></a>";
+		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='hotmotd'><b>".Translator::translateInline("MoTD")."</b></a>";
 	}else{
-		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='motd'><b>".translate_inline("MoTD")."</b></a>";
+		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='motd'><b>".Translator::translateInline("MoTD")."</b></a>";
 	}
 }
 }

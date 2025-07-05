@@ -1,6 +1,7 @@
 <?php
 use Lotgd\Backtrace;
 use Lotgd\Sanitize;
+use Lotgd\Translator;
 
 /**
  * Render an error message using simple HTML styling.
@@ -15,8 +16,8 @@ function lotgd_render_error(string $message, string $file, int $line, string $ba
     echo "<style>body{background:#000;color:#fff;font-family:sans-serif;padding:20px;}a{color:#fff;}pre{background:#111;padding:10px;overflow:auto;}</style>\n";
     echo "</head><body>\n";
     echo "<h1>Application Error</h1>\n";
-    echo sprintf('<p>%s</p>', HTMLEntities($message, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-    echo sprintf('<p>in <b>%s</b> at <b>%s</b></p>', HTMLEntities($file, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')), $line);
+    echo sprintf('<p>%s</p>', HTMLEntities($message, ENT_COMPAT));
+    echo sprintf('<p>in <b>%s</b> at <b>%s</b></p>', HTMLEntities($file, ENT_COMPAT), $line);
     echo $backtrace;
     echo "<p>If the problem persists, please <a href='/petition.php'>submit a petition</a>.</p>\n";
     echo "</body></html>";
@@ -24,7 +25,7 @@ function lotgd_render_error(string $message, string $file, int $line, string $ba
 
 
 function logd_error_handler($errno, $errstr, $errfile, $errline){
-	global $session;
+	global $session, $settings;
 	static $in_error_handler = 0;
 	// If we have used the @ operator, just don't report anything!
 	if (!error_reporting()) return;
@@ -49,14 +50,14 @@ function logd_error_handler($errno, $errstr, $errfile, $errline){
 		break;
 	case E_WARNING:
 	case E_USER_WARNING:
-		tlschema("errorhandler");
+		Translator::tlschema("errorhandler");
 		if ($session['user']['superuser'] & SU_DEBUG_OUTPUT == SU_DEBUG_OUTPUT) {
 			output("PHP Warning: \"%s\"`nin `b%s`b at `b%s`b.`n",$errstr,$errfile,$errline,true);
-			tlschema();
+			Translator::tlschema();
 			$backtrace = Backtrace::show();
 			rawoutput($backtrace);
 		} else $backtrace="";
-		if (getsetting("notify_on_warn",0) > ""){
+		if (isset($settings) && !empty($settings->getSetting("notify_on_warn",0))){
 			//$args = func_get_args();
 			//call_user_func_array("logd_error_notify",$args);
 			logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace);
@@ -66,7 +67,8 @@ function logd_error_handler($errno, $errstr, $errfile, $errline){
         case E_USER_ERROR:
                 $backtrace = Backtrace::show();
                 lotgd_render_error($errstr, $errfile, $errline, $backtrace);
-                if (getsetting("notify_on_error",0) > ""){
+                if (isset($settings) && !empty($settings->getSetting("notify_on_error",0)))
+				{
                         logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace);
                 }
                 die();
@@ -110,11 +112,11 @@ function logd_error_notify($errno, $errstr, $errfile, $errline, $backtrace){
 			/***
 			  * Set up the mime bits
 			 **/
-                        $userstr = "";
+            $userstr = "";
 			if ($session && isset($session['user']['name']) && isset($session['user']['acctid'])) {
 				$userstr = "Error triggered by user " . $session['user']['name'] . " (" . $session['user']['acctid'] . ")\n";
 			}
-                        $plain_text = "$userstr$errstr in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
+            $plain_text = "$userstr$errstr in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
 			$html_text = "<html><body>$errstr in $errfile ($errline)<hr>$backtrace</body></html>";
 
 			$semi_rand = md5(time());
