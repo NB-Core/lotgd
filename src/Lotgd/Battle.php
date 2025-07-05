@@ -7,7 +7,14 @@ use Lotgd\BellRand;
 use Lotgd\Substitute;
 class Battle
 {
-    public static function rollDamage(&$badguy)
+    /**
+     * Calculate damage for a combat round.
+     *
+     * @param array $badguy Enemy data (modified in place)
+     *
+     * @return array{creaturedmg:int,selfdmg:int}
+     */
+    public static function rollDamage(array &$badguy): array
     {
         global $session, $creatureattack, $creatureatkmod, $adjustment;
         global $creaturedefmod, $defmod, $atkmod, $buffset, $atk, $def, $options;

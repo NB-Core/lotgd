@@ -5,11 +5,21 @@ class CharStats
 {
     private array $stats = [];
 
+    /**
+     * Reset all stored stats.
+     */
     public function clear(): void
     {
         $this->stats = [];
     }
 
+    /**
+     * Add a single stat entry.
+     *
+     * @param string     $section Section name
+     * @param string     $label   Stat label
+     * @param mixed|null $value   Value to display
+     */
     public function addStat(string $section, string $label, mixed $value = null): void
     {
         if (!isset($this->stats[$section])) {
@@ -20,16 +30,25 @@ class CharStats
         }
     }
 
+    /**
+     * Replace or create a stat entry.
+     */
     public function setStat(string $section, string $label, mixed $value): void
     {
         $this->addStat($section, $label, $value);
     }
 
+    /**
+     * Retrieve a previously set stat value.
+     */
     public function getStat(string $section, string $label): mixed
     {
         return $this->stats[$section][$label] ?? null;
     }
 
+    /**
+     * Render the stat table to HTML.
+     */
     public function render(string $buffs): string
     {
         $charstat_str = templatereplace('statstart');

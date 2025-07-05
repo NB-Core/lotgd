@@ -3,14 +3,20 @@ namespace Lotgd;
 
 class DateTime
 {
-    public static function relTime($date, bool $short = true)
+    /**
+     * Time difference from now in human readable form.
+     */
+    public static function relTime(int $date, bool $short = true): string
     {
         $now = strtotime("now");
         $x = abs($now - $date);
         return self::readableTime($x, $short);
     }
 
-    public static function readableTime($date, bool $short = true)
+    /**
+     * Convert a duration in seconds to a readable string.
+     */
+    public static function readableTime(int $date, bool $short = true): string
     {
         $x = abs($date);
         $d = (int)($x / 86400);
@@ -57,7 +63,7 @@ class DateTime
         return $o;
     }
 
-    public static function relativeDate($indate)
+    public static function relativeDate(string $indate): string
     {
         $laston = round((strtotime('now') - strtotime($indate)) / 86400, 0) . ' days';
         tlschema('datetime');
@@ -77,7 +83,7 @@ class DateTime
         return $laston;
     }
 
-    public static function checkDay()
+    public static function checkDay(): void
     {
         global $session, $revertsession, $REQUEST_URI;
         if ($session['user']['loggedin']) {
@@ -92,7 +98,7 @@ class DateTime
         }
     }
 
-    public static function isNewDay($now = 0)
+    public static function isNewDay(int $now = 0): bool
     {
         global $session;
         if ($session['user']['lasthit'] == DATETIME_DATEMIN) {
@@ -105,18 +111,18 @@ class DateTime
         return $d1 != $d2;
     }
 
-    public static function getGameTime()
+    public static function getGameTime(): string
     {
         return gmdate(getsetting('gametime', 'g:i a'), self::gametime());
     }
 
-    public static function gameTime()
+    public static function gameTime(): int
     {
         $time = self::convertgametime(strtotime('now'));
         return $time;
     }
 
-    public static function convertGameTime($intime, bool $debug = false)
+    public static function convertGameTime(int $intime, bool $debug = false): int
     {
         $intime -= getsetting('gameoffsetseconds', 0);
         $epoch = strtotime(getsetting('game_epoch', gmdate('Y-m-d 00:00:00 O', strtotime('-30 days'))));
@@ -128,7 +134,7 @@ class DateTime
         return $logd_timestamp;
     }
 
-    public static function gameTimeDetails()
+    public static function gameTimeDetails(): array
     {
         $ret = [];
         $ret['now'] = date('Y-m-d 00:00:00');
@@ -146,7 +152,7 @@ class DateTime
         return $ret;
     }
 
-    public static function secondsToNextGameDay($details = false)
+    public static function secondsToNextGameDay(array|false $details = false): int
     {
         if ($details === false) {
             $details = self::gameTimeDetails();
@@ -154,13 +160,13 @@ class DateTime
         return strtotime("{$details['now']} + {$details['realsecstotomorrow']} seconds");
     }
 
-    public static function getMicroTime()
+    public static function getMicroTime(): float
     {
         list($usec, $sec) = explode(' ', microtime());
         return ((float)$usec + (float)$sec);
     }
 
-    public static function dateDifference($date_1, $date_2 = DATETIME_TODAY, $differenceFormat = '%R%a')
+    public static function dateDifference(string $date_1, string $date_2 = DATETIME_TODAY, string $differenceFormat = '%R%a'): string
     {
         $datetime1 = date_create($date_1);
         $datetime2 = date_create($date_2);
@@ -168,7 +174,7 @@ class DateTime
         return $interval->format($differenceFormat);
     }
 
-    public static function dateDifferenceEvents($date_1, bool $abs = false)
+    public static function dateDifferenceEvents(string $date_1, bool $abs = false): int
     {
         $year = date('Y');
         $diff1 = self::dateDifference($year . '-' . $date_1);

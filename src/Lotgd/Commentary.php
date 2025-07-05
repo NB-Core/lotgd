@@ -5,6 +5,9 @@ class Commentary
 {
     public static array $comsecs = [];
 
+    /**
+     * Get list of sections that accept commentary.
+     */
     public static function commentarylocs(): array
     {
         global $session;

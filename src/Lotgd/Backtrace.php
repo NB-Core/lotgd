@@ -17,9 +17,9 @@ class Backtrace
     /**
      * Build a HTML formatted call stack listing.
      *
-     * @param array|null $trace Optional trace array, such as that returned by
-     *                          Exception::getTrace(). When omitted the current
-     *                          debug_backtrace() will be used.
+     * @param array|null $trace Optional trace from Exception::getTrace()
+     *
+     * @return string HTML stack trace
      */
     public static function show(?array $trace = null): string
     {
@@ -92,9 +92,11 @@ class Backtrace
     /**
      * Format a value for output in a backtrace.
      *
-     * @param mixed $in
+     * @param mixed $in Value to render
+     *
+     * @return string Rendered output
      */
-    public static function getType($in): string
+    public static function getType(mixed $in): string
     {
         global $settings;
         $charset = isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8';

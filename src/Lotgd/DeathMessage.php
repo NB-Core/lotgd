@@ -16,7 +16,7 @@ class DeathMessage
      *
      * @return array
      */
-    public static function select($forest = true, $extra = [], $extrarep = [])
+    public static function select(bool $forest = true, array $extra = [], array $extrarep = []): array
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
@@ -43,7 +43,7 @@ class DeathMessage
      *
      * @return array
      */
-    public static function selectArray($forest = true, $extra = [], $extrarep = [])
+    public static function selectArray(bool $forest = true, array $extra = [], array $extrarep = []): array
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');

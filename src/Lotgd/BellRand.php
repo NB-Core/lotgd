@@ -12,9 +12,9 @@ class BellRand
      * @param float|int|null $min Minimum value or null for default 0
      * @param float|int|null $max Maximum value or null for default 1
      *
-     * @return float|int
+     * @return float|int Random value
      */
-    public static function generate($min = null, $max = null)
+    public static function generate(int|float|null $min = null, int|float|null $max = null): int|float
     {
         if ($min === null && $max === null) {
             $min = 0;

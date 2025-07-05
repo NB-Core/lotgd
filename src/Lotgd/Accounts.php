@@ -10,6 +10,8 @@ class Accounts
 {
     /**
      * Persist the current user session to the database.
+     *
+     * @return void
      */
     public static function saveUser(): void
     {
