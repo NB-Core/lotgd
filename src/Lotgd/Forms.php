@@ -29,7 +29,7 @@ class Forms
         }
         $switchscript=datacache("switchscript_comm".rawurlencode($name));
         if (!$switchscript) {
-            $colors=$output->get_colors();
+            $colors=$output->getColors();
             $switchscript="switch (z) {\n                                case \"0\": out+='</span>';break;\n";
             foreach ($colors as $key=>$colorcode) {
                 $switchscript.="case \"".$key."\": out+='</span><span class=\'".$colorcode."\'>';break;\n";

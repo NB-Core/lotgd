@@ -3,14 +3,14 @@ namespace Lotgd;
 
 class DateTime
 {
-    public static function reltime($date, bool $short = true)
+    public static function relTime($date, bool $short = true)
     {
         $now = strtotime("now");
         $x = abs($now - $date);
-        return self::readabletime($x, $short);
+        return self::readableTime($x, $short);
     }
 
-    public static function readabletime($date, bool $short = true)
+    public static function readableTime($date, bool $short = true)
     {
         $x = abs($date);
         $d = (int)($x / 86400);
@@ -57,7 +57,7 @@ class DateTime
         return $o;
     }
 
-    public static function relativedate($indate)
+    public static function relativeDate($indate)
     {
         $laston = round((strtotime('now') - strtotime($indate)) / 86400, 0) . ' days';
         tlschema('datetime');
@@ -77,12 +77,12 @@ class DateTime
         return $laston;
     }
 
-    public static function checkday()
+    public static function checkDay()
     {
         global $session, $revertsession, $REQUEST_URI;
         if ($session['user']['loggedin']) {
             output_notl('<!--CheckNewDay()-->', true);
-            if (self::is_new_day()) {
+            if (self::isNewDay()) {
                 $session = $revertsession;
                 $session['user']['restorepage'] = $REQUEST_URI;
                 $session['allowednavs'] = [];
@@ -92,7 +92,7 @@ class DateTime
         }
     }
 
-    public static function is_new_day($now = 0)
+    public static function isNewDay($now = 0)
     {
         global $session;
         if ($session['user']['lasthit'] == DATETIME_DATEMIN) {
@@ -105,18 +105,18 @@ class DateTime
         return $d1 != $d2;
     }
 
-    public static function getgametime()
+    public static function getGameTime()
     {
         return gmdate(getsetting('gametime', 'g:i a'), self::gametime());
     }
 
-    public static function gametime()
+    public static function gameTime()
     {
         $time = self::convertgametime(strtotime('now'));
         return $time;
     }
 
-    public static function convertgametime($intime, bool $debug = false)
+    public static function convertGameTime($intime, bool $debug = false)
     {
         $intime -= getsetting('gameoffsetseconds', 0);
         $epoch = strtotime(getsetting('game_epoch', gmdate('Y-m-d 00:00:00 O', strtotime('-30 days'))));
@@ -128,7 +128,7 @@ class DateTime
         return $logd_timestamp;
     }
 
-    public static function gametimedetails()
+    public static function gameTimeDetails()
     {
         $ret = [];
         $ret['now'] = date('Y-m-d 00:00:00');
@@ -146,21 +146,21 @@ class DateTime
         return $ret;
     }
 
-    public static function secondstonextgameday($details = false)
+    public static function secondsToNextGameDay($details = false)
     {
         if ($details === false) {
-            $details = self::gametimedetails();
+            $details = self::gameTimeDetails();
         }
         return strtotime("{$details['now']} + {$details['realsecstotomorrow']} seconds");
     }
 
-    public static function getmicrotime()
+    public static function getMicroTime()
     {
         list($usec, $sec) = explode(' ', microtime());
         return ((float)$usec + (float)$sec);
     }
 
-    public static function datedifference($date_1, $date_2 = DATETIME_TODAY, $differenceFormat = '%R%a')
+    public static function dateDifference($date_1, $date_2 = DATETIME_TODAY, $differenceFormat = '%R%a')
     {
         $datetime1 = date_create($date_1);
         $datetime2 = date_create($date_2);
@@ -168,12 +168,12 @@ class DateTime
         return $interval->format($differenceFormat);
     }
 
-    public static function datedifference_events($date_1, bool $abs = false)
+    public static function dateDifferenceEvents($date_1, bool $abs = false)
     {
         $year = date('Y');
-        $diff1 = self::datedifference($year . '-' . $date_1);
-        $diff2 = self::datedifference(($year + 1) . '-' . $date_1);
-        $diff3 = self::datedifference(($year - 1) . '-' . $date_1);
+        $diff1 = self::dateDifference($year . '-' . $date_1);
+        $diff2 = self::dateDifference(($year + 1) . '-' . $date_1);
+        $diff3 = self::dateDifference(($year - 1) . '-' . $date_1);
         if (abs($diff1) < abs($diff2) && abs($diff1) < abs($diff3)) {
             $d_return = $diff1;
         } elseif (abs($diff2) < abs($diff1) && abs($diff2) < abs($diff3)) {

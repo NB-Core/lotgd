@@ -6,7 +6,7 @@ namespace Lotgd;
  */
 class Template
 {
-    public static function templatereplace($itemname, $vals = false)
+    public static function templateReplace($itemname, $vals = false)
     {
         global $template;
         if (!isset($template[$itemname])) {
@@ -27,7 +27,7 @@ class Template
         return $out;
     }
 
-    public static function prepare_template($force = false)
+    public static function prepareTemplate($force = false)
     {
         if (!$force) {
             if (defined('TEMPLATE_IS_PREPARED')) {

@@ -6,7 +6,7 @@ namespace Lotgd;
  */
 class Names
 {
-    public static function get_player_title($old = false)
+    public static function getPlayerTitle($old = false)
     {
         global $session;
         $title = '';
@@ -24,11 +24,11 @@ class Names
         return $title;
     }
 
-    public static function get_player_basename($old = false)
+    public static function getPlayerBasename($old = false)
     {
         global $session;
         $name = '';
-        $title = self::get_player_title($old);
+        $title = self::getPlayerTitle($old);
         if ($old === false) {
             $name = $session['user']['name'];
             $pname = $session['user']['playername'];
@@ -49,20 +49,20 @@ class Names
         return $pname;
     }
 
-    public static function change_player_name($newname, $old = false)
+    public static function changePlayerName($newname, $old = false)
     {
         if ($newname == '') {
-            $newname = self::get_player_basename($old);
+            $newname = self::getPlayerBasename($old);
         }
         $newname = str_replace('`0', '', $newname);
-        $title = self::get_player_title($old);
+        $title = self::getPlayerTitle($old);
         if ($title) {
             $newname = $title . ' ' . $newname . '`0';
         }
         return $newname;
     }
 
-    public static function change_player_ctitle($nctitle, $old = false)
+    public static function changePlayerCtitle($nctitle, $old = false)
     {
         global $session;
         if ($nctitle == '') {
@@ -72,14 +72,14 @@ class Names
                 $nctitle = $old['title'];
             }
         }
-        $newname = self::get_player_basename($old) . '`0';
+        $newname = self::getPlayerBasename($old) . '`0';
         if ($nctitle) {
             $newname = $nctitle . ' ' . $newname;
         }
         return $newname;
     }
 
-    public static function change_player_title($ntitle, $old = false)
+    public static function changePlayerTitle($ntitle, $old = false)
     {
         global $session;
         if ($old === false) {
@@ -87,7 +87,7 @@ class Names
         } else {
             $ctitle = $old['ctitle'];
         }
-        $newname = self::get_player_basename($old) . '`0';
+        $newname = self::getPlayerBasename($old) . '`0';
         if ($ctitle == '') {
             if ($ntitle != '') {
                 $newname = $ntitle . ' ' . $newname;

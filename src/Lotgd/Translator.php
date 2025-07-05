@@ -16,7 +16,7 @@ class Translator
 // addnews ready
 // mail ready
 
-    public static function translator_setup(){
+    public static function translatorSetup(){
 		//Determine what language to use
 		if (defined("TRANSLATOR_IS_SET_UP")) return;
 		define("TRANSLATOR_IS_SET_UP",true);
@@ -80,7 +80,7 @@ class Translator
 					$sql = "INSERT IGNORE INTO " .  db_prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . LANGUAGE . "', " .  "'$namespace')";
 					db_query($sql,false);
 				}
-				tlbutton_push($indata,!$foundtranslation,$namespace);
+                                tlbuttonPush($indata,!$foundtranslation,$namespace);
 			} else {
 				$outdata = $indata;
 			}
@@ -88,12 +88,12 @@ class Translator
 		return $outdata;
 	}
 
-    public static function sprintf_translate(){
+    public static function sprintfTranslate(){
 		$args = func_get_args();
 		$setschema = false;
 		// Handle if an array is passed in as the first arg
 		if (is_array($args[0])) {
-			$args[0] = call_user_func_array("sprintf_translate", $args[0]);
+                    $args[0] = call_user_func_array("sprintfTranslate", $args[0]);
 		} else {
 			// array_shift returns the first element of an array and shortens this array by one...
 			if (is_bool($args[0]) && array_shift($args)) {
@@ -116,7 +116,7 @@ class Translator
 			if (is_array($val)){
 				//When passed a sub-array this represents an independant
 				//translation to happen then be inserted in the master string.
-				$args[$key]=call_user_func_array("sprintf_translate",$val);
+                                $args[$key]=call_user_func_array("sprintfTranslate",$val);
 			}
 		}
 		ob_start();
@@ -134,17 +134,17 @@ class Translator
 		return $return;
 	}
 
-    public static function translate_inline($in,$namespace=FALSE){
+    public static function translateInline($in,$namespace=FALSE){
 		$out = translate($in,$namespace);
-		rawoutput(tlbutton_clear());
+            rawoutput(tlbuttonClear());
 		return $out;
 	}
 
-		public static function translate_mail($in,$to=0){
+           public static function translateMail($in,$to=0){
 		global $session;
 		tlschema("mail"); // should be same schema like systemmails!
 		if (!is_array($in)) $in=array($in);
-		//this is done by sprintf_translate.
+            //this is done by sprintfTranslate.
 		//$in[0] = str_replace("`%","`%%",$in[0]);
 		if ($to>0){
 			$result = db_query("SELECT prefs FROM ".db_prefix("accounts")." WHERE acctid=$to");
@@ -158,23 +158,23 @@ class Translator
 		// translation of mails can't be done in language of recipient by
 		// the sender via translation tool.
 
-		$out = call_user_func_array("sprintf_translate", $in);
+                $out = call_user_func_array("sprintfTranslate", $in);
 
 		tlschema();
 		unset($session['tlanguage']);
 		return $out;
 	}
 
-		public static function tl($in){
+           public static function tl($in){
 		$out = translate($in);
-		return tlbutton_clear().$out;
+            return tlbuttonClear().$out;
 	}
 
-    public static function translate_loadnamespace($namespace,$language=false){
+    public static function translateLoadNamespace($namespace,$language=false){
 		if (defined("LANGUAGE")) {
 			if ($language===false) $language = LANGUAGE;
 		} else {
-			translator_setup();	
+                    translatorSetup();
 		}
 		$page = translator_page($namespace);
 		$uri = translator_uri($namespace);
@@ -202,7 +202,7 @@ class Translator
 	}
 
 
-	public static function tlbutton_push($indata,$hot=false,$namespace=FALSE){
+   public static function tlbuttonPush($indata,$hot=false,$namespace=FALSE){
                 global $session,$language;
                 if (!self::$translation_is_enabled) return;
                 $seentlbuttons =& self::$seentlbuttons;
@@ -232,7 +232,7 @@ class Translator
 		}
 	}
 
-    public static function tlbutton_pop(){
+    public static function tlbuttonPop(){
                 global $session;
                 if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
                         return array_pop(self::$translatorbuttons);
@@ -241,10 +241,10 @@ class Translator
                 }
         }
 
-    public static function tlbutton_clear(){
+    public static function tlbuttonClear(){
                 global $session;
                 if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
-                        $return = tlbutton_pop().join("",self::$translatorbuttons);
+                        $return = tlbuttonPop().join("",self::$translatorbuttons);
                         self::$translatorbuttons = array();
                         return $return;
                 }else{
@@ -253,7 +253,7 @@ class Translator
         }
 
 
-    public static function enable_translation($enable=true){
+    public static function enableTranslation($enable=true){
                 self::$translation_is_enabled = $enable;
         }
 
@@ -271,7 +271,7 @@ class Translator
                 }
 	}
 
-    public static function translator_check_collect_texts()
+    public static function translatorCheckCollectTexts()
 	{
 		$tlmax = getsetting("tl_maxallowed",0);
 

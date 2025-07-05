@@ -16,7 +16,7 @@ use Lotgd\Substitute;
  *
  * @param array $enemies The enemies to be displayed.
  */
-    public static function show_enemies($enemies) {
+    public static function showEnemies($enemies) {
         global $enemycounter, $session;
         $u=&$session['user']; //fast and better, by pointer
         static $fightbar=NULL;
@@ -149,7 +149,7 @@ use Lotgd\Substitute;
  * @param array $options The options given by a module or basics.
  * @return array The complete options.
  */
-    public static function prepare_fight($options=false) {
+    public static function prepareFight($options=false) {
 	global $companions;
 	$basicoptions = array(
 		"maxattacks"=>getsetting("maxattacks", 4),
@@ -160,8 +160,8 @@ use Lotgd\Substitute;
 	$fightoptions = $options + $basicoptions;
 	$fightoptions = modulehook("fightoptions", $fightoptions);
 
-	// We'll also reset the companions here...
-	prepare_companions();
+        // We'll also reset the companions here...
+        prepareCompanions();
 	return $fightoptions;
 }
 
@@ -169,7 +169,7 @@ use Lotgd\Substitute;
  * This functions prepares companions to be able to take part in a fight. Uses global copies.
  *
  */
-    public static function prepare_companions() {
+    public static function prepareCompanions() {
 	global $companions;
 	$newcompanions = array();
 	if (is_array($companions)) {
@@ -189,7 +189,7 @@ use Lotgd\Substitute;
  * @param string $susp The type of suspension
  * @param mixed $nomsg The message to be displayed upon suspending. If false, no message will be displayed.
  */
-    public static function suspend_companions($susp, $nomsg=false) {
+    public static function suspendCompanions($susp, $nomsg=false) {
 	global $companions;
 	$newcompanions = array();
 	$suspended = false;
@@ -230,7 +230,7 @@ use Lotgd\Substitute;
  * @param string $susp The type of suspension
  * @param mixed $nomsg The message to be displayed upon unsuspending. If false, no message will be displayed.
  */
-    public static function unsuspend_companions($susp, $nomsg=false) {
+    public static function unsuspendCompanions($susp, $nomsg=false) {
 	global $companions;
 	$notify = false;
 	$newcompanions = array();
@@ -265,7 +265,7 @@ use Lotgd\Substitute;
  * @param array $localenemies The stack of enemies to find a valid one from.
  * @return array $localenemies The stack with changed targetting.
  */
-    public static function autosettarget($localenemies) {
+    public static function autoSetTarget($localenemies) {
 	$targetted = 0;
 	if (is_array($localenemies)) {
 		foreach ($localenemies as $index=>$badguy) {
@@ -297,7 +297,7 @@ use Lotgd\Substitute;
  * @param string $activate The stage of activation. Can be one of these: "fight", "defend", "heal" or "magic".
  * @return array The changed companion
  */
-    public static function report_companion_move(&$badguy,$companion, $activate="fight") {
+    public static function reportCompanionMove(&$badguy,$companion, $activate="fight") {
 	global $session,$creatureattack,$creatureatkmod,$adjustment;
 	global $creaturedefmod,$defmod,$atkmod,$atk,$def,$count,$defended,$needtosstopfighting;
 
@@ -305,7 +305,7 @@ use Lotgd\Substitute;
 		return $companion;
 	}
 	if ($activate == "fight" && isset($companion['abilities']['fight']) && $companion['abilities']['fight'] == true && $companion['used'] == false) {
-		$roll = rollcompaniondamage($badguy,$companion);
+            $roll = self::rollCompanionDamage($badguy,$companion);
 		$damage_done = $roll['creaturedmg'];
 		$damage_received = $roll['selfdmg'];
 		if ($damage_done==0){
@@ -406,7 +406,7 @@ use Lotgd\Substitute;
 		} // else						// comments.
 		unset($mynewcompanions);
 		unset($mycompanions);
-		$roll = rollcompaniondamage($badguy,$companion);
+            $roll = self::rollCompanionDamage($badguy,$companion);
 		$damage_done = $roll['creaturedmg'];
 		$damage_received = $roll['selfdmg'];
 		if ($badguy['creaturehealth'] >= 0) {
@@ -423,7 +423,7 @@ use Lotgd\Substitute;
 		$companion['used'] = true;
 	} else if ($activate == "defend" && isset($companion['abilities']['defend']) && $companion['abilities']['defend'] == true && $defended == false && $companion['used'] == false) {
 		$defended = 1;
-		$roll = rollcompaniondamage($badguy,$companion);
+            $roll = self::rollCompanionDamage($badguy,$companion);
 		$damage_done = $roll['creaturedmg'];
 		$damage_received = $roll['selfdmg'];
 		if ($damage_done==0){
@@ -449,7 +449,7 @@ use Lotgd\Substitute;
 		}
 		$companion['used'] = true;
 	} else if ($activate == "magic" && isset($companion['abilities']['magic']) && $companion['abilities']['magic'] == true && $companion['used'] == false) {
-		$roll = rollcompaniondamage($badguy,$companion);
+            $roll = self::rollCompanionDamage($badguy,$companion);
 		$damage_done = abs($roll['creaturedmg']);
 		if ($damage_done==0){
 			$msg = $companion['magicfailmsg'];
@@ -507,7 +507,7 @@ use Lotgd\Substitute;
  * @return array
  */
 
-    public static function rollcompaniondamage(&$badguy,$companion){
+    public static function rollCompanionDamage(&$badguy,$companion){
 	global $creatureattack,$creatureatkmod,$adjustment,$options;
 	global $creaturedefmod,$compdefmod,$compatkmod,$buffset,$atk,$def;
 
@@ -597,7 +597,7 @@ if ($bad_check>50) {
  *
  * @param mixed $creature A standard badguy array. If numeric, the corresponding badguy will be loaded from the database.
  */
-    public static function battle_spawn($creature) {
+    public static function battleSpawn($creature) {
 	global $enemies, $newenemies, $badguy,$nextindex;
 	if (!is_array($newenemies)) $newenemies=array();
 	if (!isset($nextindex)) {
@@ -625,7 +625,7 @@ if ($bad_check>50) {
  * @param int $amount Amount of helath to be restored
  * @param mixed $target If false badguy will heal itself otherwise the enemy with this index.
  */
-    public static function battle_heal($amount, $target=false) {
+    public static function battleHeal($amount, $target=false) {
 	global $newenemies, $enemies, $badguy;
 	if ($amount > 0) {
 		if ($target === false) {
@@ -653,7 +653,7 @@ if ($bad_check>50) {
  *
  * @param string $script the script to be executed.
  */
-    public static function execute_ai_script($script) {
+    public static function executeAiScript($script) {
 	global $unsetme;
 	if ($script > "") {
 		eval($script);

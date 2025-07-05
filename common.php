@@ -478,8 +478,8 @@ if (!defined("IS_INSTALLER") && getsetting('debug',0)) {
 }
 
 // After setup, allow modification of colors and nested tags
-$colors = modulehook("core-colors",$output->get_colors());
-$output->set_colors($colors);
+$colors = modulehook("core-colors",$output->getColors());
+$output->setColors($colors);
 // and nested tag handling
 $nestedtags = modulehook("core-nestedtags",$output->get_nested_tags());
 $output->set_nested_tags($nestedtags);

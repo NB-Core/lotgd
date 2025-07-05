@@ -7,7 +7,7 @@ use Lotgd\Forms;
  */
 class Motd
 {
-    public static function motd_admin($id, $poll = false)
+    public static function motdAdmin($id, $poll = false)
     {
         global $session;
         $id = (int)$id;
@@ -20,17 +20,17 @@ class Motd
                 $body = $row['motdbody'];
                 $date = $row['motddate'];
                 $author = $row['motdauthor'];
-                self::motditem($subject, $body, $author, $date, $id);
+                self::motdItem($subject, $body, $author, $date, $id);
             }
         }
         $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motditem FROM ' . db_prefix('motd') . ($poll ? ' WHERE motdtype=1' : ' WHERE motdtype=0') . ' ORDER BY motddate DESC';
         $result = db_query($sql);
         while ($row = db_fetch_assoc($result)) {
-            self::motditem($row['motdtitle'], $row['motdbody'], $row['motdauthor'], $row['motddate'], $row['motditem']);
+            self::motdItem($row['motdtitle'], $row['motdbody'], $row['motdauthor'], $row['motddate'], $row['motditem']);
         }
     }
 
-    public static function motditem($subject, $body, $author, $date, $id)
+    public static function motdItem($subject, $body, $author, $date, $id)
     {
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
         rawoutput('<h4>' . htmlentities($subject, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
@@ -40,7 +40,7 @@ class Motd
         rawoutput('</div>');
     }
 
-    public static function pollitem($id, $subject, $body, $author, $date, $showpoll = true)
+    public static function pollItem($id, $subject, $body, $author, $date, $showpoll = true)
     {
         rawoutput('<div class="pollitem">');
         rawoutput('<h4>' . htmlentities($subject, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
@@ -52,7 +52,7 @@ class Motd
         rawoutput('</div>');
     }
 
-    public static function motd_form($id)
+    public static function motdForm($id)
     {
         require_once 'lib/showform.php';
         $sql = 'SELECT motdtitle,motdbody,motdtype FROM ' . db_prefix('motd') . " WHERE motditem='$id'";
@@ -78,7 +78,7 @@ class Motd
         rawoutput('</form>');
     }
 
-    public static function motd_poll_form()
+    public static function motdPollForm()
     {
         require_once 'lib/showform.php';
         $form = array(
@@ -92,7 +92,7 @@ class Motd
         rawoutput('</form>');
     }
 
-    public static function motd_del($id)
+    public static function motdDel($id)
     {
         $sql = 'DELETE FROM ' . db_prefix('motd') . " WHERE motditem='$id'";
         db_query($sql);

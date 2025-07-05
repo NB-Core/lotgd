@@ -12,10 +12,10 @@ function soap($input, $debug = false, $skiphook = false)
 
 function good_word_list()
 {
-    return Censor::good_word_list();
+    return Censor::goodWordList();
 }
 
 function nasty_word_list()
 {
-    return Censor::nasty_word_list();
+    return Censor::nastyWordList();
 }

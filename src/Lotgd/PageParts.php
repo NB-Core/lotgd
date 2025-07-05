@@ -450,7 +450,7 @@ public static function pageFooter(bool $saveuser=true){
 	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
 	//finalize output
-	$browser_output=$header.($output->get_output()).$footer;
+    $browser_output=$header.($output->getOutput()).$footer;
 	if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
 	$session['user']['gensize']+=strlen($browser_output);
 	$session['output']=$browser_output;
@@ -543,7 +543,7 @@ public static function popupFooter(){
 	$header = str_replace("{script}","",$header);
 	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
-	$browser_output=$header.$maillink_add_after.($output->get_output()).$footer;
+    $browser_output=$header.$maillink_add_after.($output->getOutput()).$footer;
 	Accounts::saveUser();
 	session_write_close();
 	echo $browser_output;
