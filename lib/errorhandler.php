@@ -153,7 +153,7 @@ set_error_handler("logd_error_handler");
  */
 function lotgd_exception_handler($exception): void
 {
-    $trace = Backtrace::show();
+    $trace = Backtrace::show($exception->getTrace());
     lotgd_render_error($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
 }
 set_exception_handler('lotgd_exception_handler');
