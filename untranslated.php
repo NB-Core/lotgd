@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -12,18 +14,17 @@ define("OVERRIDE_FORCED_NAV",true);
 require_once("common.php");
 require_once("lib/http.php");
 
-check_su_access(SU_IS_TRANSLATOR);
+SuAccess::check(SU_IS_TRANSLATOR);
 
 tlschema("untranslated");
 
 $op = httpget('op');
 page_header("Untranslated Texts");
 
-require_once("lib/superusernav.php");
 //chcek if he/she is allowed to edit that language
 if (!in_array($session['user']['prefs']['language'],explode(",",$session['user']['translatorlanguages']))) {
 	output("Sorry, please change your language to one you are allowed to translate.`n`n");
-	superusernav();
+	SuperuserNav::render();
 	page_footer();
 }
 
@@ -152,7 +153,7 @@ if ($op == "list") {
 } // end list if
 addnav("R?Restart Translator", "untranslated.php");
 addnav("N?Translate by Namespace", "untranslated.php?op=list");
-superusernav();
+SuperuserNav::render();
 page_footer();
 
 ?>

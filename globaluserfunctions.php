@@ -1,14 +1,15 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 require_once("common.php");
 
 tlschema("globaluserfunctions");
 
-check_su_access(SU_MEGAUSER);
+SuAccess::check(SU_MEGAUSER);
 
 page_header("Global User Functions");
-require_once("lib/superusernav.php");
-require_once("lib/serverfunctions.class.php");
-superusernav();
+use Lotgd\ServerFunctions;
+SuperuserNav::render();
 //addnav("Refresh the stats","stats.php");
 addnav("Actions");
 addnav("Reset all dragonpoints","globaluserfunctions.php?op=dkpointreset");

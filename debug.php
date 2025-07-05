@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -7,10 +9,9 @@ require_once("lib/http.php");
 
 tlschema("debug");
 
-check_su_access(SU_EDIT_CONFIG);
+SuAccess::check(SU_EDIT_CONFIG);
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Debug Options");
 addnav("",$_SERVER['REQUEST_URI']);
 $sort = httpget('sort');
@@ -35,7 +36,22 @@ addnav("Switch ASC/DESC","debug.php?debug=".$debug."&sort=".URLEncode($sort)."&d
 switch ($debug) {
 
 	case "hooksort":
-		$sql = "Select category,subcategory, value+0 as sum, (value+0)/count(id) as medium,count(id) AS counter FROM ".db_prefix('debug')." WHERE type='hooktime' group by type,category,subcategory order by $order $ascdesc limit 30";
+		$sql = "SELECT 
+					category, 
+					subcategory, 
+					SUM(value + 0) AS sum,
+					AVG(value + 0) AS medium,
+					COUNT(id) AS counter
+				FROM 
+					`".db_prefix('debug')."` 
+				WHERE 
+					type = 'hooktime'
+				GROUP BY 
+					category, subcategory
+				ORDER BY 
+					$order $ascdesc
+				LIMIT 30;
+				";
 		$category=translate_inline("Setting");
 		$subcategory=translate_inline("Module Name");
 		$sum_desc=translate_inline("Total Seconds");
@@ -46,7 +62,19 @@ switch ($debug) {
 	case "pageruntime":
 
 	default:
-	$sql = "Select category,subcategory, value+0 as sum, (value+0)/count(id) as medium,count(id) AS counter FROM ".db_prefix('debug')." WHERE type='pagegentime' group by type,category,subcategory order by $order $ascdesc limit 30";
+	$sql = "SELECT 
+				type,
+				category, 
+				subcategory, 
+				SUM(value + 0) AS sum,
+				AVG(value + 0) AS medium,
+				COUNT(id) AS counter
+			FROM ".db_prefix('debug')."
+			WHERE type = 'pagegentime'
+			GROUP BY type, category, subcategory
+			ORDER BY $order $ascdesc
+			LIMIT 30";
+
 	$category=translate_inline("Setting");
 	$subcategory=translate_inline("Module Name");
 	$sum_desc=translate_inline("Total Seconds");

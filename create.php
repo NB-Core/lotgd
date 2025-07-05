@@ -1,14 +1,20 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
 define("ALLOW_ANONYMOUS",true);
+use Lotgd\Mail;
 use Lotgd\CheckBan;
+use Lotgd\Settings;
+use Lotgd\Sanitize;
+use Lotgd\DebugLog;
 require_once("common.php");
 require_once("lib/is_email.php");
-require_once("lib/sanitize.php");
-require("lib/settings_extended.php");
-require_once("lib/serverfunctions.class.php");
+// legacy wrapper removed, instantiate settings directly
+$settings_extended = new Settings('settings_extended');
+use Lotgd\ServerFunctions;
 
 tlschema("create");
 
@@ -80,13 +86,11 @@ if ($op=="forgotval"){
 			$sql="UPDATE ".db_prefix("accounts")." SET emailaddress='".$replaceemail."', replaceemail='',forgottenpassword='' WHERE emailvalidation='$id';";
 			db_query($sql);
 			output("`#`c Email changed successfully!`c`0`n");
-			require_once("lib/debuglog.php");
-			debuglog("Email change request validated by link from ".$row['emailaddress']." to ".$replaceemail,$row['acctid'],$row['acctid'],"Email");
+                        DebugLog::add("Email change request validated by link from ".$row['emailaddress']." to ".$replaceemail,$row['acctid'],$row['acctid'],"Email");
 			//If a superuser changes email, we want to know about it... at least those who can ee it anyway, the user editors...
 			if ($row['superuser']>0) {
 				// 5 failed attempts for superuser, 10 for regular user
 				// send a system message to admin
-				require_once("lib/systemmail.php");
 				$sql = "SELECT acctid FROM " . db_prefix("accounts") ." WHERE (superuser&".SU_EDIT_USERS.")";
 				$result2 = db_query($sql);
 				$subj = translate_mail(array("`#%s`j has changed the email address",$row['name']),0);
@@ -94,7 +98,7 @@ if ($op=="forgotval"){
 				while ($row2 = db_fetch_assoc($result2)) {
 					$msg = translate_mail(array("This message is generated as a result of an email change to a superuser account.  Log Follows:`n`n%s",$alert),0);
 					if (db_affected_rows()>0) $noemail = true; else $noemail = false;
-					systemmail($row2['acctid'],$subj,$msg,0,$noemail);
+					Mail::systemMail($row2['acctid'],$subj,$msg,0,$noemail);
 				}
 			}
 
@@ -161,10 +165,9 @@ if ($op=="forgot"){
 				$msg=str_replace($keys,$values,$msg);
 				$msg=str_replace("`n","\n",$msg);
 
-				require_once("lib/sendmail.php");
-				$to_array=array($row['emailaddress']=>$row['login']);
-				$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-				send_email($to_array,$msg,$subj,$from_array,false,"text/plain");
+                                $to_array=array($row['emailaddress']=>$row['login']);
+                                $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+                                \Lotgd\Mail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
 				output("`#Sent a new validation email to the address on file for that account.");
 				output("You may use the validation email to log in and change your password.");
 			}else{
@@ -193,7 +196,7 @@ if (getsetting("allowcreation",1)==0){
 }else{
 	if ($op=="create"){
 		$emailverification="";
-		$shortname = sanitize_name(getsetting("spaceinname", 0), httppost('name'));
+                $shortname = Sanitize::sanitizeName(getsetting("spaceinname", 0), httppost('name'));
 
 		if (soap($shortname)!=$shortname){
 			output("`\$Error`^: Bad language was found in your name, please consider revising it.`n");
@@ -251,7 +254,7 @@ if (getsetting("allowcreation",1)==0){
 				$sql = "SELECT playername FROM " . db_prefix("accounts") ;
 				$result = db_query($sql);
 				while ($row=db_fetch_assoc($result)) {
-					if (sanitize($row['playername'])==$shortname) {
+                                        if (Sanitize::sanitize($row['playername'])==$shortname) {
 						$count++;
 						break;
 					}
@@ -323,10 +326,9 @@ if (getsetting("allowcreation",1)==0){
 							$values=array_values($replace);
 							$msg=str_replace($keys,$values,$msg);						
 							$msg=str_replace("`n","\n",$msg);
-							require_once("lib/sendmail.php");
-							$to_array=array($email=>$shortname);
-							$from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
-							send_email($to_array,$msg,$subj,$from_array,false,"text/plain");
+                                                        $to_array=array($email=>$shortname);
+                                                        $from_array=array(getsetting("gameadminemail","postmaster@localhost")=>getsetting("gameadminemail","postmaster@localhost"));
+                                                        \Lotgd\Mail::send($to_array,$msg,$subj,$from_array,false,"text/plain");
 							output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
 						}else{
 							rawoutput("<form action='login.php' method='POST'>");

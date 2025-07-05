@@ -1,7 +1,7 @@
 <?php
 use Lotgd\Buffs;
-require_once("lib/substitute.php");
 
+use Lotgd\Substitute;
 function activate_buffs($tag)
 {
     return Buffs::activateBuffs($tag);

@@ -1,18 +1,28 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Sanitize;
+
 class Censor
 {
-    public static function soap($input, $debug = false, $skiphook = false)
+    /**
+     * Filter a text string for banned words.
+     *
+     * @param string $input    Input string
+     * @param bool   $debug    Output debug information
+     * @param bool   $skiphook Skip module hook
+     *
+     * @return string Filtered string
+     */
+    public static function soap(string $input, bool $debug = false, bool $skiphook = false): string
     {
         global $session;
-        require_once('lib/sanitize.php');
         $final_output = $input;
-        $output = full_sanitize($input);
+        $output = Sanitize::fullSanitize($input);
         $mix_mask = str_pad('', strlen($output), 'X');
         if (getsetting('soap', 1)) {
-            $search = self::nasty_word_list();
-            $exceptions = array_flip(self::good_word_list());
+            $search = self::nastyWordList();
+            $exceptions = array_flip(self::goodWordList());
             $changed_content = false;
             foreach ($search as $word) {
                 do {
@@ -37,7 +47,7 @@ class Censor
                             }
                         } else {
                             if ($debug) {
-                                output("`7This word is not ok: \"`%%s`7\"; it blocks on the pattern `i%s`i at \"`\$%s`7\".`n", sanitize_mb($longword), $word, $shortword);
+                                output("`7This word is not ok: \"`%%s`7\"; it blocks on the pattern `i%s`i at \"`\$%s`7\".`n", Sanitize::sanitizeMb($longword), $word, $shortword);
                             }
                             $len = strlen($shortword);
                             $pad = str_pad('', $len, '_');
@@ -72,7 +82,12 @@ class Censor
         return $final_output;
     }
 
-    public static function good_word_list()
+    /**
+     * Retrieve exception words that bypass the filter.
+     *
+     * @return array<string> List of allowed words
+     */
+    public static function goodWordList(): array
     {
         $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='good'";
         $result = db_query_cached($sql, 'goodwordlist');
@@ -83,13 +98,19 @@ class Censor
         return explode(' ', $row['words']);
     }
 
-    public static function nasty_word_list()
+    /**
+     * List of banned words used by the filter.
+     *
+     * @return array<string> Compiled regexes
+     */
+    public static function nastyWordList(): array
     {
         $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='nasty'";
         $result = db_query($sql);
         $row = db_fetch_assoc($result);
         $search = ' ' . $row['words'] . ' ';
-//         $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
+        $search = preg_replace('/(?<=.)(?<!\\\\)\'(?=.)/', '\\\'', $search);
+
         $search = str_replace('b', '[b]', $search);
         $search = str_replace('d', '[d]', $search);
         $search = str_replace('e', '[e3]', $search);
@@ -97,7 +118,7 @@ class Censor
         $search = str_replace('o', '[o0]', $search);
         $search = str_replace('p', '[p]', $search);
         $search = str_replace('r', '[r]', $search);
-        $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
+
         $search = str_replace('t', '[t7+]', $search);
         $search = str_replace('u', '[u]', $search);
         $search = str_replace('x', '[xפ]', $search);
@@ -108,15 +129,20 @@ class Censor
         $search = str_replace('c', '[c\\(k穢]', $search);
         $start = '\'\\b';
         $end = '\\b\'iU';
-        $ws = '[^[:space:]\\t]*';
-        $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
-        $search = preg_replace("/(?<=.)(?<!\\)'(?=.)/", "\'", $search);
-        $search = str_replace('* ', ")+$ws$end ", $search);
-        $search = str_replace(' *', " $start$ws(", $search);
-        $search = "$start(" . trim($search) . ")+$end";
-        $search = str_replace("$start()+$end", '', $search);
-        $search = explode(' ', $search);
-        updatedatacache('nastywordlist', $search);
+        $ws = "[^[:space:]\\t]*"; //whitespace (\w is not hungry enough)
+        //space not preceeded by a star
+        $search = preg_replace("'(?<!\\*) '",")+$end ",$search);
+        //space not anteceeded by a star
+        $search = preg_replace("' (?!\\*)'"," $start(",$search);
+        //space preceeded by a star
+        $search = str_replace("* ",")+$ws$end ",$search);
+        //space anteceeded by a star
+        $search = str_replace(" *"," $start$ws(",$search);
+        $search = "$start(".trim($search).")+$end";
+        $search = str_replace("$start()+$end","",$search);
+        $search = explode(" ",$search);
+        updatedatacache("nastywordlist",$search);
+
         return $search;
     }
 }

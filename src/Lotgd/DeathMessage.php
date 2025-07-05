@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Substitute;
 /**
  * Helpers for selecting random death messages.
  */
@@ -15,7 +16,7 @@ class DeathMessage
      *
      * @return array
      */
-    public static function select($forest = true, $extra = [], $extrarep = [])
+    public static function select(bool $forest = true, array $extra = [], array $extrarep = []): array
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
@@ -29,7 +30,7 @@ class DeathMessage
             $taunt = 1;
             $deathmessage = "`5\"`6{goodguyname}'s mother wears combat boots`5\", screams {badguyname}.";
         }
-        $deathmessage = substitute($deathmessage, $extra, $extrarep);
+        $deathmessage = Substitute::apply($deathmessage, $extra, $extrarep);
         return ['deathmessage' => $deathmessage, 'taunt' => $taunt];
     }
 
@@ -42,7 +43,7 @@ class DeathMessage
      *
      * @return array
      */
-    public static function selectArray($forest = true, $extra = [], $extrarep = [])
+    public static function selectArray(bool $forest = true, array $extra = [], array $extrarep = []): array
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
@@ -59,7 +60,7 @@ class DeathMessage
         if (isset($extra[0]) && $extra[0] == '{where}') {
             $deathmessage = str_replace($extra[0], $extrarep[0] ?? 'UNKNOWN', $deathmessage);
         }
-        $deathmessage = substitute_array($deathmessage, $extra, $extrarep);
+        $deathmessage = Substitute::applyArray($deathmessage, $extra, $extrarep);
         array_unshift($deathmessage, true, 'deathmessages');
         return ['deathmessage' => $deathmessage, 'taunt' => $taunt];
     }

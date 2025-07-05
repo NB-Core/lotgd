@@ -113,7 +113,7 @@ tlschema($schemas['title']);
 page_header($texts['title']);
 tlschema();
 
-addcommentary();
+Commentary::addcommentary();
 $skipvillagedesc = handle_event("village");
 checkday();
 
@@ -132,7 +132,7 @@ if (getsetting("automaster",1) && $session['user']['seenmaster']!=1){
 	$dks = $session['user']['dragonkills'];
 	$expreqd = exp_for_next_level($level, $dks);
 	if ($session['user']['experience']>$expreqd &&
-			$session['user']['level']<getsetting('maxlevel',15)){
+			$session['user']['level']<(int)getsetting('maxlevel',15)){
 		redirect("train.php?op=autochallenge");
 	}
 }
@@ -146,7 +146,7 @@ $comment = httppost('insertcommentary');
 // the commentary (or talking) or dealing with any of the hooks in the village.
 if (!$op && $com=="" && !$comment && !$refresh && !$commenting) {
 	// The '1' should really be sysadmin customizable.
-	if (module_events("village", getsetting("villagechance", 0)) != 0) {
+	if (module_events("village", (int)getsetting("villagechance", 0)) != 0) {
 		if (checknavs()) {
 			page_footer();
 		} else {
@@ -302,7 +302,7 @@ if (!isset($args['block']) || $args['block'] != 'yes') {
 		tlschema($schemas['talk']);
 		output($texts['talk']);
 		tlschema();
-		commentdisplay("",$texts['section'],"Speak",25,$texts['sayline'], $schemas['sayline']);
+		Commentary::commentdisplay("",$texts['section'],"Speak",25,$texts['sayline'], $schemas['sayline']);
 }
 
 module_display_events("village", "village.php");

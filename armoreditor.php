@@ -1,5 +1,8 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
+use Lotgd\Forms;
 // addnews ready
 // mail ready
 /**
@@ -9,17 +12,15 @@
 * 
 */
 require_once("common.php");
-require_once("lib/showform.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_EQUIPMENT);
+SuAccess::check(SU_EDIT_EQUIPMENT);
 
 tlschema("armor");
 
 page_header("Armor Editor");
 $armorlevel = (int)httpget('level');
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Armor Editor");
 addnav("Armor Editor Home","armoreditor.php?level=$armorlevel");
 
@@ -46,7 +47,7 @@ if($op=="edit" || $op=="add"){
 	}
 	rawoutput("<form action='armoreditor.php?op=save&level=$armorlevel' method='POST'>");
 	addnav("","armoreditor.php?op=save&level=$armorlevel");
-	showform($armorarray,$row);
+	Forms::showForm($armorarray,$row);
 	rawoutput("</form>");
 }else if($op=="del"){
 	$sql = "DELETE FROM " . db_prefix("armor") . " WHERE armorid='$id'";

@@ -1,5 +1,6 @@
 <?php
 // translator ready
+use Lotgd\Accounts;
 // addnews ready
 // mail ready
 /** 
@@ -58,7 +59,7 @@ if ($session['user']['loggedin'] && $session['loggedin']){
 	echo $row['output'];
 	$session['debug']="";
 	$session['user']['allowednavs']=$session['allowednavs'];
-	saveuser();
+	Accounts::saveUser();
 }else{
 	$session=array();
 	translator_setup();

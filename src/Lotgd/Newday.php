@@ -1,5 +1,9 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
+
+use Lotgd\GameLog;
+use Lotgd\ExpireChars;
 
 class Newday
 {
@@ -16,16 +20,14 @@ class Newday
             }
         }
         $time = round(getmicrotime() - $start, 2);
-        require_once('lib/gamelog.php');
-        gamelog('Optimized tables: ' . join(', ', $tables) . " in $time seconds.", 'maintenance');
+        GameLog::log('Optimized tables: ' . join(', ', $tables) . " in $time seconds.", 'maintenance');
     }
 
     public static function commentCleanup(): void
     {
-        require_once('lib/gamelog.php');
         $timestamp = self::calculateExpirationTimestamp('2 month');
         db_query('DELETE FROM ' . db_prefix('referers') . " WHERE last < '$timestamp'");
-        gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('referers') . " older than $timestamp.", 'maintenance');
+        GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('referers') . " older than $timestamp.", 'maintenance');
 
         $timestamp = date('Y-m-d H:i:s', strtotime('now'));
         $sql = 'INSERT IGNORE INTO ' . db_prefix('debuglog_archive') .
@@ -34,24 +36,24 @@ class Newday
         if ($ok) {
             $sql = 'DELETE FROM ' . db_prefix('debuglog') . " WHERE date <'$timestamp'";
             db_query($sql);
-            $timestamp = self::calculateExpirationTimestamp(round(getsetting('expiredebuglog', 18), 0) . ' days');
+            $timestamp = self::calculateExpirationTimestamp(round((int)getsetting('expiredebuglog', 18), 0) . ' days');
             $sql = 'DELETE FROM ' . db_prefix('debuglog_archive') . " WHERE date <'$timestamp'";
             if (getsetting('expiredebuglog', 18) > 0) db_query($sql);
-            gamelog('Moved ' . db_affected_rows() . ' from ' . db_prefix('debuglog') . ' to ' . db_prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');
+            GameLog::log('Moved ' . db_affected_rows() . ' from ' . db_prefix('debuglog') . ' to ' . db_prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');
         } else {
-            gamelog('ERROR, problems with moving the debuglog to the archive', 'maintenance');
+            GameLog::log('ERROR, problems with moving the debuglog to the archive', 'maintenance');
         }
 
         $timestamp = self::calculateExpirationTimestamp(round(getsetting('oldmail', 14), 0) . ' days');
         $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE sent<'$timestamp'";
         db_query($sql);
-        gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('mails') . " older than $timestamp.", 'maintenance');
+        GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('mails') . " older than $timestamp.", 'maintenance');
         massinvalidate('mail');
 
         if ((int) getsetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
             $sql = 'DELETE FROM ' . db_prefix('news') . " WHERE newsdate<'$timestamp'";
-            gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('news') . " older than $timestamp.", 'comment expiration');
+            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('news') . " older than $timestamp.", 'comment expiration');
             db_query($sql);
         }
 
@@ -59,28 +61,28 @@ class Newday
         $sql = 'DELETE FROM ' . db_prefix('gamelog') . " WHERE date < '$timestamp' ";
         if (getsetting('expiregamelog', 30) > 0) {
             db_query($sql);
-            gamelog('Cleaned up ' . db_prefix('gamelog') . ' table removing ' . db_affected_rows() . " older than $timestamp.", 'maintenance');
+            GameLog::log('Cleaned up ' . db_prefix('gamelog') . ' table removing ' . db_affected_rows() . " older than $timestamp.", 'maintenance');
         }
 
         $sql = 'DELETE FROM ' . db_prefix('commentary') . " WHERE postdate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
         if (getsetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
             db_query($sql);
-            gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('commentary') . " older than $timestamp.", 'comment expiration');
+            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('commentary') . " older than $timestamp.", 'comment expiration');
         }
 
         $sql = 'DELETE FROM ' . db_prefix('moderatedcomments') . " WHERE moddate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
         if (getsetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
             db_query($sql);
-            gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('moderatedcomments') . " older than $timestamp.", 'comment expiration');
+            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('moderatedcomments') . " older than $timestamp.", 'comment expiration');
         }
 
         $sql = 'DELETE FROM ' . db_prefix('faillog') . " WHERE date<'" . self::calculateExpirationTimestamp(round(getsetting('expirefaillog', 1), 0) . ' days') . "'";
         if (getsetting('expirefaillog', 1) > 0) {
             db_query($sql);
             $timestamp = self::calculateExpirationTimestamp(round(getsetting('expirecontent', 180), 0) . ' days');
-            gamelog('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('faillog') . " older than $timestamp.", 'maintenance');
+            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('faillog') . " older than $timestamp.", 'maintenance');
         }
     }
 
@@ -91,7 +93,7 @@ class Newday
 
     public static function charCleanup(): void
     {
-        require_once('lib/expire_chars.php');
+        ExpireChars::expire();
     }
 
     public static function runOnce(): void

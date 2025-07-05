@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // addnews ready
 // translator ready
 // mail ready
@@ -6,7 +8,7 @@ define("OVERRIDE_FORCED_NAV",true);
 require_once("common.php");
 tlschema("translatortool");
 
-check_su_access(SU_IS_TRANSLATOR);
+SuAccess::check(SU_IS_TRANSLATOR);
 $op=httpget("op");
 if ($op==""){
 	popup_header("Translator Tool");

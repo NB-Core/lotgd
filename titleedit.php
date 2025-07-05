@@ -1,10 +1,14 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Names;
+use Lotgd\Forms;
 //Author: Lonny Luberts - 3/18/2005
 //Heavily modified by JT Traub
 require_once("common.php");
 require_once("lib/http.php");
 
-check_su_access(SU_EDIT_USERS);
+SuAccess::check(SU_EDIT_USERS);
 
 tlschema("retitle");
 
@@ -20,8 +24,7 @@ $editarray=array(
 	"female"=>"Female Title,text|",
 );
 addnav("Other");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Functions");
 
 switch ($op) {
@@ -63,8 +66,7 @@ switch ($op) {
 
 	case "reset":
 
-		require_once("lib/titles.php");
-		require_once("lib/names.php");
+                require_once("lib/titles.php");
 
 		output("`^Rebuilding all titles for all players.`0`n`n");
 		$sql = "SELECT name,title,dragonkills,acctid,sex,ctitle FROM " . db_prefix("accounts");
@@ -78,8 +80,8 @@ switch ($op) {
 			$dk = (int)($row['dragonkills']);
 			if (!valid_dk_title($otitle, $dk, $row['sex'])) {
 				$sex = translate_inline($row['sex']?"female":"male");
-				$newtitle = get_dk_title($dk, (int)$row['sex']);
-				$newname = change_player_title($newtitle, $row);
+                                $newtitle = get_dk_title($dk, (int)$row['sex']);
+                                $newname = Names::change_player_title($newtitle, $row);
 				$id = $row['acctid'];
 				if ($oname != $newname) {
 					output("`@Changing `^%s`@ to `^%s `@(%s`@ [%s,%s])`n",
@@ -112,7 +114,6 @@ switch ($op) {
 		break;
 
 	case "edit": case "add":
-		require_once("lib/showform.php");
 		if ($op=="edit"){
 			output("`\$Editing an existing title`n`n");
 			$sql = "SELECT * FROM ".db_prefix("titles")." WHERE titleid='$id'";
@@ -125,7 +126,7 @@ switch ($op) {
 		}
 		rawoutput("<form action='titleedit.php?op=save&id=$id' method='POST'>");
 		addnav("","titleedit.php?op=save&id=$id");
-		showform($editarray,$row);
+		Forms::showForm($editarray,$row);
 		rawoutput("</form>");
 		addnav("Functions");
 		addnav("Main Title Editor", "titleedit.php");

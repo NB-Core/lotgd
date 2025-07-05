@@ -1,6 +1,6 @@
 # Legend of the Green Dragon Fork
 
-![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-blue)
+![PHP Version](https://img.shields.io/badge/PHP-8.0%2B-blue)
 ![License](https://img.shields.io/badge/license-CC%20BY--SA-lightgrey)
 This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
 
@@ -41,6 +41,7 @@ Oliver
 
 ## Table of Contents
 - [Read Me First](#read-me-first)
+- [System Requirements](#system-requirements)
 - [Quick Install](#quick-install)
 - [Quick Start](#quick-start)
 - [Install from Release Archive](#install-from-release-archive)
@@ -58,27 +59,36 @@ Oliver
 Thank you for downloading the modified version of Legend Of the Green Dragon.
 See `CHANGELOG.txt` for a list of changes.
 
+## System Requirements
+
+To run Legend of the Green Dragon on a typical web host you will need:
+
+- **Web server:** Apache 2 (or another server capable of running PHP)
+- **PHP:** version 8.0 or newer
+- **Database:** MySQL 5.0 or later. MariaDB is a compatible alternative.
+- The database user must have the `LOCK TABLES` privilege.
+
 ## Quick Install
 
 Want to have this running in no time?
 
-- Requirements: PHP 7.4 or higher and MySQL 5.0 or higher, plus the `LOCK TABLES` privilege for your database user.
+- Requirements: Apache 2 (or another web server), PHP 8.0 or higher, and MySQL 5.0+ or MariaDB. Ensure the database user has the `LOCK TABLES` privilege.
 - Upload the files with the directory structure intact.
-- Run `install/index.php` in your browser and follow the installer.
+- Run `installer.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
 
 ### Quick Start
 
 1. Clone the repository with `git clone https://github.com/NB-Core/lotgd.git`
-2. Run `composer install` to install PHP dependencies.
-3. Start the containers using `docker-compose up -d`.
+2. Start the containers using `docker-compose up -d`.
+   The Docker build uses a Composer stage to install PHP dependencies automatically.
 
 ## Install from Release Archive
 
 Official releases include the `vendor/` directory so no additional commands are
 required. Download `lotgd-<version>.tar.gz` or `lotgd-<version>.zip` from the
 [Releases](https://github.com/NB-Core/lotgd/releases) page, upload the contents
-to your web server and open `install/index.php` in your browser. The installer
+to your web server and open `installer.php` in your browser. The installer
 will guide you through the setup.
 
 ## Cron Job Setup
@@ -125,7 +135,7 @@ Always back up your database and existing source files before upgrading.
 
 1. Copy the new code into your site directory, replacing the old files.
 2. Log out of the game if it is running.
-3. Open `install/index.php` in your browser and choose **Upgrade**.
+3. Open `installer.php` in your browser and choose **Upgrade**.
 4. Follow the installer steps to migrate your database.
 
 If you are upgrading from **0.9.7** or earlier, move the deprecated
@@ -154,9 +164,9 @@ an account to access the database on behalf of the site; this account
 should have full permissions on the database.
 
 After you have the database created, point your browser at the location you
-have the logd files installed at and load up install/index.php (for instance,
+have the logd files installed at and load up installer.php (for instance,
 if the files are accessible as http://logd.dragoncat.net, you will want to
-load http://logd.dragoncat.net/install/index.php in the browser).  The installer
+load http://logd.dragoncat.net/installer.php in the browser).  The installer
 will walk you through a complete setup from the ground up.  Make sure to
 follow all instructions!
 
@@ -174,7 +184,7 @@ Firstly, make SURE that your dbconnect.php is not writeable.  Under unix,
 you do this by typing
    chmod -w dbconnect.php
 This is to keep you from making unintentional changes to this file.
-The installer attempts to remove `install/index.php` after installation. If this file remains, delete it to prevent accidental reuse. An `.htaccess` file in the `install/` directory (and the root `.htaccess`) deny access when that index file is gone. You may remove the entire `install/` folder once setup is complete.
+The installer attempts to remove `installer.php` after installation. If this file remains, delete it to prevent accidental reuse. An `.htaccess` file in the `install/` directory (and the root `.htaccess`) deny access when that file is gone. You may remove the entire `install/` folder once setup is complete.
 
 
 The installer will have installed, but not activated, some common modules
@@ -277,38 +287,47 @@ docker-compose up -d --build
 ### Dockerfile
 
 ```Dockerfile
-# Base image with PHP 8.1 and Apache
-FROM php:8.1-apache
+# Composer stage – install dependencies
+FROM composer:2 AS composer
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist
 
-# Install required PHP extensions
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+# Final image with PHP and Apache
+FROM php:apache
 
-# Enable mod_rewrite
+# Install required packages and PHP extensions
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libonig-dev \
+    libzip-dev \
+    && docker-php-ext-configure gd --with-jpeg \
+    && docker-php-ext-install gd mysqli pdo pdo_mysql mbstring zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enable mod_rewrite and .htaccess overrides
 RUN a2enmod rewrite
-
-# Adjust Apache configuration to allow .htaccess
 RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
-# Set working directory
+# Copy application code and vendor directory
 WORKDIR /var/www/html
-
-# Copy source code
 COPY . /var/www/html
+COPY --from=composer /app/vendor /var/www/html/vendor
 
-# Set permissions
+# Set permissions for web server
 RUN chown -R www-data:www-data /var/www/html
 
-# Enable PHP error display for development purposes
-RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
-
-# Expose port 80
+# Expose Apache port
 EXPOSE 80
 
-# Start Apache in the foreground
+# Enable verbose PHP error reporting
+RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
+
 CMD ["apache2-foreground"]
 ```
 
@@ -442,6 +461,14 @@ The root `.htaccess` file configures custom error pages, disables directory list
 - **Code Changes Not Reflected:**
   - Ensure you have rebuilt the container after making changes to the Dockerfile.
   - Clear your application's cache or your browser's cache if necessary.
+- **Installer Log Location:**
+  - The installer writes to `install/errors/install.log`. If you see a warning
+    that the log could not be written, ensure this path is writable.
+
+### Where to find installer logs
+
+Installer errors are saved to `install/errors/install.log`. Check this file if
+the installer fails or reports problems.
 
 ---
 

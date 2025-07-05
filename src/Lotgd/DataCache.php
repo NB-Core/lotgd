@@ -12,10 +12,20 @@ class DataCache
     private static string $path = '';
     private static bool $checkedOld = false;
 
-    public static function datacache(string $name, int $duration = 60)
+    /**
+     * Retrieve an entry from the filesystem cache.
+     *
+     * @param string $name     Cache key
+     * @param int    $duration Seconds to keep entry
+     *
+     * @return mixed Cached data or false when not found
+     */
+    public static function datacache(string $name, int $duration = 60): mixed
     {
-        global $datacache;
-        if (getsetting('usedatacache', 0)) {
+        global $datacache, $settings;
+        if (!isset($settings)) return false; // not yet setup most likely
+        
+        if ($settings->getSetting('usedatacache', 0)) {
             if (isset(self::$cache[$name])) {
                 return self::$cache[$name];
             }
@@ -32,9 +42,19 @@ class DataCache
         return false;
     }
 
-    public static function updatedatacache(string $name, $data)
+    /**
+     * Store a value in the data cache.
+     *
+     * @param string $name Cache key
+     * @param mixed  $data Data to store
+     */
+    public static function updatedatacache(string $name, mixed $data): bool
     {
-        if (getsetting('usedatacache', 0)) {
+        global $settings;
+        if (!isset($settings)) {
+            return false;
+        }
+        if ($settings->getSetting('usedatacache', 0)) {
             $fullname = self::makecachetempname($name);
             self::$cache[$name] = $data;
             $fp = fopen($fullname, 'w');
@@ -47,9 +67,16 @@ class DataCache
         return false;
     }
 
-    public static function invalidatedatacache(string $name, bool $withpath = true)
+    /**
+     * Remove an entry from the cache.
+     */
+    public static function invalidatedatacache(string $name, bool $withpath = true): void
     {
-        if (getsetting('usedatacache', 0)) {
+        global $settings;
+        if (!isset($settings)) {
+            return;
+        }
+        if ($settings->getSetting('usedatacache', 0)) {
             $fullname = $withpath ? self::makecachetempname($name) : $name;
             if (file_exists($fullname)) {
                 unlink($fullname);
@@ -60,12 +87,19 @@ class DataCache
         }
     }
 
-    public static function massinvalidate(string $name = '')
+    /**
+     * Invalidate all cache entries matching prefix.
+     */
+    public static function massinvalidate(string $name = ''): void
     {
-        if (getsetting('usedatacache', 0)) {
+        global $settings;
+        if (!isset($settings)) {
+            return;
+        }
+        if ($settings->getSetting('usedatacache', 0)) {
             $name = DATACACHE_FILENAME_PREFIX . $name;
             if (self::$path == '') {
-                self::$path = getsetting('datacachepath', '/tmp');
+                self::$path = $settings->getSetting('datacachepath', '/tmp');
             }
             $dir = dir(self::$path);
             while (false !== ($file = $dir->read())) {
@@ -77,10 +111,19 @@ class DataCache
         }
     }
 
-    public static function makecachetempname(string $name)
+    /**
+     * Build full path for a cache entry.
+     *
+     * @return string Cache filename
+     */
+    public static function makecachetempname(string $name): string
     {
+        global $settings;
+        if (!isset($settings)) {
+            return '';
+        }
         if (self::$path == '') {
-            self::$path = getsetting('datacachepath', '/tmp');
+            self::$path = $settings->getSetting('datacachepath', '/tmp');
         }
         $name = rawurlencode($name);
         $name = str_replace('_', '-', $name);

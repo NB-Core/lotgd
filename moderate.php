@@ -1,20 +1,22 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Commentary;
 // translator ready
 // addnews ready
 // mail ready
 require_once("common.php");
 require_once("lib/sanitize.php");
 require_once("lib/http.php");
-require_once("lib/moderate.php");
+use Lotgd\Moderate;
 
 tlschema("moderate");
 
-addcommentary();
+Commentary::addcommentary();
 
-check_su_access(SU_EDIT_COMMENTS);
+SuAccess::check(SU_EDIT_COMMENTS);
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 addnav("Other");
 addnav("Commentary Overview","moderate.php");
@@ -112,13 +114,13 @@ if ($op==""){
 	rawoutput("</form>");
 	addnav("", "$link");
 	if ($area==""){
-		talkform("X","says");
+		Commentary::talkform("X","says");
 		//commentdisplay("", "' or '1'='1","X",100); //sure, encourage hacking...
-		commentmoderate('','','X',100,'says',false,true);
+        Moderate::commentmoderate('', '', 'X', 100, 'says', false, true);
 
 	}else{
-		commentmoderate("", $area,"X",100);
-		talkform($area,"says");
+        Moderate::commentmoderate("", $area, "X", 100);
+		Commentary::talkform($area,"says");
 	}
 }elseif ($op=="audit"){
 	$subop = httpget("subop");

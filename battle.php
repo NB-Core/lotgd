@@ -1,6 +1,7 @@
 <?php
 use Lotgd\Buffs;
 use Lotgd\Battle;
+use Lotgd\Substitute;
 // translator ready
 // addnews ready
 // mail ready
@@ -75,7 +76,7 @@ if ($op=="fight"){
 			}else{
 				if (is_array($badguy['cannotbetarget'])) {
 					$msg = sprintf_translate($badguy['cannotbetarget']);
-					$msg = substitute($msg);
+					$msg = Substitute::apply($msg);
 					output_notl($msg); //Here it's already translated
 				}else{
 					if ($badguy['cannotbetarget'] === true) {
@@ -83,7 +84,7 @@ if ($op=="fight"){
 					} else {
 						$msg = $badguy['cannotbetarget'];
 					}
-					$msg = substitute_array("`5".$msg."`0`n");
+					$msg = Substitute::applyArray("`5".$msg."`0`n");
 					output($msg);
 				}
 			}
@@ -372,7 +373,7 @@ if ($op != "newtarget") {
 				$newenemies[$index] = $badguy;
 			}
 		}
-		expire_buffs();
+		Buffs::expireBuffs();
 		$creaturedmg=0;
 		$selfdmg=0;
 
@@ -451,7 +452,7 @@ if ($op != "newtarget") {
 				if (isset($badguy['fleesifalone']) && $badguy['fleesifalone'] == true) {
 					if (is_array($badguy['fleesifalone'])) {
 						$msg = sprintf_translate($badguy['fleesifalone']);
-						$msg = substitute($msg);
+						$msg = Substitute::apply($msg);
 						output_notl($msg); //Here it's already translated
 					}else{
 						if ($badguy['fleesifalone'] === true) {
@@ -459,7 +460,7 @@ if ($op != "newtarget") {
 						} else {
 							$msg = $badguy['fleesifalone'];
 						}
-						$msg = substitute_array("`5".$msg."`0`n");
+						$msg = Substitute::applyArray("`5".$msg."`0`n");
 						output($msg);
 					}
 				} else {
@@ -469,7 +470,7 @@ if ($op != "newtarget") {
 		} else if ($leaderisdead) {
 			if (isset($badguy['essentialleader']) && is_array($badguy['essentialleader'])) {
 				$msg = sprintf_translate($badguy['essentialleader']);
-				$msg = substitute($msg);
+				$msg = Substitute::apply($msg);
 				output_notl($msg); //Here it's already translated
 			}elseif (isset($badguy['essentialleader'])){
 				if ($badguy['essentialleader'] === true) {
@@ -477,7 +478,7 @@ if ($op != "newtarget") {
 				} else {
 					$msg = $badguy['essentialleader'];
 				}
-				$msg = substitute_array("`5".$msg."`0`n");
+				$msg = Substitute::applyArray("`5".$msg."`0`n");
 				output($msg);
 			}
 		}
@@ -510,7 +511,7 @@ if ($session['user']['hitpoints'] <= 0) {
 if ($victory || $defeat){
 
 	// expire any buffs which cannot persist across fights
-	expire_buffs_afterbattle();
+	Buffs::expireBuffsAfterbattle();
 	//unsuspend any suspended buffs
     Battle::unsuspendBuffs((($options['type']=='pvp')?"allowinpvp":false));
 
@@ -556,8 +557,8 @@ function battle_player_attacks(&$badguy) {
 	}
 	if ($creaturedmg==0){
 		output("`4You try to hit `^%s`4 but `\$MISS!`n",$badguy['creaturename']);
-		process_dmgshield($buffset['dmgshield'], 0);
-		process_lifetaps($buffset['lifetap'], 0);
+		Buffs::processDmgshield($buffset['dmgshield'], 0);
+		Buffs::processLIfetaps($buffset['lifetap'], 0);
 	}else if ($creaturedmg<0){
 		output("`4You try to hit `^%s`4 but are `\$RIPOSTED `4for `\$%s`4 points of damage!`n",$badguy['creaturename'],(0-$creaturedmg));
 		$badguy['diddamage']=1;
@@ -568,13 +569,13 @@ function battle_player_attacks(&$badguy) {
 			$break = true;
 			$needtostopfighting = true;
 		}
-		process_dmgshield($buffset['dmgshield'],-$creaturedmg);
-		process_lifetaps($buffset['lifetap'],$creaturedmg);
+		Buffs::processDmgshield($buffset['dmgshield'],-$creaturedmg);
+		Buffs::processLIfetaps($buffset['lifetap'],$creaturedmg);
 	}else{
 		output("`4You hit `^%s`4 for `^%s`4 points of damage!`n",$badguy['creaturename'],$creaturedmg);
 		$badguy['creaturehealth']-=$creaturedmg;
-		process_dmgshield($buffset['dmgshield'],-$creaturedmg);
-		process_lifetaps($buffset['lifetap'],$creaturedmg);
+		Buffs::processDmgshield($buffset['dmgshield'],-$creaturedmg);
+		Buffs::processLIfetaps($buffset['lifetap'],$creaturedmg);
 	}
 	if ($badguy['creaturehealth'] <= 0) {
 		$badguy['dead'] = true;
@@ -630,13 +631,13 @@ function battle_badguy_attacks(&$badguy) {
 		if ($defended == false) {
 			if ($selfdmg==0){
 				output("`^%s`4 tries to hit you but `^MISSES!`n",$badguy['creaturename']);
-				process_dmgshield($buffset['dmgshield'], 0);
-				process_lifetaps($buffset['lifetap'], 0);
+				Buffs::processDmgshield($buffset['dmgshield'], 0);
+				Buffs::processLifetaps($buffset['lifetap'], 0);
 			}else if ($selfdmg<0){
 				output("`^%s`4 tries to hit you but you `^RIPOSTE`4 for `^%s`4 points of damage!`n",$badguy['creaturename'],(0-$selfdmg));
 				$badguy['creaturehealth']+=$selfdmg;
-				process_lifetaps($buffset['lifetap'], -$selfdmg);
-				process_dmgshield($buffset['dmgshield'], $selfdmg);
+				Buffs::processLifetaps($buffset['lifetap'], -$selfdmg);
+				Buffs::processDmgshield($buffset['dmgshield'], $selfdmg);
 			}else{
 				output("`^%s`4 hits you for `\$%s`4 points of damage!`n",$badguy['creaturename'],$selfdmg);
 				$session['user']['hitpoints']-=$selfdmg;
@@ -644,8 +645,8 @@ function battle_badguy_attacks(&$badguy) {
 					$badguy['killedplayer'] = true;
 					$count = 1;
 				}
-				process_dmgshield($buffset['dmgshield'], $selfdmg);
-				process_lifetaps($buffset['lifetap'], -$selfdmg);
+				Buffs::processDmgshield($buffset['dmgshield'], $selfdmg);
+				Buffs::processLifetaps($buffset['lifetap'], -$selfdmg);
 				$badguy['diddamage']=1;
 			}
 		}

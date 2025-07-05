@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\Commentary;
 // translator ready
 // addnews ready
@@ -7,12 +9,11 @@ require_once("common.php");
 require_once("lib/sanitize.php");
 require_once("lib/http.php");
 
-check_su_access(SU_IS_TRANSLATOR);
-addcommentary();
+SuAccess::check(SU_IS_TRANSLATOR);
+Commentary::addcommentary();
 tlschema("translatorlounge");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 $op = httpget('op');
 page_header("Translator Lounge");
@@ -23,7 +24,7 @@ if ($session['user']['sex']){
 }else{
 	output("Inside you are greeted by the sight of numerous scantily clad buxom women who wave palm fronds at you and offer to feed you grapes as you lounge on Greco-Roman couches draped with silk.`n`n");
 }
-commentdisplay("", "trans-lounge","Engage in idle conversation with other translators:",25);
+Commentary::commentdisplay("", "trans-lounge","Engage in idle conversation with other translators:",25);
 addnav("Actions");
 if ($session['user']['superuser'] & SU_IS_TRANSLATOR) addnav("U?Untranslated Texts", "untranslated.php");
 

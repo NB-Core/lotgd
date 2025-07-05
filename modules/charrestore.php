@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
+use Lotgd\Forms;
 // addnews ready
 // mail ready
 
@@ -67,7 +70,6 @@ function charrestore_dohook(string $hookname, array $args): array{
 			break;
 				case "petitionform":
 			//add some fields to the petition for charrestore
-			require_once("lib/showform.php");
 			$charrestore = httpget('charrestore');
 			if ($charrestore==1) {
 				$fields = array(
@@ -79,7 +81,7 @@ function charrestore_dohook(string $hookname, array $args): array{
 						"custom_name"=>"Custom Name (if any)",
 					       );
 				$vals = array();
-				showform($fields,$vals,true);
+				Forms::showForm($fields,$vals,true);
 			} else {
 				output("`n`\$If you are trying to restore a character, click here: ");
 				rawoutput("<a href='petition.php?charrestore=1'>".translate_inline("Character Restore Form","petition")."</a>");
@@ -213,12 +215,11 @@ function charrestore_dohook(string $hookname, array $args): array{
 
        function charrestore_run(): void{
 		global $session;
-		//	check_su_access(SU_EDIT_USERS);
-		require_once("lib/superusernav.php");
+		SuAccess::check(SU_EDIT_USERS);
 		$retid = (int)httpget('returnpetition');
 		//allow backlink to petition
 		page_header("Character Restore");
-		superusernav();
+		SuperuserNav::render();
 		if ($retid>0) {
 			addnav("Petition");
 			addnav("Return to petition","viewpetition.php?op=view&id=$retid");
@@ -566,15 +567,13 @@ function charrestore_dohook(string $hookname, array $args): array{
 			page_footer();
 			}
 
-			function charrestore_sendmail($to, $body, $subject, $fromaddress, $fromname, $attachments=false)
-			{
-				require_once("lib/sendmail.php");
-				$to_array=array($to=>$to);
-				$from_array=array($fromaddress=>$fromname);
-				$cc_array=false;
-				$mail_sent = send_email($to_array,$body,$subject,$from_array,$cc_array,"text/html");
-				return $mail_sent;
-			}
+                        function charrestore_sendmail($to, $body, $subject, $fromaddress, $fromname, $attachments=false)
+                        {
+                                $to_array = array($to => $to);
+                                $from_array = array($fromaddress => $fromname);
+                                $cc_array = false;
+                                return \Lotgd\Mail::send($to_array, $body, $subject, $from_array, $cc_array, "text/html");
+                        }
 
 			function charrestore_gethash($value) {
 				return hash('sha512',$value.get_module_setting('email_hash_salt','charrestore'));

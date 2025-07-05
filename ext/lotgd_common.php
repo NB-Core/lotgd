@@ -1,7 +1,21 @@
 <?php
+use Lotgd\SuAccess;
 require_once __DIR__."/../autoload.php";
 use Lotgd\AddNews;
 use Lotgd\Buffs;
+use Lotgd\Mounts;
+use Lotgd\HolidayText;
+use Lotgd\Output;
+use Lotgd\Accounts;
+use Lotgd\Translator;
+use Lotgd\PhpGenericEnvironment;
+use Lotgd\ForcedNavigation;
+use Lotgd\Nav;
+use Lotgd\LocalConfig;
+use Lotgd\PageParts;
+use Lotgd\MySQL\Database;
+use Lotgd\Template;
+use Lotgd\DateTime;
 // translator ready
 // addnews ready
 // mail ready
@@ -38,35 +52,23 @@ $license = "\n<!-- Creative Commons License -->\n<a rel='license' href='http://c
 // work.  This license text may not be removed nor altered in any way.
 // Please see the file LICENSE for a full textual description of the license.
 
-$logd_version = "1.3.1 +nb Edition";
+$logd_version = "2.0.0 +nb Edition";
 
 
 // Include some commonly needed and useful routines
 require_once("lib/output.php");
-$output=new output_collector();
-require_once("lib/nav.php");
-require_once("lib/local_config.php");
+$output = new Output();
+LocalConfig::apply();
 require_once("lib/dbwrapper.php");
-require_once("lib/holiday_texts.php");
 require_once("config/constants.php");
-require_once("lib/datacache.php");
 require_once("lib/modules.php");
-require_once("lib/http.php");
-require_once("lib/e_rand.php");
-require_once("lib/pageparts.php");
-require_once("lib/sanitize.php");
-require_once("lib/tempstat.php");
-require_once("lib/su_access.php");
-require_once("lib/datetime.php");
-require_once("lib/translator.php");
-require_once("lib/playerfunctions.php");
 
 
 //start the gzip compression
 if (isset ($gz_handler_on) && $gz_handler_on) ob_start('ob_gzhandler');
 	else ob_start();
 
-$pagestarttime = getmicrotime();
+$pagestarttime =DateTime::getMicroTime();
 
 // Set some constant defaults in case they weren't set before the inclusion of
 // common.php
@@ -75,17 +77,11 @@ if(!defined("ALLOW_ANONYMOUS")) define("ALLOW_ANONYMOUS",false);
 
 //Initialize variables required for this page
 
-require_once("lib/template.php");
-require_once("lib/settings.php");
-require_once("lib/redirect.php");
+// wrappers no longer required for these helpers
 require_once("lib/censor.php");
-require_once("lib/saveuser.php");
 require_once("lib/arrayutil.php");
 require_once("lib/sql.php");
-require_once("lib/mounts.php");
 require_once("lib/debuglog.php");
-require_once("ext/ajax_forcednavigation.php");
-require_once("lib/php_generic_environment.php");
 
 //session_register("session");
 //deprecated
@@ -127,14 +123,14 @@ if (file_exists("dbconnect.php")){
 }else{
 	if (!defined("IS_INSTALLER")){
 	 	if (!defined("DB_NODB")) define("DB_NODB",true);
-	 	page_header("The game has not yet been installed");
+                PageParts::pageHeader("The game has not yet been installed");
 		output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
-               output("You must run the game's installer, and follow its instructions in order to set up LoGD.  You can go to the installer <a href='install/index.php'>here</a>.",true);
+               output("You must run the game's installer, and follow its instructions in order to set up LoGD.  You can go to the installer <a href='installer.php'>here</a>.",true);
 		output("`n`nIf you're not sure why you're seeing this message, it's because this game is not properly configured right now. ");
 		output("If you've previously been running the game here, chances are that you lost a file called '`%dbconnect.php`#' from your site.");
 		output("If that's the case, no worries, we can get you back up and running in no time, and the installer can help!");
-               addnav("Game Installer","install/index.php");
-		page_footer();
+               Nav::add("Game Installer","installer.php");
+                PageParts::pageFooter();
 	}
 }
 
@@ -146,9 +142,9 @@ if (file_exists("dbconnect.php")){
 // http://php.net/manual/en/features.persistent-connections.php
 //
 //$link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
-$link = db_connect($DB_HOST, $DB_USER, $DB_PASS);
+$link = Database::connect($DB_HOST, $DB_USER, $DB_PASS);
 //set charset to utf8 (table default, don't change that!)
-if (!db_set_charset("utf8")) {
+if (!Database::setCharset("utf8")) {
 	echo "Error setting db connection charset to utf8...please check your db connection!";
 	exit(0);
 }
@@ -166,14 +162,14 @@ if ($link===false){
 		//Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
 		$notified=false;
 		if (file_exists("lib/smsnotify.php")) {
-			$smsmessage = "No DB Server: " . db_error();
+                        $smsmessage = "No DB Server: " . Database::error();
 			require_once("lib/smsnotify.php");
 			$notified=true;
 		}
 		// And tell the user it died.  No translation here, we need the DB for
 		// translation.
 	 	if (!defined("DB_NODB")) define("DB_NODB",true);
-		page_header("Database Connection Error");
+                PageParts::pageHeader("Database Connection Error");
 		output("`c`\$Database Connection Error`0`c`n`n");
 		output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
 		if (!$notified) {
@@ -188,26 +184,26 @@ if ($link===false){
 		}
 		output("Sorry for the inconvenience,`n");
 		output("Staff of %s",$_SERVER['SERVER_NAME']);
-		addnav("Home","index.php");
-		page_footer();
+                Nav::add("Home","index.php");
+                PageParts::pageFooter();
 	}
 	define("DB_CONNECTED",false);
 }else{
 	define("DB_CONNECTED",true);
 }
 
-if (!DB_CONNECTED || !db_select_db ($DB_NAME)){
+if (!DB_CONNECTED || !Database::selectDb($DB_NAME)){
 	if (!defined("IS_INSTALLER") && DB_CONNECTED){
 		// Ignore this bit.  It's only really for Eric's server
 		if (file_exists("lib/smsnotify.php")) {
-			$smsmessage = "Cant Attach to DB: " . db_error();
+                        $smsmessage = "Cant Attach to DB: " . Database::error();
 			require_once("lib/smsnotify.php");
 			$notified=true;
 		}
 		// And tell the user it died.  No translation here, we need the DB for
 		// translation.
 	 	if (!defined("DB_NODB")) define("DB_NODB",true);
-		page_header("Database Connection Error");
+                PageParts::pageHeader("Database Connection Error");
 		output("`c`\$Database Connection Error`0`c`n`n");
 		output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
 		if (!$notified) {
@@ -222,39 +218,39 @@ if (!DB_CONNECTED || !db_select_db ($DB_NAME)){
 		}
 		output("Sorry for the inconvenience,`n");
 		output("Staff of %s",$_SERVER['SERVER_NAME']);
-		addnav("Home","index.php");
-		page_footer();
+                Nav::add("Home","index.php");
+                PageParts::pageFooter();
 	}
 	define("DB_CHOSEN",false);
 }else{
 	define("LINK",$link);
 	define("DB_CHOSEN",true);
 }
-if ($logd_version == getsetting("installer_version","-1")) {
+
+//Generate our settings object
+$settings=new Settings("settings");
+if ($logd_version == $settings->getSetting("installer_version","-1")) {
 	define("IS_INSTALLER", false);
 }
-//Generate our settings object
-$settings=new settings("settings");
+header("Content-Type: text/html; charset=".$settings->getSetting('charset','ISO-8859-1'));
 
-header("Content-Type: text/html; charset=".getsetting('charset','ISO-8859-1'));
-
-if (isset($session['lasthit']) && isset($session['loggedin']) && strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds") > $session['lasthit'] && $session['lasthit']>0 && $session['loggedin']){
+if (isset($session['lasthit']) && isset($session['loggedin']) && strtotime("-".$settings->getSetting("LOGINTIMEOUT",900)." seconds") > $session['lasthit'] && $session['lasthit']>0 && $session['loggedin']){
 	// force the abandoning of the session when the user should have been
 	// sent to the fields.
 	$session=array();
 	// technically we should be able to translate this, but for now,
 	// ignore it.
 	// 1.1.1 now should be a good time to get it on with it, added tl-inline
-	translator_setup();
-	$session['message'].=translate_inline("`nYour session has expired!`n","common");
+	Translator::translatorSetup();
+        $session['message'] .= Translator::translateInline("`nYour session has expired!`n", "common");
 }
 $session['lasthit']=strtotime("now");
 
 $cp = $copyright;
 $l = $license;
 
-php_generic_environment();
-do_forced_nav(ALLOW_ANONYMOUS,OVERRIDE_FORCED_NAV);
+PhpGenericEnvironment::setup();
+ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS,OVERRIDE_FORCED_NAV);
 
 $script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
 mass_module_prepare(array(
@@ -282,22 +278,22 @@ if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
 
 }
 
-if ($logd_version != getsetting("installer_version","-1") && !defined("IS_INSTALLER")){
-	page_header("Upgrade Needed");
+if ($logd_version != $settings->getSetting("installer_version","-1") && !defined("IS_INSTALLER")){
+        PageParts::pageHeader("Upgrade Needed");
 	output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
 	output("In order to perform the upgrade, an admin will have to run through the installer.");
-    output("If you are an admin, please <a href='install/index.php'>visit the Installer</a> and complete the upgrade process.`n`n",true);
+    output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n",true);
 	output("`@If you don't know what this all means, just sit tight, we're doing an upgrade and will be done soon, you will be automatically returned to the game when the upgrade is complete.");
 	rawoutput("<meta http-equiv='refresh' content='30; url={$session['user']['restorepage']}'>");
-    addnav("Installer (Admins only!)","install/index.php");
+    Nav::add("Installer (Admins only!)","installer.php");
 	define("NO_SAVE_USER",true);
-	page_footer();
-} elseif ($logd_version == getsetting("installer_version","-1")  && file_exists('install/index.php') && substr($_SERVER['SCRIPT_NAME'],-16)!="install/index.php") {
+        PageParts::pageFooter();
+} elseif ($logd_version == $settings->getSetting("installer_version","-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'],-13)!="installer.php") {
 // here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
-	page_header("Major Security Risk");
-    output("`\$Remove the file named 'install/index.php' from your main game directory! You need to comply in order to get the game up and running.");
-	addnav("Home","index.php");
-	page_footer();
+        PageParts::pageHeader("Major Security Risk");
+    output("`\$Remove the file named 'installer.php' from your main game directory! You need to comply in order to get the game up and running.");
+        Nav::add("Home","index.php");
+        PageParts::pageFooter();
 }
 
 
@@ -348,16 +344,16 @@ if (
 	$host = str_replace(":80","",$_SERVER['HTTP_HOST']);
 
 	if ($site != $host){
-		$sql = "SELECT * FROM " . db_prefix("referers") . " WHERE uri='{$_SERVER['HTTP_REFERER']}'";
-		$result = db_query($sql);
-		$row = db_fetch_assoc($result);
-		db_free_result($result);
-		if ($row['refererid']>""){
-			$sql = "UPDATE " . db_prefix("referers") . " SET count=count+1,last='".date("Y-m-d H:i:s")."',site='".addslashes($site)."',dest='".addslashes($host)."/".addslashes($REQUEST_URI)."',ip='{$_SERVER['REMOTE_ADDR']}' WHERE refererid='{$row['refererid']}'";
-		}else{
-			$sql = "INSERT INTO " . db_prefix("referers") . " (uri,count,last,site,dest,ip) VALUES ('{$_SERVER['HTTP_REFERER']}',1,'".date("Y-m-d H:i:s")."','".addslashes($site)."','".addslashes($host)."/".addslashes($REQUEST_URI)."','{$_SERVER['REMOTE_ADDR']}')";
-		}
-		db_query($sql);
+                $sql = "SELECT * FROM " . Database::prefix("referers") . " WHERE uri='{$_SERVER['HTTP_REFERER']}'";
+                $result = Database::query($sql);
+                $row = Database::fetchAssoc($result);
+                Database::freeResult($result);
+                if ($row['refererid']>""){
+                        $sql = "UPDATE " . Database::prefix("referers") . " SET count=count+1,last='".date("Y-m-d H:i:s")."',site='".addslashes($site)."',dest='".addslashes($host)."/".addslashes($REQUEST_URI)."',ip='{$_SERVER['REMOTE_ADDR']}' WHERE refererid='{$row['refererid']}'";
+                }else{
+                        $sql = "INSERT INTO " . Database::prefix("referers") . " (uri,count,last,site,dest,ip) VALUES ('{$_SERVER['HTTP_REFERER']}',1,'".date("Y-m-d H:i:s")."','".addslashes($site)."','".addslashes($host)."/".addslashes($REQUEST_URI)."','{$_SERVER['REMOTE_ADDR']}')";
+                }
+                Database::query($sql);
 	}
 }
 
@@ -390,10 +386,10 @@ if ($session['user']['superuser']==0){
 	$lc = $l;
 }
 
-prepare_template();
+Template::prepareTemplate();
 
 if (!isset($session['user']['hashorse'])) $session['user']['hashorse']=0;
-$playermount = getmount($session['user']['hashorse']);
+$playermount = Mounts::getmount($session['user']['hashorse']);
 $temp_comp = @unserialize($session['user']['companions']);
 $companions = array();
 if(is_array($temp_comp)) {
@@ -405,16 +401,16 @@ if(is_array($temp_comp)) {
 }
 unset($temp_comp);
 
-$beta = getsetting("beta", 0);
-if (!$beta && getsetting("betaperplayer", 1) == 1)
+$beta = $settings->getSetting("beta", 0);
+if (!$beta && $settings->getSetting("betaperplayer", 1) == 1)
 	if (isset($session['user']['beta'])) $beta = $session['user']['beta'];
 		else $beta=0;
 
 if (isset($session['user']['clanid'])) {
-	$sql = "SELECT * FROM " . db_prefix("clans") . " WHERE clanid='{$session['user']['clanid']}'";
-	$result = db_query_cached($sql, "clandata-{$session['user']['clanid']}", 3600);
-	if (db_num_rows($result)>0){
-		$claninfo = db_fetch_assoc($result);
+    $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanid='{$session['user']['clanid']}'";
+    $result = Database::queryCached($sql, "clandata-{$session['user']['clanid']}", 3600);
+    if (Database::numRows($result)>0){
+            $claninfo = Database::fetchAssoc($result);
 	}else{
 		$claninfo = array();
 		$session['user']['clanid']=0;
@@ -430,12 +426,13 @@ if ($session['user']['superuser'] & SU_MEGAUSER)
 	$session['user']['superuser'] =
 		$session['user']['superuser'] | SU_EDIT_USERS;
 
-translator_setup();
-//set up the error handler after the intial setup (since it does require a
+Translator::translatorSetup();
+//set up the error handler after the initial setup (since it does require a
 //db call for notification)
-require_once("lib/errorhandler.php");
+use Lotgd\ErrorHandler;
+ErrorHandler::register();
 
-if (getsetting('debug',0)) {
+if ($settings->getSetting('debug',0)) {
 	//Server runs in Debug mode, tell the superuser about it
 	if (($session['user']['superuser']&SU_EDIT_CONFIG)==SU_EDIT_CONFIG) {
 		tlschema("debug");
@@ -447,14 +444,14 @@ if (getsetting('debug',0)) {
 }
 
 // After setup, allow modification of colors and nested tags
-$colors = modulehook("core-colors",$output->get_colors());
-$output->set_colors($colors);
+$colors = modulehook("core-colors",$output->getColors());
+$output->setColors($colors);
 // and nested tag handling
-$nestedtags = modulehook("core-nestedtags",$output->get_nested_tags());
-$output->set_nested_tags($nestedtags);
+$nestedtags = modulehook("core-nestedtags",$output->getNestedTags());
+$output->setNestedTags($nestedtags);
 // and nested tag eval
-$nestedeval = modulehook("core-nestedtags-eval",$output->get_nested_tag_eval());
-$output->set_nested_tag_eval($nestedeval);
+$nestedeval = modulehook("core-nestedtags-eval",$output->getNestedTagEval());
+$output->setNestedTagEval($nestedeval);
 
 
 // WARNING:

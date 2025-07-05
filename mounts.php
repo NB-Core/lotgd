@@ -1,10 +1,11 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // addnews ready
 // mail ready
 // translator ready
 require_once("common.php");
 require_once("lib/http.php");
-require_once("lib/showform.php");
 
 $op = httpget('op');
 $id = httpget('id');
@@ -27,14 +28,13 @@ if ($op=="xml") {
 }
 
 
-check_su_access(SU_EDIT_MOUNTS);
+SuAccess::check(SU_EDIT_MOUNTS);
 
 tlschema("mounts");
 
 page_header("Mount Editor");
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 
 addnav("Mount Editor");
 addnav("Add a mount","mounts.php?op=add");

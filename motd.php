@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Commentary;
+use Lotgd\Accounts;
 // addnews ready
 // translator ready
 // mail ready
@@ -8,14 +9,14 @@ define("OVERRIDE_FORCED_NAV",true);
 require_once("common.php");
 require_once("lib/nltoappon.php");
 require_once("lib/http.php");
-require_once("lib/motd.php");
+use Lotgd\Motd;
 
 tlschema("motd");
 
 $op = httpget('op');
 $id = httpget('id');
 
-addcommentary();
+Commentary::addcommentary();
 popup_header("LoGD Message of the Day (MoTD)");
 
 if ($session['user']['superuser'] & SU_POST_MOTD) {
@@ -37,9 +38,9 @@ if ($op=="vote"){
 }
 if ($op == "add" || $op == "addpoll" || $op == "del")  {
 	if ($session['user']['superuser'] & SU_POST_MOTD) {
-		if ($op == "add") motd_form($id);
-		elseif ($op == "addpoll") motd_poll_form($id);
-		elseif ($op == "del") motd_del($id);
+            if ($op == "add") Motd::motd_form($id);
+            elseif ($op == "addpoll") Motd::motd_poll_form($id);
+            elseif ($op == "del") Motd::motd_del($id);
 	} else {
 		if ($session['user']['loggedin']){
 			$session['user']['experience'] =
@@ -47,7 +48,7 @@ if ($op == "add" || $op == "addpoll" || $op == "del")  {
 			AddNews::add("%s was penalized for attempting to defile the gods.",
 					$session['user']['name']);
 			output("You've attempted to defile the gods.  You are struck with a wand of forgetfulness.  Some of what you knew, you no longer know.");
-			saveuser();
+			Accounts::saveUser();
 		}
 	}
 }
@@ -55,9 +56,9 @@ if ($op=="") {
 	$count = getsetting("motditems", 5);
 	$newcount = (int)httppost("newcount");
 	if ($newcount==0 || httppost('proceed')=='') $newcount=0;
-	/*
-	motditem("Beta!","Please see the beta message below.","","", "");
-	*/
+        /*
+        Motd::motditem("Beta!","Please see the beta message below.","","", "");
+        */
 	$month_post = httppost("month");
 	//SQL Injection attack possible -> kill it off after 7 letters as format is i.e. "2000-05"
 	$month_post = substr($month_post,0,7);
@@ -86,17 +87,17 @@ if ($op=="") {
 		if ($row['motdauthorname']=="")
 			$row['motdauthorname']="`@Green Dragon Staff`0";
 		if ($row['motdtype']==0){
-			motditem($row['motdtitle'], $row['motdbody'],
-					$row['motdauthorname'], $row['motddate'],
-					$row['motditem']);
+                        Motd::motditem($row['motdtitle'], $row['motdbody'],
+                                        $row['motdauthorname'], $row['motddate'],
+                                        $row['motditem']);
 		}else{
-			pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'],
-					$row['motdauthorname'],$row['motddate'],
-					$row['motditem']);
+                        Motd::pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'],
+                                        $row['motdauthorname'],$row['motddate'],
+                                        $row['motditem']);
 		}
 	}
 	/*
-	motditem("Beta!","For those who might be unaware, this website is still in beta mode.  I'm working on it when I have time, which generally means a couple of changes a week.  Feel free to drop suggestions, I'm open to anything :-)","","", "");
+        Motd::motditem("Beta!","For those who might be unaware, this website is still in beta mode.  I'm working on it when I have time, which generally means a couple of changes a week.  Feel free to drop suggestions, I'm open to anything :-)","","", "");
 	*/
 
 	$result = db_query("SELECT mid(motddate,1,7) AS d, count(*) AS c FROM ".db_prefix("motd")." GROUP BY d ORDER BY d DESC");
@@ -117,7 +118,7 @@ if ($op=="") {
 	rawoutput(" <input type='submit' value='".translate_inline("Submit")."' class='button'>");
 	rawoutput("</form>");
 
-	commentdisplay("`n`@Commentary:`0`n", "motd");
+	Commentary::commentdisplay("`n`@Commentary:`0`n", "motd");
 }
 
 $session['needtoviewmotd']=false;

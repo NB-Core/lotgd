@@ -7,65 +7,65 @@ use Lotgd\DateTime as LotgdDateTime;
 
 function reltime($date, $short = true)
 {
-    return LotgdDateTime::reltime($date, $short);
+    return LotgdDateTime::relTime($date, $short);
 }
 
 function readabletime($date, $short = true)
 {
-    return LotgdDateTime::readabletime($date, $short);
+    return LotgdDateTime::readableTime($date, $short);
 }
 
 function relativedate($indate)
 {
-    return LotgdDateTime::relativedate($indate);
+    return LotgdDateTime::relativeDate($indate);
 }
 
 function checkday()
 {
-    LotgdDateTime::checkday();
+    LotgdDateTime::checkDay();
 }
 
 function is_new_day($now = 0)
 {
-    return LotgdDateTime::is_new_day($now);
+    return LotgdDateTime::isNewDay($now);
 }
 
 function getgametime()
 {
-    return LotgdDateTime::getgametime();
+    return LotgdDateTime::getGameTime();
 }
 
 function gametime()
 {
-    return LotgdDateTime::gametime();
+    return LotgdDateTime::gameTime();
 }
 
 function convertgametime($intime, $debug = false)
 {
-    return LotgdDateTime::convertgametime($intime, $debug);
+    return LotgdDateTime::convertGameTime($intime, $debug);
 }
 
 function gametimedetails()
 {
-    return LotgdDateTime::gametimedetails();
+    return LotgdDateTime::gameTimeDetails();
 }
 
 function secondstonextgameday($details = false)
 {
-    return LotgdDateTime::secondstonextgameday($details);
+    return LotgdDateTime::secondsToNextGameDay($details);
 }
 
 function getmicrotime()
 {
-    return LotgdDateTime::getmicrotime();
+    return LotgdDateTime::getMicroTime();
 }
 
 function datedifference($date_1, $date_2 = DATETIME_TODAY, $differenceFormat = '%R%a')
 {
-    return LotgdDateTime::datedifference($date_1, $date_2, $differenceFormat);
+    return LotgdDateTime::dateDifference($date_1, $date_2, $differenceFormat);
 }
 
 function datedifference_events($date_1, $abs = false)
 {
-    return LotgdDateTime::datedifference_events($date_1, $abs);
+    return LotgdDateTime::dateDifferenceEvents($date_1, $abs);
 }

@@ -1,10 +1,12 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
 define("OVERRIDE_FORCED_NAV",true);
+use Lotgd\Mail;
 require_once("common.php");
-require_once("lib/systemmail.php");
 require_once("lib/sanitize.php");
 require_once("lib/http.php");
 
@@ -99,7 +101,7 @@ if($op=="send"){
 			$body = str_replace("\r","\n",$body);
 			$body = addslashes(substr(stripslashes($body),0,(int)getsetting("mailsizelimit",1024)));
 
-			systemmail($row1['acctid'],$subject,$body,$session['user']['acctid']);
+			Mail::systemMail($row1['acctid'],$subject,$body,$session['user']['acctid']);
 			output("Your message was sent!`n");
 		}
 	}else{

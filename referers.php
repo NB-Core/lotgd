@@ -1,4 +1,6 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
@@ -8,7 +10,7 @@ require_once("lib/http.php");
 
 tlschema("referers");
 
-check_su_access(SU_EDIT_CONFIG);
+SuAccess::check(SU_EDIT_CONFIG);
 
 $sql = "DELETE FROM " . db_prefix("referers") . " WHERE last<'".date("Y-m-d H:i:s",strtotime("-".getsetting("expirecontent",180)." days"))."'";
 db_query($sql);
@@ -24,8 +26,7 @@ if ($op=="rebuild"){
 		db_query($sql);
 	}
 }
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Referer Options");
 addnav("",$_SERVER['REQUEST_URI']);
 $sort = httpget('sort');

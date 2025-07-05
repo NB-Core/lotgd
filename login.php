@@ -1,13 +1,17 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Accounts;
 // mail ready
 // addnews ready
 use Lotgd\CheckBan;
+use Lotgd\Mail;
+use Lotgd\Serialization;
 // translator ready
 define("ALLOW_ANONYMOUS",true);
 require_once("common.php");
-require_once("lib/systemmail.php");
 require_once("lib/http.php");
-require_once("lib/serverfunctions.class.php");
+use Lotgd\ServerFunctions;
 
 tlschema("login");
 translator_setup();
@@ -62,9 +66,9 @@ if ($name!=""){
 				$session['loggedin']=true;
 				$session['laston']=date("Y-m-d H:i:s");
 				$session['sentnotice']=0;
-				$session['user']['dragonpoints']=safe_unserialize($session['user']['dragonpoints']);
-				$session['user']['prefs']=safe_unserialize($session['user']['prefs']);
-				$session['bufflist']=safe_unserialize($session['user']['bufflist']);
+                            $session['user']['dragonpoints']=\Lotgd\Serialization::safeUnserialize($session['user']['dragonpoints']);
+                            $session['user']['prefs']=\Lotgd\Serialization::safeUnserialize($session['user']['prefs']);
+                            $session['bufflist']=\Lotgd\Serialization::safeUnserialize($session['user']['bufflist']);
 				if (!is_array($session['bufflist']))
 					$session['bufflist'] = array();
 				if (!is_array($session['user']['dragonpoints'])) $session['user']['dragonpoints']=array();
@@ -81,12 +85,12 @@ if ($name!=""){
 				modulehook("player-login");
 
 				if ($session['user']['loggedin']){
-					$session['allowednavs']=safe_unserialize($session['user']['allowednavs']);
+                                    $session['allowednavs']=\Lotgd\Serialization::safeUnserialize($session['user']['allowednavs']);
 					$link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
 
 					$str = sprintf_translate("Sending you to %s, have a safe journey", $link);
 					header("Location: {$session['user']['restorepage']}");
-					saveuser();
+					Accounts::saveUser();
 					echo $str;
 					exit();
 				}
@@ -152,7 +156,7 @@ if ($name!=""){
 								db_query($sql);
 								if (db_affected_rows()>0) $noemail = true; else $noemail = false;
 								$msg = translate_mail(array("This message is generated as a result of one or more of the accounts having been a superuser account.  Log Follows:`n`n%s",$alert),0);
-								systemmail($row2['acctid'],$subj,$msg,0,$noemail);
+								Mail::systemMail($row2['acctid'],$subj,$msg,0,$noemail);
 							}//end for
 						}//end if($su)
 					}//end if($c>=10)

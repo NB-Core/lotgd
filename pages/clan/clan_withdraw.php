@@ -1,3 +1,4 @@
+use Lotgd\Mail;
 <?php
 		modulehook("clan-withdraw", array('clanid'=>$session['user']['clanid'], 'clanrank'=>$session['user']['clanrank'], 'acctid'=>$session['user']['acctid']));
 		if ($session['user']['clanrank']>=CLAN_LEADER){
@@ -46,7 +47,7 @@
 		$sql = "DELETE FROM " . db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='".addslashes(serialize($withdraw_subj))."'"; //addslashes for names with ' inside
 		db_query($sql);
 		while ($row = db_fetch_assoc($result)){
-			systemmail($row['acctid'],$withdraw_subj,$msg);
+			Mail::systemMail($row['acctid'],$withdraw_subj,$msg);
 		}
 
 		debuglog($session['user']['login']." has withdrawn from his/her clan no. ".$session['user']['clanid']);

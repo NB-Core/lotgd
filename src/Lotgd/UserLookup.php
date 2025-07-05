@@ -1,9 +1,21 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 class UserLookup
 {
-    public static function lookup($query=false, $order=false, $fields=false, $where=false)
+    /**
+     * Search for users matching the given criteria.
+     *
+     * @param string|false $query  Search string
+     * @param string|false $order  Order clause
+     * @param string|false $fields Fields to retrieve
+     * @param string|false $where  Optional where clause
+     *
+     * @return array{0:mixed,1:string} Database result resource and error message
+     */
+    public static function lookup(string|false $query=false, string|false $order=false, string|false $fields=false, string|false $where=false): array
     {
         $err = '';
         $searchresult = false;
@@ -11,11 +23,12 @@ class UserLookup
         if ($fields === false) $fields = 'acctid,login,name,level,laston,loggedin,gentimecount,gentime,lastip,uniqueid,emailaddress';
         $sql = 'SELECT ' . $fields . ' FROM ' . db_prefix('accounts');
         if ($query != '') {
-            if ($where === false)
-                $sql_where = "WHERE login LIKE ? OR name LIKE ? OR acctid = ? OR emailaddress LIKE ? OR lastip LIKE ? OR uniqueid LIKE ?";
-            else
+            if ($where === false) {
+                $query = db_real_escape_string($query);
+                $sql_where = "WHERE login LIKE '$query' OR name LIKE '$query' OR acctid = '$query' OR emailaddress LIKE '$query' OR lastip LIKE '$query' OR uniqueid LIKE '$query'";
+            } else
                 $sql_where = "WHERE $where";
-            $searchresult = db_query($sql . " $sql_where $order LIMIT 2", [$query, $query, $query, $query, $query, $query]);
+            $searchresult = db_query($sql . " $sql_where $order LIMIT 2");
         }
         if ($query !== false || $searchresult) {
             if (db_num_rows($searchresult) != 1) {

@@ -11,7 +11,7 @@ tlschema("rock");
 // This idea is Imusade's from lotgd.net
 if ($session['user']['dragonkills']>0 ||
 		$session['user']['superuser'] & SU_EDIT_COMMENTS){
-	addcommentary();
+	Commentary::addcommentary();
 }
 
 checkday();
@@ -32,7 +32,7 @@ if ($session['user']['dragonkills']>0 ||
 
 	modulehook("rock");
 
-	commentdisplay("", "veterans","Boast here",30,"boasts");
+	Commentary::commentdisplay("", "veterans","Boast here",30,"boasts");
 }else{
 	page_header("Curious looking rock");
 	output("You approach the curious looking rock.  ");

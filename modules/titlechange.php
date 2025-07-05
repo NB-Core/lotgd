@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+use Lotgd\Names;
 
 function titlechange_getmoduleinfo(): array{
 	$info = array(
@@ -64,7 +65,6 @@ function titlechange_dohook(string $hookname, array $args): array{
 
 function titlechange_run(): void{
 	require_once("lib/sanitize.php");
-	require_once("lib/names.php");
 	global $session;
 	$op = httpget("op");
 

@@ -1,6 +1,8 @@
 <?php
 use Lotgd\Buffs;
 use Lotgd\DeathMessage;
+use Lotgd\FightNav;
+use Lotgd\Battle;
 // addnews ready.
 // translator ready
 // mail ready
@@ -87,9 +89,8 @@ if ($battle){
 		httpset('op', "");
 		$skipgraveyardtext=true;
 	}else{
-		if ($defeat){
-			require_once("lib/taunt.php");
-			$taunt = select_taunt_array();
+                if ($defeat){
+                        $taunt = Battle::selectTauntArray();
 			$where = translate_inline("in the graveyard");
 			$deathmessage=DeathMessage::selectArray(false,array("{where}"),array($where));
 			if ($deathmessage['taunt']==1) {
@@ -104,10 +105,9 @@ if ($battle){
 			tlschema("nav");
 			addnav("G?Return to the Graveyard","graveyard.php");
 			tlschema();
-		}else{
-			require_once("lib/fightnav.php");
-			fightnav(false, true, "graveyard.php");
-		}
+                } else {
+                        FightNav::fightnav(false, true, "graveyard.php");
+                }
 	}
 }
 

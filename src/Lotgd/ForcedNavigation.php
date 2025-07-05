@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 class ForcedNavigation
@@ -17,6 +18,8 @@ class ForcedNavigation
             $result = db_query($sql);
             if (db_num_rows($result) == 1) {
                 $session['user'] = db_fetch_assoc($result);
+                global $baseaccount;
+                $baseaccount = $session['user'];
                 self::$baseAccount = $session['user'];
                 $session['bufflist'] = unserialize($session['user']['bufflist']);
                 if (!is_array($session['bufflist'])) $session['bufflist'] = [];

@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+use Lotgd\Names;
 //addnews ready
 // mail ready
 function namecolor_getmoduleinfo(): array{
@@ -75,7 +76,7 @@ function namecolor_form() {
 
 function namecolor_run(): void{
 	require_once("lib/sanitize.php");
-	require_once("lib/names.php");
+        
 	global $session;
 
 	$config = unserialize($session['user']['donationconfig']);
@@ -159,7 +160,7 @@ function namecolor_run(): void{
 		set_module_pref("boughtbefore", 1);
 		$fromname = $session['user']['name'];
 		$basename=rawurldecode(httpget('name'));
-		$newname = change_player_name($basename);
+                $newname = Names::change_player_name($basename);
 		$session['user']['playername'] = $basename;
 		$session['user']['name'] = $newname;
 		AddNews::add("%s`^ has become known as %s.",$fromname,$session['user']['name']);

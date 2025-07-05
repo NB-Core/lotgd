@@ -1,4 +1,7 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Substitute;
+use Lotgd\Nav\SuperuserNav;
 // addnews ready
 // mail ready
 // translator ready
@@ -7,11 +10,10 @@ require_once("lib/http.php");
 
 tlschema("deathmessage");
 
-check_su_access(SU_EDIT_CREATURES);
+SuAccess::check(SU_EDIT_CREATURES);
 
 page_header("Deathmessage Editor");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 $op = httpget('op');
 $deathmessageid = httpget('deathmessageid');
 switch ($op) {
@@ -24,9 +26,8 @@ case "edit":
 		$sql = "SELECT * FROM " . db_prefix("deathmessages") . " WHERE deathmessageid=\"$deathmessageid\"";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
-		require_once("lib/substitute.php");
 		$badguy=array('creaturename'=>'`2The Nasty Rabbit', 'creatureweapon'=>'Rabbit Ears');
-		$deathmessage = substitute_array($row['deathmessage'],array("{where}"),array("in the fields"));
+		$deathmessage = Substitute::applyArray($row['deathmessage'],array("{where}"),array("in the fields"));
 		$deathmessage = call_user_func_array("sprintf_translate", $deathmessage);
 		output("Preview: %s`0`n`n", $deathmessage);
 	} else {

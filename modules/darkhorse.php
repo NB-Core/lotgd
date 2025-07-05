@@ -1,6 +1,7 @@
 <?php
-use Lotgd\Commentary;
 declare(strict_types=1);
+use Lotgd\Commentary;
+use Lotgd\MountName;
 // translator ready
 // addnews ready
 // mail ready
@@ -81,8 +82,7 @@ function darkhorse_dohook(string $hookname, array $args): array{
 			// add the nav
 			addnav("Other");
 			$iname = get_module_setting("tavernname");
-			require_once("lib/mountname.php");
-			list($name, $lcname) = getmountname();
+                        list($name, $lcname) = MountName::getmountname();
 			addnav(array("D?Take %s`0 to %s", $lcname, $iname),
 					"runmodule.php?module=darkhorse&op=enter");
 		}
@@ -121,7 +121,7 @@ function darkhorse_bartender($from){
 		output("They are not written into shtone, you know, and may change at any time later on....`0\"`n`n");
 		output("`lEach of thoshe correshpondsh with a color to look like this: `n");
 		global $output;
-		$colors = $output->get_colormap_escaped_array();
+              $colors = $output->getColormapEscapedArray();
 		rawoutput("<table><tr><td>");
 		output("`2Color Code");
 		rawoutput("</td><td>");
@@ -324,8 +324,7 @@ function darkhorse_runevent(string $type, string $link): void{
 		output("You're sure you've seen this place before.");
 		output("As you approach the grove, a strange mist creeps in around you; your mind begins to buzz, and you're no longer sure exactly how you got here.");
 		if(darkhorse_tavernmount()) {
-			require_once("lib/mountname.php");
-			list($name, $lcname) = getmountname();
+                        list($name, $lcname) = MountName::getmountname();
 			output("%s`0 seems to have known the way, however.", $name);
 		}
 		output("`n`nThe mist clears, and before you is a log building with smoke trailing from its chimney.");
@@ -353,8 +352,8 @@ function darkhorse_runevent(string $type, string $link): void{
 		}
 		break;
 	case "tables":
-		addcommentary();
-		commentdisplay("You examine the etchings in the table:`n`n",
+		Commentary::addcommentary();
+		Commentary::commentdisplay("You examine the etchings in the table:`n`n",
 				"darkhorse","Add your own etching:");
 		addnav("Navigation");
 		addnav("Return to the Main Room",$from."op=tavern");

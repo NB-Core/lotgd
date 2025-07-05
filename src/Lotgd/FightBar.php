@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 class FightBar
@@ -32,7 +33,10 @@ class FightBar
         $this->height = 10;
     }
 
-    public function getBar($current, $max)
+    /**
+     * Render a small colored bar representing current health/points.
+     */
+    public function getBar(int $current, int $max): string
     {
         $totalwidth = $this->length;
         if ($max == 0) {

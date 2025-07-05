@@ -1,14 +1,15 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
 //addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/showform.php");
 require_once("lib/sanitize.php");
-require_once("lib/names.php");
+use Lotgd\Names;
 
 tlschema("bans");
-check_su_access(SU_EDIT_BANS);
+SuAccess::check(SU_EDIT_BANS);
 
 $op = httpget('op');
 $userid=httpget("userid");
@@ -51,8 +52,7 @@ addnav("","bans.php?op=search");
 
 
 
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Bans");
 addnav("Add a ban","bans.php?op=setupban");
 addnav("List/Remove bans","bans.php?op=removeban");

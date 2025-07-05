@@ -1,15 +1,19 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
+use Lotgd\Settings;
+use Lotgd\Forms;
 // translator ready
 // addnews ready
 // mail ready
 
 
 require_once("common.php");
-require_once("lib/showform.php");
-require("lib/settings_extended.php");
+// legacy wrapper removed, instantiate settings directly
+$settings_extended = new Settings('settings_extended');
 
-check_su_access(SU_EDIT_CONFIG);
+SuAccess::check(SU_EDIT_CONFIG);
 
 tlschema("configuration");
 
@@ -31,8 +35,8 @@ switch ($type_setting) {
 					if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
 						if (!isset($old[$key]))
 							$old[$key] = "";
-						$settings_extended->saveSetting($key,stripslashes($val));
-						output("Setting %s to %s`n", $key, stripslashes($val));
+						$hasSaved = $settings_extended->saveSetting($key,stripslashes($val));
+						output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved);
 						gamelog("`@Changed core setting (extended)`^$key`@ from `#".substr($old[$key],25)."...`@ to `&".substr($val,25)."...`0","settings");
 						// Notify every module
 						modulehook("changesetting",
@@ -103,8 +107,12 @@ switch ($type_setting) {
 					if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
 						if (!isset($old[$key]))
 							$old[$key] = "";
-						savesetting($key,stripslashes($val));
-						output("Setting %s to %s`n", $key, stripslashes($val));
+						// If key and old key have empty content, don't save it
+						if (empty($val) && empty($old[$key])) {
+							continue;
+						}
+						$hasSaved = $settings->saveSetting($key,stripslashes($val));
+						output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved ? "`2Yes`0" : "`\$No`0");
 						gamelog("`@Changed core setting `^$key`@ from `#{$old[$key]}`@ to `&$val`0","settings");
 						// Notify every module
 						modulehook("changesetting",
@@ -191,7 +199,7 @@ switch ($type_setting) {
 							rawoutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>",true);
 							addnav("","configuration.php?op=modulesettings&module=$module&save=1");
 							tlschema("module-$module");
-							showform($msettings,$module_settings[$mostrecentmodule]);
+							Forms::showForm($msettings,$module_settings[$mostrecentmodule]);
 							tlschema();
 							rawoutput("</form>",true);
 						}else{
@@ -207,8 +215,7 @@ switch ($type_setting) {
 
 
 page_header("Game Settings");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Module Manager", "modules.php");
 if ($module) {
 	$cat = $info['category'];
@@ -246,7 +253,7 @@ switch ($type_setting) {
 
 				rawoutput("<form action='configuration.php?settings=extended&op=save' method='POST'>");
 				addnav("","configuration.php?settings=extended&op=save");
-				showform($setup_extended,$vals);
+				Forms::showForm($setup_extended,$vals);
 				rawoutput("</form>");		
 				break;
 		}
@@ -275,7 +282,7 @@ switch ($type_setting) {
 					"defaultsuperuser"=>getsetting('defaultsuperuser',0), // this needs to be there as the showform loads from the database; so a value has to be present if it's not set, and this is a technical field
 					"dayduration"=>round(($details['dayduration']/60/60),0)." hours",
 					"gziphandler"=>$gz_handler_on,
-					"databasetype"=>$DB_TYPE,
+					"databasetype"=>"MySQLi",
 					"curgametime"=>getgametime(),
 					"curservertime"=>date("Y-m-d h:i:s a"),
 					"lastnewday"=>date("h:i:s a",
@@ -294,7 +301,7 @@ switch ($type_setting) {
 
 				rawoutput("<form action='configuration.php?op=save' method='POST'>");
 				addnav("","configuration.php?op=save");
-				showform($setup,$vals);
+				Forms::showForm($setup,$vals);
 				rawoutput("</form>");
 				break;
 		}

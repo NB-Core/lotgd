@@ -4,18 +4,18 @@ use Lotgd\Buffs;
 // translator ready
 // mail ready
 require_once("common.php");
-require_once("lib/fightnav.php");
-require_once("lib/titles.php");
-require_once("lib/http.php");
-require_once("lib/taunt.php");
-require_once("lib/names.php");
+use Lotgd\FightNav;
+use Lotgd\PlayerFunctions;
+use Lotgd\Http;
+use Lotgd\Battle;
+use Lotgd\Names;
 
 tlschema("dragon");
 $battle = false;
 page_header("The Green Dragon!");
-$op = httpget('op');
+$op = Http::get('op');
 if ($op==""){
-	if (!httpget('nointro')) {
+        if (!Http::get('nointro')) {
 		output("`\$Fighting down every urge to flee, you cautiously enter the cave entrance, intent on catching the great green dragon sleeping, so that you might slay it with a minimum of pain.");
 		output("Sadly, this is not to be the case, for as you round a corner within the cave you discover the great beast sitting on its haunches on a huge pile of gold, picking its teeth with a rib.");
 	}
@@ -55,7 +55,7 @@ if ($op==""){
 	$battle=true;
 }elseif($op=="prologue1"){
 	output("`@Victory!`n`n");
-	$flawless = (int)(httpget('flawless'));
+        $flawless = (int)(Http::get('flawless'));
   	if ($flawless) {
 		output("`b`c`&~~ Flawless Fight ~~`0`c`b`n`n");
 	}
@@ -173,7 +173,7 @@ if ($op==""){
 	$session['user']['armor'] = getsetting('startarmor','T-Shirt');
 	$session['user']['weapon'] = getsetting('startweapon','Fists');
 
-	$newtitle = get_dk_title($session['user']['dragonkills'], $session['user']['sex']);
+        $newtitle = PlayerFunctions::getDkTitle($session['user']['dragonkills'], $session['user']['sex']);
 
 	$restartgold = $session['user']['gold'] +
 		getsetting("newplayerstartgold", 50)*$session['user']['dragonkills'];
@@ -207,7 +207,7 @@ if ($op==""){
 	}
 
 	// Set the new title.
-	$newname = change_player_title($newtitle);
+        $newname = Names::change_player_title($newtitle);
 	$session['user']['title'] = $newtitle;
 	$session['user']['name'] = $newname;
 
@@ -263,7 +263,7 @@ if ($op==""){
 if ($op=="run"){
 	output("The creature's tail blocks the only exit to its lair!");
 	$op="fight";
-	httpset('op', 'fight');
+        Http::set('op', 'fight');
 }
 if ($op=="fight" || $op=="run"){
 	$battle=true;
@@ -285,7 +285,7 @@ if ($battle){
 			tlschema("nav");
 			addnav("Daily news","news.php");
 			tlschema();
-			$taunt = select_taunt_array();
+                        $taunt = Battle::selectTauntArray();
 			if ($session['user']['sex']){
 				AddNews::add("`%%s`5 has been slain when she encountered `@%s`5!!!  Her bones now litter the cave entrance, just like the bones of those who came before.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			}else{
@@ -305,7 +305,7 @@ if ($battle){
 
 			page_footer();
 		}else{
-		  fightnav(true,false);
+                  FightNav::fightnav(true,false);
 		}
 	}
 }

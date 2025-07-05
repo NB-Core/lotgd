@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 /**
@@ -9,7 +10,7 @@ class EDom
     /**
      * Print the script tag to include the JavaScript DOM helpers.
      */
-    public static function includeScript()
+    public static function includeScript(): void
     {
         rawoutput("<script src='src/Lotgd/e_dom.js'></script>");
     }

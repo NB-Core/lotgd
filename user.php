@@ -1,15 +1,16 @@
 <?php
+use Lotgd\SuAccess;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
 //addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/showform.php");
 require_once("lib/http.php");
 require_once("lib/sanitize.php");
-require_once("lib/names.php");
+use Lotgd\Names;
 
 tlschema("user");
-check_su_access(SU_EDIT_USERS);
+SuAccess::check(SU_EDIT_USERS);
 
 $op = httpget('op');
 $userid=(int)httpget("userid");
@@ -57,8 +58,7 @@ rawoutput("<input type='submit' class='button' value='$se'>");
 rawoutput("</form>");
 rawoutput("<script language='JavaScript'>document.getElementById('q').focus();</script>");
 addnav("","user.php?op=search$m");
-require_once("lib/superusernav.php");
-superusernav();
+SuperuserNav::render();
 addnav("Bans");
 addnav("Add a ban","bans.php?op=setupban");
 addnav("List/Remove bans","bans.php?op=removeban");

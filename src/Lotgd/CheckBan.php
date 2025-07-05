@@ -13,7 +13,7 @@ class CheckBan
      *
      * @return void
      */
-    public static function check(?string $login = null)
+    public static function check(?string $login = null): void
     {
         global $session;
 

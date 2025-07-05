@@ -14,7 +14,7 @@ class Dhms
      *
      * @return string
      */
-    public static function format($secs, $dec = false)
+    public static function format(int|float $secs, bool $dec = false): string
     {
         if ($dec === false) {
             $secs = round($secs, 0);

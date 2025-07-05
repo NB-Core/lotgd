@@ -3,12 +3,10 @@
 // addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/fightnav.php");
-require_once("lib/pvpwarning.php");
-require_once("lib/pvplist.php");
-require_once("lib/pvpsupport.php");
+use Lotgd\FightNav;
+use Lotgd\Pvp;
+use Lotgd\Battle;
 require_once("lib/http.php");
-require_once("lib/taunt.php");
 require_once("lib/villagenav.php");
 
 tlschema("pvp");
@@ -22,7 +20,7 @@ $act = httpget('act');
 
 if ($op=="" && $act!="attack"){
 	checkday();
-	pvpwarning();
+        Pvp::warn();
 	$args = array(
 		'atkmsg'=> '`4You head out to the fields, where you know some unwitting warriors are sleeping.`n`nYou have `^%s`4 PvP fights left for today.`n`n',
 		'schemas'=>array('atkmsg'=>'pvp')
@@ -32,11 +30,11 @@ if ($op=="" && $act!="attack"){
 	output($args['atkmsg'], $session['user']['playerfights']);
 	tlschema();
 	addnav("L?Refresh List of Warriors","pvp.php");
-	pvplist();
+        Pvp::listTargets();
 	villagenav();
 } else if ($act == "attack") {
 	$name = httpget('name');
-	$badguy = setup_target($name);
+        $badguy = Pvp::setupTarget($name);
 	$options['type'] = "pvp";
 	$failedattack = false;
 	if ($badguy === false) {
@@ -82,7 +80,7 @@ if ($battle){
 	require_once("battle.php");
 	if ($victory){
 		$killedin = $badguy['location'];
-		$handled = pvpvictory($badguy, $killedin, $options);
+                $handled = Pvp::victory($badguy, $killedin, $options);
 
 		// Handled will be true if a module has already done the addnews or
 		// whatever was needed.
@@ -107,10 +105,10 @@ if ($battle){
 		}
 	}elseif($defeat){
 		$killedin = $badguy['location'];
-		$taunt = select_taunt_array();
+                $taunt = Battle::selectTauntArray();
 		// This is okay because system mail which is all it's used for is
 		// not translated
-		$handled = pvpdefeat($badguy, $killedin, $taunt, $options);
+                $handled = Pvp::defeat($badguy, $killedin, $taunt, $options);
 		// Handled will be true if a module has already done the addnews or
 		// whatever was needed.
 		if (!$handled) {
@@ -123,7 +121,7 @@ if ($battle){
 	}else{
 		$extra = "";
 		if (httpget('inn')) $extra = "?inn=1";
-		fightnav(false,false, "pvp.php$extra");
+                FightNav::fightnav(false,false, "pvp.php$extra");
 	}
 }
 page_footer();

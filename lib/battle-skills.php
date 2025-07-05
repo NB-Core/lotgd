@@ -1,6 +1,5 @@
 <?php
 use Lotgd\Battle;
-require_once("lib/e_rand.php");
 
 function rolldamage(&$badguy)
 {

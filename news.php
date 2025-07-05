@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Motd;
 // translator ready
 // addnews ready
 // mail ready
@@ -40,14 +41,13 @@ if ($totaltoday > $newsperpage) {
 $sql2 = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor ORDER BY motddate DESC LIMIT 1";
 $result2 = db_query_cached($sql2, "lastmotd");
 while ($row = db_fetch_assoc($result2)) {
-	require_once("lib/motd.php");
-	require_once("lib/nltoappon.php");
+        require_once("lib/nltoappon.php");
 	if ($row['motdauthorname']=="")
 		$row['motdauthorname']=translate_inline("`@Green Dragon Staff`0");
-	if ($row['motdtype']==0){
-		motditem($row['motdtitle'], $row['motdbody'],$row['motdauthorname'], $row['motddate'], "");
-	}else{
-		pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'],$row['motdauthorname'],$row['motddate'], false);
+        if ($row['motdtype']==0){
+                Motd::motditem($row['motdtitle'], $row['motdbody'],$row['motdauthorname'], $row['motddate'], "");
+        }else{
+                Motd::pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'],$row['motdauthorname'],$row['motddate'], false);
 	}
 }
 output_notl("`n");
