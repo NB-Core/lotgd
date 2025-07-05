@@ -245,7 +245,7 @@ class Forms
                 rawoutput("<select name='$keyout'>");
                 foreach ($vloc as $loc => $val) {
                     if ($loc == $row[$key]) {
-                        rawoutput("<option value='$loc'selected>" . htmlentities($loc, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
+                        rawoutput("<option value='$loc' selected>" . htmlentities($loc, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
                     } else {
                         rawoutput("<option value='$loc'>" . htmlentities($loc, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
                     }
