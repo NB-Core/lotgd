@@ -178,7 +178,7 @@ use Lotgd\Forest\Outcomes;
 			module_display_events("travel",
 				"runmodule.php?module=cities&city=".urlencode($city)."&d=$danger&continue=1");
                 }elseif ($defeat){
-                        Outcomes::defeat($newenemies,array("travelling to %s",$city));
+                        Outcomes::defeat($newenemies,sprintf("travelling to %s", $city));
 		}else{
                         FightNav::fightnav(true,true,"runmodule.php?module=cities&city=".urlencode($city)."&d=$danger");
 		}
