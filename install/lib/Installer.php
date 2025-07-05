@@ -908,14 +908,31 @@ class Installer
         }
         
         if (!isset($session['fromversion']) || $session['fromversion']==""){
-        	output("`@`c`bConfirmation`b`c");
-        	output("`2Please confirm the following:`0`n");
+                output("`@`c`bConfirmation`b`c");
+                output("`2Please confirm the following:`0`n");
                rawoutput("<form action='installer.php?stage=7' method='POST'>");
-        	rawoutput("<table border='0' cellpadding='0' cellspacing='0'><tr><td valign='top'>");
-        	output("`2I should:`0");
-        	rawoutput("</td><td>");
-        	$version = getsetting("installer_version","-1");
-        	if ($version != "-1") $session['dbinfo']['upgrade']=true;
+                rawoutput("<table border='0' cellpadding='0' cellspacing='0'><tr><td valign='top'>");
+                output("`2I should:`0");
+                rawoutput("</td><td>");
+                $version = getsetting("installer_version","-1");
+                // Determine if this is an upgrade based on db version and code version
+                if ($version != "-1" && $version != $logd_version) {
+                        $session['dbinfo']['upgrade']=true;
+                } else {
+                        $session['dbinfo']['upgrade']=false;
+                }
+                if ($version != "-1") {
+                        output("`n`2Detected database version: `^%s`2.`n", $version);
+                        if ($session['dbinfo']['upgrade']) {
+                                output("`2Code version: `^%s`2. The installer will upgrade your database.`n", $logd_version);
+                        } else {
+                                output("`2Code version matches the database version.`n");
+                        }
+                } else {
+                        if (file_exists('dbconnect.php') && (time() - filemtime('dbconnect.php') < 300)) {
+                                output("`n`2A new dbconnect.php file was detected; assuming fresh installation.`n");
+                        }
+                }
         	rawoutput("<input type='radio' value='upgrade' name='type'".($session['dbinfo']['upgrade']?" checked":"").">");
         	output(" `2Perform an upgrade from ");
         	if ($version=="-1") $version="0.9.7";
