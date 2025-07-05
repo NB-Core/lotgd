@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd\MySQL;
 
 class TableDescriptor
@@ -17,7 +19,11 @@ class TableDescriptor
 //
 // There's no support for foreign keys that INNODB offers.  Sorry.
 
-    public static function synctable($tablename,$descriptor,$nodrop=false){
+    /**
+     * Synchronise a table with the provided descriptor.
+     */
+    public static function synctable(string $tablename, array $descriptor, bool $nodrop = false): ?int
+    {
 	//table names should be db_prefix'd before they get in to
 	//this function.
 	if (!db_table_exists($tablename)){
@@ -114,7 +120,11 @@ class TableDescriptor
 	}//end if
 }//end function
 
-    public static function tableCreateFromDescriptor($tablename,$descriptor){
+    /**
+     * Generate SQL to create a table from the given descriptor.
+     */
+    public static function tableCreateFromDescriptor(string $tablename, array $descriptor): string
+    {
 	$sql = "CREATE TABLE $tablename (\n";
 	$type = "INNODB";
 	reset($descriptor);
@@ -160,7 +170,11 @@ class TableDescriptor
 	return $sql;
 }
 
-    public static function tableCreateDescriptor($tablename){
+    /**
+     * Build a descriptor array from an existing table.
+     */
+    public static function tableCreateDescriptor(string $tablename): array
+    {
 	//this function assumes that $tablename is already passed
 	//through db_prefix.
 	$descriptor = array();
@@ -216,8 +230,12 @@ class TableDescriptor
 	return $descriptor;
 }
 
-    public static function descriptorCreateSql($input){
-	$input['type'] = descriptor_sanitize_type($input['type']);
+    /**
+     * Convert a descriptor element to SQL.
+     */
+    public static function descriptorCreateSql(array $input): string
+    {
+	$input['type'] = self::descriptorSanitizeType($input['type']);
 	if ($input['type']=="key" || $input['type']=='unique key'){
 		//this is a standard index
 		if (is_array($input['columns']))
@@ -256,7 +274,11 @@ class TableDescriptor
 	return $return;
 }
 
-    public static function descriptorSanitizeType($type){
+    /**
+     * Normalise a descriptor type value.
+     */
+    public static function descriptorSanitizeType(string $type): string
+    {
 	$type = strtolower($type);
 	$changes = array(
 		"primary index"=>"primary key",
