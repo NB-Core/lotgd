@@ -1293,9 +1293,7 @@ class Modules
      */
     public static function compareVersions($a, $b): int
     {
-        $a = (float) $a;
-        $b = (float) $b;
-        return ($a < $b ? -1 : ($a > $b ? 1 : 0));
+        return version_compare($a, $b);
     }
 
     /**
