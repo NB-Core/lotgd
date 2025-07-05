@@ -1,5 +1,6 @@
 <?php
 use Lotgd\FightNav;
+use Lotgd\Forest\Outcomes;
         $op = httpget("op");
 	$city = urldecode(httpget("city"));
 	$continue = httpget("continue");
@@ -97,8 +98,7 @@ use Lotgd\FightNav;
 
 				$args = array("soberval"=>0.9,
 						"sobermsg"=>"`&Facing your bloodthirsty opponent, the adrenaline rush helps to sober you up slightly.", "schema"=>"module-cities");
-				modulehook("soberup", $args);
-				require_once("lib/forestoutcomes.php");
+                                modulehook("soberup", $args);
 				$sql = "SELECT * FROM " . db_prefix("creatures") . " WHERE creaturelevel = '{$session['user']['level']}' AND forest = 1 ORDER BY rand(".e_rand().") LIMIT 1";
 				$result = db_query($sql);
 				restore_buff_fields();
@@ -123,7 +123,7 @@ use Lotgd\FightNav;
 						//file there, get content and put it into the ai script field.
 						$badguy['creatureaiscript']="require('".$aiscriptfile."');";
 					}
-					$badguy = buffbadguy($badguy);
+                                        $badguy = Outcomes::buffBadguy($badguy);
 				}
 				calculate_buff_fields();
 				$badguy['playerstarthp']=$session['user']['hitpoints'];
@@ -172,15 +172,13 @@ use Lotgd\FightNav;
 	if ($battle){
 		page_header("You've been waylaid!");
 		require_once("battle.php");
-		if ($victory){
-			require_once("lib/forestoutcomes.php");
-			forestvictory($newenemies,"This fight would have yielded an extra turn except it was during travel.");
+                if ($victory){
+                        Outcomes::victory($newenemies,"This fight would have yielded an extra turn except it was during travel.");
 			addnav("Continue your journey","runmodule.php?module=cities&op=travel&city=".urlencode($city)."&continue=1&d=$danger");
 			module_display_events("travel",
 				"runmodule.php?module=cities&city=".urlencode($city)."&d=$danger&continue=1");
-		}elseif ($defeat){
-			require_once("lib/forestoutcomes.php");
-			forestdefeat($newenemies,array("travelling to %s",$city));
+                }elseif ($defeat){
+                        Outcomes::defeat($newenemies,sprintf("travelling to %s", $city));
 		}else{
                         FightNav::fightnav(true,true,"runmodule.php?module=cities&city=".urlencode($city)."&d=$danger");
 		}
