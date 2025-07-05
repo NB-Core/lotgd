@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Backtrace;
@@ -46,7 +47,7 @@ class ErrorHandler
      * @param int    $errline   Line in the file the error originated from
      * @return void
      */
-    public static function handleError($errno, $errstr, $errfile, $errline): void
+    public static function handleError(int $errno, string $errstr, string $errfile, int $errline): void
     {
         global $session, $settings;
         static $inErrorHandler = 0;
@@ -113,7 +114,7 @@ class ErrorHandler
      * @param string $backtrace HTML stack trace
      * @return void
      */
-    public static function errorNotify($errno, $errstr, $errfile, $errline, $backtrace): void
+    public static function errorNotify(int $errno, string $errstr, string $errfile, int $errline, string $backtrace): void
     {
         global $session, $settings;
         $sendto = explode(';', isset($settings) && $settings instanceof Settings
@@ -184,7 +185,7 @@ class ErrorHandler
      * @param \Throwable $exception Exception instance
      * @return void
      */
-    public static function handleException($exception): void
+    public static function handleException(\Throwable $exception): void
     {
         $trace = Backtrace::show($exception->getTrace());
         self::renderError($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);

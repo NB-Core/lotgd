@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 use Lotgd\DumpItem;
 
@@ -7,7 +8,7 @@ class Forms
     /**
      * Render a message preview input field with javascript helper.
      */
-    public static function previewField(string $name, $startdiv=false, $talkline="says", bool $showcharsleft=true, $info=false, bool $scriptOutput=true)
+    public static function previewField(string $name, string|bool $startdiv=false, string $talkline="says", bool $showcharsleft=true, array|bool $info=false, bool $scriptOutput=true): string
     {
         global $schema, $session, $output;
         $talkline = translate_inline($talkline, $schema);
@@ -67,7 +68,7 @@ class Forms
     /**
      * Render a form described by the given layout array.
      */
-    public static function showForm($layout, $row, $nosave=false, $keypref=false)
+    public static function showForm(array $layout, array $row, bool $nosave=false, string|bool $keypref=false): array
     {
         	global $session;
          	static $showform_id=0;

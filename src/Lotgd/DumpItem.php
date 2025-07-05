@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 /**
@@ -12,7 +13,10 @@ class DumpItem
      * @param mixed $item
      * @return string
      */
-    public static function dump($item)
+    /**
+     * Return a printable representation of a variable for debugging.
+     */
+    public static function dump(mixed $item): string
     {
         $out = '';
         if (is_array($item)) {
@@ -34,7 +38,10 @@ class DumpItem
      * @param string $indent Indentation characters
      * @return string
      */
-    public static function dumpAsCode($item, $indent = "\t")
+    /**
+     * Return a PHP code representation of the supplied variable.
+     */
+    public static function dumpAsCode(mixed $item, string $indent = "\t"): string
     {
         $out = '';
         $temp = is_array($item) ? $item : @unserialize($item);

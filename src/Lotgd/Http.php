@@ -1,9 +1,13 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 class Http
 {
-    public static function get(string $var)
+    /**
+     * Retrieve a value from the GET superglobal.
+     */
+    public static function get(string $var): string|false
     {
         $res = $_GET[$var] ?? false;
         if ($res === '') {
@@ -12,18 +16,27 @@ class Http
         return $res;
     }
 
+    /**
+     * Return the entire $_GET array.
+     */
     public static function allGet(): array
     {
         return $_GET;
     }
 
-    public static function set(string $var, $val, bool $force=false): void
+    /**
+     * Set a GET variable.
+     */
+    public static function set(string $var, mixed $val, bool $force=false): void
     {
         if (isset($_GET[$var]) || $force) $_GET[$var] = $val;
         if (isset($GLOBALS['HTTP_GET_VARS'][$var])) $GLOBALS['HTTP_GET_VARS'][$var] = $val;
     }
 
-    public static function post(string $var)
+    /**
+     * Retrieve a value from the POST superglobal.
+     */
+    public static function post(string $var): string|false
     {
         $res = $_POST[$var] ?? false;
         if ($res === '') {
@@ -32,13 +45,17 @@ class Http
         return $res;
     }
 
+    /** Check if a POST variable exists. */
     public static function postIsset(string $var): bool
     {
         $res = isset($_POST[$var]) ? 1 : 0;
         return (bool)$res;
     }
 
-    public static function postSet(string $var, $val, $sub=false): void
+    /**
+     * Set a value in the POST array.
+     */
+    public static function postSet(string $var, mixed $val, string|false $sub=false): void
     {
         if ($sub === false) {
             if (isset($_POST[$var])) $_POST[$var] = $val;
@@ -51,12 +68,16 @@ class Http
         }
     }
 
+    /** Return the entire $_POST array. */
     public static function allPost(): array
     {
         return $_POST;
     }
 
-    public static function postParse($verify=false, $subval=false): array
+    /**
+     * Build an SQL fragment from POST data.
+     */
+    public static function postParse(array|false $verify=false, string|false $subval=false): array
     {
         $var = $subval ? $_POST[$subval] : $_POST;
         $sql = '';

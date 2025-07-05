@@ -1,24 +1,37 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Http;
 
 require_once("config/constants.php");
 
+/**
+ * Handle random special events that may occur in various locations.
+ */
 class Events
 {
 
 // This file encapsulates all the special event handling for most locations
 
 // Returns whether or not the description should be skipped
-    public static function handleEvent($location, $baseLink=false, $needHeader=false)
-{
-	if ($baseLink === false){
-		$baseLink = substr($_SERVER['PHP_SELF'],strrpos($_SERVER['PHP_SELF'],"/")+1)."?";
-	}else{
-		//debug("Base link was specified as $baseLink");
-		//debug(debug_backtrace());
-	}
+    /**
+     * Process any queued special event for the current player location.
+     *
+     * @param string      $location    Player location identifier
+     * @param string|null $baseLink    Optional base link to return to
+     * @param string|null $needHeader  Optional header for the event page
+     *
+     * @return bool Whether the location description should be skipped
+     */
+    public static function handleEvent(string $location, ?string $baseLink = null, ?string $needHeader = null): bool
+    {
+        if ($baseLink === null) {
+                $baseLink = substr($_SERVER['PHP_SELF'],strrpos($_SERVER['PHP_SELF'],"/")+1)."?";
+        } else {
+                //debug("Base link was specified as $baseLink");
+                //debug(debug_backtrace());
+        }
 	global $session, $playermount, $badguy;
 	$skipdesc = false;
 
@@ -40,9 +53,9 @@ class Events
 	if ($session['user']['specialinc']!=""){
 		$specialinc = $session['user']['specialinc'];
 		$session['user']['specialinc'] = "";
-		if ($needHeader !== false) {
-			page_header($needHeader);
-		}
+                if ($needHeader !== null) {
+                        page_header($needHeader);
+                }
 
 		output("`^`c`bSomething Special!`c`b`0");
 		if (strchr($specialinc, ":")) {

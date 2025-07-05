@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 use Lotgd\Forms;
 use Lotgd\HolidayText;
@@ -12,7 +13,7 @@ class Moderate
     /**
      * Show a moderation form for a commentary section.
      */
-    public static function commentmoderate($intro, $section, $message, $limit = 10, $talkline = 'says', $schema = false, $viewall = false): void
+    public static function commentmoderate(string $intro, string $section, string $message, int $limit = 10, string $talkline = 'says', ?string $schema = null, bool $viewall = false): void
     {
         if ($intro) {
             output($intro);
@@ -147,7 +148,7 @@ class Moderate
     /**
      * View a commentary area for moderation purposes.
      */
-    public static function viewmoderatedcommentary($section, $message = 'Interject your own commentary?', $limit = 10, $talkline = 'says', $schema = false, $viewall = false): void
+    public static function viewmoderatedcommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', ?string $schema = null, bool $viewall = false): void
     {
         global $session, $REQUEST_URI, $doublepost, $translation_namespace, $emptypost;
 
