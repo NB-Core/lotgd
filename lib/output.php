@@ -9,20 +9,20 @@ class output_collector extends Output {}
 function set_block_new_output($block)
 {
     global $output;
-    $output->set_block_new_output($block);
+    $output->setBlockNewOutput($block);
 }
 
 function rawoutput($indata)
 {
     global $output;
-    $output->rawoutput($indata);
+    $output->rawOutput($indata);
 }
 
 function output_notl()
 {
     global $output;
     $args = func_get_args();
-    call_user_func_array([$output, 'output_notl'], $args);
+    call_user_func_array([$output, 'outputNotl'], $args);
 }
 
 function output()

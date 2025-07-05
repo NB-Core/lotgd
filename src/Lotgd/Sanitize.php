@@ -9,7 +9,7 @@ class Sanitize
         if ($in == '' || $in === null) {
             return '';
         }
-        $out = preg_replace('/[`][0' . $output->get_colormap_escaped() . 'bicnHw]/', '', $in);
+        $out = preg_replace('/[`][0' . $output->getColormapEscaped() . 'bicnHw]/', '', $in);
         return $out;
     }
 
@@ -28,7 +28,7 @@ class Sanitize
             return '';
         }
         global $output;
-        $out = preg_replace('/[`][0' . $output->get_colormap_escaped() . 'cbi]/', '', $in);
+        $out = preg_replace('/[`][0' . $output->getColormapEscaped() . 'cbi]/', '', $in);
         return $out;
     }
 
@@ -38,7 +38,7 @@ class Sanitize
         if ($in == '' || $in === null) {
             return '';
         }
-        $out = preg_replace('/[`](?=[^0' . $output->get_colormap_escaped() . '])/', chr(1) . chr(1), $in);
+        $out = preg_replace('/[`](?=[^0' . $output->getColormapEscaped() . '])/', chr(1) . chr(1), $in);
         $out = str_replace(chr(1), '`', $out);
         return $out;
     }
@@ -46,7 +46,7 @@ class Sanitize
     public static function logdnetSanitize($in)
     {
         global $output;
-        $out = preg_replace('/[`](?=[^0' . $output->get_colormap_escaped() . 'bicn])/', chr(1) . chr(1), $in);
+        $out = preg_replace('/[`](?=[^0' . $output->getColormapEscaped() . 'bicn])/', chr(1) . chr(1), $in);
         $out = str_replace(chr(1), '`', $out);
         return $out;
     }
@@ -127,7 +127,7 @@ class Sanitize
         if ($admin && getsetting('allowoddadminrenames', 0)) {
             return $inname;
         }
-        $expr = $spaceallowed ? '([^[:alpha:]`0' . $output->get_colormap_escaped() . ' _-])' : '([^[:alpha:]`0' . $output->get_colormap_escaped() . '])';
+        $expr = $spaceallowed ? '([^[:alpha:]`0' . $output->getColormapEscaped() . ' _-])' : '([^[:alpha:]`0' . $output->getColormapEscaped() . '])';
         return preg_replace($expr, '', $inname);
     }
 

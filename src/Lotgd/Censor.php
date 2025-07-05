@@ -12,8 +12,8 @@ class Censor
         $output = Sanitize::fullSanitize($input);
         $mix_mask = str_pad('', strlen($output), 'X');
         if (getsetting('soap', 1)) {
-            $search = self::nasty_word_list();
-            $exceptions = array_flip(self::good_word_list());
+            $search = self::nastyWordList();
+            $exceptions = array_flip(self::goodWordList());
             $changed_content = false;
             foreach ($search as $word) {
                 do {
@@ -73,7 +73,7 @@ class Censor
         return $final_output;
     }
 
-    public static function good_word_list()
+    public static function goodWordList()
     {
         $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='good'";
         $result = db_query_cached($sql, 'goodwordlist');
@@ -84,7 +84,7 @@ class Censor
         return explode(' ', $row['words']);
     }
 
-    public static function nasty_word_list()
+    public static function nastyWordList()
     {
         $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='nasty'";
         $result = db_query($sql);

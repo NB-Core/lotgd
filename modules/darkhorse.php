@@ -121,7 +121,7 @@ function darkhorse_bartender($from){
 		output("They are not written into shtone, you know, and may change at any time later on....`0\"`n`n");
 		output("`lEach of thoshe correshpondsh with a color to look like this: `n");
 		global $output;
-		$colors = $output->get_colormap_escaped_array();
+              $colors = $output->getColormapEscapedArray();
 		rawoutput("<table><tr><td>");
 		output("`2Color Code");
 		rawoutput("</td><td>");

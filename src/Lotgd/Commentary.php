@@ -492,7 +492,7 @@ class Commentary
         }
 
         if ($returnastext !== false) {
-            $collected = $output->get_output();
+            $collected = $output->getOutput();
             $output = $oldoutput;
             return $collected;
         }

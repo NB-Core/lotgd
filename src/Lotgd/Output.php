@@ -85,7 +85,7 @@ class Output
     /**
      * Append raw text to the output buffer.
      */
-    public function rawoutput(string $indata): void
+    public function rawOutput(string $indata): void
     {
         if ($this->block_new_output) {
             return;
@@ -96,7 +96,7 @@ class Output
     /**
      * Handle color encoding and append to the output buffer.
      */
-    public function output_notl()
+    public function outputNotl()
     {
         if ($this->block_new_output) {
             return;
@@ -140,13 +140,13 @@ class Output
         } else {
             $args[0] = translate($args[0]);
         }
-        call_user_func_array([$this, 'output_notl'], $args);
+        call_user_func_array([$this, 'outputNotl'], $args);
     }
 
     /**
      * Get the formatted output closing any left open tags.
      */
-    public function get_output()
+    public function getOutput()
     {
         $output = $this->output;
         foreach (array_keys($this->nestedtags) as $key => $val) {
@@ -163,7 +163,7 @@ class Output
     /**
      * Return raw buffered output without adding closing tags.
      */
-    public function get_rawoutput()
+    public function getRawOutput()
     {
         return $this->output;
     }
@@ -171,7 +171,7 @@ class Output
     /**
      * Enable or disable output collection.
      */
-    public function set_block_new_output($block)
+    public function setBlockNewOutput($block)
     {
         $this->block_new_output = ($block ? true : false);
     }
@@ -179,7 +179,7 @@ class Output
     /**
      * Determine whether new output is blocked.
      */
-    public function get_block_new_output()
+    public function getBlockNewOutput()
     {
         return $this->block_new_output;
     }
@@ -190,15 +190,15 @@ class Output
     public function debug($text, $force = false)
     {
         global $session;
-        $temp = $this->get_block_new_output();
-        $this->set_block_new_output(false);
+        $temp = $this->getBlockNewOutput();
+        $this->setBlockNewOutput(false);
         if ($force || (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
             if (is_array($text)) {
                 $text = appoencode(DumpItem::dump($text), true);
             }
-            $this->rawoutput("<div class='debug'>$text</div>");
+            $this->rawOutput("<div class='debug'>$text</div>");
         }
-        $this->set_block_new_output($temp);
+        $this->setBlockNewOutput($temp);
     }
 
     /**
@@ -331,7 +331,7 @@ class Output
         return $out;
     }
 
-    public function set_color_map()
+    public function setColorMap()
     {
         $escape = [')', '$', '(', '[', ']', '{', '}'];
         $cols   = $this->colors;
@@ -345,48 +345,48 @@ class Output
         $this->colormap     = array_keys($this->colors);
     }
 
-    public function get_colors()
+    public function getColors()
     {
         return $this->colors;
     }
 
-    public function set_colors($colors)
+    public function setColors($colors)
     {
         $this->colors = $colors;
         $this->set_color_map();
     }
 
-    public function get_nested_tags()
+    public function getNestedTags()
     {
         return $this->nestedtags;
     }
 
-    public function set_nested_tags($tags)
+    public function setNestedTags($tags)
     {
         $this->nestedtags = $tags;
     }
 
-    public function set_nested_tag_eval($nested_eval)
+    public function setNestedTagEval($nested_eval)
     {
         $this->nestedtags_eval = $nested_eval;
     }
 
-    public function get_nested_tag_eval()
+    public function getNestedTagEval()
     {
         return $this->nestedtags_eval;
     }
 
-    public function get_colormap()
+    public function getColormap()
     {
         return implode('', $this->colormap);
     }
 
-    public function get_colormap_escaped()
+    public function getColormapEscaped()
     {
         return implode('', $this->colormap_esc);
     }
 
-    public function get_colormap_escaped_array()
+    public function getColormapEscapedArray()
     {
         return $this->colormap_esc;
     }
