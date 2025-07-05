@@ -1,6 +1,6 @@
 # Legend of the Green Dragon Fork
 
-![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-blue)
+![PHP Version](https://img.shields.io/badge/PHP-8.0%2B-blue)
 ![License](https://img.shields.io/badge/license-CC%20BY--SA-lightgrey)
 This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
 
@@ -64,7 +64,7 @@ See `CHANGELOG.txt` for a list of changes.
 To run Legend of the Green Dragon on a typical web host you will need:
 
 - **Web server:** Apache 2 (or another server capable of running PHP)
-- **PHP:** version 8.0 or newer (7.4 is the minimum supported)
+- **PHP:** version 8.0 or newer
 - **Database:** MySQL 5.0 or later. MariaDB is a compatible alternative.
 - The database user must have the `LOCK TABLES` privilege.
 
