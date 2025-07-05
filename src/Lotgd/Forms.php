@@ -140,7 +140,6 @@ class Forms
         int &$rowIndex,
         array &$formSections
     ): void {
-        $pretrans = 0;
         $keyout = $keypref !== false ? sprintf($keypref, $key) : $key;
 
         if (is_array($val)) {
