@@ -16,15 +16,27 @@ class Backtrace
 
     /**
      * Build a HTML formatted call stack listing.
+     *
+     * @param array|null $trace Optional trace array, such as that returned by
+     *                          Exception::getTrace(). When omitted the current
+     *                          debug_backtrace() will be used.
      */
-    public static function show(): string
+    public static function show(?array $trace = null): string
     {
         static $sent_css = false;
-        if (!function_exists('debug_backtrace')) {
-            return self::showNoBacktrace();
+
+        if ($trace === null) {
+            if (! function_exists('debug_backtrace')) {
+                return self::showNoBacktrace();
+            }
+
+            $bt = debug_backtrace();
+            // Remove call to this method from the stack
+            array_shift($bt);
+        } else {
+            $bt = $trace;
         }
 
-        $bt = debug_backtrace();
         $return = '';
         if (! $sent_css) {
             $return .= "<style type='text/css'>\n"
@@ -41,34 +53,39 @@ class Backtrace
                 . '</style>';
             $sent_css = true;
         }
+
         $return .= "<div class='stacktrace'><b>Call Stack:</b><br>";
-        $x = 0;
+        $index = 1;
         foreach ($bt as $val) {
-            if ($x > 0 && $val['function'] != 'logd_error_handler') {
-                $return .= "<b>$x:</b> <span class='function'>{$val['function']}(";
-                $y = 0;
-                if (isset($val['args']) && $val['args'] && is_array($val['args'])) {
-                    foreach ($val['args'] as $v) {
-                        if ($y > 0) {
-                            $return .= ', ';
-                        }
-                        $return .= self::getType($v);
-                        $y++;
-                    }
-                } elseif (isset($val['args']) && $val['args']) {
-                    $return .= self::getType($val['args']);
-                }
-                if (! isset($val['file'])) {
-                    $val['file'] = 'NO_FILE';
-                }
-                if (! isset($val['line'])) {
-                    $val['line'] = 'NO_LINE';
-                }
-                $return .= ")</span>&nbsp;called from <b>{$val['file']}</b> on line <b>{$val['line']}</b><br>";
+            if (isset($val['function']) && $val['function'] === 'logd_error_handler') {
+                continue;
             }
-            $x++;
+
+            $func = $val['function'] ?? 'unknown';
+            $return .= "<b>{$index}:</b> <span class='function'>{$func}(";
+
+            $argIndex = 0;
+            if (isset($val['args']) && is_array($val['args'])) {
+                foreach ($val['args'] as $arg) {
+                    if ($argIndex > 0) {
+                        $return .= ', ';
+                    }
+                    $return .= self::getType($arg);
+                    $argIndex++;
+                }
+            } elseif (isset($val['args'])) {
+                $return .= self::getType($val['args']);
+            }
+
+            $file = $val['file'] ?? 'NO_FILE';
+            $line = $val['line'] ?? 'NO_LINE';
+
+            $return .= ")</span>&nbsp;called from <b>{$file}</b> on line <b>{$line}</b><br>";
+            $index++;
         }
+
         $return .= '</div>';
+
         return $return;
     }
 
