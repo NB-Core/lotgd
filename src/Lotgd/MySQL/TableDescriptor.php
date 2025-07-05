@@ -235,7 +235,7 @@ class TableDescriptor
      */
     public static function descriptorCreateSql(array $input): string
     {
-	$input['type'] = descriptor_sanitize_type($input['type']);
+	$input['type'] = self::descriptorSanitizeType($input['type']);
 	if ($input['type']=="key" || $input['type']=='unique key'){
 		//this is a standard index
 		if (is_array($input['columns']))
