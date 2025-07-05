@@ -170,7 +170,7 @@ class Database
     /**
      * Get the number of rows affected by the last query.
      */
-    public static function affectedRows(mixed $link = null): int
+    public static function affectedRows(): int
     {
         global $dbinfo;
         if (isset($dbinfo['affected_rows'])) {
