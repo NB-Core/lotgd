@@ -577,10 +577,8 @@ class Forms
         }
 
         rawoutput("<script language='JavaScript'>");
-        rawoutput("formSections[$formId] = new Array();");
-        foreach ($sections as $key => $val) {
-            rawoutput("formSections[$formId][$key] = '" . addslashes($val) . "';");
-        }
+        $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        rawoutput("formSections[$formId] = JSON.parse('$encodedSections');");
         rawoutput("prepare_form($formId);</script>");
     }
 }
