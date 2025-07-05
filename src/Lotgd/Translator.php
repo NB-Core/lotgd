@@ -218,7 +218,7 @@ class Translator
      *
      * @return string Translated string
      */
-    public static function tl(string $in)
+    public static function tl(string $in): string
     {
 			$out = self::translate($in);
             return self::tlbuttonClear().$out;
