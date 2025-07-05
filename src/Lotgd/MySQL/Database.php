@@ -230,7 +230,6 @@ class Database
     public static function freeResult(array|\mysqli_result $result): bool
     {
         if (is_array($result)) {
-            unset($result);
             return true;
         }
         if (defined('DB_NODB') && !defined('LINK')) {
