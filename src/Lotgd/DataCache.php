@@ -52,7 +52,7 @@ class DataCache
     {
         global $settings;
         if (!isset($settings)) {
-            return;
+            return false;
         }
         if ($settings->getSetting('usedatacache', 0)) {
             $fullname = self::makecachetempname($name);
