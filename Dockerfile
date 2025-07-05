@@ -1,47 +1,59 @@
-# Basis-Image mit PHP und Apache
+# ---------------------------------------------
+# Composer stage - install PHP dependencies
+# ---------------------------------------------
+FROM composer:2 AS composer
+
+# Working directory for Composer
+WORKDIR /app
+
+# Copy Composer files separately to leverage Docker layer caching
+COPY composer.json composer.lock ./
+
+# Install dependencies without development packages
+RUN composer install --no-dev --no-interaction --prefer-dist
+
+# ---------------------------------------------
+# Application stage - PHP with Apache
+# ---------------------------------------------
 FROM php:apache
 
-# Benötigte PHP-Erweiterungen installieren
-RUN docker-php-ext-install mysqli pdo pdo_mysql
-
-# Mod_rewrite aktivieren
-RUN a2enmod rewrite
-
-# Apache-Konfiguration anpassen, um .htaccess zu erlauben
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
-
-# Arbeitsverzeichnis festlegen
-WORKDIR /var/www/html
-
-# Abhängigkeiten installieren (falls Composer benötigt wird)
-RUN apt-get update && apt-get install -y git unzip
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-
-# Quellcode kopieren
-COPY . /var/www/html
-#RUN cd /var/www/html && mv dbconnect.docker.php dbconnect.php
-RUN cd /var/www/html && composer install && composer update
-
-# Berechtigungen setzen
-RUN chown -R www-data:www-data /var/www/html
-
-# Port 80 exponieren
-EXPOSE 80
-
+# Install system packages and PHP extensions required by the game
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libonig-dev \
     libzip-dev \
     && docker-php-ext-configure gd --with-jpeg \
-    && docker-php-ext-install gd mysqli pdo pdo_mysql mbstring zip
+    && docker-php-ext-install gd mysqli pdo pdo_mysql mbstring zip \
+    && rm -rf /var/lib/apt/lists/*
 
-# PHP-Fehleranzeige aktivieren
-RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
+# Enable mod_rewrite for clean URLs
+RUN a2enmod rewrite
 
+# Allow .htaccess overrides
+RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
+# Application code lives here
+WORKDIR /var/www/html
+
+# Copy application source
+COPY . /var/www/html
+
+# Bring in Composer dependencies from the composer stage
+COPY --from=composer /app/vendor /var/www/html/vendor
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html
+
+# Expose the Apache port
+EXPOSE 80
+
+# Enable verbose PHP error reporting (development only)
+RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
+
+# Launch Apache
 CMD ["apache2-foreground"]

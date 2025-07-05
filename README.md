@@ -80,8 +80,8 @@ Want to have this running in no time?
 ### Quick Start
 
 1. Clone the repository with `git clone https://github.com/NB-Core/lotgd.git`
-2. Run `composer install` to install PHP dependencies.
-3. Start the containers using `docker-compose up -d`.
+2. Start the containers using `docker-compose up -d`.
+   The Docker build uses a Composer stage to install PHP dependencies automatically.
 
 ## Install from Release Archive
 
@@ -287,38 +287,47 @@ docker-compose up -d --build
 ### Dockerfile
 
 ```Dockerfile
-# Base image with PHP 8.1 and Apache
-FROM php:8.1-apache
+# Composer stage – install dependencies
+FROM composer:2 AS composer
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist
 
-# Install required PHP extensions
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+# Final image with PHP and Apache
+FROM php:apache
 
-# Enable mod_rewrite
+# Install required packages and PHP extensions
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libonig-dev \
+    libzip-dev \
+    && docker-php-ext-configure gd --with-jpeg \
+    && docker-php-ext-install gd mysqli pdo pdo_mysql mbstring zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enable mod_rewrite and .htaccess overrides
 RUN a2enmod rewrite
-
-# Adjust Apache configuration to allow .htaccess
 RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
-# Set working directory
+# Copy application code and vendor directory
 WORKDIR /var/www/html
-
-# Copy source code
 COPY . /var/www/html
+COPY --from=composer /app/vendor /var/www/html/vendor
 
-# Set permissions
+# Set permissions for web server
 RUN chown -R www-data:www-data /var/www/html
 
-# Enable PHP error display for development purposes
-RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini
-RUN echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
-
-# Expose port 80
+# Expose Apache port
 EXPOSE 80
 
-# Start Apache in the foreground
+# Enable verbose PHP error reporting
+RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
+    && echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
+
 CMD ["apache2-foreground"]
 ```
 
