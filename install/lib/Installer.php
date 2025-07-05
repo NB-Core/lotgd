@@ -22,6 +22,10 @@ class Installer
      */
     public function runStage(int $stage): void
     {
+        if ($stage === 6 && ! $this->verifyInstallDirectoryWritable()) {
+            return;
+        }
+
         $method = 'stage' . $stage;
         if (method_exists($this, $method)) {
             $this->$method();
@@ -1382,6 +1386,21 @@ class Installer
                 output("`2Use `#chmod 640 dbconnect.php`2 or `#chmod 600 dbconnect.php`2 to secure this file.`n");
             }
         }
+    }
+
+    /**
+     * Verify that the install directory is writable before creating files.
+     */
+    private function verifyInstallDirectoryWritable(): bool
+    {
+        $dir = dirname(__DIR__, 2);
+        if (! is_writable($dir)) {
+            output("`\$Installation directory not writable:`2 %s", $dir);
+            output("`2Please adjust permissions, e.g., run `#chmod 775 %s`2. See <a href='https://www.php.net/manual/en/function.chmod.php' target='_blank'>permission docs</a>.", $dir);
+            return false;
+        }
+
+        return true;
     }
 
     /**
