@@ -185,7 +185,7 @@ class Translator
      *
      * @return string Translated message
      */
-    public static function translateMail(mixed $in,int $to=0)
+    public static function translateMail(mixed $in,int $to=0): string
     {
 		global $session;
 		tlschema("mail"); // should be same schema like systemmails!
