@@ -427,9 +427,10 @@ if ($session['user']['superuser'] & SU_MEGAUSER)
 		$session['user']['superuser'] | SU_EDIT_USERS;
 
 Translator::translatorSetup();
-//set up the error handler after the intial setup (since it does require a
+//set up the error handler after the initial setup (since it does require a
 //db call for notification)
-require_once("lib/errorhandler.php");
+use Lotgd\ErrorHandler;
+ErrorHandler::register();
 
 if ($settings->getSetting('debug',0)) {
 	//Server runs in Debug mode, tell the superuser about it
