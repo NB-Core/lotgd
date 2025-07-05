@@ -882,7 +882,7 @@ public static function mailLinkTabText(){
  */
 public static function motdLink(){
 	global $session;
-	if ($session['needtoviewmotd']){
+	if (isset($session['needtoviewmotd']) && $session['needtoviewmotd']){
 		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='hotmotd'><b>".Translator::translateInline("MoTD")."</b></a>";
 	}else{
 		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='motd'><b>".Translator::translateInline("MoTD")."</b></a>";

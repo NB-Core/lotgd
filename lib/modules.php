@@ -187,7 +187,7 @@ function mass_module_prepare($hooknames){
  * @return array The args modified by the event handlers
  */
 $currenthook = "";
-function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
+function modulehook(string $hookname, array $args=array(), bool $allowinactive=false, bool $only=false){
 	global $navsection, $mostrecentmodule;
 	global $blocked_modules, $block_all_modules, $unblocked_modules;
 	global $output, $session, $modulehook_queries;

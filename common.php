@@ -63,8 +63,38 @@ $output = new Output();
 LocalConfig::apply();
 require_once("config/constants.php");
 require_once("lib/errorhandler.php");
+
+// Legacy, because modules may rely on that, but those files are already migrated to namespace structure
 require_once("lib/dbwrapper.php");
 require_once("lib/modules.php");
+require_once("lib/translator.php");
+require_once("lib/sanitize.php");
+require_once("lib/holiday_texts.php");
+require_once("lib/nav.php");
+require_once("lib/http.php");
+require_once("lib/e_rand.php");
+require_once("lib/pageparts.php");
+require_once("lib/sanitize.php");
+require_once("lib/tempstat.php");
+require_once("lib/su_access.php");
+require_once("lib/datetime.php");
+require_once("lib/translator.php");
+require_once("lib/playerfunctions.php");
+require_once("lib/serialization.php");
+require_once("lib/settings.php");
+require_once("lib/buffs.php");
+require_once("lib/addnews.php");
+require_once("lib/template.php");
+require_once("lib/settings.php");
+require_once("lib/redirect.php");
+require_once("lib/censor.php");
+require_once("lib/saveuser.php");
+require_once("lib/arrayutil.php");
+require_once("lib/sql.php");
+require_once("lib/mounts.php");
+require_once("lib/debuglog.php");
+require_once("lib/datacache.php");
+
 
 
 //start the gzip compression

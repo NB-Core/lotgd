@@ -1,6 +1,8 @@
 <?php
 // translator ready
 use Lotgd\Forms;
+use Lotgd\Nav;
+use Lotgd\Http;
 // addnews ready
 // mail ready
 
