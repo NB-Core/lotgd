@@ -54,7 +54,7 @@ class Translator
      *
      * @return mixed Translated value
      */
-    public static function translate(mixed $indata, string|false $namespace=FALSE)
+    public static function translate(mixed $indata, string|false $namespace=FALSE): mixed
     {
         global $session,$settings;
 
