@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd\MySQL;
 
 use Lotgd\Backtrace;
@@ -13,13 +15,18 @@ $dbinfo = [];
  */
 class Database
 {
-    protected static $instance;
-    protected static $dbinfo = [
+    /** @var DbMysqli|null */
+    protected static ?DbMysqli $instance = null;
+    /** @var array<string,int|string> */
+    protected static array $dbinfo = [
         'queriesthishit' => 0,
         'querytime'      => 0,
         'DB_DATACACHEPATH' => '',
     ];
 
+    /**
+     * Get the singleton database connection wrapper.
+     */
     public static function getInstance(): DbMysqli
     {
         if (!self::$instance) {
@@ -28,12 +35,20 @@ class Database
         return self::$instance;
     }
 
-    public static function setCharset($charset)
+    /**
+     * Set the client character set.
+     */
+    public static function setCharset(string $charset): bool
     {
         return self::getInstance()->setCharset($charset);
     }
 
-    public static function query($sql, $die = true)
+    /**
+     * Execute a SQL query.
+     *
+     * @return array|bool|\mysqli_result
+     */
+    public static function query(string $sql, bool $die = true): array|bool|\mysqli_result
     {
         if (defined('DB_NODB') && !defined('LINK')) {
             return [];
@@ -72,7 +87,12 @@ class Database
         return $r;
     }
 
-    public static function queryCached($sql, $name, $duration = 900)
+    /**
+     * Execute a SQL query and cache the result.
+     *
+     * @return array<mixed>
+     */
+    public static function queryCached(string $sql, string $name, int $duration = 900): array
     {
         global $dbinfo;
         $data = DataCache::datacache($name, $duration);
@@ -91,7 +111,10 @@ class Database
         return $data;
     }
 
-    public static function error()
+    /**
+     * Retrieve the last connection error.
+     */
+    public static function error(): string
     {
         $r = self::getInstance()->error();
         if ($r == '' && defined('DB_NODB') && !defined('DB_INSTALLER_STAGE4')) {
@@ -100,7 +123,14 @@ class Database
         return $r;
     }
 
-    public static function fetchAssoc(&$result)
+    /**
+     * Fetch an associative row from a result set or array.
+     *
+     * @param array|\mysqli_result $result
+     *
+     * @return array|false|null
+     */
+    public static function fetchAssoc(array|\mysqli_result &$result): array|false|null
     {
         if (is_array($result)) {
             $val = current($result);
@@ -110,7 +140,10 @@ class Database
         return self::getInstance()->fetchAssoc($result);
     }
 
-    public static function insertId()
+    /**
+     * Get the last inserted ID.
+     */
+    public static function insertId(): int
     {
         if (defined('DB_NODB') && !defined('LINK')) {
             return -1;
@@ -118,7 +151,12 @@ class Database
         return self::getInstance()->insertId();
     }
 
-    public static function numRows($result)
+    /**
+     * Count the number of rows in a result set.
+     *
+     * @param array|\mysqli_result $result
+     */
+    public static function numRows(array|\mysqli_result $result): int
     {
         if (is_array($result)) {
             return count($result);
@@ -129,7 +167,10 @@ class Database
         return self::getInstance()->numRows($result);
     }
 
-    public static function affectedRows($link = false)
+    /**
+     * Get the number of rows affected by the last query.
+     */
+    public static function affectedRows(mixed $link = null): int
     {
         global $dbinfo;
         if (isset($dbinfo['affected_rows'])) {
@@ -141,32 +182,52 @@ class Database
         return self::getInstance()->affectedRows();
     }
 
-    public static function pconnect($host, $user, $pass)
+    /**
+     * Open a persistent connection to the database server.
+     */
+    public static function pconnect(string $host, string $user, string $pass): bool
     {
         return self::getInstance()->pconnect($host, $user, $pass);
     }
 
-    public static function connect($host, $user, $pass)
+    /**
+     * Open a connection to the database server.
+     */
+    public static function connect(string $host, string $user, string $pass): bool
     {
         return self::getInstance()->connect($host, $user, $pass);
     }
 
-    public static function getServerVersion()
+    /**
+     * Retrieve the version of the database server.
+     */
+    public static function getServerVersion(): string
     {
         return self::getInstance()->getServerVersion();
     }
 
-    public static function selectDb($dbname)
+    /**
+     * Select a database.
+     */
+    public static function selectDb(string $dbname): bool
     {
         return self::getInstance()->selectDb($dbname);
     }
 
-    public static function escape($string)
+    /**
+     * Escape a string for use in a query.
+     */
+    public static function escape(string $string): string
     {
         return self::getInstance()->escape($string);
     }
 
-    public static function freeResult($result)
+    /**
+     * Free a result set.
+     *
+     * @param array|\mysqli_result $result
+     */
+    public static function freeResult(array|\mysqli_result $result): bool
     {
         if (is_array($result)) {
             unset($result);
@@ -179,7 +240,10 @@ class Database
         return true;
     }
 
-    public static function tableExists($tablename)
+    /**
+     * Check whether a table exists.
+     */
+    public static function tableExists(string $tablename): bool
     {
         if (defined('DB_NODB') && !defined('LINK')) {
             return false;
@@ -187,10 +251,13 @@ class Database
         return self::getInstance()->tableExists($tablename);
     }
 
-    public static function prefix($tablename, $force = false)
+    /**
+     * Get a table name with the configured prefix.
+     */
+    public static function prefix(string $tablename, ?string $force = null): string
     {
         global $DB_PREFIX;
-        if ($force === false) {
+        if ($force === null) {
             $special_prefixes = [];
             if (file_exists('prefixes.php')) {
                 require_once 'prefixes.php';
