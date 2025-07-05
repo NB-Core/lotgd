@@ -76,7 +76,7 @@ class DbMysqli
     /**
      * Fetch an associative row from a result set.
      */
-    public function fetchAssoc(\mysqli_result $result): array|null|false
+    public function fetchAssoc(\mysqli_result $result): array|null
     {
         return mysqli_fetch_assoc($result);
     }
