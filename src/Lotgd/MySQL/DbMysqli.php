@@ -126,7 +126,8 @@ class DbMysqli
      */
     public function freeResult(\mysqli_result $result): bool
     {
-        return mysqli_free_result($result);
+        mysqli_free_result($result); //returns always void
+        return true; // for compatibility with the interface
     }
 
     /**

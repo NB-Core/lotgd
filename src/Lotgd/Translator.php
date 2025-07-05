@@ -54,7 +54,7 @@ class Translator
      *
      * @return mixed Translated value
      */
-    public static function translate(mixed $indata, string|false $namespace=FALSE): mixed
+    public static function translate(string|array $indata, string|false|null $namespace=FALSE): string|array
     {
         global $session,$settings;
 
@@ -79,7 +79,7 @@ class Translator
 			//recursive translation on arrays.
 			$outdata = array();
 			foreach ($indata as $key=>$val) {
-				$outdata[$key] = translate($val,$namespace);
+				$outdata[$key] = self::translate($val,$namespace);
 			}
 		}else{
 			if ($namespace != "notranslate") {
@@ -121,7 +121,7 @@ class Translator
 		$setschema = false;
 		// Handle if an array is passed in as the first arg
 		if (is_array($args[0])) {
-                    $args[0] = call_user_func_array("sprintfTranslate", $args[0]);
+                    $args[0] = call_user_func_array([self::class, 'sprintfTranslate'], $args[0]);
 		} else {
 			// array_shift returns the first element of an array and shortens this array by one...
 			if (is_bool($args[0]) && array_shift($args)) {
@@ -170,7 +170,7 @@ class Translator
      *
      * @return string Translated string
      */
-    public static function translateInline(string $in,string|false $namespace=FALSE): string
+    public static function translateInline(string|array $in,string|false|null $namespace=FALSE): string|array
     {
 		$out = self::translate($in,$namespace);
             rawoutput(self::tlbuttonClear());
@@ -359,7 +359,7 @@ class Translator
      *
      * @return void
      */
-    public static function tlschema(string|false $schema=false): void
+    public static function tlschema(string|false|null $schema=false): void
     {
                 global $REQUEST_URI;
                 $stack =& self::$translation_namespace_stack;

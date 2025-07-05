@@ -104,6 +104,7 @@ class Template
 	    $fulltemplate = file_get_contents("templates/$templatename");
 	    $fulltemplate = explode("<!--!",$fulltemplate);
 	    foreach ($fulltemplate as $val) {
+            if ($val == "") continue; // Skip empty sections)
 		    $fieldname=substr($val,0,strpos($val,"-->"));
 		    if ($fieldname!=""){
 			    $template[$fieldname]=substr($val,strpos($val,"-->")+3);

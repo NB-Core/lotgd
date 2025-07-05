@@ -189,7 +189,7 @@ function module_collect_events($type, $allowinactive = false)
 
 function module_events($eventtype, $basechance, $baseLink = false)
 {
-    return Modules::moduleEvents($eventtype, $basechance, $baseLink);
+    return Modules::moduleEvents($eventtype, (int)$basechance, $baseLink);
 }
 
 function module_do_event($type, $module, $allowinactive = false, $baseLink = false)

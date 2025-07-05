@@ -36,7 +36,7 @@ class Newday
         if ($ok) {
             $sql = 'DELETE FROM ' . db_prefix('debuglog') . " WHERE date <'$timestamp'";
             db_query($sql);
-            $timestamp = self::calculateExpirationTimestamp(round(getsetting('expiredebuglog', 18), 0) . ' days');
+            $timestamp = self::calculateExpirationTimestamp(round((int)getsetting('expiredebuglog', 18), 0) . ' days');
             $sql = 'DELETE FROM ' . db_prefix('debuglog_archive') . " WHERE date <'$timestamp'";
             if (getsetting('expiredebuglog', 18) > 0) db_query($sql);
             GameLog::log('Moved ' . db_affected_rows() . ' from ' . db_prefix('debuglog') . ' to ' . db_prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');

@@ -296,7 +296,8 @@ class Nav
     protected static function privateAddNav($text, $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
         global $nav, $session, $REQUEST_URI, $notranslate, $settings;
-        if (self::isBlocked($link)) return false;
+        if ($link != false)
+            if (self::isBlocked($link)) return false;
         $thisnav = '';
         $unschema = 0;
         $translate = true;
