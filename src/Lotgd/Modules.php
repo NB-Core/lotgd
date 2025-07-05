@@ -1,6 +1,7 @@
 <?php
 namespace Lotgd;
 use Lotgd\Backtrace;
+use Lotgd\Translator;
 
 // ensure global tracking array exists when the class loads
 if (!isset($GLOBALS['injected_modules'])) {
@@ -25,16 +26,16 @@ class Modules
             return $injected_modules[$force][$moduleName];
         }
 
-        $moduleName     = modulename_sanitize($moduleName);
+        $moduleName = Sanitize::modulenameSanitize($moduleName);
         $modulefilename = "modules/{$moduleName}.php";
         if (file_exists($modulefilename)) {
-            tlschema("module-{$moduleName}");
+           Translator::tlschema("module-{$moduleName}");
             if ($withDb) {
                 $sql    = 'SELECT active,filemoddate,infokeys,version FROM ' . db_prefix('modules') . " WHERE modulename='$moduleName'";
                 $result = db_query_cached($sql, "inject-$moduleName", 3600);
                 if (! $force) {
                     if (db_num_rows($result) == 0) {
-                        tlschema();
+                       Translator::tlschema();
                         debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n", $moduleName));
                         massinvalidate();
                         $injected_modules[$force][$moduleName] = false;
@@ -42,7 +43,7 @@ class Modules
                     }
                     $row = db_fetch_assoc($result);
                     if (! $row['active']) {
-                        tlschema();
+                       Translator::tlschema();
                         debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n", $moduleName));
                         $injected_modules[$force][$moduleName] = false;
                         return false;
@@ -69,7 +70,7 @@ class Modules
                 }
                 if (! self::checkRequirements($info['requires'])) {
                     $injected_modules[$force][$moduleName] = false;
-                    tlschema();
+                   Translator::tlschema();
                     output_notl("`n`3Module `#%s`3 does not meet its prerequisites.`n", $moduleName);
                     return false;
                 }
@@ -122,7 +123,7 @@ class Modules
                     }
                 }
             }
-            tlschema();
+           Translator::tlschema();
             $injected_modules[$force][$moduleName] = true;
             return true;
         }

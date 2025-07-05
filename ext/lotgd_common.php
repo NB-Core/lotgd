@@ -446,11 +446,11 @@ if ($settings->getSetting('debug',0)) {
 $colors = modulehook("core-colors",$output->getColors());
 $output->setColors($colors);
 // and nested tag handling
-$nestedtags = modulehook("core-nestedtags",$output->get_nested_tags());
-$output->set_nested_tags($nestedtags);
+$nestedtags = modulehook("core-nestedtags",$output->getNestedTags());
+$output->setNestedTags($nestedtags);
 // and nested tag eval
-$nestedeval = modulehook("core-nestedtags-eval",$output->get_nested_tag_eval());
-$output->set_nested_tag_eval($nestedeval);
+$nestedeval = modulehook("core-nestedtags-eval",$output->getNestedTagEval());
+$output->setNestedTagEval($nestedeval);
 
 
 // WARNING:

@@ -73,14 +73,15 @@ class Installer
         	if ($row['c'] == 0){
         		$needsauthentication = false;
         	}
-        	if (Http::post("username")>""){
-        		$this->output->debug(md5(md5(stripslashes(Http::post("password")))), true);
+        	if (!empty(Http::post("username"))){
+                //if you have login troubles and wiped your own password, here in the installer you can debug-output it
+        		//$this->output->debug(md5(md5(stripslashes(Http::post("password")))), true);
         		$sql = "SELECT * FROM ".Database::prefix("accounts")." WHERE login='".Http::post("username")."' AND password='".md5(md5(stripslashes(Http::post("password"))))."' AND superuser & ".SU_MEGAUSER;
         		$result = Database::query($sql);
         		if (Database::numRows($result) > 0){
         			$row = Database::fetchAssoc($result);
-        			$this->output->debug($row['password'], true);
-        			$this->output->debug(Http::post('password'), true);
+        			//$this->output->debug($row['password'], true);
+        			//$this->output->debug(Http::post('password'), true);
         			// Okay, we have a username with megauser, now we need to do
         			// some hackery with the password.
         			$needsauthentication=true;
@@ -188,7 +189,7 @@ class Installer
      */
     public function stage10(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE,$settings;
         $this->output->output("`@`c`bSuperuser Accounts`b`c");
         $this->output->debug($logd_version, true);
         $sql = "SELECT login, password FROM ".Database::prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
@@ -253,7 +254,7 @@ class Installer
      */
     public function stage11(): void
 {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE,$settings;
         $this->output->output("`@`c`bAll Done!`b`c");
         $this->output->output("Your install of Legend of the Green Dragon has been completed!`n");
         $this->output->output("`nRemember us when you have hundreds of users on your server, enjoying the game.");
@@ -908,7 +909,7 @@ class Installer
      */
     public function stage7(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $settings;
         require(__DIR__ . "/../data/installer_sqlstatements.php");
         if (Http::post("type")>""){
         	if (Http::post("type")=="install") {
@@ -1201,7 +1202,7 @@ class Installer
      */
     public function stage9(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX, $settings;
         require_once(__DIR__ . "/../data/installer_sqlstatements.php");
         $this->output->output("`@`c`bBuilding the Tables`b`c");
         $this->output->output("`2I'm now going to build the tables.");

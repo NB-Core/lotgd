@@ -240,13 +240,17 @@ if (!DB_CONNECTED || !@Database::selectDb($DB_NAME)){
 //Generate our settings object
 if (!defined("IS_INSTALLER")) $settings=new Settings("settings");
 
-if ($logd_version == $settings->getSetting("installer_version","-1")) {
+if (isset($settings) && $logd_version == $settings->getSetting("installer_version","-1")) {
 	define("IS_INSTALLER", false);
 }
 
-header("Content-Type: text/html; charset=".$settings->getSetting('charset','ISO-8859-1'));
+$charset = isset($settings) ? $settings->getSetting('charset','ISO-8859-1') : 'utf8';
 
-if (isset($session['lasthit']) && isset($session['loggedin']) && strtotime("-".$settings->getSetting("LOGINTIMEOUT",900)." seconds") > $session['lasthit'] && $session['lasthit']>0 && $session['loggedin']){
+header("Content-Type: text/html; charset=".$charset);
+
+$loginTimeOut = isset($settings) ? $settings->getSetting("LOGINTIMEOUT",900) : 900;
+
+if (isset($session['lasthit']) && isset($session['loggedin']) && strtotime("-".$loginTimeOut." seconds") > $session['lasthit'] && $session['lasthit']>0 && $session['loggedin']){
 	// force the abandoning of the session when the user should have been
 	// sent to the fields.
 	$session=array();
@@ -291,7 +295,7 @@ if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
 
 }
 
-if ($logd_version != $settings->getSetting("installer_version","-1") && !defined("IS_INSTALLER")){
+if (isset($settings) && $logd_version != $settings->getSetting("installer_version","-1") && !defined("IS_INSTALLER")){
         PageParts::pageHeader("Upgrade Needed");
 	output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
 	output("In order to perform the upgrade, an admin will have to run through the installer.");
@@ -301,7 +305,7 @@ if ($logd_version != $settings->getSetting("installer_version","-1") && !defined
        Nav::add("Installer (Admins only!)","installer.php");
 	define("NO_SAVE_USER",true);
         PageParts::pageFooter();
-} elseif ($logd_version == $settings->getSetting("installer_version","-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'],-13)!="installer.php") {
+} elseif (isset($settings) && $logd_version == $settings->getSetting("installer_version","-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'],-13)!="installer.php") {
 	// here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
         PageParts::pageHeader("Major Security Risk");
        output("`\$Remove the file named 'installer.php' from your main game directory! You need to comply in order to get the game up and running.");
@@ -465,11 +469,11 @@ if (!defined("IS_INSTALLER") && $settings->getSetting('debug',0)) {
 $colors = modulehook("core-colors",$output->getColors());
 $output->setColors($colors);
 // and nested tag handling
-$nestedtags = modulehook("core-nestedtags",$output->get_nested_tags());
-$output->set_nested_tags($nestedtags);
+$nestedtags = modulehook("core-nestedtags",$output->getNestedTags());
+$output->setNestedTags($nestedtags);
 // and nested tag eval
-$nestedeval = modulehook("core-nestedtags-eval",$output->get_nested_tag_eval());
-$output->set_nested_tag_eval($nestedeval);
+$nestedeval = modulehook("core-nestedtags-eval",$output->getNestedTagEval());
+$output->setNestedTagEval($nestedeval);
 
 
 // WARNING:

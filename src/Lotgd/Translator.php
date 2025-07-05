@@ -145,7 +145,7 @@ class Translator
 		return $out;
 	}
 
-           public static function translateMail($in,$to=0){
+    public static function translateMail($in,$to=0){
 		global $session;
 		tlschema("mail"); // should be same schema like systemmails!
 		if (!is_array($in)) $in=array($in);
@@ -170,9 +170,9 @@ class Translator
 		return $out;
 	}
 
-           public static function tl($in){
-		$out = translate($in);
-            return tlbuttonClear().$out;
+    public static function tl($in){
+			$out = self::translate($in);
+            return self::tlbuttonClear().$out;
 	}
 
     public static function translateLoadNamespace($namespace,$language=false){
@@ -180,7 +180,7 @@ class Translator
 		if (defined("LANGUAGE")) {
 			if ($language===false) $language = LANGUAGE;
 		} else {
-                    translatorSetup();
+			self::translatorSetup();
 		}
 		$page = Sanitize::translatorPage($namespace);
 		$uri = Sanitize::translatorUri($namespace);

@@ -8,6 +8,12 @@ define("ALLOW_ANONYMOUS",true);
 define("OVERRIDE_FORCED_NAV",true);
 define("IS_INSTALLER",true);
 
+use Lotgd\DataCache;
+use Lotgd\Translator;
+use Lotgd\Http;
+use Lotgd\PageParts;
+use Lotgd\Nav;
+use Lotgd\Settings;
 
 //PHP 8.0 or higher is required for this version
 //MySQL 5.0.3 and the mysqli extension are required for this version
@@ -47,13 +53,16 @@ if (file_exists("dbconnect.php")){
        require_once("dbconnect.php");
 }
 
+// Load settings
+$settings = new Settings();
+
 $noinstallnavs=false;
 
-invalidatedatacache("gamesettings");
+Datacache::invalidatedatacache("gamesettings");
 $DB_USEDATACACHE = 0;
 //make sure we do not use the caching during this, else we might need to run  through the installer multiple times. AND we now need to reset the game settings, as these were due to faulty code not cached before.
 
-tlschema("installer");
+Translator::tlschema("installer");
 
 $stages=array(
 	"1. Introduction",
@@ -76,8 +85,8 @@ require_once 'install/data/recommended_modules.php';
 $DB_USEDATACACHE=0; //Necessary
 
 
-if ((int)httpget("stage")>0)
-	$stage = (int)httpget("stage");
+if ((int)Http::get("stage")>0)
+	$stage = (int)Http::get("stage");
 else
 	$stage = 0;
 if (!isset($session['stagecompleted'])) $session['stagecompleted']=-1;
@@ -94,20 +103,20 @@ if (file_exists("dbconnect.php") && (
 	}
 if ($stage > $session['stagecompleted']) $session['stagecompleted'] = $stage;
 
-page_header("LoGD Installer &#151; %s",$stages[$stage]);
+PageParts::pageHeader("LoGD Installer &#151; %s",$stages[$stage]);
 $installer = new \Lotgd\Installer\Installer();
 $installer->runStage($stage);
 
 
 if (!$noinstallnavs){
 	if ($session['user']['loggedin']) addnav("Back to the game",$session['user']['restorepage']);
-	addnav("Install Stages");
+	Nav::add("Install Stages");
 
 	for ($x=0; $x<=min(count($stages)-1,$session['stagecompleted']+1); $x++){
 		if ($x == $stage) $stages[$x]="`^{$stages[$x]} <----";
-               addnav($stages[$x],"installer.php?stage=$x");
+               Nav::add($stages[$x],"installer.php?stage=$x");
 	}
 }
-page_footer(false);
+PageParts::pageFooter(false);
 
 ?>

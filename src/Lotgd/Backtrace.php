@@ -96,13 +96,15 @@ class Backtrace
      */
     public static function getType($in): string
     {
+        global $settings;
+        $charset = isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8';
         $return = '';
         if (is_string($in)) {
             $return .= "<span class='string'>\"";
             if (strlen($in) > 25) {
-                $return .= htmlentities(substr($in, 0, 25) . '...', ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+                $return .= htmlentities(substr($in, 0, 25) . '...', ENT_COMPAT, $charset);
             } else {
-                $return .= htmlentities($in, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+                $return .= htmlentities($in, ENT_COMPAT, $charset);
             }
             $return .= "\"</span>";
         } elseif (is_bool($in)) {

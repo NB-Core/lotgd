@@ -2,6 +2,7 @@
 declare(strict_types=1);
 // translator ready
 use Lotgd\Forms;
+use Lotgd\Translator;
 // addnews ready
 // mail ready
 
@@ -285,7 +286,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 
 		if (injectmodule($row['modulename'], $allowinactive)) {
 			$oldnavsection = $navsection;
-			tlschema("module-{$row['modulename']}");
+			Translator::tlschema("module-{$row['modulename']}");
 			// Pass the args into the function and reassign them to the
 			// result of the function.
 			// Note: each module gets the previous module's modified return
@@ -354,7 +355,7 @@ function modulehook($hookname, $args=false, $allowinactive=false, $only=false){
 			}
 
 			//revert the translation namespace
-			tlschema();
+			Translator::tlschema();
 			//revert nav section after we're done here.
 			$navsection = $oldnavsection;
 		}
@@ -661,9 +662,9 @@ function get_module_info($shortname,$with_db=true){
 	if(injectmodule($shortname,true,$with_db)) {
 		$fname = $shortname."_getmoduleinfo";
 		if (function_exists($fname)){
-			tlschema("module-$shortname");
+			Translator::tlschema("module-$shortname");
 			$moduleinfo = $fname();
-			tlschema();
+			Translator::tlschema();
 			// Don't pick up this text unless we need it.
 			if (!isset($moduleinfo['name']) ||
 					!isset($moduleinfo['category']) ||
@@ -887,9 +888,9 @@ function module_events($eventtype, $basechance, $baseLink = false) {
 			}
 			if ($chance > $sum && $chance <= $sum + $event['normchance']) {
 				$_POST['i_am_a_hack'] = 'true';
-				tlschema("events");
+				Translator::tlschema("events");
 				output("`^`c`bSomething Special!`c`b`0");
-				tlschema();
+				Translator::tlschema();
 				$op = httpget('op');
 				httpset('op', "");
 				module_do_event($eventtype, $event['modulename'], false, $baseLink);
@@ -920,10 +921,10 @@ function module_do_event($type, $module, $allowinactive=false, $baseLink=false)
 	$_POST['i_am_a_hack'] = 'true';
 	if(injectmodule($module, $allowinactive)) {
 		$oldnavsection = $navsection;
-		tlschema("module-$module");
+		Translator::tlschema("module-$module");
 		$fname = $module."_runevent";
 		$fname($type,$baseLink);
-		tlschema();
+		Translator::tlschema();
 		//hook into the running event, but only in *this* running event, not in all
 		modulehook("runevent_$module", array("type"=>$type, "baselink"=>$baseLink, "get"=>httpallget(), "post"=>httpallpost()));
 		//revert nav section after we're done here.
@@ -1032,9 +1033,9 @@ function module_objpref_edit($type, $module, $id)
 		while($row = db_fetch_assoc($result)) {
 			$data[$row['setting']] = $row['value'];
 		}
-		tlschema("module-$module");
+		Translator::tlschema("module-$module");
 		Forms::showForm($msettings, $data);
-		tlschema();
+		Translator::tlschema();
 	}
 }
 
@@ -1090,10 +1091,10 @@ function uninstall_module($module){
 	if (injectmodule($module,true)) {
 		$fname = $module."_uninstall";
 		output("Running module uninstall script`n");
-		tlschema("module-{$module}");
+		Translator::tlschema("module-{$module}");
 		$returnvalue=$fname();
 		if (!$returnvalue) return false;
-		tlschema();
+		Translator::tlschema();
 
 		output("Deleting module entry`n");
 		$sql = "DELETE FROM " . db_prefix("modules") .

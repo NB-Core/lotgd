@@ -210,7 +210,7 @@ class Output
         global $settings;
         if (!isset($settings))
         {
-            $charset = 'utf8';
+            $charset = 'UTF-8';
         }
         else
         {
@@ -363,7 +363,7 @@ class Output
     public function setColors($colors)
     {
         $this->colors = $colors;
-        $this->set_color_map();
+        $this->setColorMap();
     }
 
     public function getNestedTags()

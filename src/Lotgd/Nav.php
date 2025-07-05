@@ -332,10 +332,10 @@ class Nav
         $ignoreuntil = '';
         if ($link === false) {
             $text = HolidayText::holidayize($text, 'nav');
-            $thisnav .= tlbutton_pop() . templatereplace('navhead', ['title' => appoencode($text, $priv)]);
+            $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhead', ['title' => appoencode($text, $priv)]);
         } elseif ($link === '') {
             $text = HolidayText::holidayize($text, 'nav');
-            $thisnav .= tlbutton_pop() . templatereplace('navhelp', ['text' => appoencode($text, $priv)]);
+            $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhelp', ['text' => appoencode($text, $priv)]);
         } elseif ($link == '!!!addraw!!!') {
             $thisnav .= $text;
         } else {
@@ -437,7 +437,7 @@ class Nav
                 }
                 $n = Template::templateReplace('navitem', [
                     'text' => appoencode($text, $priv),
-                    'link' => HTMLEntities($link . ($pop != true ? $extra : ''), ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'utf8'),
+                    'link' => HTMLEntities($link . ($pop != true ? $extra : ''), ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8'),
                     'accesskey' => $keyrep,
                     'popup' => ($pop == true ? "target='_blank'" . ($popsize > '' ? " onClick=\"" . popup($link, $popsize) . "; return false;\"" : '') : ''),
                 ]);

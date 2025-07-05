@@ -47,7 +47,13 @@ class Template
             $templatename = $_COOKIE['template'];
         }
         if ($templatename == '' || !file_exists("templates/$templatename")) {
-            $templatename = $settings->getsetting('defaultskin', $_defaultskin);
+            if (isset($settings) && $settings instanceof Settings) {
+                // If the settings object is available, use it to get the default skin
+                $templatename = $settings->getSetting('defaultskin', 'jade.htm');
+            } else {
+                // Fallback to a hardcoded default skin if settings are not available
+                $templatename = 'jade.htm';
+            }
         }
         if ($templatename == '' || !file_exists("templates/$templatename")) {
             $templatename = $_defaultskin;
