@@ -64,7 +64,7 @@ class Outcomes
 
         if ($gold) {
             output("`#You receive `^%s`# gold!`n", $gold);
-            debuglog('received gold for slaying a monster.', false, false, 'forestwin', $badguy['creaturegold']);
+            debuglog('received gold for slaying a monster.', false, false, 'forestwin', $gold);
         }
         $gemChance = isset($settings) && $settings instanceof Settings
             ? $settings->getSetting('forestgemchance', 25)
