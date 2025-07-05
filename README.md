@@ -452,6 +452,9 @@ The root `.htaccess` file configures custom error pages, disables directory list
 - **Code Changes Not Reflected:**
   - Ensure you have rebuilt the container after making changes to the Dockerfile.
   - Clear your application's cache or your browser's cache if necessary.
+- **Installer Log Location:**
+  - The installer writes to `install/errors/install.log`. If you see a warning
+    that the log could not be written, ensure this path is writable.
 
 ---
 

@@ -556,12 +556,14 @@ class Installer
                                                         output("`2Result: `\$Fail`n");
                                                         $err = error_get_last();
                                                         if ($err) {
-                                                                \Lotgd\Installer\InstallerLogger::log(sprintf(
-                                                                    "Error: %s in %s on line %d",
-                                                                    $err['message'],
-                                                                    $err['file'],
-                                                                    $err['line']
-                                                                ));
+                                                        if (!\Lotgd\Installer\InstallerLogger::log(sprintf(
+                                                            "Error: %s in %s on line %d",
+                                                            $err['message'],
+                                                            $err['file'],
+                                                            $err['line']
+                                                        ))) {
+                                                            output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                                        }
                                                                 rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
                                                         }
                                                         array_push($issues, "`^I was not able to write to your datacache directory!`n");
@@ -573,12 +575,14 @@ class Installer
                                                     if (!unlink($dummyFile)) {
                                                         $err = error_get_last();
                                                         if ($err) {
-                                                            \Lotgd\Installer\InstallerLogger::log(sprintf(
+                                                            if (!\Lotgd\Installer\InstallerLogger::log(sprintf(
                                                                 "Error: %s in %s on line %d",
                                                                 $err['message'],
                                                                 $err['file'],
                                                                 $err['line']
-                                                            ));
+                                                            ))) {
+                                                                output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                                            }
                                                             rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
                                                         } else {
                                                             rawoutput("<blockquote>`^Failed to delete the dummy file.`</blockquote>");
@@ -589,12 +593,14 @@ class Installer
                                                 output("`2Result: `\$Fail`n");
                                                 $err = error_get_last();
                                                 if ($err) {
-                                                        \Lotgd\Installer\InstallerLogger::log(sprintf(
+                                                        if (!\Lotgd\Installer\InstallerLogger::log(sprintf(
                                                             "Error: %s in %s on line %d",
                                                             $err['message'],
                                                             $err['file'],
                                                             $err['line']
-                                                        ));
+                                                        ))) {
+                                                            output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                                        }
                                                         rawoutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</blockquote>");
                                                 }
                                                 array_push($issues, "`^I was not able to write to your datacache directory! Check your permissions there!`n");
@@ -767,7 +773,9 @@ class Installer
                                         $failure=true;
                                         $err = error_get_last();
                                         if ($err) {
-                                                \Lotgd\Installer\InstallerLogger::log(sprintf("Error: %s in %s on line %d", $err['message'], $err['file'], $err['line']));
+                                                if (!\Lotgd\Installer\InstallerLogger::log(sprintf("Error: %s in %s on line %d", $err['message'], $err['file'], $err['line']))) {
+                                                    output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                                }
                                                 output("`n`\$Failed to write to dbconnect.php:`2 %s in %s on line %d", $err['message'], $err['file'], $err['line']);
                                         }
                                 }
@@ -776,7 +784,9 @@ class Installer
                                 $failure=true;
                                 $err = error_get_last();
                                 if ($err) {
-                                        \Lotgd\Installer\InstallerLogger::log($err['message']);
+                                        if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
+                                            output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                        }
                                         output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
                                 }
                         }
@@ -835,7 +845,9 @@ class Installer
                                                 $failure=true;
                                                 $err = error_get_last();
                                                 if ($err) {
-                                                        \Lotgd\Installer\InstallerLogger::log($err['message']);
+                                                        if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
+                                                            output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                                        }
                                                         output("`n`\$Failed to write to dbconnect.php:`2 %s", $err['message']);
                                                 }
                                         }
@@ -844,7 +856,9 @@ class Installer
                                         $failure=true;
                                         $err = error_get_last();
                                         if ($err) {
-                                                \Lotgd\Installer\InstallerLogger::log($err['message']);
+                                                if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
+                                                    output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                                }
                                                 output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
                                         }
                                 }
