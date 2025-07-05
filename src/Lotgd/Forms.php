@@ -272,7 +272,7 @@ class Forms
                         debug('You must pass an array as the value when using a checklist.');
                         $checked = false;
                     }
-                    $select .= "<input type='checkbox' name='{$keyout}[{$optval}]' value='1'" . ($checked == $optval ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
+                    $select .= "<input type='checkbox' name='{$keyout}[{$optval}]' value='1'" . ($checked ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
                 }
                 rawoutput($select);
                 break;
