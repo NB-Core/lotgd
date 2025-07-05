@@ -1206,7 +1206,7 @@ class Modules
         $nchance = translate_inline('Normalized Chance');
         rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
         rawoutput("<tr class='trhead'>");
-        rawoutput("<td>$name</td><td>$rchance</td><td>nchance</td><td>Filename</td><td>exists</td>");
+        rawoutput("<td>$name</td><td>$rchance</td><td>$nchance</td><td>Filename</td><td>exists</td>");
         rawoutput('</tr>');
         $i = 0;
         foreach ($events as $event) {
