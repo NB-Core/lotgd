@@ -18,7 +18,7 @@ RUN composer install --no-dev --no-interaction --prefer-dist
 FROM php:apache
 
 # Install system packages and PHP extensions required by the game
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     libjpeg-dev \
     libonig-dev \
