@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 /**
@@ -8,6 +9,8 @@ class MountName
 {
     /**
      * Return the mount display name and a lowercase variant.
+     *
+     * @return array{0:string,1:string}
      */
     public static function getmountname(): array
     {

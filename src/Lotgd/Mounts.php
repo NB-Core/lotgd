@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 /**
@@ -8,6 +9,10 @@ class Mounts
 {
     /**
      * Retrieve mount information from the database.
+     *
+     * @param int $horse Mount id
+     *
+     * @return array<string,mixed>
      */
     public static function getmount(int $horse = 0): array
     {
