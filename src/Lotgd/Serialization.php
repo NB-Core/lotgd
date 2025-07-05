@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -8,8 +10,12 @@ class Serialization
 {
     /**
      * Safely unserialize data. Returns original input on error.
+     *
+     * @param mixed $data Serialized string or other value
+     *
+     * @return mixed Unserialized data or original input
      */
-    public static function safeUnserialize($data)
+    public static function safeUnserialize(mixed $data): mixed
     {
         if (!is_string($data) || trim($data) === '') {
             return $data;
@@ -33,8 +39,12 @@ class Serialization
 
     /**
      * Check if a string looks like serialized data.
+     *
+     * @param mixed $data Potential serialized value
+     *
+     * @return bool True if data appears serialized
      */
-    public static function isValidSerialized($data): bool
+    public static function isValidSerialized(mixed $data): bool
     {
         if (!is_string($data) || trim($data) === '') {
             return false;

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -8,6 +10,8 @@ class ServerFunctions
 {
     /**
      * Determine if the game server reached the maximum number of online players.
+     *
+     * @return bool True when server limit is reached
      */
     public static function isTheServerFull(): bool
     {
@@ -28,8 +32,10 @@ class ServerFunctions
      * Reset dragonkill points for all or a subset of players.
      *
      * @param int|array|false $acctid Specific account id(s) or false for all
+     *
+     * @return void
      */
-    public static function resetAllDragonkillPoints($acctid = false): void
+    public static function resetAllDragonkillPoints(int|array|false $acctid = false): void
     {
         if ($acctid === false) {
             $where = '';

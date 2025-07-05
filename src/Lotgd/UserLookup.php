@@ -1,9 +1,21 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 class UserLookup
 {
-    public static function lookup($query=false, $order=false, $fields=false, $where=false)
+    /**
+     * Search for users matching the given criteria.
+     *
+     * @param string|false $query  Search string
+     * @param string|false $order  Order clause
+     * @param string|false $fields Fields to retrieve
+     * @param string|false $where  Optional where clause
+     *
+     * @return array{0:mixed,1:string} Database result resource and error message
+     */
+    public static function lookup(string|false $query=false, string|false $order=false, string|false $fields=false, string|false $where=false): array
     {
         $err = '';
         $searchresult = false;

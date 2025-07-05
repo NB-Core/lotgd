@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -12,8 +14,10 @@ class Substitute
      * @param string       $string  Text to process
      * @param array|false  $extra   Optional markers
      * @param array|false  $extrarep Replacement values
+     *
+     * @return string Resulting string
      */
-    public static function apply(string $string, $extra = false, $extrarep = false): string
+    public static function apply(string $string, array|false $extra = false, array|false $extrarep = false): string
     {
         global $badguy, $session;
         $search = [
@@ -55,8 +59,14 @@ class Substitute
 
     /**
      * Variant of apply() returning an array for sprintf usage.
+     *
+     * @param string      $string   Text to process
+     * @param array|false $extra    Optional markers
+     * @param array|false $extrarep Replacement values
+     *
+     * @return array Parts for sprintf
      */
-    public static function applyArray(string $string, $extra = false, $extrarep = false): array
+    public static function applyArray(string $string, array|false $extra = false, array|false $extrarep = false): array
     {
         global $badguy, $session;
         $search = ['{himher}', '{heshe}', '{hisher}'];

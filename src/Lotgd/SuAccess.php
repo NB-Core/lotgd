@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -12,6 +14,10 @@ class SuAccess
     /**
      * Ensure the current user has the given superuser level.
      * If access is denied, the request is terminated with a message.
+     *
+     * @param int $level Required superuser bitmask
+     *
+     * @return void
      */
     public static function check(int $level): void
     {
