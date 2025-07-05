@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 /**
@@ -6,7 +7,12 @@ namespace Lotgd;
  */
 class Names
 {
-    public static function getPlayerTitle($old = false)
+    /**
+     * Retrieve a player's title string.
+     *
+     * @param array|false $old Optional player row to inspect
+     */
+    public static function getPlayerTitle(array|false $old = false)
     {
         global $session;
         $title = '';
@@ -24,7 +30,12 @@ class Names
         return $title;
     }
 
-    public static function getPlayerBasename($old = false)
+    /**
+     * Get a player's base name without title codes.
+     *
+     * @param array|false $old Optional player row
+     */
+    public static function getPlayerBasename(array|false $old = false)
     {
         global $session;
         $name = '';
@@ -49,7 +60,10 @@ class Names
         return $pname;
     }
 
-    public static function changePlayerName($newname, $old = false)
+    /**
+     * Apply the player's title to a base name.
+     */
+    public static function changePlayerName(string $newname, array|false $old = false): string
     {
         if ($newname == '') {
             $newname = self::getPlayerBasename($old);
@@ -62,7 +76,10 @@ class Names
         return $newname;
     }
 
-    public static function changePlayerCtitle($nctitle, $old = false)
+    /**
+     * Replace the player's custom title.
+     */
+    public static function changePlayerCtitle(string $nctitle, array|false $old = false): string
     {
         global $session;
         if ($nctitle == '') {
@@ -79,7 +96,10 @@ class Names
         return $newname;
     }
 
-    public static function changePlayerTitle($ntitle, $old = false)
+    /**
+     * Replace a standard title while respecting custom titles.
+     */
+    public static function changePlayerTitle(string $ntitle, array|false $old = false): string
     {
         global $session;
         if ($old === false) {

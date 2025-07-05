@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 use Lotgd\Backtrace;
 use Lotgd\Translator;
@@ -142,7 +143,13 @@ class Modules
     /**
      * Return status bitfield for a module.
      */
-    public static function getStatus(string $moduleName, $version = false): int
+    /**
+     * Return status bitfield for a module.
+     *
+     * @param string $moduleName Module short name
+     * @param string|false $version Optional version check
+     */
+    public static function getStatus(string $moduleName, string|false $version = false): int
     {
         
 
@@ -189,6 +196,9 @@ class Modules
     /**
      * Determine if a module is active.
      */
+    /**
+     * Check if a module is active.
+     */
     public static function isActive(string $moduleName): bool
     {
         return (bool) (self::getStatus($moduleName) & MODULE_ACTIVE);
@@ -197,13 +207,22 @@ class Modules
     /**
      * Determine if a module is installed optionally checking version.
      */
-    public static function isInstalled(string $moduleName, $version = false): bool
+    /**
+     * Determine if a module is installed and optionally verify version.
+     *
+     * @param string      $moduleName Module short name
+     * @param string|false $version    Required version or false
+     */
+    public static function isInstalled(string $moduleName, string|false $version = false): bool
     {
         return (bool) (self::getStatus($moduleName, $version) & (MODULE_INSTALLED | MODULE_VERSION_OK));
     }
 
     /**
      * Validate module requirements and optionally inject dependencies.
+     *
+     * @param array $reqs        Module requirements
+     * @param bool  $forceinject Inject missing modules if true
      */
     public static function checkRequirements(array $reqs, bool $forceinject = false): bool
     {
@@ -235,6 +254,8 @@ class Modules
 
     /**
      * Block a module from participating in hooks during the current request.
+     *
+     * @param string $moduleName Module short name
      */
     public static function block(string $moduleName): void
     {
@@ -243,6 +264,8 @@ class Modules
 
     /**
      * Allow a previously blocked module to participate in hooks again.
+     *
+     * @param string $moduleName Module short name
      */
     public static function unblock(string $moduleName): void
     {
@@ -255,6 +278,8 @@ class Modules
 
     /**
      * Check if a module is currently blocked.
+     *
+     * @param string $moduleName Module short name
      */
     public static function isModuleBlocked(string $moduleName): bool
     {
@@ -264,6 +289,8 @@ class Modules
 
     /**
      * Prefetch hook information for a set of hooks.
+     *
+     * @param array $hookNames List of hook names
      */
     public static function massPrepare(array $hookNames): bool
     {

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Forms;
@@ -7,7 +8,13 @@ use Lotgd\Forms;
  */
 class Motd
 {
-    public static function motdAdmin($id, $poll = false)
+    /**
+     * Display MOTD administration interface.
+     *
+     * @param int  $id   MOTD identifier
+     * @param bool $poll Whether the MOTD is a poll
+     */
+    public static function motdAdmin(int $id, bool $poll = false): void
     {
         global $session;
         $id = (int)$id;
@@ -30,7 +37,10 @@ class Motd
         }
     }
 
-    public static function motdItem($subject, $body, $author, $date, $id)
+    /**
+     * Render a MOTD item.
+     */
+    public static function motdItem(string $subject, string $body, string $author, string $date, int $id): void
     {
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
         rawoutput('<h4>' . htmlentities($subject, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
@@ -40,7 +50,10 @@ class Motd
         rawoutput('</div>');
     }
 
-    public static function pollItem($id, $subject, $body, $author, $date, $showpoll = true)
+    /**
+     * Render a poll entry.
+     */
+    public static function pollItem(int $id, string $subject, string $body, string $author, string $date, bool $showpoll = true): void
     {
         rawoutput('<div class="pollitem">');
         rawoutput('<h4>' . htmlentities($subject, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
@@ -52,7 +65,10 @@ class Motd
         rawoutput('</div>');
     }
 
-    public static function motdForm($id)
+    /**
+     * Display edit form for a MOTD record.
+     */
+    public static function motdForm(int $id): void
     {
         require_once 'lib/showform.php';
         $sql = 'SELECT motdtitle,motdbody,motdtype FROM ' . db_prefix('motd') . " WHERE motditem='$id'";
@@ -78,7 +94,10 @@ class Motd
         rawoutput('</form>');
     }
 
-    public static function motdPollForm()
+    /**
+     * Show form to create a new poll entry.
+     */
+    public static function motdPollForm(): void
     {
         require_once 'lib/showform.php';
         $form = array(
@@ -92,7 +111,10 @@ class Motd
         rawoutput('</form>');
     }
 
-    public static function motdDel($id)
+    /**
+     * Delete a MOTD record.
+     */
+    public static function motdDel(int $id): void
     {
         $sql = 'DELETE FROM ' . db_prefix('motd') . " WHERE motditem='$id'";
         db_query($sql);
