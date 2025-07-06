@@ -40,6 +40,9 @@ class PageParts {
     /** Holds the character statistics for the current page. */
     private static ?CharStats $charstats = null;
 
+    /** Variables passed to Twig templates */
+    private static array $twigVars = [];
+
     /** Name of the current stat section when building char stats. */
     private static string $lastCharstatLabel = "";
 
@@ -84,12 +87,20 @@ public static function pageHeader(...$args): void {
 	$title = Sanitize::sanitize(HolidayText::holidayize($title,'title'));
 	Buffs::calculateBuffFields();
 
-	$header = $template['header'];
-	$header=str_replace("{title}",$title,$header);
-	$header.=Translator::tlbuttonPop();
-	if (isset($settings) && $settings->getSetting('debug',0)) {
-		$session['debugstart']=microtime();
-	}
+        if (TwigTemplate::isActive()) {
+                self::$twigVars['title'] = $title;
+                if (isset($settings) && $settings->getSetting('debug',0)) {
+                        $session['debugstart']=microtime();
+                }
+                return;
+        }
+
+        $header = $template['header'];
+        $header=str_replace("{title}",$title,$header);
+        $header.=Translator::tlbuttonPop();
+        if (isset($settings) && $settings->getSetting('debug',0)) {
+                $session['debugstart']=microtime();
+        }
 }
 
 /**
@@ -224,6 +235,17 @@ public static function pageFooter(bool $saveuser=true){
             $palreplace = "{stats}";
         }
 
+        if (TwigTemplate::isActive()) {
+            [$paypalSnippet, ] = self::buildPaypalDonationMarkup(
+                '{paypal}',
+                '{paypal}',
+                '{paypal}',
+                $settings ?? null,
+                $logd_version
+            );
+            self::$twigVars['paypal'] = $paypalSnippet;
+        }
+
         list($header, $footer) = self::buildPaypalDonationMarkup(
             $palreplace,
             $header,
@@ -238,6 +260,12 @@ public static function pageFooter(bool $saveuser=true){
 	//NOTICE |
 
         list($header, $footer) = self::generateNavigationOutput($header, $footer, $builtnavs);
+        if (TwigTemplate::isActive()) {
+            self::$twigVars['nav'] = $builtnavs;
+            self::$twigVars['navad'] = '';
+            self::$twigVars['verticalad'] = '';
+            self::$twigVars['bodyad'] = '';
+        }
 	//output the motd
         // use a modulehook to add more stuff by module or change the link
         $motd_link = self::motdLink();
@@ -252,7 +280,7 @@ public static function pageFooter(bool $saveuser=true){
 
         // Replace special template tokens within header and footer
         $z = $y2 ^ $z2;
-        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
+        $replacements = [
             // character statistic table
             'stats'   => $statsOutput,
             // keypress javascript block
@@ -266,29 +294,43 @@ public static function pageFooter(bool $saveuser=true){
             // page generation statistics
             'pagegen' => self::computePageGenerationStats($pagestarttime),
             $z        => $$z,
-        ]);
+        ];
+        if (TwigTemplate::isActive()) {
+            self::$twigVars = array_merge(self::$twigVars, $replacements);
+        }
 
-	Translator::tlschema();
+        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, $replacements);
 
-	//clean up spare {fields}s from header and footer (in case they're not used)
-	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
-        $footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
-        $header = self::stripAdPlaceholders($header);
-	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+        Translator::tlschema();
 
-	//finalize output
-    $browser_output=$header.($output->getOutput()).$footer;
-	if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
-	$session['user']['gensize']+=strlen($browser_output);
-	$session['output']=$browser_output;
-	if ($saveuser === true) {
-		Accounts::saveUser();
-	}
-	unset($session['output']);
-	//this somehow allows some frames to load before the user's navs say it can
-	session_write_close();
-	echo $browser_output;
-	exit();
+        if (TwigTemplate::isActive()) {
+            self::$twigVars = array_merge(self::$twigVars, [
+                'header' => $header,
+                'footer' => $footer,
+                'content' => $output->getOutput(),
+                'template_path' => TwigTemplate::getPath(),
+            ]);
+            $browser_output = TwigTemplate::render('page.twig', self::$twigVars);
+        } else {
+            //clean up spare {fields}s from header and footer (in case they're not used)
+            //note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
+            $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
+            $header = self::stripAdPlaceholders($header);
+            //      $header = preg_replace('/{[^} \t\n\r]*}/i','',$header);
+
+            $browser_output = $header.($output->getOutput()).$footer;
+        }
+        if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
+        $session['user']['gensize']+=strlen($browser_output);
+        $session['output']=$browser_output;
+        if ($saveuser === true) {
+                Accounts::saveUser();
+        }
+        unset($session['output']);
+        //this somehow allows some frames to load before the user's navs say it can
+        session_write_close();
+        echo $browser_output;
+        exit();
 }
 
 /**
@@ -297,7 +339,7 @@ public static function pageFooter(bool $saveuser=true){
  * @param string $title The title of the popup window
  */
 public static function popupHeader(...$args): void {
-	global $header, $template;
+        global $header, $template;
 
 	translator_setup();
 	prepare_template();
@@ -311,8 +353,13 @@ public static function popupHeader(...$args): void {
 	$title = call_user_func_array("sprintf_translate", $arguments);
 	$title = HolidayText::holidayize($title,'title');
 
-	$header = $template['popuphead'];
-	$header = str_replace("{title}", $title, $header);
+        if (TwigTemplate::isActive()) {
+            self::$twigVars['title'] = $title;
+            return;
+        }
+
+        $header = $template['popuphead'];
+        $header = str_replace("{title}", $title, $header);
 }
 
 /**
@@ -365,15 +412,29 @@ public static function popupFooter(){
             $z       => $$z,
         ]);
 
-        $footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
+        if (TwigTemplate::isActive()) {
+            self::$twigVars = array_merge(self::$twigVars, [
+                'header' => $header,
+                'footer' => $footer,
+                'content' => $maillink_add_after.$output->getOutput(),
+                'template_path' => TwigTemplate::getPath(),
+            ]);
+            $browser_output = TwigTemplate::render('popup.twig', self::$twigVars);
+            Accounts::saveUser();
+            session_write_close();
+            echo $browser_output;
+            exit();
+        }
+
+        $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
         $header = self::stripAdPlaceholders($header);
-	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+        //      $header = preg_replace('/{[^} \t\n\r]*}/i','', $header);
 
     $browser_output=$header.$maillink_add_after.($output->getOutput()).$footer;
-	Accounts::saveUser();
-	session_write_close();
-	echo $browser_output;
-	exit();
+    Accounts::saveUser();
+    session_write_close();
+    echo $browser_output;
+    exit();
 }
 
 /**

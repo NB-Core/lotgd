@@ -30,6 +30,7 @@ So, it should work on every modern PHP environment.
 
 If somebody really has time, there are still things to do:
 - replace the template system with a state-of-the-art system such as Smarty
+- Twig template support for modern theming
 - integrate refreshing chats (tests with Jaxon worked but were slow)
 - convert arrays into objects to avoid extensive `isset()` checks
 - configure the `datacachepath` setting in `dbconnect.php` to a writable directory so errors can be cached for email notifications
@@ -82,6 +83,16 @@ Want to have this running in no time?
 1. Clone the repository with `git clone https://github.com/NB-Core/lotgd.git`
 2. Start the containers using `docker-compose up -d`.
    The Docker build uses a Composer stage to install PHP dependencies automatically.
+
+## Twig Templates
+
+Twig templates reside in the `templates_twig/` directory. Each template should
+have its own folder containing a `config.json`, `page.twig`, and `popup.twig`.
+Set the template name via the `defaultskin` setting or a `template` cookie. If a
+matching folder is found, pages are rendered with Twig; classic `.htm` templates
+continue to work as before.
+Twig views receive variables for common placeholders like `nav`, `stats`, and
+`paypal`, allowing flexible layouts.
 
 ## Install from Release Archive
 

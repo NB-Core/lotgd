@@ -63,7 +63,7 @@ class Template
         if ($_COOKIE['template'] != '') {
             $templatename = $_COOKIE['template'];
         }
-        if ($templatename == '' || !file_exists("templates/$templatename")) {
+        if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             if (isset($settings) && $settings instanceof Settings) {
                 // If the settings object is available, use it to get the default skin
                 $templatename = $settings->getSetting('defaultskin', 'jade.htm');
@@ -72,10 +72,15 @@ class Template
                 $templatename = 'jade.htm';
             }
         }
-        if ($templatename == '' || !file_exists("templates/$templatename")) {
+        if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             $templatename = $_defaultskin;
         }
-        $template = self::loadTemplate($templatename);
+        if (is_dir("templates_twig/$templatename")) {
+            TwigTemplate::init($templatename);
+            $template = [];
+        } else {
+            $template = self::loadTemplate($templatename);
+        }
     }
 
     /**
