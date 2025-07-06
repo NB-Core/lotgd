@@ -78,18 +78,11 @@ class Template
         $template = self::loadTemplate($templatename);
     }
 
-     /**
-     * Loads the template into the current session.  If the template doesn't
-     * exist - uses the default (admin-defined) template, and then falls back
-     * to jade.htm
-     *
-     * @param string $templatename The template name (minus the path)
-     * @return array The template split into the sections defined by <!--!
-     * @see Templates
-     * @todo Template Help
-     */
     /**
      * Load a template file and split it into sections.
+     *
+     * If the template doesn't exist, uses the admin-defined default template
+     * and then falls back to jade.htm.
      *
      * @param string $templatename Template file name
      *
