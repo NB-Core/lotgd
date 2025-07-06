@@ -880,20 +880,22 @@ public static function mailLinkTabText(){
      */
     private static function applyFooterHooks(string $header, string $footer, string $script): array
     {
-        $replacementbits = [];
-        $replacementbits = modulehook("footer-$script", $replacementbits);
+        // Gather module hook results for footer replacements
+        $replacementbits = modulehook("footer-$script", []);
         if ($script == 'runmodule' && (($module = httpget('module'))) > '') {
-            modulehook("footer-$module", $replacementbits);
+            $replacementbits = modulehook("footer-$module", $replacementbits);
         }
         $replacementbits['__scriptfile__'] = $script;
         $replacementbits = modulehook('everyfooter', $replacementbits);
         unset($replacementbits['__scriptfile__']);
+
+        // Build a simple token => string mapping
+        $replacements = [];
         foreach ($replacementbits as $key => $val) {
-            $header = str_replace('{'.$key.'}', '{'.$key.'}'.implode('', $val), $header);
-            $footer = str_replace('{'.$key.'}', '{'.$key.'}'.implode('', $val), $footer);
+            $replacements[$key] = implode('', $val);
         }
 
-        return [$header, $footer];
+        return self::replaceHeaderFooterTokens($header, $footer, $replacements);
     }
 
     /**
@@ -902,12 +904,13 @@ public static function mailLinkTabText(){
     private static function applyPopupFooterHooks(string $header, string $footer): array
     {
         $replacementbits = modulehook('footer-popup', []);
+
+        $replacements = [];
         foreach ($replacementbits as $key => $val) {
-            $header = str_replace('{'.$key.'}', '{'.$key.'}'.implode('', $val), $header);
-            $footer = str_replace('{'.$key.'}', '{'.$key.'}'.implode('', $val), $footer);
+            $replacements[$key] = implode('', $val);
         }
 
-        return [$header, $footer];
+        return self::replaceHeaderFooterTokens($header, $footer, $replacements);
     }
 
     /**
