@@ -12,6 +12,7 @@ use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
+use Lotgd\Settings;
 
 /**
  * Library (supporting) functions for page output
@@ -223,7 +224,13 @@ public static function pageFooter(bool $saveuser=true){
             $palreplace = "{stats}";
         }
 
-        list($header, $footer) = self::buildPaypalDonationMarkup($palreplace, $header, $footer);
+        list($header, $footer) = self::buildPaypalDonationMarkup(
+            $palreplace,
+            $header,
+            $footer,
+            $settings ?? null,
+            $logd_version
+        );
 	//NOTICE |
 	//NOTICE | Although I will not deny you the ability to remove the above
 	//NOTICE | paypal link, I do request, as the author of this software
@@ -674,10 +681,21 @@ public static function mailLinkTabText(){
 
     /**
      * Build the Paypal donation HTML snippet and replace the appropriate placeholder.
+     *
+     * @param string      $palreplace   Placeholder to replace
+     * @param string      $header       Header template fragment
+     * @param string      $footer       Footer template fragment
+     * @param Settings|null $settings   Settings handler or null
+     * @param string      $logd_version Current game version string
      */
-    private static function buildPaypalDonationMarkup(string $palreplace, string $header, string $footer): array
-    {
-        global $session, $settings, $logd_version;
+    private static function buildPaypalDonationMarkup(
+        string $palreplace,
+        string $header,
+        string $footer,
+        ?Settings $settings,
+        string $logd_version
+    ): array {
+        global $session;
 
         $paypalstr = '<table align="center"><tr><td>';
         $currency = isset($settings) ? $settings->getSetting('paypalcurrency', 'USD') : 'USD';
@@ -886,7 +904,7 @@ public static function mailLinkTabText(){
      */
     private static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
     {
-        if ($headscript > '') {
+        if (!empty($headscript)) {
             return str_replace('{headscript}', $preHeadscript."<script type='text/javascript' charset='UTF-8'>".$headscript.'</script>', $header);
         }
 
