@@ -140,8 +140,13 @@ public static function pageFooter(bool $saveuser=true){
                $REQUEST_URI,$pagestarttime,$template,$y2,$z2,
                $logd_version,$copyright,$SCRIPT_NAME, $footer,
                $dbinfo, $settings;
-	$z = $y2^$z2;
-	$footer = $template['footer'];
+        $z = $y2^$z2;
+        if (TwigTemplate::isActive()) {
+            $footer = '';
+            $header = $header ?? '';
+        } else {
+            $footer = $template['footer'];
+        }
 	//page footer module hooks
 	if (!empty($SCRIPT_NAME)) 
 		$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
@@ -367,10 +372,15 @@ public static function popupHeader(...$args): void {
  *
  */
 public static function popupFooter(){
-	global $output,$header,$session,$y2,$z2,$copyright, $template;
+        global $output,$header,$session,$y2,$z2,$copyright, $template;
 
-	$headscript='';
-	$footer = $template['popupfoot'];
+        $headscript='';
+        if (TwigTemplate::isActive()) {
+            $footer = '';
+            $header = $header ?? '';
+        } else {
+            $footer = $template['popupfoot'];
+        }
 	$pre_headscript='';
 	$maillink_add_after='';
 	//add AJAX stuff
