@@ -223,7 +223,7 @@ class Forms
                     break;
                 }
                 natcasesort($skins);
-                rawoutput("<select name='$keyout'>");
+                rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
                 foreach ($skins as $skin) {
                     if ($skin == $row[$key]) {
                         rawoutput("<option value='$skin' selected>" . htmlentities(substr($skin, 0, strpos($skin, '.htm')), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
