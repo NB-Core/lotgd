@@ -239,27 +239,32 @@ public static function pageFooter(bool $saveuser=true){
 
         list($header, $footer) = self::generateNavigationOutput($header, $footer, $builtnavs);
 	//output the motd
-	//use a modulehook to add more stuff by module or change the link
-	$motd_link = self::motdLink();
-	$motd_link = modulehook("motd-link",array("link"=>$motd_link));
-	$motd_link = $motd_link['link'];
-	//$header = str_replace("{motd}", self::motdLink(), $header);
-	//$footer = str_replace("{motd}", self::motdLink(), $footer);
-	$header = str_replace("{motd}", $motd_link, $header);
-	$footer = str_replace("{motd}", $motd_link, $footer);
+        // use a modulehook to add more stuff by module or change the link
+        $motd_link = self::motdLink();
+        $motd_link = modulehook("motd-link",array("link"=>$motd_link));
+        $motd_link = $motd_link['link'];
+        // the "motd-link" hook allows modules to modify the final link
+        // the actual replacement happens later via replaceHeaderFooterTokens()
+        //$header = str_replace("{motd}", self::motdLink(), $header);
+        //$footer = str_replace("{motd}", self::motdLink(), $footer);
         list($header, $footer) = self::assembleMailPetitionLinks($header, $footer);
-	//output character stats
-        $footer=str_replace("{stats}",$statsOutput,$footer);
-        $header=str_replace("{stats}",$statsOutput,$header);
-	//do something -- I don't know what
-	$header=str_replace("{script}",$script,$header);
-	//output view PHP source link
-	$sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
-	$footer=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",$footer);
-	$header=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",$header);
-        //output version
-        $footer=str_replace("{version}", "Version: $logd_version", $footer);
-        $footer=str_replace("{pagegen}", self::computePageGenerationStats($pagestarttime), $footer);
+        $sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
+
+        // Replace special template tokens within header and footer
+        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
+            // character statistic table
+            'stats'   => $statsOutput,
+            // keypress javascript block
+            'script'  => $script,
+            // dynamic link to the MOTD popup
+            'motd'    => $motd_link,
+            // view source link for debugging
+            'source'  => "<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",
+            // footer version information
+            'version' => "Version: $logd_version",
+            // page generation statistics
+            'pagegen' => self::computePageGenerationStats($pagestarttime),
+        ]);
 
 	Translator::tlschema();
 
@@ -922,6 +927,46 @@ public static function mailLinkTabText(){
         $header = str_replace('{headerad}', '', $header);
 
         return $header;
+    }
+
+    /**
+     * Replace placeholder tokens in header and footer strings using
+     * Template-style warnings for missing fields.
+     *
+     * @param string $header Original header markup
+     * @param string $footer Original footer markup
+     * @param array  $replacements Associative array of token => value pairs
+     *
+     * @return array Array with the processed header and footer
+     */
+    private static function replaceHeaderFooterTokens(string $header, string $footer, array $replacements): array
+    {
+        $header = self::applyTemplateStringReplacements($header, 'header', $replacements);
+        $footer = self::applyTemplateStringReplacements($footer, 'footer', $replacements);
+
+        return [$header, $footer];
+    }
+
+    /**
+     * Apply template style replacements to a raw string.
+     * Adds a warning in the output if the placeholder is missing.
+     *
+     * @param string $content  Template fragment to process
+     * @param string $name     Fragment identifier used in warnings
+     * @param array  $replacements List of token => value pairs
+     */
+    private static function applyTemplateStringReplacements(string $content, string $name, array $replacements): string
+    {
+        foreach ($replacements as $key => $val) {
+            if (strpos($content, '{'.$key.'}') === false) {
+                output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $name, $content);
+                $content .= $val;
+            } else {
+                $content = str_replace('{'.$key.'}', $val, $content);
+            }
+        }
+
+        return $content;
     }
 
     /**
