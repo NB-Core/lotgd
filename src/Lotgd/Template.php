@@ -18,22 +18,34 @@ class Template
      */
     public static function templateReplace(string $itemname, array|false $vals = false): string
     {
+        // When Twig is active, try rendering a matching partial
+        if (TwigTemplate::isActive()) {
+            $twigFile = __DIR__ . '/../../' . TwigTemplate::getPath() . "/{$itemname}.twig";
+            if (file_exists($twigFile)) {
+                return TwigTemplate::render("{$itemname}.twig", is_array($vals) ? $vals : []);
+            }
+        }
+
         global $template;
         if (!isset($template[$itemname])) {
             output("`bWarning:`b The `i%s`i template part was not found!`n", $itemname);
+            return '';
         }
+
         $out = $template[$itemname];
         if (!is_array($vals)) {
             return $out;
         }
+
         foreach ($vals as $key => $val) {
-            if (strpos($out, "{".$key."}") === false) {
+            if (strpos($out, '{' . $key . '}') === false) {
                 output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $itemname, $out);
                 $out .= $val;
             } else {
-                $out = str_replace("{".$key."}", $val, $out);
+                $out = str_replace('{' . $key . '}', $val, $out);
             }
         }
+
         return $out;
     }
 
@@ -81,6 +93,7 @@ class Template
         }
 
         if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
+            // Initialize Twig environment for modern templates
             TwigTemplate::init($templatename);
             $template = [];
         } else {
