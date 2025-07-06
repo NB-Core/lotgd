@@ -208,9 +208,11 @@ class Forms
         switch ($info[1]) {
             case 'theme':
                 $skins = [];
-                $handle = @opendir('templates');
-                if ($handle) {
-                    while (false !== ($file = @readdir($handle))) {
+                $handle = opendir('templates');
+                if ($handle === false) {
+                    error_log('Unable to open templates directory');
+                } else {
+                    while (false !== ($file = readdir($handle))) {
                         if (strpos($file, '.htm') !== false) {
                             $value = 'legacy:' . $file;
                             $skins[$value] = substr($file, 0, strpos($file, '.htm'));
@@ -219,9 +221,11 @@ class Forms
                     closedir($handle);
                 }
 
-                $handle = @opendir('templates_twig');
-                if ($handle) {
-                    while (false !== ($dir = @readdir($handle))) {
+                $handle = opendir('templates_twig');
+                if ($handle === false) {
+                    error_log('Unable to open templates_twig directory');
+                } else {
+                    while (false !== ($dir = readdir($handle))) {
                         if ($dir === '.' || $dir === '..') {
                             continue;
                         }
@@ -247,14 +251,7 @@ class Forms
                 }
 
                 asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
-                $current = $row[$key];
-                if (strpos($current, ':') === false) {
-                    if (file_exists("templates/$current")) {
-                        $current = 'legacy:' . $current;
-                    } elseif (is_dir("templates_twig/$current")) {
-                        $current = 'twig:' . $current;
-                    }
-                }
+                $current = Template::addTypePrefix($row[$key]);
 
                 rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
                 foreach ($skins as $skin => $display) {

@@ -304,17 +304,10 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	$prefs = $session['user']['prefs'];
 	$prefs['bio'] = $session['user']['bio'];
         if (isset($_COOKIE['template'])) {
-                $prefs['template'] = $_COOKIE['template'];
+                $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
         }
         if (!isset($prefs['template']) || $prefs['template'] == "") {
-                $prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-        }
-        if (strpos($prefs['template'], ':') === false) {
-                if (is_dir("templates_twig/{$prefs['template']}")) {
-                        $prefs['template'] = 'twig:' . $prefs['template'];
-                } else {
-                        $prefs['template'] = 'legacy:' . $prefs['template'];
-                }
+                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "yarbrough.htm"));
         }
 	if (!isset($prefs['sexuality']) || $prefs['sexuality'] == "") {
 		$prefs['sexuality'] = !$session['user']['sex'];

@@ -89,6 +89,26 @@ class Template
     }
 
     /**
+     * Ensure a template name is prefixed with its type.
+     *
+     * @param string $template Template name, with or without prefix
+     *
+     * @return string Prefixed template name
+     */
+    public static function addTypePrefix(string $template): string
+    {
+        if (str_contains($template, ':')) {
+            return $template;
+        }
+
+        if (is_dir("templates_twig/$template")) {
+            return 'twig:' . $template;
+        }
+
+        return 'legacy:' . $template;
+    }
+
+    /**
      * Load a template file and split it into sections.
      *
      * If the template doesn't exist, uses the admin-defined default template

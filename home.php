@@ -143,16 +143,9 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("<table align='center'><tr><td>");
 	$form = array("template"=>"Choose a different display skin:,theme");
         if (isset($_COOKIE['template'])) {
-                $prefs['template'] = $_COOKIE['template'];
+                $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
         } else {
-                $prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-        }
-        if (strpos($prefs['template'], ':') === false) {
-                if (is_dir("templates_twig/{$prefs['template']}")) {
-                        $prefs['template'] = 'twig:' . $prefs['template'];
-                } else {
-                        $prefs['template'] = 'legacy:' . $prefs['template'];
-                }
+                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "yarbrough.htm"));
         }
         Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
