@@ -960,7 +960,8 @@ public static function mailLinkTabText(){
         foreach ($replacements as $key => $val) {
             if (strpos($content, '{'.$key.'}') === false) {
                 output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $name, $content);
-                $content .= $val;
+                // Skip appending the replacement value to avoid unexpected placement
+                continue;
             } else {
                 $content = str_replace('{'.$key.'}', $val, $content);
             }
