@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ template_path }}/assets/style.css"/>
+    {{ headscript|raw }}{{ script|raw }}
+</head>
+<body class="main-body">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td>
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="noborder">
+                    <tr class="page-header">
+                        <td class="noborder pageheader-left" align="center">
+                            <table>
+                                <tr>
+                                    <td class="noborder motd" align="left" valign="bottom" width="50%">&nbsp;&nbsp;<b>{{ motd|raw }}</b></td>
+                                    <td class="noborder" align="right" width="50%" valign="bottom"><b>{{ petition|raw }}</b></td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td align="center" class="noborder pageheader-center">{{ title }}</td>
+                        <td class="noborder pageheader-right">
+                            <img src="{{ template_path }}/images/mail.gif" width="24" height="19"><b>{{ mail|raw }}</b>&nbsp;&nbsp;
+                            {{ petitiondisplay|raw }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td valign="top" width="200" class="sidebar-content">
+                            <div style="position: relative; top: -15;" align="center">{{ navad|raw }}</div>
+                            <div align="center" role="navigation">{{ nav|raw }}</div>
+                        </td>
+                        <td valign="top" width="100%" class="main-content">
+                            <div style="float: right">{{ verticalad|raw }}</div>
+                            {{ bodyad|raw }}
+                            {{ content|raw }}
+                        </td>
+                        <td valign="top" width="132" class="sidebar-content">
+                            {{ stats|raw }}
+                            <br>
+                            {{ paypal|raw }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <table width="100%" height="20">
+                    <tr>
+                        <td align="center"></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td colspan="3" height="10" align="center"></td>
+                    </tr>
+                    <tr>
+                        <td width="12"></td>
+                        <td valign="top">
+                            <table width="100%" class="colOtWhite">
+                                <tr>
+                                    <td valign="top">{{ copyright|raw }}<br/>Design: Puritanic AI theme  <a href="https://shinobilegends.com">shinobilegends.com</a></td>
+                                    <td valign="top" align="right">{{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td width="12"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" height="10" align="center"></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
