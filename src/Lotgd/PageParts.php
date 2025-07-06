@@ -723,7 +723,7 @@ public static function mailLinkTabText(){
             $u = $settings->getSetting('logdnetserver','http://logdnet.logd.com/');
             if (!preg_match('/\/$/', $u)) {
                 $u = $u . '/';
-                savesetting('logdnetserver', $u);
+                $settings->saveSetting('logdnetserver', $u);
             }
 
             $v = $logd_version;
