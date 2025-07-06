@@ -4,6 +4,7 @@
 // mail ready
 define("OVERRIDE_FORCED_NAV",true);
 require_once("common.php");
+use Lotgd\Mail;
 
 tlschema("mail");
 $args=modulehook("header-mail",array("done"=>0));
@@ -13,30 +14,24 @@ $superusermessage = getsetting("superuseryommessage","Asking an admin for gems, 
 $op = httpget('op');
 $id = (int)httpget('id');
 if($op=="del" &&!$args['done'] ){
-	$sql = "DELETE FROM " . db_prefix("mail") . " WHERE msgto='".$session['user']['acctid']."' AND messageid='$id'";
-	db_query($sql);
-	invalidatedatacache("mail-{$session['user']['acctid']}");
-	header("Location: mail.php");
-	exit();
+        Mail::deleteMessage($session['user']['acctid'], $id);
+        header("Location: mail.php");
+        exit();
 }elseif($op=="process" && !$args['done']){
-	$msg = httppost('msg');
-	if (!is_array($msg) || count($msg)<1){
-		$session['message'] = "`n`n`\$`bYou cannot delete zero messages!  What does this mean?  You pressed \"Delete Checked\" but there are no messages checked!  What sort of world is this that people press buttons that have no meaning?!?`b`0";
-		header("Location: mail.php");
-		exit();
-	}else{
-		$sql = "DELETE FROM " . db_prefix("mail") . " WHERE msgto='".$session['user']['acctid']."' AND messageid IN ('".join("','",$msg)."')";
-		db_query($sql);
-		invalidatedatacache("mail-{$session['user']['acctid']}");
-		header("Location: mail.php");
-		exit();
-	}
+        $msg = httppost('msg');
+        if (!is_array($msg) || count($msg)<1){
+                $session['message'] = "`n`n`\$`bYou cannot delete zero messages!  What does this mean?  You pressed \"Delete Checked\" but there are no messages checked!  What sort of world is this that people press buttons that have no meaning?!?`b`0";
+                header("Location: mail.php");
+                exit();
+        }else{
+                Mail::deleteMessages($session['user']['acctid'], $msg);
+                header("Location: mail.php");
+                exit();
+        }
 }elseif ($op=="unread" &&!$args['done']){
-	$sql = "UPDATE " . db_prefix("mail") . " SET seen=0 WHERE msgto='".$session['user']['acctid']."' AND messageid='$id'";
-	db_query($sql);
-	invalidatedatacache("mail-{$session['user']['acctid']}");
-	header("Location: mail.php");
-	exit();
+        Mail::markUnread($session['user']['acctid'], $id);
+        header("Location: mail.php");
+        exit();
 }
 
 popup_header("Ye Olde Poste Office");

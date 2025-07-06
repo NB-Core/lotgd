@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Mail;
 $subject=httppost('subject');
 $body="";
 $row="";
@@ -7,20 +8,17 @@ $forwardto = (int) httppost('forwardto');
 if ($replyto>0) $msgid=$replyto;
 	else $msgid=$forwardto;
 if ($msgid>0){
-	$mail = db_prefix("mail");
-	$accounts = db_prefix("accounts");
-	$sql = "SELECT ".$mail.".sent,".$mail.".body,".$mail.".msgfrom, ".$mail.".subject,".$accounts.".login, ".$accounts.".superuser, ".$accounts.".name FROM ".$mail." LEFT JOIN ".$accounts." ON ".$accounts.".acctid=".$mail.".msgfrom WHERE msgto=\"".$session['user']['acctid']."\" AND messageid=\"".$msgid."\"";
-	$result = db_query($sql);
-	if ($row = db_fetch_assoc($result)){
-		if ($row['login']=="" && $forwardto==0) {
-			output("You cannot reply to a system message.`n`nPress the \"Back\" button in your browser to get back.");
-			$row=array();
-			popup_footer();
-		}
-		if ($forwardto>0) $row['login']=0;
-	}else{
-		output("Eek, no such message was found!`n");
-	}
+        $row = Mail::getMessage($session["user"]["acctid"], $msgid);
+        if ($row){
+                if ($row["login"]=="" && $forwardto==0){
+                        output("You cannot reply to a system message.`n`nPress the \"Back\" button in your browser to get back.");
+                        $row=array();
+                        popup_footer();
+                }
+                if ($forwardto>0) $row["login"] = 0;
+        }else{
+                output("Eek, no such message was found!`n");
+        }
 }
 $to = httpget('to');
 if ($to){

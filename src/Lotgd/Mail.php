@@ -156,4 +156,142 @@ class Mail
             return false;
         }
     }
+
+    /**
+     * Delete a single mail message for a user.
+     */
+    public static function deleteMessage(int $userId, int $messageId): void
+    {
+        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=\'$userId\' AND messageid=\'$messageId\'";
+        db_query($sql);
+        invalidatedatacache("mail-$userId");
+    }
+
+    /**
+     * Delete multiple mail messages for a user.
+     *
+     * @param array $messageIds List of message IDs
+     */
+    public static function deleteMessages(int $userId, array $messageIds): void
+    {
+        if (empty($messageIds)) {
+            return;
+        }
+        $ids = implode("','", array_map('intval', $messageIds));
+        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=\'$userId\' AND messageid IN (\'$ids\')";
+        db_query($sql);
+        invalidatedatacache("mail-$userId");
+    }
+
+    /**
+     * Mark a message as unread.
+     */
+    public static function markUnread(int $userId, int $messageId): void
+    {
+        $sql = 'UPDATE ' . db_prefix('mail') . " SET seen=0 WHERE msgto=\'$userId\' AND messageid=\'$messageId\'";
+        db_query($sql);
+        invalidatedatacache("mail-$userId");
+    }
+
+    /**
+     * Count messages in a user's inbox.
+     */
+    public static function inboxCount(int $userId, bool $onlyUnread = false): int
+    {
+        $extra = $onlyUnread ? ' AND seen=0' : '';
+        $sql = 'SELECT count(messageid) AS count FROM ' . db_prefix('mail') . " WHERE msgto=\'$userId\'$extra";
+        $result = db_query($sql);
+        $row = db_fetch_assoc($result);
+        return (int) ($row['count'] ?? 0);
+    }
+
+    /**
+     * Determine if a user's inbox is currently full.
+     */
+    public static function isInboxFull(int $userId, bool $onlyUnread = false): bool
+    {
+        $limit = getsetting('inboxlimit', 50);
+        return self::inboxCount($userId, $onlyUnread) >= $limit;
+    }
+
+    /**
+     * Retrieve all messages for a user's inbox ordered as requested.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function getInbox(int $userId, string $order = 'sent', string $direction = 'DESC'): array
+    {
+        $mail = db_prefix('mail');
+        $acc = db_prefix('accounts');
+
+        $allowed = ['subject', 'name', 'sent'];
+        if (!in_array($order, $allowed, true)) {
+            $order = 'sent';
+        }
+
+        $direction = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
+
+        $sql = "SELECT subject,messageid,$acc.name,$acc.acctid,msgfrom,seen,sent "
+             . "FROM $mail LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
+             . "WHERE msgto='$userId' ORDER BY $order $direction";
+
+        $result = db_query($sql);
+        $messages = [];
+        while ($row = db_fetch_assoc($result)) {
+            $messages[] = $row;
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Fetch a single message with account information.
+     */
+    public static function getMessage(int $userId, int $messageId): ?array
+    {
+        $mail = db_prefix('mail');
+        $acc = db_prefix('accounts');
+        $sql = "SELECT $mail.*,$acc.name,$acc.acctid FROM $mail "
+             . "LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
+             . "WHERE msgto='$userId' AND messageid='$messageId'";
+
+        $result = db_query($sql);
+        if (db_num_rows($result) > 0) {
+            return db_fetch_assoc($result);
+        }
+
+        return null;
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    public static function markRead(int $userId, int $messageId): void
+    {
+        $sql = 'UPDATE ' . db_prefix('mail')
+            . " SET seen=1 WHERE msgto='$userId' AND messageid='$messageId'";
+        db_query($sql);
+        invalidatedatacache("mail-$userId");
+    }
+
+    /**
+     * Find the previous and next message IDs around a specific message.
+     *
+     * @return array{prev:int,next:int}
+     */
+    public static function adjacentMessageIds(int $userId, int $messageId): array
+    {
+        $mail = db_prefix('mail');
+        $sql = "SELECT messageid FROM $mail WHERE msgto='$userId'" .
+            " AND messageid < '$messageId' ORDER BY messageid DESC LIMIT 1";
+        $result = db_query($sql);
+        $prev = db_num_rows($result) > 0 ? (int)db_fetch_assoc($result)['messageid'] : 0;
+
+        $sql = "SELECT messageid FROM $mail WHERE msgto='$userId'" .
+            " AND messageid > '$messageId' ORDER BY messageid LIMIT 1";
+        $result = db_query($sql);
+        $next = db_num_rows($result) > 0 ? (int)db_fetch_assoc($result)['messageid'] : 0;
+
+        return ['prev' => $prev, 'next' => $next];
+    }
 }

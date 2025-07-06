@@ -1,10 +1,8 @@
 <?php
-$acc=db_prefix('accounts');
-$mail=db_prefix('mail');
-$sql = "SELECT $mail.*,$acc.name,$acc.acctid FROM $mail LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom WHERE msgto=\"".$session['user']['acctid']."\" AND messageid=\"".$id."\"";
-$result = db_query($sql);
-if (db_num_rows($result)>0){
-	$row = db_fetch_assoc($result);
+use Lotgd\Mail;
+
+$row = Mail::getMessage($session['user']['acctid'], $id);
+if ($row){
 	$reply = translate_inline("Reply");
 	$del = translate_inline("Delete");
 	$forward = translate_inline("Forward");
@@ -44,22 +42,9 @@ if (db_num_rows($result)>0){
 	}else{
 		output("`n");
 	}
-	$sql = "SELECT messageid FROM $mail WHERE msgto='{$session['user']['acctid']}' AND messageid < '$id' ORDER BY messageid DESC LIMIT 1";
-	$result = db_query($sql);
-	if (db_num_rows($result)>0){
-		$srow = db_fetch_assoc($result);
-		$pid = $srow['messageid'];
-	}else{
-		$pid = 0;
-	}
-	$sql = "SELECT messageid FROM $mail WHERE msgto='{$session['user']['acctid']}' AND messageid > '$id' ORDER BY messageid  LIMIT 1";
-	$result = db_query($sql);
-	if (db_num_rows($result)>0){
-		$srow = db_fetch_assoc($result);
-		$nid = $srow['messageid'];
-	}else{
-		$nid = 0;
-	}
+        $adjacent = Mail::adjacentMessageIds($session['user']['acctid'], $id);
+        $pid = $adjacent['prev'];
+        $nid = $adjacent['next'];
 	output("`b`2From:`b `^%s",$row['name']);
 	output_notl($status_image."`n",true);
 	output("`b`2Subject:`b `^%s`n",$row['subject']);
@@ -80,9 +65,7 @@ if (db_num_rows($result)>0){
 	}
 	rawoutput("</tr></table><br/>");
 	output_notl(sanitize_mb(str_replace("\n","`n",$row['body'])));
-	$sql = "UPDATE $mail SET seen=1 WHERE  msgto=\"".$session['user']['acctid']."\" AND messageid=\"".$id."\"";
-	db_query($sql);
-	invalidatedatacache("mail-{$session['user']['acctid']}");
+        Mail::markRead($session['user']['acctid'], $id);
 	rawoutput("<table width='50%' border='0' cellpadding='0' cellspacing='5'><tr>
 		<td><a href='mail.php?op=write&replyto={$row['messageid']}' class='motd'>$reply</a></td>
 		<td><a href='mail.php?op=del&id={$row['messageid']}' class='motd'>$del</a></td>
