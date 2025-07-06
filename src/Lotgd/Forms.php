@@ -214,7 +214,7 @@ class Forms
                     break;
                 }
                 while (false !== ($file = @readdir($handle))) {
-                    if (strpos($file, '.htm') > 0) {
+                    if (strpos($file, '.htm') !== false) {
                         $skins[] = $file;
                     }
                 }
