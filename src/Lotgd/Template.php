@@ -59,9 +59,13 @@ class Template
             $_COOKIE['template'] = '';
         }
         $templatename = '';
+        $templateType = '';
         $templatemessage = '';
         if ($_COOKIE['template'] != '') {
             $templatename = $_COOKIE['template'];
+        }
+        if (strpos($templatename, ':') !== false) {
+            [$templateType, $templatename] = explode(':', $templatename, 2);
         }
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             if (isset($settings) && $settings instanceof Settings) {
@@ -75,12 +79,33 @@ class Template
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             $templatename = $_defaultskin;
         }
-        if (is_dir("templates_twig/$templatename")) {
+
+        if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
             TwigTemplate::init($templatename);
             $template = [];
         } else {
             $template = self::loadTemplate($templatename);
         }
+    }
+
+    /**
+     * Ensure a template name is prefixed with its type.
+     *
+     * @param string $template Template name, with or without prefix
+     *
+     * @return string Prefixed template name
+     */
+    public static function addTypePrefix(string $template): string
+    {
+        if (str_contains($template, ':')) {
+            return $template;
+        }
+
+        if (is_dir("templates_twig/$template")) {
+            return 'twig:' . $template;
+        }
+
+        return 'legacy:' . $template;
     }
 
     /**

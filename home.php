@@ -142,10 +142,12 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("<form action='home.php' method='POST'>");
 	rawoutput("<table align='center'><tr><td>");
 	$form = array("template"=>"Choose a different display skin:,theme");
-	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
-		else 
-		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-	Forms::showForm($form, $prefs, true);
+        if (isset($_COOKIE['template'])) {
+                $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
+        } else {
+                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "yarbrough.htm"));
+        }
+        Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
 	rawoutput("</td><td><br>&nbsp;<input type='submit' class='button' value='$submit'></td>");
 	rawoutput("</tr></table></form>");

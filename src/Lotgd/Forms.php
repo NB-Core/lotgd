@@ -208,27 +208,58 @@ class Forms
         switch ($info[1]) {
             case 'theme':
                 $skins = [];
-                $handle = @opendir('templates');
-                if (!$handle) {
-                    output('None available');
-                    break;
-                }
-                while (false !== ($file = @readdir($handle))) {
-                    if (strpos($file, '.htm') !== false) {
-                        $skins[] = $file;
+                $handle = opendir('templates');
+                if ($handle === false) {
+                    error_log('Unable to open templates directory');
+                } else {
+                    while (false !== ($file = readdir($handle))) {
+                        if (strpos($file, '.htm') !== false) {
+                            $value = 'legacy:' . $file;
+                            $skins[$value] = substr($file, 0, strpos($file, '.htm'));
+                        }
                     }
+                    closedir($handle);
                 }
+
+                $handle = opendir('templates_twig');
+                if ($handle === false) {
+                    error_log('Unable to open templates_twig directory');
+                } else {
+                    while (false !== ($dir = readdir($handle))) {
+                        if ($dir === '.' || $dir === '..') {
+                            continue;
+                        }
+                        if (is_dir("templates_twig/$dir")) {
+                            $name = $dir;
+                            $configPath = "templates_twig/$dir/config.json";
+                            if (file_exists($configPath)) {
+                                $cfg = json_decode((string) file_get_contents($configPath), true);
+                                if (json_last_error() === JSON_ERROR_NONE && isset($cfg['name'])) {
+                                    $name = $cfg['name'];
+                                }
+                            }
+                            $value = 'twig:' . $dir;
+                            $skins[$value] = $name;
+                        }
+                    }
+                    closedir($handle);
+                }
+
                 if (count($skins) == 0) {
                     output('None available');
                     break;
                 }
-                natcasesort($skins);
+
+                asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
+                $current = Template::addTypePrefix($row[$key]);
+
                 rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
-                foreach ($skins as $skin) {
-                    if ($skin == $row[$key]) {
-                        rawoutput("<option value='$skin' selected>" . htmlentities(substr($skin, 0, strpos($skin, '.htm')), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
+                foreach ($skins as $skin => $display) {
+                    $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+                    if ($skin == $current) {
+                        rawoutput("<option value='$skin' selected>$display</option>");
                     } else {
-                        rawoutput("<option value='$skin'>" . htmlentities(substr($skin, 0, strpos($skin, '.htm')), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
+                        rawoutput("<option value='$skin'>$display</option>");
                     }
                 }
                 rawoutput('</select>');
