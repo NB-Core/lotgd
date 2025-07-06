@@ -21,7 +21,11 @@ class TwigTemplate extends Template
 
     public static function render(string $view, array $context = []): string
     {
-        return self::$env?->render($view, $context) ?? '';
+        if (self::$env === null) {
+            throw new \RuntimeException('Twig environment is not initialized. Call init() before rendering.');
+        }
+
+        return self::$env->render($view, $context);
     }
 
     public static function isActive(): bool
