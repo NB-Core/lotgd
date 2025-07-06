@@ -251,6 +251,7 @@ public static function pageFooter(bool $saveuser=true){
         $sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
 
         // Replace special template tokens within header and footer
+        $z = $y2 ^ $z2;
         list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
             // character statistic table
             'stats'   => $statsOutput,
@@ -264,6 +265,7 @@ public static function pageFooter(bool $saveuser=true){
             'version' => "Version: $logd_version",
             // page generation statistics
             'pagegen' => self::computePageGenerationStats($pagestarttime),
+            $z        => $$z,
         ]);
 
 	Translator::tlschema();
@@ -338,13 +340,11 @@ public static function popupFooter(){
 	// invalid one which we can then blow away.
         list($header, $footer) = self::applyPopupFooterHooks($header, $footer);
 
-	$z = $y2^$z2;
-	$footer = str_replace("{".($z)."}",$$z, $footer);
-	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-			if (file_exists('ext/ajax_maillink.php')) {
-				require("ext/ajax_maillink.php");
-			}
+        if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
+                if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+                        if (file_exists('ext/ajax_maillink.php')) {
+                                require("ext/ajax_maillink.php");
+                        }
 		} else {
 			$maillink_add_after='';
 			//no AJAX for slower browsers etc
@@ -354,9 +354,19 @@ public static function popupFooter(){
 
 	//clean up spare {fields}s from header and footer (in case they're not used)
 	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
+        // Replace well-known template tokens
+        $z = $y2 ^ $z2;
+        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
+            'script' => '',
+            // Popups normally don't show mail links but support the token if present
+            'mail'   => (strpos($header, '{mail}') !== false || strpos($footer, '{mail}') !== false)
+                ? self::mailLink()
+                : '',
+            $z       => $$z,
+        ]);
+
         $footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
         $header = self::stripAdPlaceholders($header);
-        $header = str_replace("{script}","",$header);
 	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
     $browser_output=$header.$maillink_add_after.($output->getOutput()).$footer;
@@ -859,10 +869,6 @@ public static function mailLinkTabText(){
      */
     private static function generateNavigationOutput(string $header, string $footer, string $builtnavs): array
     {
-        global $y2, $z2;
-        $z = $y2^$z2;
-        $footer = str_replace('{'.$z.'}', $GLOBALS[$z] ?? '', $footer);
-        $footer = str_replace('{'.$z.'}', $z, $footer);
         $header = str_replace('{nav}', $builtnavs, $header);
         $footer = str_replace('{nav}', $builtnavs, $footer);
 
