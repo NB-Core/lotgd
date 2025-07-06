@@ -209,26 +209,49 @@ class Forms
             case 'theme':
                 $skins = [];
                 $handle = @opendir('templates');
-                if (!$handle) {
-                    output('None available');
-                    break;
-                }
-                while (false !== ($file = @readdir($handle))) {
-                    if (strpos($file, '.htm') !== false) {
-                        $skins[] = $file;
+                if ($handle) {
+                    while (false !== ($file = @readdir($handle))) {
+                        if (strpos($file, '.htm') !== false) {
+                            $skins[$file] = substr($file, 0, strpos($file, '.htm'));
+                        }
                     }
+                    closedir($handle);
                 }
+
+                $handle = @opendir('templates_twig');
+                if ($handle) {
+                    while (false !== ($dir = @readdir($handle))) {
+                        if ($dir === '.' || $dir === '..') {
+                            continue;
+                        }
+                        if (is_dir("templates_twig/$dir")) {
+                            $name = $dir;
+                            $configPath = "templates_twig/$dir/config.json";
+                            if (file_exists($configPath)) {
+                                $cfg = json_decode((string) file_get_contents($configPath), true);
+                                if (json_last_error() === JSON_ERROR_NONE && isset($cfg['name'])) {
+                                    $name = $cfg['name'];
+                                }
+                            }
+                            $skins[$dir] = $name;
+                        }
+                    }
+                    closedir($handle);
+                }
+
                 if (count($skins) == 0) {
                     output('None available');
                     break;
                 }
-                natcasesort($skins);
+
+                asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
                 rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
-                foreach ($skins as $skin) {
+                foreach ($skins as $skin => $display) {
+                    $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
                     if ($skin == $row[$key]) {
-                        rawoutput("<option value='$skin' selected>" . htmlentities(substr($skin, 0, strpos($skin, '.htm')), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
+                        rawoutput("<option value='$skin' selected>$display</option>");
                     } else {
-                        rawoutput("<option value='$skin'>" . htmlentities(substr($skin, 0, strpos($skin, '.htm')), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
+                        rawoutput("<option value='$skin'>$display</option>");
                     }
                 }
                 rawoutput('</select>');
