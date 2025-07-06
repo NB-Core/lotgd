@@ -7,18 +7,11 @@ $sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='$to'";
 $result = db_query($sql);
 $return = (int) httppost("returnto");
 if(db_num_rows($result)>0){
-	$row1 = db_fetch_assoc($result);
-	if (getsetting("onlyunreadmails",true)) {
-		$maillimitsql = "AND seen=0";
-	} else {
-		$maillimitsql = "";
-	}
-	$sql = "SELECT count(messageid) AS count FROM " . db_prefix("mail") . " WHERE msgto='".$row1['acctid']."' $maillimitsql";
-	$result = db_query($sql);
-	$row = db_fetch_assoc($result);
-	if ($row['count']>=getsetting("inboxlimit",50)) {
-		output("`\$You cannot send that person mail, their mailbox is full!`0`n`n");
-	}else{
+        $row1 = db_fetch_assoc($result);
+        $checkUnread = getsetting("onlyunreadmails",true);
+        if (Mail::isInboxFull($row1['acctid'], $checkUnread)) {
+                output("`\$You cannot send that person mail, their mailbox is full!`0`n`n");
+        }else{
 		$subject = str_replace("`n","",httppost('subject'));
 		$body = str_replace("`n","\n",httppost('body'));
 		$body = str_replace("\r\n","\n",$body);

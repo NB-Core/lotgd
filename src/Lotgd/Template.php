@@ -78,18 +78,11 @@ class Template
         $template = self::loadTemplate($templatename);
     }
 
-     /**
-     * Loads the template into the current session.  If the template doesn't
-     * exist - uses the default (admin-defined) template, and then falls back
-     * to jade.htm
-     *
-     * @param string $templatename The template name (minus the path)
-     * @return array The template split into the sections defined by <!--!
-     * @see Templates
-     * @todo Template Help
-     */
     /**
      * Load a template file and split it into sections.
+     *
+     * If the template doesn't exist, uses the admin-defined default template
+     * and then falls back to jade.htm.
      *
      * @param string $templatename Template file name
      *
@@ -104,7 +97,7 @@ class Template
 	    $fulltemplate = file_get_contents("templates/$templatename");
 	    $fulltemplate = explode("<!--!",$fulltemplate);
 	    foreach ($fulltemplate as $val) {
-            if ($val == "") continue; // Skip empty sections)
+           if ($val == "") continue; // Skip empty sections
 		    $fieldname=substr($val,0,strpos($val,"-->"));
 		    if ($fieldname!=""){
 			    $template[$fieldname]=substr($val,strpos($val,"-->")+3);

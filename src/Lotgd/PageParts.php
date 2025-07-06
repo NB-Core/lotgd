@@ -12,6 +12,7 @@ use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
+use Lotgd\Settings;
 
 /**
  * Library (supporting) functions for page output
@@ -135,38 +136,18 @@ public static function pageFooter(bool $saveuser=true){
 		$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
 	else
 		$script = "";
-	$replacementbits = array();
-	$replacementbits = modulehook("footer-$script",$replacementbits);
-	if ($script == "runmodule" && (($module = httpget('module'))) > "") {
-		// This modulehook allows you to hook directly into any module without
-		// the need to hook into footer-runmodule and then checking for the
-		// required module.
-		modulehook("footer-$module",$replacementbits);
-	}
-	// Pass the script file down into the footer so we can do something if
-	// we need to on certain pages (much like we do on the header.
-	// Problem is 'script' is a valid replacement token, so.. use an
-	// invalid one which we can then blow away.
-	$replacementbits['__scriptfile__'] = $script;
-	$replacementbits = modulehook("everyfooter",$replacementbits);
-	unset($replacementbits['__scriptfile__']);
-	//output any template part replacements that above hooks need (eg,
-	//advertising)
-	foreach ($replacementbits as $key=>$val) {
-		$header = str_replace("{".$key."}","{".$key."}".implode("",$val),$header);
-		$footer = str_replace("{".$key."}","{".$key."}".implode("",$val),$footer);
-	}
+        list($header, $footer) = self::applyFooterHooks($header, $footer, $script);
 
-	$builtnavs = Nav::buildNavs();
+        $builtnavs = Nav::buildNavs();
 
-	Buffs::restoreBuffFields();
-	Buffs::calculateBuffFields();
+        Buffs::restoreBuffFields();
+        Buffs::calculateBuffFields();
 
-	Translator::tlschema("common");
+        Translator::tlschema("common");
 
         $statsOutput = self::charStats();
 
-	Buffs::restoreBuffFields();
+        Buffs::restoreBuffFields();
 
 	if (!defined("IS_INSTALLER")) { 
 		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
@@ -196,11 +177,7 @@ public static function pageFooter(bool $saveuser=true){
 		$pre_headscript = "";
 		$headscript = "";
 	}
-	if ($headscript>""){
-		$header=str_replace("{headscript}",$pre_headscript."<script type='text/javascript' charset='UTF-8'>".$headscript."</script>",$header);
-	}else{
-		$header = str_replace("{headscript}",$pre_headscript,$header);
-	}
+        $header = self::insertHeadScript($header, $pre_headscript, $headscript);
 
 	$script = "";
 
@@ -241,219 +218,62 @@ public static function pageFooter(bool $saveuser=true){
 	//-->
 	</script>";
 
-	//handle paypal
-	if (strpos($footer,"{paypal}") || strpos($header,"{paypal}")){ $palreplace="{paypal}"; }else{ $palreplace="{stats}"; }
+        if (strpos($footer, "{paypal}") || strpos($header, "{paypal}")) {
+            $palreplace = "{paypal}";
+        } else {
+            $palreplace = "{stats}";
+        }
 
-	//NOTICE |
-	//NOTICE | Although under the license, you're not required to keep this
-	//NOTICE | paypal link, I do request, as the author of this software
-	//NOTICE | which I have made freely available to you, that you leave it in.
-	//NOTICE |
-	$paypalstr = '<table align="center"><tr><td>';
-	$currency = isset($settings) ? $settings->getSetting("paypalcurrency", "USD") : "USD";
-
-	if (!isset($_SESSION['logdnet']) || !isset($_SESSION['logdnet']['']) || $_SESSION['logdnet']['']=="" || date("Y-m-d H:i:s",strtotime("-1 hour"))>$session['user']['laston']){
-		$already_registered_logdnet = false;
-	}else{
-		$already_registered_logdnet = true;
-	}
-
-	if (isset($settings) && $settings->getSetting("logdnet",0) && $session['user']['loggedin'] && !$already_registered_logdnet){
-		//account counting, just for my own records, I don't use this in the calculation for server order.
-		$sql = "SELECT count(acctid) AS c FROM " . db_prefix("accounts");
-		$result = db_query_cached($sql,"acctcount",600);
-		$row = db_fetch_assoc($result);
-		$c = $row['c'];
-		$a = $settings->getSetting("serverurl","http://".$_SERVER['SERVER_NAME'].($_SERVER['SERVER_PORT'] == 80?"":":".$_SERVER['SERVER_PORT']).dirname($_SERVER['REQUEST_URI']));
-		if (!preg_match("/\/$/", $a)) {
-			$a = $a . "/";
-			$settings->saveSetting("serverurl", $a);
-		}
-
-		$l = $settings->getSetting("defaultlanguage","en");
-		$d = $settings->getSetting("serverdesc","Another LoGD Server");
-		$e = $settings->getSetting("gameadminemail", "postmaster@localhost.com");
-		$u = $settings->getSetting("logdnetserver","http://logdnet.logd.com/");
-		if (!preg_match("/\/$/", $u)) {
-			$u = $u . "/";
-			savesetting("logdnetserver", $u);
-		}
-
-
-		global $logd_version;
-		$v = $logd_version;
-		$c = rawurlencode($c);
-		$a = rawurlencode($a);
-		$l = rawurlencode($l);
-		$d = rawurlencode($d);
-		$e = rawurlencode($e);
-		$v = rawurlencode($v);
-		$u = rawurlencode($u);
-		$paypalstr .= "<script type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
-	}else{
-		$paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">".'
-			<input type="hidden" name="cmd" value="_xclick">
-			<input type="hidden" name="business" value="logd@mightye.org">
-			<input type="hidden" name="item_name" value="Legend of the Green Dragon Author Donation from '.Sanitize::fullSanitize($session['user']['name']).'">
-			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting("charset", "ISO-8859-1") : "UTF-8").":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
-			<input type="hidden" name="no_shipping" value="1">
-			<input type="hidden" name="notify_url" value="http://lotgd.net/payment.php">
-			<input type="hidden" name="cn" value="Your Character Name">
-			<input type="hidden" name="cs" value="1">
-			<input type="hidden" name="currency_code" value="USD">
-			<input type="hidden" name="tax" value="0">
-			<input type="image" src="images/paypal1.gif" border="0" name="submit" alt="Donate to Eric Stevens">
-			</form>';
-	}
-	$paysite = isset($settings) ? $settings->getSetting("paypalemail", "") : "";
-	if ($paysite != "") {
-		$paypalstr .= '</td><td>';
-		$paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
-			<input type="hidden" name="cmd" value="_xclick">
-			<input type="hidden" name="business" value="'.$paysite.'">
-			<input type="hidden" name="item_name" value="'.(isset($settings) ? $settings->getSetting("paypaltext","Legend of the Green Dragon Site Donation from") : "Legend of the Gren Dragon Site Donation From").' '.full_Sanitize::sanitize($session['user']['name']).'">
-			<input type="hidden" name="item_number" value="'.htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting("charset", "ISO-8859-1") : "UTF-8").":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].'">
-			<input type="hidden" name="no_shipping" value="1">';
-		if (file_exists("payment.php")) {
-			$paypalstr .= '<input type="hidden" name="notify_url" value="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER['REQUEST_URI']).'/payment.php">';
-		}
-		$paypalstr .= '<input type="hidden" name="cn" value="Your Character Name">
-			<input type="hidden" name="cs" value="1">
-			<input type="hidden" name="currency_code" value="'.$currency.'">
-			<input type="hidden" name="lc" value="'.getsetting("paypalcountry-code","US").'">
-			<input type="hidden" name="bn" value="PP-DonationsBF">
-			<input type="hidden" name="tax" value="0">
-			<input type="image" src="images/paypal2.gif" border="0" name="submit" alt="Donate to the Site">
-			</form>';
-	}
-	$paypalstr .= '</td></tr></table>';
-	$footer=str_replace($palreplace,(strpos($palreplace,"paypal")?"":"{stats}").$paypalstr,$footer);
-	$header=str_replace($palreplace,(strpos($palreplace,"paypal")?"":"{stats}").$paypalstr,$header);
+        list($header, $footer) = self::buildPaypalDonationMarkup(
+            $palreplace,
+            $header,
+            $footer,
+            $settings ?? null,
+            $logd_version
+        );
 	//NOTICE |
 	//NOTICE | Although I will not deny you the ability to remove the above
 	//NOTICE | paypal link, I do request, as the author of this software
 	//NOTICE | which I made available for free to you that you leave it in.
 	//NOTICE |
 
-	//output the nav
-	$z = $y2^$z2;
-	if (isset($$z)) {
-		$footer = str_replace("{".($z)."}",$$z, $footer);
-	} else {
-		$footer = str_replace("{".($z)."}","",$footer);
-	}
-	$footer = str_replace("{".($z)."}",$z,$footer);
-	$header=str_replace("{nav}",$builtnavs,$header);
-	$footer=str_replace("{nav}",$builtnavs,$footer);
+        list($header, $footer) = self::generateNavigationOutput($header, $footer, $builtnavs);
 	//output the motd
-	//use a modulehook to add more stuff by module or change the link
-	$motd_link = self::motdLink();
-	$motd_link = modulehook("motd-link",array("link"=>$motd_link));
-	$motd_link = $motd_link['link'];
-	//$header = str_replace("{motd}", self::motdLink(), $header);
-	//$footer = str_replace("{motd}", self::motdLink(), $footer);
-	$header = str_replace("{motd}", $motd_link, $header);
-	$footer = str_replace("{motd}", $motd_link, $footer);
-	//output the mail link
-	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-			if (file_exists('ext/ajax_maillink.php')) {
-				require('ext/ajax_maillink.php');
-			}
-			$header=str_replace("{mail}",$maillink_add_pre."<div id='maillink'>".self::mailLink()."</div>".$maillink_add_after,$header);
-		} else {
-			//no AJAX for slower browsers etc
-			$header=str_replace("{mail}",self::mailLink(),$header);
-		}
-		$footer=str_replace("{mail}",self::mailLink(),$footer);
-	}else{
-		$header=str_replace("{mail}","",$header);
-		$footer=str_replace("{mail}","",$footer);
-	}
-	//output petition count
+        // use a modulehook to add more stuff by module or change the link
+        $motd_link = self::motdLink();
+        $motd_link = modulehook("motd-link",array("link"=>$motd_link));
+        $motd_link = $motd_link['link'];
+        // the "motd-link" hook allows modules to modify the final link
+        // the actual replacement happens later via replaceHeaderFooterTokens()
+        //$header = str_replace("{motd}", self::motdLink(), $header);
+        //$footer = str_replace("{motd}", self::motdLink(), $footer);
+        list($header, $footer) = self::assembleMailPetitionLinks($header, $footer);
+        $sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
 
-	$header=str_replace("{petition}","<a href='petition.php' onClick=\"".self::popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline("Petition for Help")."</a>",$header);
-	$footer=str_replace("{petition}","<a href='petition.php' onClick=\"".self::popup("petition.php").";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline("Petition for Help")."</a>",$footer);
-	if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS){
-		$sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix("petitions") . " GROUP BY status";
-		$result = db_query_cached($sql,"petition_counts");
-		$petitions=array("P5"=>0,"P4"=>0,"P0"=>0,"P1"=>0,"P3"=>0,"P7"=>0,"P6"=>0,"P2"=>0);
-		while ($row = db_fetch_assoc($result)) {
-			$petitions["P".$row['status']] = $row['c'];
-		}
-		// add short links for the admin, depending on superuser rights (technically we could move this out of petitions and make it general, but alas...)
-		$pet = Translator::translateInline("`0`bPetitions:`b");
-		$ued = Translator::translateInline("`0`bUser Editor`b");
-		$mod = Translator::translateInline("`0`bManage Modules`b");
-		db_free_result($result);
-		$admin_array=array();
-		if ($session['user']['superuser'] & SU_EDIT_USERS){
-			$admin_array[] = "<a href='user.php'>$ued</a>";
-			addnav("", "user.php");
-		}
-		if ($session['user']['superuser'] & SU_MANAGE_MODULES) {
-			$admin_array[] = "<a href='modules.php'>$mod</a>";
-			addnav("", "modules.php");
-		}
-		$admin_array[] = "<a href='viewpetition.php'>$pet</a>";
-		addnav("", "viewpetition.php");
-		$p = implode("|",$admin_array);
-		$pcolors = array("`\$","`^","`6","`!","`#","`%","`v");
-		$pets = "`n";
-		foreach($petitions as $val) {
-			if ($pets!="`n") $pets.="|";
-			$color = array_shift($pcolors);
-			if (!isset($color) || $color==null || $color=="") $color="`1";
-			$pets.=$color.$val."`0";
-		}
-		$ret_args=array("petitioncount"=>$pets);
-		$ret_args = modulehook("petitioncount",array("petitioncount"=>$pets));
-		$pets = $ret_args['petitioncount'];
-		$p .= $pets;
-		$pcount = templatereplace("petitioncount", array("petitioncount"=>appoencode($p, true)));
-		$footer = str_replace("{petitiondisplay}", $pcount, $footer);
-		$header = str_replace("{petitiondisplay}", $pcount, $header);
-	} else {
-		$footer = str_replace("{petitiondisplay}", "", $footer);
-		$header = str_replace("{petitiondisplay}", "", $header);
-	}
-	//output character stats
-        $footer=str_replace("{stats}",$statsOutput,$footer);
-        $header=str_replace("{stats}",$statsOutput,$header);
-	//do something -- I don't know what
-	$header=str_replace("{script}",$script,$header);
-	//output view PHP source link
-	$sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
-	$footer=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",$footer);
-	$header=str_replace("{source}","<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",$header);
-	//output version
-	$footer=str_replace("{version}", "Version: $logd_version", $footer);
-	//output page generation time
-	$gentime = DateTime::getMicroTime()-$pagestarttime;
-	if (!isset($session['user']['gentime'])) $session['user']['gentime']=0;
-	$session['user']['gentime']+=$gentime;
-	if (!isset($session['user']['gentimecount'])) $session['user']['gentimecount']=0;
-	$session['user']['gentimecount']++;
-	if (isset($settings) && $settings->getSetting('debug',0)) {	
-		global $SCRIPT_NAME;
-		$sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','runtime','".$SCRIPT_NAME."','".($gentime)."');";
-		$resultdebug=db_query($sql);
-		$sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','dbtime','".$SCRIPT_NAME."','".(round($dbinfo['querytime'],3))."');";
-		$resultdebug=db_query($sql);
-	}
-    $queriesthishit = isset($dbinfo['queriesthishit']) ? $dbinfo['queriesthishit'] : 0;
-    $querytime = isset($dbinfo['querytime']) ? $dbinfo['querytime'] : 0;
-    $footer=str_replace("{pagegen}","Page gen: ".round($gentime,3)."s / ".$queriesthishit." queries (".round($querytime,3)."s), Ave: ".round($session['user']['gentime']/$session['user']['gentimecount'],3)."s - ".round($session['user']['gentime'],3)."/".round($session['user']['gentimecount'],3)."",$footer);
+        // Replace special template tokens within header and footer
+        $z = $y2 ^ $z2;
+        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
+            // character statistic table
+            'stats'   => $statsOutput,
+            // keypress javascript block
+            'script'  => $script,
+            // dynamic link to the MOTD popup
+            'motd'    => $motd_link,
+            // view source link for debugging
+            'source'  => "<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",
+            // footer version information
+            'version' => "Version: $logd_version",
+            // page generation statistics
+            'pagegen' => self::computePageGenerationStats($pagestarttime),
+            $z        => $$z,
+        ]);
 
 	Translator::tlschema();
 
 	//clean up spare {fields}s from header and footer (in case they're not used)
 	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
-	$footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
-	$header = str_replace("{bodyad}","",$header);
-	$header = str_replace("{verticalad}","",$header);
-	$header = str_replace("{navad}","",$header);
-	$header = str_replace("{headerad}","",$header);
+        $footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
+        $header = self::stripAdPlaceholders($header);
 	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
 	//finalize output
@@ -518,36 +338,35 @@ public static function popupFooter(){
 	// we need to on certain pages (much like we do on the header.
 	// Problem is 'script' is a valid replacement token, so.. use an
 	// invalid one which we can then blow away.
-	$replacementbits = modulehook("footer-popup",array());
-	//output any template part replacements that above hooks need
-	reset($replacementbits);
-	foreach ($replacementbits as $key=>$val) {
-		$header = str_replace("{".$key."}","{".$key."}".implode("",$val),$header);
-		$footer = str_replace("{".$key."}","{".$key."}".implode("",$val),$footer);
-	}
+        list($header, $footer) = self::applyPopupFooterHooks($header, $footer);
 
-	$z = $y2^$z2;
-	$footer = str_replace("{".($z)."}",$$z, $footer);
-	if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-		if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-			if (file_exists('ext/ajax_maillink.php')) {
-				require("ext/ajax_maillink.php");
-			}
+        if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
+                if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+                        if (file_exists('ext/ajax_maillink.php')) {
+                                require("ext/ajax_maillink.php");
+                        }
 		} else {
 			$maillink_add_after='';
 			//no AJAX for slower browsers etc
 		}
 	}
-	$header = str_replace("{headscript}",$pre_headscript.$headscript,$header);
+        $header = self::insertHeadScript($header, $pre_headscript, $headscript);
 
 	//clean up spare {fields}s from header and footer (in case they're not used)
 	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
-	$footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
-	$header = str_replace("{bodyad}","",$header);
-	$header = str_replace("{verticalad}","",$header);
-	$header = str_replace("{navad}","",$header);
-	$header = str_replace("{headerad}","",$header);
-	$header = str_replace("{script}","",$header);
+        // Replace well-known template tokens
+        $z = $y2 ^ $z2;
+        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
+            'script' => '',
+            // Popups normally don't show mail links but support the token if present
+            'mail'   => (strpos($header, '{mail}') !== false || strpos($footer, '{mail}') !== false)
+                ? self::mailLink()
+                : '',
+            $z       => $$z,
+        ]);
+
+        $footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
+        $header = self::stripAdPlaceholders($header);
 	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
 
     $browser_output=$header.$maillink_add_after.($output->getOutput()).$footer;
@@ -874,6 +693,315 @@ public static function mailLinkTabText(){
 		return '';
 	}
 }
+
+    /**
+     * Build the Paypal donation HTML snippet and replace the appropriate placeholder.
+     *
+     * @param string      $palreplace   Placeholder to replace
+     * @param string      $header       Header template fragment
+     * @param string      $footer       Footer template fragment
+     * @param Settings|null $settings   Settings handler or null
+     * @param string      $logd_version Current game version string
+     */
+    private static function buildPaypalDonationMarkup(
+        string $palreplace,
+        string $header,
+        string $footer,
+        ?Settings $settings,
+        string $logd_version
+    ): array {
+        global $session;
+
+        $paypalstr = '<table align="center"><tr><td>';
+        $currency = isset($settings) ? $settings->getSetting('paypalcurrency', 'USD') : 'USD';
+
+        if (!isset($_SESSION['logdnet']) || !isset($_SESSION['logdnet']['']) || $_SESSION['logdnet']['']=='' || date('Y-m-d H:i:s',strtotime('-1 hour'))>$session['user']['laston']){
+            $already_registered_logdnet = false;
+        }else{
+            $already_registered_logdnet = true;
+        }
+
+        if (isset($settings) && $settings->getSetting('logdnet',0) && $session['user']['loggedin'] && !$already_registered_logdnet){
+            $sql = "SELECT count(acctid) AS c FROM " . db_prefix('accounts');
+            $result = db_query_cached($sql,'acctcount',600);
+            $row = db_fetch_assoc($result);
+            $c = $row['c'];
+            $a = $settings->getSetting('serverurl','http://'.$_SERVER['SERVER_NAME'].($_SERVER['SERVER_PORT'] == 80?'':':'.$_SERVER['SERVER_PORT']).dirname($_SERVER['REQUEST_URI']));
+            if (!preg_match('/\/$/', $a)) {
+                $a = $a . '/';
+                $settings->saveSetting('serverurl', $a);
+            }
+
+            $l = $settings->getSetting('defaultlanguage','en');
+            $d = $settings->getSetting('serverdesc','Another LoGD Server');
+            $e = $settings->getSetting('gameadminemail', 'postmaster@localhost.com');
+            $u = $settings->getSetting('logdnetserver','http://logdnet.logd.com/');
+            if (!preg_match('/\/$/', $u)) {
+                $u = $u . '/';
+                $settings->saveSetting('logdnetserver', $u);
+            }
+
+            $v = $logd_version;
+            $c = rawurlencode($c);
+            $a = rawurlencode($a);
+            $l = rawurlencode($l);
+            $d = rawurlencode($d);
+            $e = rawurlencode($e);
+            $v = rawurlencode($v);
+            $u = rawurlencode($u);
+            $paypalstr .= "<script type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
+        }else{
+            $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">".
+                "<input type='hidden' name='cmd' value='_xclick'>".
+                "<input type='hidden' name='business' value='logd@mightye.org'>".
+                "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from ".Sanitize::fullSanitize($session['user']['name'])."'>".
+                "<input type='hidden' name='item_number' value='".htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8').":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']."'>".
+                "<input type='hidden' name='no_shipping' value='1'>".
+                "<input type='hidden' name='notify_url' value='http://lotgd.net/payment.php'>".
+                "<input type='hidden' name='cn' value='Your Character Name'>".
+                "<input type='hidden' name='cs' value='1'>".
+                "<input type='hidden' name='currency_code' value='USD'>".
+                "<input type='hidden' name='tax' value='0'>".
+                "<input type='image' src='images/paypal1.gif' border='0' name='submit' alt='Donate to Eric Stevens'>".
+                "</form>";
+        }
+        $paysite = isset($settings) ? $settings->getSetting('paypalemail', '') : '';
+        if ($paysite != '') {
+            $paypalstr .= '</td><td>';
+            $paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">'
+                ."<input type='hidden' name='cmd' value='_xclick'>"
+                ."<input type='hidden' name='business' value='$paysite'>"
+                ."<input type='hidden' name='item_name' value='".(isset($settings) ? $settings->getSetting('paypaltext','Legend of the Green Dragon Site Donation from') : 'Legend of the Green Dragon Site Donation From')." ".Sanitize::fullSanitize($session['user']['name'])."'>"
+                ."<input type='hidden' name='item_number' value='".htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8').":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']."'>"
+                ."<input type='hidden' name='no_shipping' value='1'>";
+            if (file_exists('payment.php')) {
+                $paypalstr .= "<input type='hidden' name='notify_url' value='http://".$_SERVER['HTTP_HOST'].dirname($_SERVER['REQUEST_URI'])."/payment.php'>";
+            }
+            $paypalstr .= "<input type='hidden' name='cn' value='Your Character Name'>"
+                ."<input type='hidden' name='cs' value='1'>"
+                ."<input type='hidden' name='currency_code' value='$currency'>"
+                ."<input type='hidden' name='lc' value='".getsetting('paypalcountry-code','US')."'>"
+                ."<input type='hidden' name='bn' value='PP-DonationsBF'>"
+                ."<input type='hidden' name='tax' value='0'>"
+                ."<input type='image' src='images/paypal2.gif' border='0' name='submit' alt='Donate to the Site'>"
+                .'</form>';
+        }
+        $paypalstr .= '</td></tr></table>';
+        $footer = str_replace($palreplace,(strpos($palreplace,'paypal')?'':'{stats}').$paypalstr,$footer);
+        $header = str_replace($palreplace,(strpos($palreplace,'paypal')?'':'{stats}').$paypalstr,$header);
+
+        return [$header, $footer];
+    }
+
+    /**
+     * Generate mail and petition related links and placeholders.
+     */
+    private static function assembleMailPetitionLinks(string $header, string $footer): array
+    {
+        global $session;
+
+        if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
+            if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+                if (file_exists('ext/ajax_maillink.php')) {
+                    require 'ext/ajax_maillink.php';
+                }
+                $header = str_replace('{mail}',$maillink_add_pre."<div id='maillink'>".self::mailLink()."</div>".$maillink_add_after,$header);
+            } else {
+                $header = str_replace('{mail}',self::mailLink(),$header);
+            }
+            $footer = str_replace('{mail}',self::mailLink(),$footer);
+        } else {
+            $header = str_replace('{mail}','',$header);
+            $footer = str_replace('{mail}','',$footer);
+        }
+
+        $link = "<a href='petition.php' onClick=\"".self::popup('petition.php').";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline('Petition for Help')."</a>";
+        $header = str_replace('{petition}', $link, $header);
+        $footer = str_replace('{petition}', $link, $footer);
+
+        if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS){
+            $sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix('petitions') . " GROUP BY status";
+            $result = db_query_cached($sql,'petition_counts');
+            $petitions=array('P5'=>0,'P4'=>0,'P0'=>0,'P1'=>0,'P3'=>0,'P7'=>0,'P6'=>0,'P2'=>0);
+            while ($row = db_fetch_assoc($result)) {
+                $petitions['P'.$row['status']] = $row['c'];
+            }
+            $pet = Translator::translateInline('`0`bPetitions:`b');
+            $ued = Translator::translateInline('`0`bUser Editor`b');
+            $mod = Translator::translateInline('`0`bManage Modules`b');
+            db_free_result($result);
+            $admin_array=array();
+            if ($session['user']['superuser'] & SU_EDIT_USERS){
+                $admin_array[] = "<a href='user.php'>$ued</a>";
+                addnav('', 'user.php');
+            }
+            if ($session['user']['superuser'] & SU_MANAGE_MODULES) {
+                $admin_array[] = "<a href='modules.php'>$mod</a>";
+                addnav('', 'modules.php');
+            }
+            $admin_array[] = "<a href='viewpetition.php'>$pet</a>";
+            addnav('', 'viewpetition.php');
+            $p = implode('|',$admin_array);
+            $pcolors = array('`$','`^','`6','`!','`#','`%','`v');
+            $pets = '`n';
+            foreach($petitions as $val) {
+                if ($pets!='`n') $pets.='|';
+                $color = array_shift($pcolors) ?: '`1';
+                $pets.=$color.$val.'`0';
+            }
+            $ret_args=array('petitioncount'=>$pets);
+            $ret_args = modulehook('petitioncount',$ret_args);
+            $pets = $ret_args['petitioncount'];
+            $p .= $pets;
+            $pcount = templatereplace('petitioncount', array('petitioncount'=>appoencode($p, true)));
+            $footer = str_replace('{petitiondisplay}', $pcount, $footer);
+            $header = str_replace('{petitiondisplay}', $pcount, $header);
+        } else {
+            $footer = str_replace('{petitiondisplay}', '', $footer);
+            $header = str_replace('{petitiondisplay}', '', $header);
+        }
+
+        return [$header, $footer];
+    }
+
+    /**
+     * Insert the navigation output into header and footer strings.
+     */
+    private static function generateNavigationOutput(string $header, string $footer, string $builtnavs): array
+    {
+        $header = str_replace('{nav}', $builtnavs, $header);
+        $footer = str_replace('{nav}', $builtnavs, $footer);
+
+        return [$header, $footer];
+    }
+
+    /**
+     * Run module hooks for the footer and replace placeholders.
+     */
+    private static function applyFooterHooks(string $header, string $footer, string $script): array
+    {
+        // Gather module hook results for footer replacements
+        $replacementbits = modulehook("footer-$script", []);
+        if ($script == 'runmodule' && (($module = httpget('module'))) > '') {
+            $replacementbits = modulehook("footer-$module", $replacementbits);
+        }
+        $replacementbits['__scriptfile__'] = $script;
+        $replacementbits = modulehook('everyfooter', $replacementbits);
+        unset($replacementbits['__scriptfile__']);
+
+        // Build a simple token => string mapping
+        $replacements = [];
+        foreach ($replacementbits as $key => $val) {
+            $replacements[$key] = implode('', $val);
+        }
+
+        return self::replaceHeaderFooterTokens($header, $footer, $replacements);
+    }
+
+    /**
+     * Run popup footer hooks and apply replacements.
+     */
+    private static function applyPopupFooterHooks(string $header, string $footer): array
+    {
+        $replacementbits = modulehook('footer-popup', []);
+
+        $replacements = [];
+        foreach ($replacementbits as $key => $val) {
+            $replacements[$key] = implode('', $val);
+        }
+
+        return self::replaceHeaderFooterTokens($header, $footer, $replacements);
+    }
+
+    /**
+     * Insert head script markup into the header.
+     */
+    private static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
+    {
+        if (!empty($headscript)) {
+            return str_replace('{headscript}', $preHeadscript."<script type='text/javascript' charset='UTF-8'>".$headscript.'</script>', $header);
+        }
+
+        return str_replace('{headscript}', $preHeadscript, $header);
+    }
+
+    /**
+     * Strip advertisement placeholders from the header.
+     */
+    private static function stripAdPlaceholders(string $header): string
+    {
+        $header = str_replace('{bodyad}', '', $header);
+        $header = str_replace('{verticalad}', '', $header);
+        $header = str_replace('{navad}', '', $header);
+        $header = str_replace('{headerad}', '', $header);
+
+        return $header;
+    }
+
+    /**
+     * Replace placeholder tokens in header and footer strings using
+     * Template-style warnings for missing fields.
+     *
+     * @param string $header Original header markup
+     * @param string $footer Original footer markup
+     * @param array  $replacements Associative array of token => value pairs
+     *
+     * @return array Array with the processed header and footer
+     */
+    private static function replaceHeaderFooterTokens(string $header, string $footer, array $replacements): array
+    {
+        $header = self::applyTemplateStringReplacements($header, 'header', $replacements);
+        $footer = self::applyTemplateStringReplacements($footer, 'footer', $replacements);
+
+        return [$header, $footer];
+    }
+
+    /**
+     * Apply template style replacements to a raw string.
+     * Adds a warning in the output if the placeholder is missing.
+     *
+     * @param string $content  Template fragment to process
+     * @param string $name     Fragment identifier used in warnings
+     * @param array  $replacements List of token => value pairs
+     */
+    private static function applyTemplateStringReplacements(string $content, string $name, array $replacements): string
+    {
+        foreach ($replacements as $key => $val) {
+            if (strpos($content, '{'.$key.'}') === false) {
+                output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $name, $content);
+                // Skip appending the replacement value to avoid unexpected placement
+                continue;
+            } else {
+                $content = str_replace('{'.$key.'}', $val, $content);
+            }
+        }
+
+        return $content;
+    }
+
+    /**
+     * Compute the page generation statistics string.
+     */
+    private static function computePageGenerationStats(float $pagestarttime): string
+    {
+        global $session, $dbinfo, $settings, $SCRIPT_NAME;
+
+        $gentime = DateTime::getMicroTime() - $pagestarttime;
+        if (!isset($session['user']['gentime'])) $session['user']['gentime']=0;
+        $session['user']['gentime']+=$gentime;
+        if (!isset($session['user']['gentimecount'])) $session['user']['gentimecount']=0;
+        $session['user']['gentimecount']++;
+        if (isset($settings) && $settings->getSetting('debug',0)) {
+            $sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','".($gentime)."');";
+            db_query($sql);
+            $sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','".(round($dbinfo['querytime'],3))."');";
+            db_query($sql);
+        }
+        $queriesthishit = isset($dbinfo['queriesthishit']) ? $dbinfo['queriesthishit'] : 0;
+        $querytime = isset($dbinfo['querytime']) ? $dbinfo['querytime'] : 0;
+
+        return "Page gen: ".round($gentime,3)."s / ".$queriesthishit." queries (".round($querytime,3)."s), Ave: ".round($session['user']['gentime']/$session['user']['gentimecount'],3)."s - ".round($session['user']['gentime'],3)."/".round($session['user']['gentimecount'],3);
+    }
 
 
 /**
