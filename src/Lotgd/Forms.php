@@ -212,7 +212,8 @@ class Forms
                 if ($handle) {
                     while (false !== ($file = @readdir($handle))) {
                         if (strpos($file, '.htm') !== false) {
-                            $skins[$file] = substr($file, 0, strpos($file, '.htm'));
+                            $value = 'legacy:' . $file;
+                            $skins[$value] = substr($file, 0, strpos($file, '.htm'));
                         }
                     }
                     closedir($handle);
@@ -233,7 +234,8 @@ class Forms
                                     $name = $cfg['name'];
                                 }
                             }
-                            $skins[$dir] = $name;
+                            $value = 'twig:' . $dir;
+                            $skins[$value] = $name;
                         }
                     }
                     closedir($handle);
@@ -245,10 +247,19 @@ class Forms
                 }
 
                 asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
+                $current = $row[$key];
+                if (strpos($current, ':') === false) {
+                    if (file_exists("templates/$current")) {
+                        $current = 'legacy:' . $current;
+                    } elseif (is_dir("templates_twig/$current")) {
+                        $current = 'twig:' . $current;
+                    }
+                }
+
                 rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
                 foreach ($skins as $skin => $display) {
                     $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
-                    if ($skin == $row[$key]) {
+                    if ($skin == $current) {
                         rawoutput("<option value='$skin' selected>$display</option>");
                     } else {
                         rawoutput("<option value='$skin'>$display</option>");

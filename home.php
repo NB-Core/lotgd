@@ -142,10 +142,19 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("<form action='home.php' method='POST'>");
 	rawoutput("<table align='center'><tr><td>");
 	$form = array("template"=>"Choose a different display skin:,theme");
-	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
-		else 
-		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-	Forms::showForm($form, $prefs, true);
+        if (isset($_COOKIE['template'])) {
+                $prefs['template'] = $_COOKIE['template'];
+        } else {
+                $prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
+        }
+        if (strpos($prefs['template'], ':') === false) {
+                if (is_dir("templates_twig/{$prefs['template']}")) {
+                        $prefs['template'] = 'twig:' . $prefs['template'];
+                } else {
+                        $prefs['template'] = 'legacy:' . $prefs['template'];
+                }
+        }
+        Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
 	rawoutput("</td><td><br>&nbsp;<input type='submit' class='button' value='$submit'></td>");
 	rawoutput("</tr></table></form>");

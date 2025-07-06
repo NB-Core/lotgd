@@ -59,9 +59,13 @@ class Template
             $_COOKIE['template'] = '';
         }
         $templatename = '';
+        $templateType = '';
         $templatemessage = '';
         if ($_COOKIE['template'] != '') {
             $templatename = $_COOKIE['template'];
+        }
+        if (strpos($templatename, ':') !== false) {
+            [$templateType, $templatename] = explode(':', $templatename, 2);
         }
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             if (isset($settings) && $settings instanceof Settings) {
@@ -75,7 +79,8 @@ class Template
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             $templatename = $_defaultskin;
         }
-        if (is_dir("templates_twig/$templatename")) {
+
+        if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
             TwigTemplate::init($templatename);
             $template = [];
         } else {
