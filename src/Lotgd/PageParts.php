@@ -72,9 +72,13 @@ public static function pageHeader(...$args): void {
                         if (!array_key_exists($script,self::$runHeaders))
                                 self::$runHeaders[$script] = false;
                         if (!self::$runHeaders[$script]) {
-                                if (!defined("IS_INSTALLER")) modulehook("everyheader", array('script'=>$script));
+                                if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+                                    modulehook('everyheader', ['script' => $script]);
+                                }
                                 self::$runHeaders[$script] = true;
-                                if (!defined("IS_INSTALLER")) modulehook("header-$script");
+                                if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+                                    modulehook("header-$script");
+                                }
                         }
                 }
 	}
@@ -163,7 +167,7 @@ public static function pageFooter(bool $saveuser=true){
 
     Buffs::restoreBuffFields();
 
-	if (!defined("IS_INSTALLER")) { 
+        if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);

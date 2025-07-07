@@ -121,7 +121,7 @@ ob_start();
 if (file_exists("dbconnect.php")){
 	require_once("dbconnect.php");
 }else{
-	if (!defined("IS_INSTALLER")){
+       if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 	 	if (!defined("DB_NODB")) define("DB_NODB",true);
                 PageParts::pageHeader("The game has not yet been installed");
 		output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
@@ -156,7 +156,7 @@ unset($DB_USER);
 unset($DB_PASS);
 
 if ($link===false){
- 	if (!defined("IS_INSTALLER")){
+if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 		// Ignore this bit.  It's only really for Eric's server
 		//I won't, because all people can use it //Oliver
 		//Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
@@ -193,7 +193,7 @@ if ($link===false){
 }
 
 if (!DB_CONNECTED || !Database::selectDb($DB_NAME)){
-	if (!defined("IS_INSTALLER") && DB_CONNECTED){
+       if ((!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) && DB_CONNECTED){
 		// Ignore this bit.  It's only really for Eric's server
 		if (file_exists("lib/smsnotify.php")) {
                         $smsmessage = "Cant Attach to DB: " . Database::error();
@@ -278,7 +278,7 @@ if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
 
 }
 
-if ($logd_version != $settings->getSetting("installer_version","-1") && !defined("IS_INSTALLER")){
+if ($logd_version != $settings->getSetting('installer_version', '-1') && (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER))) {
         PageParts::pageHeader("Upgrade Needed");
 	output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
 	output("In order to perform the upgrade, an admin will have to run through the installer.");

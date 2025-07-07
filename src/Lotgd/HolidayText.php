@@ -25,7 +25,7 @@ class HolidayText
             }
         }
         $args = ['text' => $text, 'type' => $type];
-        if (!defined('IS_INSTALLER')) {
+        if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
             $args = modulehook('holiday', $args);
         }
         $text = $args['text'];

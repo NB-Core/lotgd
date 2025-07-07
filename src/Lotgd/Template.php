@@ -150,8 +150,9 @@ class Template
 		    $fieldname=substr($val,0,strpos($val,"-->"));
 		    if ($fieldname!=""){
 			    $template[$fieldname]=substr($val,strpos($val,"-->")+3);
-			    if (!defined("IS_INSTALLER")) modulehook("template-{$fieldname}",
-					    array("content"=>$template[$fieldname]));
+                            if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+                                modulehook("template-{$fieldname}", ['content' => $template[$fieldname]]);
+                            }
 		    }
 	    }
 	    return $template;
