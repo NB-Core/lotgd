@@ -1,7 +1,26 @@
 <?php
-exit(0);
 
-define("OVERRIDE_FORCED_NAV",true);
+define("OVERRIDE_FORCED_NAV", true);
+
+require_once __DIR__ . '/autoload.php';
+
+use Jaxon\Jaxon;
+use Jaxon\Response\Response;
+use Lotgd\Commentary;
+use function Jaxon\jaxon;
+
+require_once(__DIR__ . '/ext/ajax_settings.php');
+
+// Get the Jaxon singleton object
+$jaxon = jaxon();
+
+// Set the Jaxon request processing URI
+$jaxon->setOption('core.request.uri', 'ext/ajax_process.php');
+
+// Register an instance of the class with Jaxon
+$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'mail_status');
+$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_text');
+$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'timeout_status');
 /* you need to check if somebody timed out.
 if you call common.php and we have a timeout, he will the redirect to index.php?op=timeout, resulting in a full page
 which will (called in 1s intervals) download a lot of useless traffic to him and from your server
@@ -13,14 +32,13 @@ This will just make our mailinfo return a small string in case of a timeout, not
 #	$s=print_r($_POST,true);
 #	$s=$_SERVER['REMOTE_ADDR'].$s;
 #	file_put_contents("/var/www/html/naruto/debug.txt",$s, FILE_APPEND);
-use Lotgd\Commentary;
 //}
 
 function mail_expired($args=false) {
 	if ($args===false) return;
 	$new="Expired";
 	$tabtext="Expired";
-	$objResponse = new xajaxResponse();
+        $objResponse = jaxon()->newResponse();
 	$objResponse->assign("maillink","innerHTML", $new);
 	$objResponse->script("document.title=\"".$tabtext."\";");
 	global $session;
@@ -37,7 +55,7 @@ function mail_status($args=false) {
 	$timeout_setting=getsetting("LOGINTIMEOUT",360); // seconds
 	$new=maillink();
 	$tabtext=maillinktabtext();
-	$objResponse = new xajaxResponse();
+	$objResponse = jaxon()->newResponse();
 	$objResponse->assign("maillink","innerHTML", $new);
 	if ($tabtext=='') { //empty
 		$tabtext=translate_inline('Legend of the Green Dragon','home');
@@ -87,11 +105,10 @@ function timeout_status($args=false) {
 	} elseif ($timeout<920){
 		$warning="<br/>".appoencode("`t").sprintf("TIMEOUT in %s seconds!",$timeout);
 	} else $warning='';
-	$objResponse = new xajaxResponse();
+	$objResponse = jaxon()->newResponse();
 	$objResponse->assign("notify","innerHTML", $warning);
 	return $objResponse;
 }
-
 
 function commentary_text($args=false) {
 	global $session;
@@ -103,19 +120,7 @@ function commentary_text($args=false) {
 	$schema=$args['schema'];
 	$viewonly=$args['viewonly'];	
 	$new=Commentary::viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
-	$new=maillink();
-	$objResponse = new xajaxResponse();
+	$objResponse = jaxon()->newResponse();
 	$objResponse->assign($section,"innerHTML", $new);
+	return $objResponse;
 }
-
-require("mailinfo_common.php");
-
-
-require("mailinfo_base.php");
-$xajax->processRequest();
-
-
-
-
-
-?>
