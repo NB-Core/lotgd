@@ -28,7 +28,8 @@ class Template
 
         global $template;
         if (!isset($template[$itemname])) {
-            output("`bWarning:`b The `i%s`i template part was not found!`n", $itemname);
+            // If the template part is not found, it's usually not a bad thing. So comment in if you have issues with missing template parts.
+            // output("`bWarning:`b The `i%s`i template part was not found!`n", $itemname);
             return '';
         }
 
@@ -39,8 +40,9 @@ class Template
 
         foreach ($vals as $key => $val) {
             if (strpos($out, '{' . $key . '}') === false) {
-                output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $itemname, $out);
-                $out .= $val;
+                // If the template part is not found, it's usually not a bad thing. So comment in if you have issues with missing template parts.
+                // output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $itemname, $out);
+                // $out .= $val;
             } else {
                 $out = str_replace('{' . $key . '}', $val, $out);
             }

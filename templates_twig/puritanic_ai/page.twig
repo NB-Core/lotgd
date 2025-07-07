@@ -4,6 +4,7 @@
     <meta charset="UTF-8"/>
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ template_path }}/assets/style.css"/>
+    <link rel="stylesheet" href="/templates/common/colors.css"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body class="main-body">
@@ -22,7 +23,7 @@
                         </td>
                         <td align="center" class="noborder pageheader-center">{{ title }}</td>
                         <td class="noborder pageheader-right">
-                            <img src="{{ template_path }}/images/mail.gif" width="24" height="19"><b>{{ mail|raw }}</b>&nbsp;&nbsp;
+                            <img src="{{ template_path }}/assets/mail.gif" width="24" height="19"><b>{{ mail|raw }}</b>&nbsp;&nbsp;
                             {{ petitiondisplay|raw }}
                         </td>
                     </tr>
@@ -71,7 +72,7 @@
                         <td valign="top">
                             <table width="100%" class="colOtWhite">
                                 <tr>
-                                    <td valign="top">{{ copyright|raw }}<br/>Design: Puritanic AI theme  <a href="https://shinobilegends.com">shinobilegends.com</a></td>
+                                    <td valign="top">{{ copyright|raw }}<br/>Design: Puritanic AI theme <a href="https://shinobilegends.com">shinobilegends.com</a></td>
                                     <td valign="top" align="right">{{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
                                 </tr>
                             </table>

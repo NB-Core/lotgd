@@ -3,6 +3,7 @@
 use Lotgd\Forms;
 use Lotgd\Nav;
 use Lotgd\Http;
+use Lotgd\Template;
 // addnews ready
 // mail ready
 
