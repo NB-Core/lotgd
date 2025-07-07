@@ -120,7 +120,6 @@ function commentary_text($args=false) {
 	$schema=$args['schema'];
 	$viewonly=$args['viewonly'];	
 	$new=Commentary::viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
-	$new=maillink();
 	$objResponse = jaxon()->newResponse();
 	$objResponse->assign($section,"innerHTML", $new);
 }
