@@ -12,6 +12,8 @@ class TwigTemplate extends Template
     private static string $templateDir = '';
     /** Path used for caching compiled templates */
     private static string $cacheDir = '/tmp';
+    /** Subdirectory within datacachepath for Twig cache */
+    private const CACHE_SUBDIR = 'twig';
 
     public static function init(string $templateName, ?string $datacachePath = null): void
     {
@@ -22,7 +24,7 @@ class TwigTemplate extends Template
 
         if ($datacachePath !== null && $datacachePath !== '') {
             self::$cacheDir = $datacachePath;
-            $cacheDir = rtrim($datacachePath, '/\\') . '/twig';
+            $cacheDir = rtrim($datacachePath, '/\\') . '/' . self::CACHE_SUBDIR;
             if ((is_dir($cacheDir) || mkdir($cacheDir, 0755, true)) && is_writable($cacheDir)) {
                 $options['cache'] = $cacheDir;
             }
