@@ -10,13 +10,30 @@ class TwigTemplate extends Template
 {
     private static ?Environment $env = null;
     private static string $templateDir = '';
+    /** Path used for caching compiled templates */
+    private static string $cacheDir = '/tmp';
+    /** Subdirectory within datacachepath for Twig cache */
+    private const CACHE_SUBDIR = 'twig';
 
-    public static function init(string $templateName): void
+    public static function init(string $templateName, ?string $datacachePath = null): void
     {
         self::$templateDir = __DIR__ . '/../../templates_twig/' . $templateName;
         $loader = new FilesystemLoader(self::$templateDir);
-        self::$env = new Environment($loader);
-        define('TEMPLATE_IS_TWIG', true);
+
+        $options = ['auto_reload' => true];
+
+        if ($datacachePath !== null && $datacachePath !== '') {
+            self::$cacheDir = $datacachePath;
+            $cacheDir = rtrim($datacachePath, '/\\') . '/' . self::CACHE_SUBDIR;
+            if ((is_dir($cacheDir) || mkdir($cacheDir, 0755, true)) && is_writable($cacheDir)) {
+                $options['cache'] = $cacheDir;
+            }
+        }
+
+        self::$env = new Environment($loader, $options);
+        if (!defined('TEMPLATE_IS_TWIG')) {
+            define('TEMPLATE_IS_TWIG', true);
+        }
     }
 
     public static function render(string $view, array $context = []): string
