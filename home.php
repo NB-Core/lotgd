@@ -115,7 +115,11 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 	$uname = translate_inline("<u>U</u>sername");
 	$pass = translate_inline("<u>P</u>assword");
 	$butt = translate_inline("Log in");
-	rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">".templatereplace("login",array("username"=>$uname,"password"=>$pass,"button"=>$butt))."</form>");
+        $templateVars = ["username" => $uname, "password" => $pass, "button" => $butt];
+        if (TwigTemplate::isActive()) {
+            $templateVars['template_path'] = TwigTemplate::getPath();
+        }
+        rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">".templatereplace("login", $templateVars)."</form>");
 	output("Did you forget your password? Go <a href='create.php?op=forgot'>here</a> to retrieve a new one!`n",true);
 	output_notl("`c");
 	addnav("","login.php");
@@ -130,7 +134,11 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 		$session['message'].=translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
 	}
 	if ($session['message']>"") output("`b`\$%s`b`n", $session['message'],true);
-	rawoutput(templatereplace("loginfull",array()));
+        $templateVars = [];
+        if (TwigTemplate::isActive()) {
+            $templateVars['template_path'] = TwigTemplate::getPath();
+        }
+        rawoutput(templatereplace("loginfull", $templateVars));
 	output_notl("`c");
 }
 
