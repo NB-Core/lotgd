@@ -13,9 +13,23 @@ class TwigTemplate extends Template
 
     public static function init(string $templateName): void
     {
+        global $settings;
+
         self::$templateDir = __DIR__ . '/../../templates_twig/' . $templateName;
         $loader = new FilesystemLoader(self::$templateDir);
-        self::$env = new Environment($loader);
+
+        $baseDir = ($settings instanceof Settings)
+            ? $settings->getSetting('datacachepath', '/tmp')
+            : '/tmp';
+        $cacheDir = rtrim($baseDir, '/\\') . '/twig';
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0777, true);
+        }
+
+        self::$env = new Environment($loader, [
+            'cache' => $cacheDir,
+            'auto_reload' => true,
+        ]);
         define('TEMPLATE_IS_TWIG', true);
     }
 

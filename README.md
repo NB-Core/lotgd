@@ -93,6 +93,9 @@ matching folder is found, pages are rendered with Twig; classic `.htm` templates
 continue to work as before.
 Twig views receive variables for common placeholders like `nav`, `stats`, and
 `paypal`, allowing flexible layouts.
+Compiled Twig templates are cached under the directory defined by the
+`datacachepath` setting. Ensure this location is writable by the web server;
+a `twig` subfolder will be created automatically.
 
 ## Install from Release Archive
 
