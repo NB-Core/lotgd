@@ -356,6 +356,7 @@ class PlayerFunctions
         if ($color === false) {
             return ($v == 0 ? '' : $v);
         }
+        // TODO ... no number formatting, it rounds to 0.1 always
         if ($v > 0) {
             return " `&(" . ($session['user'][$name] - round($v,1)) . "`@+" . round($v,1) . "`&)";
         }

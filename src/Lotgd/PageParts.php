@@ -527,9 +527,9 @@ public static function charStats(): string{
 
 	if (isset($session['loggedin']) && $session['loggedin'])
 	{
-		$u['hitpoints']=round($u['hitpoints'],0);
-		$u['experience']=round($u['experience'],0);
-		$u['maxhitpoints']=round($u['maxhitpoints'],0);
+		$u['hitpoints']=round((int)$u['hitpoints'],0);
+		$u['experience']=round((float)$u['experience'],0);
+		$u['maxhitpoints']=round((int)$u['maxhitpoints'],0);
 		$spirits=array(-6=>"Resurrected",-2=>"Very Low",-1=>"Low","0"=>"Normal",1=>"High",2=>"Very High");
 		if ($u['alive']){ }else{ $spirits[(int)$u['spirits']] = Translator::translateInline("DEAD","stats"); }
 		//calculate_buff_fields();
@@ -606,9 +606,10 @@ public static function charStats(): string{
 		self::addCharStat("Character Info");
 		self::addCharStat("Name", $u['name']);
 		self::addCharStat("Level", "`b".$u['level'].check_temp_stat("level",1)."`b");
+        // Note: Number formatting here has been introduced, but not in tempstats yet - I think it may be overhead for now, but could be done later
 		if ($u['alive']) {
 			self::addCharStat("Hitpoints", $u['hitpoints'].check_temp_stat("hitpoints",1)."`0/".$u['maxhitpoints'].check_temp_stat("maxhitpoints",1));
-			self::addCharStat("Experience",  number_format($u['experience'].check_temp_stat("experience",1),0,$point,$sep));
+			self::addCharStat("Experience",  number_format((float)$u['experience'],0,$point,$sep).check_temp_stat("experience",1));
 			self::addCharStat("Strength", $u['strength'].check_temp_stat("strength",1));
 			self::addCharStat("Dexterity", $u['dexterity'].check_temp_stat("dexterity",1));
 			self::addCharStat("Intelligence", $u['intelligence'].check_temp_stat("intelligence",1));
@@ -656,13 +657,13 @@ public static function charStats(): string{
 			self::addCharStat("PvP", $u['playerfights']);
 			self::addCharStat("Spirits", Translator::translateInline("`b".$spirits[(int)$u['spirits']]."`b"));
 			self::addCharStat("Currency");
-			self::addCharStat("Gold", number_format($u['gold'].check_temp_stat("gold",1),0,$point,$sep));
-			self::addCharStat("Bankgold", number_format($u['goldinbank'].check_temp_stat("goldinbank",1),0,$point,$sep));
+			self::addCharStat("Gold", number_format((int)$u['gold'],0,$point,$sep).check_temp_stat("gold",1));
+			self::addCharStat("Bankgold", number_format((int)$u['goldinbank'],0,$point,$sep).check_temp_stat("goldinbank",1));
 		} else {
 			self::addCharStat("Favor", $u['deathpower'].check_temp_stat("deathpower",1));
 			self::addCharStat("Currency");
 		}
-		self::addCharStat("Gems", number_format($u['gems'].check_temp_stat("gems",1),0,$point,$sep));
+		self::addCharStat("Gems", number_format((int)$u['gems'],0,$point,$sep).check_temp_stat("gems",1));
 		self::addCharStat("Equipment Info");
 		self::addCharStat("Weapon", $u['weapon']);
 		self::addCharStat("Armor", $u['armor']);
