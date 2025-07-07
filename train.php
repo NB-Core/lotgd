@@ -165,10 +165,9 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 		$battle=true;
 	}
 
-	if($battle){
-                require_once("lib/extended-battle.php");
+        if($battle){
                 Battle::suspendBuffs('allowintrain', "`&Your pride prevents you from using extra abilities during the fight!`0`n");
-		suspend_companions("allowintrain");
+                Battle::suspendCompanions("allowintrain");
 		if (!$victory) {
 			require_once("battle.php");
 		}
@@ -265,7 +264,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 		}
 		if ($victory || $defeat) {
                     Battle::unsuspendBuffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");
-			unsuspend_companions("allowintrain");
+                        Battle::unsuspendCompanions("allowintrain");
 		}
 	}
 }else{

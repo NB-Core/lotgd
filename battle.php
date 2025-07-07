@@ -11,13 +11,11 @@ use Lotgd\Substitute;
 * @see lib/buffs.php
 * @see lib/battle-buffs.php
 * @see lib/battle-skills.php
-* @see lib/extended-battle.php
 */
 require_once("lib/bell_rand.php");
 require_once("common.php");
 require_once("lib/http.php");
 
-require_once("lib/extended-battle.php");
 
 //just in case we're called from within a function.Yuck is this ugly.
 global $badguy,$enemies,$newenemies,$session,$creatureattack,$creatureatkmod, $beta;
@@ -44,7 +42,7 @@ if (!isset($options)) {
 	if (isset($enemies[0]['type'])) $options['type'] = $enemies[0]['type'];
 }
 
-$options = prepare_fight($options);
+$options = Battle::prepareFight($options);
 
 $roundcounter=0;
 $adjustment = 1;
@@ -59,7 +57,7 @@ if ($auto == 'full') {
 	$count = 10;
 }
 $enemycounter = count($enemies);
-$enemies = autosettarget($enemies);
+$enemies = Battle::autoSetTarget($enemies);
 
 $op=httpget("op");
 $skill=httpget("skill");
@@ -111,7 +109,7 @@ if ($enemycounter > 0) {
 		}
 	}
 	output_notl("`n");
-	show_enemies($enemies);
+        Battle::showEnemies($enemies);
 }
 
 if (!isset($options['type'])) {
@@ -119,7 +117,7 @@ if (!isset($options['type'])) {
 	$options['type'] = 'forest';
 }
 Battle::suspendBuffs((($options['type'] == 'pvp')?"allowinpvp":false));
-suspend_companions((($options['type'] == 'pvp')?"allowinpvp":false));
+Battle::suspendCompanions((($options['type'] == 'pvp')?"allowinpvp":false));
 
 // Now that the bufflist is sane, see if we should add in the bodyguard.
 $inn = (int)httpget('inn');
@@ -169,7 +167,7 @@ if ($op != "newtarget") {
 		//we need to restore and calculate here to reflect changes that happen throughout the course of multiple rounds.
 		restore_buff_fields();
 		calculate_buff_fields();
-		prepare_companions();
+                Battle::prepareCompanions();
 		//$newenemies = array();
 		// Run the beginning of round buffs (this also calculates all modifiers)
 		foreach ($enemies as $index=>$badguy) {
@@ -210,7 +208,7 @@ if ($op != "newtarget") {
 								$newcompanions = array();
 								foreach ($companions as $name=>$companion) {
 									if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
-										$buffer = report_companion_move($badguy,$companion, "heal");
+                                                                       $buffer = Battle::reportCompanionMove($badguy,$companion, "heal");
 										if ($buffer !== false) {
 											$newcompanions[$name] = $buffer;
 											unset($buffer);
@@ -242,7 +240,7 @@ if ($op != "newtarget") {
 											$newcompanions = array();
 											foreach ($companions as $name=>$companion) {
 												if (isset($companion['hitpoits']) && $companion['hitpoints'] > 0) {
-													$buffer = report_companion_move($badguy,$companion, "magic");
+                                                                       $buffer = Battle::reportCompanionMove($badguy,$companion, "magic");
 													if ($buffer !== false) {
 														$newcompanions[$name] = $buffer;
 														unset($buffer);
@@ -328,7 +326,7 @@ if ($op != "newtarget") {
 								if (is_array($companions)) {
 									foreach ($companions as $name=>$companion) {
 										if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
-											$buffer = report_companion_move($badguy,$companion, "fight");
+                                                                       $buffer = Battle::reportCompanionMove($badguy,$companion, "fight");
 											if ($buffer !== false) {
 												$newcompanions[$name] = $buffer;
 												unset($buffer);
@@ -492,11 +490,11 @@ if ($op != "newtarget") {
 	$newenemies = $enemies;
 }
 
-$newenemies = autosettarget($newenemies);
+$newenemies = Battle::autoSetTarget($newenemies);
 
 if ($session['user']['hitpoints']>0 && count($newenemies)>0 && ($op=="fight" || $op=="run")){
 	output("`2`bEnd of Round:`b`n");
-	show_enemies($newenemies);
+        Battle::showEnemies($newenemies);
 }
 
 if ($session['user']['hitpoints'] <= 0) {
@@ -516,9 +514,9 @@ if ($victory || $defeat){
     Battle::unsuspendBuffs((($options['type']=='pvp')?"allowinpvp":false));
 
 
-	if ($session['user']['alive']) {
-		unsuspend_companions((($options['type']=='pvp')?"allowinpvp":false));
-	}
+        if ($session['user']['alive']) {
+                Battle::unsuspendCompanions((($options['type']=='pvp')?"allowinpvp":false));
+        }
 	foreach($companions as $index => $companion) {
 		if(isset($companion['expireafterfight']) && $companion['expireafterfight']) {
 			if (isset($companion['dyingtext'])) output($companion['dyingtext']);
@@ -611,7 +609,7 @@ function battle_badguy_attacks(&$badguy) {
 			if (is_array($companions)) {
 			foreach ($companions as $name=>$companion) {
 				if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
-					$buffer = report_companion_move($badguy,$companion, "defend");
+                                        $buffer = Battle::reportCompanionMove($badguy,$companion, "defend");
 					if ($buffer !== false) {
 						$newcompanions[$name] = $buffer;
 						unset($buffer);

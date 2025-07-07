@@ -1,5 +1,6 @@
 <?php
 use Lotgd\Motd;
+use Lotgd\Battle;
 // translator ready
 // addnews ready
 // mail ready
@@ -97,8 +98,7 @@ if (!$session['user']['loggedin']) {
 	}
 	addnav("S?Land of Shades","shades.php");
 	addnav("G?The Graveyard","graveyard.php");
-	require_once("lib/extended-battle.php");
-	suspend_companions("allowinshades", true);
+        Battle::suspendCompanions("allowinshades", true);
 	tlschema();
 }
 addnav("News");
