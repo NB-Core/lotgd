@@ -87,20 +87,18 @@ public static function pageHeader(...$args): void {
 	$title = Sanitize::sanitize(HolidayText::holidayize($title,'title'));
 	Buffs::calculateBuffFields();
 
-        if (TwigTemplate::isActive()) {
-                self::$twigVars['title'] = $title;
-                if (isset($settings) && $settings->getSetting('debug',0)) {
-                        $session['debugstart']=microtime();
-                }
-                return;
-        }
-
+    if (TwigTemplate::isActive()) {
+            self::$twigVars['title'] = $title;
+    }
+    else
+    {
         $header = $template['header'];
         $header=str_replace("{title}",$title,$header);
-        $header.=Translator::tlbuttonPop();
-        if (isset($settings) && $settings->getSetting('debug',0)) {
-                $session['debugstart']=microtime();
-        }
+    }
+    $header.=Translator::tlbuttonPop();
+    if (isset($settings) && $settings->getSetting('debug',0)) {
+            $session['debugstart']=microtime();
+    }
 }
 
 /**
@@ -152,18 +150,18 @@ public static function pageFooter(bool $saveuser=true){
 		$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
 	else
 		$script = "";
-        list($header, $footer) = self::applyFooterHooks($header, $footer, $script);
+    list($header, $footer) = self::applyFooterHooks($header, $footer, $script);
 
-        $builtnavs = Nav::buildNavs();
+    $builtnavs = Nav::buildNavs();
 
-        Buffs::restoreBuffFields();
-        Buffs::calculateBuffFields();
+    Buffs::restoreBuffFields();
+    Buffs::calculateBuffFields();
 
-        Translator::tlschema("common");
+    Translator::tlschema("common");
 
-        $statsOutput = self::charStats();
+    $statsOutput = self::charStats();
 
-        Buffs::restoreBuffFields();
+    Buffs::restoreBuffFields();
 
 	if (!defined("IS_INSTALLER")) { 
 		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
@@ -226,7 +224,7 @@ public static function pageFooter(bool $saveuser=true){
 		}else{";
 			$quickkeys = Nav::getQuickKeys();
 			foreach ($quickkeys as $key=>$val) {
-				$script.="\n			if (c == '".strtoupper($key)."') { $val; return false; }";
+				$script.="\n			if (c == '".strtoupper((string)$key)."') { $val; return false; }";
 			}
 			$script.="
 		}
@@ -256,6 +254,7 @@ public static function pageFooter(bool $saveuser=true){
         list($header, $footer) = self::generateNavigationOutput($header, $footer, $builtnavs);
         if (TwigTemplate::isActive()) {
             self::$twigVars['nav'] = $builtnavs;
+            // empty for now, never really used by any template. if so, add them manually
             self::$twigVars['navad'] = '';
             self::$twigVars['verticalad'] = '';
             self::$twigVars['bodyad'] = '';
@@ -516,11 +515,10 @@ public static function getCharStatValue(string $section,string $title){
  */
 public static function charStats(): string{
 	global $session, $playermount, $companions, $settings;
-
-	if (defined("IS_INSTALLER")) return "";
+	if (defined("IS_INSTALLER") && IS_INSTALLER === true) return "";
 
 	self::wipeCharStats();
-
+    
 	$u =& $session['user'];
 
 	if (isset($session['loggedin']) && $session['loggedin'])
@@ -536,9 +534,9 @@ public static function charStats(): string{
 		  $atk=$u['attack'];
 		  $def=$u['defense'];
 		 */
-                $o_atk=$atk=PlayerFunctions::getPlayerAttack();
-                $o_def=$def=PlayerFunctions::getPlayerDefense();
-                $spd=PlayerFunctions::getPlayerSpeed();
+        $o_atk=$atk=PlayerFunctions::getPlayerAttack();
+        $o_def=$def=PlayerFunctions::getPlayerDefense();
+        $spd=PlayerFunctions::getPlayerSpeed();
 
 		$buffcount = 0;
 		$buffs = "";

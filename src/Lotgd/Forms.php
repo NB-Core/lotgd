@@ -18,11 +18,11 @@ class Forms
         if ($startdiv === false) $startdiv = "";
         $script.="<script language='JavaScript'>\n                                function previewtext$name(t,l){\n                                        var out = \"<span class='colLtWhite'>".addslashes(appoencode($startdiv))." \";\n                                        var end = '</span>';\n                                        var x=0;\n                                        var y='';\n                                        var z='';\n                                        var max=document.getElementById('input$name');\n                                        var charsleft='';";
         if ($talkline !== false) {
-            $script.="      if (t.substr(0,2)=='::'){\n                                                x=2;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,1)==':'){\n                                                x=1;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,3)=='/me'){\n                                                x=3;\n                                                out += '</span><span class=\'colLtWhite\';";
+            $script.="      if (t.substr(0,2)=='::'){\n                                                x=2;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,1)==':'){\n                                                x=1;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,3)=='/me'){\n                                                x=3;\n                                                out += '</span><span class=\'colLtWhite\'>';";
             if ($session['user']['superuser']&SU_IS_GAMEMASTER) {
                 $script.="\n                                        }else if (t.substr(0,5)=='/game'){\n                                                x=5;\n                                                out = '<span class=\'colLtWhite\'>';";
             }
-            $script.="      }else{\n                                                out += '</span><span class=\'colDkCyan\'>".addslashes(appoencode($talkline)).", \"</span><span class=\'colLtCyan\'>';\n                                                end += '</span><span class=\'colDkCyan\'>';
+            $script.=" \n     }else{\n                                                out += '</span><span class=\'colDkCyan\'>".addslashes(appoencode($talkline)).", \"</span><span class=\'colLtCyan\'>';\n                                                end += '</span><span class=\'colDkCyan\'>';
                                         }";
         }
         if ($showcharsleft == true) {
@@ -30,6 +30,18 @@ class Forms
         }
         $switchscript=datacache("switchscript_comm".rawurlencode($name));
         if (!$switchscript) {
+        $script.="              for (; x < t.length; x++){
+                                                y = t.substr(x,1);
+                                                if (y=='<'){
+                                                        out += '&lt;';
+                                                        continue;
+                                                }else if(y=='>'){
+                                                        out += '&gt;';
+                                                        continue;
+                                                }else if (y=='`'){
+                                                        if (x < t.length-1){
+                                                                z = t.substr(x+1,1);";
+
             $colors=$output->getColors();
             $switchscript="switch (z) {\n                                case \"0\": out+='</span>';break;\n";
             foreach ($colors as $key=>$colorcode) {
