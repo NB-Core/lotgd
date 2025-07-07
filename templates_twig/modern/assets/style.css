@@ -103,12 +103,12 @@ table.charinfo {
 }
 td.pageheader {
         background-color: #333399;
-        background-image: url({{ template_path }}/assets/headbkg.GIF);
+        background-image: url(./assets/headbkg.GIF);
         height: 69px;
 }
 td.popupheader {
         background-color: #333399;
-        background-image: url({{ template_path }}/assets/headbkg.GIF);
+        background-image: url(./assets/headbkg.GIF);
         height: 20px;
 }
 td.noborder {
