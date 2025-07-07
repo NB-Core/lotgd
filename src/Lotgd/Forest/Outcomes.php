@@ -35,9 +35,9 @@ class Outcomes
                 ? $settings->getSetting('dropmingold', 0)
                 : getsetting('dropmingold', 0);
             if ($dropMinGold) {
-                $badguy['creaturegold'] = e_rand(round($badguy['creaturegold'] / 4), round(3 * $badguy['creaturegold'] / 4));
+                $badguy['creaturegold'] = r_rand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
             } else {
-                $badguy['creaturegold'] = e_rand(0, $badguy['creaturegold']);
+                $badguy['creaturegold'] = r_rand(0, (int)$badguy['creaturegold']);
             }
             $gold += $badguy['creaturegold'];
             if (isset($badguy['creaturelose'])) {
@@ -49,17 +49,17 @@ class Outcomes
             if ($badguy['diddamage'] == 1) {
                 $diddamage = true;
             }
-            $creaturelevel = max($creaturelevel, $badguy['creaturelevel']);
-            if (!$denyflawless && isset($badguy['denyflawless']) && $badguy['denyflawless'] > '') {
+            $creaturelevel = max($creaturelevel, (int)$badguy['creaturelevel']);
+            if (!$denyflawless && isset($badguy['denyflawless']) && !empty($badguy['denyflawless'])) {
                 $denyflawless = $badguy['denyflawless'];
             }
-            $expbonus += round(($badguy['creatureexp'] * (1 + .25 * ($badguy['creaturelevel'] - $session['user']['level']))) - $badguy['creatureexp'], 0);
+            $expbonus += round(((int)$badguy['creatureexp'] * (1 + .25 * ((int)$badguy['creaturelevel'] - (int)$session['user']['level']))) - (int)$badguy['creatureexp'], 0);
         }
         $multibonus = $count > 1 ? 1 : 0;
-        $expbonus += $session['user']['dragonkills'] * $session['user']['level'] * $multibonus;
+        $expbonus += (int)$session['user']['dragonkills'] * (int)$session['user']['level'] * $multibonus;
         $totalexp = array_sum($options['experience']);
         $exp = round($totalexp / $count);
-        $gold = e_rand(round($gold / $count), round($gold), 0);
+        $gold = round(r_rand(round($gold / $count), round($gold), 0));
         $expbonus = round($expbonus / $count, 0);
 
         if ($gold) {
@@ -70,7 +70,7 @@ class Outcomes
             ? $settings->getSetting('forestgemchance', 25)
             : getsetting('forestgemchance', 25);
         $args = modulehook('alter-gemchance', ['chance' => $gemChance]);
-        $gemchances = $args['chance'];
+        $gemchances = (int)$args['chance'];
         $maxLevel = isset($settings) && $settings instanceof Settings
             ? $settings->getSetting('maxlevel', 15)
             : getsetting('maxlevel', 15);
@@ -210,10 +210,10 @@ class Outcomes
             $dk = round($dk * (.25 + $add));
         }
         $expflux = round($badguy['creatureexp'] / 10, 0);
-        $expflux = e_rand(-$expflux, $expflux);
+        $expflux = r_rand(-$expflux, $expflux);
         $badguy['creatureexp'] += $expflux;
-        $atkflux = e_rand(0, $dk);
-        $defflux = e_rand(0, ($dk - $atkflux));
+        $atkflux = r_rand(0, $dk);
+        $defflux = r_rand(0, ($dk - $atkflux));
         $hpflux = ($dk - ($atkflux + $defflux)) * 5;
         $badguy['creatureattack'] += $atkflux;
         $badguy['creaturedefense'] += $defflux;
@@ -222,11 +222,11 @@ class Outcomes
             ? $settings->getSetting('disablebonuses', 1)
             : getsetting('disablebonuses', 1);
         if ($disableBonuses) {
-            $base = 30 - min(20, round(sqrt($session['user']['dragonkills']) / 2));
+            $base = 30 - min(20, round(sqrt((int)$session['user']['dragonkills']) / 2));
             $base /= 1000;
             $bonus = 1 + $base * ($atkflux + $defflux) + .001 * $hpflux;
-            $badguy['creaturegold'] = round($badguy['creaturegold'] * $bonus, 0);
-            $badguy['creatureexp'] = round($badguy['creatureexp'] * $bonus, 0);
+            $badguy['creaturegold'] = round((int)$badguy['creaturegold'] * $bonus, 0);
+            $badguy['creatureexp'] = round((int)$badguy['creatureexp'] * $bonus, 0);
         }
         $badguy = modulehook('creatureencounter', $badguy);
         debug("DEBUG: $dk modification points total.");

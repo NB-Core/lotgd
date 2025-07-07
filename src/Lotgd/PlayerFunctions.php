@@ -193,7 +193,7 @@ class PlayerFunctions
         } else {
             $user =& $session['user'];
         }
-        $defense = round(log($user['wisdom']) + $user['constitution'] * 0.08 + log($user['defense']), 1);
+        $defense = round(log((int)$user['wisdom']) + (int)$user['constitution'] * 0.08 + log((int)$user['defense']), 1);
         return max($defense, 0);
     }
 

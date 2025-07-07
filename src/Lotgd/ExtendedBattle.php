@@ -162,7 +162,7 @@ use Lotgd\Substitute;
 	$fightoptions = modulehook("fightoptions", $fightoptions);
 
         // We'll also reset the companions here...
-        prepareCompanions();
+    self::prepareCompanions();
 	return $fightoptions;
 }
 
