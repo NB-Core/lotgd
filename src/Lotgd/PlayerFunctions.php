@@ -63,7 +63,7 @@ class PlayerFunctions
     /**
      * Calculate a player's attack rating.
      */
-    public static function getPlayerAttack($player = false)
+    public static function getPlayerAttack(int|false $player = false): float
     {
         global $session;
         if ($player !== false) {
@@ -86,7 +86,7 @@ class PlayerFunctions
         return max($attack, 0);
     }
 
-    public static function explainedGetPlayerAttack($player = false)
+    public static function explainedGetPlayerAttack(int|false $player = false): string
     {
         global $session;
         if ($player !== false) {
@@ -113,7 +113,7 @@ class PlayerFunctions
         return $explained;
     }
 
-    public static function getPlayerDefense($player = false)
+    public static function getPlayerDefense(int|false $player = false): float
     {
         global $session;
         if ($player !== false) {
@@ -135,7 +135,7 @@ class PlayerFunctions
         return max($defense, 0);
     }
 
-    public static function explainedGetPlayerDefense($player = false)
+    public static function explainedGetPlayerDefense(int|false $player = false): string
     {
         global $session;
         if ($player !== false) {
@@ -161,7 +161,7 @@ class PlayerFunctions
         return $explained;
     }
 
-    public static function getPlayerSpeed($player = false)
+    public static function getPlayerSpeed(int|false $player = false): float
     {
         global $session;
         if ($player !== false) {
@@ -179,7 +179,7 @@ class PlayerFunctions
         return max($speed, 0);
     }
 
-    public static function getPlayerPhysicalResistance($player = false)
+    public static function getPlayerPhysicalResistance(int|false $player = false): float
     {
         global $session;
         if ($player !== false) {
@@ -197,7 +197,7 @@ class PlayerFunctions
         return max($defense, 0);
     }
 
-    public static function isPlayerOnline($player = false)
+    public static function isPlayerOnline(int|false $player = false): bool
     {
         static $checked_users = [];
         if ($player === false) {
@@ -228,7 +228,7 @@ class PlayerFunctions
         return false;
     }
 
-    public static function massIsPlayerOnline($players = false)
+    public static function massIsPlayerOnline(array|false $players = false): array
     {
         $users = [];
         if ($players === false || $players == [] || !is_array($players)) {
@@ -258,7 +258,7 @@ class PlayerFunctions
         return $users;
     }
 
-    public static function getPlayerDragonkillmod($withhitpoints = false)
+    public static function getPlayerDragonkillmod(bool $withhitpoints = false): float
     {
         global $session;
         $dragonpoints = array_count_values($session['user']['dragonpoints']);
@@ -289,7 +289,7 @@ class PlayerFunctions
     /**
      * Calculate experience required for the next level.
      */
-    public static function expForNextLevel($curlevel, $curdk)
+    public static function expForNextLevel(int $curlevel, int $curdk): float
     {
         $stored = DataCache::datacache('exparraydk' . $curdk);
         if ($stored !== false && is_array($stored)) {
@@ -321,7 +321,7 @@ class PlayerFunctions
         return $exprequired;
     }
 
-    public static function applyTempStat($name, $value, $type = 'add')
+    public static function applyTempStat(string $name, int|float $value, string $type = 'add'): bool
     {
         global $session, $temp_user_stats;
         if ($type == 'add') {
@@ -349,7 +349,7 @@ class PlayerFunctions
         return false;
     }
 
-    public static function checkTempStat($name, $color = false)
+    public static function checkTempStat(string $name, bool|int $color = false): string|int|float
     {
         global $temp_user_stats, $session;
         $v = $temp_user_stats['add'][$name] ?? 0;
@@ -363,7 +363,7 @@ class PlayerFunctions
         return ($v == 0 ? '' : " `&(" . ($session['user'][$name] + round($v,1)) . "`$-" . round($v,1) . "`&)");
     }
 
-    public static function suspendTempStats()
+    public static function suspendTempStats(): bool
     {
         global $session, $temp_user_stats;
         if (!$temp_user_stats['is_suspended']) {
@@ -380,7 +380,7 @@ class PlayerFunctions
         return false;
     }
 
-    public static function restoreTempStats()
+    public static function restoreTempStats(): bool
     {
         global $session, $temp_user_stats;
         if ($temp_user_stats['is_suspended']) {
@@ -397,7 +397,7 @@ class PlayerFunctions
         return false;
     }
 
-    public static function validDkTitle($title, $dks, $gender)
+    public static function validDkTitle(string $title, int $dks, bool $gender): bool
     {
         $sql = 'SELECT dk,male,female FROM ' . db_prefix('titles') . " WHERE dk <= $dks ORDER by dk DESC";
         $res = db_query($sql);
@@ -411,7 +411,7 @@ class PlayerFunctions
         return false;
     }
 
-    public static function getDkTitle($dks, $gender, $ref = false)
+    public static function getDkTitle(int $dks, bool $gender, string|false $ref = false): string
     {
         $refdk = -1;
         if ($ref !== false) {
