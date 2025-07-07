@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ template_path }}/assets/style.css"/>
+    <link rel="stylesheet" href="/templates/common/colors.css"/>
+    {{ headscript|raw }}{{ script|raw }}
+</head>
+<body bgcolor="#000000" text="#CCCCCC">
+<table border="0" cellpadding="4" cellspacing="0" width="100%">
+    <tr>
+        <td colspan="2" class="pageheader" valign="top">
+            <img src="{{ template_path }}/assets/title.gif" width="395" height="55" align="right"><span class="pagetitle"><br>{{ title }}</span>
+        </td>
+    </tr>
+    <tr>
+        <td width="190" bgcolor="#433828" valign="top">
+            <div align="center">{{ navad|raw }}</div>
+            <img src="{{ template_path }}/assets/uscroll.GIF" width="182" height="11" alt="">
+            <table cellspacing="0" cellpadding="0" class="nav">
+                <tr><td>{{ nav|raw }}</td></tr>
+            </table>
+            <img src="{{ template_path }}/assets/lscroll.GIF" width="182" height="11"> <br>
+            {{ motd|raw }} <br>
+            {{ mail|raw }} <br>
+            {{ petition|raw }}
+        </td>
+        <td width="100%" rowspan="2" valign="top" bgcolor="#352D20">
+            <table align="right" border="0"><tr><td>{{ paypal|raw }}{{ verticalad|raw }}</td></tr></table>
+            {{ headerad|raw }}{{ bodyad|raw }}
+            {{ content|raw }}
+            {{ petitiondisplay|raw }}
+        </td>
+    </tr>
+    <tr>
+        <td width="190" valign="top" bgcolor="#433828"><img src="{{ template_path }}/assets/uscroll.GIF" width="182" height="11" alt="">
+            <table border="0" cellpadding="0" cellspacing="0" class="vitalinfo">
+                <tr><td> {{ stats|raw }} </td></tr>
+            </table>
+            <img src="{{ template_path }}/assets/lscroll.GIF" width="182" height="11"></td>
+    </tr>
+    <tr>
+        <td colspan="2" class="footer">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" class="noborder">
+                <tr>
+                    <td class="noborder">{{ copyright|raw }}Design: Chris Yarbrough ({{ pagegen|raw }}) </td>
+                    <td align="right" class="noborder" valign="top">{{ source|raw }}<br /><br />{{ version }}</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<table border='0' cellpadding='0' cellspacing='0'>
+    <tr>
+        <td><img src='{{ template_path }}/assets/logindragon.gif' class='noborder'></td>
+    </tr>
+    <tr>
+        <td valign='center' align='center' class='noborder'>
+            <table border='0'>
+                <tr>
+                    <td align='center'><font color='#ffff00'>{{ username|raw }}:</font></td>
+                    <td align='center'><font color='#ffff00'>{{ password|raw }}:</font></td>
+                </tr>
+                <tr>
+                    <td><input name='name' id="name" accesskey='u' size='10'></td>
+                    <td><input name='password' id="password" accesskey='p' type='password' size='10'></td>
+                </tr>
+                <tr>
+                    <td colspan='2' align='center'><input type='submit' value='{{ button|raw }}' class='button'><br></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
