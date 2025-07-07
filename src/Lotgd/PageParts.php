@@ -235,20 +235,9 @@ public static function pageFooter(bool $saveuser=true){
 	</script>";
 
         if (strpos($footer, "{paypal}") || strpos($header, "{paypal}")) {
-            $palreplace = "{paypal}";
+            $palreplace = '{paypal}';
         } else {
-            $palreplace = "{stats}";
-        }
-
-        if (TwigTemplate::isActive()) {
-            [$paypalSnippet, ] = self::buildPaypalDonationMarkup(
-                '{paypal}',
-                '{paypal}',
-                '{paypal}',
-                $settings ?? null,
-                $logd_version
-            );
-            self::$twigVars['paypal'] = $paypalSnippet;
+            $palreplace = '{stats}';
         }
 
         list($header, $footer) = self::buildPaypalDonationMarkup(
@@ -280,7 +269,9 @@ public static function pageFooter(bool $saveuser=true){
         // the actual replacement happens later via replaceHeaderFooterTokens()
         //$header = str_replace("{motd}", self::motdLink(), $header);
         //$footer = str_replace("{motd}", self::motdLink(), $footer);
-        list($header, $footer) = self::assembleMailPetitionLinks($header, $footer);
+        list($header, $footer) = self::assembleMailLink($header, $footer);
+        list($header, $footer) = self::assemblePetitionLink($header, $footer);
+        list($header, $footer) = self::assemblePetitionDisplay($header, $footer);
         $sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
 
         // Replace special template tokens within header and footer
@@ -858,42 +849,72 @@ public static function mailLinkTabText(){
                 .'</form>';
         }
         $paypalstr .= '</td></tr></table>';
-        $footer = str_replace($palreplace,(strpos($palreplace,'paypal')?'':'{stats}').$paypalstr,$footer);
-        $header = str_replace($palreplace,(strpos($palreplace,'paypal')?'':'{stats}').$paypalstr,$header);
 
-        return [$header, $footer];
+        $replacement = (strpos($palreplace, 'paypal') ? '' : '{stats}') . $paypalstr;
+        $token = trim($palreplace, '{}');
+
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            [
+                $token   => $replacement,
+                'paypal' => $paypalstr,
+            ]
+        );
     }
 
     /**
-     * Generate mail and petition related links and placeholders.
+     * Generate the mail link markup and populate placeholders.
      */
-    private static function assembleMailPetitionLinks(string $header, string $footer): array
+    private static function assembleMailLink(string $header, string $footer): array
     {
         global $session;
 
-        if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-            if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+        $mailHtml = '';
+        if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
+            if (getsetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('ext/ajax_maillink.php')) {
                     require 'ext/ajax_maillink.php';
                 }
-                $header = str_replace('{mail}',$maillink_add_pre."<div id='maillink'>".self::mailLink()."</div>".$maillink_add_after,$header);
+                $mailHtml = $maillink_add_pre."<div id='maillink'>".self::mailLink()."</div>".$maillink_add_after;
             } else {
-                $header = str_replace('{mail}',self::mailLink(),$header);
+                $mailHtml = self::mailLink();
             }
-            $footer = str_replace('{mail}',self::mailLink(),$footer);
-        } else {
-            $header = str_replace('{mail}','',$header);
-            $footer = str_replace('{mail}','',$footer);
         }
 
-        $link = "<a href='petition.php' onClick=\"".self::popup('petition.php').";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline('Petition for Help')."</a>";
-        $header = str_replace('{petition}', $link, $header);
-        $footer = str_replace('{petition}', $link, $footer);
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['mail' => $mailHtml]
+        );
+    }
 
-        if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS){
+    /**
+     * Generate the petition link markup and populate placeholders.
+     */
+    private static function assemblePetitionLink(string $header, string $footer): array
+    {
+        $link = "<a href='petition.php' onClick=\"".self::popup('petition.php').";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline('Petition for Help')."</a>";
+
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['petition' => $link]
+        );
+    }
+
+    /**
+     * Generate the petition administration display section.
+     */
+    private static function assemblePetitionDisplay(string $header, string $footer): array
+    {
+        global $session;
+
+        $pcount = '';
+        if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS) {
             $sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix('petitions') . " GROUP BY status";
-            $result = db_query_cached($sql,'petition_counts');
-            $petitions=array('P5'=>0,'P4'=>0,'P0'=>0,'P1'=>0,'P3'=>0,'P7'=>0,'P6'=>0,'P2'=>0);
+            $result = db_query_cached($sql, 'petition_counts');
+            $petitions = array('P5'=>0,'P4'=>0,'P0'=>0,'P1'=>0,'P3'=>0,'P7'=>0,'P6'=>0,'P2'=>0);
             while ($row = db_fetch_assoc($result)) {
                 $petitions['P'.$row['status']] = $row['c'];
             }
@@ -901,8 +922,8 @@ public static function mailLinkTabText(){
             $ued = Translator::translateInline('`0`bUser Editor`b');
             $mod = Translator::translateInline('`0`bManage Modules`b');
             db_free_result($result);
-            $admin_array=array();
-            if ($session['user']['superuser'] & SU_EDIT_USERS){
+            $admin_array = array();
+            if ($session['user']['superuser'] & SU_EDIT_USERS) {
                 $admin_array[] = "<a href='user.php'>$ued</a>";
                 addnav('', 'user.php');
             }
@@ -912,27 +933,28 @@ public static function mailLinkTabText(){
             }
             $admin_array[] = "<a href='viewpetition.php'>$pet</a>";
             addnav('', 'viewpetition.php');
-            $p = implode('|',$admin_array);
+            $p = implode('|', $admin_array);
             $pcolors = array('`$','`^','`6','`!','`#','`%','`v');
             $pets = '`n';
-            foreach($petitions as $val) {
-                if ($pets!='`n') $pets.='|';
+            foreach ($petitions as $val) {
+                if ($pets != '`n') {
+                    $pets .= '|';
+                }
                 $color = array_shift($pcolors) ?: '`1';
-                $pets.=$color.$val.'`0';
+                $pets .= $color.$val.'`0';
             }
-            $ret_args=array('petitioncount'=>$pets);
-            $ret_args = modulehook('petitioncount',$ret_args);
+            $ret_args = array('petitioncount'=>$pets);
+            $ret_args = modulehook('petitioncount', $ret_args);
             $pets = $ret_args['petitioncount'];
             $p .= $pets;
             $pcount = templatereplace('petitioncount', array('petitioncount'=>appoencode($p, true)));
-            $footer = str_replace('{petitiondisplay}', $pcount, $footer);
-            $header = str_replace('{petitiondisplay}', $pcount, $header);
-        } else {
-            $footer = str_replace('{petitiondisplay}', '', $footer);
-            $header = str_replace('{petitiondisplay}', '', $header);
         }
 
-        return [$header, $footer];
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['petitiondisplay' => $pcount]
+        );
     }
 
     /**
@@ -940,10 +962,11 @@ public static function mailLinkTabText(){
      */
     private static function generateNavigationOutput(string $header, string $footer, string $builtnavs): array
     {
-        $header = str_replace('{nav}', $builtnavs, $header);
-        $footer = str_replace('{nav}', $builtnavs, $footer);
-
-        return [$header, $footer];
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['nav' => $builtnavs]
+        );
     }
 
     /**
@@ -989,11 +1012,16 @@ public static function mailLinkTabText(){
      */
     private static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
     {
+        $markup = $preHeadscript;
         if (!empty($headscript)) {
-            return str_replace('{headscript}', $preHeadscript."<script type='text/javascript' charset='UTF-8'>".$headscript.'</script>', $header);
+            $markup .= "<script type='text/javascript' charset='UTF-8'>".$headscript.'</script>';
         }
 
-        return str_replace('{headscript}', $preHeadscript, $header);
+        return self::applyTemplateStringReplacements(
+            $header,
+            'header',
+            ['headscript' => $markup]
+        );
     }
 
     /**
@@ -1038,10 +1066,13 @@ public static function mailLinkTabText(){
     private static function applyTemplateStringReplacements(string $content, string $name, array $replacements): string
     {
         foreach ($replacements as $key => $val) {
+            if (TwigTemplate::isActive()) {
+                self::$twigVars[$key] = $val;
+            }
+
             if (strpos($content, '{'.$key.'}') === false) {
                 // If we don't find the key in the content, we can skip it - if you want to notify, use the line below
                 //output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $name, $content);
-                // Skip appending the replacement value to avoid unexpected placement
                 continue;
             } else {
                 $content = str_replace('{'.$key.'}', $val, $content);
