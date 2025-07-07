@@ -10,22 +10,22 @@ class TwigTemplate extends Template
 {
     private static ?Environment $env = null;
     private static string $templateDir = '';
+    /** Path used for caching compiled templates */
+    private static string $cacheDir = '/tmp';
 
-    public static function init(string $templateName, ?Settings $settings = null): void
+    public static function init(string $templateName, ?string $datacachePath = null): void
     {
         self::$templateDir = __DIR__ . '/../../templates_twig/' . $templateName;
         $loader = new FilesystemLoader(self::$templateDir);
 
-        $baseDir = $settings?->getSetting('datacachepath', '/tmp') ?? '/tmp';
-        $cacheDir = rtrim($baseDir, '/\\') . '/twig';
-        $cacheEnabled = false;
-        if (is_dir($cacheDir) || mkdir($cacheDir, 0755, true)) {
-            $cacheEnabled = is_writable($cacheDir);
-        }
-
         $options = ['auto_reload' => true];
-        if ($cacheEnabled) {
-            $options['cache'] = $cacheDir;
+
+        if ($datacachePath !== null && $datacachePath !== '') {
+            self::$cacheDir = $datacachePath;
+            $cacheDir = rtrim($datacachePath, '/\\') . '/twig';
+            if ((is_dir($cacheDir) || mkdir($cacheDir, 0755, true)) && is_writable($cacheDir)) {
+                $options['cache'] = $cacheDir;
+            }
         }
 
         self::$env = new Environment($loader, $options);

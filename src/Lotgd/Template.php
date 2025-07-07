@@ -96,7 +96,11 @@ class Template
 
         if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
             // Initialize Twig environment for modern templates
-            TwigTemplate::init($templatename, $settings instanceof Settings ? $settings : null);
+            $cachePath = null;
+            if ($settings instanceof Settings) {
+                $cachePath = $settings->getSetting('datacachepath', '/tmp');
+            }
+            TwigTemplate::init($templatename, $cachePath);
             $template = [];
         } else {
             $template = self::loadTemplate($templatename);
