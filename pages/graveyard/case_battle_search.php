@@ -1,12 +1,12 @@
 <?php
-if ($session['user']['gravefights']<=0){
+use Lotgd\Battle;
 use Lotgd\BellRand;
+if ($session['user']['gravefights']<=0){
 	output("`\$`bYour soul can bear no more torment in this afterlife.`b`0");
 	$op="";
 	httpset('op', "");
 }else{
-	require_once("lib/extended-battle.php");
-	suspend_companions("allowinshades", true);
+       Battle::suspendCompanions("allowinshades", true);
 	if (module_events("graveyard", getsetting("gravechance", 0)) != 0) {
 		if (!checknavs()) {
 			// If we're going back to the graveyard, make sure to reset

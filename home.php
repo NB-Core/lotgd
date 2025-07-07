@@ -3,6 +3,8 @@
 use Lotgd\Forms;
 use Lotgd\Nav;
 use Lotgd\Http;
+use Lotgd\Template;
+use Lotgd\TwigTemplate;
 // addnews ready
 // mail ready
 
@@ -114,7 +116,11 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 	$uname = translate_inline("<u>U</u>sername");
 	$pass = translate_inline("<u>P</u>assword");
 	$butt = translate_inline("Log in");
-	rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">".templatereplace("login",array("username"=>$uname,"password"=>$pass,"button"=>$butt))."</form>");
+        $templateVars = ["username" => $uname, "password" => $pass, "button" => $butt];
+        if (TwigTemplate::isActive()) {
+            $templateVars['template_path'] = TwigTemplate::getPath();
+        }
+        rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">".templatereplace("login", $templateVars)."</form>");
 	output("Did you forget your password? Go <a href='create.php?op=forgot'>here</a> to retrieve a new one!`n",true);
 	output_notl("`c");
 	addnav("","login.php");
@@ -129,7 +135,11 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 		$session['message'].=translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
 	}
 	if ($session['message']>"") output("`b`\$%s`b`n", $session['message'],true);
-	rawoutput(templatereplace("loginfull",array()));
+        $templateVars = [];
+        if (TwigTemplate::isActive()) {
+            $templateVars['template_path'] = TwigTemplate::getPath();
+        }
+        rawoutput(templatereplace("loginfull", $templateVars));
 	output_notl("`c");
 }
 
@@ -142,10 +152,12 @@ if (getsetting("homeskinselect", 1)) {
 	rawoutput("<form action='home.php' method='POST'>");
 	rawoutput("<table align='center'><tr><td>");
 	$form = array("template"=>"Choose a different display skin:,theme");
-	if (isset($_COOKIE['template'])) $prefs['template'] = $_COOKIE['template'];
-		else 
-		$prefs['template'] = getsetting("defaultskin", "yarbrough.htm");
-	Forms::showForm($form, $prefs, true);
+        if (isset($_COOKIE['template'])) {
+                $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
+        } else {
+                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "yarbrough.htm"));
+        }
+        Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
 	rawoutput("</td><td><br>&nbsp;<input type='submit' class='button' value='$submit'></td>");
 	rawoutput("</tr></table></form>");

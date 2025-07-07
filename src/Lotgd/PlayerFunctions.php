@@ -193,7 +193,7 @@ class PlayerFunctions
         } else {
             $user =& $session['user'];
         }
-        $defense = round(log($user['wisdom']) + $user['constitution'] * 0.08 + log($user['defense']), 1);
+        $defense = round(log((int)$user['wisdom']) + (int)$user['constitution'] * 0.08 + log((int)$user['defense']), 1);
         return max($defense, 0);
     }
 
@@ -356,6 +356,7 @@ class PlayerFunctions
         if ($color === false) {
             return ($v == 0 ? '' : $v);
         }
+        // TODO ... no number formatting, it rounds to 0.1 always
         if ($v > 0) {
             return " `&(" . ($session['user'][$name] - round($v,1)) . "`@+" . round($v,1) . "`&)";
         }

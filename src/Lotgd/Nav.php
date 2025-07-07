@@ -439,7 +439,7 @@ class Nav
                 }
                 $n = Template::templateReplace('navitem', [
                     'text' => appoencode($text, $priv),
-                    'link' => HTMLEntities($link . ($pop != true ? $extra : ''), ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8'),
+                    'link' => $link . ($pop != true ? $extra : ''),
                     'accesskey' => $keyrep,
                     'popup' => ($pop == true ? "target='_blank'" . ($popsize > '' ? " onClick=\"" . popup($link, $popsize) . "; return false;\"" : '') : ''),
                 ]);

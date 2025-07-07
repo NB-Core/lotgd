@@ -18,11 +18,11 @@ class Forms
         if ($startdiv === false) $startdiv = "";
         $script.="<script language='JavaScript'>\n                                function previewtext$name(t,l){\n                                        var out = \"<span class='colLtWhite'>".addslashes(appoencode($startdiv))." \";\n                                        var end = '</span>';\n                                        var x=0;\n                                        var y='';\n                                        var z='';\n                                        var max=document.getElementById('input$name');\n                                        var charsleft='';";
         if ($talkline !== false) {
-            $script.="      if (t.substr(0,2)=='::'){\n                                                x=2;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,1)==':'){\n                                                x=1;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,3)=='/me'){\n                                                x=3;\n                                                out += '</span><span class=\'colLtWhite\';";
+            $script.="      if (t.substr(0,2)=='::'){\n                                                x=2;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,1)==':'){\n                                                x=1;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,3)=='/me'){\n                                                x=3;\n                                                out += '</span><span class=\'colLtWhite\'>';";
             if ($session['user']['superuser']&SU_IS_GAMEMASTER) {
                 $script.="\n                                        }else if (t.substr(0,5)=='/game'){\n                                                x=5;\n                                                out = '<span class=\'colLtWhite\'>';";
             }
-            $script.="      }else{\n                                                out += '</span><span class=\'colDkCyan\'>".addslashes(appoencode($talkline)).", \"</span><span class=\'colLtCyan\'>';\n                                                end += '</span><span class=\'colDkCyan\'>';
+            $script.=" \n     }else{\n                                                out += '</span><span class=\'colDkCyan\'>".addslashes(appoencode($talkline)).", \"</span><span class=\'colLtCyan\'>';\n                                                end += '</span><span class=\'colDkCyan\'>';
                                         }";
         }
         if ($showcharsleft == true) {
@@ -30,6 +30,18 @@ class Forms
         }
         $switchscript=datacache("switchscript_comm".rawurlencode($name));
         if (!$switchscript) {
+        $script.="              for (; x < t.length; x++){
+                                                y = t.substr(x,1);
+                                                if (y=='<'){
+                                                        out += '&lt;';
+                                                        continue;
+                                                }else if(y=='>'){
+                                                        out += '&gt;';
+                                                        continue;
+                                                }else if (y=='`'){
+                                                        if (x < t.length-1){
+                                                                z = t.substr(x+1,1);";
+
             $colors=$output->getColors();
             $switchscript="switch (z) {\n                                case \"0\": out+='</span>';break;\n";
             foreach ($colors as $key=>$colorcode) {
@@ -208,27 +220,58 @@ class Forms
         switch ($info[1]) {
             case 'theme':
                 $skins = [];
-                $handle = @opendir('templates');
-                if (!$handle) {
-                    output('None available');
-                    break;
-                }
-                while (false !== ($file = @readdir($handle))) {
-                    if (strpos($file, '.htm') !== false) {
-                        $skins[] = $file;
+                $handle = opendir('templates');
+                if ($handle === false) {
+                    error_log('Unable to open templates directory');
+                } else {
+                    while (false !== ($file = readdir($handle))) {
+                        if (strpos($file, '.htm') !== false) {
+                            $value = 'legacy:' . $file;
+                            $skins[$value] = substr($file, 0, strpos($file, '.htm'));
+                        }
                     }
+                    closedir($handle);
                 }
+
+                $handle = opendir('templates_twig');
+                if ($handle === false) {
+                    error_log('Unable to open templates_twig directory');
+                } else {
+                    while (false !== ($dir = readdir($handle))) {
+                        if ($dir === '.' || $dir === '..') {
+                            continue;
+                        }
+                        if (is_dir("templates_twig/$dir")) {
+                            $name = $dir;
+                            $configPath = "templates_twig/$dir/config.json";
+                            if (file_exists($configPath)) {
+                                $cfg = json_decode((string) file_get_contents($configPath), true);
+                                if (json_last_error() === JSON_ERROR_NONE && isset($cfg['name'])) {
+                                    $name = $cfg['name'];
+                                }
+                            }
+                            $value = 'twig:' . $dir;
+                            $skins[$value] = $name;
+                        }
+                    }
+                    closedir($handle);
+                }
+
                 if (count($skins) == 0) {
                     output('None available');
                     break;
                 }
-                natcasesort($skins);
+
+                asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
+                $current = Template::addTypePrefix($row[$key]);
+
                 rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
-                foreach ($skins as $skin) {
-                    if ($skin == $row[$key]) {
-                        rawoutput("<option value='$skin' selected>" . htmlentities(substr($skin, 0, strpos($skin, '.htm')), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
+                foreach ($skins as $skin => $display) {
+                    $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+                    if ($skin == $current) {
+                        rawoutput("<option value='$skin' selected>$display</option>");
                     } else {
-                        rawoutput("<option value='$skin'>" . htmlentities(substr($skin, 0, strpos($skin, '.htm')), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
+                        rawoutput("<option value='$skin'>$display</option>");
                     }
                 }
                 rawoutput('</select>');

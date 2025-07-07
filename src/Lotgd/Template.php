@@ -18,22 +18,36 @@ class Template
      */
     public static function templateReplace(string $itemname, array|false $vals = false): string
     {
+        // When Twig is active, try rendering a matching partial
+        if (TwigTemplate::isActive()) {
+            $twigFile = __DIR__ . '/../../' . TwigTemplate::getPath() . "/{$itemname}.twig";
+            if (file_exists($twigFile)) {
+                return TwigTemplate::render("{$itemname}.twig", is_array($vals) ? $vals : []);
+            }
+        }
+
         global $template;
         if (!isset($template[$itemname])) {
-            output("`bWarning:`b The `i%s`i template part was not found!`n", $itemname);
+            // If the template part is not found, it's usually not a bad thing. So comment in if you have issues with missing template parts.
+            // output("`bWarning:`b The `i%s`i template part was not found!`n", $itemname);
+            return '';
         }
+
         $out = $template[$itemname];
         if (!is_array($vals)) {
             return $out;
         }
+
         foreach ($vals as $key => $val) {
-            if (strpos($out, "{".$key."}") === false) {
-                output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $itemname, $out);
-                $out .= $val;
+            if (strpos($out, '{' . $key . '}') === false) {
+                // If the template part is not found, it's usually not a bad thing. So comment in if you have issues with missing template parts.
+                // output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $itemname, $out);
+                // $out .= $val;
             } else {
-                $out = str_replace("{".$key."}", $val, $out);
+                $out = str_replace('{' . $key . '}', $val, $out);
             }
         }
+
         return $out;
     }
 
@@ -59,11 +73,15 @@ class Template
             $_COOKIE['template'] = '';
         }
         $templatename = '';
+        $templateType = '';
         $templatemessage = '';
         if ($_COOKIE['template'] != '') {
             $templatename = $_COOKIE['template'];
         }
-        if ($templatename == '' || !file_exists("templates/$templatename")) {
+        if (strpos($templatename, ':') !== false) {
+            [$templateType, $templatename] = explode(':', $templatename, 2);
+        }
+        if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             if (isset($settings) && $settings instanceof Settings) {
                 // If the settings object is available, use it to get the default skin
                 $templatename = $settings->getSetting('defaultskin', 'jade.htm');
@@ -72,10 +90,41 @@ class Template
                 $templatename = 'jade.htm';
             }
         }
-        if ($templatename == '' || !file_exists("templates/$templatename")) {
+        if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             $templatename = $_defaultskin;
         }
-        $template = self::loadTemplate($templatename);
+
+        if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
+            // Initialize Twig environment for modern templates
+            $cachePath = null;
+            if ($settings instanceof Settings) {
+                $cachePath = $settings->getSetting('datacachepath', '/tmp');
+            }
+            TwigTemplate::init($templatename, $cachePath);
+            $template = [];
+        } else {
+            $template = self::loadTemplate($templatename);
+        }
+    }
+
+    /**
+     * Ensure a template name is prefixed with its type.
+     *
+     * @param string $template Template name, with or without prefix
+     *
+     * @return string Prefixed template name
+     */
+    public static function addTypePrefix(string $template): string
+    {
+        if (str_contains($template, ':')) {
+            return $template;
+        }
+
+        if (is_dir("templates_twig/$template")) {
+            return 'twig:' . $template;
+        }
+
+        return 'legacy:' . $template;
     }
 
     /**
@@ -101,8 +150,9 @@ class Template
 		    $fieldname=substr($val,0,strpos($val,"-->"));
 		    if ($fieldname!=""){
 			    $template[$fieldname]=substr($val,strpos($val,"-->")+3);
-			    if (!defined("IS_INSTALLER")) modulehook("template-{$fieldname}",
-					    array("content"=>$template[$fieldname]));
+                            if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+                                modulehook("template-{$fieldname}", ['content' => $template[$fieldname]]);
+                            }
 		    }
 	    }
 	    return $template;

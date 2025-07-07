@@ -24,7 +24,7 @@ class DataCache
     {
         global $datacache, $settings;
         if (!isset($settings)) return false; // not yet setup most likely
-        
+
         if ($settings->getSetting('usedatacache', 0)) {
             if (isset(self::$cache[$name])) {
                 return self::$cache[$name];

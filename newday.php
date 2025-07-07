@@ -3,6 +3,7 @@ use Lotgd\Buffs;
 use Lotgd\Newday;
 use Lotgd\MountName;
 use Lotgd\Names;
+use Lotgd\Battle;
 use Lotgd\Substitute;
 // translator ready
 // addnews ready
@@ -290,8 +291,7 @@ if ($dp < $dkills) {
 		output("`n`&You strap your `%%s`& to your back and head out for some adventure.`0",$session['user']['weapon']);
 	}
 
-	require_once("lib/extended-battle.php");
-	unsuspend_companions("allowinshades");
+        Battle::unsuspendCompanions("allowinshades");
 
 	if (!getsetting("newdaycron",0)) {
 		//check last time we did this vs now to see if it was a different game day.
@@ -310,7 +310,7 @@ if ($dp < $dkills) {
                 savesetting("newdaySemaphore",gmdate("Y-m-d H:i:s"));
                 $sql = "UNLOCK TABLES";
                 db_query($sql);
-                                Newday::runOnce();
+                Newday::runOnce();
 			}else{
 	            //someone else beat us to it, unlock.
                 $sql = "UNLOCK TABLES";

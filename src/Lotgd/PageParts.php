@@ -40,6 +40,9 @@ class PageParts {
     /** Holds the character statistics for the current page. */
     private static ?CharStats $charstats = null;
 
+    /** Variables passed to Twig templates */
+    private static array $twigVars = [];
+
     /** Name of the current stat section when building char stats. */
     private static string $lastCharstatLabel = "";
 
@@ -69,9 +72,13 @@ public static function pageHeader(...$args): void {
                         if (!array_key_exists($script,self::$runHeaders))
                                 self::$runHeaders[$script] = false;
                         if (!self::$runHeaders[$script]) {
-                                if (!defined("IS_INSTALLER")) modulehook("everyheader", array('script'=>$script));
+                                if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+                                    modulehook('everyheader', ['script' => $script]);
+                                }
                                 self::$runHeaders[$script] = true;
-                                if (!defined("IS_INSTALLER")) modulehook("header-$script");
+                                if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+                                    modulehook("header-$script");
+                                }
                         }
                 }
 	}
@@ -84,12 +91,18 @@ public static function pageHeader(...$args): void {
 	$title = Sanitize::sanitize(HolidayText::holidayize($title,'title'));
 	Buffs::calculateBuffFields();
 
-	$header = $template['header'];
-	$header=str_replace("{title}",$title,$header);
-	$header.=Translator::tlbuttonPop();
-	if (isset($settings) && $settings->getSetting('debug',0)) {
-		$session['debugstart']=microtime();
-	}
+    if (TwigTemplate::isActive()) {
+            self::$twigVars['title'] = $title;
+    }
+    else
+    {
+        $header = $template['header'];
+        $header=str_replace("{title}",$title,$header);
+    }
+    $header.=Translator::tlbuttonPop();
+    if (isset($settings) && $settings->getSetting('debug',0)) {
+            $session['debugstart']=microtime();
+    }
 }
 
 /**
@@ -129,27 +142,32 @@ public static function pageFooter(bool $saveuser=true){
                $REQUEST_URI,$pagestarttime,$template,$y2,$z2,
                $logd_version,$copyright,$SCRIPT_NAME, $footer,
                $dbinfo, $settings;
-	$z = $y2^$z2;
-	$footer = $template['footer'];
+        $z = $y2^$z2;
+        if (TwigTemplate::isActive()) {
+            $footer = '';
+            $header = $header ?? '';
+        } else {
+            $footer = $template['footer'];
+        }
 	//page footer module hooks
 	if (!empty($SCRIPT_NAME)) 
 		$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
 	else
 		$script = "";
-        list($header, $footer) = self::applyFooterHooks($header, $footer, $script);
+    list($header, $footer) = self::applyFooterHooks($header, $footer, $script);
 
-        $builtnavs = Nav::buildNavs();
+    $builtnavs = Nav::buildNavs();
 
-        Buffs::restoreBuffFields();
-        Buffs::calculateBuffFields();
+    Buffs::restoreBuffFields();
+    Buffs::calculateBuffFields();
 
-        Translator::tlschema("common");
+    Translator::tlschema("common");
 
-        $statsOutput = self::charStats();
+    $statsOutput = self::charStats();
 
-        Buffs::restoreBuffFields();
+    Buffs::restoreBuffFields();
 
-	if (!defined("IS_INSTALLER")) { 
+        if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
@@ -210,7 +228,7 @@ public static function pageFooter(bool $saveuser=true){
 		}else{";
 			$quickkeys = Nav::getQuickKeys();
 			foreach ($quickkeys as $key=>$val) {
-				$script.="\n			if (c == '".strtoupper($key)."') { $val; return false; }";
+				$script.="\n			if (c == '".strtoupper((string)$key)."') { $val; return false; }";
 			}
 			$script.="
 		}
@@ -219,9 +237,9 @@ public static function pageFooter(bool $saveuser=true){
 	</script>";
 
         if (strpos($footer, "{paypal}") || strpos($header, "{paypal}")) {
-            $palreplace = "{paypal}";
+            $palreplace = '{paypal}';
         } else {
-            $palreplace = "{stats}";
+            $palreplace = '{stats}';
         }
 
         list($header, $footer) = self::buildPaypalDonationMarkup(
@@ -238,6 +256,13 @@ public static function pageFooter(bool $saveuser=true){
 	//NOTICE |
 
         list($header, $footer) = self::generateNavigationOutput($header, $footer, $builtnavs);
+        if (TwigTemplate::isActive()) {
+            self::$twigVars['nav'] = $builtnavs;
+            // empty for now, never really used by any template. if so, add them manually
+            self::$twigVars['navad'] = '';
+            self::$twigVars['verticalad'] = '';
+            self::$twigVars['bodyad'] = '';
+        }
 	//output the motd
         // use a modulehook to add more stuff by module or change the link
         $motd_link = self::motdLink();
@@ -247,12 +272,14 @@ public static function pageFooter(bool $saveuser=true){
         // the actual replacement happens later via replaceHeaderFooterTokens()
         //$header = str_replace("{motd}", self::motdLink(), $header);
         //$footer = str_replace("{motd}", self::motdLink(), $footer);
-        list($header, $footer) = self::assembleMailPetitionLinks($header, $footer);
+        list($header, $footer) = self::assembleMailLink($header, $footer);
+        list($header, $footer) = self::assemblePetitionLink($header, $footer);
+        list($header, $footer) = self::assemblePetitionDisplay($header, $footer);
         $sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
 
         // Replace special template tokens within header and footer
         $z = $y2 ^ $z2;
-        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
+        $replacements = [
             // character statistic table
             'stats'   => $statsOutput,
             // keypress javascript block
@@ -266,29 +293,43 @@ public static function pageFooter(bool $saveuser=true){
             // page generation statistics
             'pagegen' => self::computePageGenerationStats($pagestarttime),
             $z        => $$z,
-        ]);
+        ];
+        if (TwigTemplate::isActive()) {
+            self::$twigVars = array_merge(self::$twigVars, $replacements);
+        }
 
-	Translator::tlschema();
+        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, $replacements);
 
-	//clean up spare {fields}s from header and footer (in case they're not used)
-	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
-        $footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
-        $header = self::stripAdPlaceholders($header);
-	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+        Translator::tlschema();
 
-	//finalize output
-    $browser_output=$header.($output->getOutput()).$footer;
-	if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
-	$session['user']['gensize']+=strlen($browser_output);
-	$session['output']=$browser_output;
-	if ($saveuser === true) {
-		Accounts::saveUser();
-	}
-	unset($session['output']);
-	//this somehow allows some frames to load before the user's navs say it can
-	session_write_close();
-	echo $browser_output;
-	exit();
+        if (TwigTemplate::isActive()) {
+            self::$twigVars = array_merge(self::$twigVars, [
+                'header' => $header,
+                'footer' => $footer,
+                'content' => $output->getOutput(),
+                'template_path' => TwigTemplate::getPath(),
+            ]);
+            $browser_output = TwigTemplate::render('page.twig', self::$twigVars);
+        } else {
+            //clean up spare {fields}s from header and footer (in case they're not used)
+            //note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
+            $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
+            $header = self::stripAdPlaceholders($header);
+            //      $header = preg_replace('/{[^} \t\n\r]*}/i','',$header);
+
+            $browser_output = $header.($output->getOutput()).$footer;
+        }
+        if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
+        $session['user']['gensize']+=strlen($browser_output);
+        $session['output']=$browser_output;
+        if ($saveuser === true) {
+                Accounts::saveUser();
+        }
+        unset($session['output']);
+        //this somehow allows some frames to load before the user's navs say it can
+        session_write_close();
+        echo $browser_output;
+        exit();
 }
 
 /**
@@ -297,7 +338,7 @@ public static function pageFooter(bool $saveuser=true){
  * @param string $title The title of the popup window
  */
 public static function popupHeader(...$args): void {
-	global $header, $template;
+        global $header, $template;
 
 	translator_setup();
 	prepare_template();
@@ -311,8 +352,13 @@ public static function popupHeader(...$args): void {
 	$title = call_user_func_array("sprintf_translate", $arguments);
 	$title = HolidayText::holidayize($title,'title');
 
-	$header = $template['popuphead'];
-	$header = str_replace("{title}", $title, $header);
+        if (TwigTemplate::isActive()) {
+            self::$twigVars['title'] = $title;
+            return;
+        }
+
+        $header = $template['popuphead'];
+        $header = str_replace("{title}", $title, $header);
 }
 
 /**
@@ -320,10 +366,15 @@ public static function popupHeader(...$args): void {
  *
  */
 public static function popupFooter(){
-	global $output,$header,$session,$y2,$z2,$copyright, $template;
+        global $output,$header,$session,$y2,$z2,$copyright, $template;
 
-	$headscript='';
-	$footer = $template['popupfoot'];
+        $headscript='';
+        if (TwigTemplate::isActive()) {
+            $footer = '';
+            $header = $header ?? '';
+        } else {
+            $footer = $template['popupfoot'];
+        }
 	$pre_headscript='';
 	$maillink_add_after='';
 	//add AJAX stuff
@@ -365,15 +416,29 @@ public static function popupFooter(){
             $z       => $$z,
         ]);
 
-        $footer = preg_replace("/{[^} \t\n\r]*}/i","",$footer);
+        if (TwigTemplate::isActive()) {
+            self::$twigVars = array_merge(self::$twigVars, [
+                'header' => $header,
+                'footer' => $footer,
+                'content' => $maillink_add_after.$output->getOutput(),
+                'template_path' => TwigTemplate::getPath(),
+            ]);
+            $browser_output = TwigTemplate::render('popup.twig', self::$twigVars);
+            Accounts::saveUser();
+            session_write_close();
+            echo $browser_output;
+            exit();
+        }
+
+        $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
         $header = self::stripAdPlaceholders($header);
-	//	$header = preg_replace("/{[^} \t\n\r]*}/i","",$header);
+        //      $header = preg_replace('/{[^} \t\n\r]*}/i','', $header);
 
     $browser_output=$header.$maillink_add_after.($output->getOutput()).$footer;
-	Accounts::saveUser();
-	session_write_close();
-	echo $browser_output;
-	exit();
+    Accounts::saveUser();
+    session_write_close();
+    echo $browser_output;
+    exit();
 }
 
 /**
@@ -454,18 +519,17 @@ public static function getCharStatValue(string $section,string $title){
  */
 public static function charStats(): string{
 	global $session, $playermount, $companions, $settings;
-
-	if (defined("IS_INSTALLER")) return "";
+	if (defined("IS_INSTALLER") && IS_INSTALLER === true) return "";
 
 	self::wipeCharStats();
-
+    
 	$u =& $session['user'];
 
 	if (isset($session['loggedin']) && $session['loggedin'])
 	{
-		$u['hitpoints']=round($u['hitpoints'],0);
-		$u['experience']=round($u['experience'],0);
-		$u['maxhitpoints']=round($u['maxhitpoints'],0);
+		$u['hitpoints']=round((int)$u['hitpoints'],0);
+		$u['experience']=round((float)$u['experience'],0);
+		$u['maxhitpoints']=round((int)$u['maxhitpoints'],0);
 		$spirits=array(-6=>"Resurrected",-2=>"Very Low",-1=>"Low","0"=>"Normal",1=>"High",2=>"Very High");
 		if ($u['alive']){ }else{ $spirits[(int)$u['spirits']] = Translator::translateInline("DEAD","stats"); }
 		//calculate_buff_fields();
@@ -474,9 +538,9 @@ public static function charStats(): string{
 		  $atk=$u['attack'];
 		  $def=$u['defense'];
 		 */
-                $o_atk=$atk=PlayerFunctions::getPlayerAttack();
-                $o_def=$def=PlayerFunctions::getPlayerDefense();
-                $spd=PlayerFunctions::getPlayerSpeed();
+        $o_atk=$atk=PlayerFunctions::getPlayerAttack();
+        $o_def=$def=PlayerFunctions::getPlayerDefense();
+        $spd=PlayerFunctions::getPlayerSpeed();
 
 		$buffcount = 0;
 		$buffs = "";
@@ -542,9 +606,10 @@ public static function charStats(): string{
 		self::addCharStat("Character Info");
 		self::addCharStat("Name", $u['name']);
 		self::addCharStat("Level", "`b".$u['level'].check_temp_stat("level",1)."`b");
+        // Note: Number formatting here has been introduced, but not in tempstats yet - I think it may be overhead for now, but could be done later
 		if ($u['alive']) {
 			self::addCharStat("Hitpoints", $u['hitpoints'].check_temp_stat("hitpoints",1)."`0/".$u['maxhitpoints'].check_temp_stat("maxhitpoints",1));
-			self::addCharStat("Experience",  number_format($u['experience'].check_temp_stat("experience",1),0,$point,$sep));
+			self::addCharStat("Experience",  number_format((float)$u['experience'],0,$point,$sep).check_temp_stat("experience",1));
 			self::addCharStat("Strength", $u['strength'].check_temp_stat("strength",1));
 			self::addCharStat("Dexterity", $u['dexterity'].check_temp_stat("dexterity",1));
 			self::addCharStat("Intelligence", $u['intelligence'].check_temp_stat("intelligence",1));
@@ -592,13 +657,13 @@ public static function charStats(): string{
 			self::addCharStat("PvP", $u['playerfights']);
 			self::addCharStat("Spirits", Translator::translateInline("`b".$spirits[(int)$u['spirits']]."`b"));
 			self::addCharStat("Currency");
-			self::addCharStat("Gold", number_format($u['gold'].check_temp_stat("gold",1),0,$point,$sep));
-			self::addCharStat("Bankgold", number_format($u['goldinbank'].check_temp_stat("goldinbank",1),0,$point,$sep));
+			self::addCharStat("Gold", number_format((int)$u['gold'],0,$point,$sep).check_temp_stat("gold",1));
+			self::addCharStat("Bankgold", number_format((int)$u['goldinbank'],0,$point,$sep).check_temp_stat("goldinbank",1));
 		} else {
 			self::addCharStat("Favor", $u['deathpower'].check_temp_stat("deathpower",1));
 			self::addCharStat("Currency");
 		}
-		self::addCharStat("Gems", number_format($u['gems'].check_temp_stat("gems",1),0,$point,$sep));
+		self::addCharStat("Gems", number_format((int)$u['gems'],0,$point,$sep).check_temp_stat("gems",1));
 		self::addCharStat("Equipment Info");
 		self::addCharStat("Weapon", $u['weapon']);
 		self::addCharStat("Armor", $u['armor']);
@@ -787,42 +852,72 @@ public static function mailLinkTabText(){
                 .'</form>';
         }
         $paypalstr .= '</td></tr></table>';
-        $footer = str_replace($palreplace,(strpos($palreplace,'paypal')?'':'{stats}').$paypalstr,$footer);
-        $header = str_replace($palreplace,(strpos($palreplace,'paypal')?'':'{stats}').$paypalstr,$header);
 
-        return [$header, $footer];
+        $replacement = (strpos($palreplace, 'paypal') ? '' : '{stats}') . $paypalstr;
+        $token = trim($palreplace, '{}');
+
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            [
+                $token   => $replacement,
+                'paypal' => $paypalstr,
+            ]
+        );
     }
 
     /**
-     * Generate mail and petition related links and placeholders.
+     * Generate the mail link markup and populate placeholders.
      */
-    private static function assembleMailPetitionLinks(string $header, string $footer): array
+    private static function assembleMailLink(string $header, string $footer): array
     {
         global $session;
 
-        if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-            if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+        $mailHtml = '';
+        if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
+            if (getsetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('ext/ajax_maillink.php')) {
                     require 'ext/ajax_maillink.php';
                 }
-                $header = str_replace('{mail}',$maillink_add_pre."<div id='maillink'>".self::mailLink()."</div>".$maillink_add_after,$header);
+                $mailHtml = $maillink_add_pre."<div id='maillink'>".self::mailLink()."</div>".$maillink_add_after;
             } else {
-                $header = str_replace('{mail}',self::mailLink(),$header);
+                $mailHtml = self::mailLink();
             }
-            $footer = str_replace('{mail}',self::mailLink(),$footer);
-        } else {
-            $header = str_replace('{mail}','',$header);
-            $footer = str_replace('{mail}','',$footer);
         }
 
-        $link = "<a href='petition.php' onClick=\"".self::popup('petition.php').";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline('Petition for Help')."</a>";
-        $header = str_replace('{petition}', $link, $header);
-        $footer = str_replace('{petition}', $link, $footer);
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['mail' => $mailHtml]
+        );
+    }
 
-        if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS){
+    /**
+     * Generate the petition link markup and populate placeholders.
+     */
+    private static function assemblePetitionLink(string $header, string $footer): array
+    {
+        $link = "<a href='petition.php' onClick=\"".self::popup('petition.php').";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline('Petition for Help')."</a>";
+
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['petition' => $link]
+        );
+    }
+
+    /**
+     * Generate the petition administration display section.
+     */
+    private static function assemblePetitionDisplay(string $header, string $footer): array
+    {
+        global $session;
+
+        $pcount = '';
+        if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS) {
             $sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix('petitions') . " GROUP BY status";
-            $result = db_query_cached($sql,'petition_counts');
-            $petitions=array('P5'=>0,'P4'=>0,'P0'=>0,'P1'=>0,'P3'=>0,'P7'=>0,'P6'=>0,'P2'=>0);
+            $result = db_query_cached($sql, 'petition_counts');
+            $petitions = array('P5'=>0,'P4'=>0,'P0'=>0,'P1'=>0,'P3'=>0,'P7'=>0,'P6'=>0,'P2'=>0);
             while ($row = db_fetch_assoc($result)) {
                 $petitions['P'.$row['status']] = $row['c'];
             }
@@ -830,8 +925,8 @@ public static function mailLinkTabText(){
             $ued = Translator::translateInline('`0`bUser Editor`b');
             $mod = Translator::translateInline('`0`bManage Modules`b');
             db_free_result($result);
-            $admin_array=array();
-            if ($session['user']['superuser'] & SU_EDIT_USERS){
+            $admin_array = array();
+            if ($session['user']['superuser'] & SU_EDIT_USERS) {
                 $admin_array[] = "<a href='user.php'>$ued</a>";
                 addnav('', 'user.php');
             }
@@ -841,27 +936,28 @@ public static function mailLinkTabText(){
             }
             $admin_array[] = "<a href='viewpetition.php'>$pet</a>";
             addnav('', 'viewpetition.php');
-            $p = implode('|',$admin_array);
+            $p = implode('|', $admin_array);
             $pcolors = array('`$','`^','`6','`!','`#','`%','`v');
             $pets = '`n';
-            foreach($petitions as $val) {
-                if ($pets!='`n') $pets.='|';
+            foreach ($petitions as $val) {
+                if ($pets != '`n') {
+                    $pets .= '|';
+                }
                 $color = array_shift($pcolors) ?: '`1';
-                $pets.=$color.$val.'`0';
+                $pets .= $color.$val.'`0';
             }
-            $ret_args=array('petitioncount'=>$pets);
-            $ret_args = modulehook('petitioncount',$ret_args);
+            $ret_args = array('petitioncount'=>$pets);
+            $ret_args = modulehook('petitioncount', $ret_args);
             $pets = $ret_args['petitioncount'];
             $p .= $pets;
             $pcount = templatereplace('petitioncount', array('petitioncount'=>appoencode($p, true)));
-            $footer = str_replace('{petitiondisplay}', $pcount, $footer);
-            $header = str_replace('{petitiondisplay}', $pcount, $header);
-        } else {
-            $footer = str_replace('{petitiondisplay}', '', $footer);
-            $header = str_replace('{petitiondisplay}', '', $header);
         }
 
-        return [$header, $footer];
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['petitiondisplay' => $pcount]
+        );
     }
 
     /**
@@ -869,10 +965,11 @@ public static function mailLinkTabText(){
      */
     private static function generateNavigationOutput(string $header, string $footer, string $builtnavs): array
     {
-        $header = str_replace('{nav}', $builtnavs, $header);
-        $footer = str_replace('{nav}', $builtnavs, $footer);
-
-        return [$header, $footer];
+        return self::replaceHeaderFooterTokens(
+            $header,
+            $footer,
+            ['nav' => $builtnavs]
+        );
     }
 
     /**
@@ -918,11 +1015,16 @@ public static function mailLinkTabText(){
      */
     private static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
     {
+        $markup = $preHeadscript;
         if (!empty($headscript)) {
-            return str_replace('{headscript}', $preHeadscript."<script type='text/javascript' charset='UTF-8'>".$headscript.'</script>', $header);
+            $markup .= "<script type='text/javascript' charset='UTF-8'>".$headscript.'</script>';
         }
 
-        return str_replace('{headscript}', $preHeadscript, $header);
+        return self::applyTemplateStringReplacements(
+            $header,
+            'header',
+            ['headscript' => $markup]
+        );
     }
 
     /**
@@ -967,9 +1069,13 @@ public static function mailLinkTabText(){
     private static function applyTemplateStringReplacements(string $content, string $name, array $replacements): string
     {
         foreach ($replacements as $key => $val) {
+            if (TwigTemplate::isActive()) {
+                self::$twigVars[$key] = $val;
+            }
+
             if (strpos($content, '{'.$key.'}') === false) {
-                output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $name, $content);
-                // Skip appending the replacement value to avoid unexpected placement
+                // If we don't find the key in the content, we can skip it - if you want to notify, use the line below
+                //output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $name, $content);
                 continue;
             } else {
                 $content = str_replace('{'.$key.'}', $val, $content);

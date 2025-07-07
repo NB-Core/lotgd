@@ -354,7 +354,7 @@ class Modules
         global $navsection, $mostrecentmodule;
         global $output, $session, $currenthook;
 
-        if (defined('IS_INSTALLER')) {
+        if (defined('IS_INSTALLER') && IS_INSTALLER) {
             return $args;
         }
 
@@ -408,7 +408,7 @@ class Modules
                 . ' FROM ' . db_prefix('module_hooks')
                 . ' INNER JOIN ' . db_prefix('modules')
                 . ' ON ' . db_prefix('modules') . '.modulename = ' . db_prefix('module_hooks') . '.modulename'
-                . " WHERE $active" . db_prefix('module_hooks') . ".location='$hookName'"
+                . " WHERE $active " . db_prefix('module_hooks') . ".location='$hookName'"
                 . ' ORDER BY ' . db_prefix('module_hooks') . '.priority,'
                 . db_prefix('module_hooks') . '.modulename';
             $result = db_query_cached($sql, 'hook-' . $hookName);
