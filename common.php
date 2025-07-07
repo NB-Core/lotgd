@@ -151,7 +151,7 @@ ob_start();
 if (file_exists("dbconnect.php")){
 	require_once("dbconnect.php");
 }else{
-	if (!defined("IS_INSTALLER")){
+if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 		if (!defined("DB_NODB")) define("DB_NODB",true);
                 PageParts::pageHeader("The game has not yet been installed");
 		output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
@@ -195,7 +195,7 @@ if (!defined("DB_NODB")) {
 }
 
 if ($link===false){
-	if (!defined("IS_INSTALLER")){
+if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 		// Ignore this bit.  It's only really for Eric's server
 		//I won't, because all people can use it //Oliver
 		//Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
@@ -233,7 +233,7 @@ if ($link===false){
 
 if (!defined("DB_NODB")) {
 if (!DB_CONNECTED || !@Database::selectDb($DB_NAME)){
-		if (!defined("IS_INSTALLER") && DB_CONNECTED){
+                if ((!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) && DB_CONNECTED){
 			// Ignore this bit.  It's only really for Eric's server or people that want to trigger something when the database is jerky
 			if (file_exists("lib/smsnotify.php")) {
                                 $smsmessage = "Cant Attach to DB: " . Database::error();
@@ -269,7 +269,9 @@ if (!DB_CONNECTED || !@Database::selectDb($DB_NAME)){
 }
 
 //Generate our settings object
-if (!defined("IS_INSTALLER")) $settings=new Settings("settings");
+if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+    $settings = new Settings('settings');
+}
 
 if (isset($settings) && $logd_version == $settings->getSetting("installer_version","-1")) {
 	define("IS_INSTALLER", false);
@@ -300,7 +302,7 @@ PhpGenericEnvironment::setup();
 ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS,OVERRIDE_FORCED_NAV);
 
 $script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
-if (!defined("IS_INSTALLER")) {
+if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 	mass_module_prepare(array(
 				'template-header','template-footer','template-statstart','template-stathead','template-statrow','template-statbuff','template-statend',
 				'template-navhead','template-navitem','template-petitioncount','template-adwrapper','template-login','template-loginfull','everyhit',
@@ -326,7 +328,7 @@ if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
 
 }
 
-if (isset($settings) && $logd_version != $settings->getSetting("installer_version","-1") && !defined("IS_INSTALLER")){
+if (isset($settings) && $logd_version != $settings->getSetting('installer_version', '-1') && (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER))) {
         PageParts::pageHeader("Upgrade Needed");
 	output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
 	output("In order to perform the upgrade, an admin will have to run through the installer.");
@@ -442,7 +444,7 @@ if ($session['user']['superuser']==0){
 
 Template::prepareTemplate();
 
-if(!defined("IS_INSTALLER")) {
+if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 	if (!isset($session['user']['hashorse'])) $session['user']['hashorse']=0;
         $playermount = Mounts::getmount($session['user']['hashorse']);
 	$temp_comp = @unserialize($session['user']['companions']);
@@ -485,7 +487,7 @@ if(!defined("IS_INSTALLER")) {
 
 }
 
-if (!defined("IS_INSTALLER") && $settings->getSetting('debug',0)) {
+if ((!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) && $settings->getSetting('debug', 0)) {
 	//Server runs in Debug mode, tell the superuser about it
 	if (($session['user']['superuser']&SU_EDIT_CONFIG)==SU_EDIT_CONFIG) {
 		tlschema("debug");
@@ -514,5 +516,7 @@ $output->setNestedTagEval($nestedeval);
 // This however is the only context where blockmodule can be called safely!
 // You should do as LITTLE as possible here and consider if you can hook on
 // a page header instead.
-if (!defined("IS_INSTALLER")) modulehook("everyhit");
+if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+    modulehook('everyhit');
+}
 ?>

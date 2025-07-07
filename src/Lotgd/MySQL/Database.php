@@ -50,7 +50,7 @@ class Database
      */
     public static function query(string $sql, bool $die = true): array|bool|\mysqli_result
     {
-        if (defined('DB_NODB') && !defined('LINK')) {
+        if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return [];
         }
         global $session, $dbinfo;
@@ -117,7 +117,7 @@ class Database
     public static function error(): string
     {
         $r = self::getInstance()->error();
-        if ($r == '' && defined('DB_NODB') && !defined('DB_INSTALLER_STAGE4')) {
+        if ($r == '' && (defined('DB_NODB') && DB_NODB) && !defined('DB_INSTALLER_STAGE4')) {
             return 'The database connection was never established';
         }
         return $r;
@@ -145,7 +145,7 @@ class Database
      */
     public static function insertId(): int|string
     {
-        if (defined('DB_NODB') && !defined('LINK')) {
+        if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return -1;
         }
         return self::getInstance()->insertId();
@@ -161,7 +161,7 @@ class Database
         if (is_array($result)) {
             return count($result);
         }
-        if (defined('DB_NODB') && !defined('LINK')) {
+        if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return 0;
         }
         return self::getInstance()->numRows($result);
@@ -176,7 +176,7 @@ class Database
         if (isset($dbinfo['affected_rows'])) {
             return $dbinfo['affected_rows'];
         }
-        if (defined('DB_NODB') && !defined('LINK')) {
+        if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return 0;
         }
         return self::getInstance()->affectedRows();
@@ -232,7 +232,7 @@ class Database
         if (is_array($result)) {
             return true;
         }
-        if (defined('DB_NODB') && !defined('LINK')) {
+        if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return false;
         }
         self::getInstance()->freeResult($result);
@@ -244,7 +244,7 @@ class Database
      */
     public static function tableExists(string $tablename): bool
     {
-        if (defined('DB_NODB') && !defined('LINK')) {
+        if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return false;
         }
         return self::getInstance()->tableExists($tablename);

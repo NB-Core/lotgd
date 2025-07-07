@@ -354,7 +354,7 @@ class Modules
         global $navsection, $mostrecentmodule;
         global $output, $session, $currenthook;
 
-        if (defined('IS_INSTALLER')) {
+        if (defined('IS_INSTALLER') && IS_INSTALLER) {
             return $args;
         }
 
