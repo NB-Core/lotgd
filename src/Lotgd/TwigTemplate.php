@@ -11,26 +11,27 @@ class TwigTemplate extends Template
     private static ?Environment $env = null;
     private static string $templateDir = '';
 
-    public static function init(string $templateName): void
+    public static function init(string $templateName, ?Settings $settings = null): void
     {
-        global $settings;
-
         self::$templateDir = __DIR__ . '/../../templates_twig/' . $templateName;
         $loader = new FilesystemLoader(self::$templateDir);
 
-        $baseDir = ($settings instanceof Settings)
-            ? $settings->getSetting('datacachepath', '/tmp')
-            : '/tmp';
+        $baseDir = $settings?->getSetting('datacachepath', '/tmp') ?? '/tmp';
         $cacheDir = rtrim($baseDir, '/\\') . '/twig';
-        if (!is_dir($cacheDir)) {
-            mkdir($cacheDir, 0777, true);
+        $cacheEnabled = false;
+        if (is_dir($cacheDir) || mkdir($cacheDir, 0755, true)) {
+            $cacheEnabled = is_writable($cacheDir);
         }
 
-        self::$env = new Environment($loader, [
-            'cache' => $cacheDir,
-            'auto_reload' => true,
-        ]);
-        define('TEMPLATE_IS_TWIG', true);
+        $options = ['auto_reload' => true];
+        if ($cacheEnabled) {
+            $options['cache'] = $cacheDir;
+        }
+
+        self::$env = new Environment($loader, $options);
+        if (!defined('TEMPLATE_IS_TWIG')) {
+            define('TEMPLATE_IS_TWIG', true);
+        }
     }
 
     public static function render(string $view, array $context = []): string

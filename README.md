@@ -94,8 +94,9 @@ continue to work as before.
 Twig views receive variables for common placeholders like `nav`, `stats`, and
 `paypal`, allowing flexible layouts.
 Compiled Twig templates are cached under the directory defined by the
-`datacachepath` setting. Ensure this location is writable by the web server;
-a `twig` subfolder will be created automatically.
+`datacachepath` setting. The engine attempts to create a `twig` subdirectory
+and only enables caching when it is writable. If the path cannot be created
+or written to, templates are rendered without caching.
 
 ## Install from Release Archive
 
