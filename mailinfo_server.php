@@ -122,4 +122,5 @@ function commentary_text($args=false) {
 	$new=Commentary::viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
 	$objResponse = jaxon()->newResponse();
 	$objResponse->assign($section,"innerHTML", $new);
+	return $objResponse;
 }
