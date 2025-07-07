@@ -102,14 +102,16 @@ table.charinfo {
 	width: 182px;
 }
 td.pageheader {
-        background-color: #333399;
-        background-image: url(templates_twig/modern/assets/headbkg.GIF);
-        height: 69px;
+    background-color: #333399;
+    background-image: url(headbkg.GIF);
+    height: 69px;
+	padding-bottom: 0px;
 }
 td.popupheader {
-		background-color: #333399;
-		background-image: url(templates_twig/modern/assets/headbkg.GIF);
-		height: 20px;
+	background-color: #333399;
+	background-image: url(headbkg.GIF);
+	height: 20px;
+	padding: 0px;
 }
 td.noborder {
 	border: none;
@@ -192,7 +194,7 @@ a.hotmotd {
 	color: #FFFFFF;
 }
 td.footer {
-		background-image: url(templates_twig/modern/assets/rule.gif);
+		background-image: url(rule.gif);
 		background-repeat: repeat-x;
 		background-position: top;
 }

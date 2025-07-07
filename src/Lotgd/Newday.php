@@ -44,7 +44,7 @@ class Newday
             GameLog::log('ERROR, problems with moving the debuglog to the archive', 'maintenance');
         }
 
-        $timestamp = self::calculateExpirationTimestamp(((int)getsetting('oldmail', 14) . ' days');
+        $timestamp = self::calculateExpirationTimestamp((int)getsetting('oldmail', 14) . ' days');
         $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE sent<'$timestamp'";
         db_query($sql);
         GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('mails') . " older than $timestamp.", 'maintenance');

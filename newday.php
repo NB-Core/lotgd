@@ -310,7 +310,7 @@ if ($dp < $dkills) {
                 savesetting("newdaySemaphore",gmdate("Y-m-d H:i:s"));
                 $sql = "UNLOCK TABLES";
                 db_query($sql);
-                                Newday::runOnce();
+                Newday::runOnce();
 			}else{
 	            //someone else beat us to it, unlock.
                 $sql = "UNLOCK TABLES";

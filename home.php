@@ -4,6 +4,7 @@ use Lotgd\Forms;
 use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Template;
+use Lotgd\TwigTemplate;
 // addnews ready
 // mail ready
 
