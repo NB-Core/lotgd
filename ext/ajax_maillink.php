@@ -1,4 +1,9 @@
 <?php
+global $jaxon;
+$s_js=($jaxon->getJs());
+$s_script=($jaxon->getScript());
+
+require __DIR__ . '/ajax_settings.php';
 $maillink_add_pre = $s_js . $s_script;
 $maillink_add_after = "<script>";
 $maillink_add_after .= "var lotgd_comment_section = " . json_encode($session['last_comment_section'] ?? '') . ";";

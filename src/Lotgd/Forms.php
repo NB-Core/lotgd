@@ -524,7 +524,7 @@ class Forms
                 break;
 
             case 'int':
-                $out = array_key_exists($key, $row) ? $row[$key] : 0;
+                $out = (string) (array_key_exists($key, $row) ? $row[$key] : 0);
                 rawoutput("<input name='$keyout' value=\"" . HTMLEntities($out, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\" size='5'>");
                 break;
 

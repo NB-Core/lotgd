@@ -59,7 +59,7 @@ class Mail
             } else {
                 $fromline = translate_inline('The Green Dragon', 'mail');
             }
-            $sql = 'SELECT name FROM ' . db_prefix('accounts') . " WHERE acctid='$to'";
+            $sql = 'SELECT name FROM ' . db_prefix('accounts') . " WHERE acctid=$to";
             $result = db_query($sql);
             $row1 = db_fetch_assoc($result);
             db_free_result($result);
@@ -162,7 +162,7 @@ class Mail
      */
     public static function deleteMessage(int $userId, int $messageId): void
     {
-        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=\'$userId\' AND messageid=\'$messageId\'";
+        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=$userId AND messageid=$messageId";
         db_query($sql);
         invalidatedatacache("mail-$userId");
     }
@@ -178,7 +178,7 @@ class Mail
             return;
         }
         $ids = implode("','", array_map('intval', $messageIds));
-        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=\'$userId\' AND messageid IN (\'$ids\')";
+        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=$userId AND messageid IN (\'$ids\')";
         db_query($sql);
         invalidatedatacache("mail-$userId");
     }
@@ -188,7 +188,7 @@ class Mail
      */
     public static function markUnread(int $userId, int $messageId): void
     {
-        $sql = 'UPDATE ' . db_prefix('mail') . " SET seen=0 WHERE msgto=\'$userId\' AND messageid=\'$messageId\'";
+        $sql = 'UPDATE ' . db_prefix('mail') . " SET seen=0 WHERE msgto=$userId AND messageid=$messageId";
         db_query($sql);
         invalidatedatacache("mail-$userId");
     }
@@ -199,7 +199,7 @@ class Mail
     public static function inboxCount(int $userId, bool $onlyUnread = false): int
     {
         $extra = $onlyUnread ? ' AND seen=0' : '';
-        $sql = 'SELECT count(messageid) AS count FROM ' . db_prefix('mail') . " WHERE msgto=\'$userId\'$extra";
+        $sql = 'SELECT count(messageid) AS count FROM ' . db_prefix('mail') . " WHERE msgto=$userId $extra";
         $result = db_query($sql);
         $row = db_fetch_assoc($result);
         return (int) ($row['count'] ?? 0);
@@ -282,13 +282,13 @@ class Mail
     public static function adjacentMessageIds(int $userId, int $messageId): array
     {
         $mail = db_prefix('mail');
-        $sql = "SELECT messageid FROM $mail WHERE msgto='$userId'" .
-            " AND messageid < '$messageId' ORDER BY messageid DESC LIMIT 1";
+        $sql = "SELECT messageid FROM $mail WHERE msgto=$userId" .
+            " AND messageid < $messageId ORDER BY messageid DESC LIMIT 1";
         $result = db_query($sql);
         $prev = db_num_rows($result) > 0 ? (int)db_fetch_assoc($result)['messageid'] : 0;
 
-        $sql = "SELECT messageid FROM $mail WHERE msgto='$userId'" .
-            " AND messageid > '$messageId' ORDER BY messageid LIMIT 1";
+        $sql = "SELECT messageid FROM $mail WHERE msgto=$userId" .
+            " AND messageid > $messageId ORDER BY messageid LIMIT 1";
         $result = db_query($sql);
         $next = db_num_rows($result) > 0 ? (int)db_fetch_assoc($result)['messageid'] : 0;
 
