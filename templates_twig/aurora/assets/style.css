@@ -183,13 +183,12 @@ a:hover.nav {
 }
 
 /* Message of the Day Link */
-a.motd {
+a.motd, a:hover.motd {
     text-decoration: none;
     color: #c61d2e;
-}
-
-a:hover.motd {
     font-weight: normal;
+}
+a:hover.motd {
     color: #FFFFFF;
 }
 
