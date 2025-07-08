@@ -122,6 +122,9 @@ function set_poll_ajax() {
  * background polling when the user navigates away.
  */
 function clear_ajax() {
+    if (typeof jaxon_timeout_status === 'function') {
+        jaxon_timeout_status(1);   // ensure final timeout message
+    }
     window.clearInterval(active_timeout_interval);
     window.clearInterval(active_mail_interval);
     window.clearInterval(active_comment_interval);
