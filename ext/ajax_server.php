@@ -1,4 +1,10 @@
 <?php
+declare(strict_types=1);
+/**
+ * Collection of server-side Jaxon callbacks used by the AJAX
+ * interface. Handles mail notifications, timeout warnings and
+ * commentary updates.
+ */
 /* you need to check if somebody timed out.
    if you call common.php and we have a timeout, he will the redirect to index.php?op=timeout, resulting in a full page
    which will (called in 1s intervals) download a lot of useless traffic to him and from your server
@@ -15,7 +21,13 @@ use Jaxon\Response\Response;          // and the Response class
 use Lotgd\Commentary;
 use function Jaxon\jaxon;
 
-function mail_expired($args=false) {
+/**
+ * Respond when a user's session has expired.
+ *
+ * @param bool $args Trigger flag from the client
+ * @return Response
+ */
+function mail_expired($args=false): Response {
 	if ($args===false) return;
 	chdir("..");
 	$new="Expired";
@@ -32,6 +44,12 @@ function mail_expired($args=false) {
 	return $objResponse;
 }
 
+/**
+ * Return mail and timeout status information for the active user.
+ *
+ * @param bool $args Trigger flag from the client
+ * @return Response
+ */
 function mail_status($args=false) {
 	global $start_timeout_show_seconds;
 	chdir("..");
@@ -72,6 +90,12 @@ function mail_status($args=false) {
 	return $objResponse;
 }
 
+/**
+ * Update last activity time and report remaining session timeout.
+ *
+ * @param bool $args Trigger flag from the client
+ * @return Response
+ */
 function timeout_status($args=false) {
 	global $start_timeout_show_seconds, $never_timeout_if_browser_open;
 	chdir("..");
@@ -96,6 +120,12 @@ function timeout_status($args=false) {
 }
 
 
+/**
+ * Retrieve a block of commentary for a given section.
+ *
+ * @param array|bool $args Parameter array from the client
+ * @return Response
+ */
 function commentary_text($args=false) {
 	global $session;
 	if ($args===false || !is_array($args)) return;
@@ -111,6 +141,13 @@ function commentary_text($args=false) {
        return $objResponse;
 }
 
+/**
+ * Return new commentary posts after a given comment ID.
+ *
+ * @param string $section The commentary section name
+ * @param int $lastId ID of the last comment already displayed
+ * @return Response
+ */
 function commentary_refresh(string $section, int $lastId) {
         global $session;
         $comments = [];
