@@ -37,7 +37,7 @@ function clear_ajax() {
     window.clearInterval(active_comment_interval);
 }
 
-$(window).ready(function() {
+$(function() {
     set_mail_ajax();
     if (typeof lotgd_comment_section !== 'undefined' && lotgd_comment_section) {
         set_comment_ajax();
