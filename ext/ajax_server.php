@@ -135,7 +135,10 @@ function commentary_refresh(string $section, int $lastId) {
         $newId = $lastId;
         while ($row = db_fetch_assoc($result)) {
                 $newId = $row['commentid'];
-                $comments[] = "<div data-cid='{$row['commentid']}'>" . Commentary::renderCommentLine($row, $linkbios) . '</div>';
+                $line = Commentary::renderCommentLine($row, $linkbios);
+                // Convert colour codes but preserve embedded HTML like profile links
+                $line = appoencode($line, true);
+                $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
         }
         db_free_result($result);
         $html = implode('', $comments);
