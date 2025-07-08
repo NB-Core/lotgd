@@ -33,8 +33,8 @@ function mail_expired($args=false): Response {
 	$new="Expired";
 	$tabtext="Expired";
 	$objResponse = jaxon()->newResponse();
-	$objResponse->assign("maillink","innerHTML", $new);
-	$objResponse->script("document.title=\"".$tabtext."\";");
+        $objResponse->assign("maillink","innerHTML", $new);
+        $objResponse->script("document.title=\"".$tabtext."\";");
 	global $session;
 	$warning='';
 	$warning="<br/>".appoencode("`\$`b")."Your session has timed out!".appoencode("`b");
@@ -55,18 +55,26 @@ function mail_status($args=false) {
 	chdir("..");
 	if ($args===false) return;
 	$timeout_setting=getsetting("LOGINTIMEOUT",360); // seconds
-	$new=maillink();
-	$tabtext=maillinktabtext();
-	$objResponse = jaxon()->newResponse();
+        $new=maillink();
+        $tabtext=maillinktabtext();
+        $sql = "SELECT sum(if(seen=0,1,0)) AS notseen FROM "
+            . db_prefix('mail') . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
+        $result = db_query_cached($sql, 'mail-notify-' . $session['user']['acctid'], 60);
+        $row = db_fetch_assoc($result);
+        db_free_result($result);
+        $unseen = (int)($row['notseen'] ?? 0);
+        $objResponse = jaxon()->newResponse();
 	$objResponse->assign("maillink","innerHTML", $new);
 	if ($tabtext=='') { //empty
 		$tabtext=translate_inline('Legend of the Green Dragon','home');
 		//		$objResponse->script("if (tab_oldtext!=='' && tab_oldtext!==document.title) {document.title=tab_oldtext; tab_oldtext='';}");
-		$objResponse->script("document.title=\"".$tabtext."\";");
-	} else {
+                $objResponse->script("document.title=\"".$tabtext."\";");
+                $objResponse->script('lotgdMailNotify(' . $unseen . ');');
+        } else {
 		//		$objResponse->script("if (tab_oldtext==='') { tab_oldtext=document.title; }");
 		//		$objResponse->script("console.log('Text: '+tab_oldtext)");
-		$objResponse->script("document.title=\"".$tabtext."\";");
+                $objResponse->script("document.title=\"".$tabtext."\";");
+                $objResponse->script('lotgdMailNotify(' . $unseen . ');');
 	}
 	global $session;
 	$warning='';
@@ -183,6 +191,7 @@ function commentary_refresh(string $section, int $lastId) {
         if ($html !== '') {
                 $objResponse->append("{$section}-comment", 'innerHTML', $html);
                 $objResponse->script("lotgd_lastCommentId = $newId;");
+                $objResponse->script('lotgdCommentNotify(' . count($comments) . ');');
         }
         return $objResponse;
 }
