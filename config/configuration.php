@@ -11,7 +11,7 @@ $setup = array(
 	"This is a comma separated list the petitionsender can choose one point from. Use as many as you like - without colors,note",
 	"Enter languages here like this: `i(shortname 2 chars) comma (readable name of the language)`i and continue as long as you wish,note",
 	"serverlanguages"=>"Languages available on this server",
-	"defaultlanguage"=>"Default Language,enum,".getsetting("serverlanguages","en,English,fr,Français,dk,Danish,de,Deutsch,es,Español,it,Italian"),
+	"defaultlanguage"=>"Default Language,enum,".getsetting("serverlanguages","en,English,fr,FranÃ§ais,dk,Danish,de,Deutsch,es,EspaÃ±ol,it,Italian"),
 	"corenewspath"=>"Path and file to fetch the Core News for +nb Editions",
 	"edittitles"=>"Should DK titles be editable in user editor,bool",
 	"forcedmotdpopup"=>"Force a MOTD popup if an unseen motd is there?,bool",
@@ -45,7 +45,7 @@ $setup = array(
 	"homecurtime"=>"Should the current realm time be shown?,bool",
 	"homenewdaytime"=>"Should the time till newday be shown?,bool",
 	"homenewestplayer"=>"Should the newest player be shown?,bool",
-	"defaultskin"=>"What skin should be the default?,theme",
+	"defaultskin"=>"Which template should be the default? (ships with modern.htm),theme",
 	"listonlyonline"=>"Show Warriors List with only online folks (prevent paging)?,bool",
 	"impressum"=>"Tell the world something about the person running this server. (e.g. name and address),textarea",
 

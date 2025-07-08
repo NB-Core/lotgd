@@ -91,9 +91,10 @@ Want to have this running in no time?
 
 Twig templates reside in the `templates_twig/` directory. Each template should
 have its own folder containing a `config.json`, `page.twig`, and `popup.twig`.
-Set the template name via the `defaultskin` setting or a `template` cookie. If a
-matching folder is found, pages are rendered with Twig; classic `.htm` templates
-continue to work as before.
+The distribution includes the **modern** template and uses it as the default
+skin. You can switch to another template by changing the `defaultskin` setting
+or by setting a `template` cookie. If a matching folder is found, pages are
+rendered with Twig; classic `.htm` templates continue to work as before.
 Twig views receive variables for common placeholders like `nav`, `stats`, and
 `paypal`, allowing flexible layouts.
 Compiled Twig templates are cached under the directory defined by the

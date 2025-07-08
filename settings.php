@@ -16,10 +16,9 @@ zlib.output_compression_level = 7
 for instance. And then do an "apache2 -k graceful" and check with phpinfo() to see if it worked.
 */
 
-/* The default skin which gets selected if you have NO skin accessible / configured or the database simply does not exist to select a default skin.
-
-This will also be used in cases of database outages and so forth
-
+/* The bundled **modern** template is used when no skin is configured or the
+database is unavailable. Change the template by adjusting the `defaultskin`
+setting in your game configuration.
 */
 $_defaultskin="modern.htm";
 
