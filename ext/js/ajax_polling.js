@@ -12,6 +12,47 @@
 var active_mail_interval;     // ID of the mail polling interval
 var active_comment_interval;  // ID of the commentary polling interval
 var active_timeout_interval;  // ID of the timeout polling interval
+var lotgd_lastMailCount = 0;  // Track last unread mail count
+
+/**
+ * Display a Web Notification with the given title and message.
+ * The browser permission is requested on demand.
+ */
+function lotgdShowNotification(title, message) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+        new Notification(title, {body: message, icon: '/favicon.ico'});
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(function(permission) {
+            if (permission === 'granted') {
+                new Notification(title, {body: message, icon: '/favicon.ico'});
+            }
+        });
+    }
+}
+
+/**
+ * Handle updated unread mail count from the server.
+ */
+function lotgdMailNotify(count) {
+    if (count > lotgd_lastMailCount && !document.hasFocus()) {
+        var msg = count === 1 ? 'You have 1 unread message' :
+            'You have ' + count + ' unread messages';
+        lotgdShowNotification('Legend of the Green Dragon', msg);
+    }
+    lotgd_lastMailCount = count;
+}
+
+/**
+ * Notify about new commentary posts when the page is unfocused.
+ */
+function lotgdCommentNotify(count) {
+    if (count > 0 && !document.hasFocus()) {
+        var msg = count === 1 ? 'A new comment was posted' :
+            count + ' new comments were posted';
+        lotgdShowNotification('Legend of the Green Dragon', msg);
+    }
+}
 
 /**
  * Start periodic mail polling if the interval is configured.
@@ -69,6 +110,9 @@ function clear_ajax() {
 // supplied by the server. Commentary and timeout checks only run
 // if the corresponding variables are present.
 $(function() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
     set_mail_ajax();
     if (typeof lotgd_comment_section !== 'undefined' && lotgd_comment_section) {
         set_comment_ajax();
