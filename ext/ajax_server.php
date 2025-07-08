@@ -27,7 +27,7 @@ use function Jaxon\jaxon;
  * @param bool $args Trigger flag from the client
  * @return Response
  */
-function mail_expired($args=false) {
+function mail_expired($args=false): Response {
 	if ($args===false) return;
 	chdir("..");
 	$new="Expired";
