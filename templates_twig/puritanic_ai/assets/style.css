@@ -246,7 +246,7 @@ td[class*="page-bottom"] {
 
 .btn {
     background-color: #222222;
-    color: #000000;
+    color: #CCCCCC;
     font-family: verdana, arial, helvetica, sans-serif;
     font-size: 12px;
     background-image: url(/templates/images/input.gif);
