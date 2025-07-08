@@ -84,14 +84,20 @@ class Template
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             if (isset($settings) && $settings instanceof Settings) {
                 // If the settings object is available, use it to get the default skin
-                $templatename = $settings->getSetting('defaultskin', 'jade.htm');
+                $templatename = $settings->getSetting('defaultskin', 'modern.htm');
             } else {
                 // Fallback to a hardcoded default skin if settings are not available
-                $templatename = 'jade.htm';
+                $templatename = 'modern.htm';
+            }
+            if (strpos($templatename, ':') !== false) {
+                [$templateType, $templatename] = explode(':', $templatename, 2);
             }
         }
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             $templatename = $_defaultskin;
+            if (strpos($templatename, ':') !== false) {
+                [$templateType, $templatename] = explode(':', $templatename, 2);
+            }
         }
 
         if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
@@ -131,7 +137,7 @@ class Template
      * Load a template file and split it into sections.
      *
      * If the template doesn't exist, uses the admin-defined default template
-     * and then falls back to jade.htm.
+     * and then falls back to modern.htm.
      *
      * @param string $templatename Template file name
      *

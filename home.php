@@ -155,7 +155,7 @@ if (getsetting("homeskinselect", 1)) {
         if (isset($_COOKIE['template'])) {
                 $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
         } else {
-                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "yarbrough.htm"));
+                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "modern.htm"));
         }
         Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
