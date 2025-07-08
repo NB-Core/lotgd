@@ -323,8 +323,11 @@ if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 $revertsession=$session;
 if (!isset($session['user']['loggedin'])) $session['user']['loggedin']=false;
 
-if ($session['user']['loggedin']!=true && !ALLOW_ANONYMOUS){
-    Redirect::redirect("login.php?op=logout");
+if ($session['user']['loggedin'] != true && !ALLOW_ANONYMOUS) {
+    if (!AJAX_MODE) {
+        Redirect::redirect('login.php?op=logout');
+    }
+    // For AJAX_MODE, allow the caller to handle a timed-out session.
 }
 
 if (!isset($session['counter'])) $session['counter']=0;
