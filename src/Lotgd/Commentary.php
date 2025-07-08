@@ -327,121 +327,19 @@ class Commentary
             if (isset($row['acctid']) && isset($session['user']['acctid']) && $row['acctid'] === $session['user']['acctid'] && $is_gm) {
                 $gm_array[] = $i;
             }
-            $row['comment'] = comment_sanitize($row['comment']);
-            $row['comment'] = sanitize_mb($row['comment']);
             $commentids[$i] = $row['commentid'];
             if (date('Y-m-d', strtotime($row['postdate'])) == date('Y-m-d')) {
                 if (isset($session['user']['name']) && $row['name'] == $session['user']['name']) {
                     $counttoday++;
                 }
             }
-            $x = 0;
-            $ft = '';
-            for ($x = 0; strlen($ft) < 5 && $x < strlen($row['comment']); $x++) {
-                if (mb_substr($row['comment'], $x, 1) == '`' && strlen($ft) == 0) {
-                    $x++;
-                } else {
-                    $ft .= mb_substr($row['comment'], $x, 1);
-                }
-            }
 
-            $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($real_request_uri);
-
-            if (mb_substr($ft, 0, 2) == '::') {
-                $ft = mb_substr($ft, 0, 2);
-            } elseif (mb_substr($ft, 0, 1) == ':') {
-                $ft = mb_substr($ft, 0, 1);
-            } elseif (mb_substr($ft, 0, 3) == '/me') {
-                $ft = mb_substr($ft, 0, 3);
-            }
-
-            $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
-            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
-            if ($row['clanrank']) {
-                $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
-            }
-
-            if (getsetting('enable_chat_tags', 1) == 1) {
-                if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
-                    $row['name'] = '`$' . getsetting('chat_tag_megauser', '[ADMIN]') . '`0' . $row['name'];
-                } else {
-                    if (($row['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
-                        $chat_tag_gm = getsetting('chat_tag_gm', '[GM]');
-                        $row['name'] = '`$' . $chat_tag_gm . '`0' . $row['name'];
-                    }
-                    if (($row['superuser'] & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
-                        $chat_tag_mod = getsetting('chat_tag_mod', '[MOD]');
-                        $row['name'] = '`$' . $chat_tag_mod . '`0' . $row['name'];
-                    }
-                }
-            }
-
-            if ($ft == '::' || $ft == '/me' || $ft == ':') {
-                $x = strpos($row['comment'], $ft);
-                if ($x !== false) {
-                    if ($linkbios) {
-                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
-                    } else {
-                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
-                    }
-                    $rawc[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
-                }
-            }
-
-            if ($ft == '/game' && !$row['name']) {
-                $x = strpos($row['comment'], $ft);
-                if ($x !== false) {
-                    $op[$i] = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
-                }
-            }
-
-            if (!isset($op) || !is_array($op)) {
-                $op = [];
-            }
-            if (!array_key_exists($i, $op) || $op[$i] == '') {
-                if ($linkbios) {
-                    $op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
-                } elseif (mb_substr($ft, 0, 5) == '/game' && !$row['name']) {
-                    $op[$i] = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-                } else {
-                    $op[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
-                }
-                $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
-            }
-
-            if (isset($session['user']['prefs']['timeoffset'])) {
-                $session['user']['prefs']['timeoffset'] = round($session['user']['prefs']['timeoffset'], 1);
-            } else {
-                $session['user']['prefs']['timeoffset'] = 0;
-            }
-
-            if (!array_key_exists('timestamp', $session['user']['prefs'])) {
-                $session['user']['prefs']['timestamp'] = 0;
-            }
-
-            if ($session['user']['prefs']['timestamp'] == 1) {
-                if (!isset($session['user']['prefs']['timeformat'])) {
-                    $session['user']['prefs']['timeformat'] = '[m/d h:ia]';
-                }
-                $time = strtotime($row['postdate']) + ($session['user']['prefs']['timeoffset'] * 60 * 60);
-                $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', $time);
-                $op[$i] = $s . $op[$i];
-            } elseif ($session['user']['prefs']['timestamp'] == 2) {
-                $s = reltime(strtotime($row['postdate']));
-                $op[$i] = "`7($s)`0 " . $op[$i];
-            }
+            $op[$i] = self::renderCommentLine($row, $linkbios);
             if ($message == 'X') {
                 $op[$i] = "`0({$row['section']}) " . $op[$i];
             }
-            if (isset($session['user']['recentcomments']) && $row['postdate'] >= $session['user']['recentcomments']) {
-                $op[$i] = "<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> " . $op[$i];
-            }
-            addnav('', $link);
+
             $auth[$i] = $row['author'];
-            if (isset($rawc[$i])) {
-                $rawc[$i] = full_sanitize($rawc[$i]);
-                $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
-            }
         }
         $i--;
         $outputcomments = [];
@@ -589,6 +487,116 @@ class Commentary
         }
         rawoutput('</div>');
         return null;
+    }
+
+    /**
+     * Render a single commentary line.
+     */
+    public static function renderCommentLine(array $row, bool $linkBios): string
+    {
+        global $session;
+
+        if ($_SERVER['REQUEST_URI'] == '/ext/ajax_process.php') {
+            $real_request_uri = $session['last_comment_request_uri'] ?? $_SERVER['REQUEST_URI'];
+        } else {
+            $real_request_uri = $_SERVER['REQUEST_URI'];
+            $session['last_comment_request_uri'] = $real_request_uri;
+        }
+
+        $row['comment'] = comment_sanitize($row['comment']);
+        $row['comment'] = sanitize_mb($row['comment']);
+
+        $ft = '';
+        for ($x = 0; strlen($ft) < 5 && $x < strlen($row['comment']); $x++) {
+            if (mb_substr($row['comment'], $x, 1) == '`' && strlen($ft) == 0) {
+                $x++;
+            } else {
+                $ft .= mb_substr($row['comment'], $x, 1);
+            }
+        }
+
+        $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($real_request_uri);
+
+        if (mb_substr($ft, 0, 2) == '::') {
+            $ft = mb_substr($ft, 0, 2);
+        } elseif (mb_substr($ft, 0, 1) == ':') {
+            $ft = mb_substr($ft, 0, 1);
+        } elseif (mb_substr($ft, 0, 3) == '/me') {
+            $ft = mb_substr($ft, 0, 3);
+        }
+
+        $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
+        $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+
+        if ($row['clanrank']) {
+            $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
+            $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
+        }
+
+        if (getsetting('enable_chat_tags', 1) == 1) {
+            if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
+                $row['name'] = '`$' . getsetting('chat_tag_megauser', '[ADMIN]') . '`0' . $row['name'];
+            } else {
+                if (($row['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
+                    $chat_tag_gm = getsetting('chat_tag_gm', '[GM]');
+                    $row['name'] = '`$' . $chat_tag_gm . '`0' . $row['name'];
+                }
+                if (($row['superuser'] & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
+                    $chat_tag_mod = getsetting('chat_tag_mod', '[MOD]');
+                    $row['name'] = '`$' . $chat_tag_mod . '`0' . $row['name'];
+                }
+            }
+        }
+
+        $op = '';
+        if ($ft == '::' || $ft == '/me' || $ft == ':') {
+            $x = strpos($row['comment'], $ft);
+            if ($x !== false) {
+                if ($linkBios) {
+                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                } else {
+                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                }
+            }
+        }
+
+        if ($op == '' && $ft == '/game' && !$row['name']) {
+            $x = strpos($row['comment'], $ft);
+            if ($x !== false) {
+                $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+            }
+        }
+
+        if ($op == '') {
+            if ($linkBios) {
+                $op = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
+            } elseif (mb_substr($ft, 0, 5) == '/game' && !$row['name']) {
+                $op = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+            } else {
+                $op = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
+            }
+        }
+
+        $session['user']['prefs']['timeoffset'] = $session['user']['prefs']['timeoffset'] ?? 0;
+        $session['user']['prefs']['timestamp'] = $session['user']['prefs']['timestamp'] ?? 0;
+
+        if ($session['user']['prefs']['timestamp'] == 1) {
+            $session['user']['prefs']['timeformat'] = $session['user']['prefs']['timeformat'] ?? '[m/d h:ia]';
+            $time = strtotime($row['postdate']) + ($session['user']['prefs']['timeoffset'] * 60 * 60);
+            $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', $time);
+            $op = $s . $op;
+        } elseif ($session['user']['prefs']['timestamp'] == 2) {
+            $s = reltime(strtotime($row['postdate']));
+            $op = "`7($s)`0 " . $op;
+        }
+
+        if (isset($session['user']['recentcomments']) && $row['postdate'] >= $session['user']['recentcomments']) {
+            $op = "<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> " . $op;
+        }
+
+        addnav('', $link);
+
+        return $op;
     }
 
     public static function talkline(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
