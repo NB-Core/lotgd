@@ -110,9 +110,6 @@ function clear_ajax() {
 // supplied by the server. Commentary and timeout checks only run
 // if the corresponding variables are present.
 $(function() {
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
     set_mail_ajax();
     if (typeof lotgd_comment_section !== 'undefined' && lotgd_comment_section) {
         set_comment_ajax();
