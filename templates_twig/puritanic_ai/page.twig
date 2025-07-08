@@ -16,6 +16,7 @@
                 <table class="layout-table noborder" width="100%">
                     <tr class="page-header">
                         <td class="noborder pageheader-left align-center">
+                            <button class="btn btn-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNav" aria-controls="offcanvasNav" aria-label="Open navigation menu">&#9776;</button>
                             <table>
                                 <tr>
                                     <td class="noborder motd align-left valign-bottom" width="50%">&nbsp;&nbsp;<strong>{{ motd|raw }}</strong></td>
@@ -25,6 +26,7 @@
                         </td>
                         <td class="noborder pageheader-center align-center">{{ title }}</td>
                         <td class="noborder pageheader-right">
+                            <button class="btn btn-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasStats" aria-controls="offcanvasStats">&#128202;</button>
                             <img src="{{ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail"><strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
                             {{ petitiondisplay|raw }}
                         </td>
@@ -33,7 +35,7 @@
             </div>
         </div>
         <div class="row">
-            <nav class="col-lg-2 sidebar-content valign-top">
+            <nav class="col-lg-2 sidebar-content valign-top d-none d-lg-block">
                 <div class="navad-wrapper">{{ navad|raw }}</div>
                 <div class="nav-container" role="navigation">{{ nav|raw }}</div>
             </nav>
@@ -42,7 +44,7 @@
                 {{ bodyad|raw }}
                 {{ content|raw }}
             </main>
-            <aside class="col-lg-2 sidebar-content valign-top">
+            <aside class="col-lg-2 sidebar-content valign-top d-none d-lg-block">
                 {{ stats|raw }}
                 <br>
                 {{ paypal|raw }}
@@ -82,6 +84,30 @@
             </div>
         </div>
     </div>
+
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNav" aria-labelledby="offcanvasNavLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasNavLabel">Navigation</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="navad-wrapper">{{ navad|raw }}</div>
+            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasStats" aria-labelledby="offcanvasStatsLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasStatsLabel">Stats</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            {{ stats|raw }}
+            <br>
+            {{ paypal|raw }}
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
