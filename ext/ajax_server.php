@@ -59,7 +59,7 @@ function mail_status($args=false) {
         $tabtext=maillinktabtext();
         $sql = "SELECT sum(if(seen=0,1,0)) AS notseen FROM "
             . db_prefix('mail') . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
-        $result = db_query_cached($sql, 'mail-notify-' . $session['user']['acctid'], 86400);
+        $result = db_query_cached($sql, 'mail-notify-' . $session['user']['acctid'], 60);
         $row = db_fetch_assoc($result);
         db_free_result($result);
         $unseen = (int)($row['notseen'] ?? 0);
