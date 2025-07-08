@@ -68,6 +68,9 @@ myDefine("SEX_FEMALE",1);
 //Miscellaneous
 myDefine("INT_MAX",4294967295);
 
+// Name of the template used when none is configured
+myDefine("DEFAULT_TEMPLATE", "twig:aurora");
+
 myDefine("RACE_UNKNOWN","Horrible Gelatinous Blob");
 
 //Character Deletion Types

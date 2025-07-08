@@ -155,7 +155,7 @@ if (getsetting("homeskinselect", 1)) {
         if (isset($_COOKIE['template'])) {
                 $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
         } else {
-                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "modern.htm"));
+                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", DEFAULT_TEMPLATE));
         }
         Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
@@ -167,5 +167,4 @@ modulehook("index_bottom", array());
 page_footer();
 if ($op=="timeout") {
 	session_unset();    
-	session_destroy(); // destroy if timeout
-}
+	session_destroy(); // destroy if timeout}

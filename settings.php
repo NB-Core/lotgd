@@ -16,10 +16,9 @@ zlib.output_compression_level = 7
 for instance. And then do an "apache2 -k graceful" and check with phpinfo() to see if it worked.
 */
 
-/* The bundled **modern** template is used when no skin is configured or the
+/* The bundled **aurora** template is used when no skin is configured or the
 database is unavailable. Change the template by adjusting the `defaultskin`
 setting in your game configuration.
 */
-$_defaultskin="modern.htm";
 
 ?>

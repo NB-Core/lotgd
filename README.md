@@ -91,7 +91,7 @@ Want to have this running in no time?
 
 Twig templates reside in the `templates_twig/` directory. Each template should
 have its own folder containing a `config.json`, `page.twig`, and `popup.twig`.
-The distribution includes the **modern** template and uses it as the default
+The distribution includes the **aurora** template and uses it as the default
 skin. You can switch to another template by changing the `defaultskin` setting
 or by setting a `template` cookie. If a matching folder is found, pages are
 rendered with Twig; classic `.htm` templates continue to work as before.

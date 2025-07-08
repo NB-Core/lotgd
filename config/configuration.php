@@ -45,7 +45,7 @@ $setup = array(
 	"homecurtime"=>"Should the current realm time be shown?,bool",
 	"homenewdaytime"=>"Should the time till newday be shown?,bool",
 	"homenewestplayer"=>"Should the newest player be shown?,bool",
-	"defaultskin"=>"Which template should be the default? (ships with modern.htm),theme",
+        "defaultskin"=>"Which template should be the default? (ships with twig:aurora),theme",
 	"listonlyonline"=>"Show Warriors List with only online folks (prevent paging)?,bool",
 	"impressum"=>"Tell the world something about the person running this server. (e.g. name and address),textarea",
 
