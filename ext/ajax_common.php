@@ -28,3 +28,4 @@ $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'mail_status');
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_text');
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'timeout_status');
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_refresh');
+$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'poll_updates');

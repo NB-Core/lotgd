@@ -9,9 +9,10 @@
  * variables.
  */
 
-var active_mail_interval;     // ID of the mail polling interval
-var active_comment_interval;  // ID of the commentary polling interval
-var active_timeout_interval;  // ID of the timeout polling interval
+var active_mail_interval;     // ID of the mail polling interval (unused)
+var active_comment_interval;  // ID of the commentary polling interval (unused)
+var active_timeout_interval;  // ID of the timeout polling interval (unused)
+var active_poll_interval;     // ID of the combined polling interval
 var lotgd_lastUnreadMailId=0;  // Track last unread mail count
 
 /**
@@ -102,6 +103,20 @@ function set_timeout_ajax() {
 }
 
 /**
+ * Start polling for all updates using a single server call.
+ * Calls {@code jaxon_poll_updates} with the current commentary
+ * section and last comment id at the configured interval.
+ */
+function set_poll_ajax() {
+    if (typeof lotgd_poll_interval_ms === 'undefined') return;
+    active_poll_interval = window.setInterval(function() {
+        if (typeof jaxon_poll_updates === 'function') {
+            jaxon_poll_updates(lotgd_comment_section, lotgd_lastCommentId);
+        }
+    }, lotgd_poll_interval_ms);
+}
+
+/**
  * Stop all polling intervals. Used after the page unloads to avoid
  * background polling when the user navigates away.
  */
@@ -109,20 +124,19 @@ function clear_ajax() {
     window.clearInterval(active_timeout_interval);
     window.clearInterval(active_mail_interval);
     window.clearInterval(active_comment_interval);
+    window.clearInterval(active_poll_interval);
 }
 
 // Start polling once the DOM is ready using configuration variables
 // supplied by the server. Commentary and timeout checks only run
 // if the corresponding variables are present.
 $(function() {
-    set_mail_ajax();
-    if (typeof lotgd_comment_section !== 'undefined' && lotgd_comment_section) {
-        set_comment_ajax();
-    }
-    if (typeof lotgd_timeout_delay_ms !== 'undefined') {
-        window.setTimeout(set_timeout_ajax, lotgd_timeout_delay_ms);
-    }
+    set_poll_ajax();
     if (typeof lotgd_clear_delay_ms !== 'undefined') {
         window.setTimeout(clear_ajax, lotgd_clear_delay_ms);
     }
+    // Individual polling functions remain defined but are unused
+    // set_mail_ajax();
+    // set_comment_ajax();
+    // set_timeout_ajax();
 });

@@ -159,3 +159,18 @@ function commentary_refresh(string $section, int $lastId) : Response {
         }
         return $objResponse;
 }
+
+/**
+ * Combined polling for mail, timeout and commentary updates.
+ *
+ * @param string $section The commentary section name
+ * @param int $lastId The last comment ID already displayed
+ * @return Response
+ */
+function poll_updates(string $section, int $lastId) : Response {
+        $response = jaxon()->newResponse();
+        $response->appendResponse(mail_status(true));
+        $response->appendResponse(timeout_status(true));
+        $response->appendResponse(commentary_refresh($section, $lastId));
+        return $response;
+}
