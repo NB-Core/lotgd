@@ -20,6 +20,7 @@ Features of this fork include:
 - compatibility with PHP 8
 - PHPMailer replacing the sendmail system
 - mail notifications that auto-refresh via Ajax
+- incremental chat updates via `commentary_refresh` to load new messages without reloading the page
 - Composer integration for third-party modules
   - after modifying Composer settings, run `composer dump-autoload` to recognize new namespaces
   - after running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies
@@ -31,7 +32,6 @@ So, it should work on every modern PHP environment.
 If somebody really has time, there are still things to do:
 - replace the template system with a state-of-the-art system such as Smarty
 - Twig template support for modern theming
-- integrate refreshing chats (tests with Jaxon worked but were slow)
 - convert arrays into objects to avoid extensive `isset()` checks
 - configure the `datacachepath` setting in `dbconnect.php` to a writable directory so errors can be cached for email notifications
 
