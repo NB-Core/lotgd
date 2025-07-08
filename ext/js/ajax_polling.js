@@ -12,7 +12,7 @@
 var active_mail_interval;     // ID of the mail polling interval
 var active_comment_interval;  // ID of the commentary polling interval
 var active_timeout_interval;  // ID of the timeout polling interval
-var lotgd_lastMailCount = 0;  // Track last unread mail count
+var lotgd_lastUnreadMailId=0;  // Track last unread mail count
 
 /**
  * Display a Web Notification with the given title and message.
@@ -35,12 +35,17 @@ function lotgdShowNotification(title, message) {
  * Handle updated unread mail count from the server.
  */
 function lotgdMailNotify(count) {
-    if (count > lotgd_lastMailCount && !document.hasFocus()) {
+    if (lotgd_lastUnreadMailId === 0) {
+        // First time we get the count, just store it
+        lotgd_lastUnreadMailId = count;
+        return;
+    }
+    if (count > lotgd_lastUnreadMailId && !document.hasFocus()) {
         var msg = count === 1 ? 'You have 1 unread message' :
             'You have ' + count + ' unread messages';
-        lotgdShowNotification('Legend of the Green Dragon', msg);
+        lotgdShowNotification('Unread game messages', msg);
     }
-    lotgd_lastMailCount = count;
+    lotgd_lastUnreadMailId = count;
 }
 
 /**
@@ -50,7 +55,7 @@ function lotgdCommentNotify(count) {
     if (count > 0 && !document.hasFocus()) {
         var msg = count === 1 ? 'A new comment was posted' :
             count + ' new comments were posted';
-        lotgdShowNotification('Legend of the Green Dragon', msg);
+        lotgdShowNotification('Unread comments', msg);
     }
 }
 
