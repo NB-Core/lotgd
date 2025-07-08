@@ -105,8 +105,8 @@ function commentary_text($args=false) {
 	$talkline="says";
 	$schema=$args['schema'];
 	$viewonly=$args['viewonly'];	
-	$new=Commentary::viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
-	$new=maillink();
-	$objResponse = jaxon()->newResponse();
-	$objResponse->assign($section,"innerHTML", $new);
+       $new=Commentary::viewcommentary($section, $message, $limit, $talkline, $schema,$viewonly,1);
+       $objResponse = jaxon()->newResponse();
+       $objResponse->assign($section, "innerHTML", $new);
+       return $objResponse;
 }
