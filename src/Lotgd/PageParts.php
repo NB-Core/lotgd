@@ -875,7 +875,6 @@ public static function mailLinkTabText(){
 
         $mailHtml = '';
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
-            debug($session);
             if (getsetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('ext/ajax_maillink.php')) {
                     require 'ext/ajax_maillink.php';
