@@ -215,13 +215,10 @@ td[class*="page-bottom"] {
 
 /* Button Styles */
 .button {
-    background-color: #222222;
-    color: #000000;
-    font-family: verdana, arial, helvetica, sans-serif;
-    font-size: 12px;
-    background-image: url(/templates/images/input.gif);
-    border: 1px solid;
-    border-color: #000000 #888846 #888846 #000000;
+    /* Bootstrap btn-secondary style */
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
 }
 
 .text-center {

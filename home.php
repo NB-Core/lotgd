@@ -159,7 +159,7 @@ if (getsetting("homeskinselect", 1)) {
         }
         Forms::showForm($form, $prefs, true);
 	$submit = translate_inline("Choose");
-	rawoutput("</td><td><br>&nbsp;<input type='submit' class='button' value='$submit'></td>");
+	rawoutput("</td><td><br>&nbsp;<input type='submit' class='button login-button' value='$submit'></td>");
 	rawoutput("</tr></table></form>");
 }
 modulehook("index_bottom", array());
@@ -169,4 +169,3 @@ if ($op=="timeout") {
 	session_unset();    
 	session_destroy(); // destroy if timeout
 }
-?>
