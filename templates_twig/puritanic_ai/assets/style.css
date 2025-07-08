@@ -352,3 +352,9 @@ table.petition-count {
         text-align: center;
     }
 }
+
+.offcanvas-header,
+.offcanvas-body {
+    background-color: #000;
+    color: #ccc;
+}
