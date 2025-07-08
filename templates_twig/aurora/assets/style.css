@@ -30,7 +30,6 @@ td {
 }
 
 
-
 .popup-body {
     background-color: #111;
     color: #CCCCCC;
@@ -142,7 +141,7 @@ table.vitalinfo {
     width: 182px;
 }
 
-a.motd, a:hover.motd {
+a.motd, a:hover.motd,
 a.hotmotd {
     font-weight: normal;
     color: #FFFFFF;
@@ -244,13 +243,7 @@ td[class*="page-bottom"] {
 
 /* Button Styles */
 .button {
-    background-color: #222222;
-    color: #FFFFFF;
     font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-    font-size: 13px;
-    background-image: url(/templates/images/input.gif);
-    border: 1px solid;
-    border-color: #000000 #888846 #888846 #000000;
 }
 
 .login-submit {
@@ -342,7 +335,6 @@ table.petition-count {
 
 .nav-container {
     text-align: center;
-    background: rgba(20,20,20,0.8);
     padding-top: 4px;
     padding-bottom: 4px;
 }
@@ -364,7 +356,14 @@ table.petition-count {
 }
 
 .login-hero {
-    height: 150px;
-    background: url('login-hero.jpg') center/cover no-repeat;
+    width: 100%;
+    max-width: 512px;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background: url('login-hero.png') center/cover no-repeat;
     margin-bottom: 10px;
+    margin-top: 10px;
+    display: block;
+    border-radius: 16px;
+    overflow: hidden;
 }
