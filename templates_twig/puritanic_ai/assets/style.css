@@ -58,13 +58,7 @@ a {
     background-color: #1e1e1e;
 }
 
-.sidebar-content {
-    padding-left: 3px;
-    padding-right: 3px;
-}
-
 .pageheader-center, .pageheader-left, .pageheader-right {
-    width: 33.3%;
     padding: 3px;
     text-align: center;
 }
@@ -152,7 +146,6 @@ td.nav a.t {
 }
 
 a.t {
-    width: 7px;
     height: 7px;
     border: 1px dotted #FFFFFF;
     background-color: #999;
@@ -164,7 +157,6 @@ a.t {
 }
 
 a.thot {
-    width: 7px;
     height: 7px;
     border: 1px dotted #FFFFFF;
     background-color: #666666;
@@ -237,7 +229,6 @@ td[class*="page-bottom"] {
 
 .form-control {
     display: block;
-    width: 100%;
     padding: 2px 4px;
     border: 1px solid #ced4da;
     background-color: #000;
@@ -332,23 +323,32 @@ table.petition-count {
     position: relative;
     top: -15px;
     text-align: center;
+    margin-bottom: .5rem;
 }
 
 .verticalad-wrapper {
     float: right;
+    margin-left: 1rem;
 }
 
 .nav-container {
     text-align: center;
 }
 
-.layout-table {
-    width: 100%;
-    border-collapse: collapse;
-    border-spacing: 0;
-}
 
 .clear {
     clear: both;
     display: block;
+}
+
+@media (max-width: 992px) {
+    .navad-wrapper {
+        top: 0;
+        margin-bottom: 1rem;
+    }
+    .verticalad-wrapper {
+        float: none;
+        margin: 1rem 0;
+        text-align: center;
+    }
 }
