@@ -1,4 +1,10 @@
 <?php
+declare(strict_types=1);
+/**
+ * Entry point for processing Jaxon AJAX requests. Loads the
+ * lightweight environment, common settings and server callbacks,
+ * then passes control to the Jaxon engine.
+ */
 // File ajax_process.php
 define("OVERRIDE_FORCED_NAV",true);
 

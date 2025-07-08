@@ -1,4 +1,10 @@
 <?php
+declare(strict_types=1);
+/**
+ * Configuration values controlling the AJAX polling behaviour for
+ * mail checks, timeouts and intervals. Adjust these values to tune
+ * the client-side update frequency.
+ */
 
 $mail_debug=0; //debug
 $never_timeout_if_browser_open=0;

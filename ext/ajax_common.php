@@ -1,4 +1,10 @@
 <?php
+declare(strict_types=1);
+/**
+ * Common bootstrap for AJAX operations. This file configures the
+ * Jaxon library and registers callable functions used by the client
+ * side scripts.
+ */
 require_once __DIR__ . '/../autoload.php'; // Start autoload
 
 use Jaxon\Jaxon;                      // Use the jaxon core class
