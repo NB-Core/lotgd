@@ -1,7 +1,7 @@
 <?php
 $maillink_add_pre = $s_js . $s_script;
 $maillink_add_after = "<script>";
-$maillink_add_after .= "var lotgd_comment_section = '" . ($session['last_comment_section'] ?? '') . "';";
+$maillink_add_after .= "var lotgd_comment_section = " . json_encode($session['last_comment_section'] ?? '') . ";";
 $maillink_add_after .= "var lotgd_lastCommentId = " . (int)($session['lastcommentid'] ?? 0) . ";";
 $maillink_add_after .= "var lotgd_mail_interval_ms = " . ($check_mail_timeout_seconds * 1000) . ";";
 $maillink_add_after .= "var lotgd_comment_interval_ms = 10000;";
