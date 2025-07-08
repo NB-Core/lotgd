@@ -109,6 +109,7 @@ function set_timeout_ajax() {
  */
 function set_poll_ajax() {
     if (typeof lotgd_poll_interval_ms === 'undefined') return;
+    window.clearInterval(active_poll_interval); // Clear any existing interval
     active_poll_interval = window.setInterval(function() {
         if (typeof jaxon_poll_updates === 'function') {
             jaxon_poll_updates(lotgd_comment_section, lotgd_lastCommentId);
