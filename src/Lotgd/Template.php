@@ -68,7 +68,7 @@ class Template
             define('TEMPLATE_IS_PREPARED', true);
         }
 
-        global $templatename, $templatemessage, $template, $session, $y, $z, $y2, $z2, $copyright, $lc, $x, $templatetags, $_defaultskin;
+        global $templatename, $templatemessage, $template, $session, $y, $z, $y2, $z2, $copyright, $lc, $x, $templatetags;
         if (!isset($_COOKIE['template'])) {
             $_COOKIE['template'] = '';
         }
@@ -83,26 +83,26 @@ class Template
         }
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
             if (isset($settings) && $settings instanceof Settings) {
-                // Pull the skin from settings (the distribution ships with modern.htm).
+                // Pull the skin from settings (the distribution ships with DEFAULT_TEMPLATE).
                 // Administrators can change this via the 'defaultskin' setting.
-                $templatename = $settings->getSetting('defaultskin', 'modern.htm');
+                $templatename = $settings->getSetting('defaultskin', DEFAULT_TEMPLATE);
             } else {
-                // Use modern.htm when settings are unavailable
-                $templatename = 'modern.htm';
+                // Use DEFAULT_TEMPLATE when settings are unavailable
+                $templatename = DEFAULT_TEMPLATE;
             }
             if (strpos($templatename, ':') !== false) {
                 [$templateType, $templatename] = explode(':', $templatename, 2);
             }
         }
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
-            $templatename = $_defaultskin;
+            $templatename = DEFAULT_TEMPLATE;
             if (strpos($templatename, ':') !== false) {
                 [$templateType, $templatename] = explode(':', $templatename, 2);
             }
         }
 
         if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
-            // Initialize Twig environment for modern templates
+            // Initialize Twig environment for Twig templates
             $cachePath = null;
             if ($settings instanceof Settings) {
                 $cachePath = $settings->getSetting('datacachepath', '/tmp');
@@ -138,7 +138,7 @@ class Template
      * Load a template file and split it into sections.
      *
      * If the template doesn't exist, uses the admin-defined default template
-     * (modern.htm by default) and then falls back to modern.htm.
+     * (DEFAULT_TEMPLATE) and then falls back to that constant.
      *
      * @param string $templatename Template file name
      *
@@ -146,10 +146,10 @@ class Template
      */
     public static function loadTemplate(string $templatename): array
     {
-	    if ($templatename=="" || !file_exists("templates/$templatename"))
-		    $templatename=getsetting("defaultskin",$_defaultskin);
-	    if ($templatename=="" || !file_exists("templates/$templatename"))
-		    $templatename=$_defaultskin;
+            if ($templatename=="" || !file_exists("templates/$templatename"))
+                    $templatename=getsetting("defaultskin", DEFAULT_TEMPLATE);
+            if ($templatename=="" || !file_exists("templates/$templatename"))
+                    $templatename=DEFAULT_TEMPLATE;
 	    $fulltemplate = file_get_contents("templates/$templatename");
 	    $fulltemplate = explode("<!--!",$fulltemplate);
 	    foreach ($fulltemplate as $val) {
