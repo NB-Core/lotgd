@@ -231,8 +231,28 @@ td[class*="page-bottom"] {
     border-color: #000000 #888846 #888846 #000000;
 }
 
-.login-submit {
+.text-center {
     text-align: center;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 2px 4px;
+    border: 1px solid #ced4da;
+    background-color: #000;
+    color: #CCCCCC;
+}
+
+.btn {
+    background-color: #222222;
+    color: #000000;
+    font-family: verdana, arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-image: url(/templates/images/input.gif);
+    border: 1px solid;
+    border-color: #000000 #888846 #888846 #000000;
+    cursor: pointer;
 }
 
 /* Other Styles */
