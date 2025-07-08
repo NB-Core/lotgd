@@ -110,3 +110,39 @@ function commentary_text($args=false) {
        $objResponse->assign($section, "innerHTML", $new);
        return $objResponse;
 }
+
+function commentary_refresh(string $section, int $lastId) {
+        global $session;
+        $comments = [];
+        $nobios = ['motd.php' => true];
+        $scriptname = $session['last_comment_scriptname'] ?? $_SERVER['SCRIPT_NAME'];
+        if (!array_key_exists(basename($scriptname), $nobios)) {
+                $nobios[basename($scriptname)] = false;
+        }
+        $linkbios = !$nobios[basename($scriptname)];
+        $sql = 'SELECT ' . db_prefix('commentary') . '.*, '
+            . db_prefix('accounts') . '.name, '
+            . db_prefix('accounts') . '.acctid, '
+            . db_prefix('accounts') . '.superuser, '
+            . db_prefix('accounts') . '.clanrank, '
+            . db_prefix('clans') . '.clanshort FROM ' . db_prefix('commentary')
+            . ' LEFT JOIN ' . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = '
+            . db_prefix('commentary') . '.author LEFT JOIN ' . db_prefix('clans')
+            . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid '
+            . "WHERE section='" . addslashes($section) . "' AND commentid > '" . (int)$lastId
+            . "' ORDER BY commentid ASC";
+        $result = db_query($sql);
+        $newId = $lastId;
+        while ($row = db_fetch_assoc($result)) {
+                $newId = $row['commentid'];
+                $comments[] = "<div data-cid='{$row['commentid']}'>" . Commentary::renderCommentLine($row, $linkbios) . '</div>';
+        }
+        db_free_result($result);
+        $html = implode('', $comments);
+        $objResponse = jaxon()->newResponse();
+        if ($html !== '') {
+                $objResponse->append("{$section}-comment", 'innerHTML', $html);
+                $objResponse->script("lotgd_lastCommentId = $newId;");
+        }
+        return $objResponse;
+}

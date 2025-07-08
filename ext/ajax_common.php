@@ -21,3 +21,4 @@ $jaxon->setOption('core.request.uri', 'ext/ajax_process.php');
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'mail_status');
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_text');
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, 'timeout_status');
+$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_refresh');
