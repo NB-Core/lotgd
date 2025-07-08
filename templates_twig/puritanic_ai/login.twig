@@ -1,11 +1,11 @@
 <form class="row g-2" role="form" action="/login" method="post">
     <div class="col-12 col-sm">
-        <label for="name" class="visually-hidden">{{ username|raw }}</label>
-        <input name="name" id="name" accesskey="u" size="10" class="form-control" placeholder="{{ username|raw }}" />
+    <label for="name" class="visually-hidden">{{ username|raw }}</label>
+    <input name="name" id="name" accesskey="u" size="10" class="form-control" placeholder="{{ username|striptags }}" autocomplete="username" />
     </div>
     <div class="col-12 col-sm">
-        <label for="password" class="visually-hidden">{{ password|raw }}</label>
-        <input name="password" id="password" accesskey="p" type="password" size="10" class="form-control" placeholder="{{ password|raw }}" />
+    <label for="password" class="visually-hidden">{{ password|raw }}</label>
+    <input name="password" id="password" accesskey="p" type="password" size="10" class="form-control" placeholder="{{ password|striptags }}" autocomplete="password" />
     </div>
     <div class="col-12 text-center">
         <button type="submit" class="btn">{{ button|raw }}</button>
