@@ -23,14 +23,12 @@ td {
 
 /* Navigation Table */
 table.nav {
-    border: 1px solid #000000;
+    border: 1px solid #444;
     height: auto;
-    width: 182px;
 }
 
 .navhead {
     text-decoration: none;
-    width: 180px;
     height: auto;
     padding: 1px;
     float: left;
@@ -57,7 +55,7 @@ a {
 
 .main-content {
     border-style: dotted;
-    background-color: #2B2B2B;
+    background-color: #1e1e1e;
 }
 
 .sidebar-content {
@@ -86,7 +84,6 @@ a {
 a.nav {
     color: #FFFFFF;
     text-decoration: none;
-    width: 181px;
     height: auto;
     float: left;
     padding: 1px;
@@ -96,7 +93,6 @@ a.nav {
 
 .navhelp {
     text-decoration: none;
-    width: 181px;
     height: auto;
     padding: 1px;
     float: left;
@@ -114,7 +110,6 @@ select {
 table.vitalinfo {
     background-color: #333333;
     border: 1px solid #000000;
-    width: 182px;
 }
 
 a.motd {
@@ -204,7 +199,6 @@ td.charhead {
 }
 
 table.charinfo {
-    width: 182px;
     color: #FFFFFF;
     border: none;
     border-spacing: 0px;
