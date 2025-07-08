@@ -36,7 +36,7 @@ class Http
     /**
      * Retrieve a value from the POST superglobal.
      */
-    public static function post(string $var): string|false
+    public static function post(string $var): string|array|false
     {
         $res = $_POST[$var] ?? false;
         if ($res === '') {

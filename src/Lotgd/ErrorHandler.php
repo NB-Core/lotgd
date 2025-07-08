@@ -79,7 +79,7 @@ class ErrorHandler
             case E_WARNING:
             case E_USER_WARNING:
                 Translator::tlschema('errorhandler');
-                if (($session['user']['superuser'] & SU_DEBUG_OUTPUT) == SU_DEBUG_OUTPUT) {
+                if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT) == SU_DEBUG_OUTPUT) {
                     output("PHP Warning: \"%s\"`nin `b%s`b at `b%s`b.`n", $errstr, $errfile, $errline, true);
                     Translator::tlschema();
                     $backtrace = Backtrace::show();

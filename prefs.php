@@ -1,9 +1,11 @@
 <?php
 // addnews ready
 use Lotgd\Forms;
+use Lotgd\Template;
 // mail ready
 // translator ready
 
+require_once("common.php");
 require_once("lib/http.php");
 
 $skin = httppost('template');
@@ -13,7 +15,6 @@ if ($skin > "") {
 }
 
 require_once("lib/villagenav.php");
-require_once("common.php");
 
 tlschema("prefs");
 

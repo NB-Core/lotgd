@@ -108,6 +108,7 @@ $pagestarttime = DateTime::getMicroTime();
 // common.php
 if(!defined("OVERRIDE_FORCED_NAV")) define("OVERRIDE_FORCED_NAV",false);
 if(!defined("ALLOW_ANONYMOUS")) define("ALLOW_ANONYMOUS",false);
+if(!defined('AJAX_MODE')) define('AJAX_MODE', false);
 
 //Initialize variables required for this page
 
@@ -152,17 +153,19 @@ if (file_exists("dbconnect.php")){
 	require_once("dbconnect.php");
 }else{
 if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-		if (!defined("DB_NODB")) define("DB_NODB",true);
-                PageParts::pageHeader("The game has not yet been installed");
-		output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
-        output("You must run the game's installer, and follow its instructions in order to set up LoGD.  You can go to the installer <a href='installer.php'>here</a>.",true);
-		output("`n`nIf you're not sure why you're seeing this message, it's because this game is not properly configured right now. ");
-		output("If you've previously been running the game here, chances are that you lost a file called '`%dbconnect.php`#' from your site.");
-		output("If that's the case, no worries, we can get you back up and running in no time, and the installer can help!");
-        Nav::add("Game Installer","installer.php");
-		$session = array(); // reset the session so that it doesn't have any old data in it
-                PageParts::pageFooter();
-	}
+                if (!defined("DB_NODB")) define("DB_NODB",true);
+                if (!AJAX_MODE) {
+                        PageParts::pageHeader("The game has not yet been installed");
+                        output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
+                output("You must run the game's installer, and follow its instructions in order to set up LoGD.  You can go to the installer <a href='installer.php'>here</a>.",true);
+                        output("`n`nIf you're not sure why you're seeing this message, it's because this game is not properly configured right now. ");
+                        output("If you've previously been running the game here, chances are that you lost a file called '`%dbconnect.php`#' from your site.");
+                        output("If that's the case, no worries, we can get you back up and running in no time, and the installer can help!");
+                Nav::add("Game Installer","installer.php");
+                        PageParts::pageFooter();
+                }
+                $session = array(); // reset the session so that it doesn't have any old data in it
+        }
 }
 
 // If you are running a server that has high overhead to *connect* to your
@@ -196,35 +199,37 @@ if (!defined("DB_NODB")) {
 
 if ($link===false){
 if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-		// Ignore this bit.  It's only really for Eric's server
-		//I won't, because all people can use it //Oliver
-		//Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
-		$notified=false;
-		if (file_exists("lib/smsnotify.php")) {
+                // Ignore this bit.  It's only really for Eric's server
+                //I won't, because all people can use it //Oliver
+                //Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
+                $notified=false;
+                if (file_exists("lib/smsnotify.php")) {
                         $smsmessage = "No DB Server: " . Database::error();
-			require_once("lib/smsnotify.php");
-			$notified=true;
-		}
-		// And tell the user it died.  No translation here, we need the DB for
-		// translation.
-		if (!defined("DB_NODB")) define("DB_NODB",true);
-                PageParts::pageHeader("Database Connection Error");
-		output("`c`\$Database Connection Error`0`c`n`n");
-		output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
-		if (!$notified) {
-			//the admin did not want to notify him with a script
-			output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
-			//add the message as it was not enclosed and posted to the smsnotify file
-			output("Please give them the following error message:`n");
-			output("`i`1%s`0`i`n`n",$smsmessage,true);
-		} else {
-			//in any other case
-			output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
-		}
-		output("Sorry for the inconvenience,`n");
-		output("Staff of %s",$_SERVER['SERVER_NAME']);
-                Nav::add("Home","index.php");
-                PageParts::pageFooter();
+                        require_once("lib/smsnotify.php");
+                        $notified=true;
+                }
+                // And tell the user it died.  No translation here, we need the DB for
+                // translation.
+                if (!defined("DB_NODB")) define("DB_NODB",true);
+                if (!AJAX_MODE) {
+                        PageParts::pageHeader("Database Connection Error");
+                        output("`c`\$Database Connection Error`0`c`n`n");
+                        output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
+                        if (!$notified) {
+                                //the admin did not want to notify him with a script
+                                output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
+                                //add the message as it was not enclosed and posted to the smsnotify file
+                                output("Please give them the following error message:`n");
+                                output("`i`1%s`0`i`n`n",$smsmessage,true);
+                        } else {
+                                //in any other case
+                                output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
+                        }
+                        output("Sorry for the inconvenience,`n");
+                        output("Staff of %s",$_SERVER['SERVER_NAME']);
+                        Nav::add("Home","index.php");
+                        PageParts::pageFooter();
+                }
 	}
 	define("DB_CONNECTED",false);
 }else{
@@ -242,24 +247,26 @@ if (!DB_CONNECTED || !@Database::selectDb($DB_NAME)){
 			}
 			// And tell the user it died.  No translation here, we need the DB for
 			// translation.
-			if (!defined("DB_NODB")) define("DB_NODB",true);
-                        PageParts::pageHeader("Database Connection Error");
-			output("`c`\$Database Connection Error`0`c`n`n");
-			output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
-			if (!$notified) {
-				//the admin did not want to notify him with a script
-				output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
-				//add the message as it was not enclosed and posted to the smsnotify file
-				output("Please give them the following error message:`n");
-				output("`i`1%s`0`i`n`n",$smsmessage,true);
-			} else {
-				//in any other case
-				output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
-			}
-			output("Sorry for the inconvenience,`n");
-			output("Staff of %s",$_SERVER['SERVER_NAME']);
-                        Nav::add("Home","index.php");
-                        PageParts::pageFooter();
+                        if (!defined("DB_NODB")) define("DB_NODB",true);
+                        if (!AJAX_MODE) {
+                                PageParts::pageHeader("Database Connection Error");
+                                output("`c`\$Database Connection Error`0`c`n`n");
+                                output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
+                                if (!$notified) {
+                                        //the admin did not want to notify him with a script
+                                        output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
+                                        //add the message as it was not enclosed and posted to the smsnotify file
+                                        output("Please give them the following error message:`n");
+                                        output("`i`1%s`0`i`n`n",$smsmessage,true);
+                                } else {
+                                        //in any other case
+                                        output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
+                                }
+                                output("Sorry for the inconvenience,`n");
+                                output("Staff of %s",$_SERVER['SERVER_NAME']);
+                                Nav::add("Home","index.php");
+                                PageParts::pageFooter();
+                        }
 		}
 		define("DB_CHOSEN",false);
 	}else{
@@ -299,7 +306,9 @@ $cp = $copyright;
 $l = $license;
 
 PhpGenericEnvironment::setup();
-ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS,OVERRIDE_FORCED_NAV);
+if (!AJAX_MODE) {
+    ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS,OVERRIDE_FORCED_NAV);
+}
 
 $script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
 if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
@@ -314,8 +323,11 @@ if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 $revertsession=$session;
 if (!isset($session['user']['loggedin'])) $session['user']['loggedin']=false;
 
-if ($session['user']['loggedin']!=true && !ALLOW_ANONYMOUS){
-    Redirect::redirect("login.php?op=logout");
+if ($session['user']['loggedin'] != true && !ALLOW_ANONYMOUS) {
+    if (!AJAX_MODE) {
+        Redirect::redirect('login.php?op=logout');
+    }
+    // For AJAX_MODE, allow the caller to handle a timed-out session.
 }
 
 if (!isset($session['counter'])) $session['counter']=0;
@@ -329,21 +341,25 @@ if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
 }
 
 if (isset($settings) && $logd_version != $settings->getSetting('installer_version', '-1') && (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER))) {
-        PageParts::pageHeader("Upgrade Needed");
-	output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
-	output("In order to perform the upgrade, an admin will have to run through the installer.");
+        if (!AJAX_MODE) {
+                PageParts::pageHeader("Upgrade Needed");
+                output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
+                output("In order to perform the upgrade, an admin will have to run through the installer.");
        output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n",true);
-	output("`@If you don't know what this all means, just sit tight, we're doing an upgrade and will be done soon, you will be automatically returned to the game when the upgrade is complete.");
-	rawoutput("<meta http-equiv='refresh' content='30; url={$session['user']['restorepage']}'>");
+                output("`@If you don't know what this all means, just sit tight, we're doing an upgrade and will be done soon, you will be automatically returned to the game when the upgrade is complete.");
+                rawoutput("<meta http-equiv='refresh' content='30; url={$session['user']['restorepage']}'>");
        Nav::add("Installer (Admins only!)","installer.php");
-	define("NO_SAVE_USER",true);
-        PageParts::pageFooter();
+                PageParts::pageFooter();
+        }
+        define("NO_SAVE_USER",true);
 } elseif (isset($settings) && $logd_version == $settings->getSetting("installer_version","-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'],-13)!="installer.php") {
-	// here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
-        PageParts::pageHeader("Major Security Risk");
+        // here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
+        if (!AJAX_MODE) {
+                PageParts::pageHeader("Major Security Risk");
        output("`\$Remove the file named 'installer.php' from your main game directory! You need to comply in order to get the game up and running.");
-        Nav::add("Home","index.php");
-        PageParts::pageFooter();
+                Nav::add("Home","index.php");
+                PageParts::pageFooter();
+        }
 }
 
 
