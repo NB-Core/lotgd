@@ -286,3 +286,51 @@ table.petition-count {
 }
 
 /* Additional styles as needed based on your layout and design requirements */
+
+/* Layout helper classes */
+.align-center {
+    text-align: center;
+}
+
+.align-left {
+    text-align: left;
+}
+
+.align-right {
+    text-align: right;
+}
+
+.valign-top {
+    vertical-align: top;
+}
+
+.valign-bottom {
+    vertical-align: bottom;
+}
+
+.noborder {
+    border: 0;
+}
+
+.navad-wrapper {
+    position: relative;
+    top: -15px;
+    text-align: center;
+}
+
+.verticalad-wrapper {
+    float: right;
+}
+
+.nav-container {
+    text-align: center;
+}
+
+.layout-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.clear {
+    clear: both;
+}
