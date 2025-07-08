@@ -6,8 +6,8 @@ declare(strict_types=1);
  * asynchronous mail and commentary polling.
  */
 global $jaxon;
-$s_js=($jaxon->getJs());
-$s_script=($jaxon->getScript());
+$s_js = $jaxon->getJs();
+$s_script = $jaxon->getScript();
 
 require __DIR__ . '/ajax_settings.php';
 $maillink_add_pre = $s_js . $s_script;
