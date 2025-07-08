@@ -9,6 +9,9 @@ declare(strict_types=1);
 $mail_debug=0; //debug
 $never_timeout_if_browser_open=0;
 
+// Minimum time in seconds between Ajax requests from the same session.
+$ajax_rate_limit_seconds = 1.0; // adjust to allow faster or slower polling
+
 if ($mail_debug==0) {
 	$check_mail_timeout_seconds = 10; 	// how often check for new mail
 	$check_timeout_seconds = 5;  		// how often checking for timeout
