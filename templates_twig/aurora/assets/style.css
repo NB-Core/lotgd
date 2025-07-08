@@ -121,16 +121,7 @@ table.vitalinfo {
     width: 182px;
 }
 
-a.motd {
-    text-decoration: none;
-    color: #c61d2e;
-}
-
-a:hover.motd {
-    font-weight: normal;
-    color: #FFFFFF;
-}
-
+a.motd, a:hover.motd {
 a.hotmotd {
     font-weight: normal;
     color: #FFFFFF;
