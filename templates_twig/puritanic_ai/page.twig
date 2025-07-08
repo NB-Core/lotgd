@@ -10,9 +10,9 @@
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body class="main-body">
-    <table class="layout-table" width="100%">
-        <tr>
-            <td>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
                 <table class="layout-table noborder" width="100%">
                     <tr class="page-header">
                         <td class="noborder pageheader-left align-center">
@@ -30,41 +30,35 @@
                         </td>
                     </tr>
                 </table>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <table class="layout-table" width="100%">
-                    <tr>
-                        <td width="200" class="sidebar-content valign-top">
-                            <div class="navad-wrapper">{{ navad|raw }}</div>
-                            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
-                        </td>
-                        <td width="100%" class="main-content valign-top">
-                            <div class="verticalad-wrapper">{{ verticalad|raw }}</div>
-                            {{ bodyad|raw }}
-                            {{ content|raw }}
-                        </td>
-                        <td width="132" class="sidebar-content valign-top">
-                            {{ stats|raw }}
-                            <br>
-                            {{ paypal|raw }}
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3">
+            </div>
+        </div>
+        <div class="row">
+            <nav class="col-lg-2 sidebar-content valign-top">
+                <div class="navad-wrapper">{{ navad|raw }}</div>
+                <div class="nav-container" role="navigation">{{ nav|raw }}</div>
+            </nav>
+            <main class="col-12 col-lg-8 main-content valign-top">
+                <div class="verticalad-wrapper">{{ verticalad|raw }}</div>
+                {{ bodyad|raw }}
+                {{ content|raw }}
+            </main>
+            <aside class="col-lg-2 sidebar-content valign-top">
+                {{ stats|raw }}
+                <br>
+                {{ paypal|raw }}
+            </aside>
+        </div>
+        <div class="row">
+            <div class="col-12">
                 <table class="layout-table" width="100%" height="20">
                     <tr>
                         <td class="align-center"></td>
                     </tr>
                 </table>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
                 <table class="layout-table" width="100%">
                     <tr>
                         <td colspan="3" height="10" class="align-center"></td>
@@ -85,9 +79,9 @@
                         <td colspan="3" height="10" class="align-center"></td>
                     </tr>
                 </table>
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
