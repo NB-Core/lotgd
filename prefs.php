@@ -308,7 +308,7 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
                 $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
         }
         if (!isset($prefs['template']) || $prefs['template'] == "") {
-                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "yarbrough.htm"));
+                $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", "modern.htm"));
         }
 	if (!isset($prefs['sexuality']) || $prefs['sexuality'] == "") {
 		$prefs['sexuality'] = !$session['user']['sex'];
