@@ -1,0 +1,349 @@
+/* General Styles */
+caption {
+    white-space: nowrap;
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+}
+
+td {
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+}
+
+
+.main-body {
+    background-color: #111;
+    color: #CCCCCC;
+    margin: 0;
+}
+
+.popup-body {
+    background-color: #111;
+    color: #CCCCCC;
+}
+
+/* Navigation Table */
+table.nav {
+    border: 1px solid #000000;
+    height: auto;
+    width: 182px;
+}
+
+.navhead {
+    text-decoration: none;
+    width: 180px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    line-height: 33px;
+    clear: none;
+    color: #FFFFFF;
+    cursor: default;
+    text-align: center;
+    font-family: Tahoma Small Cap;
+    font-weight: bolder;
+}
+
+a {
+    color: #669933;
+    text-decoration: none;
+}
+
+/* Header and other styles */
+
+.page-header {
+    height: 48px;
+    padding-bottom: 3px;
+    background: url('header-bg.png') repeat-x;
+}
+
+.main-content {
+    border-style: dotted;
+    background-color: #1b1b1b;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.sidebar-content {
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+.pageheader-center, .pageheader-left, .pageheader-right {
+    width: 33.3%;
+    padding: 3px;
+    text-align: center;
+}
+
+.pageheader-left {
+    text-align: left;
+}
+
+.pageheader-right {
+    text-align: right;
+}
+
+
+
+
+/* Navigation Link */
+a.nav {
+    color: #30d5c8;
+    text-decoration: none;
+    width: 181px;
+    height: auto;
+    float: left;
+    padding: 1px;
+    clear: none;
+    text-align: center;
+}
+
+.navhelp {
+    text-decoration: none;
+    width: 181px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    clear: none;
+    color: #30d5c8;
+}
+
+/* Translations and others */
+
+select {
+    background-color: #000000;
+    border: 1px solid #999999;
+    color: #CCCCCC;
+}
+
+table.vitalinfo {
+    background-color: #333333;
+    border: 1px solid #000000;
+    width: 182px;
+}
+
+a.motd, a:hover.motd {
+a.hotmotd {
+    font-weight: normal;
+    color: #FFFFFF;
+}
+
+.pagetitle {
+    font-family: "Arial Black", "Courier";
+    font-variant: small-caps;
+    font-size: 14px;
+    color: #000000;
+}
+
+.navhi {
+    color: #c61d2e;
+    text-decoration: underline;
+}
+
+td.nav a.thot {
+    position: absolute;
+    left: 0px;
+    height: auto;
+}
+
+td.nav a.t {
+    position: absolute;
+    left: 0px;
+    height: auto;
+}
+
+a.t {
+    width: 7px;
+    height: 7px;
+    border: 1px dotted #FFFFFF;
+    background-color: #999;
+    color: #FFF;
+    font-size: 7px;
+    text-decoration: none;
+    padding-left: 1px;
+    padding-right: 1px;
+}
+
+a.thot {
+    width: 7px;
+    height: 7px;
+    border: 1px dotted #FFFFFF;
+    background-color: #666666;
+    color: #FFFFFF;
+    font-size: 7px;
+    text-decoration: none;
+    padding-left: 1px;
+    padding-right: 1px;
+}
+
+/* Hover Effects */
+a:hover.nav {
+    background-color: #404040;
+    border: none;
+    color: #FFFFFF;
+}
+
+/* Message of the Day Link */
+a.motd, a:hover.motd {
+    text-decoration: none;
+    color: #c61d2e;
+    font-weight: normal;
+}
+a:hover.motd {
+    color: #FFFFFF;
+}
+
+/* Character Info Styles */
+td.charhead {
+    background-color: #222222;
+    color: #FFFFFF;
+}
+
+table.charinfo {
+    width: 182px;
+    color: #FFFFFF;
+    border: none;
+    border-spacing: 0px;
+}
+
+td.charinfo {
+    color: #FFFFFF;
+    border-top: 1px solid #FFFFFF;
+    cursor: default;
+    padding: 2px;
+}
+
+/* Specific adjustments for td elements that used inline background attributes */
+td[class*="page-top"] {
+    background-image: url('/templates/images/page_top.gif');
+}
+
+td[class*="page-bottom"] {
+    background-image: url('/templates/images/page_bot.gif');
+}
+
+/* Button Styles */
+.button {
+    background-color: #222222;
+    color: #FFFFFF;
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    background-image: url(/templates/images/input.gif);
+    border: 1px solid;
+    border-color: #000000 #888846 #888846 #000000;
+}
+
+.login-submit {
+    text-align: center;
+}
+
+/* Other Styles */
+.select {
+    background-color: #000000;
+    border: 1px solid #999999;
+    color: #CCCCCC;
+}
+
+.stonage {
+    background-image: url(/templates/images/stone_corner.gif);
+    background-repeat: no-repeat;
+    background-position: left top;
+}
+
+.stonage2 {
+    background-image: url(/templates/images/stone_center.gif);
+    background-repeat: no-repeat;
+    background-position: left top;
+    color: #669933;
+}
+
+/* Background Images for Different Sections */
+td.village {
+    background-image: url(/templates/images/village.jpg);
+    background-repeat: no-repeat;
+    background-position: right bottom;
+}
+
+td.forest {
+    background-image: url(/templates/images/forest.jpg);
+    background-repeat: no-repeat;
+    background-position: center bottom;
+}
+
+td.dragon {
+    background-image: url(/templates/images/dragon.jpg);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+}
+
+/* Petition */
+table.petition-count {
+    float: right;
+    text-align: right;
+}
+
+/* Additional styles as needed based on your layout and design requirements */
+
+/* Layout helper classes */
+.align-center {
+    text-align: center;
+}
+
+.align-left {
+    text-align: left;
+}
+
+.align-right {
+    text-align: right;
+}
+
+.valign-top {
+    vertical-align: top;
+}
+
+.valign-bottom {
+    vertical-align: bottom;
+}
+
+.noborder {
+    border: 0;
+}
+
+.navad-wrapper {
+    position: relative;
+    top: -15px;
+    text-align: center;
+}
+
+.verticalad-wrapper {
+    float: right;
+}
+
+.nav-container {
+    text-align: center;
+    background: rgba(20,20,20,0.8);
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.layout-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+.clear {
+    clear: both;
+    display: block;
+}
+
+.nav-top,
+.nav-bottom {
+    width: 100%;
+}
+
+.login-hero {
+    height: 150px;
+    background: url('login-hero.jpg') center/cover no-repeat;
+    margin-bottom: 10px;
+}
