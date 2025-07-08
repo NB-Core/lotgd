@@ -172,7 +172,7 @@ public static function pageFooter(bool $saveuser=true){
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
 		$headscript = "";
-                if (db_num_rows($result)>0 && isset($session['user']['lastmotd']) &&
+        if (db_num_rows($result)>0 && isset($session['user']['lastmotd']) && 
                                 ($row['motddate']>$session['user']['lastmotd']) &&
                                 (!isset(self::$noPopups[$SCRIPT_NAME]) || self::$noPopups[$SCRIPT_NAME]!=1) &&
                                 $session['user']['loggedin']){
@@ -185,7 +185,7 @@ public static function pageFooter(bool $saveuser=true){
 		$favicon = modulehook("pageparts-favicon", $favicon);
 		$pre_headscript = $favicon['favicon-link'];
 		//add AJAX notification stuff
-		if (isset($settings) && $settings->getSetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+		if (isset($settings) && $settings->getSetting('ajax',1)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 			if (file_exists('ext/ajax_base_setup.php')) {
 				require("ext/ajax_base_setup.php");
 			}
@@ -378,7 +378,7 @@ public static function popupFooter(){
 	$pre_headscript='';
 	$maillink_add_after='';
 	//add AJAX stuff
-	if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+	if (getsetting('ajax',1)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 		if (file_exists('ext/ajax_base_setup.php')) {
 			require("ext/ajax_base_setup.php");
 		}
@@ -392,7 +392,7 @@ public static function popupFooter(){
         list($header, $footer) = self::applyPopupFooterHooks($header, $footer);
 
         if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-                if (getsetting('ajax',0)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+                if (getsetting('ajax',1)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                         if (file_exists('ext/ajax_maillink.php')) {
                                 require("ext/ajax_maillink.php");
                         }

@@ -83,7 +83,7 @@ if ($op=="") {
 	}
 	while ($row = db_fetch_assoc($result)) {
 		if (!isset($session['user']['lastmotd']))
-			$session['user']['lastmotd']=0;
+			$session['user']['lastmotd']=DATETIME_DATEMIN;
 		if ($row['motdauthorname']=="")
 			$row['motdauthorname']="`@Green Dragon Staff`0";
 		if ($row['motdtype']==0){

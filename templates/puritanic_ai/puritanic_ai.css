@@ -58,6 +58,7 @@ a {
 .main-content {
 	border-style: dotted;
 	background-color: #2B2B2B;
+	align-content: start;
 }
 
 .pageheader-center,.pageheader-left,.pageheader-right {

@@ -1,39 +1,24 @@
 /* General Styles */
 caption {
     white-space: nowrap;
-    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-    font-size: 13px;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
 }
 
 td {
-    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-    font-size: 13px;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
 }
 
-
 .main-body {
-    background-image: url('page-bg.png');
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: top right;
-    background-attachment: fixed;
-    background-color: #111;
-    color: #CCCCCC;
+    background-color: #000;
+    color: #777474;
     margin: 0;
 }
 
-@media (max-width: 768px) {
-    .main-body {
-        background-size: cover;
-        background-position: top 10% right 30%;
-    }
-}
-
-
-
 .popup-body {
-    background-color: #111;
-    color: #CCCCCC;
+    background-color: #000;
+    color: #777474;
 }
 
 /* Navigation Table */
@@ -68,18 +53,15 @@ a {
 .page-header {
     height: 48px;
     padding-bottom: 3px;
-    /*background: url('header-bg.png') repeat-x;*/
 }
 
 .main-content {
     border-style: dotted;
-    /*background-color: #1b1b1b;*/
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    background-color: #2B2B2B;
     align-content: start;
 }
 
 .sidebar-content {
-    min-width: 150px;
     padding-left: 3px;
     padding-right: 3px;
     align-content: start;
@@ -104,7 +86,7 @@ a {
 
 /* Navigation Link */
 a.nav {
-    color: #30d5c8;
+    color: #FFFFFF;
     text-decoration: none;
     width: 181px;
     height: auto;
@@ -121,11 +103,6 @@ a.nav {
     padding: 1px;
     float: left;
     clear: none;
-    color: #30d5c8;
-}
-
-.sidebar-content img.nav-bottom {
-    margin-top: 15px;
 }
 
 /* Translations and others */
@@ -142,7 +119,16 @@ table.vitalinfo {
     width: 182px;
 }
 
-a.motd, a:hover.motd {
+a.motd {
+    text-decoration: none;
+    color: #c61d2e;
+}
+
+a:hover.motd {
+    font-weight: normal;
+    color: #FFFFFF;
+}
+
 a.hotmotd {
     font-weight: normal;
     color: #FFFFFF;
@@ -200,16 +186,16 @@ a.thot {
 a:hover.nav {
     background-color: #404040;
     border: none;
-    color: #FFFFFF;
 }
 
 /* Message of the Day Link */
-a.motd, a:hover.motd {
+a.motd {
     text-decoration: none;
     color: #c61d2e;
-    font-weight: normal;
 }
+
 a:hover.motd {
+    font-weight: normal;
     color: #FFFFFF;
 }
 
@@ -245,9 +231,9 @@ td[class*="page-bottom"] {
 /* Button Styles */
 .button {
     background-color: #222222;
-    color: #FFFFFF;
-    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-    font-size: 13px;
+    color: #000000;
+    font-family: verdana, arial, helvetica, sans-serif;
+    font-size: 12px;
     background-image: url(/templates/images/input.gif);
     border: 1px solid;
     border-color: #000000 #888846 #888846 #000000;
@@ -342,9 +328,6 @@ table.petition-count {
 
 .nav-container {
     text-align: center;
-    background: rgba(20,20,20,0.8);
-    padding-top: 4px;
-    padding-bottom: 4px;
 }
 
 .layout-table {
@@ -356,15 +339,4 @@ table.petition-count {
 .clear {
     clear: both;
     display: block;
-}
-
-.nav-top,
-.nav-bottom {
-    width: 100%;
-}
-
-.login-hero {
-    height: 150px;
-    background: url('login-hero.jpg') center/cover no-repeat;
-    margin-bottom: 10px;
 }

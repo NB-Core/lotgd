@@ -56,6 +56,7 @@ a {
 .main-content {
     border-style: dotted;
     background-color: #1e1e1e;
+    align-content: start;
 }
 
 .pageheader-center, .pageheader-left, .pageheader-right {
@@ -240,7 +241,7 @@ td[class*="page-bottom"] {
     color: #CCCCCC;
     font-family: verdana, arial, helvetica, sans-serif;
     font-size: 12px;
-    background-image: url(/templates/images/input.gif);
+    /*background-image: url(/templates/images/input.gif);*/
     border: 1px solid;
     border-color: #000000 #888846 #888846 #000000;
     cursor: pointer;
