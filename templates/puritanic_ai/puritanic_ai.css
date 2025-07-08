@@ -14,13 +14,13 @@ td {
 
 .main-body {
 	background-color: #000;
-	color: '#777474';
+	color: #777474;
 	margin: 0;
 }
 
 .popup-body {
 	background-color: #000;
-	color: '#777474';
+	color: #777474;
 }
 
 /* Navigation Table */
@@ -204,12 +204,14 @@ table.charinfo {
 	width: 182px;
 	color: #FFFFFF;
 	border: none;
+	border-spacing: 0px;
 }
 
 td.charinfo {
 	color: #FFFFFF;
 	border-top: 1px solid #FFFFFF;
 	cursor: default;
+	padding: 2px;
 }
 
 /* Not used right now, due to moving images to css */

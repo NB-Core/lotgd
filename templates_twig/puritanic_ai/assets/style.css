@@ -207,12 +207,14 @@ table.charinfo {
     width: 182px;
     color: #FFFFFF;
     border: none;
+    border-spacing: 0px;
 }
 
 td.charinfo {
     color: #FFFFFF;
     border-top: 1px solid #FFFFFF;
     cursor: default;
+    padding: 2px;
 }
 
 /* Specific adjustments for td elements that used inline background attributes */
