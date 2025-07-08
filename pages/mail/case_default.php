@@ -33,9 +33,8 @@ if ($db_num_rows>0){
 	rawoutput("<td>".($sortorder=='name'?"<img src='images/shapes/$arrow' alt='$arrow'":"")."<a href='mail.php?sortorder=name&direction=".($sortorder=='name'?$newdirection:$sorting_direction)."'>$from</a></td>");
 	rawoutput("<td>".($sortorder=='date'?"<img src='images/shapes/$arrow' alt='$arrow'":"")."<a href='mail.php?sortorder=date&direction=".($sortorder=='date'?$newdirection:$sorting_direction)."'>$date</a></td>");
 	rawoutput("</tr>");
-	$from_list=array();
-	$rows=array();
-	$userlist=array();
+       $from_list=array();
+       $userlist=array();
 
         foreach ($rows as $row) {
                 if ($row['acctid']) {
