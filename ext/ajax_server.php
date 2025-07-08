@@ -28,7 +28,7 @@ use function Jaxon\jaxon;
  * @return Response
  */
 function mail_expired($args=false): Response {
-	if ($args===false) return;
+    if ($args===false) return jaxon()->newResponse();
 	chdir("..");
 	$new="Expired";
 	$tabtext="Expired";
