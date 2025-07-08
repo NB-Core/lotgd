@@ -517,7 +517,7 @@ class Commentary
 
         // Determine any command prefix (like ::, : or /me) at the start of the comment
         $ft = '';
-        for ($x = 0; strlen($ft) < 5 && $x < strlen($row['comment']); $x++) {
+        for ($x = 0; mb_strlen($ft) < 5 && $x < mb_strlen($row['comment']); $x++) {
             if (mb_substr($row['comment'], $x, 1) == '`' && strlen($ft) == 0) {
                 $x++;
             } else {
