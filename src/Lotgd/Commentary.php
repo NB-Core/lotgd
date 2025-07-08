@@ -491,11 +491,19 @@ class Commentary
 
     /**
      * Render a single commentary line.
+     *
+     * The legacy commentary system mixes HTML with game codes. This method
+     * prepares a row from the database and generates a formatted output line.
+     * Comments can contain formatting directives ("::", ":", "/me", etc.) which
+     * are handled here.  We also honour user display options such as timestamps
+     * or chat tags.  The result is the final HTML to output.
      */
     public static function renderCommentLine(array $row, bool $linkBios): string
     {
         global $session;
 
+        // Build a return URL for profile links. Ajax requests reuse the last
+        // page URL stored in the session.
         if ($_SERVER['REQUEST_URI'] == '/ext/ajax_process.php') {
             $real_request_uri = $session['last_comment_request_uri'] ?? $_SERVER['REQUEST_URI'];
         } else {
@@ -503,9 +511,11 @@ class Commentary
             $session['last_comment_request_uri'] = $real_request_uri;
         }
 
+        // Clean up colour codes and ensure valid UTF-8
         $row['comment'] = comment_sanitize($row['comment']);
         $row['comment'] = sanitize_mb($row['comment']);
 
+        // Determine any command prefix (like ::, : or /me) at the start of the comment
         $ft = '';
         for ($x = 0; strlen($ft) < 5 && $x < strlen($row['comment']); $x++) {
             if (mb_substr($row['comment'], $x, 1) == '`' && strlen($ft) == 0) {
@@ -515,8 +525,10 @@ class Commentary
             }
         }
 
+        // Destination for the author's bio
         $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($real_request_uri);
 
+        // Trim prefix to a recognised command token
         if (mb_substr($ft, 0, 2) == '::') {
             $ft = mb_substr($ft, 0, 2);
         } elseif (mb_substr($ft, 0, 1) == ':') {
@@ -525,14 +537,17 @@ class Commentary
             $ft = mb_substr($ft, 0, 3);
         }
 
+        // Apply holiday translations to comment and name
         $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
         $row['name'] = HolidayText::holidayize($row['name'], 'comment');
 
+        // Prepend clan tag to the author's name
         if ($row['clanrank']) {
             $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
             $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
         }
 
+        // Inject chat tags for staff or moderators
         if (getsetting('enable_chat_tags', 1) == 1) {
             if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
                 $row['name'] = '`$' . getsetting('chat_tag_megauser', '[ADMIN]') . '`0' . $row['name'];
@@ -549,6 +564,7 @@ class Commentary
         }
 
         $op = '';
+        // Handle roleplay prefixes such as "/me" or the :: shout format
         if ($ft == '::' || $ft == '/me' || $ft == ':') {
             $x = strpos($row['comment'], $ft);
             if ($x !== false) {
@@ -560,6 +576,7 @@ class Commentary
             }
         }
 
+        // Game messages without an author
         if ($op == '' && $ft == '/game' && !$row['name']) {
             $x = strpos($row['comment'], $ft);
             if ($x !== false) {
@@ -567,6 +584,7 @@ class Commentary
             }
         }
 
+        // Default display if we did not handle a special prefix above
         if ($op == '') {
             if ($linkBios) {
                 $op = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
@@ -577,6 +595,7 @@ class Commentary
             }
         }
 
+        // Timestamp preferences
         $session['user']['prefs']['timeoffset'] = $session['user']['prefs']['timeoffset'] ?? 0;
         $session['user']['prefs']['timestamp'] = $session['user']['prefs']['timestamp'] ?? 0;
 
