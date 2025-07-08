@@ -333,4 +333,5 @@ table.petition-count {
 
 .clear {
     clear: both;
+    display: block;
 }
