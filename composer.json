@@ -2,12 +2,16 @@
     "require": {
         "jaxon-php/jaxon-core": "~4.0",
         "phpmailer/phpmailer": "^6.7",
-        "twig/twig": "^3.0"
+        "twig/twig": "^3.0",
+        "doctrine/orm": "^2.15",
+        "doctrine/dbal": "^3.7",
+        "doctrine/migrations": "^3.6"
     },
     "autoload": {
         "psr-4": {
             "Lotgd\\": "src/Lotgd/",
-            "Lotgd\\Installer\\": "install/lib/"
+            "Lotgd\\Installer\\": "install/lib/",
+            "Lotgd\\Entity\\": "src/Entity/"
         }
     }
 }
