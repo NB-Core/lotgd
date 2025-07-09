@@ -28,6 +28,11 @@ function strip_companion($name)
     return Buffs::stripCompanion($name);
 }
 
+function strip_companions($name)
+{
+    return Buffs::stripCompanions($name);
+}
+
 function apply_companion($name, $companion, $ignorelimit = false)
 {
     return Buffs::applyCompanion($name, $companion, $ignorelimit);

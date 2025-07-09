@@ -678,7 +678,7 @@ class Modules
         }
 
         $sql = 'REPLACE INTO ' . db_prefix('module_objprefs')
-            . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes($value) . "')";
+            . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes((string)$value) . "')";
         db_query($sql);
         invalidatedatacache("objpref-$objtype-$objid-$name-$module");
     }

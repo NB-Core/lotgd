@@ -118,6 +118,7 @@ class TableDescriptor
 			return count($changes);
 		}
 	}//end if
+	return null; //no changes made
 }//end function
 
     /**
@@ -195,8 +196,8 @@ class TableDescriptor
 		}
 		$item['type']=$row['Type'];
 		if ($row['Null']=="Yes") $item['null'] = true;
-		if (trim($row['Default'])!="") $item['default']=$row['Default'];
-		if (trim($row['Extra'])!=="") $item['extra']=$row['Extra'];
+		if (isset($row['Default']) && !empty(trim($row['Default']))) $item['default']=$row['Default'];
+		if (isset($row['Extra']) && !empty(trim($row['Extra']))) $item['extra']=$row['Extra'];
 		$descriptor[$item['name']] = $item;
 	}
 	$sql = "SHOW KEYS FROM $tablename";

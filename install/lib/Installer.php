@@ -61,85 +61,98 @@ class Installer
         $this->output->output("`n`&This game is a small project into which we have invested a tremendous amount of personal effort, and we provide this to you absolutely free of charge.`2");
         $this->output->output("Please understand that if you modify our copyright, or otherwise violate the license, you are not only breaking international copyright law (which includes penalties which are defined in whichever country you live), but you're also defeating the spirit of open source, and ruining any good faith which we have demonstrated by providing our blood, sweat, and tears to you free of charge.  You should also know that by breaking the license even one time, it is within our rights to require you to permanently cease running LoGD forever.`n");
         $this->output->output("`nPlease note that in order to use the installer, you must have cookies enabled in your browser.`n");
+
+        // Check sys_get_temp_dir()
+        $dir = sys_get_temp_dir();
+        if (empty($dir) || !is_writable($dir)) {
+            $this->output->output("`\$Important note: Your PHP setup is not configured correctly.`n");
+            $this->output->output("`2The temporary directory (`#sys_get_temp_dir()`2) is either empty or not writable (Path given:'%s').`n",$dir);
+            $this->output->output("`2Please make sure that your PHP configuration has a valid and writable temporary directory set.`n");
+            $this->output->output("`2For more information, see e.g. <a href='https://www.php.net/manual/en/function.sys-get-temp-dir.php' target='_blank'>PHP sys_get_temp_dir documentation</a> or <a href='https://www.php.net/manual/en/ini.core.php#ini.upload-tmp-dir' target='_blank'>upload_tmp_dir configuration</a>.`n", true);
+            $this->output->output("`2`nWithout a valid temporary directory writeable, we cannot move on. Check also your webserver settings if this is accessible.`n");
+            $this->output->output("`ni.e. with apache2 you need to have it in openbasedir: 'php_admin_value open_basedir /var/www /tmp' (and then there is a private temp for you under there.");
+            $this->output->output("`\$The installation may not be able to continue until this problem is resolved.`n");
+        }
+
         if (getenv("MYSQL_HOST")) {
-        	$this->output->output("`n`\$This seems to be a Docker setup, which means the database will be provided by the environment variables. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
-        	$this->output->output("Also, you need to take care of other hosting issues, like SSL, possibly Let's encrypt and other things.");
-        	$this->output->output("`n`nNote that the entire html folder is volume-linked, so the database connection file and more will be stored there, too.");
+									$this->output->output("`n`\$This seems to be a Docker setup, which means the database will be provided by the environment variables. You can change them if you want, but most likely you won't be able to connect to the database.`2`n");
+									$this->output->output("Also, you need to take care of other hosting issues, like SSL, possibly Let's encrypt and other things.");
+									$this->output->output("`n`nNote that the entire html folder is volume-linked, so the database connection file and more will be stored there, too.");
         }
         if (defined("DB_CHOSEN") && DB_CHOSEN){
-        	$sql = "SELECT count(*) AS c FROM ".Database::prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
-        	$result = Database::query($sql);
-        	$row = Database::fetchAssoc($result);
-        	if ($row['c'] == 0){
-        		$needsauthentication = false;
-        	}
-        	if (!empty(Http::post("username"))){
+									$sql = "SELECT count(*) AS c FROM ".Database::prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
+									$result = Database::query($sql);
+									$row = Database::fetchAssoc($result);
+									if ($row['c'] == 0){
+										$needsauthentication = false;
+									}
+									if (!empty(Http::post("username"))){
                 //if you have login troubles and wiped your own password, here in the installer you can debug-output it
-        		//$this->output->debug(md5(md5(stripslashes(Http::post("password")))), true);
-        		$sql = "SELECT * FROM ".Database::prefix("accounts")." WHERE login='".Http::post("username")."' AND password='".md5(md5(stripslashes(Http::post("password"))))."' AND superuser & ".SU_MEGAUSER;
-        		$result = Database::query($sql);
-        		if (Database::numRows($result) > 0){
-        			$row = Database::fetchAssoc($result);
-        			//$this->output->debug($row['password'], true);
-        			//$this->output->debug(Http::post('password'), true);
-        			// Okay, we have a username with megauser, now we need to do
-        			// some hackery with the password.
-        			$needsauthentication=true;
-        			$p = stripslashes(Http::post("password"));
-        			$p1 = md5($p);
-        			$p2 = md5($p1);
-        			$this->output->debug($p2, true);
-        
-        			if ($this->getSetting("installer_version", "-1") == "-1") {
-        				$this->output->debug("HERE I AM", true);
-        				// Okay, they are upgrading from 0.9.7  they will have
-        				// either a non-encrypted password, or an encrypted singly
-        				// password.
-        				if (strlen($row['password']) == 32 &&
-        				$row['password'] == $p1) {
-        					$needsauthentication = false;
-        				} elseif ($row['password'] == $p) {
-        					$needsauthentication = false;
-        				}
-        			} elseif ($row['password'] == $p2) {
-        				$needsauthentication = false;
-        			}
-        			if ($needsauthentication === false) {
+										//$this->output->debug(md5(md5(stripslashes(Http::post("password")))), true);
+										$sql = "SELECT * FROM ".Database::prefix("accounts")." WHERE login='".Http::post("username")."' AND password='".md5(md5(stripslashes(Http::post("password"))))."' AND superuser & ".SU_MEGAUSER;
+										$result = Database::query($sql);
+										if (Database::numRows($result) > 0){
+											$row = Database::fetchAssoc($result);
+											//$this->output->debug($row['password'], true);
+											//$this->output->debug(Http::post('password'), true);
+											// Okay, we have a username with megauser, now we need to do
+											// some hackery with the password.
+											$needsauthentication=true;
+											$p = stripslashes(Http::post("password"));
+											$p1 = md5($p);
+											$p2 = md5($p1);
+											$this->output->debug($p2, true);
+
+											if ($this->getSetting("installer_version", "-1") == "-1") {
+												$this->output->debug("HERE I AM", true);
+												// Okay, they are upgrading from 0.9.7  they will have
+												// either a non-encrypted password, or an encrypted singly
+												// password.
+												if (strlen($row['password']) == 32 &&
+												$row['password'] == $p1) {
+													$needsauthentication = false;
+												} elseif ($row['password'] == $p) {
+													$needsauthentication = false;
+												}
+											} elseif ($row['password'] == $p2) {
+												$needsauthentication = false;
+											}
+											if ($needsauthentication === false) {
                                        Redirect::redirect("installer.php?stage=1");
-        			}
-        			$this->output->output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
-        		}else{
-        			$needsauthentication=true;
-        			$this->output->output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
-        		}
-        	}else{
-        		$sql = "SELECT count(*) AS c FROM ".Database::prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
-        		$result = Database::query($sql);
-        		$row = Database::fetchAssoc($result);
-        		if ($row['c']>0){
-        			$needsauthentication=true;
-        		}else{
-        			$needsauthentication=false;
-        		}
-        	}
+											}
+											$this->output->output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
+										}else{
+											$needsauthentication=true;
+											$this->output->output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
+										}
+									}else{
+										$sql = "SELECT count(*) AS c FROM ".Database::prefix("accounts")." WHERE superuser & ".SU_MEGAUSER;
+										$result = Database::query($sql);
+										$row = Database::fetchAssoc($result);
+										if ($row['c']>0){
+											$needsauthentication=true;
+										}else{
+											$needsauthentication=false;
+										}
+									}
         }else{
-        	$needsauthentication=false;
+									$needsauthentication=false;
         }
         //if a user with appropriate privs is already logged in, let's let them past.
         if ($session['user']['superuser'] & SU_MEGAUSER) $needsauthentication=false;
         if ($needsauthentication){
-        	$session['stagecompleted']=-1;
-               $this->output->rawOutput("<form action='installer.php?stage=0' method='POST'>");
-        	$this->output->output("`%In order to upgrade this LoGD installation, you will need to provide the username and password of a superuser account with the MEGAUSER privilege`n");
-        	$this->output->output("`^Username: `0");
-        	$this->output->rawOutput("<input name='username'><br>");
-        	$this->output->output("`^Password: `0");
-        	$this->output->rawOutput("<input type='password' name='password'><br>");
-        	$submit = Translator::translateInline("Submit");
-        	$this->output->rawOutput("<input type='submit' value='$submit' class='button'>");
-        	$this->output->rawOutput("</form>");
+			$session['stagecompleted']=-1;
+            $this->output->rawOutput("<form action='installer.php?stage=0' method='POST'>");
+            $this->output->output("`%In order to upgrade this LoGD installation, you will need to provide the username and password of a superuser account with the MEGAUSER privilege`n");
+            $this->output->output("`^Username: `0");
+            $this->output->rawOutput("<input name='username'><br>");
+            $this->output->output("`^Password: `0");
+            $this->output->rawOutput("<input type='password' name='password'><br>");
+            $submit = Translator::translateInline("Submit");
+            $this->output->rawOutput("<input type='submit' value='$submit' class='button'>");
+            $this->output->rawOutput("</form>");
         }else{
-        	$this->output->output("`nPlease continue on to the next page, \"License Agreement.\"");
+			$this->output->output("`nPlease continue on to the next page, \"License Agreement.\"");
         }
     }
 
