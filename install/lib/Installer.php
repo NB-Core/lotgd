@@ -967,8 +967,8 @@ class Installer
         	$session['stagecompleted']=$stage - 1;
         }else{
         	$session['stagecompleted']=$stage;
-               header("Location: installer.php?stage=".($stage+1));
-        	exit();
+		// Header, because we do not want to save the user(!)
+		header("Location: installer.php?stage=".($stage+1));
         }
     }
 
@@ -981,8 +981,8 @@ class Installer
         if (array_key_exists('modulesok',$_POST)){
         	$session['moduleoperations'] = $_POST['modules'];
         	$session['stagecompleted'] = $stage;
-               header("Location: installer.php?stage=".($stage+1));
-        	exit();
+		// Header, because we do not want to save the user(!)
+		header("Location: installer.php?stage=".($stage+1));
         }elseif (array_key_exists('moduleoperations',$session) && is_array($session['moduleoperations'])){
         	$session['stagecompleted'] = $stage;
         }else{
@@ -997,7 +997,7 @@ class Installer
         $this->output->output("`n`n`^If you are not familiar with Legend of the Green Dragon, and how the game is played, it is probably wisest to choose the default set of modules to be installed.");
         $this->output->output("`n`n`@There is an extensive community of users who write modules for LoGD at <a href='http://dragonprime.net/'>http://dragonprime.net/</a>.",true);
         $phpram = ini_get("memory_limit");
-        if ($this->returnBytes($phpram) < 12582912 && $phpram!=-1 && !$session['overridememorylimit'] && !$session['dbinfo']['upgrade']) {// 12 MBytes
+        if ($this->returnBytes($phpram) < 62582912 && $phpram!=-1 && !$session['overridememorylimit'] && !$session['dbinfo']['upgrade']) {// 62 MBytes
         															    // enter this ONLY if it's not an upgrade and if the limit is really too low
         	$this->output->output("`n`n`\$Warning: Your PHP memory limit is set to a very low level.");
         	$this->output->output("Smaller servers should not be affected by this during normal gameplay but for this installation step you should assign at least 12 Megabytes of RAM for your PHP process.");
@@ -1045,6 +1045,7 @@ class Installer
         			"description"=>"",
         			"invalid"=>true,
         			);
+        	$this->output->output("`n`nChecking possible uninstalled modules (%d) - in case of errors check the modules themselves for errors...",count($uninstalled));
         	foreach($uninstalled as $key=>$modulename){
         		$row = array();
         		//test if the file is a valid module or a lib file/whatever that got in, maybe even malcode that does not have module form
@@ -1057,7 +1058,7 @@ class Installer
         			//here the files has neither do_hook nor getinfo, which means it won't execute as a module here --> block it + notify the admin who is the manage modules section
         			$moduleinfo=array_merge($invalidmodule,array("name"=>$modulename.".php ".appoencode(Translator::translateInline("(`\$Invalid Module! Contact Author or check file!`0)"))));
         		} else {
-        			$moduleinfo= get_module_info($modulename,false,false);
+        			$moduleinfo= get_module_info($modulename,false);
         		}
         		//end of testing
         		$row['installed'] = false;
@@ -1073,8 +1074,9 @@ class Installer
         		}
         		$all_modules[$row['category']][$row['modulename']] = $row;
         	}
+        	$this->output->output("`n... done.)",count($uninstalled));
         	$this->output->outputNotl("`0");
-            $this->output->rawOutput("<form action='installer.php?stage=".$stage."' method='POST'>");
+                $this->output->rawOutput("<form action='installer.php?stage=".$stage."' method='POST'>");
         	$this->output->rawOutput("<input type='submit' name='modulesok' value='$submit' class='button'>");
         	$this->output->rawOutput("<input type='button' onClick='chooseRecommendedModules();' class='button' value='$install'>");
         	$this->output->rawOutput("<input type='reset' value='$reset' class='button'><br>");
@@ -1427,7 +1429,7 @@ class Installer
         $dir = dirname(__DIR__, 2);
         if (! is_writable($dir)) {
             $this->output->output("`\$Installation directory not writable:`2 %s", $dir);
-            $this->output->output("`2Please adjust permissions, e.g., run `#chmod 775 %s`2. See <a href='https://www.php.net/manual/en/function.chmod.php' target='_blank'>permission docs</a>.", $dir);
+            $this->output->output("`2Please adjust permissions, e.g., run `#chmod 775 %s`2. See <a href='https://www.php.net/manual/en/function.chmod.php' target='_blank'>permission docs</a>.", $dir, true);
             return false;
         }
 

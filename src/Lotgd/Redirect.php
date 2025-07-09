@@ -42,13 +42,17 @@ class Redirect
         if (!isset($session['debug'])) {
             $session['debug'] = '';
         }
-        $session['debug'] .= "Redirected to $location from $REQUEST_URI.  $reason<br>";
+
         Accounts::saveUser();
         $host = $_SERVER['HTTP_HOST'];
         $http = $_SERVER['SERVER_PORT'] == 443 ? 'https' : 'http';
         $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
         header("Location: $http://$host$uri/$location");
-        echo Translator::translateInline('Whoops. There has been an error concering redirecting your to your new page. Please inform the admins about this. More Information for your petition down below:\n\n');
+
+	//fall through if this does not work!
+	$session['debug'] .= "Redirected on '$host' with protocol '$http' to uri '$uri' to location '$location' from location '$REQUEST_URI'.<br/><br/>Reasion if given:<br/>  $reason<br>";
+        $text = Translator::translateInline('Whoops. There has been an error concering redirecting your to your new page. Please inform the admins about this. More Information for your petition down below:<br/><br/>');
+        echo "<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000; color: #fff;'>$text</body></html>";
         echo $session['debug'];
         exit();
     }

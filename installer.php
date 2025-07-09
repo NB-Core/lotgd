@@ -103,7 +103,7 @@ if (file_exists("dbconnect.php") && (
 	}
 if ($stage > $session['stagecompleted']) $session['stagecompleted'] = $stage;
 
-PageParts::pageHeader("LoGD Installer &#151; %s",$stages[$stage]);
+PageParts::pageHeader("LoGD Installer - %s",$stages[$stage]);
 $installer = new \Lotgd\Installer\Installer();
 $installer->runStage($stage);
 

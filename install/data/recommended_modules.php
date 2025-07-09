@@ -1,4 +1,4 @@
-<?
+<?php
 
 global $recommended_modules;
 // Recommended modules

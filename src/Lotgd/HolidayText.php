@@ -12,7 +12,7 @@ class HolidayText
      */
     public static function holidayize(string $text, string $type = 'unknown'): string
     {
-        global $session;
+        global $session,$currenthook;
         if (isset($session['user'])) {
             if (!isset($session['user']['prefs']) || !is_array($session['user']['prefs'])) {
                 $session['user']['prefs'] = [];
@@ -26,7 +26,10 @@ class HolidayText
         }
         $args = ['text' => $text, 'type' => $type];
         if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-            $args = modulehook('holiday', $args);
+		if (isset($currenthook) && $currenthook === 'holiday') {
+			return $text;
+		}
+		$args = modulehook('holiday', $args);
         }
         $text = $args['text'];
         return $text;
