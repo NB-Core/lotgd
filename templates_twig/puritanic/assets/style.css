@@ -340,3 +340,12 @@ table.petition-count {
     clear: both;
     display: block;
 }
+
+div.debug {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: 1px dotted #000000;
+    width: auto;
+    height: auto;
+    font-size: 10px;
+}

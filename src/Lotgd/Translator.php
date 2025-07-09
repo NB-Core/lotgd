@@ -315,7 +315,7 @@ class Translator
     {
                 global $session;
                 if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
-                        return array_pop(self::$translatorbuttons);
+                        return array_pop(self::$translatorbuttons) ?? "";
                 }else{
                         return "";
                 }
@@ -330,7 +330,7 @@ class Translator
     {
                 global $session;
                 if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
-                        $return = tlbuttonPop().join("",self::$translatorbuttons);
+                        $return = self::tlbuttonPop().join("",self::$translatorbuttons);
                         self::$translatorbuttons = array();
                         return $return;
                 }else{

@@ -141,7 +141,7 @@ class ExpireChars
      */
     private static function notifyUpcomingExpirations(): void
     {
-        $old = max(1, ((int)getsetting('expireoldacct', 45) - ((int)getsetting('notifydaysbeforedeletion', 5))));
+        $old = max(1, ((int)getsetting('expireoldacct', 45)) - ((int)getsetting('notifydaysbeforedeletion', 5)));
         $sql = 'SELECT login,acctid,emailaddress FROM ' . db_prefix('accounts') .
             " WHERE 1=0 " . ($old > 0 ? "OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '') .
             " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
