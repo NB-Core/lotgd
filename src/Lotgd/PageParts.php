@@ -181,7 +181,13 @@ public static function pageFooter(bool $saveuser=true){
 		}else{
 			$session['needtoviewmotd']=false;
 		}
-		$favicon = array ("favicon-link"=>"<link rel=\"shortcut icon\" HREF=\"favicon.ico\" TYPE=\"image/x-icon\"/>");
+		$favicon = array ("favicon-link"=>
+            "<link rel=\"shortcut icon\" HREF=\"/images/favicon/favicon.ico\" TYPE=\"image/x-icon\"/>
+            <link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/images/favicon/apple-touch-icon.png\">
+            <link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/images/favicon/favicon-32x32.png\">
+            <link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">
+            <link rel=\"manifest\" href=\"/images/favicon/site.webmanifest\">"
+        );
 		$favicon = modulehook("pageparts-favicon", $favicon);
 		$pre_headscript = $favicon['favicon-link'];
 		//add AJAX notification stuff
