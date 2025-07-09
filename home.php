@@ -167,4 +167,5 @@ modulehook("index_bottom", array());
 page_footer();
 if ($op=="timeout") {
 	session_unset();    
-	session_destroy(); // destroy if timeout}
+	session_destroy(); // destroy if timeout
+}
