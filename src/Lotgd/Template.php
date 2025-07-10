@@ -143,6 +143,8 @@ class Template
     {
         $template = preg_replace('/[^a-zA-Z0-9:_-]/', '', $template);
         if ($template === '') {
+            setcookie('template', '', time() - 3600); // Expire the cookie
+            unset($_COOKIE['template']); // Unset the cookie value in the current request
             return;
         }
 
