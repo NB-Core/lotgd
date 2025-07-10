@@ -10,8 +10,7 @@ require_once("lib/http.php");
 
 $skin = httppost('template');
 if ($skin > "") {
-	setcookie("template",$skin,strtotime("+45 days"));
-	$_COOKIE['template']=$skin;
+        Template::setTemplateCookie($skin);
 }
 
 require_once("lib/villagenav.php");
@@ -304,8 +303,9 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 	//
 	$prefs = $session['user']['prefs'];
 	$prefs['bio'] = $session['user']['bio'];
-        if (isset($_COOKIE['template'])) {
-                $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
+        $cookieTemplate = Template::getTemplateCookie();
+        if ($cookieTemplate !== '') {
+                $prefs['template'] = Template::addTypePrefix($cookieTemplate);
         }
         if (!isset($prefs['template']) || $prefs['template'] == "") {
                 $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", DEFAULT_TEMPLATE));
