@@ -3,7 +3,7 @@ use Lotgd\Stripslashes;
 tlschema("petition");
 popup_header("Petition for Help");
 $post = httpallpost();
-$problem = httppost('problem') ?? "";
+$problem = (string)(httppost('problem') ?? "");
 if (count($post)>0 && httppost('abuse')!="yes"){
 	$ip = explode(".",$_SERVER['REMOTE_ADDR']);
 	array_pop($ip);
