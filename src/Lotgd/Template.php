@@ -69,14 +69,12 @@ class Template
         }
 
         global $templatename, $templatemessage, $template, $session, $y, $z, $y2, $z2, $copyright, $lc, $x, $templatetags;
-        if (!isset($_COOKIE['template'])) {
-            $_COOKIE['template'] = '';
-        }
         $templatename = '';
         $templateType = '';
         $templatemessage = '';
-        if ($_COOKIE['template'] != '') {
-            $templatename = $_COOKIE['template'];
+        $cookieTemplate = self::getTemplateCookie();
+        if ($cookieTemplate !== '') {
+            $templatename = $cookieTemplate;
         }
         if (strpos($templatename, ':') !== false) {
             [$templateType, $templatename] = explode(':', $templatename, 2);
@@ -132,6 +130,38 @@ class Template
         }
 
         return 'legacy:' . $template;
+    }
+
+    /**
+     * Set the template cookie after sanitizing the value.
+     *
+     * @param string $template User provided template name
+     *
+     * @return void
+     */
+    public static function setTemplateCookie(string $template): void
+    {
+        $template = preg_replace(self::SANITIZATION_REGEX, '', $template);
+        if ($template === '') {
+            setcookie('template', '', time() - 3600); // Expire the cookie
+            unset($_COOKIE['template']); // Unset the cookie value in the current request
+            return;
+        }
+
+        setcookie('template', $template, strtotime('+45 days'));
+        $_COOKIE['template'] = $template;
+    }
+
+    /**
+     * Get the sanitized template cookie value.
+     *
+     * @return string Sanitized template value or empty string
+     */
+    public static function getTemplateCookie(): string
+    {
+        $template = $_COOKIE['template'] ?? '';
+
+        return preg_replace('/[^a-zA-Z0-9:_-]/', '', $template);
     }
 
     /**

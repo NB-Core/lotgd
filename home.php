@@ -9,11 +9,10 @@ use Lotgd\TwigTemplate;
 // mail ready
 
 if (isset($_POST['template'])){
-	$skin = $_POST['template'];
-	if ($skin > "") {
-		setcookie("template",$skin ,strtotime("+45 days"));
-		$_COOKIE['template']=$skin;
-	}
+        $skin = $_POST['template'];
+        if ($skin > "") {
+                Template::setTemplateCookie($skin);
+        }
 }
 
 define("ALLOW_ANONYMOUS",true);
@@ -151,9 +150,10 @@ output("`c`2Game server running version: `@%s`0`c", $logd_version);
 if (getsetting("homeskinselect", 1)) {
 	rawoutput("<form action='home.php' method='POST'>");
 	rawoutput("<table align='center'><tr><td>");
-	$form = array("template"=>"Choose a different display skin:,theme");
-        if (isset($_COOKIE['template'])) {
-                $prefs['template'] = Template::addTypePrefix($_COOKIE['template']);
+        $form = array("template"=>"Choose a different display skin:,theme");
+        $cookieTemplate = Template::getTemplateCookie();
+        if ($cookieTemplate !== '') {
+                $prefs['template'] = Template::addTypePrefix($cookieTemplate);
         } else {
                 $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", DEFAULT_TEMPLATE));
         }
