@@ -12,6 +12,7 @@ require_once("lib/http.php");
 require_once("common.php");
 require_once("lib/modules.php");
 require_once("lib/villagenav.php");
+require_once("lib/forcednavigation.php");
 
 if (injectmodule(httpget('module'), (httpget('admin')?true:false))){
 	$info = get_module_info(httpget('module'));
