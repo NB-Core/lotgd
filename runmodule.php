@@ -15,6 +15,13 @@ use Lotgd\DateTime;
 
 require_once("common.php");
 
+// Legacy Wrappers for Modules
+require_once("lib/http.php");
+require_once("lib/modules.php");
+require_once("lib/villagenav.php");
+
+DateTime::getMicroTime();
+
 // Determine which module should be executed
 $module = (string) Http::get('module');
 
