@@ -8,6 +8,10 @@ namespace Lotgd;
  */
 class Template
 {
+
+    // Set SANITIZATION_REGEX
+    private const SANITIZATION_REGEX = '/[^a-zA-Z0-9:_-]/';
+
     /**
      * Replace placeholders within a template section.
      *
@@ -161,7 +165,7 @@ class Template
     {
         $template = $_COOKIE['template'] ?? '';
 
-        return preg_replace('/[^a-zA-Z0-9:_-]/', '', $template);
+        return preg_replace(SANITIZATION_REGEX, '', $template);
     }
 
     /**
