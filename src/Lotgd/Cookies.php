@@ -9,7 +9,7 @@ class Cookies
     // Set SANITIZATION_REGEX
     // Allowed: legacy:Modern.htm, legacy:Modern.html, twig:aurora, etc.
     // Format: <prefix>:<name>[.htm[l]] (optional .htm or .html at the end)
-    private const SANITIZATION_REGEX = '/^(legacy:[a-zA-Z0-9:_-]+\.html?|twig:[a-zA-Z0-9:_-]+)$';
+    private const SANITIZATION_REGEX = '/^(legacy:[a-zA-Z0-9:_-]+\.html?|twig:[a-zA-Z0-9:_-]+)$/';
 
     /**
      * Set a cookie value with common defaults.
@@ -82,7 +82,7 @@ class Cookies
      */
     public static function setTemplate(string $template): void
     {
-        $template = preg_replace(self::SANITIZATION_REGEX, '', $template);
+        $template = preg_match(self::SANITIZATION_REGEX, '', $template);
 
         if ($template === '') {
             self::delete('template');
@@ -101,6 +101,6 @@ class Cookies
     {
         $template = self::get('template') ?? '';
 
-        return preg_replace(self::SANITIZATION_REGEX, '', $template);
+        return preg_match(self::SANITIZATION_REGEX, '', $template);
     }
 }
