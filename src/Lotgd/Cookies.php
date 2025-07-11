@@ -76,7 +76,7 @@ class Cookies
      */
     public static function setTemplate(string $template): void
     {
-        $template = preg_replace('/[^a-zA-Z0-9:_-]/', '', $template);
+        $template = preg_replace(self::SANITIZATION_REGEX, '', $template);
 
         if ($template === '') {
             self::delete('template');
