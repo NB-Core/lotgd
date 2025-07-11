@@ -528,6 +528,7 @@ the installer fails or reports problems.
 
 Found a bug or have a feature request? Open an issue on GitHub.
 Pull requests are welcome for improvements or fixes.
+Run the unit tests locally with `composer test` before submitting PRs.
 
 ## License
 

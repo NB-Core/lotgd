@@ -9,5 +9,8 @@
             "Lotgd\\": "src/Lotgd/",
             "Lotgd\\Installer\\": "install/lib/"
         }
+    },
+    "scripts": {
+        "test": "phpunit --configuration phpunit.xml"
     }
 }
