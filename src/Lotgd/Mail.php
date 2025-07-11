@@ -11,8 +11,7 @@ use PHPMailer\PHPMailer\Exception;
 
 class Mail
 {
-    // TODO: Move functions from lib/mail.php here
-
+    
     /**
      * Send a system generated mail to a user.
      */
