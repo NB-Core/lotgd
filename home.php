@@ -9,16 +9,16 @@ use Lotgd\Cookies;
 // addnews ready
 // mail ready
 
+define("ALLOW_ANONYMOUS",true);
+require_once("common.php");
+require_once("lib/http.php");
+
 if (isset($_POST['template'])) {
         $skin = $_POST['template'];
         if ($skin !== '' && Template::isValidTemplate($skin)) {
                 Template::setTemplateCookie($skin);
         }
 }
-
-define("ALLOW_ANONYMOUS",true);
-require_once("common.php");
-require_once("lib/http.php");
 
 
 if (!isset($session['loggedin'])) $session['loggedin']=false;
