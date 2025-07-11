@@ -6,6 +6,8 @@ This is a fork of the original Legend of the Green Dragon game by Eric "MightyE"
 
 The original readme and license texts follow below, also the installation + upgrade routines which haven't changed much.
 
+**Note:** The `CHANGELOG.txt` file does not cover every change. Around 300 commits were made without entries, so refer to the git history for a complete list.
+
 I'd like to add a few words, primarily why this fork was made and how the current status is.
 
 The fork was mostly made for personal purposes, as many small or big things have been replaced or changed compared to the core version on Dragonprime.
@@ -29,16 +31,16 @@ Features of this fork include:
   - after running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies
   - `autoload.php` automatically loads `vendor/autoload.php` and registers the project namespace
 - mysqli is now the default database layer
+- Twig is now the default template system located in `templates_twig/` (classic `.htm` files continue to work)
 
 So, it should work on every modern PHP environment.
 
 If somebody really has time, there are still things to do:
-- replace the template system with a state-of-the-art system such as Smarty
-- Twig template support for modern theming
+- extend and refine the Twig templates for modern theming
 - convert arrays into objects to avoid extensive `isset()` checks
 - configure the `datacachepath` setting in `dbconnect.php` to a writable directory so errors can be cached for email notifications
 
-Contact me on github via issue if you like https://github.com/NB-Core/lotgd
+Contact me on [GitHub](https://github.com/NB-Core/lotgd/issues) if you have questions or suggestions.
 
 Kind regards,
 Oliver
