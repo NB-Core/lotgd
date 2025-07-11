@@ -1,6 +1,8 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Settings;
+
 class DateTime
 {
     /**
@@ -113,7 +115,8 @@ class DateTime
 
     public static function getGameTime(): string
     {
-        return gmdate(getsetting('gametime', 'g:i a'), self::gametime());
+        global $settings;
+        return gmdate($settings->getSetting('gametime', 'g:i a'), self::gametime());
     }
 
     public static function gameTime(): int
@@ -124,10 +127,11 @@ class DateTime
 
     public static function convertGameTime(int $intime, bool $debug = false): int
     {
-        $intime -= getsetting('gameoffsetseconds', 0);
-        $epoch = strtotime(getsetting('game_epoch', gmdate('Y-m-d 00:00:00 O', strtotime('-30 days'))));
+        global $settings;
+        $intime -= $settings->getSetting('gameoffsetseconds', 0);
+        $epoch = strtotime($settings->getSetting('game_epoch', gmdate('Y-m-d 00:00:00 O', strtotime('-30 days'))));
         $now = strtotime(gmdate('Y-m-d H:i:s O', $intime));
-        $logd_timestamp = ($now - $epoch) * getsetting('daysperday', 4);
+        $logd_timestamp = ($now - $epoch) * $settings->getSetting('daysperday', 4);
         if ($debug) {
             echo 'Game Timestamp: ' . $logd_timestamp . ', which makes it ' . gmdate('Y-m-d H:i:s', $logd_timestamp) . '<br>';
         }
@@ -136,10 +140,11 @@ class DateTime
 
     public static function gameTimeDetails(): array
     {
+        global $settings;
         $ret = [];
         $ret['now'] = date('Y-m-d 00:00:00');
         $ret['gametime'] = self::gametime();
-        $ret['daysperday'] = getsetting('daysperday', 4);
+        $ret['daysperday'] = $settings->getSetting('daysperday', 4);
         $ret['secsperday'] = 86400 / $ret['daysperday'];
         $ret['today'] = strtotime(gmdate('Y-m-d 00:00:00 O', $ret['gametime']));
         $ret['tomorrow'] = strtotime(gmdate('Y-m-d H:i:s O', $ret['gametime']) . ' + 1 day');

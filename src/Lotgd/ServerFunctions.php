@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Settings;
+
 /**
  * Miscellaneous server wide helper utilities.
  */
@@ -15,17 +17,18 @@ class ServerFunctions
      */
     public static function isTheServerFull(): bool
     {
-        if (abs(getsetting('OnlineCountLast', 0) - strtotime('now')) > 60) {
-            $sql = "SELECT count(acctid) as counter FROM " . db_prefix('accounts') . " WHERE locked=0 AND loggedin=1 AND laston>'" . date('Y-m-d H:i:s', strtotime('-' . getsetting('LOGINTIMEOUT', 900) . ' seconds')) . "'";
+        global $settings;
+        if (abs($settings->getSetting('OnlineCountLast', 0) - strtotime('now')) > 60) {
+            $sql = "SELECT count(acctid) as counter FROM " . db_prefix('accounts') . " WHERE locked=0 AND loggedin=1 AND laston>'" . date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')) . "'";
             $result = db_query($sql);
             $onlinecount = db_fetch_assoc($result);
             $onlinecount = $onlinecount['counter'];
-            savesetting('OnlineCount', $onlinecount);
-            savesetting('OnlineCountLast', strtotime('now'));
+            $settings->saveSetting('OnlineCount', $onlinecount);
+            $settings->saveSetting('OnlineCountLast', strtotime('now'));
         } else {
-            $onlinecount = getsetting('OnlineCount', 0);
+            $onlinecount = $settings->getSetting('OnlineCount', 0);
         }
-        return $onlinecount >= getsetting('maxonline', 0) && getsetting('maxonline', 0) != 0;
+        return $onlinecount >= $settings->getSetting('maxonline', 0) && $settings->getSetting('maxonline', 0) != 0;
     }
 
     /**

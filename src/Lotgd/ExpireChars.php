@@ -36,11 +36,12 @@ class ExpireChars
      */
     private static function needsExpiration(): bool
     {
-        $lastExpire = strtotime(getsetting('last_char_expire', DATETIME_DATEMIN));
+        global $settings;
+        $lastExpire = strtotime($settings->getSetting('last_char_expire', DATETIME_DATEMIN));
         if ($lastExpire >= strtotime('-23 hours')) {
             return false;
         }
-        savesetting('last_char_expire', date('Y-m-d H:i:s'));
+        $settings->saveSetting('last_char_expire', date('Y-m-d H:i:s'));
         return true;
     }
 
@@ -50,9 +51,10 @@ class ExpireChars
      */
     private static function cleanupExpiredAccounts(): void
     {
-        $old = (int)getsetting('expireoldacct', 45);
-        $new = (int)getsetting('expirenewacct', 10);
-        $trash = (int)getsetting('expiretrashacct', 1);
+        global $settings;
+        $old = (int)$settings->getSetting('expireoldacct', 45);
+        $new = (int)$settings->getSetting('expirenewacct', 10);
+        $trash = (int)$settings->getSetting('expiretrashacct', 1);
 
         $rows = self::fetchAccountsToExpire($old, $new, $trash);
         if (empty($rows)) {
@@ -141,7 +143,8 @@ class ExpireChars
      */
     private static function notifyUpcomingExpirations(): void
     {
-        $old = max(1, ((int)getsetting('expireoldacct', 45)) - ((int)getsetting('notifydaysbeforedeletion', 5)));
+        global $settings;
+        $old = max(1, ((int)$settings->getSetting('expireoldacct', 45)) - ((int)$settings->getSetting('notifydaysbeforedeletion', 5)));
         $sql = 'SELECT login,acctid,emailaddress FROM ' . db_prefix('accounts') .
             " WHERE 1=0 " . ($old > 0 ? "OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '') .
             " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
@@ -149,10 +152,10 @@ class ExpireChars
 
         $subject = translate_inline(self::$settingsExtended->getSetting('expirationnoticesubject'));
         $message = translate_inline(self::$settingsExtended->getSetting('expirationnoticetext'));
-        $message = str_replace('{server}', getsetting('serverurl', 'http://nodomain.notd'), $message);
+        $message = str_replace('{server}', $settings->getSetting('serverurl', 'http://nodomain.notd'), $message);
 
         $collector = [];
-        $from = [getsetting('gameadminemail', 'postmaster@localhost') => getsetting('gameadminemail', 'postmaster@localhost')];
+        $from = [$settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost')];
         $cc = [];
         while ($row = db_fetch_assoc($result)) {
             $to = [$row['emailaddress'] => $row['emailaddress']];
