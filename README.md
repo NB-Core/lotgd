@@ -18,7 +18,7 @@ The base DP version this fork derived from was 1.1.1 +dragonprime edition.
 Features of this fork include:
 - additional hooks
 - a stat system with strength, dexterity, and other attributes
-- numerous other changes documented in `CHANGELOG.txt` *(note: roughly 300 commits are missing from that file; see the git history for complete details)*
+- numerous other changes documented in `CHANGELOG.txt`
 - compatibility with PHP 8
 - PHPMailer replacing the sendmail system
 - mail notifications that auto-refresh via Ajax
