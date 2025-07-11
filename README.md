@@ -126,7 +126,7 @@ LOTGD uses **PHPMailer** for all outgoing mail. Open the admin settings (or edit
 
 ```php
 "gamemailhost"       => "SMTP Hostname",
-"gamailsmtpauth"    => "SMTP Auth,bool",
+"gamailsmtpauth"    => "SMTP Auth, bool",
 "gamemailusername"   => "SMTP Username",
 "gamemailpassword"   => "SMTP Password",
 "gamemailsmtpsecure" => "SMTP Securemechanism,enum,starttls,STARTTLS,tls,TLS",
