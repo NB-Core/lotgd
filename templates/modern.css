@@ -201,28 +201,30 @@ td.footer {
 	text-decoration: underline;
 }
 
-a.t {
-	width: 7px;
-	height: 7px;
-	border: 1px dotted #0000FF;
-	background-color: #9999FF;
-	color: #FFFFFF;
-	font-size: 7px;
+a.t, a.thot {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	font-size: 8px;
+	line-height: 10px;
+	text-align: center;
+	color: #fff;
 	text-decoration: none;
-	padding-left: 1px;
-	padding-right: 1px;
+	border-radius: 3px;
+	margin-left: 2px;
+	cursor: help;
+	border: 1px solid #aaa;
+}
+
+a.t {
+	background-color: #555; /* less... conspicious */
+	border-color: #888;
 }
 
 a.thot {
-	width: 7px;
-	height: 7px;
-	border: 1px dotted #FF0000;
-	background-color: #FF9999;
-	color: #FFFFFF;
-	font-size: 7px;
-	text-decoration: none;
-	padding-left: 1px;
-	padding-right: 1px;
+	background-color: #c0392b; /* really red for "hot" */
+	border-color: #e74c3c;
+	font-weight: bold;
 }
 
 .hidden {
