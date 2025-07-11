@@ -112,6 +112,8 @@ class Template
             TwigTemplate::init($templatename, $cachePath);
             $template = [];
         } else {
+            // Load legacy template
+            TwigTemplate::deactivate();
             $template = self::loadTemplate($templatename);
         }
     }
