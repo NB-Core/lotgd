@@ -37,8 +37,11 @@ class Translator
 		$language = "";
 		if (isset($session['user']['prefs']['language'])) {
 			$language = $session['user']['prefs']['language'];
-                } elseif (null !== Cookies::get('language')) {
-                        $language = Cookies::get('language');
+                } else {
+                        $cookieLanguage = Cookies::get('language');
+                        if (null !== $cookieLanguage) {
+                            $language = $cookieLanguage;
+                        }
                 }
 		if ($language=="") {
 			$language=$settings->getsetting("defaultlanguage","en");
