@@ -11,6 +11,6 @@
         }
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit --configuration phpunit.xml"
     }
 }
