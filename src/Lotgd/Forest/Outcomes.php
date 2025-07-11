@@ -31,9 +31,7 @@ class Outcomes
         $expbonus = 0;
         $count = 0;
         foreach ($enemies as $badguy) {
-            $dropMinGold = isset($settings) && $settings instanceof Settings
-                ? $settings->getSetting('dropmingold', 0)
-                : getsetting('dropmingold', 0);
+            $dropMinGold = $settings->getSetting('dropmingold', 0);
             if ($dropMinGold) {
                 $badguy['creaturegold'] = r_rand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
             } else {
@@ -66,22 +64,16 @@ class Outcomes
             output("`#You receive `^%s`# gold!`n", $gold);
             debuglog('received gold for slaying a monster.', false, false, 'forestwin', $gold);
         }
-        $gemChance = isset($settings) && $settings instanceof Settings
-            ? $settings->getSetting('forestgemchance', 25)
-            : getsetting('forestgemchance', 25);
+        $gemChance = $settings->getSetting('forestgemchance', 25);
         $args = modulehook('alter-gemchance', ['chance' => $gemChance]);
         $gemchances = (int)$args['chance'];
-        $maxLevel = isset($settings) && $settings instanceof Settings
-            ? $settings->getSetting('maxlevel', 15)
-            : getsetting('maxlevel', 15);
+        $maxLevel = $settings->getSetting('maxlevel', 15);
         if ($session['user']['level'] < $maxLevel && e_rand(1, $gemchances) == 1) {
             output("`&You find A GEM!`n`#");
             $session['user']['gems']++;
             debuglog('found gem when slaying a monster.', false, false, 'forestwingem', 1);
         }
-        $instantExp = isset($settings) && $settings instanceof Settings
-            ? $settings->getSetting('instantexp', false)
-            : getsetting('instantexp', false);
+        $instantExp = $settings->getSetting('instantexp', false);
         if ($instantExp == true) {
             $expgained = array_sum($options['experiencegained']);
             $diff = $expgained - $exp;
@@ -90,9 +82,7 @@ class Outcomes
                 $expbonus = -$exp + 1;
             }
             if ($expbonus > 0) {
-                $addExp = isset($settings) && $settings instanceof Settings
-                    ? $settings->getSetting('addexp', 5)
-                    : getsetting('addexp', 5);
+                $addExp = $settings->getSetting('addexp', 5);
                 $expbonus = round($expbonus * pow(1 + ($addExp / 100), $count - 1), 0);
                 output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience! `n", $expbonus);
             } elseif ($expbonus < 0) {
@@ -107,9 +97,7 @@ class Outcomes
                 $expbonus = -$exp + 1;
             }
             if ($expbonus > 0) {
-                $addExp = isset($settings) && $settings instanceof Settings
-                    ? $settings->getSetting('addexp', 5)
-                    : getsetting('addexp', 5);
+                $addExp = $settings->getSetting('addexp', 5);
                 $expbonus = round($expbonus * pow(1 + ($addExp / 100), $count - 1), 0);
                 output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience! `n(%s + %s = %s) ", $expbonus, $exp, abs($expbonus), $exp + $expbonus);
             } elseif ($expbonus < 0) {
@@ -152,9 +140,7 @@ class Outcomes
     public static function defeat(array $enemies, string $where = 'in the forest'): void
     {
         global $session, $settings;
-        $percent = isset($settings) && $settings instanceof Settings
-            ? $settings->getSetting('forestexploss', 10)
-            : getsetting('forestexploss', 10);
+        $percent = $settings->getSetting('forestexploss', 10);
         Nav::add('Daily news', 'news.php');
         $names = [];
         $killer = false;
@@ -218,9 +204,7 @@ class Outcomes
         $badguy['creatureattack'] += $atkflux;
         $badguy['creaturedefense'] += $defflux;
         $badguy['creaturehealth'] += $hpflux;
-        $disableBonuses = isset($settings) && $settings instanceof Settings
-            ? $settings->getSetting('disablebonuses', 1)
-            : getsetting('disablebonuses', 1);
+        $disableBonuses = $settings->getSetting('disablebonuses', 1);
         if ($disableBonuses) {
             $base = 30 - min(20, round(sqrt((int)$session['user']['dragonkills']) / 2));
             $base /= 1000;
