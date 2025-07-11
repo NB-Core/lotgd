@@ -7,7 +7,9 @@ class Cookies
 {
 
     // Set SANITIZATION_REGEX
-    private const SANITIZATION_REGEX = '/[^a-zA-Z0-9:_-]/';
+    // Allowed: legacy:Modern.htm, legacy:Modern.html, twig:aurora, etc.
+    // Format: <prefix>:<name>[.htm[l]] (optional .htm or .html at the end)
+    private const SANITIZATION_REGEX = '/^(legacy:[a-zA-Z0-9:_-]+\.html?|twig:[a-zA-Z0-9:_-]+)$';
 
     /**
      * Set a cookie value with common defaults.

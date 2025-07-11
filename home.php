@@ -13,6 +13,7 @@ if (isset($_POST['template'])) {
         $skin = $_POST['template'];
         if ($skin !== '' && Template::isValidTemplate($skin)) {
                 Template::setTemplateCookie($skin);
+				Template::prepareTemplate(true); // set anew
         }
 }
 
