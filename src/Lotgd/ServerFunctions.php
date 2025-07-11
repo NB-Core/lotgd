@@ -96,4 +96,15 @@ class ServerFunctions
             modulehook('dragonpointreset', [$row]);
         }
     }
+
+    /**
+     * Check if the current request is served over HTTPS.
+     *
+     * @return bool True when the connection is secure
+     */
+    public static function isSecureConnection(): bool
+    {
+        return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
+    }
 }

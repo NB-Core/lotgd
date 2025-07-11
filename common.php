@@ -375,19 +375,32 @@ else
 $session['bufflist'] = array();
 if (!is_array($session['bufflist'])) $session['bufflist']=array();
 if (isset($REMOTE_ADDR)) $session['user']['lastip']=$REMOTE_ADDR;   //cron i.e. doesn't have an $REMOTE_ADDR
+$secure = \Lotgd\ServerFunctions::isSecureConnection();
 if (!isset($_COOKIE['lgi']) || strlen($_COOKIE['lgi'])<32){
-	if (!isset($session['user']['uniqueid']) || strlen($session['user']['uniqueid'])<32){
-		$u=md5(microtime());
-		setcookie("lgi",$u,strtotime("+365 days"));
-		$_COOKIE['lgi']=$u;
-		$session['user']['uniqueid']=$u;
-	}else{
-		if (isset($session['user']['uniqueid'])) setcookie("lgi",$session['user']['uniqueid'],strtotime("+365 days"));
-	}
+        if (!isset($session['user']['uniqueid']) || strlen($session['user']['uniqueid'])<32){
+                $u=md5(microtime());
+                setcookie("lgi", $u, [
+                    'expires'  => strtotime("+365 days"),
+                    'path'     => '/',
+                    'secure'   => $secure,
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]);
+                $_COOKIE['lgi']=$u;
+                $session['user']['uniqueid']=$u;
+        }else{
+                if (isset($session['user']['uniqueid'])) setcookie("lgi", $session['user']['uniqueid'], [
+                    'expires'  => strtotime("+365 days"),
+                    'path'     => '/',
+                    'secure'   => $secure,
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]);
+        }
 }else{
-	if (isset($_COOKIE['lgi']) && $_COOKIE['lgi']!='') {
-		$session['user']['uniqueid']=$_COOKIE['lgi'];
-	} 
+        if (isset($_COOKIE['lgi']) && $_COOKIE['lgi']!='') {
+                $session['user']['uniqueid']=$_COOKIE['lgi'];
+        }
 }
 if (isset($_SERVER['SERVER_NAME'])) {
 	$url = "http://".$_SERVER['SERVER_NAME'].dirname($_SERVER['REQUEST_URI']);

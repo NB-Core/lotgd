@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\ServerFunctions;
+
 /**
  * Helper methods for working with output templates.
  */
@@ -146,13 +148,27 @@ class Template
     public static function setTemplateCookie(string $template): void
     {
         $template = preg_replace(self::SANITIZATION_REGEX, '', $template);
+        $secure   = ServerFunctions::isSecureConnection();
+
         if ($template === '') {
-            setcookie('template', '', time() - 3600); // Expire the cookie
+            setcookie('template', '', [
+                'expires'  => time() - 3600,
+                'path'     => '/',
+                'secure'   => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]); // Expire the cookie
             unset($_COOKIE['template']); // Unset the cookie value in the current request
             return;
         }
 
-        setcookie('template', $template, strtotime('+45 days'));
+        setcookie('template', $template, [
+            'expires'  => strtotime('+45 days'),
+            'path'     => '/',
+            'secure'   => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
         $_COOKIE['template'] = $template;
     }
 
