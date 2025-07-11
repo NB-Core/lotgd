@@ -26,7 +26,11 @@ class DummySettings extends Settings
 
     public function loadSettings(): void {}
     public function clearSettings(): void {}
-    public function saveSetting(string|int $settingname, mixed $value): bool { $this->values[$settingname] = $value; return true; }
+    public function saveSetting(string|int $settingname, mixed $value): bool
+    {
+        $this->values[$settingname] = $value;
+        return true;
+    }
     public function getArray(): array { return $this->values; }
 }
 
