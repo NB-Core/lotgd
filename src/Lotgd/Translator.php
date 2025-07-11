@@ -285,8 +285,8 @@ class Translator
         if (!self::$translation_is_enabled) return;
         $seentlbuttons =& self::$seentlbuttons;
         $translatorbuttons =& self::$translatorbuttons;
-		$nothot = Translate::translateInline("`^This text has already been translated.`0");
-		$hot = Translate::translateInline("`^This text has not been translated yet.`0");
+		$nothot = self::translateInline("`^This text has already been translated.`0");
+		$hot = self::translateInline("`^This text has not been translated yet.`0");
 		if (!$namespace) $namespace="unknown";
 		if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
 			if (!in_array($language,explode(',',$session['user']['translatorlanguages']))) return true;
