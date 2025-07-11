@@ -14,6 +14,8 @@ class TwigTemplate extends Template
     private static string $cacheDir = '/tmp';
     /** Subdirectory within datacachepath for Twig cache */
     private const CACHE_SUBDIR = 'twig';
+    /** Checks if Twig is enabled or not */
+    private static bool $isTwigActive = false;
 
     public static function init(string $templateName, ?string $datacachePath = null): void
     {
@@ -31,9 +33,13 @@ class TwigTemplate extends Template
         }
 
         self::$env = new Environment($loader, $options);
-        if (!defined('TEMPLATE_IS_TWIG')) {
-            define('TEMPLATE_IS_TWIG', true);
-        }
+        self::$isTwigActive = true;
+    }
+
+    public static function deactivate(): void
+    {
+        self::$env = null;
+        self::$isTwigActive = false;
     }
 
     public static function render(string $view, array $context = []): string
@@ -47,7 +53,7 @@ class TwigTemplate extends Template
 
     public static function isActive(): bool
     {
-        return defined('TEMPLATE_IS_TWIG') && TEMPLATE_IS_TWIG;
+        return self::$isTwigActive;
     }
 
     public static function getPath(): string
