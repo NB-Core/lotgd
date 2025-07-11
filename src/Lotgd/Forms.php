@@ -268,10 +268,11 @@ class Forms
                 rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
                 foreach ($skins as $skin => $display) {
                     $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+                    $skinEsc = htmlentities($skin, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
                     if ($skin == $current) {
-                        rawoutput("<option value='$skin' selected>$display</option>");
+                        rawoutput("<option value='$skinEsc' selected>$display</option>");
                     } else {
-                        rawoutput("<option value='$skin'>$display</option>");
+                        rawoutput("<option value='$skinEsc'>$display</option>");
                     }
                 }
                 rawoutput('</select>');
