@@ -1,14 +1,15 @@
 <?php
 use Lotgd\Stripslashes;
+use Lotgd\Cookies;
 tlschema("petition");
 popup_header("Petition for Help");
 $post = httpallpost();
 $problem = (string)(httppost('problem') ?? "");
 if (count($post)>0 && httppost('abuse')!="yes"){
-	$ip = explode(".",$_SERVER['REMOTE_ADDR']);
-	array_pop($ip);
-	$ip = implode(".",$ip).".";
-	$cookie_lgi = isset($_COOKIE['lgi'])?$_COOKIE['lgi']:'';
+        $ip = explode(".",$_SERVER['REMOTE_ADDR']);
+        array_pop($ip);
+        $ip = implode(".",$ip).".";
+        $cookie_lgi = Cookies::getLgi() ?? '';
 	$sql = "SELECT count(petitionid) AS c FROM ".db_prefix("petitions")." WHERE (ip LIKE '$ip%' OR id = '".addslashes($cookie_lgi)."') AND date > '".date("Y-m-d H:i:s",strtotime("-1 day"))."'";
 	$result = db_query($sql);
 	$row = db_fetch_assoc($result);

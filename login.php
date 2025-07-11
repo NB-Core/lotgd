@@ -7,6 +7,7 @@ use Lotgd\Accounts;
 use Lotgd\CheckBan;
 use Lotgd\Mail;
 use Lotgd\Serialization;
+use Lotgd\Cookies;
 // translator ready
 define("ALLOW_ANONYMOUS",true);
 require_once("common.php");
@@ -126,7 +127,7 @@ if ($name!=""){
 				// this name.
 				while ($row=db_fetch_assoc($result)){
 					$post = httpallpost();
-					$cookielgi = (isset($_COOKIE['lgi'])?$_COOKIE['lgi']:'no cookie set');
+                                        $cookielgi = Cookies::getLgi() ?? 'no cookie set';
 					$sql = "INSERT INTO " . db_prefix("faillog") . " VALUES (0,'".date("Y-m-d H:i:s")."','".addslashes(serialize($post))."','{$_SERVER['REMOTE_ADDR']}','{$row['acctid']}','$cookielgi')";
 					db_query($sql);
 					$sql = "SELECT " . db_prefix("faillog") . ".*," . db_prefix("accounts") . ".superuser,name,login FROM " . db_prefix("faillog") . " INNER JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid=" . db_prefix("faillog") . ".acctid WHERE ip='{$_SERVER['REMOTE_ADDR']}' AND date>'".date("Y-m-d H:i:s",strtotime("-1 day"))."'";

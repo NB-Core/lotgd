@@ -1,6 +1,8 @@
 <?php
 namespace Lotgd;
 
+use Lotgd\Cookies;
+
 /**
  * Functions related to ban checking.
  */
@@ -23,7 +25,7 @@ class CheckBan
 
         if ($login === null) {
             $ip = $_SERVER['REMOTE_ADDR'];
-            $id = $_COOKIE['lgi'] ?? '';
+            $id = Cookies::getLgi() ?? '';
         } else {
             $sql = "SELECT lastip,uniqueid,banoverride,superuser FROM " . db_prefix('accounts') . " WHERE login='$login'";
             $result = db_query($sql);

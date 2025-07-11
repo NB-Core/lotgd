@@ -5,6 +5,7 @@ use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Template;
 use Lotgd\TwigTemplate;
+use Lotgd\Cookies;
 // addnews ready
 // mail ready
 
@@ -94,10 +95,10 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 		if (!isset($session['message'])) $session['message']='';
 		$session['message'].= translate_inline(" Your session has timed out, you must log in again.`n");
 	}
-	if (!isset($_COOKIE['lgi'])){
-		$session['message'].=translate_inline("It appears that you may be blocking cookies from this site.  At least session cookies must be enabled in order to use this site.`n");
-		$session['message'].=translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
-	}
+        if (Cookies::getLgi() === null){
+                $session['message'].=translate_inline("It appears that you may be blocking cookies from this site.  At least session cookies must be enabled in order to use this site.`n");
+                $session['message'].=translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
+        }
 	if (isset($session['message']) && $session['message']>"")
 		output_notl("`b`\$%s`b`n", $session['message'],true);
 	rawoutput("<script language='JavaScript' src='lib/md5.js'></script>");
@@ -129,10 +130,10 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
 	if ($op=="timeout"){
 		$session['message'].= translate_inline(" Your session has timed out, you must log in again.`n");
 	}
-	if (!isset($_COOKIE['lgi'])){
-		$session['message'].=translate_inline("It appears that you may be blocking cookies from this site. At least session cookies must be enabled in order to use this site.`n");
-		$session['message'].=translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
-	}
+        if (Cookies::getLgi() === null){
+                $session['message'].=translate_inline("It appears that you may be blocking cookies from this site. At least session cookies must be enabled in order to use this site.`n");
+                $session['message'].=translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
+        }
 	if ($session['message']>"") output("`b`\$%s`b`n", $session['message'],true);
         $templateVars = [];
         if (TwigTemplate::isActive()) {
