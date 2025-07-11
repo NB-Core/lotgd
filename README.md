@@ -486,6 +486,13 @@ The root `.htaccess` file configures custom error pages, disables directory list
   - The installer writes to `install/errors/install.log`. If you see a warning
     that the log could not be written, ensure this path is writable.
 
+- **Ubuntu Private /tmp notice:**
+  - On some Ubuntu systems `systemd` isolates the `/tmp` directory for the
+    web server. If PHP has `display_errors` enabled, warnings about writing
+    temporary files may be output directly to the browser and interrupt the
+    installer. Set `display_errors = Off` in your PHP configuration when this
+    happens so the installer and game can run correctly.
+
 ### Where to find installer logs
 
 Installer errors are saved to `install/errors/install.log`. Check this file if
