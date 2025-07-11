@@ -106,6 +106,21 @@ Compiled Twig templates are cached under the directory defined by the
 and only enables caching when it is writable. If the path cannot be created
 or written to, templates are rendered without caching.
 
+`dbconnect.php` is created by the installer and stores database and cache
+settings in plain PHP.  After installation you can edit this file to point the
+`datacachepath` setting at a writable directory:
+
+```php
+$DB_USEDATACACHE  = 1;
+$DB_DATACACHEPATH = "/path/to/lotgd/data/cache"; // without trailing slash
+```
+
+Common locations include a `data/cache` folder within the project or a
+dedicated directory such as `/tmp/lotgd`. Give the web server write access
+with a command like `chmod 775 data/cache` (or adjust as required by your
+hosting environment). A valid `datacachepath` enables Twig caching—without it
+pages must be recompiled and the game runs noticeably slower.
+
 ## Install from Release Archive
 
 Official releases include the `vendor/` directory so no additional commands are
