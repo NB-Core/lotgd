@@ -5,6 +5,10 @@ namespace Lotgd;
 
 class Cookies
 {
+
+    // Set SANITIZATION_REGEX
+    private const SANITIZATION_REGEX = '/[^a-zA-Z0-9:_-]/';
+
     /**
      * Set a cookie value with common defaults.
      */
@@ -95,6 +99,6 @@ class Cookies
     {
         $template = self::get('template') ?? '';
 
-        return preg_replace('/[^a-zA-Z0-9:_-]/', '', $template);
+        return preg_replace(self::SANITIZATION_REGEX, '', $template);
     }
 }

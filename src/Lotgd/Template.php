@@ -12,9 +12,6 @@ use Lotgd\Cookies;
 class Template
 {
 
-    // Set SANITIZATION_REGEX
-    private const SANITIZATION_REGEX = '/[^a-zA-Z0-9:_-]/';
-
     /**
      * Replace placeholders within a template section.
      *
