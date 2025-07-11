@@ -201,6 +201,7 @@ td.footer {
 	text-decoration: underline;
 }
 
+/* Translator Buttons styling */
 a.t, a.thot {
 	display: inline-block;
 	width: 10px;
@@ -216,10 +217,13 @@ a.t, a.thot {
 	border: 1px solid #aaa;
 }
 
+/* Normal Button */
 a.t {
 	background-color: #555; /* less... conspicious */
 	border-color: #888;
 }
+
+/* Hot Button, not translated */
 
 a.thot {
 	background-color: #c0392b; /* really red for "hot" */
@@ -227,10 +231,19 @@ a.thot {
 	font-weight: bold;
 }
 
+/* Hover effects for translator buttons */
+a.t:hover, a.thot:hover {
+	transform: scale(1.5);
+	box-shadow: 0 0 4px #fff;
+	z-index: 10;
+}
+
+/* Hidden elements, for i.e. debug output */
 .hidden {
 	display: none;
 }
 
+/* Clear debug output */
 div.debug {
 	background-color: #FFFFFF;
 	color: #000000;
