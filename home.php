@@ -8,9 +8,9 @@ use Lotgd\TwigTemplate;
 // addnews ready
 // mail ready
 
-if (isset($_POST['template'])){
+if (isset($_POST['template'])) {
         $skin = $_POST['template'];
-        if ($skin > "") {
+        if ($skin !== '' && Template::isValidTemplate($skin)) {
                 Template::setTemplateCookie($skin);
         }
 }

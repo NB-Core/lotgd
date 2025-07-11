@@ -9,7 +9,7 @@ require_once("common.php");
 require_once("lib/http.php");
 
 $skin = httppost('template');
-if ($skin > "") {
+if ($skin !== '' && Template::isValidTemplate($skin)) {
         Template::setTemplateCookie($skin);
 }
 

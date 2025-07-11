@@ -169,6 +169,64 @@ class Template
     }
 
     /**
+     * Retrieve available template identifiers.
+     *
+     * @return array<string,string> Array of template key => display name
+     */
+    public static function getAvailableTemplates(): array
+    {
+        $skins = [];
+
+        $handle = opendir('templates');
+        if ($handle !== false) {
+            while (false !== ($file = readdir($handle))) {
+                if (strpos($file, '.htm') !== false) {
+                    $value = 'legacy:' . $file;
+                    $skins[$value] = substr($file, 0, strpos($file, '.htm'));
+                }
+            }
+            closedir($handle);
+        }
+
+        $handle = opendir('templates_twig');
+        if ($handle !== false) {
+            while (false !== ($dir = readdir($handle))) {
+                if ($dir === '.' || $dir === '..') {
+                    continue;
+                }
+                if (is_dir("templates_twig/$dir")) {
+                    $name = $dir;
+                    $configPath = "templates_twig/$dir/config.json";
+                    if (file_exists($configPath)) {
+                        $cfg = json_decode((string) file_get_contents($configPath), true);
+                        if (json_last_error() === JSON_ERROR_NONE && isset($cfg['name'])) {
+                            $name = $cfg['name'];
+                        }
+                    }
+                    $value = 'twig:' . $dir;
+                    $skins[$value] = $name;
+                }
+            }
+            closedir($handle);
+        }
+
+        asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $skins;
+    }
+
+    /**
+     * Check if a template identifier is valid.
+     */
+    public static function isValidTemplate(string $template): bool
+    {
+        $template = self::addTypePrefix($template);
+        $templates = self::getAvailableTemplates();
+
+        return array_key_exists($template, $templates);
+    }
+
+    /**
      * Load a template file and split it into sections.
      *
      * If the template doesn't exist, uses the admin-defined default template
