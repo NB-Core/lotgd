@@ -4,7 +4,7 @@ $output="";
 $sql = "SELECT output FROM " . db_prefix("accounts_output") . " WHERE acctid=" . (int)$userid;
 $result = db_query($sql);
 $row = db_fetch_assoc($result);
-if ($row['output']=='') {
+if (empty($row) || !isset($row['output']) || $row['output']=='') {
         require_once("lib/output.php");
         $output = new Output();
 	$text=$output->appoencode("`\$This user has had his navs fixed OR has an empty page stored. Nothing can be displayed to you -_-`0");
