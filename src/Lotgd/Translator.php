@@ -224,8 +224,8 @@ class Translator
      */
     public static function tl(string $in): string
     {
-			$out = self::translate($in);
-            return self::tlbuttonClear().$out;
+		$out = self::translate($in);
+        return self::tlbuttonClear().$out;
 	}
 
     /**
@@ -281,10 +281,12 @@ class Translator
     */
    public static function tlbuttonPush(string $indata,bool $hot=false,string|false $namespace=FALSE)
    {
-                global $session,$language;
-                if (!self::$translation_is_enabled) return;
-                $seentlbuttons =& self::$seentlbuttons;
-                $translatorbuttons =& self::$translatorbuttons;
+        global $session,$language;
+        if (!self::$translation_is_enabled) return;
+        $seentlbuttons =& self::$seentlbuttons;
+        $translatorbuttons =& self::$translatorbuttons;
+		$nothot = Translate::translateInline("`^This text has already been translated.`0");
+		$hot = Translate::translateInline("`^This text has not been translated yet.`0");
 		if (!$namespace) $namespace="unknown";
 		if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
 			if (!in_array($language,explode(',',$session['user']['translatorlanguages']))) return true;
@@ -292,16 +294,19 @@ class Translator
 				if (isset($seentlbuttons[$namespace][$indata])){
 					$link = "";
 				}else{
-                                $seentlbuttons[$namespace][$indata] = true;
-                                        $uri = Sanitize::cmdSanitize($namespace);
-                                        $uri = Sanitize::comscrollSanitize($uri);
+                    $seentlbuttons[$namespace][$indata] = true;
+                            $uri = Sanitize::cmdSanitize($namespace);
+                            $uri = Sanitize::comscrollSanitize($uri);
 					$link = "translatortool.php?u=".
 						rawurlencode($uri)."&t=".rawurlencode($indata);
 					$link = "<a href='$link' target='_blank' onClick=\"".
 						popup($link).";return false;\" class='t".
-						($hot?"hot":"")."'>T</a>";
+						($hot?"hot":"").
+						"' title='".
+						($hot?$hot:$nothot).
+						"'>T</a>";
 				}
-                                array_push($translatorbuttons,$link);
+                array_push($translatorbuttons,$link);
 			}
 			return true;
 		}else{
@@ -317,13 +322,13 @@ class Translator
      */
     public static function tlbuttonPop(): string
     {
-                global $session;
-                if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
-                        return array_pop(self::$translatorbuttons) ?? "";
-                }else{
-                        return "";
-                }
+        global $session;
+        if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
+                return array_pop(self::$translatorbuttons) ?? "";
+        }else{
+                return "";
         }
+    }
 
     /**
      * Clear and return all queued translator buttons.
@@ -332,15 +337,15 @@ class Translator
      */
     public static function tlbuttonClear(): string
     {
-                global $session;
-                if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
-                        $return = self::tlbuttonPop().join("",self::$translatorbuttons);
-                        self::$translatorbuttons = array();
-                        return $return;
-                }else{
-                        return "";
-                }
+        global $session;
+        if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)){
+                $return = self::tlbuttonPop().join("",self::$translatorbuttons);
+                self::$translatorbuttons = array();
+                return $return;
+        }else{
+                return "";
         }
+    }
 
 
     /**
@@ -352,8 +357,8 @@ class Translator
      */
     public static function enableTranslation(bool $enable=true): void
     {
-                self::$translation_is_enabled = $enable;
-        }
+        self::$translation_is_enabled = $enable;
+    }
 
 
     /**
@@ -365,16 +370,16 @@ class Translator
      */
     public static function tlschema(string|false|null $schema=false): void
     {
-                global $REQUEST_URI;
-                $stack =& self::$translation_namespace_stack;
-                if ($schema===false){
-                        self::$translation_namespace = (string)array_pop($stack);
-                        if (empty(self::$translation_namespace))
-                                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI);
-                }else{
-                        array_push($stack,self::$translation_namespace);
-                        self::$translation_namespace = (string)$schema;
-                }
+        global $REQUEST_URI;
+        $stack =& self::$translation_namespace_stack;
+        if ($schema===false){
+                self::$translation_namespace = (string)array_pop($stack);
+                if (empty(self::$translation_namespace))
+                        self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI);
+        }else{
+                array_push($stack,self::$translation_namespace);
+                self::$translation_namespace = (string)$schema;
+        }
 	}
 
     /**
