@@ -15,6 +15,12 @@ final class TemplateHelperTest extends TestCase
         $this->assertSame('foo', $result);
     }
 
+    public function testSetTemplateCookieStoresSanitizedValue(): void
+    {
+        Template::setTemplateCookie('../bar');
+        $this->assertSame('bar', $_COOKIE['template']);
+    }
+
     public function testDefaultTemplateIsAvailable(): void
     {
         $templates = Template::getAvailableTemplates();

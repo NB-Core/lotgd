@@ -66,4 +66,35 @@ class Cookies
         }
         return $id;
     }
+
+    /**
+     * Set the template cookie value after sanitizing.
+     *
+     * @param string $template Template identifier
+     *
+     * @return void
+     */
+    public static function setTemplate(string $template): void
+    {
+        $template = preg_replace(self::SANITIZATION_REGEX, '', $template);
+
+        if ($template === '') {
+            self::delete('template');
+
+            return;
+        }
+
+        $expires = strtotime('+45 days');
+        self::set('template', $template, $expires, ServerFunctions::isSecureConnection());
+    }
+
+    /**
+     * Get the sanitized template cookie value.
+     */
+    public static function getTemplate(): string
+    {
+        $template = self::get('template') ?? '';
+
+        return preg_replace('/[^a-zA-Z0-9:_-]/', '', $template);
+    }
 }
