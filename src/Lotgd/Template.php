@@ -165,7 +165,7 @@ class Template
     {
         $template = $_COOKIE['template'] ?? '';
 
-        return preg_replace(SANITIZATION_REGEX, '', $template);
+        return preg_replace(self::SANITIZATION_REGEX, '', $template);
     }
 
     /**
