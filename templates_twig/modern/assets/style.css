@@ -227,6 +227,10 @@ a.thot {
 	padding-right: 1px;
 }
 
+.hidden {
+	display: none;
+}
+
 div.debug {
 	background-color: #1e1e1e; /* dark gray, easy on the eyes */
 	color: #d4d4d4; /* slightly muted white for good readability */

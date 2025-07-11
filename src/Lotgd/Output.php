@@ -198,7 +198,8 @@ class Output
             if (is_array($text)) {
                 $text = appoencode(DumpItem::dump($text), true);
             }
-            $this->rawOutput("<div class='debug'>$text</div>");
+            // Toggle visibility of debug output to make the page cleaner if you want to
+            $this->rawOutput("<button onclick=\"this.nextElementSibling.classList.toggle('hidden');\">Show Debug Output</button><div class='debug'>$text</div>");
         }
         $this->setBlockNewOutput($temp);
     }

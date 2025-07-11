@@ -225,6 +225,10 @@ a.thot {
 	padding-right: 1px;
 }
 
+.hidden {
+	display: none;
+}
+
 div.debug {
 	background-color: #FFFFFF;
 	color: #000000;
