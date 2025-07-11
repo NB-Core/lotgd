@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Cookies;
 $sql = "INSERT INTO " . db_prefix("bans") . " (banner,";
 $type = httppost("type");
 if ($type=="ip"){
@@ -29,11 +30,11 @@ if ($type=="ip"){
 		output("That's your own IP address!");
 	}
 }else{
-	if ($_COOKIE['lgi']==httppost("id")){
-		$sql = "";
-		output("You don't really want to ban yourself now do you??");
-		output("That's your own ID!");
-	}
+        if (Cookies::getLgi() == httppost("id")){
+                $sql = "";
+                output("You don't really want to ban yourself now do you??");
+                output("That's your own ID!");
+        }
 }
 if ($sql!=""){
 	$result=db_query($sql);

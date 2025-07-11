@@ -10,6 +10,7 @@ use Lotgd\CheckBan;
 use Lotgd\Settings;
 use Lotgd\Sanitize;
 use Lotgd\DebugLog;
+use Lotgd\Cookies;
 require_once("common.php");
 require_once("lib/is_email.php");
 // legacy wrapper removed, instantiate settings directly
@@ -296,7 +297,7 @@ if (getsetting("allowcreation",1)==0){
 					$sql = "INSERT INTO " . db_prefix("accounts") . "
 						(playername,name, superuser, title, password, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate,badguy,allowednavs,specialinc,specialmisc,bufflist,dragonpoints,replaceemail,forgottenpassword,prefs,hauntedby,donationconfig,bio,ctitle,companions)
 						VALUES
-						('$shortname','$title $shortname', '".getsetting("defaultsuperuser",0)."', '$title', '$dbpass', '$sex', '$shortname', '".date("Y-m-d H:i:s",strtotime("-1 day"))."', '".(isset($_COOKIE['lgi'])?$_COOKIE['lgi']:'')."', '".$_SERVER['REMOTE_ADDR']."', ".getsetting("newplayerstartgold",50).", '".addslashes(getsetting('villagename', LOCATION_FIELDS))."', '$email', '$emailverification', '$referer', NOW(),'','','','','',0,'','','','','','','','')";
+						('$shortname','$title $shortname', '".getsetting("defaultsuperuser",0)."', '$title', '$dbpass', '$sex', '$shortname', '".date("Y-m-d H:i:s",strtotime("-1 day"))."', '".(Cookies::getLgi() ?? '')."', '".$_SERVER['REMOTE_ADDR']."', ".getsetting("newplayerstartgold",50).", '".addslashes(getsetting('villagename', LOCATION_FIELDS))."', '$email', '$emailverification', '$referer', NOW(),'','','','','',0,'','','','','','','','')";
 					db_query($sql);
 					if (db_affected_rows(LINK)<=0){
 						output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
