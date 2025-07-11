@@ -356,11 +356,18 @@ class PlayerFunctions
         if ($color === false) {
             return ($v == 0 ? '' : $v);
         }
-        // TODO ... no number formatting, it rounds to 0.1 always
+        $point = getsetting('moneydecimalpoint', '.');
+        $sep   = getsetting('moneythousandssep', ',');
+
         if ($v > 0) {
-            return " `&(" . ($session['user'][$name] - round($v,1)) . "`@+" . round($v,1) . "`&)";
+            return " `&(" . number_format($session['user'][$name] - $v, 1, $point, $sep)
+                . "`@+" . number_format($v, 1, $point, $sep) . "`&)";
         }
-        return ($v == 0 ? '' : " `&(" . ($session['user'][$name] + round($v,1)) . "`$-" . round($v,1) . "`&)");
+
+        return $v == 0
+            ? ''
+            : " `&(" . number_format($session['user'][$name] + $v, 1, $point, $sep)
+                . "`$-" . number_format($v, 1, $point, $sep) . "`&)";
     }
 
     public static function suspendTempStats(): bool
