@@ -32,7 +32,7 @@ function db_query(string $sql) {
         $last_query_result = [$row];
         return $last_query_result;
     }
-    if (preg_match("/INSERT INTO mail \(msgfrom,msgto,subject,body,sent\) VALUES \('(\d+)','(\d+)','(.*)','(.*)','(.*)'\);/", $sql, $m)) {
+    if (preg_match("/INSERT INTO mail \(msgfrom,msgto,subject,body,sent\) VALUES \('(\d+)','(\d+)','(.*?)','(.*?)','(.*?)'\);/", $sql, $m)) {
         $from=(int)$m[1]; $to=(int)$m[2]; $subject=$m[3]; $body=$m[4]; $sent=$m[5];
         $id = count($mail_table)+1;
         $mail_table[] = ['messageid'=>$id,'msgfrom'=>$from,'msgto'=>$to,'subject'=>$subject,'body'=>$body,'sent'=>$sent,'seen'=>0];
