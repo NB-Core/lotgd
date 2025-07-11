@@ -146,13 +146,16 @@ class Template
     public static function setTemplateCookie(string $template): void
     {
         $template = preg_replace(self::SANITIZATION_REGEX, '', $template);
+        $secure  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
+
         if ($template === '') {
-            setcookie('template', '', time() - 3600); // Expire the cookie
+            setcookie('template', '', time() - 3600, '/', '', $secure, true); // Expire the cookie
             unset($_COOKIE['template']); // Unset the cookie value in the current request
             return;
         }
 
-        setcookie('template', $template, strtotime('+45 days'));
+        setcookie('template', $template, strtotime('+45 days'), '/', '', $secure, true);
         $_COOKIE['template'] = $template;
     }
 
