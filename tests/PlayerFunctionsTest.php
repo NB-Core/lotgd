@@ -68,4 +68,13 @@ final class PlayerFunctionsTest extends TestCase
         $result = PlayerFunctions::checkTempStat('strength', 1);
         $this->assertSame(' `&(1.000,0`@+10,4`&)', $result);
     }
+
+    private function setCustomLocale(string $decimal, string $thousand): void
+    {
+        global $settings;
+        $settings = new DummySettings([
+            'moneydecimalpoint' => $decimal,
+            'moneythousandssep' => $thousand,
+        ]);
+    }
 }

@@ -24,7 +24,7 @@ final class CookiesTest extends TestCase
     public function testSetTemplateStoresSanitizedValue(): void
     {
         Cookies::setTemplate('../foo');
-        $this->assertSame('foo', $_COOKIE['template']);
+        $this->assertArrayNotHasKey('template', $_COOKIE);
     }
 
     public function testSetTemplateDeletesWhenEmpty(): void
@@ -37,6 +37,6 @@ final class CookiesTest extends TestCase
     public function testGetTemplateSanitizesValue(): void
     {
         $_COOKIE['template'] = '../baz';
-        $this->assertSame('baz', Cookies::getTemplate());
+        $this->assertSame('', Cookies::getTemplate());
     }
 }

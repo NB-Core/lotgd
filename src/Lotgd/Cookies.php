@@ -82,9 +82,7 @@ class Cookies
      */
     public static function setTemplate(string $template): void
     {
-        $template_match = preg_match(self::SANITIZATION_REGEX, $template);
-
-        if ($template_match === false) {
+        if ($template === '' || preg_match(self::SANITIZATION_REGEX, $template) !== 1) {
             self::delete('template');
 
             return;
@@ -100,11 +98,11 @@ class Cookies
     public static function getTemplate(): string
     {
         $template = self::get('template') ?? '';
-        $template_match = preg_match(self::SANITIZATION_REGEX, $template);
 
-        if ($template_match === false || $template === '') {
+        if ($template === '' || preg_match(self::SANITIZATION_REGEX, $template) !== 1) {
             return '';
         }
+
         return $template;
     }
 }
