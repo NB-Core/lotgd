@@ -61,13 +61,9 @@ final class PlayerFunctionsTest extends TestCase
 
     public function testCheckTempStatHonorsCustomLocale(): void
     {
-        global $settings, $session, $temp_user_stats;
-        $settings = new DummySettings([
-            'moneydecimalpoint' => ',',
-            'moneythousandssep' => '.',
-        ]);
+        $this->setCustomLocale(',', '.');
+        global $session;
         $session['user']['strength'] = 1000.0;
-        $temp_user_stats = ['add' => [], 'is_suspended' => false];
         apply_temp_stat('strength', 10.4);
         $result = PlayerFunctions::checkTempStat('strength', 1);
         $this->assertSame(' `&(1.000,0`@+10,4`&)', $result);
