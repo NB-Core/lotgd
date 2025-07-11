@@ -31,7 +31,10 @@ class DummySettings extends Settings
         $this->values[$settingname] = $value;
         return true;
     }
-    public function getArray(): array { return $this->values; }
+    public function getArray(): array
+    {
+        return $this->values;
+    }
 }
 
 final class PlayerFunctionsTest extends TestCase
