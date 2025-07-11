@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Sanitize;
+use Lotgd\Cookies;
 
 class Translator
 {
@@ -36,9 +37,12 @@ class Translator
 		$language = "";
 		if (isset($session['user']['prefs']['language'])) {
 			$language = $session['user']['prefs']['language'];
-		}elseif(isset($_COOKIE['language'])){
-			$language = $_COOKIE['language'];
-		}
+                } else {
+                        $cookieLanguage = Cookies::get('language');
+                        if (null !== $cookieLanguage) {
+                            $language = $cookieLanguage;
+                        }
+                }
 		if ($language=="") {
 			$language=$settings->getsetting("defaultlanguage","en");
 		}
