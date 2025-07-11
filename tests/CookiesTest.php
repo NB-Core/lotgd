@@ -20,4 +20,23 @@ final class CookiesTest extends TestCase
         $_COOKIE['lgi'] = 'short';
         $this->assertNull(Cookies::getLgi());
     }
+
+    public function testSetTemplateStoresSanitizedValue(): void
+    {
+        Cookies::setTemplate('../foo');
+        $this->assertSame('foo', $_COOKIE['template']);
+    }
+
+    public function testSetTemplateDeletesWhenEmpty(): void
+    {
+        $_COOKIE['template'] = 'bar';
+        Cookies::setTemplate('..');
+        $this->assertArrayNotHasKey('template', $_COOKIE);
+    }
+
+    public function testGetTemplateSanitizesValue(): void
+    {
+        $_COOKIE['template'] = '../baz';
+        $this->assertSame('baz', Cookies::getTemplate());
+    }
 }
