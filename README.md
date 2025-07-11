@@ -39,6 +39,7 @@ If somebody really has time, there are still things to do:
 - extend and refine the Twig templates for modern theming
 - convert arrays into objects to avoid extensive `isset()` checks
 - configure the `datacachepath` setting in `dbconnect.php` to a writable directory so errors can be cached for email notifications
+- define your SMTP credentials under **SMTP Mail Settings** in `config/configuration.php`
 
 Contact me on [GitHub](https://github.com/NB-Core/lotgd/issues) if you have questions or suggestions.
 
@@ -52,6 +53,7 @@ Oliver
 - [Quick Start](#quick-start)
 - [Install from Release Archive](#install-from-release-archive)
 - [Cron Job Setup](#cron-job-setup)
+- [SMTP Mail Setup](#smtp-mail-setup)
 - [After Upgrading](#after-upgrading)
 - [Upgrading](#upgrading)
 - [Installation](#installation)
@@ -116,6 +118,26 @@ will guide you through the setup.
 
 `cron.php` handles automated tasks such as new day resets. It runs from the command line and reads `settings.php` to determine the game directory.
 Edit `$GAME_DIR` in `settings.php` to the absolute path of your installation before creating the cron job.  Modules like namecolor/namechange no longer work; set `playername` instead.
+
+## SMTP Mail Setup
+
+LOTGD uses **PHPMailer** for all outgoing mail. Open the admin settings (or edit
+`config/configuration.php`) and fill in the options under **SMTP Mail Settings**:
+
+```php
+"gamemailhost"       => "SMTP Hostname",
+"gamailsmtpauth"    => "SMTP Auth,bool",
+"gamemailusername"   => "SMTP Username",
+"gamemailpassword"   => "SMTP Password",
+"gamemailsmtpsecure" => "SMTP Securemechanism,enum,starttls,STARTTLS,tls,TLS",
+"gamemailsmtpport"   => "SMTP port to use,int",
+```
+
+Enable `notify_on_warn` or `notify_on_error` and set `notify_address` in the
+**Error Notification** section to receive site warnings or errors via email.
+These notifications rely on the data cache, so ensure `$DB_USEDATACACHE` is set
+to `1` and `$DB_DATACACHEPATH` points to a writable directory in
+`dbconnect.php`.
 
 ## After Upgrading
 
