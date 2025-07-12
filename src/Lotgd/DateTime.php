@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Settings;
@@ -181,10 +182,11 @@ class DateTime
 
     public static function dateDifferenceEvents(string $date_1, bool $abs = false): int
     {
-        $year = date('Y');
-        $diff1 = self::dateDifference($year . '-' . $date_1);
-        $diff2 = self::dateDifference(($year + 1) . '-' . $date_1);
-        $diff3 = self::dateDifference(($year - 1) . '-' . $date_1);
+        $year  = (int) date('Y');
+        $diff1 = (int) self::dateDifference($year . '-' . $date_1);
+        $diff2 = (int) self::dateDifference(($year + 1) . '-' . $date_1);
+        $diff3 = (int) self::dateDifference(($year - 1) . '-' . $date_1);
+
         if (abs($diff1) < abs($diff2) && abs($diff1) < abs($diff3)) {
             $d_return = $diff1;
         } elseif (abs($diff2) < abs($diff1) && abs($diff2) < abs($diff3)) {
@@ -192,9 +194,7 @@ class DateTime
         } else {
             $d_return = $diff3;
         }
-        if ($abs === true) {
-            return abs($d_return);
-        }
-        return $d_return;
+
+        return $abs ? abs($d_return) : $d_return;
     }
 }

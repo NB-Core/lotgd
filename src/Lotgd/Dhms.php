@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 
 /**
@@ -26,7 +27,7 @@ class Dhms
             . (int)($secs / 60 % 60)
             . translate_inline('m', 'datetime')
             . ($secs % 60)
-            . ($dec ? substr($secs - (int)$secs, 1) : '')
+            . ($dec ? substr((string)($secs - (int)$secs), 1) : '')
             . translate_inline('s', 'datetime');
     }
 }
