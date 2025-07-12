@@ -15,10 +15,10 @@ final class BacktraceTest extends TestCase
         $this->assertSame('', Backtrace::showNoBacktrace());
     }
 
-    #[DataProvider('getTypeDataProvider')]
     /**
      * @dataProvider getTypeDataProvider
      */
+    #[DataProvider('getTypeDataProvider')]
     public function testGetType($input, string $expected): void
     {
         $this->assertSame($expected, Backtrace::getType($input));
