@@ -58,6 +58,7 @@ Oliver
 - [Upgrading](#upgrading)
 - [Installation](#installation)
 - [Post Installation](#post-installation)
+- [Composer Local Setup](#composer-local-setup)
 - [LOTGD Docker Environment](#lotgd-docker-environment)
 - [Contributing & Support](#contributing--support)
 - [License](#license)
@@ -272,6 +273,15 @@ Once you have things configured to your liking, you should go back to the
 manage modules page and ACTIVATE any modules that you want to have running.
 
 Good luck and enjoy your new LotGD server!
+
+## Composer Local Setup
+
+Optional Composer packages can be defined in
+`config/composer.local.json`. Copy the provided
+`config/composer.local.json.dist` to this location and run
+`composer update` to install the additional dependencies. The
+`composer-merge-plugin` will automatically merge the local file with the
+main `composer.json`.
 
 # LOTGD Docker Environment
 
