@@ -29,7 +29,7 @@ $GLOBALS['settings_array'] = [
 // --- Database stub ---
 namespace Lotgd\MySQL {
     class Database {
-        public static function prefix(string $name, ?string $force = null): string {
+        public static function prefix(string $name, bool $force = false): string {
             return $name;
         }
 
