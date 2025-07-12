@@ -20,5 +20,10 @@
                 "config/composer.local.json"
             ]
         }
+    },
+    "config": {
+        "allow-plugins": {
+            "wikimedia/composer-merge-plugin": true
+        }
     }
 }
