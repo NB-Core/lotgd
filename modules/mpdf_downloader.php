@@ -12,18 +12,18 @@ use Lotgd\Output;
 
 function mpdf_downloader_getmoduleinfo(): array
 {
-        return [
-                "name" => "MPDF Content Downloader (Mails/Chats)",
-                "version" => "1.1",
-                "author" => "Oliver Brendel & LotGD Codex",
-                "category" => "Administrative",
-                "download" => "core_module",
-                "settings" => [
-                        "Customization,title",
-                        "header_image" => "Optional logo or watermark image,text|",
-                        "site_url" => "Override site URL in footer,text|",
-                ],
-        ];
+	return [
+		"name" => "MPDF Content Downloader (Mails/Chats)",
+		"version" => "1.1",
+		"author" => "Oliver Brendel & LotGD Codex",
+		"category" => "Administrative",
+		"download" => "core_module",
+		"settings" => [
+			"Customization,title",
+		"header_image" => "Optional logo or watermark image,text|",
+		"site_url" => "Override site URL in footer,text|",
+		],
+	];
 }
 
 function mpdf_downloader_install(): bool
@@ -52,41 +52,39 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
 			rawoutput("<input type='hidden' name='section' value='$section'>");
 			rawoutput("Lines: <input name='lines' value='100' size='4'> ");
 			rawoutput("<select name='format'><option value='pdf'>PDF</option><option value='text'>Text</option></select> ");
-                    rawoutput("<input type='submit' class='button' value='Download'>");
-                    rawoutput("</form>");
-                    addnav('', "runmodule.php?module=mpdf_downloader&op=grab");
-                    // Break to avoid executing the mail form logic when the
-                    // hook is triggered from commentary.
-                    break;
-                case 'mailform':
-                case 'mailform-archive':
+			rawoutput("<input type='submit' class='button' value='Download'>");
+			rawoutput("</form>");
+			addnav('', "runmodule.php?module=mpdf_downloader&op=grab");
+			// Break to avoid executing the mail form logic when the
+			// hook is triggered from commentary.
+			break;
+		case 'mailform':
+		case 'mailform-archive':
 			$label = htmlentities(translate_inline("Grab checked as PDF"), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
 			rawoutput("<input type='submit' class='button' name='pdf_mail' value=\"{$label}\"> ");
 			break;
 		case 'header-mail':
 		case 'header-mailarchive':
 			if (httppost('pdf_mail')) {
-                $ids = httppost('msg');
-                if (!is_array($ids)) {
-                $ids = [];
-                }
-                // Sanitize: cast each ID to int to prevent SQL injection
-                $ids = array_map('intval', $ids);
-                $ids = array_filter($ids);
+				$ids = httppost('msg');
+				if (!is_array($ids)) {
+					$ids = [];
+				}
+				// Sanitize: cast each ID to int to prevent SQL injection
 				$ids = array_map('intval', $ids);
 				$ids = array_filter($ids);
 				if (count($ids) > 0) {
 					$table = ($hookname === 'header-mail') ? 'mail' : 'mailarchive';
-                    $acct = Database::prefix('accounts');
-                    $mailtbl = Database::prefix($table);
-                    $sql = "SELECT $mailtbl.*, a1.name AS sender, a2.name AS receiver FROM $mailtbl LEFT JOIN $acct AS a1 ON a1.acctid=$mailtbl.msgfrom LEFT JOIN $acct AS a2 ON a2.acctid=$mailtbl.msgto WHERE $mailtbl.messageid IN (" . implode(',', $ids) . ") ORDER BY $mailtbl.messageid";
-                    $result = Database::query($sql);
+					$acct = Database::prefix('accounts');
+					$mailtbl = Database::prefix($table);
+					$sql = "SELECT $mailtbl.*, a1.name AS sender, a2.name AS receiver FROM $mailtbl LEFT JOIN $acct AS a1 ON a1.acctid=$mailtbl.msgfrom LEFT JOIN $acct AS a2 ON a2.acctid=$mailtbl.msgto WHERE $mailtbl.messageid IN (" . implode(',', $ids) . ") ORDER BY $mailtbl.messageid";
+					$result = Database::query($sql);
 
-                    $header = get_module_setting('header_image');
-                    $url = get_module_setting('site_url');
-                    $mpdf = mpdf_downloader_setup($header, $url);
-                    $first = true;
-                    while ($row = Database::fetchAssoc($result)) {
+					$header = get_module_setting('header_image');
+					$url = get_module_setting('site_url');
+					$mpdf = mpdf_downloader_setup($header, $url);
+					$first = true;
+					while ($row = Database::fetchAssoc($result)) {
 						if (!$first) {
 							$mpdf->AddPage();
 						}
@@ -147,10 +145,10 @@ function mpdf_downloader_run(): void
 			}
 		} else {
 
-                        $logo = get_module_setting('header_image');
-                        $site = get_module_setting('site_url');
-                        $mpdf = mpdf_downloader_setup($logo, $site);
-                        $mpdf->setHTMLHeader("Chat: " . $section);
+			$logo = get_module_setting('header_image');
+			$site = get_module_setting('site_url');
+			$mpdf = mpdf_downloader_setup($logo, $site);
+			$mpdf->setHTMLHeader("Chat: " . $section);
 
 			$html = '';
 			foreach ($rows as $row) {
@@ -168,31 +166,31 @@ function mpdf_downloader_run(): void
 	page_footer();
 }
 function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = null) : Mpdf {
-        global $output;
-        $tempDir = getsetting('datacachepath', sys_get_temp_dir());
-        $mpdf = new Mpdf(['tempDir' => $tempDir]);
-        $serverUrl = rtrim($siteUrl ?: getsetting('serverurl', ''), '/');
-        // Use a local logo for the watermark unless a custom one is provided
-        $logoUrl = $logoImage ?: __DIR__ . "/mpdf_downloader/images/server-logo.png";
-        $siteName = $output->appoencode(getsetting('serverdesc', $serverUrl));
+	global $output;
+	$tempDir = getsetting('datacachepath', sys_get_temp_dir());
+	$mpdf = new Mpdf(['tempDir' => $tempDir]);
+	$serverUrl = rtrim($siteUrl ?: getsetting('serverurl', ''), '/');
+	// Use a local logo for the watermark unless a custom one is provided
+	$logoUrl = $logoImage ?: __DIR__ . "/mpdf_downloader/images/server-logo.png";
+	$siteName = $output->appoencode(getsetting('serverdesc', $serverUrl));
 
-        $mpdf->SetWatermarkImage($logoUrl, 0.1, '', [120, 0]); // opacity 0.1, position x=190mm, y=10mm
-        $mpdf->showWatermarkImage = true;
-        $mpdf->SetHTMLFooter("<div style='text-align:center;font-size:10pt;'>$serverUrl<br/>$siteName<br/>Page {PAGENO}/{nb}</div>");
-        return $mpdf;
+	$mpdf->SetWatermarkImage($logoUrl, 0.1, '', [120, 0]); // opacity 0.1, position x=190mm, y=10mm
+	$mpdf->showWatermarkImage = true;
+	$mpdf->SetHTMLFooter("<div style='text-align:center;font-size:10pt;'>$serverUrl<br/>$siteName<br/>Page {PAGENO}/{nb}</div>");
+	return $mpdf;
 }
 function mpdf_downloader_convertMail(string $text): string {
-        // Convert internal new line markers to HTML line breaks for MPDF
-        return str_replace('`n', "<br>\n", $text);
+	// Convert internal new line markers to HTML line breaks for MPDF
+	return str_replace('`n', "<br>\n", $text);
 }
 
 function mpdf_downloader_convert(array $row): string
 {
-        // Reuse the standard commentary renderer then strip all HTML
-        // to produce a plain text line for the output file
-        $line = Commentary::renderCommentLine($row, false);
-        $line = strip_tags($line);
-        $line = html_entity_decode($line, ENT_QUOTES, getsetting('charset','ISO-8859-1'));
-        $line = full_sanitize($line);
-        return trim($line);
+	// Reuse the standard commentary renderer then strip all HTML
+	// to produce a plain text line for the output file
+	$line = Commentary::renderCommentLine($row, false);
+	$line = strip_tags($line);
+	$line = html_entity_decode($line, ENT_QUOTES, getsetting('charset','ISO-8859-1'));
+	$line = full_sanitize($line);
+	return trim($line);
 }
