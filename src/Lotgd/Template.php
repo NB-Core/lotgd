@@ -141,7 +141,7 @@ class Template
         // unavailable (for example, during tests that rename the
         // directory to simulate absence).
         if (defined('DEFAULT_TEMPLATE') && str_starts_with((string) DEFAULT_TEMPLATE, 'twig:')) {
-            $defaultName = substr((string) DEFAULT_TEMPLATE, 5);
+            $defaultName = substr((string) DEFAULT_TEMPLATE, strlen('twig:'));
             if ($defaultName === $template) {
                 return 'twig:' . $template;
             }
