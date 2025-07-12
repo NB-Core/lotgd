@@ -2,21 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Lotgd {
-    if (!class_exists('Lotgd\\Settings', false)) {
-        class Settings {
-            public function __construct(string|false $table = false){}
-            public function getSetting(string|int $name, mixed $default = false): mixed {
-                return $GLOBALS['settings_array'][$name] ?? $default;
-            }
-        }
-    }
-}
-
 namespace {
     use PHPUnit\Framework\TestCase;
     use Lotgd\DataCache;
-    use Lotgd\Settings;
 
     require_once __DIR__ . '/../config/constants.php';
 
@@ -25,7 +13,7 @@ namespace {
     }
 
     if (!class_exists('CacheDummySettings')) {
-        class CacheDummySettings extends Settings
+        class CacheDummySettings
         {
             private array $values;
 
