@@ -12,13 +12,18 @@ use Lotgd\Output;
 
 function mpdf_downloader_getmoduleinfo(): array
 {
-	return [
-		"name" => "MPDF Content Downloader (Mails/Chats)",
-		"version" => "1.0",
-		"author" => "Oliver Brendel & LotGD Codex",
-		"category" => "Administrative",
-		"download" => "core_module"
-	];
+        return [
+                "name" => "MPDF Content Downloader (Mails/Chats)",
+                "version" => "1.1",
+                "author" => "Oliver Brendel & LotGD Codex",
+                "category" => "Administrative",
+                "download" => "core_module",
+                "settings" => [
+                        "Customization,title",
+                        "header_image" => "Optional logo or watermark image,text|",
+                        "site_url" => "Override site URL in footer,text|",
+                ],
+        ];
 }
 
 function mpdf_downloader_install(): bool
@@ -74,14 +79,10 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
 					$sql = "SELECT $mailtbl.*, a1.name AS sender, a2.name AS receiver FROM $mailtbl LEFT JOIN $acct AS a1 ON a1.acctid=$mailtbl.msgfrom LEFT JOIN $acct AS a2 ON a2.acctid=$mailtbl.msgto WHERE $mailtbl.messageid IN (" . implode(',', $ids) . ") ORDER BY $mailtbl.messageid";
 					$result = db_query($sql);
 
-					$mpdf = mpdf_downloader_setup();
-
-                                        // The following settings are reserved
-                                        // for custom PDF headers/URLs but are
-                                        // currently not used.
                                         $header = get_module_setting('header_image');
                                         $url = get_module_setting('site_url');
-					$first = true;
+                                        $mpdf = mpdf_downloader_setup($header, $url);
+                                        $first = true;
 					while ($row = db_fetch_assoc($result)) {
 						if (!$first) {
 							$mpdf->AddPage();
@@ -143,8 +144,10 @@ function mpdf_downloader_run(): void
 			}
 		} else {
 
-			$mpdf = mpdf_downloader_setup();
-			$mpdf->setHTMLHeader("Chat: " . $section);
+                        $logo = get_module_setting('header_image');
+                        $site = get_module_setting('site_url');
+                        $mpdf = mpdf_downloader_setup($logo, $site);
+                        $mpdf->setHTMLHeader("Chat: " . $section);
 
 			$html = '';
 			foreach ($rows as $row) {
@@ -161,21 +164,19 @@ function mpdf_downloader_run(): void
 	output('Invalid operation.');
 	page_footer();
 }
-function mpdf_downloader_setup() : Mpdf {
+function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = null) : Mpdf {
         global $output;
         $tempDir = getsetting('datacachepath', sys_get_temp_dir());
         $mpdf = new Mpdf(['tempDir' => $tempDir]);
-        $serverUrl = rtrim(getsetting('serverurl', ''), '/');
-        // Use a local logo for the watermark; adjust path as needed
-        //$logoUrl = $serverUrl . '/modules/mpdf_downloader/images/server-logo.png';
-        $logoUrl = __DIR__ . "/mpdf_downloader/images/server-logo.png";
-	$siteName = $output->appoencode(getsetting('serverdesc', $serverUrl));
+        $serverUrl = rtrim($siteUrl ?: getsetting('serverurl', ''), '/');
+        // Use a local logo for the watermark unless a custom one is provided
+        $logoUrl = $logoImage ?: __DIR__ . "/mpdf_downloader/images/server-logo.png";
+        $siteName = $output->appoencode(getsetting('serverdesc', $serverUrl));
 
-	//$mpdf->SetHTMLHeader("<div style='text-align:center'><img src='$logoUrl' alt='logo'></div>");
-	$mpdf->SetWatermarkImage($logoUrl, 0.1, '', array(120, 0)); // opacity 0.1, position x=190mm, y=10mm
-	$mpdf->showWatermarkImage = true;
-	$mpdf->SetHTMLFooter("<div style='text-align:center;font-size:10pt;'>$serverUrl<br/>$siteName<br/>Page {PAGENO}/{nb}</div>");
-	return $mpdf;
+        $mpdf->SetWatermarkImage($logoUrl, 0.1, '', [120, 0]); // opacity 0.1, position x=190mm, y=10mm
+        $mpdf->showWatermarkImage = true;
+        $mpdf->SetHTMLFooter("<div style='text-align:center;font-size:10pt;'>$serverUrl<br/>$siteName<br/>Page {PAGENO}/{nb}</div>");
+        return $mpdf;
 }
 function mpdf_downloader_convertMail(string $text): string {
         // Convert internal new line markers to HTML line breaks for MPDF
