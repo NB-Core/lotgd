@@ -74,6 +74,7 @@ $ucount = count($uninstmodules);
 addnav("Uninstalled");
 addnav(array(" ?Uninstalled - (%s modules)", $ucount), "modules.php");
 
+addnav("Module Categories");
 foreach ($seencats as $cat=>$count) {
 	$category = $cat;
 	if (strpos($cat,"|") !== false) {
