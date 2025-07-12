@@ -158,9 +158,10 @@ if ($session['user']['loggedin'] &&
 		output("`nCannot view this file.`n");;
 	}
 } else {
-	output("Due to the behaviour of people in the past, access to the source code online has been restricted.");
-	output("You may download the entirety of the latest publically released stable version from <a href='http://www.dragonprime.net' target='_blank'>DragonPrime</a>.", true);
-	output("You may then work with that code within the restrictions of its license.");
+       output("Due to the behaviour of people in the past, access to the source code online has been restricted.");
+       output("You may download the entirety of the latest publicly released stable version from <a href='http://www.dragonprime.net' target='_blank'>DragonPrime</a>.", true);
+       output("For the +NB version of Legend of the Green Dragon, visit our <a href='https://github.com/NB-Core/lotgd' target='_blank'>GitHub repository</a> where you can download releases or clone the project.", true);
+       output("You may then work with that code within the restrictions of its license.");
 	output("`n`nHopefully this will help put an end to actions like the following:");
 	rawoutput("<ul><li>");
 	output("Releasing code which they do not own without permission.");
