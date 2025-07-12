@@ -160,7 +160,16 @@ if (!function_exists('output')) {
 }
 
 // --- Class stubs ---
-
+namespace Lotgd {
+    if (!class_exists('Lotgd\\Settings', false)) {
+        class Settings {
+            public function __construct(string|false $table=false){}
+            public function getSetting(string|int $name, mixed $default=false): mixed {
+                return $GLOBALS['settings_array'][$name] ?? $default;
+            }
+        }
+    }
+}
 
 namespace PHPMailer\PHPMailer {
 class PHPMailer {
