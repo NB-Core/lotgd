@@ -25,9 +25,9 @@ jobs:
           mkdir dist
           tar --exclude='.git*' --exclude='.github' --exclude='tests' \
               --exclude='phpunit.xml' --exclude='.phpunit.result.cache' \
-              -czf "dist/lotgd-${VERSION}.tar.gz" .
+              --exclude='dist' -czf "dist/lotgd-${VERSION}.tar.gz" .
           zip -r "dist/lotgd-${VERSION}.zip" . \
-              -x '*.git*' -x '.github/*' -x 'tests/*' -x 'phpunit.xml' -x '.phpunit.result.cache'
+              -x '*.git*' -x '.github/*' -x 'tests/*' -x 'phpunit.xml' -x '.phpunit.result.cache' -x 'dist/*'
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
