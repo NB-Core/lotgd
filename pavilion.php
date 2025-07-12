@@ -20,4 +20,3 @@ villagenav();
 Commentary::commentdisplay('', 'beta', 'Talk with other testers:', 25);
 
 page_footer();
-?>
