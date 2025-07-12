@@ -210,7 +210,7 @@ class Mail
      */
     public static function isInboxFull(int $userId, bool $onlyUnread = false): bool
     {
-        $limit = getsetting('inboxlimit', 50);
+        $limit = (int) getsetting('inboxlimit', 50);
         return self::inboxCount($userId, $onlyUnread) >= $limit;
     }
 

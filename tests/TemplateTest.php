@@ -31,6 +31,6 @@ final class TemplateTest extends TestCase
             rmdir($tempDir);
         }
 
-        $this->assertSame('legacy:aurora', $result);
+        $this->assertSame('twig:aurora', $result);
     }
 }
