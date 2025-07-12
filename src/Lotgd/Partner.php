@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 /**
  * Helper to resolve the partner name for a player.
@@ -32,9 +33,9 @@ class Partner
                     $partner = getsetting('bard', '`^Seth');
                 }
             } else {
-                $sql = 'SELECT name FROM ' . db_prefix('accounts') . ' WHERE acctid = ' . $session['user']['marriedto'];
-                $result = db_query($sql);
-                if ($row = db_fetch_assoc($result)) {
+                $sql = 'SELECT name FROM ' . Database::prefix('accounts') . ' WHERE acctid = ' . $session['user']['marriedto'];
+                $result = Database::query($sql);
+                if ($row = Database::fetchAssoc($result)) {
                     $partner = $row['name'];
                 } else {
                     $session['user']['marriedto'] = 0;

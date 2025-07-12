@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 /**
  * Placeholder class for future mail handling refactoring.
@@ -17,10 +18,10 @@ class Mail
      */
     public static function systemMail(int $to, string $subject, string $body, int $from = 0, bool $noemail = false): void
     {
-        $sql = 'SELECT prefs,emailaddress FROM ' . db_prefix('accounts') . " WHERE acctid='$to'";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
-        db_free_result($result);
+        $sql = 'SELECT prefs,emailaddress FROM ' . Database::prefix('accounts') . " WHERE acctid='$to'";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
+        Database::freeResult($result);
         $prefs = isset($row['prefs']) ? @unserialize($row['prefs']) : [];
         $subject = SafeEscape::escape($subject);
         if ($from === 0) {
@@ -35,8 +36,8 @@ class Mail
         }
 
         $body = addslashes(substr(stripslashes($body), 0, (int)getsetting('mailsizelimit', 1024)));
-        $sql = 'INSERT INTO ' . db_prefix('mail') . " (msgfrom,msgto,subject,body,sent) VALUES ('" . (int)$from . "','" . (int)$to . "','$subject','$body','" . date('Y-m-d H:i:s') . "')";
-        db_query($sql);
+        $sql = 'INSERT INTO ' . Database::prefix('mail') . " (msgfrom,msgto,subject,body,sent) VALUES ('" . (int)$from . "','" . (int)$to . "','$subject','$body','" . date('Y-m-d H:i:s') . "')";
+        Database::query($sql);
         invalidatedatacache("mail-$to");
         $email = false;
         if (isset($prefs['emailonmail']) && $prefs['emailonmail'] && $from > 0) {
@@ -50,18 +51,18 @@ class Mail
             $email = false;
         }
         if ($email && !$noemail) {
-            $sql = 'SELECT name FROM ' . db_prefix('accounts') . " WHERE acctid='$from'";
-            $result = db_query($sql);
-            $row1 = db_fetch_assoc($result);
-            if (db_num_rows($result) > 0 && $row1['name'] != '') {
+            $sql = 'SELECT name FROM ' . Database::prefix('accounts') . " WHERE acctid='$from'";
+            $result = Database::query($sql);
+            $row1 = Database::fetchAssoc($result);
+            if (Database::numRows($result) > 0 && $row1['name'] != '') {
                 $fromline = full_sanitize($row1['name']);
             } else {
                 $fromline = translate_inline('The Green Dragon', 'mail');
             }
-            $sql = 'SELECT name FROM ' . db_prefix('accounts') . " WHERE acctid=$to";
-            $result = db_query($sql);
-            $row1 = db_fetch_assoc($result);
-            db_free_result($result);
+            $sql = 'SELECT name FROM ' . Database::prefix('accounts') . " WHERE acctid=$to";
+            $result = Database::query($sql);
+            $row1 = Database::fetchAssoc($result);
+            Database::freeResult($result);
             $toline = full_sanitize($row1['name']);
             $body = preg_replace("'[`]n'", "\n", $body);
             $body = full_sanitize($body);
@@ -161,8 +162,8 @@ class Mail
      */
     public static function deleteMessage(int $userId, int $messageId): void
     {
-        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=$userId AND messageid=$messageId";
-        db_query($sql);
+        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid=$messageId";
+        Database::query($sql);
         invalidatedatacache("mail-$userId");
     }
 
@@ -177,8 +178,8 @@ class Mail
             return;
         }
         $ids = implode("','", array_map('intval', $messageIds));
-        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE msgto=$userId AND messageid IN (\'$ids\')";
-        db_query($sql);
+        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid IN (\'$ids\')";
+        Database::query($sql);
         invalidatedatacache("mail-$userId");
     }
 
@@ -187,8 +188,8 @@ class Mail
      */
     public static function markUnread(int $userId, int $messageId): void
     {
-        $sql = 'UPDATE ' . db_prefix('mail') . " SET seen=0 WHERE msgto=$userId AND messageid=$messageId";
-        db_query($sql);
+        $sql = 'UPDATE ' . Database::prefix('mail') . " SET seen=0 WHERE msgto=$userId AND messageid=$messageId";
+        Database::query($sql);
         invalidatedatacache("mail-$userId");
     }
 
@@ -198,9 +199,9 @@ class Mail
     public static function inboxCount(int $userId, bool $onlyUnread = false): int
     {
         $extra = $onlyUnread ? ' AND seen=0' : '';
-        $sql = 'SELECT count(messageid) AS count FROM ' . db_prefix('mail') . " WHERE msgto=$userId $extra";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = 'SELECT count(messageid) AS count FROM ' . Database::prefix('mail') . " WHERE msgto=$userId $extra";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
         return (int) ($row['count'] ?? 0);
     }
 
@@ -220,8 +221,8 @@ class Mail
      */
     public static function getInbox(int $userId, string $order = 'sent', string $direction = 'DESC'): array
     {
-        $mail = db_prefix('mail');
-        $acc = db_prefix('accounts');
+        $mail = Database::prefix('mail');
+        $acc = Database::prefix('accounts');
 
         $allowed = ['subject', 'name', 'sent'];
         if (!in_array($order, $allowed, true)) {
@@ -234,9 +235,9 @@ class Mail
              . "FROM $mail LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
              . "WHERE msgto='$userId' ORDER BY $order $direction";
 
-        $result = db_query($sql);
+        $result = Database::query($sql);
         $messages = [];
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $messages[] = $row;
         }
 
@@ -248,15 +249,15 @@ class Mail
      */
     public static function getMessage(int $userId, int $messageId): ?array
     {
-        $mail = db_prefix('mail');
-        $acc = db_prefix('accounts');
+        $mail = Database::prefix('mail');
+        $acc = Database::prefix('accounts');
         $sql = "SELECT $mail.*,$acc.name,$acc.acctid FROM $mail "
              . "LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
              . "WHERE msgto='$userId' AND messageid='$messageId'";
 
-        $result = db_query($sql);
-        if (db_num_rows($result) > 0) {
-            return db_fetch_assoc($result);
+        $result = Database::query($sql);
+        if (Database::numRows($result) > 0) {
+            return Database::fetchAssoc($result);
         }
 
         return null;
@@ -267,9 +268,9 @@ class Mail
      */
     public static function markRead(int $userId, int $messageId): void
     {
-        $sql = 'UPDATE ' . db_prefix('mail')
+        $sql = 'UPDATE ' . Database::prefix('mail')
             . " SET seen=1 WHERE msgto='$userId' AND messageid='$messageId'";
-        db_query($sql);
+        Database::query($sql);
         invalidatedatacache("mail-$userId");
     }
 
@@ -280,16 +281,16 @@ class Mail
      */
     public static function adjacentMessageIds(int $userId, int $messageId): array
     {
-        $mail = db_prefix('mail');
+        $mail = Database::prefix('mail');
         $sql = "SELECT messageid FROM $mail WHERE msgto=$userId" .
             " AND messageid < $messageId ORDER BY messageid DESC LIMIT 1";
-        $result = db_query($sql);
-        $prev = db_num_rows($result) > 0 ? (int)db_fetch_assoc($result)['messageid'] : 0;
+        $result = Database::query($sql);
+        $prev = Database::numRows($result) > 0 ? (int)Database::fetchAssoc($result)['messageid'] : 0;
 
         $sql = "SELECT messageid FROM $mail WHERE msgto=$userId" .
             " AND messageid > $messageId ORDER BY messageid LIMIT 1";
-        $result = db_query($sql);
-        $next = db_num_rows($result) > 0 ? (int)db_fetch_assoc($result)['messageid'] : 0;
+        $result = Database::query($sql);
+        $next = Database::numRows($result) > 0 ? (int)Database::fetchAssoc($result)['messageid'] : 0;
 
         return ['prev' => $prev, 'next' => $next];
     }

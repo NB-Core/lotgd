@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Substitute;
 /**
@@ -20,10 +21,10 @@ class DeathMessage
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
-        $sql = 'SELECT deathmessage,taunt FROM ' . db_prefix('deathmessages') . " $where ORDER BY rand(" . e_rand() . ') LIMIT 1';
-        $result = db_query($sql);
+        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . e_rand() . ') LIMIT 1';
+        $result = Database::query($sql);
         if ($result) {
-            $row = db_fetch_assoc($result);
+            $row = Database::fetchAssoc($result);
             $deathmessage = $row['deathmessage'];
             $taunt = $row['taunt'];
         } else {
@@ -47,10 +48,10 @@ class DeathMessage
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
-        $sql = 'SELECT deathmessage,taunt FROM ' . db_prefix('deathmessages') . " $where ORDER BY rand(" . e_rand() . ') LIMIT 1';
-        $result = db_query($sql);
+        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . e_rand() . ') LIMIT 1';
+        $result = Database::query($sql);
         if ($result) {
-            $row = db_fetch_assoc($result);
+            $row = Database::fetchAssoc($result);
             $deathmessage = $row['deathmessage'];
             $taunt = $row['taunt'];
         } else {

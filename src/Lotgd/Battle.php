@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Buffs;
 use Lotgd\FightBar;
@@ -285,12 +286,12 @@ public static function applyBodyguard($level)
     */
 public static function selectTaunt(): string
 {
-    $sql = 'SELECT taunt FROM ' . db_prefix('taunts') .
+    $sql = 'SELECT taunt FROM ' . Database::prefix('taunts') .
         ' ORDER BY rand(' . e_rand() . ') LIMIT 1';
 
-    $result = db_query($sql);
+    $result = Database::query($sql);
     if ($result) {
-        $row = db_fetch_assoc($result);
+        $row = Database::fetchAssoc($result);
         $taunt = $row['taunt'];
     } else {
         $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
@@ -304,12 +305,12 @@ public static function selectTaunt(): string
     */
 public static function selectTauntArray(): array
 {
-    $sql = 'SELECT taunt FROM ' . db_prefix('taunts') .
+    $sql = 'SELECT taunt FROM ' . Database::prefix('taunts') .
         ' ORDER BY rand(' . e_rand() . ') LIMIT 1';
 
-    $result = db_query($sql);
+    $result = Database::query($sql);
     if ($result) {
-        $row = db_fetch_assoc($result);
+        $row = Database::fetchAssoc($result);
         $taunt = $row['taunt'];
     } else {
         $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
@@ -993,9 +994,9 @@ if ($bad_check>50) {
 		$nextindex++;
 	}
 	if(is_numeric($creature)) {
-		$sql = "SELECT * FROM " . db_prefix("creatures") . " WHERE creatureid = $creature LIMIT 1";
-		$result = db_query($sql);
-		if ($row = db_fetch_assoc($result)) {
+		$sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE creatureid = $creature LIMIT 1";
+		$result = Database::query($sql);
+		if ($row = Database::fetchAssoc($result)) {
 			$newenemies[$nextindex] = $row;
 			output("`^%s`2 summons `^%s`2 for help!`n", $badguy['creaturename'], $row['creaturename']);
 		}

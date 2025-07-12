@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 class ForcedNavigation
 {
@@ -14,10 +15,10 @@ class ForcedNavigation
         global $session, $REQUEST_URI;
         rawoutput("<!--\nAllowAnonymous: " . ($anonymous?"True":"False") . "\nOverride Forced Nav: " . ($overrideforced?"True":"False") . "\n-->");
         if (isset($session['loggedin']) && $session['loggedin']) {
-            $sql = "SELECT * FROM " . db_prefix('accounts') . " WHERE acctid='".$session['user']['acctid']."'";
-            $result = db_query($sql);
-            if (db_num_rows($result) == 1) {
-                $session['user'] = db_fetch_assoc($result);
+            $sql = "SELECT * FROM " . Database::prefix('accounts') . " WHERE acctid='".$session['user']['acctid']."'";
+            $result = Database::query($sql);
+            if (Database::numRows($result) == 1) {
+                $session['user'] = Database::fetchAssoc($result);
                 global $baseaccount;
                 $baseaccount = $session['user'];
                 self::$baseAccount = $session['user'];
@@ -40,7 +41,7 @@ class ForcedNavigation
                 $session['message'] = translate_inline("`4Error, your login was incorrect`0","login");
                 redirect('index.php','Account Disappeared!');
             }
-            db_free_result($result);
+            Database::freeResult($result);
             if (isset($session['allowednavs'][$REQUEST_URI]) && $session['allowednavs'][$REQUEST_URI] && $overrideforced !== true) {
                 $session['allowednavs'] = [];
             } else {

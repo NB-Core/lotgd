@@ -26,13 +26,13 @@ class TableDescriptor
     {
 	//table names should be db_prefix'd before they get in to
 	//this function.
-	if (!db_table_exists($tablename)){
+	if (!Database::tableExists($tablename)){
 		//the table doesn't exist, so we create it and are done.
 		reset($descriptor);
 		$sql = table_create_from_descriptor($tablename,$descriptor);
 		debug($sql);
-		if(!db_query($sql)) {
-			output("`\$Error:`^ %s`n", db_error());
+		if(!Database::query($sql)) {
+			output("`\$Error:`^ %s`n", Database::error());
 			rawoutput("<pre>".htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</pre>");
 		} else {
 			output("`^Table `#%s`^ created.`n", $tablename);
@@ -114,7 +114,7 @@ class TableDescriptor
 			//we have changes to do!  Woohoo!
 			$sql = "ALTER TABLE $tablename \n".join(",\n",$changes);
 			debug(nl2br($sql));
-			db_query($sql);
+			Database::query($sql);
 			return count($changes);
 		}
 	}//end if
@@ -134,7 +134,7 @@ class TableDescriptor
 		if ($key === "RequireMyISAM" && $val == 1) {
 			// Let's hope that we don't run into badly formatted strings
 			// but you know what, if we do, tough
-			if (db_get_server_version() < "4.0.14") {
+			if (Database::getServerVersion() < "4.0.14") {
 				$type = "MyISAM";
 			}
 			continue;
@@ -185,8 +185,8 @@ class TableDescriptor
 
 	//fetch column desc's
 	$sql = "DESCRIBE $tablename";
-	$result = db_query($sql);
-	while ($row = db_fetch_assoc($result)){
+	$result = Database::query($sql);
+	while ($row = Database::fetchAssoc($result)){
 		$item = array();
 		// check for reserved 
 		if (in_array($row['Field'],$reserved_words)) {
@@ -201,8 +201,8 @@ class TableDescriptor
 		$descriptor[$item['name']] = $item;
 	}
 	$sql = "SHOW KEYS FROM $tablename";
-	$result = db_query($sql);
-	while ($row = db_fetch_assoc($result)){
+	$result = Database::query($sql);
+	while ($row = Database::fetchAssoc($result)){
 		if ($row['Seq_in_index']>1){
 			//this is a secondary+ column on some previous key;
 			//add this to that column's keys.

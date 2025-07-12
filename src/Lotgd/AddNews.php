@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 class AddNews
 {
@@ -50,13 +51,13 @@ class AddNews
             $user = 0;
         }
 
-        $sql = 'INSERT INTO ' . db_prefix('news')
+        $sql = 'INSERT INTO ' . Database::prefix('news')
             . ' (newstext,newsdate,accountid,arguments,tlschema) VALUES ('
             . '\'' . addslashes($news) . '\','
             . '\'' . date('Y-m-d H:i:s') . '\','
             . $user . ',\'' . addslashes($arguments) . '\','
             . '\'' . $translation_namespace . '\')';
 
-        return db_query($sql);
+        return Database::query($sql);
     }
 }

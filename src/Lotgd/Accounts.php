@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Buffs;
 
@@ -43,17 +44,17 @@ class Accounts
             // Always update laston due to output moving to separate table
             $sql .= "laston='" . date('Y-m-d H:i:s') . "', ";
             $sql  = substr($sql, 0, strlen($sql) - 2);
-            $sql  = 'UPDATE ' . db_prefix('accounts') . ' SET ' . $sql .
+            $sql  = 'UPDATE ' . Database::prefix('accounts') . ' SET ' . $sql .
                 ' WHERE acctid = ' . $session['user']['acctid'];
-            db_query($sql);
+            Database::query($sql);
             if (isset($session['output']) && $session['output']) {
-                $sql_output = 'UPDATE ' . db_prefix('accounts_output') .
+                $sql_output = 'UPDATE ' . Database::prefix('accounts_output') .
                     " SET output='" . addslashes(gzcompress($session['output'], 1)) . "' WHERE acctid={$session['user']['acctid']};";
-                $result = db_query($sql_output);
-                if (db_affected_rows($result) < 1) {
-                    $sql_output = 'REPLACE INTO ' . db_prefix('accounts_output') .
+                $result = Database::query($sql_output);
+                if (Database::affectedRows($result) < 1) {
+                    $sql_output = 'REPLACE INTO ' . Database::prefix('accounts_output') .
                         " VALUES ({$session['user']['acctid']},'" . addslashes(gzcompress($session['output'], 1)) . "');";
-                    db_query($sql_output);
+                    Database::query($sql_output);
                 }
             }
             unset($session['bufflist']);

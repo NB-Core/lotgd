@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\GameLog;
 use Lotgd\ExpireChars;
@@ -10,12 +11,12 @@ class Newday
     public static function dbCleanup(): void
     {
         savesetting("lastdboptimize", date("Y-m-d H:i:s"));
-        $result = db_query("SHOW TABLES");
+        $result = Database::query("SHOW TABLES");
         $tables = [];
         $start = getmicrotime();
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             foreach ($row as $val) {
-                db_query("OPTIMIZE TABLE $val");
+                Database::query("OPTIMIZE TABLE $val");
                 $tables[] = $val;
             }
         }
@@ -26,63 +27,63 @@ class Newday
     public static function commentCleanup(): void
     {
         $timestamp = self::calculateExpirationTimestamp('2 month');
-        db_query('DELETE FROM ' . db_prefix('referers') . " WHERE last < '$timestamp'");
-        GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('referers') . " older than $timestamp.", 'maintenance');
+        Database::query('DELETE FROM ' . Database::prefix('referers') . " WHERE last < '$timestamp'");
+        GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('referers') . " older than $timestamp.", 'maintenance');
 
         $timestamp = date('Y-m-d H:i:s', strtotime('now'));
-        $sql = 'INSERT IGNORE INTO ' . db_prefix('debuglog_archive') .
-            ' SELECT * FROM ' . db_prefix('debuglog') . " WHERE date <'$timestamp'";
-        $ok = db_query($sql);
+        $sql = 'INSERT IGNORE INTO ' . Database::prefix('debuglog_archive') .
+            ' SELECT * FROM ' . Database::prefix('debuglog') . " WHERE date <'$timestamp'";
+        $ok = Database::query($sql);
         if ($ok) {
-            $sql = 'DELETE FROM ' . db_prefix('debuglog') . " WHERE date <'$timestamp'";
-            db_query($sql);
+            $sql = 'DELETE FROM ' . Database::prefix('debuglog') . " WHERE date <'$timestamp'";
+            Database::query($sql);
             $timestamp = self::calculateExpirationTimestamp(getsetting('expiredebuglog', 18) . ' days');
-            $sql = 'DELETE FROM ' . db_prefix('debuglog_archive') . " WHERE date <'$timestamp'";
-            if (getsetting('expiredebuglog', 18) > 0) db_query($sql);
-            GameLog::log('Moved ' . db_affected_rows() . ' from ' . db_prefix('debuglog') . ' to ' . db_prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');
+            $sql = 'DELETE FROM ' . Database::prefix('debuglog_archive') . " WHERE date <'$timestamp'";
+            if (getsetting('expiredebuglog', 18) > 0) Database::query($sql);
+            GameLog::log('Moved ' . Database::affectedRows() . ' from ' . Database::prefix('debuglog') . ' to ' . Database::prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');
         } else {
             GameLog::log('ERROR, problems with moving the debuglog to the archive', 'maintenance');
         }
 
         $timestamp = self::calculateExpirationTimestamp(getsetting('oldmail', 14) . ' days');
-        $sql = 'DELETE FROM ' . db_prefix('mail') . " WHERE sent<'$timestamp'";
-        db_query($sql);
-        GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('mails') . " older than $timestamp.", 'maintenance');
+        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE sent<'$timestamp'";
+        Database::query($sql);
+        GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('mails') . " older than $timestamp.", 'maintenance');
         massinvalidate('mail');
 
         if ((int) getsetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
-            $sql = 'DELETE FROM ' . db_prefix('news') . " WHERE newsdate<'$timestamp'";
-            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('news') . " older than $timestamp.", 'comment expiration');
-            db_query($sql);
+            $sql = 'DELETE FROM ' . Database::prefix('news') . " WHERE newsdate<'$timestamp'";
+            GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('news') . " older than $timestamp.", 'comment expiration');
+            Database::query($sql);
         }
 
         $timestamp = self::calculateExpirationTimestamp(getsetting('expiregamelog', 30) . ' days');
-        $sql = 'DELETE FROM ' . db_prefix('gamelog') . " WHERE date < '$timestamp' ";
+        $sql = 'DELETE FROM ' . Database::prefix('gamelog') . " WHERE date < '$timestamp' ";
         if (getsetting('expiregamelog', 30) > 0) {
-            db_query($sql);
-            GameLog::log('Cleaned up ' . db_prefix('gamelog') . ' table removing ' . db_affected_rows() . " older than $timestamp.", 'maintenance');
+            Database::query($sql);
+            GameLog::log('Cleaned up ' . Database::prefix('gamelog') . ' table removing ' . Database::affectedRows() . " older than $timestamp.", 'maintenance');
         }
 
-        $sql = 'DELETE FROM ' . db_prefix('commentary') . " WHERE postdate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
+        $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE postdate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
         if (getsetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
-            db_query($sql);
-            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('commentary') . " older than $timestamp.", 'comment expiration');
+            Database::query($sql);
+            GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('commentary') . " older than $timestamp.", 'comment expiration');
         }
 
-        $sql = 'DELETE FROM ' . db_prefix('moderatedcomments') . " WHERE moddate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
+        $sql = 'DELETE FROM ' . Database::prefix('moderatedcomments') . " WHERE moddate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
         if (getsetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
-            db_query($sql);
-            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('moderatedcomments') . " older than $timestamp.", 'comment expiration');
+            Database::query($sql);
+            GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('moderatedcomments') . " older than $timestamp.", 'comment expiration');
         }
 
-        $sql = 'DELETE FROM ' . db_prefix('faillog') . " WHERE date<'" . self::calculateExpirationTimestamp(getsetting('expirefaillog', 1) . ' days') . "'";
+        $sql = 'DELETE FROM ' . Database::prefix('faillog') . " WHERE date<'" . self::calculateExpirationTimestamp(getsetting('expirefaillog', 1) . ' days') . "'";
         if (getsetting('expirefaillog', 1) > 0) {
-            db_query($sql);
+            Database::query($sql);
             $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
-            GameLog::log('Deleted ' . db_affected_rows() . ' records from ' . db_prefix('faillog') . " older than $timestamp.", 'maintenance');
+            GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('faillog') . " older than $timestamp.", 'maintenance');
         }
     }
 
