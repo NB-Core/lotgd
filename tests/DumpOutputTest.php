@@ -6,6 +6,10 @@ namespace Lotgd {
     if (!function_exists('Lotgd\\getsetting')) {
         function getsetting(string|int $name, mixed $default = ''): mixed
         {
+            if (function_exists('\\getsetting')) {
+                return \getsetting($name, $default);
+            }
+
             return $default;
         }
     }
