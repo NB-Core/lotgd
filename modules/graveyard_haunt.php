@@ -45,10 +45,12 @@ function graveyard_haunt_dohook(string $hookname, array $args): array{
 		if ($by!=0){
 			$sql="SELECT name from ".Database::prefix('accounts')." WHERE acctid=".$by;
 			$result=Database::query($sql);
-			$row=Database::fetchAssoc($result);
-			if (Database::numRows($result)==0) {
-				$haunter=translate_inline("The Evil Reaper");
-			} else $haunter=$row['name'];
+			if (Database::numRows($result) == 0) {
+				$haunter = translate_inline("The Evil Reaper");
+			} else {
+				$row = Database::fetchAssoc($result);
+				$haunter = $row['name'];
+			}
 			output("`n`n`)You have been haunted by %s`); as a result, you lose a forest fight!",$haunter);
 			$session['user']['turns']-=get_module_setting('turnloss');
 			set_module_pref('hauntedby',0);
