@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Buffs;
 use Lotgd\CharStats;
@@ -168,11 +169,11 @@ public static function pageFooter(bool $saveuser=true){
     Buffs::restoreBuffFields();
 
         if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-		$sql = "SELECT motddate FROM " . db_prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
-		$result = db_query($sql);
-		$row = db_fetch_assoc($result);
+		$sql = "SELECT motddate FROM " . Database::prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
+		$result = Database::query($sql);
+		$row = Database::fetchAssoc($result);
 		$headscript = "";
-        if (db_num_rows($result)>0 && isset($session['user']['lastmotd']) && 
+        if (Database::numRows($result)>0 && isset($session['user']['lastmotd']) && 
                                 ($row['motddate']>$session['user']['lastmotd']) &&
                                 (!isset(self::$noPopups[$SCRIPT_NAME]) || self::$noPopups[$SCRIPT_NAME]!=1) &&
                                 $session['user']['loggedin']){
@@ -702,13 +703,13 @@ public static function charStats(): string{
 					$loginTimeout = 90; //default to 90 seconds if not set
 				}
 
-                $sql="SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".$loginTimeout." seconds"))."' ORDER BY level DESC";
-                $result = db_query($sql);
+                $sql="SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".$loginTimeout." seconds"))."' ORDER BY level DESC";
+                $result = Database::query($sql);
                 $rows = array();
-                while ($row = db_fetch_assoc($result)) {
+                while ($row = Database::fetchAssoc($result)) {
                     $rows[] = $row;
                 }
-                db_free_result($result);
+                Database::freeResult($result);
                 $rows = modulehook("loggedin", $rows);
                 $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
                 foreach ($rows as $row) {
@@ -737,10 +738,10 @@ public static function charStats(): string{
  */
 public static function mailLink(){
 	global $session;
-	$sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . db_prefix("mail") . " WHERE msgto=\"".$session['user']['acctid']."\"";
-	$result = db_query_cached($sql,"mail-{$session['user']['acctid']}",86400);
-	$row = db_fetch_assoc($result);
-	db_free_result($result);
+	$sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"".$session['user']['acctid']."\"";
+	$result = Database::queryCached($sql,"mail-{$session['user']['acctid']}",86400);
+	$row = Database::fetchAssoc($result);
+	Database::freeResult($result);
 	$row['seencount']=(int)$row['seencount'];
 	$row['notseen']=(int)$row['notseen'];
 	if ($row['notseen']>0){
@@ -752,10 +753,10 @@ public static function mailLink(){
 /* same, but only the text for the tab */
 public static function mailLinkTabText(){
 	global $session;
-	$sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . db_prefix("mail") . " WHERE msgto=\"".$session['user']['acctid']."\"";
-	$result = db_query_cached($sql,"mail-{$session['user']['acctid']}",86400);
-	$row = db_fetch_assoc($result);
-	db_free_result($result);
+	$sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"".$session['user']['acctid']."\"";
+	$result = Database::queryCached($sql,"mail-{$session['user']['acctid']}",86400);
+	$row = Database::fetchAssoc($result);
+	Database::freeResult($result);
 	$row['seencount']=(int)$row['seencount'];
 	$row['notseen']=(int)$row['notseen'];
 	if ($row['notseen']>0){
@@ -793,9 +794,9 @@ public static function mailLinkTabText(){
         }
 
         if (isset($settings) && $settings->getSetting('logdnet',0) && $session['user']['loggedin'] && !$already_registered_logdnet){
-            $sql = "SELECT count(acctid) AS c FROM " . db_prefix('accounts');
-            $result = db_query_cached($sql,'acctcount',600);
-            $row = db_fetch_assoc($result);
+            $sql = "SELECT count(acctid) AS c FROM " . Database::prefix('accounts');
+            $result = Database::queryCached($sql,'acctcount',600);
+            $row = Database::fetchAssoc($result);
             $c = $row['c'];
             $a = $settings->getSetting('serverurl','http://'.$_SERVER['SERVER_NAME'].($_SERVER['SERVER_PORT'] == 80?'':':'.$_SERVER['SERVER_PORT']).dirname($_SERVER['REQUEST_URI']));
             if (!preg_match('/\/$/', $a)) {
@@ -921,16 +922,16 @@ public static function mailLinkTabText(){
 
         $pcount = '';
         if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS) {
-            $sql = "SELECT count(petitionid) AS c,status FROM " . db_prefix('petitions') . " GROUP BY status";
-            $result = db_query_cached($sql, 'petition_counts');
+            $sql = "SELECT count(petitionid) AS c,status FROM " . Database::prefix('petitions') . " GROUP BY status";
+            $result = Database::queryCached($sql, 'petition_counts');
             $petitions = array('P5'=>0,'P4'=>0,'P0'=>0,'P1'=>0,'P3'=>0,'P7'=>0,'P6'=>0,'P2'=>0);
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = Database::fetchAssoc($result)) {
                 $petitions['P'.$row['status']] = $row['c'];
             }
             $pet = Translator::translateInline('`0`bPetitions:`b');
             $ued = Translator::translateInline('`0`bUser Editor`b');
             $mod = Translator::translateInline('`0`bManage Modules`b');
-            db_free_result($result);
+            Database::freeResult($result);
             $admin_array = array();
             if ($session['user']['superuser'] & SU_EDIT_USERS) {
                 $admin_array[] = "<a href='user.php'>$ued</a>";
@@ -1104,10 +1105,10 @@ public static function mailLinkTabText(){
         if (!isset($session['user']['gentimecount'])) $session['user']['gentimecount']=0;
         $session['user']['gentimecount']++;
         if (isset($settings) && $settings->getSetting('debug',0)) {
-            $sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','".($gentime)."');";
-            db_query($sql);
-            $sql="INSERT INTO ".db_prefix('debug')." VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','".(round($dbinfo['querytime'],3))."');";
-            db_query($sql);
+            $sql="INSERT INTO ".Database::prefix('debug')." VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','".($gentime)."');";
+            Database::query($sql);
+            $sql="INSERT INTO ".Database::prefix('debug')." VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','".(round($dbinfo['querytime'],3))."');";
+            Database::query($sql);
         }
         $queriesthishit = isset($dbinfo['queriesthishit']) ? $dbinfo['queriesthishit'] : 0;
         $querytime = isset($dbinfo['querytime']) ? $dbinfo['querytime'] : 0;

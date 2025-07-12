@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\HolidayText;
 use Lotgd\Commentary;
@@ -30,36 +31,36 @@ class Moderate
     {
         // Retrieve the batch of comments for this page
         if ($cid == 0) {
-            $sql = 'SELECT ' . db_prefix('commentary') . '.*, '
-                . db_prefix('accounts') . '.name, '
-                . db_prefix('accounts') . '.acctid, '
-                . db_prefix('accounts') . '.clanrank, '
-                . db_prefix('clans') . '.clanshort FROM ' . db_prefix('commentary') . ' LEFT JOIN '
-                . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = ' . db_prefix('commentary') . '.author LEFT JOIN '
-                . db_prefix('clans') . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid WHERE '
-                . "$sectselect (" . db_prefix('accounts') . ".locked=0 OR " . db_prefix('accounts') . ".locked is null ) ORDER BY commentid DESC LIMIT " . ($com * $limit) . ",$limit";
+            $sql = 'SELECT ' . Database::prefix('commentary') . '.*, '
+                . Database::prefix('accounts') . '.name, '
+                . Database::prefix('accounts') . '.acctid, '
+                . Database::prefix('accounts') . '.clanrank, '
+                . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' LEFT JOIN '
+                . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN '
+                . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE '
+                . "$sectselect (" . Database::prefix('accounts') . ".locked=0 OR " . Database::prefix('accounts') . ".locked is null ) ORDER BY commentid DESC LIMIT " . ($com * $limit) . ",$limit";
             if ($com == 0 && strstr($_SERVER['REQUEST_URI'], '/moderate.php') != $_SERVER['REQUEST_URI']) {
-                $result = db_query_cached($sql, "comments-{$section}");
+                $result = Database::queryCached($sql, "comments-{$section}");
             } else {
-                $result = db_query($sql);
+                $result = Database::query($sql);
             }
         } else {
-            $sql = 'SELECT ' . db_prefix('commentary') . '.*, '
-                . db_prefix('accounts') . '.name, '
-                . db_prefix('accounts') . '.acctid, '
-                . db_prefix('accounts') . '.clanrank, '
-                . db_prefix('clans') . '.clanshort FROM ' . db_prefix('commentary') . ' LEFT JOIN '
-                . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = ' . db_prefix('commentary') . '.author LEFT JOIN '
-                . db_prefix('clans') . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid WHERE '
-                . "$sectselect (" . db_prefix('accounts') . ".locked=0 OR " . db_prefix('accounts') . ".locked is null ) AND commentid > '$cid' ORDER BY commentid ASC LIMIT $limit";
-            $result = db_query($sql);
+            $sql = 'SELECT ' . Database::prefix('commentary') . '.*, '
+                . Database::prefix('accounts') . '.name, '
+                . Database::prefix('accounts') . '.acctid, '
+                . Database::prefix('accounts') . '.clanrank, '
+                . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' LEFT JOIN '
+                . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN '
+                . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE '
+                . "$sectselect (" . Database::prefix('accounts') . ".locked=0 OR " . Database::prefix('accounts') . ".locked is null ) AND commentid > '$cid' ORDER BY commentid ASC LIMIT $limit";
+            $result = Database::query($sql);
         }
 
         $commentbuffer = [];
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $commentbuffer[] = $row;
         }
-        db_free_result($result);
+        Database::freeResult($result);
         if ($cid > 0) {
             // Reverse order when appending new comments to the top
             $commentbuffer = array_reverse($commentbuffer);
@@ -82,10 +83,10 @@ class Moderate
         $lastu = translate_inline('Last Page &gt;&gt;');
 
         if ($rowcount >= $limit || $cid > 0) {
-            $sql = "SELECT count(commentid) AS c FROM " . db_prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
-            $r = db_query($sql);
-            $val = db_fetch_assoc($r);
-            db_free_result($r);
+            $sql = "SELECT count(commentid) AS c FROM " . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
+            $r = Database::query($sql);
+            $val = Database::fetchAssoc($r);
+            Database::freeResult($r);
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
                 $first = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . $val;
@@ -219,14 +220,14 @@ class Moderate
         // Determine how many new comments exist beyond the last id
         if ($com > 0 || $cid > 0) {
             $sql = 'SELECT COUNT(commentid) AS newadded FROM '
-                . db_prefix('commentary') . ' LEFT JOIN '
-                . db_prefix('accounts') . ' ON '
-                . db_prefix('accounts') . '.acctid = '
-                . db_prefix('commentary') . ".author WHERE $sectselect "
-                . '(' . db_prefix('accounts') . '.locked=0 or ' . db_prefix('accounts') . ".locked is null) AND commentid > '$cid'";
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
-            db_free_result($result);
+                . Database::prefix('commentary') . ' LEFT JOIN '
+                . Database::prefix('accounts') . ' ON '
+                . Database::prefix('accounts') . '.acctid = '
+                . Database::prefix('commentary') . ".author WHERE $sectselect "
+                . '(' . Database::prefix('accounts') . '.locked=0 or ' . Database::prefix('accounts') . ".locked is null) AND commentid > '$cid'";
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
+            Database::freeResult($result);
             $newadded = (int)$row['newadded'];
         } else {
             $newadded = 0;

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 /**
  * Helper for validating superuser permissions.
@@ -53,9 +54,9 @@ class SuAccess
         $session['user']['gold'] = 0;
         $session['user']['experience'] *= 0.75;
         addnav('Daily News', 'news.php');
-        $sql = 'SELECT acctid FROM ' . db_prefix('accounts') . ' WHERE (superuser&' . SU_EDIT_USERS . ')';
-        $result = db_query($sql);
-        while ($row = db_fetch_assoc($result)) {
+        $sql = 'SELECT acctid FROM ' . Database::prefix('accounts') . ' WHERE (superuser&' . SU_EDIT_USERS . ')';
+        $result = Database::query($sql);
+        while ($row = Database::fetchAssoc($result)) {
             $subj = '`#%s`# tried to hack the superuser pages!';
             $subj = sprintf($subj, $session['user']['name']);
             $body = 'Bad, bad, bad %s, they are a hacker!`n`nTried to access %s from %s.';

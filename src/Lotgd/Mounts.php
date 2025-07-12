@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 /**
  * Access to mount data.
@@ -16,10 +17,10 @@ class Mounts
      */
     public static function getmount(int $horse = 0): array
     {
-        $sql = 'SELECT * FROM ' . db_prefix('mounts') . " WHERE mountid='$horse'";
-        $result = db_query_cached($sql, "mountdata-$horse", 3600);
-        if (db_num_rows($result) > 0) {
-            return db_fetch_assoc($result);
+        $sql = 'SELECT * FROM ' . Database::prefix('mounts') . " WHERE mountid='$horse'";
+        $result = Database::queryCached($sql, "mountdata-$horse", 3600);
+        if (Database::numRows($result) > 0) {
+            return Database::fetchAssoc($result);
         }
         return [];
     }

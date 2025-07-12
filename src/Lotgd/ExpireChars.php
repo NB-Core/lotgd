@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Settings;
 use Lotgd\PlayerFunctions;
@@ -78,16 +79,16 @@ class ExpireChars
      */
     private static function fetchAccountsToExpire(int $old, int $new, int $trash): array
     {
-        $sql = 'SELECT login,acctid,dragonkills,level FROM ' . db_prefix('accounts') .
+        $sql = 'SELECT login,acctid,dragonkills,level FROM ' . Database::prefix('accounts') .
             ' WHERE (superuser&' . NO_ACCOUNT_EXPIRATION . ')=0 AND (1=0'
             . ($old > 0 ? " OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '')
             . ($new > 0 ? " OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$new days")) . "' AND level=1 AND dragonkills=0)" : '')
             . ($trash > 0 ? " OR (laston < '" . date('Y-m-d H:i:s', strtotime('-' . ($trash + 1) . ' days')) . "' AND level=1 AND experience < 10 AND dragonkills=0)" : '')
             . ')';
 
-        $result = db_query($sql);
+        $result = Database::query($sql);
         $rows = [];
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $rows[] = $row;
         }
         return $rows;
@@ -134,8 +135,8 @@ class ExpireChars
             return;
         }
 
-        $sql = 'DELETE FROM ' . db_prefix('accounts') . ' WHERE acctid IN (' . implode(',', $acctIds) . ')';
-        db_query($sql);
+        $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . implode(',', $acctIds) . ')';
+        Database::query($sql);
     }
 
     /**
@@ -145,10 +146,10 @@ class ExpireChars
     {
         global $settings;
         $old = max(1, ((int)$settings->getSetting('expireoldacct', 45)) - ((int)$settings->getSetting('notifydaysbeforedeletion', 5)));
-        $sql = 'SELECT login,acctid,emailaddress FROM ' . db_prefix('accounts') .
+        $sql = 'SELECT login,acctid,emailaddress FROM ' . Database::prefix('accounts') .
             " WHERE 1=0 " . ($old > 0 ? "OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '') .
             " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
-        $result = db_query($sql);
+        $result = Database::query($sql);
 
         $subject = translate_inline(self::$settingsExtended->getSetting('expirationnoticesubject'));
         $message = translate_inline(self::$settingsExtended->getSetting('expirationnoticetext'));
@@ -157,7 +158,7 @@ class ExpireChars
         $collector = [];
         $from = [$settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost')];
         $cc = [];
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $to = [$row['emailaddress'] => $row['emailaddress']];
             $body = str_replace('{charname}', $row['login'], $message);
             Mail::send($to, $body, $subject, $from, $cc, 'text/html');
@@ -165,8 +166,8 @@ class ExpireChars
         }
 
         if (!empty($collector)) {
-            $sql = 'UPDATE ' . db_prefix('accounts') . ' SET sentnotice=1 WHERE acctid IN (' . implode(',', $collector) . ');';
-            db_query($sql);
+            $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET sentnotice=1 WHERE acctid IN (' . implode(',', $collector) . ');';
+            Database::query($sql);
         }
     }
 }

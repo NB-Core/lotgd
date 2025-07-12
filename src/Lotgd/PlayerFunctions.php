@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 /**
  * Utility methods for player maintenance tasks.
@@ -19,39 +20,39 @@ class PlayerFunctions
         modulehook('delete_character', ['acctid' => $id, 'deltype' => $type]);
 
         // Remove output cache records for this player
-        db_query('DELETE FROM ' . db_prefix('accounts_output') . " WHERE acctid=$id;");
+        Database::query('DELETE FROM ' . Database::prefix('accounts_output') . " WHERE acctid=$id;");
 
         // Remove comments from this player
-        db_query('DELETE FROM ' . db_prefix('commentary') . " WHERE author=$id;");
+        Database::query('DELETE FROM ' . Database::prefix('commentary') . " WHERE author=$id;");
 
         // Handle clan cleanup logic
-        $sql = 'SELECT clanrank,clanid FROM ' . db_prefix('accounts') . " WHERE acctid=$id";
-        $res = db_query($sql);
-        $row = db_fetch_assoc($res);
+        $sql = 'SELECT clanrank,clanid FROM ' . Database::prefix('accounts') . " WHERE acctid=$id";
+        $res = Database::query($sql);
+        $row = Database::fetchAssoc($res);
         if ($row['clanid'] != 0 && ($row['clanrank'] == CLAN_LEADER || $row['clanrank'] == CLAN_FOUNDER)) {
             $cid = $row['clanid'];
-            $sql = 'SELECT count(acctid) as counter FROM ' . db_prefix('accounts')
+            $sql = 'SELECT count(acctid) as counter FROM ' . Database::prefix('accounts')
                 . " WHERE clanid=$cid AND clanrank >= " . CLAN_LEADER . " AND acctid<>$id ORDER BY clanrank DESC, clanjoindate";
-            $res = db_query($sql);
-            $row = db_fetch_assoc($res);
+            $res = Database::query($sql);
+            $row = Database::fetchAssoc($res);
             if ($row['counter'] == 0) {
-                $sql = 'SELECT name,acctid,clanrank FROM ' . db_prefix('accounts')
+                $sql = 'SELECT name,acctid,clanrank FROM ' . Database::prefix('accounts')
                     . " WHERE clanid=$cid AND clanrank > " . CLAN_APPLICANT . " AND acctid<>$id ORDER BY clanrank DESC, clanjoindate";
-                $res = db_query($sql);
-                if (db_num_rows($res)) {
-                    $row = db_fetch_assoc($res);
+                $res = Database::query($sql);
+                if (Database::numRows($res)) {
+                    $row = Database::fetchAssoc($res);
                     if ($row['clanrank'] != CLAN_LEADER && $row['clanrank'] != CLAN_FOUNDER) {
                         $id1 = $row['acctid'];
-                        $sql = 'UPDATE ' . db_prefix('accounts') . ' SET clanrank=' . CLAN_LEADER . " WHERE acctid=$id1";
-                        db_query($sql);
+                        $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET clanrank=' . CLAN_LEADER . " WHERE acctid=$id1";
+                        Database::query($sql);
                     }
                     GameLog::log('Clan ' . $cid . ' has a new leader ' . $row['name'] . ' as there were no others left', 'clan');
                 } else {
-                    $sql = 'DELETE FROM ' . db_prefix('clans') . " WHERE clanid=$cid";
-                    db_query($sql);
+                    $sql = 'DELETE FROM ' . Database::prefix('clans') . " WHERE clanid=$cid";
+                    Database::query($sql);
                     GameLog::log('Clan ' . $cid . ' has been disbanded as the last member left', 'clan');
-                    $sql = 'UPDATE ' . db_prefix('accounts') . " SET clanid=0,clanrank=0,clanjoindate='" . DATETIME_DATEMIN . "' WHERE clanid=$cid";
-                    db_query($sql);
+                    $sql = 'UPDATE ' . Database::prefix('accounts') . " SET clanid=0,clanrank=0,clanjoindate='" . DATETIME_DATEMIN . "' WHERE clanid=$cid";
+                    Database::query($sql);
                 }
             }
         }
@@ -67,9 +68,9 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT strength,wisdom,intelligence,attack FROM ' . db_prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = 'SELECT strength,wisdom,intelligence,attack FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
             }
@@ -90,9 +91,9 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT strength,wisdom,intelligence,attack FROM ' . db_prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = 'SELECT strength,wisdom,intelligence,attack FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
             }
@@ -117,9 +118,9 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT constitution,wisdom,defense FROM ' . db_prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = 'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
             }
@@ -139,9 +140,9 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT constitution,wisdom,defense FROM ' . db_prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = 'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
             }
@@ -165,9 +166,9 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT dexterity,intelligence FROM ' . db_prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = 'SELECT dexterity,intelligence FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
             }
@@ -183,9 +184,9 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT constitution,wisdom,defense FROM ' . db_prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = 'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
             }
@@ -206,9 +207,9 @@ class PlayerFunctions
         } elseif (isset($checked_users[$player])) {
             $user =& $checked_users[$player];
         } else {
-            $sql = 'SELECT acctid,laston,loggedin FROM ' . db_prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             $row = modulehook('is-player-online', $row);
             if (!$row) {
                 return false;
@@ -234,10 +235,10 @@ class PlayerFunctions
         if ($players === false || $players == [] || !is_array($players)) {
             return [];
         } else {
-            $sql = 'SELECT acctid,laston,loggedin FROM ' . db_prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', $players)) . ')';
-            $result = db_query($sql);
+            $sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', $players)) . ')';
+            $result = Database::query($sql);
             $rows = [];
-            while ($user = db_fetch_assoc($result)) {
+            while ($user = Database::fetchAssoc($result)) {
                 $rows[] = $user;
             }
             $rows = modulehook('warriorlist', $rows);
@@ -406,10 +407,10 @@ class PlayerFunctions
 
     public static function validDkTitle(string $title, int $dks, bool $gender): bool
     {
-        $sql = 'SELECT dk,male,female FROM ' . db_prefix('titles') . " WHERE dk <= $dks ORDER by dk DESC";
-        $res = db_query($sql);
+        $sql = 'SELECT dk,male,female FROM ' . Database::prefix('titles') . " WHERE dk <= $dks ORDER by dk DESC";
+        $res = Database::query($sql);
         $d = -1;
-        while ($row = db_fetch_assoc($res)) {
+        while ($row = Database::fetchAssoc($res)) {
             if ($d == -1) { $d = $row['dk']; }
             if ($row['dk'] != $d) break;
             if ($gender && ($row['female'] == $title)) return true;
@@ -422,14 +423,14 @@ class PlayerFunctions
     {
         $refdk = -1;
         if ($ref !== false) {
-            $sql = 'SELECT max(dk) as dk FROM ' . db_prefix('titles') . " WHERE dk<='$dks' and ref='$ref'";
-            $res = db_query($sql);
-            $row = db_fetch_assoc($res);
+            $sql = 'SELECT max(dk) as dk FROM ' . Database::prefix('titles') . " WHERE dk<='$dks' and ref='$ref'";
+            $res = Database::query($sql);
+            $row = Database::fetchAssoc($res);
             $refdk = $row['dk'];
         }
-        $sql = 'SELECT max(dk) as dk FROM ' . db_prefix('titles') . " WHERE dk<='$dks'";
-        $res = db_query($sql);
-        $row = db_fetch_assoc($res);
+        $sql = 'SELECT max(dk) as dk FROM ' . Database::prefix('titles') . " WHERE dk<='$dks'";
+        $res = Database::query($sql);
+        $row = Database::fetchAssoc($res);
         $anydk = $row['dk'];
         $useref = '';
         $targetdk = $anydk;
@@ -437,11 +438,11 @@ class PlayerFunctions
             $useref = "AND ref='$ref'";
             $targetdk = $refdk;
         }
-        $sql = 'SELECT male,female FROM ' . db_prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . e_rand() . ") LIMIT 1";
-        $res = db_query($sql);
+        $sql = 'SELECT male,female FROM ' . Database::prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . e_rand() . ") LIMIT 1";
+        $res = Database::query($sql);
         $row = ['male' => 'God', 'female' => 'Goddess'];
-        if (db_num_rows($res) != 0) {
-            $row = db_fetch_assoc($res);
+        if (Database::numRows($res) != 0) {
+            $row = Database::fetchAssoc($res);
         }
         return ($gender == SEX_MALE) ? $row['male'] : $row['female'];
     }

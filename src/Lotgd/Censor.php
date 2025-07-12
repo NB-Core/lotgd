@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Sanitize;
 
@@ -89,9 +90,9 @@ class Censor
      */
     public static function goodWordList(): array
     {
-        $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='good'";
-        $result = db_query_cached($sql, 'goodwordlist');
-        $row = db_fetch_assoc($result);
+        $sql = 'SELECT * FROM ' . Database::prefix('nastywords') . " WHERE type='good'";
+        $result = Database::queryCached($sql, 'goodwordlist');
+        $row = Database::fetchAssoc($result);
         if (!isset($row['words'])) {
             return [];
         }
@@ -105,9 +106,9 @@ class Censor
      */
     public static function nastyWordList(): array
     {
-        $sql = 'SELECT * FROM ' . db_prefix('nastywords') . " WHERE type='nasty'";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = 'SELECT * FROM ' . Database::prefix('nastywords') . " WHERE type='nasty'";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
         $search = ' ' . $row['words'] . ' ';
         $search = preg_replace('/(?<=.)(?<!\\\\)\'(?=.)/', '\\\'', $search);
 

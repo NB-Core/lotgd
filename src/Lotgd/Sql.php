@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 /**
  * Utility methods related to SQL operations.
@@ -18,6 +19,6 @@ class Sql
     public static function error(string $sql): string
     {
         global $session;
-        return OutputArray::output($session) . "SQL = <pre>$sql</pre>" . db_error(LINK);
+        return OutputArray::output($session) . "SQL = <pre>$sql</pre>" . Database::error();
     }
 }

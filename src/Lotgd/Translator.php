@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Sanitize;
 use Lotgd\Cookies;
@@ -96,15 +97,15 @@ class Translator
 					// It has been requested to be removed.
 					/*
 					if (getsetting("collecttexts", false)) {
-						$sql = "DELETE FROM " . db_prefix("untranslated") .
+						$sql = "DELETE FROM " . Database::prefix("untranslated") .
 							" WHERE intext='" . addslashes($indata) .
 							"' AND language='" . LANGUAGE . "'";
-						db_query($sql);
+						Database::query($sql);
 					}
 					*/
 				} elseif ($settings->getsetting("collecttexts", false)) {
-					$sql = "INSERT IGNORE INTO " .  db_prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . LANGUAGE . "', " .  "'$namespace')";
-					db_query($sql,false);
+					$sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . LANGUAGE . "', " .  "'$namespace')";
+					Database::query($sql,false);
 				}
                                 self::tlbuttonPush($indata,!$foundtranslation,$namespace);
 			} else {
@@ -197,8 +198,8 @@ class Translator
             //this is done by sprintfTranslate.
 		//$in[0] = str_replace("`%","`%%",$in[0]);
 		if ($to>0){
-			$result = db_query("SELECT prefs FROM ".db_prefix("accounts")." WHERE acctid=$to");
-			$language = db_fetch_assoc($result);
+			$result = Database::query("SELECT prefs FROM ".Database::prefix("accounts")." WHERE acctid=$to");
+			$language = Database::fetchAssoc($result);
 			$language['prefs'] = unserialize($language['prefs']);
 			$session['tlanguage'] = (isset($language['prefs']['language']) && $language['prefs']['language']!='')?$language['prefs']['language']:getsetting("defaultlanguage","en");
 		}
@@ -252,18 +253,18 @@ class Translator
 			$where = "(uri='$page' OR uri='$uri')";
 		$sql = "
 			SELECT intext,outtext
-			FROM ".db_prefix("translations")."
+			FROM ".Database::prefix("translations")."
 			WHERE language='$language'
 				AND $where";
 	/*	debug(nl2br(htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1")))); */
 		if (isset($settings) && !$settings->getSetting("cachetranslations",0)) {
-			$result = db_query($sql);
+			$result = Database::query($sql);
 		} else {
-			$result = db_query_cached($sql,"translations-".$namespace."-".$language,600);
+			$result = Database::queryCached($sql,"translations-".$namespace."-".$language,600);
 			//store it for 10 Minutes, normally you don't need to refresh this often
 		}
 		$out = array();
-		while ($row = db_fetch_assoc($result)){
+		while ($row = Database::fetchAssoc($result)){
 			$out[$row['intext']] = $row['outtext'];
 		}
 		return $out;

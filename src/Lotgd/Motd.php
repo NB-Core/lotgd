@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Forms;
 /**
@@ -19,10 +20,10 @@ class Motd
         global $session;
         $id = (int)$id;
         if ($id > 0) {
-            $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor FROM ' . db_prefix('motd') . " WHERE motditem=$id";
-            $result = db_query($sql);
-            if (db_num_rows($result) > 0) {
-                $row = db_fetch_assoc($result);
+            $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor FROM ' . Database::prefix('motd') . " WHERE motditem=$id";
+            $result = Database::query($sql);
+            if (Database::numRows($result) > 0) {
+                $row = Database::fetchAssoc($result);
                 $subject = $row['motdtitle'];
                 $body = $row['motdbody'];
                 $date = $row['motddate'];
@@ -30,9 +31,9 @@ class Motd
                 self::motdItem($subject, $body, $author, $date, $id);
             }
         }
-        $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motditem FROM ' . db_prefix('motd') . ($poll ? ' WHERE motdtype=1' : ' WHERE motdtype=0') . ' ORDER BY motddate DESC';
-        $result = db_query($sql);
-        while ($row = db_fetch_assoc($result)) {
+        $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motditem FROM ' . Database::prefix('motd') . ($poll ? ' WHERE motdtype=1' : ' WHERE motdtype=0') . ' ORDER BY motddate DESC';
+        $result = Database::query($sql);
+        while ($row = Database::fetchAssoc($result)) {
             self::motdItem($row['motdtitle'], $row['motdbody'], $row['motdauthor'], $row['motddate'], $row['motditem']);
         }
     }
@@ -71,10 +72,10 @@ class Motd
     public static function motdForm(int $id): void
     {
         require_once 'lib/showform.php';
-        $sql = 'SELECT motdtitle,motdbody,motdtype FROM ' . db_prefix('motd') . " WHERE motditem='$id'";
-        $result = db_query($sql);
-        if (db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $sql = 'SELECT motdtitle,motdbody,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
+        $result = Database::query($sql);
+        if (Database::numRows($result) > 0) {
+            $row = Database::fetchAssoc($result);
             $title = $row['motdtitle'];
             $body = $row['motdbody'];
             $poll = $row['motdtype'];
@@ -116,8 +117,8 @@ class Motd
      */
     public static function motdDel(int $id): void
     {
-        $sql = 'DELETE FROM ' . db_prefix('motd') . " WHERE motditem='$id'";
-        db_query($sql);
+        $sql = 'DELETE FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
+        Database::query($sql);
         invalidatedatacache('motd');
     }
 }

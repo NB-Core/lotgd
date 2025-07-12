@@ -1,5 +1,6 @@
 <?php
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 class Commentary
 {
@@ -50,12 +51,12 @@ class Commentary
         if ($remove > 0) {
             $return = httpget('returnpath');
             $section = httpget('section');
-            $sql = 'SELECT ' . db_prefix('commentary') . '.*,' . db_prefix('accounts') . '.name,' . db_prefix('accounts') . '.acctid, ' . db_prefix('accounts') . '.clanrank,' . db_prefix('clans') . '.clanshort FROM ' . db_prefix('commentary') . ' INNER JOIN ' . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = ' . db_prefix('commentary') . '.author LEFT JOIN ' . db_prefix('clans') . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid WHERE commentid=$remove';
-            $row = db_fetch_assoc(db_query($sql));
-            $sql = 'INSERT LOW_PRIORITY INTO ' . db_prefix('moderatedcomments') . " (moderator,moddate,comment) VALUES ('{$session['user']['acctid']}'," . date('Y-m-d H:i:s') . ",\"" . addslashes(serialize($row)) . "\")";
-            db_query($sql);
-            $sql = 'DELETE FROM ' . db_prefix('commentary') . " WHERE commentid='$remove';";
-            db_query($sql);
+            $sql = 'SELECT ' . Database::prefix('commentary') . '.*,' . Database::prefix('accounts') . '.name,' . Database::prefix('accounts') . '.acctid, ' . Database::prefix('accounts') . '.clanrank,' . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' INNER JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE commentid=$remove';
+            $row = Database::fetchAssoc(Database::query($sql));
+            $sql = 'INSERT LOW_PRIORITY INTO ' . Database::prefix('moderatedcomments') . " (moderator,moddate,comment) VALUES ('{$session['user']['acctid']}'," . date('Y-m-d H:i:s') . ",\"" . addslashes(serialize($row)) . "\")";
+            Database::query($sql);
+            $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE commentid='$remove';";
+            Database::query($sql);
             invalidatedatacache("comments-$section");
             invalidatedatacache('comments-or11');
             $session['user']['specialinc'] == '';
@@ -94,8 +95,8 @@ class Commentary
 
     public static function injectrawcomment(string $section, int $author, string $comment): void
     {
-        $sql = 'INSERT INTO ' . db_prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'".db_real_escape_string($comment)."')";
-        db_query($sql);
+        $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'".Database::escape($comment)."')";
+        Database::query($sql);
         invalidatedatacache("comments-{$section}");
         invalidatedatacache('comments-or11');
     }
@@ -143,10 +144,10 @@ class Commentary
                 self::injectsystemcomment($section, $args['commentary']);
             } else {
                 $commentary = $args['commentary'];
-                $sql = 'SELECT comment,author FROM ' . db_prefix('commentary') . " WHERE section='$section' ORDER BY commentid DESC LIMIT 1";
-                $result = db_query($sql);
-                if (db_num_rows($result) > 0) {
-                    $row = db_fetch_assoc($result);
+                $sql = 'SELECT comment,author FROM ' . Database::prefix('commentary') . " WHERE section='$section' ORDER BY commentid DESC LIMIT 1";
+                $result = Database::query($sql);
+                if (Database::numRows($result) > 0) {
+                    $row = Database::fetchAssoc($result);
                     if ($row['comment'] != stripslashes($commentary) || $row['author'] != $session['user']['acctid']) {
                         self::injectrawcomment($section, $session['user']['acctid'], $commentary);
                         $session['user']['laston'] = date('Y-m-d H:i:s');
@@ -251,13 +252,13 @@ class Commentary
 
         if ($com > 0 || $cid > 0) {
             $sql = 'SELECT COUNT(commentid) AS newadded FROM '
-                . db_prefix('commentary') . ' LEFT JOIN '
-                . db_prefix('accounts') . ' ON '
-                . db_prefix('accounts') . '.acctid = '
-                . db_prefix('commentary') . '.author WHERE section=\'' . $section . "' AND "
-                . '(' . db_prefix('accounts') . '.locked=0 or ' . db_prefix('accounts') . '.locked is null) AND commentid > \'' . $cid . "'";
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+                . Database::prefix('commentary') . ' LEFT JOIN '
+                . Database::prefix('accounts') . ' ON '
+                . Database::prefix('accounts') . '.acctid = '
+                . Database::prefix('commentary') . '.author WHERE section=\'' . $section . "' AND "
+                . '(' . Database::prefix('accounts') . '.locked=0 or ' . Database::prefix('accounts') . '.locked is null) AND commentid > \'' . $cid . "'";
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
             $newadded = $row['newadded'];
         } else {
             $newadded = 0;
@@ -265,49 +266,49 @@ class Commentary
 
         $commentbuffer = [];
         if ($cid == 0) {
-            $sql = "SELECT " . db_prefix("commentary") . ".*, " .
-                db_prefix("accounts") . ".name, " .
-                db_prefix("accounts") . ".acctid, " .
-                db_prefix("accounts") . ".superuser, " .
-                db_prefix("accounts") . ".clanrank, " .
-                db_prefix("clans") .  ".clanshort FROM " .
-                db_prefix("commentary") . " LEFT JOIN " .
-                db_prefix("accounts") . " ON " .
-                db_prefix("accounts") .  ".acctid = " .
-                db_prefix("commentary") . ".author LEFT JOIN " .
-                db_prefix("clans") . " ON " .
-                db_prefix("clans") . ".clanid=" .
-                db_prefix("accounts") .
+            $sql = "SELECT " . Database::prefix("commentary") . ".*, " .
+                Database::prefix("accounts") . ".name, " .
+                Database::prefix("accounts") . ".acctid, " .
+                Database::prefix("accounts") . ".superuser, " .
+                Database::prefix("accounts") . ".clanrank, " .
+                Database::prefix("clans") .  ".clanshort FROM " .
+                Database::prefix("commentary") . " LEFT JOIN " .
+                Database::prefix("accounts") . " ON " .
+                Database::prefix("accounts") .  ".acctid = " .
+                Database::prefix("commentary") . ".author LEFT JOIN " .
+                Database::prefix("clans") . " ON " .
+                Database::prefix("clans") . ".clanid=" .
+                Database::prefix("accounts") .
                 ".clanid WHERE section = '$section' AND " .
-                "( " . db_prefix("accounts") . ".locked=0 OR " . db_prefix("accounts") . ".locked is null ) " .
+                "( " . Database::prefix("accounts") . ".locked=0 OR " . Database::prefix("accounts") . ".locked is null ) " .
                 "ORDER BY commentid DESC LIMIT " .
                 ($com * $limit) . ",$limit";
             if ($com == 0 && strstr($real_request_uri, '/moderate.php') !== $real_request_uri) {
-                $result = db_query_cached($sql, "comments-{$section}");
+                $result = Database::queryCached($sql, "comments-{$section}");
             } else {
-                $result = db_query($sql);
+                $result = Database::query($sql);
             }
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = Database::fetchAssoc($result)) {
                 $commentbuffer[] = $row;
             }
         } else {
-            $sql = "SELECT " . db_prefix("commentary") . ".*, " .
-                db_prefix("accounts") . ".name, " .
-                db_prefix("accounts") . ".acctid, " .
-                db_prefix("accounts") . ".superuser, " .
-                db_prefix("accounts") . ".clanrank, " .
-                db_prefix("clans") . ".clanshort FROM " . db_prefix("commentary") .
-                " LEFT JOIN " . db_prefix("accounts") . " ON " .
-                db_prefix("accounts") . ".acctid = " .
-                db_prefix("commentary") . ".author LEFT JOIN " .
-                db_prefix("clans") . " ON " . db_prefix("clans") . ".clanid=" .
-                db_prefix("accounts") .
+            $sql = "SELECT " . Database::prefix("commentary") . ".*, " .
+                Database::prefix("accounts") . ".name, " .
+                Database::prefix("accounts") . ".acctid, " .
+                Database::prefix("accounts") . ".superuser, " .
+                Database::prefix("accounts") . ".clanrank, " .
+                Database::prefix("clans") . ".clanshort FROM " . Database::prefix("commentary") .
+                " LEFT JOIN " . Database::prefix("accounts") . " ON " .
+                Database::prefix("accounts") . ".acctid = " .
+                Database::prefix("commentary") . ".author LEFT JOIN " .
+                Database::prefix("clans") . " ON " . Database::prefix("clans") . ".clanid=" .
+                Database::prefix("accounts") .
                 ".clanid WHERE section = '$section' AND " .
-                "( " . db_prefix("accounts") . ".locked=0 OR " . db_prefix("accounts") . ".locked is null ) " .
+                "( " . Database::prefix("accounts") . ".locked=0 OR " . Database::prefix("accounts") . ".locked is null ) " .
                 "AND commentid > '$cid' " .
                 "ORDER BY commentid ASC LIMIT $limit";
-            $result = db_query($sql);
-            while ($row = db_fetch_assoc($result)) {
+            $result = Database::query($sql);
+            while ($row = Database::fetchAssoc($result)) {
                 $commentbuffer[] = $row;
             }
             $commentbuffer = array_reverse($commentbuffer);
@@ -416,12 +417,12 @@ class Commentary
         $lastu = translate_inline('Last Page &gt;&gt;');
         if ($rowcount >= $limit || $cid > 0) {
             if (isset($session['user']['recentcomments']) && $session['user']['recentcomments'] != '') {
-                $sql = 'SELECT count(commentid) AS c FROM ' . db_prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
+                $sql = 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
             } else {
-                $sql = 'SELECT count(commentid) AS c FROM ' . db_prefix('commentary') . " WHERE section='$section' AND postdate > '" . DATETIME_DATEMIN . "'";
+                $sql = 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '" . DATETIME_DATEMIN . "'";
             }
-            $r = db_query($sql);
-            $val = db_fetch_assoc($r);
+            $r = Database::query($sql);
+            $val = Database::fetchAssoc($r);
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
                 $first = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($val);
@@ -479,7 +480,7 @@ class Commentary
             output_notl("$next $lastu", true);
         }
         if (!$cc) {
-            db_free_result($result);
+            Database::freeResult($result);
         }
         tlschema();
         if ($needclose) {
@@ -653,9 +654,9 @@ class Commentary
 
         $counttoday=0;
         if (mb_substr($section,0,5)!="clan-"){
-                $sql = "SELECT author FROM " . db_prefix("commentary") . " WHERE section='$section' AND postdate>'".date("Y-m-d 00:00:00")."' ORDER BY commentid DESC LIMIT $limit";
-                $result = db_query($sql);
-                while ($row=db_fetch_assoc($result)){
+                $sql = "SELECT author FROM " . Database::prefix("commentary") . " WHERE section='$section' AND postdate>'".date("Y-m-d 00:00:00")."' ORDER BY commentid DESC LIMIT $limit";
+                $result = Database::query($sql);
+                while ($row=Database::fetchAssoc($result)){
                         if ($row['author']==$session['user']['acctid']) $counttoday++;
                 }
                 if (round($limit/2,0)-$counttoday <= 0 && getsetting('postinglimit',1)){

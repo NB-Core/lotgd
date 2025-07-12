@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\Settings;
 
@@ -19,9 +20,9 @@ class ServerFunctions
     {
         global $settings;
         if (abs($settings->getSetting('OnlineCountLast', 0) - strtotime('now')) > 60) {
-            $sql = "SELECT count(acctid) as counter FROM " . db_prefix('accounts') . " WHERE locked=0 AND loggedin=1 AND laston>'" . date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')) . "'";
-            $result = db_query($sql);
-            $onlinecount = db_fetch_assoc($result);
+            $sql = "SELECT count(acctid) as counter FROM " . Database::prefix('accounts') . " WHERE locked=0 AND loggedin=1 AND laston>'" . date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')) . "'";
+            $result = Database::query($sql);
+            $onlinecount = Database::fetchAssoc($result);
             $onlinecount = $onlinecount['counter'];
             $settings->saveSetting('OnlineCount', $onlinecount);
             $settings->saveSetting('OnlineCountLast', strtotime('now'));
@@ -47,9 +48,9 @@ class ServerFunctions
         } else {
             $where = "WHERE acctid=$acctid";
         }
-        $sql = 'SELECT acctid,dragonpoints FROM ' . db_prefix('accounts') . " $where";
-        $result = db_query($sql);
-        while ($row = db_fetch_assoc($result)) {
+        $sql = 'SELECT acctid,dragonpoints FROM ' . Database::prefix('accounts') . " $where";
+        $result = Database::query($sql);
+        while ($row = Database::fetchAssoc($result)) {
             $dkpoints = $row['dragonpoints'];
             if ($dkpoints == '') {
                 continue;
@@ -94,8 +95,8 @@ class ServerFunctions
                 }
             }
             $resetactions = count($sets) > 0 ? ',' . implode(',', $sets) : '';
-            $sql = 'UPDATE ' . db_prefix('accounts') . " SET dragonpoints=''$resetactions WHERE acctid=" . $row['acctid'];
-            db_query($sql);
+            $sql = 'UPDATE ' . Database::prefix('accounts') . " SET dragonpoints=''$resetactions WHERE acctid=" . $row['acctid'];
+            Database::query($sql);
             modulehook('dragonpointreset', [$row]);
         }
     }

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 class ModuleManager
 {
@@ -15,15 +16,15 @@ class ModuleManager
      */
     public static function listInstalled(?string $category = null, string $sortBy = 'installdate', bool $ascending = false): array
     {
-        $sql = 'SELECT * FROM ' . db_prefix('modules');
+        $sql = 'SELECT * FROM ' . Database::prefix('modules');
         if ($category !== null) {
-            $sql .= " WHERE category='" . db_real_escape_string($category) . "'";
+            $sql .= " WHERE category='" . Database::escape($category) . "'";
         }
         $sql .= ' ORDER BY ' . $sortBy . ' ' . ($ascending ? 'ASC' : 'DESC');
-        $result = db_query($sql);
+        $result = Database::query($sql);
         $modules = [];
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = Database::fetchAssoc($result)) {
                 $modules[] = $row;
             }
         }
@@ -112,8 +113,8 @@ class ModuleManager
      */
     public static function reinstall(string $module): bool
     {
-        $sql = 'UPDATE ' . db_prefix('modules') . " SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='" . $module . "'";
-        db_query($sql);
+        $sql = 'UPDATE ' . Database::prefix('modules') . " SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='" . $module . "'";
+        Database::query($sql);
         invalidatedatacache("inject-$module");
         massinvalidate('hook');
         massinvalidate('module-prepare');

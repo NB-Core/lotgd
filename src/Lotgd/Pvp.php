@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Lotgd;
+use Lotgd\MySQL\Database;
 
 use Lotgd\DateTime;
 use Lotgd\Mail;
@@ -56,10 +57,10 @@ class Pvp
         $sql = "SELECT name AS creaturename, level AS creaturelevel, weapon AS creatureweapon, dragonkills AS dragonkills," .
             "gold AS creaturegold, experience AS creatureexp, maxhitpoints AS creaturehealth, attack AS creatureattack, " .
             "defense AS creaturedefense, loggedin, location, laston, alive, acctid, pvpflag, boughtroomtoday, race FROM " .
-            db_prefix('accounts') . " WHERE $where";
-        $result = db_query($sql);
-        if (db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+            Database::prefix('accounts') . " WHERE $where";
+        $result = Database::query($sql);
+        if (Database::numRows($result) > 0) {
+            $row = Database::fetchAssoc($result);
             if ($session['user']['dragonkills'] < $row['dragonkills']) {
                 $diff = $row['dragonkills'] - $session['user']['dragonkills'];
                 $row['creatureattack'] = get_player_attack($row['acctid']) + round($diff / 2);
@@ -73,8 +74,8 @@ class Pvp
                 output("`\$Error:`4 That user is now online, and cannot be attacked until they log off again.");
                 return false;
             } elseif ($session['user']['playerfights'] > 0) {
-                $sql = "UPDATE " . db_prefix('accounts') . " SET pvpflag='" . date('Y-m-d H:i:s') . "' WHERE acctid={$row['acctid']}";
-                db_query($sql);
+                $sql = "UPDATE " . Database::prefix('accounts') . " SET pvpflag='" . date('Y-m-d H:i:s') . "' WHERE acctid={$row['acctid']}";
+                Database::query($sql);
                 $row['creatureexp'] = round($row['creatureexp'], 0);
                 $row['playerstarthp'] = $session['user']['hitpoints'];
                 $row['fightstartdate'] = strtotime('now');
@@ -96,9 +97,9 @@ class Pvp
     {
         global $session;
 
-        $sql = "SELECT gold FROM " . db_prefix('accounts') . " WHERE acctid='" . (int) $badguy['acctid'] . "'";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = "SELECT gold FROM " . Database::prefix('accounts') . " WHERE acctid='" . (int) $badguy['acctid'] . "'";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
         if (!isset($row['gold'])) {
             $row['gold'] = 0;
         }
@@ -164,9 +165,9 @@ class Pvp
 
         Mail::systemMail($badguy['acctid'], ['`2You were killed while in %s`2', $killedloc], $mailmessage);
 
-        $sql = "UPDATE " . db_prefix('accounts') . " SET alive=0, goldinbank=(goldinbank+IF(gold<{$badguy['creaturegold']},gold-{$badguy['creaturegold']},0)),gold=IF(gold<{$badguy['creaturegold']},0,gold-{$badguy['creaturegold']}), experience=IF(experience>=$lostexp,experience-$lostexp,0) WHERE acctid=" . (int) $badguy['acctid'];
+        $sql = "UPDATE " . Database::prefix('accounts') . " SET alive=0, goldinbank=(goldinbank+IF(gold<{$badguy['creaturegold']},gold-{$badguy['creaturegold']},0)),gold=IF(gold<{$badguy['creaturegold']},0,gold-{$badguy['creaturegold']}), experience=IF(experience>=$lostexp,experience-$lostexp,0) WHERE acctid=" . (int) $badguy['acctid'];
         debuglog($sql, (int) $badguy['acctid'], $session['user']['acctid']);
-        db_query($sql);
+        Database::query($sql);
         return $args['handled'];
     }
 
@@ -187,9 +188,9 @@ class Pvp
             $wonamount = 0;
         }
 
-        $sql = "SELECT level FROM " . db_prefix('accounts') . " WHERE acctid={$badguy['acctid']}";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = "SELECT level FROM " . Database::prefix('accounts') . " WHERE acctid={$badguy['acctid']}";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
 
         $wonexp = round($session['user']['experience'] * getsetting('pvpdefgain', 10) / 100, 0);
         if (getsetting('pvphardlimit', 0)) {
@@ -220,9 +221,9 @@ class Pvp
         Mail::systemMail($badguy['acctid'], ['`2You were successful while you were in %s`2', $killedloc], [$msg, $session['user']['name'], $killedloc, $wonexp, $winamount, $args['pvpmsgadd']]);
 
         if ($row['level'] >= $badguy['creaturelevel']) {
-            $sql = "UPDATE " . db_prefix('accounts') . " SET gold=gold+" . $winamount . ", experience=experience+" . $wonexp . " WHERE acctid=" . (int) $badguy['acctid'];
+            $sql = "UPDATE " . Database::prefix('accounts') . " SET gold=gold+" . $winamount . ", experience=experience+" . $wonexp . " WHERE acctid=" . (int) $badguy['acctid'];
             debuglog($sql);
-            db_query($sql);
+            Database::query($sql);
         }
 
         $session['user']['alive'] = 0;
@@ -274,10 +275,10 @@ class Pvp
             $loc = addslashes($location);
             $sql = "SELECT acctid, name, race, alive, location, sex, level, laston, " .
                 "loggedin, login, pvpflag, clanshort, clanrank, dragonkills, " .
-                db_prefix('accounts') . ".clanid FROM " .
-                db_prefix('accounts') . " LEFT JOIN " .
-                db_prefix('clans') . " ON " . db_prefix('clans') . ".clanid=" .
-                db_prefix('accounts') . ".clanid WHERE (locked=0) " .
+                Database::prefix('accounts') . ".clanid FROM " .
+                Database::prefix('accounts') . " LEFT JOIN " .
+                Database::prefix('clans') . " ON " . Database::prefix('clans') . ".clanid=" .
+                Database::prefix('accounts') . ".clanid WHERE (locked=0) " .
                 "AND (slaydragon=0) AND " .
                 "(age>$days OR dragonkills>0 OR pk>0 OR experience>$exp) " .
                 ($levdiff == -1 ? '' : "AND (level>=$lev1 AND level<=$lev2)") .
@@ -288,10 +289,10 @@ class Pvp
                 "ORDER BY location='$loc' DESC, location, level DESC, " .
                 "experience DESC, dragonkills DESC";
         }
-        $result = db_query($sql);
+        $result = Database::query($sql);
 
         $pvp = [];
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $pvp[] = $row;
         }
 
@@ -350,7 +351,7 @@ class Pvp
             rawoutput('</tr>');
         }
 
-        $sql = "SELECT count(location) as counter, location FROM " . db_prefix('accounts') .
+        $sql = "SELECT count(location) as counter, location FROM " . Database::prefix('accounts') .
             " WHERE (locked=0) " .
             "AND (slaydragon=0) AND " .
             "(age>$days OR dragonkills>0 OR pk>0 OR experience>$exp) " .
@@ -358,7 +359,7 @@ class Pvp
             " AND (alive=1) " .
             "AND (laston<'$last' OR loggedin=0) AND (acctid<>$id) " .
             "AND location!='$loc' GROUP BY location ORDER BY location; ";
-        $result = db_query($sql);
+        $result = Database::query($sql);
 
         if ($j == 0) {
             $noone = translate_inline('`iThere are no available targets.`i');
@@ -366,9 +367,9 @@ class Pvp
         }
         rawoutput('</table>', true);
 
-        if (db_num_rows($result) != 0) {
+        if (Database::numRows($result) != 0) {
             output('`n`n`&As you listen to different people around you talking, you glean the following additional information:`n');
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = Database::fetchAssoc($result)) {
                 $loc = $row['location'];
                 $count = $row['counter'];
                 $args = modulehook('pvpcount', ['count' => $count, 'loc' => $loc]);
