@@ -51,7 +51,7 @@ if (is_array($release)) {
     output("`^Release:`0 %s`n", HTMLEntities($name, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
     output("`^Tag:`0 %s`n", HTMLEntities($tag, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
     output("`^Published:`0 %s`n", HTMLEntities($published, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-    rawoutput("`^Link:`0 <a href='" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "' target='_blank'>" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</a>`n");
+    output_notl("`^Link:`0 <a href='" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "' target='_blank'>" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</a>`n",true);
 } else {
     output("`4No release information available at this time.`n");
 }
