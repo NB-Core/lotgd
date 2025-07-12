@@ -24,4 +24,4 @@ Before opening a PR:
 4. Provide a clear description of the change and reference related issues.
 5. Keep the diff minimal, focusing only on the feature or fix.
 
-These rules apply to all directories unless a more specific `AGENTS.md` overrides them.
+These rules apply to all directories unless a more specific file overrides them.
