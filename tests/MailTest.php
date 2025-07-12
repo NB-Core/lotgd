@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace {
     use PHPUnit\Framework\TestCase;
     use Lotgd\Mail;
-    use Lotgd\Settings;
 
     require_once __DIR__ . '/../config/constants.php';
     require_once __DIR__ . '/../lib/settings.php';
@@ -158,18 +157,7 @@ if (!function_exists('output')) {
     function output(string $format,...$args){}
 }
 }
-
 // --- Class stubs ---
-namespace Lotgd {
-    if (!class_exists('Lotgd\\Settings', false)) {
-        class Settings {
-            public function __construct(string|false $table=false){}
-            public function getSetting(string|int $name, mixed $default=false): mixed {
-                return $GLOBALS['settings_array'][$name] ?? $default;
-            }
-        }
-    }
-}
 
 namespace PHPMailer\PHPMailer {
 class PHPMailer {
@@ -189,10 +177,9 @@ class PHPMailer {
 namespace {
 use PHPUnit\Framework\TestCase;
 use Lotgd\Mail;
-use Lotgd\Settings;
 
     if (!class_exists('MailDummySettings')) {
-        class MailDummySettings extends Settings
+        class MailDummySettings
         {
             private array $values;
 
