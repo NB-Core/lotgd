@@ -37,6 +37,6 @@ final class TemplateTest extends TestCase
             }
         }
 
-        $this->assertSame('legacy:aurora', $result);
+        $this->assertSame('twig:aurora', $result);
     }
 }
