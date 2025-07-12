@@ -135,6 +135,18 @@ class Template
             return 'twig:' . $template;
         }
 
+        // Fall back to twig prefix when DEFAULT_TEMPLATE specifies
+        // this template as a Twig one. This allows Twig templates to
+        // be referenced even when their directory is temporarily
+        // unavailable (for example, during tests that rename the
+        // directory to simulate absence).
+        if (defined('DEFAULT_TEMPLATE') && str_starts_with((string) DEFAULT_TEMPLATE, 'twig:')) {
+            $defaultName = substr((string) DEFAULT_TEMPLATE, 5);
+            if ($defaultName === $template) {
+                return 'twig:' . $template;
+            }
+        }
+
         return 'legacy:' . $template;
     }
 
