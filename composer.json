@@ -2,7 +2,8 @@
     "require": {
         "jaxon-php/jaxon-core": "~4.0",
         "phpmailer/phpmailer": "^6.7",
-        "twig/twig": "^3.0"
+        "twig/twig": "^3.0",
+        "wikimedia/composer-merge-plugin": "^2.0"
     },
     "autoload": {
         "psr-4": {
@@ -12,5 +13,12 @@
     },
     "scripts": {
         "test": "phpunit --configuration phpunit.xml"
+    },
+    "extra": {
+        "merge-plugin": {
+            "include": [
+                "config/composer.local.json"
+            ]
+        }
     }
 }
