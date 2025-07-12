@@ -7,7 +7,7 @@ use Lotgd\PageParts;
 function page_header(...$args){ PageParts::pageHeader(...$args); }
 function popup(string $page, string $size="550x300"){ return PageParts::popup($page, $size); }
 function page_footer(bool $saveuser=true){ PageParts::pageFooter($saveuser); }
-function popup_header(string $title="Legend of the Green Dragon"){ PageParts::popupHeader($title); }
+function popup_header(...$args){ PageParts::popupHeader(...$args); }
 function popup_footer(){ PageParts::popupFooter(); }
 function wipe_charstats(): void { PageParts::wipeCharStats(); }
 function addcharstat(string $label, mixed $value = null): void { PageParts::addCharStat($label, $value); }
