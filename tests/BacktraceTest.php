@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Lotgd\Backtrace;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 require_once __DIR__ . '/../config/constants.php';
 
@@ -15,7 +15,9 @@ final class BacktraceTest extends TestCase
         $this->assertSame('', Backtrace::showNoBacktrace());
     }
 
-    
+    /**
+     * @dataProvider getTypeDataProvider
+     */
     #[DataProvider('getTypeDataProvider')]
     public function testGetType($input, string $expected): void
     {
