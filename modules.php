@@ -15,7 +15,6 @@ page_header("Module Manager");
 
 SuperuserNav::render();
 
-addnav("Module Categories");
 
 addnav("",$REQUEST_URI);
 $op = httpget('op');
@@ -72,7 +71,9 @@ $uninstmodules = ModuleManager::listUninstalled();
 $seencats = ModuleManager::getInstalledCategories();
 $ucount = count($uninstmodules);
 
+addnav("Uninstalled");
 addnav(array(" ?Uninstalled - (%s modules)", $ucount), "modules.php");
+
 foreach ($seencats as $cat=>$count) {
 	$category = $cat;
 	if (strpos($cat,"|") !== false) {
