@@ -11,12 +11,15 @@ final class HttpHelperTest extends TestCase
 {
     protected function setUp(): void
     {
-        $_GET = [];
-        $_POST = [];
-        unset($GLOBALS['HTTP_GET_VARS'], $GLOBALS['HTTP_POST_VARS']);
+        $this->resetSuperglobals();
     }
 
     protected function tearDown(): void
+    {
+        $this->resetSuperglobals();
+    }
+
+    private function resetSuperglobals(): void
     {
         $_GET = [];
         $_POST = [];
