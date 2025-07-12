@@ -24,14 +24,17 @@ $GLOBALS['settings_array'] = [
     'notificationmailsubject' => '{subject}',
     'notificationmailtext' => '{body}',
 ];
-
-// --- Function stubs ---
-if (!function_exists('db_prefix')) {
-    function db_prefix(string $name, $force=false) { return $name; }
 }
-if (!function_exists('db_query')) {
-    function db_query(string $sql) {
-    global $accounts_table, $mail_table, $last_query_result;
+
+// --- Database stub ---
+namespace Lotgd\MySQL {
+    class Database {
+        public static function prefix(string $name, ?string $force = null): string {
+            return $name;
+        }
+
+        public static function query(string $sql, bool $die = true) {
+            global $accounts_table, $mail_table, $last_query_result;
     if (preg_match("/SELECT prefs,emailaddress FROM accounts WHERE acctid='?(\d+)'?;/", $sql, $m)) {
         $acctid = (int)$m[1];
         $row = $accounts_table[$acctid] ?? ['prefs'=>'', 'emailaddress'=>''];
@@ -72,16 +75,22 @@ if (!function_exists('db_query')) {
     $last_query_result = [];
     return [];
     }
+        public static function fetchAssoc(array|\mysqli_result &$result) {
+            return array_shift($result);
+        }
+
+        public static function freeResult(array|\mysqli_result &$result): bool {
+            $result = null;
+            return true;
+        }
+
+        public static function numRows(array|\mysqli_result $result): int {
+            return is_array($result) ? count($result) : 0;
+        }
+    }
 }
-if (!function_exists('db_fetch_assoc')) {
-    function db_fetch_assoc(&$result) { return array_shift($result); }
-}
-if (!function_exists('db_free_result')) {
-    function db_free_result(&$result) { $result = null; }
-}
-if (!function_exists('db_num_rows')) {
-    function db_num_rows($result) { return is_array($result) ? count($result) : 0; }
-}
+
+namespace {
 if (!function_exists('invalidatedatacache')) {
     function invalidatedatacache(string $name) {}
 }
@@ -100,8 +109,7 @@ if (!function_exists('soap')) {
 if (!function_exists('output')) {
     function output(string $format,...$args){}
 }
-
-} // end global namespace
+}
 
 // --- Class stubs ---
 namespace Lotgd {
@@ -129,9 +137,9 @@ class PHPMailer {
 }
 
 namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\Mail;
-    use Lotgd\Settings;
+use PHPUnit\Framework\TestCase;
+use Lotgd\Mail;
+use Lotgd\Settings;
 
     if (!class_exists('MailDummySettings')) {
         class MailDummySettings extends Settings
@@ -199,5 +207,4 @@ final class MailTest extends TestCase
         $this->assertTrue(Mail::isInboxFull(1));
     }
 }
-
 }
