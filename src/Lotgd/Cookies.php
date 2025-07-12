@@ -16,13 +16,15 @@ class Cookies
      */
     public static function set(string $name, string $value, int $expires, bool $secure = false): void
     {
-        setcookie($name, $value, [
-            'expires'  => $expires,
-            'path'     => '/',
-            'secure'   => $secure,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
+        if (!headers_sent()) {
+            setcookie($name, $value, [
+                'expires'  => $expires,
+                'path'     => '/',
+                'secure'   => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
         $_COOKIE[$name] = $value;
     }
 
@@ -31,13 +33,15 @@ class Cookies
      */
     public static function delete(string $name): void
     {
-        setcookie($name, '', [
-            'expires'  => time() - 3600,
-            'path'     => '/',
-            'secure'   => ServerFunctions::isSecureConnection(),
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
+        if (!headers_sent()) {
+            setcookie($name, '', [
+                'expires'  => time() - 3600,
+                'path'     => '/',
+                'secure'   => ServerFunctions::isSecureConnection(),
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
         unset($_COOKIE[$name]);
     }
 
