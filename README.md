@@ -130,6 +130,14 @@ required. Download `lotgd-<version>.tar.gz` or `lotgd-<version>.zip` from the
 to your web server and open `installer.php` in your browser. The installer
 will guide you through the setup.
 
+## Release Workflow
+
+Releases are created automatically when pushing a tag that starts with `v`.
+Update the version in `common.php`, commit the change and push a tag like
+`v2.0.0` or `v2.0.0-rc1`. GitHub Actions then builds archives that contain the
+application and its `vendor/` dependencies while omitting development files such
+as the `tests/` directory.
+
 ## Cron Job Setup
 
 `cron.php` handles automated tasks such as new day resets. It runs from the command line and reads `settings.php` to determine the game directory.
