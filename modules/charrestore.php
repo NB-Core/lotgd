@@ -1,7 +1,11 @@
 <?php
 declare(strict_types=1);
+/**
+ * Administrative module to snapshot and restore player accounts.
+ */
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\MySQL\Database;
 // translator ready
 use Lotgd\Forms;
 // addnews ready
@@ -117,10 +121,10 @@ function charrestore_dohook(string $hookname, array $args): array{
 			if ($args['deltype']==CHAR_DELETE_PERMADEATH &&
 					!get_module_setting("permadeath_snapshot")) return $args;
 			//time to create a snapshot.
-			$sql = "SELECT * FROM ".db_prefix("accounts")." WHERE acctid='{$args['acctid']}'";
-			$result = db_query($sql);
-			if (db_num_rows($result) > 0){
-				$row = db_fetch_assoc($result);
+			$sql = "SELECT * FROM ".Database::prefix("accounts")." WHERE acctid='{$args['acctid']}'";
+			$result = Database::query($sql);
+			if (Database::numRows($result) > 0){
+				$row = Database::fetchAssoc($result);
 
 				//test if the user is below the snapshot threshold
 				if ($args['deltype']==CHAR_DELETE_AUTO){
@@ -150,9 +154,9 @@ function charrestore_dohook(string $hookname, array $args): array{
 				//set up the user's module preferences
 				//add a hook for module to not include themselves (data privacy issue)
 				$nosavemodules = modulehook('charrestore_nosavemodules',array()); // "output"=>true,"allowednavs"=>true,"ipaddress","id");
-				$sql = "SELECT * FROM ".db_prefix("module_userprefs")." WHERE userid='{$args['acctid']}'";
-				$prefs = db_query($sql);
-				while ($row = db_fetch_assoc($prefs)){
+				$sql = "SELECT * FROM ".Database::prefix("module_userprefs")." WHERE userid='{$args['acctid']}'";
+				$prefs = Database::query($sql);
+				while ($row = Database::fetchAssoc($prefs)){
 					if (!isset($user['prefs'][$row['modulename']])){
 						$user['prefs'][$row['modulename']] = array();
 					}
@@ -347,9 +351,9 @@ function charrestore_dohook(string $hookname, array $args): array{
 				output("Hashed String: `\$%s",charrestore_gethash(httppost('teststring')));
 			} elseif (httpget("op")=="beginrestore"){
 				$user = unserialize(join("",file(charrestore_getstorepath().httpget("file"))));
-				$sql = "SELECT count(acctid) AS c FROM ".db_prefix("accounts")." WHERE login='{$user['account']['login']}'";
-				$result = db_query($sql);
-				$row = db_fetch_assoc($result);
+				$sql = "SELECT count(acctid) AS c FROM ".Database::prefix("accounts")." WHERE login='{$user['account']['login']}'";
+				$result = Database::query($sql);
+				$row = Database::fetchAssoc($result);
 				rawoutput("<form action='runmodule.php?module=charrestore&op=finishrestore&file=".rawurlencode(stripslashes(httpget("file"))).$retnav."' method='POST'>");
 				addnav("","runmodule.php?module=charrestore&op=finishrestore&file=".rawurlencode(stripslashes(httpget("file"))).$retnav);
 				if ($row['c'] > 0){
@@ -359,9 +363,9 @@ function charrestore_dohook(string $hookname, array $args): array{
 					rawoutput("<input name='newlogin'><br>");
 				}
 
-				$sql="SELECT count(acctid) as c FROM ".db_prefix('accounts')." WHERE acctid=".$user['account']['acctid'];
-				$result=db_query($sql);
-				$row=db_fetch_assoc($result);
+				$sql="SELECT count(acctid) as c FROM ".Database::prefix('accounts')." WHERE acctid=".$user['account']['acctid'];
+				$result=Database::query($sql);
+				$row=Database::fetchAssoc($result);
 				if ($row['c']>0) {
 					output("`\$The user has already a char here ... you want to maybe restore an older version of it.`n`nYou have to DELETE it first in order to restore this one.");
 					page_footer();	
@@ -391,22 +395,22 @@ function charrestore_dohook(string $hookname, array $args): array{
 				$user = unserialize(join("",file(charrestore_getstorepath().httpget("file"))));
 				$newlogin=(httppost('newlogin')>''?httppost('newlogin'):$user['account']['login']);
 				$user = unserialize(join("",file(charrestore_getstorepath().httpget("file"))));
-				$sql = "SELECT acctid FROM ".db_prefix("accounts")." WHERE login='$newlogin'";
-				$result = db_query($sql);
-				$count = db_num_rows($result);
+				$sql = "SELECT acctid FROM ".Database::prefix("accounts")." WHERE login='$newlogin'";
+				$result = Database::query($sql);
+				$count = Database::numRows($result);
 				if ($count > 0){
 					$ids=array();
-					while ($row=db_fetch_assoc($result)) {
+					while ($row=Database::fetchAssoc($result)) {
 						$ids[]=$row['acctid'];
 					}
 					$link="runmodule.php?module=charrestore&op=beginrestore&file=".rawurlencode(stripslashes(httpget("file")));
 					output("Hm. Login '%s' seems to exist already as Account-ID %s. If you want to go on, you need to give out a new login <a href='$link'>here</a>",$newlogin,implode(",",$ids),true);
 				}else{
 					if (httppost("newlogin") > "") $user['account']['login'] = httppost('newlogin');
-					$sql = "DESCRIBE ".db_prefix("accounts");
-					$result = db_query($sql);
+					$sql = "DESCRIBE ".Database::prefix("accounts");
+					$result = Database::query($sql);
 					$known_columns = array();
-					while ($row = db_fetch_assoc($result)){
+					while ($row = Database::fetchAssoc($result)){
 						$known_columns[$row['Field']] = true;
 					}
 
@@ -439,9 +443,9 @@ function charrestore_dohook(string $hookname, array $args): array{
 							array_push($vals,"'".addslashes($val)."'");
 						}
 					}
-					$sql = "INSERT INTO ".db_prefix("accounts")." (\n".join("\t,\n",$keys).") VALUES (\n".join("\t,\n",$vals).")";
-					db_query($sql);
-					$id = db_insert_id();
+					$sql = "INSERT INTO ".Database::prefix("accounts")." (\n".join("\t,\n",$keys).") VALUES (\n".join("\t,\n",$vals).")";
+					Database::query($sql);
+					$id = Database::insertId();
 					if ($id > 0){
 						if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) { 
 							addnav("Edit the restored user","user.php?op=edit&userid=$id".$retnav);

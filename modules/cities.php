@@ -1,8 +1,12 @@
 <?php
 declare(strict_types=1);
+/**
+ * Core module handling multiple cities and travel events.
+ */
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\MySQL\Database;
 
 function cities_getmoduleinfo(): array{
 	$info = array(
@@ -63,8 +67,8 @@ function cities_uninstall(): bool{
 	// I think I have a patch however :)
 	$city = getsetting("villagename", LOCATION_FIELDS);
 	$inn = getsetting("innname", LOCATION_INN);
-	$sql = "UPDATE " . db_prefix("accounts") . " SET location='".addslashes($city)."' WHERE location!='".addslashes($inn)."'";
-	db_query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET location='".addslashes($city)."' WHERE location!='".addslashes($inn)."'";
+	Database::query($sql);
 	$session['user']['location']=$city;
 	return true;
 }

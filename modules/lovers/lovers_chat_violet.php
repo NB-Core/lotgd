@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 function lovers_chat_violet(){
 	global $session;
 	if (httpget('act')==""){

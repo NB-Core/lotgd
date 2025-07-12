@@ -1,8 +1,12 @@
 <?php
 declare(strict_types=1);
+/**
+ * Allows deceased players to haunt the living.
+ */
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Mail;
+use Lotgd\MySQL\Database;
 
 function graveyard_haunt_getmoduleinfo(): array{
 	$info = array(
@@ -39,10 +43,10 @@ function graveyard_haunt_dohook(string $hookname, array $args): array{
 	case "newday":
 		$by=(int)get_module_pref('hauntedby');
 		if ($by!=0){
-			$sql="SELECT name from ".db_prefix('accounts')." WHERE acctid=".$by;
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
-			if (db_num_rows($result)==0) {
+			$sql="SELECT name from ".Database::prefix('accounts')." WHERE acctid=".$by;
+			$result=Database::query($sql);
+			$row=Database::fetchAssoc($result);
+			if (Database::numRows($result)==0) {
 				$haunter=translate_inline("The Evil Reaper");
 			} else $haunter=$row['name'];
 			output("`n`n`)You have been haunted by %s`); as a result, you lose a forest fight!",$haunter);
@@ -81,11 +85,11 @@ $name = httppost('name');
 for ($x=0;$x<strlen($name);$x++){
 	$string .= substr($name,$x,1)."%";
 }
-$sql = "SELECT login,name,level FROM " . db_prefix("accounts") . " WHERE name LIKE '".addslashes($string)."' AND locked=0 ORDER BY level,login";
-$result = db_query($sql);
-if (db_num_rows($result)<=0){
+$sql = "SELECT login,name,level FROM " . Database::prefix("accounts") . " WHERE name LIKE '".addslashes($string)."' AND locked=0 ORDER BY level,login";
+$result = Database::query($sql);
+if (Database::numRows($result)<=0){
 	output("`\$%s`) could find no one who matched the name you gave him.",$deathoverlord);
-}elseif(db_num_rows($result)>100){
+}elseif(Database::numRows($result)>100){
 	output("`\$%s`) thinks you should narrow down the number of people you wish to haunt.",$deathoverlord);
 	$search = translate_inline("Search");
 	rawoutput("<form action='runmodule.php?module=graveyard_haunt&op=stage2' method='POST'>");
@@ -101,8 +105,8 @@ if (db_num_rows($result)<=0){
 	$lev = translate_inline("Level");
 	rawoutput("<table cellpadding='3' cellspacing='0' border='0'>");
 	rawoutput("<tr class='trhead'><td>$name</td><td>$lev</td></tr>");
-	for ($i=0;$i<db_num_rows($result);$i++){
-		$row = db_fetch_assoc($result);
+	for ($i=0;$i<Database::numRows($result);$i++){
+		$row = Database::fetchAssoc($result);
 		rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td><a href='runmodule.php?module=graveyard_haunt&op=stage3&name=".HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."'>");
 		output_notl("%s", $row['name']);
 		rawoutput("</a></td><td>");
@@ -116,10 +120,10 @@ break;
 case "stage3":
 output("`)`c`bThe Mausoleum`b`c");
 $name = httpget('name');
-$sql = "SELECT name,level,acctid FROM " . db_prefix("accounts") . " WHERE login='$name'";
-$result = db_query($sql);
-if (db_num_rows($result)>0){
-	$row = db_fetch_assoc($result);
+$sql = "SELECT name,level,acctid FROM " . Database::prefix("accounts") . " WHERE login='$name'";
+$result = Database::query($sql);
+if (Database::numRows($result)>0){
+	$row = Database::fetchAssoc($result);
 	$already_haunted=(int)get_module_pref('hauntedby',$row['acctid']);
 	if ($row['hauntedby']!=0){
 		output("That person has already been haunted, please select another target");

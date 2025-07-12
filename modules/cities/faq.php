@@ -1,4 +1,8 @@
 <?php
+declare(strict_types=1);
+/**
+ * FAQ page for the multiple cities module.
+ */
 
 	tlschema("faq");
 	popup_header("Multi-Village Questions");
