@@ -21,8 +21,8 @@ jobs:
       - name: Create archives
         run: |
           VERSION=${{ steps.vars.outputs.VERSION }}
-          tar --exclude='.git*' --exclude='.github' -czf "lotgd-${VERSION}.tar.gz" .
-          zip -r "lotgd-${VERSION}.zip" . -x '*.git*' -x '.github/*'
+          tar --exclude='.git*' --exclude='.github' --exclude='tests' --exclude='phpunit.xml' --exclude='.phpunit.result.cache' -czf "lotgd-${VERSION}.tar.gz" .
+          zip -r "lotgd-${VERSION}.zip" . -x '*.git*' -x '.github/*' -x 'tests/*' -x 'phpunit.xml' -x '.phpunit.result.cache'
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
