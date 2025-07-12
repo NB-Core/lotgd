@@ -23,18 +23,12 @@ final class TemplateTest extends TestCase
 
     public function testAddTypePrefixReturnsLegacyWhenTwigDirMissing(): void
     {
-        $dir = dirname(__DIR__) . '/templates_twig/aurora';
-        $temp = $dir . '.tmp';
-        $renamed = false;
-        if (is_dir($dir)) {
-            $renamed = rename($dir, $temp);
-        }
+        $tempDir = sys_get_temp_dir() . '/templates_twig_aurora';
+        mkdir($tempDir);
         try {
             $result = Template::addTypePrefix('aurora');
         } finally {
-            if ($renamed) {
-                rename($temp, $dir);
-            }
+            rmdir($tempDir);
         }
 
         $this->assertSame('legacy:aurora', $result);
