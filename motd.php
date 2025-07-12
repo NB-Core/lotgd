@@ -16,7 +16,7 @@ tlschema("motd");
 $op = httpget('op');
 $id = httpget('id');
 
-Commentary::addcommentary();
+Commentary::addCommentary();
 popup_header("LoGD Message of the Day (MoTD)");
 
 if ($session['user']['superuser'] & SU_POST_MOTD) {
@@ -118,7 +118,7 @@ if ($op=="") {
 	rawoutput(" <input type='submit' value='".translate_inline("Submit")."' class='button'>");
 	rawoutput("</form>");
 
-	Commentary::commentdisplay("`n`@Commentary:`0`n", "motd");
+    Commentary::commentDisplay("`n`@Commentary:`0`n", "motd");
 }
 
 $session['needtoviewmotd']=false;

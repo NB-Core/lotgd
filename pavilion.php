@@ -8,7 +8,7 @@ require_once 'lib/villagenav.php';
 // mail ready
 
 tlschema('pavilion');
-Commentary::addcommentary();
+Commentary::addCommentary();
 checkday();
 
 page_header('Eye-catching Pavilion');
@@ -17,6 +17,6 @@ output("`b`cThe Pavilion`c`b`n");
 output("This page is a placeholder for beta features. Customize it to showcase experimental content.`n");
 
 villagenav();
-Commentary::commentdisplay('', 'beta', 'Talk with other testers:', 25);
+Commentary::commentDisplay('', 'beta', 'Talk with other testers:', 25);
 
 page_footer();

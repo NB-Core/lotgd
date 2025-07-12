@@ -113,7 +113,7 @@ tlschema($schemas['title']);
 page_header($texts['title']);
 tlschema();
 
-Commentary::addcommentary();
+Commentary::addCommentary();
 $skipvillagedesc = handle_event("village");
 checkday();
 
@@ -302,7 +302,7 @@ if (!isset($args['block']) || $args['block'] != 'yes') {
 		tlschema($schemas['talk']);
 		output($texts['talk']);
 		tlschema();
-		Commentary::commentdisplay("",$texts['section'],"Speak",25,$texts['sayline'], $schemas['sayline']);
+            Commentary::commentDisplay("",$texts['section'],"Speak",25,$texts['sayline'], $schemas['sayline']);
 }
 
 module_display_events("village", "village.php");

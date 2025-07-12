@@ -11,7 +11,7 @@ use Lotgd\Names;
 
 tlschema("lodge");
 
-Commentary::addcommentary();
+Commentary::addCommentary();
 
 $op = httpget('op');
 if ($op == "") checkday();
@@ -47,7 +47,7 @@ if ($op==""){
 		output("In the chair closest to the fire sits J. C. Petersen, reading a heavy tome entitled \"Alchemy Today.\"`n`n");
 		output("As you approach, a large hunting dog at his feet raises her head and looks at you.");
 		output("Sensing that you belong, she lays down and goes back to sleep.`n`n");
-		Commentary::commentdisplay("Nearby some other rugged hunters talk:`n", "hunterlodge","Talk quietly",25);
+            Commentary::commentDisplay("Nearby some other rugged hunters talk:`n", "hunterlodge","Talk quietly",25);
 		addnav("Use Points");
 		modulehook("lodge");
 	}else{
