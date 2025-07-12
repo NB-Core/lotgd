@@ -1,6 +1,7 @@
 <?php
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\DataCache;
 
 require("common.php");
 
@@ -11,26 +12,48 @@ page_header("Core News");
 
 SuperuserNav::render();
 
-output("`4This section gets the newest information about the +nb Core Editions from the nb-core.org website.`n`n");
 
-output("`\$You can delete the corenews.php file and the menu option for this will disappear. It's up to you. However, you will get notices about new Core Versions here - as well as critical security fixes.`n`n");
+output("`4Latest release information will be retrieved from GitHub.`n`n");
 
-output("So I recommend you to keep this.`n`n");
+$cacheKey = 'github_release_latest';
+$release = DataCache::datacache($cacheKey, 86400);
 
-$buttontext=translate_inline("Get the Latest News");
-rawoutput("<form action='corenews.php?op=fetchnews' method='POST'>");
-addnav("","corenews.php?op=fetchnews");
-rawoutput("<input type='submit' class='button' value='".appoencode($buttontext)."'></form>");
-$op=httpget('op');
-switch ($op) {
-
-	case "fetchnews";
-		$file = file_get_contents(getsetting('corenewspath','http://corenews.nb-core.org/corenews.txt'));
-		if ($file!="") {
-			output_notl("`v".str_replace("\n","`n",$file));
-		}
-		break;
+if (!is_array($release)) {
+    $context = stream_context_create([
+        'http' => ['user_agent' => 'LotGD Core News']
+    ]);
+    $json = false;
+    try {
+        set_error_handler(function ($severity, $message, $file, $line) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        });
+        $json = file_get_contents('https://api.github.com/repos/NB-Core/lotgd/releases/latest', false, $context);
+    } catch (Exception $e) {
+        error_log("Error fetching GitHub release information: " . $e->getMessage());
+    } finally {
+        restore_error_handler();
+    }
+    if ($json !== false) {
+        $data = json_decode($json, true);
+        if (is_array($data)) {
+            $release = $data;
+            DataCache::updatedatacache($cacheKey, $release);
+        }
+    }
 }
 
+if (is_array($release)) {
+    $name = $release['name'] ?? ($release['tag_name'] ?? '');
+    $tag = $release['tag_name'] ?? '';
+    $published = isset($release['published_at']) ? substr($release['published_at'], 0, 10) : '';
+    $url = $release['html_url'] ?? 'https://github.com/NB-Core/lotgd/releases';
+
+    output("`^Release:`0 %s`n", HTMLEntities($name, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+    output("`^Tag:`0 %s`n", HTMLEntities($tag, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+    output("`^Published:`0 %s`n", HTMLEntities($published, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+    rawoutput("`^Link:`0 <a href='" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "' target='_blank'>" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</a>`n");
+} else {
+    output("`4No release information available at this time.`n");
+}
 page_footer();
 
