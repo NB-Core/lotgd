@@ -54,6 +54,7 @@ Oliver
 - [Install from Release Archive](#install-from-release-archive)
 - [Cron Job Setup](#cron-job-setup)
 - [SMTP Mail Setup](#smtp-mail-setup)
+- [Beta Setup](#beta-setup)
 - [After Upgrading](#after-upgrading)
 - [Upgrading](#upgrading)
 - [Installation](#installation)
@@ -162,6 +163,14 @@ Enable `notify_on_warn` or `notify_on_error` and set `notify_address` in the
 These notifications rely on the data cache, so ensure `$DB_USEDATACACHE` is set
 to `1` and `$DB_DATACACHEPATH` points to a writable directory in
 `dbconnect.php`.
+
+## Beta Setup
+
+`pavilion.php` is an optional script used when beta features are enabled per
+player. Players flagged for beta access see a link to the pavilion in the
+village and can use it to try experimental features. The repository provides a
+minimal template for this file which simply displays a message and a commentary
+section. Customize it to implement your own beta content.
 
 ## After Upgrading
 
