@@ -14,41 +14,28 @@ final class BacktraceTest extends TestCase
         $this->assertSame('', Backtrace::showNoBacktrace());
     }
 
-    public function testGetTypeFormatsString(): void
+    /**
+     * @dataProvider getTypeDataProvider
+     */
+    public function testGetType($input, string $expected): void
     {
-        $this->assertSame("<span class='string'>\"foo\"</span>", Backtrace::getType('foo'));
+        $this->assertSame($expected, Backtrace::getType($input));
     }
 
-    public function testGetTypeFormatsInteger(): void
+    public function getTypeDataProvider(): array
     {
-        $this->assertSame("<span class='number'>42</span>", Backtrace::getType(42));
-    }
-
-    public function testGetTypeFormatsFloat(): void
-    {
-        $this->assertSame("<span class='number'>3.142</span>", Backtrace::getType(3.14159));
-    }
-
-    public function testGetTypeFormatsBooleans(): void
-    {
-        $this->assertSame("<span class='bool'>true</span>", Backtrace::getType(true));
-        $this->assertSame("<span class='bool'>false</span>", Backtrace::getType(false));
-    }
-
-    public function testGetTypeFormatsNull(): void
-    {
-        $this->assertSame("<span class='null'>NULL</span>", Backtrace::getType(null));
-    }
-
-    public function testGetTypeFormatsObject(): void
-    {
-        $obj = new stdClass();
-        $this->assertSame("<span class='object'>stdClass</span>", Backtrace::getType($obj));
-    }
-
-    public function testGetTypeFormatsArray(): void
-    {
-        $expected = "<span class='array'>Array(<blockquote><span class='number'>0</span>=><span class='number'>1</span>, <span class='number'>1</span>=><span class='string'>\"foo\"</span></blockquote>)</span>";
-        $this->assertSame($expected, Backtrace::getType([1, 'foo']));
+        return [
+            'string' => ['foo', "<span class='string'>\"foo\"</span>"],
+            'integer' => [42, "<span class='number'>42</span>"],
+            'float' => [3.14159, "<span class='number'>3.142</span>"],
+            'boolean true' => [true, "<span class='bool'>true</span>"],
+            'boolean false' => [false, "<span class='bool'>false</span>"],
+            'null' => [null, "<span class='null'>NULL</span>"],
+            'object' => [new stdClass(), "<span class='object'>stdClass</span>"],
+            'array' => [
+                [1, 'foo'],
+                "<span class='array'>Array(<blockquote><span class='number'>0</span>=><span class='number'>1</span>, <span class='number'>1</span>=><span class='string'>\"foo\"</span></blockquote>)</span>"
+            ],
+        ];
     }
 }
