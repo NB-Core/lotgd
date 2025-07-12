@@ -22,7 +22,17 @@ if (!is_array($release)) {
     $context = stream_context_create([
         'http' => ['user_agent' => 'LotGD Core News']
     ]);
-    $json = @file_get_contents('https://api.github.com/repos/NB-Core/lotgd/releases/latest', false, $context);
+    $json = false;
+    try {
+        set_error_handler(function ($severity, $message, $file, $line) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        });
+        $json = file_get_contents('https://api.github.com/repos/NB-Core/lotgd/releases/latest', false, $context);
+    } catch (Exception $e) {
+        error_log("Error fetching GitHub release information: " . $e->getMessage());
+    } finally {
+        restore_error_handler();
+    }
     if ($json !== false) {
         $data = json_decode($json, true);
         if (is_array($data)) {
