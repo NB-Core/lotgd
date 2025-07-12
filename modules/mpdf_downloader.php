@@ -74,16 +74,16 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
 				$ids = array_filter($ids);
 				if (count($ids) > 0) {
 					$table = ($hookname === 'header-mail') ? 'mail' : 'mailarchive';
-					$acct = db_prefix('accounts');
-					$mailtbl = db_prefix($table);
-					$sql = "SELECT $mailtbl.*, a1.name AS sender, a2.name AS receiver FROM $mailtbl LEFT JOIN $acct AS a1 ON a1.acctid=$mailtbl.msgfrom LEFT JOIN $acct AS a2 ON a2.acctid=$mailtbl.msgto WHERE $mailtbl.messageid IN (" . implode(',', $ids) . ") ORDER BY $mailtbl.messageid";
-					$result = db_query($sql);
+                                        $acct = Database::prefix('accounts');
+                                        $mailtbl = Database::prefix($table);
+                                        $sql = "SELECT $mailtbl.*, a1.name AS sender, a2.name AS receiver FROM $mailtbl LEFT JOIN $acct AS a1 ON a1.acctid=$mailtbl.msgfrom LEFT JOIN $acct AS a2 ON a2.acctid=$mailtbl.msgto WHERE $mailtbl.messageid IN (" . implode(',', $ids) . ") ORDER BY $mailtbl.messageid";
+                                        $result = Database::query($sql);
 
                                         $header = get_module_setting('header_image');
                                         $url = get_module_setting('site_url');
                                         $mpdf = mpdf_downloader_setup($header, $url);
                                         $first = true;
-					while ($row = db_fetch_assoc($result)) {
+                                        while ($row = Database::fetchAssoc($result)) {
 						if (!$first) {
 							$mpdf->AddPage();
 						}

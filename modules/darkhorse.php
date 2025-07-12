@@ -1,7 +1,11 @@
 <?php
 declare(strict_types=1);
+/**
+ * Random tavern event with various interactions.
+ */
 use Lotgd\Commentary;
 use Lotgd\MountName;
+use Lotgd\MySQL\Database;
 // translator ready
 // addnews ready
 // mail ready
@@ -46,16 +50,16 @@ function darkhorse_install(): bool{
 	module_addeventhook("travel",
 			"require_once(\"modules/darkhorse.php\");
 			return (darkhorse_tavernmount() ? 0 : 100);");
-	$sql = "DESCRIBE " . db_prefix("mounts");
-	$result = db_query($sql);
-	while($row = db_fetch_assoc($result)) {
+	$sql = "DESCRIBE " . Database::prefix("mounts");
+	$result = Database::query($sql);
+	while($row = Database::fetchAssoc($result)) {
 		if ($row['Field'] == "tavern") {
 			debug("Migrating tavern for all mounts");
-			$sql = "INSERT INTO " . db_prefix("module_objprefs") . " (modulename,objtype,setting,objid,value) SELECT 'darkhorse','mounts','findtavern',mountid,tavern FROM " . db_prefix("mounts");
-			db_query($sql);
+			$sql = "INSERT INTO " . Database::prefix("module_objprefs") . " (modulename,objtype,setting,objid,value) SELECT 'darkhorse','mounts','findtavern',mountid,tavern FROM " . Database::prefix("mounts");
+			Database::query($sql);
 			debug("Dropping tavern field from mounts table");
-			$sql = "ALTER TABLE " . db_prefix("mounts") . " DROP tavern";
-			db_query($sql);
+			$sql = "ALTER TABLE " . Database::prefix("mounts") . " DROP tavern";
+			Database::query($sql);
 		}
 	}
 	module_addhook("forest");
@@ -166,13 +170,13 @@ function darkhorse_bartender($from){
 				for ($i=0;$i<strlen($name);$i++){
 					$search.=substr($name,$i,1)."%";
 				}
-				$sql = "SELECT name,alive,location,sex,level,laston,loggedin,login FROM " . db_prefix("accounts") . " WHERE (locked=0 AND name LIKE '$search') ORDER BY level DESC";
-		//		$result = db_query($sql);
+				$sql = "SELECT name,alive,location,sex,level,laston,loggedin,login FROM " . Database::prefix("accounts") . " WHERE (locked=0 AND name LIKE '$search') ORDER BY level DESC";
+		//		$result = Database::query($sql);
 */				require_once("lib/lookup_user.php");
 				$results = lookup_user($name);
 				$result= $results[0];
 				if ($result != false) {
-					$max = db_num_rows($result);
+					$max = Database::numRows($result);
 				} else {
 					$max = 0;
 				}
@@ -185,7 +189,7 @@ function darkhorse_bartender($from){
 				$lev = translate_inline("Level");
 				rawoutput("<table border=1 cellpadding=0><tr><td style='min-width:150px;'>$n</td><td style='min-width:50px;'>$lev</td></tr>");
 				for ($i=0;$i<$max;$i++){
-					$row = db_fetch_assoc($result);
+					$row = Database::fetchAssoc($result);
 					rawoutput("<tr><td><a href='".$from."op=bartender&what=enemies&who=".rawurlencode($row['login'])."'>");
 					output_notl("%s", $row['name']);
 					rawoutput("</a></td><td>{$row['level']}</td></tr>");
@@ -195,12 +199,12 @@ function darkhorse_bartender($from){
 			}
 		}else{
 			if ($session['user']['gold']>=100){
-				$sql = "SELECT name,acctid,alive,location,maxhitpoints,gold,sex,level,weapon,armor,attack,race,defense,charm,strength,dexterity,wisdom,intelligence,constitution FROM " . db_prefix("accounts") . " WHERE login='$who'";
-				$result = db_query($sql);
+				$sql = "SELECT name,acctid,alive,location,maxhitpoints,gold,sex,level,weapon,armor,attack,race,defense,charm,strength,dexterity,wisdom,intelligence,constitution FROM " . Database::prefix("accounts") . " WHERE login='$who'";
+				$result = Database::query($sql);
 				require_once("lib/playerfunctions.php");
 				
-				if (db_num_rows($result)>0){
-					$row = db_fetch_assoc($result);
+				if (Database::numRows($result)>0){
+					$row = Database::fetchAssoc($result);
 					$row = modulehook("adjuststats", $row);
 					$name = str_replace("s", "sh", $row['name']);
 					$name = str_replace("S", "Sh", $name);

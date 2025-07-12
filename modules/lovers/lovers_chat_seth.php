@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 function lovers_chat_seth(){
 	global $session;
 	if (httpget("act")==""){

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 function lovers_violet(){
 	global $session;
 	$seenlover = get_module_pref("seenlover");
