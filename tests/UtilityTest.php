@@ -54,11 +54,23 @@ final class UtilityTest extends TestCase
         $this->assertSame('1d1h1m1s', Dhms::format(90061));
     }
 
-    public function testSanitizeFunctions(): void
+    public function testSanitize(): void
     {
         $this->assertSame('Hello World!', Sanitize::sanitize('Hello `&World`1!'));
+    }
+
+    public function testColorSanitize(): void
+    {
         $this->assertSame('Hello `nWorld', Sanitize::colorSanitize('Hello `n`&World'));
+    }
+
+    public function testCommentSanitize(): void
+    {
         $this->assertSame('Look ``here', Sanitize::commentSanitize('Look `here'));
+    }
+
+    public function testPreventColors(): void
+    {
         $this->assertSame('Hi &#0096;&World&#0096;0', Sanitize::preventColors('Hi `&World`0'));
     }
 }
