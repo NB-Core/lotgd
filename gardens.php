@@ -12,7 +12,7 @@ tlschema("gardens");
 
 page_header("The Gardens");
 
-Commentary::addcommentary();
+Commentary::addCommentary();
 $skipgardendesc = handle_event("gardens");
 $op = httpget('op');
 $com = httpget('comscroll');
@@ -48,7 +48,7 @@ if (!$skipgardendesc) {
 villagenav();
 modulehook("gardens", array());
 
-Commentary::commentdisplay("", "gardens","Whisper here",30,"whispers");
+Commentary::commentDisplay("", "gardens","Whisper here",30,"whispers");
 
 module_display_events("gardens", "gardens.php");
 page_footer();

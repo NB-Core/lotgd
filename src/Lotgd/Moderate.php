@@ -406,7 +406,7 @@ class Moderate
 
         ksort($outputcomments);
         reset($outputcomments);
-        $sections = Commentary::commentarylocs();
+        $sections = Commentary::commentaryLocs();
         $needclose = 0;
 
         foreach ($outputcomments as $sec => $v) {
@@ -454,7 +454,7 @@ class Moderate
                 if ($message != 'X') {
                     $message = "`n`@" . $message . '`n';
                     output($message);
-                    Commentary::talkform($section, $talkline, $limit, $schema);
+                    Commentary::talkForm($section, $talkline, $limit, $schema);
                 }
             } else {
                 $message = "`n`@" . $message . '`n';

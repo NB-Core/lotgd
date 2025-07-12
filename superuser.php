@@ -10,7 +10,7 @@ require_once("lib/sanitize.php");
 require_once("lib/http.php");
 
 SuAccess::check(0xFFFFFFFF &~ SU_DOESNT_GIVE_GROTTO);
-Commentary::addcommentary();
+Commentary::addCommentary();
 tlschema("superuser");
 
 SuperuserNav::render();
@@ -55,7 +55,7 @@ if ($session['user']['sex']==SEX_FEMALE){
 //make section customizable for view / switching to different superuser chats possible
 $args = modulehook("superusertop", array("section"=>"superuser"));
 if ($session['user']['superuser'] !=SU_IS_TRANSLATOR)
-	Commentary::commentdisplay("", $args['section'],"Engage in idle conversation with other gods:",25);
+     Commentary::commentDisplay("", $args['section'],"Engage in idle conversation with other gods:",25);
 
 addnav("Actions");
 if ($session['user']['superuser'] & SU_EDIT_PETITIONS) addnav("Petition Viewer","viewpetition.php");

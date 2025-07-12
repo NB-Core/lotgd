@@ -12,7 +12,7 @@ use Lotgd\Moderate;
 
 tlschema("moderate");
 
-Commentary::addcommentary();
+Commentary::addCommentary();
 
 SuAccess::check(SU_EDIT_COMMENTS);
 
@@ -114,13 +114,13 @@ if ($op==""){
 	rawoutput("</form>");
 	addnav("", "$link");
 	if ($area==""){
-		Commentary::talkform("X","says");
+               Commentary::talkForm("X","says");
 		//commentdisplay("", "' or '1'='1","X",100); //sure, encourage hacking...
         Moderate::commentmoderate('', '', 'X', 100, 'says', false, true);
 
 	}else{
         Moderate::commentmoderate("", $area, "X", 100);
-		Commentary::talkform($area,"says");
+               Commentary::talkForm($area,"says");
 	}
 }elseif ($op=="audit"){
 	$subop = httpget("subop");

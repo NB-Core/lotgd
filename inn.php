@@ -14,7 +14,7 @@ require_once("lib/villagenav.php");
 
 tlschema("inn");
 
-Commentary::addcommentary();
+Commentary::addCommentary();
 $iname = getsetting("innname", LOCATION_INN);
 $vname = getsetting("villagename", LOCATION_FIELDS);
 $barkeep = getsetting('barkeep','`tCedrik');
@@ -54,7 +54,7 @@ switch ($op) {
                 blocknav("inn.php");
                 break;
 	case "converse":
-		Commentary::commentdisplay("You stroll over to a table, place your foot up on the bench and listen in on the conversation:`n", "inn","Add to the conversation?",20);
+            Commentary::commentDisplay("You stroll over to a table, place your foot up on the bench and listen in on the conversation:`n", "inn","Add to the conversation?",20);
 		break;
         case "bartender":
                 require("pages/inn/inn_bartender.php");

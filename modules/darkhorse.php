@@ -356,8 +356,8 @@ function darkhorse_runevent(string $type, string $link): void{
 		}
 		break;
 	case "tables":
-		Commentary::addcommentary();
-		Commentary::commentdisplay("You examine the etchings in the table:`n`n",
+            Commentary::addCommentary();
+            Commentary::commentDisplay("You examine the etchings in the table:`n`n",
 				"darkhorse","Add your own etching:");
 		addnav("Navigation");
 		addnav("Return to the Main Room",$from."op=tavern");

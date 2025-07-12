@@ -9,45 +9,45 @@ $comsecs = [];
 
 function commentarylocs()
 {
-    return Commentary::commentarylocs();
+    return Commentary::commentaryLocs();
 }
 
 function addcommentary()
 {
-    Commentary::addcommentary();
+    Commentary::addCommentary();
 }
 
 function injectsystemcomment($section, $comment)
 {
-    Commentary::injectsystemcomment($section, $comment);
+    Commentary::injectSystemComment($section, $comment);
 }
 
 function injectrawcomment($section, $author, $comment)
 {
-    Commentary::injectrawcomment($section, $author, $comment);
+    Commentary::injectRawComment($section, $author, $comment);
 }
 
 function injectcommentary($section, $talkline, $comment, $schema = false)
 {
-    Commentary::injectcommentary($section, $talkline, $comment, $schema);
+    Commentary::injectCommentary($section, $talkline, $comment, $schema);
 }
 
 function commentdisplay($intro, $section, $message = 'Interject your own commentary?', $limit = 10, $talkline = 'says', $schema = false)
 {
-    Commentary::commentdisplay($intro, $section, $message, $limit, $talkline, $schema);
+    Commentary::commentDisplay($intro, $section, $message, $limit, $talkline, $schema);
 }
 
 function viewcommentary($section, $message = 'Interject your own commentary?', $limit = 10, $talkline = 'says', $schema = false, $viewonly = false, $returnastext = false, $scriptname_pre = false)
 {
-    Commentary::viewcommentary($section, $message, $limit, $talkline, $schema, $viewonly, $returnastext, $scriptname_pre);
+    Commentary::viewCommentary($section, $message, $limit, $talkline, $schema, $viewonly, $returnastext, $scriptname_pre);
 }
 
 function talkline($section, $talkline, $limit, $schema, $counttoday, $message)
 {
-    return Commentary::talkline($section, $talkline, $limit, $schema, $counttoday, $message);
+    return Commentary::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
 }
 
 function talkform($section, $talkline, $limit = 10, $schema = false)
 {
-    Commentary::talkform($section, $talkline, $limit, $schema);
+    Commentary::talkForm($section, $talkline, $limit, $schema);
 }
