@@ -16,7 +16,8 @@ jobs:
       - name: Extract version
         id: vars
         run: |
-          VERSION="${GITHUB_REF_NAME}"
+          # Remove leading 'v' from the tag name
+          VERSION="${GITHUB_REF_NAME#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create archives
         run: |
