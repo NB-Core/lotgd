@@ -16,7 +16,7 @@ jobs:
       - name: Extract version
         id: vars
         run: |
-          VERSION=$(grep -oP '[0-9]+\.[0-9]+\.[0-9]+' common.php | head -1)
+          VERSION="${GITHUB_REF_NAME#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create archives
         run: |
