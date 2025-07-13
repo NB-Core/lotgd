@@ -5,6 +5,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\HolidayText;
 use Lotgd\Commentary;
+use Lotgd\Translator;
 
 /**
  * Tools for comment moderation.
@@ -151,7 +152,7 @@ class Moderate
      */
     public static function viewmoderatedcommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', ?string $schema = null, bool $viewall = false): void
     {
-        global $session, $REQUEST_URI, $doublepost, $translation_namespace, $emptypost;
+        global $session, $REQUEST_URI, $doublepost, $emptypost;
 
         // Decide whether to limit to a specific section or view all
         if ($viewall === false) {
@@ -177,8 +178,8 @@ class Moderate
         debug('Select: ' . $sectselect);
 
         // Determine which translation schema to use for output
-        if ($schema === false) {
-            $schema = $translation_namespace;
+        if ($schema === null) {
+            $schema = Translator::getNamespace();
         }
         tlschema('commentary');
 

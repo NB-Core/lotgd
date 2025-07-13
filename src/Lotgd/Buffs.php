@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Substitute;
+use Lotgd\Translator;
 class Buffs
 {
     private static array $buffReplacements = [];
@@ -143,10 +144,10 @@ class Buffs
 
     public static function applyBuff(string $name, array $buff): void
     {
-        global $session, $translation_namespace;
+        global $session;
 
         if (!isset($buff['schema']) || $buff['schema'] == '') {
-            $buff['schema'] = $translation_namespace;
+            $buff['schema'] = Translator::getNamespace();
         }
 
         if (isset(self::$buffReplacements[$name])) {

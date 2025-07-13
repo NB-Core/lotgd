@@ -48,8 +48,16 @@ class Translator
 			$language=$settings->getsetting("defaultlanguage","en");
 		}
 
-		define("LANGUAGE",preg_replace("/[^a-z]/i","",$language));
-	}
+                define("LANGUAGE",preg_replace("/[^a-z]/i","",$language));
+        }
+
+    /**
+     * Return the current translation namespace.
+     */
+    public static function getNamespace(): string
+    {
+        return self::$translation_namespace;
+    }
 
     /**
      * Translate a string or array within an optional namespace.

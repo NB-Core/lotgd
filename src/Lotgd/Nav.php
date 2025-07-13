@@ -107,14 +107,14 @@ class Nav
      */
     public static function addHeader($text, bool $collapse = true, bool $translate = true): void
     {
-        global $translation_namespace, $notranslate;
+        global $notranslate;
         if (self::$block_new_navs) return;
         if (is_array($text)) {
             $text = '!array!' . serialize($text);
         }
         self::$navsection = $text;
         if (!array_key_exists($text, self::$navschema)) {
-            self::$navschema[$text] = $translation_namespace;
+            self::$navschema[$text] = Translator::getNamespace();
         }
         if (!isset(self::$navbysection[self::$navsection])) {
             self::$navbysection[self::$navsection] = [];
@@ -157,7 +157,6 @@ class Nav
 
     public static function add($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
     {
-        global $translation_namespace;
         if (self::$block_new_navs) return;
         if ($link === false) {
             if ($text != '') {
@@ -176,7 +175,7 @@ class Nav
                     $t = $t[0];
                 }
                 if (!array_key_exists($t, self::$navschema)) {
-                    self::$navschema[$t] = $translation_namespace;
+                    self::$navschema[$t] = Translator::getNamespace();
                 }
                 array_push(self::$navbysection[self::$navsection], array_merge($args, ['translate' => false]));
             }

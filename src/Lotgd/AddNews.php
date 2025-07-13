@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace Lotgd;
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 class AddNews
 {
@@ -31,7 +32,6 @@ class AddNews
      */
     public static function addForUser(int $user, string $news, mixed ...$args): mixed
     {
-        global $translation_namespace;
         $hidefrombio = false;
 
         if (count($args) > 0) {
@@ -57,7 +57,7 @@ class AddNews
             . '\'' . addslashes($news) . '\','
             . '\'' . date('Y-m-d H:i:s') . '\','
             . $user . ',\'' . addslashes($arguments) . '\','
-            . '\'' . $translation_namespace . '\')';
+            . '\'' . Translator::getNamespace() . '\')';
 
         return Database::query($sql);
     }
