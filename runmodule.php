@@ -31,12 +31,12 @@ if (Modules::inject($module, Http::get('admin') ? true : false)){
 	if (!isset($info['allowanonymous'])){
 		$allowanonymous=false;
 	}else{
-		$allowanonymous = $info['allowanonymous'];
+		$allowanonymous = (bool)$info['allowanonymous'];
 	}
 	if (!isset($info['override_forced_nav'])){
 		$override_forced_nav=false;
 	}else{
-		$override_forced_nav=$info['override_forced_nav'];
+		$override_forced_nav=(bool)$info['override_forced_nav'];
 	}
         // Check for any navigation overrides or login requirements
         ForcedNavigation::doForcedNav($allowanonymous, $override_forced_nav);
