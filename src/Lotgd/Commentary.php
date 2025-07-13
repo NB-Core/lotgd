@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Lotgd;
 use Lotgd\MySQL\Database;
 
@@ -7,9 +8,9 @@ class Commentary
     public static array $comsecs = [];
 
     /**
-     * Get list of sections that accept commentary.
+     * Retrieve all sections that accept commentary posts.
      */
-    public static function commentarylocs(): array
+    public static function commentaryLocs(): array
     {
         global $session;
         if (is_array(self::$comsecs) && count(self::$comsecs)) {
@@ -39,15 +40,18 @@ class Commentary
         return self::$comsecs;
     }
 
-    public static function addcommentary(): void
+    /**
+     * Handle POSTed commentary and perform moderation actions.
+     */
+    public static function addCommentary(): void
     {
         global $session, $emptypost;
         $section = httppost('section');
         $talkline = httppost('talkline');
         $schema = httppost('schema');
-        $comment = trim(httppost('insertcommentary'));
+        $comment = trim((string)httppost('insertcommentary'));
         $counter = httppost('counter');
-        $remove = URLDecode(httpget('removecomment'));
+        $remove = URLDecode((string)httpget('removecomment'));
         if ($remove > 0) {
             $return = httpget('returnpath');
             $section = httpget('section');
@@ -78,22 +82,28 @@ class Commentary
                         output('`\$Please post in the section you should!');
                         debug(rawurldecode(httpget('section')) . "-" . $section);
                     } else {
-                        self::injectcommentary($section, $talkline, $comment, $schema);
+                        self::injectCommentary($section, $talkline, $comment, $schema);
                     }
                 }
             }
         }
     }
 
-    public static function injectsystemcomment(string $section, string $comment): void
+    /**
+     * Insert a system generated message into the commentary stream.
+     */
+    public static function injectSystemComment(string $section, string $comment): void
     {
         if (strncmp($comment, '/game', 5) !== 0) {
             $comment = '/game' . $comment;
         }
-        self::injectrawcomment($section, 0, $comment);
+        self::injectRawComment($section, 0, $comment);
     }
 
-    public static function injectrawcomment(string $section, int $author, string $comment): void
+    /**
+     * Directly insert a comment row without additional processing.
+     */
+    public static function injectRawComment(string $section, int $author, string $comment): void
     {
         $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'".Database::escape($comment)."')";
         Database::query($sql);
@@ -101,7 +111,10 @@ class Commentary
         invalidatedatacache('comments-or11');
     }
 
-    public static function injectcommentary(string $section, string $talkline, string $comment, $schema = false): void
+    /**
+     * Insert a user comment into the database, performing validation and hooks.
+     */
+    public static function injectCommentary(string $section, string $talkline, string $comment, $schema = false): void
     {
         global $session, $doublepost, $translation_namespace;
         if ($schema === false) {
@@ -141,7 +154,7 @@ class Commentary
             }
             $args = modulehook('gmcommentarea', ['section' => $section, 'allow_gm' => false, 'commentary' => $commentary]);
             if (mb_substr($commentary, 0, 5) == '/game' && ((($session['user']['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) || $args['allow_gm'] === true)) {
-                self::injectsystemcomment($section, $args['commentary']);
+                self::injectSystemComment($section, $args['commentary']);
             } else {
                 $commentary = $args['commentary'];
                 $sql = 'SELECT comment,author FROM ' . Database::prefix('commentary') . " WHERE section='$section' ORDER BY commentid DESC LIMIT 1";
@@ -149,20 +162,23 @@ class Commentary
                 if (Database::numRows($result) > 0) {
                     $row = Database::fetchAssoc($result);
                     if ($row['comment'] != stripslashes($commentary) || $row['author'] != $session['user']['acctid']) {
-                        self::injectrawcomment($section, $session['user']['acctid'], $commentary);
+                        self::injectRawComment($section, $session['user']['acctid'], $commentary);
                         $session['user']['laston'] = date('Y-m-d H:i:s');
                     } else {
                         $doublepost = 1;
                     }
                 } else {
-                    self::injectrawcomment($section, $session['user']['acctid'], $commentary);
+                    self::injectRawComment($section, (int)$session['user']['acctid'], $commentary);
                 }
             }
             tlschema();
         }
     }
 
-    public static function commentdisplay(string $intro, string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false): void
+    /**
+     * Display a block of commentary and an optional input form.
+     */
+    public static function commentDisplay(string $intro, string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false): void
     {
         $args = modulehook('blockcommentarea', ['section' => $section]);
         if (isset($args['block']) && ($args['block'] == 'yes')) {
@@ -171,10 +187,13 @@ class Commentary
         if ($intro) {
             output($intro);
         }
-        self::viewcommentary($section, $message, $limit, $talkline, $schema);
+        self::viewCommentary($section, $message, $limit, $talkline, $schema);
     }
 
-    public static function viewcommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false, bool $viewonly = false, bool $returnastext = false, $scriptname_pre = false): ?string
+    /**
+     * Render commentary lines for a given section.
+     */
+    public static function viewCommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false, bool $viewonly = false, bool $returnastext = false, $scriptname_pre = false): ?string
     {
         global $session, $REQUEST_URI, $doublepost, $translation_namespace, $emptypost;
 
@@ -368,7 +387,7 @@ class Commentary
 
         ksort($outputcomments);
         reset($outputcomments);
-        $sections = self::commentarylocs();
+        $sections = self::commentaryLocs();
         $needclose = 0;
 
         foreach ($outputcomments as $sec => $v) {
@@ -402,7 +421,7 @@ class Commentary
         rawoutput("<div id='$section-talkline'>");
 
         if ($session['user']['loggedin'] && !$viewonly) {
-            self::talkline($section, $talkline, $limit, $schema, $counttoday, $message);
+            self::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
         }
         rawoutput("</div><div id='$section-nav'>");
         $jump = false;
@@ -619,7 +638,10 @@ class Commentary
         return $op;
     }
 
-    public static function talkline(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
+    /**
+     * Output a line prompting for new commentary submissions.
+     */
+    public static function talkLine(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
     {
         $args = modulehook("insertcomment", array("section"=>$section));
         if (array_key_exists("mute",$args) && $args['mute'] &&
@@ -632,7 +654,7 @@ class Commentary
                 if ($message!="X"){
                         $message="`n`@$message`n";
                         output($message);
-                        self::talkform($section,$talkline,$limit,$schema);
+                        self::talkForm($section,$talkline,$limit,$schema);
                 }
         }else{
                 $message="`n`@$message`n";
@@ -641,7 +663,10 @@ class Commentary
         }
     }
 
-    public static function talkform(string $section, string $talkline, int $limit = 10, $schema = false)
+    /**
+     * Render the HTML form used to submit new commentary.
+     */
+    public static function talkForm(string $section, string $talkline, int $limit = 10, $schema = false)
     {
       global $REQUEST_URI,$session,$translation_namespace;
         if ($schema===false) $schema=$translation_namespace;
@@ -688,7 +713,7 @@ class Commentary
         if ($section=="X"){
                 $vname = getsetting("villagename", LOCATION_FIELDS);
                 $iname = getsetting("innname", LOCATION_INN);
-                $sections = self::commentarylocs();
+                $sections = self::commentaryLocs();
                 reset ($sections);
                 output_notl("<select name='section'>",true);
                 foreach ($sections as $key=>$val) {

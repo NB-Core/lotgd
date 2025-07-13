@@ -39,7 +39,18 @@ class Accounts
                 }
                 // Only update columns which changed
                 if ($baseaccount[$key] != $val) {
-                    $sql .= "$key='" . addslashes($val) . "', ";
+                    if (is_array($val)) {
+                        $val = serialize($val);
+                    }
+                    // Only update columns which changed
+                    if ($baseaccount[$key] != $val) {
+                        if (is_string($val)) {
+                            $escapedVal = addslashes($val);
+                        } else {
+                            $escapedVal = $val;
+                        }
+                        $sql .= "$key='" . $escapedVal . "', ";
+                    }
                 }
             }
             // Always update laston due to output moving to separate table
