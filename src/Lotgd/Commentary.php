@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace Lotgd;
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 class Commentary
 {
@@ -116,9 +117,9 @@ class Commentary
      */
     public static function injectCommentary(string $section, string $talkline, string $comment, $schema = false): void
     {
-        global $session, $doublepost, $translation_namespace;
+        global $session, $doublepost;
         if ($schema === false) {
-            $schema = $translation_namespace;
+            $schema = Translator::getNamespace();
         }
         $comment = stripslashes($comment);
         tlschema('commentary');
@@ -195,7 +196,7 @@ class Commentary
      */
     public static function viewCommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false, bool $viewonly = false, bool $returnastext = false, $scriptname_pre = false): ?string
     {
-        global $session, $REQUEST_URI, $doublepost, $translation_namespace, $emptypost;
+        global $session, $REQUEST_URI, $doublepost, $emptypost;
 
         // The guard for null is removed as $section is declared as string and cannot be null.
 
@@ -230,7 +231,7 @@ class Commentary
         }
 
         if ($schema === false) {
-            $schema = $translation_namespace;
+            $schema = Translator::getNamespace();
         }
         tlschema('commentary');
 
@@ -668,8 +669,8 @@ class Commentary
      */
     public static function talkForm(string $section, string $talkline, int $limit = 10, $schema = false)
     {
-      global $REQUEST_URI,$session,$translation_namespace;
-        if ($schema===false) $schema=$translation_namespace;
+      global $REQUEST_URI,$session;
+        if ($schema===false) $schema=Translator::getNamespace();
         tlschema("commentary");
 
         $jump = false;
