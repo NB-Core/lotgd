@@ -14,7 +14,7 @@ function injectmodule(string $modulename, bool $force = false, bool $with_db = t
     return Modules::inject($modulename, $force, $with_db);
 }
 
-function module_status(string $modulename, $version = false): int
+function module_status(string $modulename, string|false $version = false): int
 {
     return Modules::getStatus($modulename, $version);
 }
@@ -24,7 +24,7 @@ function is_module_active(string $modulename): bool
     return Modules::isActive($modulename);
 }
 
-function is_module_installed(string $modulename, $version = false): bool
+function is_module_installed(string $modulename, string|false $version = false): bool
 {
     return Modules::isInstalled($modulename, $version);
 }
@@ -44,215 +44,215 @@ function unblockmodule(string $modulename): void
     Modules::unblock($modulename);
 }
 
-function mass_module_prepare($hooknames)
+function mass_module_prepare(array $hooknames): bool
 {
     return Modules::massPrepare($hooknames);
 }
 
 $currenthook = "";
-function modulehook(string $hookname, array $args = array(), bool $allowinactive = false, $only = false)
+function modulehook(string $hookname, array $args = [], bool $allowinactive = false, $only = false): array
 {
     return Modules::hook($hookname, $args, $allowinactive, $only);
 }
 
 $module_settings = array();
-function get_all_module_settings($module = false)
+function get_all_module_settings(?string $module = null): array
 {
-    return Modules::getAllModuleSettings($module ?: null);
+    return Modules::getAllModuleSettings($module);
 }
 
-function get_module_setting($name, $module = false)
+function get_module_setting(string $name, ?string $module = null): mixed
 {
-    return Modules::getModuleSetting($name, $module ?: null);
+    return Modules::getModuleSetting($name, $module);
 }
 
-function set_module_setting($name, $value, $module = false)
+function set_module_setting(string $name, mixed $value, ?string $module = null): void
 {
-    Modules::setModuleSetting($name, $value, $module ?: null);
+    Modules::setModuleSetting($name, $value, $module);
 }
 
-function increment_module_setting($name, $value = 1, $module = false)
+function increment_module_setting(string $name, int|float $value = 1, ?string $module = null): void
 {
-    Modules::incrementModuleSetting($name, $value, $module ?: null);
+    Modules::incrementModuleSetting($name, $value, $module);
 }
 
-function clear_module_settings($module = false)
+function clear_module_settings(?string $module = null): void
 {
-    Modules::clearModuleSettings($module ?: null);
+    Modules::clearModuleSettings($module);
 }
 
-function load_module_settings($module)
+function load_module_settings(string $module): void
 {
     Modules::loadModuleSettings($module);
 }
 
-function module_delete_objprefs($objtype, $objid)
+function module_delete_objprefs(string $objtype, $objid): void
 {
     Modules::deleteObjPrefs($objtype, $objid);
 }
 
-function get_module_objpref($type, $objid, $name, $module = false)
+function get_module_objpref(string $type, $objid, string $name, ?string $module = null)
 {
-    return Modules::getObjPref($type, $objid, $name, $module ?: null);
+    return Modules::getObjPref($type, $objid, $name, $module);
 }
 
-function set_module_objpref($objtype, $objid, $name, $value, $module = false)
+function set_module_objpref(string $objtype, $objid, string $name, mixed $value, ?string $module = null): void
 {
-    Modules::setObjPref($objtype, $objid, $name, $value, $module ?: null);
+    Modules::setObjPref($objtype, $objid, $name, $value, $module);
 }
 
-function increment_module_objpref($objtype, $objid, $name, $value = 1, $module = false)
+function increment_module_objpref(string $objtype, $objid, string $name, int|float $value = 1, ?string $module = null): void
 {
-    Modules::incrementObjPref($objtype, $objid, $name, $value, $module ?: null);
+    Modules::incrementObjPref($objtype, $objid, $name, $value, $module);
 }
 
-function module_delete_userprefs($user)
+function module_delete_userprefs(int $user): void
 {
     Modules::deleteUserPrefs($user);
 }
 
 $module_prefs = array();
-function get_all_module_prefs($module = false, $user = false)
+function get_all_module_prefs(?string $module = null, $user = null): array
 {
-    return Modules::getAllModulePrefs($module ?: null, $user !== false ? $user : null);
+    return Modules::getAllModulePrefs($module, $user);
 }
 
-function get_module_pref($name, $module = false, $user = false)
+function get_module_pref(string $name, ?string $module = null, $user = null)
 {
-    return Modules::getModulePref($name, $module ?: null, $user !== false ? $user : null);
+    return Modules::getModulePref($name, $module, $user);
 }
 
-function set_module_pref($name, $value, $module = false, $user = false)
+function set_module_pref(string $name, mixed $value, ?string $module = null, $user = null): void
 {
-    Modules::setModulePref($name, $value, $module ?: null, $user !== false ? $user : null);
+    Modules::setModulePref($name, $value, $module, $user);
 }
 
-function increment_module_pref($name, $value = 1, $module = false, $user = false)
+function increment_module_pref(string $name, int|float $value = 1, ?string $module = null, $user = null): void
 {
-    Modules::incrementModulePref($name, $value, $module ?: null, $user !== false ? $user : null);
+    Modules::incrementModulePref($name, $value, $module, $user);
 }
 
-function clear_module_pref($name, $module = false, $user = false)
+function clear_module_pref(string $name, ?string $module = null, $user = null): void
 {
-    Modules::clearModulePref($name, $module ?: null, $user !== false ? $user : null);
+    Modules::clearModulePref($name, $module, $user);
 }
 
-function load_module_prefs($module, $user = false)
+function load_module_prefs(string $module, $user = null): void
 {
-    Modules::loadModulePrefs($module, $user !== false ? $user : null);
+    Modules::loadModulePrefs($module, $user);
 }
 
-function get_module_info($shortname, $with_db = true)
+function get_module_info(string $shortname, bool $with_db = true): array
 {
     return Modules::getModuleInfo($shortname, $with_db);
 }
 
-function module_wipehooks()
+function module_wipehooks(): void
 {
     Modules::wipeHooks();
 }
 
-function module_addeventhook($type, $chance)
+function module_addeventhook(string $type, string $chance): void
 {
     Modules::addEventHook($type, $chance);
 }
 
-function module_drophook($hookname, $functioncall = false)
+function module_drophook(string $hookname, $functioncall = false): void
 {
     Modules::dropHook($hookname, $functioncall);
 }
 
-function module_addhook($hookname, $functioncall = false, $whenactive = false)
+function module_addhook(string $hookname, $functioncall = false, $whenactive = false): void
 {
     Modules::addHook($hookname, $functioncall, $whenactive);
 }
 
-function module_addhook_priority($hookname, $priority = 50, $functioncall = false, $whenactive = false)
+function module_addhook_priority(string $hookname, int $priority = 50, $functioncall = false, $whenactive = false): void
 {
     Modules::addHookPriority($hookname, $priority, $functioncall, $whenactive);
 }
 
-function module_sem_acquire()
+function module_sem_acquire(): void
 {
     Modules::semAcquire();
 }
 
-function module_sem_release()
+function module_sem_release(): void
 {
     Modules::semRelease();
 }
 
-function module_collect_events($type, $allowinactive = false)
+function module_collect_events(string $type, bool $allowinactive = false): array
 {
     return Modules::collectEvents($type, $allowinactive);
 }
 
-function module_events($eventtype, $basechance, $baseLink = false)
+function module_events(string $eventtype, int $basechance, $baseLink = false): int
 {
-    return Modules::moduleEvents($eventtype, (int)$basechance, $baseLink);
+    return Modules::moduleEvents($eventtype, $basechance, $baseLink);
 }
 
-function module_do_event($type, $module, $allowinactive = false, $baseLink = false)
+function module_do_event(string $type, string $module, bool $allowinactive = false, $baseLink = false): void
 {
     Modules::doEvent($type, $module, $allowinactive, $baseLink);
 }
 
-function event_sort($a, $b)
+function event_sort($a, $b): int
 {
     return Modules::eventSort($a, $b);
 }
 
-function module_display_events($eventtype, $forcescript = false)
+function module_display_events(string $eventtype, $forcescript = false): void
 {
     Modules::displayEvents($eventtype, $forcescript);
 }
 
-function module_editor_navs($like, $linkprefix)
+function module_editor_navs(string $like, string $linkprefix): void
 {
     Modules::editorNavs($like, $linkprefix);
 }
 
-function module_objpref_edit($type, $module, $id)
+function module_objpref_edit(string $type, string $module, $id): void
 {
     Modules::objprefEdit($type, $module, $id);
 }
 
-function module_compare_versions($a, $b)
+function module_compare_versions($a, $b): int
 {
     return Modules::compareVersions($a, $b);
 }
 
-function activate_module($module)
+function activate_module(string $module): bool
 {
     return Modules::activate($module);
 }
 
-function deactivate_module($module)
+function deactivate_module(string $module): bool
 {
     return Modules::deactivate($module);
 }
 
-function uninstall_module($module)
+function uninstall_module(string $module): bool
 {
     return Modules::uninstall($module);
 }
 
-function install_module($module, $force = true)
+function install_module(string $module, bool $force = true): bool
 {
     return Modules::install($module, $force);
 }
 
-function module_condition($condition)
+function module_condition(string $condition): bool
 {
     return Modules::condition($condition);
 }
 
-function get_module_install_status($with_db = true)
+function get_module_install_status(bool $with_db = true): array
 {
     return Modules::getInstallStatus($with_db);
 }
 
-function get_racename($thisuser = true)
+function get_racename($thisuser = true): string
 {
     return Modules::getRaceName($thisuser);
 }

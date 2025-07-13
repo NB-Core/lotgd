@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // translator ready
 // addnews ready
 // mail ready
@@ -7,47 +8,47 @@ use Lotgd\Commentary;
 
 $comsecs = [];
 
-function commentarylocs()
+function commentarylocs(): array
 {
     return Commentary::commentaryLocs();
 }
 
-function addcommentary()
+function addcommentary(): void
 {
     Commentary::addCommentary();
 }
 
-function injectsystemcomment($section, $comment)
+function injectsystemcomment(string $section, string $comment): void
 {
     Commentary::injectSystemComment($section, $comment);
 }
 
-function injectrawcomment($section, $author, $comment)
+function injectrawcomment(string $section, int $author, string $comment): void
 {
     Commentary::injectRawComment($section, $author, $comment);
 }
 
-function injectcommentary($section, $talkline, $comment, $schema = false)
+function injectcommentary(string $section, string $talkline, string $comment, $schema = false): void
 {
     Commentary::injectCommentary($section, $talkline, $comment, $schema);
 }
 
-function commentdisplay($intro, $section, $message = 'Interject your own commentary?', $limit = 10, $talkline = 'says', $schema = false)
+function commentdisplay(string $intro, string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false): void
 {
     Commentary::commentDisplay($intro, $section, $message, $limit, $talkline, $schema);
 }
 
-function viewcommentary($section, $message = 'Interject your own commentary?', $limit = 10, $talkline = 'says', $schema = false, $viewonly = false, $returnastext = false, $scriptname_pre = false)
+function viewcommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false, bool $viewonly = false, bool $returnastext = false, $scriptname_pre = false): ?string
 {
-    Commentary::viewCommentary($section, $message, $limit, $talkline, $schema, $viewonly, $returnastext, $scriptname_pre);
+    return Commentary::viewCommentary($section, $message, $limit, $talkline, $schema, $viewonly, $returnastext, $scriptname_pre);
 }
 
-function talkline($section, $talkline, $limit, $schema, $counttoday, $message)
+function talkline(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
 {
-    return Commentary::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
+    Commentary::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
 }
 
-function talkform($section, $talkline, $limit = 10, $schema = false)
+function talkform(string $section, string $talkline, int $limit = 10, $schema = false): void
 {
     Commentary::talkForm($section, $talkline, $limit, $schema);
 }
