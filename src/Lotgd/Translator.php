@@ -295,8 +295,8 @@ class Translator
         $seentlbuttons =& self::$seentlbuttons;
         $translatorbuttons =& self::$translatorbuttons;
 		// Texts cannot be translated because this would could (if not already translated) an infinite loop...
-		$nothot = "This text has already been translated.";
-		$hot = "This text has not been translated yet.";
+		$nothotText = "This text has already been translated.";
+		$hotText = "This text has not been translated yet.";
 		if (!$namespace) $namespace="unknown";
 		if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_IS_TRANSLATOR){
 			if (!in_array($language,explode(',',$session['user']['translatorlanguages']))) return true;
@@ -313,7 +313,7 @@ class Translator
 						popup($link).";return false;\" class='t".
 						($hot?"hot":"").
 						"' title='".
-						($hot?$hot:$nothot).
+						($hot?$hotText:$nothotText).
 						"'>T</a>";
 				}
                 array_push($translatorbuttons,$link);
