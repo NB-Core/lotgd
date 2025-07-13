@@ -61,7 +61,7 @@ function get_all_module_settings(?string $module = null): array
     return Modules::getAllModuleSettings($module);
 }
 
-function get_module_setting(string $name, ?string $module = null)
+function get_module_setting(string $name, ?string $module = null): mixed
 {
     return Modules::getModuleSetting($name, $module);
 }
