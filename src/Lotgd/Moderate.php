@@ -178,7 +178,7 @@ class Moderate
         debug('Select: ' . $sectselect);
 
         // Determine which translation schema to use for output
-        if ($schema === false) {
+        if ($schema === null) {
             $schema = Translator::getNamespace();
         }
         tlschema('commentary');
