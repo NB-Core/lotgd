@@ -48,7 +48,7 @@ function talkline(string $section, string $talkline, int $limit, $schema, int $c
     Commentary::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
 }
 
-function talkform(string $section, string $talkline, int $limit = 10, $schema = false)
+function talkform(string $section, string $talkline, int $limit = 10, $schema = false): void
 {
     Commentary::talkForm($section, $talkline, $limit, $schema);
 }
