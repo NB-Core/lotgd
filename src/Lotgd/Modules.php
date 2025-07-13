@@ -853,7 +853,7 @@ class Modules
         } else {
             $module_prefs[$uid][$module][$name] = $value;
             $sql = 'INSERT INTO ' . Database::prefix('module_userprefs')
-                . " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','" . addslashes($value) . "')";
+                . " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','" . $value . "')";
             Database::query($sql);
         }
 
