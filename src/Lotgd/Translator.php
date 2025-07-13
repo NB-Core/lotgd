@@ -53,6 +53,8 @@ class Translator
 
     /**
      * Return the current translation namespace.
+     *
+     * @return string Translation namespace
      */
     public static function getNamespace(): string
     {
