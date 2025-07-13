@@ -374,15 +374,20 @@ class Translator
     {
         global $REQUEST_URI;
         $stack =& self::$translation_namespace_stack;
-        if ($schema===false){
+
+        if ($schema === false) {
+            // Revert one entry: remove current namespace and set previous
+            if (!empty($stack)) {
                 self::$translation_namespace = (string)array_pop($stack);
-                if (empty(self::$translation_namespace))
-                        self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI);
-        }else{
-                array_push($stack,self::$translation_namespace);
-                self::$translation_namespace = (string)$schema;
+            } else {
+                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI);
+            }
+        } else {
+            // Push current namespace to stack, set new one
+            array_push($stack, self::$translation_namespace);
+            self::$translation_namespace = (string)$schema;
         }
-	}
+    }
 
     /**
      * Periodically enable or disable text collection based on configuration.
