@@ -46,7 +46,7 @@ while ($row = db_fetch_assoc($result2)) {
 	if ($row['motdauthorname']=="")
 		$row['motdauthorname']=translate_inline("`@Green Dragon Staff`0");
         if ($row['motdtype']==0){
-                Motd::motditem($row['motdtitle'], $row['motdbody'],$row['motdauthorname'], $row['motddate'], "");
+                Motd::motditem($row['motdtitle'], $row['motdbody'],$output->appoencode($row['motdauthorname']), $row['motddate'], 0);
         }else{
                 Motd::pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'],$row['motdauthorname'],$row['motddate'], false);
 	}

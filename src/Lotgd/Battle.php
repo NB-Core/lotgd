@@ -450,7 +450,7 @@ public static function showEnemies($enemies = [])
 			rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
 			output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
 			rawoutput("</td><td>");
-			rawoutput($fightbar->getBar($badguy['creaturehealth'],$badguy['creaturemaxhealth']));
+			rawoutput($fightbar->getBar((int)$badguy['creaturehealth'],(int)$badguy['creaturemaxhealth']));
 			rawoutput("</td><td>");
 			output_notl("(%s/%s) %s`0`n",$health,$maxhealth,$badguy['creaturehealth']>0?"":translate_inline("`7DEFEATED`0"),true);
 			rawoutput("</td></tr></table>");
@@ -466,7 +466,7 @@ public static function showEnemies($enemies = [])
 			rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
 			output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
 			rawoutput("</td><td>");
-			rawoutput($fightbar->getBar($badguy['creaturehealth'],$badguy['creaturemaxhealth']));
+			rawoutput($fightbar->getBar((int)$badguy['creaturehealth'],(int)$badguy['creaturemaxhealth']));
 			rawoutput("</td><td>");
 			output_notl("%s`0`n",$badguy['creaturehealth']>0?"":translate_inline("`7DEFEATED`0"),true);
 			rawoutput("</td></tr></table>");
