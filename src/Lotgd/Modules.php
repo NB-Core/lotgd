@@ -1134,9 +1134,9 @@ class Modules
     /**
      * Trigger a module event if the base chance allows.
      */
-    public static function moduleEvents(string $eventtype, int $basechance, $baseLink = false): int
+    public static function moduleEvents(string $eventtype, int $basechance, ?string $baseLink = null): int
     {
-        if ($baseLink === false) {
+        if ($baseLink === null) {
             $baseLink = substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1) . '?';
         }
 
@@ -1170,11 +1170,11 @@ class Modules
     /**
      * Execute a specific module event.
      */
-    public static function doEvent(string $type, string $module, bool $allowinactive = false, $baseLink = false): void
+    public static function doEvent(string $type, string $module, bool $allowinactive = false, ?string $baseLink = null): void
     {
         global $navsection, $mostrecentmodule;
 
-        if ($baseLink === false) {
+        if ($baseLink === null) {
             $baseLink = substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1) . '?';
         }
 

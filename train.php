@@ -9,7 +9,6 @@ use Lotgd\Mail;
 // translator ready
 require_once("common.php");
 require_once("lib/increment_specialty.php");
-use Lotgd\FightNav;
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 require_once("lib/experience.php");
@@ -165,18 +164,18 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 		$battle=true;
 	}
 
-        if($battle){
-                Battle::suspendBuffs('allowintrain', "`&Your pride prevents you from using extra abilities during the fight!`0`n");
-                Battle::suspendCompanions("allowintrain");
+	if($battle){
+		Battle::suspendBuffs('allowintrain', "`&Your pride prevents you from using extra abilities during the fight!`0`n");
+		Battle::suspendCompanions("allowintrain");
 		if (!$victory) {
 			require_once("battle.php");
 		}
 		if ($victory){
 			$badguy['creaturelose']=Substitute::applyArray($badguy['creaturelose']);
 			output_notl("`b`&");
- 	 	 	output($badguy['creaturelose']);
- 	 	 	output_notl("`0`b`n");
- 	 	 	output("`b`\$You have defeated %s!`0`b`n",$badguy['creaturename']);
+			output($badguy['creaturelose']);
+			output_notl("`0`b`n");
+			output("`b`\$You have defeated %s!`0`b`n",$badguy['creaturename']);
 
 			$session['user']['level']++;
 			$session['user']['maxhitpoints']+=10;
@@ -232,15 +231,15 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 				addnav("Superuser Gain level","train.php?op=challenge&victory=1");
 			}
 			if ($session['user']['age'] == 1) {
- 	 	 	 	if (getsetting('displaymasternews',1)) AddNews::add("`%%s`3 has defeated ".($session['user']['sex']?"her":"his")." master, `%%s`3 to advance to level `^%s`3 after `^1`3 day!!", $session['user']['name'],$badguy['creaturename'],$session['user']['level']);
- 	 	 	} else {
- 	 	 	 	if (getsetting('displaymasternews',1)) AddNews::add("`%%s`3 has defeated ".($session['user']['sex']?"her":"his")." master, `%%s`3 to advance to level `^%s`3 after `^%s`3 days!!", $session['user']['name'],$badguy['creaturename'],$session['user']['level'],$session['user']['age']);
- 	 	 	}
+				if (getsetting('displaymasternews',1)) AddNews::add("`%%s`3 has defeated ".($session['user']['sex']?"her":"his")." master, `%%s`3 to advance to level `^%s`3 after `^1`3 day!!", $session['user']['name'],$badguy['creaturename'],$session['user']['level']);
+			} else {
+				if (getsetting('displaymasternews',1)) AddNews::add("`%%s`3 has defeated ".($session['user']['sex']?"her":"his")." master, `%%s`3 to advance to level `^%s`3 after `^%s`3 days!!", $session['user']['name'],$badguy['creaturename'],$session['user']['level'],$session['user']['age']);
+			}
 			if ($session['user']['hitpoints'] < $session['user']['maxhitpoints'])
 				$session['user']['hitpoints'] = $session['user']['maxhitpoints'];
 			modulehook("training-victory", $badguy);
 		}elseif($defeat){
-                        $taunt = Battle::selectTauntArray();
+			$taunt = Battle::selectTauntArray();
 
 			if (getsetting('displaymasternews',1)) AddNews::add("`%%s`5 has challenged their master, %s and lost!`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
 			$session['user']['hitpoints']=$session['user']['maxhitpoints'];
@@ -260,11 +259,11 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 			}
 			modulehook("training-defeat", $badguy);
 		}else{
-                  FightNav::fightnav(false,false, "train.php?master=$mid");
+			battle::fightnav(false,false, "train.php?master=$mid");
 		}
 		if ($victory || $defeat) {
-                    Battle::unsuspendBuffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");
-                        Battle::unsuspendCompanions("allowintrain");
+			Battle::unsuspendBuffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");
+			Battle::unsuspendCompanions("allowintrain");
 		}
 	}
 }else{

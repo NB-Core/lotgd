@@ -187,12 +187,12 @@ function module_collect_events(string $type, bool $allowinactive = false): array
     return Modules::collectEvents($type, $allowinactive);
 }
 
-function module_events(string $eventtype, int $basechance, $baseLink = false): int
+function module_events(string $eventtype, int $basechance, ?string $baseLink = null): int
 {
     return Modules::moduleEvents($eventtype, $basechance, $baseLink);
 }
 
-function module_do_event(string $type, string $module, bool $allowinactive = false, $baseLink = false): void
+function module_do_event(string $type, string $module, bool $allowinactive = false, ?string $baseLink = null): void
 {
     Modules::doEvent($type, $module, $allowinactive, $baseLink);
 }
