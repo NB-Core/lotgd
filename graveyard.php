@@ -1,8 +1,8 @@
 <?php
 use Lotgd\Buffs;
 use Lotgd\DeathMessage;
-use Lotgd\FightNav;
 use Lotgd\Battle;
+use Lotgd\AddNews;
 // addnews ready.
 // translator ready
 // mail ready
@@ -106,7 +106,7 @@ if ($battle){
 			addnav("G?Return to the Graveyard","graveyard.php");
 			tlschema();
                 } else {
-                        FightNav::fightnav(false, true, "graveyard.php");
+                        Battle::fightnav(false, true, "graveyard.php");
                 }
 	}
 }
