@@ -488,8 +488,10 @@ class Buffs
                     $min = $buff['mingoodguydamage'] ?? 0;
                     $who = 1;
                 }
+                $min = (int) $min;
+                $max = (int) $max;
                 $minioncounter = 1;
-                while ($minioncounter <= $buff['minioncount'] && $who >= 0) {
+                while ($minioncounter <= ((int)$buff['minioncount']) && $who >= 0) {
                     $damage = e_rand($min, $max);
                     if ($who == 0) {
                         $badguy['creaturehealth'] -= $damage;

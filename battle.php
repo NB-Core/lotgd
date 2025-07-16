@@ -179,7 +179,7 @@ if ($op != "newtarget") {
 				if (($roundcounter > $options['maxattacks']) && $badguy['istarget'] == false) {
 					$newcompanions = $companions;
 				} else {
-                                   $buffset = Buffs::activateBuffs("roundstart");
+                    $buffset = Buffs::activateBuffs("roundstart");
 					if ($badguy['creaturehealth']<=0 || $session['user']['hitpoints']<=0){
 						$creaturedmg = 0;
 						$selfdmg = 0;
