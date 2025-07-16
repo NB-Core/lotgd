@@ -79,7 +79,7 @@ while ($row = db_fetch_assoc($result)){
 	$mounts.=",{$row['mountid']},{$row['mountcategory']}: ".color_sanitize($row['mountname']);
 }
 
-$specialties = array(""=>translate_inline("Undecided"));
+$specialties = array("Undecided"=>translate_inline("Undecided"));
 $specialties = modulehook("specialtynames", $specialties);
 $enum = "";
 foreach ($specialties as $key=>$name) {

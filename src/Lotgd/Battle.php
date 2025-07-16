@@ -92,7 +92,7 @@ class Battle
         ];
     }
 
-    public static function reportPowerMove($crit, $dmg)
+    public static function reportPowerMove(int $crit, int $dmg)
     {
         global $session;
         $uatk = get_player_attack();

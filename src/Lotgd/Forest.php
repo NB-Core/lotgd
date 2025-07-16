@@ -27,7 +27,7 @@ class Forest
         addnav('T?Go Thrillseeking', 'forest.php?op=search&type=thrill');
         if (getsetting('suicide', 0)) {
             if (getsetting('suicidedk', 10) <= $session['user']['dragonkills']) {
-                addnav('*?Search `\$Suicidally`0', 'forest.php?op=search&type=suicide');
+                addnav("*?Search `\$Suicidally`0", 'forest.php?op=search&type=suicide');
             }
         }
         addnav('Other');
