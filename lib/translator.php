@@ -3,7 +3,7 @@ use Lotgd\Translator;
 
 function translator_setup(){ return Translator::translatorSetup(); }
 function translate($indata,$namespace=FALSE){ return Translator::translate($indata,$namespace); }
-function sprintf_translate(){ return call_user_func_array([Translator::class,'sprintfTranslate'], func_get_args()); }
+function sprintf_translate(){ return Translator::sprintfTranslate(... func_get_args()); }
 function translate_inline($in,$namespace=FALSE){ return Translator::translateInline($in,$namespace); }
 function translate_mail($in,$to=0){ return Translator::translateMail($in,$to); }
 function tl($in){ return Translator::tl($in); }

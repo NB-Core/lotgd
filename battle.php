@@ -348,7 +348,7 @@ if ($op != "newtarget") {
 						if($badguy['dead'] == false && isset($badguy['creatureaiscript']) && $badguy['creatureaiscript'] > "") {
 							global $unsetme,$session;
 							$lasthp=$session['user']['hitpoints'];
-							execute_ai_script($badguy['creatureaiscript']);
+							Battle::executeAiScript($badguy['creatureaiscript']);
 							if ($session['user']['hitpoints']<$lasthp) $badguy['diddamage']=1;
 						}
 					}

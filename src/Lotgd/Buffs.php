@@ -479,6 +479,8 @@ class Buffs
                 $badguy['dead'] == false
             ) {
                 $who = -1;
+		$min = 0;
+		$max = 0;
                 if (isset($buff['maxbadguydamage']) && $buff['maxbadguydamage'] != 0) {
                     $max = $buff['maxbadguydamage'];
                     $min = $buff['minbadguydamage'] ?? 0;
