@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 use Lotgd\Buffs;
 use Lotgd\Battle;
 use Lotgd\Substitute;
@@ -551,7 +552,7 @@ function battle_player_attacks(&$badguy) {
 	$break = false;
 	$creaturedmg = $roll['creaturedmg'];
 	if ($options['type'] != "pvp") {
-            $creaturedmg = Battle::reportPowerMove($atk, $creaturedmg);
+            $creaturedmg = Battle::reportPowerMove((int)$atk, (int)$creaturedmg);
 	}
 	if ($creaturedmg==0){
 		output("`4You try to hit `^%s`4 but `\$MISS!`n",$badguy['creaturename']);
