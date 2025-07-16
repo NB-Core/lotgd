@@ -171,6 +171,11 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 			require_once("battle.php");
 		}
 		if ($victory){
+			if (!empty($badguy['creaturelose'])) {
+				$badguy['creaturelose'] = $badguy['creaturelose'];
+			} else {
+				$badguy['creaturelose'] = "";
+			}
 			$badguy['creaturelose']=Substitute::applyArray($badguy['creaturelose']);
 			output_notl("`b`&");
 			output($badguy['creaturelose']);
