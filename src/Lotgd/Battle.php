@@ -116,7 +116,7 @@ class Battle
                 output($msg);
                 tlschema();
 
-                $dmg += e_rand($crit / 4, $crit / 2);
+                $dmg += e_rand((int)($crit / 4), (int)($crit / 2));
                 $dmg = max($dmg, 1);
             }
         }
