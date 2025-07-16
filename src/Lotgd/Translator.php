@@ -159,7 +159,7 @@ class Translator
 			if (is_array($val)){
 				//When passed a sub-array this represents an independant
 				//translation to happen then be inserted in the master string.
-                                $args[$key]=call_user_func_array("sprintfTranslate",$val);
+                $args[$key]=self::sprintfTranslate(...$val);
 			}
 		}
 		ob_start();
