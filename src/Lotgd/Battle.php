@@ -494,40 +494,43 @@ public static function showEnemies($enemies = [])
 		$maxsoul= 50 + 10 * $u['level']+$u['dragonkills']*2;
 
 	}
-	//your faction display (companions?)
-	switch ($barDisplay) {
-		case 2:
-		output("`l%s:`n",
-			$hitpointstext
-			);
-		rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-		output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
-		rawoutput("</td><td>");
-		if (!$dead) rawoutput($fightbar->getBar($u['hitpoints'],$u['maxhitpoints']));
-			else rawoutput($fightbar->getBar($u['hitpoints'],$maxsoul));
-		rawoutput("</td><td>");
-		if (!$dead) output_notl("(%s/%s) %s`0`n",$u['hitpoints'],$u['maxhitpoints'],$u['hitpoints']>0?"":translate_inline("`7DEFEATED`0"),true);
-			else output_notl("(%s/%s) %s`0`n",$u['hitpoints'],$maxsoul,$u['hitpoints']>0?"":translate_inline("`7DEFEATED`0"),true);
 
-		rawoutput("</td></tr></table>");
+	$hitpoints = (int)$u['hitpoints'];
+	$maxhitpoints = (int)$u['maxhitpoints'];
+	//your faction display (companions?)
+    switch ($barDisplay) {
+		case 2:
+			output("`l%s:`n",
+				$hitpointstext
+			);
+			rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+			output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
+			rawoutput("</td><td>");
+			if (!$dead) rawoutput($fightbar->getBar($hitpoints, $maxhitpoints));
+			else rawoutput($fightbar->getBar($hitpoints, $maxsoul));
+			rawoutput("</td><td>");
+			if (!$dead) output_notl("(%s/%s) %s`0`n", $hitpoints, $maxhitpoints, $hitpoints > 0 ? "" : translate_inline("`7DEFEATED`0"), true);
+			else output_notl("(%s/%s) %s`0`n", $hitpoints, $maxsoul, $hitpoints > 0 ? "" : translate_inline("`7DEFEATED`0"), true);
+
+			rawoutput("</td></tr></table>");
 		break;
 
 		case 1:
-		output("`l%s:`n",
-			$hitpointstext
+
+			output("`l%s:`n",
+				$hitpointstext
 			);
-		rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-		output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
-		rawoutput("</td><td>");
-		if (!$dead) rawoutput($fightbar->getBar($u['hitpoints'],$u['maxhitpoints']));
-			else rawoutput($fightbar->getBar($u['hitpoints'],$maxsoul));
-		rawoutput("</td><td>");
+			rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+			output_notl("&nbsp;&nbsp;&nbsp;%s: ",$healthtext,true);
+			rawoutput("</td><td>");
+			if (!$dead) rawoutput($fightbar->getBar($hitpoints, $maxhitpoints));
+			else rawoutput($fightbar->getBar($hitpoints, $maxsoul));
+			rawoutput("</td><td>");
 
-		rawoutput("</td></tr></table>");
-
+			rawoutput("</td></tr></table>");
 
 		default:
-		output("`l%s: `6%s`0`n",$hitpointstext,$u['hitpoints']);
+			output("`l%s: `6%s`0`n",$hitpointstext,$u['hitpoints']);
 	}
 }
 
@@ -540,7 +543,7 @@ public static function showEnemies($enemies = [])
 public static function prepareFight($options=false) {
 	global $companions;
 	$basicoptions = array(
-		"maxattacks"=>getsetting("maxattacks", 4),
+		"maxattacks"=>(int)getsetting("maxattacks", 4),
 	);
 	if (!is_array($options)) {
 		$options = array();
