@@ -36,6 +36,15 @@ if ($op=="vote"){
 	header("Location: motd.php");
 	exit();
 }
+if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_POST_MOTD)) {
+        if ($op == "save") {
+                Motd::saveMotd((int)$id);
+        } else {
+                Motd::savePoll();
+        }
+        header("Location: motd.php");
+        exit();
+}
 if ($op == "add" || $op == "addpoll" || $op == "del")  {
 	if ($session['user']['superuser'] & SU_POST_MOTD) {
             if ($op == "add") Motd::motdForm($id);
