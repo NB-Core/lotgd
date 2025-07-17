@@ -20,21 +20,29 @@ class Motd
         global $session;
         $id = (int)$id;
         if ($id > 0) {
-            $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor FROM ' . Database::prefix('motd') . " WHERE motditem=$id";
-            $result = Database::query($sql);
-            if (Database::numRows($result) > 0) {
-                $row = Database::fetchAssoc($result);
-                $subject = $row['motdtitle'];
-                $body = $row['motdbody'];
-                $date = $row['motddate'];
-                $author = $row['motdauthor'];
-                self::motdItem($subject, $body, $author, $date, $id);
+        $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem=$id";
+        $result = Database::query($sql);
+        if (Database::numRows($result) > 0) {
+            $row = Database::fetchAssoc($result);
+            $subject = $row['motdtitle'];
+            $body = $row['motdbody'];
+            $date = $row['motddate'];
+            $author = $row['motdauthor'];
+            if ((int)$row['motdtype'] === 1) {
+                self::pollItem($id, $subject, $body, (string)$author, $date, false);
+            } else {
+                self::motdItem($subject, $body, (string)$author, $date, $id);
             }
         }
-        $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motditem FROM ' . Database::prefix('motd') . ($poll ? ' WHERE motdtype=1' : ' WHERE motdtype=0') . ' ORDER BY motddate DESC';
+        }
+        $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motditem,motdtype FROM ' . Database::prefix('motd') . ($poll ? ' WHERE motdtype=1' : ' WHERE motdtype=0') . ' ORDER BY motddate DESC';
         $result = Database::query($sql);
         while ($row = Database::fetchAssoc($result)) {
-            self::motdItem($row['motdtitle'], $row['motdbody'], $row['motdauthor'], $row['motddate'], $row['motditem']);
+            if ((int)$row['motdtype'] === 1) {
+                self::pollItem((int)$row['motditem'], $row['motdtitle'], $row['motdbody'], (string)$row['motdauthor'], $row['motddate']);
+            } else {
+                self::motdItem($row['motdtitle'], $row['motdbody'], (string)$row['motdauthor'], $row['motddate'], (int)$row['motditem']);
+            }
         }
     }
 
@@ -58,11 +66,65 @@ class Motd
      */
     public static function pollItem(int $id, string $subject, string $body, string $author, string $date, bool $showpoll = true): void
     {
-	global $output;
+        global $output, $session;
+
+        $sql = 'SELECT count(resultid) AS c, MAX(choice) AS choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' AND account='{$session['user']['acctid']}'";
+        $result = Database::query($sql);
+        $row = Database::numRows($result) > 0 ? Database::fetchAssoc($result) : [];
+        $choice = $row['choice'] ?? null;
+
+        $bodyData = @unserialize($body);
+        if (!is_array($bodyData)) {
+            $bodyData = ['body' => $body, 'opt' => []];
+        }
+
         rawoutput('<div class="pollitem">');
-        output_notl('<h4>%s</h4>', $subject,true);
-        output_notl('<div>%s</div>',$body,true);
-        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'),  $author, $date, true);
+        output_notl('<h4>%s</h4>', $subject, true);
+        output_notl('<div>%s</div>', stripslashes((string)$bodyData['body']), true);
+        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'), $author, $date, true);
+
+        $sql = 'SELECT count(resultid) AS c, choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' GROUP BY choice ORDER BY choice";
+        $results = Database::queryCached($sql, "poll-$id");
+        $choices = [];
+        $totalanswers = 0;
+        $maxitem = 0;
+        foreach ($results as $r) {
+            $choices[$r['choice']] = (int)$r['c'];
+            $totalanswers += (int)$r['c'];
+            if ((int)$r['c'] > $maxitem) {
+                $maxitem = (int)$r['c'];
+            }
+        }
+
+        if ($session['user']['loggedin'] && $showpoll) {
+            rawoutput("<form action='motd.php?op=vote' method='POST'>");
+            rawoutput("<input type='hidden' name='motditem' value='$id'>", true);
+        }
+
+        foreach ($bodyData['opt'] as $key => $val) {
+            if (trim((string)$val) !== '') {
+                if ($totalanswers <= 0) {
+                    $totalanswers = 1;
+                }
+                $percent = isset($choices[$key]) ? round($choices[$key] / $totalanswers * 100, 1) : 0;
+
+                if ($session['user']['loggedin'] && $showpoll) {
+                    rawoutput("<input type='radio' name='choice' value='$key'" . ($choice == $key ? ' checked' : '') . '>' );
+                }
+
+                output_notl('%s (%s - %s%%)`n', stripslashes((string)$val), $choices[$key] ?? 0, $percent);
+
+                $width = ($maxitem == 0 || !isset($choices[$key])) ? 1 : (int)round($choices[$key] / $maxitem * 400, 0);
+                $width = max($width, 1);
+                rawoutput("<img src='images/rule.gif' width='$width' height='2' alt='$percent'><br>");
+            }
+        }
+
+        if ($session['user']['loggedin'] && $showpoll) {
+            $vote = translate_inline('Vote');
+            rawoutput("<input type='submit' class='button' value='$vote'></form>");
+        }
+
         if ($showpoll) {
             rawoutput('<div>' . translate_inline('Poll ID') . ': ' . $id . '</div>');
         }
@@ -109,20 +171,27 @@ class Motd
      */
     public static function motdPollForm(): void
     {
-        require_once 'lib/showform.php';
-        $form = array(
-            'Poll,title',
-            'motdtitle' => 'Question,text',
-            'choice1'   => 'Option 1,text',
-            'choice2'   => 'Option 2,text',
-            'choice3'   => 'Option 3,text',
-            'choice4'   => 'Option 4,text',
-            'motdtype'  => 'Type,viewhiddenonly',
-        );
-        output('`b`4Note:`0 Polls cannot be edited after creation.`n`n');
-        output('<form action="motd.php?op=savenew" method="post">', true);
-        Forms::showForm($form, array('motdtitle' => '', 'motdtype' => '1', 'choice1' => '', 'choice2' => '', 'choice3' => '', 'choice4' => ''));
-        rawoutput('</form>');
+        $title = httppost('motdtitle');
+        $body  = httppost('motdbody');
+
+        output('`$NOTE:`^ Polls cannot be edited after creation.`0`n`n');
+        rawoutput("<form action='motd.php?op=savenew' method='post'>");
+        output('Subject: ');
+        rawoutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\"><br/>");
+        output('Body:`n');
+        rawoutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</textarea><br/>");
+        $option = translate_inline('Option');
+        output('Choices:`n');
+        $pollitem = "$option <input name='opt[]'><br/>";
+        for ($i = 0; $i < 5; $i++) {
+            rawoutput($pollitem);
+        }
+        rawoutput("<div id='hidepolls'></div>");
+        rawoutput("<script language='JavaScript'>document.getElementById('hidepolls').innerHTML = '';</script>", true);
+        $addi = translate_inline('Add Poll Item');
+        $add = translate_inline('Add');
+        rawoutput("<a href=\"#\" onClick=\"javascript:document.getElementById('hidepolls').innerHTML += '" . addslashes($pollitem) . "'; return false;\">$addi</a><br>");
+        rawoutput("<input type='submit' class='button' value='$add'></form>");
     }
 
     /**
@@ -166,14 +235,13 @@ class Motd
     {
         global $session;
         $title = httppost('motdtitle');
-        $choices = [];
-        for ($i = 1; $i <= 4; $i++) {
-            $c = trim((string) httppost("choice$i"));
-            if ($c !== '') {
-                $choices[] = $c;
-            }
+        $text  = httppost('motdbody');
+        $choices = httppost('opt');
+        if (!is_array($choices)) {
+            $choices = [];
         }
-        $body = addslashes(serialize($choices));
+        $data = ['body' => $text, 'opt' => $choices];
+        $body = addslashes(serialize($data));
         $date = date('Y-m-d H:i:s');
         $sql = 'INSERT INTO ' . Database::prefix('motd') .
             " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",1,{$session['user']['acctid']})";
