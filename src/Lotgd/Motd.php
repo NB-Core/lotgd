@@ -52,6 +52,8 @@ class Motd
     public static function motdItem(string $subject, string $body, string $author, string $date, int $id): void
     {
 	global $output;
+        $anchor = 'motd' . date('YmdHis', strtotime($date));
+        rawoutput("<a name='$anchor'>");
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
         output_notl('<h4>%s</h4>', $subject,true);
         modulehook('motd-item-intercept', ['id' => $id]);
@@ -59,6 +61,8 @@ class Motd
         output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'),  $author, $date, true);
         self::motdAdminLinks($id, false);
         rawoutput('</div>');
+        rawoutput('<hr>');
+        rawoutput('</a>');
     }
 
     /**
@@ -130,6 +134,7 @@ class Motd
         }
         self::motdAdminLinks($id, true);
         rawoutput('</div>');
+        rawoutput('<hr>');
     }
 
     /**
@@ -152,8 +157,8 @@ class Motd
         }
         $form = array(
             'Motd,title',
-            'motdtitle' => 'Title,text',
-            'motdbody'  => 'Body,textarea',
+            'motdtitle' => 'Title,string,50',
+            'motdbody'  => 'Body,textarea,37',
             'motdtype'  => 'Type,viewhiddenonly',
         );
         if ($id > 0) {
