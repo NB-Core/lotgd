@@ -1,7 +1,7 @@
 <?php
 use Lotgd\Commentary;
 use Lotgd\Buffs;
-use Lotgd\Nav\Villagenav;
+use Lotgd\Nav\VillageNav;
 // addnews ready
 // translator ready
 // mail ready

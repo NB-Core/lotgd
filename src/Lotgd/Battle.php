@@ -1046,7 +1046,7 @@ if ($bad_check>50) {
  */
     public static function executeAiScript($script) {
 	global $unsetme;
-	if ($script > "") {
+	if (!empty($scrip)) {
 		eval($script);
 	}
 }

@@ -163,7 +163,7 @@ class Commentary
                 if (Database::numRows($result) > 0) {
                     $row = Database::fetchAssoc($result);
                     if ($row['comment'] != stripslashes($commentary) || $row['author'] != $session['user']['acctid']) {
-                        self::injectRawComment($section, $session['user']['acctid'], $commentary);
+                        self::injectRawComment($section, (int)$session['user']['acctid'], $commentary);
                         $session['user']['laston'] = date('Y-m-d H:i:s');
                     } else {
                         $doublepost = 1;
