@@ -43,11 +43,12 @@ class Motd
      */
     public static function motdItem(string $subject, string $body, string $author, string $date, int $id): void
     {
+	global $output;
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
-        rawoutput('<h4>' . htmlentities($subject, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
+        rawoutput('<h4>' . htmlentities($output->appoencode($subject), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
         modulehook('motd-item-intercept', ['id' => $id]);
-        rawoutput('<div>' . $body . '</div>');
-        rawoutput('<small>' . translate_inline('Posted by') . ' ' . $author . ' - ' . $date . '</small>');
+        rawoutput('<div>' . $output->appoencode($body) . '</div>');
+        rawoutput('<small>' . translate_inline('Posted by') . ' ' . $output->appoencode($author) . ' - ' . $date . '</small>');
         self::motdAdminLinks($id, false);
         rawoutput('</div>');
     }
@@ -58,9 +59,9 @@ class Motd
     public static function pollItem(int $id, string $subject, string $body, string $author, string $date, bool $showpoll = true): void
     {
         rawoutput('<div class="pollitem">');
-        rawoutput('<h4>' . htmlentities($subject, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
+        rawoutput('<h4>' . htmlentities($output->appoencode($subject), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
         rawoutput('<div>' . $body . '</div>');
-        rawoutput('<small>' . translate_inline('Posted by') . ' ' . $author . ' - ' . $date . '</small>');
+        rawoutput('<small>' . translate_inline('Posted by') . ' ' . $output->appoencode($author) . ' - ' . $date . '</small>');
         if ($showpoll) {
             rawoutput('<div>' . translate_inline('Poll ID') . ': ' . $id . '</div>');
         }
@@ -93,11 +94,11 @@ class Motd
             'motdtype'  => 'Type,viewhiddenonly',
         );
         if ($id > 0) {
-            $form['changeauthor'] = 'Change Author,checkbox';
-            $form['changedate'] = 'Change Date (force popup),checkbox';
+            $form['changeauthor'] = 'Change Author,checklist';
+            $form['changedate'] = 'Change Date (force popup),checklist';
         }
         output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
-        $data = ['motdtitle' => $title, 'motdbody' => $body, 'motdtype' => $poll, 'changeauthor' => 0, 'changedate' => 0];
+        $data = ['motdtitle' => $title, 'motdbody' => $body, 'motdtype' => $poll, 'changeauthor' => '0', 'changedate' => '0'];
         Forms::showForm($form, $data);
         rawoutput('</form>');
     }
