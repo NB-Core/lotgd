@@ -45,10 +45,10 @@ class Motd
     {
 	global $output;
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
-        rawoutput('<h4>' . htmlentities($output->appoencode($subject), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
+        output_notl('<h4>%s</h4>', $subject,true);
         modulehook('motd-item-intercept', ['id' => $id]);
-        rawoutput('<div>' . $output->appoencode($body) . '</div>');
-        rawoutput('<small>' . translate_inline('Posted by') . ' ' . $output->appoencode($author) . ' - ' . $date . '</small>');
+        output_notl('<div>%s</div>',$body,true);
+        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'),  $author, $date, true);
         self::motdAdminLinks($id, false);
         rawoutput('</div>');
     }
@@ -58,10 +58,11 @@ class Motd
      */
     public static function pollItem(int $id, string $subject, string $body, string $author, string $date, bool $showpoll = true): void
     {
+	global $output;
         rawoutput('<div class="pollitem">');
-        rawoutput('<h4>' . htmlentities($output->appoencode($subject), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</h4>');
-        rawoutput('<div>' . $body . '</div>');
-        rawoutput('<small>' . translate_inline('Posted by') . ' ' . $output->appoencode($author) . ' - ' . $date . '</small>');
+        output_notl('<h4>%s</h4>', $subject,true);
+        output_notl('<div>%s</div>',$body,true);
+        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'),  $author, $date, true);
         if ($showpoll) {
             rawoutput('<div>' . translate_inline('Poll ID') . ': ' . $id . '</div>');
         }
@@ -172,7 +173,7 @@ class Motd
                 $choices[] = $c;
             }
         }
-        $body = serialize($choices);
+        $body = addslashes(serialize($choices));
         $date = date('Y-m-d H:i:s');
         $sql = 'INSERT INTO ' . Database::prefix('motd') .
             " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",1,{$session['user']['acctid']})";
