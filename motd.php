@@ -38,9 +38,9 @@ if ($op=="vote"){
 }
 if ($op == "add" || $op == "addpoll" || $op == "del")  {
 	if ($session['user']['superuser'] & SU_POST_MOTD) {
-            if ($op == "add") Motd::motd_form($id);
-            elseif ($op == "addpoll") Motd::motd_poll_form($id);
-            elseif ($op == "del") Motd::motd_del($id);
+            if ($op == "add") Motd::motdForm($id);
+            elseif ($op == "addpoll") Motd::motdPollForm($id);
+            elseif ($op == "del") Motd::motdDel($id);
 	} else {
 		if ($session['user']['loggedin']){
 			$session['user']['experience'] =

@@ -164,7 +164,7 @@ class Forms
         }
 
         if (is_array($info[0])) {
-            $info[0] = call_user_func_array('sprintf_translate', $info[0]);
+            $info[0] = Translator::sprintfTranslate(...$info[0]);
         } else {
             $info[0] = translate($info[0]);
         }

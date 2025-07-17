@@ -82,13 +82,13 @@ class Motd
         } else {
             $title = '';
             $body = '';
-            $poll = 0;
+            $poll = '0';
         }
         $form = array(
             'Motd,title',
-            'motdtitle' => array('Title', 'text', 'value' => $title),
-            'motdbody'  => array('Body', 'textarea', 'value' => $body),
-            'motdtype'  => array('Type', 'checkbox', 'value' => $poll),
+            'motdtitle' => 'Title,text',
+            'motdbody'  => 'Body,textarea',
+            'motdtype'  => 'Type,viewhiddenonly',
         );
         output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
         Forms::showForm($form, array('motdtitle' => $title, 'motdbody' => $body, 'motdtype' => $poll));
@@ -103,12 +103,12 @@ class Motd
         require_once 'lib/showform.php';
         $form = array(
             'Poll,title',
-            'motdtitle' => array('Title', 'text'),
-            'motdbody'  => array('Body', 'textarea'),
-            'motdtype'  => array('Type', 'hidden', 'value' => 1),
+            'motdtitle' => 'Title,text',
+            'motdbody'  => 'Body,textarea',
+            'motdtype'  => 'Type,viewhiddenonly',
         );
         output('<form action="motd.php?op=savenew" method="post">', true);
-        Forms::showForm($form);
+        Forms::showForm($form, array('motdtitle' => '', 'motdbody' => '', 'motdtype' => '1'));
         rawoutput('</form>');
     }
 
