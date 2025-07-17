@@ -703,7 +703,7 @@ class Modules
         $result = Database::query($sql);
         if (Database::affectedRows($result) == 0) {
             $sql = 'INSERT INTO ' . Database::prefix('module_objprefs')
-                . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes($value) . "')";
+                . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes((string)$value) . "')";
             Database::query($sql);
         }
 
