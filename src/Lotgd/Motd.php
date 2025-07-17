@@ -231,6 +231,8 @@ class Motd
         }
         Database::query($sql);
         invalidatedatacache('motd');
+        invalidatedatacache('lastmotd');
+        invalidatedatacache('motddate');
     }
 
     /**
@@ -262,6 +264,8 @@ class Motd
         $sql = 'DELETE FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
         Database::query($sql);
         invalidatedatacache('motd');
+        invalidatedatacache('lastmotd');
+        invalidatedatacache('motddate');
     }
 
     /**
