@@ -480,6 +480,11 @@ class Forms
                 rawoutput('</select>', true);
                 break;
 
+            case 'checkbox':
+                $checked = !empty($row[$key]);
+                rawoutput("<input type='checkbox' name='$keyout' value='1'" . ($checked ? ' checked' : '') . '>');
+                break;
+
             case 'hidden':
                 rawoutput("<input type='hidden' name='$keyout' value=\"" . HTMLEntities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">" . HTMLEntities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
                 break;
