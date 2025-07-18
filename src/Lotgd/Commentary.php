@@ -559,8 +559,13 @@ class Commentary
         }
 
         // Apply holiday translations to comment and name
-        $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
-        $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+        if (!empty($row['comment'])) {
+            $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
+        }
+        if (!empty($row['name'])) {
+            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+        }
+        
 
         // Prepend clan tag to the author's name
         if ($row['clanrank']) {
