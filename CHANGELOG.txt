@@ -19,6 +19,7 @@ Changes to 1.3.0 +nb
 *lib/sendmail.php --> sending to a non-valid email address format should not be allowed -> skipped (no good error handling optional, because it is not a system error)
 *lib/serialization.php --> unserialize() is not safe, and needs a wrapper for newer php versions
 *lib/showform.php --> unset nightmare
+*src/Lotgd/Nav.php --> skip nav counter when user is not logged in
 
 [CHANGES]
 

@@ -82,6 +82,10 @@ class Nav
     public static function appendCount(string $link): string
     {
         global $session;
+        if (! (isset($session['loggedin']) && $session['loggedin'])) {
+            return $link;
+        }
+
         return self::appendLink($link, 'c=' . $session['counter'] . '-' . date('His'));
     }
 
@@ -342,13 +346,17 @@ class Nav
         } else {
             if ($text != '') {
                 $extra = '';
-                if (!isset($session['counter'])) $session['counter'] = '';
-                if (strpos($link, '?')) {
-                    $extra = "&c={$session['counter']}";
-                } else {
-                    $extra = "?c={$session['counter']}";
+                if (isset($session['loggedin']) && $session['loggedin']) {
+                    if (!isset($session['counter'])) {
+                        $session['counter'] = '';
+                    }
+                    if (strpos($link, '?')) {
+                        $extra = "&c={$session['counter']}";
+                    } else {
+                        $extra = "?c={$session['counter']}";
+                    }
+                    $extra .= '-' . date('His');
                 }
-                $extra .= '-' . date('His');
                 $key = '';
                 if ($text[1] == '?') {
                     $hchar = strtolower($text[0]);
@@ -445,12 +453,14 @@ class Nav
                 $n = str_replace('<a ', Translator::tlbuttonPop() . '<a ', $n);
                 $thisnav .= $n;
             }
-            $session['allowednavs'][$link . $extra] = true;
-            $session['allowednavs'][str_replace(' ', '%20', $link) . $extra] = true;
-            $session['allowednavs'][str_replace(' ', '+', $link) . $extra] = true;
-            if (($pos = strpos($link, '#')) !== false) {
-                $sublink = substr($link, 0, $pos);
-                $session['allowednavs'][$sublink . $extra] = true;
+            if (isset($session['loggedin']) && $session['loggedin']) {
+                $session['allowednavs'][$link . $extra] = true;
+                $session['allowednavs'][str_replace(' ', '%20', $link) . $extra] = true;
+                $session['allowednavs'][str_replace(' ', '+', $link) . $extra] = true;
+                if (($pos = strpos($link, '#')) !== false) {
+                    $sublink = substr($link, 0, $pos);
+                    $session['allowednavs'][$sublink . $extra] = true;
+                }
             }
         }
         if ($unschema) tlschema();
