@@ -126,7 +126,7 @@ $sql = "SELECT name,level,acctid FROM " . Database::prefix("accounts") . " WHERE
 $result = Database::query($sql);
 if (Database::numRows($result)>0){
 	$row = Database::fetchAssoc($result);
-       $already_haunted=(int)get_module_pref('hauntedby', 'graveyard_haunt', $row['acctid']);
+	$already_haunted=(int)get_module_pref('hauntedby', 'graveyard_haunt', $row['acctid']);
 	if ($row['hauntedby']!=0){
 		output("That person has already been haunted, please select another target");
 	}else{
