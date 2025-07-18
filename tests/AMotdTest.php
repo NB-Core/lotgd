@@ -116,7 +116,13 @@ namespace Lotgd\MySQL {
 
             public static function fetchAssoc(array|\mysqli_result &$result)
             {
-                return array_shift($result);
+                if (is_array($result)) {
+                    return array_shift($result);
+                } elseif ($result instanceof \mysqli_result) {
+                    return $result->fetch_assoc();
+                }
+
+                return null; // Return null if the type is unexpected
             }
 
             public static function freeResult(array|\mysqli_result &$result): bool
