@@ -47,7 +47,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 	$master['creatureweapon'] = stripslashes($master['creatureweapon']);
 	//this is a piece of old work I will leave in, if you don't have Gadriel, then well...
 	if ($master['creaturename'] == "Gadriel the Elven Ranger" &&
-			$session['user']['race'] == "Elf") {
+		$session['user']['race'] == "Elf") {
 		$master['creaturewin'] = "You call yourself an Elf?? Maybe Half-Elf! Come back when you've been better trained.";
 		$master['creaturelose'] = "It is only fitting that another Elf should best me.  You make good progress.";
 	}
@@ -61,14 +61,14 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 		checkday();
 		output("The sound of conflict surrounds you.  The clang of weapons in grisly battle inspires your warrior heart. ");
 		output("`n`n`^%s stands ready to evaluate you.`0",
-				$master['creaturename']);
+			$master['creaturename']);
 		addnav("Navigation");
 		villagenav();
 		addnav("Actions");
 		addnav("Question Master","train.php?op=question&master=$mid");
 		addnav("M?Challenge Master","train.php?op=challenge&master=$mid");
 		if ($session['user']['superuser'] & SU_DEVELOPER) {
-			addnav("Superuser Gain level","train.php?op=challenge&victory=1&master=$mid");
+			addnav("Superuser Gain level","train.php?op=challenge&victory=1&master=$mid&sugain=1");
 		}
 	}else if($op=="challenge"){
 		if (httpget('victory')) {
@@ -141,7 +141,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 		addnav("Question Master","train.php?op=question&master=$mid");
 		addnav("M?Challenge Master","train.php?op=challenge&master=$mid");
 		if ($session['user']['superuser'] & SU_DEVELOPER) {
-			addnav("Superuser Gain level","train.php?op=challenge&victory=1&master=$mid");
+			addnav("Superuser Gain level","train.php?op=challenge&victory=1&master=$mid&sugain=1");
 		}
 	}else if($op=="autochallenge"){
 		addnav("Fight Your Master","train.php?op=challenge&master=$mid");
@@ -171,6 +171,10 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 			require_once("battle.php");
 		}
 		if ($victory){
+			if (httpget('sugain')==1) {
+				//Set badguy to defeat
+				$badguy = $attackstack['enemies'][0];
+			}
 			if (!empty($badguy['creaturelose'])) {
 				$badguy['creaturelose'] = $badguy['creaturelose'];
 			} else {
@@ -217,10 +221,14 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 			if (getsetting("companionslevelup", 1) == true) {
 				$newcompanions = $companions;
 				foreach ($companions as $name => $companion) {
-					$companion['attack'] = $companion['attack'] + (isset($companion['attackperlevel'])?$companion['attackperlevel']:0);
-					$companion['defense'] = $companion['defense'] + (isset($companion['defenseperlevel'])?$companion['defenseperlevel']:0);
-					$companion['maxhitpoints'] = $companion['maxhitpoints'] + (isset($companion['maxhitpointsperlevel'])?$companion['maxhitpointsperlevel']:0);
-					$companion['hitpoints'] = $companion['maxhitpoints'];
+					if (isset($companion['attack']))
+						$companion['attack'] = $companion['attack'] + (isset($companion['attackperlevel'])?$companion['attackperlevel']:0);
+					if (isset($companion['defense']))
+						$companion['defense'] = $companion['defense'] + (isset($companion['defenseperlevel'])?$companion['defenseperlevel']:0);
+					if (isset($companion['maxhitpoints']))
+						$companion['maxhitpoints'] = $companion['maxhitpoints'] + (isset($companion['maxhitpointsperlevel'])?$companion['maxhitpointsperlevel']:0);
+					if (isset($companion['attack']))
+						$companion['hitpoints'] = $companion['maxhitpoints'];
 					$newcompanions[$name] = $companion;
 				}
 			}
@@ -233,7 +241,7 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
 			addnav("Question Master","train.php?op=question");
 			addnav("M?Challenge Master","train.php?op=challenge");
 			if ($session['user']['superuser'] & SU_DEVELOPER) {
-				addnav("Superuser Gain level","train.php?op=challenge&victory=1");
+				addnav("Superuser Gain level","train.php?op=challenge&victory=1&master=".((string)((int)$mid+1))."&sugain=1");
 			}
 			if ($session['user']['age'] == 1) {
 				if (getsetting('displaymasternews',1)) AddNews::add("`%%s`3 has defeated ".($session['user']['sex']?"her":"his")." master, `%%s`3 to advance to level `^%s`3 after `^1`3 day!!", $session['user']['name'],$badguy['creaturename'],$session['user']['level']);
