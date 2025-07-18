@@ -733,9 +733,9 @@ class Modules
             $user = $session['user']['acctid'] ?? 0;
         }
 
-        if ($user !== null) {
-            $user = (int) $user;
-        }
+        // No need to cast $user to (int) as it is already typed as ?int
+        // and PHP's type system ensures it is either null or an integer.
+        
 
         self::loadModulePrefs($module, $user);
 
