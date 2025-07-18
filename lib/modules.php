@@ -112,32 +112,32 @@ function module_delete_userprefs(int $user): void
 }
 
 $module_prefs = array();
-function get_all_module_prefs(?string $module = null, $user = null): array
+function get_all_module_prefs(?string $module = null, ?int $user = null): array
 {
     return Modules::getAllModulePrefs($module, $user);
 }
 
-function get_module_pref(string $name, ?string $module = null, $user = null)
+function get_module_pref(string $name, ?string $module = null, ?int $user = null)
 {
     return Modules::getModulePref($name, $module, $user);
 }
 
-function set_module_pref(string $name, mixed $value, ?string $module = null, $user = null): void
+function set_module_pref(string $name, mixed $value, ?string $module = null, ?int $user = null): void
 {
     Modules::setModulePref($name, $value, $module, $user);
 }
 
-function increment_module_pref(string $name, int|float $value = 1, ?string $module = null, $user = null): void
+function increment_module_pref(string $name, int|float $value = 1, ?string $module = null, ?int $user = null): void
 {
     Modules::incrementModulePref($name, $value, $module, $user);
 }
 
-function clear_module_pref(string $name, ?string $module = null, $user = null): void
+function clear_module_pref(string $name, ?string $module = null, ?int $user = null): void
 {
     Modules::clearModulePref($name, $module, $user);
 }
 
-function load_module_prefs(string $module, $user = null): void
+function load_module_prefs(string $module, ?int $user = null): void
 {
     Modules::loadModulePrefs($module, $user);
 }

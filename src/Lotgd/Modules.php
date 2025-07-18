@@ -722,7 +722,7 @@ class Modules
     /**
      * Retrieve all module preferences for a user.
      */
-    public static function getAllModulePrefs(?string $module = null, $user = null): array
+    public static function getAllModulePrefs(?string $module = null, ?int $user = null): array
     {
         global $module_prefs, $mostrecentmodule, $session;
 
@@ -733,6 +733,10 @@ class Modules
             $user = $session['user']['acctid'] ?? 0;
         }
 
+        // No need to cast $user to (int) as it is already typed as ?int
+        // and PHP's type system ensures it is either null or an integer.
+        
+
         self::loadModulePrefs($module, $user);
 
         return $module_prefs[$user][$module] ?? [];
@@ -741,7 +745,7 @@ class Modules
     /**
      * Get a specific module preference value for a user.
      */
-    public static function getModulePref(string $name, ?string $module = null, $user = null)
+    public static function getModulePref(string $name, ?string $module = null, ?int $user = null)
     {
         global $module_prefs, $mostrecentmodule, $session;
 
@@ -750,6 +754,10 @@ class Modules
         }
         if ($user === null && isset($session['user']['acctid'])) {
             $user = $session['user']['acctid'];
+        }
+
+        if ($user !== null) {
+            $user = (int) $user;
         }
 
         if ($user !== null && isset($module_prefs[$user][$module][$name])) {
@@ -787,7 +795,7 @@ class Modules
     /**
      * Persist a module preference value for a user.
      */
-    public static function setModulePref(string $name, $value, ?string $module = null, $user = null): void
+    public static function setModulePref(string $name, $value, ?string $module = null, ?int $user = null): void
     {
         global $module_prefs, $mostrecentmodule, $session;
 
@@ -798,6 +806,10 @@ class Modules
             $uid = $session['user']['acctid'] ?? 0;
         } else {
             $uid = $user;
+        }
+
+        if ($uid !== null) {
+            $uid = (int) $uid;
         }
 
         self::loadModulePrefs($module, $uid);
@@ -824,7 +836,7 @@ class Modules
     /**
      * Increment a numeric module preference value.
      */
-    public static function incrementModulePref(string $name, $value = 1, ?string $module = null, $user = null): void
+    public static function incrementModulePref(string $name, $value = 1, ?string $module = null, ?int $user = null): void
     {
         global $module_prefs, $mostrecentmodule, $session;
 
@@ -837,6 +849,10 @@ class Modules
             $uid = $session['user']['acctid'];
         } else {
             $uid = $user;
+        }
+
+        if ($uid !== null) {
+            $uid = (int) $uid;
         }
 
         self::loadModulePrefs($module, $uid);
@@ -863,7 +879,7 @@ class Modules
     /**
      * Clear a module preference for a user.
      */
-    public static function clearModulePref(string $name, ?string $module = null, $user = null): void
+    public static function clearModulePref(string $name, ?string $module = null, ?int $user = null): void
     {
         global $module_prefs, $mostrecentmodule, $session;
 
@@ -874,6 +890,9 @@ class Modules
             $uid = $session['user']['acctid'];
         } else {
             $uid = $user;
+        }
+        if ($uid !== null) {
+            $uid = (int) $uid;
         }
 
         self::loadModulePrefs($module, $uid);
@@ -895,12 +914,16 @@ class Modules
     /**
      * Load user preferences for a module.
      */
-    public static function loadModulePrefs(string $module, $user = null): void
+    public static function loadModulePrefs(string $module, ?int $user = null): void
     {
         global $module_prefs, $session;
 
         if ($user === null) {
             $user = $session['user']['acctid'];
+        }
+
+        if ($user !== null) {
+            $user = (int) $user;
         }
 
         if (!isset($module_prefs[$user])) {
