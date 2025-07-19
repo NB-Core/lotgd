@@ -77,7 +77,7 @@ class Motd
         $row = Database::numRows($result) > 0 ? Database::fetchAssoc($result) : [];
         $choice = $row['choice'] ?? null;
 
-        $bodyData = @unserialize($body);
+        $bodyData = @unserialize(stripslashes($body));
         if (!is_array($bodyData)) {
             $bodyData = ['body' => $body, 'opt' => []];
         }
