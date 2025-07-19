@@ -36,6 +36,9 @@ class Nav
     private static array $coloredsections = [];
     /**
      * Block a navigation link.
+     *
+     * @param string $link    URL to block
+     * @param bool   $partial Whether to treat the link as a prefix
      */
     public static function blockNav(string $link, bool $partial = false): void
     {
@@ -56,9 +59,9 @@ class Nav
     }
 
     /**
-     * Get the quick keys array.
+     * Get the quick keys array assigned to navigation items.
      *
-     * @return array
+     * @return array<string,string>
      */
     public static function getQuickKeys(): array
     {
@@ -67,6 +70,9 @@ class Nav
 
     /**
      * Unblock a navigation link.
+     *
+     * @param string $link    URL to unblock
+     * @param bool   $partial Whether the link is a prefix
      */
     public static function unblockNav(string $link, bool $partial = false): void
     {
@@ -86,6 +92,13 @@ class Nav
         }
     }
 
+    /**
+     * Append the current session counter to a link.
+     *
+     * @param string $link Base URL
+     *
+     * @return string Updated URL containing the counter
+     */
     public static function appendCount(string $link): string
     {
         global $session;
@@ -96,6 +109,14 @@ class Nav
         return self::appendLink($link, 'c=' . $session['counter'] . '-' . date('His'));
     }
 
+    /**
+     * Append a query fragment to a link.
+     *
+     * @param string $link Base URL
+     * @param string $new  Query string to append (without ?)
+     *
+     * @return string
+     */
     public static function appendLink(string $link, string $new): string
     {
         if (strpos($link, '?') !== false) {
@@ -105,7 +126,9 @@ class Nav
     }
 
     /**
-     * Allow header/footer code to block/unblock additional navs.
+     * Allow header/footer code to block or unblock newly added navs.
+     *
+     * @param bool $block True to block nav creation, false to allow
      */
     public static function setBlockNewNavs(bool $block): void
     {
@@ -114,7 +137,11 @@ class Nav
     }
 
     /**
-     * Generate and/or store a nav banner for the player.
+     * Start a new navigation section.
+     *
+     * @param string|array $text      Header text or sprintf format
+     * @param bool         $collapse  Whether the section can collapse
+     * @param bool         $translate Disable translation when false
      */
     public static function addHeader($text, bool $collapse = true, bool $translate = true): void
     {
@@ -145,6 +172,9 @@ class Nav
      * Add a navigation headline that can include LOTGD colour codes.
      * The headline is automatically terminated with `0 so any
      * open colour span closes before rendering.
+     *
+     * @param string $text     Headline text
+     * @param bool   $collapse Whether the section can collapse
      */
     public static function addColoredHeadline(string $text, bool $collapse = true): void
     {
@@ -153,6 +183,15 @@ class Nav
         self::$coloredsections[self::$navsection] = true;
     }
 
+    /**
+     * Add a link without translating the label.
+     *
+     * @param string|array $text    Link label or header text
+     * @param string|false $link    Target URL; false for header, '' for help text
+     * @param bool         $priv    Passed to appoencode()
+     * @param bool         $pop     Open in popup window
+     * @param string       $popsize Popup size when $pop is true
+     */
     public static function addNotl($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
     {
         global $notranslate;
@@ -178,6 +217,15 @@ class Nav
         }
     }
 
+    /**
+     * Add a translated navigation link or header.
+     *
+     * @param string|array $text    Link label or header text
+     * @param string|false $link    Target URL; false for header, '' for help text
+     * @param bool         $priv    Passed to appoencode()
+     * @param bool         $pop     Open in popup window
+     * @param string       $popsize Popup size when $pop is true
+     */
     public static function add($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
     {
         if (self::$block_new_navs) return;
@@ -205,6 +253,13 @@ class Nav
         }
     }
 
+    /**
+     * Check whether a navigation link is blocked.
+     *
+     * @param string $link Link URL
+     *
+     * @return bool
+     */
     public static function isBlocked(string $link): bool
     {
         
@@ -223,6 +278,13 @@ class Nav
         return false;
     }
 
+    /**
+     * Count unblocked links in a section.
+     *
+     * @param string $section Section identifier
+     *
+     * @return int
+     */
     public static function countViableNavs($section): int
     {
         
@@ -239,6 +301,11 @@ class Nav
         return $count;
     }
 
+    /**
+     * Determine if any navigation items are available.
+     *
+     * @return bool
+     */
     public static function checkNavs(): bool
     {
         global $session;
@@ -253,6 +320,11 @@ class Nav
         return false;
     }
 
+    /**
+     * Render stored navigation items and clear the cache.
+     *
+     * @return string HTML output
+     */
     public static function buildNavs(): string
     {
         global $session;
@@ -496,6 +568,11 @@ class Nav
         return $thisnav;
     }
 
+    /**
+     * Get the total number of navigation elements.
+     *
+     * @return int
+     */
     public static function navCount(): int
     {
         global $session;
@@ -507,23 +584,30 @@ class Nav
         return $c;
     }
 
+    /**
+     * Reset the list of allowed navigation links.
+     */
     public static function clearNav(): void
     {
         global $session;
         $session['allowednavs'] = [];
     }
 
+    /**
+     * Sort navigation entries alphabetically.
+     */
     public static function navSort(): void
     {
         global $session;
-        if (!is_array(self::$navbysection)) return;
+        if (!is_array(self::$navbysection)) {
+            return;
+        }
         foreach (self::$navbysection as $key => $val) {
             if (is_array($val)) {
                 usort($val, [self::class, 'navASort']);
                 self::$navbysection[$key] = $val;
             }
         }
-        return;
     }
 
     protected static function navASort($a, $b)
@@ -543,6 +627,9 @@ class Nav
         return strcmp($a, $b);
     }
 
+    /**
+     * Reset output buffers and navigation state.
+     */
     public static function clearOutput(): void
     {
         global $output, $nestedtags, $header, $nav, $session;
