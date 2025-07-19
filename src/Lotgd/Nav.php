@@ -28,6 +28,13 @@ class Nav
     private static array $accesskeys = [];
     private static array $quickkeys = [];
     /**
+     * Store which nav sections use colored headlines so we can
+     * append the colour reset when rendering.
+     *
+     * @var array<string,bool>
+     */
+    private static array $coloredsections = [];
+    /**
      * Block a navigation link.
      */
     public static function blockNav(string $link, bool $partial = false): void
@@ -132,6 +139,18 @@ class Nav
             }
             array_push($notranslate, [$text, '']);
         }
+    }
+
+    /**
+     * Add a navigation headline that can include LOTGD colour codes.
+     * The headline is automatically terminated with `0 so any
+     * open colour span closes before rendering.
+     */
+    public static function addColoredHeadline(string $text, bool $collapse = true): void
+    {
+        if (self::$block_new_navs) return;
+        self::addHeader($text, $collapse);
+        self::$coloredsections[self::$navsection] = true;
     }
 
     public static function addNotl($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
@@ -248,7 +267,15 @@ class Nav
                     if (substr($key, 0, 7) == '!array!') {
                         $key = unserialize(substr($key, 7));
                     }
-                    $navbanner = self::privateAddNav($key);
+                    $header = $key;
+                    if (isset(self::$coloredsections[$tkey]) && self::$coloredsections[$tkey]) {
+                        if (is_array($header)) {
+                            $header[0] .= '`0';
+                        } else {
+                            $header .= '`0';
+                        }
+                    }
+                    $navbanner = self::privateAddNav($header);
                     if (isset($session['loggedin']) && $session['loggedin']) tlschema();
                 }
                 $style = 'default';
@@ -293,6 +320,7 @@ class Nav
             }
         }
         self::$navbysection = [];
+        self::$coloredsections = [];
         return $builtnavs;
     }
 
