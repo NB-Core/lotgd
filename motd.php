@@ -27,7 +27,7 @@ if ($session['user']['superuser'] & SU_POST_MOTD) {
 
 if ($op=="vote"){
 	$motditem = httppost('motditem');
-	$choice = httppost('choice');
+	$choice = (string)httppost('choice');
 	$sql = "DELETE FROM " . db_prefix("pollresults") . " WHERE motditem='$motditem' AND account='{$session['user']['acctid']}'";
 	db_query($sql);
 	$sql = "INSERT INTO " . db_prefix("pollresults") . " (choice,account,motditem) VALUES ('$choice','{$session['user']['acctid']}','$motditem')";
