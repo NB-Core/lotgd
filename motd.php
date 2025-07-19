@@ -46,20 +46,27 @@ if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_P
         exit();
 }
 if ($op == "add" || $op == "addpoll" || $op == "del")  {
-	if ($session['user']['superuser'] & SU_POST_MOTD) {
-            if ($op == "add") Motd::motdForm($id);
-            elseif ($op == "addpoll") Motd::motdPollForm($id);
-            elseif ($op == "del") Motd::motdDel($id);
-	} else {
-		if ($session['user']['loggedin']){
-			$session['user']['experience'] =
-				round($session['user']['experience']*0.9,0);
-			AddNews::add("%s was penalized for attempting to defile the gods.",
-					$session['user']['name']);
-			output("You've attempted to defile the gods.  You are struck with a wand of forgetfulness.  Some of what you knew, you no longer know.");
-			Accounts::saveUser();
-		}
-	}
+        if ($session['user']['superuser'] & SU_POST_MOTD) {
+            if ($op == "add") {
+                Motd::motdForm($id);
+            } elseif ($op == "addpoll") {
+                Motd::motdPollForm($id);
+            } elseif ($op == "del") {
+                Motd::motdDel($id);
+                output("`^Entry deleted.`0`n");
+                $return = translate_inline("Return to MoTD");
+                rawoutput("<a href='motd.php'>$return</a>");
+                addnav('', 'motd.php');
+            }
+        } else {
+            if ($session['user']['loggedin']) {
+                $session['user']['experience'] = round($session['user']['experience'] * 0.9, 0);
+                AddNews::add("%s was penalized for attempting to defile the gods.",
+                    $session['user']['name']);
+                output("You've attempted to defile the gods.  You are struck with a wand of forgetfulness.  Some of what you knew, you no longer know.");
+                Accounts::saveUser();
+            }
+        }
 }
 if ($op=="") {
 	$count = getsetting("motditems", 5);
