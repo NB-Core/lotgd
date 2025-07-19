@@ -28,7 +28,7 @@ class Nav
     private static array $accesskeys = [];
     private static array $quickkeys = [];
     /**
-     * Store which nav sections use coloured headlines so we can
+     * Store which nav sections use colored headlines so we can
      * append the colour reset when rendering.
      *
      * @var array<string,bool>
