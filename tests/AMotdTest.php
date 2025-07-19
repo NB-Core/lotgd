@@ -208,6 +208,17 @@ namespace {
             $this->assertStringContainsString("type='radio' name='choice'", $forms_output);
         }
 
+        public function testPollItemUnserializesSlashedData(): void
+        {
+            global $forms_output;
+            $data = ['body' => 'Question?', 'opt' => ['Yes', 'No']];
+            $body = addslashes(serialize($data));
+
+            Motd::pollItem(1, 'Subject', $body, 'Author', '2024-01-01 00:00:00');
+
+            $this->assertStringContainsString("type='radio' name='choice'", $forms_output);
+        }
+
         public function testSavePollSerializesData(): void
         {
             $_POST['motdtitle'] = 'Title';
