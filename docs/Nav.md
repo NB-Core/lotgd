@@ -69,6 +69,14 @@ Works like `addSubHeader()` but the text may contain LOTGD colour codes. The
 subheader automatically appends `` `0`` so colours do not bleed into
 following items.
 
+Example:
+
+```php
+\Lotgd\Nav::addHeader('Main');
+\Lotgd\Nav::addColoredSubHeader('`!Special');
+\Lotgd\Nav::add('Link', 'foo.php');
+```
+
 ## add
 
 ```php
@@ -113,10 +121,11 @@ navsort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
 
 Sorts navigation links alphabetically. `$headerOrder` controls the ordering of
 subsections while `$subOrder` determines the order of items within each section
-and subsection. Pass `'off'` to leave the original order untouched.
+and subsection. Each argument may be `'asc'`, `'desc'` or `'off'`. Use `'off'`
+to keep the original order.
 
-User preferences `navsort_headers` and `navsort_subheaders` hold the chosen
-values (`off`, `asc` or `desc`) and `buildNavs()` will automatically sort the
-navigation accordingly.
+User preferences `navsort_headers` and `navsort_subheaders` store the chosen
+values for headlines and subheadlines. `buildNavs()` reads these preferences and
+automatically sorts the navigation.
 
 
