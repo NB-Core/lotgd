@@ -10,7 +10,7 @@ use Lotgd\Nav;
  */
 class NavigationItem
 {
-    public $text;
+    public string|array $text;
     public $link;
     public bool $priv;
     public bool $popup;
