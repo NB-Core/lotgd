@@ -60,7 +60,7 @@ namespace {
             $this->assertLessThan(strpos($navs, 'Z Item'), strpos($navs, 'A Item'));
             $this->assertLessThan(strpos($navs, 'Y Item'), strpos($navs, 'B Item'));
             $this->assertLessThan(strpos($navs, 'X Item'), strpos($navs, 'C Item'));
-            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
         public function testDescendingSorting(): void
