@@ -59,6 +59,16 @@ addSubHeader(string|array $text, bool $translate = true): void
 
 Begins a sub section under the current headline. Links added afterwards are grouped under this subheader until another subheader or header is set. Pass an empty string to stop adding items to a subheader.
 
+## addColoredSubHeader
+
+```php
+addColoredSubHeader(string $text, bool $translate = true): void
+```
+
+Works like `addSubHeader()` but the text may contain LOTGD colour codes. The
+subheader automatically appends `` `0`` so colours do not bleed into
+following items.
+
 ## add
 
 ```php

@@ -60,6 +60,14 @@ function addnavsubheader($text, bool $translate = true): void
 }
 
 /**
+ * Start a coloured sub navigation section.
+ */
+function addnavcoloredsubheader(string $text, bool $translate = true): void
+{
+    Nav::addColoredSubHeader($text, $translate);
+}
+
+/**
  * Add a navigation link without translation.
  */
 function addnav_notl($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
