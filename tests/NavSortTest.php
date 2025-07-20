@@ -55,12 +55,12 @@ namespace {
             $session['user']['prefs']['navsort_headers'] = 'asc';
             $session['user']['prefs']['navsort_subheaders'] = 'asc';
 
-            $navs = Nav::buildNavs();
+            $navs = strip_tags(Nav::buildNavs());
 
             $this->assertLessThan(strpos($navs, 'Z Item'), strpos($navs, 'A Item'));
             $this->assertLessThan(strpos($navs, 'Y Item'), strpos($navs, 'B Item'));
             $this->assertLessThan(strpos($navs, 'X Item'), strpos($navs, 'C Item'));
-            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
         }
 
         public function testDescendingSorting(): void
@@ -79,7 +79,7 @@ namespace {
             $session['user']['prefs']['navsort_headers'] = 'desc';
             $session['user']['prefs']['navsort_subheaders'] = 'desc';
 
-            $navs = Nav::buildNavs();
+            $navs = strip_tags(Nav::buildNavs());
 
             $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'B Item'));
             $this->assertLessThan(strpos($navs, 'A1'), strpos($navs, 'B1'));
