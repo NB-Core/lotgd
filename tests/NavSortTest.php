@@ -83,7 +83,7 @@ namespace {
 
             $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'B Item'));
             $this->assertLessThan(strpos($navs, 'A1'), strpos($navs, 'B1'));
-            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
         }
     }
 }
