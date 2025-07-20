@@ -34,6 +34,22 @@ table.nav {
 	text-align: center;
 	font-variant: small-caps;
 }
+.navheadsub {
+        text-decoration: none;
+        width: 170px;
+        height: auto;
+        padding: 1px;
+        float: left;
+        line-height: 18px;
+        clear: none;
+        background-color: #003800;
+        font-weight: bold;
+        color: #FFFFFF;
+        cursor: default;
+        text-align: center;
+        font-variant: small-caps;
+        margin-left: 10px;
+}
 
 a {
 	color: #D1FFD1;

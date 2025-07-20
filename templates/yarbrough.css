@@ -78,7 +78,22 @@ a:hover.navhilite {
 	font-weight: bold;
 	color: #00CCFF;
 	cursor: default;
-	text-align: center;
+        text-align: center;
+}
+.navheadsub {
+        text-decoration: none;
+        width: 170px;
+        border: thin #003366;
+        height: auto;
+        padding: 1px;
+        line-height: 18px;
+        float: left;
+        clear: none;
+        font-weight: bold;
+        color: #00CCFF;
+        cursor: default;
+        text-align: center;
+        margin-left: 10px;
 }
 table {
 }
