@@ -11,6 +11,7 @@ class NavigationSubSection
     public string|array $headline;
     private array $items = [];
     public bool $translate;
+    public bool $colored = false;
 
     /**
      * @param string|array $headline Subsection headline text

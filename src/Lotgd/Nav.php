@@ -218,6 +218,19 @@ class Nav
     }
 
     /**
+     * Start a new coloured sub navigation section.
+     * Items added afterwards belong to this subsection until a new header is set.
+     */
+    public static function addColoredSubHeader(string $text, bool $translate = true): void
+    {
+        if (self::$block_new_navs) return;
+        self::addSubHeader($text, $translate);
+        if (self::$currentSubSection instanceof NavigationSubSection) {
+            self::$currentSubSection->colored = true;
+        }
+    }
+
+    /**
      * Add a link without translating the label.
      *
      * @param string|array $text    Link label or header text
@@ -440,7 +453,15 @@ class Nav
                     if (! $has) {
                         continue;
                     }
-                    $sublinks .= self::privateAddSubHeader($sub->headline, $sub->translate ?? true);
+                    $header = $sub->headline;
+                    if ($sub->colored) {
+                        if (is_array($header)) {
+                            $header[0] .= '`0';
+                        } else {
+                            $header .= '`0';
+                        }
+                    }
+                    $sublinks .= self::privateAddSubHeader($header, $sub->translate ?? true);
                     foreach ($sub->getItems() as $v) {
                         $sublinks .= $v->render();
                     }
