@@ -11,7 +11,7 @@ use Lotgd\Nav;
 class NavigationItem
 {
     public string|array $text;
-    public $link;
+    public string $link;
     public bool $priv;
     public bool $popup;
     public string $popupSize;
