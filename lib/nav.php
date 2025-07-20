@@ -134,9 +134,9 @@ function clearnav(): void
 /**
  * Sort navigation entries alphabetically.
  */
-function navsort(): void
+function navsort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
 {
-    Nav::navSort();
+    Nav::navSort($headerOrder, $subOrder);
 }
 
 /**
