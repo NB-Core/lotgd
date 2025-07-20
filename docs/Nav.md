@@ -2,6 +2,22 @@
 
 This page documents helper methods in `\Lotgd\Nav`.
 
+## NavigationItem
+
+```php
+new \Lotgd\Nav\NavigationItem(string|array $text, string $link, bool $priv = false, bool $popup = false, string $popupSize = '500x300', bool $translate = true)
+```
+
+Represents a single navigation link. Use `render()` to produce the HTML snippet for the item.
+
+## NavigationSection
+
+```php
+new \Lotgd\Nav\NavigationSection(string|array $headline, bool $collapse = true, bool $colored = false)
+```
+
+Holds a headline and a set of `NavigationItem` objects. The `$collapse` flag controls whether the section can be collapsed and `$colored` indicates a coloured headline.
+
 ## addColoredHeadline
 
 ```php

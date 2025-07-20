@@ -5,6 +5,8 @@ namespace Lotgd;
 use Lotgd\HolidayText;
 use Lotgd\Output;
 use Lotgd\Translator;
+use Lotgd\Nav\NavigationItem;
+use Lotgd\Nav\NavigationSection;
 
 // Maintain state within the class instead of the global namespace
 
@@ -21,19 +23,12 @@ class Nav
         'unblockfull' => [],
     ];
     private static string $navsection = '';
-    private static array $navbysection = [];
+    /** @var array<string, NavigationSection> */
+    private static array $sections = [];
     private static array $navschema = [];
-    private static array $navnocollapse = [];
     private static bool $block_new_navs = false;
     private static array $accesskeys = [];
     private static array $quickkeys = [];
-    /**
-     * Store which nav sections use colored headlines so we can
-     * append the colour reset when rendering.
-     *
-     * @var array<string,bool>
-     */
-    private static array $coloredsections = [];
     /**
      * Block a navigation link.
      *
@@ -148,23 +143,25 @@ class Nav
         global $notranslate;
         if (self::$block_new_navs) return;
         if (is_array($text)) {
-            $text = '!array!' . serialize($text);
+            $key = '!array!' . serialize($text);
+        } else {
+            $key = $text;
         }
-        self::$navsection = $text;
-        if (!array_key_exists($text, self::$navschema)) {
-            self::$navschema[$text] = Translator::getNamespace();
+        self::$navsection = $key;
+        if (!array_key_exists($key, self::$navschema)) {
+            self::$navschema[$key] = Translator::getNamespace();
         }
-        if (!isset(self::$navbysection[self::$navsection])) {
-            self::$navbysection[self::$navsection] = [];
-        }
-        if ($collapse === false) {
-            self::$navnocollapse[$text] = true;
+        if (!isset(self::$sections[self::$navsection])) {
+            self::$sections[self::$navsection] = new NavigationSection($text, $collapse);
+        } else {
+            self::$sections[self::$navsection]->collapse = $collapse;
+            self::$sections[self::$navsection]->headline = $text;
         }
         if ($translate === false) {
             if (!isset($notranslate)) {
                 $notranslate = [];
             }
-            array_push($notranslate, [$text, '']);
+            array_push($notranslate, [$key, '']);
         }
     }
 
@@ -180,7 +177,9 @@ class Nav
     {
         if (self::$block_new_navs) return;
         self::addHeader($text, $collapse);
-        self::$coloredsections[self::$navsection] = true;
+        if (isset(self::$sections[self::$navsection])) {
+            self::$sections[self::$navsection]->colored = true;
+        }
     }
 
     /**
@@ -205,14 +204,14 @@ class Nav
             if ($text == '') {
                 call_user_func_array([self::class, 'privateAddNav'], $args);
             } else {
-                if (!isset(self::$navbysection[self::$navsection])) {
-                    self::$navbysection[self::$navsection] = [];
+                if (!isset(self::$sections[self::$navsection])) {
+                    self::$sections[self::$navsection] = new NavigationSection(self::$navsection);
                 }
                 if (!isset($notranslate)) {
                     $notranslate = [];
                 }
-                array_push(self::$navbysection[self::$navsection], $args);
-                array_push($notranslate, $args);
+                self::$sections[self::$navsection]->addItem(new NavigationItem($args[0], $args[1], $args[2] ?? false, $args[3] ?? false, $args[4] ?? '500x300', false));
+                array_push($notranslate, [$args[0], $args[1]]);
             }
         }
     }
@@ -238,8 +237,8 @@ class Nav
             if ($text == '') {
                 call_user_func_array([self::class, 'privateAddNav'], $args);
             } else {
-                if (!isset(self::$navbysection[self::$navsection])) {
-                    self::$navbysection[self::$navsection] = [];
+                if (!isset(self::$sections[self::$navsection])) {
+                    self::$sections[self::$navsection] = new NavigationSection(self::$navsection);
                 }
                 $t = $args[0];
                 if (is_array($t)) {
@@ -248,7 +247,7 @@ class Nav
                 if (!array_key_exists($t, self::$navschema)) {
                     self::$navschema[$t] = Translator::getNamespace();
                 }
-                array_push(self::$navbysection[self::$navsection], array_merge($args, ['translate' => false]));
+                self::$sections[self::$navsection]->addItem(new NavigationItem($args[0], $args[1], $args[2] ?? false, $args[3] ?? false, $args[4] ?? '500x300'));
             }
         }
     }
@@ -289,12 +288,15 @@ class Nav
     {
         
         $count = 0;
-        $val = self::$navbysection[$section];
+        if (!isset(self::$sections[$section])) {
+            return 0;
+        }
+        $val = self::$sections[$section]->getItems();
         if (count($val) > 0) {
             foreach ($val as $nav) {
-                if (is_array($nav) && count($nav) > 0) {
-                    $link = $nav[1];
-                    if (!self::isBlocked($link)) $count++;
+                $link = $nav->link;
+                if (!self::isBlocked($link)) {
+                    $count++;
                 }
             }
         }
@@ -310,10 +312,10 @@ class Nav
     {
         global $session;
         if (is_array($session['allowednavs']) && count($session['allowednavs']) > 0) return true;
-        foreach (self::$navbysection as $key => $val) {
+        foreach (self::$sections as $key => $section) {
             if (self::countViableNavs($key) > 0) {
-                foreach ($val as $v) {
-                    if (is_array($v) && count($v) > 0) return true;
+                if (count($section->getItems()) > 0) {
+                    return true;
                 }
             }
         }
@@ -330,17 +332,17 @@ class Nav
         global $session;
         $builtnavs = '';
         if (isset($session['user']['prefs']['sortedmenus']) && $session['user']['prefs']['sortedmenus'] == 1) self::navSort();
-        foreach (self::$navbysection as $key => $val) {
+        foreach (self::$sections as $key => $section) {
             $tkey = $key;
             $navbanner = '';
             if (self::countViableNavs($key) > 0) {
+                $headerKey = $section->headline;
                 if ($key > '') {
-                    if (isset($session['loggedin']) && $session['loggedin']) tlschema(self::$navschema[$key]);
-                    if (substr($key, 0, 7) == '!array!') {
-                        $key = unserialize(substr($key, 7));
+                    if (isset($session['loggedin']) && $session['loggedin']) {
+                        tlschema(self::$navschema[$key]);
                     }
-                    $header = $key;
-                    if (isset(self::$coloredsections[$tkey]) && self::$coloredsections[$tkey]) {
+                    $header = $headerKey;
+                    if ($section->colored) {
                         if (is_array($header)) {
                             $header[0] .= '`0';
                         } else {
@@ -348,35 +350,40 @@ class Nav
                         }
                     }
                     $navbanner = self::privateAddNav($header);
-                    if (isset($session['loggedin']) && $session['loggedin']) tlschema();
+                    if (isset($session['loggedin']) && $session['loggedin']) {
+                        tlschema();
+                    }
                 }
                 $style = 'default';
                 $collapseheader = '';
                 $collapsefooter = '';
-                if ($tkey > '' && (!array_key_exists($tkey, self::$navnocollapse) || !self::$navnocollapse[$tkey])) {
-                    if (is_array($key)) {
-                        $key_string = call_user_func_array('sprintf', $key);
+                if ($tkey > '' && $section->collapse) {
+                    if (is_array($headerKey)) {
+                        $key_string = call_user_func_array('sprintf', $headerKey);
                     } else {
-                        $key_string = $key;
+                        $key_string = $headerKey;
                     }
                     $args = ['name' => "nh-{$key_string}", 'title' => ($key_string ? $key_string : 'Unnamed Navs')];
                     $args = modulehook('collapse-nav{', $args);
-                    if (isset($args['content'])) $collapseheader = $args['content'];
-                    if (isset($args['style'])) $style = $args['style'];
+                    if (isset($args['content'])) {
+                        $collapseheader = $args['content'];
+                    }
+                    if (isset($args['style'])) {
+                        $style = $args['style'];
+                    }
                     if (!($key > '') && $style == 'classic') {
                         $navbanner = '<tr><td>';
                     }
                 }
                 $sublinks = '';
-                foreach ($val as $v) {
-                    if (is_array($v) && count($v) > 0) {
-                        unset($v['translate']);
-                        $sublinks .= call_user_func_array([self::class, 'privateAddNav'], $v);
-                    }
+                foreach ($section->getItems() as $v) {
+                    $sublinks .= $v->render();
                 }
-                if ($tkey > '' && (!array_key_exists($tkey, self::$navnocollapse) || !self::$navnocollapse[$tkey])) {
+                if ($tkey > '' && $section->collapse) {
                     $args = modulehook('}collapse-nav');
-                    if (isset($args['content'])) $collapsefooter = $args['content'];
+                    if (isset($args['content'])) {
+                        $collapsefooter = $args['content'];
+                    }
                 }
                 switch ($style) {
                     case 'classic':
@@ -391,12 +398,11 @@ class Nav
                 }
             }
         }
-        self::$navbysection = [];
-        self::$coloredsections = [];
+        self::$sections = [];
         return $builtnavs;
     }
 
-    protected static function privateAddNav($text, $link = false, $priv = false, $pop = false, $popsize = '500x300')
+    public static function privateAddNav($text, $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
         global $nav, $session, $REQUEST_URI, $notranslate, $settings;
         if ($link != false)
@@ -577,9 +583,8 @@ class Nav
     {
         global $session;
         $c = count($session['allowednavs']);
-        if (!is_array(self::$navbysection)) return $c;
-        foreach (self::$navbysection as $val) {
-            if (is_array($val)) $c += count($val);
+        foreach (self::$sections as $section) {
+            $c += count($section->getItems());
         }
         return $c;
     }
@@ -599,14 +604,10 @@ class Nav
     public static function navSort(): void
     {
         global $session;
-        if (!is_array(self::$navbysection)) {
-            return;
-        }
-        foreach (self::$navbysection as $key => $val) {
-            if (is_array($val)) {
-                usort($val, [self::class, 'navASort']);
-                self::$navbysection[$key] = $val;
-            }
+        foreach (self::$sections as $key => $section) {
+            $val = $section->getItems();
+            usort($val, [self::class, 'navASortItem']);
+            self::$sections[$key]->setItems($val);
         }
     }
 
@@ -625,6 +626,27 @@ class Nav
         $a = substr($a, $pos + 1);
         $b = substr($b, $pos2 + 1);
         return strcmp($a, $b);
+    }
+
+    protected static function navASortItem(NavigationItem $a, NavigationItem $b): int
+    {
+        $ta = $a->text;
+        $tb = $b->text;
+        if (is_array($ta)) {
+            $ta = call_user_func_array('sprintf', $ta);
+        }
+        if (is_array($tb)) {
+            $tb = call_user_func_array('sprintf', $tb);
+        }
+        $ta = sanitize($ta);
+        $tb = sanitize($tb);
+        $posA = strpos(substr($ta, 0, 2), '?');
+        $posB = strpos(substr($tb, 0, 2), '?');
+        if ($posA === false) $posA = -1;
+        if ($posB === false) $posB = -1;
+        $ta = substr($ta, $posA + 1);
+        $tb = substr($tb, $posB + 1);
+        return strcmp($ta, $tb);
     }
 
     /**
