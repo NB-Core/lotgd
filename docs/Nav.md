@@ -105,4 +105,18 @@ unblockNav(string $link, bool $partial = false): void
 Blocks or unblocks a navigation link. If `$partial` is `true`, every link that
 starts with the given prefix is affected.
 
+## navsort
+
+```php
+navsort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
+```
+
+Sorts navigation links alphabetically. `$headerOrder` controls the ordering of
+subsections while `$subOrder` determines the order of items within each section
+and subsection. Pass `'off'` to leave the original order untouched.
+
+User preferences `navsort_headers` and `navsort_subheaders` hold the chosen
+values (`off`, `asc` or `desc`) and `buildNavs()` will automatically sort the
+navigation accordingly.
+
 

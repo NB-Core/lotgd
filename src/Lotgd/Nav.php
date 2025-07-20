@@ -394,7 +394,13 @@ class Nav
     {
         global $session;
         $builtnavs = '';
-        if (isset($session['user']['prefs']['sortedmenus']) && $session['user']['prefs']['sortedmenus'] == 1) self::navSort();
+        $headerOrder = $session['user']['prefs']['navsort_headers'] ?? null;
+        $subOrder = $session['user']['prefs']['navsort_subheaders'] ?? null;
+        if (($headerOrder && $headerOrder !== 'off') || ($subOrder && $subOrder !== 'off')) {
+            self::navSort($headerOrder ?: 'asc', $subOrder ?: 'asc');
+        } elseif (isset($session['user']['prefs']['sortedmenus']) && $session['user']['prefs']['sortedmenus'] == 1) {
+            self::navSort('asc', 'asc');
+        }
         foreach (self::$sections as $key => $section) {
             $tkey = $key;
             $navbanner = '';
@@ -729,19 +735,37 @@ class Nav
     /**
      * Sort navigation entries alphabetically.
      */
-    public static function navSort(): void
+    public static function navSort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
     {
         global $session;
         foreach (self::$sections as $key => $section) {
             $val = $section->getItems();
-            usort($val, [self::class, 'navASortItem']);
+            if ($subOrder !== 'off') {
+                usort($val, [self::class, 'navASortItem']);
+                if ($subOrder === 'desc') {
+                    $val = array_reverse($val);
+                }
+            }
             self::$sections[$key]->setItems($val);
+
             $subs = $section->getSubSections();
+            if ($headerOrder !== 'off') {
+                usort($subs, [self::class, 'navASortSub']);
+                if ($headerOrder === 'desc') {
+                    $subs = array_reverse($subs);
+                }
+            }
             foreach ($subs as $s) {
                 $items = $s->getItems();
-                usort($items, [self::class, 'navASortItem']);
+                if ($subOrder !== 'off') {
+                    usort($items, [self::class, 'navASortItem']);
+                    if ($subOrder === 'desc') {
+                        $items = array_reverse($items);
+                    }
+                }
                 $s->setItems($items);
             }
+            self::$sections[$key]->setSubSections($subs);
         }
     }
 
@@ -766,6 +790,27 @@ class Nav
     {
         $ta = $a->text;
         $tb = $b->text;
+        if (is_array($ta)) {
+            $ta = call_user_func_array('sprintf', $ta);
+        }
+        if (is_array($tb)) {
+            $tb = call_user_func_array('sprintf', $tb);
+        }
+        $ta = sanitize($ta);
+        $tb = sanitize($tb);
+        $posA = strpos(substr($ta, 0, 2), '?');
+        $posB = strpos(substr($tb, 0, 2), '?');
+        if ($posA === false) $posA = -1;
+        if ($posB === false) $posB = -1;
+        $ta = substr($ta, $posA + 1);
+        $tb = substr($tb, $posB + 1);
+        return strcmp($ta, $tb);
+    }
+
+    protected static function navASortSub(NavigationSubSection $a, NavigationSubSection $b): int
+    {
+        $ta = $a->headline;
+        $tb = $b->headline;
         if (is_array($ta)) {
             $ta = call_user_func_array('sprintf', $ta);
         }
