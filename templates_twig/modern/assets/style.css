@@ -89,7 +89,21 @@ td.charinfo {
 	border-right-style: none;
 	border-bottom-style: none;
 	border-left-style: none;
-	cursor: default;
+        cursor: default;
+}
+.navheadsub {
+        text-decoration: none;
+        width: 170px;
+        border: thin #003366;
+        height: auto;
+        padding: 1px;
+        line-height: 18px;
+        float: left;
+        clear: none;
+        font-weight: bold;
+        color: #00CCFF;
+        cursor: default;
+        margin-left: 10px;
 }
 td.charhead {
 	background-color: #009900;

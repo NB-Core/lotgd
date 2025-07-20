@@ -52,6 +52,14 @@ function addnavheader($text, bool $collapse = true, bool $translate = true): voi
 }
 
 /**
+ * Start a new sub navigation section.
+ */
+function addnavsubheader($text, bool $translate = true): void
+{
+    Nav::addSubHeader($text, $translate);
+}
+
+/**
  * Add a navigation link without translation.
  */
 function addnav_notl($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void

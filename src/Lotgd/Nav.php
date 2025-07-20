@@ -7,6 +7,7 @@ use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\Nav\NavigationItem;
 use Lotgd\Nav\NavigationSection;
+use Lotgd\Nav\NavigationSubSection;
 
 // Maintain state within the class instead of the global namespace
 
@@ -25,6 +26,7 @@ class Nav
     private static string $navsection = '';
     /** @var array<string, NavigationSection> */
     private static array $sections = [];
+    private static ?NavigationSubSection $currentSubSection = null;
     private static array $navschema = [];
     private static bool $block_new_navs = false;
     private static array $accesskeys = [];
@@ -148,6 +150,7 @@ class Nav
             $key = $text;
         }
         self::$navsection = $key;
+        self::$currentSubSection = null;
         if (!array_key_exists($key, self::$navschema)) {
             self::$navschema[$key] = Translator::getNamespace();
         }
@@ -183,6 +186,38 @@ class Nav
     }
 
     /**
+     * Start a new sub navigation section.
+     * Items added afterwards belong to this subsection until a new header is set.
+     * Pass an empty string to stop using a subsection.
+     */
+    public static function addSubHeader($text, bool $translate = true): void
+    {
+        global $notranslate;
+        if (self::$block_new_navs) return;
+        if ($text === '') {
+            self::$currentSubSection = null;
+            return;
+        }
+        if (!isset(self::$sections[self::$navsection])) {
+            self::$sections[self::$navsection] = new NavigationSection(self::$navsection);
+        }
+        $sub = new NavigationSubSection($text, $translate);
+        self::$sections[self::$navsection]->addSubSection($sub);
+        self::$currentSubSection = $sub;
+
+        $key = is_array($text) ? '!array!' . serialize($text) : $text;
+        if (!array_key_exists($key, self::$navschema)) {
+            self::$navschema[$key] = Translator::getNamespace();
+        }
+        if ($translate === false) {
+            if (!isset($notranslate)) {
+                $notranslate = [];
+            }
+            array_push($notranslate, [$key, '']);
+        }
+    }
+
+    /**
      * Add a link without translating the label.
      *
      * @param string|array $text    Link label or header text
@@ -210,7 +245,12 @@ class Nav
                 if (!isset($notranslate)) {
                     $notranslate = [];
                 }
-                self::$sections[self::$navsection]->addItem(new NavigationItem($args[0], $args[1], $args[2] ?? false, $args[3] ?? false, $args[4] ?? '500x300', false));
+                $item = new NavigationItem($args[0], $args[1], $args[2] ?? false, $args[3] ?? false, $args[4] ?? '500x300', false);
+                if (self::$currentSubSection !== null) {
+                    self::$currentSubSection->addItem($item);
+                } else {
+                    self::$sections[self::$navsection]->addItem($item);
+                }
                 array_push($notranslate, [$args[0], $args[1]]);
             }
         }
@@ -247,7 +287,12 @@ class Nav
                 if (!array_key_exists($t, self::$navschema)) {
                     self::$navschema[$t] = Translator::getNamespace();
                 }
-                self::$sections[self::$navsection]->addItem(new NavigationItem($args[0], $args[1], $args[2] ?? false, $args[3] ?? false, $args[4] ?? '500x300'));
+                $item = new NavigationItem($args[0], $args[1], $args[2] ?? false, $args[3] ?? false, $args[4] ?? '500x300');
+                if (self::$currentSubSection !== null) {
+                    self::$currentSubSection->addItem($item);
+                } else {
+                    self::$sections[self::$navsection]->addItem($item);
+                }
             }
         }
     }
@@ -291,11 +336,16 @@ class Nav
         if (!isset(self::$sections[$section])) {
             return 0;
         }
-        $val = self::$sections[$section]->getItems();
-        if (count($val) > 0) {
-            foreach ($val as $nav) {
-                $link = $nav->link;
-                if (!self::isBlocked($link)) {
+        $sec = self::$sections[$section];
+        $val = $sec->getItems();
+        foreach ($val as $nav) {
+            if (!self::isBlocked($nav->link)) {
+                $count++;
+            }
+        }
+        foreach ($sec->getSubSections() as $sub) {
+            foreach ($sub->getItems() as $nav) {
+                if (!self::isBlocked($nav->link)) {
                     $count++;
                 }
             }
@@ -314,7 +364,7 @@ class Nav
         if (is_array($session['allowednavs']) && count($session['allowednavs']) > 0) return true;
         foreach (self::$sections as $key => $section) {
             if (self::countViableNavs($key) > 0) {
-                if (count($section->getItems()) > 0) {
+                if (count($section->getItems()) > 0 || count($section->getSubSections()) > 0) {
                     return true;
                 }
             }
@@ -378,6 +428,22 @@ class Nav
                 $sublinks = '';
                 foreach ($section->getItems() as $v) {
                     $sublinks .= $v->render();
+                }
+                foreach ($section->getSubSections() as $sub) {
+                    $has = false;
+                    foreach ($sub->getItems() as $navItem) {
+                        if (!self::isBlocked($navItem->link)) {
+                            $has = true;
+                            break;
+                        }
+                    }
+                    if (! $has) {
+                        continue;
+                    }
+                    $sublinks .= self::privateAddSubHeader($sub->headline, $sub->translate ?? true);
+                    foreach ($sub->getItems() as $v) {
+                        $sublinks .= $v->render();
+                    }
                 }
                 if ($tkey > '' && $section->collapse) {
                     $args = modulehook('}collapse-nav');
@@ -574,6 +640,44 @@ class Nav
         return $thisnav;
     }
 
+    private static function privateAddSubHeader($text, bool $priv = false): string
+    {
+        global $nav, $session, $notranslate;
+        $link = false;
+        $thisnav = '';
+        $unschema = 0;
+        $translate = true;
+        if (isset($notranslate)) {
+            if (in_array([$text, $link], $notranslate)) $translate = false;
+        }
+        if (is_array($text)) {
+            if ($text[0] && (isset($session['loggedin']) && $session['loggedin'])) {
+                $schema = '!array!' . serialize($text);
+                if ($translate) {
+                    if (isset(self::$navschema[$schema])) {
+                        tlschema(self::$navschema[$schema]);
+                    }
+                    $unschema = 1;
+                }
+            }
+            if ($translate) $text[0] = translate($text[0]);
+            $text = call_user_func_array('sprintf', $text);
+        } else {
+            if ($text && isset($session['loggedin']) && $session['loggedin'] && $translate) {
+                if (isset(self::$navschema[$text])) {
+                    tlschema(self::$navschema[$text]);
+                }
+                $unschema = 1;
+            }
+            if ($text > '' && $translate) $text = Translator::translate($text);
+        }
+        $text = HolidayText::holidayize($text, 'nav');
+        $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navheadsub', ['title' => appoencode($text, $priv)]);
+        if ($unschema) tlschema();
+        $nav .= $thisnav;
+        return $thisnav;
+    }
+
     /**
      * Get the total number of navigation elements.
      *
@@ -585,6 +689,9 @@ class Nav
         $c = count($session['allowednavs']);
         foreach (self::$sections as $section) {
             $c += count($section->getItems());
+            foreach ($section->getSubSections() as $sub) {
+                $c += count($sub->getItems());
+            }
         }
         return $c;
     }
@@ -608,6 +715,12 @@ class Nav
             $val = $section->getItems();
             usort($val, [self::class, 'navASortItem']);
             self::$sections[$key]->setItems($val);
+            $subs = $section->getSubSections();
+            foreach ($subs as $s) {
+                $items = $s->getItems();
+                usort($items, [self::class, 'navASortItem']);
+                $s->setItems($items);
+            }
         }
     }
 

@@ -18,6 +18,14 @@ new \Lotgd\Nav\NavigationSection(string|array $headline, bool $collapse = true, 
 
 Holds a headline and a set of `NavigationItem` objects. The `$collapse` flag controls whether the section can be collapsed and `$colored` indicates a coloured headline.
 
+## NavigationSubSection
+
+```php
+new \Lotgd\Nav\NavigationSubSection(string|array $headline, bool $translate = true)
+```
+
+Represents a sub headline within a section. It contains its own list of `NavigationItem` objects.
+
 ## addColoredHeadline
 
 ```php
@@ -43,6 +51,14 @@ addHeader(string|array $text, bool $collapse = true, bool $translate = true): vo
 Starts a new navigation section. When `$collapse` is `true` the links added after the call
 can be collapsed in the UI. Set it to `false` to keep the section always expanded.
 
+## addSubHeader
+
+```php
+addSubHeader(string|array $text, bool $translate = true): void
+```
+
+Begins a sub section under the current headline. Links added afterwards are grouped under this subheader until another subheader or header is set. Pass an empty string to stop adding items to a subheader.
+
 ## add
 
 ```php
@@ -53,6 +69,7 @@ Adds a navigation link. When `$link` is `false` the call behaves like `addHeader
 If `$link` is an empty string an inactive/help line is inserted.
 The optional `$priv` flag is forwarded to `appoencode()` to control HTML escaping.
 When `$pop` is `true` the target URL opens in a popup sized by `$popsize`.
+When a subheader is active the link is stored inside that subsection.
 
 Example:
 
@@ -66,7 +83,7 @@ Example:
 ## addNotl
 
 Behaves like `add()` but never translates the text. Useful when links already
-contain colour codes or are generated dynamically.
+contain colour codes or are generated dynamically. Links are also placed in the current subheader when one is active.
 
 ## blockNav / unblockNav
 

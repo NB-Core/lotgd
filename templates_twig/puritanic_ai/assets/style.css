@@ -40,6 +40,20 @@ table.nav {
     font-family: Tahoma Small Cap;
     font-weight: bolder;
 }
+.navheadsub {
+    text-decoration: none;
+    height: auto;
+    padding: 1px;
+    float: left;
+    line-height: 33px;
+    clear: none;
+    color: #FFFFFF;
+    cursor: default;
+    text-align: center;
+    font-family: Tahoma Small Cap;
+    font-weight: bolder;
+    margin-left: 10px;
+}
 
 a {
     color: #669933;

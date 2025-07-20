@@ -10,6 +10,8 @@ class NavigationSection
 {
     public string|array $headline;
     private array $items = [];
+    /** @var NavigationSubSection[] */
+    private array $subSections = [];
     public bool $collapse;
     public bool $colored = false;
 
@@ -36,6 +38,14 @@ class NavigationSection
     }
 
     /**
+     * Add a subsection below this headline.
+     */
+    public function addSubSection(NavigationSubSection $sub): void
+    {
+        $this->subSections[] = $sub;
+    }
+
+    /**
      * Get the items within the section.
      *
      * @return NavigationItem[]
@@ -46,6 +56,16 @@ class NavigationSection
     }
 
     /**
+     * Get the subsections within this section.
+     *
+     * @return NavigationSubSection[]
+     */
+    public function getSubSections(): array
+    {
+        return $this->subSections;
+    }
+
+    /**
      * Replace the list of items in the section.
      *
      * @param NavigationItem[] $items
@@ -53,5 +73,15 @@ class NavigationSection
     public function setItems(array $items): void
     {
         $this->items = $items;
+    }
+
+    /**
+     * Replace the list of subsections in the section.
+     *
+     * @param NavigationSubSection[] $subs
+     */
+    public function setSubSections(array $subs): void
+    {
+        $this->subSections = $subs;
     }
 }
