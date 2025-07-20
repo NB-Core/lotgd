@@ -42,6 +42,14 @@ class NavigationItem
      */
     public function render(): string
     {
-        return Nav::privateAddNav($this->text, $this->link, $this->priv, $this->popup, $this->popupSize);
+        $output = Nav::privateAddNav(
+            $this->text,
+            $this->link,
+            $this->priv,
+            $this->popup,
+            $this->popupSize
+        );
+
+        return is_string($output) ? $output : '';
     }
 }
