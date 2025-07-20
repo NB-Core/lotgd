@@ -8,7 +8,7 @@ namespace Lotgd\Nav;
  */
 class NavigationSection
 {
-    public $headline;
+    public string|array $headline;
     private array $items = [];
     public bool $collapse;
     public bool $colored = false;
