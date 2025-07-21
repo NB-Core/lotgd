@@ -59,10 +59,10 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'Z Item'));
-            $this->assertLessThan(strpos($navs, 'B Item'), strpos($navs, 'Y Item'));
-            $this->assertLessThan(strpos($navs, 'C Item'), strpos($navs, 'X Item'));
-            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertLessThan(strpos($navs, 'Z Item'), strpos($navs, 'A Item'));
+            $this->assertLessThan(strpos($navs, 'Y Item'), strpos($navs, 'B Item'));
+            $this->assertLessThan(strpos($navs, 'X Item'), strpos($navs, 'C Item'));
+            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
         }
 
         public function testDescendingSorting(): void
@@ -83,8 +83,8 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'B Item'), strpos($navs, 'A Item'));
-            $this->assertLessThan(strpos($navs, 'B1'), strpos($navs, 'A1'));
+            $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'B Item'));
+            $this->assertLessThan(strpos($navs, 'A1'), strpos($navs, 'B1'));
             $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
@@ -118,7 +118,7 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
         public function testSortedMenusPreferenceDisablesSorting(): void
@@ -137,9 +137,9 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
-            $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'Z Item'));
-            $this->assertLessThan(strpos($navs, 'B Item'), strpos($navs, 'Y Item'));
+            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertLessThan(strpos($navs, 'Z Item'), strpos($navs, 'A Item'));
+            $this->assertLessThan(strpos($navs, 'Y Item'), strpos($navs, 'B Item'));
         }
     }
 }
