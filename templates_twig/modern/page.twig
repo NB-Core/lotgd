@@ -10,14 +10,20 @@
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body bgcolor="#000000" text="#CCCCCC">
+<header>
 <table border="0" cellpadding="4" cellspacing="0" width="100%">
     <tr>
         <td colspan="2" class="pageheader" valign="top">
             <img src="{{ template_path }}/assets/title.gif" width="395" height="55" align="right" alt="Page title graphic"><span class="pagetitle"><br>{{ title }}</span>
         </td>
     </tr>
+</table>
+</header>
+<main>
+<table border="0" cellpadding="4" cellspacing="0" width="100%">
     <tr>
         <td width="190" bgcolor="#433828" valign="top">
+            <nav role="navigation">
             <div align="center">{{ navad|raw }}</div>
             <img src="{{ template_path }}/assets/uscroll.GIF" width="182" height="11" alt="">
             <table cellspacing="0" cellpadding="0" class="nav">
@@ -27,6 +33,7 @@
             {{ motd|raw }} <br>
             {{ mail|raw }} <br>
             {{ petition|raw }}
+            </nav>
         </td>
         <td width="100%" rowspan="2" valign="top" bgcolor="#352D20">
             <table align="right" border="0"><tr><td>{{ paypal|raw }}{{ verticalad|raw }}</td></tr></table>
@@ -53,5 +60,7 @@
         </td>
     </tr>
 </table>
+</main>
+<footer></footer>
 </body>
 </html>

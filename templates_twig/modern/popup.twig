@@ -10,25 +10,29 @@
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body bgcolor="#000000" text="#CCCCCC">
+<header>
 <table border="0" cellpadding="4" cellspacing="0" width="100%">
     <tr>
         <td class="pageheader" valign="top"><span class="pagetitle"><br>{{ title }}</span></td>
     </tr>
+</table>
+</header>
+<main>
+<table border="0" cellpadding="4" cellspacing="0" width="100%">
     <tr>
         <td width="100%" valign="top" bgcolor="#352D20">
             {{ content|raw }}
         </td>
     </tr>
-    <tr>
-        <td class="footer">
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" class="noborder">
-                <tr valign="top">
-                    <td class="noborder">{{ copyright|raw }}</td>
-                    <td align="right" class="noborder">Design: Chris Yarbrough</td>
-                </tr>
-            </table>
-        </td>
+</table>
+</main>
+<footer>
+<table border="0" cellpadding="0" cellspacing="0" width="100%" class="noborder">
+    <tr valign="top">
+        <td class="noborder">{{ copyright|raw }}</td>
+        <td align="right" class="noborder">Design: Chris Yarbrough</td>
     </tr>
 </table>
+</footer>
 </body>
 </html>
