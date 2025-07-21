@@ -79,14 +79,18 @@ $currentHeader = "Module Categories";
 foreach ($seencats as $cat => $count) {
         $category = $cat;
         $header   = "Module Categories";
+        $subnav   = '';
         if (strpos($cat, "|") !== false) {
-                list($header, $category) = explode("|", $cat, 2);
+                list($header, $subnav) = explode("|", $cat, 2);
+                $category = $subnav;
         }
         if ($header !== $currentHeader) {
                 addnavheader($header);
                 $currentHeader = $header;
         }
-        addnavsubheader($category);
+        if ($subnav !== '') {
+                addnavsubheader($subnav);
+        }
         addnav(array(" ?%s - (%s modules)", $category, $count), "modules.php?cat=$cat");
 }
 
