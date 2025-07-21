@@ -195,12 +195,15 @@ class Forms
             $returnvalues[$key] = $row[$key];
         }
 
+        $fieldId = 'form-' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $keyout);
+
         rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td valign='top'>");
+        rawoutput("<label for='" . HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
         output_notl('%s', $info[0], true);
-        rawoutput('</td><td valign="top">');
+        rawoutput('</label></td><td valign="top">');
         $rowIndex++;
 
-        self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions);
+        self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions, $fieldId);
 
         rawoutput('</td></tr>', true);
     }
@@ -214,7 +217,8 @@ class Forms
         array $info,
         array $row,
         array &$returnvalues,
-        array $extensions
+        array $extensions,
+        string $fieldId
     ): void {
         $pretrans = 0;
         switch ($info[1]) {
@@ -265,7 +269,7 @@ class Forms
                 asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
                 $current = Template::addTypePrefix($row[$key]);
 
-                rawoutput("<select name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
+                rawoutput("<select id='" . htmlentities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "' name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
                 foreach ($skins as $skin => $display) {
                     $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
                     $skinEsc = htmlentities($skin, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
@@ -286,7 +290,7 @@ class Forms
                 $vloc = modulehook('validlocation', $vloc);
                 unset($vloc['all']);
                 reset($vloc);
-                rawoutput("<select name='$keyout'>");
+                rawoutput("<select id='" . HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "' name='$keyout'>");
                 foreach ($vloc as $loc => $val) {
                     if ($loc == $row[$key]) {
                         rawoutput("<option value='$loc' selected>" . htmlentities($loc, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
