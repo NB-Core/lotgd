@@ -2,6 +2,12 @@
 
 This document describes the main namespaces and helper classes within the `src/` directory. The project organizes most PHP code under the `\Lotgd` root namespace. Each file in `src/Lotgd` provides a class of the same name. The following tables summarise what each class is used for and highlight notable methods.
 
+For in-depth explanations see:
+- [Lotgd.md](Lotgd.md) – exhaustive reference for every class in the root namespace
+- [MySQL.md](MySQL.md) – details on the database layer and connection handling
+- [Nav.md](Nav.md) – how to create and render navigation links
+- [Forest.md](Forest.md) – combat helpers and forest outcomes
+
 ## \Lotgd (root namespace)
 
 The root namespace contains many helper classes. Each file usually offers a collection of static methods or utility features. Below is a short summary of the purpose of every class:
@@ -93,4 +99,5 @@ Currently hosts only `Outcomes` with functions for forest battle results. Future
 # Why Namespaces?
 
 The original codebase used many global functions defined in `lib/*.php`. Namespaces allow grouping related functionality into classes, improving autoloading and reducing name collisions. Modules should prefer these namespaced classes over the legacy wrappers documented in `docs/LegacyWrappers.md`.
+
 

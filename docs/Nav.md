@@ -129,3 +129,17 @@ the chosen values. `buildNavs()` reads these preferences and automatically sorts
 the navigation.
 
 
+
+## Building the Final Menu
+
+After links have been added with the helper methods above, call `Lotgd\Nav::buildNavs()` to produce the HTML navigation list.  The method automatically applies user preferences such as sorting order and collapsible sections.
+
+```php
+Lotgd\Nav::addHeader('Main');
+Lotgd\Nav::add('Return', 'village.php');
+$html = Lotgd\Nav::buildNavs();
+```
+
+`buildNavs()` clears the internal cache so links for the next page must be added again.
+
+Developers can reset access keys or start fresh output with `Lotgd\Nav::resetAccessKeys()` and `Lotgd\Nav::clearOutput()` respectively.
