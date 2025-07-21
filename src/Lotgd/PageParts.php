@@ -92,13 +92,18 @@ public static function pageHeader(...$args): void {
 	$title = Sanitize::sanitize(HolidayText::holidayize($title,'title'));
 	Buffs::calculateBuffFields();
 
+    $lang = defined('LANGUAGE') ? LANGUAGE : getsetting('defaultlanguage', 'en');
+    $metaDesc = getsetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
+
     if (TwigTemplate::isActive()) {
-            self::$twigVars['title'] = $title;
-    }
-    else
-    {
+        self::$twigVars['title'] = $title;
+        self::$twigVars['lang'] = $lang;
+        self::$twigVars['meta_description'] = $metaDesc;
+    } else {
         $header = $template['header'];
-        $header=str_replace("{title}",$title,$header);
+        $header = str_replace('{title}', $title, $header);
+        $header = str_replace('{lang}', $lang, $header);
+        $header = str_replace('{meta_description}', $metaDesc, $header);
     }
     $header.=Translator::tlbuttonPop();
     if (isset($settings) && $settings->getSetting('debug',0)) {
@@ -359,13 +364,20 @@ public static function popupHeader(...$args): void {
 	$title = call_user_func_array("sprintf_translate", $arguments);
 	$title = HolidayText::holidayize($title,'title');
 
+        $lang = defined('LANGUAGE') ? LANGUAGE : getsetting('defaultlanguage', 'en');
+        $metaDesc = getsetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
+
         if (TwigTemplate::isActive()) {
             self::$twigVars['title'] = $title;
+            self::$twigVars['lang'] = $lang;
+            self::$twigVars['meta_description'] = $metaDesc;
             return;
         }
 
         $header = $template['popuphead'];
-        $header = str_replace("{title}", $title, $header);
+        $header = str_replace('{title}', $title, $header);
+        $header = str_replace('{lang}', $lang, $header);
+        $header = str_replace('{meta_description}', $metaDesc, $header);
 }
 
 /**
