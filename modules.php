@@ -80,8 +80,7 @@ foreach ($seencats as $cat => $count) {
         $category = $cat;
         $header   = "Module Categories";
         if (strpos($cat, "|") !== false) {
-                $header   = strtok($cat, "|");
-                $category = strtok("|");
+                list($header, $category) = explode("|", $cat, 2);
         }
         if ($header !== $currentHeader) {
                 addnavheader($header);
