@@ -71,21 +71,24 @@ $uninstmodules = ModuleManager::listUninstalled();
 $seencats = ModuleManager::getInstalledCategories();
 $ucount = count($uninstmodules);
 
-addnav("Uninstalled");
+addnavheader("Uninstalled");
 addnav(array(" ?Uninstalled - (%s modules)", $ucount), "modules.php");
 
-addnav("Module Categories");
-foreach ($seencats as $cat=>$count) {
-	$category = $cat;
-	if (strpos($cat,"|") !== false) {
-		//header included
-		$m_header = strtok($cat,"|");
-		$category = strtok("|");
-		addnav($m_header);
-	} else {
-		addnav("Module Categories");
-	}
-	addnav(array(" ?%s - (%s modules)", $category, $count), "modules.php?cat=$cat");
+addnavheader("Module Categories");
+$currentHeader = "Module Categories";
+foreach ($seencats as $cat => $count) {
+        $category = $cat;
+        $header   = "Module Categories";
+        if (strpos($cat, "|") !== false) {
+                $header   = strtok($cat, "|");
+                $category = strtok("|");
+        }
+        if ($header !== $currentHeader) {
+                addnavheader($header);
+                $currentHeader = $header;
+        }
+        addnavsubheader($category);
+        addnav(array(" ?%s - (%s modules)", $category, $count), "modules.php?cat=$cat");
 }
 
 $cat = httpget('cat');
