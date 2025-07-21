@@ -117,14 +117,14 @@
   <tr>
 	<td valign='center' align='center' class='noborder'>
 	  <table border='0'>
-		<tr>
-		  <td align='center'><font color='#ffff00'>{username}:</font></td>
-		  <td align='center'><font color='#ffff00'>{password}:</font></td>
-		</tr>
-		<tr>
-		  <td><input name='name' id="name" accesskey='u' size='10'></td>
-		  <td><input name='password' id="password" accesskey='p' type='password' size='10'></td>
-		</tr>
+                <tr>
+                  <td align='center'><label for='name'><font color='#ffff00'>{username}:</font></label></td>
+                  <td align='center'><label for='password'><font color='#ffff00'>{password}:</font></label></td>
+                </tr>
+                <tr>
+                  <td><input name='name' id="name" accesskey='u' size='10' autocomplete='username'></td>
+                  <td><input name='password' id="password" accesskey='p' type='password' size='10' autocomplete='current-password'></td>
+                </tr>
 		<tr>
 		  <td colspan='2' align='center'><input type='submit' value='{button}' class='button'><br></td>
 		</tr>

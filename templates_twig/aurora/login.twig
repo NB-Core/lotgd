@@ -5,16 +5,16 @@
             <td class="noborder">
                 <table class="login-inner">
                     <tr>
-                        <td class="login-label">{{ username|raw }}:</td>
-                        <td class="login-label">{{ password|raw }}:</td>
+                        <td class="login-label"><label for='name'>{{ username|raw }}:</label></td>
+                        <td class="login-label"><label for='password'>{{ password|raw }}:</label></td>
                     </tr>
                     <tr>
                         <td>
-							<input name='name' id='name' autocomplete ='username' accesskey='u' size='10'></input>
-						</td>
+                                                        <input name='name' id='name' autocomplete='username' accesskey='u' size='10'></input>
+                                                </td>
                         <td>
-							<input name='password' autocomplete='password' id='password' accesskey='p' type='password' size='10'></input>
-						</td>
+                                                        <input name='password' autocomplete='current-password' id='password' accesskey='p' type='password' size='10'></input>
+                                                </td>
                     </tr>
                     <tr>
                         <td colspan='2' class="login-submit">
