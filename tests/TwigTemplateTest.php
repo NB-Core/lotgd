@@ -21,15 +21,29 @@ final class TwigTemplateTest extends TestCase
     protected function tearDown(): void
     {
         TwigTemplate::deactivate();
-        if (is_dir($this->cacheDir . '/twig')) {
-            foreach (glob($this->cacheDir . '/twig/*') as $file) {
-                unlink($file);
+        $this->removeDir($this->cacheDir);
+    }
+
+    private function removeDir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getPathname());
+            } else {
+                unlink($item->getPathname());
             }
-            rmdir($this->cacheDir . '/twig');
         }
-        if (is_dir($this->cacheDir)) {
-            rmdir($this->cacheDir);
-        }
+
+        rmdir($dir);
     }
 
     public function testRenderSimpleTemplate(): void
