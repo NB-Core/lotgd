@@ -17,7 +17,7 @@
     },
     "scripts": {
         "test": "phpunit --configuration phpunit.xml",
-        "lint": "phpcs"
+        "lint": "phpcs ."
     },
     "extra": {
         "merge-plugin": {
