@@ -53,7 +53,6 @@ namespace {
             Nav::add('C Item', 'c.php');
 
             $session['user']['prefs']['sortedmenus'] = 'asc';
-            $session['user']['prefs']['sortedmenus'] = 'asc';
             $session['user']['prefs']['navsort_headers'] = 'asc';
             $session['user']['prefs']['navsort_subheaders'] = 'asc';
 
