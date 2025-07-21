@@ -37,7 +37,7 @@ final class SanitizeExtraTest extends TestCase
     protected function tearDown(): void
     {
         global $settings;
-        unset($settings);
+        $settings = null;
     }
 
     public function testNewlineSanitize(): void
