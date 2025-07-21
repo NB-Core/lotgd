@@ -29,6 +29,7 @@ class Nav
     private static ?NavigationSubSection $currentSubSection = null;
     private static array $navschema = [];
     private static bool $block_new_navs = false;
+    /** @var array<string,bool> */
     private static array $accesskeys = [];
     private static array $quickkeys = [];
     /**
@@ -63,6 +64,15 @@ class Nav
     public static function getQuickKeys(): array
     {
         return self::$quickkeys;
+    }
+
+    /**
+     * Reset stored access keys and quick keys.
+     */
+    public static function resetAccessKeys(): void
+    {
+        self::$accesskeys = [];
+        self::$quickkeys = [];
     }
 
     /**
@@ -730,6 +740,7 @@ class Nav
     {
         global $session;
         $session['allowednavs'] = [];
+        self::resetAccessKeys();
     }
 
     /**
