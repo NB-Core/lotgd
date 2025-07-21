@@ -56,8 +56,10 @@ if ($op == "list") {
 	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$session['user']['prefs']['language']."' GROUP BY namespace ORDER BY namespace ASC";
 	$result = db_query($sql);
 	rawoutput("<input type='hidden' name='op' value='list'>");
-	output("Known Namespaces:");
-	rawoutput("<select name='ns'>");
+        rawoutput("<label for='ns'>");
+        output("Known Namespaces:");
+        rawoutput("</label>");
+        rawoutput("<select name='ns' id='ns'>");
 	while ($row = db_fetch_assoc($result)){
 		rawoutput("<option value=\"".htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"".((htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) == $namespace) ? "selected" : "").">".htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))." ({$row['c']})</option>");
 	}

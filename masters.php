@@ -65,8 +65,10 @@ if ($op == "del") {
 	}
 	addnav("","masters.php?op=save&id=$id");
 	rawoutput("<form action='masters.php?op=save&id=$id' method='POST'>");
-	output("`^Master's level:`n");
-	rawoutput("<select name='level'>");
+        rawoutput("<label for='level'>");
+        output("`^Master's level:`n");
+        rawoutput("</label>");
+        rawoutput("<select name='level' id='level'>");
 	$maxlevel=getsetting('maxlevel');
 	for ($i=0;$i<$maxlevel;$i++) {
 		$selected=($i==$row['creaturelevel']?' selected':'');

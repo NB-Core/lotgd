@@ -98,8 +98,10 @@ if ($op==""){
 	$result = db_query($sql);
 	output_notl("<form action='translatortool.php' method='GET'>",true);
 	output_notl("<input type='hidden' name='op' value='list'>",true);
-	output("Known Namespaces:");
-	output_notl("<select name='u'>",true);
+        output_notl("<label for='u'>", true);
+        output("Known Namespaces:");
+        output_notl("</label>", true);
+        output_notl("<select name='u' id='u'>", true);
 	while ($row = db_fetch_assoc($result)){
 		output_notl("<option value=\"".htmlentities($row['uri'])."\">".htmlentities($row['uri'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))." ({$row['c']})</option>",true);
 	}

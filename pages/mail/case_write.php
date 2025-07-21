@@ -63,7 +63,9 @@ if (isset($row['login']) && $row['login']!="" && $forwardto==0){
 		array_push($superusers,$row['login']);
 	}
 }else{ 
-	output("`2To: ");
+        rawoutput("<label for='to'>");
+        output("`2To: ");
+        rawoutput("</label>");
 	$to = httppost('to');
 	$sql = "SELECT acctid,login,name,superuser FROM ".db_prefix('accounts')." WHERE login = '".addslashes($to)."' AND locked = 0";
 	$result = db_query($sql);
