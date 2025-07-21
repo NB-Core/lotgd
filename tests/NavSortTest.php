@@ -85,5 +85,37 @@ namespace {
             $this->assertLessThan(strpos($navs, 'A1'), strpos($navs, 'B1'));
             $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
+
+        public function testHeaderAscendingSorting(): void
+        {
+            global $session;
+            Nav::addHeader('Beta', false);
+            Nav::add('B Item', 'b.php');
+            Nav::addHeader('Alpha', false);
+            Nav::add('A Item', 'a.php');
+
+            $session['user']['prefs']['navsort_headers'] = 'asc';
+            $session['user']['prefs']['navsort_subheaders'] = 'asc';
+
+            $navs = strip_tags(Nav::buildNavs());
+
+            $this->assertGreaterThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+        }
+
+        public function testHeaderDescendingSorting(): void
+        {
+            global $session;
+            Nav::addHeader('Alpha', false);
+            Nav::add('A Item', 'a.php');
+            Nav::addHeader('Beta', false);
+            Nav::add('B Item', 'b.php');
+
+            $session['user']['prefs']['navsort_headers'] = 'desc';
+            $session['user']['prefs']['navsort_subheaders'] = 'asc';
+
+            $navs = strip_tags(Nav::buildNavs());
+
+            $this->assertGreaterThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+        }
     }
 }

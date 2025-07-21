@@ -120,9 +120,9 @@ navsort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
 ```
 
 Sorts navigation links alphabetically. `$headerOrder` controls the ordering of
-subsections while `$subOrder` determines the order of items within each section
-and subsection. Each argument may be `'asc'`, `'desc'` or `'off'`. Use `'off'`
-to keep the original order.
+sections and their subsections while `$subOrder` determines the order of items
+within each section and subsection. Each argument may be `'asc'`, `'desc'` or
+`'off'`. Use `'off'` to keep the original order.
 
 User preferences `navsort_headers` and `navsort_subheaders` store the chosen
 values for headlines and subheadlines. `buildNavs()` reads these preferences and
