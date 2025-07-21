@@ -10,26 +10,30 @@
 {headscript}{script}
 </head>
 <body bgcolor='#000000' text='#CCCCCC'>
+<header>
 <table border='0' cellpadding=4 cellspacing=0 width='100%'>
   <tr>
-	<td class='pageheader' valign='top'><span class='pagetitle'><br>{title}</span></td>
-  </tr>
-  <tr>
-	<td width='100%' valign='top' bgcolor='#352D20'>
-<!--!popupfoot-->
-	</td>
-  </tr>
-  <tr>
-	<td class='footer'>
-	  <table border='0' cellpadding='0' cellspacing='0' width='100%' class='noborder'>
-		<tr valign='top'>
-		  <td class='noborder'>{copyright}</td>
-		  <td align='right' class='noborder'>Design: Chris Yarbrough </td>
-		</tr>
-	  </table>
-	</td>
+        <td class='pageheader' valign='top'><span class='pagetitle'><br>{title}</span></td>
   </tr>
 </table>
+</header>
+<main>
+<table border='0' cellpadding=4 cellspacing=0 width='100%'>
+  <tr>
+        <td width='100%' valign='top' bgcolor='#352D20'>
+<!--!popupfoot-->
+        </td>
+  </tr>
+</table>
+</main>
+<footer>
+<table border='0' cellpadding='0' cellspacing='0' width='100%' class='noborder'>
+        <tr valign='top'>
+          <td class='noborder'>{copyright}</td>
+          <td align='right' class='noborder'>Design: Chris Yarbrough </td>
+        </tr>
+</table>
+</footer>
 </body>
 </html>
 <!--!header-->
@@ -44,54 +48,60 @@
 {headscript}{script}
 </head>
 <body bgcolor='#000000' text='#CCCCCC'>
+<header>
 <table border='0' cellpadding=4 cellspacing=0 width='100%'>
   <tr>
-	<td colspan=2 class='pageheader' valign='top'> <img src='templates/modern/title.gif' alt='' width='395' height='55' align='right'><span class='pagetitle'><br>
-	  {title}</span></td>
+        <td colspan=2 class='pageheader' valign='top'> <img src='templates/modern/title.gif' alt='' width='395' height='55' align='right'><span class='pagetitle'><br>
+          {title}</span></td>
 
-  </tr>
-  <tr>
-	<td width=190 bgcolor='#433828' valign='top'> 
-	<div align='center'>{navad}</div>
-	<img src='templates/modern/uscroll.GIF' width='182' height='11' alt=''>
-	  <table cellspacing='0' cellpadding='0' class='nav'>
-		<tr>
-		  <td>{nav}</td>
-		</tr>
-	  </table>
-
-	  <img src='templates/modern/lscroll.GIF' alt='' width='182' height='11'> <br>
-	  {motd} <br>
-	  {mail} <br>
-	  {petition} </td>
-	<td width='100%' rowspan=2 valign='top' bgcolor='#352D20'><table align='right' border='0'><tr><td>{paypal}{verticalad}</td></tr></table>{headerad}{bodyad}
-	  <!--!footer-->
-		{petitiondisplay}
-	</td>
-
-  </tr>
-  <tr>
-	<td width='190' valign='top' bgcolor='#433828'><img src='templates/modern/uscroll.GIF' width='182' height='11' alt=''>
-	  <table border='0' cellpadding='0' cellspacing='0' class='vitalinfo'>
-		<tr>
-		  <td> {stats} </td>
-		</tr>
-
-	  </table>
-	  <img src='templates/modern/lscroll.GIF' alt='' width='182' height='11'></td>
-  </tr>
-  <tr>
-	<td colspan=2 class='footer'>
-	  <table border='0' cellpadding='0' cellspacing='0' width='100%' class='noborder'>
-		<tr>
-		  <td class='noborder'>{copyright}Design: Chris Yarbrough ({pagegen}) </td>
-
-		  <td align='right' class='noborder' valign='top'>{source}<br /><br />{version}</td>
-		</tr>
-	  </table>
-	</td>
   </tr>
 </table>
+</header>
+<main>
+<table border='0' cellpadding=4 cellspacing=0 width='100%'>
+  <tr>
+        <td width=190 bgcolor='#433828' valign='top'>
+        <nav role='navigation'>
+        <div align='center'>{navad}</div>
+        <img src='templates/modern/uscroll.GIF' width='182' height='11' alt=''>
+          <table cellspacing='0' cellpadding='0' class='nav'>
+                <tr>
+                  <td>{nav}</td>
+                </tr>
+          </table>
+
+          <img src='templates/modern/lscroll.GIF' alt='' width='182' height='11'> <br>
+          {motd} <br>
+          {mail} <br>
+          {petition}</nav> </td>
+        <td width='100%' rowspan=2 valign='top' bgcolor='#352D20'>
+            <table align='right' border='0'><tr><td>{paypal}{verticalad}</td></tr></table>{headerad}{bodyad}
+            <!--!footer-->
+                {petitiondisplay}
+        </td>
+
+  </tr>
+  <tr>
+        <td width='190' valign='top' bgcolor='#433828'><img src='templates/modern/uscroll.GIF' width='182' height='11' alt=''>
+          <table border='0' cellpadding='0' cellspacing='0' class='vitalinfo'>
+                <tr>
+                  <td> {stats} </td>
+                </tr>
+
+          </table>
+          <img src='templates/modern/lscroll.GIF' alt='' width='182' height='11'></td>
+  </tr>
+</table>
+</main>
+<footer>
+<table border='0' cellpadding='0' cellspacing='0' width='100%' class='noborder'>
+        <tr>
+          <td class='noborder'>{copyright}Design: Chris Yarbrough ({pagegen}) </td>
+
+          <td align='right' class='noborder' valign='top'>{source}<br /><br />{version}</td>
+        </tr>
+</table>
+</footer>
 </body>
 </html>
 
