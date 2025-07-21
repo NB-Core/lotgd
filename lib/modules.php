@@ -157,6 +157,11 @@ function module_addeventhook(string $type, string $chance): void
     Modules::addEventHook($type, $chance);
 }
 
+function module_dropeventhook(string $type): void
+{
+    Modules::dropEventHook($type);
+}
+
 function module_drophook(string $hookname, $functioncall = false): void
 {
     Modules::dropHook($hookname, $functioncall);
