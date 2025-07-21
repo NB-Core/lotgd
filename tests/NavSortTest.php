@@ -99,7 +99,7 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertGreaterThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
         public function testHeaderDescendingSorting(): void
@@ -115,7 +115,7 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+            $this->assertGreaterThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
         }
     }
 }
