@@ -269,7 +269,7 @@ class Forms
                 asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
                 $current = Template::addTypePrefix($row[$key]);
 
-                rawoutput("<select id='" . HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "' name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
+                rawoutput("<select id='" . htmlentities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "' name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
                 foreach ($skins as $skin => $display) {
                     $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
                     $skinEsc = htmlentities($skin, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
