@@ -274,8 +274,9 @@ $setup = array(
 	"(LoGDnet requires your PHP configuration to have file wrappers enabled!!),note",
 	"logdnet"=>"Register with LoGDnet?,bool",
 	"Serverurl has moved to basic game setup. Enter it there please as it is now used for char expiration mails too!,note",
-	"serverdesc"=>"Server Description (75 chars max)",
-	"logdnetserver"=>"Master LoGDnet Server (default http://logdnet.logd.com/)",
+        "serverdesc"=>"Server Description (75 chars max)",
+        "meta_description"=>"Default HTML meta description,text",
+        "logdnetserver"=>"Master LoGDnet Server (default http://logdnet.logd.com/)",
 	"curltimeout"=>"How long we wait for responses from that server (in seconds),range,1,10,1|2",
 
 	"Game day Setup,title",
