@@ -1017,14 +1017,36 @@ class Modules
 
     /**
      * Register an event hook for a module.
+     *
+     * Any existing event hook for the same module and event type is removed
+     * first to avoid duplicate entries in the database which would lead to
+     * duplicated rows in the developer event list.
      */
     public static function addEventHook(string $type, string $chance): void
     {
         global $mostrecentmodule;
 
-        self::dropHook($type, $chance);
+        self::dropEventHook($type);
+
         $sql = 'INSERT INTO ' . Database::prefix('module_event_hooks')
             . " (modulename, event_type, event_chance) VALUES ('" . $mostrecentmodule . "', '$type', '" . addslashes($chance) . "')";
+        Database::query($sql);
+        invalidatedatacache("event-$type-0");
+        invalidatedatacache("event-$type-1");
+    }
+
+    /**
+     * Remove an existing event hook for the current module.
+     *
+     * This is called from {@see addEventHook()} before inserting a new hook so
+     * the table never contains duplicate rows.
+     */
+    public static function dropEventHook(string $type): void
+    {
+        global $mostrecentmodule;
+
+        $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks')
+            . " WHERE modulename='$mostrecentmodule' AND event_type='" . addslashes($type) . "'";
         Database::query($sql);
         invalidatedatacache("event-$type-0");
         invalidatedatacache("event-$type-1");
