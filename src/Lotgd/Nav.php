@@ -749,7 +749,16 @@ class Nav
     public static function navSort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
     {
         global $session;
-        foreach (self::$sections as $key => $section) {
+
+        $sections = array_values(self::$sections);
+        if ($headerOrder !== 'off') {
+            usort($sections, [self::class, 'navASortSection']);
+            if ($headerOrder === 'desc') {
+                $sections = array_reverse($sections);
+            }
+        }
+
+        foreach ($sections as $index => $section) {
             $val = $section->getItems();
             if ($subOrder !== 'off') {
                 usort($val, [self::class, 'navASortItem']);
@@ -757,7 +766,7 @@ class Nav
                     $val = array_reverse($val);
                 }
             }
-            self::$sections[$key]->setItems($val);
+            $sections[$index]->setItems($val);
 
             $subs = $section->getSubSections();
             if ($headerOrder !== 'off') {
@@ -776,8 +785,9 @@ class Nav
                 }
                 $s->setItems($items);
             }
-            self::$sections[$key]->setSubSections($subs);
+            $sections[$index]->setSubSections($subs);
         }
+        self::$sections = $sections;
     }
 
     protected static function navASort($a, $b)
@@ -801,6 +811,27 @@ class Nav
     {
         $ta = $a->text;
         $tb = $b->text;
+        if (is_array($ta)) {
+            $ta = call_user_func_array('sprintf', $ta);
+        }
+        if (is_array($tb)) {
+            $tb = call_user_func_array('sprintf', $tb);
+        }
+        $ta = sanitize($ta);
+        $tb = sanitize($tb);
+        $posA = strpos(substr($ta, 0, 2), '?');
+        $posB = strpos(substr($tb, 0, 2), '?');
+        if ($posA === false) $posA = -1;
+        if ($posB === false) $posB = -1;
+        $ta = substr($ta, $posA + 1);
+        $tb = substr($tb, $posB + 1);
+        return strcmp($ta, $tb);
+    }
+
+    protected static function navASortSection(NavigationSection $a, NavigationSection $b): int
+    {
+        $ta = $a->headline;
+        $tb = $b->headline;
         if (is_array($ta)) {
             $ta = call_user_func_array('sprintf', $ta);
         }
