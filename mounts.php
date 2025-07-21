@@ -340,8 +340,9 @@ function mountform($mount){
 	output("Mount Category:");
 	rawoutput("</td><td><input name='mount[mountcategory]' value=\"".htmlentities($mount['mountcategory'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
 	rawoutput("<tr><td nowrap>");
-	output("Mount Availability:");
-	rawoutput("</td><td nowrap>");
+        rawoutput("<label for='mount_location'>");
+        output("Mount Availability:");
+        rawoutput("</label></td><td nowrap>");
 	// Run a modulehook to find out where stables are located.  By default
 	// they are located in 'Degolburg' (ie, getgamesetting('villagename'));
 	// Some later module can remove them however.
@@ -351,7 +352,7 @@ function mountform($mount){
 	$locs['all'] = translate_inline("Everywhere");
 	ksort($locs);
 	reset($locs);
-	rawoutput("<select name='mount[mountlocation]'>");
+        rawoutput("<select name='mount[mountlocation]' id='mount_location'>");
 	foreach($locs as $loc=>$name) {
 		rawoutput("<option value='$loc'".($mount['mountlocation']==$loc?" selected":"").">$name</option>");
 	}

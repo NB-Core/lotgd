@@ -85,8 +85,10 @@ if (count($post)>0 && httppost('abuse')!="yes"){
 		$nolog = translate_inline("Character is not logged in!!");
 		rawoutput("<input name='unverified' type='hidden' value='$nolog'>");
 	}
-	output("`nType of your Problem / Enquiry: ");
-	rawoutput("<select name='problem_type'>");
+        rawoutput("<label for='problem_type'>");
+        output("`nType of your Problem / Enquiry: ");
+        rawoutput("</label>");
+        rawoutput("<select name='problem_type' id='problem_type'>");
 	$types=getsetting('petition_types','General');
 	$types=explode(",",$types);
 	foreach ($types as $type) {

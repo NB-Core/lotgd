@@ -119,8 +119,10 @@ if ($op=="") {
 	$result = db_query("SELECT mid(motddate,1,7) AS d, count(*) AS c FROM ".db_prefix("motd")." GROUP BY d ORDER BY d DESC");
 	$row = db_fetch_assoc($result);
 	rawoutput("<form action='motd.php' method='POST'>");
-	output("MoTD Archives:");
-	rawoutput("<select name='month' onChange='this.form.submit();' >");
+        rawoutput("<label for='month'>");
+        output("MoTD Archives:");
+        rawoutput("</label>");
+        rawoutput("<select name='month' id='month' onChange='this.form.submit();' >");
 	rawoutput("<option value=''>--Current--</option>");
 	while ($row = db_fetch_assoc($result)){
 		$time = strtotime("{$row['d']}-01");

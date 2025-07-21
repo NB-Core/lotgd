@@ -93,8 +93,10 @@ if ($op==""){
 		addnav("","bank.php?op=transfer2");
 	}elseif(db_num_rows($result)>1){
 		rawoutput("<form action='bank.php?op=transfer3' method='POST'>");
-		output("`6Transfer `^%s`6 to ",$amt);
-		rawoutput("<select name='to' class='input'>");
+                rawoutput("<label for='bank_to'>");
+                output("`6Transfer `^%s`6 to ",$amt);
+                rawoutput("</label>");
+                rawoutput("<select name='to' id='bank_to' class='input'>");
 		while ($row = db_fetch_assoc($result)) {
 			rawoutput("<option value=\"".HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\">".full_sanitize($row['name'])."</option>");
 		}

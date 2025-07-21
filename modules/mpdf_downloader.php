@@ -51,7 +51,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
 			rawoutput("<form action='runmodule.php?module=mpdf_downloader&op=grab' method='POST' style='display:inline'>");
 			rawoutput("<input type='hidden' name='section' value='$section'>");
 			rawoutput("Lines: <input name='lines' value='100' size='4'> ");
-			rawoutput("<select name='format'><option value='pdf'>PDF</option><option value='text'>Text</option></select> ");
+                        rawoutput("<label for='format'>Format:</label> <select name='format' id='format'><option value='pdf'>PDF</option><option value='text'>Text</option></select> ");
 			rawoutput("<input type='submit' class='button' value='Download'>");
 			rawoutput("</form>");
 			addnav('', "runmodule.php?module=mpdf_downloader&op=grab");

@@ -138,7 +138,7 @@ if ($db_num_rows>0){
 	$checkall = htmlentities(translate_inline("Check All"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
 	$delchecked = htmlentities(translate_inline("Delete Checked"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
 	$checknames = htmlentities(translate_inline("`vCheck by Name"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-	output_notl($checknames." <select onchange='check_name()' id='check_name_select'>".$option."</select><br>",true);
+        output_notl("<label for='check_name_select'>".$checknames."</label> <select onchange='check_name()' id='check_name_select'>".$option."</select><br>", true);
 	rawoutput("<input type='button' id='button_check' value=\"$checkall\" class='button' onClick='check_all()'>");
 	rawoutput("<input type='submit' class='button' value=\"$delchecked\">");
 	//enter here more input buttons as you like, you can then evaluate them via the mailfunctions hook

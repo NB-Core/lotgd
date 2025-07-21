@@ -46,8 +46,10 @@ if ($target=='') {
 	if ($names[0]!==false) {
 		rawoutput("<form action='bans.php?op=searchban' method='POST'>");
 		addnav("","bans.php?op=searchban");
-		output("Search banned user by name: ");
-		rawoutput("<select name='target'>");
+                rawoutput("<label for='target'>");
+                output("Search banned user by name: ");
+                rawoutput("</label>");
+                rawoutput("<select name='target' id='target'>");
 		while ($row=db_fetch_assoc($names[0])) {
 			rawoutput("<option value='".$row['acctid']."'>".$row['login']."</option>");
 		}
