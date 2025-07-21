@@ -116,16 +116,16 @@ starts with the given prefix is affected.
 ## navsort
 
 ```php
-navsort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
+navsort(string $sectionOrder = 'asc', string $subOrder = 'asc', string $itemOrder = 'asc'): void
 ```
 
-Sorts navigation links alphabetically. `$headerOrder` controls the ordering of
-sections and their subsections while `$subOrder` determines the order of items
-within each section and subsection. Each argument may be `'asc'`, `'desc'` or
-`'off'`. Use `'off'` to keep the original order.
+Sorts navigation links alphabetically. `$sectionOrder` controls the order of
+headlines, `$subOrder` the order of sub-headlines and `$itemOrder` the order of
+items within sections and subsections. Each argument may be `'asc'`, `'desc'` or
+`'off'` to keep the original order.
 
-User preferences `navsort_headers` and `navsort_subheaders` store the chosen
-values for headlines and subheadlines. `buildNavs()` reads these preferences and
-automatically sorts the navigation.
+User preferences `sortedmenus`, `navsort_headers` and `navsort_subheaders` store
+the chosen values. `buildNavs()` reads these preferences and automatically sorts
+the navigation.
 
 
