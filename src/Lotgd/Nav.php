@@ -403,12 +403,16 @@ class Nav
     public static function buildNavs(): string
     {
         global $session;
-        $builtnavs = '';
+        $builtnavs   = '';
         $headerOrder = $session['user']['prefs']['navsort_headers'] ?? null;
-        $subOrder = $session['user']['prefs']['navsort_subheaders'] ?? null;
-        if (($headerOrder && $headerOrder !== 'off') || ($subOrder && $subOrder !== 'off')) {
+        $subOrder    = $session['user']['prefs']['navsort_subheaders'] ?? null;
+        $sortedMenus = $session['user']['prefs']['sortedmenus'] ?? null;
+
+        if ($sortedMenus == 0) {
+            // Legacy preference explicitly disables sorting
+        } elseif (($headerOrder && $headerOrder !== 'off') || ($subOrder && $subOrder !== 'off')) {
             self::navSort($headerOrder ?: 'asc', $subOrder ?: 'asc');
-        } elseif (isset($session['user']['prefs']['sortedmenus']) && $session['user']['prefs']['sortedmenus'] == 1) {
+        } elseif ($sortedMenus == 1) {
             self::navSort('asc', 'asc');
         }
         foreach (self::$sections as $key => $section) {
@@ -750,15 +754,15 @@ class Nav
     {
         global $session;
 
-        $sections = array_values(self::$sections);
+        $sections = self::$sections;
         if ($headerOrder !== 'off') {
-            usort($sections, [self::class, 'navASortSection']);
+            uasort($sections, [self::class, 'navASortSection']);
             if ($headerOrder === 'desc') {
-                $sections = array_reverse($sections);
+                $sections = array_reverse($sections, true);
             }
         }
 
-        foreach ($sections as $index => $section) {
+        foreach ($sections as $key => $section) {
             $val = $section->getItems();
             if ($subOrder !== 'off') {
                 usort($val, [self::class, 'navASortItem']);
@@ -766,7 +770,7 @@ class Nav
                     $val = array_reverse($val);
                 }
             }
-            $sections[$index]->setItems($val);
+            $sections[$key]->setItems($val);
 
             $subs = $section->getSubSections();
             if ($headerOrder !== 'off') {
@@ -785,7 +789,7 @@ class Nav
                 }
                 $s->setItems($items);
             }
-            $sections[$index]->setSubSections($subs);
+            $sections[$key]->setSubSections($subs);
         }
         self::$sections = $sections;
     }
