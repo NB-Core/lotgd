@@ -99,7 +99,7 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertGreaterThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
         }
 
         public function testHeaderDescendingSorting(): void
@@ -115,7 +115,7 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertGreaterThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
         public function testSortedMenusPreferenceDisablesSorting(): void

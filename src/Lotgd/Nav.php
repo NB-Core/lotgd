@@ -408,11 +408,11 @@ class Nav
         $subOrder    = $session['user']['prefs']['navsort_subheaders'] ?? null;
         $sortedMenus = $session['user']['prefs']['sortedmenus'] ?? null;
 
-        if ($sortedMenus == 0) {
+        if ($sortedMenus !== null && (int) $sortedMenus === 0) {
             // Legacy preference explicitly disables sorting
         } elseif (($headerOrder && $headerOrder !== 'off') || ($subOrder && $subOrder !== 'off')) {
             self::navSort($headerOrder ?: 'asc', $subOrder ?: 'asc');
-        } elseif ($sortedMenus == 1) {
+        } elseif ($sortedMenus !== null && (int) $sortedMenus === 1) {
             self::navSort('asc', 'asc');
         }
         foreach (self::$sections as $key => $section) {
