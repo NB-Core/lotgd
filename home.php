@@ -122,7 +122,7 @@ if ($onlinecount<getsetting("maxonline",0) || getsetting("maxonline",0)==0){
             $templateVars['template_path'] = TwigTemplate::getPath();
         }
         rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">".templatereplace("login", $templateVars)."</form>");
-	output("Did you forget your password? Go <a href='create.php?op=forgot'>here</a> to retrieve a new one!`n",true);
+        output("Did you forget your password? Visit the <a href='create.php?op=forgot'>password reset page</a> to retrieve a new one!`n",true);
 	output_notl("`c");
 	addnav("","login.php");
 	modulehook("index-login", array());
