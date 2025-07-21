@@ -404,16 +404,12 @@ class Nav
     {
         global $session;
         $builtnavs   = '';
-        $headerOrder = $session['user']['prefs']['navsort_headers'] ?? null;
-        $subOrder    = $session['user']['prefs']['navsort_subheaders'] ?? null;
-        $sortedMenus = $session['user']['prefs']['sortedmenus'] ?? null;
+        $sectionOrder = self::normalizeOrder($session['user']['prefs']['sortedmenus'] ?? null);
+        $subOrder     = self::normalizeOrder($session['user']['prefs']['navsort_headers'] ?? null);
+        $itemOrder    = self::normalizeOrder($session['user']['prefs']['navsort_subheaders'] ?? null);
 
-        if ($sortedMenus !== null && (int) $sortedMenus === 0) {
-            // Legacy preference explicitly disables sorting
-        } elseif (($headerOrder && $headerOrder !== 'off') || ($subOrder && $subOrder !== 'off')) {
-            self::navSort($headerOrder ?: 'asc', $subOrder ?: 'asc');
-        } elseif ($sortedMenus !== null && (int) $sortedMenus === 1) {
-            self::navSort('asc', 'asc');
+        if ($sectionOrder !== 'off' || $subOrder !== 'off' || $itemOrder !== 'off') {
+            self::navSort($sectionOrder, $subOrder, $itemOrder);
         }
         foreach (self::$sections as $key => $section) {
             $tkey = $key;
@@ -749,41 +745,45 @@ class Nav
 
     /**
      * Sort navigation entries alphabetically.
+     *
+     * @param string $sectionOrder Order for section headlines (asc, desc or off)
+     * @param string $subOrder     Order for sub-headlines (asc, desc or off)
+     * @param string $itemOrder    Order for items (asc, desc or off)
      */
-    public static function navSort(string $headerOrder = 'asc', string $subOrder = 'asc'): void
+    public static function navSort(string $sectionOrder = 'asc', string $subOrder = 'asc', string $itemOrder = 'asc'): void
     {
         global $session;
 
         $sections = self::$sections;
-        if ($headerOrder !== 'off') {
+        if ($sectionOrder !== 'off') {
             uasort($sections, [self::class, 'navASortSection']);
-            if ($headerOrder === 'desc') {
+            if ($sectionOrder === 'desc') {
                 $sections = array_reverse($sections, true);
             }
         }
 
         foreach ($sections as $key => $section) {
             $val = $section->getItems();
-            if ($subOrder !== 'off') {
+            if ($itemOrder !== 'off') {
                 usort($val, [self::class, 'navASortItem']);
-                if ($subOrder === 'desc') {
+                if ($itemOrder === 'desc') {
                     $val = array_reverse($val);
                 }
             }
             $sections[$key]->setItems($val);
 
             $subs = $section->getSubSections();
-            if ($headerOrder !== 'off') {
+            if ($subOrder !== 'off') {
                 usort($subs, [self::class, 'navASortSub']);
-                if ($headerOrder === 'desc') {
+                if ($subOrder === 'desc') {
                     $subs = array_reverse($subs);
                 }
             }
             foreach ($subs as $s) {
                 $items = $s->getItems();
-                if ($subOrder !== 'off') {
+                if ($itemOrder !== 'off') {
                     usort($items, [self::class, 'navASortItem']);
-                    if ($subOrder === 'desc') {
+                    if ($itemOrder === 'desc') {
                         $items = array_reverse($items);
                     }
                 }
@@ -872,6 +872,20 @@ class Nav
         $ta = substr($ta, $posA + 1);
         $tb = substr($tb, $posB + 1);
         return strcmp($ta, $tb);
+    }
+
+    private static function normalizeOrder($value): string
+    {
+        if ($value === null || $value === '' || $value === 'off') {
+            return 'off';
+        }
+        if ($value === 0 || $value === '0') {
+            return 'off';
+        }
+        if ($value === 1 || $value === '1') {
+            return 'asc';
+        }
+        return (string) $value;
     }
 
     /**

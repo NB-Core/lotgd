@@ -52,15 +52,17 @@ namespace {
             Nav::add('X Item', 'x.php');
             Nav::add('C Item', 'c.php');
 
+            $session['user']['prefs']['sortedmenus'] = 'asc';
+            $session['user']['prefs']['sortedmenus'] = 'asc';
             $session['user']['prefs']['navsort_headers'] = 'asc';
             $session['user']['prefs']['navsort_subheaders'] = 'asc';
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Z Item'), strpos($navs, 'A Item'));
-            $this->assertLessThan(strpos($navs, 'Y Item'), strpos($navs, 'B Item'));
-            $this->assertLessThan(strpos($navs, 'X Item'), strpos($navs, 'C Item'));
-            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+            $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'Z Item'));
+            $this->assertLessThan(strpos($navs, 'B Item'), strpos($navs, 'Y Item'));
+            $this->assertLessThan(strpos($navs, 'C Item'), strpos($navs, 'X Item'));
+            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
         public function testDescendingSorting(): void
@@ -81,8 +83,8 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'B Item'));
-            $this->assertLessThan(strpos($navs, 'A1'), strpos($navs, 'B1'));
+            $this->assertLessThan(strpos($navs, 'B Item'), strpos($navs, 'A Item'));
+            $this->assertLessThan(strpos($navs, 'B1'), strpos($navs, 'A1'));
             $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
@@ -99,7 +101,7 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
         }
 
         public function testHeaderDescendingSorting(): void
@@ -110,21 +112,24 @@ namespace {
             Nav::addHeader('Beta', false);
             Nav::add('B Item', 'b.php');
 
-            $session['user']['prefs']['navsort_headers'] = 'desc';
+            $session['user']['prefs']['sortedmenus'] = 'desc';
+            $session['user']['prefs']['navsort_headers'] = 'asc';
             $session['user']['prefs']['navsort_subheaders'] = 'asc';
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
         }
 
         public function testSortedMenusPreferenceDisablesSorting(): void
         {
             global $session;
             Nav::addHeader('Beta', false);
-            Nav::add('B Item', 'b.php');
-            Nav::addHeader('Alpha', false);
+            Nav::add('Z Item', 'z.php');
             Nav::add('A Item', 'a.php');
+            Nav::addHeader('Alpha', false);
+            Nav::add('Y Item', 'y.php');
+            Nav::add('B Item', 'b.php');
 
             $session['user']['prefs']['navsort_headers'] = 'asc';
             $session['user']['prefs']['navsort_subheaders'] = 'asc';
@@ -132,7 +137,9 @@ namespace {
 
             $navs = strip_tags(Nav::buildNavs());
 
-            $this->assertLessThan(strpos($navs, 'Alpha'), strpos($navs, 'Beta'));
+            $this->assertLessThan(strpos($navs, 'Beta'), strpos($navs, 'Alpha'));
+            $this->assertLessThan(strpos($navs, 'A Item'), strpos($navs, 'Z Item'));
+            $this->assertLessThan(strpos($navs, 'B Item'), strpos($navs, 'Y Item'));
         }
     }
 }

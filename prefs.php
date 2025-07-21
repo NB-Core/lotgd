@@ -250,9 +250,9 @@ if ($op=="suicide" && getsetting("selfdelete",0)!=0) {
 
 		"Display Preferences,title",
 		"template"=>"Skin,theme",
-                "sortedmenus"=>"Menus are sorted by alphabet?,bool",
-                "navsort_headers"=>"Sort subsections?,enum,off,Off,asc,Ascending,desc,Descending",
-                "navsort_subheaders"=>"Sort section items?,enum,off,Off,asc,Ascending,desc,Descending",
+                "sortedmenus"=>"Nav Headlines are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
+                "navsort_headers"=>"Nav Sub-Headlines are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
+                "navsort_subheaders"=>"Items under a headline are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
                 "language"=>"Language,enum,".getsetting("serverlanguages","en,English,de,Deutsch,fr,Français,dk,Danish,es,Español,it,Italian"),
 		"tabconfig"=>"Show config sections in tabs,bool",
 		"forestcreaturebar"=>"Forest Creatures show health ...,enum,0,Only Text,1,Only Healthbar,2,Healthbar AND Text",
