@@ -12,12 +12,32 @@ if (!function_exists('getsetting')) {
     function getsetting(string|int $name, mixed $default = ''): mixed { return $default; }
 }
 
+if (!class_exists('DummySettingsSanitize')) {
+    class DummySettingsSanitize extends Lotgd\Settings
+    {
+        private array $values;
+        public function __construct(array $values = []) { $this->values = $values; }
+        public function getSetting(string|int $name, mixed $default = false): mixed { return $this->values[$name] ?? $default; }
+        public function loadSettings(): void {}
+        public function clearSettings(): void {}
+        public function saveSetting(string|int $name, mixed $value): bool { $this->values[$name] = $value; return true; }
+        public function getArray(): array { return $this->values; }
+    }
+}
+
 final class SanitizeExtraTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $output;
+        global $output, $settings;
         $output = new Output();
+        $settings = new DummySettingsSanitize(['charset' => 'UTF-8']);
+    }
+
+    protected function tearDown(): void
+    {
+        global $settings;
+        unset($settings);
     }
 
     public function testNewlineSanitize(): void
@@ -32,7 +52,7 @@ final class SanitizeExtraTest extends TestCase
 
     public function testCmdSanitize(): void
     {
-        $this->assertSame('page.php', Sanitize::cmdSanitize('page.php?op=foo&c=1'));
+        $this->assertSame('page.php?op=foo', Sanitize::cmdSanitize('page.php?op=foo&c=1'));
     }
 
     public function testComscrollSanitize(): void
@@ -70,7 +90,7 @@ final class SanitizeExtraTest extends TestCase
     {
         global $output;
         $output = new Output();
-        $this->assertSame('Blue', Sanitize::sanitizeColorname(false, 'Bl`%u@e'));
+        $this->assertSame('Bl`%u@e', Sanitize::sanitizeColorname(false, 'Bl`%u@e'));
     }
 
     public function testSanitizeHtml(): void

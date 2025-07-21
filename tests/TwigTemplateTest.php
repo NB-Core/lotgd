@@ -21,8 +21,13 @@ final class TwigTemplateTest extends TestCase
     protected function tearDown(): void
     {
         TwigTemplate::deactivate();
+        if (is_dir($this->cacheDir . '/twig')) {
+            foreach (glob($this->cacheDir . '/twig/*') as $file) {
+                unlink($file);
+            }
+            rmdir($this->cacheDir . '/twig');
+        }
         if (is_dir($this->cacheDir)) {
-            foreach (glob($this->cacheDir . '/*') as $f) { unlink($f); }
             rmdir($this->cacheDir);
         }
     }
