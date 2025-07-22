@@ -70,7 +70,7 @@ class Header
         global $header, $template;
 
         \Lotgd\Translator::setup();
-        prepare_template();
+        Template::prepare();
 
         modulehook('header-popup');
 
