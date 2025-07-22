@@ -40,7 +40,7 @@ class PHPMailer
         $this->cc[$addr] = $name;
     }
 
-    public function SetLanguage($lang)
+    public function SetLanguage(string $lang)
     {
     }
 
