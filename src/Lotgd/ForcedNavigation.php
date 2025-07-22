@@ -63,8 +63,8 @@ class ForcedNavigation
         } else {
             if (!$anonymous) {
                 if (defined('AJAX_MODE') && AJAX_MODE) {
-                    $session = [];
                     $session['loggedin'] = false;
+                    $session = [];
                     return;
                 }
                 redirect('index.php?op=timeout', 'Not logged in: ' . $REQUEST_URI);
