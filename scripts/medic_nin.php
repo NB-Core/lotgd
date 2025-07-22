@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 //script file for use with the creatureaiscript
 //mind that this is PURE PHP+lotgd, you can do anything nasty in here!
