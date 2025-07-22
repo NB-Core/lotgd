@@ -90,7 +90,6 @@ a {
 /* Header and other styles */
 
 .page-header {
-    height: 48px;
     padding-bottom: 3px;
     /*background: url('header-bg.png') repeat-x;*/
 }
@@ -103,7 +102,8 @@ a {
 }
 
 .sidebar-content {
-    min-width: 150px;
+    min-width: 160px;
+    max-width: 208px;
     padding-left: 3px;
     padding-right: 3px;
     align-content: start;
@@ -299,6 +299,10 @@ table.petition-count {
 
 /* Additional styles as needed based on your layout and design requirements */
 
+.nav {
+   display: flow;
+}
+
 /* Layout helper classes */
 .align-center {
     text-align: center;
@@ -428,7 +432,7 @@ div.debug {
 }
 
 /* Mobile specific tweaks */
-@media (max-width: 575.98px) {
+@media (max-width: 1100px) {
     .mobile-toggles .navbar-toggler {
         border: none;
     }
