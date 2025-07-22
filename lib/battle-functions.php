@@ -2,7 +2,7 @@
 
 namespace Lotgd;
 
-class Fightbar extends FightBar
+class Fightbar extends \FightBar
 {
 }
 
