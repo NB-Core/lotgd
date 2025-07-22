@@ -644,6 +644,7 @@ public static function mailLinkTabText(){
 
     /**
      * Insert the navigation output into header and footer strings.
+     * @api
      */
     public static function generateNavigationOutput(string $header, string $footer, string $builtnavs): array
     {
