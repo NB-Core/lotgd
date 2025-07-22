@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Settings;
+
 class PullUrl
 {
     private static function curl(string $url)

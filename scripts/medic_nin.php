@@ -18,5 +18,3 @@ if ($badguy['creaturehealth'] < $badguy['maxhealth'] * 0.60 && $badguy['healpoin
     $badguy['creaturehealth'] += $heal;
     output("`!%s`# heals for `$%s hitpoints`#.`n", $heal);
 }
-
-?>

@@ -15,6 +15,7 @@ use Lotgd\PageParts;
 use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\Nav;
+
 class Outcomes
 {
     /**

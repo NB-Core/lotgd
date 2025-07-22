@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Cookies;
+
 class CheckBan
 {
     /**

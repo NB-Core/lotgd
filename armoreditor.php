@@ -1,4 +1,5 @@
 <?php
+
 /**
  * \file armoreditor.php
  * This file represents the grotto armor editor where you can create or edit new weapons for the shop.

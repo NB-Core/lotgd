@@ -17,6 +17,7 @@ use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\Redirect;
 use Lotgd\Settings;
+
 class Installer
 {
     /**

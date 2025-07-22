@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd\MySQL;
 
 use Lotgd\DataCache;
+
 class DbMysqli
 {
     /** @var \mysqli|null */

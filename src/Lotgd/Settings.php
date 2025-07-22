@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
+
 class Settings
 {
     private string $tablename;

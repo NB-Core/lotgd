@@ -13,6 +13,7 @@ use Lotgd\Sanitize;
 use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\DataCache;
+
 class ErrorHandler
 {
     /**

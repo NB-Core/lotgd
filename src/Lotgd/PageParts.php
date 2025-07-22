@@ -26,6 +26,7 @@ use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
+
 class PageParts
 {
     /**

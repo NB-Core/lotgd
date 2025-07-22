@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\ServerFunctions;
 use Lotgd\Cookies;
+
 class Template
 {
     /**

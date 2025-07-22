@@ -13,6 +13,7 @@ use Lotgd\Forms;
 use Lotgd\HolidayText;
 use Lotgd\Commentary;
 use Lotgd\Translator;
+
 class Moderate
 {
     /**

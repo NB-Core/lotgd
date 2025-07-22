@@ -14,6 +14,7 @@ use Lotgd\Translator;
 use Lotgd\Forms;
 use Lotgd\Sanitize;
 use Lotgd\Modules\Installer;
+
 class Modules
 {
     private static array $injectedModules = [1 => [], 0 => []];

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * \file badword.php
  * This file holds the Bad Word Editor for the Grotto. With this editor you can define bad words that get filtered or good words that count as exception to a rule. You have a grotto setting to turn this on or off.

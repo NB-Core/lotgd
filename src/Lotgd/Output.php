@@ -12,6 +12,7 @@ namespace Lotgd;
 use Lotgd\DumpItem;
 use Lotgd\HolidayText;
 use Lotgd\Translator;
+
 class Output
 {
     private $output;             // text collected for display

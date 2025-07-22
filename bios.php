@@ -1,4 +1,5 @@
 <?php
+
 /**
  * \file bios.php
  * This file provides the basic block of a users bio, hence it will display a warning. Blocking and unblocking can be done from the bio of the user.

@@ -14,6 +14,7 @@ use Lotgd\Settings;
 use Lotgd\PlayerFunctions;
 use Lotgd\Mail;
 use Lotgd\GameLog;
+
 class ExpireChars
 {
     /** @var Settings */

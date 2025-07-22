@@ -1,4 +1,5 @@
 <?php
+
 /**
  * \file bank.php
  * This file holds the entire bank code for the village bank. You can withdraw or depost gold here as user.

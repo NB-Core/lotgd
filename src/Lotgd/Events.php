@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Http;
+
 class Events
 {
 // This file encapsulates all the special event handling for most locations
