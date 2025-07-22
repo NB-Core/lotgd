@@ -577,6 +577,8 @@ Additional information about the navigation helper API can be found in
 Found a bug or have a feature request? Open an issue on GitHub.
 Pull requests are welcome for improvements or fixes.
 Run the unit tests locally with `composer test` before submitting PRs.
+Check coding style with `composer lint` and apply automatic fixes using
+`composer lint:fix`.
 
 ## License
 
