@@ -4,42 +4,11 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use Lotgd\PlayerFunctions;
-use Lotgd\Settings;
+use Lotgd\Tests\Stubs\DummySettings;
 
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../lib/settings.php';
 require_once __DIR__ . '/../lib/tempstat.php';
-
-class DummySettings extends Settings
-{
-    private array $values;
-
-    public function __construct(array $values = [])
-    {
-        $this->values = $values;
-    }
-
-    public function getSetting(string|int $settingname, mixed $default = false): mixed
-    {
-        return $this->values[$settingname] ?? $default;
-    }
-
-    public function loadSettings(): void
-    {
-    }
-    public function clearSettings(): void
-    {
-    }
-    public function saveSetting(string|int $settingname, mixed $value): bool
-    {
-        $this->values[$settingname] = $value;
-        return true;
-    }
-    public function getArray(): array
-    {
-        return $this->values;
-    }
-}
 
 final class PlayerFunctionsTest extends TestCase
 {

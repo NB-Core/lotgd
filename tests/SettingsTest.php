@@ -11,6 +11,7 @@ final class SettingsTest extends TestCase
 {
     protected function setUp(): void
     {
+        class_exists(Database::class);
         \Lotgd\MySQL\Database::$settings_table = [];
         \Lotgd\MySQL\Database::$affected_rows = 0;
     }

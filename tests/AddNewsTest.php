@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace {
     use PHPUnit\Framework\TestCase;
     use Lotgd\AddNews;
+    use Lotgd\Tests\Stubs\Database;
 
     require_once __DIR__ . '/../config/constants.php';
 
@@ -12,6 +13,7 @@ namespace {
     {
         protected function setUp(): void
         {
+            class_exists(Database::class);
             $GLOBALS['session'] = ['user' => ['acctid' => 3]];
             \Lotgd\Translator::tlschema('ns');
             \Lotgd\MySQL\Database::$lastSql = '';
