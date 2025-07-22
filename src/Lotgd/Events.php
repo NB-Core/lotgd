@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * Handle random special events that may occur in various locations.
+ */
+
 namespace Lotgd;
 
 use Lotgd\Http;
 
 require_once("config/constants.php");
-
-/**
- * Handle random special events that may occur in various locations.
- */
 class Events
 {
 // This file encapsulates all the special event handling for most locations

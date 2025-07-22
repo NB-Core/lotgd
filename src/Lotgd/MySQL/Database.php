@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Collection of database helper methods.
+ */
+
 namespace Lotgd\MySQL;
 
 use Lotgd\Backtrace;
@@ -11,10 +15,6 @@ use Lotgd\DateTime;
 global $dbinfo;
 
 $dbinfo = [];
-
-/**
- * Collection of database helper methods.
- */
 class Database
 {
     /** @var DbMysqli|null */

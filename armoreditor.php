@@ -1,4 +1,9 @@
 <?php
+/**
+ * \file armoreditor.php
+ * This file represents the grotto armor editor where you can create or edit new weapons for the shop.
+ * @see armor.php
+ */
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -7,12 +12,6 @@ use Lotgd\Forms;
 
 // addnews ready
 // mail ready
-/**
-* \file armoreditor.php
-* This file represents the grotto armor editor where you can create or edit new weapons for the shop.
-* @see armor.php
-*
-*/
 require_once("common.php");
 require_once("lib/http.php");
 

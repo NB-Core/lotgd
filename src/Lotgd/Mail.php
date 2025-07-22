@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Placeholder class for future mail handling refactoring.
  */
 
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;

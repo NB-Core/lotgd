@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Helper to resolve the partner name for a player.
  */
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 class Partner
 {
     /**

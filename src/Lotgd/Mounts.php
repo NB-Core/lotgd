@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Access to mount data.
  */
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 class Mounts
 {
     /**

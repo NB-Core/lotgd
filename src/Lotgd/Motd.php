@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Helpers for MOTD administration.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
-
-/**
- * Helpers for MOTD administration.
- */
 class Motd
 {
     /**

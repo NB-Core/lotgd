@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+/**
+ * Library (supporting) functions for page output
+ *      addnews ready
+ *      translator ready
+ *      mail ready
+ *
+ * @author core_module
+ * @package defaultPackage
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
@@ -16,17 +26,6 @@ use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
-
-/**
- * Library (supporting) functions for page output
- *      addnews ready
- *      translator ready
- *      mail ready
- *
- * @author core_module
- * @package defaultPackage
- *
- */
 class PageParts
 {
     /**

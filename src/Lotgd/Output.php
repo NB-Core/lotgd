@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
+/**
+ * Collects formatted page output which can later be rendered by the template.
+ * Refactored from the legacy output_collector class in lib/output.php.
+ */
+
 namespace Lotgd;
 
 use Lotgd\DumpItem;
 use Lotgd\HolidayText;
 use Lotgd\Translator;
-
-/**
- * Collects formatted page output which can later be rendered by the template.
- * Refactored from the legacy output_collector class in lib/output.php.
- */
 class Output
 {
     private $output;             // text collected for display

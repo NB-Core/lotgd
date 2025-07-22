@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Miscellaneous server wide helper utilities.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
-
-/**
- * Miscellaneous server wide helper utilities.
- */
 class ServerFunctions
 {
     /**

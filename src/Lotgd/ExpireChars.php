@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * Maintenance tasks for deleting inactive characters and notifying players
+ * about impending account expiration.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
@@ -9,11 +14,6 @@ use Lotgd\Settings;
 use Lotgd\PlayerFunctions;
 use Lotgd\Mail;
 use Lotgd\GameLog;
-
-/**
- * Maintenance tasks for deleting inactive characters and notifying players
- * about impending account expiration.
- */
 class ExpireChars
 {
     /** @var Settings */

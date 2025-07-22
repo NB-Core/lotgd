@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Nav;
-
-use Lotgd\Nav;
-
 /**
  * Represents a single navigation link.
  */
+
+namespace Lotgd\Nav;
+
+use Lotgd\Nav;
 class NavigationItem
 {
     public string|array $text;

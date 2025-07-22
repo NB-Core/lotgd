@@ -1,4 +1,9 @@
 <?php
+/**
+ * \file badword.php
+ * This file holds the Bad Word Editor for the Grotto. With this editor you can define bad words that get filtered or good words that count as exception to a rule. You have a grotto setting to turn this on or off.
+ * @see grotto.php
+ */
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -6,11 +11,6 @@ use Lotgd\Nav\SuperuserNav;
 // translator ready
 // addnews ready
 // mail ready
-/**
-* \file badword.php
-* This file holds the Bad Word Editor for the Grotto. With this editor you can define bad words that get filtered or good words that count as exception to a rule. You have a grotto setting to turn this on or off.
-* @see grotto.php
-*/
 require_once("common.php");
 require_once("lib/http.php");
 

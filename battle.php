@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * \file battle.php
+ * This file holds the generic battle code that gets normally require()'d and executes basic fight functions.
+ * @see lib/buffs.php
+ * @see lib/battle-buffs.php
+ * @see lib/battle-skills.php
+ */
+
 use Lotgd\Buffs;
 use Lotgd\Battle;
 use Lotgd\Substitute;
@@ -9,13 +17,6 @@ use Lotgd\Substitute;
 // translator ready
 // addnews ready
 // mail ready
-/**
-* \file battle.php
-* This file holds the generic battle code that gets normally require()'d and executes basic fight functions.
-* @see lib/buffs.php
-* @see lib/battle-buffs.php
-* @see lib/battle-skills.php
-*/
 require_once("lib/bell_rand.php");
 require_once("common.php");
 require_once("lib/http.php");

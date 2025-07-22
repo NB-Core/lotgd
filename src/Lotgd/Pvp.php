@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * Collection of Player versus Player helper routines.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
 use Lotgd\Mail;
-
-/**
- * Collection of Player versus Player helper routines.
- */
 class Pvp
 {
     /**

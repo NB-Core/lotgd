@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Tools for comment moderation.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
@@ -9,10 +13,6 @@ use Lotgd\Forms;
 use Lotgd\HolidayText;
 use Lotgd\Commentary;
 use Lotgd\Translator;
-
-/**
- * Tools for comment moderation.
- */
 class Moderate
 {
     /**

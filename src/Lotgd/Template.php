@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Helper methods for working with output templates.
+ */
+
 namespace Lotgd;
 
 use Lotgd\ServerFunctions;
 use Lotgd\Cookies;
-
-/**
- * Helper methods for working with output templates.
- */
 class Template
 {
     /**

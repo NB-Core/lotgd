@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\Settings;
-
 /**
  * Helper methods to fetch remote URLs using different mechanisms.
  */
+
+namespace Lotgd;
+
+use Lotgd\Settings;
 class PullUrl
 {
     private static function curl(string $url)

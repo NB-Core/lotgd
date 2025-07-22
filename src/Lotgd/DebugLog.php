@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Write entries to the user debug log.
  */
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 class DebugLog
 {
     /**

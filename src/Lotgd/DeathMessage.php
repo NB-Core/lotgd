@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Helpers for selecting random death messages.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Substitute;
-
-/**
- * Helpers for selecting random death messages.
- */
 class DeathMessage
 {
     /**
