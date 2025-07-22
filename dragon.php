@@ -317,7 +317,7 @@ if ($battle) {
 
             page_footer();
         } else {
-                  FightNav::fightnav(true, false);
+                  Battle::fightnav(true, false);
         }
     }
 }
