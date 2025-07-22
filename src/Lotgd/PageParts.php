@@ -775,6 +775,8 @@ public static function mailLinkTabText(){
 
     /**
      * Compute the page generation statistics string.
+     *
+     * @internal This method is intended for internal use only and should not be relied upon as part of the public API.
      */
     public static function computePageGenerationStats(float $pagestarttime): string
     {
