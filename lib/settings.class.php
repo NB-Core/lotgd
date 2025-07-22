@@ -1,5 +1,9 @@
 <?php
 
-class settings extends Lotgd\Settings
+namespace Lotgd;
+
+class Settings extends \Lotgd\Settings
 {
 }
+
+\class_alias(Settings::class, 'settings');
