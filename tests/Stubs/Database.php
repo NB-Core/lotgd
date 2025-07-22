@@ -117,13 +117,24 @@ class Database
         return [];
     }
 
-    public static function fetchAssoc(array|\mysqli_result &$result)
+    /**
+     * Fetch a single row as an associative array.
+     *
+     * When an array is supplied the argument is passed by reference and the
+     * first element is removed. This simulates the internal pointer behaviour
+     * of {@link \mysqli_result::fetch_assoc()} so that repeated calls continue
+     * to return subsequent rows.
+     */
+    public static function fetchAssoc(array|\mysqli_result &$result): mixed
     {
         if (is_array($result)) {
             return array_shift($result);
-        } elseif ($result instanceof \mysqli_result) {
+        }
+
+        if ($result instanceof \mysqli_result) {
             return $result->fetch_assoc();
         }
+
         return null;
     }
 
