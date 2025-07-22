@@ -2,81 +2,12 @@
 
 declare(strict_types=1);
 
-namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\Forms;
+namespace Lotgd\Tests;
 
-    require_once __DIR__ . '/../config/constants.php';
+use Lotgd\Forms;
+use PHPUnit\Framework\TestCase;
 
-    if (!function_exists('translate_inline')) {
-        function translate_inline($t, $ns = false)
-        {
-            return $t;
-        }
-    }
-    if (!function_exists('translate')) {
-        function translate($t, $ns = false)
-        {
-            return $t;
-        }
-    }
-    if (!function_exists('modulehook')) {
-        function modulehook($name, $data)
-        {
-            return $data;
-        }
-    }
-    if (!function_exists('tlbutton_pop')) {
-        function tlbutton_pop()
-        {
-            return '';
-        }
-    }
-    if (!function_exists('tlschema')) {
-        function tlschema($schema = false)
-        {
-        }
-    }
-    if (!function_exists('getsetting')) {
-        function getsetting($name, $default)
-        {
-            return $default;
-        }
-    }
-    if (!function_exists('httppost')) {
-        function httppost($name)
-        {
-            return false;
-        }
-    }
-    if (!function_exists('rawoutput')) {
-        function rawoutput($t)
-        {
-            global $forms_output;
-            $forms_output .= $t;
-        }
-    }
-    if (!function_exists('output_notl')) {
-        function output_notl($f, $t = true)
-        {
-            global $forms_output;
-            $forms_output .= sprintf($f, $t);
-        }
-    }
-    if (!function_exists('output')) {
-        function output($f, $t = true)
-        {
-            global $forms_output;
-            $forms_output .= sprintf($f, $t);
-        }
-    }
-    if (!function_exists('debug')) {
-        function debug($t, $force = false)
-        {
-        }
-    }
-
-    final class FormsTest extends TestCase
+final class FormsTest extends TestCase
     {
         protected function setUp(): void
         {
@@ -99,4 +30,3 @@ namespace {
             $this->assertStringNotContainsString('checked', $forms_output);
         }
     }
-}

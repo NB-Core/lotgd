@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\Mounts;
+namespace Lotgd\Tests;
 
-    use Lotgd\Tests\Stubs\Database;
-    require_once __DIR__ . '/../config/constants.php';
+use Lotgd\Mounts;
+use Lotgd\Tests\Stubs\Database;
+use PHPUnit\Framework\TestCase;
 
-    final class MountsTest extends TestCase
+final class MountsTest extends TestCase
     {
         protected function setUp(): void
         {
@@ -33,4 +32,3 @@ namespace {
             $this->assertSame([], $row);
         }
     }
-}

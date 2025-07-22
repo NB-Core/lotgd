@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Lotgd\BellRand;
+namespace Lotgd\Tests;
 
-require_once __DIR__ . '/../config/constants.php';
+use Lotgd\BellRand;
+use PHPUnit\Framework\TestCase;
 
 final class BellRandTest extends TestCase
 {

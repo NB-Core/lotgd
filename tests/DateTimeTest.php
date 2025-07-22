@@ -2,28 +2,14 @@
 
 declare(strict_types=1);
 
-namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\DateTime;
-    use Lotgd\Dhms;
-    use Lotgd\Settings;
+namespace Lotgd\Tests;
 
-    require_once __DIR__ . '/../config/constants.php';
+use Lotgd\DateTime;
+use Lotgd\Dhms;
+use Lotgd\Settings;
+use PHPUnit\Framework\TestCase;
 
-    if (!function_exists('translate_inline')) {
-        function translate_inline($text, $ns = false)
-        {
-            return $text;
-        }
-    }
-}
-namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\DateTime;
-    use Lotgd\Dhms;
-    use Lotgd\Settings;
-
-    final class DateTimeTest extends TestCase
+final class DateTimeTest extends TestCase
     {
         public function testReadableTimeShortFormat(): void
         {
@@ -80,4 +66,3 @@ namespace {
             $this->assertSame('0d1h1m1.5s', Dhms::format(3661.5, true));
         }
     }
-}

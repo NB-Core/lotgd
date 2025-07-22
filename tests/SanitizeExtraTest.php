@@ -2,20 +2,12 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Lotgd\Sanitize;
+namespace Lotgd\Tests;
+
 use Lotgd\Output;
+use Lotgd\Sanitize;
 use Lotgd\Tests\Stubs\DummySettingsSanitize;
-
-require_once __DIR__ . '/../config/constants.php';
-
-if (!function_exists('getsetting')) {
-    function getsetting(string|int $name, mixed $default = ''): mixed
-    {
-        return $default;
-    }
-}
-
+use PHPUnit\Framework\TestCase;
 
 final class SanitizeExtraTest extends TestCase
 {

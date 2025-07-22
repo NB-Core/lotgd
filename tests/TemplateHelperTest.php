@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Lotgd\Template;
+namespace Lotgd\Tests;
 
-require_once __DIR__ . '/../config/constants.php';
+use Lotgd\Template;
+use PHPUnit\Framework\TestCase;
 
 final class TemplateHelperTest extends TestCase
 {

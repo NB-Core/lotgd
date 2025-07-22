@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
+namespace Lotgd\Tests;
+
 use Lotgd\PlayerFunctions;
 use Lotgd\Tests\Stubs\DummySettings;
-
-require_once __DIR__ . '/../config/constants.php';
-require_once __DIR__ . '/../lib/settings.php';
-require_once __DIR__ . '/../lib/tempstat.php';
+use PHPUnit\Framework\TestCase;
 
 final class PlayerFunctionsTest extends TestCase
 {

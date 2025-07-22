@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
+namespace Lotgd\Tests;
+
 use Lotgd\ServerFunctions;
 use Lotgd\Tests\Stubs\ServerDummySettings;
-
-require_once __DIR__ . '/../config/constants.php';
+use PHPUnit\Framework\TestCase;
 
 final class ServerFunctionsTest extends TestCase
 {
