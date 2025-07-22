@@ -25,17 +25,17 @@ class PHPMailer
     {
     }
 
-    public function AddReplyTo($addr, $name = '')
+    public function AddReplyTo(string $addr, string $name = '')
     {
         $this->reply[$addr] = $name;
     }
 
-    public function AddAddress($addr, $name = '')
+    public function AddAddress(string $addr, string $name = '')
     {
         $this->to[$addr] = $name;
     }
 
-    public function AddCC($addr, $name = '')
+    public function AddCC(string $addr, string $name = '')
     {
         $this->cc[$addr] = $name;
     }
