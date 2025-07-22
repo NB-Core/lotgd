@@ -13,7 +13,7 @@ class PHPMailer
     public $AltBody = '';
     public $Subject = '';
 
-    public function __construct($exc = false)
+    public function __construct(bool $exc = false)
     {
     }
 
