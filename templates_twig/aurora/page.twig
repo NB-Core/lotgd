@@ -19,14 +19,19 @@
     {{ paypal|raw }}
 {% endset %}
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-xs-3 col-sm-2 motd">
-            {{ motd|raw }}
+    <div class="row page-header align-items-end">
+        <div class="col-sm-4 pageheader-left">
+            <div class="d-flex justify-content-between">
+                <div class="motd">{{ motd|raw }}</div>
+                <div class="petition">{{ petition|raw }}</div>
+            </div>
         </div>
-        <div class="col-sm-8 hidden-xs header-picture">&nbsp;</div>
-        <div class="col-xs-8 col-sm-2">
-            {{ mail|raw }}
-            {{ petition|raw }}
+        <div class="col-sm-4 pageheader-center text-center">
+            <img src="{{ template_path }}/assets/title-logo.png" alt="{{ title }}">
+        </div>
+        <div class="col-sm-4 pageheader-right text-end">
+            <img src="{{ template_path }}/assets/mail.png" width="24" height="19" alt="Mail">
+            <strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
             {{ petitiondisplay|raw }}
         </div>
     </div>
@@ -44,8 +49,10 @@
     </div>
     <div class="row">
         <nav class="col-sm-2 d-none d-sm-block sidebar-content">
-            {{ navad|raw }}
-            {{ nav|raw }}
+            <div class="navad-wrapper">{{ navad|raw }}</div>
+            <img src="{{ template_path }}/assets/nav-top.png" alt="" class="nav-top">
+            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
+            <img src="{{ template_path }}/assets/nav-bottom.png" alt="" class="nav-bottom">
         </nav>
         <main class="col-12 col-sm-8 main-content">
             {{ content|raw }}
