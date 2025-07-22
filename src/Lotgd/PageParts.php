@@ -714,6 +714,8 @@ public static function mailLinkTabText(){
 
     /**
      * Strip advertisement placeholders from the header.
+     *
+     * @internal This method is intended for internal use only and is not part of the public API.
      */
     public static function stripAdPlaceholders(string $header): string
     {
