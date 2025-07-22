@@ -30,22 +30,17 @@ class PageParts {
      * Tracks scripts that should not display popups.
      * @var array<string,bool>
      */
-    private static array $noPopups = [];
+    public static array $noPopups = [];
 
     /**
      * Keeps track of which headers have already run to avoid duplicates.
      * @var array<string,bool>
      */
-    private static array $runHeaders = [];
+    public static array $runHeaders = [];
 
     /** Holds the character statistics for the current page. */
-    private static ?CharStats $charstats = null;
-
     /** Variables passed to Twig templates */
-    private static array $twigVars = [];
-
-    /** Name of the current stat section when building char stats. */
-    private static string $lastCharstatLabel = "";
+    public static array $twigVars = [];
 
     /**
      * Starts page output. Initializes the template and translator modules.
@@ -465,8 +460,7 @@ public static function popupFooter(){
  *
  */
 public static function wipeCharStats(): void {
-        self::$charstats = new CharStats();
-        self::$lastCharstatLabel = "";
+        \Lotgd\Page\CharStats::wipe();
 }
 
 /**
@@ -476,14 +470,7 @@ public static function wipeCharStats(): void {
  * @param mixed $value (optional) value to display
  */
 public static function addCharStat(string $label, mixed $value = null): void {
-        if ($value === null) {
-                self::$lastCharstatLabel = $label;
-        } else {
-                if (self::$lastCharstatLabel === '') {
-                        self::$lastCharstatLabel = 'Other Info';
-                }
-                self::$charstats?->addStat(self::$lastCharstatLabel, $label, $value);
-        }
+        \Lotgd\Page\CharStats::add($label, $value);
 }
 
 /**
@@ -494,7 +481,7 @@ public static function addCharStat(string $label, mixed $value = null): void {
  * @return mixed The value associated with the stat
  */
 public static function getCharStat(string $cat, string $label) {
-        return self::$charstats?->getStat($cat, $label);
+        return \Lotgd\Page\CharStats::get($cat, $label);
 }
 
 /**
@@ -505,7 +492,7 @@ public static function getCharStat(string $cat, string $label) {
  * @param mixed $val The value of the attribute
  */
 public static function setCharStat(string $cat, string $label, mixed $val): void {
-        self::$charstats?->setStat($cat, $label, $val);
+        \Lotgd\Page\CharStats::set($cat, $label, $val);
 }
 
 /**
@@ -515,7 +502,7 @@ public static function setCharStat(string $cat, string $label, mixed $val): void
  * @return string
  */
 public static function getCharStats(string $buffs): string{
-        return self::$charstats?->render($buffs) ?? '';
+        return \Lotgd\Page\CharStats::render($buffs);
 }
 
 /**
@@ -526,7 +513,7 @@ public static function getCharStats(string $buffs): string{
  * @return mixed The value associated with the stat
  */
 public static function getCharStatValue(string $section,string $title){
-        return self::$charstats?->getStat($section, $title) ?? "";
+        return \Lotgd\Page\CharStats::value($section, $title);
 }
 
 /**
