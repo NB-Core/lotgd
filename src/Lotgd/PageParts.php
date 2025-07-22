@@ -800,7 +800,7 @@ class PageParts
      */
     public static function computePageGenerationStats(float $pagestarttime): string
     {
-        global $session, $dbinfo, $settings, $SCRIPT_NAME;
+        global $session, $settings, $SCRIPT_NAME;
 
         $gentime = DateTime::getMicroTime() - $pagestarttime;
         if (!isset($session['user']['gentime'])) {
@@ -814,11 +814,11 @@ class PageParts
         if (isset($settings) && $settings->getSetting('debug', 0)) {
             $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','" . ($gentime) . "');";
             Database::query($sql);
-            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','" . (round($dbinfo['querytime'], 3)) . "');";
+            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','" . (round(Database::getInfo('querytime', 0), 3)) . "');";
             Database::query($sql);
         }
-        $queriesthishit = isset($dbinfo['queriesthishit']) ? $dbinfo['queriesthishit'] : 0;
-        $querytime = isset($dbinfo['querytime']) ? $dbinfo['querytime'] : 0;
+        $queriesthishit = Database::getInfo('queriesthishit', 0);
+        $querytime = Database::getInfo('querytime', 0);
 
         return "Page gen: " . round($gentime, 3) . "s / " . $queriesthishit . " queries (" . round($querytime, 3) . "s), Ave: " . round($session['user']['gentime'] / $session['user']['gentimecount'], 3) . "s - " . round($session['user']['gentime'], 3) . "/" . round($session['user']['gentimecount'], 3);
     }

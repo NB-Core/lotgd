@@ -12,19 +12,32 @@ use Lotgd\Backtrace;
 use Lotgd\DataCache;
 use Lotgd\DateTime;
 
-global $dbinfo;
-
-$dbinfo = [];
 class Database
 {
     /** @var DbMysqli|null */
     protected static ?DbMysqli $instance = null;
-    /** @var array<string,int|string> */
+    /**
+     * Runtime statistics collected during query execution.
+     *
+     *  - 'queriesthishit'   Number of queries executed for the current request.
+     *  - 'querytime'        Cumulative time spent running SQL queries.
+     *  - 'DB_DATACACHEPATH' Optional path for datacache files.
+     *
+     * @var array<string,int|string>
+     */
     protected static array $dbinfo = [
-        'queriesthishit' => 0,
-        'querytime'      => 0,
+        'queriesthishit'   => 0,
+        'querytime'        => 0,
         'DB_DATACACHEPATH' => '',
     ];
+
+    /**
+     * Get a statistic from the database info store.
+     */
+    public static function getInfo(string $key, mixed $default = null): mixed
+    {
+        return self::$dbinfo[$key] ?? $default;
+    }
 
     /**
      * Get the singleton database connection wrapper.
@@ -55,11 +68,11 @@ class Database
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return [];
         }
-        global $session, $dbinfo;
-        if (!isset($dbinfo['queriesthishit'])) {
-            $dbinfo['queriesthishit'] = 0;
+        global $session;
+        if (!isset(self::$dbinfo['queriesthishit'])) {
+            self::$dbinfo['queriesthishit'] = 0;
         }
-        $dbinfo['queriesthishit']++;
+        self::$dbinfo['queriesthishit']++;
         $starttime = DateTime::getMicroTime();
         $r = self::getInstance()->query($sql);
 
@@ -80,12 +93,12 @@ class Database
             }
             debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '`n');
         }
-        unset($dbinfo['affected_rows']);
-        $dbinfo['affected_rows'] = self::affectedRows();
-        if (!isset($dbinfo['querytime'])) {
-            $dbinfo['querytime'] = 0;
+        unset(self::$dbinfo['affected_rows']);
+        self::$dbinfo['affected_rows'] = self::affectedRows();
+        if (!isset(self::$dbinfo['querytime'])) {
+            self::$dbinfo['querytime'] = 0;
         }
-        $dbinfo['querytime'] += $endtime - $starttime;
+        self::$dbinfo['querytime'] += $endtime - $starttime;
         return $r;
     }
 
@@ -96,11 +109,10 @@ class Database
      */
     public static function queryCached(string $sql, string $name, int $duration = 900): array
     {
-        global $dbinfo;
         $data = DataCache::datacache($name, $duration);
         if (is_array($data)) {
             reset($data);
-            $dbinfo['affected_rows'] = -1;
+            self::$dbinfo['affected_rows'] = -1;
             return $data;
         }
         $result = self::query($sql);
@@ -174,9 +186,8 @@ class Database
      */
     public static function affectedRows(): int
     {
-        global $dbinfo;
-        if (isset($dbinfo['affected_rows'])) {
-            return $dbinfo['affected_rows'];
+        if (isset(self::$dbinfo['affected_rows'])) {
+            return self::$dbinfo['affected_rows'];
         }
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return 0;
