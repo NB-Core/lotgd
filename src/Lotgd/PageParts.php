@@ -695,6 +695,8 @@ public static function mailLinkTabText(){
 
     /**
      * Insert head script markup into the header.
+     *
+     * @internal This method is intended for internal use only and should not be used directly by external code.
      */
     public static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
     {
