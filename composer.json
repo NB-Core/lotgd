@@ -15,6 +15,12 @@
             "Lotgd\\Installer\\": "install/lib/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Lotgd\\Tests\\": "tests/",
+            "Lotgd\\Tests\\Stubs\\": "tests/Stubs/"
+        }
+    },
     "scripts": {
         "test": "phpunit --configuration phpunit.xml",
         "lint": "phpcs .",

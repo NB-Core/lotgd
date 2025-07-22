@@ -42,6 +42,8 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         ),
         'L' => 
         array (
+            'Lotgd\\Tests\\Stubs\\' => 18,
+            'Lotgd\\Tests\\' => 12,
             'Lotgd\\Installer\\' => 16,
             'Lotgd\\' => 6,
         ),
@@ -71,8 +73,8 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         ),
         'Psr\\Http\\Server\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-server-handler/src',
-            1 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
+            0 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
+            1 => __DIR__ . '/..' . '/psr/http-server-handler/src',
         ),
         'Psr\\Http\\Message\\' => 
         array (
@@ -94,6 +96,14 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'Nyholm\\Psr7Server\\' => 
         array (
             0 => __DIR__ . '/..' . '/nyholm/psr7-server/src',
+        ),
+        'Lotgd\\Tests\\Stubs\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/tests/Stubs',
+        ),
+        'Lotgd\\Tests\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/tests',
         ),
         'Lotgd\\Installer\\' => 
         array (
