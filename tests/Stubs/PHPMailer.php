@@ -44,7 +44,7 @@ class PHPMailer
     {
     }
 
-    public function IsHTML($v = true)
+    public function IsHTML(bool $v = true)
     {
     }
 
