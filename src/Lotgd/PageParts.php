@@ -572,6 +572,8 @@ public static function mailLinkTabText(){
 
     /**
      * Generate the petition link markup and populate placeholders.
+     *
+     * @internal This method is intended for internal use only.
      */
     public static function assemblePetitionLink(string $header, string $footer): array
     {
