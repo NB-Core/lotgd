@@ -588,6 +588,8 @@ public static function mailLinkTabText(){
 
     /**
      * Generate the petition administration display section.
+     *
+     * @internal This method is intended for internal use only and should not be relied upon as part of the public API.
      */
     public static function assemblePetitionDisplay(string $header, string $footer): array
     {
