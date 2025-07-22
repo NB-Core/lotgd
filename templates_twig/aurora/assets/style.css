@@ -35,6 +35,16 @@ td {
     color: #CCCCCC;
 }
 
+/* Offcanvas sidebars should match the main page background */
+.offcanvas {
+    background-image: url('page-bg.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: top right;
+    background-color: #111;
+    color: #CCCCCC;
+}
+
 /* Navigation Table */
 table.nav {
     border: 1px solid #000000;
