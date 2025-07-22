@@ -4,6 +4,8 @@ declare(strict_types=1);
 use Lotgd\Forms;
 use Lotgd\Translator;
 use Lotgd\Modules;
+use Lotgd\Modules\Installer;
+use Lotgd\Modules\HookHandler;
 
 require_once "lib/arraytourl.php";
 
@@ -36,110 +38,110 @@ function module_check_requirements(array $reqs, bool $forceinject = false): bool
 
 function blockmodule(string $modulename): void
 {
-    Modules::block($modulename);
+    HookHandler::block($modulename);
 }
 
 function unblockmodule(string $modulename): void
 {
-    Modules::unblock($modulename);
+    HookHandler::unblock($modulename);
 }
 
 function mass_module_prepare(array $hooknames): bool
 {
-    return Modules::massPrepare($hooknames);
+    return HookHandler::massPrepare($hooknames);
 }
 
 $currenthook = "";
 function modulehook(string $hookname, array $args = [], bool $allowinactive = false, $only = false): array
 {
-    return Modules::hook($hookname, $args, $allowinactive, $only);
+    return HookHandler::hook($hookname, $args, $allowinactive, $only);
 }
 
 $module_settings = array();
 function get_all_module_settings(?string $module = null): array
 {
-    return Modules::getAllModuleSettings($module);
+    return HookHandler::getAllModuleSettings($module);
 }
 
 function get_module_setting(string $name, ?string $module = null): mixed
 {
-    return Modules::getModuleSetting($name, $module);
+    return HookHandler::getModuleSetting($name, $module);
 }
 
 function set_module_setting(string $name, mixed $value, ?string $module = null): void
 {
-    Modules::setModuleSetting($name, $value, $module);
+    HookHandler::setModuleSetting($name, $value, $module);
 }
 
 function increment_module_setting(string $name, int|float $value = 1, ?string $module = null): void
 {
-    Modules::incrementModuleSetting($name, $value, $module);
+    HookHandler::incrementModuleSetting($name, $value, $module);
 }
 
 function clear_module_settings(?string $module = null): void
 {
-    Modules::clearModuleSettings($module);
+    HookHandler::clearModuleSettings($module);
 }
 
 function load_module_settings(string $module): void
 {
-    Modules::loadModuleSettings($module);
+    HookHandler::loadModuleSettings($module);
 }
 
 function module_delete_objprefs(string $objtype, $objid): void
 {
-    Modules::deleteObjPrefs($objtype, $objid);
+    HookHandler::deleteObjPrefs($objtype, $objid);
 }
 
 function get_module_objpref(string $type, $objid, string $name, ?string $module = null)
 {
-    return Modules::getObjPref($type, $objid, $name, $module);
+    return HookHandler::getObjPref($type, $objid, $name, $module);
 }
 
 function set_module_objpref(string $objtype, $objid, string $name, mixed $value, ?string $module = null): void
 {
-    Modules::setObjPref($objtype, $objid, $name, $value, $module);
+    HookHandler::setObjPref($objtype, $objid, $name, $value, $module);
 }
 
 function increment_module_objpref(string $objtype, $objid, string $name, int|float $value = 1, ?string $module = null): void
 {
-    Modules::incrementObjPref($objtype, $objid, $name, $value, $module);
+    HookHandler::incrementObjPref($objtype, $objid, $name, $value, $module);
 }
 
 function module_delete_userprefs(int $user): void
 {
-    Modules::deleteUserPrefs($user);
+    HookHandler::deleteUserPrefs($user);
 }
 
 $module_prefs = array();
 function get_all_module_prefs(?string $module = null, ?int $user = null): array
 {
-    return Modules::getAllModulePrefs($module, $user);
+    return HookHandler::getAllModulePrefs($module, $user);
 }
 
 function get_module_pref(string $name, ?string $module = null, ?int $user = null)
 {
-    return Modules::getModulePref($name, $module, $user);
+    return HookHandler::getModulePref($name, $module, $user);
 }
 
 function set_module_pref(string $name, mixed $value, ?string $module = null, ?int $user = null): void
 {
-    Modules::setModulePref($name, $value, $module, $user);
+    HookHandler::setModulePref($name, $value, $module, $user);
 }
 
 function increment_module_pref(string $name, int|float $value = 1, ?string $module = null, ?int $user = null): void
 {
-    Modules::incrementModulePref($name, $value, $module, $user);
+    HookHandler::incrementModulePref($name, $value, $module, $user);
 }
 
 function clear_module_pref(string $name, ?string $module = null, ?int $user = null): void
 {
-    Modules::clearModulePref($name, $module, $user);
+    HookHandler::clearModulePref($name, $module, $user);
 }
 
 function load_module_prefs(string $module, ?int $user = null): void
 {
-    Modules::loadModulePrefs($module, $user);
+    HookHandler::loadModulePrefs($module, $user);
 }
 
 function get_module_info(string $shortname, bool $with_db = true): array
@@ -149,112 +151,112 @@ function get_module_info(string $shortname, bool $with_db = true): array
 
 function module_wipehooks(): void
 {
-    Modules::wipeHooks();
+    HookHandler::wipeHooks();
 }
 
 function module_addeventhook(string $type, string $chance): void
 {
-    Modules::addEventHook($type, $chance);
+    HookHandler::addEventHook($type, $chance);
 }
 
 function module_dropeventhook(string $type): void
 {
-    Modules::dropEventHook($type);
+    HookHandler::dropEventHook($type);
 }
 
 function module_drophook(string $hookname, $functioncall = false): void
 {
-    Modules::dropHook($hookname, $functioncall);
+    HookHandler::dropHook($hookname, $functioncall);
 }
 
 function module_addhook(string $hookname, $functioncall = false, $whenactive = false): void
 {
-    Modules::addHook($hookname, $functioncall, $whenactive);
+    HookHandler::addHook($hookname, $functioncall, $whenactive);
 }
 
 function module_addhook_priority(string $hookname, int $priority = 50, $functioncall = false, $whenactive = false): void
 {
-    Modules::addHookPriority($hookname, $priority, $functioncall, $whenactive);
+    HookHandler::addHookPriority($hookname, $priority, $functioncall, $whenactive);
 }
 
 function module_sem_acquire(): void
 {
-    Modules::semAcquire();
+    HookHandler::semAcquire();
 }
 
 function module_sem_release(): void
 {
-    Modules::semRelease();
+    HookHandler::semRelease();
 }
 
 function module_collect_events(string $type, bool $allowinactive = false): array
 {
-    return Modules::collectEvents($type, $allowinactive);
+    return HookHandler::collectEvents($type, $allowinactive);
 }
 
 function module_events(string $eventtype, int $basechance, ?string $baseLink = null): int
 {
-    return Modules::moduleEvents($eventtype, $basechance, $baseLink);
+    return HookHandler::moduleEvents($eventtype, $basechance, $baseLink);
 }
 
 function module_do_event(string $type, string $module, bool $allowinactive = false, ?string $baseLink = null): void
 {
-    Modules::doEvent($type, $module, $allowinactive, $baseLink);
+    HookHandler::doEvent($type, $module, $allowinactive, $baseLink);
 }
 
 function event_sort($a, $b): int
 {
-    return Modules::eventSort($a, $b);
+    return HookHandler::eventSort($a, $b);
 }
 
 function module_display_events(string $eventtype, $forcescript = false): void
 {
-    Modules::displayEvents($eventtype, $forcescript);
+    HookHandler::displayEvents($eventtype, $forcescript);
 }
 
 function module_editor_navs(string $like, string $linkprefix): void
 {
-    Modules::editorNavs($like, $linkprefix);
+    HookHandler::editorNavs($like, $linkprefix);
 }
 
 function module_objpref_edit(string $type, string $module, $id): void
 {
-    Modules::objprefEdit($type, $module, $id);
+    HookHandler::objprefEdit($type, $module, $id);
 }
 
 function module_compare_versions($a, $b): int
 {
-    return Modules::compareVersions($a, $b);
+    return HookHandler::compareVersions($a, $b);
 }
 
 function activate_module(string $module): bool
 {
-    return Modules::activate($module);
+    return Installer::activate($module);
 }
 
 function deactivate_module(string $module): bool
 {
-    return Modules::deactivate($module);
+    return Installer::deactivate($module);
 }
 
 function uninstall_module(string $module): bool
 {
-    return Modules::uninstall($module);
+    return Installer::uninstall($module);
 }
 
 function install_module(string $module, bool $force = true): bool
 {
-    return Modules::install($module, $force);
+    return Installer::install($module, $force);
 }
 
 function module_condition(string $condition): bool
 {
-    return Modules::condition($condition);
+    return Installer::condition($condition);
 }
 
 function get_module_install_status(bool $with_db = true): array
 {
-    return Modules::getInstallStatus($with_db);
+    return Installer::getInstallStatus($with_db);
 }
 
 function get_racename($thisuser = true): string
