@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
-    <link href="/templates/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ template_path }}/assets/style.css"/>
     <link rel="stylesheet" href="/templates/common/colors.css"/>
     <link rel="stylesheet" href="/templates/common/sidebar.css"/>
@@ -30,55 +30,29 @@
             {{ petitiondisplay|raw }}
         </div>
     </div>
-    <div class="row">
-        <div class="col-xs-12">
-            <div class="navbar-header navbar-inverse">
-                <button class="navbar-toggle collapsed" data-target="#navbar-right" data-toggle="collapse" type="button">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
+    <div class="row d-sm-none mobile-toggles">
+        <nav class="navbar navbar-dark bg-dark">
+            <div class="container-fluid justify-content-end">
+                <button class="navbar-toggler me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#leftSidebar">
+                    <span class="navbar-toggler-icon"></span>
                 </button>
-                <button class="navbar-toggle collapsed" data-target="#navbar-left" data-toggle="collapse" type="button">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
+                <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar">
+                    <span class="navbar-toggler-icon"></span>
                 </button>
-                <a class="navbar-brand" href="#">Navigation</a>
             </div>
-        </div>
+        </nav>
     </div>
     <div class="row">
-        <div class="col-xs-12 col-sm-2">
-            <div class="navbar-collapse collapse" id="navbar-left">
-                <ul class="nav navbar-nav">
-                    <li>
-                        {{ navad|raw }}
-                        {{ nav|raw }}
-                    </li>
-                </ul>
-            </div>
-            <div class="navbar-collapse collapse" id="navbar-right">
-                <ul class="nav navbar-nav">
-                    <li>
-                        {{ right_sidebar|raw }}
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-8 main-content">
+        <nav class="col-sm-2 d-none d-sm-block sidebar-content">
+            {{ navad|raw }}
+            {{ nav|raw }}
+        </nav>
+        <main class="col-12 col-sm-8 main-content">
             {{ content|raw }}
-        </div>
-        <div class="col-xs-2 hidden-xs">
-            <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                    <li>
-                        {% block right_sidebar %}{% endblock %}
-                    </li>
-                </ul>
-            </div>
-        </div>
+        </main>
+        <aside class="col-sm-2 d-none d-sm-block sidebar-content">
+            {{ right_sidebar|raw }}
+        </aside>
     </div>
     <div class="bootstrap-footer row">
         <div class="col-xs-12">
@@ -87,7 +61,26 @@
         </div>
     </div>
 </div>
-<script src="/templates/bootstrap/jquery/jquery-2.1.0.min.js"></script>
-<script src="/templates/bootstrap/js/bootstrap.min.js"></script>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="leftSidebar">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Menu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        {{ navad|raw }}
+        {{ nav|raw }}
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Info</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        {{ right_sidebar|raw }}
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
