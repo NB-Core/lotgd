@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace {
     use Lotgd\Modules\SmallCaptcha\Number;
 
-function smallcaptcha_111_getmoduleinfo(): array{
+function smallcaptcha_111_getmoduleinfo(): array {
 $info = array(
 	"name"=>"Small Petition Captcha",
 	"version"=>"1.0",
