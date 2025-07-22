@@ -16,7 +16,15 @@ class Database
 {
     /** @var DbMysqli|null */
     protected static ?DbMysqli $instance = null;
-    /** @var array<string,int|string> */
+    /**
+     * Runtime statistics collected during query execution.
+     *
+     *  - 'queriesthishit'   Number of queries executed for the current request.
+     *  - 'querytime'        Cumulative time spent running SQL queries.
+     *  - 'DB_DATACACHEPATH' Optional path for datacache files.
+     *
+     * @var array<string,int|string>
+     */
     protected static array $dbinfo = [
         'queriesthishit'   => 0,
         'querytime'        => 0,
