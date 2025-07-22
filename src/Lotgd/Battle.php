@@ -480,7 +480,7 @@ class Battle
                     rawoutput("</td><td>");
                     output_notl("%s`0`n", $badguy['creaturehealth'] > 0 ? "" : translate_inline("`7DEFEATED`0"), true);
                     rawoutput("</td></tr></table>");
-
+                    // no break
 
                 default:
                     output(
@@ -548,6 +548,7 @@ class Battle
                 rawoutput("</td><td>");
 
                 rawoutput("</td></tr></table>");
+                // no break
 
             default:
                 output("`l%s: `6%s`0`n", $hitpointstext, $u['hitpoints']);
