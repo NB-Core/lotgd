@@ -1,13 +1,18 @@
 <?php
 
-// Legacy wrapper for \Lotgd\Output class
+namespace Lotgd {
 
 use Lotgd\Output;
 
-// Provide legacy class name for modules still instantiating output_collector
-class output_collector extends Output
+class OutputCollector extends Output
 {
 }
+
+\class_alias(OutputCollector::class, 'output_collector');
+
+}
+
+namespace {
 
 function set_block_new_output($block)
 {
@@ -45,4 +50,6 @@ function appoencode($data, $priv = false)
 {
     global $output;
     return $output->appoencode($data, $priv);
+}
+
 }

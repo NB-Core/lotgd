@@ -1,5 +1,9 @@
 <?php
 
-class fightbar extends \Lotgd\FightBar
+namespace Lotgd;
+
+class Fightbar extends FightBar
 {
 }
+
+\class_alias(Fightbar::class, 'fightbar');
