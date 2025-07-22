@@ -418,29 +418,9 @@ div.debug {
 }
 
 /* Mobile specific tweaks */
-@media (min-width: 768px) {
-    #navbar-right {
-        display: none !important;
-    }
-    input#name,
-    input#password {
-        width: 200px;
-    }
-    .navbar-nav > li > a {
-        padding: 0;
-    }
-}
-
-@media (max-width: 767px) {
-    .navbar-nav > li > a  {
-        padding: 0;
-    }
-    #navbar-left > .navbar-nav > li > br {
-        display: none !important;
-    }
-    input#name,
-    input#password {
-        width: 100px;
+@media (max-width: 575.98px) {
+    .mobile-toggles .navbar-toggler {
+        border: none;
     }
 }
 
