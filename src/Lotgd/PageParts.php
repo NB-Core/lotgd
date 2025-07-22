@@ -50,60 +50,12 @@ class PageParts {
      *      everyheader
      *      header-{scriptname}
      */
-public static function pageHeader(...$args): void {
-        global $header,$SCRIPT_NAME,$session,$template;
-        self::$noPopups["login.php"] = true;
-        self::$noPopups["motd.php"] = true;
-        self::$noPopups["index.php"] = true;
-        self::$noPopups["create.php"] = true;
-        self::$noPopups["about.php"] = true;
-        self::$noPopups["mail.php"] = true;
-
-	//in case this didn't already get called (such as on a database error)
-	Translator::translatorSetup();
-	Template::prepareTemplate();
-	if (isset($SCRIPT_NAME)) {
-		$script = substr($SCRIPT_NAME,0,strrpos($SCRIPT_NAME,"."));
-                if ($script) {
-                        if (!array_key_exists($script,self::$runHeaders))
-                                self::$runHeaders[$script] = false;
-                        if (!self::$runHeaders[$script]) {
-                                if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-                                    modulehook('everyheader', ['script' => $script]);
-                                }
-                                self::$runHeaders[$script] = true;
-                                if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-                                    modulehook("header-$script");
-                                }
-                        }
-                }
-	}
-
-	$arguments = func_get_args();
-	if (!$arguments || count($arguments) == 0) {
-		$arguments = array("Legend of the Green Dragon");
-	}
-    $title = call_user_func_array([Translator::class, 'sprintfTranslate'], $arguments);
-	$title = Sanitize::sanitize(HolidayText::holidayize($title,'title'));
-	Buffs::calculateBuffFields();
-
-    $lang = defined('LANGUAGE') ? LANGUAGE : getsetting('defaultlanguage', 'en');
-    $metaDesc = getsetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
-
-    if (TwigTemplate::isActive()) {
-        self::$twigVars['title'] = $title;
-        self::$twigVars['lang'] = $lang;
-        self::$twigVars['meta_description'] = $metaDesc;
-    } else {
-        $header = $template['header'];
-        $header = str_replace('{title}', $title, $header);
-        $header = str_replace('{lang}', $lang, $header);
-        $header = str_replace('{meta_description}', $metaDesc, $header);
-    }
-    $header.=Translator::tlbuttonPop();
-    if (isset($settings) && $settings->getSetting('debug',0)) {
-            $session['debugstart']=microtime();
-    }
+/**
+ * Deprecated wrapper that forwards to Header::pageHeader().
+ */
+public static function pageHeader(...$args): void
+{
+    \Lotgd\Page\Header::pageHeader(...$args);
 }
 
 /**
@@ -138,321 +90,39 @@ public static function popup(string $page, string $size="550x300"){
  *	everyfooter
  *
  */
-public static function pageFooter(bool $saveuser=true){
-        global $output,$header,$nav,$session,$REMOTE_ADDR,
-               $REQUEST_URI,$pagestarttime,$template,$y2,$z2,
-               $logd_version,$copyright,$SCRIPT_NAME, $footer,
-               $dbinfo, $settings;
-        $z = $y2^$z2;
-        if (TwigTemplate::isActive()) {
-            $footer = '';
-            $header = $header ?? '';
-        } else {
-            $footer = $template['footer'];
-        }
-	//page footer module hooks
-	if (!empty($SCRIPT_NAME)) 
-		$script = substr($SCRIPT_NAME,0,strpos($SCRIPT_NAME,"."));
-	else
-		$script = "";
-    list($header, $footer) = self::applyFooterHooks($header, $footer, $script);
-
-    $builtnavs = Nav::buildNavs();
-
-    Buffs::restoreBuffFields();
-    Buffs::calculateBuffFields();
-
-    Translator::tlschema("common");
-
-    $statsOutput = self::charStats();
-
-    Buffs::restoreBuffFields();
-
-        if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-		$sql = "SELECT motddate FROM " . Database::prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
-		$result = Database::query($sql);
-		$row = Database::fetchAssoc($result);
-		$headscript = "";
-        if (Database::numRows($result)>0 && isset($session['user']['lastmotd']) && 
-                                ($row['motddate']>$session['user']['lastmotd']) &&
-                                (!isset(self::$noPopups[$SCRIPT_NAME]) || self::$noPopups[$SCRIPT_NAME]!=1) &&
-                                $session['user']['loggedin']){
-			if (isset($settings) && $settings->getSetting('forcedmotdpopup',0)) $headscript.=self::popup("motd.php");
-			$session['needtoviewmotd']=true;
-		}else{
-			$session['needtoviewmotd']=false;
-		}
-		$favicon = array ("favicon-link"=>
-            "<link rel=\"shortcut icon\" HREF=\"/images/favicon/favicon.ico\" TYPE=\"image/x-icon\"/>
-            <link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/images/favicon/apple-touch-icon.png\">
-            <link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/images/favicon/favicon-32x32.png\">
-            <link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">
-            <link rel=\"manifest\" href=\"/images/favicon/site.webmanifest\">"
-        );
-		$favicon = modulehook("pageparts-favicon", $favicon);
-		$pre_headscript = $favicon['favicon-link'];
-		//add AJAX notification stuff
-		if (isset($settings) && $settings->getSetting('ajax',1)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-			if (file_exists('ext/ajax_base_setup.php')) {
-				require("ext/ajax_base_setup.php");
-			}
-		}
-		//END AJAX
-	} else {
-		$pre_headscript = "";
-		$headscript = "";
-	}
-        $header = self::insertHeadScript($header, $pre_headscript, $headscript);
-
-	$script = "";
-
-	if (!isset($session['user']['name'])) $session['user']['name']="";
-	if (!isset($session['user']['login'])) $session['user']['login']="";
-
-	//output keypress script
-	$script.="<script type='text/javascript' charset='UTF-8'>
-		<!--
-		document.onkeypress=keyevent;
-	function keyevent(e){
-		var c;
-		var target;
-		var altKey;
-		var ctrlKey;
-		if (window.event != null) {
-			c=String.fromCharCode(window.event.keyCode).toUpperCase();
-			altKey=window.event.altKey;
-			ctrlKey=window.event.ctrlKey;
-		}else{
-			c=String.fromCharCode(e.charCode).toUpperCase();
-			altKey=e.altKey;
-			ctrlKey=e.ctrlKey;
-		}
-		if (window.event != null)
-			target=window.event.srcElement;
-		else
-			target=e.originalTarget;
-		if (target.nodeName.toUpperCase()=='INPUT' || target.nodeName.toUpperCase()=='TEXTAREA' || altKey || ctrlKey){
-		}else{";
-			$quickkeys = Nav::getQuickKeys();
-			foreach ($quickkeys as $key=>$val) {
-				$script.="\n			if (c == '".strtoupper((string)$key)."') { $val; return false; }";
-			}
-			$script.="
-		}
-	}
-	//-->
-	</script>";
-
-        if (strpos($footer, "{paypal}") || strpos($header, "{paypal}")) {
-            $palreplace = '{paypal}';
-        } else {
-            $palreplace = '{stats}';
-        }
-
-        list($header, $footer) = self::buildPaypalDonationMarkup(
-            $palreplace,
-            $header,
-            $footer,
-            $settings ?? null,
-            $logd_version
-        );
-	//NOTICE |
-	//NOTICE | Although I will not deny you the ability to remove the above
-	//NOTICE | paypal link, I do request, as the author of this software
-	//NOTICE | which I made available for free to you that you leave it in.
-	//NOTICE |
-
-        list($header, $footer) = self::generateNavigationOutput($header, $footer, $builtnavs);
-        if (TwigTemplate::isActive()) {
-            self::$twigVars['nav'] = $builtnavs;
-            // empty for now, never really used by any template. if so, add them manually
-            self::$twigVars['navad'] = '';
-            self::$twigVars['verticalad'] = '';
-            self::$twigVars['bodyad'] = '';
-        }
-	//output the motd
-        // use a modulehook to add more stuff by module or change the link
-        $motd_link = self::motdLink();
-        $motd_link = modulehook("motd-link",array("link"=>$motd_link));
-        $motd_link = $motd_link['link'];
-        // the "motd-link" hook allows modules to modify the final link
-        // the actual replacement happens later via replaceHeaderFooterTokens()
-        //$header = str_replace("{motd}", self::motdLink(), $header);
-        //$footer = str_replace("{motd}", self::motdLink(), $footer);
-        list($header, $footer) = self::assembleMailLink($header, $footer);
-        list($header, $footer) = self::assemblePetitionLink($header, $footer);
-        list($header, $footer) = self::assemblePetitionDisplay($header, $footer);
-        $sourcelink = "source.php?url=".preg_replace("/[?].*/","",($_SERVER['REQUEST_URI']));
-
-        // Replace special template tokens within header and footer
-        $z = $y2 ^ $z2;
-        $replacements = [
-            // character statistic table
-            'stats'   => $statsOutput,
-            // keypress javascript block
-            'script'  => $script,
-            // dynamic link to the MOTD popup
-            'motd'    => $motd_link,
-            // view source link for debugging
-            'source'  => "<a href='$sourcelink' onclick=\"".self::popup($sourcelink).";return false;\" target='_blank'>".Translator::translateInline("View PHP Source")."</a>",
-            // footer version information
-            'version' => "Version: $logd_version",
-            // page generation statistics
-            'pagegen' => self::computePageGenerationStats($pagestarttime),
-            $z        => $$z,
-        ];
-        if (TwigTemplate::isActive()) {
-            self::$twigVars = array_merge(self::$twigVars, $replacements);
-        }
-
-        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, $replacements);
-
-        Translator::tlschema();
-
-        if (TwigTemplate::isActive()) {
-            self::$twigVars = array_merge(self::$twigVars, [
-                'header' => $header,
-                'footer' => $footer,
-                'content' => $output->getOutput(),
-                'template_path' => TwigTemplate::getPath(),
-            ]);
-            $browser_output = TwigTemplate::render('page.twig', self::$twigVars);
-        } else {
-            //clean up spare {fields}s from header and footer (in case they're not used)
-            //note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
-            $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
-            $header = self::stripAdPlaceholders($header);
-            //      $header = preg_replace('/{[^} \t\n\r]*}/i','',$header);
-
-            $browser_output = $header.($output->getOutput()).$footer;
-        }
-        if (!isset($session['user']['gensize'])) $session['user']['gensize']=0;
-        $session['user']['gensize']+=strlen($browser_output);
-        $session['output']=$browser_output;
-        if ($saveuser === true) {
-                Accounts::saveUser();
-        }
-        unset($session['output']);
-        //this somehow allows some frames to load before the user's navs say it can
-        session_write_close();
-        echo $browser_output;
-        exit();
+/**
+ * Deprecated wrapper that forwards to Footer::pageFooter().
+ */
+public static function pageFooter(bool $saveuser=true)
+{
+    \Lotgd\Page\Footer::pageFooter($saveuser);
 }
+
 
 /**
  * Page header for popup windows.
  *
  * @param string $title The title of the popup window
  */
-public static function popupHeader(...$args): void {
-        global $header, $template;
-
-	translator_setup();
-	prepare_template();
-
-	modulehook("header-popup");
-
-	$arguments = func_get_args();
-	if (!$arguments || count($arguments) == 0) {
-		$arguments = array("Legend of the Green Dragon");
-	}
-	$title = call_user_func_array("sprintf_translate", $arguments);
-	$title = HolidayText::holidayize($title,'title');
-
-        $lang = defined('LANGUAGE') ? LANGUAGE : getsetting('defaultlanguage', 'en');
-        $metaDesc = getsetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
-
-        if (TwigTemplate::isActive()) {
-            self::$twigVars['title'] = $title;
-            self::$twigVars['lang'] = $lang;
-            self::$twigVars['meta_description'] = $metaDesc;
-            return;
-        }
-
-        $header = $template['popuphead'];
-        $header = str_replace('{title}', $title, $header);
-        $header = str_replace('{lang}', $lang, $header);
-        $header = str_replace('{meta_description}', $metaDesc, $header);
+/**
+ * Deprecated wrapper that forwards to Header::popupHeader().
+ */
+public static function popupHeader(...$args): void
+{
+    \Lotgd\Page\Header::popupHeader(...$args);
 }
+
 
 /**
  * Ends page generation for popup windows.  Saves the user account info - doesn't update page generation stats
  *
  */
-public static function popupFooter(){
-        global $output,$header,$session,$y2,$z2,$copyright, $template;
-
-        $headscript='';
-        if (TwigTemplate::isActive()) {
-            $footer = '';
-            $header = $header ?? '';
-        } else {
-            $footer = $template['popupfoot'];
-        }
-	$pre_headscript='';
-	$maillink_add_after='';
-	//add AJAX stuff
-	if (getsetting('ajax',1)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-		if (file_exists('ext/ajax_base_setup.php')) {
-			require("ext/ajax_base_setup.php");
-		}
-	}
-	//END AJAX
-
-	// Pass the script file down into the footer so we can do something if
-	// we need to on certain pages (much like we do on the header.
-	// Problem is 'script' is a valid replacement token, so.. use an
-	// invalid one which we can then blow away.
-        list($header, $footer) = self::applyPopupFooterHooks($header, $footer);
-
-        if (isset($session['user']['acctid']) && $session['user']['acctid']>0 && $session['user']['loggedin']) {
-                if (getsetting('ajax',1)==1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                        if (file_exists('ext/ajax_maillink.php')) {
-                                require("ext/ajax_maillink.php");
-                        }
-		} else {
-			$maillink_add_after='';
-			//no AJAX for slower browsers etc
-		}
-	}
-        $header = self::insertHeadScript($header, $pre_headscript, $headscript);
-
-	//clean up spare {fields}s from header and footer (in case they're not used)
-	//note: if you put javascript code in, this has been killing {} javascript assignments...kudos... took me an hour to find why the injected code didn't work...
-        // Replace well-known template tokens
-        $z = $y2 ^ $z2;
-        list($header, $footer) = self::replaceHeaderFooterTokens($header, $footer, [
-            'script' => '',
-            // Popups normally don't show mail links but support the token if present
-            'mail'   => (strpos($header, '{mail}') !== false || strpos($footer, '{mail}') !== false)
-                ? self::mailLink()
-                : '',
-            $z       => $$z,
-        ]);
-
-        if (TwigTemplate::isActive()) {
-            self::$twigVars = array_merge(self::$twigVars, [
-                'header' => $header,
-                'footer' => $footer,
-                'content' => $maillink_add_after.$output->getOutput(),
-                'template_path' => TwigTemplate::getPath(),
-            ]);
-            $browser_output = TwigTemplate::render('popup.twig', self::$twigVars);
-            Accounts::saveUser();
-            session_write_close();
-            echo $browser_output;
-            exit();
-        }
-
-        $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
-        $header = self::stripAdPlaceholders($header);
-        //      $header = preg_replace('/{[^} \t\n\r]*}/i','', $header);
-
-    $browser_output=$header.$maillink_add_after.($output->getOutput()).$footer;
-    Accounts::saveUser();
-    session_write_close();
-    echo $browser_output;
-    exit();
+/**
+ * Deprecated wrapper that forwards to Footer::popupFooter().
+ */
+public static function popupFooter(): void
+{
+    \Lotgd\Page\Footer::popupFooter();
 }
 
 /**
@@ -774,7 +444,7 @@ public static function mailLinkTabText(){
      * @param Settings|null $settings   Settings handler or null
      * @param string      $logd_version Current game version string
      */
-    private static function buildPaypalDonationMarkup(
+    public static function buildPaypalDonationMarkup(
         string $palreplace,
         string $header,
         string $footer,
@@ -875,7 +545,7 @@ public static function mailLinkTabText(){
     /**
      * Generate the mail link markup and populate placeholders.
      */
-    private static function assembleMailLink(string $header, string $footer): array
+    public static function assembleMailLink(string $header, string $footer): array
     {
         global $session;
 
@@ -901,7 +571,7 @@ public static function mailLinkTabText(){
     /**
      * Generate the petition link markup and populate placeholders.
      */
-    private static function assemblePetitionLink(string $header, string $footer): array
+    public static function assemblePetitionLink(string $header, string $footer): array
     {
         $link = "<a href='petition.php' onClick=\"".self::popup('petition.php').";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline('Petition for Help')."</a>";
 
@@ -915,7 +585,7 @@ public static function mailLinkTabText(){
     /**
      * Generate the petition administration display section.
      */
-    private static function assemblePetitionDisplay(string $header, string $footer): array
+    public static function assemblePetitionDisplay(string $header, string $footer): array
     {
         global $session;
 
@@ -969,7 +639,7 @@ public static function mailLinkTabText(){
     /**
      * Insert the navigation output into header and footer strings.
      */
-    private static function generateNavigationOutput(string $header, string $footer, string $builtnavs): array
+    public static function generateNavigationOutput(string $header, string $footer, string $builtnavs): array
     {
         return self::replaceHeaderFooterTokens(
             $header,
@@ -981,7 +651,7 @@ public static function mailLinkTabText(){
     /**
      * Run module hooks for the footer and replace placeholders.
      */
-    private static function applyFooterHooks(string $header, string $footer, string $script): array
+    public static function applyFooterHooks(string $header, string $footer, string $script): array
     {
         // Gather module hook results for footer replacements
         $replacementbits = modulehook("footer-$script", []);
@@ -1004,7 +674,7 @@ public static function mailLinkTabText(){
     /**
      * Run popup footer hooks and apply replacements.
      */
-    private static function applyPopupFooterHooks(string $header, string $footer): array
+    public static function applyPopupFooterHooks(string $header, string $footer): array
     {
         $replacementbits = modulehook('footer-popup', []);
 
@@ -1019,7 +689,7 @@ public static function mailLinkTabText(){
     /**
      * Insert head script markup into the header.
      */
-    private static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
+    public static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
     {
         $markup = $preHeadscript;
         if (!empty($headscript)) {
@@ -1036,7 +706,7 @@ public static function mailLinkTabText(){
     /**
      * Strip advertisement placeholders from the header.
      */
-    private static function stripAdPlaceholders(string $header): string
+    public static function stripAdPlaceholders(string $header): string
     {
         $header = str_replace('{bodyad}', '', $header);
         $header = str_replace('{verticalad}', '', $header);
@@ -1056,7 +726,7 @@ public static function mailLinkTabText(){
      *
      * @return array Array with the processed header and footer
      */
-    private static function replaceHeaderFooterTokens(string $header, string $footer, array $replacements): array
+    public static function replaceHeaderFooterTokens(string $header, string $footer, array $replacements): array
     {
         $header = self::applyTemplateStringReplacements($header, 'header', $replacements);
         $footer = self::applyTemplateStringReplacements($footer, 'footer', $replacements);
@@ -1072,7 +742,7 @@ public static function mailLinkTabText(){
      * @param string $name     Fragment identifier used in warnings
      * @param array  $replacements List of token => value pairs
      */
-    private static function applyTemplateStringReplacements(string $content, string $name, array $replacements): string
+    public static function applyTemplateStringReplacements(string $content, string $name, array $replacements): string
     {
         foreach ($replacements as $key => $val) {
             if (TwigTemplate::isActive()) {
@@ -1094,7 +764,7 @@ public static function mailLinkTabText(){
     /**
      * Compute the page generation statistics string.
      */
-    private static function computePageGenerationStats(float $pagestarttime): string
+    public static function computePageGenerationStats(float $pagestarttime): string
     {
         global $session, $dbinfo, $settings, $SCRIPT_NAME;
 

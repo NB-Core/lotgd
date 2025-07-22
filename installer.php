@@ -12,6 +12,8 @@ use Lotgd\DataCache;
 use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\PageParts;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Settings;
 
@@ -103,7 +105,7 @@ if (file_exists("dbconnect.php") && (
 	}
 if ($stage > $session['stagecompleted']) $session['stagecompleted'] = $stage;
 
-PageParts::pageHeader("LoGD Installer - %s",$stages[$stage]);
+Header::pageHeader("LoGD Installer - %s",$stages[$stage]);
 $installer = new \Lotgd\Installer\Installer();
 $installer->runStage($stage);
 
@@ -117,6 +119,6 @@ if (!$noinstallnavs){
                Nav::add($stages[$x],"installer.php?stage=$x");
 	}
 }
-PageParts::pageFooter(false);
+Footer::pageFooter(false);
 
 ?>
