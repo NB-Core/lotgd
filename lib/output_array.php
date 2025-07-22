@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for OutputArray class
 // translator ready
 // addnews ready
@@ -6,7 +7,7 @@
 
 use Lotgd\OutputArray;
 
-function output_array($array, $prefix="")
+function output_array($array, $prefix = "")
 {
     return OutputArray::output($array, $prefix);
 }
@@ -15,5 +16,3 @@ function code_array($array)
 {
     return OutputArray::code($array);
 }
-
-?>

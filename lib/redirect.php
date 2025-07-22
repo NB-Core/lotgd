@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Redirect class
 // translator ready
 // addnews ready
@@ -6,8 +7,7 @@
 
 use Lotgd\Redirect;
 
-function redirect($location, $reason=false)
+function redirect($location, $reason = false)
 {
     Redirect::redirect($location, $reason);
 }
-?>

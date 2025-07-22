@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Substitute class
 use Lotgd\Substitute;
 

@@ -1,10 +1,13 @@
 <?php
+
 declare(strict_types=1);
+
 /**
  * Lightweight loader for AJAX requests. It includes the standard
  * game bootstrap and ensures allowed navigation is reloaded for
  * asynchronous calls.
  */
+
 // Lightweight loader for AJAX requests
 if (!defined('AJAX_MODE')) {
     define('AJAX_MODE', true);

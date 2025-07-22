@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\HolidayText;
 
 function holidayize($text, $type = 'unknown')

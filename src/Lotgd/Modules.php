@@ -1,13 +1,15 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
+
 use Lotgd\MySQL\Database;
 use Lotgd\Backtrace;
 use Lotgd\Translator;
 use Lotgd\Forms;
 use Lotgd\Sanitize;
 use Lotgd\Modules\Installer;
-
 
 /**
  * Collection of module helper functions migrated from legacy modules.php
@@ -37,13 +39,13 @@ class Modules
         $moduleName = Sanitize::modulenameSanitize($moduleName);
         $modulefilename = "modules/{$moduleName}.php";
         if (file_exists($modulefilename)) {
-           Translator::tlschema("module-{$moduleName}");
+            Translator::tlschema("module-{$moduleName}");
             if ($withDb) {
                 $sql    = 'SELECT active,filemoddate,infokeys,version FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
                 $result = Database::queryCached($sql, "inject-$moduleName", 3600);
                 if (! $force) {
                     if (Database::numRows($result) == 0) {
-                       Translator::tlschema();
+                        Translator::tlschema();
                         debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n", $moduleName));
                         massinvalidate();
                         self::$injectedModules[$force][$moduleName] = false;
@@ -51,7 +53,7 @@ class Modules
                     }
                     $row = Database::fetchAssoc($result);
                     if (! $row['active']) {
-                       Translator::tlschema();
+                        Translator::tlschema();
                         debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n", $moduleName));
                         self::$injectedModules[$force][$moduleName] = false;
                         return false;
@@ -78,7 +80,7 @@ class Modules
                 }
                 if (! self::checkRequirements($info['requires'])) {
                     self::$injectedModules[$force][$moduleName] = false;
-                   Translator::tlschema();
+                    Translator::tlschema();
                     output_notl("`n`3Module `#%s`3 does not meet its prerequisites.`n", $moduleName);
                     return false;
                 }
@@ -131,7 +133,7 @@ class Modules
                     }
                 }
             }
-           Translator::tlschema();
+            Translator::tlschema();
             self::$injectedModules[$force][$moduleName] = true;
             return true;
         }
@@ -153,7 +155,7 @@ class Modules
      */
     public static function getStatus(string $moduleName, string|false $version = false): int
     {
-        
+
 
         $moduleName     = modulename_sanitize($moduleName);
         $modulefilename = "modules/$moduleName.php";
@@ -243,9 +245,11 @@ class Modules
                 return false;
             }
             $status = self::getStatus($key);
-            if (! (
+            if (
+                ! (
                 $status & MODULE_INJECTED
-            ) && $forceinject) {
+                ) && $forceinject
+            ) {
                 $result = $result && self::inject($key);
             }
         }
@@ -736,7 +740,7 @@ class Modules
 
         // No need to cast $user to (int) as it is already typed as ?int
         // and PHP's type system ensures it is either null or an integer.
-        
+
 
         self::loadModulePrefs($module, $user);
 
@@ -1430,4 +1434,3 @@ class Modules
         return translate_inline($thisuser, 'race');
     }
 }
-

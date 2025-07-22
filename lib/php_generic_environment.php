@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for PhpGenericEnvironment class
 // addnews ready
 // translator ready
@@ -15,5 +16,3 @@ function php_generic_environment()
 {
     PhpGenericEnvironment::setup();
 }
-
-?>

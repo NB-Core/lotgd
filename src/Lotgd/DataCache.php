@@ -1,7 +1,8 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
 
+declare(strict_types=1);
+
+namespace Lotgd;
 
 /**
  * Lightweight file based data cache helper.
@@ -24,7 +25,9 @@ class DataCache
     public static function datacache(string $name, int $duration = 60): mixed
     {
         global $datacache, $settings;
-        if (!isset($settings)) return false; // not yet setup most likely
+        if (!isset($settings)) {
+            return false; // not yet setup most likely
+        }
 
         if ($settings->getSetting('usedatacache', 0)) {
             if (isset(self::$cache[$name])) {

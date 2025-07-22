@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lotgd;
@@ -26,8 +27,7 @@ class Redirect
             Nav::add('', $location);
             if (isset($settings) && $settings instanceof Settings) {
                 $charset = $settings->getSetting('charset', 'UTF-8');
-            }
-            else {
+            } else {
                 $charset = 'UTF-8'; // Default charset if settings not available
             }
             $failoutput = new Output();
@@ -49,8 +49,8 @@ class Redirect
         $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
         header("Location: $http://$host$uri/$location");
 
-	//fall through if this does not work!
-	$session['debug'] .= "Redirected on '$host' with protocol '$http' to uri '$uri' to location '$location' from location '$REQUEST_URI'.<br/><br/>Reasion if given:<br/>  $reason<br>";
+    //fall through if this does not work!
+        $session['debug'] .= "Redirected on '$host' with protocol '$http' to uri '$uri' to location '$location' from location '$REQUEST_URI'.<br/><br/>Reasion if given:<br/>  $reason<br>";
         $text = Translator::translateInline('Whoops. There has been an error concering redirecting your to your new page. Please inform the admins about this. More Information for your petition down below:<br/><br/>');
         echo "<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000; color: #fff;'>$text</body></html>";
         echo $session['debug'];

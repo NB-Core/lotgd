@@ -1,9 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 
 /**

@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\Backtrace;
 
 function show_no_backtrace()

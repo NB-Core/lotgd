@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
+
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 
@@ -56,7 +59,7 @@ class Commentary
         if ($remove > 0) {
             $return = httpget('returnpath');
             $section = httpget('section');
-            $sql = 'SELECT ' . Database::prefix('commentary') . '.*,' . Database::prefix('accounts') . '.name,' . Database::prefix('accounts') . '.acctid, ' . Database::prefix('accounts') . '.clanrank,' . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' INNER JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE commentid='.((string)$remove);
+            $sql = 'SELECT ' . Database::prefix('commentary') . '.*,' . Database::prefix('accounts') . '.name,' . Database::prefix('accounts') . '.acctid, ' . Database::prefix('accounts') . '.clanrank,' . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' INNER JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE commentid=' . ((string)$remove);
             $row = Database::fetchAssoc(Database::query($sql));
             $sql = 'INSERT LOW_PRIORITY INTO ' . Database::prefix('moderatedcomments') . " (moderator,moddate,comment) VALUES ('{$session['user']['acctid']}',\"" . date('Y-m-d H:i:s') . "\",\"" . addslashes(serialize($row)) . "\")";
             Database::query($sql);
@@ -106,7 +109,7 @@ class Commentary
      */
     public static function injectRawComment(string $section, int $author, string $comment): void
     {
-        $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'".Database::escape($comment)."')";
+        $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'" . Database::escape($comment) . "')";
         Database::query($sql);
         invalidatedatacache("comments-{$section}");
         invalidatedatacache('comments-or11');
@@ -565,7 +568,7 @@ class Commentary
         if (!empty($row['name'])) {
             $row['name'] = HolidayText::holidayize($row['name'], 'comment');
         }
-        
+
 
         // Prepend clan tag to the author's name
         if ($row['clanrank']) {
@@ -649,21 +652,25 @@ class Commentary
      */
     public static function talkLine(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
     {
-        $args = modulehook("insertcomment", array("section"=>$section));
-        if (array_key_exists("mute",$args) && $args['mute'] &&
-                        !($session['user']['superuser'] & SU_EDIT_COMMENTS)) {
+        $args = modulehook("insertcomment", array("section" => $section));
+        if (
+            array_key_exists("mute", $args) && $args['mute'] &&
+                        !($session['user']['superuser'] & SU_EDIT_COMMENTS)
+        ) {
                 output_notl("%s", $args['mutemsg']);
-        } elseif ($counttoday<($limit/2)
-                        || ($session['user']['superuser']&~SU_DOESNT_GIVE_GROTTO)
-                        || ($session['user']['superuser']&SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER
-                        || !getsetting('postinglimit',1)){
-                if ($message!="X"){
-                        $message="`n`@$message`n";
-                        output($message);
-                        self::talkForm($section,$talkline,$limit,$schema);
-                }
-        }else{
-                $message="`n`@$message`n";
+        } elseif (
+            $counttoday < ($limit / 2)
+                        || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO)
+                        || ($session['user']['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER
+                        || !getsetting('postinglimit', 1)
+        ) {
+            if ($message != "X") {
+                    $message = "`n`@$message`n";
+                    output($message);
+                    self::talkForm($section, $talkline, $limit, $schema);
+            }
+        } else {
+                $message = "`n`@$message`n";
                 output($message);
                 output("Sorry, you've exhausted your posts in this section for now.`0`n");
         }
@@ -674,8 +681,10 @@ class Commentary
      */
     public static function talkForm(string $section, string $talkline, int $limit = 10, $schema = false)
     {
-      global $REQUEST_URI,$session;
-        if ($schema===false) $schema=Translator::getNamespace();
+        global $REQUEST_URI,$session;
+        if ($schema === false) {
+            $schema = Translator::getNamespace();
+        }
         tlschema("commentary");
 
         $jump = false;
@@ -683,54 +692,62 @@ class Commentary
                 $jump = true;
         }
 
-        $counttoday=0;
-        if (mb_substr($section,0,5)!="clan-"){
-                $sql = "SELECT author FROM " . Database::prefix("commentary") . " WHERE section='$section' AND postdate>'".date("Y-m-d 00:00:00")."' ORDER BY commentid DESC LIMIT $limit";
+        $counttoday = 0;
+        if (mb_substr($section, 0, 5) != "clan-") {
+                $sql = "SELECT author FROM " . Database::prefix("commentary") . " WHERE section='$section' AND postdate>'" . date("Y-m-d 00:00:00") . "' ORDER BY commentid DESC LIMIT $limit";
                 $result = Database::query($sql);
-                while ($row=Database::fetchAssoc($result)){
-                        if ($row['author']==$session['user']['acctid']) $counttoday++;
+            while ($row = Database::fetchAssoc($result)) {
+                if ($row['author'] == $session['user']['acctid']) {
+                    $counttoday++;
                 }
-                if (round($limit/2,0)-$counttoday <= 0 && getsetting('postinglimit',1)){
-                        if ($session['user']['superuser']&~SU_DOESNT_GIVE_GROTTO){
-                                output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
-                        }else{
-                                output("`n`)(You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.)`n");
-                                return false;
-                        }
+            }
+            if (round($limit / 2, 0) - $counttoday <= 0 && getsetting('postinglimit', 1)) {
+                if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
+                        output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
+                } else {
+                        output("`n`)(You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.)`n");
+                        return false;
                 }
+            }
         }
-        if (translate_inline($talkline,$schema)!="says")
-                $tll = strlen(translate_inline($talkline,$schema))+11;
-                else $tll=0;
-        $req = comscroll_sanitize($REQUEST_URI)."&comment=1";
-        if (strpos($req,"?")===false) $req = str_replace("&","?",$req);
-        if (preg_match('/[&\?]section=/',$req)==0) $req.="&section=".rawurlencode($section); //add only if not present, and only if in the right form
-        $req = str_replace("?&","?",$req);
+        if (translate_inline($talkline, $schema) != "says") {
+                $tll = strlen(translate_inline($talkline, $schema)) + 11;
+        } else {
+            $tll = 0;
+        }
+        $req = comscroll_sanitize($REQUEST_URI) . "&comment=1";
+        if (strpos($req, "?") === false) {
+            $req = str_replace("&", "?", $req);
+        }
+        if (preg_match('/[&\?]section=/', $req) == 0) {
+            $req .= "&section=" . rawurlencode($section); //add only if not present, and only if in the right form
+        }
+        $req = str_replace("?&", "?", $req);
         if ($jump) {
                 $req .= "#$section";
         }
-        addnav("",$req);
-        output_notl("<form action=\"$req\" method='POST' autocomplete='false'>",true);
-        Forms::previewfield("insertcommentary", $session['user']['name'], $talkline, true, array("size"=>getsetting('chatlinelength',40), "maxlength"=>getsetting('maxchars',200)-$tll));
+        addnav("", $req);
+        output_notl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
+        Forms::previewfield("insertcommentary", $session['user']['name'], $talkline, true, array("size" => getsetting('chatlinelength', 40), "maxlength" => getsetting('maxchars', 200) - $tll));
         rawoutput("<input type='hidden' name='talkline' value='$talkline'>");
         rawoutput("<input type='hidden' name='schema' value='$schema'>");
         rawoutput("<input type='hidden' name='counter' value='{$session['counter']}'>");
         $session['commentcounter'] = $session['counter'];
-        if ($section=="X"){
+        if ($section == "X") {
                 $vname = getsetting("villagename", LOCATION_FIELDS);
                 $iname = getsetting("innname", LOCATION_INN);
                 $sections = self::commentaryLocs();
-                reset ($sections);
-                output_notl("<select name='section'>",true);
-                foreach ($sections as $key=>$val) {
-                        output_notl("<option value='$key'>$val</option>",true);
-                }
-                output_notl("</select>",true);
-        }else{
-                output_notl("<input type='hidden' name='section' value='$section'>",true);
+                reset($sections);
+                output_notl("<select name='section'>", true);
+            foreach ($sections as $key => $val) {
+                    output_notl("<option value='$key'>$val</option>", true);
+            }
+                output_notl("</select>", true);
+        } else {
+                output_notl("<input type='hidden' name='section' value='$section'>", true);
         }
-        if (round($limit/2,0)-$counttoday < 3 && getsetting('postinglimit',1)){
-                output("`)(You have %s posts left today)`n`0",(round($limit/2,0)-$counttoday));
+        if (round($limit / 2, 0) - $counttoday < 3 && getsetting('postinglimit', 1)) {
+                output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
         }
         rawoutput("<div id='previewtext'></div></form>");
         tlschema();

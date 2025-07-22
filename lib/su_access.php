@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for SuAccess class
 use Lotgd\SuAccess;
 

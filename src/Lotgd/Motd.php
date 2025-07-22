@@ -1,9 +1,12 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+declare(strict_types=1);
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\Forms;
+
 /**
  * Helpers for MOTD administration.
  */
@@ -20,20 +23,20 @@ class Motd
         global $session;
         $id = (int)$id;
         if ($id > 0) {
-        $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem=$id";
-        $result = Database::query($sql);
-        if (Database::numRows($result) > 0) {
-            $row = Database::fetchAssoc($result);
-            $subject = $row['motdtitle'];
-            $body = $row['motdbody'];
-            $date = $row['motddate'];
-            $author = $row['motdauthor'];
-            if ((int)$row['motdtype'] === 1) {
-                self::pollItem($id, $subject, $body, (string)$author, $date, false);
-            } else {
-                self::motdItem($subject, $body, (string)$author, $date, $id);
+            $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem=$id";
+            $result = Database::query($sql);
+            if (Database::numRows($result) > 0) {
+                $row = Database::fetchAssoc($result);
+                $subject = $row['motdtitle'];
+                $body = $row['motdbody'];
+                $date = $row['motddate'];
+                $author = $row['motdauthor'];
+                if ((int)$row['motdtype'] === 1) {
+                    self::pollItem($id, $subject, $body, (string)$author, $date, false);
+                } else {
+                    self::motdItem($subject, $body, (string)$author, $date, $id);
+                }
             }
-        }
         }
         $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motditem,motdtype FROM ' . Database::prefix('motd') . ($poll ? ' WHERE motdtype=1' : ' WHERE motdtype=0') . ' ORDER BY motddate DESC';
         $result = Database::query($sql);
@@ -51,14 +54,14 @@ class Motd
      */
     public static function motdItem(string $subject, string $body, string $author, string $date, int $id): void
     {
-	global $output;
+        global $output;
         $anchor = 'motd' . date('YmdHis', strtotime($date));
         rawoutput("<a name='$anchor'>");
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
-        output_notl('<h4>%s</h4>', $subject,true);
+        output_notl('<h4>%s</h4>', $subject, true);
         modulehook('motd-item-intercept', ['id' => $id]);
-        output_notl('<div>%s</div>',$body,true);
-        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'),  $author, $date, true);
+        output_notl('<div>%s</div>', $body, true);
+        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'), $author, $date, true);
         self::motdAdminLinks($id, false);
         rawoutput('</div>');
         rawoutput('<hr>');
@@ -113,7 +116,7 @@ class Motd
                 $percent = isset($choices[$key]) ? round($choices[$key] / $totalanswers * 100, 1) : 0;
 
                 if ($session['user']['loggedin'] && $showpoll) {
-                    rawoutput("<input type='radio' name='choice' value='$key'" . ($choice == $key ? ' checked' : '') . '>' );
+                    rawoutput("<input type='radio' name='choice' value='$key'" . ($choice == $key ? ' checked' : '') . '>');
                 }
 
                 output_notl('%s (%s - %s%%)`n', stripslashes((string)$val), $choices[$key] ?? 0, $percent);

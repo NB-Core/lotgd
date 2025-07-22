@@ -1,4 +1,5 @@
 <?php
+
 // addnews ready
 // translator ready
 // mail ready

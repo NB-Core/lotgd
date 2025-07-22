@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lotgd\MySQL;
@@ -6,6 +7,7 @@ namespace Lotgd\MySQL;
 use Lotgd\Backtrace;
 use Lotgd\DataCache;
 use Lotgd\DateTime;
+
 global $dbinfo;
 
 $dbinfo = [];
@@ -271,4 +273,3 @@ class Database
         return $prefix . $tablename;
     }
 }
-

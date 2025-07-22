@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for RegisterGlobal class
 // addnews ready
 // translator ready
@@ -10,4 +11,3 @@ function register_global(&$var)
 {
     RegisterGlobal::register($var);
 }
-?>

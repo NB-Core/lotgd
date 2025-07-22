@@ -1,10 +1,13 @@
 <?php
+
 declare(strict_types=1);
+
 /**
  * Prepares the mail link JavaScript code snippets used by the
  * interface. It injects Jaxon scripts and variables required by the
  * asynchronous mail and commentary polling.
  */
+
 global $jaxon;
 $s_js = $jaxon->getJs();
 $s_script = $jaxon->getScript();
@@ -20,4 +23,3 @@ $maillink_add_after .= "var lotgd_clear_delay_ms = " . ((getsetting('LOGINTIMEOU
 $maillink_add_after .= "</script>";
 $maillink_add_after .= "<script src='/ext/js/ajax_polling.js'></script>";
 $maillink_add_after .= "<div id='notify'></div>";
-

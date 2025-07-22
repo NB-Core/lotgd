@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\Battle;
 
 function rolldamage(&$badguy)

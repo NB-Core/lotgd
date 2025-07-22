@@ -2,25 +2,25 @@
 
 /* General Styles */
 caption {
-	white-space: nowrap;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 12px;
+    white-space: nowrap;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
 }
 
 td {
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 12px;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
 }
 
 .main-body {
-	background-color: #000;
-	color: #777474;
-	margin: 0;
+    background-color: #000;
+    color: #777474;
+    margin: 0;
 }
 
 .popup-body {
-	background-color: #000;
-	color: #777474;
+    background-color: #000;
+    color: #777474;
 }
 
 /* Navigation Table */
@@ -36,9 +36,9 @@ table.nav {
         float: left;
         line-height: 33px;
         clear: none;
-	color: #FFFFFF;
-	cursor: default;
-	text-align: center;
+    color: #FFFFFF;
+    cursor: default;
+    text-align: center;
         font-family: Tahoma Small Cap;
         font-weight: bolder;
 }
@@ -58,21 +58,21 @@ table.nav {
 }
 
 a {
-	color: #669933;
-	text-decoration: none;
+    color: #669933;
+    text-decoration: none;
 }
 
 /* Header and other styles */
 
 .page-header {
-	height: 48px;
-	padding-bottom: 3px;
+    height: 48px;
+    padding-bottom: 3px;
 }
 
 .main-content {
-	border-style: dotted;
-	background-color: #2B2B2B;
-	align-content: start;
+    border-style: dotted;
+    background-color: #2B2B2B;
+    align-content: start;
 }
 
 .pageheader-center,.pageheader-left,.pageheader-right {
@@ -81,11 +81,11 @@ a {
 }
 
 .pageheader-left {
-	text-align: left;
+    text-align: left;
 }
 
 .pageheader-right {
-	text-align: right;
+    text-align: right;
 }
 
 
@@ -113,93 +113,93 @@ a.nav {
 /* Translations and others */
 
 select {
-	background-color: #000000;
-	border: 1px solid #999999;
-	color: #CCCCCC;
+    background-color: #000000;
+    border: 1px solid #999999;
+    color: #CCCCCC;
 }
 table.vitalinfo {
         background-color: #333333;
         border: 1px solid #000000;
 }
 a.motd {
-	text-decoration: none;
-	color:#c61d2e;
+    text-decoration: none;
+    color:#c61d2e;
 }
 a:hover.motd {
-	font-weight: normal;
-	color:#FFFFFF;
+    font-weight: normal;
+    color:#FFFFFF;
 }
 
 a.hotmotd {
-	font-weight: normal;
-	color:#FFFFFF;
+    font-weight: normal;
+    color:#FFFFFF;
 }
 
 .pagetitle {
-	font-family: "Arial Black", "Courier";
-	font-variant: small-caps;
-	font-size: 14px;
-	color: #000000;
+    font-family: "Arial Black", "Courier";
+    font-variant: small-caps;
+    font-size: 14px;
+    color: #000000;
 }
 .navhi {
-	color: #c61d2e;
-	text-decoration: underline;
+    color: #c61d2e;
+    text-decoration: underline;
 }
 
 td.nav a.thot {
-	position: absolute;
-	left: 0px;
-	height: auto;
+    position: absolute;
+    left: 0px;
+    height: auto;
 }
 td.nav a.t {
-	position: absolute;
-	left: 0px;
-	height: auto;
+    position: absolute;
+    left: 0px;
+    height: auto;
 }
 
 a.t {
         height: 7px;
         border: 1px dotted #FFFFFF;
         background-color: #999;
-	color: #FFF;
-	font-size: 7px;
-	text-decoration: none;
-	padding-left: 1px;
-	padding-right: 1px;
+    color: #FFF;
+    font-size: 7px;
+    text-decoration: none;
+    padding-left: 1px;
+    padding-right: 1px;
 }
 
 a.thot {
         height: 7px;
         border: 1px dotted #FFFFFF;
-	background-color: #666666;
-	color: #FFFFFF;
-	font-size: 7px;
-	text-decoration: none;
-	padding-left: 1px;
-	padding-right: 1px;
+    background-color: #666666;
+    color: #FFFFFF;
+    font-size: 7px;
+    text-decoration: none;
+    padding-left: 1px;
+    padding-right: 1px;
 }
 
 /* Hover Effects */
 a:hover.nav {
-	background-color: #404040;
-	border: none;
+    background-color: #404040;
+    border: none;
 }
 
 /* Message of the Day Link */
 a.motd {
-	text-decoration: none;
-	color: #c61d2e;
+    text-decoration: none;
+    color: #c61d2e;
 }
 
 a:hover.motd {
-	font-weight: normal;
-	color: #FFFFFF;
+    font-weight: normal;
+    color: #FFFFFF;
 }
 
 /* Character Info Styles */
 td.charhead {
-	background-color: #222222;
-	color: #FFFFFF;
+    background-color: #222222;
+    color: #FFFFFF;
 }
 
 table.charinfo {
@@ -209,97 +209,97 @@ table.charinfo {
 }
 
 td.charinfo {
-	color: #FFFFFF;
-	border-top: 1px solid #FFFFFF;
-	cursor: default;
-	padding: 2px;
+    color: #FFFFFF;
+    border-top: 1px solid #FFFFFF;
+    cursor: default;
+    padding: 2px;
 }
 
 /* Not used right now, due to moving images to css */
 /* Additional Background Images based on HTML Attributes */
 .page-top {
-	background-image: url('images/page_top.gif');
-	background-repeat: repeat-x;
+    background-image: url('images/page_top.gif');
+    background-repeat: repeat-x;
 }
 
 .page-bottom {
-	background-image: url('images/page_bot.gif');
-	background-repeat: repeat-x;
+    background-image: url('images/page_bot.gif');
+    background-repeat: repeat-x;
 }
 
 .page-left {
-	background-image: url('images/page_lt.gif');
-	background-repeat: repeat-y;
+    background-image: url('images/page_lt.gif');
+    background-repeat: repeat-y;
 }
 
 .page-right {
-	background-image: url('images/page_rt.gif');
-	background-repeat: repeat-y;
+    background-image: url('images/page_rt.gif');
+    background-repeat: repeat-y;
 }
 
 
 /* Specific adjustments for td elements that used inline background attributes */
 td[class*="page-top"] {
-	background-image: url('images/page_top.gif');
+    background-image: url('images/page_top.gif');
 }
 
 td[class*="page-bottom"] {
-	background-image: url('images/page_bot.gif');
+    background-image: url('images/page_bot.gif');
 }
 
 /* Button Styles */
 .button {
-	background-color: #222222;
-	color: #000000;
-	font-family: verdana, arial, helvetica, sans-serif;
-	font-size: 12px;
-	background-image: url(images/input.gif);
-	border: 1px solid;
-	border-color: #000000 #888846 #888846 #000000;
+    background-color: #222222;
+    color: #000000;
+    font-family: verdana, arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-image: url(images/input.gif);
+    border: 1px solid;
+    border-color: #000000 #888846 #888846 #000000;
 }
 
 .login-submit {
-	text-align:center;
+    text-align:center;
 }
 
 /* Other Styles */
 .select {
-	background-color: #000000;
-	border: 1px solid #999999;
-	color: #CCCCCC;
+    background-color: #000000;
+    border: 1px solid #999999;
+    color: #CCCCCC;
 }
 
 .stonage {
-	background-image: url(images/stone_corner.gif);
-	background-repeat: no-repeat;
-	background-position: left top;
+    background-image: url(images/stone_corner.gif);
+    background-repeat: no-repeat;
+    background-position: left top;
 }
 
 .stonage2 {
-	background-image: url(images/stone_center.gif);
-	background-repeat: no-repeat;
-	background-position: left top;
-	color: #669933;
+    background-image: url(images/stone_center.gif);
+    background-repeat: no-repeat;
+    background-position: left top;
+    color: #669933;
 }
 
 /* Background Images for Different Sections */
 td.village {
-	background-image: url(../images/village.jpg);
-	background-repeat: no-repeat;
-	background-position: right bottom;
+    background-image: url(../images/village.jpg);
+    background-repeat: no-repeat;
+    background-position: right bottom;
 }
 
 td.forest {
-	background-image: url(../images/forest.jpg);
-	background-repeat: no-repeat;
-	background-position: center bottom;
+    background-image: url(../images/forest.jpg);
+    background-repeat: no-repeat;
+    background-position: center bottom;
 }
 
 td.dragon {
-	background-image: url(../images/dragon.jpg);
-	background-repeat: no-repeat;
-	background-position: center center;
-	background-attachment: fixed;
+    background-image: url(../images/dragon.jpg);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
 }
 
 /* Additional styles as needed based on your layout and design requirements */

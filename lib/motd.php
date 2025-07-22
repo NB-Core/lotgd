@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\Motd;
 
 function motd_admin($id, $poll = false)

@@ -18,12 +18,29 @@ if (!defined('DATACACHE_FILENAME_PREFIX')) {
 class DummySettingsExtra extends Settings
 {
     private array $values;
-    public function __construct(array $values = []) { $this->values = $values; }
-    public function getSetting(string|int $name, mixed $default = false): mixed { return $this->values[$name] ?? $default; }
-    public function loadSettings(): void {}
-    public function clearSettings(): void {}
-    public function saveSetting(string|int $name, mixed $value): bool { $this->values[$name] = $value; return true; }
-    public function getArray(): array { return $this->values; }
+    public function __construct(array $values = [])
+    {
+        $this->values = $values;
+    }
+    public function getSetting(string|int $name, mixed $default = false): mixed
+    {
+        return $this->values[$name] ?? $default;
+    }
+    public function loadSettings(): void
+    {
+    }
+    public function clearSettings(): void
+    {
+    }
+    public function saveSetting(string|int $name, mixed $value): bool
+    {
+        $this->values[$name] = $value;
+        return true;
+    }
+    public function getArray(): array
+    {
+        return $this->values;
+    }
 }
 
 final class PlayerFunctionsExtraTest extends TestCase
@@ -48,7 +65,9 @@ final class PlayerFunctionsExtraTest extends TestCase
     protected function tearDown(): void
     {
         if (is_dir($this->cacheDir)) {
-            foreach (glob($this->cacheDir . '/*') as $f) { unlink($f); }
+            foreach (glob($this->cacheDir . '/*') as $f) {
+                unlink($f);
+            }
             rmdir($this->cacheDir);
         }
         unset($GLOBALS['settings'], $GLOBALS['session']);

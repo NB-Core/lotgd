@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd\Nav;
 
 /**
@@ -27,4 +29,3 @@ class VillageNav
         tlschema();
     }
 }
-

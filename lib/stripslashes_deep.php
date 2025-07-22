@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Stripslashes class
 use Lotgd\Stripslashes;
 

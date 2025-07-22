@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\Names;
 
 function get_player_title($old = false)

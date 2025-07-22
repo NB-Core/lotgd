@@ -1,7 +1,8 @@
 <?php
-use Lotgd\Buffs;
 
+use Lotgd\Buffs;
 use Lotgd\Substitute;
+
 function activate_buffs($tag)
 {
     return Buffs::activateBuffs($tag);

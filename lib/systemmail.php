@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Mail::systemMail
 use Lotgd\Mail;
 

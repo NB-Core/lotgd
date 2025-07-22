@@ -21,5 +21,3 @@ if (!$badguy['rage_used'] && $session['user']['hitpoints'] < $session['user']['m
     ]);
     $badguy['rage_used'] = true;
 }
-
-?>

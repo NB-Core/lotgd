@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 use Lotgd\DumpItem;
@@ -210,12 +212,9 @@ class Output
     public function appoencode($data, $priv = false)
     {
         global $settings;
-        if (!isset($settings))
-        {
+        if (!isset($settings)) {
             $charset = 'UTF-8';
-        }
-        else
-        {
+        } else {
             $charset = $settings->getSetting('charset', 'ISO-8859-1');
         }
         $start = 0;

@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for SafeEscape class
 // addnews ready
 // translator ready
@@ -10,4 +11,3 @@ function safeescape($input)
 {
     return SafeEscape::escape($input);
 }
-?>

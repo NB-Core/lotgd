@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Forest class
 use Lotgd\Forest;
 

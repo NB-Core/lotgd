@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lotgd\Page;
@@ -49,10 +50,12 @@ class Footer
             $result  = Database::query($sql);
             $row     = Database::fetchAssoc($result);
             $headscript = '';
-            if (Database::numRows($result) > 0 && isset($session['user']['lastmotd']) &&
+            if (
+                Database::numRows($result) > 0 && isset($session['user']['lastmotd']) &&
                 ($row['motddate'] > $session['user']['lastmotd']) &&
                 (!isset(PageParts::$noPopups[$SCRIPT_NAME]) || PageParts::$noPopups[$SCRIPT_NAME] != 1) &&
-                $session['user']['loggedin']) {
+                $session['user']['loggedin']
+            ) {
                 if (isset($settings) && $settings->getSetting('forcedmotdpopup', 0)) {
                     $headscript .= PageParts::popup('motd.php');
                 }
@@ -62,10 +65,10 @@ class Footer
             }
             $favicon = [
                 'favicon-link' =>
-                    "<link rel=\"shortcut icon\" HREF=\"/images/favicon/favicon.ico\" TYPE=\"image/x-icon\"/>".
-                    "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/images/favicon/apple-touch-icon.png\">".
-                    "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/images/favicon/favicon-32x32.png\">".
-                    "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">".
+                    "<link rel=\"shortcut icon\" HREF=\"/images/favicon/favicon.ico\" TYPE=\"image/x-icon\"/>" .
+                    "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/images/favicon/apple-touch-icon.png\">" .
+                    "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/images/favicon/favicon-32x32.png\">" .
+                    "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">" .
                     "<link rel=\"manifest\" href=\"/images/favicon/site.webmanifest\">",
             ];
             $favicon        = modulehook('pageparts-favicon', $favicon);
@@ -90,34 +93,34 @@ class Footer
             $session['user']['login'] = '';
         }
 
-        $script .= "<script type='text/javascript' charset='UTF-8'>".
-            "<!--".
-            "document.onkeypress=keyevent;".
-            "function keyevent(e){".
-            "var c;".
-            "var target;".
-            "var altKey;".
-            "var ctrlKey;".
-            "if (window.event != null) {".
-            "c=String.fromCharCode(window.event.keyCode).toUpperCase();".
-            "altKey=window.event.altKey;".
-            "ctrlKey=window.event.ctrlKey;".
-            "}else{".
-            "c=String.fromCharCode(e.charCode).toUpperCase();".
-            "altKey=e.altKey;".
-            "ctrlKey=e.ctrlKey;".
-            "}".
-            "if (window.event != null)".
-            "target=window.event.srcElement;".
-            "else".
-            "target=e.originalTarget;".
-            "if (target.nodeName.toUpperCase()=='INPUT' || target.nodeName.toUpperCase()=='TEXTAREA' || altKey || ctrlKey){".
+        $script .= "<script type='text/javascript' charset='UTF-8'>" .
+            "<!--" .
+            "document.onkeypress=keyevent;" .
+            "function keyevent(e){" .
+            "var c;" .
+            "var target;" .
+            "var altKey;" .
+            "var ctrlKey;" .
+            "if (window.event != null) {" .
+            "c=String.fromCharCode(window.event.keyCode).toUpperCase();" .
+            "altKey=window.event.altKey;" .
+            "ctrlKey=window.event.ctrlKey;" .
+            "}else{" .
+            "c=String.fromCharCode(e.charCode).toUpperCase();" .
+            "altKey=e.altKey;" .
+            "ctrlKey=e.ctrlKey;" .
+            "}" .
+            "if (window.event != null)" .
+            "target=window.event.srcElement;" .
+            "else" .
+            "target=e.originalTarget;" .
+            "if (target.nodeName.toUpperCase()=='INPUT' || target.nodeName.toUpperCase()=='TEXTAREA' || altKey || ctrlKey){" .
             "}";
         foreach (Nav::getQuickKeys() as $key => $val) {
             $script .= "\n                    if (c == '" . strtoupper((string) $key) . "') { $val; return false; }";
         }
-        $script .= "\n        }".
-            "//-->".
+        $script .= "\n        }" .
+            "//-->" .
             "</script>";
 
         $palreplace = (strpos($footer, '{paypal}') || strpos($header, '{paypal}')) ? '{paypal}' : '{stats}';

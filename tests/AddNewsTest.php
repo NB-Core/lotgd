@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-
-
 namespace {
     use PHPUnit\Framework\TestCase;
     use Lotgd\AddNews;

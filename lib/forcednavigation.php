@@ -1,4 +1,5 @@
 <?php
+
 // translator ready
 // addnews ready
 // mail ready
@@ -10,4 +11,3 @@ function do_forced_nav($anonymous, $overrideforced)
 {
     ForcedNavigation::doForcedNav((bool)$anonymous, (bool)$overrideforced);
 }
-?>
