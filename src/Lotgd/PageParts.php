@@ -736,6 +736,7 @@ public static function mailLinkTabText(){
      * @param array  $replacements Associative array of token => value pairs
      *
      * @return array Array with the processed header and footer
+     * @internal This method is intended for internal use only.
      */
     public static function replaceHeaderFooterTokens(string $header, string $footer, array $replacements): array
     {
