@@ -10,6 +10,9 @@ use Lotgd\TwigTemplate;
 use Lotgd\Sanitize;
 use Lotgd\HolidayText;
 use Lotgd\Buffs;
+use Lotgd\Nav;
+use Lotgd\Accounts;
+use Lotgd\MySQL\Database;
 
 class Footer
 {
