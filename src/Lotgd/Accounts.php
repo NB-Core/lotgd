@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Helper functions related to account management.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
-
-/**
- * Helper functions related to account management.
- */
 class Accounts
 {
     /**

@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Helper methods for handling forest fight results and creature buffs.
+ */
+
 namespace Lotgd\Forest;
 
 use Lotgd\AddNews;
@@ -11,10 +15,6 @@ use Lotgd\PageParts;
 use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\Nav;
-
-/**
- * Helper methods for handling forest fight results and creature buffs.
- */
 class Outcomes
 {
     /**

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Lightweight wrapper around the settings table.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
-
-/**
- * Lightweight wrapper around the settings table.
- */
 class Settings
 {
     private string $tablename;

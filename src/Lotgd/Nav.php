@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Navigation helper functions.
+ */
+
 namespace Lotgd;
 
 use Lotgd\HolidayText;
@@ -13,10 +17,6 @@ use Lotgd\Nav\NavigationSubSection;
 
 // Maintain state within the class instead of the global namespace
 
-
-/**
- * Navigation helper functions.
- */
 class Nav
 {
     private static array $blockednavs = [

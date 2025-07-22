@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Functions related to ban checking.
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Cookies;
-
-/**
- * Functions related to ban checking.
- */
 class CheckBan
 {
     /**

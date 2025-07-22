@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+/**
+ * Handles the multi step installation of Legend of the Green Dragon.
+ *
+ * Each public stage method represents a step in the installer wizard.
+ */
+
 namespace Lotgd\Installer;
 
 use Lotgd\MySQL\Database;
@@ -11,12 +17,6 @@ use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\Redirect;
 use Lotgd\Settings;
-
-/**
- * Handles the multi step installation of Legend of the Green Dragon.
- *
- * Each public stage method represents a step in the installer wizard.
- */
 class Installer
 {
     /**

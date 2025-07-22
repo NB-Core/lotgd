@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Utility methods for player maintenance tasks.
  */
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 class PlayerFunctions
 {
     /**

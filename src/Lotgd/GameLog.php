@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Simple wrapper around the gamelog table.
  */
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 class GameLog
 {
     /**

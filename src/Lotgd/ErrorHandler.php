@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Centralized error handling utilities.
+ */
+
 namespace Lotgd;
 
 use Lotgd\Backtrace;
@@ -9,10 +13,6 @@ use Lotgd\Sanitize;
 use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\DataCache;
-
-/**
- * Centralized error handling utilities.
- */
 class ErrorHandler
 {
     /**

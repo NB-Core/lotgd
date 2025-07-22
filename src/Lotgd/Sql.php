@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Utility methods related to SQL operations.
  */
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 class Sql
 {
     /**

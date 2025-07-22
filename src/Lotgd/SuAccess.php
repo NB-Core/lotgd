@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Lotgd;
-
-use Lotgd\MySQL\Database;
-
 /**
  * Helper for validating superuser permissions.
  */
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 class SuAccess
 {
     /** @var int Bitmask of superuser levels required on this page */

@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Collection of module helper functions migrated from legacy modules.php
+ */
+
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
@@ -10,10 +14,6 @@ use Lotgd\Translator;
 use Lotgd\Forms;
 use Lotgd\Sanitize;
 use Lotgd\Modules\Installer;
-
-/**
- * Collection of module helper functions migrated from legacy modules.php
- */
 class Modules
 {
     private static array $injectedModules = [1 => [], 0 => []];

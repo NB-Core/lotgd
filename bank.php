@@ -1,4 +1,9 @@
 <?php
+/**
+ * \file bank.php
+ * This file holds the entire bank code for the village bank. You can withdraw or depost gold here as user.
+ * @see village.php
+ */
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -6,12 +11,6 @@ use Lotgd\Nav\SuperuserNav;
 // addnews ready
 // mail ready
 use Lotgd\Mail;
-
-/**
-* \file bank.php
-* This file holds the entire bank code for the village bank. You can withdraw or depost gold here as user.
-* @see village.php
-*/
 
 require_once("common.php");
 require_once("lib/sanitize.php");

@@ -1,4 +1,9 @@
 <?php
+/**
+ * \file bios.php
+ * This file provides the basic block of a users bio, hence it will display a warning. Blocking and unblocking can be done from the bio of the user.
+ * @see bio.php
+ */
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -7,11 +12,6 @@ use Lotgd\Mail;
 // translator ready
 // addnews ready
 // mail ready
-/**
-* \file bios.php
-* This file provides the basic block of a users bio, hence it will display a warning. Blocking and unblocking can be done from the bio of the user.
-* @see bio.php
-*/
 require_once("common.php");
 require_once("lib/http.php");
 
