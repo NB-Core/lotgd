@@ -21,7 +21,7 @@ class Footer
     {
         global $output, $header, $nav, $session, $REMOTE_ADDR, $REQUEST_URI, $pagestarttime,
             $template, $y2, $z2, $logd_version, $copyright, $SCRIPT_NAME, $footer,
-            $dbinfo, $settings;
+            $settings;
 
         $z = $y2 ^ $z2;
         if (TwigTemplate::isActive()) {
