@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use Lotgd\Template;
+
 require_once __DIR__ . '/../config/constants.php';
 
 final class TemplateHelperTest extends TestCase

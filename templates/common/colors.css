@@ -1,4 +1,4 @@
-/*Colors */ 
+/*Colors */
 
 .colDkBlue    { color: #000066;  font-weight: bold; }
 
@@ -36,29 +36,29 @@
 
 .colOtWhite   { color: #CCCCCC;  }
 
-.colBlue  		{ color: #0070FF; }
+.colBlue        { color: #0070FF; }
 
-.colLime  		{ color: #DDFFBB; }
+.colLime        { color: #DDFFBB; }
 
-.colBlack  		{ color: #000000; }
+.colBlack       { color: #000000; }
 
-.colRose 		{ color: #EEBBEE; }
+.colRose        { color: #EEBBEE; }
 
-.colblueviolet 	{ color: #9A5BEE; }
+.colblueviolet  { color: #9A5BEE; }
 
-.coliceviolet	{ color: #AABBEE; }
+.coliceviolet   { color: #AABBEE; }
 
-.colLtBrown 	{ color: #F8DB83; }
+.colLtBrown     { color: #F8DB83; }
 
-.colDkBrown 	{ color: #6b563f; }
+.colDkBrown     { color: #6b563f; }
 
-.colXLtGreen	{ color: #aaff99; }
+.colXLtGreen    { color: #aaff99; }
 
-.colAttention 	{ background-color: #00FF00; color: #FF0000; }
+.colAttention   { background-color: #00FF00; color: #FF0000; }
 
-.colWhiteBlack 	{ background-color: #FFFFFF; color: #000000; }
+.colWhiteBlack  { background-color: #FFFFFF; color: #000000; }
 
-.colBack  		{ background-color: #00FFFF; color: #000000; }
+.colBack        { background-color: #00FFFF; color: #000000; }
 
 .colLtLinkBlue { color: #0099FF; }
 

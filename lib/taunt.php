@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Battle class taunt helpers
 use Lotgd\Battle;
 

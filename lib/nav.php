@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for \Lotgd\Nav class
 
 use Lotgd\Nav;

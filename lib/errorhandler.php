@@ -29,5 +29,3 @@ function lotgd_fatal_shutdown(): void
 }
 
 ErrorHandler::register();
-
-?>

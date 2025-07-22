@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Nltoappon class
 // translator ready
 // addnews ready
@@ -10,5 +11,3 @@ function nltoappon($in)
 {
     return Nltoappon::convert($in);
 }
-
-?>

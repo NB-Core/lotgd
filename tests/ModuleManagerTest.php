@@ -2,32 +2,58 @@
 
 declare(strict_types=1);
 
-
-
 namespace {
     if (!function_exists('install_module')) {
-        function install_module(string $module): bool { $GLOBALS['install_called'][] = $module; return true; }
+        function install_module(string $module): bool
+        {
+            $GLOBALS['install_called'][] = $module;
+            return true;
+        }
     }
     if (!function_exists('uninstall_module')) {
-        function uninstall_module(string $module): bool { $GLOBALS['uninstall_called'][] = $module; return true; }
+        function uninstall_module(string $module): bool
+        {
+            $GLOBALS['uninstall_called'][] = $module;
+            return true;
+        }
     }
     if (!function_exists('activate_module')) {
-        function activate_module(string $module): bool { $GLOBALS['activate_called'][] = $module; return true; }
+        function activate_module(string $module): bool
+        {
+            $GLOBALS['activate_called'][] = $module;
+            return true;
+        }
     }
     if (!function_exists('deactivate_module')) {
-        function deactivate_module(string $module): bool { $GLOBALS['deactivate_called'][] = $module; return true; }
+        function deactivate_module(string $module): bool
+        {
+            $GLOBALS['deactivate_called'][] = $module;
+            return true;
+        }
     }
     if (!function_exists('injectmodule')) {
-        function injectmodule(string $module, bool $b): void { $GLOBALS['inject_called'][] = $module; }
+        function injectmodule(string $module, bool $b): void
+        {
+            $GLOBALS['inject_called'][] = $module;
+        }
     }
     if (!function_exists('invalidatedatacache')) {
-        function invalidatedatacache(string $name): void { $GLOBALS['invalidates'][] = $name; }
+        function invalidatedatacache(string $name): void
+        {
+            $GLOBALS['invalidates'][] = $name;
+        }
     }
     if (!function_exists('massinvalidate')) {
-        function massinvalidate(string $name): void { $GLOBALS['massinvalidates'][] = $name; }
+        function massinvalidate(string $name): void
+        {
+            $GLOBALS['massinvalidates'][] = $name;
+        }
     }
     if (!function_exists('get_module_install_status')) {
-        function get_module_install_status(bool $with_db = true): array { return $GLOBALS['module_status']; }
+        function get_module_install_status(bool $with_db = true): array
+        {
+            return $GLOBALS['module_status'];
+        }
     }
 }
 

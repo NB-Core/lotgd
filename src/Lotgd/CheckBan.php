@@ -1,8 +1,10 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+declare(strict_types=1);
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\Cookies;
 
 /**
@@ -78,4 +80,3 @@ class CheckBan
         Database::freeResult($result);
     }
 }
-

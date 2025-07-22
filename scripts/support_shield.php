@@ -18,5 +18,3 @@ if (!isset($badguy['shield_given'])) {
     ]);
     $badguy['shield_given'] = true;
 }
-
-?>

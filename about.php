@@ -1,17 +1,19 @@
 <?php
+
 // translator ready
 // addnews ready
 // mail ready
 
 
-/** 
+/**
 * \file about.php
 * This file displays the 'About Lotgd' navigation and the appropriate Text including the license.
 *
 *
 *
 */
-define("ALLOW_ANONYMOUS",true);
+
+define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
 require_once("lib/http.php");
 
@@ -24,17 +26,18 @@ checkday();
 $op = httpget('op');
 
 switch ($op) {
-        case "setup": case "listmodules": case "license":
-                require("pages/about/about_$op.php");
-                break;
-        default:
-                require("pages/about/about_default.php");
-                break;
+    case "setup":
+    case "listmodules":
+    case "license":
+            require("pages/about/about_$op.php");
+        break;
+    default:
+            require("pages/about/about_default.php");
+        break;
 }
 if ($session['user']['loggedin']) {
-	addnav("Return to the news","news.php");
-}else{
-	addnav("Login Page","index.php");
+    addnav("Return to the news", "news.php");
+} else {
+    addnav("Login Page", "index.php");
 }
 page_footer();
-?>

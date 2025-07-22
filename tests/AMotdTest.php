@@ -156,25 +156,47 @@ namespace {
     require_once __DIR__ . '/../config/constants.php';
 
     if (!function_exists('translate_inline')) {
-        function translate_inline($t, $ns = false) { return $t; }
+        function translate_inline($t, $ns = false)
+        {
+            return $t;
+        }
     }
     if (!function_exists('output_notl')) {
-        function output_notl(string $f, ...$args) { global $forms_output; $forms_output .= vsprintf($f, $args); }
+        function output_notl(string $f, ...$args)
+        {
+            global $forms_output;
+            $forms_output .= vsprintf($f, $args);
+        }
     }
     if (!function_exists('rawoutput')) {
-        function rawoutput($t) { global $forms_output; $forms_output .= $t; }
+        function rawoutput($t)
+        {
+            global $forms_output;
+            $forms_output .= $t;
+        }
     }
     if (!function_exists('output')) {
-        function output(string $f, ...$args) { global $forms_output; $forms_output .= vsprintf($f, $args); }
+        function output(string $f, ...$args)
+        {
+            global $forms_output;
+            $forms_output .= vsprintf($f, $args);
+        }
     }
     if (!function_exists('addnav')) {
-        function addnav(...$args) {}
+        function addnav(...$args)
+        {
+        }
     }
     if (!function_exists('httppost')) {
-        function httppost($name) { return $_POST[$name] ?? false; }
+        function httppost($name)
+        {
+            return $_POST[$name] ?? false;
+        }
     }
     if (!function_exists('invalidatedatacache')) {
-        function invalidatedatacache(string $name) {}
+        function invalidatedatacache(string $name)
+        {
+        }
     }
 
     final class AMotdTest extends TestCase

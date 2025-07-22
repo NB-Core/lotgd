@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -63,4 +65,3 @@ class DumpItem
         return $out;
     }
 }
-

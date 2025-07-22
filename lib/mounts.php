@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\Mounts;
 
 function getmount($horse = 0)

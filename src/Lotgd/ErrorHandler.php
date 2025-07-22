@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 use Lotgd\Backtrace;
@@ -119,8 +121,7 @@ class ErrorHandler
         global $session, $settings;
         $sendto = explode(';', isset($settings) && $settings instanceof Settings
             ? $settings->getSetting('notify_address', '')
-            : getsetting('notify_address', '')
-        );
+            : getsetting('notify_address', ''));
         $howoften = isset($settings) && $settings instanceof Settings
             ? $settings->getSetting('notify_every', 30)
             : getsetting('notify_every', 30);

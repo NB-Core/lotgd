@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <ruleset name="lotgd">
-    <rule ref="PSR12" />
-    <exclude-pattern>vendor/*</exclude-pattern>
+	<rule ref="PSR12">
+		<exclude name="Generic.Files.LineLength"/>
+	</rule>
+	<exclude-pattern>vendor/*</exclude-pattern>
 </ruleset>

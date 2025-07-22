@@ -1,2 +1,5 @@
 <?php
-class fightbar extends \Lotgd\FightBar {}
+
+class fightbar extends \Lotgd\FightBar
+{
+}

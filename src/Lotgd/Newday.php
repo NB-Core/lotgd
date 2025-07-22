@@ -1,8 +1,10 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+declare(strict_types=1);
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
 use Lotgd\ExpireChars;
 
@@ -39,7 +41,9 @@ class Newday
             Database::query($sql);
             $timestamp = self::calculateExpirationTimestamp(getsetting('expiredebuglog', 18) . ' days');
             $sql = 'DELETE FROM ' . Database::prefix('debuglog_archive') . " WHERE date <'$timestamp'";
-            if (getsetting('expiredebuglog', 18) > 0) Database::query($sql);
+            if (getsetting('expiredebuglog', 18) > 0) {
+                Database::query($sql);
+            }
             GameLog::log('Moved ' . Database::affectedRows() . ' from ' . Database::prefix('debuglog') . ' to ' . Database::prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');
         } else {
             GameLog::log('ERROR, problems with moving the debuglog to the archive', 'maintenance');
@@ -194,14 +198,18 @@ class Newday
             $text .= "var form = document.getElementById(\\\"dkForm\\\");\n";
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
-                if (count($head) > 1) continue;
+                if (count($head) > 1) {
+                    continue;
+                }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
                     $text .= "var $type = parseInt(form.$type.value);\n";
                 }
             }
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
-                if (count($head) > 1) continue;
+                if (count($head) > 1) {
+                    continue;
+                }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
                     $text .= "if (isNaN($type)) $type = 0;\n";
                 }
@@ -209,7 +217,9 @@ class Newday
             $text .= "var val = $dkills - $dp ";
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
-                if (count($head) > 1) continue;
+                if (count($head) > 1) {
+                    continue;
+                }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
                     $text .= "- $type";
                 }
@@ -257,8 +267,12 @@ class Newday
             $count = 0;
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
-                if (count($head) > 1) continue;
-                if ($count > 0) break;
+                if (count($head) > 1) {
+                    continue;
+                }
+                if ($count > 0) {
+                    break;
+                }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
                     rawoutput("<script language='JavaScript'>document.getElementById('$type').focus();</script>");
                     $count++;
@@ -294,14 +308,18 @@ class Newday
             rawoutput('<blockquote><table>');
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
-                if (isset($type) && $type > 0 && (!isset($dist[$type]) || $dist[$type] == 0)) continue;
+                if (isset($type) && $type > 0 && (!isset($dist[$type]) || $dist[$type] == 0)) {
+                    continue;
+                }
                 if (count($head) > 1) {
                     rawoutput("<tr><td colspan='2' nowrap>");
                     output("`b`4%s`0`b`n", translate_inline($head[0]));
                     rawoutput('</td></tr>');
                     continue;
                 }
-                if ($type == 'unknown' && $dist[$type] == 0) continue;
+                if ($type == 'unknown' && $dist[$type] == 0) {
+                    continue;
+                }
                 rawoutput('<tr><td nowrap>');
                 output($label);
                 output_notl(':');

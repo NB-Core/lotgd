@@ -24,5 +24,3 @@ if ($badguy['burst_charges'] > 0 && $badguy['creaturehealth'] <= $badguy['maxhea
     ]);
     $badguy['burst_charges']--;
 }
-
-?>

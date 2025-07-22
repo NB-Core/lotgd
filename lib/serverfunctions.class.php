@@ -1,2 +1,5 @@
 <?php
-class ServerFunctions extends Lotgd\ServerFunctions {}
+
+class ServerFunctions extends Lotgd\ServerFunctions
+{
+}

@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -26,10 +28,10 @@ class HolidayText
         }
         $args = ['text' => $text, 'type' => $type];
         if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-		if (isset($currenthook) && $currenthook === 'holiday') {
-			return $text;
-		}
-		$args = modulehook('holiday', $args);
+            if (isset($currenthook) && $currenthook === 'holiday') {
+                return $text;
+            }
+            $args = modulehook('holiday', $args);
         }
         $text = $args['text'];
         return $text;

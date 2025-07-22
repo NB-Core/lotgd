@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 class Http
@@ -27,10 +29,14 @@ class Http
     /**
      * Set a GET variable.
      */
-    public static function set(string $var, mixed $val, bool $force=false): void
+    public static function set(string $var, mixed $val, bool $force = false): void
     {
-        if (isset($_GET[$var]) || $force) $_GET[$var] = $val;
-        if (isset($GLOBALS['HTTP_GET_VARS'][$var])) $GLOBALS['HTTP_GET_VARS'][$var] = $val;
+        if (isset($_GET[$var]) || $force) {
+            $_GET[$var] = $val;
+        }
+        if (isset($GLOBALS['HTTP_GET_VARS'][$var])) {
+            $GLOBALS['HTTP_GET_VARS'][$var] = $val;
+        }
     }
 
     /**
@@ -55,16 +61,22 @@ class Http
     /**
      * Set a value in the POST array.
      */
-    public static function postSet(string $var, mixed $val, string|false $sub=false): void
+    public static function postSet(string $var, mixed $val, string|false $sub = false): void
     {
         if ($sub === false) {
-            if (isset($_POST[$var])) $_POST[$var] = $val;
-            if (isset($GLOBALS['HTTP_POST_VARS'][$var])) $GLOBALS['HTTP_POST_VARS'][$var] = $val;
+            if (isset($_POST[$var])) {
+                $_POST[$var] = $val;
+            }
+            if (isset($GLOBALS['HTTP_POST_VARS'][$var])) {
+                $GLOBALS['HTTP_POST_VARS'][$var] = $val;
+            }
         } else {
-            if (isset($_POST[$var]) && isset($_POST[$var][$sub]))
-                $_POST[$var][$sub]=$val;
-            if (isset($GLOBALS['HTTP_POST_VARS'][$var]) && isset($GLOBALS['HTTP_POST_VARS'][$var][$sub]))
-                $GLOBALS['HTTP_POST_VARS'][$var][$sub]=$val;
+            if (isset($_POST[$var]) && isset($_POST[$var][$sub])) {
+                $_POST[$var][$sub] = $val;
+            }
+            if (isset($GLOBALS['HTTP_POST_VARS'][$var]) && isset($GLOBALS['HTTP_POST_VARS'][$var][$sub])) {
+                $GLOBALS['HTTP_POST_VARS'][$var][$sub] = $val;
+            }
         }
     }
 
@@ -77,16 +89,18 @@ class Http
     /**
      * Build an SQL fragment from POST data.
      */
-    public static function postParse(array|false $verify=false, string|false $subval=false): array
+    public static function postParse(array|false $verify = false, string|false $subval = false): array
     {
         $var = $subval ? $_POST[$subval] : $_POST;
         $sql = '';
         $keys = '';
         $vals = '';
         $i = 0;
-        foreach ($var as $key=>$val) {
+        foreach ($var as $key => $val) {
             if ($verify === false || isset($verify[$key])) {
-                if (is_array($val)) $val = addslashes(serialize($val));
+                if (is_array($val)) {
+                    $val = addslashes(serialize($val));
+                }
                 $sql .= (($i > 0) ? ',' : '') . "$key='$val'";
                 $keys .= (($i > 0) ? ',' : '') . "$key";
                 $vals .= (($i > 0) ? ',' : '') . "'$val'";

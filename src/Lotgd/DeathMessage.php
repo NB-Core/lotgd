@@ -1,9 +1,12 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+declare(strict_types=1);
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\Substitute;
+
 /**
  * Helpers for selecting random death messages.
  */
@@ -67,4 +70,3 @@ class DeathMessage
         return ['deathmessage' => $deathmessage, 'taunt' => $taunt];
     }
 }
-

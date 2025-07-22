@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for PullUrl class
 // addnews ready
 // translator ready

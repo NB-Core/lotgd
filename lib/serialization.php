@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\Serialization;
 
 function safe_unserialize($data)

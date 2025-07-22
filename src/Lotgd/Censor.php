@@ -1,8 +1,10 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+declare(strict_types=1);
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 
 class Censor
@@ -133,17 +135,17 @@ class Censor
         $end = '\\b\'iU';
         $ws = "[^[:space:]\\t]*"; //whitespace (\w is not hungry enough)
         //space not preceeded by a star
-        $search = preg_replace("'(?<!\\*) '",")+$end ",$search);
+        $search = preg_replace("'(?<!\\*) '", ")+$end ", $search);
         //space not anteceeded by a star
-        $search = preg_replace("' (?!\\*)'"," $start(",$search);
+        $search = preg_replace("' (?!\\*)'", " $start(", $search);
         //space preceeded by a star
-        $search = str_replace("* ",")+$ws$end ",$search);
+        $search = str_replace("* ", ")+$ws$end ", $search);
         //space anteceeded by a star
-        $search = str_replace(" *"," $start$ws(",$search);
-        $search = "$start(".trim($search).")+$end";
-        $search = str_replace("$start()+$end","",$search);
-        $search = explode(" ",$search);
-        updatedatacache("nastywordlist",$search);
+        $search = str_replace(" *", " $start$ws(", $search);
+        $search = "$start(" . trim($search) . ")+$end";
+        $search = str_replace("$start()+$end", "", $search);
+        $search = explode(" ", $search);
+        updatedatacache("nastywordlist", $search);
 
         return $search;
     }

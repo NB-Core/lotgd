@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Spell class
 use Lotgd\Spell;
 

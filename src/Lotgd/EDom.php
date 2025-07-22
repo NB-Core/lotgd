@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 /**
@@ -15,4 +17,3 @@ class EDom
         rawoutput("<script src='src/Lotgd/e_dom.js'></script>");
     }
 }
-

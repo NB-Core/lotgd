@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Sql class
 use Lotgd\Sql;
 

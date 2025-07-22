@@ -1,7 +1,9 @@
 <?php
+
 /**
  * Legacy wrappers for mail handling functions using the Lotgd\Mail namespace.
  */
+
 use Lotgd\Mail;
 use Lotgd\EmailValidator;
 

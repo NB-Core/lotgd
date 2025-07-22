@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 // translator ready
 // addnews ready
 // mail ready

@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for \Lotgd\Forest\Outcomes class
 
 use Lotgd\Forest\Outcomes;
@@ -27,4 +28,3 @@ function buffbadguy($badguy)
 {
     return Outcomes::buffBadguy($badguy);
 }
-?>

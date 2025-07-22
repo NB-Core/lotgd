@@ -1,8 +1,10 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+declare(strict_types=1);
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
 use Lotgd\Mail;
 
@@ -321,9 +323,13 @@ class Pvp
             rawoutput("<tr class='" . ($j % 2 ? 'trlight' : 'trdark') . "'>");
             rawoutput('<td>');
             if ($row['clanshort'] > '' && $row['clanrank'] > CLAN_APPLICANT) {
-                output_notl('%s&lt;`2%s%s&gt;`0 ',
-                    $clanrankcolors[ceil($row['clanrank'] / 10)], $row['clanshort'],
-                    $clanrankcolors[ceil($row['clanrank'] / 10)], true);
+                output_notl(
+                    '%s&lt;`2%s%s&gt;`0 ',
+                    $clanrankcolors[ceil($row['clanrank'] / 10)],
+                    $row['clanshort'],
+                    $clanrankcolors[ceil($row['clanrank'] / 10)],
+                    true
+                );
             }
             output_notl('`@%s`0', $row['name']);
             rawoutput('</td>');

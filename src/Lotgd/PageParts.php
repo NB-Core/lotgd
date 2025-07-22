@@ -1,8 +1,10 @@
 <?php
-declare(strict_types=1);
-namespace Lotgd;
-use Lotgd\MySQL\Database;
 
+declare(strict_types=1);
+
+namespace Lotgd;
+
+use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
 use Lotgd\CharStats;
 use Lotgd\Accounts;
@@ -17,15 +19,16 @@ use Lotgd\Settings;
 
 /**
  * Library (supporting) functions for page output
- *		addnews ready
- *		translator ready
- *		mail ready
+ *      addnews ready
+ *      translator ready
+ *      mail ready
  *
  * @author core_module
  * @package defaultPackage
  *
  */
-class PageParts {
+class PageParts
+{
     /**
      * Tracks scripts that should not display popups.
      * @var array<string,bool>
@@ -53,10 +56,10 @@ class PageParts {
 /**
  * Deprecated wrapper that forwards to Header::pageHeader().
  */
-public static function pageHeader(...$args): void
-{
-    \Lotgd\Page\Header::pageHeader(...$args);
-}
+    public static function pageHeader(...$args): void
+    {
+        \Lotgd\Page\Header::pageHeader(...$args);
+    }
 
 /**
  * Returns an output formatted popup link based on JavaScript
@@ -65,38 +68,43 @@ public static function pageHeader(...$args): void
  * @param string $size The size of the popup window (Default: 550x300)
  * @return string
  */
-public static function popup(string $page, string $size="550x300"){
-	// user prefs
-	global $session;
-	if ($size==="550x300" && isset($session['loggedin']) && $session['loggedin']) {
-		if (!isset($session['user']['prefs'])) {
-			$usersize='550x330';
-		} else {
-			$usersize = &$session['user']['prefs']['popupsize'];
-			if ($usersize=='') $usersize='550x330';
-		}
-		$s=explode("x",$usersize);
-		$s[0]=(int)max(50,$s[0]);
-		$s[1]=(int)max(50,$s[1]);
-	} else 	$s = explode("x",$size);
-	//user prefs
-	return "window.open('$page','".preg_replace("([^[:alnum:]])","",$page)."','scrollbars=yes,resizable=yes,width={$s[0]},height={$s[1]}').focus()";
-}
+    public static function popup(string $page, string $size = "550x300")
+    {
+        // user prefs
+        global $session;
+        if ($size === "550x300" && isset($session['loggedin']) && $session['loggedin']) {
+            if (!isset($session['user']['prefs'])) {
+                $usersize = '550x330';
+            } else {
+                $usersize = &$session['user']['prefs']['popupsize'];
+                if ($usersize == '') {
+                    $usersize = '550x330';
+                }
+            }
+            $s = explode("x", $usersize);
+            $s[0] = (int)max(50, $s[0]);
+            $s[1] = (int)max(50, $s[1]);
+        } else {
+            $s = explode("x", $size);
+        }
+        //user prefs
+        return "window.open('$page','" . preg_replace("([^[:alnum:]])", "", $page) . "','scrollbars=yes,resizable=yes,width={$s[0]},height={$s[1]}').focus()";
+    }
 
 /**
  * Brings all the output elements together and terminates the rendering of the page.  Saves the current user info and updates the rendering statistics
  * Hooks provided:
- *	footer-{$script name}
- *	everyfooter
+ *  footer-{$script name}
+ *  everyfooter
  *
  */
 /**
  * Deprecated wrapper that forwards to Footer::pageFooter().
  */
-public static function pageFooter(bool $saveuser=true)
-{
-    \Lotgd\Page\Footer::pageFooter($saveuser);
-}
+    public static function pageFooter(bool $saveuser = true)
+    {
+        \Lotgd\Page\Footer::pageFooter($saveuser);
+    }
 
 
 /**
@@ -107,10 +115,10 @@ public static function pageFooter(bool $saveuser=true)
 /**
  * Deprecated wrapper that forwards to Header::popupHeader().
  */
-public static function popupHeader(...$args): void
-{
-    \Lotgd\Page\Header::popupHeader(...$args);
-}
+    public static function popupHeader(...$args): void
+    {
+        \Lotgd\Page\Header::popupHeader(...$args);
+    }
 
 
 /**
@@ -120,18 +128,19 @@ public static function popupHeader(...$args): void
 /**
  * Deprecated wrapper that forwards to Footer::popupFooter().
  */
-public static function popupFooter(): void
-{
-    \Lotgd\Page\Footer::popupFooter();
-}
+    public static function popupFooter(): void
+    {
+        \Lotgd\Page\Footer::popupFooter();
+    }
 
 /**
  * Resets the character stats array
  *
  */
-public static function wipeCharStats(): void {
+    public static function wipeCharStats(): void
+    {
         \Lotgd\Page\CharStats::wipe();
-}
+    }
 
 /**
  * Add a attribute and/or value to the character stats display
@@ -139,9 +148,10 @@ public static function wipeCharStats(): void {
  * @param string $label The label to use
  * @param mixed $value (optional) value to display
  */
-public static function addCharStat(string $label, mixed $value = null): void {
+    public static function addCharStat(string $label, mixed $value = null): void
+    {
         \Lotgd\Page\CharStats::add($label, $value);
-}
+    }
 
 /**
  * Returns the character stat related to the category ($cat) and the label
@@ -150,9 +160,10 @@ public static function addCharStat(string $label, mixed $value = null): void {
  * @param string $label The label of the character stat
  * @return mixed The value associated with the stat
  */
-public static function getCharStat(string $cat, string $label) {
+    public static function getCharStat(string $cat, string $label)
+    {
         return \Lotgd\Page\CharStats::get($cat, $label);
-}
+    }
 
 /**
  * Sets a value to the passed category & label for character stats
@@ -161,9 +172,10 @@ public static function getCharStat(string $cat, string $label) {
  * @param string $label The label associated with the value
  * @param mixed $val The value of the attribute
  */
-public static function setCharStat(string $cat, string $label, mixed $val): void {
+    public static function setCharStat(string $cat, string $label, mixed $val): void
+    {
         \Lotgd\Page\CharStats::set($cat, $label, $val);
-}
+    }
 
 /**
  * Returns output formatted character stats
@@ -171,9 +183,10 @@ public static function setCharStat(string $cat, string $label, mixed $val): void
  * @param array $buffs
  * @return string
  */
-public static function getCharStats(string $buffs): string{
+    public static function getCharStats(string $buffs): string
+    {
         return \Lotgd\Page\CharStats::render($buffs);
-}
+    }
 
 /**
  * Returns the value associated with the section & label.  Returns an empty string if the stat isn't set
@@ -182,258 +195,266 @@ public static function getCharStats(string $buffs): string{
  * @param string $title The stat display label
  * @return mixed The value associated with the stat
  */
-public static function getCharStatValue(string $section,string $title){
+    public static function getCharStatValue(string $section, string $title)
+    {
         return \Lotgd\Page\CharStats::value($section, $title);
-}
+    }
 
 /**
  * Returns the current character stats or (if the character isn't logged in) the currently online players
  * Hooks provided:
- *		charstats
+ *      charstats
  *
  * @return string The current stats for this character or the list of online players
  */
-public static function charStats(): string{
-	global $session, $playermount, $companions, $settings;
-	if (defined("IS_INSTALLER") && IS_INSTALLER === true) return "";
+    public static function charStats(): string
+    {
+        global $session, $playermount, $companions, $settings;
+        if (defined("IS_INSTALLER") && IS_INSTALLER === true) {
+            return "";
+        }
 
-	self::wipeCharStats();
-    
-	$u =& $session['user'];
+        self::wipeCharStats();
 
-	if (isset($session['loggedin']) && $session['loggedin'])
-	{
-		$u['hitpoints']=round((int)$u['hitpoints'],0);
-		$u['experience']=round((float)$u['experience'],0);
-		$u['maxhitpoints']=round((int)$u['maxhitpoints'],0);
-		$spirits=array(-6=>"Resurrected",-2=>"Very Low",-1=>"Low","0"=>"Normal",1=>"High",2=>"Very High");
-		if ($u['alive']){ }else{ $spirits[(int)$u['spirits']] = Translator::translateInline("DEAD","stats"); }
-		//calculate_buff_fields();
-		reset($session['bufflist']);
-		/*not so easy anymore
-		  $atk=$u['attack'];
-		  $def=$u['defense'];
-		 */
-        $o_atk=$atk=PlayerFunctions::getPlayerAttack();
-        $o_def=$def=PlayerFunctions::getPlayerDefense();
-        $spd=PlayerFunctions::getPlayerSpeed();
+        $u =& $session['user'];
 
-		$buffcount = 0;
-		$buffs = "";
-		foreach ($session['bufflist'] as $val) {
-			if (isset($val['suspended']) && $val['suspended']) continue;
-			if (isset($val['atkmod'])) {
-				$atk *= $val['atkmod'];
-			}
-			if (isset($val['defmod'])) {
-				$def *= $val['defmod'];
-			}
-			// Short circuit if the name is blank
-			if ((isset($val['name']) && $val['name'] > "") || $session['user']['superuser'] & SU_DEBUG_OUTPUT){
-				tlschema($val['schema']);
-				//	if ($val['name']=="")
-				//		$val['name'] = "DEBUG: {$key}";
-				//	removed due to performance reasons. foreach is better with only $val than to have $key ONLY for the short happiness of one debug. much greater performance gain here
-				if (is_array($val['name'])) {
-					$val['name'][0] = str_replace("`%","`%%",$val['name'][0]);
-					$val['name']=call_user_func_array("sprintf_translate", $val['name']);
-				} else { //in case it's a string
-					$val['name']=Translator::translateInline($val['name']);
-				}
-				if ($val['rounds']>=0){
-					// We're about to sprintf, so, let's makes sure that
-					// `% is handled.
-					//$n = Translator::translateInline(str_replace("`%","`%%",$val['name']));
-					$b = Translator::translateInline("`#%s `7(%s rounds left)`n","buffs");
-					$b = sprintf($b, $val['name'], $val['rounds']);
-					$buffs.=appoencode($b, true);
-				}else{
-					$buffs.= appoencode("`#{$val['name']}`n",true);
-				}
-				tlschema();
-				$buffcount++;
-			}
-		}
-		if ($buffcount==0){
-			$buffs.=appoencode(Translator::translateInline("`^None`0"),true);
-		}
-
-		$atk = round($atk, 2);
-		$def = round($def, 2);
-		if ($atk < $o_atk){
-			$atk = round($o_atk,1)."`\$".round($atk-$o_atk,1);
-		}else if($atk > $o_atk){
-			$atk = round($o_atk,1)."`@+".round($atk-$o_atk,1);
-		} else {
-			// They are equal, display in the 1 signifigant digit format.
-			$atk = round($atk,1);
-		}
-		if ($def < $o_def){
-			$def = round($o_def,1)."`\$".round($def-$o_def,1);
-		}else if($def > $o_def){
-			$def = round($o_def,1)."`@+".round($def-$o_def,1);
-		} else {
-			// They are equal, display in the 1 signifigant digit format.
-			$def = round($def, 1);
-		}
-		$point=getsetting('moneydecimalpoint',".");
-		$sep=getsetting('moneythousandssep',",");
-
-		self::addCharStat("Character Info");
-		self::addCharStat("Name", $u['name']);
-		self::addCharStat("Level", "`b".$u['level'].check_temp_stat("level",1)."`b");
-        // Note: Number formatting here has been introduced, but not in tempstats yet - I think it may be overhead for now, but could be done later
-		if ($u['alive']) {
-			self::addCharStat("Hitpoints", $u['hitpoints'].check_temp_stat("hitpoints",1)."`0/".$u['maxhitpoints'].check_temp_stat("maxhitpoints",1));
-			self::addCharStat("Experience",  number_format((float)$u['experience'],0,$point,$sep).check_temp_stat("experience",1));
-			self::addCharStat("Strength", $u['strength'].check_temp_stat("strength",1));
-			self::addCharStat("Dexterity", $u['dexterity'].check_temp_stat("dexterity",1));
-			self::addCharStat("Intelligence", $u['intelligence'].check_temp_stat("intelligence",1));
-			self::addCharStat("Constitution", $u['constitution'].check_temp_stat("constitution",1));
-			self::addCharStat("Wisdom", $u['wisdom'].check_temp_stat("wisdom",1));
-                        self::addCharStat("Attack", $atk."`\$<span title='".PlayerFunctions::explainedGetPlayerAttack()."'>(?)</span>`0".check_temp_stat("attack",1));
-                        self::addCharStat("Defense", $def."`\$<span title='".PlayerFunctions::explainedGetPlayerDefense()."'>(?)</span>`0".check_temp_stat("defense",1));
-			self::addCharStat("Speed", $spd.check_temp_stat("speed",1));
-		} else {
-			$maxsoul = 50 + 10 * $u['level']+$u['dragonkills']*2;
-			self::addCharStat("Soulpoints", $u['soulpoints'].check_temp_stat("soulpoints",1)."`0/".$maxsoul);
-			self::addCharStat("Torments", $u['gravefights'].check_temp_stat("gravefights",1));
-			self::addCharStat("Psyche", 10+round(($u['level']-1)*1.5));
-			self::addCharStat("Spirit", 10+round(($u['level']-1)*1.5));
-		}
-		if ($u['race'] != RACE_UNKNOWN) {
-			self::addCharStat("Race", Translator::translateInline($u['race'],"race"));
-		}else {
-			self::addCharStat("Race", Translator::translateInline(RACE_UNKNOWN,"race"));
-		}
-		if (is_array($companions) && count($companions)>0) {
-			self::addCharStat("Companions");
-			foreach ($companions as $name=>$companion) {
-				if ((isset($companion['hitpoints']) && $companion['hitpoints'] > 0) ||(isset($companion['cannotdie']) && $companion['cannotdie'] == true)) {
-					if ($companion['hitpoints']<0) {
-						$companion['hitpoints'] = 0;
-					}
-					if($companion['hitpoints']<$companion['maxhitpoints']) {
-						$color = "`\$";
-					}else{
-						$color = "`@";
-					}
-					if (isset($companion['suspended']) && $companion['suspended'] == true) {
-						$suspcode = "`7 *";
-					} else {
-						$suspcode = "";
-					}
-					self::addCharStat($companion['name'], $color.($companion['hitpoints'])."`7/`&".($companion['maxhitpoints'])."$suspcode`0");
-				}
-			}
-		}
-		self::addCharStat("Personal Info");
-		if ($u['alive']) {
-			self::addCharStat("Turns", $u['turns'].check_temp_stat("turns",1));
-			self::addCharStat("PvP", $u['playerfights']);
-			self::addCharStat("Spirits", Translator::translateInline("`b".$spirits[(int)$u['spirits']]."`b"));
-			self::addCharStat("Currency");
-			self::addCharStat("Gold", number_format((int)$u['gold'],0,$point,$sep).check_temp_stat("gold",1));
-			self::addCharStat("Bankgold", number_format((int)$u['goldinbank'],0,$point,$sep).check_temp_stat("goldinbank",1));
-		} else {
-			self::addCharStat("Favor", $u['deathpower'].check_temp_stat("deathpower",1));
-			self::addCharStat("Currency");
-		}
-		self::addCharStat("Gems", number_format((int)$u['gems'],0,$point,$sep).check_temp_stat("gems",1));
-		self::addCharStat("Equipment Info");
-		self::addCharStat("Weapon", $u['weapon']);
-		self::addCharStat("Armor", $u['armor']);
-		if ($u['hashorse'] && isset($playermount['mountname']))
-			self::addCharStat("Creature", $playermount['mountname'] . "`0");
-
-		modulehook("charstats");
-
-		$charstat = self::getCharStats($buffs);
-
-		if (!is_array($session['bufflist'])) $session['bufflist']=array();
-		return $charstat;
-	}
-	else
-	{
-		$ret = "";
-		if ($ret = Datacache::datacache("charlisthomepage")){
-
-		}else{
-			$onlinecount=0;
-            $list = modulehook("onlinecharlist", array("count"=>0, "list"=>""));
-            if (isset($list['handled']) && $list['handled']) {
-                $onlinecount = $list['count'];
-                $ret = $list['list'];
+        if (isset($session['loggedin']) && $session['loggedin']) {
+            $u['hitpoints'] = round((int)$u['hitpoints'], 0);
+            $u['experience'] = round((float)$u['experience'], 0);
+            $u['maxhitpoints'] = round((int)$u['maxhitpoints'], 0);
+            $spirits = array(-6 => "Resurrected",-2 => "Very Low",-1 => "Low","0" => "Normal",1 => "High",2 => "Very High");
+            if ($u['alive']) {
             } else {
-				if (isset($settings))
-				{
-					$loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
-				} else {
-					$loginTimeout = 90; //default to 90 seconds if not set
-				}
+                $spirits[(int)$u['spirits']] = Translator::translateInline("DEAD", "stats");
+            }
+            //calculate_buff_fields();
+            reset($session['bufflist']);
+            /*not so easy anymore
+              $atk=$u['attack'];
+              $def=$u['defense'];
+             */
+            $o_atk = $atk = PlayerFunctions::getPlayerAttack();
+            $o_def = $def = PlayerFunctions::getPlayerDefense();
+            $spd = PlayerFunctions::getPlayerSpeed();
 
-                $sql="SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".$loginTimeout." seconds"))."' ORDER BY level DESC";
-                $result = Database::query($sql);
-                $rows = array();
-                while ($row = Database::fetchAssoc($result)) {
-                    $rows[] = $row;
+            $buffcount = 0;
+            $buffs = "";
+            foreach ($session['bufflist'] as $val) {
+                if (isset($val['suspended']) && $val['suspended']) {
+                    continue;
                 }
-                Database::freeResult($result);
-                $rows = modulehook("loggedin", $rows);
-                $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
-                foreach ($rows as $row) {
-                    $ret .= appoencode("`^{$row['name']}`n");
-                    $onlinecount++;
+                if (isset($val['atkmod'])) {
+                    $atk *= $val['atkmod'];
                 }
-                if ($onlinecount == 0) {
-                    $ret .= appoencode(Translator::translateInline("`iNone`i"));
-               	}
-			}
-			if (isset($settings))
-			{
-				$settings->saveSetting("OnlineCount",$onlinecount);
-				$settings->saveSetting("OnlineCountLast",strtotime("now"));
-			}
-			Datacache::updatedatacache("charlisthomepage",$ret);
-		}
-		return $ret;
-	}
-}
+                if (isset($val['defmod'])) {
+                    $def *= $val['defmod'];
+                }
+                // Short circuit if the name is blank
+                if ((isset($val['name']) && $val['name'] > "") || $session['user']['superuser'] & SU_DEBUG_OUTPUT) {
+                    tlschema($val['schema']);
+                    //  if ($val['name']=="")
+                    //      $val['name'] = "DEBUG: {$key}";
+                    //  removed due to performance reasons. foreach is better with only $val than to have $key ONLY for the short happiness of one debug. much greater performance gain here
+                    if (is_array($val['name'])) {
+                        $val['name'][0] = str_replace("`%", "`%%", $val['name'][0]);
+                        $val['name'] = call_user_func_array("sprintf_translate", $val['name']);
+                    } else { //in case it's a string
+                        $val['name'] = Translator::translateInline($val['name']);
+                    }
+                    if ($val['rounds'] >= 0) {
+                        // We're about to sprintf, so, let's makes sure that
+                        // `% is handled.
+                        //$n = Translator::translateInline(str_replace("`%","`%%",$val['name']));
+                        $b = Translator::translateInline("`#%s `7(%s rounds left)`n", "buffs");
+                        $b = sprintf($b, $val['name'], $val['rounds']);
+                        $buffs .= appoencode($b, true);
+                    } else {
+                        $buffs .= appoencode("`#{$val['name']}`n", true);
+                    }
+                    tlschema();
+                    $buffcount++;
+                }
+            }
+            if ($buffcount == 0) {
+                $buffs .= appoencode(Translator::translateInline("`^None`0"), true);
+            }
+
+            $atk = round($atk, 2);
+            $def = round($def, 2);
+            if ($atk < $o_atk) {
+                $atk = round($o_atk, 1) . "`\$" . round($atk - $o_atk, 1);
+            } elseif ($atk > $o_atk) {
+                $atk = round($o_atk, 1) . "`@+" . round($atk - $o_atk, 1);
+            } else {
+                // They are equal, display in the 1 signifigant digit format.
+                $atk = round($atk, 1);
+            }
+            if ($def < $o_def) {
+                $def = round($o_def, 1) . "`\$" . round($def - $o_def, 1);
+            } elseif ($def > $o_def) {
+                $def = round($o_def, 1) . "`@+" . round($def - $o_def, 1);
+            } else {
+                // They are equal, display in the 1 signifigant digit format.
+                $def = round($def, 1);
+            }
+            $point = getsetting('moneydecimalpoint', ".");
+            $sep = getsetting('moneythousandssep', ",");
+
+            self::addCharStat("Character Info");
+            self::addCharStat("Name", $u['name']);
+            self::addCharStat("Level", "`b" . $u['level'] . check_temp_stat("level", 1) . "`b");
+            // Note: Number formatting here has been introduced, but not in tempstats yet - I think it may be overhead for now, but could be done later
+            if ($u['alive']) {
+                self::addCharStat("Hitpoints", $u['hitpoints'] . check_temp_stat("hitpoints", 1) . "`0/" . $u['maxhitpoints'] . check_temp_stat("maxhitpoints", 1));
+                self::addCharStat("Experience", number_format((float)$u['experience'], 0, $point, $sep) . check_temp_stat("experience", 1));
+                self::addCharStat("Strength", $u['strength'] . check_temp_stat("strength", 1));
+                self::addCharStat("Dexterity", $u['dexterity'] . check_temp_stat("dexterity", 1));
+                self::addCharStat("Intelligence", $u['intelligence'] . check_temp_stat("intelligence", 1));
+                self::addCharStat("Constitution", $u['constitution'] . check_temp_stat("constitution", 1));
+                self::addCharStat("Wisdom", $u['wisdom'] . check_temp_stat("wisdom", 1));
+                        self::addCharStat("Attack", $atk . "`\$<span title='" . PlayerFunctions::explainedGetPlayerAttack() . "'>(?)</span>`0" . check_temp_stat("attack", 1));
+                        self::addCharStat("Defense", $def . "`\$<span title='" . PlayerFunctions::explainedGetPlayerDefense() . "'>(?)</span>`0" . check_temp_stat("defense", 1));
+                self::addCharStat("Speed", $spd . check_temp_stat("speed", 1));
+            } else {
+                $maxsoul = 50 + 10 * $u['level'] + $u['dragonkills'] * 2;
+                self::addCharStat("Soulpoints", $u['soulpoints'] . check_temp_stat("soulpoints", 1) . "`0/" . $maxsoul);
+                self::addCharStat("Torments", $u['gravefights'] . check_temp_stat("gravefights", 1));
+                self::addCharStat("Psyche", 10 + round(($u['level'] - 1) * 1.5));
+                self::addCharStat("Spirit", 10 + round(($u['level'] - 1) * 1.5));
+            }
+            if ($u['race'] != RACE_UNKNOWN) {
+                self::addCharStat("Race", Translator::translateInline($u['race'], "race"));
+            } else {
+                self::addCharStat("Race", Translator::translateInline(RACE_UNKNOWN, "race"));
+            }
+            if (is_array($companions) && count($companions) > 0) {
+                self::addCharStat("Companions");
+                foreach ($companions as $name => $companion) {
+                    if ((isset($companion['hitpoints']) && $companion['hitpoints'] > 0) || (isset($companion['cannotdie']) && $companion['cannotdie'] == true)) {
+                        if ($companion['hitpoints'] < 0) {
+                            $companion['hitpoints'] = 0;
+                        }
+                        if ($companion['hitpoints'] < $companion['maxhitpoints']) {
+                            $color = "`\$";
+                        } else {
+                            $color = "`@";
+                        }
+                        if (isset($companion['suspended']) && $companion['suspended'] == true) {
+                            $suspcode = "`7 *";
+                        } else {
+                            $suspcode = "";
+                        }
+                        self::addCharStat($companion['name'], $color . ($companion['hitpoints']) . "`7/`&" . ($companion['maxhitpoints']) . "$suspcode`0");
+                    }
+                }
+            }
+            self::addCharStat("Personal Info");
+            if ($u['alive']) {
+                self::addCharStat("Turns", $u['turns'] . check_temp_stat("turns", 1));
+                self::addCharStat("PvP", $u['playerfights']);
+                self::addCharStat("Spirits", Translator::translateInline("`b" . $spirits[(int)$u['spirits']] . "`b"));
+                self::addCharStat("Currency");
+                self::addCharStat("Gold", number_format((int)$u['gold'], 0, $point, $sep) . check_temp_stat("gold", 1));
+                self::addCharStat("Bankgold", number_format((int)$u['goldinbank'], 0, $point, $sep) . check_temp_stat("goldinbank", 1));
+            } else {
+                self::addCharStat("Favor", $u['deathpower'] . check_temp_stat("deathpower", 1));
+                self::addCharStat("Currency");
+            }
+            self::addCharStat("Gems", number_format((int)$u['gems'], 0, $point, $sep) . check_temp_stat("gems", 1));
+            self::addCharStat("Equipment Info");
+            self::addCharStat("Weapon", $u['weapon']);
+            self::addCharStat("Armor", $u['armor']);
+            if ($u['hashorse'] && isset($playermount['mountname'])) {
+                self::addCharStat("Creature", $playermount['mountname'] . "`0");
+            }
+
+            modulehook("charstats");
+
+            $charstat = self::getCharStats($buffs);
+
+            if (!is_array($session['bufflist'])) {
+                $session['bufflist'] = array();
+            }
+            return $charstat;
+        } else {
+            $ret = "";
+            if ($ret = Datacache::datacache("charlisthomepage")) {
+            } else {
+                $onlinecount = 0;
+                $list = modulehook("onlinecharlist", array("count" => 0, "list" => ""));
+                if (isset($list['handled']) && $list['handled']) {
+                    $onlinecount = $list['count'];
+                    $ret = $list['list'];
+                } else {
+                    if (isset($settings)) {
+                        $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
+                    } else {
+                        $loginTimeout = 90; //default to 90 seconds if not set
+                    }
+
+                    $sql = "SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $loginTimeout . " seconds")) . "' ORDER BY level DESC";
+                    $result = Database::query($sql);
+                    $rows = array();
+                    while ($row = Database::fetchAssoc($result)) {
+                        $rows[] = $row;
+                    }
+                    Database::freeResult($result);
+                    $rows = modulehook("loggedin", $rows);
+                    $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
+                    foreach ($rows as $row) {
+                        $ret .= appoencode("`^{$row['name']}`n");
+                        $onlinecount++;
+                    }
+                    if ($onlinecount == 0) {
+                        $ret .= appoencode(Translator::translateInline("`iNone`i"));
+                    }
+                }
+                if (isset($settings)) {
+                    $settings->saveSetting("OnlineCount", $onlinecount);
+                    $settings->saveSetting("OnlineCountLast", strtotime("now"));
+                }
+                Datacache::updatedatacache("charlisthomepage", $ret);
+            }
+            return $ret;
+        }
+    }
 
 /**
  * Returns a display formatted (and popup enabled) mail link - determines if unread mail exists and highlights the link if needed
  *
  * @return string The formatted mail link
  */
-public static function mailLink(){
-	global $session;
-	$sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"".$session['user']['acctid']."\"";
-	$result = Database::queryCached($sql,"mail-{$session['user']['acctid']}",86400);
-	$row = Database::fetchAssoc($result);
-	Database::freeResult($result);
-	$row['seencount']=(int)$row['seencount'];
-	$row['notseen']=(int)$row['notseen'];
-	if ($row['notseen']>0){
-		return sprintf("<a href='mail.php' target='_blank' onClick=\"".self::popup("mail.php").";return false;\" class='hotmotd'>".Translator::translateInline("Ye Olde Mail: %s new, %s old","common")."</a>",$row['notseen'],$row['seencount']);
-	}else{
-		return sprintf("<a href='mail.php' target='_blank' onClick=\"".self::popup("mail.php").";return false;\" class='motd'>".Translator::translateInline("Ye Olde Mail: %s new, %s old","common")."</a>",$row['notseen'],$row['seencount']);
-	}
-}
+    public static function mailLink()
+    {
+        global $session;
+        $sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
+        $result = Database::queryCached($sql, "mail-{$session['user']['acctid']}", 86400);
+        $row = Database::fetchAssoc($result);
+        Database::freeResult($result);
+        $row['seencount'] = (int)$row['seencount'];
+        $row['notseen'] = (int)$row['notseen'];
+        if ($row['notseen'] > 0) {
+            return sprintf("<a href='mail.php' target='_blank' onClick=\"" . self::popup("mail.php") . ";return false;\" class='hotmotd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
+        } else {
+            return sprintf("<a href='mail.php' target='_blank' onClick=\"" . self::popup("mail.php") . ";return false;\" class='motd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
+        }
+    }
 /* same, but only the text for the tab */
-public static function mailLinkTabText(){
-	global $session;
-	$sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"".$session['user']['acctid']."\"";
-	$result = Database::queryCached($sql,"mail-{$session['user']['acctid']}",86400);
-	$row = Database::fetchAssoc($result);
-	Database::freeResult($result);
-	$row['seencount']=(int)$row['seencount'];
-	$row['notseen']=(int)$row['notseen'];
-	if ($row['notseen']>0){
-		return sprintf(translate_inline("%s new mail(s)","common"),$row['notseen']);
-	}else{
-		return '';
-	}
-}
+    public static function mailLinkTabText()
+    {
+        global $session;
+        $sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
+        $result = Database::queryCached($sql, "mail-{$session['user']['acctid']}", 86400);
+        $row = Database::fetchAssoc($result);
+        Database::freeResult($result);
+        $row['seencount'] = (int)$row['seencount'];
+        $row['notseen'] = (int)$row['notseen'];
+        if ($row['notseen'] > 0) {
+            return sprintf(translate_inline("%s new mail(s)", "common"), $row['notseen']);
+        } else {
+            return '';
+        }
+    }
 
     /**
      * Build the Paypal donation HTML snippet and replace the appropriate placeholder.
@@ -456,27 +477,27 @@ public static function mailLinkTabText(){
         $paypalstr = '<table align="center"><tr><td>';
         $currency = isset($settings) ? $settings->getSetting('paypalcurrency', 'USD') : 'USD';
 
-        if (!isset($_SESSION['logdnet']) || !isset($_SESSION['logdnet']['']) || $_SESSION['logdnet']['']=='' || date('Y-m-d H:i:s',strtotime('-1 hour'))>$session['user']['laston']){
+        if (!isset($_SESSION['logdnet']) || !isset($_SESSION['logdnet']['']) || $_SESSION['logdnet'][''] == '' || date('Y-m-d H:i:s', strtotime('-1 hour')) > $session['user']['laston']) {
             $already_registered_logdnet = false;
-        }else{
+        } else {
             $already_registered_logdnet = true;
         }
 
-        if (isset($settings) && $settings->getSetting('logdnet',0) && $session['user']['loggedin'] && !$already_registered_logdnet){
+        if (isset($settings) && $settings->getSetting('logdnet', 0) && $session['user']['loggedin'] && !$already_registered_logdnet) {
             $sql = "SELECT count(acctid) AS c FROM " . Database::prefix('accounts');
-            $result = Database::queryCached($sql,'acctcount',600);
+            $result = Database::queryCached($sql, 'acctcount', 600);
             $row = Database::fetchAssoc($result);
             $c = $row['c'];
-            $a = $settings->getSetting('serverurl','http://'.$_SERVER['SERVER_NAME'].($_SERVER['SERVER_PORT'] == 80?'':':'.$_SERVER['SERVER_PORT']).dirname($_SERVER['REQUEST_URI']));
+            $a = $settings->getSetting('serverurl', 'http://' . $_SERVER['SERVER_NAME'] . ($_SERVER['SERVER_PORT'] == 80 ? '' : ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['REQUEST_URI']));
             if (!preg_match('/\/$/', $a)) {
                 $a = $a . '/';
                 $settings->saveSetting('serverurl', $a);
             }
 
-            $l = $settings->getSetting('defaultlanguage','en');
-            $d = $settings->getSetting('serverdesc','Another LoGD Server');
+            $l = $settings->getSetting('defaultlanguage', 'en');
+            $d = $settings->getSetting('serverdesc', 'Another LoGD Server');
             $e = $settings->getSetting('gameadminemail', 'postmaster@localhost.com');
-            $u = $settings->getSetting('logdnetserver','http://logdnet.logd.com/');
+            $u = $settings->getSetting('logdnetserver', 'http://logdnet.logd.com/');
             if (!preg_match('/\/$/', $u)) {
                 $u = $u . '/';
                 $settings->saveSetting('logdnetserver', $u);
@@ -491,41 +512,41 @@ public static function mailLinkTabText(){
             $v = rawurlencode($v);
             $u = rawurlencode($u);
             $paypalstr .= "<script type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
-        }else{
-            $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">".
-                "<input type='hidden' name='cmd' value='_xclick'>".
-                "<input type='hidden' name='business' value='logd@mightye.org'>".
-                "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from ".Sanitize::fullSanitize($session['user']['name'])."'>".
-                "<input type='hidden' name='item_number' value='".htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8').":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']."'>".
-                "<input type='hidden' name='no_shipping' value='1'>".
-                "<input type='hidden' name='notify_url' value='http://lotgd.net/payment.php'>".
-                "<input type='hidden' name='cn' value='Your Character Name'>".
-                "<input type='hidden' name='cs' value='1'>".
-                "<input type='hidden' name='currency_code' value='USD'>".
-                "<input type='hidden' name='tax' value='0'>".
-                "<input type='image' src='images/paypal1.gif' border='0' name='submit' alt='Donate to Eric Stevens'>".
+        } else {
+            $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">" .
+                "<input type='hidden' name='cmd' value='_xclick'>" .
+                "<input type='hidden' name='business' value='logd@mightye.org'>" .
+                "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from " . Sanitize::fullSanitize($session['user']['name']) . "'>" .
+                "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>" .
+                "<input type='hidden' name='no_shipping' value='1'>" .
+                "<input type='hidden' name='notify_url' value='http://lotgd.net/payment.php'>" .
+                "<input type='hidden' name='cn' value='Your Character Name'>" .
+                "<input type='hidden' name='cs' value='1'>" .
+                "<input type='hidden' name='currency_code' value='USD'>" .
+                "<input type='hidden' name='tax' value='0'>" .
+                "<input type='image' src='images/paypal1.gif' border='0' name='submit' alt='Donate to Eric Stevens'>" .
                 "</form>";
         }
         $paysite = isset($settings) ? $settings->getSetting('paypalemail', '') : '';
         if ($paysite != '') {
             $paypalstr .= '</td><td>';
             $paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">'
-                ."<input type='hidden' name='cmd' value='_xclick'>"
-                ."<input type='hidden' name='business' value='$paysite'>"
-                ."<input type='hidden' name='item_name' value='".(isset($settings) ? $settings->getSetting('paypaltext','Legend of the Green Dragon Site Donation from') : 'Legend of the Green Dragon Site Donation From')." ".Sanitize::fullSanitize($session['user']['name'])."'>"
-                ."<input type='hidden' name='item_number' value='".htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8').":".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']."'>"
-                ."<input type='hidden' name='no_shipping' value='1'>";
+                . "<input type='hidden' name='cmd' value='_xclick'>"
+                . "<input type='hidden' name='business' value='$paysite'>"
+                . "<input type='hidden' name='item_name' value='" . (isset($settings) ? $settings->getSetting('paypaltext', 'Legend of the Green Dragon Site Donation from') : 'Legend of the Green Dragon Site Donation From') . " " . Sanitize::fullSanitize($session['user']['name']) . "'>"
+                . "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>"
+                . "<input type='hidden' name='no_shipping' value='1'>";
             if (file_exists('payment.php')) {
-                $paypalstr .= "<input type='hidden' name='notify_url' value='http://".$_SERVER['HTTP_HOST'].dirname($_SERVER['REQUEST_URI'])."/payment.php'>";
+                $paypalstr .= "<input type='hidden' name='notify_url' value='http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . "/payment.php'>";
             }
             $paypalstr .= "<input type='hidden' name='cn' value='Your Character Name'>"
-                ."<input type='hidden' name='cs' value='1'>"
-                ."<input type='hidden' name='currency_code' value='$currency'>"
-                ."<input type='hidden' name='lc' value='".getsetting('paypalcountry-code','US')."'>"
-                ."<input type='hidden' name='bn' value='PP-DonationsBF'>"
-                ."<input type='hidden' name='tax' value='0'>"
-                ."<input type='image' src='images/paypal2.gif' border='0' name='submit' alt='Donate to the Site'>"
-                .'</form>';
+                . "<input type='hidden' name='cs' value='1'>"
+                . "<input type='hidden' name='currency_code' value='$currency'>"
+                . "<input type='hidden' name='lc' value='" . getsetting('paypalcountry-code', 'US') . "'>"
+                . "<input type='hidden' name='bn' value='PP-DonationsBF'>"
+                . "<input type='hidden' name='tax' value='0'>"
+                . "<input type='image' src='images/paypal2.gif' border='0' name='submit' alt='Donate to the Site'>"
+                . '</form>';
         }
         $paypalstr .= '</td></tr></table>';
 
@@ -557,7 +578,7 @@ public static function mailLinkTabText(){
                 if (file_exists('ext/ajax_maillink.php')) {
                     require 'ext/ajax_maillink.php';
                 }
-                $mailHtml = $maillink_add_pre."<div id='maillink'>".self::mailLink()."</div>".$maillink_add_after;
+                $mailHtml = $maillink_add_pre . "<div id='maillink'>" . self::mailLink() . "</div>" . $maillink_add_after;
             } else {
                 $mailHtml = self::mailLink();
             }
@@ -577,7 +598,7 @@ public static function mailLinkTabText(){
      */
     public static function assemblePetitionLink(string $header, string $footer): array
     {
-        $link = "<a href='petition.php' onClick=\"".self::popup('petition.php').";return false;\" target='_blank' align='right' class='motd'>".Translator::translateInline('Petition for Help')."</a>";
+        $link = "<a href='petition.php' onClick=\"" . self::popup('petition.php') . ";return false;\" target='_blank' align='right' class='motd'>" . Translator::translateInline('Petition for Help') . "</a>";
 
         return self::replaceHeaderFooterTokens(
             $header,
@@ -599,9 +620,9 @@ public static function mailLinkTabText(){
         if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS) {
             $sql = "SELECT count(petitionid) AS c,status FROM " . Database::prefix('petitions') . " GROUP BY status";
             $result = Database::queryCached($sql, 'petition_counts');
-            $petitions = array('P5'=>0,'P4'=>0,'P0'=>0,'P1'=>0,'P3'=>0,'P7'=>0,'P6'=>0,'P2'=>0);
+            $petitions = array('P5' => 0,'P4' => 0,'P0' => 0,'P1' => 0,'P3' => 0,'P7' => 0,'P6' => 0,'P2' => 0);
             while ($row = Database::fetchAssoc($result)) {
-                $petitions['P'.$row['status']] = $row['c'];
+                $petitions['P' . $row['status']] = $row['c'];
             }
             $pet = Translator::translateInline('`0`bPetitions:`b');
             $ued = Translator::translateInline('`0`bUser Editor`b');
@@ -626,13 +647,13 @@ public static function mailLinkTabText(){
                     $pets .= '|';
                 }
                 $color = array_shift($pcolors) ?: '`1';
-                $pets .= $color.$val.'`0';
+                $pets .= $color . $val . '`0';
             }
-            $ret_args = array('petitioncount'=>$pets);
+            $ret_args = array('petitioncount' => $pets);
             $ret_args = modulehook('petitioncount', $ret_args);
             $pets = $ret_args['petitioncount'];
             $p .= $pets;
-            $pcount = templatereplace('petitioncount', array('petitioncount'=>appoencode($p, true)));
+            $pcount = templatereplace('petitioncount', array('petitioncount' => appoencode($p, true)));
         }
 
         return self::replaceHeaderFooterTokens(
@@ -702,7 +723,7 @@ public static function mailLinkTabText(){
     {
         $markup = $preHeadscript;
         if (!empty($headscript)) {
-            $markup .= "<script type='text/javascript' charset='UTF-8'>".$headscript.'</script>';
+            $markup .= "<script type='text/javascript' charset='UTF-8'>" . $headscript . '</script>';
         }
 
         return self::applyTemplateStringReplacements(
@@ -761,12 +782,12 @@ public static function mailLinkTabText(){
                 self::$twigVars[$key] = $val;
             }
 
-            if (strpos($content, '{'.$key.'}') === false) {
+            if (strpos($content, '{' . $key . '}') === false) {
                 // If we don't find the key in the content, we can skip it - if you want to notify, use the line below
                 //output("`bWarning:`b the `i%s`i piece was not found in the `i%s`i template part! (%s)`n", $key, $name, $content);
                 continue;
             } else {
-                $content = str_replace('{'.$key.'}', $val, $content);
+                $content = str_replace('{' . $key . '}', $val, $content);
             }
         }
 
@@ -783,20 +804,24 @@ public static function mailLinkTabText(){
         global $session, $dbinfo, $settings, $SCRIPT_NAME;
 
         $gentime = DateTime::getMicroTime() - $pagestarttime;
-        if (!isset($session['user']['gentime'])) $session['user']['gentime']=0;
-        $session['user']['gentime']+=$gentime;
-        if (!isset($session['user']['gentimecount'])) $session['user']['gentimecount']=0;
+        if (!isset($session['user']['gentime'])) {
+            $session['user']['gentime'] = 0;
+        }
+        $session['user']['gentime'] += $gentime;
+        if (!isset($session['user']['gentimecount'])) {
+            $session['user']['gentimecount'] = 0;
+        }
         $session['user']['gentimecount']++;
-        if (isset($settings) && $settings->getSetting('debug',0)) {
-            $sql="INSERT INTO ".Database::prefix('debug')." VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','".($gentime)."');";
+        if (isset($settings) && $settings->getSetting('debug', 0)) {
+            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','" . ($gentime) . "');";
             Database::query($sql);
-            $sql="INSERT INTO ".Database::prefix('debug')." VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','".(round($dbinfo['querytime'],3))."');";
+            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','" . (round($dbinfo['querytime'], 3)) . "');";
             Database::query($sql);
         }
         $queriesthishit = isset($dbinfo['queriesthishit']) ? $dbinfo['queriesthishit'] : 0;
         $querytime = isset($dbinfo['querytime']) ? $dbinfo['querytime'] : 0;
 
-        return "Page gen: ".round($gentime,3)."s / ".$queriesthishit." queries (".round($querytime,3)."s), Ave: ".round($session['user']['gentime']/$session['user']['gentimecount'],3)."s - ".round($session['user']['gentime'],3)."/".round($session['user']['gentimecount'],3);
+        return "Page gen: " . round($gentime, 3) . "s / " . $queriesthishit . " queries (" . round($querytime, 3) . "s), Ave: " . round($session['user']['gentime'] / $session['user']['gentimecount'], 3) . "s - " . round($session['user']['gentime'], 3) . "/" . round($session['user']['gentimecount'], 3);
     }
 
 
@@ -805,13 +830,13 @@ public static function mailLinkTabText(){
  *
  * @return string The formatted MOTD link
  */
-public static function motdLink(){
-	global $session;
-	if (isset($session['needtoviewmotd']) && $session['needtoviewmotd']){
-		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='hotmotd'><b>".Translator::translateInline("MoTD")."</b></a>";
-	}else{
-		return "<a href='motd.php' target='_blank' onClick=\"".self::popup("motd.php").";return false;\" class='motd'><b>".Translator::translateInline("MoTD")."</b></a>";
-	}
+    public static function motdLink()
+    {
+        global $session;
+        if (isset($session['needtoviewmotd']) && $session['needtoviewmotd']) {
+            return "<a href='motd.php' target='_blank' onClick=\"" . self::popup("motd.php") . ";return false;\" class='hotmotd'><b>" . Translator::translateInline("MoTD") . "</b></a>";
+        } else {
+            return "<a href='motd.php' target='_blank' onClick=\"" . self::popup("motd.php") . ";return false;\" class='motd'><b>" . Translator::translateInline("MoTD") . "</b></a>";
+        }
+    }
 }
-}
-?>

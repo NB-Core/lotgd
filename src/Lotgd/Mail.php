@@ -1,18 +1,21 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
+
 use Lotgd\MySQL\Database;
 
 /**
  * Placeholder class for future mail handling refactoring.
  */
+
 use Lotgd\Settings;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 class Mail
 {
-    
     /**
      * Send a system generated mail to a user.
      */

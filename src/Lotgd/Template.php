@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lotgd;
@@ -11,7 +12,6 @@ use Lotgd\Cookies;
  */
 class Template
 {
-
     /**
      * Replace placeholders within a template section.
      *
@@ -242,24 +242,26 @@ class Template
      */
     public static function loadTemplate(string $templatename): array
     {
-            if ($templatename=="" || !file_exists("templates/$templatename"))
-                    $templatename=getsetting("defaultskin", DEFAULT_TEMPLATE);
-            if ($templatename=="" || !file_exists("templates/$templatename"))
-                    $templatename=DEFAULT_TEMPLATE;
-	    $fulltemplate = file_get_contents("templates/$templatename");
-	    $fulltemplate = explode("<!--!",$fulltemplate);
-	    foreach ($fulltemplate as $val) {
-           if ($val == "") continue; // Skip empty sections
-		    $fieldname=substr($val,0,strpos($val,"-->"));
-		    if ($fieldname!=""){
-			    $template[$fieldname]=substr($val,strpos($val,"-->")+3);
-                            if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-                                modulehook("template-{$fieldname}", ['content' => $template[$fieldname]]);
-                            }
-		    }
-	    }
-	    return $template;
+        if ($templatename == "" || !file_exists("templates/$templatename")) {
+                $templatename = getsetting("defaultskin", DEFAULT_TEMPLATE);
+        }
+        if ($templatename == "" || !file_exists("templates/$templatename")) {
+                $templatename = DEFAULT_TEMPLATE;
+        }
+        $fulltemplate = file_get_contents("templates/$templatename");
+        $fulltemplate = explode("<!--!", $fulltemplate);
+        foreach ($fulltemplate as $val) {
+            if ($val == "") {
+                continue; // Skip empty sections
+            }
+            $fieldname = substr($val, 0, strpos($val, "-->"));
+            if ($fieldname != "") {
+                $template[$fieldname] = substr($val, strpos($val, "-->") + 3);
+                if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+                    modulehook("template-{$fieldname}", ['content' => $template[$fieldname]]);
+                }
+            }
+        }
+        return $template;
     }
-
 }
-

@@ -1,7 +1,9 @@
 <?php
+
 use Lotgd\Moderate;
 use Lotgd\DateTime;
 use Lotgd\Commentary;
+
 require_once 'lib/sanitize.php';
 require_once 'lib/http.php';
 

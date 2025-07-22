@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd\Forest;
 
 use Lotgd\AddNews;
@@ -196,10 +198,10 @@ class Outcomes
             $dk = round($dk * (.25 + $add));
         }
         $expflux = round($badguy['creatureexp'] / 10, 0);
-        $expflux = round(r_rand(-$expflux, $expflux),0);
+        $expflux = round(r_rand(-$expflux, $expflux), 0);
         $badguy['creatureexp'] += $expflux;
-        $atkflux = round(r_rand(0, $dk),0);
-        $defflux = round(r_rand(0, ($dk - $atkflux)),0);
+        $atkflux = round(r_rand(0, $dk), 0);
+        $defflux = round(r_rand(0, ($dk - $atkflux)), 0);
         $hpflux = ($dk - ($atkflux + $defflux)) * 5;
         $badguy['creatureattack'] += $atkflux;
         $badguy['creaturedefense'] += $defflux;

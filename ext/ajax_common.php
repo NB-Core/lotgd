@@ -1,17 +1,20 @@
 <?php
+
 declare(strict_types=1);
+
 /**
  * Common bootstrap for AJAX operations. This file configures the
  * Jaxon library and registers callable functions used by the client
  * side scripts.
  */
+
 require_once __DIR__ . '/../autoload.php'; // Start autoload
 
 use Jaxon\Jaxon;                      // Use the jaxon core class
 use Jaxon\Response\Response;          // and the Response class
 use function Jaxon\jaxon;
 
-require_once(__DIR__ . '/ajax_settings.php'); 
+require_once(__DIR__ . '/ajax_settings.php');
 global $jaxon;
 // Get the Jaxon singleton object
 $jaxon = jaxon();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use Lotgd\Cookies;
+
 require_once __DIR__ . '/../config/constants.php';
 
 final class CookiesTest extends TestCase

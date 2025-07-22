@@ -1,11 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lotgd;
 
 class Cookies
 {
-
     // Set SANITIZATION_REGEX
     // Allowed: legacy:Modern.htm, legacy:Modern.html, twig:aurora, etc.
     // Format: <prefix>:<name>[.htm[l]] (optional .htm or .html at the end)

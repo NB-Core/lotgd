@@ -1,9 +1,12 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 use Lotgd\Substitute;
 use Lotgd\Translator;
+
 class Buffs
 {
     private static array $buffReplacements = [];
@@ -36,8 +39,8 @@ class Buffs
         foreach ($session['bufflist'] as $buffname => $buff) {
             if (!isset($buff['fields_calculated'])) {
                 foreach ($buff as $property => $value) {
-		    // Sanitize if somebody uses int here
-		    $value = (string)$value; 
+            // Sanitize if somebody uses int here
+                    $value = (string)$value;
                     $origstring = $value;
                     $value = preg_replace('/<([A-Za-z0-9]+)\\|([A-Za-z0-9]+)>/', "get_module_pref('\\2','\\1')", $value);
                     $value = preg_replace('/<([A-Za-z0-9]+)>/', "\$session['user']['\\1']", $value);
@@ -479,8 +482,8 @@ class Buffs
                 $badguy['dead'] == false
             ) {
                 $who = -1;
-		$min = 0;
-		$max = 0;
+                $min = 0;
+                $max = 0;
                 if (isset($buff['maxbadguydamage']) && $buff['maxbadguydamage'] != 0) {
                     $max = $buff['maxbadguydamage'];
                     $min = $buff['minbadguydamage'] ?? 0;

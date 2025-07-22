@@ -27,8 +27,12 @@ namespace {
                 return $this->values[$name] ?? $default;
             }
 
-            public function loadSettings(): void {}
-            public function clearSettings(): void {}
+            public function loadSettings(): void
+            {
+            }
+            public function clearSettings(): void
+            {
+            }
             public function saveSetting(string|int $name, mixed $value): bool
             {
                 $this->values[$name] = $value;

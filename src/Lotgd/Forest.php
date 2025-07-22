@@ -1,8 +1,11 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
 
 use Lotgd\Nav\VillageNav;
+
 /**
  * Wrapper around the old forest() function.
  */

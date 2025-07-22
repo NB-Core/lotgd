@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd;
+
 use Lotgd\MySQL\Database;
 
 /**
@@ -297,25 +300,27 @@ class PlayerFunctions
             $exparray = $stored;
         } else {
             $expstring = getsetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930');
-            if ($expstring == '') return 0;
+            if ($expstring == '') {
+                return 0;
+            }
             $exparray = explode(',', $expstring);
             if (count($exparray) < getsetting('maxlevel', 15)) {
-                for ($i = count($exparray)-1; $i < getsetting('maxlevel', 15); $i++) {
-                    $exparray[] = $exparray[count($exparray)-1] * 1.3;
+                for ($i = count($exparray) - 1; $i < getsetting('maxlevel', 15); $i++) {
+                    $exparray[] = $exparray[count($exparray) - 1] * 1.3;
                 }
             }
             foreach ($exparray as $key => $val) {
-                $exparray[$key] = round($val + ($curdk/4) * ($key+1) * 100, 0);
+                $exparray[$key] = round($val + ($curdk / 4) * ($key + 1) * 100, 0);
             }
             if (getsetting('maxlevel', 15) > count($exparray)) {
                 for ($i = count($exparray); $i < getsetting('maxlevel', 15); $i++) {
-                    $exparray[$i] = round($exparray[$i-1]*1.2);
+                    $exparray[$i] = round($exparray[$i - 1] * 1.2);
                 }
             }
             DataCache::updatedatacache('exparraydk' . $curdk, $exparray);
         }
         if (count($exparray) > $curlevel) {
-            $exprequired = $exparray[max(0,$curlevel-1)];
+            $exprequired = $exparray[max(0, $curlevel - 1)];
         } else {
             $exprequired = array_pop($exparray);
         }
@@ -411,10 +416,18 @@ class PlayerFunctions
         $res = Database::query($sql);
         $d = -1;
         while ($row = Database::fetchAssoc($res)) {
-            if ($d == -1) { $d = $row['dk']; }
-            if ($row['dk'] != $d) break;
-            if ($gender && ($row['female'] == $title)) return true;
-            if (!$gender && ($row['male'] == $title)) return true;
+            if ($d == -1) {
+                $d = $row['dk'];
+            }
+            if ($row['dk'] != $d) {
+                break;
+            }
+            if ($gender && ($row['female'] == $title)) {
+                return true;
+            }
+            if (!$gender && ($row['male'] == $title)) {
+                return true;
+            }
         }
         return false;
     }

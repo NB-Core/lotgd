@@ -1,4 +1,5 @@
 <?php
+
 // Legacy wrapper for Sanitize class
 // translator ready
 // addnews ready
@@ -90,4 +91,3 @@ function sanitize_mb($str)
 {
     return Sanitize::sanitizeMb($str);
 }
-?>

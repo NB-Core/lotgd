@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lotgd\MySQL;
@@ -147,4 +148,3 @@ class DbMysqli
         return mysqli_get_server_info($this->link);
     }
 }
-

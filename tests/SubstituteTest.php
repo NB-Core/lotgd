@@ -8,7 +8,10 @@ use Lotgd\Substitute;
 require_once __DIR__ . '/../config/constants.php';
 
 if (!function_exists('translate_inline')) {
-    function translate_inline($text, $ns = false) { return $text; }
+    function translate_inline($text, $ns = false)
+    {
+        return $text;
+    }
 }
 
 final class SubstituteTest extends TestCase
@@ -24,7 +27,7 @@ final class SubstituteTest extends TestCase
         ]];
         $badguy = [
             'creaturename'  => 'Goblin',
-            'creatureweapon'=> 'Club',
+            'creatureweapon' => 'Club',
         ];
     }
 

@@ -1,10 +1,13 @@
 <?php
+
 // Legacy wrapper for \Lotgd\Output class
 
 use Lotgd\Output;
 
 // Provide legacy class name for modules still instantiating output_collector
-class output_collector extends Output {}
+class output_collector extends Output
+{
+}
 
 function set_block_new_output($block)
 {

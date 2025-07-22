@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Lotgd\Nav;
 
 /**
@@ -15,7 +17,7 @@ class SuperuserNav
         global $SCRIPT_NAME, $session;
         tlschema('nav');
         addnav('Navigation');
-        if ($session['user']['superuser'] &~ SU_DOESNT_GIVE_GROTTO) {
+        if ($session['user']['superuser'] & ~ SU_DOESNT_GIVE_GROTTO) {
             $script = substr($SCRIPT_NAME, 0, strpos($SCRIPT_NAME, '.'));
             if ($script != 'superuser') {
                 $args = modulehook('grottonav');

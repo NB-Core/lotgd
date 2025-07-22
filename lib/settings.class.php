@@ -1,2 +1,5 @@
 <?php
-class settings extends Lotgd\Settings {}
+
+class settings extends Lotgd\Settings
+{
+}
