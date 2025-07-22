@@ -2,95 +2,92 @@
 <html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8"/>
-    <title>{{ title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
+    <title>{{ title }}</title>
+    <link href="/templates/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ template_path }}/assets/style.css"/>
     <link rel="stylesheet" href="/templates/common/colors.css"/>
+    <link rel="stylesheet" href="/templates/common/sidebar.css"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body class="main-body">
-    <table class="layout-table" width="100%">
-        <tr>
-            <td>
-                <table class="layout-table noborder" width="100%">
-                    <tr class="page-header">
-                        <td class="noborder pageheader-left align-center">
-                            <table>
-                                <tr>
-                                    <td class="noborder motd align-left valign-bottom" width="50%">&nbsp;&nbsp;<strong>{{ motd|raw }}</strong></td>
-                                    <td class="noborder align-right valign-bottom" width="50%"><strong>{{ petition|raw }}</strong></td>
-                                </tr>
-                            </table>
-                        </td>
-                        <td class="noborder pageheader-center align-center">
-                            <img src="{{ template_path }}/assets/title-logo.png" alt="{{ title }}">
-                        </td>
-                        <td class="noborder pageheader-right">
-                            <img src="{{ template_path }}/assets/mail.png" width="24" height="19" alt="Mail"><strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
-                            {{ petitiondisplay|raw }}
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <table class="layout-table" width="100%">
-                    <tr>
-                        <td width="200" class="sidebar-content valign-top">
-                            <div class="navad-wrapper">{{ navad|raw }}</div>
-                            <img src="{{ template_path }}/assets/nav-top.png" alt="" class="nav-top">
-                            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
-                            <img src="{{ template_path }}/assets/nav-bottom.png" alt="" class="nav-bottom">
-                        </td>
-                        <td width="100%" class="main-content valign-top">
-                            <div class="verticalad-wrapper">{{ verticalad|raw }}</div>
-                            {{ bodyad|raw }}
-                            {{ content|raw }}
-                        </td>
-                        <td width="132" class="sidebar-content valign-top">
-                            {{ stats|raw }}
-                            <br>
-                            {{ paypal|raw }}
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3">
-                <table class="layout-table" width="100%" height="20">
-                    <tr>
-                        <td class="align-center"></td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3">
-                <table class="layout-table" width="100%">
-                    <tr>
-                        <td colspan="3" height="10" class="align-center"></td>
-                    </tr>
-                    <tr>
-                        <td width="12"></td>
-                        <td class="valign-top">
-                            <table class="layout-table colOtWhite" width="100%">
-                                <tr>
-                                    <td class="valign-top">{{ copyright|raw }}<br/>Design: Aurora theme by NB-Core</td>
-                                    <td class="valign-top align-right">{{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
-                                </tr>
-                            </table>
-                        </td>
-                        <td width="12"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" height="10" class="align-center"></td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
+{% set right_sidebar %}
+    {{ verticalad|raw }}
+    {{ bodyad|raw }}
+    {{ stats|raw }}<br/>
+    {{ paypal|raw }}
+{% endset %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xs-3 col-sm-2 motd">
+            {{ motd|raw }}
+        </div>
+        <div class="col-sm-8 hidden-xs header-picture">&nbsp;</div>
+        <div class="col-xs-8 col-sm-2">
+            {{ mail|raw }}
+            {{ petition|raw }}
+            {{ petitiondisplay|raw }}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="navbar-header navbar-inverse">
+                <button class="navbar-toggle collapsed" data-target="#navbar-right" data-toggle="collapse" type="button">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <button class="navbar-toggle collapsed" data-target="#navbar-left" data-toggle="collapse" type="button">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Navigation</a>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-sm-2">
+            <div class="navbar-collapse collapse" id="navbar-left">
+                <ul class="nav navbar-nav">
+                    <li>
+                        {{ navad|raw }}
+                        {{ nav|raw }}
+                    </li>
+                </ul>
+            </div>
+            <div class="navbar-collapse collapse" id="navbar-right">
+                <ul class="nav navbar-nav">
+                    <li>
+                        {{ right_sidebar|raw }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-8 main-content">
+            {{ content|raw }}
+        </div>
+        <div class="col-xs-2 hidden-xs">
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>
+                        {% block right_sidebar %}{% endblock %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="bootstrap-footer row">
+        <div class="col-xs-12">
+            {{ copyright|raw }}<br />
+            {{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})
+        </div>
+    </div>
+</div>
+<script src="/templates/bootstrap/jquery/jquery-2.1.0.min.js"></script>
+<script src="/templates/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>

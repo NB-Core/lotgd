@@ -416,3 +416,50 @@ div.debug {
     border-radius: 4px;
     box-shadow: 0 0 4px rgba(0,0,0,0.4); /* subtle depth */
 }
+
+/* Mobile specific tweaks */
+@media (min-width: 768px) {
+    #navbar-right {
+        display: none !important;
+    }
+    input#name,
+    input#password {
+        width: 200px;
+    }
+    .navbar-nav > li > a {
+        padding: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .navbar-nav > li > a  {
+        padding: 0;
+    }
+    #navbar-left > .navbar-nav > li > br {
+        display: none !important;
+    }
+    input#name,
+    input#password {
+        width: 100px;
+    }
+}
+
+table a, .table a {
+    text-decoration: none;
+}
+
+.navheadsub {
+    text-decoration: none;
+    width: 170px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    line-height: 33px;
+    clear: none;
+    color: #FFFFFF;
+    cursor: default;
+    text-align: center;
+    font-family: "Tahoma Small Cap", Tahoma, sans-serif;
+    font-weight: bolder;
+    margin-left: 10px;
+}
