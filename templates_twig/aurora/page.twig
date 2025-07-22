@@ -47,16 +47,16 @@
         </nav>
     </div>
     <div class="row">
-        <nav class="col-sm-2 d-none d-lg-block sidebar-content">
+        <nav class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
             <div class="navad-wrapper">{{ navad|raw }}</div>
             <img src="{{ template_path }}/assets/nav-top.png" alt="" class="nav-top">
             <div class="nav-container" role="navigation">{{ nav|raw }}</div>
             <img src="{{ template_path }}/assets/nav-bottom.png" alt="" class="nav-bottom">
         </nav>
-        <main class="col-12 col-lg-8 main-content">
+        <main class="col flex-grow-1 main-content">
             {{ content|raw }}
         </main>
-        <aside class="col-sm-2 d-none d-lg-block sidebar-content">
+        <aside class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
             {{ right_sidebar|raw }}
         </aside>
     </div>
