@@ -6,4 +6,3 @@ class ServerFunctions extends \Lotgd\ServerFunctions
 {
 }
 
-\class_alias(ServerFunctions::class, 'ServerFunctions');
