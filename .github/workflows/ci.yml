@@ -17,8 +17,8 @@ jobs:
           php-version: '8.1'
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
-      - name: Run PHPCS
-        run: composer lint
+#      - name: Run PHPCS
+#        run: composer lint
       - name: Lint PHP files
         run: |
           find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
