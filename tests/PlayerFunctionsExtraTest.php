@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use Lotgd\PlayerFunctions;
-use Lotgd\Settings;
 use Lotgd\DataCache;
+use Lotgd\Tests\Stubs\DummySettingsExtra;
 
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../lib/settings.php';
@@ -13,34 +13,6 @@ require_once __DIR__ . '/../lib/tempstat.php';
 
 if (!defined('DATACACHE_FILENAME_PREFIX')) {
     define('DATACACHE_FILENAME_PREFIX', 'datacache-');
-}
-
-class DummySettingsExtra extends Settings
-{
-    private array $values;
-    public function __construct(array $values = [])
-    {
-        $this->values = $values;
-    }
-    public function getSetting(string|int $name, mixed $default = false): mixed
-    {
-        return $this->values[$name] ?? $default;
-    }
-    public function loadSettings(): void
-    {
-    }
-    public function clearSettings(): void
-    {
-    }
-    public function saveSetting(string|int $name, mixed $value): bool
-    {
-        $this->values[$name] = $value;
-        return true;
-    }
-    public function getArray(): array
-    {
-        return $this->values;
-    }
 }
 
 final class PlayerFunctionsExtraTest extends TestCase

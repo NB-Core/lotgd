@@ -61,12 +61,14 @@ namespace {
     use PHPUnit\Framework\TestCase;
     use Lotgd\ModuleManager;
 
+    use Lotgd\Tests\Stubs\Database;
     require_once __DIR__ . '/../config/constants.php';
 
     final class ModuleManagerTest extends TestCase
     {
         protected function setUp(): void
         {
+            class_exists(Database::class);
             \Lotgd\MySQL\Database::$lastSql = '';
             $GLOBALS['install_called'] = $GLOBALS['uninstall_called'] = [];
             $GLOBALS['activate_called'] = $GLOBALS['deactivate_called'] = [];

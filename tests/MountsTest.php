@@ -6,12 +6,14 @@ namespace {
     use PHPUnit\Framework\TestCase;
     use Lotgd\Mounts;
 
+    use Lotgd\Tests\Stubs\Database;
     require_once __DIR__ . '/../config/constants.php';
 
     final class MountsTest extends TestCase
     {
         protected function setUp(): void
         {
+            class_exists(Database::class);
             \Lotgd\MySQL\Database::$lastSql = '';
         }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 use Lotgd\Sanitize;
 use Lotgd\Output;
+use Lotgd\Tests\Stubs\DummySettingsSanitize;
 
 require_once __DIR__ . '/../config/constants.php';
 
@@ -15,35 +16,6 @@ if (!function_exists('getsetting')) {
     }
 }
 
-if (!class_exists('DummySettingsSanitize')) {
-    class DummySettingsSanitize extends Lotgd\Settings
-    {
-        private array $values;
-        public function __construct(array $values = [])
-        {
-            $this->values = $values;
-        }
-        public function getSetting(string|int $name, mixed $default = false): mixed
-        {
-            return $this->values[$name] ?? $default;
-        }
-        public function loadSettings(): void
-        {
-        }
-        public function clearSettings(): void
-        {
-        }
-        public function saveSetting(string|int $name, mixed $value): bool
-        {
-            $this->values[$name] = $value;
-            return true;
-        }
-        public function getArray(): array
-        {
-            return $this->values;
-        }
-    }
-}
 
 final class SanitizeExtraTest extends TestCase
 {
