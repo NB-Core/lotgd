@@ -544,6 +544,8 @@ public static function mailLinkTabText(){
 
     /**
      * Generate the mail link markup and populate placeholders.
+     *
+     * @api
      */
     public static function assembleMailLink(string $header, string $footer): array
     {
