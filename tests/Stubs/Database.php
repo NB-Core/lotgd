@@ -19,7 +19,7 @@ class Database
         return $name;
     }
 
-    public static function query(string $sql, bool $die = true)
+    public static function query(string $sql, bool $die = true): array|bool|null
     {
         global $accounts_table, $mail_table, $last_query_result;
         self::$lastSql = $sql;
