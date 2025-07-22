@@ -121,7 +121,8 @@ class TableDescriptor
                         $sql = "DROP {$val['name']}";
                     }
                     array_push($changes, $sql);
-                }//end foreach
+                // end foreach
+                }
             }
             if (count($changes) > 0) {
                 //we have changes to do!  Woohoo!
@@ -130,9 +131,11 @@ class TableDescriptor
                 Database::query($sql);
                 return count($changes);
             }
-        }//end if
+        // end if
+        }
         return null; //no changes made
-    }//end function
+    // end function
+    }
 
     /**
      * Generate SQL to create a table from the given descriptor.

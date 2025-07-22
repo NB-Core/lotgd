@@ -832,12 +832,13 @@ class Battle
                                     tlschema();
                                     $healed = true;
                                     $companions[$myname] = $mycompanion;
-                                } // else   // These
-                            } // foreach    // are
-                        } // else           // some
-                    } // foreach            // totally
-                } // if                     // senseless
-            } // else                       // comments.
+                                // These are some totally senseless comments.
+                                }
+                            }
+                        }
+                    }
+                }
+            }
                 unset($mynewcompanions);
                 unset($mycompanions);
                 $roll = self::rollCompanionDamage($badguy, $companion);
