@@ -1509,8 +1509,10 @@ class Installer
             // The 'G' modifier is available since PHP 5.1.0
             case 'g':
                 $numericPart *= 1024;
+                // no break
             case 'm':
                 $numericPart *= 1024;
+                // no break
             case 'k':
                 $numericPart *= 1024;
         }
