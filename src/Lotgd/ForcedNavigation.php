@@ -41,6 +41,10 @@ class ForcedNavigation
                 }
                 if (!$session['user']['loggedin'] || ((date('U') - strtotime($session['user']['laston'])) > getsetting('LOGINTIMEOUT', 900))) {
                     $session = [];
+                    if (defined('AJAX_MODE') && AJAX_MODE) {
+                        $session['loggedin'] = false;
+                        return;
+                    }
                     redirect('index.php?op=timeout', 'Account not logged in but session thinks they are.');
                 }
             } else {
@@ -58,6 +62,11 @@ class ForcedNavigation
             }
         } else {
             if (!$anonymous) {
+                if (defined('AJAX_MODE') && AJAX_MODE) {
+                    $session = [];
+                    $session['loggedin'] = false;
+                    return;
+                }
                 redirect('index.php?op=timeout', 'Not logged in: ' . $REQUEST_URI);
             }
         }
