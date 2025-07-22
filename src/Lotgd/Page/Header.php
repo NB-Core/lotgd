@@ -69,7 +69,7 @@ class Header
     {
         global $header, $template;
 
-        translator_setup();
+        \Lotgd\Translator::setup();
         prepare_template();
 
         modulehook('header-popup');
