@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
+namespace Lotgd\Tests;
+
 use Lotgd\Backtrace;
 use PHPUnit\Framework\Attributes\DataProvider;
-
-require_once __DIR__ . '/../config/constants.php';
+use PHPUnit\Framework\TestCase;
 
 final class BacktraceTest extends TestCase
 {
@@ -33,7 +33,7 @@ final class BacktraceTest extends TestCase
             'boolean true' => [true, "<span class='bool'>true</span>"],
             'boolean false' => [false, "<span class='bool'>false</span>"],
             'null' => [null, "<span class='null'>NULL</span>"],
-            'object' => [new stdClass(), "<span class='object'>stdClass</span>"],
+            'object' => [new \stdClass(), "<span class='object'>stdClass</span>"],
             'array' => [
                 [1, 'foo'],
                 "<span class='array'>Array(<blockquote><span class='number'>0</span>=><span class='number'>1</span>, <span class='number'>1</span>=><span class='string'>\"foo\"</span></blockquote>)</span>"

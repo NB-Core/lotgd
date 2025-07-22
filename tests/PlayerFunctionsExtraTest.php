@@ -2,18 +2,12 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Lotgd\PlayerFunctions;
+namespace Lotgd\Tests;
+
 use Lotgd\DataCache;
+use Lotgd\PlayerFunctions;
 use Lotgd\Tests\Stubs\DummySettingsExtra;
-
-require_once __DIR__ . '/../config/constants.php';
-require_once __DIR__ . '/../lib/settings.php';
-require_once __DIR__ . '/../lib/tempstat.php';
-
-if (!defined('DATACACHE_FILENAME_PREFIX')) {
-    define('DATACACHE_FILENAME_PREFIX', 'datacache-');
-}
+use PHPUnit\Framework\TestCase;
 
 final class PlayerFunctionsExtraTest extends TestCase
 {

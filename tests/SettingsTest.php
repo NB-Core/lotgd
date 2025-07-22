@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Lotgd\Settings;
+namespace Lotgd\Tests;
 
-require_once __DIR__ . '/../config/constants.php';
+use Lotgd\Settings;
+use PHPUnit\Framework\TestCase;
 
 final class SettingsTest extends TestCase
 {

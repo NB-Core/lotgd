@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Lotgd\TwigTemplate;
+namespace Lotgd\Tests;
 
-require_once __DIR__ . '/../config/constants.php';
+use Lotgd\TwigTemplate;
+use PHPUnit\Framework\TestCase;
 
 final class TwigTemplateTest extends TestCase
 {
@@ -30,9 +30,9 @@ final class TwigTemplateTest extends TestCase
             return;
         }
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($iterator as $item) {

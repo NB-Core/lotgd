@@ -2,20 +2,14 @@
 
 declare(strict_types=1);
 
-namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\DataCache;
-    use Lotgd\Tests\Stubs\CacheDummySettings;
+namespace Lotgd\Tests;
 
-    require_once __DIR__ . '/../config/constants.php';
+use Lotgd\DataCache;
+use Lotgd\Tests\Stubs\CacheDummySettings;
+use PHPUnit\Framework\TestCase;
 
-    if (!defined('DATACACHE_FILENAME_PREFIX')) {
-        define('DATACACHE_FILENAME_PREFIX', 'datacache-');
-    }
-
-
-    final class DataCacheTest extends TestCase
-    {
+final class DataCacheTest extends TestCase
+{
         private string $cacheDir;
 
         protected function setUp(): void
@@ -74,4 +68,3 @@ namespace {
             $this->assertFileExists(DataCache::makecachetempname('other'));
         }
     }
-}

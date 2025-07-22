@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Lotgd\Http;
+namespace Lotgd\Tests;
 
-require_once __DIR__ . '/../config/constants.php';
+use Lotgd\Http;
+use PHPUnit\Framework\TestCase;
 
 final class HttpHelperTest extends TestCase
 {

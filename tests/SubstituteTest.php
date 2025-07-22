@@ -2,17 +2,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
+namespace Lotgd\Tests;
+
 use Lotgd\Substitute;
-
-require_once __DIR__ . '/../config/constants.php';
-
-if (!function_exists('translate_inline')) {
-    function translate_inline($text, $ns = false)
-    {
-        return $text;
-    }
-}
+use PHPUnit\Framework\TestCase;
 
 final class SubstituteTest extends TestCase
 {

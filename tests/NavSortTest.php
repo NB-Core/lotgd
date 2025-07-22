@@ -2,63 +2,14 @@
 
 declare(strict_types=1);
 
-namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\Nav;
-    use Lotgd\Output;
-    use Lotgd\Template;
+namespace Lotgd\Tests;
 
-    require_once __DIR__ . '/../config/constants.php';
-    if (!function_exists('modulehook')) {
-        function modulehook($name, $data = [], $allowinactive = false, $only = false)
-        {
-            return $data;
-        }
-    }
-    if (!function_exists('translate')) {
-        function translate($t, $ns = false)
-        {
-            return $t;
-        }
-    }
-    if (!function_exists('translate_inline')) {
-        function translate_inline($t, $ns = false)
-        {
-            return $t;
-        }
-    }
-    if (!function_exists('tlbutton_pop')) {
-        function tlbutton_pop()
-        {
-            return '';
-        }
-    }
-    if (!function_exists('tlschema')) {
-        function tlschema($schema = false)
-        {
-        }
-    }
-    if (!function_exists('popup')) {
-        function popup(string $page, string $size = '550x300')
-        {
-            return '';
-        }
-    }
-    if (!function_exists('appoencode')) {
-        function appoencode($data, $priv = false)
-        {
-            global $output;
-            return $output->appoencode($data, $priv);
-        }
-    }
-    if (!function_exists('sanitize')) {
-        function sanitize($in)
-        {
-            return $in;
-        }
-    }
+use Lotgd\Nav;
+use Lotgd\Output;
+use Lotgd\Template;
+use PHPUnit\Framework\TestCase;
 
-    final class NavSortTest extends TestCase
+final class NavSortTest extends TestCase
     {
         protected function setUp(): void
         {
@@ -181,4 +132,3 @@ namespace {
             $this->assertLessThan(strpos($navs, 'Y Item'), strpos($navs, 'B Item'));
         }
     }
-}

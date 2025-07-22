@@ -2,30 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Lotgd {
-    if (!function_exists('Lotgd\\getsetting')) {
-        function getsetting(string|int $name, mixed $default = ''): mixed
-        {
-            if (function_exists('\\getsetting')) {
-                return \getsetting($name, $default);
-            }
+namespace Lotgd\Tests;
 
-            return $default;
-        }
-    }
-}
+use Lotgd\DumpItem;
+use Lotgd\OutputArray;
+use Lotgd\Tests\Stubs\DumpDummySettings;
+use PHPUnit\Framework\TestCase;
 
-namespace {
-    use PHPUnit\Framework\TestCase;
-    use Lotgd\OutputArray;
-    use Lotgd\Tests\Stubs\DumpDummySettings;
-    use Lotgd\DumpItem;
-
-    require_once __DIR__ . '/../config/constants.php';
-    require_once __DIR__ . '/../lib/settings.php';
-
-
-    final class DumpOutputTest extends TestCase
+final class DumpOutputTest extends TestCase
     {
         protected function setUp(): void
         {
@@ -65,4 +49,3 @@ namespace {
             $this->assertSame($codeExpected, DumpItem::dumpAsCode($array));
         }
     }
-}
