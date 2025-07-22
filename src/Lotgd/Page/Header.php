@@ -4,6 +4,12 @@ declare(strict_types=1);
 namespace Lotgd\Page;
 
 use Lotgd\PageParts;
+use Lotgd\Translator;
+use Lotgd\Template;
+use Lotgd\TwigTemplate;
+use Lotgd\Sanitize;
+use Lotgd\HolidayText;
+use Lotgd\Buffs;
 
 class Header
 {
