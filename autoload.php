@@ -7,3 +7,4 @@ if (!file_exists($autoloadPath)) {
 $loader = require $autoloadPath;
 $loader->addPsr4('Lotgd\\', __DIR__ . '/src/Lotgd/');
 $loader->addPsr4('Lotgd\\Installer\\', __DIR__ . '/install/lib/');
+$loader->addPsr4('Lotgd\\Doctrine\\', __DIR__ . '/src/Lotgd/Doctrine/');

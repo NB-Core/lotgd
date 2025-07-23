@@ -3,7 +3,10 @@
         "jaxon-php/jaxon-core": "~4.0",
         "phpmailer/phpmailer": "^6.7",
         "twig/twig": "^3.0",
-        "wikimedia/composer-merge-plugin": "^2.0"
+        "wikimedia/composer-merge-plugin": "^2.0",
+        "doctrine/orm": "^2.17",
+        "doctrine/dbal": "^3.7",
+        "doctrine/migrations": "^3.6"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",
@@ -12,7 +15,8 @@
     "autoload": {
         "psr-4": {
             "Lotgd\\": "src/Lotgd/",
-            "Lotgd\\Installer\\": "install/lib/"
+            "Lotgd\\Installer\\": "install/lib/",
+            "Lotgd\\Doctrine\\": "src/Lotgd/Doctrine/"
         }
     },
     "autoload-dev": {
