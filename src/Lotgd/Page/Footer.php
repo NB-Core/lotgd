@@ -95,38 +95,28 @@ class Footer
 
 		$quickKeys = Nav::getQuickKeys();
 		$script = "<script type='text/javascript' charset='UTF-8'>\n";
-		$script .= "document.onkeypress = function(e) {\n";
-		$script .= "    var c, target, altKey, ctrlKey;\n";
-		$script .= "    if (window.event) {\n";
-		$script .= "        c = String.fromCharCode(window.event.keyCode).toUpperCase();\n";
-		$script .= "        altKey = window.event.altKey;\n";
-		$script .= "        ctrlKey = window.event.ctrlKey;\n";
-		$script .= "        target = window.event.srcElement;\n";
-		$script .= "    } else {\n";
-		$script .= "        c = String.fromCharCode(e.charCode).toUpperCase();\n";
-		$script .= "        altKey = e.altKey;\n";
-		$script .= "        ctrlKey = e.ctrlKey;\n";
-		$script .= "        target = e.originalTarget || e.target;\n";
-		$script .= "    }\n";
-		$script .= "    if (target.nodeName.toUpperCase() === 'INPUT' || target.nodeName.toUpperCase() === 'TEXTAREA' || altKey || ctrlKey) return;\n\n";
+		$script .= "document.addEventListener('keypress', event => {\n";
+		$script .= "    const char = String.fromCharCode(event.charCode || event.keyCode).toUpperCase();\n";
+		$script .= "    const target = event.target;\n";
+		$script .= "    const isInput = ['INPUT', 'TEXTAREA'].includes(target.nodeName);\n";
+		$script .= "    if (isInput || event.altKey || event.ctrlKey || event.metaKey) return;\n\n";
 
-		// Build JS object mapping keys to actions
-		$script .= "    var quickLinks = {\n";
+		// Create the key-action mapping
+		$script .= "    const quickLinks = {\n";
 		$entries = [];
 		foreach ($quickKeys as $key => $val) {
-			// $val is assumed to be a JS statement like `window.location = '...';`
 			$key = strtoupper((string)$key);
-			$entries[] = "        '{$key}': function() { {$val} }";
+			$entries[] = "        '{$key}': () => { {$val} }";
 		}
 		$script .= implode(",\n", $entries) . "\n";
 		$script .= "    };\n\n";
 
-		// Execution logic
-		$script .= "    if (quickLinks[c]) {\n";
-		$script .= "        quickLinks[c]();\n";
-		$script .= "        return false;\n";
+		// Execution block
+		$script .= "    if (quickLinks[char]) {\n";
+		$script .= "        quickLinks[char]();\n";
+		$script .= "        event.preventDefault();\n";
 		$script .= "    }\n";
-		$script .= "};\n";
+		$script .= "});\n";
 		$script .= "</script>\n";
 
 		$palreplace = (strpos($footer, '{paypal}') || strpos($header, '{paypal}')) ? '{paypal}' : '{stats}';
