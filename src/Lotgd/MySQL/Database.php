@@ -92,7 +92,12 @@ class Database
         }
         self::$dbinfo['queriesthishit']++;
         $starttime = DateTime::getMicroTime();
-        if ((self::$doctrine || class_exists(\Lotgd\Doctrine\Bootstrap::class)) ) {
+        static $bootstrapExists = null;
+        if ($bootstrapExists === null) {
+            $bootstrapExists = class_exists(\Lotgd\Doctrine\Bootstrap::class);
+        }
+
+        if (self::$doctrine || $bootstrapExists) {
             $conn = self::$doctrine ?? self::getDoctrineConnection();
             $trim = ltrim($sql);
             if (strncasecmp($trim, 'select', 6) === 0) {
@@ -173,9 +178,9 @@ class Database
      *
      * @param array|\mysqli_result $result
      *
-     * @return array|false|null
+     * @return array|null
      */
-    public static function fetchAssoc(array|\mysqli_result|DoctrineResult &$result): array|false|null
+    public static function fetchAssoc(array|\mysqli_result|DoctrineResult &$result): ?array
     {
         if (is_array($result)) {
             $val = current($result);
@@ -184,7 +189,7 @@ class Database
         }
         if ($result instanceof DoctrineResult) {
             $row = $result->fetchAssociative();
-            return $row !== false ? $row : null;
+            return $row === false ? null : $row;
         }
 
         return self::getInstance()->fetchAssoc($result);
@@ -277,7 +282,12 @@ class Database
     public static function escape(string $string): string
     {
         if (self::$doctrine) {
-            return trim(self::$doctrine->quote($string), "'");
+            $quoted = self::$doctrine->quote($string);
+            if (substr($quoted, 0, 1) === "'" && substr($quoted, -1) === "'") {
+                return substr($quoted, 1, -1);
+            }
+
+            return $quoted;
         }
 
         return self::getInstance()->escape($string);
