@@ -92,8 +92,8 @@ class Database
         }
         self::$dbinfo['queriesthishit']++;
         $starttime = DateTime::getMicroTime();
-        if (self::$doctrine) {
-            $conn = self::getDoctrineConnection();
+        if ((self::$doctrine || class_exists(\Lotgd\Doctrine\Bootstrap::class)) ) {
+            $conn = self::$doctrine ?? self::getDoctrineConnection();
             $trim = ltrim($sql);
             if (strncasecmp($trim, 'select', 6) === 0) {
                 $r = $conn->executeQuery($sql);
@@ -199,7 +199,7 @@ class Database
             return -1;
         }
         if (self::$doctrine) {
-            return self::getDoctrineConnection()->lastInsertId();
+            return self::$doctrine->lastInsertId();
         }
 
         return self::getInstance()->insertId();
@@ -236,10 +236,6 @@ class Database
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return 0;
         }
-        if (self::$doctrine) {
-            return 0; // Doctrine does not expose a generic global counter
-        }
-
         return self::getInstance()->affectedRows();
     }
 
@@ -281,7 +277,7 @@ class Database
     public static function escape(string $string): string
     {
         if (self::$doctrine) {
-            return self::getDoctrineConnection()->quote($string);
+            return trim(self::$doctrine->quote($string), "'");
         }
 
         return self::getInstance()->escape($string);
