@@ -29,7 +29,7 @@
             <img src="{{ template_path }}/assets/title-logo.png" alt="{{ title }}">
         </div>
         <div class="col-sm-4 pageheader-right text-end">
-            <img src="{{ template_path }}/assets/mail.png" width="24" height="19" alt="Mail">
+            <img src="{{ template_path }}/assets/mail.png" alt="Mail">
             <strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
             {{ petitiondisplay|raw }}
         </div>
@@ -37,10 +37,10 @@
     <div class="row d-lg-none mobile-toggles">
         <nav class="navbar navbar-dark bg-dark">
             <div class="container-fluid justify-content-end">
-                <button class="navbar-toggler me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#leftSidebar">
+                <button class="navbar-toggler me-2" type="button" aria-label="Navigation" data-bs-toggle="offcanvas" data-bs-target="#leftSidebar">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar">
+                <button class="navbar-toggler" type="button" aria-label="Char Stats" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
