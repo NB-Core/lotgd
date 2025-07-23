@@ -93,6 +93,9 @@ Want to have this running in no time?
 1. Clone the repository with `git clone https://github.com/NB-Core/lotgd.git`
 2. Start the containers using `docker-compose up -d`.
    The Docker build uses a Composer stage to install PHP dependencies automatically.
+3. Run `composer install` to fetch Doctrine packages.
+4. Instantiate the entity manager with `Lotgd\Doctrine\Bootstrap::getEntityManager()`
+   or include `config/doctrine.php` when using Doctrine CLI tools.
 
 ## Twig Templates
 
