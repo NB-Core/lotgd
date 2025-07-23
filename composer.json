@@ -15,8 +15,7 @@
     "autoload": {
         "psr-4": {
             "Lotgd\\": "src/Lotgd/",
-            "Lotgd\\Installer\\": "install/lib/",
-            "Lotgd\\Doctrine\\": "src/Lotgd/Doctrine/"
+            "Lotgd\\Installer\\": "install/lib/"
         }
     },
     "autoload-dev": {

@@ -15,9 +15,9 @@ class Bootstrap
     public static function getEntityManager(): EntityManager
     {
         $rootDir = dirname(__DIR__, 2);
-        $dbConfig = $rootDir . '/dbconnect.php';
-        if (file_exists($dbConfig)) {
-            include $dbConfig;
+        $dbConfig = realpath($rootDir . '/dbconnect.php');
+        if ($dbConfig && strpos($dbConfig, $rootDir) === 0) {
+            include_once $dbConfig;
         } else {
             throw new \RuntimeException('dbconnect.php not found');
         }
