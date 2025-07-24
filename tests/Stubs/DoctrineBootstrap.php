@@ -68,6 +68,7 @@ class DoctrineConnection
 class DoctrineEntityManager
 {
     public DoctrineConnection $connection;
+    public ?object $entity = null;
 
     public function __construct(DoctrineConnection $connection)
     {
@@ -77,6 +78,39 @@ class DoctrineEntityManager
     public function getConnection(): DoctrineConnection
     {
         return $this->connection;
+    }
+
+    public function find(string $class, $id)
+    {
+        $this->entity = new class {
+            public array $data = [];
+            public function __call(string $name, array $args)
+            {
+                if (str_starts_with($name, 'set')) {
+                    $field = lcfirst(substr($name, 3));
+                    $this->data[$field] = $args[0] ?? null;
+                    return $this;
+                }
+                if (str_starts_with($name, 'get')) {
+                    $field = lcfirst(substr($name, 3));
+                    return $this->data[$field] ?? null;
+                }
+                return null;
+            }
+        };
+        $this->entity->setAcctid($id);
+        return $this->entity;
+    }
+
+    public function flush(): void
+    {
+        // Simulate persisting the entity's state to a mock storage
+        if ($this->entity) {
+            $this->connection->queries[] = sprintf(
+                'PERSIST ENTITY: %s',
+                json_encode($this->entity->data)
+            );
+        }
     }
 }
 
@@ -94,7 +128,13 @@ class DoctrineBootstrap
     }
 }
 
-class_alias(DoctrineBootstrap::class, 'Lotgd\\Doctrine\\Bootstrap');
-class_alias(DoctrineConnection::class, 'Doctrine\\DBAL\\Connection');
-class_alias(DoctrineResult::class, 'Doctrine\\DBAL\\Result');
+if (!class_exists('Lotgd\\Doctrine\\Bootstrap')) {
+    class_alias(DoctrineBootstrap::class, 'Lotgd\\Doctrine\\Bootstrap');
+}
+if (!class_exists('Doctrine\\DBAL\\Connection')) {
+    class_alias(DoctrineConnection::class, 'Doctrine\\DBAL\\Connection');
+}
+if (!class_exists('Doctrine\\DBAL\\Result')) {
+    class_alias(DoctrineResult::class, 'Doctrine\\DBAL\\Result');
+}
 

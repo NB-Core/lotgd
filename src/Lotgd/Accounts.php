@@ -10,9 +10,39 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
+use Lotgd\Doctrine\Bootstrap;
+use Lotgd\Entity\Account;
 
 class Accounts
 {
+    private static ?Account $accountEntity = null;
+
+    public static function setAccountEntity(?Account $account): void
+    {
+        self::$accountEntity = $account;
+    }
+
+    public static function getAccountEntity(): ?Account
+    {
+        return self::$accountEntity;
+    }
+
+    private static function entityToArray(Account $account): array
+    {
+        $ref  = new \ReflectionClass($account);
+        $data = [];
+
+        foreach ($ref->getProperties() as $prop) {
+            $prop->setAccessible(true);
+            $value = $prop->getValue($account);
+            if ($value instanceof \DateTimeInterface) {
+                $value = $value->format('Y-m-d H:i:s');
+            }
+            $data[$prop->getName()] = $value;
+        }
+
+        return $data;
+    }
     /**
      * Persist the current user session to the database.
      *
@@ -35,17 +65,41 @@ class Accounts
             // legacy support, allows boolean values for alive
             $session['user']['alive']       = (int) $session['user']['alive'];
 
-            $sql = '';
-            foreach ($session['user'] as $key => $val) {
-                if (is_array($val)) {
-                    $val = serialize($val);
+            static $bootstrapExists = null;
+            if ($bootstrapExists === null) {
+                $bootstrapExists = class_exists(Bootstrap::class);
+            }
+
+            if ($bootstrapExists) {
+                $em = Bootstrap::getEntityManager();
+                if (self::$accountEntity && self::$accountEntity->getId() === $session['user']['acctid']) {
+                    $account = self::$accountEntity;
+                } else {
+                    $account = $em->find(Account::class, $session['user']['acctid']);
+                    self::$accountEntity = $account;
                 }
-                // Only update columns which changed
-                if ($baseaccount[$key] != $val) {
+
+                if ($account) {
+                    foreach ($session['user'] as $key => $val) {
+                        if (is_array($val)) {
+                            $val = serialize($val);
+                        }
+                        if ($baseaccount[$key] != $val) {
+                            $method = 'set' . ucfirst($key);
+                            if (method_exists($account, $method)) {
+                                $account->$method($val);
+                            }
+                        }
+                    }
+                    $account->setLaston(new \DateTime());
+                    $em->flush();
+                }
+            } else {
+                $sql = '';
+                foreach ($session['user'] as $key => $val) {
                     if (is_array($val)) {
                         $val = serialize($val);
                     }
-                    // Only update columns which changed
                     if ($baseaccount[$key] != $val) {
                         if (is_string($val)) {
                             $escapedVal = addslashes($val);
@@ -55,13 +109,13 @@ class Accounts
                         $sql .= "$key='" . $escapedVal . "', ";
                     }
                 }
+                // Always update laston due to output moving to separate table
+                $sql .= "laston='" . date('Y-m-d H:i:s') . "', ";
+                $sql  = substr($sql, 0, strlen($sql) - 2);
+                $sql  = 'UPDATE ' . Database::prefix('accounts') . ' SET ' . $sql .
+                    ' WHERE acctid = ' . $session['user']['acctid'];
+                Database::query($sql);
             }
-            // Always update laston due to output moving to separate table
-            $sql .= "laston='" . date('Y-m-d H:i:s') . "', ";
-            $sql  = substr($sql, 0, strlen($sql) - 2);
-            $sql  = 'UPDATE ' . Database::prefix('accounts') . ' SET ' . $sql .
-                ' WHERE acctid = ' . $session['user']['acctid'];
-            Database::query($sql);
             if (isset($session['output']) && $session['output']) {
                 $sql_output = 'UPDATE ' . Database::prefix('accounts_output') .
                     " SET output='" . addslashes(gzcompress($session['output'], 1)) . "' WHERE acctid={$session['user']['acctid']};";
