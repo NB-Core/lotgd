@@ -21,6 +21,17 @@ class Database
         return $name;
     }
 
+    /**
+     * Executes a database query and returns the result.
+     *
+     * @param string $sql The SQL query to execute.
+     * @param bool   $die Whether to terminate execution on error (default: true).
+     *
+     * @return array|null Returns an array of results for SELECT queries.
+     *                    Returns null if no results are found or for non-SELECT queries.
+     *                    Returns a boolean (true/false) for certain operations (e.g., success/failure).
+     *                    Returns a string in specific cases (e.g., error messages or debug information).
+     */
     public static function query(string $sql, bool $die = true): array|bool|string|null
     {
         global $accounts_table, $mail_table, $last_query_result;
