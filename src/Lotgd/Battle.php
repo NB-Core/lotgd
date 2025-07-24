@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
@@ -439,11 +440,11 @@ class Battle
                 $session['user']['prefs']['forestcreaturebar'] = $barDisplay;
             }
             if ($u['alive']) {
-                $hitpointstext = translate_inline("Hitpoints");
-                $healthtext = appoencode(translate_inline("`^Health"));
+                $hitpointstext = Translator::translateInline("Hitpoints");
+                $healthtext = appoencode(Translator::translateInline("`^Health"));
             } else {
-                $hitpointstext = translate_inline("Soulpoints");
-                $healthtext = appoencode(translate_inline("`)Soul"));
+                $hitpointstext = Translator::translateInline("Soulpoints");
+                $healthtext = appoencode(Translator::translateInline("`)Soul"));
             }
             switch ($barDisplay) {
                 case 2:
@@ -460,7 +461,7 @@ class Battle
                     rawoutput("</td><td>");
                     rawoutput($fightbar->getBar((int)$badguy['creaturehealth'], (int)$badguy['creaturemaxhealth']));
                     rawoutput("</td><td>");
-                    output_notl("(%s/%s) %s`0`n", $health, $maxhealth, $badguy['creaturehealth'] > 0 ? "" : translate_inline("`7DEFEATED`0"), true);
+                    output_notl("(%s/%s) %s`0`n", $health, $maxhealth, $badguy['creaturehealth'] > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
                     rawoutput("</td></tr></table>");
                     break;
 
@@ -478,7 +479,7 @@ class Battle
                     rawoutput("</td><td>");
                     rawoutput($fightbar->getBar((int)$badguy['creaturehealth'], (int)$badguy['creaturemaxhealth']));
                     rawoutput("</td><td>");
-                    output_notl("%s`0`n", $badguy['creaturehealth'] > 0 ? "" : translate_inline("`7DEFEATED`0"), true);
+                    output_notl("%s`0`n", $badguy['creaturehealth'] > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
                     rawoutput("</td></tr></table>");
                     // no break
 
@@ -492,7 +493,7 @@ class Battle
                         $hitpointstext,
                         $ccode,
                         $badguy['creaturelevel'],
-                        ($badguy['creaturehealth'] > 0 ? $health : translate_inline("`7DEFEATED`0"))
+                        ($badguy['creaturehealth'] > 0 ? $health : Translator::translateInline("`7DEFEATED`0"))
                     );
             }
         }
@@ -524,9 +525,9 @@ class Battle
                 }
                 rawoutput("</td><td>");
                 if (!$dead) {
-                    output_notl("(%s/%s) %s`0`n", $hitpoints, $maxhitpoints, $hitpoints > 0 ? "" : translate_inline("`7DEFEATED`0"), true);
+                    output_notl("(%s/%s) %s`0`n", $hitpoints, $maxhitpoints, $hitpoints > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
                 } else {
-                    output_notl("(%s/%s) %s`0`n", $hitpoints, $maxsoul, $hitpoints > 0 ? "" : translate_inline("`7DEFEATED`0"), true);
+                    output_notl("(%s/%s) %s`0`n", $hitpoints, $maxsoul, $hitpoints > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
                 }
 
                 rawoutput("</td></tr></table>");

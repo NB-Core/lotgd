@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
@@ -302,12 +303,12 @@ class Pvp
         $pvp = modulehook('pvpmodifytargets', $pvp);
 
         tlschema('pvp');
-        $n = translate_inline('Name');
-        $l = translate_inline('Level');
-        $loc = translate_inline('Location');
-        $ops = translate_inline('Ops');
-        $bio = translate_inline('Bio');
-        $att = translate_inline('Attack');
+        $n = Translator::translateInline('Name');
+        $l = Translator::translateInline('Level');
+        $loc = Translator::translateInline('Location');
+        $ops = Translator::translateInline('Ops');
+        $bio = Translator::translateInline('Bio');
+        $att = Translator::translateInline('Attack');
 
         rawoutput("<table border='0' cellpadding='3' cellspacing='0'>");
         rawoutput("<tr class='trhead'><td>$n</td><td>$l</td><td>$loc</td><td>$ops</td></tr>");
@@ -369,7 +370,7 @@ class Pvp
         $result = Database::query($sql);
 
         if ($j == 0) {
-            $noone = translate_inline('`iThere are no available targets.`i');
+            $noone = Translator::translateInline('`iThere are no available targets.`i');
             output_notl("<tr><td align='center' colspan='4'>$noone</td></tr>", true);
         }
         rawoutput('</table>', true);

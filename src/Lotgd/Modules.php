@@ -963,7 +963,7 @@ class Modules
                 $moduleinfo = $fname();
                 Translator::tlschema();
                 if (!isset($moduleinfo['name']) || !isset($moduleinfo['category']) || !isset($moduleinfo['author']) || !isset($moduleinfo['version'])) {
-                    $ns = translate_inline('Not specified', 'common');
+                    $ns = Translator::translateInline('Not specified', 'common');
                 }
                 if (!isset($moduleinfo['name'])) {
                     $moduleinfo['name'] = "$ns ($shortname)";
@@ -985,7 +985,7 @@ class Modules
                 }
             }
             if (!is_array($moduleinfo) || count($moduleinfo) < 2) {
-                $mf         = translate_inline('Missing function', 'common');
+                $mf         = Translator::translateInline('Missing function', 'common');
                 $moduleinfo = [
                     'name'        => "$mf ({$shortname}_getmoduleinfo)",
                     'version'     => '0.0',
@@ -1280,9 +1280,9 @@ class Modules
 
         tlschema('events');
         output("`n`nSpecial event triggers:`n");
-        $name    = translate_inline('Name');
-        $rchance = translate_inline('Raw Chance');
-        $nchance = translate_inline('Normalized Chance');
+        $name    = Translator::translateInline('Name');
+        $rchance = Translator::translateInline('Raw Chance');
+        $nchance = Translator::translateInline('Normalized Chance');
         rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
         rawoutput("<tr class='trhead'>");
         rawoutput("<td>$name</td><td>$rchance</td><td>$nchance</td><td>Filename</td><td>exists</td>");
@@ -1430,8 +1430,8 @@ class Modules
     {
         if ($thisuser === true) {
             global $session;
-            return translate_inline($session['user']['race'], 'race');
+            return Translator::translateInline($session['user']['race'], 'race');
         }
-        return translate_inline($thisuser, 'race');
+        return Translator::translateInline($thisuser, 'race');
     }
 }

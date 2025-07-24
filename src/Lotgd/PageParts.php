@@ -450,7 +450,7 @@ class PageParts
         $row['seencount'] = (int)$row['seencount'];
         $row['notseen'] = (int)$row['notseen'];
         if ($row['notseen'] > 0) {
-            return sprintf(translate_inline("%s new mail(s)", "common"), $row['notseen']);
+            return sprintf(Translator::translateInline("%s new mail(s)", "common"), $row['notseen']);
         } else {
             return '';
         }

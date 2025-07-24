@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 use Lotgd\DumpItem;
 
@@ -14,9 +15,9 @@ class Forms
     public static function previewField(string $name, string|bool $startdiv = false, string $talkline = "says", bool $showcharsleft = true, array|bool $info = false, bool $scriptOutput = true): string
     {
         global $schema, $session, $output;
-        $talkline = translate_inline($talkline, $schema);
-        $youhave = translate_inline("You have ");
-        $charsleft = translate_inline(" characters left.");
+        $talkline = Translator::translateInline($talkline, $schema);
+        $youhave = Translator::translateInline("You have ");
+        $charsleft = Translator::translateInline(" characters left.");
         $script = '';
         if ($startdiv === false) {
             $startdiv = "";
@@ -81,7 +82,7 @@ class Forms
                 $script .= ">";
             }
         }
-        $add = translate_inline("Add");
+        $add = Translator::translateInline("Add");
         $returnscript = $script . "<div id='previewtext$name'></div>";
         $script .= "<input type='submit' class='button' value='$add'><br>";
         $script .= "<div id='previewtext$name'></div>";
@@ -142,7 +143,7 @@ class Forms
 
         rawoutput("</td></tr></table>");
         tlschema('showform');
-        $save = translate_inline('Save');
+        $save = Translator::translateInline('Save');
         tlschema();
         if (!$nosave) {
             rawoutput("<input type='submit' class='button' value='$save'>");
@@ -325,7 +326,7 @@ class Forms
                 while ($optval = array_shift($inf_list)) {
                     $optdis = array_shift($inf_list);
                     if (!$pretrans) {
-                        $optdis = translate_inline($optdis);
+                        $optdis = Translator::translateInline($optdis);
                     }
                     if (is_array($row[$key])) {
                         $checked = $row[$key][$optval] ? true : false;
@@ -349,7 +350,7 @@ class Forms
                 while ($optval = array_shift($inf_list)) {
                     $optdis = array_shift($inf_list);
                     if (!$pretrans) {
-                        $optdis = translate_inline($optdis);
+                        $optdis = Translator::translateInline($optdis);
                     }
                     $select .= "<input type='radio' name='$keyout' value='$optval'" . ($row[$key] == $optval ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
                 }
@@ -423,7 +424,7 @@ class Forms
                         " value='1'> ");
                     $v = array_shift($inf_list);
                     if (!$pretrans) {
-                        $v = translate_inline($v);
+                        $v = Translator::translateInline($v);
                     }
                     output_notl('%s`n', $v, true);
                 }
@@ -470,7 +471,7 @@ class Forms
                         continue;
                     }
                     if (!$pretrans) {
-                        $optdis = translate_inline($optdis);
+                        $optdis = Translator::translateInline($optdis);
                     }
                     $selected = isset($row[$key]) && $row[$key] == $optval ? 1 : 0;
                     $select .= "<option value='$optval'" . ($selected ? ' selected' : '') . '>' . HTMLEntities("$optdis", ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>';
@@ -487,8 +488,8 @@ class Forms
 
             case 'bool':
                 tlschema('showform');
-                $yes = translate_inline('Yes');
-                $no = translate_inline('No');
+                $yes = Translator::translateInline('Yes');
+                $no = Translator::translateInline('No');
                 $boolval = isset($row[$key]) ? $row[$key] : 0;
                 tlschema();
                 rawoutput("<select name='$keyout'>");

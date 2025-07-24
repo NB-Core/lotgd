@@ -202,7 +202,9 @@ class Translator
     public static function translateInline(string|array $in, string|false|null $namespace = false): string|array
     {
         $out = self::translate($in, $namespace);
-            rawoutput(self::tlbuttonClear());
+        if (function_exists('rawoutput')) {
+            \rawoutput(self::tlbuttonClear());
+        }
         return $out;
     }
 
