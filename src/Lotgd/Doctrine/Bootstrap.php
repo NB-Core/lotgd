@@ -7,6 +7,7 @@ namespace Lotgd\Doctrine;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class Bootstrap
 {
@@ -37,11 +38,19 @@ class Bootstrap
         $paths = [$rootDir . '/src/Lotgd/Entity'];
 
         $cacheDir = ($DB_DATACACHEPATH ?? sys_get_temp_dir()) . '/doctrine';
+
+        if (class_exists(FilesystemAdapter::class)) {
+            $cache = new FilesystemAdapter('', 0, $cacheDir);
+        } else {
+            // Fallback to an in-memory cache when Symfony cache is missing.
+            $cache = new ArrayAdapter();
+        }
+
         $config = ORMSetup::createAnnotationMetadataConfiguration(
             $paths,
             true,
             null,
-            new FilesystemAdapter('', 0, $cacheDir)
+            $cache
         );
 
         return EntityManager::create($connection, $config);
