@@ -576,7 +576,7 @@ class Forms
                 if (array_key_exists($info[1], $extensions)) {
                     $func = $extensions[$info[1]];
                     $val = array_key_exists($key, $row) ? $row[$key] : '';
-                    call_user_func($func, $keyout, $val, $info);
+                    $func($keyout, $val, $info);
                 } else {
                     $val = array_key_exists($key, $row) ? $row[$key] : '';
                     rawoutput("<input size='50' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">");
