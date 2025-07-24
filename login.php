@@ -42,10 +42,32 @@ if ($name != "") {
         } else {
             $password = md5(md5($password));
         }
-        $sql = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
-        $result = db_query($sql);
-        if (db_num_rows($result) == 1) {
-            $session['user'] = db_fetch_assoc($result);
+        static $bootstrapExists = null;
+        if ($bootstrapExists === null) {
+            $bootstrapExists = class_exists('Lotgd\\Doctrine\\Bootstrap');
+        }
+
+        $acctrow = null;
+        if ($bootstrapExists) {
+            $em   = \Lotgd\Doctrine\Bootstrap::getEntityManager();
+            $sql  = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0"; 
+            $result = $em->getConnection()->executeQuery($sql);
+            $acctrow = $result->fetchAssociative();
+            if ($acctrow) {
+                \Lotgd\Accounts::setAccountEntity($em->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
+            }
+        }
+
+        if (!$acctrow) {
+            $sql    = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0"; 
+            $result = db_query($sql);
+            if (db_num_rows($result) == 1) {
+                $acctrow = db_fetch_assoc($result);
+            }
+        }
+
+        if ($acctrow) {
+            $session['user'] = $acctrow;
             $baseaccount = $session['user'];
             CheckBan::check($session['user']['login']); //check if this account is banned
             CheckBan::check(); //check if this computer is banned
