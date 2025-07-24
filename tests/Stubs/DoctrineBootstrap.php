@@ -104,7 +104,13 @@ class DoctrineEntityManager
 
     public function flush(): void
     {
-        $this->connection->executeQuery('FLUSH');
+        // Simulate persisting the entity's state to a mock storage
+        if ($this->entity) {
+            $this->connection->queries[] = sprintf(
+                'PERSIST ENTITY: %s',
+                json_encode($this->entity->data)
+            );
+        }
     }
 }
 
