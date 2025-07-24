@@ -17,6 +17,13 @@ use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\Redirect;
 use Lotgd\Settings;
+use Lotgd\Doctrine\Bootstrap;
+use Doctrine\Migrations\DependencyFactory;
+use Doctrine\Migrations\Configuration\Migration\ConfigurationArray;
+use Doctrine\Migrations\Configuration\EntityManager\ExistingEntityManager;
+use Doctrine\Migrations\Version\Version;
+use Doctrine\Migrations\Version\ExecutionResult;
+use Symfony\Component\Console\Input\ArrayInput;
 
 class Installer
 {
@@ -1241,72 +1248,15 @@ class Installer
     public function stage9(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX, $settings;
-        require_once(__DIR__ . "/../data/installer_sqlstatements.php");
-        $this->output->output("`@`c`bBuilding the Tables`b`c");
-        $this->output->output("`2I'm now going to build the tables.");
-        $this->output->output("If this is an upgrade, your current tables will be brought in line with the current version.");
-        $this->output->output("If it's an install, the necessary tables will be placed in your database.`n");
-        $this->output->output("`n`@Table Synchronization Logs:`n");
-        $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-        if (empty($DB_PREFIX)) {
-            $DB_PREFIX = $session['dbinfo']['DB_PREFIX'] ?? '';
+        $this->output->output("`@`c`bRunning Database Migrations`b`c");
+        $this->output->output("`2The installer now uses Doctrine migrations to set up the database schema.`n");
+        try {
+            $this->runMigrations();
+            $this->output->output("`@Migrations executed successfully.`n");
+        } catch (\Throwable $e) {
+            $this->output->output("`\$Migration error:`n" . $e->getMessage());
+            return;
         }
-        $descriptors = $this->descriptors($DB_PREFIX);
-        require_once("lib/tabledescriptor.php");
-        foreach ($descriptors as $tablename => $descriptor) {
-            $this->output->output("`3Synchronizing table `#$tablename`3..`n");
-            synctable($tablename, $descriptor, true);
-            if ($session['dbinfo']['upgrade'] == false) {
-                //on a clean install, destroy all old data.
-                Database::query("TRUNCATE TABLE $tablename");
-            }
-        }
-        $this->output->rawOutput("</div>");
-        $this->output->output("`n`2The tables now have new fields and columns added, I'm going to begin importing data now.`n");
-        $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-        $dosql = false;
-        reset($sql_upgrade_statements);
-        foreach ($sql_upgrade_statements as $key => $val) {
-            if ($dosql) {
-                $this->output->output("`3Version `#%s`3: %s SQL statements...`n", $key, count($val));
-                if (count($val) > 0) {
-                    $this->output->output("`^Doing: `6");
-                    reset($val);
-                    $count = 0;
-                    foreach ($val as $id => $sql) {
-                        $onlyupgrade = 0;
-                        if (substr($sql, 0, 2) == "1|") {
-                            $sql = substr($sql, 2);
-                            $onlyupgrade = 1;
-                        }
-                        // Skip any statements that should only be run during
-                        // upgrades from previous versions.
-                        if (!$session['dbinfo']['upgrade'] && $onlyupgrade) {
-                            continue;
-                        }
-                        $count++;
-                        if ($count % 10 == 0 && $count != count($val)) {
-                            $this->output->outputNotl("`6$count...");
-                        }
-                        if (!Database::query($sql)) {
-                            $this->output->output(
-                                "`n`\$Error: `^'%s'`7 executing `#'%s'`7.`n",
-                                Database::error(),
-                                $sql
-                            );
-                        }
-                    }
-                    $this->output->output("$count.`n");
-                }
-            }
-            if (
-                $key == $session['fromversion'] ||
-                    $session['dbinfo']['upgrade'] == false
-            ) {
-                $dosql = true;
-            }
-        }
-        $this->output->rawOutput("</div>");
         /*
            $this->output->output("`n`2Now I'll install the recommended modules.");
            $this->output->output("Please note that these modules will be installed, but not activated.");
@@ -1369,13 +1319,6 @@ class Installer
             }
             $this->output->rawOutput("</div>");
         }
-        $this->output->output("`n`2Finally, I'll clean up old data.`n");
-        $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-        foreach ($descriptors as $tablename => $descriptor) {
-            $this->output->output("`3Cleaning up `#$tablename`3...`n");
-            synctable($tablename, $descriptor);
-        }
-        $this->output->rawOutput("</div>");
         $this->output->output("`n`n`^You're ready for the next step.");
     }
 
@@ -1496,6 +1439,57 @@ class Installer
             $settings = new Settings('settings');
         }
         $settings->saveSetting($name, $value);
+    }
+
+    /**
+     * Execute Doctrine migrations defined in the configured migrations directory.
+     */
+    private function runMigrations(): void
+    {
+        global $session;
+        $config = require dirname(__DIR__, 2) . '/config/doctrine.php';
+
+        $em = Bootstrap::getEntityManager();
+
+        $dependencyFactory = DependencyFactory::fromEntityManager(
+            new ConfigurationArray(['migrations_paths' => $config['migrations_paths']]),
+            new ExistingEntityManager($em)
+        );
+
+        $storage = $dependencyFactory->getMetadataStorage();
+        $storage->ensureInitialized();
+
+        $executed = $storage->getExecutedMigrations();
+        $map = [
+            '0.9' => '20250724000000',
+            '0.9.1' => '20250724000001',
+            '0.9.7' => '20250724000002',
+            '0.9.8-prerelease.1' => '20250724000003',
+            '0.9.8-prerelease.6' => '20250724000004',
+            '0.9.8-prerelease.11' => '20250724000005',
+            '0.9.8-prerelease.12' => '20250724000006',
+            '0.9.8-prerelease.14a' => '20250724000007',
+            '1.1.0 Dragonprime Edition' => '20250724000008',
+            '1.1.1 Dragonprime Edition' => '20250724000009',
+            '1.1.1.0 Dragonprime Edition +nb' => '20250724000010',
+            '1.1.1.1 Dragonprime Edition +nb' => '20250724000011',
+            '1.2.6 +nb Edition' => '20250724000012',
+        ];
+
+        $from = $session['fromversion'] ?? '-1';
+        foreach ($map as $ver => $id) {
+            if ($from === '-1' || version_compare($from, $ver, '>=')) {
+                $v = new Version($id);
+                if (! $executed->hasMigration($v)) {
+                    $storage->complete(new ExecutionResult($v));
+                }
+            }
+        }
+
+        $plan = $dependencyFactory->getMigrationPlanCalculator()->getPlanUntilLatest();
+        $factory = $dependencyFactory->getConsoleInputMigratorConfigurationFactory();
+        $migratorConfig = $factory->getMigratorConfiguration(new ArrayInput([]));
+        $dependencyFactory->getMigrator()->migrate($plan, $migratorConfig);
     }
 
     /**

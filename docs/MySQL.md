@@ -73,4 +73,18 @@ SQL errors throw exceptions with detailed messages from `DbMysqli`. In debug mod
 
 Modules may ship schema descriptions for their tables. `TableDescriptor::schematize()` converts descriptor arrays into CREATE or ALTER statements during `install.php`.
 
+## Database Migrations
+
+The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory defined in `config/doctrine.php`.
+
+### Running Migrations
+
+Execute pending migrations with the Doctrine command line tool:
+
+```bash
+vendor/bin/doctrine-migrations migrations:migrate
+```
+
+This will apply all new migrations to the configured database. During development you can generate additional migrations using `migrations:diff` or `migrations:generate`.
+
 
