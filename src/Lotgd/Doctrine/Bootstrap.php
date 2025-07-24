@@ -6,6 +6,7 @@ namespace Lotgd\Doctrine;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Bootstrap
 {
@@ -33,8 +34,15 @@ class Bootstrap
             'charset' => 'utf8mb4',
         ];
 
-        $paths  = [$rootDir . '/src/Lotgd/Entity'];
-        $config = ORMSetup::createAnnotationMetadataConfiguration($paths, true);
+        $paths = [$rootDir . '/src/Lotgd/Entity'];
+
+        $cacheDir = ($DB_DATACACHEPATH ?? sys_get_temp_dir()) . '/doctrine';
+        $config = ORMSetup::createAnnotationMetadataConfiguration(
+            $paths,
+            true,
+            null,
+            new FilesystemAdapter('', 0, $cacheDir)
+        );
 
         return EntityManager::create($connection, $config);
     }
