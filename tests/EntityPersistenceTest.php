@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Lotgd\Tests;
+
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Tools\SchemaTool;
+use Doctrine\ORM\Tools\Setup;
+use Lotgd\Entity\Account;
+use Lotgd\Entity\Setting;
+use PHPUnit\Framework\TestCase;
+
+final class EntityPersistenceTest extends TestCase
+{
+    private EntityManager $em;
+
+    protected function setUp(): void
+    {
+        $config = Setup::createAnnotationMetadataConfiguration([
+            __DIR__ . '/../src/Lotgd/Entity',
+            __DIR__ . '/../../src/Lotgd/Entity'
+        ], true);
+        $this->em = EntityManager::create(['driver' => 'pdo_sqlite', 'memory' => true], $config);
+        $tool = new SchemaTool($this->em);
+        $tool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
+    }
+
+    public function testAccountPersistAndRetrieve(): void
+    {
+        $account = new Account();
+        $account->setLogin('tester')
+            ->setEmailaddress('tester@example.com')
+            ->setPassword('secret')
+            ->setName('Tester')
+            ->setLevel(2);
+        $account->setLaston(new \DateTime());
+        $this->em->persist($account);
+        $this->em->flush();
+        $this->em->clear();
+
+        $repo = $this->em->getRepository(Account::class);
+        $found = $repo->findByLogin('tester');
+        $this->assertNotNull($found);
+        $this->assertSame('tester@example.com', $found->getEmailaddress());
+    }
+
+    public function testSettingPersistAndRetrieve(): void
+    {
+        $setting = new Setting();
+        $setting->setSetting('foo')->setValue('bar');
+        $this->em->persist($setting);
+        $this->em->flush();
+        $this->em->clear();
+
+        $repo = $this->em->getRepository(Setting::class);
+        $found = $repo->find('foo');
+        $this->assertSame('bar', $found->getValue());
+    }
+}
