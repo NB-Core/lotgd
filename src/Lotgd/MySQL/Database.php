@@ -178,9 +178,9 @@ class Database
      *
      * @param array|\mysqli_result $result
      *
-     * @return array|null
+     * @return array|false|null
      */
-    public static function fetchAssoc(array|\mysqli_result|DoctrineResult &$result): ?array
+    public static function fetchAssoc(array|\mysqli_result|DoctrineResult &$result): array|false|null
     {
         if (is_array($result)) {
             $val = current($result);
@@ -188,8 +188,7 @@ class Database
             return $val;
         }
         if ($result instanceof DoctrineResult) {
-            $row = $result->fetchAssociative();
-            return $row === false ? null : $row;
+            return $result->fetchAssociative();
         }
 
         return self::getInstance()->fetchAssoc($result);
@@ -283,11 +282,8 @@ class Database
     {
         if (self::$doctrine) {
             $quoted = self::$doctrine->quote($string);
-            if (substr($quoted, 0, 1) === "'" && substr($quoted, -1) === "'") {
-                return substr($quoted, 1, -1);
-            }
-
-            return $quoted;
+            $unquoted = preg_replace('/^([\'"`])(.*)\1$/', '$2', $quoted);
+            return $unquoted !== null ? $unquoted : $quoted;
         }
 
         return self::getInstance()->escape($string);
