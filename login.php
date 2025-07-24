@@ -50,8 +50,8 @@ if ($name != "") {
         $acctrow = null;
         if ($bootstrapExists) {
             $em   = \Lotgd\Doctrine\Bootstrap::getEntityManager();
-            $sql  = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0"; 
-            $result = $em->getConnection()->executeQuery($sql);
+            $sqlQuery = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
+            $result = $em->getConnection()->executeQuery($sqlQuery);
             $acctrow = $result->fetchAssociative();
             if ($acctrow) {
                 \Lotgd\Accounts::setAccountEntity($em->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
