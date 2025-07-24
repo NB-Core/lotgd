@@ -97,6 +97,10 @@ Want to have this running in no time?
 4. Instantiate the entity manager with `Lotgd\Doctrine\Bootstrap::getEntityManager()`
    or include `config/doctrine.php` when using Doctrine CLI tools.
 
+Account changes are flushed through Doctrine's EntityManager when calling
+`Lotgd\Accounts::saveUser()`. The `$session['user']` array remains available for
+legacy code. Run `composer test` to verify the setup works as expected.
+
 ## Twig Templates
 
 Twig templates reside in the `templates_twig/` directory. Each template should
@@ -579,9 +583,9 @@ Additional information about the navigation helper API can be found in
 
 Found a bug or have a feature request? Open an issue on GitHub.
 Pull requests are welcome for improvements or fixes.
-Run the unit tests locally with `composer test` before submitting PRs.
-Check coding style with `composer lint` and apply automatic fixes using
-`composer lint:fix`.
+Run the unit tests with `composer test` and check modified PHP files using
+`php -l` before submitting PRs. Check coding style with `composer lint` and
+apply automatic fixes using `composer lint:fix`.
 
 ## License
 

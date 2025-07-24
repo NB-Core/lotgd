@@ -87,4 +87,11 @@ vendor/bin/doctrine-migrations migrations:migrate
 
 This will apply all new migrations to the configured database. During development you can generate additional migrations using `migrations:diff` or `migrations:generate`.
 
+## Session Persistence
+
+`Lotgd\Accounts::saveUser()` now persists account updates through Doctrine when the
+EntityManager is available.  The `$session['user']` array is still populated for
+legacy code, but changes are flushed to the database via Doctrine whenever
+possible.
+
 
