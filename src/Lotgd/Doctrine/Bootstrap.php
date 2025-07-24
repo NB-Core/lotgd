@@ -6,6 +6,7 @@ namespace Lotgd\Doctrine;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class Bootstrap
 {
@@ -34,7 +35,12 @@ class Bootstrap
         ];
 
         $paths  = [$rootDir . '/src/Lotgd/Entity'];
-        $config = ORMSetup::createAnnotationMetadataConfiguration($paths, true);
+        $config = ORMSetup::createAnnotationMetadataConfiguration(
+            $paths,
+            true,
+            null,
+            new ArrayAdapter()
+        );
 
         return EntityManager::create($connection, $config);
     }
