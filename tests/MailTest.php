@@ -17,6 +17,12 @@ final class MailTest extends TestCase
         $GLOBALS['accounts_table'] = [];
         $GLOBALS['mail_table'] = [];
         $GLOBALS['mail_sent_count'] = 0;
+        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        \Lotgd\MySQL\Database::$instance = null;
+        \Lotgd\MySQL\Database::$lastSql = '';
+        if (class_exists('Lotgd\\Tests\\Stubs\\DoctrineBootstrap', false)) {
+            \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
+        }
         $GLOBALS['settings_array'] = [
             'mailsizelimit' => 1024,
             'charset' => 'UTF-8',

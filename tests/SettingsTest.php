@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\Settings;
+use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
 final class SettingsTest extends TestCase
@@ -14,6 +15,11 @@ final class SettingsTest extends TestCase
         class_exists(Database::class);
         \Lotgd\MySQL\Database::$settings_table = [];
         \Lotgd\MySQL\Database::$affected_rows = 0;
+        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        \Lotgd\MySQL\Database::$instance = null;
+        if (class_exists('Lotgd\\Tests\\Stubs\\DoctrineBootstrap', false)) {
+            \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
+        }
     }
 
     public function testGetSettingReturnsDefault(): void

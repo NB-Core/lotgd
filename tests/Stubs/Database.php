@@ -21,12 +21,12 @@ class Database
         return $name;
     }
 
-    public static function query(string $sql, bool $die = true): array|bool|null
+    public static function query(string $sql, bool $die = true): array|bool|string|null
     {
         global $accounts_table, $mail_table, $last_query_result;
         self::$lastSql = $sql;
 
-        if (class_exists('Lotgd\\Doctrine\\Bootstrap')) {
+        if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && (self::$doctrineConnection || \Lotgd\Doctrine\Bootstrap::$conn)) {
             $conn = self::getDoctrineConnection();
             $conn->executeQuery($sql);
             $last_query_result = [['ok' => true]];
@@ -34,15 +34,26 @@ class Database
         }
 
         $mysqli = self::getInstance();
-        if ($mysqli) {
-            $last_query_result = $mysqli->query($sql);
-            return $last_query_result;
-        }
 
-        if (preg_match("/SELECT prefs,emailaddress FROM accounts WHERE acctid='?(\d+)'?;/", $sql, $m)) {
+        if (preg_match("/SELECT prefs,emailaddress FROM accounts WHERE acctid='?(\d+)'?/", $sql, $m)) {
             $acctid = (int) $m[1];
             $row = $accounts_table[$acctid] ?? ['prefs' => '', 'emailaddress' => ''];
             $last_query_result = [$row];
+            return $last_query_result;
+        }
+
+        if (strpos($sql, 'SELECT * FROM modules') === 0) {
+            $last_query_result = [];
+            return $last_query_result;
+        }
+
+        if (preg_match("/SELECT count\\(resultid\\) AS c, MAX\\(choice\\) AS choice FROM pollresults/", $sql)) {
+            $last_query_result = [['c' => 0, 'choice' => null]];
+            return $last_query_result;
+        }
+
+        if (preg_match("/SELECT count\\(resultid\\) AS c, choice FROM pollresults/", $sql)) {
+            $last_query_result = [];
             return $last_query_result;
         }
 
@@ -65,7 +76,7 @@ class Database
             return true;
         }
 
-        if (preg_match("/SELECT name FROM accounts WHERE acctid='?(\d+)'?;/", $sql, $m)) {
+        if (preg_match("/SELECT name FROM accounts WHERE acctid='?(\d+)'?/", $sql, $m)) {
             $acctid = (int) $m[1];
             $row = ['name' => $accounts_table[$acctid]['name'] ?? ''];
             $last_query_result = [$row];
@@ -128,6 +139,11 @@ class Database
             }
         }
 
+        if ($mysqli) {
+            $last_query_result = $mysqli->query($sql);
+            return $last_query_result;
+        }
+
         $last_query_result = [];
         return [];
     }
@@ -177,14 +193,14 @@ class Database
     public static function getDoctrineConnection()
     {
         if (!self::$doctrineConnection) {
-            self::$doctrineConnection = new class {
-                public array $queries = [];
-                public function executeQuery(string $sql)
-                {
-                    $this->queries[] = $sql;
-                    return true;
+            if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && property_exists('Lotgd\\Doctrine\\Bootstrap', 'conn') && \Lotgd\Doctrine\Bootstrap::$conn) {
+                self::$doctrineConnection = \Lotgd\Doctrine\Bootstrap::$conn;
+            } else {
+                self::$doctrineConnection = new DoctrineConnection();
+                if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && property_exists('Lotgd\\Doctrine\\Bootstrap', 'conn')) {
+                    \Lotgd\Doctrine\Bootstrap::$conn = self::$doctrineConnection;
                 }
-            };
+            }
         }
 
         return self::$doctrineConnection;
