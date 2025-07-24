@@ -34,8 +34,10 @@ class Database
         }
 
         $mysqli = self::getInstance();
-        $last_query_result = $mysqli->query($sql);
-        return $last_query_result;
+        if ($mysqli) {
+            $last_query_result = $mysqli->query($sql);
+            return $last_query_result;
+        }
 
         if (preg_match("/SELECT prefs,emailaddress FROM accounts WHERE acctid='?(\d+)'?;/", $sql, $m)) {
             $acctid = (int) $m[1];
