@@ -14,7 +14,9 @@ class Bootstrap
      */
     public static function getEntityManager(): EntityManager
     {
-        $rootDir = dirname(__DIR__, 2);
+        // The project root is three directories up from this file
+        // src/Lotgd/Doctrine/Bootstrap.php -> src/Lotgd -> src -> project root
+        $rootDir = dirname(__DIR__, 3);
         $dbConfig = realpath($rootDir . '/dbconnect.php');
         if ($dbConfig && strpos($dbConfig, $rootDir) === 0) {
             include_once $dbConfig;
