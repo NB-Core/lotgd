@@ -11,11 +11,16 @@ namespace Lotgd\MySQL;
 use Lotgd\Backtrace;
 use Lotgd\DataCache;
 use Lotgd\DateTime;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Result as DoctrineResult;
+use Lotgd\Doctrine\Bootstrap;
 
 class Database
 {
     /** @var DbMysqli|null */
     protected static ?DbMysqli $instance = null;
+    /** @var Connection|null */
+    protected static ?Connection $doctrine = null;
     /**
      * Runtime statistics collected during query execution.
      *
@@ -51,6 +56,19 @@ class Database
     }
 
     /**
+     * Get or create the Doctrine DBAL connection.
+     */
+    public static function getDoctrineConnection(): Connection
+    {
+        if (!self::$doctrine) {
+            $em = Bootstrap::getEntityManager();
+            self::$doctrine = $em->getConnection();
+        }
+
+        return self::$doctrine;
+    }
+
+    /**
      * Set the client character set.
      */
     public static function setCharset(string $charset): bool
@@ -74,7 +92,25 @@ class Database
         }
         self::$dbinfo['queriesthishit']++;
         $starttime = DateTime::getMicroTime();
-        $r = self::getInstance()->query($sql);
+        static $bootstrapExists = null;
+        if ($bootstrapExists === null) {
+            $bootstrapExists = class_exists(\Lotgd\Doctrine\Bootstrap::class);
+        }
+
+        if (self::$doctrine || $bootstrapExists) {
+            $conn = self::$doctrine ?? self::getDoctrineConnection();
+            $trim = ltrim($sql);
+            if (strncasecmp($trim, 'select', 6) === 0) {
+                $r = $conn->executeQuery($sql);
+                $affected = $r->rowCount();
+            } else {
+                $affected = $conn->executeStatement($sql);
+                $r = $affected;
+            }
+        } else {
+            $r = self::getInstance()->query($sql);
+            $affected = self::getInstance()->affectedRows();
+        }
 
         if (!$r && $die === true) {
             if (defined('IS_INSTALLER') && IS_INSTALLER) {
@@ -94,7 +130,7 @@ class Database
             debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '`n');
         }
         unset(self::$dbinfo['affected_rows']);
-        self::$dbinfo['affected_rows'] = self::affectedRows();
+        self::$dbinfo['affected_rows'] = $affected ?? self::affectedRows();
         if (!isset(self::$dbinfo['querytime'])) {
             self::$dbinfo['querytime'] = 0;
         }
@@ -144,13 +180,17 @@ class Database
      *
      * @return array|false|null
      */
-    public static function fetchAssoc(array|\mysqli_result &$result): array|false|null
+    public static function fetchAssoc(array|\mysqli_result|DoctrineResult &$result): array|false|null
     {
         if (is_array($result)) {
             $val = current($result);
             next($result);
             return $val;
         }
+        if ($result instanceof DoctrineResult) {
+            return $result->fetchAssociative();
+        }
+
         return self::getInstance()->fetchAssoc($result);
     }
 
@@ -162,6 +202,10 @@ class Database
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return -1;
         }
+        if (self::$doctrine) {
+            return self::$doctrine->lastInsertId();
+        }
+
         return self::getInstance()->insertId();
     }
 
@@ -178,6 +222,10 @@ class Database
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return 0;
         }
+        if ($result instanceof DoctrineResult) {
+            return $result->rowCount();
+        }
+
         return self::getInstance()->numRows($result);
     }
 
@@ -232,6 +280,12 @@ class Database
      */
     public static function escape(string $string): string
     {
+        if (self::$doctrine) {
+            $quoted = self::$doctrine->quote($string);
+            $unquoted = preg_replace('/^([\'"`])(.*)\1$/', '$2', $quoted);
+            return $unquoted !== null ? $unquoted : $quoted;
+        }
+
         return self::getInstance()->escape($string);
     }
 
@@ -240,7 +294,7 @@ class Database
      *
      * @param array|\mysqli_result $result
      */
-    public static function freeResult(array|\mysqli_result $result): bool
+    public static function freeResult(array|\mysqli_result|DoctrineResult $result): bool
     {
         if (is_array($result)) {
             return true;
@@ -248,6 +302,11 @@ class Database
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return false;
         }
+        if ($result instanceof DoctrineResult) {
+            $result->free();
+            return true;
+        }
+
         self::getInstance()->freeResult($result);
         return true;
     }
@@ -260,6 +319,11 @@ class Database
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return false;
         }
+        if (self::$doctrine) {
+            $sm = self::getDoctrineConnection()->createSchemaManager();
+            return $sm->tablesExist([$tablename]);
+        }
+
         return self::getInstance()->tableExists($tablename);
     }
 
