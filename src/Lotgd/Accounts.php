@@ -72,7 +72,7 @@ class Accounts
 
             if ($bootstrapExists) {
                 $em = Bootstrap::getEntityManager();
-                if (self::$accountEntity && self::$accountEntity->getId() === $session['user']['acctid']) {
+                if (self::$accountEntity && self::$accountEntity->getAcctid() === $session['user']['acctid']) {
                     $account = self::$accountEntity;
                 } else {
                     $account = $em->find(Account::class, $session['user']['acctid']);
