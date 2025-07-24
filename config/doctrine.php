@@ -9,4 +9,7 @@ return [
     'user' => $DB_USER ?? '',
     'password' => $DB_PASS ?? '',
     'charset' => 'utf8mb4',
+    'migrations_paths' => [
+        'Lotgd\Migrations' => dirname(__DIR__) . '/migrations',
+    ],
 ];

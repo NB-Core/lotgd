@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 class CharStats
 {
@@ -57,21 +58,21 @@ class CharStats
         $charstat_str = templatereplace('statstart');
         foreach ($this->stats as $label => $section) {
             if (count($section)) {
-                $arr = ['title' => translate_inline($label)];
+                $arr = ['title' => Translator::translateInline($label)];
                 $sectionhead = templatereplace('stathead', $arr);
                 foreach ($section as $name => $val) {
                     if ($name == $label) {
-                        $a2 = ['title' => translate_inline("`0$name"), 'value' => "`^$val`0"];
+                        $a2 = ['title' => Translator::translateInline("`0$name"), 'value' => "`^$val`0"];
                         $charstat_str .= templatereplace('statbuff', $a2);
                     } else {
-                        $a2 = ['title' => translate_inline("`&$name`0"), 'value' => "`^$val`0"];
+                        $a2 = ['title' => Translator::translateInline("`&$name`0"), 'value' => "`^$val`0"];
                         $charstat_str .= $sectionhead . templatereplace('statrow', $a2);
                         $sectionhead = '';
                     }
                 }
             }
         }
-        $charstat_str .= templatereplace('statbuff', ['title' => translate_inline('`0Buffs'), 'value' => $buffs]);
+        $charstat_str .= templatereplace('statbuff', ['title' => Translator::translateInline('`0Buffs'), 'value' => $buffs]);
         $charstat_str .= templatereplace('statend');
         return appoencode($charstat_str, true);
     }

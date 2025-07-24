@@ -13,6 +13,8 @@ class Database
     public static int $onlineCounter = 0;
     public static int $affected_rows = 0;
     public static string $lastSql = '';
+    public static ?object $doctrineConnection = null;
+    public static ?object $instance = null;
 
     public static function prefix(string $name, bool $force = false): string
     {
@@ -23,6 +25,19 @@ class Database
     {
         global $accounts_table, $mail_table, $last_query_result;
         self::$lastSql = $sql;
+
+        if (class_exists('Lotgd\\Doctrine\\Bootstrap')) {
+            $conn = self::getDoctrineConnection();
+            $conn->executeQuery($sql);
+            $last_query_result = [['ok' => true]];
+            return $last_query_result;
+        }
+
+        $mysqli = self::getInstance();
+        if ($mysqli) {
+            $last_query_result = $mysqli->query($sql);
+            return $last_query_result;
+        }
 
         if (preg_match("/SELECT prefs,emailaddress FROM accounts WHERE acctid='?(\d+)'?;/", $sql, $m)) {
             $acctid = (int) $m[1];
@@ -157,6 +172,31 @@ class Database
     public static function queryCached(string $sql, string $name, int $duration = 900): array
     {
         return [];
+    }
+
+    public static function getDoctrineConnection()
+    {
+        if (!self::$doctrineConnection) {
+            self::$doctrineConnection = new class {
+                public array $queries = [];
+                public function executeQuery(string $sql)
+                {
+                    $this->queries[] = $sql;
+                    return true;
+                }
+            };
+        }
+
+        return self::$doctrineConnection;
+    }
+
+    public static function getInstance()
+    {
+        if (!self::$instance) {
+            self::$instance = new DbMysqli();
+        }
+
+        return self::$instance;
     }
 }
 

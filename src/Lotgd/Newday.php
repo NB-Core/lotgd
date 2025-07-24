@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
@@ -245,7 +246,7 @@ class Newday
                 $head = explode(',', $label);
                 if (count($head) > 1) {
                     rawoutput("<tr><td colspan='2' nowrap>");
-                    output("`b`4%s`0`b`n", translate_inline($head[0]));
+                    output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
                     rawoutput("</td></tr>");
                     continue;
                 }
@@ -259,7 +260,7 @@ class Newday
                 }
             }
             rawoutput("<tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
-            $click = translate_inline('Spend');
+            $click = Translator::translateInline('Spend');
             rawoutput("<input id='dksub' type='submit' class='button' value='$click'>");
             rawoutput("</td></tr><tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
             rawoutput('<div id="amtLeft"></div>');
@@ -313,7 +314,7 @@ class Newday
                 }
                 if (count($head) > 1) {
                     rawoutput("<tr><td colspan='2' nowrap>");
-                    output("`b`4%s`0`b`n", translate_inline($head[0]));
+                    output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
                     rawoutput('</td></tr>');
                     continue;
                 }

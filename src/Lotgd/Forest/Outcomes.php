@@ -42,7 +42,7 @@ class Outcomes
             }
             $gold += $badguy['creaturegold'];
             if (isset($badguy['creaturelose'])) {
-                $msg = translate_inline($badguy['creaturelose'], 'battle');
+                $msg = Translator::translateInline($badguy['creaturelose'], 'battle');
                 output_notl("`b`&%s`0`b`n", $msg);
             }
             output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
@@ -118,7 +118,7 @@ class Outcomes
         if (!$diddamage) {
             output("`c`b`&~~ Flawless Fight! ~~`0`b`c");
             if ($denyflawless) {
-                output("`c`\$%s`0`c", translate_inline($denyflawless));
+                output("`c`\$%s`0`c", Translator::translateInline($denyflawless));
             } elseif ($session['user']['level'] <= $creaturelevel) {
                 output("`c`b`\$You receive an extra turn!`0`b`c`n");
                 $session['user']['turns']++;
@@ -153,7 +153,7 @@ class Outcomes
                 $killer = $badguy['creaturename'];
             }
             if (isset($badguy['creaturewin']) && $badguy['creaturewin'] > '') {
-                $msg = translate_inline($badguy['creaturewin'], 'battle');
+                $msg = Translator::translateInline($badguy['creaturewin'], 'battle');
                 output_notl("`b`&%s`0`b`n", $msg);
             }
         }
@@ -161,7 +161,7 @@ class Outcomes
             $lastname = array_pop($names);
         }
         $enemystring = join(', ', $names);
-        $and = translate_inline('and');
+        $and = Translator::translateInline('and');
         if (isset($lastname) && $lastname > '') {
             $enemystring = "$enemystring $and $lastname";
         }

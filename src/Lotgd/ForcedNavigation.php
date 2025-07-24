@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 use Lotgd\MySQL\Database;
 
@@ -49,7 +50,7 @@ class ForcedNavigation
                 }
             } else {
                 $session = [];
-                $session['message'] = translate_inline("`4Error, your login was incorrect`0", "login");
+                $session['message'] = Translator::translateInline("`4Error, your login was incorrect`0", "login");
                 redirect('index.php', 'Account Disappeared!');
             }
             Database::freeResult($result);

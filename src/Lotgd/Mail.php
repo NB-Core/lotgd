@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
@@ -59,7 +60,7 @@ class Mail
             if (Database::numRows($result) > 0 && $row1['name'] != '') {
                 $fromline = full_sanitize($row1['name']);
             } else {
-                $fromline = translate_inline('The Green Dragon', 'mail');
+                $fromline = Translator::translateInline('The Green Dragon', 'mail');
             }
             $sql = 'SELECT name FROM ' . Database::prefix('accounts') . " WHERE acctid=$to";
             $result = Database::query($sql);

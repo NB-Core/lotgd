@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Translator;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
@@ -62,7 +63,7 @@ class Motd
         output_notl('<h4>%s</h4>', $subject, true);
         modulehook('motd-item-intercept', ['id' => $id]);
         output_notl('<div>%s</div>', $body, true);
-        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'), $author, $date, true);
+        output_notl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
         self::motdAdminLinks($id, false);
         rawoutput('</div>');
         rawoutput('<hr>');
@@ -89,7 +90,7 @@ class Motd
         rawoutput('<div class="pollitem">');
         output_notl('<h4>%s</h4>', $subject, true);
         output_notl('<div>%s</div>', stripslashes((string)$bodyData['body']), true);
-        output_notl('<small>%s %s - %s</small>', translate_inline('Posted by'), $author, $date, true);
+        output_notl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
 
         $sql = 'SELECT count(resultid) AS c, choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' GROUP BY choice ORDER BY choice";
         $results = Database::queryCached($sql, "poll-$id");
@@ -129,12 +130,12 @@ class Motd
         }
 
         if ($session['user']['loggedin'] && $showpoll) {
-            $vote = translate_inline('Vote');
+            $vote = Translator::translateInline('Vote');
             rawoutput("<input type='submit' class='button' value='$vote'></form>");
         }
 
         if ($showpoll) {
-            rawoutput('<div>' . translate_inline('Poll ID') . ': ' . $id . '</div>');
+            rawoutput('<div>' . Translator::translateInline('Poll ID') . ': ' . $id . '</div>');
         }
         self::motdAdminLinks($id, true);
         rawoutput('</div>');
@@ -189,7 +190,7 @@ class Motd
         rawoutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\"><br/>");
         output('Body:`n');
         rawoutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</textarea><br/>");
-        $option = translate_inline('Option');
+        $option = Translator::translateInline('Option');
         output('Choices:`n');
         $pollitem = "$option <input name='opt[]'><br/>";
         for ($i = 0; $i < 5; $i++) {
@@ -197,8 +198,8 @@ class Motd
         }
         rawoutput("<div id='hidepolls'></div>");
         rawoutput("<script language='JavaScript'>document.getElementById('hidepolls').innerHTML = '';</script>", true);
-        $addi = translate_inline('Add Poll Item');
-        $add = translate_inline('Add');
+        $addi = Translator::translateInline('Add Poll Item');
+        $add = Translator::translateInline('Add');
         rawoutput("<a href=\"#\" onClick=\"javascript:document.getElementById('hidepolls').innerHTML += '" . addslashes($pollitem) . "'; return false;\">$addi</a><br>");
         rawoutput("<input type='submit' class='button' value='$add'></form>");
     }
@@ -279,9 +280,9 @@ class Motd
     {
         global $session;
         if ($session['user']['superuser'] & SU_POST_MOTD) {
-            $edit = translate_inline('Edit');
-            $del = translate_inline('Del');
-            $conf = translate_inline('Are you sure you wish to delete this entry?');
+            $edit = Translator::translateInline('Edit');
+            $del = Translator::translateInline('Del');
+            $conf = Translator::translateInline('Are you sure you wish to delete this entry?');
             $editop = $poll ? 'addpoll' : 'add';
             rawoutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | <a href='motd.php?op=del&id=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
             addnav('', "motd.php?op=$editop&id=$id");
