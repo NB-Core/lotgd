@@ -9,6 +9,7 @@ use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\ORM\Tools\Setup;
 use Lotgd\Entity\Account;
 use Lotgd\Entity\Setting;
+use Lotgd\Entity\ExtendedSetting;
 use PHPUnit\Framework\TestCase;
 
 final class EntityPersistenceTest extends TestCase
@@ -56,5 +57,18 @@ final class EntityPersistenceTest extends TestCase
         $repo = $this->em->getRepository(Setting::class);
         $found = $repo->find('foo');
         $this->assertSame('bar', $found->getValue());
+    }
+
+    public function testExtendedSettingPersistAndRetrieve(): void
+    {
+        $setting = new ExtendedSetting();
+        $setting->setSetting('long')->setValue('value');
+        $this->em->persist($setting);
+        $this->em->flush();
+        $this->em->clear();
+
+        $repo = $this->em->getRepository(ExtendedSetting::class);
+        $found = $repo->find('long');
+        $this->assertSame('value', $found->getValue());
     }
 }
