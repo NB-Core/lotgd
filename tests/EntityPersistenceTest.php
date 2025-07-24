@@ -53,6 +53,28 @@ final class EntityPersistenceTest extends TestCase
         $this->assertSame(5, $found->getGems());
     }
 
+    public function testAccountUpdatePersistsChanges(): void
+    {
+        $account = new Account();
+        $account->setLogin('update')
+            ->setEmailaddress('user@example.com')
+            ->setPassword('secret')
+            ->setName('User')
+            ->setLevel(1)
+            ->setGems(1);
+        $account->setLaston(new \DateTime());
+        $this->em->persist($account);
+        $this->em->flush();
+
+        $account->setGems(10);
+        $this->em->flush();
+        $this->em->clear();
+
+        $repo = $this->em->getRepository(Account::class);
+        $found = $repo->findByLogin('update');
+        $this->assertSame(10, $found->getGems());
+    }
+
     public function testSettingPersistAndRetrieve(): void
     {
         $setting = new Setting();

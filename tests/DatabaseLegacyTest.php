@@ -13,6 +13,11 @@ final class DatabaseLegacyTest extends TestCase
     protected function setUp(): void
     {
         class_exists(DbMysqli::class);
+        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        \Lotgd\MySQL\Database::$instance = null;
+        if (class_exists('Lotgd\\Tests\\Stubs\\DoctrineBootstrap', false)) {
+            \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
+        }
     }
 
     public function testQueryUsesMysqli(): void

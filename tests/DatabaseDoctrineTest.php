@@ -14,6 +14,10 @@ final class DatabaseDoctrineTest extends TestCase
     {
         class_exists(DbMysqli::class);
         require_once __DIR__ . '/Stubs/DoctrineBootstrap.php';
+        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        \Lotgd\MySQL\Database::$instance = null;
+        \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
+        \Lotgd\MySQL\Database::getDoctrineConnection();
     }
 
     public function testQueryUsesDoctrineConnection(): void

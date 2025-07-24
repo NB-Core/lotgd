@@ -6,6 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\Accounts;
 use Lotgd\Tests\Stubs\DbMysqli;
+use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
 final class AccountsDoctrineTest extends TestCase
@@ -13,9 +14,13 @@ final class AccountsDoctrineTest extends TestCase
     protected function setUp(): void
     {
         class_exists(DbMysqli::class);
+        class_exists(Database::class);
         if (!class_exists('Lotgd\\Doctrine\\Bootstrap', false)) {
             require_once __DIR__ . '/Stubs/DoctrineBootstrap.php';
         }
+        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        \Lotgd\MySQL\Database::$instance = null;
+        \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
 
         $GLOBALS['session'] = [
             'loggedin'    => true,

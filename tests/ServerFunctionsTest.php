@@ -6,6 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\ServerFunctions;
 use Lotgd\Tests\Stubs\ServerDummySettings;
+use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
 final class ServerFunctionsTest extends TestCase
@@ -13,8 +14,11 @@ final class ServerFunctionsTest extends TestCase
     protected function setUp(): void
     {
         $_SERVER = [];
+        class_exists(Database::class);
         \Lotgd\MySQL\Database::$onlineCounter = 0;
         \Lotgd\MySQL\Database::$settings_table = [];
+        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        \Lotgd\MySQL\Database::$instance = null;
     }
 
     public function testIsSecureConnection(): void

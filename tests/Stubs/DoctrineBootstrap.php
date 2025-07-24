@@ -82,23 +82,10 @@ class DoctrineEntityManager
 
     public function find(string $class, $id)
     {
-        $this->entity = new class {
-            public array $data = [];
-            public function __call(string $name, array $args)
-            {
-                if (str_starts_with($name, 'set')) {
-                    $field = lcfirst(substr($name, 3));
-                    $this->data[$field] = $args[0] ?? null;
-                    return $this;
-                }
-                if (str_starts_with($name, 'get')) {
-                    $field = lcfirst(substr($name, 3));
-                    return $this->data[$field] ?? null;
-                }
-                return null;
-            }
-        };
-        $this->entity->setAcctid($id);
+        $this->entity = new $class();
+        if (method_exists($this->entity, 'setAcctid')) {
+            $this->entity->setAcctid($id);
+        }
         return $this->entity;
     }
 
@@ -106,9 +93,15 @@ class DoctrineEntityManager
     {
         // Simulate persisting the entity's state to a mock storage
         if ($this->entity) {
+            $ref  = new \ReflectionClass($this->entity);
+            $data = [];
+            foreach ($ref->getProperties() as $prop) {
+                $prop->setAccessible(true);
+                $data[$prop->getName()] = $prop->getValue($this->entity);
+            }
             $this->connection->queries[] = sprintf(
                 'PERSIST ENTITY: %s',
-                json_encode($this->entity->data)
+                json_encode($data)
             );
         }
     }
@@ -128,7 +121,7 @@ class DoctrineBootstrap
     }
 }
 
-if (!class_exists('Lotgd\\Doctrine\\Bootstrap')) {
+if (!class_exists('Lotgd\\Doctrine\\Bootstrap', false)) {
     class_alias(DoctrineBootstrap::class, 'Lotgd\\Doctrine\\Bootstrap');
 }
 if (!class_exists('Doctrine\\DBAL\\Connection')) {
