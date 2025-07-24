@@ -72,8 +72,12 @@ class Accounts
 
             if ($bootstrapExists) {
                 $em = Bootstrap::getEntityManager();
-                $account = self::$accountEntity ?: $em->find(Account::class, $session['user']['acctid']);
-                self::$accountEntity = $account;
+                if (self::$accountEntity && self::$accountEntity->getId() === $session['user']['acctid']) {
+                    $account = self::$accountEntity;
+                } else {
+                    $account = $em->find(Account::class, $session['user']['acctid']);
+                    self::$accountEntity = $account;
+                }
 
                 if ($account) {
                     foreach ($session['user'] as $key => $val) {
