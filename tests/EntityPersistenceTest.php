@@ -34,7 +34,8 @@ final class EntityPersistenceTest extends TestCase
             ->setEmailaddress('tester@example.com')
             ->setPassword('secret')
             ->setName('Tester')
-            ->setLevel(2);
+            ->setLevel(2)
+            ->setGems(5);
         $account->setLaston(new \DateTime());
         $this->em->persist($account);
         $this->em->flush();
@@ -44,6 +45,7 @@ final class EntityPersistenceTest extends TestCase
         $found = $repo->findByLogin('tester');
         $this->assertNotNull($found);
         $this->assertSame('tester@example.com', $found->getEmailaddress());
+        $this->assertSame(5, $found->getGems());
     }
 
     public function testSettingPersistAndRetrieve(): void

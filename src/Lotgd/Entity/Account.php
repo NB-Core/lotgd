@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use BadMethodCallException;
 
 /**
  * @ORM\Entity(repositoryClass="Lotgd\\Repository\\AccountRepository")
@@ -385,5 +386,27 @@ class Account
     {
         $this->laston = $date;
         return $this;
+    }
+
+    /**
+     * Magic method to handle get* and set* calls for all properties.
+     */
+    public function __call(string $name, array $arguments)
+    {
+        if (str_starts_with($name, 'get')) {
+            $prop = lcfirst(substr($name, 3));
+            if (property_exists($this, $prop)) {
+                return $this->$prop;
+            }
+        }
+        if (str_starts_with($name, 'set')) {
+            $prop = lcfirst(substr($name, 3));
+            if (property_exists($this, $prop)) {
+                $this->$prop = $arguments[0] ?? null;
+                return $this;
+            }
+        }
+
+        throw new BadMethodCallException(sprintf('Undefined method %s', $name));
     }
 }
