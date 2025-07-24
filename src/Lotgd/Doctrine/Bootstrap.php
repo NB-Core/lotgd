@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Doctrine;
 
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Tools\Setup;
+use Doctrine\ORM\ORMSetup;
 
 class Bootstrap
 {
@@ -33,8 +33,8 @@ class Bootstrap
             'charset' => 'utf8mb4',
         ];
 
-        $paths = [$rootDir . '/src/Lotgd/Entity'];
-        $config = Setup::createAnnotationMetadataConfiguration($paths, true);
+        $paths  = [$rootDir . '/src/Lotgd/Entity'];
+        $config = ORMSetup::createAnnotationMetadataConfiguration($paths, true);
 
         return EntityManager::create($connection, $config);
     }
