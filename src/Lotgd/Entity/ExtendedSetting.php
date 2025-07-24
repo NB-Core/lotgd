@@ -14,7 +14,7 @@ class ExtendedSetting
 {
     /**
      * @ORM\Id
-     * @ORM\Column(type="string", length=50)
+     * @ORM\Column(name="setting", type="string", length=50)
      */
     private string $setting = '';
 
