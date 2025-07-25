@@ -15,6 +15,22 @@ use Lotgd\Entity\Account;
 
 class Accounts
 {
+    /**
+     * Fields in the account entity that store date and time values.
+     *
+     * @var string[]
+     */
+    private const DATE_FIELDS = [
+        'laston',
+        'lastmotd',
+        'lasthit',
+        'pvpflag',
+        'recentcomments',
+        'biotime',
+        'regdate',
+        'clanjoindate',
+    ];
+
     private static ?Account $accountEntity = null;
 
     public static function setAccountEntity(?Account $account): void
@@ -87,6 +103,17 @@ class Accounts
                         if ($baseaccount[$key] != $val) {
                             $method = 'set' . ucfirst($key);
                             if (method_exists($account, $method)) {
+                                if (
+                                    $val
+                                    && in_array($key, self::DATE_FIELDS, true)
+                                    && ! $val instanceof \DateTimeInterface
+                                ) {
+                                    try {
+                                        $val = new \DateTime($val);
+                                    } catch (\Exception $e) {
+                                        $val = new \DateTime(DATETIME_DATEMIN);
+                                    }
+                                }
                                 $account->$method($val);
                             }
                         }
