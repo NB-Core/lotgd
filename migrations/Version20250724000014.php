@@ -53,8 +53,9 @@ final class Version20250724000014 extends AbstractMigration
             return; // nothing we can migrate
         }
 
+        $timezone = date_default_timezone_get();
         $dbconnect = "<?php\n";
-        $dbconnect .= "//Migrated automatically on " . date('M d, Y h:i a') . "\n";
+        $dbconnect .= "//Migrated automatically on " . date('M d, Y h:i a', time()) . " (Timezone: {$timezone})\n";
         $dbconnect .= "return [\n";
         foreach ($keys as $key) {
             $value = $values[$key] ?? null;
