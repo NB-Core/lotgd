@@ -62,7 +62,9 @@ final class Version20250724000014 extends AbstractMigration
         }
         $dbconnect .= "];\n";
 
-        file_put_contents($file, $dbconnect);
+        if (file_put_contents($file, $dbconnect) === false) {
+            throw new \RuntimeException("Failed to write to file: {$file}");
+        }
     }
 
     public function down(Schema $schema): void
