@@ -11,6 +11,7 @@ use Lotgd\PlayerFunctions;
 use Lotgd\Http;
 use Lotgd\Battle;
 use Lotgd\Names;
+use Lotgd\AddNews;
 
 tlschema("dragon");
 $battle = false;
