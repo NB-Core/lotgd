@@ -809,16 +809,17 @@ class Installer
             $this->output->output("`2I'm attempting to write a file named 'dbconnect.php' to your site root.");
             $this->output->output("This file tells LoGD how to connect to the database, and is necessary to continue installation.`n");
             $dbconnect =
-            "<?php\n"
-               . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
-            . "\$DB_HOST = \"{$session['dbinfo']['DB_HOST']}\";\n"
-            . "\$DB_USER = \"{$session['dbinfo']['DB_USER']}\";\n"
-            . "\$DB_PASS = \"{$session['dbinfo']['DB_PASS']}\";\n"
-            . "\$DB_NAME = \"{$session['dbinfo']['DB_NAME']}\";\n"
-            . "\$DB_PREFIX = \"{$session['dbinfo']['DB_PREFIX']}\";\n"
-            . "\$DB_USEDATACACHE = " . ((int)$session['dbinfo']['DB_USEDATACACHE']) . ";\n"
-            . "\$DB_DATACACHEPATH = \"{$session['dbinfo']['DB_DATACACHEPATH']}\";\n"
-            . "?>\n";
+                "<?php\n"
+                . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
+                . "return [\n"
+                . "    'DB_HOST' => '{$session['dbinfo']['DB_HOST']}',\n"
+                . "    'DB_USER' => '{$session['dbinfo']['DB_USER']}',\n"
+                . "    'DB_PASS' => '{$session['dbinfo']['DB_PASS']}',\n"
+                . "    'DB_NAME' => '{$session['dbinfo']['DB_NAME']}',\n"
+                . "    'DB_PREFIX' => '{$session['dbinfo']['DB_PREFIX']}',\n"
+                . "    'DB_USEDATACACHE' => " . ((int)$session['dbinfo']['DB_USEDATACACHE']) . ",\n"
+                . "    'DB_DATACACHEPATH' => '{$session['dbinfo']['DB_DATACACHEPATH']}',\n"
+                . "];\n";
                 $failure = false;
                 $dir = dirname('dbconnect.php');
             if (is_writable($dir)) {
@@ -882,15 +883,16 @@ class Installer
                 }
                 $dbconnect =
                     "<?php\n"
-                               . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
-                    . "$DB_HOST = \"{$DB_HOST}\";\n"
-                    . "$DB_USER = \"{$DB_USER}\";\n"
-                    . "$DB_PASS = \"{$DB_PASS}\";\n"
-                    . "$DB_NAME = \"{$DB_NAME}\";\n"
-                    . "$DB_PREFIX = \"{$DB_PREFIX}\";\n"
-                    . "$DB_USEDATACACHE = " . ((int)$DB_USEDATACACHE) . ";\n"
-                    . "$DB_DATACACHEPATH = \"" . addslashes($DB_DATACACHEPATH) . "\";\n"
-                    . "?>\n";
+                    . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
+                    . "return [\n"
+                    . "    'DB_HOST' => '{$DB_HOST}',\n"
+                    . "    'DB_USER' => '{$DB_USER}',\n"
+                    . "    'DB_PASS' => '{$DB_PASS}',\n"
+                    . "    'DB_NAME' => '{$DB_NAME}',\n"
+                    . "    'DB_PREFIX' => '{$DB_PREFIX}',\n"
+                    . "    'DB_USEDATACACHE' => " . ((int)$DB_USEDATACACHE) . ",\n"
+                    . "    'DB_DATACACHEPATH' => " . var_export($DB_DATACACHEPATH, true) . ",\n"
+                    . "];\n";
                 // Check if the file is writeable for us. If yes, we will change the file and notice the admin
                 // if not, they have to change the file themselves...
                         $failure = false;

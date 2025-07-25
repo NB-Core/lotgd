@@ -166,7 +166,14 @@ $session =& $_SESSION['session'];
 // like LotGD.net experienced on 7/20/04.
 ob_start();
 if (file_exists("dbconnect.php")) {
-    require_once("dbconnect.php");
+    $config = require "dbconnect.php";
+    $DB_HOST = $config['DB_HOST'] ?? '';
+    $DB_USER = $config['DB_USER'] ?? '';
+    $DB_PASS = $config['DB_PASS'] ?? '';
+    $DB_NAME = $config['DB_NAME'] ?? '';
+    $DB_PREFIX = $config['DB_PREFIX'] ?? '';
+    $DB_USEDATACACHE = $config['DB_USEDATACACHE'] ?? 0;
+    $DB_DATACACHEPATH = $config['DB_DATACACHEPATH'] ?? '';
 } else {
     if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
         if (!defined("DB_NODB")) {
@@ -198,7 +205,7 @@ if (file_exists("dbconnect.php")) {
 //  $link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
 $link = false;
 if (!defined("DB_NODB")) {
-        $link = Database::connect($DB_HOST, $DB_USER, $DB_PASS);
+        $link = Database::connect($config['DB_HOST'], $config['DB_USER'], $config['DB_PASS']);
 
         //set charset to utf8 (table default, don't change that!)
     if (!Database::setCharset("utf8mb4")) {
@@ -209,11 +216,6 @@ if (!defined("DB_NODB")) {
 
 $out = ob_get_contents();
 ob_end_clean();
-if (!defined("DB_NODB")) {
-    unset($DB_HOST);
-    unset($DB_USER);
-    unset($DB_PASS);
-}
 
 if ($link === false) {
     if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
@@ -257,7 +259,7 @@ if ($link === false) {
 }
 
 if (!defined("DB_NODB")) {
-    if (!DB_CONNECTED || !@Database::selectDb($DB_NAME)) {
+    if (!DB_CONNECTED || !@Database::selectDb($config['DB_NAME'])) {
         if ((!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) && DB_CONNECTED) {
             // Ignore this bit.  It's only really for Eric's server or people that want to trigger something when the database is jerky
             if (file_exists("lib/smsnotify.php")) {
