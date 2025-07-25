@@ -1475,7 +1475,8 @@ class Installer
             '1.1.1 Dragonprime Edition' => '20250724000009',
             '1.1.1.0 Dragonprime Edition +nb' => '20250724000010',
             '1.1.1.1 Dragonprime Edition +nb' => '20250724000011',
-            '1.2.6 +nb Edition' => '20250724000012',
+            '1.2.6 +nb Edition' => '20250724000013',
+            '1.2.7 +nb Edition' => '20250724000014',
         ];
 
         $from = $session['fromversion'] ?? '-1';
