@@ -100,11 +100,16 @@ class Settings
      */
     public function getSetting(string|int $settingname, mixed $default = false): mixed
     {
-        global $DB_USEDATACACHE, $DB_DATACACHEPATH;
+        global $config;
+        if (!is_array($config)) {
+            $root = dirname(__DIR__, 2);
+            $path = realpath($root . '/dbconnect.php');
+            $config = $path ? require $path : [];
+        }
         if ($settingname == 'usedatacache') {
-            return $DB_USEDATACACHE;
+            return $config['DB_USEDATACACHE'] ?? 0;
         } elseif ($settingname == 'datacachepath') {
-            return $DB_DATACACHEPATH;
+            return $config['DB_DATACACHEPATH'] ?? '';
         }
         if (!isset($this->settings[$settingname])) {
             $this->loadSettings();
