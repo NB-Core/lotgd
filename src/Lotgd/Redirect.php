@@ -24,6 +24,8 @@ class Redirect
         global $session, $REQUEST_URI, $settings;
         if (strpos($location, 'badnav.php') === false) {
             $session['allowednavs'] = [];
+            // Append the session counter so the nav entry and redirect match
+            $location = Nav::appendCount($location);
             Nav::add('', $location);
             if (isset($settings) && $settings instanceof Settings) {
                 $charset = $settings->getSetting('charset', 'UTF-8');
