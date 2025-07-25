@@ -15,9 +15,15 @@ class Newday
     {
         savesetting("lastdboptimize", date("Y-m-d H:i:s"));
         $result = Database::query("SHOW TABLES");
+        $rows = [];
+        while ($row = Database::fetchAssoc($result)) {
+            $rows[] = $row;
+        }
+        Database::freeResult($result);
+
         $tables = [];
         $start = getmicrotime();
-        while ($row = Database::fetchAssoc($result)) {
+        foreach ($rows as $row) {
             foreach ($row as $val) {
                 Database::query("OPTIMIZE TABLE $val");
                 $tables[] = $val;
