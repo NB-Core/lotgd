@@ -100,7 +100,9 @@ class Database
         if (self::$doctrine || $bootstrapExists) {
             $conn = self::$doctrine ?? self::getDoctrineConnection();
             $trim = ltrim($sql);
-            if (strncasecmp($trim, 'select', 6) === 0) {
+            $keyword = strtolower(strtok($trim, " \t\n\r"));
+            $readOps = ['select', 'show', 'describe', 'desc', 'explain', 'pragma'];
+            if (in_array($keyword, $readOps, true)) {
                 $r = $conn->executeQuery($sql);
                 $affected = $r->rowCount();
             } else {
