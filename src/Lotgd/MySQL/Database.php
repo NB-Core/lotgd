@@ -212,12 +212,15 @@ class Database
     /**
      * Count the number of rows in a result set.
      *
-     * @param array|\mysqli_result $result
+     * @param array|\mysqli_result|\Doctrine\DBAL\Result $result
      */
-    public static function numRows(array|\mysqli_result $result): int
+    public static function numRows(array|\mysqli_result|\Doctrine\DBAL\Result $result): int
     {
         if (is_array($result)) {
             return count($result);
+        }
+        if ($result instanceof \Doctrine\DBAL\Result) {
+            return $result->rowCount();
         }
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return 0;
