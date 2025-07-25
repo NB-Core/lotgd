@@ -87,6 +87,22 @@ class Accounts
                         if ($baseaccount[$key] != $val) {
                             $method = 'set' . ucfirst($key);
                             if (method_exists($account, $method)) {
+                                if ($val && in_array($key, [
+                                    'laston',
+                                    'lastmotd',
+                                    'lasthit',
+                                    'pvpflag',
+                                    'recentcomments',
+                                    'biotime',
+                                    'regdate',
+                                    'clanjoindate',
+                                ], true) && ! $val instanceof \DateTimeInterface) {
+                                    try {
+                                        $val = new \DateTime($val);
+                                    } catch (\Exception $e) {
+                                        $val = new \DateTime(DATETIME_DATEMIN);
+                                    }
+                                }
                                 $account->$method($val);
                             }
                         }
