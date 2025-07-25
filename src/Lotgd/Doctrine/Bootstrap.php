@@ -21,23 +21,26 @@ class Bootstrap
         $rootDir = dirname(__DIR__, 3);
         $dbConfig = realpath($rootDir . '/dbconnect.php');
         if ($dbConfig && strpos($dbConfig, $rootDir) === 0) {
-            $config = require $dbConfig;
+            $settings = require $dbConfig;
         } else {
             throw new \RuntimeException('dbconnect.php not found');
         }
 
         $connection = [
             'driver' => 'pdo_mysql',
-            'host' => $config['DB_HOST'] ?? 'localhost',
-            'dbname' => $config['DB_NAME'] ?? '',
-            'user' => $config['DB_USER'] ?? '',
-            'password' => $config['DB_PASS'] ?? '',
+            'host' => $settings['DB_HOST'] ?? 'localhost',
+            'dbname' => $settings['DB_NAME'] ?? '',
+            'user' => $settings['DB_USER'] ?? '',
+            'password' => $settings['DB_PASS'] ?? '',
             'charset' => 'utf8mb4',
         ];
 
         $paths = [$rootDir . '/src/Lotgd/Entity'];
 
-        $cacheDir = ($config['DB_DATACACHEPATH'] ?? sys_get_temp_dir()) . '/doctrine';
+        $cacheDir = ($settings['DB_DATACACHEPATH'] ?? sys_get_temp_dir()) . '/doctrine';
+
+        // Disable metadata caching only when datacache path is not configured
+        $isDevMode = empty($settings['DB_USEDATACACHE']) || empty($settings['DB_DATACACHEPATH']);
 
         if (class_exists(FilesystemAdapter::class)) {
             $cache = new FilesystemAdapter('', 0, $cacheDir);
@@ -48,7 +51,7 @@ class Bootstrap
 
         $config = ORMSetup::createAnnotationMetadataConfiguration(
             $paths,
-            true,
+            $isDevMode,
             null,
             $cache
         );
