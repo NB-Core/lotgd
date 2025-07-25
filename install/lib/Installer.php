@@ -891,7 +891,7 @@ class Installer
                     . "    'DB_NAME' => '{$DB_NAME}',\n"
                     . "    'DB_PREFIX' => '{$DB_PREFIX}',\n"
                     . "    'DB_USEDATACACHE' => " . ((int)$DB_USEDATACACHE) . ",\n"
-                    . "    'DB_DATACACHEPATH' => '" . addslashes($DB_DATACACHEPATH) . "',\n"
+                    . "    'DB_DATACACHEPATH' => " . var_export($DB_DATACACHEPATH, true) . ",\n"
                     . "];\n";
                 // Check if the file is writeable for us. If yes, we will change the file and notice the admin
                 // if not, they have to change the file themselves...
