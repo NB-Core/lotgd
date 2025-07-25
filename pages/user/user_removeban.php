@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 $subop = httpget("subop");
 $none = translate_inline('NONE');

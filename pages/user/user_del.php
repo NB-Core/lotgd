@@ -1,9 +1,11 @@
 <?php
+declare(strict_types=1);
+
+use Lotgd\PlayerFunctions;
 
 $sql = "SELECT name,superuser from " . db_prefix("accounts") . " WHERE acctid='$userid'";
 $res = db_query($sql);
-require_once("lib/charcleanup.php");
-char_cleanup($userid, CHAR_DELETE_MANUAL);
+PlayerFunctions::charCleanup($userid, CHAR_DELETE_MANUAL);
 $fail = false;
 while ($row = db_fetch_assoc($res)) {
     if ($row['superuser'] > 0 && ($session['user']['superuser'] & SU_MEGAUSER) != SU_MEGAUSER) {

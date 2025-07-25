@@ -1,5 +1,7 @@
 <?php
+declare(strict_types=1);
 
+use Lotgd\PlayerFunctions;
 use Lotgd\Forms;
 
 $result = db_query("SELECT * FROM " . db_prefix("accounts") . " WHERE acctid=" . (int)$userid);
@@ -45,8 +47,8 @@ if (httpget("subop") == "") {
         output("`\$This user is probably logged in at the moment!`0");
     }
     //Add new composita attack
-    $row['totalattack'] = get_player_attack($row['acctid']);
-    $row['totaldefense'] = get_player_defense($row['acctid']);
+    $row['totalattack'] = PlayerFunctions::getPlayerAttack($row['acctid']);
+    $row['totaldefense'] = PlayerFunctions::getPlayerDefense($row['acctid']);
     //Add the count summary for DKs
     if ($row['dragonkills'] > 0) {
         $row['dragonpointssummary'] = array_count_values(($row['dragonpoints'] > '' ? unserialize($row['dragonpoints']) : array()));
