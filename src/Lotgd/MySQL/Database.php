@@ -105,7 +105,7 @@ class Database
                 $affected = $r->rowCount();
             } else {
                 $affected = $conn->executeStatement($sql);
-                $r = $affected;
+                $r = $affected >= 0;
             }
         } else {
             $r = self::getInstance()->query($sql);
