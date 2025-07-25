@@ -113,7 +113,8 @@ if ($name != "") {
                 modulehook("player-login");
 
                 if ($session['user']['loggedin']) {
-                                    $session['allowednavs'] = \Lotgd\Serialization::safeUnserialize($session['user']['allowednavs']);
+                    $allowednavs = \Lotgd\Serialization::safeUnserialize($session['user']['allowednavs']);
+                    $session['allowednavs'] = is_array($allowednavs) ? $allowednavs : [];
                     $link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
 
                     $str = sprintf_translate("Sending you to %s, have a safe journey", $link);

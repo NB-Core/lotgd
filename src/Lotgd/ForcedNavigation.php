@@ -35,10 +35,11 @@ class ForcedNavigation
                 if (!is_array($session['user']['dragonpoints'])) {
                     $session['user']['dragonpoints'] = [];
                 }
-                if (is_array(unserialize($session['user']['allowednavs']))) {
-                    $session['allowednavs'] = unserialize($session['user']['allowednavs']);
+                $allowednavs = Serialization::safeUnserialize($session['user']['allowednavs']);
+                if (is_array($allowednavs)) {
+                    $session['allowednavs'] = $allowednavs;
                 } else {
-                    $session['allowednavs'] = [$session['user']['allowednavs']];
+                    $session['allowednavs'] = [];
                 }
                 if (!$session['user']['loggedin'] || ((date('U') - strtotime($session['user']['laston'])) > getsetting('LOGINTIMEOUT', 900))) {
                     $session = [];
