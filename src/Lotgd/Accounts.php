@@ -102,7 +102,10 @@ class Accounts
                         }
                         if ($baseaccount[$key] != $val) {
                             $method = 'set' . ucfirst($key);
-                            if (method_exists($account, $method)) {
+                            if (
+                                method_exists($account, $method)
+                                || property_exists($account, $key)
+                            ) {
                                 if (
                                     $val
                                     && in_array($key, self::DATE_FIELDS, true)
