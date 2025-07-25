@@ -40,6 +40,7 @@ class Database
         if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && (self::$doctrineConnection || \Lotgd\Doctrine\Bootstrap::$conn)) {
             $conn = self::getDoctrineConnection();
             $conn->executeQuery($sql);
+            self::$affected_rows = 1;
             $last_query_result = [['ok' => true]];
             return $last_query_result;
         }
@@ -194,6 +195,21 @@ class Database
     public static function affectedRows(): int
     {
         return self::$affected_rows;
+    }
+
+    public static function insertId(): string
+    {
+        return '1';
+    }
+
+    public static function escape(string $string): string
+    {
+        return addslashes($string);
+    }
+
+    public static function tableExists(string $table): bool
+    {
+        return true;
     }
 
     public static function queryCached(string $sql, string $name, int $duration = 900): array

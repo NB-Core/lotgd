@@ -1,6 +1,6 @@
 # Legend of the Green Dragon Fork
 
-![PHP Version](https://img.shields.io/badge/PHP-8.0%2B-blue)
+![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue)
 ![License](https://img.shields.io/badge/license-CC%20BY--SA-lightgrey)
 [![CI](https://github.com/NB-Core/lotgd/actions/workflows/ci.yml/badge.svg)](https://github.com/NB-Core/lotgd/actions/workflows/ci.yml)
 This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
@@ -20,7 +20,7 @@ Features of this fork include:
 - additional hooks
 - a stat system with strength, dexterity, and other attributes
 - numerous other changes documented in `CHANGELOG.txt`
-- compatibility with PHP 8
+- compatibility with PHP 8.3
 - PHPMailer replacing the sendmail system
 - mail notifications that auto-refresh via Ajax
 - incremental chat updates via `commentary_refresh` to load new messages without reloading the page
@@ -75,7 +75,7 @@ See `CHANGELOG.txt` for a list of changes.
 To run Legend of the Green Dragon on a typical web host you will need:
 
 - **Web server:** Apache 2 (or another server capable of running PHP)
-- **PHP:** version 8.0 or newer
+- **PHP:** version 8.3 or newer
 - **Database:** MySQL 5.0 or later. MariaDB is a compatible alternative.
 - The database user must have the `LOCK TABLES` privilege.
 
@@ -83,7 +83,7 @@ To run Legend of the Green Dragon on a typical web host you will need:
 
 Want to have this running in no time?
 
-- Requirements: Apache 2 (or another web server), PHP 8.0 or higher, and MySQL 5.0+ or MariaDB. Ensure the database user has the `LOCK TABLES` privilege.
+- Requirements: Apache 2 (or another web server), PHP 8.3 or higher, and MySQL 5.0+ or MariaDB. Ensure the database user has the `LOCK TABLES` privilege.
 - Upload the files with the directory structure intact.
 - Run `installer.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
