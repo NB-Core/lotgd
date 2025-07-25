@@ -125,6 +125,9 @@ if ($name != "") {
 
                 db_query("UPDATE " . db_prefix("accounts") . " SET loggedin=" . true . ", laston='" . date("Y-m-d H:i:s") . "' WHERE acctid = " . $session['user']['acctid']);
 
+                // Persist updated login time when using Doctrine ORM
+                Accounts::saveUser();
+
                 $session['user']['loggedin'] = true;
                 $location = $session['user']['location'];
                 if ($session['user']['location'] == $iname) {
