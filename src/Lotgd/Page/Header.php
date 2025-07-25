@@ -76,8 +76,8 @@ class Header
     {
         global $header, $template;
 
-        \Lotgd\Translator::setup();
-        Template::prepare();
+        Translator::translatorSetup();
+        Template::prepareTemplate();
 
         modulehook('header-popup');
 
@@ -85,7 +85,7 @@ class Header
         if (!$arguments || count($arguments) === 0) {
             $arguments = ['Legend of the Green Dragon'];
         }
-        $title = \Lotgd\Translator::translateWithSprintf(...$arguments);
+        $title = Translator::sprintfTranslate(...$arguments);
         $title = HolidayText::holidayize($title, 'title');
 
         $lang     = defined('LANGUAGE') ? LANGUAGE : getsetting('defaultlanguage', 'en');
