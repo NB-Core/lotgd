@@ -79,9 +79,9 @@ class Database
     /**
      * Execute a SQL query.
      *
-     * @return array|bool|\mysqli_result
+     * @return array|bool|\mysqli_result|DoctrineResult
      */
-    public static function query(string $sql, bool $die = true): array|bool|\mysqli_result
+    public static function query(string $sql, bool $die = true): array|bool|\mysqli_result|DoctrineResult
     {
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return [];
