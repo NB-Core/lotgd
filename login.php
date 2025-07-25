@@ -117,8 +117,14 @@ if ($name != "") {
                     $link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
 
                     $str = sprintf_translate("Sending you to %s, have a safe journey", $link);
-                    header("Location: {$session['user']['restorepage']}");
+                    // Refresh activity timestamp when resuming a logged in session
+                    db_query(
+                        "UPDATE " . db_prefix('accounts')
+                        . " SET loggedin=1, laston='" . date('Y-m-d H:i:s')
+                        . "' WHERE acctid=" . $session['user']['acctid']
+                    );
                     Accounts::saveUser();
+                    header("Location: {$session['user']['restorepage']}");
                     echo $str;
                     exit();
                 }
