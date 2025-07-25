@@ -29,5 +29,53 @@ final class DatabaseDoctrineTest extends TestCase
         $mysqli = Database::getInstance();
         $this->assertSame([], $mysqli->queries);
     }
+
+    public function testFetchAssocReturnsDoctrineRow(): void
+    {
+        $result = Database::query('SELECT 1');
+        $row    = Database::fetchAssoc($result);
+
+        $this->assertSame(['ok' => true], $row);
+    }
+
+    public function testInsertIdUsesDoctrine(): void
+    {
+        $id = Database::insertId();
+
+        $this->assertSame('1', $id);
+    }
+
+    public function testEscapeUsesDoctrineQuote(): void
+    {
+        $escaped = Database::escape("O'Reilly");
+
+        $this->assertSame("O\\'Reilly", $escaped);
+    }
+
+    public function testNumRowsReturnsDoctrineCount(): void
+    {
+        $result = Database::query('SELECT 1');
+
+        $this->assertSame(1, Database::numRows($result));
+    }
+
+    public function testAffectedRowsAfterStatement(): void
+    {
+        Database::query('UPDATE test SET x=1');
+
+        $this->assertSame(1, Database::affectedRows());
+    }
+
+    public function testFreeResultHandlesDoctrineResult(): void
+    {
+        $result = Database::query('SELECT 1');
+
+        $this->assertTrue(Database::freeResult($result));
+    }
+
+    public function testTableExistsUsesDoctrineSchemaManager(): void
+    {
+        $this->assertTrue(Database::tableExists('accounts'));
+    }
 }
 
