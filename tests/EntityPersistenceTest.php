@@ -24,9 +24,8 @@ final class EntityPersistenceTest extends TestCase
         }
 
         $config = Setup::createAnnotationMetadataConfiguration([
-            __DIR__ . '/../src/Lotgd/Entity',
-            __DIR__ . '/../../src/Lotgd/Entity'
-        ], true, null, new ArrayCache());
+            __DIR__ . '/../src/Lotgd/Entity'
+        ], true, null, new ArrayCache(), false);
         $this->em = EntityManager::create(['driver' => 'pdo_sqlite', 'memory' => true], $config);
         $tool = new SchemaTool($this->em);
         $tool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
@@ -44,10 +43,10 @@ final class EntityPersistenceTest extends TestCase
         $account->setLaston(new \DateTime());
         $this->em->persist($account);
         $this->em->flush();
+        $id = $account->getAcctid();
         $this->em->clear();
 
-        $repo = $this->em->getRepository(Account::class);
-        $found = $repo->findByLogin('tester');
+        $found = $this->em->find(Account::class, $id);
         $this->assertNotNull($found);
         $this->assertSame('tester@example.com', $found->getEmailaddress());
         $this->assertSame(5, $found->getGems());
@@ -68,10 +67,10 @@ final class EntityPersistenceTest extends TestCase
 
         $account->setGems(10);
         $this->em->flush();
+        $id = $account->getAcctid();
         $this->em->clear();
 
-        $repo = $this->em->getRepository(Account::class);
-        $found = $repo->findByLogin('update');
+        $found = $this->em->find(Account::class, $id);
         $this->assertSame(10, $found->getGems());
     }
 
@@ -83,8 +82,7 @@ final class EntityPersistenceTest extends TestCase
         $this->em->flush();
         $this->em->clear();
 
-        $repo = $this->em->getRepository(Setting::class);
-        $found = $repo->find('foo');
+        $found = $this->em->find(Setting::class, 'foo');
         $this->assertSame('bar', $found->getValue());
     }
 
@@ -96,8 +94,7 @@ final class EntityPersistenceTest extends TestCase
         $this->em->flush();
         $this->em->clear();
 
-        $repo = $this->em->getRepository(ExtendedSetting::class);
-        $found = $repo->find('long');
+        $found = $this->em->find(ExtendedSetting::class, 'long');
         $this->assertSame('value', $found->getValue());
     }
 }

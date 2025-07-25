@@ -20,7 +20,7 @@ final class DataCacheTest extends TestCase
         foreach (['cache' => [], 'path' => '', 'checkedOld' => false] as $prop => $val) {
             $p = $ref->getProperty($prop);
             $p->setAccessible(true);
-            $p->setValue($val);
+            $p->setValue(null, $val);
         }
         $GLOBALS['settings'] = new CacheDummySettings([
             'datacachepath' => $this->cacheDir,

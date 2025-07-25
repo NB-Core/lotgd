@@ -20,17 +20,17 @@ class Dhms
      */
     public static function format(int|float $secs, bool $dec = false): string
     {
-        if ($dec === false) {
-            $secs = round($secs, 0);
-        }
-        return (int)($secs / 86400)
+        $secsInt = $dec ? (int)$secs : (int)round($secs, 0);
+        $decimal = $dec ? substr((string)($secs - $secsInt), 1) : '';
+
+        return intdiv($secsInt, 86400)
             . Translator::translateInline('d', 'datetime')
-            . (int)($secs / 3600 % 24)
+            . intdiv($secsInt, 3600) % 24
             . Translator::translateInline('h', 'datetime')
-            . (int)($secs / 60 % 60)
+            . intdiv($secsInt, 60) % 60
             . Translator::translateInline('m', 'datetime')
-            . ($secs % 60)
-            . ($dec ? substr((string)($secs - (int)$secs), 1) : '')
+            . ($secsInt % 60)
+            . $decimal
             . Translator::translateInline('s', 'datetime');
     }
 }
