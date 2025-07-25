@@ -123,8 +123,8 @@ if ($name != "") {
                         . " SET loggedin=1, laston='" . date('Y-m-d H:i:s')
                         . "' WHERE acctid=" . $session['user']['acctid']
                     );
-                    Accounts::saveUser();
                     header("Location: {$session['user']['restorepage']}");
+                    Accounts::saveUser();
                     echo $str;
                     exit();
                 }
