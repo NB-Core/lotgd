@@ -1,4 +1,7 @@
 <?php
+declare(strict_types=1);
+
+use Lotgd\Names;
 
 $sql = "";
 $updates = 0;
@@ -15,7 +18,7 @@ if ($oldvalues['ctitle']) {
 if (!isset($oldvalues['playername']) || $oldvalues['playername'] == '') {
     //you need a name, this is normal after an update from <1.1.1+nb
     if ($post['playername'] == '') {
-        $post['playername'] = get_player_basename($oldvalues);
+        $post['playername'] = Names::getPlayerBasename($oldvalues);
     }
 }
 // End Naming
@@ -74,7 +77,7 @@ foreach ($post as $key => $val) {
                 output("`^The new name doesn't pass the bad word filter!`0");
             }
             debug($tmp);
-            $newname = change_player_name($tmp, $oldvalues);
+            $newname = Names::changePlayerName($tmp, $oldvalues);
             debug($newname);
             $sql .= "$key = \"" . addslashes($newname) . "\",";
             output("`2Changed player name to %s`0`n", $newname);
@@ -94,7 +97,7 @@ foreach ($post as $key => $val) {
             if (soap($tmp) != ($tmp)) {
                 output("`^The new title doesn't pass the bad word filter!`0");
             }
-                $newname = change_player_title($tmp, $oldvalues);
+                $newname = Names::changePlayerTitle($tmp, $oldvalues);
             $sql .= "$key = \"$val\",";
             output("Changed player title from %s`0 to %s`0`n", $oldvalues['title'], $tmp);
             $oldvalues[$key] = $tmp;
@@ -121,7 +124,7 @@ foreach ($post as $key => $val) {
             if (soap($tmp) != ($tmp)) {
                 output("`^The new custom title doesn't pass the bad word filter!`0");
             }
-            $newname = change_player_ctitle($tmp, $oldvalues);
+            $newname = Names::changePlayerCtitle($tmp, $oldvalues);
             $sql .= "$key = \"$val\",";
             output("`2Changed player ctitle from `\$%s`2 to `\$%s`2`n", $oldvalues['ctitle'], $tmp);
             $oldvalues[$key] = $tmp;
@@ -129,7 +132,7 @@ foreach ($post as $key => $val) {
                 $sql .= "name = \"" . addslashes($newname) . "\",";
                 if ($oldvalues['playername'] == '' && !isset($post['playername'])) {
                     //no valid title currently, add update
-                    $post['playername'] = get_player_basename($tmp);
+                    $post['playername'] = Names::getPlayerBasename($tmp);
                 }
                 output("`2Changed player name to `\$%s`2 due to changed custom title`n", $newname);
                 debuglog($session['user']['name'] . "`0 changed player name to $newname`0 due to changed custom title", $userid);
@@ -153,7 +156,7 @@ foreach ($post as $key => $val) {
                 output("`^The new playername doesn't pass the bad word filter!`0");
             }
             debug($tmp);
-            $newname = change_player_name($tmp, $oldvalues);
+            $newname = Names::changePlayerName($tmp, $oldvalues);
             debug($newname);
             $sql .= "$key = \"$val\",";
             output("`2Changed player name from `\$%s`2 to `\$%s`2`n", $oldvalues['playername'], $tmp);

@@ -1,4 +1,7 @@
 <?php
+declare(strict_types=1);
+
+use Lotgd\UserLookup;
 
 $subop = httpget("subop");
 $none = translate_inline('NONE');
@@ -43,8 +46,7 @@ if ($target == '') {
     $row = db_fetch_assoc($result);
     $since = "WHERE ipfilter LIKE '%" . $row['lastip'] . "%' OR uniqueid LIKE '%" . $row['uniqueid'] . "%'";
 } else {
-    require_once("lib/lookup_user.php");
-    $names = lookup_user($target);
+    $names = UserLookup::lookup($target);
     if ($names[0] !== false) {
         rawoutput("<form action='user.php?op=searchban' method='POST'>");
         addnav("", "user.php?op=searchban");

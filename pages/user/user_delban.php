@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 $sql = "DELETE FROM " . db_prefix("bans") . " WHERE ipfilter = '" . httpget("ipfilter") . "' AND uniqueid = '" . httpget("uniqueid") . "'";
 db_query($sql);

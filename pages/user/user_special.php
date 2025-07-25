@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 if (httppost("newday") != "") {
 #   $offset = "-".(24 / (int)getsetting("daysperday",4))." hours";

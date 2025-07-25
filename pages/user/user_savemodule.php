@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 //save module settings.
 $userid = (int)httpget('userid');

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 $sql = "SELECT name,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE acctid=\"$userid\"";
 $result = db_query($sql);
@@ -41,7 +42,7 @@ if ($row['name'] != "") {
     $result = db_query($sql);
     while ($row = db_fetch_assoc($result)) {
         output(
-            "`0• (%s) `%%s`0 - %s hits, last: %s`n",
+            "`0â€¢ (%s) `%%s`0 - %s hits, last: %s`n",
             $row['lastip'],
             $row['name'],
             $row['gentimecount'],
@@ -61,7 +62,7 @@ if ($row['name'] != "") {
         //output("$sql`n");
         $result = db_query($sql);
         if (db_num_rows($result) > 0) {
-            output("• IP Filter: %s ", $thisip);
+            output("â€¢ IP Filter: %s ", $thisip);
             rawoutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
             output("Use this filter");
             rawoutput("</a>");
@@ -69,7 +70,7 @@ if ($row['name'] != "") {
             while ($row = db_fetch_assoc($result)) {
                 output("&nbsp;&nbsp;", true);
                 output(
-                    "• (%s) [%s] `%%s`0 - %s hits, last: %s`n",
+                    "â€¢ (%s) [%s] `%%s`0 - %s hits, last: %s`n",
                     $row['lastip'],
                     $row['uniqueid'],
                     $row['name'],

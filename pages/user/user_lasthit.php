@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 use Lotgd\Output;
 
@@ -7,7 +8,6 @@ $sql = "SELECT output FROM " . db_prefix("accounts_output") . " WHERE acctid=" .
 $result = db_query($sql);
 $row = db_fetch_assoc($result);
 if (empty($row) || !isset($row['output']) || $row['output'] == '') {
-        require_once("lib/output.php");
         $output = new Output();
     $text = $output->appoencode("`\$This user has had his navs fixed OR has an empty page stored. Nothing can be displayed to you -_-`0");
     $output = "<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000'>$text</body></html>";
