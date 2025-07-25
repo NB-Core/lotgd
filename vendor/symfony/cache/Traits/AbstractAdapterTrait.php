@@ -35,7 +35,6 @@ trait AbstractAdapterTrait
      */
     private static \Closure $mergeByLifetime;
 
-    private readonly string $rootNamespace;
     private string $namespace = '';
     private int $defaultLifetime;
     private string $namespaceVersion = '';
@@ -44,9 +43,9 @@ trait AbstractAdapterTrait
     private array $ids = [];
 
     /**
-     * The maximum length to enforce for identifiers or null when no limit applies.
+     * @var int|null The maximum length to enforce for identifiers or null when no limit applies
      */
-    protected ?int $maxIdLength = null;
+    protected $maxIdLength;
 
     /**
      * Fetches several cache items.
@@ -107,16 +106,15 @@ trait AbstractAdapterTrait
     {
         $this->deferred = [];
         if ($cleared = $this->versioningIsEnabled) {
-            $rootNamespace = $this->rootNamespace ??= $this->namespace;
             if ('' === $namespaceVersionToClear = $this->namespaceVersion) {
-                foreach ($this->doFetch([static::NS_SEPARATOR.$rootNamespace]) as $v) {
+                foreach ($this->doFetch([static::NS_SEPARATOR.$this->namespace]) as $v) {
                     $namespaceVersionToClear = $v;
                 }
             }
-            $namespaceToClear = $rootNamespace.$namespaceVersionToClear;
+            $namespaceToClear = $this->namespace.$namespaceVersionToClear;
             $namespaceVersion = self::formatNamespaceVersion(mt_rand());
             try {
-                $e = $this->doSave([static::NS_SEPARATOR.$rootNamespace => $namespaceVersion], 0);
+                $e = $this->doSave([static::NS_SEPARATOR.$this->namespace => $namespaceVersion], 0);
             } catch (\Exception $e) {
             }
             if (true !== $e && [] !== $e) {
@@ -249,16 +247,6 @@ trait AbstractAdapterTrait
         return true;
     }
 
-    public function withSubNamespace(string $namespace): static
-    {
-        $this->rootNamespace ??= $this->namespace;
-
-        $clone = clone $this;
-        $clone->namespace .= CacheItem::validateKey($namespace).static::NS_SEPARATOR;
-
-        return $clone;
-    }
-
     /**
      * Enables/disables versioning of items.
      *
@@ -293,7 +281,10 @@ trait AbstractAdapterTrait
         throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
     }
 
-    public function __wakeup(): void
+    /**
+     * @return void
+     */
+    public function __wakeup()
     {
         throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
     }
@@ -312,7 +303,7 @@ trait AbstractAdapterTrait
         try {
             foreach ($items as $id => $value) {
                 if (!isset($keys[$id])) {
-                    throw new InvalidArgumentException(\sprintf('Could not match value id "%s" to keys "%s".', $id, implode('", "', $keys)));
+                    throw new InvalidArgumentException(sprintf('Could not match value id "%s" to keys "%s".', $id, implode('", "', $keys)));
                 }
                 $key = $keys[$id];
                 unset($keys[$id]);
@@ -330,24 +321,19 @@ trait AbstractAdapterTrait
     /**
      * @internal
      */
-    protected function getId(mixed $key, ?string $namespace = null): string
+    protected function getId(mixed $key): string
     {
-        $namespace ??= $this->namespace;
-
-        if ('' !== $this->namespaceVersion) {
-            $namespace .= $this->namespaceVersion;
-        } elseif ($this->versioningIsEnabled) {
-            $rootNamespace = $this->rootNamespace ??= $this->namespace;
+        if ($this->versioningIsEnabled && '' === $this->namespaceVersion) {
             $this->ids = [];
             $this->namespaceVersion = '1'.static::NS_SEPARATOR;
             try {
-                foreach ($this->doFetch([static::NS_SEPARATOR.$rootNamespace]) as $v) {
+                foreach ($this->doFetch([static::NS_SEPARATOR.$this->namespace]) as $v) {
                     $this->namespaceVersion = $v;
                 }
                 $e = true;
                 if ('1'.static::NS_SEPARATOR === $this->namespaceVersion) {
                     $this->namespaceVersion = self::formatNamespaceVersion(time());
-                    $e = $this->doSave([static::NS_SEPARATOR.$rootNamespace => $this->namespaceVersion], 0);
+                    $e = $this->doSave([static::NS_SEPARATOR.$this->namespace => $this->namespaceVersion], 0);
                 }
             } catch (\Exception $e) {
             }
@@ -355,34 +341,25 @@ trait AbstractAdapterTrait
                 $message = 'Failed to save the new namespace'.($e instanceof \Exception ? ': '.$e->getMessage() : '.');
                 CacheItem::log($this->logger, $message, ['exception' => $e instanceof \Exception ? $e : null, 'cache-adapter' => get_debug_type($this)]);
             }
-
-            $namespace .= $this->namespaceVersion;
         }
 
         if (\is_string($key) && isset($this->ids[$key])) {
-            $id = $this->ids[$key];
-        } else {
-            \assert('' !== CacheItem::validateKey($key));
-            $this->ids[$key] = $key;
+            return $this->namespace.$this->namespaceVersion.$this->ids[$key];
+        }
+        \assert('' !== CacheItem::validateKey($key));
+        $this->ids[$key] = $key;
 
-            if (\count($this->ids) > 1000) {
-                $this->ids = \array_slice($this->ids, 500, null, true); // stop memory leak if there are many keys
-            }
+        if (\count($this->ids) > 1000) {
+            $this->ids = \array_slice($this->ids, 500, null, true); // stop memory leak if there are many keys
+        }
 
-            if (null === $this->maxIdLength) {
-                return $namespace.$key;
-            }
-            if (\strlen($id = $namespace.$key) <= $this->maxIdLength) {
-                return $id;
-            }
-
+        if (null === $this->maxIdLength) {
+            return $this->namespace.$this->namespaceVersion.$key;
+        }
+        if (\strlen($id = $this->namespace.$this->namespaceVersion.$key) > $this->maxIdLength) {
             // Use xxh128 to favor speed over security, which is not an issue here
             $this->ids[$key] = $id = substr_replace(base64_encode(hash('xxh128', $key, true)), static::NS_SEPARATOR, -(\strlen($this->namespaceVersion) + 2));
-        }
-        $id = $namespace.$id;
-
-        if (null !== $this->maxIdLength && \strlen($id) > $this->maxIdLength) {
-            return base64_encode(hash('xxh128', $id, true));
+            $id = $this->namespace.$this->namespaceVersion.$id;
         }
 
         return $id;

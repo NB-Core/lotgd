@@ -19,12 +19,12 @@ if (version_compare(phpversion('relay'), '0.9.0', '>=')) {
     {
         public function blmove($srckey, $dstkey, $srcpos, $dstpos, $timeout): mixed
         {
-            return $this->initializeLazyObject()->blmove(...\func_get_args());
+            return ($this->lazyObjectState->realInstance ??= ($this->lazyObjectState->initializer)())->blmove(...\func_get_args());
         }
 
         public function lmove($srckey, $dstkey, $srcpos, $dstpos): mixed
         {
-            return $this->initializeLazyObject()->lmove(...\func_get_args());
+            return ($this->lazyObjectState->realInstance ??= ($this->lazyObjectState->initializer)())->lmove(...\func_get_args());
         }
     }
 } else {
@@ -33,14 +33,14 @@ if (version_compare(phpversion('relay'), '0.9.0', '>=')) {
      */
     trait MoveTrait
     {
-        public function blmove($srckey, $dstkey, $srcpos, $dstpos, $timeout): \Relay\Relay|false|string|null
+        public function blmove($srckey, $dstkey, $srcpos, $dstpos, $timeout): \Relay\Relay|false|null|string
         {
-            return $this->initializeLazyObject()->blmove(...\func_get_args());
+            return ($this->lazyObjectState->realInstance ??= ($this->lazyObjectState->initializer)())->blmove(...\func_get_args());
         }
 
-        public function lmove($srckey, $dstkey, $srcpos, $dstpos): \Relay\Relay|false|string|null
+        public function lmove($srckey, $dstkey, $srcpos, $dstpos): \Relay\Relay|false|null|string
         {
-            return $this->initializeLazyObject()->lmove(...\func_get_args());
+            return ($this->lazyObjectState->realInstance ??= ($this->lazyObjectState->initializer)())->lmove(...\func_get_args());
         }
     }
 }

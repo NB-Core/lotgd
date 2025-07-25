@@ -17,7 +17,6 @@ use Symfony\Component\Cache\Exception\InvalidArgumentException;
 use Symfony\Component\Cache\ResettableInterface;
 use Symfony\Component\Cache\Traits\AbstractAdapterTrait;
 use Symfony\Component\Cache\Traits\ContractsTrait;
-use Symfony\Contracts\Cache\NamespacedPoolInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 /**
@@ -31,36 +30,19 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
  *
  * @internal
  */
-abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagAwareCacheInterface, AdapterInterface, NamespacedPoolInterface, LoggerAwareInterface, ResettableInterface
+abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagAwareCacheInterface, LoggerAwareInterface, ResettableInterface
 {
     use AbstractAdapterTrait;
     use ContractsTrait;
-
-    /**
-     * @internal
-     */
-    protected const NS_SEPARATOR = ':';
 
     private const TAGS_PREFIX = "\1tags\1";
 
     protected function __construct(string $namespace = '', int $defaultLifetime = 0)
     {
-        if ('' !== $namespace) {
-            if (str_contains($namespace, static::NS_SEPARATOR)) {
-                if (str_contains($namespace, static::NS_SEPARATOR.static::NS_SEPARATOR)) {
-                    throw new InvalidArgumentException(\sprintf('Cache namespace "%s" contains empty sub-namespace.', $namespace));
-                }
-                CacheItem::validateKey(str_replace(static::NS_SEPARATOR, '', $namespace));
-            } else {
-                CacheItem::validateKey($namespace);
-            }
-            $this->namespace = $namespace.static::NS_SEPARATOR;
-        }
-        $this->rootNamespace = $this->namespace;
-
+        $this->namespace = '' === $namespace ? '' : CacheItem::validateKey($namespace).':';
         $this->defaultLifetime = $defaultLifetime;
         if (null !== $this->maxIdLength && \strlen($namespace) > $this->maxIdLength - 24) {
-            throw new InvalidArgumentException(\sprintf('Namespace must be %d chars max, %d given ("%s").', $this->maxIdLength - 24, \strlen($namespace), $namespace));
+            throw new InvalidArgumentException(sprintf('Namespace must be %d chars max, %d given ("%s").', $this->maxIdLength - 24, \strlen($namespace), $namespace));
         }
         self::$createCacheItem ??= \Closure::bind(
             static function ($key, $value, $isHit) {
@@ -88,7 +70,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
             CacheItem::class
         );
         self::$mergeByLifetime ??= \Closure::bind(
-            static function ($deferred, &$expiredIds, $getId, $tagPrefix, $defaultLifetime, $rootNamespace) {
+            static function ($deferred, &$expiredIds, $getId, $tagPrefix, $defaultLifetime) {
                 $byLifetime = [];
                 $now = microtime(true);
                 $expiredIds = [];
@@ -120,10 +102,10 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
                     $value['tag-operations'] = ['add' => [], 'remove' => []];
                     $oldTags = $item->metadata[CacheItem::METADATA_TAGS] ?? [];
                     foreach (array_diff_key($value['tags'], $oldTags) as $addedTag) {
-                        $value['tag-operations']['add'][] = $getId($tagPrefix.$addedTag, $rootNamespace);
+                        $value['tag-operations']['add'][] = $getId($tagPrefix.$addedTag);
                     }
                     foreach (array_diff_key($oldTags, $value['tags']) as $removedTag) {
-                        $value['tag-operations']['remove'][] = $getId($tagPrefix.$removedTag, $rootNamespace);
+                        $value['tag-operations']['remove'][] = $getId($tagPrefix.$removedTag);
                     }
                     $value['tags'] = array_keys($value['tags']);
 
@@ -186,7 +168,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
     public function commit(): bool
     {
         $ok = true;
-        $byLifetime = (self::$mergeByLifetime)($this->deferred, $expiredIds, $this->getId(...), self::TAGS_PREFIX, $this->defaultLifetime, $this->rootNamespace);
+        $byLifetime = (self::$mergeByLifetime)($this->deferred, $expiredIds, $this->getId(...), self::TAGS_PREFIX, $this->defaultLifetime);
         $retry = $this->deferred = [];
 
         if ($expiredIds) {
@@ -204,7 +186,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
                 $e = $this->doSave($values, $lifetime, $addTagData, $removeTagData);
             } catch (\Exception $e) {
             }
-            if ([] === $e) {
+            if (true === $e || [] === $e) {
                 continue;
             }
             if (\is_array($e) || 1 === \count($values)) {
@@ -212,8 +194,8 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
                     $ok = false;
                     $v = $values[$id];
                     $type = get_debug_type($v);
-                    $message = \sprintf('Failed to save key "{key}" of type %s%s', $type, $e instanceof \Exception ? ': '.$e->getMessage() : '.');
-                    CacheItem::log($this->logger, $message, ['key' => substr($id, \strlen($this->rootNamespace)), 'exception' => $e instanceof \Exception ? $e : null, 'cache-adapter' => get_debug_type($this)]);
+                    $message = sprintf('Failed to save key "{key}" of type %s%s', $type, $e instanceof \Exception ? ': '.$e->getMessage() : '.');
+                    CacheItem::log($this->logger, $message, ['key' => substr($id, \strlen($this->namespace)), 'exception' => $e instanceof \Exception ? $e : null, 'cache-adapter' => get_debug_type($this)]);
                 }
             } else {
                 foreach ($values as $id => $v) {
@@ -231,13 +213,13 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
                     $e = $this->doSave($values, $lifetime, $addTagData, $removeTagData);
                 } catch (\Exception $e) {
                 }
-                if ([] === $e) {
+                if (true === $e || [] === $e) {
                     continue;
                 }
                 $ok = false;
                 $type = get_debug_type($v);
-                $message = \sprintf('Failed to save key "{key}" of type %s%s', $type, $e instanceof \Exception ? ': '.$e->getMessage() : '.');
-                CacheItem::log($this->logger, $message, ['key' => substr($id, \strlen($this->rootNamespace)), 'exception' => $e instanceof \Exception ? $e : null, 'cache-adapter' => get_debug_type($this)]);
+                $message = sprintf('Failed to save key "{key}" of type %s%s', $type, $e instanceof \Exception ? ': '.$e->getMessage() : '.');
+                CacheItem::log($this->logger, $message, ['key' => substr($id, \strlen($this->namespace)), 'exception' => $e instanceof \Exception ? $e : null, 'cache-adapter' => get_debug_type($this)]);
             }
         }
 
@@ -262,7 +244,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
         try {
             foreach ($this->doDeleteYieldTags(array_values($ids)) as $id => $tags) {
                 foreach ($tags as $tag) {
-                    $tagData[$this->getId(self::TAGS_PREFIX.$tag, $this->rootNamespace)][] = $id;
+                    $tagData[$this->getId(self::TAGS_PREFIX.$tag)][] = $id;
                 }
             }
         } catch (\Exception) {
@@ -301,7 +283,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
 
         $tagIds = [];
         foreach (array_unique($tags) as $tag) {
-            $tagIds[] = $this->getId(self::TAGS_PREFIX.$tag, $this->rootNamespace);
+            $tagIds[] = $this->getId(self::TAGS_PREFIX.$tag);
         }
 
         try {

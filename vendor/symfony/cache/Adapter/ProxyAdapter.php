@@ -19,12 +19,11 @@ use Symfony\Component\Cache\ResettableInterface;
 use Symfony\Component\Cache\Traits\ContractsTrait;
 use Symfony\Component\Cache\Traits\ProxyTrait;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\NamespacedPoolInterface;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
-class ProxyAdapter implements AdapterInterface, NamespacedPoolInterface, CacheInterface, PruneableInterface, ResettableInterface
+class ProxyAdapter implements AdapterInterface, CacheInterface, PruneableInterface, ResettableInterface
 {
     use ContractsTrait;
     use ProxyTrait;
@@ -39,17 +38,12 @@ class ProxyAdapter implements AdapterInterface, NamespacedPoolInterface, CacheIn
 
     public function __construct(CacheItemPoolInterface $pool, string $namespace = '', int $defaultLifetime = 0)
     {
-        if ('' !== $namespace) {
-            if ($pool instanceof NamespacedPoolInterface) {
-                $pool = $pool->withSubNamespace($namespace);
-                $this->namespace = $namespace = '';
-            } else {
-                \assert('' !== CacheItem::validateKey($namespace));
-                $this->namespace = $namespace;
-            }
-        }
         $this->pool = $pool;
         $this->poolHash = spl_object_hash($pool);
+        if ('' !== $namespace) {
+            \assert('' !== CacheItem::validateKey($namespace));
+            $this->namespace = $namespace;
+        }
         $this->namespaceLen = \strlen($namespace);
         $this->defaultLifetime = $defaultLifetime;
         self::$createCacheItem ??= \Closure::bind(
@@ -79,7 +73,7 @@ class ProxyAdapter implements AdapterInterface, NamespacedPoolInterface, CacheIn
         self::$setInnerItem ??= \Closure::bind(
             static function (CacheItemInterface $innerItem, CacheItem $item, $expiry = null) {
                 $innerItem->set($item->pack());
-                $innerItem->expiresAt(($expiry ?? $item->expiry) ? \DateTimeImmutable::createFromFormat('U.u', \sprintf('%.6F', $expiry ?? $item->expiry)) : null);
+                $innerItem->expiresAt(($expiry ?? $item->expiry) ? \DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', $expiry ?? $item->expiry)) : null);
             },
             null,
             CacheItem::class
@@ -162,20 +156,6 @@ class ProxyAdapter implements AdapterInterface, NamespacedPoolInterface, CacheIn
     public function commit(): bool
     {
         return $this->pool->commit();
-    }
-
-    public function withSubNamespace(string $namespace): static
-    {
-        $clone = clone $this;
-
-        if ($clone->pool instanceof NamespacedPoolInterface) {
-            $clone->pool = $clone->pool->withSubNamespace($namespace);
-        } else {
-            $clone->namespace .= CacheItem::validateKey($namespace);
-            $clone->namespaceLen = \strlen($clone->namespace);
-        }
-
-        return $clone;
     }
 
     private function doSave(CacheItemInterface $item, string $method): bool

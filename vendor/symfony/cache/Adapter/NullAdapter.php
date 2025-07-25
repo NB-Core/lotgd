@@ -14,12 +14,11 @@ namespace Symfony\Component\Cache\Adapter;
 use Psr\Cache\CacheItemInterface;
 use Symfony\Component\Cache\CacheItem;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\NamespacedPoolInterface;
 
 /**
  * @author Titouan Galopin <galopintitouan@gmail.com>
  */
-class NullAdapter implements AdapterInterface, CacheInterface, NamespacedPoolInterface
+class NullAdapter implements AdapterInterface, CacheInterface
 {
     private static \Closure $createCacheItem;
 
@@ -93,11 +92,6 @@ class NullAdapter implements AdapterInterface, CacheInterface, NamespacedPoolInt
     public function delete(string $key): bool
     {
         return $this->deleteItem($key);
-    }
-
-    public function withSubNamespace(string $namespace): static
-    {
-        return clone $this;
     }
 
     private function generateItems(array $keys): \Generator
