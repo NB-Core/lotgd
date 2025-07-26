@@ -133,7 +133,7 @@ if ($name != "") {
                 db_query("UPDATE " . db_prefix("accounts") . " SET loggedin=" . true . ", laston='" . date("Y-m-d H:i:s") . "' WHERE acctid = " . $session['user']['acctid']);
 
                 // Persist updated login time when using Doctrine ORM
-                Accounts::saveUser();
+                //Accounts::saveUser();
 
                 $session['user']['loggedin'] = true;
                 $location = $session['user']['location'];
@@ -141,8 +141,19 @@ if ($name != "") {
                     $session['user']['location'] = $vname;
                 }
 
-                if ($session['user']['restorepage'] > "") {
-                    redirect($session['user']['restorepage']);
+                if ($session['user']['restorepage'] > '') {
+                    $link = "<a href='{$session['user']['restorepage']}'>{$session['user']['restorepage']}</a>";
+                    $msg  = sprintf_translate('Sending you to %s, have a safe journey', $link);
+
+                    // Ensure the restore page is allowed in the next request
+                    $session['allowednavs'] = [];
+                    \Lotgd\Nav::add('', $session['user']['restorepage']);
+
+                    $location = \Lotgd\Nav::appendCount($session['user']['restorepage']);
+                    header("Location: {$location}");
+                    Accounts::saveUser();
+                    echo $msg;
+                    exit();
                 } else {
                     if ($location == $iname) {
                         redirect("inn.php?op=strolldown");
