@@ -39,11 +39,16 @@ class Buffs
         foreach ($session['bufflist'] as $buffname => $buff) {
             if (!isset($buff['fields_calculated'])) {
                 foreach ($buff as $property => $value) {
-            // Sanitize if somebody uses int here
-                    $value = (string)$value;
+                    // Sanitize if somebody uses int here
+                    if (!is_array($value)) {
+                        $value = (string) $value;
+                    }
                     $origstring = $value;
-                    $value = preg_replace('/<([A-Za-z0-9]+)\\|([A-Za-z0-9]+)>/', "get_module_pref('\\2','\\1')", $value);
-                    $value = preg_replace('/<([A-Za-z0-9]+)>/', "\$session['user']['\\1']", $value);
+
+                    if (!is_array($value)) {
+                        $value = preg_replace('/<([A-Za-z0-9]+)\\|([A-Za-z0-9]+)>/', "get_module_pref('\\2','\\1')", $value);
+                        $value = preg_replace('/<([A-Za-z0-9]+)>/', "\$session['user']['\\1']", $value);
+                    }
 
                     if (!defined('OLDSU')) {
                         define('OLDSU', $session['user']['superuser']);
