@@ -213,15 +213,7 @@ if ($name != "") {
     }
 } elseif ($op == "logout") {
     if ($session['user']['loggedin']) {
-        $location = $session['user']['location'];
-        if ($location == $iname) {
-            $session['user']['restorepage'] = "inn.php?op=strolldown";
-        } elseif ($session['user']['superuser'] & (0xFFFFFFFF & ~ SU_DOESNT_GIVE_GROTTO)) {
-            $session['user']['restorepage'] = "superuser.php";
-        } else {
-            $session['user']['restorepage'] = "news.php";
-        }
-        $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0,restorepage='{$session['user']['restorepage']}', allowednavs='' WHERE acctid = " . $session['user']['acctid'];
+        $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
         db_query($sql);
         invalidatedatacache("charlisthomepage");
         invalidatedatacache("list.php-warsonline");
