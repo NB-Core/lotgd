@@ -504,7 +504,7 @@ class PageParts
             }
 
             $v = $logd_version;
-            $c = rawurlencode($c);
+            $c = rawurlencode((string) $c);
             $a = rawurlencode($a);
             $l = rawurlencode($l);
             $d = rawurlencode($d);
