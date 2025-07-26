@@ -1489,7 +1489,9 @@ class Installer
             }
         }
 
-        $plan = $dependencyFactory->getMigrationPlanCalculator()->getPlanUntilLatest();
+        $aliasResolver = $dependencyFactory->getVersionAliasResolver();
+        $latestVersion = $aliasResolver->resolveVersionAlias('latest');
+        $plan = $dependencyFactory->getMigrationPlanCalculator()->getPlanUntilVersion($latestVersion);
         $factory = $dependencyFactory->getConsoleInputMigratorConfigurationFactory();
         $migratorConfig = $factory->getMigratorConfiguration(new ArrayInput([]));
         $dependencyFactory->getMigrator()->migrate($plan, $migratorConfig);
