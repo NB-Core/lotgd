@@ -71,8 +71,8 @@ class Footer
 				"<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">" .
 				"<link rel=\"manifest\" href=\"/images/favicon/site.webmanifest\">",
 			];
-			$favicon        = modulehook('pageparts-favicon', $favicon);
-			$pre_headscript = $favicon['favicon-link'];
+                        $favicon        = modulehook('pageparts-favicon', $favicon);
+                        $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
 			if (isset($settings) && $settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 				if (file_exists('ext/ajax_base_setup.php')) {
 					require 'ext/ajax_base_setup.php';
@@ -201,8 +201,8 @@ class Footer
 		} else {
 			$footer = $template['popupfoot'];
 		}
-		$pre_headscript   = '';
-		$maillink_add_after = '';
+                $pre_headscript   = PageParts::canonicalLink();
+                $maillink_add_after = '';
 		if (getsetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
 			if (file_exists('ext/ajax_base_setup.php')) {
 				require 'ext/ajax_base_setup.php';
