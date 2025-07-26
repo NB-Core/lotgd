@@ -50,4 +50,12 @@ final class AccountsDoctrineTest extends TestCase
         $mysqli = \Lotgd\MySQL\Database::getInstance();
         $this->assertSame([], $mysqli->queries);
     }
+
+    public function testSaveUserCastsBooleanFields(): void
+    {
+        $GLOBALS['session']['user']['alive'] = 1;
+        Accounts::saveUser();
+        $entity = Accounts::getAccountEntity();
+        $this->assertTrue($entity->getAlive());
+    }
 }
