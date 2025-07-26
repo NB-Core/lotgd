@@ -221,7 +221,7 @@ if ($name != "") {
         } else {
             $session['user']['restorepage'] = "news.php";
         }
-        $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0,restorepage='{$session['user']['restorepage']}' WHERE acctid = " . $session['user']['acctid'];
+        $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0,restorepage='{$session['user']['restorepage']}', allowednavs='' WHERE acctid = " . $session['user']['acctid'];
         db_query($sql);
         invalidatedatacache("charlisthomepage");
         invalidatedatacache("list.php-warsonline");
