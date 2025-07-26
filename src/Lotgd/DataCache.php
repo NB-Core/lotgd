@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+if (!defined('DATACACHE_FILENAME_PREFIX')) {
+    define('DATACACHE_FILENAME_PREFIX', 'datacache-');
+}
+
 /**
  * Lightweight file based data cache helper.
  */
