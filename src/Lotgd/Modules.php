@@ -1329,7 +1329,11 @@ class Modules
                 $curcat = $row['category'];
                 addnav(["%s Modules", $curcat]);
             }
-            addnav_notl(($row['active'] ? '' : '`') . $row['formalname'] . '`0', $linkprefix . $row['modulename']);
+            // Prefix inactive modules with a valid colour code so the name
+            // does not start with an unescaped backtick. Without a colour
+            // letter the first character of the name would be parsed as one,
+            // causing unbalanced HTML tags like `<em>`.
+            addnav_notl(($row['active'] ? '' : '`&') . $row['formalname'] . '`0', $linkprefix . $row['modulename']);
         }
     }
 
