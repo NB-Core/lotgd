@@ -114,12 +114,12 @@ class Modules
                         }
                         $keys = '|' . implode('|', array_keys($info)) . '|';
                         $sql  = 'UPDATE ' . Database::prefix('modules') .
-                            " SET moduleauthor='" . addslashes($info['author']) .
-                            "', category='" . addslashes($info['category']) .
-                            "', formalname='" . addslashes($info['name']) .
-                            "', description='" . addslashes($info['description']) .
-                            "', filemoddate='$filemoddate', infokeys='$keys',version='" . addslashes($info['version']) .
-                            "',download='" . addslashes($info['download']) . "' WHERE modulename='$moduleName'";
+                            " SET moduleauthor='" . addslashes((string) ($info['author'] ?? '')) .
+                            "', category='" . addslashes((string) ($info['category'] ?? '')) .
+                            "', formalname='" . addslashes((string) ($info['name'] ?? '')) .
+                            "', description='" . addslashes((string) ($info['description'] ?? '')) .
+                            "', filemoddate='$filemoddate', infokeys='$keys',version='" . addslashes((string) ($info['version'] ?? '')) .
+                            "',download='" . addslashes((string) ($info['download'] ?? '')) . "' WHERE modulename='$moduleName'";
                         Database::query($sql);
                         debug($sql);
                         $sql = 'UNLOCK TABLES';
