@@ -734,6 +734,29 @@ class PageParts
     }
 
     /**
+     * Generate the canonical link element for the current page.
+     */
+    public static function canonicalLink(): string
+    {
+        global $SCRIPT_NAME, $settings;
+
+        $serverUrl = isset($settings)
+            ? rtrim($settings->getSetting('serverurl', 'http://' . $_SERVER['HTTP_HOST']), '/')
+            : 'http://' . $_SERVER['HTTP_HOST'];
+
+        $page = ltrim($SCRIPT_NAME ?? '', '/');
+
+        if ($page === 'runmodule.php') {
+            $module = httpget('module');
+            if ($module !== false && $module !== '') {
+                $page .= '?module=' . urlencode((string) $module);
+            }
+        }
+
+        return sprintf('<link rel="canonical" href="%s/%s" />', $serverUrl, $page);
+    }
+
+    /**
      * Strip advertisement placeholders from the header.
      *
      * @internal This method is intended for internal use only and is not part of the public API.
