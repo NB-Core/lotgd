@@ -402,7 +402,15 @@ class Account
         if (str_starts_with($name, 'set')) {
             $prop = lcfirst(substr($name, 3));
             if (property_exists($this, $prop)) {
-                $this->$prop = $arguments[0] ?? null;
+                $value = $arguments[0] ?? null;
+
+                $ref = new \ReflectionProperty($this, $prop);
+                $type = $ref->hasType() ? $ref->getType()->getName() : null;
+                if ($type === 'bool') {
+                    $value = (bool) $value;
+                }
+
+                $this->$prop = $value;
                 return $this;
             }
         }
