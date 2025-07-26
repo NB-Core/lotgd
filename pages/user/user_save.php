@@ -7,6 +7,11 @@ $sql = "";
 $updates = 0;
 $post = httpallpost();
 $oldvalues = stripslashes(httppost('oldvalues'));
+$oldvalues = html_entity_decode(
+    $oldvalues,
+    ENT_COMPAT,
+    getsetting('charset', 'ISO-8859-1')
+);
 $oldvalues = unserialize($oldvalues);
 // Handle recombining the old name
 $otitle = $oldvalues['title'];

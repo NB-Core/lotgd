@@ -81,6 +81,11 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
 
 
     $oldvalues = stripslashes(httppost('oldvalues'));
+    $oldvalues = html_entity_decode(
+        $oldvalues,
+        ENT_COMPAT,
+        getsetting('charset', 'ISO-8859-1')
+    );
     $oldvalues = unserialize($oldvalues);
 
     $post = httpallpost();
