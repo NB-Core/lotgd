@@ -124,6 +124,8 @@ if ($name != "") {
                         . " SET loggedin=1, laston='" . date('Y-m-d H:i:s')
                         . "' WHERE acctid=" . $session['user']['acctid']
                     );
+		    $session['allowednavs'] = [];
+                    \Lotgd\Nav::add('', $session['user']['restorepage']);
                     header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
                     echo $str;
@@ -146,11 +148,8 @@ if ($name != "") {
                     $msg  = sprintf_translate('Sending you to %s, have a safe journey', $link);
 
                     // Ensure the restore page is allowed in the next request
-                    $session['allowednavs'] = [];
                     \Lotgd\Nav::add('', $session['user']['restorepage']);
-
-                    $location = \Lotgd\Nav::appendCount($session['user']['restorepage']);
-                    header("Location: {$location}");
+                    header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
                     echo $msg;
                     exit();
