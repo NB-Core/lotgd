@@ -407,6 +407,15 @@ class Account
                 $ref  = new \ReflectionProperty($this, $prop);
                 $type = $ref->hasType() ? $ref->getType()->getName() : null;
 
+		// This below is necessary as some old modules set i.e. isalive to 1 or 0.. not true or false
+		// LIkewise, some calculations will be done to round(), but resulting in i.e. 124.0 and not 124
+		// Means the datatype is wrong.
+		// I pondered a long time how to fix this, but with array-assignment in $session['user'] this
+		// is not solvable. The conversion approach below is practical and not worse than the original
+		// source code. 
+		// I deem old modules (which may need still some modernization for php8) still worth of
+		// being able to run by design of LotGD
+
                 if ($type === 'bool') {
                     $value = (bool) $value;
                 } elseif ($type === 'int') {
