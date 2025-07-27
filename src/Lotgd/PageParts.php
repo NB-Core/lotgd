@@ -738,20 +738,22 @@ class PageParts
      */
     public static function canonicalLink(): string
     {
-        global $SCRIPT_NAME, $settings;
+        global $REQUEST_URI, $SCRIPT_NAME, $settings;
 
         $serverUrl = isset($settings)
             ? rtrim($settings->getSetting('serverurl', 'http://' . $_SERVER['HTTP_HOST']), '/')
             : 'http://' . $_SERVER['HTTP_HOST'];
 
-        $page = ltrim($SCRIPT_NAME ?? '', '/');
-
-        if ($page === 'runmodule.php') {
-            $module = httpget('module');
-            if ($module !== false && $module !== '') {
-                $page .= '?module=' . urlencode((string) $module);
-            }
+        $uri = $REQUEST_URI ?? '';
+        if ($uri === '') {
+            $uri = $SCRIPT_NAME ?? '';
         }
+
+        // Remove the session "c" parameter while keeping the rest intact
+        $uri = preg_replace('/([?&])c=[^&]*(&|$)/', '$1', $uri);
+        $uri = rtrim($uri, '&?');
+
+        $page = ltrim($uri, '/');
 
         return sprintf('<link rel="canonical" href="%s/%s" />', $serverUrl, $page);
     }
