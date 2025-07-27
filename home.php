@@ -117,7 +117,7 @@ if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0
     if (isset($session['message']) && $session['message'] > "") {
         output_notl("`b`\$%s`b`n", $session['message'], true);
     }
-    rawoutput("<script language='JavaScript' src='lib/md5.js'></script>");
+    rawoutput("<script src='lib/md5.js' defer></script>");
     rawoutput("<script language='JavaScript'>
 	<!--
 	function md5pass(){

@@ -85,7 +85,7 @@ function recaptcha_dohook(string $hookname, array $args): array
             break;
         case "create-form":
         case "petitionform":
-            rawoutput("<script src='https://www.google.com/recaptcha/api.js'></script>");
+            rawoutput("<script src='https://www.google.com/recaptcha/api.js' defer></script>");
             rawoutput("<div class=\"g-recaptcha\" data-sitekey=\"$sitekey\" data-theme=\"dark\"></div>");
             break;
     }
