@@ -13,6 +13,7 @@ require_once("lib/http.php");
 $skin = httppost('template');
 if ($skin !== '' && Template::isValidTemplate($skin)) {
         Template::setTemplateCookie($skin);
+        Template::prepareTemplate(true);
 }
 
 require_once("lib/villagenav.php");
