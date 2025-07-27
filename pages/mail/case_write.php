@@ -13,18 +13,18 @@ if ($replyto > 0) {
     $msgid = $forwardto;
 }
 if ($msgid > 0) {
-        $row = Mail::getMessage($session["user"]["acctid"], $msgid);
+    $row = Mail::getMessage($session['user']['acctid'], $msgid);
     if ($row) {
-        if ($row["login"] == "" && $forwardto == 0) {
-                output("You cannot reply to a system message.`n`nPress the \"Back\" button in your browser to get back.");
-                    $row = array();
-                    popup_footer();
+        if ((!isset($row['login']) || $row['login'] === '') && $forwardto == 0) {
+            output("You cannot reply to a system message.`n`nPress the \"Back\" button in your browser to get back.");
+            $row = [];
+            popup_footer();
         }
         if ($forwardto > 0) {
-            $row["login"] = 0;
+            $row['login'] = '';
         }
     } else {
-            output("Eek, no such message was found!`n");
+        output("Eek, no such message was found!`n");
     }
 }
 $to = httpget('to');
