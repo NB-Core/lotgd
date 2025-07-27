@@ -276,8 +276,10 @@ class Moderate
                 $ft = substr($ft, 0, 3);
             }
 
-            $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
-            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+	    if (!empty($row['comment']))
+	            $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
+	    if (!empty($row['name']))
+	            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
             if ($row['clanrank']) {
                 $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
             }
@@ -315,7 +317,7 @@ class Moderate
                 $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
             }
 
-            $session['user']['prefs']['timeoffset'] = round($session['user']['prefs']['timeoffset'], 1);
+            $session['user']['prefs']['timeoffset'] = round((float)$session['user']['prefs']['timeoffset'], 1);
 
             if (!array_key_exists('timestamp', $session['user']['prefs'])) {
                 $session['user']['prefs']['timestamp'] = 0;

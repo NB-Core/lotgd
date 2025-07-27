@@ -3,17 +3,15 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Accounts;
-// mail ready
-// addnews ready
 use Lotgd\CheckBan;
 use Lotgd\Mail;
 use Lotgd\Serialization;
 use Lotgd\Cookies;
 
-// translator ready
 define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
 require_once("lib/http.php");
+// This must be after common.php for now
 use Lotgd\ServerFunctions;
 
 tlschema("login");
@@ -91,9 +89,9 @@ if ($name != "") {
                 $session['loggedin'] = true;
                 $session['laston'] = date("Y-m-d H:i:s");
                 $session['sentnotice'] = 0;
-                            $session['user']['dragonpoints'] = \Lotgd\Serialization::safeUnserialize($session['user']['dragonpoints']);
-                            $session['user']['prefs'] = \Lotgd\Serialization::safeUnserialize($session['user']['prefs']);
-                            $session['bufflist'] = \Lotgd\Serialization::safeUnserialize($session['user']['bufflist']);
+                $session['user']['dragonpoints'] = \Lotgd\Serialization::safeUnserialize($session['user']['dragonpoints']);
+                $session['user']['prefs'] = \Lotgd\Serialization::safeUnserialize($session['user']['prefs']);
+                $session['bufflist'] = \Lotgd\Serialization::safeUnserialize($session['user']['bufflist']);
                 if (!is_array($session['bufflist'])) {
                     $session['bufflist'] = array();
                 }
@@ -113,8 +111,6 @@ if ($name != "") {
                 modulehook("player-login");
 
                 if ($session['user']['loggedin']) {
-                    $allowednavs = \Lotgd\Serialization::safeUnserialize($session['user']['allowednavs']);
-                    $session['allowednavs'] = is_array($allowednavs) ? $allowednavs : [];
                     $link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
 
                     $str = sprintf_translate("Sending you to %s, have a safe journey", $link);
@@ -235,6 +231,20 @@ if ($name != "") {
         // like the stafflist which need to invalidate the cache
         // when someone logs in or off can do so.
         modulehook("player-logout");
+
+        // Get allowed navs that are saved, not the ones in the user array, because they are empty (redirect clears)
+        $sql = "SELECT restorepage, allowednavs FROM " . db_prefix('accounts') . " WHERE acctid=" . $session['user']['acctid'];
+        $result = db_query($sql);
+        // Check if we got anything (we should)
+	if (db_num_rows($result) == 1) {
+	    $row = db_fetch_assoc($result);
+            $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
+	    $allowednavs[] = $row['restorepage'];
+	    // Write back to database
+	    $serialized = addslashes(serialize($allowednavs));
+            $sql = "UPDATE " . db_prefix('accounts'). " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
+	    db_query($sql);
+        }
     }
     $session = array();
     redirect("index.php");
