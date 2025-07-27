@@ -750,11 +750,11 @@ class PageParts
         }
 
         // Remove the session "c" parameter while keeping the rest intact
-        $parsedUrl = parse_url($uri);
+        $parsedUrl = parse_url($uri) ?: [];
         parse_str($parsedUrl['query'] ?? '', $queryParams);
         unset($queryParams['c']); // Remove the 'c' parameter
         $parsedUrl['query'] = http_build_query($queryParams);
-        $uri = $parsedUrl['path'] . (!empty($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '');
+        $uri = ($parsedUrl['path'] ?? '') . (!empty($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '');
 
         $page = ltrim($uri, '/');
 
