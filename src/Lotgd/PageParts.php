@@ -497,7 +497,7 @@ class PageParts
             $l = $settings->getSetting('defaultlanguage', 'en');
             $d = $settings->getSetting('serverdesc', 'Another LoGD Server');
             $e = $settings->getSetting('gameadminemail', 'postmaster@localhost.com');
-            $u = $settings->getSetting('logdnetserver', 'http://logdnet.logd.com/');
+            $u = $settings->getSetting('logdnetserver', 'http://lotgd.net/');
             if (!preg_match('/\/$/', $u)) {
                 $u = $u . '/';
                 $settings->saveSetting('logdnetserver', $u);
