@@ -6,9 +6,9 @@ use Lotgd\Names;
 $sql = "";
 $updates = 0;
 $post = httpallpost();
-$oldvalues = stripslashes(httppost('oldvalues'));
+$oldvalues = httppost('oldvalues');
 $oldvalues = html_entity_decode(
-    $oldvalues,
+    (string) $oldvalues,
     ENT_COMPAT,
     getsetting('charset', 'ISO-8859-1')
 );

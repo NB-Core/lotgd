@@ -80,9 +80,9 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
     }
 
 
-    $oldvalues = stripslashes(httppost('oldvalues'));
+    $oldvalues = httppost('oldvalues');
     $oldvalues = html_entity_decode(
-        $oldvalues,
+        (string) $oldvalues,
         ENT_COMPAT,
         getsetting('charset', 'ISO-8859-1')
     );
@@ -486,7 +486,7 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
     rawoutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
     $info = Forms::showForm($form, $prefs);
     rawoutput("<input type='hidden' value=\"" .
-            htmlentities(serialize($info), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" name='oldvalues'>");
+            htmlentities(serialize($info), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\" name='oldvalues'>");
 
     rawoutput("</form><br>");
     addnav("", "prefs.php?op=save");
