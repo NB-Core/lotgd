@@ -12,83 +12,162 @@ class Forms
     /**
      * Render a message preview input field with javascript helper.
      */
-    public static function previewField(string $name, string|bool $startdiv = false, string $talkline = "says", bool $showcharsleft = true, array|bool $info = false, bool $scriptOutput = true): string
-    {
+    public static function previewField(
+        string $name,
+        string|bool $startdiv = false,
+        string $talkline = 'says',
+        bool $showcharsleft = true,
+        array|bool $info = false,
+        bool $scriptOutput = true
+    ): string {
         global $schema, $session, $output;
-        $talkline = Translator::translateInline($talkline, $schema);
-        $youhave = Translator::translateInline("You have ");
-        $charsleft = Translator::translateInline(" characters left.");
-        $script = '';
-        if ($startdiv === false) {
-            $startdiv = "";
-        }
-        $script .= "<script language='JavaScript'>\n                                function previewtext$name(t,l){\n                                        var out = \"<span class='colLtWhite'>" . addslashes(appoencode($startdiv)) . " \";\n                                        var end = '</span>';\n                                        var x=0;\n                                        var y='';\n                                        var z='';\n                                        var max=document.getElementById('input$name');\n                                        var charsleft='';";
-        if ($talkline !== false) {
-            $script .= "      if (t.substr(0,2)=='::'){\n                                                x=2;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,1)==':'){\n                                                x=1;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,3)=='/me'){\n                                                x=3;\n                                                out += '</span><span class=\'colLtWhite\'>';";
-            if ($session['user']['superuser'] & SU_IS_GAMEMASTER) {
-                $script .= "\n                                        }else if (t.substr(0,5)=='/game'){\n                                                x=5;\n                                                out = '<span class=\'colLtWhite\'>';";
-            }
-            $script .= " \n     }else{\n                                                out += '</span><span class=\'colDkCyan\'>" . addslashes(appoencode($talkline)) . ", \"</span><span class=\'colLtCyan\'>';\n                                                end += '</span><span class=\'colDkCyan\'>';
-                                        }";
-        }
-        if ($showcharsleft == true) {
-            $script .= "      if (x!=0) {\n                                                if (max.maxLength!=" . getsetting('maxchars', 200) . ") max.maxLength=" . getsetting('maxchars', 200) . ";\n                                                l=" . getsetting('maxchars', 200) . ";\n                                        } else {\n                                                max.maxLength=l;\n                                        }\n                                        if (l-t.length<0) charsleft +='<span class=\'colLtRed\'>';\n                                        charsleft += '" . $youhave . "'+(l-t.length)+'" . $charsleft . "<br>';\n                                        if (l-t.length<0) charsleft +='</span>';\n                                        document.getElementById('charsleft$name').innerHTML=charsleft+'<br/>';";
-        }
-        $switchscript = datacache("switchscript_comm" . rawurlencode($name));
-        if (!$switchscript) {
-            $script .= "              for (; x < t.length; x++){
-                                                y = t.substr(x,1);
-                                                if (y=='<'){
-                                                        out += '&lt;';
-                                                        continue;
-                                                }else if(y=='>'){
-                                                        out += '&gt;';
-                                                        continue;
-                                                }else if (y=='`'){
-                                                        if (x < t.length-1){
-                                                                z = t.substr(x+1,1);";
 
+        $talkline = Translator::translateInline($talkline, $schema);
+        $youhave = Translator::translateInline('You have ');
+        $charsleft = Translator::translateInline(' characters left.');
+        $startdiv = $startdiv === false ? '' : $startdiv;
+
+        $encodedStart = addslashes(appoencode($startdiv));
+        $maxChars = (int) getsetting('maxchars', 200);
+
+        $script = <<<JS
+<script language="JavaScript">
+function previewtext{$name}(t, l) {
+    var out = "<span class='colLtWhite'>{$encodedStart} ";
+    var end = '</span>';
+    var x = 0;
+    var y = '';
+    var z = '';
+    var max = document.getElementById('input{$name}');
+    var charsleft = '';
+JS;
+
+        if ($talkline !== false) {
+            $script .= <<<JS
+
+    if (t.substr(0, 2) == '::') {
+        x = 2;
+        out += '</span><span class="colLtWhite">';
+    } else if (t.substr(0, 1) == ':') {
+        x = 1;
+        out += '</span><span class="colLtWhite">';
+    } else if (t.substr(0, 3) == '/me') {
+        x = 3;
+        out += '</span><span class="colLtWhite">';
+JS;
+            if ($session['user']['superuser'] & SU_IS_GAMEMASTER) {
+                $script .= <<<JS
+
+    } else if (t.substr(0, 5) == '/game') {
+        x = 5;
+        out = '<span class="colLtWhite">';
+JS;
+            }
+            $script .= <<<JS
+
+    } else {
+        out += '</span><span class="colDkCyan">{$talkline}, </span><span class="colLtCyan">';
+        end += '</span><span class="colDkCyan">';
+    }
+JS;
+        }
+
+        if ($showcharsleft) {
+            $script .= <<<JS
+
+    if (x != 0) {
+        if (max.maxLength != {$maxChars}) {
+            max.maxLength = {$maxChars};
+        }
+        l = {$maxChars};
+    } else {
+        max.maxLength = l;
+    }
+    if (l - t.length < 0) {
+        charsleft += '<span class="colLtRed">';
+    }
+    charsleft += '{$youhave}' + (l - t.length) + '{$charsleft}<br>';
+    if (l - t.length < 0) {
+        charsleft += '</span>';
+    }
+    document.getElementById('charsleft{$name}').innerHTML = charsleft + '<br/>';
+JS;
+        }
+
+        $switchscript = datacache('switchscript_comm' . rawurlencode($name));
+
+        if (!$switchscript) {
             $colors = $output->getColors();
-            $switchscript = "switch (z) {\n                                case \"0\": out+='</span>';break;\n";
+            $cases = ["case \"0\": out+='</span>';break;"];
             foreach ($colors as $key => $colorcode) {
-                $switchscript .= "case \"" . $key . "\": out+='</span><span class=\'" . $colorcode . "\'>';break;\n";
+                $cases[] = "case \"{$key}\": out+='</span><span class=\"{$colorcode}\">';break;";
             }
-            $switchscript .= "}\n                                                x++;\n                                                }\n                                        }else{\n                                                out += y;\n                                        }\n                                }\n                                document.getElementById(\"previewtext$name\").innerHTML=out+end+'<br/>';\n                        }\n                        </script>";
-            updatedatacache("switchscript_comm" . rawurlencode($name), $switchscript);
-        }
-        $script .= $switchscript;
-        if ($showcharsleft == true) {
-            $script .= "<span id='charsleft$name'></span>";
-        }
-        if (!is_array($info)) {
-            $script .= "<input name='$name' id='input$name' maxsize='" . (getsetting('maxchars', 200) + 100) . "' onKeyUp='previewtext$name(document.getElementById(\"input$name\").value," . getsetting('maxchars', 200) . ");'>";
+            $cases = implode("\n            ", $cases);
+
+            $switchscript = <<<JS
+
+    for (; x < t.length; x++) {
+        y = t.substr(x, 1);
+        if (y == '<') {
+            out += '&lt;';
+            continue;
+        } else if (y == '>') {
+            out += '&gt;';
+            continue;
+        } else if (y == '`') {
+            if (x < t.length - 1) {
+                z = t.substr(x + 1, 1);
+                switch (z) {
+                        {$cases}
+                }
+                x++;
+            }
         } else {
-            if (isset($info['maxlength'])) {
-                $l = $info['maxlength'];
-            } else {
-                $l = getsetting('maxchars', 200);
-            }
+            out += y;
+        }
+    }
+    document.getElementById("previewtext{$name}").innerHTML = out + end + '<br/>';
+}
+</script>
+JS;
+
+            updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
+        }
+
+        $script .= $switchscript;
+
+        if ($showcharsleft) {
+            $script .= "<span id='charsleft{$name}'></span>";
+        }
+
+        if (!is_array($info)) {
+            $script .= "<input name='{$name}' id='input{$name}' maxsize='" . ($maxChars + 100) . "' onKeyUp='previewtext{$name}(document.getElementById(\"input{$name}\").value,{$maxChars});'>";
+        } else {
+            $l = isset($info['maxlength']) ? $info['maxlength'] : $maxChars;
             if (isset($info['type']) && $info['type'] == 'textarea') {
-                $script .= "<textarea name='$name' id='input$name' onKeyUp='previewtext$name(document.getElementById(\"input$name\").value,$l);' ";
+                $script .= "<textarea name='{$name}' id='input{$name}' onKeyUp='previewtext{$name}(document.getElementById(\"input{$name}\").value,{$l});' ";
             } else {
-                $script .= "<input name='$name' id='input$name' onKeyUp='previewtext$name(document.getElementById(\"input$name\").value,$l);' ";
+                $script .= "<input name='{$name}' id='input{$name}' onKeyUp='previewtext{$name}(document.getElementById(\"input{$name}\").value,{$l});' ";
             }
             foreach ($info as $key => $val) {
                 $script .= "$key='$val'";
             }
             if (isset($info['type']) && $info['type'] == 'textarea') {
-                $script .= "></textarea>";
+                $script .= '></textarea>';
             } else {
-                $script .= ">";
+                $script .= '>';
             }
         }
-        $add = Translator::translateInline("Add");
-        $returnscript = $script . "<div id='previewtext$name'></div>";
-        $script .= "<input type='submit' class='button' value='$add'><br>";
-        $script .= "<div id='previewtext$name'></div>";
+
+        $add = Translator::translateInline('Add');
+        $returnscript = $script . "<div id='previewtext{$name}'></div>";
+        $script .= "<input type='submit' class='button' value='{$add}'><br>";
+        $script .= "<div id='previewtext{$name}'></div>";
+
         if ($scriptOutput) {
             rawoutput($script);
         }
+
         return $returnscript;
     }
     /**
