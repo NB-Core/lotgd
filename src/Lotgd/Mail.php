@@ -254,7 +254,7 @@ class Mail
     {
         $mail = Database::prefix('mail');
         $acc = Database::prefix('accounts');
-        $sql = "SELECT $mail.*,$acc.name,$acc.acctid FROM $mail "
+        $sql = "SELECT $mail.*,$acc.name,$acc.acctid,$acc.login FROM $mail "
              . "LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
              . "WHERE msgto='$userId' AND messageid='$messageId'";
 
