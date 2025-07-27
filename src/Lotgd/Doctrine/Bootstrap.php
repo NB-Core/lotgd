@@ -35,7 +35,7 @@ class Bootstrap
             'charset'      => 'utf8mb4',
             // Use buffered queries to avoid "Cannot execute queries while other
             // unbuffered queries are active" errors when using PDO.
-            'driverOptions'=> [
+            'driverOptions' => [
                 \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
             ],
         ];
