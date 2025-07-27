@@ -738,20 +738,38 @@ class PageParts
      */
     public static function canonicalLink(): string
     {
-        global $SCRIPT_NAME, $settings;
+        global $REQUEST_URI, $SCRIPT_NAME, $settings;
 
         $serverUrl = isset($settings)
             ? rtrim($settings->getSetting('serverurl', 'http://' . $_SERVER['HTTP_HOST']), '/')
             : 'http://' . $_SERVER['HTTP_HOST'];
 
-        $page = ltrim($SCRIPT_NAME ?? '', '/');
-
-        if ($page === 'runmodule.php') {
-            $module = httpget('module');
-            if ($module !== false && $module !== '') {
-                $page .= '?module=' . urlencode((string) $module);
-            }
+        $uri = $REQUEST_URI ?? '';
+        if ($uri === '') {
+            $uri = $SCRIPT_NAME ?? '';
         }
+
+        // Remove the session "c" parameter while keeping the rest intact
+        $parsedUrl = parse_url($uri);
+        if ($parsedUrl === false) {
+            // Handle the malformed URL case
+            $parsedUrl = [];
+        }
+        $queryString = $parsedUrl['query'] ?? '';
+        if (is_string($queryString)) {
+            parse_str($queryString, $queryParams);
+        } else {
+            $queryParams = [];
+        }
+        unset($queryParams['c']); // Remove the 'c' parameter
+        if (empty($queryParams)) {
+            unset($parsedUrl['query']);
+        } else {
+            $parsedUrl['query'] = http_build_query($queryParams);
+        }
+        $uri = ($parsedUrl['path'] ?? '') . (!empty($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '');
+
+        $page = ltrim($uri, '/');
 
         return sprintf('<link rel="canonical" href="%s/%s" />', $serverUrl, $page);
     }
