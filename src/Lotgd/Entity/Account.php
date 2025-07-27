@@ -410,7 +410,7 @@ class Account
                 if ($type === 'bool') {
                     $value = (bool) $value;
                 } elseif ($type === 'int') {
-                    $value = (int) round($value);
+                    $value = intval($value);
                 } elseif ($type === 'float') {
                     $value = (float) $value;
                 }
