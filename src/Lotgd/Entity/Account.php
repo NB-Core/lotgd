@@ -404,13 +404,19 @@ class Account
             if (property_exists($this, $prop)) {
                 $value = $arguments[0] ?? null;
 
-                $ref = new \ReflectionProperty($this, $prop);
+                $ref  = new \ReflectionProperty($this, $prop);
                 $type = $ref->hasType() ? $ref->getType()->getName() : null;
+
                 if ($type === 'bool') {
                     $value = (bool) $value;
+                } elseif ($type === 'int') {
+                    $value = (int) round($value);
+                } elseif ($type === 'float') {
+                    $value = (float) $value;
                 }
 
                 $this->$prop = $value;
+
                 return $this;
             }
         }
