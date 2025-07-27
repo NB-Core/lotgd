@@ -755,7 +755,12 @@ class PageParts
             // Handle the malformed URL case
             $parsedUrl = [];
         }
-        parse_str($parsedUrl['query'] ?? '', $queryParams);
+        $queryString = $parsedUrl['query'] ?? '';
+        if (is_string($queryString)) {
+            parse_str($queryString, $queryParams);
+        } else {
+            $queryParams = [];
+        }
         unset($queryParams['c']); // Remove the 'c' parameter
         if (empty($queryParams)) {
             unset($parsedUrl['query']);
