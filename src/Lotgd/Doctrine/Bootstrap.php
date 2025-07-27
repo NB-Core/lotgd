@@ -27,13 +27,15 @@ class Bootstrap
         }
 
         $connection = [
-            'driver'  => 'pdo_mysql',
-            'host'    => $settings['DB_HOST'] ?? 'localhost',
-            'dbname'  => $settings['DB_NAME'] ?? '',
-            'user'    => $settings['DB_USER'] ?? '',
-            'password'=> $settings['DB_PASS'] ?? '',
-            'charset' => 'utf8mb4',
-            'options' => [
+            'driver'       => 'pdo_mysql',
+            'host'         => $settings['DB_HOST'] ?? 'localhost',
+            'dbname'       => $settings['DB_NAME'] ?? '',
+            'user'         => $settings['DB_USER'] ?? '',
+            'password'     => $settings['DB_PASS'] ?? '',
+            'charset'      => 'utf8mb4',
+            // Use buffered queries to avoid "Cannot execute queries while other
+            // unbuffered queries are active" errors when using PDO.
+            'driverOptions'=> [
                 \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
             ],
         ];
