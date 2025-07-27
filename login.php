@@ -222,6 +222,7 @@ if ($name != "") {
         }
     }
 } elseif ($op == "logout") {
+    $restorePage = $session['user']['restorepage'] ?? '';
     if ($session['user']['loggedin']) {
         $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
         db_query($sql);
@@ -235,6 +236,11 @@ if ($name != "") {
         // like the stafflist which need to invalidate the cache
         // when someone logs in or off can do so.
         modulehook("player-logout");
+
+        if ($restorePage !== '') {
+            \Lotgd\Nav::add('', $restorePage);
+            Accounts::saveUser();
+        }
     }
     $session = array();
     redirect("index.php");
