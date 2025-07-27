@@ -118,7 +118,7 @@ JS;
             if (x < t.length - 1) {
                 z = t.substr(x + 1, 1);
                 switch (z) {
-                    {$cases}
+                        {$cases}
                 }
                 x++;
             }
