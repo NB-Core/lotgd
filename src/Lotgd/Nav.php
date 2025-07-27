@@ -705,6 +705,9 @@ class Nav
                         self::$quickkeys[$key] = "window.location='$link$extra'";
                     }
                 }
+                if (is_string($text)) {
+                    $text = preg_replace('/^`0+/', '', $text);
+                }
                 $n = Template::templateReplace('navitem', [
                     'text' => appoencode($text, $priv),
                     'link' => $link . ($pop != true ? $extra : ''),
