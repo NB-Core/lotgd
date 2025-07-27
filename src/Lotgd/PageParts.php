@@ -750,7 +750,11 @@ class PageParts
         }
 
         // Remove the session "c" parameter while keeping the rest intact
-        $parsedUrl = parse_url($uri) ?: [];
+        $parsedUrl = parse_url($uri);
+        if ($parsedUrl === false) {
+            // Handle the malformed URL case
+            $parsedUrl = [];
+        }
         parse_str($parsedUrl['query'] ?? '', $queryParams);
         unset($queryParams['c']); // Remove the 'c' parameter
         if (empty($queryParams)) {
