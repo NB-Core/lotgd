@@ -23,6 +23,13 @@ if ($msgid > 0) {
         if ($forwardto > 0) {
             $row['login'] = '';
         }
+        if (isset($row['login']) && $row['login'] !== '') {
+            $sql = "SELECT superuser FROM " . db_prefix('accounts')
+                . " WHERE login = '" . addslashes($row['login']) . "'";
+            $result = db_query($sql);
+            $acct = db_fetch_assoc($result);
+            $row['superuser'] = $acct['superuser'] ?? 0;
+        }
     } else {
         output("Eek, no such message was found!`n");
     }
