@@ -595,6 +595,7 @@ JS;
 
             case 'viewhiddenonly':
                 if (isset($row[$key])) {
+		    $row[$key] = (string) $row[$key];
                     output_notl(DumpItem::dump($row[$key]), true);
                     rawoutput("<input type='hidden' name='" . addslashes($key) . "' value='" . addslashes($row[$key]) . "'>");
                 }
@@ -658,6 +659,8 @@ JS;
                     $func($keyout, $val, $info);
                 } else {
                     $val = array_key_exists($key, $row) ? $row[$key] : '';
+		    if (!is_string($val))
+                        $val = (string) $val;
                     rawoutput("<input size='50' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">");
                 }
         }
