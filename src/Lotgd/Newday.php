@@ -14,12 +14,11 @@ class Newday
     public static function dbCleanup(): void
     {
         savesetting("lastdboptimize", date("Y-m-d H:i:s"));
-        $result = Database::query("SHOW TABLES");
-        $rows = [];
-        while ($row = Database::fetchAssoc($result)) {
-            $rows[] = $row;
-        }
-        Database::freeResult($result);
+        // Fetch all table names at once to avoid leaving an unbuffered
+        // result active which can cause "Cannot execute queries while other
+        // unbuffered queries are active" errors with PDO MySQL.
+        $rows = Database::getDoctrineConnection()
+            ->fetchAllAssociative('SHOW TABLES');
 
         $tables = [];
         $start = getmicrotime();
