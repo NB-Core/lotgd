@@ -750,8 +750,9 @@ class PageParts
         }
 
         // Remove the session "c" parameter while keeping the rest intact
-        $uri = preg_replace('/([?&])c=[^&]*(&|$)/', '$1', $uri);
-        $uri = rtrim($uri, '&?');
+        $uri = preg_replace('/\?c=[^&]*(?:&|$)/', '?', $uri); // Handle case where 'c' is the only parameter
+        $uri = preg_replace('/&c=[^&]*/', '', $uri);         // Handle case where 'c' is not the only parameter
+        $uri = rtrim($uri, '&?');                           // Clean up any trailing '&' or '?'
 
         $page = ltrim($uri, '/');
 
