@@ -27,12 +27,15 @@ class Bootstrap
         }
 
         $connection = [
-            'driver' => 'pdo_mysql',
-            'host' => $settings['DB_HOST'] ?? 'localhost',
-            'dbname' => $settings['DB_NAME'] ?? '',
-            'user' => $settings['DB_USER'] ?? '',
-            'password' => $settings['DB_PASS'] ?? '',
+            'driver'  => 'pdo_mysql',
+            'host'    => $settings['DB_HOST'] ?? 'localhost',
+            'dbname'  => $settings['DB_NAME'] ?? '',
+            'user'    => $settings['DB_USER'] ?? '',
+            'password'=> $settings['DB_PASS'] ?? '',
             'charset' => 'utf8mb4',
+            'options' => [
+                \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
+            ],
         ];
 
         $paths = [$rootDir . '/src/Lotgd/Entity'];
