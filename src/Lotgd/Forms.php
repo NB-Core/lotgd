@@ -290,10 +290,12 @@ JS;
 
         $fieldId = 'form-' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $keyout);
 
-        rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td valign='top'>");
-        rawoutput("<label for='" . HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
+	$entityFieldId = HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+
+        rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
+        rawoutput("<label for='$entityFieldId'>");
         output_notl('%s', $info[0], true);
-        rawoutput('</label></td><td valign="top">');
+        rawoutput("</label></td><td class='formfield-value' id='$entityFieldId' name='$entityFieldId' valign='top'>");
         $rowIndex++;
 
         self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions, $fieldId);

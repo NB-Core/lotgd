@@ -130,21 +130,18 @@ if ($name != "") {
 
                 db_query("UPDATE " . db_prefix("accounts") . " SET loggedin=" . true . ", laston='" . date("Y-m-d H:i:s") . "' WHERE acctid = " . $session['user']['acctid']);
 
-                // Persist updated login time when using Doctrine ORM
-                //Accounts::saveUser();
-
                 $session['user']['loggedin'] = true;
                 $location = $session['user']['location'];
                 if ($session['user']['location'] == $iname) {
                     $session['user']['location'] = $vname;
                 }
 
-                if ($session['user']['restorepage'] > '') {
+                if (!empty($session['user']['restorepage'])) {
                     $link = "<a href='{$session['user']['restorepage']}'>{$session['user']['restorepage']}</a>";
                     $msg  = sprintf_translate('Sending you to %s, have a safe journey', $link);
-
+                    //$session['allowednavs'] = unserialize($session['user']['allowednavs']);
                     // Ensure the restore page is allowed in the next request
-                    \Lotgd\Nav::add('', $session['user']['restorepage']);
+                    //\Lotgd\Nav::add('', $session['user']['restorepage']);
                     header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
                     echo $msg;
@@ -239,7 +236,7 @@ if ($name != "") {
 	if (db_num_rows($result) == 1) {
 	    $row = db_fetch_assoc($result);
             $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
-	    $allowednavs[] = $row['restorepage'];
+	    $allowednavs[$row['restorepage']] = true;
 	    // Write back to database
 	    $serialized = addslashes(serialize($allowednavs));
             $sql = "UPDATE " . db_prefix('accounts'). " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];

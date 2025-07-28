@@ -34,7 +34,7 @@ class Redirect
             $failoutput->outputNotl("`lWhoops, your navigation is broken. Hopefully we can restore it.`n`n");
             $failoutput->outputNotl('`$');
             $failoutput->rawoutput("<a href=\"" . HTMLEntities($location, ENT_COMPAT, $charset) . "\">" . Translator::translateInline('Click here to continue.', 'badnav') . "</a>");
-            $failoutput->outputNotl(Translator::translateInline("`n`n\$If you cannot leave this page, notify the staff via <a href='petition.php'>petition</a> `\$and tell them where this happened and what you did. Thanks.", 'badnav'), true);
+            $failoutput->outputNotl(Translator::translateInline("`n`n`\$If you cannot leave this page, notify the staff via <a href='petition.php'>petition</a> `\$and tell them where this happened and what you did. Thanks.", 'badnav'), true);
             $text = $failoutput->getOutput();
             $session['output'] = "<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000'>$text</body></html>";
         }
