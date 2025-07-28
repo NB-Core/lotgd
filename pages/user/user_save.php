@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Lotgd\Names;
 use Lotgd\Nav;
+use Lotgd\MySQL\Database;
 
 $sql = "";
 $updates = 0;
@@ -195,14 +196,14 @@ foreach ($post as $key => $val) {
     }
 }
     $sql = substr($sql, 0, strlen($sql) - 1);
-$sql = "UPDATE " . db_prefix("accounts") . " SET " . $sql . " WHERE acctid=\"$userid\"";
+$sql = "UPDATE " . Database::prefix("accounts") . " SET " . $sql . " WHERE acctid=\"$userid\"";
     $petition = httpget("returnpetition");
 if ($petition != "") {
     Nav::add("", "viewpetition.php?op=view&id=$petition");
 }
 Nav::add("", "user.php");
 if ($updates > 0) {
-    db_query($sql);
+    Database::query($sql);
     debug("Updated $updates fields in the user record with:\n$sql");
     $output->output("%s fields in the user's record were updated.", $updates);
 } else {

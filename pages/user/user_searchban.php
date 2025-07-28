@@ -4,29 +4,28 @@ declare(strict_types=1);
 use Lotgd\UserLookup;
 use Lotgd\Nav;
 use Lotgd\Translator;
+use Lotgd\MySQL\Database;
 
 $subop = httpget("subop");
 $none = Translator::translateInline('NONE');
 if ($subop == "xml") {
     header("Content-Type: text/xml");
-    $sql = "SELECT DISTINCT " . db_prefix("accounts") . ".name FROM " . db_prefix("bans") . ", " . db_prefix("accounts") . " WHERE (ipfilter='" . addslashes(httpget("ip")) . "' AND " .
-        db_prefix("bans") . ".uniqueid='" .
+    $sql = "SELECT DISTINCT " . Database::prefix("accounts") . ".name FROM " . Database::prefix("bans") . ", " . Database::prefix("accounts") . " WHERE (ipfilter='" . addslashes(httpget("ip")) . "' AND " .
+        Database::prefix("bans") . ".uniqueid='" .
         addslashes(httpget("id")) . "') AND ((substring(" .
-        db_prefix("accounts") . ".lastip,1,length(ipfilter))=ipfilter " .
-        "AND ipfilter<>'') OR (" .  db_prefix("bans") . ".uniqueid=" .
-        db_prefix("accounts") . ".uniqueid AND " .
-        db_prefix("bans") . ".uniqueid<>''))";
-    $r = db_query($sql);
-    echo "<xml>";
-    while ($ro = db_fetch_assoc($r)) {
-        echo "<name name=\"";
-        echo urlencode(appoencode("`0{$ro['name']}"));
-        echo "\"/>";
+        Database::prefix("accounts") . ".lastip,1,length(ipfilter))=ipfilter " .
+        "AND ipfilter<>'') OR (" .  Database::prefix("bans") . ".uniqueid=" .
+        Database::prefix("accounts") . ".uniqueid AND " .
+        Database::prefix("bans") . ".uniqueid<>''))";
+    $r = Database::query($sql);
+    $output->rawOutput("<xml>");
+    while ($ro = Database::fetchAssoc($r)) {
+        $output->rawOutput("<name name=\"" . urlencode(appoencode("`0{$ro['name']}")) . "\"/>");
     }
-    if (db_num_rows($r) == 0) {
-        echo "<name name=\"$none\"/>";
+    if (Database::numRows($r) == 0) {
+        $output->rawOutput("<name name=\"$none\"/>");
     }
-    echo "</xml>";
+    $output->rawOutput("</xml>");
     exit();
 }
 $operator = "<=";
@@ -44,8 +43,8 @@ if ($target == '') {
 } elseif (is_numeric($target)) {
     //none
     $sql = "SELECT lastip,uniqueid FROM accounts WHERE acctid=" . $target;
-    $result = db_query($sql);
-    $row = db_fetch_assoc($result);
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
     $since = "WHERE ipfilter LIKE '%" . $row['lastip'] . "%' OR uniqueid LIKE '%" . $row['uniqueid'] . "%'";
 } else {
     $names = UserLookup::lookup($target);
@@ -56,7 +55,7 @@ if ($target == '') {
                 $output->output("Search banned user by name: ");
                 $output->rawOutput("</label>");
                 $output->rawOutput("<select name='target' id='target'>");
-        while ($row = db_fetch_assoc($names[0])) {
+        while ($row = Database::fetchAssoc($names[0])) {
             $output->rawOutput("<option value='" . $row['acctid'] . "'>" . $row['login'] . "</option>");
         }
         $output->rawOutput("</select>");
@@ -64,8 +63,8 @@ if ($target == '') {
     }
 }
 
-$sql = "SELECT * FROM " . db_prefix("bans") . " $since ORDER BY banexpire ASC";
-$result = db_query($sql);
+$sql = "SELECT * FROM " . Database::prefix("bans") . " $since ORDER BY banexpire ASC";
+$result = Database::query($sql);
 $output->rawOutput("<script language='JavaScript'>
 function getUserInfo(ip,id,divid){
 	var filename='user.php?op=removeban&subop=xml&ip='+ip+'&id='+id;
@@ -99,7 +98,7 @@ $aff = Translator::translateInline("Affects");
 $l = Translator::translateInline("Last");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$bauth</td><td>$ipd</td><td>$dur</td><td>$mssg</td><td>$aff</td><td>$l</td></tr>");
 $i = 0;
-while ($row = db_fetch_assoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $liftban = Translator::translateInline("Lift&nbsp;ban");
     $showuser = Translator::translateInline("Click&nbsp;to&nbsp;show&nbsp;users");
     $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
