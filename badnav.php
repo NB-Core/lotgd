@@ -14,6 +14,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
+use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Redirect;
 
@@ -39,13 +40,13 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
             unset($session['allowednavs'][$key]);
         }
     }
-    $sql = "SELECT output FROM " . db_prefix("accounts_output") . " WHERE acctid={$session['user']['acctid']};";
-    $result = db_query($sql);
-    if (db_num_rows($result) < 1) {
+    $sql = "SELECT output FROM " . Database::prefix("accounts_output") . " WHERE acctid={$session['user']['acctid']};";
+    $result = Database::query($sql);
+    if (Database::numRows($result) < 1) {
         //no output found, nothing to set
         $row = array ("output" => '');
     } else {
-        $row = db_fetch_assoc($result);
+        $row = Database::fetchAssoc($result);
         if ($row['output'] > "") {
             $row['output'] = gzuncompress($row['output']);
         }
@@ -63,13 +64,13 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
         Header::pageHeader("Your Navs Are Corrupted");
         if ($session['user']['alive']) {
             VillageNav::render();
-            output(
+            $output->output(
                 "Your navs are corrupted, please return to %s.",
                 $session['user']['location']
             );
         } else {
             Nav::add("Return to Shades", "shades.php");
-            output("Your navs are corrupted, please return to the Shades.");
+            $output->output("Your navs are corrupted, please return to the Shades.");
         }
         Footer::pageFooter();
     }
