@@ -131,6 +131,7 @@ $output->rawOutput("<input name='word'><input type='submit' class='button' value
 $sql = "SELECT * FROM " . Database::prefix("nastywords") . " WHERE type='nasty'";
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
+
 $words = explode(" ", $row['words']);
 reset($words);
 

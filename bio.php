@@ -15,6 +15,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Modules;
+use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\DateTime;
@@ -48,7 +49,7 @@ if ($target = Database::fetchAssoc($result)) {
     $id = $target['acctid'];
     $target['return_link'] = $return;
 
-    Header::pageHeader("Character Biography: %s", full_sanitize($target['name']));
+    Header::pageHeader("Character Biography: %s", Sanitize::fullSanitize($target['name']));
 
     tlschema("nav");
     Nav::add("Return");
@@ -133,7 +134,7 @@ if ($target = Database::fetchAssoc($result)) {
         $output->output("`^Bio: `@`n%s`n", soap($target['bio']));
     }
 
-    Modules::modulehook("bioinfo", $target);
+    HookHandler::hook("bioinfo", $target);
 
     $output->output("`n`^Recent accomplishments (and defeats) of %s`^", $target['name']);
     $result = Database::query("SELECT * FROM " . Database::prefix("news") . " WHERE accountid={$target['acctid']} ORDER BY newsdate DESC,newsid ASC LIMIT 100");
@@ -185,7 +186,7 @@ if ($target = Database::fetchAssoc($result)) {
         tlschema();
     }
 
-    Modules::modulehook("bioend", $target);
+    HookHandler::hook("bioend", $target);
     Footer::pageFooter();
 } else {
     Header::pageHeader("Character has been deleted");

@@ -1,18 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Commentary;
 use Lotgd\Buffs;
 use Lotgd\Nav\VillageNav;
+use Lotgd\Sanitize;
+use Lotgd\Http;
+use Lotgd\Events;
 
 // addnews ready
 // translator ready
 // mail ready
 require_once("common.php");
 use Lotgd\Pvp;
-require_once("lib/sanitize.php");
-require_once("lib/http.php");
-require_once("lib/events.php");
-require_once("lib/villagenav.php");
 
 tlschema("inn");
 
@@ -21,28 +22,28 @@ $iname = getsetting("innname", LOCATION_INN);
 $vname = getsetting("villagename", LOCATION_FIELDS);
 $barkeep = getsetting('barkeep', '`tCedrik');
 
-$op = httpget('op');
+$op = Http::get('op');
 // Correctly reset the location if they fleeing the dragon
 // This needs to be done up here because a special could alter your op.
 if ($op == "fleedragon") {
     $session['user']['location'] = $vname;
 }
 
-page_header(array("%s",sanitize($iname)));
-$skipinndesc = handle_event("inn");
+page_header(["%s", Sanitize::sanitize($iname)]);
+$skipinndesc = Events::handleEvent("inn");
 
 if (!$skipinndesc) {
     checkday();
-    rawoutput("<span style='color: #9900FF'>");
-    output_notl("`c`b");
-    output($iname);
-    output_notl("`b`c");
+    $output->rawOutput("<span style='color: #9900FF'>");
+    $output->outputNotl("`c`b");
+    $output->output($iname);
+    $output->outputNotl("`b`c");
 }
 
-$subop = httpget('subop');
+$subop = Http::get('subop');
 
-$com = httpget('comscroll');
-$comment = httppost('insertcommentary');
+$com = Http::get('comscroll');
+$comment = Http::post('insertcommentary');
 
 require_once("lib/partner.php");
 $partner = get_partner();
@@ -69,7 +70,7 @@ switch ($op) {
 }
 
 if (!$skipinndesc) {
-    rawoutput("</span>");
+    $output->rawOutput("</span>");
 }
 
 page_footer();
