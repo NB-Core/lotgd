@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use Lotgd\Http;
+use Lotgd\Nav;
 use Lotgd\Serialization;
+use Lotgd\Accounts;
 
 $config = Serialization::safeUnserialize($session['user']['donationconfig']);
-use Lotgd\Accounts;
 $expense = round(($session['user']['level'] * (10 + log($session['user']['level']))), 0);
 $pay = Http::get('pay');
 if ($pay) {
@@ -44,7 +45,7 @@ if ($pay) {
 } else {
     if ($session['user']['boughtroomtoday']) {
         $output->output("You already paid for a room for the day.");
-        addnav("Go to room", "inn.php?op=room&pay=1");
+        Nav::add("Go to room", "inn.php?op=room&pay=1");
     } else {
         modulehook("innrooms");
         $output->output("You stroll over to the bartender and request a room.");
@@ -77,9 +78,9 @@ if ($pay) {
         $output->output("It is far harder for vagabonds to get you in your room while you sleep.");
         $output->output("Also, those bodyguards sound pretty safe to you.");
         //$output->output("`n`bNote, bodyguard levels not yet implemented`b`n");
-        addnav(array("Give him %s gold", $expense), "inn.php?op=room&pay=1");
+        Nav::add(array("Give him %s gold", $expense), "inn.php?op=room&pay=1");
         if ($session['user']['goldinbank'] >= $bankexpense) {
-            addnav(array("Pay %s gold from bank", $bankexpense), "inn.php?op=room&pay=2");
+            Nav::add(array("Pay %s gold from bank", $bankexpense), "inn.php?op=room&pay=2");
         }
     }
 }

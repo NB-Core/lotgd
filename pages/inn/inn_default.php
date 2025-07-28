@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Http;
+use Lotgd\Nav;
 
 if ($com == "" && !$comment && $op != "fleedragon") {
     if (module_events("inn", getsetting("innchance", 0)) != 0) {
@@ -18,15 +19,15 @@ if ($com == "" && !$comment && $op != "fleedragon") {
     }
 }
 
-addnav("Things to do");
+Nav::add("Things to do");
 $args = modulehook("blockcommentarea", array("section" => "inn"));
 if (!isset($args['block']) || $args['block'] != 'yes') {
-    addnav("Converse with patrons", "inn.php?op=converse");
+    Nav::add("Converse with patrons", "inn.php?op=converse");
 }
-addnav(array("B?Talk to %s`0 the Barkeep",$barkeep), "inn.php?op=bartender");
+Nav::add(array("B?Talk to %s`0 the Barkeep",$barkeep), "inn.php?op=bartender");
 
-addnav("Other");
-addnav("Get a room (log out)", "inn.php?op=room");
+Nav::add("Other");
+Nav::add("Get a room (log out)", "inn.php?op=room");
 
 
 if (!$skipinndesc) {

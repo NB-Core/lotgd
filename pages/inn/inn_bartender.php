@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Http;
+use Lotgd\Nav;
 use Lotgd\Sanitize;
 
 $act = Http::get('act');
@@ -12,9 +13,9 @@ if ($act == "") {
     $output->output("%s`0 polishes a glass, holds it up to the light of the door as another patron opens it to stagger out into the street.", $barkeep);
     $output->output("He then makes a face, spits on the glass and goes back to polishing it.");
     $output->output("\"`%What d'ya want?`0\" he asks gruffly.");
-    addnav_notl(Sanitize::sanitize($barkeep));
-    addnav("Bribe", "inn.php?op=bartender&act=bribe");
-    addnav("Drinks");
+    Nav::addNotl(Sanitize::sanitize($barkeep));
+    Nav::add("Bribe", "inn.php?op=bartender&act=bribe");
+    Nav::add("Drinks");
     modulehook("ale", array());
 } elseif ($act == "bribe") {
     $g1 = $session['user']['level'] * 10;
@@ -25,12 +26,12 @@ if ($act == "") {
         $output->output("While you know that you won't always get what you want, sometimes the way to a man's information is through your purse.");
         $output->output("It's also always been said that more is better.`n`n");
         $output->output("How much would you like to offer him?");
-        addnav("1 gem", "inn.php?op=bartender&act=bribe&type=gem&amt=1");
-        addnav("2 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=2");
-        addnav("3 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=3");
-        addnav(array("%s gold", $g1), "inn.php?op=bartender&act=bribe&type=gold&amt=$g1");
-        addnav(array("%s gold", $g2), "inn.php?op=bartender&act=bribe&type=gold&amt=$g2");
-        addnav(array("%s gold", $g3), "inn.php?op=bartender&act=bribe&type=gold&amt=$g3");
+        Nav::add("1 gem", "inn.php?op=bartender&act=bribe&type=gem&amt=1");
+        Nav::add("2 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=2");
+        Nav::add("3 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=3");
+        Nav::add(array("%s gold", $g1), "inn.php?op=bartender&act=bribe&type=gold&amt=$g1");
+        Nav::add(array("%s gold", $g2), "inn.php?op=bartender&act=bribe&type=gold&amt=$g2");
+        Nav::add(array("%s gold", $g3), "inn.php?op=bartender&act=bribe&type=gold&amt=$g3");
     } else {
         $amt = Http::get('amt');
         if ($type == "gem") {
@@ -59,14 +60,14 @@ if ($act == "") {
         if ($try) {
             if (e_rand(0, 100) < $chance) {
                 $output->output("%s`0 leans over the counter toward you.  \"`%What can I do for you, kid?`0\" he asks.", $barkeep);
-                addnav("What do you want?");
+                Nav::add("What do you want?");
                 modulehook("bartenderbribe", array());
                 if (getsetting("pvp", 1)) {
-                    addnav("Who's upstairs?", "inn.php?op=bartender&act=listupstairs");
+                    Nav::add("Who's upstairs?", "inn.php?op=bartender&act=listupstairs");
                 }
-                addnav("Tell me about colors", "inn.php?op=bartender&act=colors");
+                Nav::add("Tell me about colors", "inn.php?op=bartender&act=colors");
                 if (getsetting("allowspecialswitch", true)) {
-                    addnav("Switch specialty", "inn.php?op=bartender&act=specialty");
+                    Nav::add("Switch specialty", "inn.php?op=bartender&act=specialty");
                 }
             } else {
                 $output->output("%s`0 begins to wipe down the counter top, an act that really needed doing a long time ago.", $barkeep);
@@ -80,15 +81,15 @@ if ($act == "") {
                     $output->output("When he's finished, your gold is gone.");
                 }
                 $output->output("You inquire about the loss, and he stares blankly back at you.");
-                addnav(array("B?Talk to %s`0 again",$barkeep), "inn.php?op=bartender");
+                Nav::add(array("B?Talk to %s`0 again",$barkeep), "inn.php?op=bartender");
             }
         } else {
             $output->output("`n`n%s`0 stands there staring at you blankly.", $barkeep);
-            addnav(array("B?Talk to %s`0 the Barkeep",$barkeep), "inn.php?op=bartender");
+            Nav::add(array("B?Talk to %s`0 the Barkeep",$barkeep), "inn.php?op=bartender");
         }
     }
 } elseif ($act == "listupstairs") {
-    addnav("Refresh the list", "inn.php?op=bartender&act=listupstairs");
+    Nav::add("Refresh the list", "inn.php?op=bartender&act=listupstairs");
     $output->output("%s`0 lays out a set of keys on the counter top, and tells you which key opens whose room.  The choice is yours, you may sneak in and attack any one of them.", $barkeep);
     pvplist($iname, "pvp.php", "?act=attack&inn=1");
 } elseif ($act == "colors") {
@@ -110,7 +111,7 @@ if ($act == "") {
     $output->rawOutput("</form>");
     $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>");
         $output->output("`0`n`nThese colors can be used in your name, and in any conversations you have.");
-    addnav("", $REQUEST_URI);
+    Nav::add("", $REQUEST_URI);
 } elseif ($act == "specialty") {
     $specialty = Http::get('specialty');
     if ($specialty == "") {
@@ -122,7 +123,7 @@ if ($act == "") {
         $output->output("`0\"`3What new specialty did you have in mind?`0\"");
         $specialities = modulehook("specialtynames");
         foreach ($specialities as $key => $name) {
-            addnav($name, Sanitize::cmdSanitize($REQUEST_URI) . "&specialty=$key");
+            Nav::add($name, Sanitize::cmdSanitize($REQUEST_URI) . "&specialty=$key");
         }
     } else {
         $output->output("\"`3Ok then,`0\" %s`0 says, \"`3You're all set.`0\"`n`n\"`2That's it?`0\" you ask him.`n`n", $barkeep);
