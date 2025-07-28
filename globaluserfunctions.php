@@ -22,23 +22,23 @@ SuperuserNav::render();
 Nav::add('Actions');
 Nav::add('Reset all dragonpoints', 'globaluserfunctions.php?op=dkpointreset');
 
-output('`n`c`q~~~~~ `\$Global User Functions `q~~~~~`c`n`n');
+$output->output('`n`c`q~~~~~ `\$Global User Functions `q~~~~~`c`n`n');
 
 $op = (string) Http::get('op');
 
 switch ($op) {
     case "dkpointreset":
-        output("`qThis lets you reset all the dragonpoints for all users on your server.`n`n`\$Handle with care!`q`n`nIf you hit `l\"Reset!\"`q there is no turning back!`n`nAlso note that the hitpoints will be recalculated and the players can respend their points.`n`nThere is also a hook in there allowing modules to reset any things they did.");
+        $output->output("`qThis lets you reset all the dragonpoints for all users on your server.`n`n`\$Handle with care!`q`n`nIf you hit `l\"Reset!\"`q there is no turning back!`n`nAlso note that the hitpoints will be recalculated and the players can respend their points.`n`nThere is also a hook in there allowing modules to reset any things they did.");
         Nav::add('Dragonpoints');
         Nav::add('Reset!', 'globaluserfunctions.php?op=dkpointresetnow');
         break;
     case "dkpointresetnow":
-        output("`qExecuting...");
+        $output->output("`qExecuting...");
         ServerFunctions::resetAllDragonkillPoints();
-        output("... `\$done!`n`n`qIf you need to do a MOTD, you should so so now!");
+        $output->output("... `\$done!`n`n`qIf you need to do a MOTD, you should so so now!");
         break;
     default:
-        output("`QWelcome to the Global User Functions.`n`nPlease select your action.");
+        $output->output("`QWelcome to the Global User Functions.`n`nPlease select your action.");
         break;
 }
 
