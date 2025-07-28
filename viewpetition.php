@@ -39,10 +39,10 @@ $statuses = array(
 $statuses = HookHandler::hook("petition-status", $statuses);
 $statuses = translate_inline($statuses);
 
-$op = Http::get("op");
-$id = Http::get("id");
-
-if (trim(Http::post('insertcommentary')) != "") {
+$op = Http::get("op") ?? "";
+$id = Http::get("id") ?? "";
+$insertCommentary = (string) Http::post('insertcommentary');
+if (!empty(trim($insertCommentary))) {
     /* Update the bug if someone adds comments as well */
     $sql = "UPDATE " . db_prefix("petitions") . " SET closeuserid='{$session['user']['acctid']}',closedate='" . date("Y-m-d H:i:s") . "' WHERE petitionid='$id'";
     db_query($sql);

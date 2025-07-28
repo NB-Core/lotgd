@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+use Lotgd\Http;
 
 output_notl("<form action='mail.php?op=write' method='post'>", true);
 output("`b`2Address:`b`n");
@@ -14,7 +15,8 @@ if ($id > 0) {
     $to = $forwardto;
     $forwardlink = "<input type='hidden' name='forwardto' value='$id'>";
 }
-output_notl("`2$to <input name='to' id='to' value=\"" . htmlentities(stripslashes(httpget('prepop')), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">", true);
+$preop = (string) Http::get('preop');
+output_notl("`2$to <input name='to' id='to' value=\"" . htmlentities($preop, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">", true);
 output_notl("<input type='submit' class='button' value=\"$search\">", true);
 rawoutput($forwardlink);
 rawoutput("</form>");

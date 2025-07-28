@@ -8,7 +8,7 @@ use Lotgd\Nav;
 $sql = 'SELECT name,lastip,uniqueid FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $userid;
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
-if ($row['name'] != "") {
+if (isset($row['name']) && !empty($row['name'])) {
     $output->output("Setting up ban information based on `\$%s`0", $row['name']);
 }
 $output->rawOutput("<form action='bans.php?op=saveban' method='POST'>");
@@ -17,11 +17,11 @@ $output->output("`qWe recommended ID as this bans all users who are sitting on T
 $output->output("If you ban via IP and if you have several different users behind a NAT(sharing IPs, many big providers do this currently), you will ban much more users. However, you can ban multichars from different PCs too.`n`0");
 $output->rawOutput("<input type='radio' value='ip' id='ipradio' name='type'>");
 $output->output("IP: ");
-$output->rawOutput("<input name='ip' id='ip' value=\"" . HTMLEntities($row['lastip'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">");
+$output->rawOutput("<input name='ip' id='ip' value=\"" . HTMLEntities($row['lastip'] ?? "", ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">");
 $output->outputNotl("`n");
 $output->rawOutput("<input type='radio' value='id' name='type' checked>");
 $output->output("ID: ");
-$output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">");
+$output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'] ?? "", ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">");
 $output->output("`nDuration: ");
 $output->rawOutput("<input name='duration' id='duration' size='3' value='14'>");
 $output->output("Days (0 for permanent)`n");
@@ -38,7 +38,7 @@ $output->rawOutput("<input type='submit' class='button' value='$pban' onClick='i
 $output->rawOutput("</form>");
 $output->output("For an IP ban, enter the beginning part of the IP you wish to ban if you wish to ban a range, or simply a full IP to ban a single IP`n`n");
 Nav::add("", "bans.php?op=saveban");
-if ($row['name'] != "") {
+if (isset($row['name']) && !empty($row['name'])) {
     $id = $row['uniqueid'];
     $ip = $row['lastip'];
     $name = $row['name'];
