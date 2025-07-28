@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 // mail ready
 // addnews ready
@@ -6,8 +7,11 @@
 ob_start();
 set_error_handler("payment_error");
 define("ALLOW_ANONYMOUS", true);
+use Lotgd\Http;
+use Lotgd\Page\Footer;
+use Lotgd\MySQL\Database;
+
 require_once("common.php");
-require_once("lib/http.php");
 
 tlschema("payment");
 
@@ -18,7 +22,7 @@ header('HTTP/1.1 200 OK');
 // read the post from PayPal system and add 'cmd'
 $req = 'cmd=_notify-validate';
 
-$post = httpallpost();
+$post = Http::allPost();
 reset($post);
 foreach ($post as $key => $value) {
     $value = urlencode(stripslashes($value));
@@ -39,15 +43,15 @@ $fp = fsockopen('ssl://www.paypal.com', 443, $errno, $errstr, 30);
 //$fp = fsockopen ('ssl://www.sandbox.paypal.com', 443, $errno, $errstr, 30);
 
 // assign posted variables to local variables
-$item_name = httppost('item_name');
-$item_number = httppost('item_number');
-$payment_status = httppost('payment_status');
-$payment_amount = httppost('mc_gross');
-$payment_currency = httppost('mc_currency');
-$txn_id = httppost('txn_id');
-$receiver_email = httppost('business'); //formerly receiver_email, but with using multiple emails for paypal it's gross
-$payer_email = httppost('payer_email');
-$payment_fee = httppost('mc_fee');
+$item_name = Http::post('item_name');
+$item_number = Http::post('item_number');
+$payment_status = Http::post('payment_status');
+$payment_amount = Http::post('mc_gross');
+$payment_currency = Http::post('mc_currency');
+$txn_id = Http::post('txn_id');
+$receiver_email = Http::post('business'); //formerly receiver_email, but with using multiple emails for paypal it's gross
+$payer_email = Http::post('payer_email');
+$payment_fee = Http::post('mc_fee');
 
 $response = '';
 if (!$fp) {
@@ -72,8 +76,8 @@ if (!$fp) {
                     $payment_fee = 0;
                     $txn_type = 'refund';
                 }
-                $sql = "SELECT * FROM " . db_prefix("paylog") . " WHERE txnid='{$txn_id}'";
-                $result = db_query($sql);
+                $sql = "SELECT * FROM " . Database::prefix("paylog") . " WHERE txnid='{$txn_id}'";
+                $result = Database::query($sql);
                 if (db_num_rows($result) == 1) {
                     $emsg .= "Already logged this transaction ID ($txn_id)\n";
                     payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
@@ -107,9 +111,9 @@ function writelog($response)
     $match = array();
     preg_match("'([^:]*):([^/])*'", $item_number, $match);
     if (isset($match[1]) && $match[1] > "") {
-        $sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='{$match[1]}'";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='{$match[1]}'";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
         $acctid = $row['acctid'];
         if ($acctid > 0) {
             $donation = $payment_amount;
@@ -125,9 +129,9 @@ function writelog($response)
             //updated to make a setting here for each Dollar, Euro, Shekel
             $hookresult['points'] = round($hookresult['points']);
 
-            $sql = "UPDATE " . db_prefix("accounts") . " SET donation = donation + '{$hookresult['points']}' WHERE acctid=$acctid";
+            $sql = "UPDATE " . Database::prefix("accounts") . " SET donation = donation + '{$hookresult['points']}' WHERE acctid=$acctid";
 
-            $result = db_query($sql);
+            $result = Database::query($sql);
             debuglog("Received donator points for donating -- Credited Automatically", false, $acctid, "donation", $hookresult['points'], false);
             if (!is_array($hookresult['messages'])) {
                 $hookresult['messages'] = array($hookresult['messages']);
@@ -135,7 +139,7 @@ function writelog($response)
             foreach ($hookresult['messages'] as $id => $message) {
                 debuglog($message, false, $acctid, "donation", 0, false);
             }
-            if (db_affected_rows() > 0) {
+            if (Database::affectedRows() > 0) {
                 $processed = 1;
             }
         }
@@ -146,7 +150,7 @@ function writelog($response)
         modulehook("donation", array("id" => $acctid, "amt" => $donation * getsetting('dpointspercurrencyunit', 100), "manual" => false));
     }
     $sql = "
-		INSERT INTO " . db_prefix("paylog") . " (
+                INSERT INTO " . Database::prefix("paylog") . " (
 			info,
 			response,
 			txnid,
@@ -172,9 +176,9 @@ function writelog($response)
     if (isset($acctid)) {
         debuglog($sql, false, $acctid, "donation", 0, false);
     }
-    $result = db_query($sql);
+    $result = Database::query($sql);
     modulehook("donation-processed", $post);
-    $err = db_error();
+    $err = Database::error();
     if ($err) {
         payment_error(E_ERROR, "SQL: $sql\nERR: $err", __FILE__, __LINE__);
     }

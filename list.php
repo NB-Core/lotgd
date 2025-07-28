@@ -1,50 +1,57 @@
 <?php
+declare(strict_types=1);
 
 // addnews ready
 // translator ready
 // mail ready
 define("ALLOW_ANONYMOUS", true);
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Nav;
+use Lotgd\DateTime;
+use Lotgd\MySQL\Database;
+
 require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/villagenav.php");
 
 tlschema("list");
 
-page_header("List Warriors");
+Header::pageHeader("List Warriors");
 if ($session['user']['loggedin']) {
-    checkday();
+    DateTime::checkDay();
     if ($session['user']['alive']) {
-        villagenav();
+        VillageNav::render();
     } else {
-        addnav("Return to the Graveyard", "graveyard.php");
+        Nav::add("Return to the Graveyard", "graveyard.php");
     }
-    addnav("Currently Online", "list.php");
+    Nav::add("Currently Online", "list.php");
     if ($session['user']['clanid'] > 0) {
-        addnav("Online Clan Members", "list.php?op=clan");
+        Nav::add("Online Clan Members", "list.php?op=clan");
         if ($session['user']['alive']) {
-            addnav("Clan Hall", "clan.php");
+            Nav::add("Clan Hall", "clan.php");
         }
     }
 } else {
-    addnav("Login Screen", "index.php");
-    addnav("Currently Online", "list.php");
+    Nav::add("Login Screen", "index.php");
+    Nav::add("Currently Online", "list.php");
 }
 
 $playersperpage = 50;
 
-$sql = "SELECT count(acctid) AS c FROM " . db_prefix("accounts") . " WHERE locked=0";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$sql = "SELECT count(acctid) AS c FROM " . Database::prefix("accounts") . " WHERE locked=0";
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $totalplayers = $row['c'];
 
-$op = httpget('op');
-$page = httpget('page');
+$op = Http::get('op');
+$page = Http::get('page');
 $search = "";
 $limit = "";
 
 if ($op == "search") {
     $search = "%";
-    $n = db_real_escape_string(httppost('name'));
+    $n = Database::escape(Http::post('name'));
     for ($x = 0; $x < strlen($n); $x++) {
         $search .= substr($n, $x, 1) . "%";
     }
@@ -61,13 +68,13 @@ if ($op == "search") {
     $limit = " LIMIT $pageoffset,$playersperpage ";
 }
 if (getsetting('listonlyonline', 1) == 0 || (getsetting('listonlyonline', 1) == 1 && $session['user']['loggedin'])) {
-    addnav("Pages");
+    Nav::add("Pages");
     for ($i = 0; $i < $totalplayers; $i += $playersperpage) {
         $pnum = $i / $playersperpage + 1;
         if ($page == $pnum) {
-            addnav(array(" ?`b`#Page %s`0 (%s-%s)`b", $pnum, $i + 1, min($i + $playersperpage, $totalplayers)), "list.php?page=$pnum");
+            Nav::add(array(" ?`b`#Page %s`0 (%s-%s)`b", $pnum, $i + 1, min($i + $playersperpage, $totalplayers)), "list.php?page=$pnum");
         } else {
-            addnav(array(" ?Page %s (%s-%s)", $pnum, $i + 1, min($i + $playersperpage, $totalplayers)), "list.php?page=$pnum");
+            Nav::add(array(" ?Page %s (%s-%s)", $pnum, $i + 1, min($i + $playersperpage, $totalplayers)), "list.php?page=$pnum");
         }
     }
 }
@@ -77,12 +84,12 @@ if (getsetting('listonlyonline', 1) == 0 || (getsetting('listonlyonline', 1) == 
 $remove_offline = true;
 if ($page == "" && $op == "") {
     $title = translate_inline("Warriors Currently Online");
-    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' ORDER BY level DESC, dragonkills DESC, login ASC";
-    $result = db_query_cached($sql, "list.php-warsonline");
+    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' ORDER BY level DESC, dragonkills DESC, login ASC";
+    $result = Database::queryCached($sql, "list.php-warsonline");
 } elseif ($op == 'clan') {
     $title = translate_inline("Clan Members Online");
-    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' AND clanid='{$session['user']['clanid']}' ORDER BY level DESC, dragonkills DESC, login ASC";
-    $result = db_query($sql);
+    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' AND clanid='{$session['user']['clanid']}' ORDER BY level DESC, dragonkills DESC, login ASC";
+    $result = Database::query($sql);
 } else {
     $remove_offline = false;
     if ($totalplayers > $playersperpage && $op != "search") {
@@ -90,21 +97,21 @@ if ($page == "" && $op == "") {
     } else {
         $title = sprintf_translate("Warriors of the realm");
     }
-    rawoutput(tlbutton_clear());
-    $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
-    $result = db_query($sql);
+    $output->rawOutput(tlbutton_clear());
+    $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
+    $result = Database::query($sql);
 }
 if ($session['user']['loggedin']) {
     $search = translate_inline("Search by name: ");
     $search2 = translate_inline("Search");
 
-    rawoutput("<form action='list.php?op=search' method='POST'>$search<input name='name'><input type='submit' class='button' value='$search2'></form>");
-    addnav("", "list.php?op=search");
+    $output->rawOutput("<form action='list.php?op=search' method='POST'>$search<input name='name'><input type='submit' class='button' value='$search2'></form>");
+    Nav::add("", "list.php?op=search");
 }
 
-$max = db_num_rows($result);
+$max = Database::numRows($result);
 if ($max > getsetting("maxlistsize", 100)) {
-    output("`\$Too many names match that search.  Showing only the first %s.`0`n", getsetting("maxlistsize", 100));
+    $output->output("`\$Too many names match that search.  Showing only the first %s.`0`n", getsetting("maxlistsize", 100));
     $max = getsetting("maxlistsize", 100);
 }
 
@@ -129,7 +136,7 @@ if ($page == "" && $op == "") {
     }
     $title .= sprintf_translate(" (%s warriors online)", $loggedin);
 }
-output_notl("`c`b" . $title . "`b");
+$output->outputNotl("`c`b" . $title . "`b");
 
 $alive = translate_inline("Alive");
 $level = translate_inline("Level");
@@ -139,8 +146,8 @@ $race = translate_inline("Race");
 $sex = translate_inline("Sex");
 $last = translate_inline("Last On");
 
-rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>", true);
-rawoutput("<tr class='trhead'><td>$alive</td><td>$level</td><td>$name</td><td>$loc</td><td>$race</td><td>$sex</td><td>$last</tr>");
+$output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>", true);
+$output->rawOutput("<tr class='trhead'><td>$alive</td><td>$level</td><td>$name</td><td>$loc</td><td>$race</td><td>$sex</td><td>$last</tr>");
 $writemail = translate_inline("Write Mail");
 $alive = translate_inline("`1Yes`0");
 $dead = translate_inline("`4No`0");
@@ -150,7 +157,7 @@ foreach ($rows as $i => $row) {
     if ($remove_offline === true && !$row['loggedin']) {
         continue;
     }
-    rawoutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'><td>", true);
+    $output->rawOutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'><td>", true);
     if ($row['alive'] == true) {
         $a = $alive;
     } elseif (isset($row['hitpoints']) && $row['hitpoints'] > 0) {
@@ -159,42 +166,42 @@ foreach ($rows as $i => $row) {
         $a = $dead;
     }
     //$a = translate_inline($row['alive']?"`1Yes`0":"`4No`0");
-    output_notl("%s", $a);
-    rawoutput("</td><td>");
-    output_notl("`^%s`0", $row['level']);
-    rawoutput("</td><td>");
+    $output->outputNotl("%s", $a);
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("`^%s`0", $row['level']);
+    $output->rawOutput("</td><td>");
     if ($session['user']['loggedin']) {
-        rawoutput("<a href=\"mail.php?op=write&to=" . rawurlencode($row['login']) . "\" target=\"_blank\" onClick=\"" . popup("mail.php?op=write&to=" . rawurlencode($row['login']) . "") . ";return false;\">");
-        rawoutput("<img src='images/newscroll.GIF' width='16' height='16' alt='$writemail' border='0'></a>");
-        rawoutput("<a href='bio.php?char=" . $row['acctid'] . "'>");
-        addnav("", "bio.php?char=" . $row['acctid'] . "");
+        $output->rawOutput("<a href=\"mail.php?op=write&to=" . rawurlencode($row['login']) . "\" target=\"_blank\" onClick=\"" . popup("mail.php?op=write&to=" . rawurlencode($row['login']) . "") . ";return false;\">");
+        $output->rawOutput("<img src='images/newscroll.GIF' width='16' height='16' alt='$writemail' border='0'></a>");
+        $output->rawOutput("<a href='bio.php?char=" . $row['acctid'] . "'>");
+        Nav::add("", "bio.php?char=" . $row['acctid'] . "");
     }
-    output_notl("`&%s`0", $row['name']);
+    $output->outputNotl("`&%s`0", $row['name']);
     if ($session['user']['loggedin']) {
-        rawoutput("</a>");
+        $output->rawOutput("</a>");
     }
-    rawoutput("</td><td>");
+    $output->rawOutput("</td><td>");
     $loggedin = (date("U") - strtotime($row['laston']) < getsetting("LOGINTIMEOUT", 900) && $row['loggedin']);
-    output_notl("`&%s`0", $row['location']);
+    $output->outputNotl("`&%s`0", $row['location']);
     if ($loggedin) {
         $online = translate_inline("`#(Online)");
-        output_notl("%s", $online);
+        $output->outputNotl("%s", $online);
     }
-    rawoutput("</td><td>");
+    $output->rawOutput("</td><td>");
     if (!$row['race']) {
         $row['race'] = RACE_UNKNOWN;
     }
     tlschema("race");
-    output($row['race']);
+    $output->output($row['race']);
     tlschema();
-    rawoutput("</td><td>");
+    $output->rawOutput("</td><td>");
     $sex = translate_inline($row['sex'] ? "`%Female`0" : "`!Male`0");
-    output_notl("%s", $sex);
-    rawoutput("</td><td>");
-    $laston = relativedate($row['laston']);
-    output_notl("%s", $laston);
-    rawoutput("</td></tr>");
+    $output->outputNotl("%s", $sex);
+    $output->rawOutput("</td><td>");
+    $laston = DateTime::relativeDate($row['laston']);
+    $output->outputNotl("%s", $laston);
+    $output->rawOutput("</td></tr>");
 }
-rawoutput("</table>");
-output_notl("`c");
-page_footer();
+$output->rawOutput("</table>");
+$output->outputNotl("`c");
+Footer::pageFooter();
