@@ -89,7 +89,7 @@ function titlechange_run(): void
             output("`7Because you have earned sufficient points, you have been granted the ability to set a custom title of your choosing.");
             output("The title must be appropriate, and the admin of the game can reset if it isn't (as well as penalize you for abusing the game).");
             output("The title may not be more than 25 characters long including any characters used for colorization!.`n`n");
-            $otitle = get_player_title();
+            $otitle = Names::getPlayerTitle();
             if ($otitle == "`0") {
                 $otitle = "";
             }
@@ -138,7 +138,7 @@ function titlechange_run(): void
                 rawoutput("</form>");
                 break;
             }
-            $nname = get_player_basename();
+            $nname = Names::getPlayerBasename();
             output("`7Your new title will look like this: %s`0`n", $ntitle);
             output(
                 "`7Your entire name will look like: %s %s`0`n`n",
@@ -153,7 +153,7 @@ function titlechange_run(): void
         case "changetitle":
             $ntitle = stripslashes(rawurldecode(httpget('newname')));
             $fromname = $session['user']['name'];
-            $newname = change_player_ctitle($ntitle);
+            $newname = Names::changePlayerCtitle($ntitle);
             $session['user']['ctitle'] = $ntitle;
             $session['user']['name'] = $newname;
             AddNews::add("%s`^ has become known as %s.", $fromname, $session['user']['name']);
@@ -174,7 +174,7 @@ function titlechange_run(): void
             output("`7Your title has been reset.");
             $ntitle = '';
             $fromname = $session['user']['name'];
-            $newname = change_player_ctitle($ntitle);
+            $newname = Names::changePlayerCtitle($ntitle);
             $session['user']['ctitle'] = $ntitle;
             $session['user']['name'] = $newname;
             AddNews::add("%s`^ has become known as %s.", $fromname, $session['user']['name']);

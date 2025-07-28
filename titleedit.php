@@ -80,8 +80,8 @@ switch ($op) {
             $dk = (int)($row['dragonkills']);
             if (!valid_dk_title($otitle, $dk, $row['sex'])) {
                 $sex = translate_inline($row['sex'] ? "female" : "male");
-                                $newtitle = get_dk_title($dk, (int)$row['sex']);
-                                $newname = Names::change_player_title($newtitle, $row);
+                $newtitle = get_dk_title($dk, (int)$row['sex']);
+                $newname = Names::changePlayerTitle($newtitle, $row);
                 $id = $row['acctid'];
                 if ($oname != $newname) {
                     output(
