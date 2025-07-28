@@ -30,7 +30,7 @@ if ($ret == "") {
     $return = Sanitize::cmdSanitize($ret);
 }
 
-$char = httpget('char');
+$char = Http::get('char');
 //Legacy support
 if (is_numeric($char)) {
     $where = "acctid = $char";
