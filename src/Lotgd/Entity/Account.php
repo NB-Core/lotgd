@@ -422,6 +422,8 @@ class Account
                     $value = intval($value);
                 } elseif ($type === 'float') {
                     $value = (float) $value;
+                } elseif ($type === 'string' && $value === null) {
+                    $value = '';
                 }
 
                 $this->$prop = $value;
