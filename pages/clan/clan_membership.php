@@ -8,6 +8,7 @@ use Lotgd\Modules;
 use Lotgd\DebugLog;
 use Lotgd\SafeEscape;
 use Lotgd\Translator;
+use Lotgd\Sanitize;
 
         Nav::add("Clan Hall", "clan.php");
         Nav::add("Clan Options");
@@ -70,7 +71,7 @@ if ($remove > "") {
         $output->rawOutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$lev</td><td>$dk</td><td>$jd</td><td>$lo</td><td>$ops</td></tr>", true);
         $i = false;
         $tot = 0;
-                require_once("pages/clan/func.php");
+                require("pages/clan/func.php");
         $validranks = array_intersect_key($ranks, range(0, $session['user']['clanrank']));
 while ($row = Database::fetchAssoc($result)) {
     $i = !$i;
@@ -124,7 +125,7 @@ while ($row = Database::fetchAssoc($result)) {
         //new promote/demote system
         if ($row['clanrank'] == CLAN_FOUNDER && $row['login'] == $session['user']['login']) {
             $conf = Translator::translateInline("Are you really sure to step down as founder? You can NEVER rise again to that rank!");
-            $output->outputNotl("<form action='clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid'] . "' METHOD='POST'><input type='submit' class='button' onClick='return confirm(\"$conf\");' value='" . sanitize($stepdown) . "'></form> | ", true);
+            $output->outputNotl("<form action='clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid'] . "' METHOD='POST'><input type='submit' class='button' onClick='return confirm(\"$conf\");' value='" . Sanitize::sanitize($stepdown) . "'></form> | ", true);
             Nav::add("", "clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid']);
         } elseif ($row['clanrank'] != CLAN_FOUNDER) {
             $output->rawOutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'><select name='setrank'>");
