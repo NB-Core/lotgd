@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Nav;
+use Lotgd\Http;
 
 $sql = 'SELECT name,lastip,uniqueid FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $userid;
 $result = Database::query($sql);
@@ -25,7 +26,7 @@ $output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'] ?
 $output->output("`nDuration: ");
 $output->rawOutput("<input name='duration' id='duration' size='3' value='14'>");
 $output->output("Days (0 for permanent)`n");
-$reason = httpget("reason");
+$reason = (string) Http::get("reason");
 if ($reason == "") {
     $reason = Translator::translateInline("Don't mess with me.");
 }
