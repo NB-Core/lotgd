@@ -580,6 +580,8 @@ class Nav
         }
         $extra = '';
         $ignoreuntil = '';
+        global $output;
+        $output->closeOpenFont();
         if ($link === false) {
             $text = HolidayText::holidayize($text, 'nav');
             $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhead', ['title' => appoencode($text, $priv)]);
