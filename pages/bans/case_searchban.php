@@ -34,7 +34,7 @@ if ($subop == "xml") {
 $operator = "<=";
 
 
-$target = httppost('target');
+$target = Http::post('target');
 $since = 'WHERE 0';
 $submit = Translator::translateInline("Search");
 if ($target == '') {
