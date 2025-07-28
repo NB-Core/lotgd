@@ -101,7 +101,7 @@ class Database
             $conn = self::$doctrine ?? self::getDoctrineConnection();
             $trim = ltrim($sql);
             $keyword = strtolower(strtok($trim, " \t\n\r"));
-            $readOps = ['select', 'show', 'describe', 'desc', 'explain', 'pragma'];
+            $readOps = ['select', 'show', 'describe', 'desc', 'explain', 'pragma', 'optimize', 'analyze'];
             if (in_array($keyword, $readOps, true)) {
                 $r = $conn->executeQuery($sql);
                 $affected = $r->rowCount();
