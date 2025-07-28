@@ -8,6 +8,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Nltoappon;
 use Lotgd\Translator;
 use Lotgd\Modules;
+use Lotgd\Sanitize;
 
         $to = (int)Http::get('to');
 if ($to > 0) {
@@ -76,7 +77,7 @@ if ($row['c'] == 1) {
                 $output->outputNotl(
                     "&#149; <a href='clan.php?op=apply&to=%s'>%s</a> %s`n",
                     $row['clanid'],
-                    full_sanitize(htmlentities($row['clanname'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))),
+                    Sanitize::fullSanitize(htmlentities($row['clanname'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))),
                     $memb,
                     true
                 );

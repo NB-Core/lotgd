@@ -11,9 +11,9 @@ use Lotgd\Modules;
     Nav::add("Clan Options");
     $output->output("`b`c`&Clan Halls`c`b");
 if ($op == "apply") {
-        require_once("pages/clan/applicant_apply.php");
+        require("pages/clan/applicant_apply.php");
 } elseif ($op == "new") {
-        require_once("pages/clan/applicant_new.php");
+        require("pages/clan/applicant_new.php");
 } else {
     $output->output("`7You stand in the center of a great marble lobby filled with pillars.");
     $output->output("All around the walls of the lobby are various doors which lead to various clan halls.");
