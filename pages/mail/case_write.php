@@ -1,6 +1,9 @@
 <?php
+declare(strict_types=1);
 
 use Lotgd\Mail;
+use Lotgd\Sanitize;
+use Lotgd\Translator;
 
 $subject = httppost('subject');
 $body = "";
@@ -45,16 +48,16 @@ if ($to) {
 if (is_array($row)) {
     if (isset($row['subject']) && $row['subject']) {
         if ((int)$row['msgfrom'] == 0) {
-            $row['name'] = translate_inline("`i`^System`0`i");
+            $row['name'] = Translator::translateInline("`i`^System`0`i");
             // No translation for subject if it's not an array
             $row_subject = @unserialize($row['subject']);
             if ($row_subject !== false) {
-                $row['subject'] = call_user_func_array("sprintf_translate", $row_subject);
+                $row['subject'] = Translator::sprintfTranslate(...$row_subject);
             }
             // No translation for body if it's not an array
             $row_body = @unserialize($row['body']);
             if ($row_body !== false) {
-                $row['body'] = call_user_func_array("sprintf_translate", $row_body);
+                $row['body'] = Translator::sprintfTranslate(...$row_body);
             }
         }
         $subject = $row['subject'];
@@ -63,7 +66,7 @@ if (is_array($row)) {
         }
     }
     if (isset($row['body']) && $row['body']) {
-        $body = "\n\n---" . sprintf_translate(array("Original Message from %s(%s)",sanitize($row['name']),date("Y-m-d H:i:s", strtotime($row['sent'])))) . "---\n" . $row['body'];
+        $body = "\n\n---" . Translator::sprintfTranslate("Original Message from %s(%s)", Sanitize::sanitize($row['name']), date("Y-m-d H:i:s", strtotime($row['sent']))) . "---\n" . $row['body'];
     }
 }
 rawoutput("<form action='mail.php?op=send' method='post'>");
@@ -114,8 +117,7 @@ if (isset($row['login']) && $row['login'] != "" && $forwardto == 0) {
         $superusers = array();
         while ($row = db_fetch_assoc($result)) {
             output_notl("<option value=\"" . htmlentities($row['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">", true);
-            require_once("lib/sanitize.php");
-            output_notl("%s", full_sanitize($row['name']));
+            output_notl("%s", Sanitize::fullSanitize($row['name']));
             if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
                 array_push($superusers, $row['login']);
             }
@@ -154,18 +156,18 @@ $rows = max(10, $prefs['mailheight']);
 rawoutput("<table style='border:0;cellspacing:10'><tr><td><input type='button' onClick=\"increase(textarea$key,1);\" value='+' accesskey='+'></td><td><input type='button' onClick=\"increase(textarea$key,-1);\" value='-' accesskey='-'></td>");
 rawoutput("<td><input type='button' onClick=\"cincrease(textarea$key,-1);\" value='<-'></td><td><input type='button' onClick=\"cincrease(textarea$key,1);\" value='->' accesskey='-'></td></tr></table>");
 //substr is necessary if you have chars that take up more than 1 byte. That breaks the entire HTMLentities up and it returns nothing
-rawoutput("<textarea id='textarea$key' class='input' onKeyUp='sizeCount(this);' name='$keyout' cols='$cols' rows='$rows'>" . htmlentities(str_replace("`n", "\n", sanitize_mb(substr($body, 0, getsetting("mailsizelimit", 1024, getsetting("charset", "ISO-8859-1"))))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . htmlentities(sanitize_mb(stripslashes(httpget('body'))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea>");
+rawoutput("<textarea id='textarea$key' class='input' onKeyUp='sizeCount(this);' name='$keyout' cols='$cols' rows='$rows'>" . htmlentities(str_replace("`n", "\n", Sanitize::sanitizeMb(substr($body, 0, getsetting("mailsizelimit", 1024, getsetting("charset", "ISO-8859-1"))))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . htmlentities(Sanitize::sanitizeMb(stripslashes(httpget('body'))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea>");
 //rawoutput("<textarea name='body' id='textarea' class='input' cols='60' rows='9' onKeyUp='sizeCount(this);'>".htmlentities($body, ENT_COMPAT, getsetting("charset", "ISO-8859-1")).htmlentities(stripslashes(httpget('body')), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</textarea><br>");
-$send = translate_inline("Send");
-$sendclose = translate_inline("Send and Close");
-$sendback = translate_inline("Send and back to main Mailbox");
+$send = Translator::translateInline("Send");
+$sendclose = Translator::translateInline("Send and Close");
+$sendback = Translator::translateInline("Send and back to main Mailbox");
 rawoutput("<table border='0' cellpadding='0' cellspacing='0' width='100%'><tr><td><input type='submit' class='button' value='$send'></td><td style='width:20px;'></td><td><input type='submit' class='button' value='$sendclose' name='sendclose'></td><td><input type='submit' class='button' value='$sendback' name='sendback'></td><td align='right'><div id='sizemsg'></div></td></tr></table>");
 rawoutput("</form>");
 $sizemsg = "`#Max message size is `@%s`#, you have `^XX`# characters left.";
-$sizemsg = translate_inline($sizemsg);
+$sizemsg = Translator::translateInline($sizemsg);
 $sizemsg = sprintf($sizemsg, getsetting("mailsizelimit", 1024));
 $sizemsgover = "`\$Max message size is `@%s`\$, you are over by `^XX`\$ characters!";
-$sizemsgover = translate_inline($sizemsgover);
+$sizemsgover = Translator::translateInline($sizemsgover);
 $sizemsgover = sprintf($sizemsgover, getsetting("mailsizelimit", 1024));
 $sizemsg = explode("XX", $sizemsg);
 $sizemsgover = explode("XX", $sizemsgover);
