@@ -50,7 +50,7 @@ if ($sql != "") {
     $result = Database::query($sql);
     global $output;
     $output->output("%s ban rows entered.`n`n", Database::affectedRows($result));
-    $output->outputNotl(Database::error());
+    $output->outputNotl(Database::error($result));
     debuglog("entered a ban: " .  ($type == "ip" ?  "IP: " . httppost("ip") : "ID: " . httppost("id")) . " Ends after: $duration  Reason: \"" .  httppost("reason") . "\"");
     /* log out affected players */
     $sql = "SELECT acctid FROM " . Database::prefix('accounts') . " WHERE $key='$key_value'";
