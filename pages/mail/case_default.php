@@ -1,6 +1,10 @@
 <?php
+declare(strict_types=1);
 
 use Lotgd\Mail;
+use Lotgd\PlayerFunctions;
+use Lotgd\Sanitize;
+use Lotgd\Translator;
 
 output("`b`iMail Box`i`b");
 if (isset($session['message'])) {
@@ -27,10 +31,10 @@ $newdirection = (int)!$sorting_direction;
 $rows = Mail::getInbox($session['user']['acctid'], $order, $direction);
 $db_num_rows = count($rows);
 if ($db_num_rows > 0) {
-    $no_subject = translate_inline("`i(No Subject)`i");
-    $subject = translate_inline("Subject");
-    $from = translate_inline("Sender");
-    $date = translate_inline("SendDate");
+    $no_subject = Translator::translateInline("`i(No Subject)`i");
+    $subject = Translator::translateInline("Subject");
+    $from = Translator::translateInline("Sender");
+    $date = Translator::translateInline("SendDate");
     $arrow = ($sorting_direction ? "arrow_down.png" : "arrow_up.png");
 
     rawoutput("<form action='mail.php?op=process' onsubmit=\"return confirm('Do you really want to delete/move/process those entries?');\" method='post'><table>");
@@ -48,7 +52,7 @@ if ($db_num_rows > 0) {
         }
     }
 
-        $user_statuslist = mass_is_player_online($userlist);
+        $user_statuslist = PlayerFunctions::massIsPlayerOnline($userlist);
 
     foreach ($rows as $row) {
         rawoutput("<tr>");
@@ -57,7 +61,7 @@ if ($db_num_rows > 0) {
         rawoutput("<td>");
         $status_image = "";
         if ((int)$row['msgfrom'] == 0) {
-            $row['name'] = translate_inline("`i`^System`0`i");
+            $row['name'] = Translator::translateInline("`i`^System`0`i");
             // Only translate the subject if it's an array, ie, it came from the game.
             if (isset($row['subject'])) {
                 $row_subject = \Lotgd\Serialization::safeUnserialize($row['subject']);
@@ -65,10 +69,10 @@ if ($db_num_rows > 0) {
                 $row_subject = "";
             }
             if ($row_subject !== false && $row_subject != null && is_array($row_subject)) {
-                $row['subject'] = call_user_func_array("sprintf_translate", $row_subject);
+                $row['subject'] = Translator::sprintfTranslate(...$row_subject);
             }
         } elseif ($row['name'] == '') {
-            $row['name'] = translate_inline("`i`^Deleted User`0`i");
+            $row['name'] = Translator::translateInline("`i`^Deleted User`0`i");
         } else {
             //get status
             $online = $user_statuslist[$row['acctid']];
@@ -76,7 +80,7 @@ if ($db_num_rows > 0) {
             $status_image = "<img src='images/$status.gif' alt='$status'>";
         }
         //collect sanitized names plus message IDs for later use
-        $sname = sanitize($row['name']);
+        $sname = Sanitize::sanitize($row['name']);
         if (!isset($from_list[$sname])) {
             $from_list[$sname] = "'" . $row['messageid'] . "'";
         } else {
@@ -97,8 +101,8 @@ if ($db_num_rows > 0) {
 						var elements = document.getElementsByName(\"msg[]\");
 						var max = elements.length;
 						var Zaehler=0;
-						var checktext='" . translate_inline("Check all") . "';
-						var unchecktext='" . translate_inline("Uncheck all") . "';
+                                                var checktext='" . Translator::translateInline("Check all") . "';
+                                                var unchecktext='" . Translator::translateInline("Uncheck all") . "';
 						var check = false;
 						for (Zaehler=0;Zaehler<max;Zaehler++) {
 							if (elements[Zaehler].checked==true) {
@@ -137,7 +141,7 @@ if ($db_num_rows > 0) {
     }
     $script .= "var container = new Array($add);
 			var who = document.getElementById('check_name_select').value;
-			var unchecktext='" . translate_inline("Uncheck all") . "';
+                        var unchecktext='" . Translator::translateInline("Uncheck all") . "';
 			for (var i=0;i<container[who].length;i++) {
 				document.getElementById(container[who][i]).checked=true;
 			}
@@ -145,9 +149,9 @@ if ($db_num_rows > 0) {
 		}
 					</script>";
     rawoutput($script);
-    $checkall = htmlentities(translate_inline("Check All"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-    $delchecked = htmlentities(translate_inline("Delete Checked"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-    $checknames = htmlentities(translate_inline("`vCheck by Name"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+    $checkall = htmlentities(Translator::translateInline("Check All"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+    $delchecked = htmlentities(Translator::translateInline("Delete Checked"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+    $checknames = htmlentities(Translator::translateInline("`vCheck by Name"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
         output_notl("<label for='check_name_select'>" . $checknames . "</label> <select onchange='check_name()' id='check_name_select'>" . $option . "</select><br>", true);
     rawoutput("<input type='button' id='button_check' value=\"$checkall\" class='button' onClick='check_all()'>");
     rawoutput("<input type='submit' class='button' value=\"$delchecked\">");
