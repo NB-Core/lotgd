@@ -1,27 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
 
 // translator ready
 // addnews ready
 // mail ready
-require_once("common.php");
-require_once("lib/http.php");
+require_once 'common.php';
 
 tlschema("rawsql");
 
 SuAccess::check(SU_RAW_SQL);
 
-page_header("Raw SQL/PHP execution");
+Header::pageHeader('Raw SQL/PHP execution');
 SuperuserNav::render();
-addnav("Execution");
-addnav("SQL", "rawsql.php");
-addnav("PHP", "rawsql.php?op=php");
+Nav::add('Execution');
+Nav::add('SQL', 'rawsql.php');
+Nav::add('PHP', 'rawsql.php?op=php');
 
-$op = httpget("op");
+$op = (string) Http::get('op');
 if ($op == "" || $op == "sql") {
-    $sql = httppost('sql');
+    $sql = (string) Http::post('sql');
     if ($sql != "") {
         $sql = stripslashes($sql);
         modulehook("rawsql-execsql", array("sql" => $sql));
@@ -67,9 +72,9 @@ if ($op == "" || $op == "sql") {
     rawoutput("<textarea name='sql' class='input' cols='60' rows='10'>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea><br>");
     rawoutput("<input type='submit' class='button' value='$execute'>");
     rawoutput("</form>");
-    addnav("", "rawsql.php");
+    Nav::add('', 'rawsql.php');
 } else {
-    $php = stripslashes(httppost("php"));
+    $php = stripslashes((string) Http::post('php'));
     $source = translate_inline("Source:");
     $execute = translate_inline("Execute");
     if ($php > "") {
@@ -90,6 +95,6 @@ if ($op == "" || $op == "sql") {
     rawoutput("&lt;?php<br><textarea name='php' class='input' cols='60' rows='10'>" . htmlentities($php, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea><br>?&gt;<br>");
     rawoutput("<input type='submit' class='button' value='$execute'>");
     rawoutput("</form>");
-    addnav("", "rawsql.php?op=php");
+    Nav::add('', 'rawsql.php?op=php');
 }
-page_footer();
+Footer::pageFooter();

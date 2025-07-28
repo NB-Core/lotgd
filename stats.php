@@ -1,27 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Dhms;
+use Lotgd\Http;
+
 // translator ready
 // addnews ready
 // mail ready
-use Lotgd\Dhms;
+require_once 'common.php';
 
-require_once("common.php");
-
-tlschema("stats");
+tlschema('stats');
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-page_header("Stats");
+Header::pageHeader('Stats');
 SuperuserNav::render();
-//addnav("Refresh the stats","stats.php");
-addnav("Stats Types");
-addnav("Totals & Averages", "stats.php?op=stats");
-addnav("Top Referers", "stats.php?op=referers");
-addnav("Logon Graph", "stats.php?op=graph");
+//Nav::add("Refresh the stats", "stats.php");
+Nav::add('Stats Types');
+Nav::add('Totals & Averages', 'stats.php?op=stats');
+Nav::add('Top Referers', 'stats.php?op=referers');
+Nav::add('Logon Graph', 'stats.php?op=graph');
 
-$op = httpget("op");
+$op = (string) Http::get('op');
 
 if ($op == "stats" || $op == "") {
     $sql = "SELECT sum(gentimecount) AS c, sum(gentime) AS t, sum(gensize) AS s, count(acctid) AS a FROM " . db_prefix("accounts");
@@ -49,7 +55,7 @@ if ($op == "stats" || $op == "") {
         output_notl("`@{$row['referer']}`0");
         rawoutput("</td><td>");
         output_notl("`^{$row['c']}:`0  ");
-        $sql = "SELECT name,refererawarded FROM " . db_prefix("accounts") . " WHERE referer = ${row['acctid']} ORDER BY acctid ASC";
+        $sql = "SELECT name,refererawarded FROM " . db_prefix("accounts") . " WHERE referer = {$row['acctid']} ORDER BY acctid ASC";
         $res2 = db_query($sql);
         $number2 = db_num_rows($res2);
         for ($j = 0; $j < $number2; $j++) {
@@ -90,4 +96,4 @@ if ($op == "stats" || $op == "") {
     }
     rawoutput("</table>");
 }
-page_footer();
+Footer::pageFooter();

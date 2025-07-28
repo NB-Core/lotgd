@@ -1,14 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Commentary;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\Nav\VillageNav;
+use Lotgd\DateTime;
 
 // translator ready
 // addnews ready
 // mail ready
-require_once("common.php");
-require_once("lib/villagenav.php");
+require_once 'common.php';
 
-tlschema("rock");
+tlschema('rock');
 
 // This idea is Imusade's from lotgd.net
 if (
@@ -18,14 +24,14 @@ if (
     Commentary::addCommentary();
 }
 
-checkday();
-addnav("Navigation");
-villagenav();
+DateTime::checkDay();
+Nav::add('Navigation');
+VillageNav::render();
 if (
     $session['user']['dragonkills'] > 0 ||
         $session['user']['superuser'] & SU_EDIT_COMMENTS
 ) {
-    page_header("The Veteran's Club");
+    Header::pageHeader('The Veteran\'s Club');
 
     output("`b`c`2The Veteran's Club`0`c`b");
 
@@ -40,11 +46,11 @@ if (
 
     Commentary::commentDisplay("", "veterans", "Boast here", 30, "boasts");
 } else {
-    page_header("Curious looking rock");
+    Header::pageHeader('Curious looking rock');
     output("You approach the curious looking rock.  ");
     output("After staring and looking at it for a little while, it continues to look just like a curious looking rock.`n`n");
     output("Bored, you decide to leave the rock alone.");
 }
 
 
-page_footer();
+Footer::pageFooter();
