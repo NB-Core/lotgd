@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 addnav("G?Return to the Graveyard", "graveyard.php");
 addnav("Places");

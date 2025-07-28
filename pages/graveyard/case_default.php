@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 if (!$skipgraveyardtext) {
     output("`)`c`bThe Graveyard`b`c");
