@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 // addnews ready
 // translator ready
@@ -9,18 +10,24 @@
 * @see village.php
 * @see prefs.php
 */
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\Sanitize;
+use Lotgd\DateTime;
+use Lotgd\Http;
+
 require_once("common.php");
-require_once("lib/sanitize.php");
 
 tlschema("bio");
 
-checkday();
+DateTime::checkDay();
 
-$ret = httpget('ret');
+$ret = Http::get('ret');
 if ($ret == "") {
     $return = "/list.php";
 } else {
-    $return = cmd_sanitize($ret);
+    $return = Sanitize::cmdSanitize($ret);
 }
 
 $char = httpget('char');
@@ -39,15 +46,15 @@ if ($target = db_fetch_assoc($result)) {
     $id = $target['acctid'];
     $target['return_link'] = $return;
 
-    page_header("Character Biography: %s", full_sanitize($target['name']));
+    Header::pageHeader("Character Biography: %s", Sanitize::fullSanitize($target['name']));
 
     tlschema("nav");
-    addnav("Return");
+    Nav::add("Return");
     tlschema();
 
     if ($session['user']['superuser'] & SU_EDIT_USERS) {
-        addnav("Superuser");
-        addnav("Edit User", "user.php?op=edit&userid=$id");
+        Nav::add("Superuser");
+        Nav::add("Edit User", "user.php?op=edit&userid=$id");
     }
 
     modulehook("biotop", $target);
@@ -154,49 +161,49 @@ if ($target = db_fetch_assoc($result)) {
             );
             $odate = $row['newsdate'];
         }
-        output_notl("`@" . sanitize_mb($news) . "`0`n");
+        output_notl("`@" . Sanitize::sanitizeMb($news) . "`0`n");
     }
     tlschema();
 
     if ($ret == "") {
         $return = substr($return, strrpos($return, "/") + 1);
         tlschema("nav");
-        addnav("Return");
-        addnav("Return to the warrior list", $return);
+        Nav::add("Return");
+        Nav::add("Return to the warrior list", $return);
         tlschema();
     } else {
         $return = substr($return, strrpos($return, "/") + 1);
         tlschema("nav");
-        addnav("Return");
+        Nav::add("Return");
         if ($return == "list.php") {
-            addnav("Return to the warrior list", $return);
+            Nav::add("Return to the warrior list", $return);
         } else {
-            addnav("Return whence you came", $return);
+            Nav::add("Return whence you came", $return);
         }
         tlschema();
     }
 
     modulehook("bioend", $target);
-    page_footer();
+    Footer::pageFooter();
 } else {
-    page_header("Character has been deleted");
+    Header::pageHeader("Character has been deleted");
     output("This character is already deleted.");
     if ($ret == "") {
         $return = substr($return, strrpos($return, "/") + 1);
         tlschema("nav");
-        addnav("Return");
-        addnav("Return to the warrior list", $return);
+        Nav::add("Return");
+        Nav::add("Return to the warrior list", $return);
         tlschema();
     } else {
         $return = substr($return, strrpos($return, "/") + 1);
         tlschema("nav");
-        addnav("Return");
+        Nav::add("Return");
         if ($return == "list.php") {
-            addnav("Return to the warrior list", $return);
+            Nav::add("Return to the warrior list", $return);
         } else {
-            addnav("Return whence you came", $return);
+            Nav::add("Return whence you came", $return);
         }
         tlschema();
     }
-    page_footer();
+    Footer::pageFooter();
 }
