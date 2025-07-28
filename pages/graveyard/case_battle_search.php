@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 
 use Lotgd\Battle;
 use Lotgd\BellRand;
+use Lotgd\PlayerFunctions;
 
 if ($session['user']['gravefights'] <= 0) {
     output("`\$`bYour soul can bear no more torment in this afterlife.`b`0");
@@ -44,9 +46,8 @@ if ($session['user']['gravefights'] <= 0) {
                 $badguy['creatureaiscript'] = "require('" . $aiscriptfile . "');";
             }
         }
-        require_once("lib/playerfunctions.php");
-        $atk = get_player_attack();
-        $def = get_player_defense();
+        $atk = PlayerFunctions::getPlayerAttack();
+        $def = PlayerFunctions::getPlayerDefense();
         //$badguy['creatureattack']*=1.7+round($atk/(10 + round(($session['user']['level'] - 1) )));
         //$badguy['creaturedefense']*=1.6+round($def/(10 + round(($session['user']['level'] - 1))));
         $modificator = 1.5;
