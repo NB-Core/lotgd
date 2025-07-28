@@ -298,7 +298,7 @@ JS;
         rawoutput("</label></td><td class='formfield-value' valign='top'>");
         $rowIndex++;
 
-        self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions, $fieldId);
+        self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions, $fieldId, $entityFieldId);
 
         rawoutput('</td></tr>', true);
     }
