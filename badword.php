@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /**
  * \file badword.php
@@ -8,65 +9,70 @@
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\MySQL\Database;
+use Lotgd\DataCache;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_COMMENTS);
 
 tlschema("badword");
 
-$op = httpget('op');
+$op = Http::get('op');
 //yuck, this page is a mess, but it gets the job done.
-page_header("Bad word editor");
+Header::pageHeader("Bad word editor");
 
 SuperuserNav::render();
-addnav("Bad Word Editor");
+Nav::add("Bad Word Editor");
 
-addnav("Refresh the list", "badword.php");
-output("`7Here you can edit the words that the game filters.  Using * at the start or end of a word will be a wildcard matching anything else attached to the word.  These words are only filtered if bad word filtering is turned on in the game settings page.`n`n`0");
+Nav::add("Refresh the list", "badword.php");
+$output->output("`7Here you can edit the words that the game filters.  Using * at the start or end of a word will be a wildcard matching anything else attached to the word.  These words are only filtered if bad word filtering is turned on in the game settings page.`n`n`0");
 
 $test = translate_inline("Test");
-rawoutput("<form action='badword.php?op=test' method='POST'>");
-addnav("", "badword.php?op=test");
-output("`7Test a word:`0");
-rawoutput("<input name='word'><input type='submit' class='button' value='$test'></form>");
+$output->rawOutput("<form action='badword.php?op=test' method='POST'>");
+Nav::add("", "badword.php?op=test");
+$output->output("`7Test a word:`0");
+$output->rawOutput("<input name='word'><input type='submit' class='button' value='$test'></form>");
 if ($op == "test") {
-    $word = httppost("word");
+    $word = Http::post("word");
     $return = soap($word, true);
     if ($return == $word) {
-        output("`7\"%s\" does not trip any filters.`0`n`n", $word);
+        $output->output("`7\"%s\" does not trip any filters.`0`n`n", $word);
     } else {
-        output("`7%s`0`n`n", $return);
+        $output->output("`7%s`0`n`n", $return);
     }
 }
 
-output_notl("<font size='+1'>", true);
-output("`7`bGood Words`b`0");
-rawoutput("</font>");
-output("`7 (bad word exceptions)`0`n");
+$output->outputNotl("<font size='+1'>", true);
+$output->output("`7`bGood Words`b`0");
+$output->rawOutput("</font>");
+$output->output("`7 (bad word exceptions)`0`n");
 
 $add = translate_inline("Add");
 $remove = translate_inline("Remove");
-rawoutput("<form action='badword.php?op=addgood' method='POST'>");
-addnav("", "badword.php?op=addgood");
-output("`7Add a word:`0");
-rawoutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
-rawoutput("<form action='badword.php?op=removegood' method='POST'>");
-addnav("", "badword.php?op=removegood");
-output("`7Remove a word:`0");
-rawoutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");
+$output->rawOutput("<form action='badword.php?op=addgood' method='POST'>");
+Nav::add("", "badword.php?op=addgood");
+$output->output("`7Add a word:`0");
+$output->rawOutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
+$output->rawOutput("<form action='badword.php?op=removegood' method='POST'>");
+Nav::add("", "badword.php?op=removegood");
+$output->output("`7Remove a word:`0");
+$output->rawOutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");
 
 
-$sql = "SELECT * FROM " . db_prefix("nastywords") . " WHERE type='good'";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$sql = "SELECT * FROM " . Database::prefix("nastywords") . " WHERE type='good'";
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $words = explode(" ", $row['words']);
 if ($op == "addgood") {
-    $newregexp = stripslashes(httppost('word'));
+    $newregexp = stripslashes(Http::post('word'));
 
     // not sure if the line below should appear, as the strings in the good
     // word list have different behaviour than those in the nasty word list,
@@ -89,7 +95,7 @@ if ($op == "addgood") {
 }
 if ($op == "removegood") {
     // false if not found
-    $removekey = array_search(stripslashes(httppost('word')), $words);
+    $removekey = array_search(stripslashes(Http::post('word')), $words);
     // $removekey can be 0
     if ($removekey !== false) {
         unset($words[$removekey]);
@@ -100,36 +106,36 @@ if ($op == "removegood") {
 
 show_word_list($words);
 if ($op == "addgood" || $op == "removegood") {
-    $sql = "DELETE FROM " . db_prefix("nastywords") . " WHERE type='good'";
-    db_query($sql);
-    $sql = "INSERT INTO " . db_prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','good')";
-    db_query($sql);
-    invalidatedatacache("goodwordlist");
+    $sql = "DELETE FROM " . Database::prefix("nastywords") . " WHERE type='good'";
+    Database::query($sql);
+    $sql = "INSERT INTO " . Database::prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','good')";
+    Database::query($sql);
+    DataCache::invalidatedatacache("goodwordlist");
 }
 
-output_notl("`0`n`n");
-rawoutput("<font size='+1'>");
-output("`7`bNasty Words`b`0");
-rawoutput("</font>");
-output_notl("`n");
+$output->outputNotl("`0`n`n");
+$output->rawOutput("<font size='+1'>");
+$output->output("`7`bNasty Words`b`0");
+$output->rawOutput("</font>");
+$output->outputNotl("`n");
 
-rawoutput("<form action='badword.php?op=add' method='POST'>");
-addnav("", "badword.php?op=add");
-output("`7Add a word:`0");
-rawoutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
-rawoutput("<form action='badword.php?op=remove' method='POST'>");
-addnav("", "badword.php?op=remove");
-output("`7Remove a word:`0");
-rawoutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");
+$output->rawOutput("<form action='badword.php?op=add' method='POST'>");
+Nav::add("", "badword.php?op=add");
+$output->output("`7Add a word:`0");
+$output->rawOutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
+$output->rawOutput("<form action='badword.php?op=remove' method='POST'>");
+Nav::add("", "badword.php?op=remove");
+$output->output("`7Remove a word:`0");
+$output->rawOutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");
 
-$sql = "SELECT * FROM " . db_prefix("nastywords") . " WHERE type='nasty'";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$sql = "SELECT * FROM " . Database::prefix("nastywords") . " WHERE type='nasty'";
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $words = explode(" ", $row['words']);
 reset($words);
 
 if ($op == "add") {
-    $newregexp = stripslashes(httppost('word'));
+    $newregexp = stripslashes(Http::post('word'));
 
     // automagically escapes all unescaped single quote characters
     $newregexp = preg_replace('/(?<!\\\\)\'/', '\\\'', $newregexp);
@@ -148,7 +154,7 @@ if ($op == "add") {
 }
 if ($op == "remove") {
     // false if not found
-    $removekey = array_search(stripslashes(httppost('word')), $words);
+    $removekey = array_search(stripslashes(Http::post('word')), $words);
     // $removekey can be 0
     if ($removekey !== false) {
         unset($words[$removekey]);
@@ -157,16 +163,16 @@ if ($op == "remove") {
     //unset($words[array_search(stripslashes(httppost('word')),$words)]);
 }
 show_word_list($words);
-output_notl("`0");
+$output->outputNotl("`0");
 
 if ($op == "add" || $op == "remove") {
-    $sql = "DELETE FROM " . db_prefix("nastywords") . " WHERE type='nasty'";
-    db_query($sql);
-    $sql = "INSERT INTO " . db_prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','nasty')";
-    db_query($sql);
-    invalidatedatacache("nastywordlist");
+    $sql = "DELETE FROM " . Database::prefix("nastywords") . " WHERE type='nasty'";
+    Database::query($sql);
+    $sql = "INSERT INTO " . Database::prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','nasty')";
+    Database::query($sql);
+    DataCache::invalidatedatacache("nastywordlist");
 }
-page_footer();
+Footer::pageFooter();
 
 function show_word_list($words)
 {
@@ -178,9 +184,9 @@ function show_word_list($words)
         } else {
             if (substr($val, 0, 1) != $lastletter) {
                 $lastletter = substr($val, 0, 1);
-                output_notl("`n`n`^`b%s`b`@`n", strtoupper($lastletter));
+                $output->outputNotl("`n`n`^`b%s`b`@`n", strtoupper($lastletter));
             }
-            output_notl("%s ", $val);
+            $output->outputNotl("%s ", $val);
         }
     }
 }

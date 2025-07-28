@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /**
  * \file badnav.php
@@ -8,18 +9,25 @@
 
 // translator ready
 use Lotgd\Accounts;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Nav;
+use Lotgd\DateTime;
+use Lotgd\MySQL\Database;
+use Lotgd\Translator;
+use Lotgd\Redirect;
 
 // addnews ready
 // mail ready
 define("OVERRIDE_FORCED_NAV", true);
 require_once("common.php");
-require_once("lib/villagenav.php");
 
 tlschema("badnav");
 
 if ($session['user']['loggedin'] && $session['loggedin']) {
     if (isset($session['output']) && strpos($session['output'], "<!--CheckNewDay()-->")) {
-        checkday();
+        DateTime::checkDay();
     }
     foreach ($session['allowednavs'] as $key => $val) {
         //hack-tastic.
@@ -32,13 +40,13 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
             unset($session['allowednavs'][$key]);
         }
     }
-    $sql = "SELECT output FROM " . db_prefix("accounts_output") . " WHERE acctid={$session['user']['acctid']};";
-    $result = db_query($sql);
-    if (db_num_rows($result) < 1) {
+    $sql = "SELECT output FROM " . Database::prefix("accounts_output") . " WHERE acctid={$session['user']['acctid']};";
+    $result = Database::query($sql);
+    if (Database::numRows($result) < 1) {
         //no output found, nothing to set
         $row = array ("output" => '');
     } else {
-        $row = db_fetch_assoc($result);
+        $row = Database::fetchAssoc($result);
         if ($row['output'] > "") {
             $row['output'] = gzuncompress($row['output']);
         }
@@ -53,18 +61,18 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
             count($session['allowednavs']) == 0 || $row['output'] == ""
     ) {
         $session['allowednavs'] = array();
-        page_header("Your Navs Are Corrupted");
+        Header::pageHeader("Your Navs Are Corrupted");
         if ($session['user']['alive']) {
-            villagenav();
-            output(
+            VillageNav::render();
+            $output->output(
                 "Your navs are corrupted, please return to %s.",
                 $session['user']['location']
             );
         } else {
-            addnav("Return to Shades", "shades.php");
-            output("Your navs are corrupted, please return to the Shades.");
+            Nav::add("Return to Shades", "shades.php");
+            $output->output("Your navs are corrupted, please return to the Shades.");
         }
-        page_footer();
+        Footer::pageFooter();
     }
     echo $row['output'];
     $session['debug'] = "";
@@ -72,6 +80,6 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
     Accounts::saveUser();
 } else {
     $session = array();
-    translator_setup();
-    redirect("index.php");
+    Translator::translatorSetup();
+    Redirect::redirect("index.php");
 }
