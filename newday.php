@@ -355,7 +355,7 @@ if ($dp < $dkills) {
     //legacy support if you have no playername set
     if ($session['user']['playername'] == '') {
         //set it
-                $session['user']['playername'] = Names::get_player_basename(false);
+        $session['user']['playername'] = Names::getPlayerBasename(false);
     }
 }
 page_footer();

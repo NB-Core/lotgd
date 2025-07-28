@@ -79,7 +79,7 @@ function namecolor_dohook(string $hookname, array $args): array
 
 function namecolor_form()
 {
-    $regname = get_player_basename();
+    $regname = Names::getPlayerBasename();
     output("Your name currently is this:");
     rawoutput($regname);
     output(", which looks like %s`7`n`n", $regname);
@@ -132,7 +132,7 @@ function namecolor_run(): void
         }
         addnav("L?Return to the Lodge", "lodge.php");
     } elseif ($op == "namepreview") {
-        $regname = get_player_basename();
+        $regname = Names::getPlayerBasename();
         $newname = str_replace("`0", "", httppost("newname"));
 
         if (!get_module_setting("bold")) {
@@ -190,7 +190,7 @@ function namecolor_run(): void
         set_module_pref("boughtbefore", 1);
         $fromname = $session['user']['name'];
         $basename = rawurldecode(httpget('name'));
-                $newname = Names::change_player_name($basename);
+        $newname = Names::changePlayerName($basename);
         $session['user']['playername'] = $basename;
         $session['user']['name'] = $newname;
         AddNews::add("%s`^ has become known as %s.", $fromname, $session['user']['name']);

@@ -216,7 +216,7 @@ if ($op == "") {
     }
 
     // Set the new title.
-        $newname = Names::change_player_title($newtitle);
+    $newname = Names::changePlayerTitle($newtitle);
     $session['user']['title'] = $newtitle;
     $session['user']['name'] = $newname;
 
@@ -244,7 +244,7 @@ if ($op == "") {
     // allow explanative text as well.
     modulehook("dragonkilltext");
 
-    $regname = get_player_basename();
+    $regname = Names::getPlayerBasename();
     //get the dragons name
     $badguys = @unserialize($badguys);
     $badguy = array("creaturename" => translate_inline("`@The Green Dragon`0"));
