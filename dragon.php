@@ -173,9 +173,22 @@ if ($op == "") {
             array_key_exists($row['Field'], $nochange) &&
                 $nochange[$row['Field']]
         ) {
-        } else {
-            $session['user'][$row['Field']] = $row["Default"];
+            continue;
         }
+
+        $value = $row['Default'];
+        $type = strtolower($row['Type']);
+        $baseType = strtok($type, '(');
+
+        if (strpos($baseType, 'int') !== false) {
+            $value = (int) $value;
+        } elseif (in_array($baseType, ['float', 'double', 'decimal'])) {
+            $value = (float) $value;
+        } elseif ($baseType === 'tinyint' && $type === 'tinyint(1)') {
+            $value = (bool) $value;
+        }
+
+        $session['user'][$row['Field']] = $value;
     }
     $session['user']['gold'] = getsetting("newplayerstartgold", 50);
     $session['user']['location'] = getsetting('villagename', LOCATION_FIELDS);
