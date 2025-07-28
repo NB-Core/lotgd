@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
 
 // mail ready
 // addnews ready
 // translator ready
-require_once("common.php");
-require_once("lib/http.php");
+require_once 'common.php';
 
 tlschema("paylog");
 
@@ -28,11 +33,11 @@ SuAccess::check(SU_EDIT_PAYLOG);
 | txfee     | float(9,2)          |      |     | 0.00    |                |
 +-----------+---------------------+------+-----+---------+----------------+
 */
-page_header("Payment Log");
+Header::pageHeader('Payment Log');
 SuperuserNav::render();
 modulehook("paylog", array());
 
-$op = httpget('op');
+$op = (string) Http::get('op');
 if ($op == "") {
     $sql = "SELECT info,txnid FROM " . db_prefix("paylog") . " WHERE processdate='" . DATETIME_DATEMIN . "'";
     $result = db_query($sql);
@@ -43,11 +48,11 @@ if ($op == "") {
     }
     $sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM " . db_prefix('paylog') . " GROUP BY month ORDER BY month DESC";
     $result = db_query($sql);
-    addnav("Months");
+    Nav::add('Months');
     while ($row = db_fetch_assoc($result)) {
-        addnav(array("%s %s %s", date("M Y", strtotime($row['month'] . "-01")), getsetting("paypalcurrency", "USD"), $row['profit']), "paylog.php?month={$row['month']}");
+        Nav::add(array("%s %s %s", date("M Y", strtotime($row['month'] . '-01')), getsetting('paypalcurrency', 'USD'), $row['profit']), "paylog.php?month={$row['month']}");
     }
-    $month = httpget('month');
+    $month = (string) Http::get('month');
     if ($month == "") {
         $month = date("Y-m");
     }
@@ -92,7 +97,7 @@ if ($op == "") {
                 $row['donation']
             );
             rawoutput("</a>");
-            addnav("", "user.php?op=edit&userid={$row['acctid']}");
+            Nav::add('', "user.php?op=edit&userid={$row['acctid']}");
         } else {
             $amt = round((float)$info['mc_gross'] * 100, 0);
             $memo = "";
@@ -101,11 +106,11 @@ if ($op == "") {
             }
             $link = "donators.php?op=add1&name=" . rawurlencode($memo) . "&amt=$amt&txnid={$row['txnid']}";
             rawoutput("-=( <a href='$link' title=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" alt=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">[" . htmlentities($memo, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "]</a> )=-");
-            addnav("", $link);
+            Nav::add('', $link);
         }
         rawoutput("</td></tr>");
     }
     rawoutput("</table>");
-    addnav("Refresh", "paylog.php");
+    Nav::add('Refresh', 'paylog.php');
 }
-page_footer();
+Footer::pageFooter();
