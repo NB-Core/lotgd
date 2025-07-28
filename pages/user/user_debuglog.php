@@ -3,14 +3,15 @@ declare(strict_types=1);
 
 use Lotgd\Nav;
 use Lotgd\Translator;
+use Lotgd\MySQL\Database;
 
 if ($petition != "") {
     Nav::add("Navigation");
     Nav::add("Return to the petition", "viewpetition.php?op=view&id=$petition");
 }
-$debuglog = db_prefix('debuglog');
-$debuglog_archive = db_prefix('debuglog_archive');
-$accounts = db_prefix('accounts');
+$debuglog = Database::prefix('debuglog');
+$debuglog_archive = Database::prefix('debuglog_archive');
+$accounts = Database::prefix('accounts');
 
 
 // As mySQL cannot use two different indexes in a single query this query can take up to 25s on its own!
@@ -20,23 +21,23 @@ $accounts = db_prefix('accounts');
 // $sql = "SELECT count(id) AS c FROM $debuglog WHERE actor=$userid OR target=$userid";
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog WHERE target=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max = $row['c'];
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog WHERE actor=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max += $row['c'];
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog_archive WHERE target=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max = $row['c'];
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog_archive WHERE actor=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max += $row['c'];
 
 
@@ -86,9 +87,9 @@ if ($start > 0) {
         "user.php?op=debuglog&userid=$userid&start=$prev$returnpetition"
     );
 }
-$result = db_query($sql);
+$result = Database::query($sql);
 $odate = "";
-while ($row = db_fetch_assoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $dom = date("D, M d", strtotime($row['date']));
     if ($odate != $dom) {
         $output->outputNotl("`n`b`@%s`0`b`n", $dom);

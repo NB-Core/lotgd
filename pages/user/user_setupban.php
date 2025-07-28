@@ -3,10 +3,11 @@ declare(strict_types=1);
 
 use Lotgd\Nav;
 use Lotgd\Translator;
+use Lotgd\MySQL\Database;
 
-$sql = "SELECT name,lastip,uniqueid FROM " . db_prefix("accounts") . " WHERE acctid=\"$userid\"";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$sql = "SELECT name,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE acctid=\"$userid\"";
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 if ($row['name'] != "") {
     $output->output("Setting up ban information based on `\$%s`0", $row['name']);
 }
@@ -41,9 +42,9 @@ if ($row['name'] != "") {
     $name = $row['name'];
     $output->output("`0To help locate similar users to `@%s`0, here are some other users who are close:`n", $name);
     $output->output("`bSame ID (%s):`b`n", $id);
-    $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . db_prefix("accounts") . " WHERE uniqueid='" . addslashes($id) . "' ORDER BY lastip";
-    $result = db_query($sql);
-    while ($row = db_fetch_assoc($result)) {
+    $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . Database::prefix("accounts") . " WHERE uniqueid='" . addslashes($id) . "' ORDER BY lastip";
+    $result = Database::query($sql);
+    while ($row = Database::fetchAssoc($result)) {
         $output->output(
             "`0• (%s) `%%s`0 - %s hits, last: %s`n",
             $row['lastip'],
@@ -61,16 +62,16 @@ if ($row['name'] != "") {
             break;
         }
         $thisip = substr($ip, 0, $x);
-        $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . db_prefix("accounts") . " WHERE lastip LIKE '$thisip%' AND NOT (lastip LIKE '$oip') ORDER BY uniqueid";
+        $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . Database::prefix("accounts") . " WHERE lastip LIKE '$thisip%' AND NOT (lastip LIKE '$oip') ORDER BY uniqueid";
         //$output->output("$sql`n");
-        $result = db_query($sql);
-        if (db_num_rows($result) > 0) {
+        $result = Database::query($sql);
+        if (Database::numRows($result) > 0) {
             $output->output("• IP Filter: %s ", $thisip);
             $output->rawOutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
             $output->output("Use this filter");
             $output->rawOutput("</a>");
             $output->outputNotl("`n");
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = Database::fetchAssoc($result)) {
                 $output->output("&nbsp;&nbsp;", true);
                 $output->output(
                     "• (%s) [%s] `%%s`0 - %s hits, last: %s`n",

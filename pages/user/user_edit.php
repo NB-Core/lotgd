@@ -6,9 +6,10 @@ use Lotgd\Forms;
 use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\Modules;
+use Lotgd\MySQL\Database;
 
-$result = db_query("SELECT * FROM " . db_prefix("accounts") . " WHERE acctid=" . (int)$userid);
-$row = db_fetch_assoc($result);
+$result = Database::query("SELECT * FROM " . Database::prefix("accounts") . " WHERE acctid=" . (int)$userid);
+$row = Database::fetchAssoc($result);
 $petition = httpget("returnpetition");
 if ($petition != "") {
     $returnpetition = "&returnpetition=$petition";
@@ -101,9 +102,9 @@ if (httpget("subop") == "") {
                 $data[$key] = $x[1];
             }
         }
-               $sql = "SELECT * FROM " . db_prefix("module_userprefs") . " WHERE modulename='" . db_real_escape_string($module) . "' AND userid=" . (int)$userid;
-        $result = db_query($sql);
-        while ($row = db_fetch_assoc($result)) {
+               $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE modulename='" . Database::escape($module) . "' AND userid=" . (int)$userid;
+        $result = Database::query($sql);
+        while ($row = Database::fetchAssoc($result)) {
             $data[$row['setting']] = $row['value'];
         }
         $output->rawOutput("<form action='user.php?op=savemodule&module=$module&userid=$userid$returnpetition' method='POST'>");

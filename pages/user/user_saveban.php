@@ -2,8 +2,9 @@
 declare(strict_types=1);
 
 use Lotgd\Cookies;
+use Lotgd\MySQL\Database;
 
-$sql = "INSERT INTO " . db_prefix("bans") . " (banner,";
+$sql = "INSERT INTO " . Database::prefix("bans") . " (banner,";
 $type = httppost("type");
 if ($type == "ip") {
     $sql .= "ipfilter";
@@ -45,22 +46,22 @@ if ($type == "ip") {
     }
 }
 if ($sql != "") {
-    $result = db_query($sql);
-    $output->output("%s ban rows entered.`n`n", db_affected_rows($result));
-    $output->outputNotl("%s", db_error(LINK));
+    $result = Database::query($sql);
+    $output->output("%s ban rows entered.`n`n", Database::affectedRows($result));
+    $output->outputNotl("%s", Database::error());
     debuglog("entered a ban: " .  ($type == "ip" ?  "IP: " . httppost("ip") : "ID: " . httppost("id")) . " Ends after: $duration  Reason: \"" .  httppost("reason") . "\"");
     /* log out affected players */
-    $sql = "SELECT acctid FROM " . db_prefix('accounts') . " WHERE $key='$key_value'";
-    $result = db_query($sql);
+    $sql = "SELECT acctid FROM " . Database::prefix('accounts') . " WHERE $key='$key_value'";
+    $result = Database::query($sql);
     $acctids = array();
-    while ($row = db_fetch_assoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         $acctids[] = $row['acctid'];
     }
     if ($acctids != array()) {
-        $sql = " UPDATE " . db_prefix('accounts') . " SET loggedin=0 WHERE acctid IN (" . implode(",", $acctids) . ")";
-        $result = db_query($sql);
+        $sql = " UPDATE " . Database::prefix('accounts') . " SET loggedin=0 WHERE acctid IN (" . implode(",", $acctids) . ")"; 
+        $result = Database::query($sql);
         if ($result) {
-            $output->output("`\$%s people have been logged out!`n`n`0", db_affected_rows($result));
+            $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows($result));
         } else {
             $output->output("`\$Nobody was logged out. Acctids (%s) did not return rows!`n`n`0", implode(",", $acctids));
         }

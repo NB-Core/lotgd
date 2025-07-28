@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Lotgd\Nav;
 use Lotgd\Translator;
+use Lotgd\MySQL\Database;
 
 if ($display == 1) {
     $q = "";
@@ -36,7 +37,7 @@ if ($display == 1) {
     Nav::add("", "user.php?sort=uniqueid$q");
     $rn = 0;
     $oorder = "";
-    while ($row = db_fetch_assoc($searchresult)) {
+    while ($row = Database::fetchAssoc($searchresult)) {
         $laston = relativedate($row['laston']);
         $loggedin =
             (date("U") - strtotime($row['laston']) <
