@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Lotgd\Translator;
+
 //save module settings.
 $userid = (int)httpget('userid');
 $module = httpget('module');
@@ -9,13 +11,13 @@ $post = modulehook("validateprefs", $post, true, $module);
 if (isset($post['validation_error']) && $post['validation_error']) {
     tlschema("module-$module");
     $post['validation_error'] =
-        translate_inline($post['validation_error']);
+        Translator::translateInline($post['validation_error']);
     tlschema();
-    output("Unable to change settings: `\$%s`0", $post['validation_error']);
+    $output->output("Unable to change settings: `\$%s`0", $post['validation_error']);
 } else {
-    output_notl("`n");
+    $output->outputNotl("`n");
     foreach ($post as $key => $val) {
-        output("`\$Setting '`2%s`\$' to '`2%s`\$'`n", $key, htmlspecialchars($val, ENT_QUOTES, 'UTF-8'));
+        $output->output("`\$Setting '`2%s`\$' to '`2%s`\$'`n", $key, htmlspecialchars($val, ENT_QUOTES, 'UTF-8'));
                $sql = "REPLACE INTO " . db_prefix("module_userprefs") .
                        " (modulename,userid,setting,value) VALUES ('" .
                        db_real_escape_string($module) . "',$userid,'" .
@@ -23,7 +25,7 @@ if (isset($post['validation_error']) && $post['validation_error']) {
                        db_real_escape_string($val) . "')";
         db_query($sql);
     }
-    output("`^Preferences for module %s saved.`n", $module);
+    $output->output("`^Preferences for module %s saved.`n", $module);
 }
 $op = "edit";
 httpset("op", "edit");
