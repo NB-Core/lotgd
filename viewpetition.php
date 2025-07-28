@@ -266,7 +266,7 @@ if ($op == "") {
     Nav::add("Details");
     $viewpageinfo = (int)Http::get("viewpageinfo");
     if ($viewpageinfo == 1) {
-        Nav::add("Hide Details", "viewpetition.php?op=view&id=$id}");
+        Nav::add("Hide Details", "viewpetition.php?op=view&id=$id");
     } else {
         Nav::add("D?Show Details", "viewpetition.php?op=view&id=$id&viewpageinfo=1");
     }
