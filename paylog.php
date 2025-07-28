@@ -60,7 +60,7 @@ if ($op == "") {
     $enddate = date("Y-m-d H:i:s", strtotime("+1 month", strtotime($startdate)));
     $sql = "SELECT " . db_prefix("paylog") . ".*," . db_prefix("accounts") . ".name," . db_prefix("accounts") . ".donation," . db_prefix("accounts") . ".donationspent FROM " . db_prefix("paylog") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("paylog") . ".acctid = " . db_prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
     $result = db_query($sql);
-    rawoutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
+    $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
     $type = translate_inline("Type");
     $gross = translate_inline("Gross");
     $fee = translate_inline("Fee");
@@ -68,35 +68,35 @@ if ($op == "") {
     $processed = translate_inline("Processed");
     $id = translate_inline("Transaction ID");
     $who = translate_inline("Who");
-    rawoutput("<tr class='trhead'><td>Date</td><td>$id</td><td>$type</td><td>$gross</td><td>$fee</td><td>$net</td><td>$processed</td><td>$who</td></tr>");
+    $output->rawOutput("<tr class='trhead'><td>Date</td><td>$id</td><td>$type</td><td>$gross</td><td>$fee</td><td>$net</td><td>$processed</td><td>$who</td></tr>");
     $number = db_num_rows($result);
     for ($i = 0; $i < $number; $i++) {
         $row = db_fetch_assoc($result);
         $info = unserialize($row['info']);
-        rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td nowrap>");
-        output_notl(date("m/d H:i", strtotime($info['payment_date'])));
-        rawoutput("</td><td>");
-        output_notl("%s", $row['txnid']);
-        rawoutput("</td><td>");
-        output_notl("%s", $info['txn_type']);
-        rawoutput("</td><td nowrap>");
-        output_notl("%.2f %s", $info['mc_gross'], $info['mc_currency']);
-        rawoutput("</td><td>");
-        output_notl("%s", $info['mc_fee']);
-        rawoutput("</td><td>");
-        output_notl("%.2f", (float)$info['mc_gross'] - (float)$info['mc_fee']);
-        rawoutput("</td><td>");
-        output_notl("%s", translate_inline($row['processed'] ? "`@Yes`0" : "`\$No`0"));
-        rawoutput("</td><td nowrap>");
+        $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td nowrap>");
+        $output->outputNotl(date("m/d H:i", strtotime($info['payment_date'])));
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['txnid']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $info['txn_type']);
+        $output->rawOutput("</td><td nowrap>");
+        $output->outputNotl("%.2f %s", $info['mc_gross'], $info['mc_currency']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $info['mc_fee']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%.2f", (float)$info['mc_gross'] - (float)$info['mc_fee']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", translate_inline($row['processed'] ? "`@Yes`0" : "`\$No`0"));
+        $output->rawOutput("</td><td nowrap>");
         if ($row['name'] > "") {
-            rawoutput("<a href='user.php?op=edit&userid={$row['acctid']}'>");
-            output_notl(
+            $output->rawOutput("<a href='user.php?op=edit&userid={$row['acctid']}'>");
+            $output->outputNotl(
                 "`&%s`0 (%d/%d)",
                 $row['name'],
                 $row['donationspent'],
                 $row['donation']
             );
-            rawoutput("</a>");
+            $output->rawOutput("</a>");
             Nav::add('', "user.php?op=edit&userid={$row['acctid']}");
         } else {
             $amt = round((float)$info['mc_gross'] * 100, 0);
@@ -105,12 +105,12 @@ if ($op == "") {
                 $memo = $info['memo'];
             }
             $link = "donators.php?op=add1&name=" . rawurlencode($memo) . "&amt=$amt&txnid={$row['txnid']}";
-            rawoutput("-=( <a href='$link' title=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" alt=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">[" . htmlentities($memo, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "]</a> )=-");
+            $output->rawOutput("-=( <a href='$link' title=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" alt=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">[" . htmlentities($memo, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "]</a> )=-");
             Nav::add('', $link);
         }
-        rawoutput("</td></tr>");
+        $output->rawOutput("</td></tr>");
     }
-    rawoutput("</table>");
+    $output->rawOutput("</table>");
     Nav::add('Refresh', 'paylog.php');
 }
 Footer::pageFooter();
