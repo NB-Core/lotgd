@@ -371,9 +371,9 @@ class Account
         return $this->level;
     }
 
-    public function setLevel(int $level): self
+    public function setLevel(int|string $level): self
     {
-        $this->level = $level;
+        $this->level = (int) $level;
         return $this;
     }
 

@@ -58,4 +58,13 @@ final class AccountsDoctrineTest extends TestCase
         $entity = Accounts::getAccountEntity();
         $this->assertTrue($entity->getAlive());
     }
+
+    public function testSaveUserCastsIntegerFields(): void
+    {
+        $GLOBALS['session']['user']['level'] = '3';
+        $GLOBALS['baseaccount']['level'] = 1;
+        Accounts::saveUser();
+        $entity = Accounts::getAccountEntity();
+        $this->assertSame(3, $entity->getLevel());
+    }
 }
