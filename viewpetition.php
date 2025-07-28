@@ -9,6 +9,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -16,7 +17,7 @@ use Lotgd\Modules\HookHandler;
 
 require_once("common.php");
 
-tlschema("petition");
+Translator::tlschema('petition');
 
 SuAccess::check(SU_EDIT_PETITIONS);
 
@@ -37,7 +38,7 @@ $statuses = array(
     );
 
 $statuses = HookHandler::hook("petition-status", $statuses);
-$statuses = translate_inline($statuses);
+$statuses = Translator::translateInline($statuses);
 
 $op = Http::get("op") ?? "";
 $id = Http::get("id") ?? "";
@@ -144,16 +145,16 @@ if ($op == "") {
     $result = db_query($sql);
     Nav::add("Petitions");
     Nav::add("Refresh", "viewpetition.php");
-    $num = translate_inline("Num");
-    $ops = translate_inline("Ops");
-    $from = translate_inline("From");
-    $sent = translate_inline("Sent");
-    $com = translate_inline("Com");
-    $last = translate_inline("Last Updater");
-    $when = translate_inline("Updated");
-    $view = translate_inline("View");
-    $close = translate_inline("Close");
-    $mark = translate_inline("Mark");
+    $num = Translator::translateInline('Num');
+    $ops = Translator::translateInline('Ops');
+    $from = Translator::translateInline('From');
+    $sent = Translator::translateInline('Sent');
+    $com = Translator::translateInline('Com');
+    $last = Translator::translateInline('Last Updater');
+    $when = Translator::translateInline('Updated');
+    $view = Translator::translateInline('View');
+    $close = Translator::translateInline('Close');
+    $mark = Translator::translateInline('Mark');
 
     $output->rawOutput("<table border='0'><tr class='trhead'><td>$num</td><td>$ops</td><td>$from</td><td>$sent</td><td>$com</td><td>$last</td><td>$when</td></tr>");
     $i = 0;
@@ -300,13 +301,13 @@ if ($op == "") {
         Nav::add("User Ops");
         Nav::add("Edit User Donations", "donators.php?op=add1&name=" . rawurlencode($row['login']) . "&ret=" . urlencode($_SERVER['REQUEST_URI']));
     }
-    $write = translate_inline("Write Mail");
+    $write = Translator::translateInline('Write Mail');
     // We assume that petitions are handled in default language
-    $yourpeti = translate_mail("Your Petition", 0);
-    $peti = translate_mail("Petition", 0);
-    $row['body'] = str_replace("[charname]", translate_mail("[charname]", 0), $row['body']);
-    $row['body'] = str_replace("[email]", translate_mail("[email]", 0), $row['body']);
-    $row['body'] = str_replace("[description]", translate_mail("[description]", 0), $row['body']);
+    $yourpeti = Translator::translateMail('Your Petition', 0);
+    $peti = Translator::translateMail('Petition', 0);
+    $row['body'] = str_replace('[charname]', Translator::translateMail('[charname]', 0), $row['body']);
+    $row['body'] = str_replace('[email]', Translator::translateMail('[email]', 0), $row['body']);
+    $row['body'] = str_replace('[description]', Translator::translateMail('[description]', 0), $row['body']);
     // For email replies, make sure we don't overflow the URI buffer.
     $reppet = substr(stripslashes($row['body']), 0, 2000);
     //display given category, if any
