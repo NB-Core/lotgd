@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 use Lotgd\PlayerFunctions;
 use Lotgd\Forms;
+use Lotgd\Nav;
+use Lotgd\Translator;
+use Lotgd\Modules;
 
 $result = db_query("SELECT * FROM " . db_prefix("accounts") . " WHERE acctid=" . (int)$userid);
 $row = db_fetch_assoc($result);
@@ -11,40 +14,40 @@ if ($petition != "") {
     $returnpetition = "&returnpetition=$petition";
 }
 if ($petition != "") {
-    addnav("Navigation");
-    addnav("Return to the petition", "viewpetition.php?op=view&id=$petition");
+    Nav::add("Navigation");
+    Nav::add("Return to the petition", "viewpetition.php?op=view&id=$petition");
 }
-    addnav("Operations");
-addnav("View last page hit", "user.php?op=lasthit&userid=$userid", false, true);
-addnav("Display debug log", "user.php?op=debuglog&userid=$userid$returnpetition");
-addnav("View user bio", "bio.php?char=" . $row['acctid'] . "&ret=" . urlencode($_SERVER['REQUEST_URI']));
+    Nav::add("Operations");
+Nav::add("View last page hit", "user.php?op=lasthit&userid=$userid", false, true);
+Nav::add("Display debug log", "user.php?op=debuglog&userid=$userid$returnpetition");
+Nav::add("View user bio", "bio.php?char=" . $row['acctid'] . "&ret=" . urlencode($_SERVER['REQUEST_URI']));
 if ($session['user']['superuser'] & SU_EDIT_DONATIONS) {
-    addnav("Add donation points", "donators.php?op=add1&name=" . rawurlencode($row['login']) . "&ret=" . urlencode($_SERVER['REQUEST_URI']));
+    Nav::add("Add donation points", "donators.php?op=add1&name=" . rawurlencode($row['login']) . "&ret=" . urlencode($_SERVER['REQUEST_URI']));
 }
-    addnav("", "user.php?op=edit&userid=$userid$returnpetition");
-addnav("Bans");
-addnav("Set up ban", "bans.php?op=setupban&userid={$row['acctid']}");
+    Nav::add("", "user.php?op=edit&userid=$userid$returnpetition");
+Nav::add("Bans");
+Nav::add("Set up ban", "bans.php?op=setupban&userid={$row['acctid']}");
 if (httpget("subop") == "") {
-    rawoutput("<form action='user.php?op=special&userid=$userid$returnpetition' method='POST'>");
-    addnav("", "user.php?op=special&userid=$userid$returnpetition");
-    $grant = translate_inline("Grant New Day");
-    rawoutput("<input type='submit' class='button' name='newday' value='$grant'>");
-    $fix = translate_inline("Fix Broken Navs");
-    rawoutput("<input type='submit' class='button' name='fixnavs' value='$fix'>");
-    $mark = translate_inline("Mark Email As Valid");
-    rawoutput("<input type='submit' class='button' name='clearvalidation' value='$mark'>");
-    rawoutput("</form>");
+    $output->rawOutput("<form action='user.php?op=special&userid=$userid$returnpetition' method='POST'>");
+    Nav::add("", "user.php?op=special&userid=$userid$returnpetition");
+    $grant = Translator::translateInline("Grant New Day");
+    $output->rawOutput("<input type='submit' class='button' name='newday' value='$grant'>");
+    $fix = Translator::translateInline("Fix Broken Navs");
+    $output->rawOutput("<input type='submit' class='button' name='fixnavs' value='$fix'>");
+    $mark = Translator::translateInline("Mark Email As Valid");
+    $output->rawOutput("<input type='submit' class='button' name='clearvalidation' value='$mark'>");
+    $output->rawOutput("</form>");
         //Show a user's usertable
-    rawoutput("<form action='user.php?op=save&userid=$userid$returnpetition' method='POST'>");
-    addnav("", "user.php?op=save&userid=$userid$returnpetition");
-    $save = translate_inline("Save");
-    rawoutput("<input type='submit' class='button' value='$save'>");
+    $output->rawOutput("<form action='user.php?op=save&userid=$userid$returnpetition' method='POST'>");
+    Nav::add("", "user.php?op=save&userid=$userid$returnpetition");
+    $save = Translator::translateInline("Save");
+    $output->rawOutput("<input type='submit' class='button' value='$save'>");
     if ($row['loggedin'] == 1 && $row['laston'] > date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds"))) {
-        output_notl("`\$");
-        rawoutput("<span style='font-size: 20px'>");
-        output("`\$Warning:`0");
-        rawoutput("</span>");
-        output("`\$This user is probably logged in at the moment!`0");
+        $output->outputNotl("`\$");
+        $output->rawOutput("<span style='font-size: 20px'>");
+        $output->output("`\$Warning:`0");
+        $output->rawOutput("</span>");
+        $output->output("`\$This user is probably logged in at the moment!`0");
     }
     //Add new composita attack
     $row['totalattack'] = PlayerFunctions::getPlayerAttack($row['acctid']);
@@ -66,17 +69,17 @@ if (httpget("subop") == "") {
     */
     $showformargs = modulehook("modifyuserview", array("userinfo" => $userinfo, "user" => $row));
     $info = Forms::showForm($showformargs['userinfo'], $showformargs['user']);
-    rawoutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" name='oldvalues'>");
-    rawoutput("</form>");
-        output("`n`nLast Page Viewed:`n");
-    rawoutput("<iframe src='user.php?op=lasthit&userid=$userid' width='100%' height='400'>");
-    output("You need iframes to view the user's last hit here.");
-    output("Use the link in the nav instead.");
-    rawoutput("</iframe>");
+    $output->rawOutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" name='oldvalues'>");
+    $output->rawOutput("</form>");
+        $output->output("`n`nLast Page Viewed:`n");
+    $output->rawOutput("<iframe src='user.php?op=lasthit&userid=$userid' width='100%' height='400'>");
+    $output->output("You need iframes to view the user's last hit here.");
+    $output->output("Use the link in the nav instead.");
+    $output->rawOutput("</iframe>");
 } elseif (httpget("subop") == "module") {
     //Show a user's prefs for a given module.
-    addnav("Operations");
-    addnav("Edit user", "user.php?op=edit&userid=$userid$returnpetition");
+    Nav::add("Operations");
+    Nav::add("Edit user", "user.php?op=edit&userid=$userid$returnpetition");
     $module = httpget('module');
     $info = get_module_info($module);
     if (count($info['prefs']) > 0) {
@@ -103,15 +106,15 @@ if (httpget("subop") == "") {
         while ($row = db_fetch_assoc($result)) {
             $data[$row['setting']] = $row['value'];
         }
-        rawoutput("<form action='user.php?op=savemodule&module=$module&userid=$userid$returnpetition' method='POST'>");
-        addnav("", "user.php?op=savemodule&module=$module&userid=$userid$returnpetition");
+        $output->rawOutput("<form action='user.php?op=savemodule&module=$module&userid=$userid$returnpetition' method='POST'>");
+        Nav::add("", "user.php?op=savemodule&module=$module&userid=$userid$returnpetition");
         tlschema("module-$module");
         Forms::showForm($msettings, $data);
         tlschema();
-        rawoutput("</form>");
+        $output->rawOutput("</form>");
     } else {
-        output("The $module module doesn't appear to define any user preferences.");
+        $output->output("The $module module doesn't appear to define any user preferences.");
     }
 }
-module_editor_navs('prefs', "user.php?op=edit&subop=module&userid=$userid$returnpetition&module=");
-addnav("", "user.php?op=lasthit&userid=$userid");
+Modules::editorNavs('prefs', "user.php?op=edit&subop=module&userid=$userid$returnpetition&module=");
+Nav::add("", "user.php?op=lasthit&userid=$userid");
