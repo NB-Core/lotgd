@@ -4,31 +4,36 @@ declare(strict_types=1);
 use Lotgd\Battle;
 use Lotgd\BellRand;
 use Lotgd\PlayerFunctions;
+use Lotgd\Modules\HookHandler;
+use Lotgd\Nav;
+use Lotgd\Http;
+use Lotgd\Page\Footer;
+use Lotgd\MySQL\Database;
 
 if ($session['user']['gravefights'] <= 0) {
-    output("`\$`bYour soul can bear no more torment in this afterlife.`b`0");
-    $op = "";
-    httpset('op', "");
+    $output->output("`\$`bYour soul can bear no more torment in this afterlife.`b`0");
+    $op = '';
+    Http::set('op', '');
 } else {
-       Battle::suspendCompanions("allowinshades", true);
-    if (module_events("graveyard", getsetting("gravechance", 0)) != 0) {
-        if (!checknavs()) {
+    Battle::suspendCompanions('allowinshades', true);
+    if (HookHandler::moduleEvents('graveyard', (int) getsetting('gravechance', 0)) != 0) {
+        if (! Nav::checkNavs()) {
             // If we're going back to the graveyard, make sure to reset
             // the special and the specialmisc
             $session['user']['specialinc'] = "";
             $session['user']['specialmisc'] = "";
             $skipgraveyardtext = true;
-            $op = "";
-            httpset("op", "");
+            $op = '';
+            Http::set('op', '');
         } else {
-            page_footer();
+            Footer::pageFooter();
         }
     } else {
         $session['user']['gravefights']--;
             $battle = true;
-            $sql = "SELECT * FROM " . db_prefix("creatures") . " WHERE graveyard=1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
-        $result = db_query($sql);
-        $badguy = db_fetch_assoc($result);
+            $sql = "SELECT * FROM " . Database::prefix('creatures') . " WHERE graveyard=1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
+        $result = Database::query($sql);
+        $badguy = Database::fetchAssoc($result);
         $level = $session['user']['level'];
         $shift = 0;
         if ($level < 5) {
@@ -61,7 +66,7 @@ if ($session['user']['gravefights'] <= 0) {
 
 
         //no multifights currently, so this hook passes the badguy to modify
-        $attackstack = modulehook("graveyardfight-start", $attackstack);
+        $attackstack = HookHandler::hook('graveyardfight-start', $attackstack);
 
         $session['user']['badguy'] = createstring($attackstack);
     }
