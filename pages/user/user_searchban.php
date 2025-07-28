@@ -40,7 +40,7 @@ if ($target == '') {
     Nav::add("", "user.php?op=searchban");
     $output->output("Search banned user by name: ");
     $output->rawOutput("<input name='target' value='$target'>");
-    $output->rawOutput("<input type='submit' class='button' value='$submit'></from><br><br>");
+    $output->rawOutput("<input type='submit' class='button' value='$submit'></form><br><br>");
 } elseif (is_numeric($target)) {
     //none
     $sql = "SELECT lastip,uniqueid FROM accounts WHERE acctid=" . $target;
