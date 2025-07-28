@@ -19,6 +19,10 @@ final class RepositoryDoctrineTest extends TestCase
 
     protected function setUp(): void
     {
+        if (!extension_loaded('pdo_sqlite')) {
+            $this->markTestSkipped('PDO SQLite extension not installed');
+        }
+
         if (!class_exists('Doctrine\\Common\\Annotations\\AnnotationReader')) {
             $this->markTestSkipped('Doctrine annotations not installed');
         }
