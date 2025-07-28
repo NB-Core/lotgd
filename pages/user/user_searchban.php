@@ -60,7 +60,7 @@ if ($target == '') {
             $output->rawOutput("<option value='" . $row['acctid'] . "'>" . $row['login'] . "</option>");
         }
         $output->rawOutput("</select>");
-        $output->rawOutput("<input type='submit' class='button' value='$submit'></from><br><br>");
+        $output->rawOutput("<input type='submit' class='button' value='$submit'></form><br><br>");
     }
 }
 
