@@ -79,7 +79,7 @@ while ($row = Database::fetchAssoc($result)) {
         if ($key > $session['user']['clanrank'] || $key == CLAN_FOUNDER) {
             continue;
         }
-        $list .= "<option value='$key' " . ($row['clanrank'] == $key ? 'selected ' : '') . ">" . sanitize($value) . "</option>";
+        $list .= "<option value='$key' " . ($row['clanrank'] == $key ? 'selected ' : '') . ">" . Sanitize::sanitize($value) . "</option>";
     }
     $tot += $row['dragonkills'];
     $output->rawOutput("<tr class='" . ($i ? "trlight" : "trdark") . "'>");
