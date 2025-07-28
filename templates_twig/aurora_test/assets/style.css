@@ -12,14 +12,15 @@ td {
 
 
 .main-body {
-	background-image: url('page-bg.png');
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: top right;
-	background-attachment: fixed;
-	background-color: #111;
-	color: #CCCCCC;
-	margin: 0;
+        background-color: #222;
+        background-image:
+                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                radial-gradient(rgba(0,0,0,0.2) 1px, transparent 1px);
+        background-size: 4px 4px;
+        background-position: 0 0, 2px 2px;
+        background-attachment: fixed;
+        color: #eeeeee;
+        margin: 0;
 }
 
 @media (max-width: 968px) {
@@ -27,12 +28,9 @@ td {
 		background-size: cover;
 		background-position: top 10% right 30%;
 	}
-	.pageheader-center > img {
-		width: 50%;
-	}
-	.pageheader-right > img {
-		width: 27%;
-	}
+        .title-logo {
+                font-size: 2rem;
+        }
 	.petition {
 		padding-left: 15px;
 	}
@@ -46,12 +44,13 @@ td {
 
 /* Offcanvas sidebars should match the main page background */
 .offcanvas {
-	background-image: url('page-bg.png');
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: top right;
-	background-color: #111;
-	color: #CCCCCC;
+        background-color: #222;
+        background-image:
+                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                radial-gradient(rgba(0,0,0,0.2) 1px, transparent 1px);
+        background-size: 4px 4px;
+        background-position: 0 0, 2px 2px;
+        color: #eeeeee;
 }
 
 /* Navigation Table */
@@ -92,15 +91,14 @@ table.nav {
 }
 
 a {
-	color: #669933;
-	text-decoration: none;
+        color: #ff5555;
+        text-decoration: none;
 }
 
 /* Header and other styles */
 
 .page-header {
-	padding-bottom: 3px;
-	/*background: url('header-bg.png') repeat-x;*/
+        padding-bottom: 3px;
 }
 
 .main-content {
@@ -132,7 +130,15 @@ a {
 }
 
 .pageheader-right {
-	text-align: right;
+        text-align: right;
+}
+
+.title-logo {
+        font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+        font-size: 3rem;
+        color: #ff5555;
+        font-weight: bold;
+        text-shadow: 2px 2px 2px #000;
 }
 
 
@@ -140,7 +146,7 @@ a {
 
 /* Navigation Link */
 a.nav {
-	color: #30d5c8;
+        color: #ff5555;
 	text-decoration: none;
 	width: 181px;
 	height: auto;
@@ -157,7 +163,7 @@ a.nav {
 	padding: 1px;
 	float: left;
 	clear: none;
-	color: #30d5c8;
+        color: #ff5555;
 }
 
 .sidebar-content img.nav-bottom {
@@ -277,10 +283,10 @@ td[class*="page-bottom"] {
 }
 
 .stonage2 {
-	background-image: url(/templates/images/stone_center.gif);
-	background-repeat: no-repeat;
-	background-position: left top;
-	color: #669933;
+        background-image: url(/templates/images/stone_center.gif);
+        background-repeat: no-repeat;
+        background-position: left top;
+        color: #ff5555;
 }
 
 /* Background Images for Different Sections */
@@ -373,14 +379,14 @@ table.petition-count {
 }
 
 .login-hero {
-	width: 100%;
-	max-width: 512px;
-	height: auto;
-	aspect-ratio: 1 / 1;
-	background: url('login-hero.png') center/cover no-repeat;
-	display: block;
-	border-radius: 16px;
-	overflow: hidden;
+        width: 100%;
+        max-width: 512px;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        background: linear-gradient(135deg, #444, #222);
+        display: block;
+        border-radius: 16px;
+        overflow: hidden;
 }
 
 .hidden {

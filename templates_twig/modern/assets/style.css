@@ -259,6 +259,11 @@ a.thot {
     display: none;
 }
 
+/* Form Fields */
+.formfield-value {
+	word-break: break-all;
+}
+
 /* Clear debug output */
 div.debug {
     background-color: #FFFFFF;

@@ -395,6 +395,11 @@ a.thot {
     display: none;
 }
 
+/* Form Fields */
+.formfield-value {
+	word-break: break-all;
+}
+
 div.debug {
     background-color: #1e1e1e; /* dark gray, easy on the eyes */
     color: #d4d4d4; /* slightly muted white for good readability */
