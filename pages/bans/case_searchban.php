@@ -11,9 +11,9 @@ $subop = Http::get('subop');
 $none = Translator::translateInline('NONE');
 if ($subop == "xml") {
     header("Content-Type: text/xml");
-    $sql = "SELECT DISTINCT " . Database::prefix("accounts") . ".name FROM " . Database::prefix("bans") . ", " . Database::prefix("accounts") . " WHERE (ipfilter='" . addslashes(httpget("ip")) . "' AND " .
+    $sql = "SELECT DISTINCT " . Database::prefix("accounts") . ".name FROM " . Database::prefix("bans") . ", " . Database::prefix("accounts") . " WHERE (ipfilter='" . addslashes(Http::get('ip')) . "' AND " .
         Database::prefix("bans") . ".uniqueid='" .
-        addslashes(httpget("id")) . "') AND ((substring(" .
+        addslashes(Http::get('id')) . "') AND ((substring(" .
         Database::prefix("accounts") . ".lastip,1,length(ipfilter))=ipfilter " .
         "AND ipfilter<>'') OR (" .  Database::prefix("bans") . ".uniqueid=" .
         Database::prefix("accounts") . ".uniqueid AND " .
