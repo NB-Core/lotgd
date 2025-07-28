@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /**
  * \file badword.php
@@ -8,34 +9,37 @@
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_COMMENTS);
 
 tlschema("badword");
 
-$op = httpget('op');
+$op = Http::get('op');
 //yuck, this page is a mess, but it gets the job done.
-page_header("Bad word editor");
+Header::pageHeader("Bad word editor");
 
 SuperuserNav::render();
-addnav("Bad Word Editor");
+Nav::add("Bad Word Editor");
 
-addnav("Refresh the list", "badword.php");
+Nav::add("Refresh the list", "badword.php");
 output("`7Here you can edit the words that the game filters.  Using * at the start or end of a word will be a wildcard matching anything else attached to the word.  These words are only filtered if bad word filtering is turned on in the game settings page.`n`n`0");
 
 $test = translate_inline("Test");
 rawoutput("<form action='badword.php?op=test' method='POST'>");
-addnav("", "badword.php?op=test");
+Nav::add("", "badword.php?op=test");
 output("`7Test a word:`0");
 rawoutput("<input name='word'><input type='submit' class='button' value='$test'></form>");
 if ($op == "test") {
-    $word = httppost("word");
+    $word = Http::post("word");
     $return = soap($word, true);
     if ($return == $word) {
         output("`7\"%s\" does not trip any filters.`0`n`n", $word);
@@ -52,11 +56,11 @@ output("`7 (bad word exceptions)`0`n");
 $add = translate_inline("Add");
 $remove = translate_inline("Remove");
 rawoutput("<form action='badword.php?op=addgood' method='POST'>");
-addnav("", "badword.php?op=addgood");
+Nav::add("", "badword.php?op=addgood");
 output("`7Add a word:`0");
 rawoutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
 rawoutput("<form action='badword.php?op=removegood' method='POST'>");
-addnav("", "badword.php?op=removegood");
+Nav::add("", "badword.php?op=removegood");
 output("`7Remove a word:`0");
 rawoutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");
 
@@ -66,7 +70,7 @@ $result = db_query($sql);
 $row = db_fetch_assoc($result);
 $words = explode(" ", $row['words']);
 if ($op == "addgood") {
-    $newregexp = stripslashes(httppost('word'));
+    $newregexp = stripslashes(Http::post('word'));
 
     // not sure if the line below should appear, as the strings in the good
     // word list have different behaviour than those in the nasty word list,
@@ -89,7 +93,7 @@ if ($op == "addgood") {
 }
 if ($op == "removegood") {
     // false if not found
-    $removekey = array_search(stripslashes(httppost('word')), $words);
+    $removekey = array_search(stripslashes(Http::post('word')), $words);
     // $removekey can be 0
     if ($removekey !== false) {
         unset($words[$removekey]);
@@ -114,11 +118,11 @@ rawoutput("</font>");
 output_notl("`n");
 
 rawoutput("<form action='badword.php?op=add' method='POST'>");
-addnav("", "badword.php?op=add");
+Nav::add("", "badword.php?op=add");
 output("`7Add a word:`0");
 rawoutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
 rawoutput("<form action='badword.php?op=remove' method='POST'>");
-addnav("", "badword.php?op=remove");
+Nav::add("", "badword.php?op=remove");
 output("`7Remove a word:`0");
 rawoutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");
 
@@ -129,7 +133,7 @@ $words = explode(" ", $row['words']);
 reset($words);
 
 if ($op == "add") {
-    $newregexp = stripslashes(httppost('word'));
+    $newregexp = stripslashes(Http::post('word'));
 
     // automagically escapes all unescaped single quote characters
     $newregexp = preg_replace('/(?<!\\\\)\'/', '\\\'', $newregexp);
@@ -148,7 +152,7 @@ if ($op == "add") {
 }
 if ($op == "remove") {
     // false if not found
-    $removekey = array_search(stripslashes(httppost('word')), $words);
+    $removekey = array_search(stripslashes(Http::post('word')), $words);
     // $removekey can be 0
     if ($removekey !== false) {
         unset($words[$removekey]);
@@ -166,7 +170,7 @@ if ($op == "add" || $op == "remove") {
     db_query($sql);
     invalidatedatacache("nastywordlist");
 }
-page_footer();
+Footer::pageFooter();
 
 function show_word_list($words)
 {

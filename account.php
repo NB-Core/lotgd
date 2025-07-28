@@ -1,7 +1,12 @@
 <?php
+declare(strict_types=1);
 
 use Lotgd\DateTime;
 use Lotgd\Commentary;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\Nav\VillageNav;
 
 // translator ready
 // addnews ready
@@ -11,16 +16,15 @@ require_once("common.php");
 
 tlschema("account");
 
-page_header("Account Information");
+Header::pageHeader("Account Information");
 Commentary::addCommentary();
-checkday();
+DateTime::checkDay();
 
 output("`\$Some stats concerning your account. Note that this in the timezone of the server.`0`n`n");
-addnav("Navigation");
-require_once("lib/villagenav.php");
-villagenav();
-addnav("Actions");
-addnav("Refresh", "account.php");
+Nav::add("Navigation");
+VillageNav::render();
+Nav::add("Actions");
+Nav::add("Refresh", "account.php");
 
 $user = $session['user'];
 
@@ -32,7 +36,10 @@ $stats[] = array("title" => "Last Comment posted:","value" => $user['recentcomme
 $stats[] = array("title" => "Last PvP happened:","value" => $user['pvpflag']);
 $stats[] = array("title" => "Dragonkills:","value" => $user['dragonkills']);
 $stats[] = array("title" => "Total Pages generated for you:","value" => $user['gentimecount']);
-$stats[] = array("title" => "How long did these pages take to generate:","value" => readabletime($user['gentime']));
+$stats[] = array(
+    "title" => "How long did these pages take to generate:",
+    "value" => DateTime::readableTime($user['gentime'])
+);
 $stats[] = array("title" => "You are Account Number:","value" => ($user['acctid'] - 1));
 //Add the count summary for DKs
 $dksummary = "";
@@ -66,4 +73,4 @@ rawoutput("</table>");
 
 tlschema();
 
-page_footer();
+Footer::pageFooter();
