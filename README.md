@@ -34,8 +34,7 @@ It should run on any modern PHP environment. Open an issue on [GitHub](https://g
 - [Read Me First](#read-me-first)
 - [System Requirements](#system-requirements)
 - [Quick Install](#quick-install)
-- [Quick Start](#quick-start)
-- [Docker Quick Start](#docker-quick-start)
+- [Getting Started](#getting-started)
 - [Install from Release Archive](#install-from-release-archive)
 - [Cron Job Setup](#cron-job-setup)
 - [SMTP Mail Setup](#smtp-mail-setup)
@@ -69,30 +68,21 @@ Want to have this running in no time?
 - Run `installer.php` in your browser and follow the installer.
 - If unsure about features you can activate them later.
 
-### Quick Start
+## Getting Started
 
-1. Clone the repository with `git clone https://github.com/NB-Core/lotgd.git`
-2. Start the containers using `docker-compose up -d`.
-   The Docker build uses a Composer stage to install PHP dependencies automatically.
-3. Run `composer install` to fetch all dependencies, including Doctrine
-   Annotations. If you prefer installing packages manually, run
-   `composer require doctrine/annotations` instead.
-4. Instantiate the entity manager with `Lotgd\Doctrine\Bootstrap::getEntityManager()`
-   or include `config/doctrine.php` when using Doctrine CLI tools.
+Follow these steps to set up the game:
 
-Account changes are flushed through Doctrine's EntityManager when calling
-`Lotgd\Accounts::saveUser()`. The `$session['user']` array remains available for
-legacy code. Run `composer test` to verify the setup works as expected.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/NB-Core/lotgd.git
+   ```
+2. Install dependencies with Composer:
+   ```bash
+   composer install
+   ```
+3. Launch the installer by opening `installer.php` in your browser.
 
-## Docker Quick Start
-
-Spin up the development environment using Docker:
-
-```bash
-docker-compose up -d --build
-```
-
-See [docs/Docker.md](docs/Docker.md) for the complete guide.
+You can also run the project using Docker. See [docs/Docker.md](docs/Docker.md) for details.
 
 ## Twig Templates
 
