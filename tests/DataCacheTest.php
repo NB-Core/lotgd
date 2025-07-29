@@ -67,4 +67,21 @@ final class DataCacheTest extends TestCase
         $this->assertFileDoesNotExist(DataCache::makecachetempname($prefix . '2'));
         $this->assertFileExists(DataCache::makecachetempname('other'));
     }
+
+    public function testUpdateCacheFailureOnBadPath(): void
+    {
+        $invalidPath = '/nonexistent/' . uniqid();
+        $GLOBALS['settings']->saveSetting('datacachepath', $invalidPath);
+
+        $this->assertFalse(DataCache::updatedatacache('failpath', ['x' => 1]));
+        $this->assertFileDoesNotExist(DataCache::makecachetempname('failpath'));
+    }
+
+    public function testUpdateCacheFailureOnJsonError(): void
+    {
+        $resource = tmpfile();
+        $this->assertFalse(DataCache::updatedatacache('failjson', $resource));
+        fclose($resource);
+        $this->assertFileDoesNotExist(DataCache::makecachetempname('failjson'));
+    }
 }

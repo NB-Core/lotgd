@@ -65,13 +65,23 @@ class DataCache
         if ($settings->getSetting('usedatacache', 0)) {
             $fullname = self::makecachetempname($name);
             self::$cache[$name] = $data;
-            $fp = fopen($fullname, 'w');
-            if ($fp) {
-                fwrite($fp, json_encode($data));
-                fclose($fp);
+
+            $encoded = json_encode($data);
+            if ($encoded === false) {
+                return false;
             }
-            return true;
+
+            $fp = @fopen($fullname, 'w');
+            if ($fp === false) {
+                return false;
+            }
+
+            $written = fwrite($fp, $encoded);
+            fclose($fp);
+
+            return $written !== false;
         }
+
         return false;
     }
 
