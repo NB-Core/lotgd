@@ -73,6 +73,14 @@ SQL errors throw exceptions with detailed messages from `DbMysqli`. In debug mod
 
 Modules may ship schema descriptions for their tables. `TableDescriptor::schematize()` converts descriptor arrays into CREATE or ALTER statements during `install.php`.
 
+#### Detecting default values
+
+`TableDescriptor::tableCreateDescriptor()` reads column metadata using
+`DESCRIBE` and stores each column's default value in the descriptor under the
+`default` key. Defaults such as `'0'` are preserved, and an explicit `NULL`
+default results in `default => null` so schema updates generate a `DEFAULT NULL`
+clause when required.
+
 ## Database Migrations
 
 The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory defined in `config/doctrine.php`.
