@@ -196,21 +196,27 @@ class Template
         $handle = opendir('templates_twig');
         if ($handle !== false) {
             while (false !== ($dir = readdir($handle))) {
-                if ($dir === '.' || $dir === '..') {
+                if ($dir === '.' || $dir === '..' || str_starts_with($dir, '.')) {
                     continue;
                 }
-                if (is_dir("templates_twig/$dir")) {
-                    $name = $dir;
-                    $configPath = "templates_twig/$dir/config.json";
-                    if (file_exists($configPath)) {
-                        $cfg = json_decode((string) file_get_contents($configPath), true);
-                        if (json_last_error() === JSON_ERROR_NONE && isset($cfg['name'])) {
-                            $name = $cfg['name'];
-                        }
-                    }
-                    $value = 'twig:' . $dir;
-                    $skins[$value] = $name;
+
+                if (!is_dir("templates_twig/$dir")) {
+                    continue;
                 }
+
+                $configPath = "templates_twig/$dir/config.json";
+                if (!is_file($configPath)) {
+                    continue;
+                }
+
+                $name = $dir;
+                $cfg = json_decode((string) file_get_contents($configPath), true);
+                if (json_last_error() === JSON_ERROR_NONE && isset($cfg['name'])) {
+                    $name = $cfg['name'];
+                }
+
+                $value = 'twig:' . $dir;
+                $skins[$value] = $name;
             }
             closedir($handle);
         }
