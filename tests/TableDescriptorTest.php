@@ -32,4 +32,21 @@ final class TableDescriptorTest extends TestCase
         $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
         $this->assertSame('0', $descriptor['noaddskillpoints']['default']);
     }
+
+    public function testDefaultNullIsDetected(): void
+    {
+        Database::$describe_rows = [
+            [
+                'Field' => 'somecolumn',
+                'Type' => 'int',
+                'Null' => 'YES',
+                'Key' => '',
+                'Default' => 'NULL',
+                'Extra' => '',
+            ],
+        ];
+        $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
+        $this->assertArrayHasKey('default', $descriptor['somecolumn']);
+        $this->assertNull($descriptor['somecolumn']['default']);
+    }
 }
