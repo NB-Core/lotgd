@@ -84,6 +84,22 @@ Follow these steps to set up the game:
 
 You can also run the project using Docker. See [docs/Docker.md](docs/Docker.md) for details.
 
+## Maintenance
+
+Regular upkeep tasks:
+
+- Run `composer update` to update dependencies.
+- Run `composer test` to execute the unit tests.
+- Schedule `cron.php` via cron for automated jobs.
+- Configure SMTP settings in `config/configuration.php`.
+
+## Further Reading
+
+For details on key components:
+
+- [docs/Nav.md](docs/Nav.md)
+- [docs/Doctrine.md](docs/Doctrine.md)
+
 ## Twig Templates
 
 Twig templates reside in the `templates_twig/` directory. Each template should
