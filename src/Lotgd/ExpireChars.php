@@ -8,8 +8,8 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
-use Lotgd\Translator;
 
+use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\PlayerFunctions;

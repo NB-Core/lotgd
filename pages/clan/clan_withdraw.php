@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Lotgd\Mail;
@@ -7,6 +8,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\DebugLog;
 use Lotgd\GameLog;
+
         Modules::hook("clan-withdraw", array('clanid' => $session['user']['clanid'], 'clanrank' => $session['user']['clanrank'], 'acctid' => $session['user']['acctid']));
 if ($session['user']['clanrank'] >= CLAN_LEADER) {
     //first test to see if we were the leader.
@@ -63,4 +65,3 @@ while ($row = Database::fetchAssoc($result)) {
         $output->output("`&You have withdrawn from your clan.");
         Nav::add("Clan Options");
         Nav::add("Return to the Lobby", "clan.php");
-?>

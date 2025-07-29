@@ -261,7 +261,7 @@ a.thot {
 
 /* Form Fields */
 .formfield-value {
-	word-break: break-all;
+    word-break: break-all;
 }
 
 /* Clear debug output */

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 namespace Lotgd;
-use Lotgd\Translator;
 
+use Lotgd\Translator;
 use Lotgd\DumpItem;
 
 class Forms
@@ -290,7 +290,7 @@ JS;
 
         $fieldId = 'form-' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $keyout);
 
-	$entityFieldId = HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+        $entityFieldId = HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
 
         rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
         rawoutput("<label for='$entityFieldId'>");
@@ -601,7 +601,7 @@ JS;
 
             case 'viewhiddenonly':
                 if (isset($row[$key])) {
-		    $row[$key] = (string) $row[$key];
+                    $row[$key] = (string) $row[$key];
                     output_notl(DumpItem::dump($row[$key]), true);
                     rawoutput("<input id='$entityId' type='hidden' name='" . addslashes($key) . "' value='" . addslashes($row[$key]) . "'>");
                 }
@@ -665,8 +665,9 @@ JS;
                     $func($keyout, $val, $info);
                 } else {
                     $val = array_key_exists($key, $row) ? $row[$key] : '';
-		    if (!is_string($val))
+                    if (!is_string($val)) {
                         $val = (string) $val;
+                    }
                     rawoutput("<input id='$entityId' size='50' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">");
                 }
         }

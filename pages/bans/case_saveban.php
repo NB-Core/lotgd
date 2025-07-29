@@ -1,11 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 use Lotgd\Cookies;
 use Lotgd\MySQL\Database;
 use Lotgd\Http;
 
-$sql = 'INSERT INTO '.Database::prefix('bans').' (banner,';
+$sql = 'INSERT INTO ' . Database::prefix('bans') . ' (banner,';
 $type = (string) Http::post('type');
 if ($type == "ip") {
     $sql .= "ipfilter";

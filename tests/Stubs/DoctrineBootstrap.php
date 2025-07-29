@@ -130,4 +130,3 @@ if (!class_exists('Doctrine\\DBAL\\Connection')) {
 if (!class_exists('Doctrine\\DBAL\\Result')) {
     class_alias(DoctrineResult::class, 'Doctrine\\DBAL\\Result');
 }
-

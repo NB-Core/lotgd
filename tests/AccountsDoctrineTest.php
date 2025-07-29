@@ -29,7 +29,7 @@ final class AccountsDoctrineTest extends TestCase
             'user'        => [
                 'acctid'     => 1,
                 'login'      => 'tester',
-                'allowednavs'=> '',
+                'allowednavs' => '',
                 'bufflist'   => '',
                 'alive'      => true,
             ],

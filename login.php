@@ -57,7 +57,7 @@ if ($name != "") {
         }
 
         if (!$acctrow) {
-            $sql    = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0"; 
+            $sql    = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
             $result = db_query($sql);
             if (db_num_rows($result) == 1) {
                 $acctrow = db_fetch_assoc($result);
@@ -120,7 +120,7 @@ if ($name != "") {
                         . " SET loggedin=1, laston='" . date('Y-m-d H:i:s')
                         . "' WHERE acctid=" . $session['user']['acctid']
                     );
-		    $session['allowednavs'] = [];
+                    $session['allowednavs'] = [];
                     \Lotgd\Nav::add('', $session['user']['restorepage']);
                     header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
@@ -233,14 +233,14 @@ if ($name != "") {
         $sql = "SELECT restorepage, allowednavs FROM " . db_prefix('accounts') . " WHERE acctid=" . $session['user']['acctid'];
         $result = db_query($sql);
         // Check if we got anything (we should)
-	if (db_num_rows($result) == 1) {
-	    $row = db_fetch_assoc($result);
+        if (db_num_rows($result) == 1) {
+            $row = db_fetch_assoc($result);
             $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
-	    $allowednavs[$row['restorepage']] = true;
-	    // Write back to database
-	    $serialized = addslashes(serialize($allowednavs));
-            $sql = "UPDATE " . db_prefix('accounts'). " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
-	    db_query($sql);
+            $allowednavs[$row['restorepage']] = true;
+            // Write back to database
+            $serialized = addslashes(serialize($allowednavs));
+            $sql = "UPDATE " . db_prefix('accounts') . " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
+            db_query($sql);
         }
     }
     $session = array();

@@ -41,4 +41,3 @@ class DbMysqli
 }
 
 class_alias(DbMysqli::class, 'Lotgd\\MySQL\\DbMysqli');
-

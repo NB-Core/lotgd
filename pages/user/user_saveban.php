@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Lotgd\Cookies;
@@ -58,7 +59,7 @@ if ($sql != "") {
         $acctids[] = $row['acctid'];
     }
     if ($acctids != array()) {
-        $sql = " UPDATE " . Database::prefix('accounts') . " SET loggedin=0 WHERE acctid IN (" . implode(",", $acctids) . ")"; 
+        $sql = " UPDATE " . Database::prefix('accounts') . " SET loggedin=0 WHERE acctid IN (" . implode(",", $acctids) . ")";
         $result = Database::query($sql);
         if ($result) {
             $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows($result));

@@ -29,4 +29,3 @@ final class DatabaseLegacyTest extends TestCase
         $this->assertSame('mysql_result', $result);
     }
 }
-

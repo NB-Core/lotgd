@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 // translator ready
@@ -123,9 +124,9 @@ function display_table(
     $name = translate_inline("Name");
 
     if ($totalplayers > $playersperpage) {
-    $output->output("`c`b`^%s`0`b `7(Page %s: %s-%s of %s)`0`c`n", $title, $page, $from, $to, $totalplayers);
+        $output->output("`c`b`^%s`0`b `7(Page %s: %s-%s of %s)`0`c`n", $title, $page, $from, $to, $totalplayers);
     } else {
-    $output->output("`c`b`^%s`0`b`c`n", $title);
+        $output->output("`c`b`^%s`0`b`c`n", $title);
     }
     $output->rawOutput("<table cellspacing='0' cellpadding='2' align='center'>");
     $output->rawOutput("<tr class='trhead'>");
@@ -135,7 +136,7 @@ function display_table(
             $output->outputNotl("<td>`b{$data_header[$i]}`b</td>", true);
         }
     }
-$result = Database::query($sql);
+    $result = Database::query($sql);
     if (Database::numRows($result) == 0) {
         $size = ($data_header === false) ? 2 : 2 + count($data_header);
         $output->outputNotl("<tr class='trlight'><td colspan='$size' align='center'>`&$none`0</td></tr>", true);

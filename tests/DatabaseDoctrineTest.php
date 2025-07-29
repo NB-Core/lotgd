@@ -78,4 +78,3 @@ final class DatabaseDoctrineTest extends TestCase
         $this->assertTrue(Database::tableExists('accounts'));
     }
 }
-

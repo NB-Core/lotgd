@@ -214,7 +214,7 @@ function charrestore_dohook(string $hookname, array $args): array
                     $errno = E_USER_ERROR;
                     $errfile = "charrestore.php";
                     $errline = 169;
-		    ErrorHandler::Register($errno, $errstr, $errfile, $errline);
+                    ErrorHandler::Register($errno, $errstr, $errfile, $errline);
                     //quit now, which is should anyways, this is a precaution, so we don't delete the data of the char
                     exit(0);
                 }

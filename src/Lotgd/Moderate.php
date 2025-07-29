@@ -276,10 +276,12 @@ class Moderate
                 $ft = substr($ft, 0, 3);
             }
 
-	    if (!empty($row['comment']))
-	            $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
-	    if (!empty($row['name']))
-	            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+            if (!empty($row['comment'])) {
+                $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
+            }
+            if (!empty($row['name'])) {
+                $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+            }
             if ($row['clanrank']) {
                 $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
             }

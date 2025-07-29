@@ -1,138 +1,138 @@
 /* General Styles */
 caption {
-	white-space: nowrap;
-	font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-	font-size: 13px;
+    white-space: nowrap;
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 13px;
 }
 
 td {
-	font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-	font-size: 13px;
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 13px;
 }
 
 
 .main-body {
-	background-image: url('page-bg.png');
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: top right;
-	background-attachment: fixed;
-	background-color: #111;
-	color: #CCCCCC;
-	margin: 0;
+    background-image: url('page-bg.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: top right;
+    background-attachment: fixed;
+    background-color: #111;
+    color: #CCCCCC;
+    margin: 0;
 }
 
 @media (max-width: 968px) {
-	.main-body {
-		background-size: cover;
-		background-position: top 10% right 30%;
-	}
-	.pageheader-center > img {
-		width: 50%;
-	}
-	.pageheader-right > img {
-		width: 27%;
-	}
-	.petition {
-		padding-left: 15px;
-	}
+    .main-body {
+        background-size: cover;
+        background-position: top 10% right 30%;
+    }
+    .pageheader-center > img {
+        width: 50%;
+    }
+    .pageheader-right > img {
+        width: 27%;
+    }
+    .petition {
+        padding-left: 15px;
+    }
 }
 
 
 .popup-body {
-	background-color: #111;
-	color: #CCCCCC;
+    background-color: #111;
+    color: #CCCCCC;
 }
 
 /* Offcanvas sidebars should match the main page background */
 .offcanvas {
-	background-image: url('page-bg.png');
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: top right;
-	background-color: #111;
-	color: #CCCCCC;
+    background-image: url('page-bg.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: top right;
+    background-color: #111;
+    color: #CCCCCC;
 }
 
 /* Navigation Table */
 table.nav {
-	border: 1px solid #000000;
-	height: auto;
-	width: 182px;
+    border: 1px solid #000000;
+    height: auto;
+    width: 182px;
 }
 
 .navhead {
-	text-decoration: none;
-	width: 180px;
-	height: auto;
-	padding: 1px;
-	float: left;
-	line-height: 33px;
-	clear: none;
-	color: #FFFFFF;
-	cursor: default;
-	text-align: center;
-	font-family: Tahoma Small Cap;
-	font-weight: bolder;
+    text-decoration: none;
+    width: 180px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    line-height: 33px;
+    clear: none;
+    color: #FFFFFF;
+    cursor: default;
+    text-align: center;
+    font-family: Tahoma Small Cap;
+    font-weight: bolder;
 }
 .navheadsub {
-	text-decoration: none;
-	width: 170px;
-	height: auto;
-	padding: 1px;
-	float: left;
-	line-height: 33px;
-	clear: none;
-	color: #FFFFFF;
-	cursor: default;
-	text-align: center;
-	font-family: Tahoma Small Cap;
-	font-weight: bolder;
-	margin-left: 10px;
+    text-decoration: none;
+    width: 170px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    line-height: 33px;
+    clear: none;
+    color: #FFFFFF;
+    cursor: default;
+    text-align: center;
+    font-family: Tahoma Small Cap;
+    font-weight: bolder;
+    margin-left: 10px;
 }
 
 a {
-	color: #669933;
-	text-decoration: none;
+    color: #669933;
+    text-decoration: none;
 }
 
 /* Header and other styles */
 
 .page-header {
-	padding-bottom: 3px;
-	/*background: url('header-bg.png') repeat-x;*/
+    padding-bottom: 3px;
+    /*background: url('header-bg.png') repeat-x;*/
 }
 
 .main-content {
-	border-style: dotted;
-	/*background-color: #1b1b1b;*/
-	box-shadow: 0 0 5px rgba(0,0,0,0.5);
-	align-content: start;
+    border-style: dotted;
+    /*background-color: #1b1b1b;*/
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    align-content: start;
 }
 
 .sidebar-content {
-	min-width: 160px;
-	max-width: 208px;
-	padding-left: 3px;
-	padding-right: 3px;
-	align-content: start;
+    min-width: 160px;
+    max-width: 208px;
+    padding-left: 3px;
+    padding-right: 3px;
+    align-content: start;
 }
 
 .pageheader-center, .pageheader-left, .pageheader-right {
-	width: 33.3%;
-	padding: 3px;
-	text-align: center;
+    width: 33.3%;
+    padding: 3px;
+    text-align: center;
 }
 
 @media (max-width: 768px) {
 }
 
 .pageheader-left {
-	text-align: left;
+    text-align: left;
 }
 
 .pageheader-right {
-	text-align: right;
+    text-align: right;
 }
 
 
@@ -140,337 +140,337 @@ a {
 
 /* Navigation Link */
 a.nav {
-	color: #30d5c8;
-	text-decoration: none;
-	width: 181px;
-	height: auto;
-	float: left;
-	padding: 1px;
-	clear: none;
-	text-align: center;
+    color: #30d5c8;
+    text-decoration: none;
+    width: 181px;
+    height: auto;
+    float: left;
+    padding: 1px;
+    clear: none;
+    text-align: center;
 }
 
 .navhelp {
-	text-decoration: none;
-	width: 181px;
-	height: auto;
-	padding: 1px;
-	float: left;
-	clear: none;
-	color: #30d5c8;
+    text-decoration: none;
+    width: 181px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    clear: none;
+    color: #30d5c8;
 }
 
 .sidebar-content img.nav-bottom {
-	margin-top: 15px;
+    margin-top: 15px;
 }
 
 /* Translations and others */
 
 select {
-	background-color: #000000;
-	border: 1px solid #999999;
-	color: #CCCCCC;
+    background-color: #000000;
+    border: 1px solid #999999;
+    color: #CCCCCC;
 }
 
 table.vitalinfo {
-	background-color: #333333;
-	border: 1px solid #000000;
-	width: 182px;
+    background-color: #333333;
+    border: 1px solid #000000;
+    width: 182px;
 }
 
 a.motd, a:hover.motd,
 a.hotmotd {
-	font-weight: normal;
-	color: #FFFFFF;
+    font-weight: normal;
+    color: #FFFFFF;
 }
 
 .pagetitle {
-	font-family: "Arial Black", "Courier";
-	font-variant: small-caps;
-	font-size: 14px;
-	color: #000000;
+    font-family: "Arial Black", "Courier";
+    font-variant: small-caps;
+    font-size: 14px;
+    color: #000000;
 }
 
 .navhi {
-	color: #c61d2e;
-	text-decoration: underline;
+    color: #c61d2e;
+    text-decoration: underline;
 }
 
 td.nav a.thot {
-	position: absolute;
-	left: 0px;
-	height: auto;
+    position: absolute;
+    left: 0px;
+    height: auto;
 }
 
 td.nav a.t {
-	position: absolute;
-	left: 0px;
-	height: auto;
+    position: absolute;
+    left: 0px;
+    height: auto;
 }
 
 /* Hover Effects */
 a:hover.nav {
-	background-color: #404040;
-	border: none;
-	color: #FFFFFF;
+    background-color: #404040;
+    border: none;
+    color: #FFFFFF;
 }
 
 /* Message of the Day Link */
 a.motd, a:hover.motd {
-	text-decoration: none;
-	color: #c61d2e;
-	font-weight: normal;
+    text-decoration: none;
+    color: #c61d2e;
+    font-weight: normal;
 }
 a:hover.motd {
-	color: #FFFFFF;
+    color: #FFFFFF;
 }
 
 /* Character Info Styles */
 td.charhead {
-	background-color: #222222;
-	color: #FFFFFF;
+    background-color: #222222;
+    color: #FFFFFF;
 }
 
 table.charinfo {
-	width: 182px;
-	color: #FFFFFF;
-	border: none;
-	border-spacing: 0px;
+    width: 182px;
+    color: #FFFFFF;
+    border: none;
+    border-spacing: 0px;
 }
 
 td.charinfo {
-	color: #FFFFFF;
-	border-top: 1px solid #FFFFFF;
-	cursor: default;
-	padding: 2px;
+    color: #FFFFFF;
+    border-top: 1px solid #FFFFFF;
+    cursor: default;
+    padding: 2px;
 }
 
 /* Specific adjustments for td elements that used inline background attributes */
 td[class*="page-top"] {
-	background-image: url('/templates/images/page_top.gif');
+    background-image: url('/templates/images/page_top.gif');
 }
 
 td[class*="page-bottom"] {
-	background-image: url('/templates/images/page_bot.gif');
+    background-image: url('/templates/images/page_bot.gif');
 }
 
 /* Button Styles */
 .button {
-	font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 .login-submit {
-	text-align: center;
+    text-align: center;
 }
 
 /* Other Styles */
 .select {
-	background-color: #000000;
-	border: 1px solid #999999;
-	color: #CCCCCC;
+    background-color: #000000;
+    border: 1px solid #999999;
+    color: #CCCCCC;
 }
 
 .stonage {
-	background-image: url(/templates/images/stone_corner.gif);
-	background-repeat: no-repeat;
-	background-position: left top;
+    background-image: url(/templates/images/stone_corner.gif);
+    background-repeat: no-repeat;
+    background-position: left top;
 }
 
 .stonage2 {
-	background-image: url(/templates/images/stone_center.gif);
-	background-repeat: no-repeat;
-	background-position: left top;
-	color: #669933;
+    background-image: url(/templates/images/stone_center.gif);
+    background-repeat: no-repeat;
+    background-position: left top;
+    color: #669933;
 }
 
 /* Background Images for Different Sections */
 td.village {
-	background-image: url(/templates/images/village.jpg);
-	background-repeat: no-repeat;
-	background-position: right bottom;
+    background-image: url(/templates/images/village.jpg);
+    background-repeat: no-repeat;
+    background-position: right bottom;
 }
 
 td.forest {
-	background-image: url(/templates/images/forest.jpg);
-	background-repeat: no-repeat;
-	background-position: center bottom;
+    background-image: url(/templates/images/forest.jpg);
+    background-repeat: no-repeat;
+    background-position: center bottom;
 }
 
 td.dragon {
-	background-image: url(/templates/images/dragon.jpg);
-	background-repeat: no-repeat;
-	background-position: center center;
-	background-attachment: fixed;
+    background-image: url(/templates/images/dragon.jpg);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
 }
 
 /* Petition */
 table.petition-count {
-	float: right;
-	text-align: right;
+    float: right;
+    text-align: right;
 }
 
 /* Additional styles as needed based on your layout and design requirements */
 
 .nav {
-	display: flow;
+    display: flow;
 }
 
 /* Layout helper classes */
 .align-center {
-	text-align: center;
+    text-align: center;
 }
 
 .align-left {
-	text-align: left;
+    text-align: left;
 }
 
 .align-right {
-	text-align: right;
+    text-align: right;
 }
 
 .valign-top {
-	vertical-align: top;
+    vertical-align: top;
 }
 
 .valign-bottom {
-	vertical-align: bottom;
+    vertical-align: bottom;
 }
 
 .noborder {
-	border: 0;
+    border: 0;
 }
 
 .navad-wrapper {
-	position: relative;
-	top: -15px;
-	text-align: center;
+    position: relative;
+    top: -15px;
+    text-align: center;
 }
 
 .verticalad-wrapper {
-	float: right;
+    float: right;
 }
 
 .nav-container {
-	text-align: center;
-	padding-top: 4px;
-	padding-bottom: 4px;
+    text-align: center;
+    padding-top: 4px;
+    padding-bottom: 4px;
 }
 
 .layout-table {
-	width: 100%;
-	border-collapse: collapse;
-	border-spacing: 0;
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
 }
 
 .clear {
-	clear: both;
-	display: block;
+    clear: both;
+    display: block;
 }
 
 .nav-top,
 .nav-bottom {
-	width: 100%;
+    width: 100%;
 }
 
 .login-hero {
-	width: 100%;
-	max-width: 512px;
-	height: auto;
-	aspect-ratio: 1 / 1;
-	background: url('login-hero.png') center/cover no-repeat;
-	display: block;
-	border-radius: 16px;
-	overflow: hidden;
+    width: 100%;
+    max-width: 512px;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background: url('login-hero.png') center/cover no-repeat;
+    display: block;
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 .hidden {
-	display: none;
+    display: none;
 }
 
 /* Form Fields */
 .formfield-value {
-	word-break: break-all;
+    word-break: break-all;
 }
 
 /* Translator Buttons styling */
 a.t, a.thot {
-	display: inline-block;
-	width: 10px;
-	height: 10px;
-	font-size: 8px;
-	line-height: 10px;
-	text-align: center;
-	color: #fff;
-	text-decoration: none;
-	border-radius: 3px;
-	margin-left: 2px;
-	cursor: help;
-	border: 1px solid #aaa;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    font-size: 8px;
+    line-height: 10px;
+    text-align: center;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 3px;
+    margin-left: 2px;
+    cursor: help;
+    border: 1px solid #aaa;
 }
 
 /* Normal Button */
 a.t {
-	background-color: #555; /* less... conspicious */
-	border-color: #888;
+    background-color: #555; /* less... conspicious */
+    border-color: #888;
 }
 
 /* Hot Button, not translated */
 
 a.thot {
-	background-color: #c0392b; /* really red for "hot" */
-	border-color: #e74c3c;
-	font-weight: bold;
+    background-color: #c0392b; /* really red for "hot" */
+    border-color: #e74c3c;
+    font-weight: bold;
 }
 
 /* Hover effects for translator buttons */
 a.t:hover, a.thot:hover {
-	transform: scale(1.5);
-	box-shadow: 0 0 4px #fff;
-	z-index: 10;
+    transform: scale(1.5);
+    box-shadow: 0 0 4px #fff;
+    z-index: 10;
 }
 
 /* Hidden elements, for i.e. debug output */
 .hidden {
-	display: none;
+    display: none;
 }
 
 div.debug {
-	background-color: #1e1e1e; /* dark gray, easy on the eyes */
-	color: #d4d4d4; /* slightly muted white for good readability */
-	border: 1px dashed #555; /* subtle, technical look */
-	font-family: Consolas, monospace; /* clear debug font */
-	font-size: 11px; /* slightly larger than before for better readability */
-	padding: 10px;
-	margin: 12px 0;
-	white-space: pre-wrap; /* preserves structure and lines */
-	overflow-x: auto; /* scrollbar for long lines */
-	border-radius: 4px;
-	box-shadow: 0 0 4px rgba(0,0,0,0.4); /* subtle depth */
+    background-color: #1e1e1e; /* dark gray, easy on the eyes */
+    color: #d4d4d4; /* slightly muted white for good readability */
+    border: 1px dashed #555; /* subtle, technical look */
+    font-family: Consolas, monospace; /* clear debug font */
+    font-size: 11px; /* slightly larger than before for better readability */
+    padding: 10px;
+    margin: 12px 0;
+    white-space: pre-wrap; /* preserves structure and lines */
+    overflow-x: auto; /* scrollbar for long lines */
+    border-radius: 4px;
+    box-shadow: 0 0 4px rgba(0,0,0,0.4); /* subtle depth */
 }
 
 /* Mobile specific tweaks */
 @media (max-width: 1100px) {
-	.mobile-toggles .navbar-toggler {
-		border: none;
-	}
+    .mobile-toggles .navbar-toggler {
+        border: none;
+    }
 }
 
 table a, .table a {
-	text-decoration: none;
+    text-decoration: none;
 }
 
 .navheadsub {
-	text-decoration: none;
-	width: 170px;
-	height: auto;
-	padding: 1px;
-	float: left;
-	line-height: 33px;
-	clear: none;
-	color: #FFFFFF;
-	cursor: default;
-	text-align: center;
-	font-family: "Tahoma Small Cap", Tahoma, sans-serif;
-	font-weight: bolder;
-	margin-left: 10px;
+    text-decoration: none;
+    width: 170px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    line-height: 33px;
+    clear: none;
+    color: #FFFFFF;
+    cursor: default;
+    text-align: center;
+    font-family: "Tahoma Small Cap", Tahoma, sans-serif;
+    font-weight: bolder;
+    margin-left: 10px;
 }

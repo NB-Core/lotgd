@@ -54,7 +54,7 @@ class Outcomes
             if (!$denyflawless && isset($badguy['denyflawless']) && !empty($badguy['denyflawless'])) {
                 $denyflawless = $badguy['denyflawless'];
             }
-        $expbonus += (int) round(((int) $badguy['creatureexp'] * (1 + .25 * ((int) $badguy['creaturelevel'] - (int) $session['user']['level']))) - (int) $badguy['creatureexp'], 0);
+            $expbonus += (int) round(((int) $badguy['creatureexp'] * (1 + .25 * ((int) $badguy['creaturelevel'] - (int) $session['user']['level']))) - (int) $badguy['creatureexp'], 0);
         }
         $multibonus = $count > 1 ? 1 : 0;
         $expbonus += (int)$session['user']['dragonkills'] * (int)$session['user']['level'] * $multibonus;
