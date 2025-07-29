@@ -46,7 +46,12 @@ final class TableDescriptorTest extends TestCase
             ],
         ];
         $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
-        $this->assertArrayHasKey('default', $descriptor['somecolumn']);
-        $this->assertNull($descriptor['somecolumn']['default']);
+        $expected = [
+            'name' => 'somecolumn',
+            'type' => 'int',
+            'default' => null,
+        ];
+
+        $this->assertSame($expected, $descriptor['somecolumn']);
     }
 }
