@@ -67,4 +67,30 @@ final class AccountsDoctrineTest extends TestCase
         $entity = Accounts::getAccountEntity();
         $this->assertSame(3, $entity->getLevel());
     }
+
+    public function testSaveUserCastsFloatStringOnIntegerField(): void
+    {
+        $GLOBALS['session']['user']['level'] = '2.5';
+        $GLOBALS['baseaccount']['level'] = 1;
+        Accounts::saveUser();
+        $entity = Accounts::getAccountEntity();
+        $this->assertSame(2, $entity->getLevel());
+    }
+
+    public function testSaveUserCastsFloatFields(): void
+    {
+        $GLOBALS['session']['user']['gentime'] = '4.2';
+        $GLOBALS['baseaccount']['gentime'] = 0.0;
+        Accounts::saveUser();
+        $entity = Accounts::getAccountEntity();
+        $this->assertSame(4.2, $entity->getGentime());
+    }
+
+    public function testSaveUserCastsNonBooleanStringFields(): void
+    {
+        $GLOBALS['session']['user']['alive'] = 'yes';
+        Accounts::saveUser();
+        $entity = Accounts::getAccountEntity();
+        $this->assertFalse($entity->getAlive());
+    }
 }
