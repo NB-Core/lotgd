@@ -123,16 +123,6 @@ The root `.htaccess` file configures custom error pages, disables directory list
 Installer errors are saved to `install/errors/install.log`. Check this file if
 the installer fails or reports problems.
 
-## Documentation
-
-Additional information about the navigation helper API can be found in
-[docs/Nav.md](docs/Nav.md).
-
-Doctrine usage and migration instructions are documented in
-[docs/Doctrine.md](docs/Doctrine.md).
-
----
-
 ## Contributing & Support
 
 Found a bug or have a feature request? Open an issue on GitHub.
