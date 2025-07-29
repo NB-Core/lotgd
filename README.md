@@ -65,30 +65,11 @@ To run Legend of the Green Dragon on a typical web host you will need:
 - **Database:** MySQL 5.0 or later. MariaDB is a compatible alternative.
 - The database user must have the `LOCK TABLES` privilege.
 
-## Quick Install
-
-Want to have this running in no time?
-
-- Requirements: Apache 2 (or another web server), PHP 8.3 or higher, and MySQL 5.0+ or MariaDB. Ensure the database user has the `LOCK TABLES` privilege.
-- Upload the files with the directory structure intact.
-- Run `installer.php` in your browser and follow the installer.
-- If unsure about features you can activate them later.
-
 ## Getting Started
-
-Follow these steps to set up the game:
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/NB-Core/lotgd.git
-   ```
-2. Install dependencies with Composer:
-   ```bash
-   composer install
-   ```
-3. Launch the installer by opening `installer.php` in your browser.
-
-You can also run the project using Docker. See [docs/Docker.md](docs/Docker.md) for details.
+1. Clone the repository.
+2. Run `composer install`.
+3. Open `installer.php` in your browser and follow the prompts.
+4. (Optional) Use Docker—see [docs/Docker.md](docs/Docker.md).
 
 ## Maintenance
 
