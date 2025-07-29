@@ -579,6 +579,9 @@ the installer fails or reports problems.
 Additional information about the navigation helper API can be found in
 [docs/Nav.md](docs/Nav.md).
 
+Doctrine usage and migration instructions are documented in
+[docs/Doctrine.md](docs/Doctrine.md).
+
 ---
 
 ## Contributing & Support

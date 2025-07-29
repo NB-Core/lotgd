@@ -88,6 +88,12 @@ Database related classes reside in the `MySQL` sub‑namespace:
 - **DbMysqli** – thin wrapper over `mysqli` used by `Database` to perform actual queries.
 - **TableDescriptor** – synchronises schema definitions and can generate `CREATE TABLE` statements.
 
+## \Lotgd\Doctrine
+
+Integrates the Doctrine ORM. The `Bootstrap` class creates the `EntityManager` used by
+entities in `src/Lotgd/Entity`. See [Doctrine.md](Doctrine.md) for details on
+using repositories and running migrations.
+
 ## \Lotgd\Nav
 
 Contains the navigation builder used throughout the game. See `docs/Nav.md` for detailed usage of `NavigationItem`, `NavigationSection` and related helpers. Additional classes include `VillageNav` for the village page and `SuperuserNav` for the admin menu.
