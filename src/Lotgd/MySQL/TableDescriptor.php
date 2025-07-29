@@ -220,8 +220,12 @@ class TableDescriptor
             if ($row['Null'] == "Yes") {
                 $item['null'] = true;
             }
-            if (array_key_exists('Default', $row) && $row['Default'] !== null && $row['Default'] !== 'NULL') {
-                $item['default'] = $row['Default'];
+            if (array_key_exists('Default', $row)) {
+                if ($row['Default'] === null || $row['Default'] === 'NULL') {
+                    $item['default'] = null;
+                } else {
+                    $item['default'] = $row['Default'];
+                }
             }
             if (isset($row['Extra']) && !empty(trim($row['Extra']))) {
                 $item['extra'] = $row['Extra'];
