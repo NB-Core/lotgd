@@ -32,6 +32,7 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
     }
     foreach ($session['allowednavs'] as $key => $val) {
         //hack-tastic.
+	$key = (string) $key;
         if (
             trim($key) == "" ||
             $key === 0 ||
