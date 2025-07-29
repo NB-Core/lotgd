@@ -314,30 +314,6 @@ CMD ["apache2-foreground"]
 ### docker-compose.yml
 
 ```yaml
-version: '3.8'
-
-services:
-  web:
-    build: .
-    ports:
-      - "80:80"
-    depends_on:
-      - db
-    networks:
-      - lotgd-network
-
-  db:
-    image: mysql:5.7
-    restart: always
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    volumes:
-      - db_data:/var/lib/mysql
-    networks:
-      - lotgd-network
 
 volumes:
   db_data:
