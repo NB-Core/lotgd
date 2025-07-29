@@ -9,12 +9,7 @@ The original readme and license texts follow below, also the installation + upgr
 
 **Note:** The `CHANGELOG.txt` file does not cover every change. Around 300 commits were made without entries, so refer to the git history for a complete list.
 
-I'd like to add a few words, primarily why this fork was made and how the current status is.
-
-The fork was mostly made for personal purposes, as many small or big things have been replaced or changed compared to the core version on Dragonprime.
-Most things that were done on the fork are backwards compatible, which means you can safely use modules from non-fork development.
-
-The base DP version this fork derived from was 1.1.1 +dragonprime edition.
+This fork updates the Dragonprime 1.1.1 release with modern tooling while remaining compatible with existing modules. It aims to provide a smoother experience on current PHP versions.  The source lives on [GitHub](https://github.com/NB-Core/lotgd) where you can follow development and open issues.
 
 Features of this fork include:
 - additional hooks
@@ -25,7 +20,7 @@ Features of this fork include:
 - mail notifications that auto-refresh via Ajax
 - incremental chat updates via `commentary_refresh` to load new messages without reloading the page
 - Ajax requests are rate limited to roughly one per second; faster requests
-  receive an HTTP 429 response. Adjust `\$ajax_rate_limit_seconds` in
+  receive an HTTP 429 response. Adjust $ajax_rate_limit_seconds in
   `ext/ajax_settings.php` to change the threshold
 - Composer integration for third-party modules
   - after modifying Composer settings, run `composer dump-autoload` to recognize new namespaces
@@ -34,19 +29,7 @@ Features of this fork include:
 - mysqli is now the default database layer
 - Twig is now the default template system located in `templates_twig/` (classic `.htm` files continue to work)
 
-So, it should work on every modern PHP environment.
-
-If somebody really has time, there are still things to do:
-- extend and refine the Twig templates for modern theming
-- convert arrays into objects to avoid extensive `isset()` checks
-- configure the `datacachepath` setting in `dbconnect.php` to a writable directory so errors can be cached for email notifications
-- define your SMTP credentials under **SMTP Mail Settings** in `config/configuration.php`
-
-Contact me on [GitHub](https://github.com/NB-Core/lotgd/issues) if you have questions or suggestions.
-
-Kind regards,
-Oliver
-
+It should run on any modern PHP environment. Open an issue on [GitHub](https://github.com/NB-Core/lotgd/issues) with questions.
 ## Table of Contents
 - [Read Me First](#read-me-first)
 - [System Requirements](#system-requirements)
