@@ -220,7 +220,7 @@ class TableDescriptor
             if ($row['Null'] == "Yes") {
                 $item['null'] = true;
             }
-            if (isset($row['Default']) && !empty(trim($row['Default']))) {
+            if (array_key_exists('Default', $row) && $row['Default'] !== null && $row['Default'] !== 'NULL') {
                 $item['default'] = $row['Default'];
             }
             if (isset($row['Extra']) && !empty(trim($row['Extra']))) {
