@@ -30,6 +30,12 @@ Features of this fork include:
 - Twig is now the default template system located in `templates_twig/` (classic `.htm` files continue to work)
 
 It should run on any modern PHP environment. Open an issue on [GitHub](https://github.com/NB-Core/lotgd/issues) with questions.
+
+## Demo
+
+![Game screenshot](images/screenshot.png)
+There is no official demo server. You can explore the original at [LotGD.net](https://lotgd.net) or the current version at [Shinobi Legends](https://shinobilegends.com). You can create an account to explore, but you will only have standard user rights.
+
 ## Table of Contents
 - [Read Me First](#read-me-first)
 - [System Requirements](#system-requirements)
