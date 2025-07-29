@@ -13,6 +13,8 @@ class Database
     public static int $onlineCounter = 0;
     public static int $affected_rows = 0;
     public static string $lastSql = '';
+    public static array $describe_rows = [];
+    public static array $keys_rows = [];
     public static ?object $doctrineConnection = null;
     public static ?object $instance = null;
 
@@ -42,6 +44,16 @@ class Database
             $conn->executeQuery($sql);
             self::$affected_rows = 1;
             $last_query_result = [['ok' => true]];
+            return $last_query_result;
+        }
+
+        if (strpos($sql, 'DESCRIBE ') === 0) {
+            $last_query_result = self::$describe_rows;
+            return $last_query_result;
+        }
+
+        if (strpos($sql, 'SHOW KEYS FROM') === 0) {
+            $last_query_result = self::$keys_rows;
             return $last_query_result;
         }
 
