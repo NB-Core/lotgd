@@ -1,3 +1,4 @@
+# Legacy README
 
 Always back up your database and existing source files before upgrading.
 
@@ -92,10 +93,3 @@ Optional Composer packages can be defined in
 `composer-merge-plugin` will automatically merge the local file with the
 main `composer.json`.
 
-# LOTGD Docker Environment
-
-This guide explains how to containerize and run the LOTGD application using Docker. The provided Docker environment is configured for development and testing purposes. Additional configurations are required for production use, particularly regarding security and SSL encryption.
-
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
