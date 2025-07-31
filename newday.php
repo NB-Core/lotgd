@@ -6,6 +6,7 @@ use Lotgd\MountName;
 use Lotgd\Names;
 use Lotgd\Battle;
 use Lotgd\Substitute;
+use Lotgd\AddNews;
 
 // translator ready
 // addnews ready
