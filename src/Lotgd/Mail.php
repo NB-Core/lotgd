@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -59,7 +60,7 @@ class Mail
             if (Database::numRows($result) > 0 && $row1['name'] != '') {
                 $fromline = full_sanitize($row1['name']);
             } else {
-                $fromline = translate_inline('The Green Dragon', 'mail');
+                $fromline = Translator::translateInline('The Green Dragon', 'mail');
             }
             $sql = 'SELECT name FROM ' . Database::prefix('accounts') . " WHERE acctid=$to";
             $result = Database::query($sql);
@@ -253,7 +254,7 @@ class Mail
     {
         $mail = Database::prefix('mail');
         $acc = Database::prefix('accounts');
-        $sql = "SELECT $mail.*,$acc.name,$acc.acctid FROM $mail "
+        $sql = "SELECT $mail.*,$acc.name,$acc.acctid,$acc.login FROM $mail "
              . "LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
              . "WHERE msgto='$userId' AND messageid='$messageId'";
 

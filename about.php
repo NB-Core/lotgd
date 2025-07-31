@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // translator ready
 // addnews ready
 // mail ready
@@ -15,15 +17,20 @@
 
 define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
-require_once("lib/http.php");
+
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\DateTime;
 
 tlschema("about");
 
-page_header("About Legend of the Green Dragon Core Engine");
+Header::pageHeader("About Legend of the Green Dragon Core Engine");
 $details = gametimedetails();
 
-checkday();
-$op = httpget('op');
+DateTime::checkDay();
+$op = Http::get('op');
 
 switch ($op) {
     case "setup":
@@ -36,8 +43,8 @@ switch ($op) {
         break;
 }
 if ($session['user']['loggedin']) {
-    addnav("Return to the news", "news.php");
+    Nav::add("Return to the news", "news.php");
 } else {
-    addnav("Login Page", "index.php");
+    Nav::add("Login Page", "index.php");
 }
-page_footer();
+Footer::pageFooter();

@@ -1,40 +1,45 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Mail;
+use Lotgd\PlayerFunctions;
+use Lotgd\Sanitize;
+use Lotgd\Translator;
 
 $row = Mail::getMessage($session['user']['acctid'], $id);
 if ($row) {
-    $reply = translate_inline("Reply");
-    $del = translate_inline("Delete");
-    $forward = translate_inline("Forward");
-    $unread = translate_inline("Mark Unread");
-    $report = translate_inline("Report to Admin");
-    $prev = translate_inline("< Previous");
-    $next = translate_inline("Next >");
+    $reply = Translator::translateInline("Reply");
+    $del = Translator::translateInline("Delete");
+    $forward = Translator::translateInline("Forward");
+    $unread = Translator::translateInline("Mark Unread");
+    $report = Translator::translateInline("Report to Admin");
+    $prev = Translator::translateInline("< Previous");
+    $next = Translator::translateInline("Next >");
     $problem = "Abusive Email Report:\nFrom: {$row['name']}\nSubject: {$row['subject']}\nSent: {$row['sent']}\nID: {$row['messageid']}\nBody:\n{$row['body']}";
     $problemplayer = (int)$row['msgfrom'];
     $status_image = "";
     if ((int)$row['msgfrom'] == 0) {
-        $row['name'] = translate_inline("`i`^System`0`i");
+        $row['name'] = Translator::translateInline("`i`^System`0`i");
         // No translation for subject if it's not an array
                 $row_subject = \Lotgd\Serialization::safeUnserialize($row['subject']);
         if ($row_subject !== false && is_array($row_subject)) {
-            $row['subject'] = call_user_func_array("sprintf_translate", $row_subject);
+            $row['subject'] = Translator::sprintfTranslate(...$row_subject);
         } else {
             $row['subject'] = $row_subject;
         }
         // No translation for body if it's not an array
                 $row_body = \Lotgd\Serialization::safeUnserialize($row['body']);
         if ($row_body !== false && is_array($row_body)) {
-            $row['body'] = call_user_func_array("sprintf_translate", $row_body);
+            $row['body'] = Translator::sprintfTranslate(...$row_body);
         } else {
             $row['body'] = $row_body;
         }
     } elseif ($row['name'] == "") {
-        $row['name'] = translate_inline("`^Deleted User");
+        $row['name'] = Translator::translateInline("`^Deleted User");
     } else {
         //get status
-        $online = (int)is_player_online($row['acctid']);
+        $online = (int)PlayerFunctions::isPlayerOnline($row['acctid']);
         $status = ($online ? "online" : "offline");
         $status_image = "<img src='images/$status.gif' alt='$status'>";
     }
@@ -65,7 +70,7 @@ if ($row) {
         rawoutput(htmlentities($next, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</td>");
     }
     rawoutput("</tr></table><br/>");
-    output_notl(sanitize_mb(str_replace("\n", "`n", $row['body'])));
+    output_notl(Sanitize::sanitizeMb(str_replace("\n", "`n", $row['body'])));
         Mail::markRead($session['user']['acctid'], $id);
     rawoutput("<table width='50%' border='0' cellpadding='0' cellspacing='5'><tr>
 		<td><a href='mail.php?op=write&replyto={$row['messageid']}' class='motd'>$reply</a></td>

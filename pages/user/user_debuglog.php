@@ -1,12 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
+use Lotgd\Nav;
+use Lotgd\Translator;
+use Lotgd\MySQL\Database;
+
 if ($petition != "") {
-    addnav("Navigation");
-    addnav("Return to the petition", "viewpetition.php?op=view&id=$petition");
+    Nav::add("Navigation");
+    Nav::add("Return to the petition", "viewpetition.php?op=view&id=$petition");
 }
-$debuglog = db_prefix('debuglog');
-$debuglog_archive = db_prefix('debuglog_archive');
-$accounts = db_prefix('accounts');
+$debuglog = Database::prefix('debuglog');
+$debuglog_archive = Database::prefix('debuglog_archive');
+$accounts = Database::prefix('accounts');
 
 
 // As mySQL cannot use two different indexes in a single query this query can take up to 25s on its own!
@@ -16,23 +22,23 @@ $accounts = db_prefix('accounts');
 // $sql = "SELECT count(id) AS c FROM $debuglog WHERE actor=$userid OR target=$userid";
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog WHERE target=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max = $row['c'];
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog WHERE actor=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max += $row['c'];
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog_archive WHERE target=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max = $row['c'];
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog_archive WHERE actor=$userid";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max += $row['c'];
 
 
@@ -69,31 +75,31 @@ $sql = "(
 
 $next = $start + 500;
 $prev = $start - 500;
-addnav("Operations");
-addnav("Edit user info", "user.php?op=edit&userid=$userid$returnpetition");
-addnav("Refresh", "user.php?op=debuglog&userid=$userid&start=$start$returnpetition");
-addnav("Debug Log");
+Nav::add("Operations");
+Nav::add("Edit user info", "user.php?op=edit&userid=$userid$returnpetition");
+Nav::add("Refresh", "user.php?op=debuglog&userid=$userid&start=$start$returnpetition");
+Nav::add("Debug Log");
 if ($next < $max) {
-    addnav("Next page", "user.php?op=debuglog&userid=$userid&start=$next$returnpetition");
+    Nav::add("Next page", "user.php?op=debuglog&userid=$userid&start=$next$returnpetition");
 }
 if ($start > 0) {
-    addnav(
+    Nav::add(
         "Previous page",
         "user.php?op=debuglog&userid=$userid&start=$prev$returnpetition"
     );
 }
-$result = db_query($sql);
+$result = Database::query($sql);
 $odate = "";
-while ($row = db_fetch_assoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $dom = date("D, M d", strtotime($row['date']));
     if ($odate != $dom) {
-        output_notl("`n`b`@%s`0`b`n", $dom);
+        $output->outputNotl("`n`b`@%s`0`b`n", $dom);
         $odate = $dom;
     }
     $time = date("H:i:s", strtotime($row['date'])) . " (" . reltime(strtotime($row['date'])) . ")";
-    output_notl("`#%s (%s) `^%s - `&%s`7 %s`0", $row['field'], $row['value'], $time, $row['actorname'], $row['message']);
+    $output->outputNotl("`#%s (%s) `^%s - `&%s`7 %s`0", $row['field'], $row['value'], $time, $row['actorname'], $row['message']);
     if ($row['target']) {
-        output(" \-- Recipient = `\$%s`0", $row['targetname']);
+        $output->output(" \-- Recipient = `\$%s`0", $row['targetname']);
     }
-    output_notl("`n");
+    $output->outputNotl("`n");
 }

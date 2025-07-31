@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\SuAccess;
 use Lotgd\Stripslashes;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Http;
+use Lotgd\Page\Footer;
 
 // addnews ready
 // translator ready
@@ -10,9 +14,8 @@ use Lotgd\Nav\SuperuserNav;
 define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 require_once("common.php");
-require_once("lib/output_array.php");
-require_once("lib/http.php");
-$op = httpget('op');
+
+$op = Http::get('op');
 
 switch ($op) {
     case "primer":
@@ -26,4 +29,4 @@ switch ($op) {
             require("pages/petition/petition_default.php");
         break;
 }
-popup_footer();
+Footer::popupFooter();

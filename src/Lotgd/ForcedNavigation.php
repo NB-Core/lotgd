@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 
 class ForcedNavigation
@@ -34,10 +35,11 @@ class ForcedNavigation
                 if (!is_array($session['user']['dragonpoints'])) {
                     $session['user']['dragonpoints'] = [];
                 }
-                if (is_array(unserialize($session['user']['allowednavs']))) {
-                    $session['allowednavs'] = unserialize($session['user']['allowednavs']);
+                $allowednavs = Serialization::safeUnserialize($session['user']['allowednavs']);
+                if (is_array($allowednavs)) {
+                    $session['allowednavs'] = $allowednavs;
                 } else {
-                    $session['allowednavs'] = [$session['user']['allowednavs']];
+                    $session['allowednavs'] = [];
                 }
                 if (!$session['user']['loggedin'] || ((date('U') - strtotime($session['user']['laston'])) > getsetting('LOGINTIMEOUT', 900))) {
                     $session = [];
@@ -49,7 +51,7 @@ class ForcedNavigation
                 }
             } else {
                 $session = [];
-                $session['message'] = translate_inline("`4Error, your login was incorrect`0", "login");
+                $session['message'] = Translator::translateInline("`4Error, your login was incorrect`0", "login");
                 redirect('index.php', 'Account Disappeared!');
             }
             Database::freeResult($result);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
 use Lotgd\DumpItem;
 
 class Forms
@@ -11,83 +12,162 @@ class Forms
     /**
      * Render a message preview input field with javascript helper.
      */
-    public static function previewField(string $name, string|bool $startdiv = false, string $talkline = "says", bool $showcharsleft = true, array|bool $info = false, bool $scriptOutput = true): string
-    {
+    public static function previewField(
+        string $name,
+        string|bool $startdiv = false,
+        string $talkline = 'says',
+        bool $showcharsleft = true,
+        array|bool $info = false,
+        bool $scriptOutput = true
+    ): string {
         global $schema, $session, $output;
-        $talkline = translate_inline($talkline, $schema);
-        $youhave = translate_inline("You have ");
-        $charsleft = translate_inline(" characters left.");
-        $script = '';
-        if ($startdiv === false) {
-            $startdiv = "";
-        }
-        $script .= "<script language='JavaScript'>\n                                function previewtext$name(t,l){\n                                        var out = \"<span class='colLtWhite'>" . addslashes(appoencode($startdiv)) . " \";\n                                        var end = '</span>';\n                                        var x=0;\n                                        var y='';\n                                        var z='';\n                                        var max=document.getElementById('input$name');\n                                        var charsleft='';";
-        if ($talkline !== false) {
-            $script .= "      if (t.substr(0,2)=='::'){\n                                                x=2;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,1)==':'){\n                                                x=1;\n                                                out += '</span><span class=\'colLtWhite\'>';\n                                        }else if (t.substr(0,3)=='/me'){\n                                                x=3;\n                                                out += '</span><span class=\'colLtWhite\'>';";
-            if ($session['user']['superuser'] & SU_IS_GAMEMASTER) {
-                $script .= "\n                                        }else if (t.substr(0,5)=='/game'){\n                                                x=5;\n                                                out = '<span class=\'colLtWhite\'>';";
-            }
-            $script .= " \n     }else{\n                                                out += '</span><span class=\'colDkCyan\'>" . addslashes(appoencode($talkline)) . ", \"</span><span class=\'colLtCyan\'>';\n                                                end += '</span><span class=\'colDkCyan\'>';
-                                        }";
-        }
-        if ($showcharsleft == true) {
-            $script .= "      if (x!=0) {\n                                                if (max.maxLength!=" . getsetting('maxchars', 200) . ") max.maxLength=" . getsetting('maxchars', 200) . ";\n                                                l=" . getsetting('maxchars', 200) . ";\n                                        } else {\n                                                max.maxLength=l;\n                                        }\n                                        if (l-t.length<0) charsleft +='<span class=\'colLtRed\'>';\n                                        charsleft += '" . $youhave . "'+(l-t.length)+'" . $charsleft . "<br>';\n                                        if (l-t.length<0) charsleft +='</span>';\n                                        document.getElementById('charsleft$name').innerHTML=charsleft+'<br/>';";
-        }
-        $switchscript = datacache("switchscript_comm" . rawurlencode($name));
-        if (!$switchscript) {
-            $script .= "              for (; x < t.length; x++){
-                                                y = t.substr(x,1);
-                                                if (y=='<'){
-                                                        out += '&lt;';
-                                                        continue;
-                                                }else if(y=='>'){
-                                                        out += '&gt;';
-                                                        continue;
-                                                }else if (y=='`'){
-                                                        if (x < t.length-1){
-                                                                z = t.substr(x+1,1);";
 
+        $talkline = Translator::translateInline($talkline, $schema);
+        $youhave = Translator::translateInline('You have ');
+        $charsleft = Translator::translateInline(' characters left.');
+        $startdiv = $startdiv === false ? '' : $startdiv;
+
+        $encodedStart = addslashes(appoencode($startdiv));
+        $maxChars = (int) getsetting('maxchars', 200);
+
+        $script = <<<JS
+<script language="JavaScript">
+function previewtext{$name}(t, l) {
+    var out = "<span class='colLtWhite'>{$encodedStart} ";
+    var end = '</span>';
+    var x = 0;
+    var y = '';
+    var z = '';
+    var max = document.getElementById('input{$name}');
+    var charsleft = '';
+JS;
+
+        if ($talkline !== false) {
+            $script .= <<<JS
+
+    if (t.substr(0, 2) == '::') {
+        x = 2;
+        out += '</span><span class="colLtWhite">';
+    } else if (t.substr(0, 1) == ':') {
+        x = 1;
+        out += '</span><span class="colLtWhite">';
+    } else if (t.substr(0, 3) == '/me') {
+        x = 3;
+        out += '</span><span class="colLtWhite">';
+JS;
+            if ($session['user']['superuser'] & SU_IS_GAMEMASTER) {
+                $script .= <<<JS
+
+    } else if (t.substr(0, 5) == '/game') {
+        x = 5;
+        out = '<span class="colLtWhite">';
+JS;
+            }
+            $script .= <<<JS
+
+    } else {
+        out += '</span><span class="colDkCyan">{$talkline}, </span><span class="colLtCyan">';
+        end += '</span><span class="colDkCyan">';
+    }
+JS;
+        }
+
+        if ($showcharsleft) {
+            $script .= <<<JS
+
+    if (x != 0) {
+        if (max.maxLength != {$maxChars}) {
+            max.maxLength = {$maxChars};
+        }
+        l = {$maxChars};
+    } else {
+        max.maxLength = l;
+    }
+    if (l - t.length < 0) {
+        charsleft += '<span class="colLtRed">';
+    }
+    charsleft += '{$youhave}' + (l - t.length) + '{$charsleft}<br>';
+    if (l - t.length < 0) {
+        charsleft += '</span>';
+    }
+    document.getElementById('charsleft{$name}').innerHTML = charsleft + '<br/>';
+JS;
+        }
+
+        $switchscript = datacache('switchscript_comm' . rawurlencode($name));
+
+        if (!$switchscript) {
             $colors = $output->getColors();
-            $switchscript = "switch (z) {\n                                case \"0\": out+='</span>';break;\n";
+            $cases = ["case \"0\": out+='</span>';break;"];
             foreach ($colors as $key => $colorcode) {
-                $switchscript .= "case \"" . $key . "\": out+='</span><span class=\'" . $colorcode . "\'>';break;\n";
+                $cases[] = "case \"{$key}\": out+='</span><span class=\"{$colorcode}\">';break;";
             }
-            $switchscript .= "}\n                                                x++;\n                                                }\n                                        }else{\n                                                out += y;\n                                        }\n                                }\n                                document.getElementById(\"previewtext$name\").innerHTML=out+end+'<br/>';\n                        }\n                        </script>";
-            updatedatacache("switchscript_comm" . rawurlencode($name), $switchscript);
-        }
-        $script .= $switchscript;
-        if ($showcharsleft == true) {
-            $script .= "<span id='charsleft$name'></span>";
-        }
-        if (!is_array($info)) {
-            $script .= "<input name='$name' id='input$name' maxsize='" . (getsetting('maxchars', 200) + 100) . "' onKeyUp='previewtext$name(document.getElementById(\"input$name\").value," . getsetting('maxchars', 200) . ");'>";
+            $cases = implode("\n            ", $cases);
+
+            $switchscript = <<<JS
+
+    for (; x < t.length; x++) {
+        y = t.substr(x, 1);
+        if (y == '<') {
+            out += '&lt;';
+            continue;
+        } else if (y == '>') {
+            out += '&gt;';
+            continue;
+        } else if (y == '`') {
+            if (x < t.length - 1) {
+                z = t.substr(x + 1, 1);
+                switch (z) {
+                        {$cases}
+                }
+                x++;
+            }
         } else {
-            if (isset($info['maxlength'])) {
-                $l = $info['maxlength'];
-            } else {
-                $l = getsetting('maxchars', 200);
-            }
+            out += y;
+        }
+    }
+    document.getElementById("previewtext{$name}").innerHTML = out + end + '<br/>';
+}
+</script>
+JS;
+
+            updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
+        }
+
+        $script .= $switchscript;
+
+        if ($showcharsleft) {
+            $script .= "<span id='charsleft{$name}'></span>";
+        }
+
+        if (!is_array($info)) {
+            $script .= "<input name='{$name}' id='input{$name}' maxsize='" . ($maxChars + 100) . "' onKeyUp='previewtext{$name}(document.getElementById(\"input{$name}\").value,{$maxChars});'>";
+        } else {
+            $l = isset($info['maxlength']) ? $info['maxlength'] : $maxChars;
             if (isset($info['type']) && $info['type'] == 'textarea') {
-                $script .= "<textarea name='$name' id='input$name' onKeyUp='previewtext$name(document.getElementById(\"input$name\").value,$l);' ";
+                $script .= "<textarea name='{$name}' id='input{$name}' onKeyUp='previewtext{$name}(document.getElementById(\"input{$name}\").value,{$l});' ";
             } else {
-                $script .= "<input name='$name' id='input$name' onKeyUp='previewtext$name(document.getElementById(\"input$name\").value,$l);' ";
+                $script .= "<input name='{$name}' id='input{$name}' onKeyUp='previewtext{$name}(document.getElementById(\"input{$name}\").value,{$l});' ";
             }
             foreach ($info as $key => $val) {
                 $script .= "$key='$val'";
             }
             if (isset($info['type']) && $info['type'] == 'textarea') {
-                $script .= "></textarea>";
+                $script .= '></textarea>';
             } else {
-                $script .= ">";
+                $script .= '>';
             }
         }
-        $add = translate_inline("Add");
-        $returnscript = $script . "<div id='previewtext$name'></div>";
-        $script .= "<input type='submit' class='button' value='$add'><br>";
-        $script .= "<div id='previewtext$name'></div>";
+
+        $add = Translator::translateInline('Add');
+        $returnscript = $script . "<div id='previewtext{$name}'></div>";
+        $script .= "<input type='submit' class='button' value='{$add}'><br>";
+        $script .= "<div id='previewtext{$name}'></div>";
+
         if ($scriptOutput) {
             rawoutput($script);
         }
+
         return $returnscript;
     }
     /**
@@ -142,7 +222,7 @@ class Forms
 
         rawoutput("</td></tr></table>");
         tlschema('showform');
-        $save = translate_inline('Save');
+        $save = Translator::translateInline('Save');
         tlschema();
         if (!$nosave) {
             rawoutput("<input type='submit' class='button' value='$save'>");
@@ -210,13 +290,15 @@ class Forms
 
         $fieldId = 'form-' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $keyout);
 
-        rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td valign='top'>");
-        rawoutput("<label for='" . HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
+        $entityFieldId = HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+
+        rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
+        rawoutput("<label for='$entityFieldId'>");
         output_notl('%s', $info[0], true);
-        rawoutput('</label></td><td valign="top">');
+        rawoutput("</label></td><td class='formfield-value' valign='top'>");
         $rowIndex++;
 
-        self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions, $fieldId);
+        self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions, $fieldId, $entityFieldId);
 
         rawoutput('</td></tr>', true);
     }
@@ -234,45 +316,10 @@ class Forms
         string $fieldId
     ): void {
         $pretrans = 0;
+        $entityId = HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
         switch ($info[1]) {
             case 'theme':
-                $skins = [];
-                $handle = opendir('templates');
-                if ($handle === false) {
-                    error_log('Unable to open templates directory');
-                } else {
-                    while (false !== ($file = readdir($handle))) {
-                        if (strpos($file, '.htm') !== false) {
-                            $value = 'legacy:' . $file;
-                            $skins[$value] = substr($file, 0, strpos($file, '.htm'));
-                        }
-                    }
-                    closedir($handle);
-                }
-
-                $handle = opendir('templates_twig');
-                if ($handle === false) {
-                    error_log('Unable to open templates_twig directory');
-                } else {
-                    while (false !== ($dir = readdir($handle))) {
-                        if ($dir === '.' || $dir === '..') {
-                            continue;
-                        }
-                        if (is_dir("templates_twig/$dir")) {
-                            $name = $dir;
-                            $configPath = "templates_twig/$dir/config.json";
-                            if (file_exists($configPath)) {
-                                $cfg = json_decode((string) file_get_contents($configPath), true);
-                                if (json_last_error() === JSON_ERROR_NONE && isset($cfg['name'])) {
-                                    $name = $cfg['name'];
-                                }
-                            }
-                            $value = 'twig:' . $dir;
-                            $skins[$value] = $name;
-                        }
-                    }
-                    closedir($handle);
-                }
+                $skins = Template::getAvailableTemplates();
 
                 if (count($skins) == 0) {
                     output('None available');
@@ -282,7 +329,7 @@ class Forms
                 asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
                 $current = Template::addTypePrefix($row[$key]);
 
-                rawoutput("<select id='" . htmlentities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "' name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
+                rawoutput("<select id='$entityId' name='" . htmlentities($keyout, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "'>");
                 foreach ($skins as $skin => $display) {
                     $display = htmlentities($display, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
                     $skinEsc = htmlentities($skin, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
@@ -303,7 +350,7 @@ class Forms
                 $vloc = modulehook('validlocation', $vloc);
                 unset($vloc['all']);
                 reset($vloc);
-                rawoutput("<select id='" . HTMLEntities($fieldId, ENT_QUOTES, getsetting('charset', 'ISO-8859-1')) . "' name='$keyout'>");
+                rawoutput("<select id='$entityId' name='$keyout'>");
                 foreach ($vloc as $loc => $val) {
                     if ($loc == $row[$key]) {
                         rawoutput("<option value='$loc' selected>" . htmlentities($loc, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
@@ -325,7 +372,7 @@ class Forms
                 while ($optval = array_shift($inf_list)) {
                     $optdis = array_shift($inf_list);
                     if (!$pretrans) {
-                        $optdis = translate_inline($optdis);
+                        $optdis = Translator::translateInline($optdis);
                     }
                     if (is_array($row[$key])) {
                         $checked = $row[$key][$optval] ? true : false;
@@ -333,7 +380,8 @@ class Forms
                         debug('You must pass an array as the value when using a checklist.');
                         $checked = false;
                     }
-                    $select .= "<input type='checkbox' name='{$keyout}[{$optval}]' value='1'" . ($checked ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
+                    $id = HTMLEntities("{$fieldId}-{$optval}", ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+                    $select .= "<input id='$id' type='checkbox' name='{$keyout}[{$optval}]' value='1'" . ($checked ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
                 }
                 rawoutput($select);
                 break;
@@ -349,9 +397,10 @@ class Forms
                 while ($optval = array_shift($inf_list)) {
                     $optdis = array_shift($inf_list);
                     if (!$pretrans) {
-                        $optdis = translate_inline($optdis);
+                        $optdis = Translator::translateInline($optdis);
                     }
-                    $select .= "<input type='radio' name='$keyout' value='$optval'" . ($row[$key] == $optval ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
+                    $id = HTMLEntities("{$fieldId}-{$optval}", ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+                    $select .= "<input id='$id' type='radio' name='$keyout' value='$optval'" . ($row[$key] == $optval ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
                 }
                 rawoutput($select);
                 break;
@@ -361,7 +410,7 @@ class Forms
                 $end = strtotime($info[2]);
                 $step = $info[3];
                 $cur = $row[$key];
-                rawoutput("<select name='$keyout'>");
+                rawoutput("<select id='$entityId' name='$keyout'>");
                 if ($cur && $cur < date('Y-m-d H:i:s', $start)) {
                     rawoutput("<option value='$cur' selected>" . htmlentities($cur, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
                 }
@@ -382,7 +431,7 @@ class Forms
                 if ($step == 0) {
                     $step = 1;
                 }
-                rawoutput("<select name='$keyout'>");
+                rawoutput("<select id='$entityId' name='$keyout'>");
                 if ($min < $max && ($max - $min) / $step > 300) {
                     $step = max(1, (int) (($max - $min) / 300));
                 }
@@ -399,7 +448,7 @@ class Forms
                 if ($step == 0) {
                     $step = 1;
                 }
-                rawoutput("<select name='$keyout'>", true);
+                rawoutput("<select id='$entityId' name='$keyout'>", true);
                 $val = round((float) $row[$key], 2);
                 for ($j = $min; $j <= $max; $j = round($j + $step, 2)) {
                     rawoutput("<option value='$j'" . ($val == $j ? ' selected' : '') . '>' . HTMLEntities("$j", ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>', true);
@@ -417,13 +466,14 @@ class Forms
                 $disablemask = array_shift($inf_list);
                 rawoutput("<input type='hidden' name='$keyout" . "[0]' value='1'>", true);
                 while ($v = array_shift($inf_list)) {
-                    rawoutput("<input type='checkbox' name='$keyout" . "[$v]'" .
+                    $id = HTMLEntities("{$fieldId}-{$v}", ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+                    rawoutput("<input id='$id' type='checkbox' name='$keyout" . "[$v]'" .
                         ((int) $row[$key] & (int) $v ? ' checked' : '') .
                         ($disablemask & (int) $v ? '' : ' disabled') .
                         " value='1'> ");
                     $v = array_shift($inf_list);
                     if (!$pretrans) {
-                        $v = translate_inline($v);
+                        $v = Translator::translateInline($v);
                     }
                     output_notl('%s`n', $v, true);
                 }
@@ -447,7 +497,7 @@ class Forms
                     rawoutput(tlbutton_pop());
                 }
                 tlschema();
-                rawoutput("<select name='$keyout'>");
+                rawoutput("<select id='$entityId' name='$keyout'>");
                 foreach ($vals as $k => $v) {
                     rawoutput("<option value=\"" . htmlentities($v, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\"" . ($row[$key] == $v ? ' selected' : '') . '>' . htmlentities($v, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>');
                 }
@@ -462,7 +512,7 @@ class Forms
                 array_shift($inf_list);
                 array_shift($inf_list);
                 $select = '';
-                $select .= "<select name='$keyout'>";
+                $select .= "<select id='$entityId' name='$keyout'>";
                 $optval = '';
                 foreach ($inf_list as $optdis) {
                     if ($optval == '') {
@@ -470,7 +520,7 @@ class Forms
                         continue;
                     }
                     if (!$pretrans) {
-                        $optdis = translate_inline($optdis);
+                        $optdis = Translator::translateInline($optdis);
                     }
                     $selected = isset($row[$key]) && $row[$key] == $optval ? 1 : 0;
                     $select .= "<option value='$optval'" . ($selected ? ' selected' : '') . '>' . HTMLEntities("$optdis", ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</option>';
@@ -482,16 +532,16 @@ class Forms
 
             case 'password':
                 $out = array_key_exists($key, $row) ? $row[$key] : '';
-                rawoutput("<input type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "'>");
+                rawoutput("<input id='$entityId' type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "'>");
                 break;
 
             case 'bool':
                 tlschema('showform');
-                $yes = translate_inline('Yes');
-                $no = translate_inline('No');
+                $yes = Translator::translateInline('Yes');
+                $no = Translator::translateInline('No');
                 $boolval = isset($row[$key]) ? $row[$key] : 0;
                 tlschema();
-                rawoutput("<select name='$keyout'>");
+                rawoutput("<select id='$entityId' name='$keyout'>");
                 rawoutput("<option value='0'" . ($boolval == 0 ? ' selected' : '') . ">$no</option>");
                 rawoutput("<option value='1'" . ($boolval == 1 ? ' selected' : '') . ">$yes</option>");
                 rawoutput('</select>', true);
@@ -499,11 +549,11 @@ class Forms
 
             case 'checkbox':
                 $checked = !empty($row[$key]);
-                rawoutput("<input type='checkbox' name='$keyout' value='1'" . ($checked ? ' checked' : '') . '>');
+                rawoutput("<input id='$entityId' type='checkbox' name='$keyout' value='1'" . ($checked ? ' checked' : '') . '>');
                 break;
 
             case 'hidden':
-                rawoutput("<input type='hidden' name='$keyout' value=\"" . HTMLEntities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">" . HTMLEntities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+                rawoutput("<input id='$entityId' type='hidden' name='$keyout' value=\"" . HTMLEntities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">" . HTMLEntities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
                 break;
 
             case 'viewonly':
@@ -515,8 +565,9 @@ class Forms
 
             case 'viewhiddenonly':
                 if (isset($row[$key])) {
+                    $row[$key] = (string) $row[$key];
                     output_notl(DumpItem::dump($row[$key]), true);
-                    rawoutput("<input type='hidden' name='" . addslashes($key) . "' value='" . addslashes($row[$key]) . "'>");
+                    rawoutput("<input id='$entityId' type='hidden' name='" . addslashes($key) . "' value='" . addslashes($row[$key]) . "'>");
                 }
                 break;
 
@@ -538,21 +589,21 @@ class Forms
                 if (isset($resize) && $resize) {
                     rawoutput("<script type=\"text/javascript\">function increase(target, value){  if (target.rows + value > 3 && target.rows + value < 50) target.rows = target.rows + value;}</script>");
                     rawoutput("<script type=\"text/javascript\">function cincrease(target, value){  if (target.cols + value > 3 && target.cols + value < 150) target.cols = target.cols + value;}</script>");
-                    rawoutput("<input type='button' onClick=\"increase(textarea$key,1);\" value='+' accesskey='+'><input type='button' onClick=\"increase(textarea$key,-1);\" value='-' accesskey='-'>");
-                    rawoutput("<input type='button' onClick=\"cincrease(textarea$key,-1);\" value='<-'><input type='button' onClick=\"cincrease(textarea$key,1);\" value='->' accesskey='-'><br>");
-                    rawoutput("<textarea id='textarea$key' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</textarea>');
+                    rawoutput("<input type='button' onClick=\"increase(document.getElementById('$entityId'),1);\" value='+' accesskey='+'><input type='button' onClick=\"increase(document.getElementById('$entityId'),-1);\" value='-' accesskey='-'>");
+                    rawoutput("<input type='button' onClick=\"cincrease(document.getElementById('$entityId'),-1);\" value='<-'><input type='button' onClick=\"cincrease(document.getElementById('$entityId'),1);\" value='->' accesskey='-'><br>");
+                    rawoutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</textarea>');
                 } else {
-                    rawoutput("<textarea class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</textarea>');
+                    rawoutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</textarea>');
                 }
                 break;
 
             case 'int':
                 $out = (string) (array_key_exists($key, $row) ? $row[$key] : 0);
-                rawoutput("<input name='$keyout' value=\"" . HTMLEntities($out, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\" size='5'>");
+                rawoutput("<input id='$entityId' name='$keyout' value=\"" . HTMLEntities($out, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\" size='5'>");
                 break;
 
             case 'float':
-                rawoutput("<input name='$keyout' value=\"" . htmlentities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\" size='8'>");
+                rawoutput("<input id='$entityId' name='$keyout' value=\"" . htmlentities($row[$key], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\" size='8'>");
                 break;
 
             case 'string':
@@ -568,17 +619,20 @@ class Forms
                     $minlen = 70;
                 }
                 $val = array_key_exists($key, $row) ? $row[$key] : '';
-                rawoutput("<input size='$minlen' maxlength='$len' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">");
+                rawoutput("<input id='$entityId' size='$minlen' maxlength='$len' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">");
                 break;
 
             default:
                 if (array_key_exists($info[1], $extensions)) {
                     $func = $extensions[$info[1]];
                     $val = array_key_exists($key, $row) ? $row[$key] : '';
-                    call_user_func($func, $keyout, $val, $info);
+                    $func($keyout, $val, $info);
                 } else {
                     $val = array_key_exists($key, $row) ? $row[$key] : '';
-                    rawoutput("<input size='50' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">");
+                    if (!is_string($val)) {
+                        $val = (string) $val;
+                    }
+                    rawoutput("<input id='$entityId' size='50' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">");
                 }
         }
     }

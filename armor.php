@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // translator ready
 // addnews ready
 // mail ready
@@ -10,12 +12,17 @@
 * @see armoreditor.php
 */
 require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/villagenav.php");
+
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Nav;
+use Lotgd\DateTime;
 
 tlschema("armor");
 
-checkday();
+DateTime::checkDay();
 $tradeinvalue = round(($session['user']['armorvalue'] * .75), 0);
 $basetext = array(
     "title"         =>  "Pegasus Armor",
@@ -48,10 +55,10 @@ $texts = modulehook("armortext", $basetext);
 $schemas = $texts['schemas'];
 
 tlschema($schemas['title']);
-page_header($texts['title']);
+Header::pageHeader($texts['title']);
 output("`c`b`%" . $texts['title'] . "`0`b`c");
 tlschema();
-$op = httpget('op');
+$op = Http::get('op');
 if ($op == "") {
     tlschema($schemas['desc']);
     if (is_array($texts['desc'])) {
@@ -115,10 +122,10 @@ if ($op == "") {
             if ($link) {
                 rawoutput("</a>");
             }
-            addnav("", "armor.php?op=buy&id={$row['armorid']}");
+            Nav::add("", "armor.php?op=buy&id={$row['armorid']}");
         } else {
             output_notl("%s%s`0", $color, $row['armorname']);
-            addnav("", "armor.php?op=buy&id={$row['armorid']}");
+            Nav::add("", "armor.php?op=buy&id={$row['armorid']}");
         }
         rawoutput("</td><td align='center'>");
         output_notl("%s%s`0", $color, $row['defense']);
@@ -132,9 +139,9 @@ if ($op == "") {
         ++$i;
     }
     rawoutput("</table>", true);
-    villagenav();
+    VillageNav::render();
 } elseif ($op == "buy") {
-    $id = httpget('id');
+    $id = Http::get('id');
     $sql = "SELECT * FROM " . db_prefix("armor") . " WHERE armorid='$id'";
     $result = db_query($sql);
     if (db_num_rows($result) == 0) {
@@ -142,9 +149,9 @@ if ($op == "") {
         output($texts['nosuchweapon']);
         tlschema();
         tlschema($schemas['tryagain']);
-        addnav($texts['tryagain'], "armor.php");
+        Nav::add($texts['tryagain'], "armor.php");
         tlschema();
-        villagenav();
+        VillageNav::render();
     } else {
         $row = db_fetch_assoc($result);
         $row = modulehook("modify-armor", $row);
@@ -152,7 +159,7 @@ if ($op == "") {
             tlschema($schemas['notenoughgold']);
             output($texts['notenoughgold'], $row['armorname']);
             tlschema();
-            villagenav();
+            VillageNav::render();
         } else {
             tlschema($schemas['payarmor']);
             output($texts['payarmor'], $session['user']['armor'], $row['armorname'], $row['armorname']);
@@ -165,8 +172,8 @@ if ($op == "") {
             $session['user']['armordef'] = $row['defense'];
             $session['user']['defense'] += $session['user']['armordef'];
             $session['user']['armorvalue'] = $row['value'];
-            villagenav();
+            VillageNav::render();
         }
     }
 }
-page_footer();
+Footer::pageFooter();

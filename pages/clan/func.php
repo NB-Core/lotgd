@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 function clan_nextrank($ranks, $current)
 {
     $temp = array_pop($ranks);

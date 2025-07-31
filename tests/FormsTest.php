@@ -29,4 +29,26 @@ final class FormsTest extends TestCase
         $this->assertStringContainsString("type='checkbox' name='flag' value='1'", $forms_output);
         $this->assertStringNotContainsString('checked', $forms_output);
     }
+
+    public function testThemeFieldSkipsInvalidDirectories(): void
+    {
+        global $forms_output;
+
+        $base = dirname(__DIR__) . '/templates_twig';
+        $tempDir = $base . '/test_no_config';
+        $hiddenDir = $base . '/.git';
+
+        mkdir($tempDir);
+        mkdir($hiddenDir);
+
+        try {
+            Forms::showForm(['skin' => 'Skin,theme'], ['skin' => 'aurora']);
+        } finally {
+            rmdir($tempDir);
+            rmdir($hiddenDir);
+        }
+
+        $this->assertStringNotContainsString("value='twig:test_no_config'", $forms_output);
+        $this->assertStringNotContainsString("value='twig:.git'", $forms_output);
+    }
 }

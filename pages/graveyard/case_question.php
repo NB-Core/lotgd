@@ -1,11 +1,16 @@
 <?php
 
-addnav("G?Return to the Graveyard", "graveyard.php");
-addnav("Places");
-addnav("S?Land of the Shades", "shades.php");
-addnav("Souls");
+declare(strict_types=1);
+
+use Lotgd\Nav;
+use Lotgd\Modules\HookHandler;
+
+Nav::add('G?Return to the Graveyard', 'graveyard.php');
+Nav::add('Places');
+Nav::add('S?Land of the Shades', 'shades.php');
+Nav::add('Souls');
 if ($favortoheal > 0) {
-    addnav(array("Restore Your Soul (%s favor)",$favortoheal), "graveyard.php?op=restore");
+    Nav::add(['Restore Your Soul (%s favor)', $favortoheal], 'graveyard.php?op=restore');
 }
 
 
@@ -23,7 +28,7 @@ $default_actions[] = array(
     );
 
 //build navigation
-$actions = modulehook("deathoverlord_actions", $default_actions);
+$actions = HookHandler::hook('deathoverlord_actions', $default_actions);
 
 
 foreach ($actions as $key => $row) {
@@ -68,19 +73,19 @@ if ($length > 0) {
     }
 }
 $highest = str_replace("{deathoverlord}", $deathoverlord, $highest);
-output_notl($highest . "`n`n");
+$output->outputNotl($highest . "`n`n");
 
 
-addnav(array("%s Favors",sanitize($deathoverlord)));
+Nav::add(["%s Favors", sanitize($deathoverlord)]);
 for ($i = 0; $i < $length; $i++) {
     $linktext[$i] = str_replace("{deathoverlord}", $deathoverlord, $linktext[$i]);
-    addnav(array("%s`) (%s favors)",$linktext[$i],$favorcostlist[$i]), $linklist[$i]);
+    Nav::add(["%s`) (%s favors)", $linktext[$i], $favorcostlist[$i]], $linklist[$i]);
     if (isset($textlist[$i]) && $textlist[$i] != "") {
         $textlist[$i] = str_replace("{deathoverlord}", $deathoverlord, $textlist[$i]);
-        output_notl($textlist[$i]);
+        $output->outputNotl($textlist[$i]);
     }
 }
-addnav("Other");
-modulehook("ramiusfavors");
+Nav::add('Other');
+HookHandler::hook('ramiusfavors');
 
-output("`n`nYou have `6%s`) favor with `\$%s`).", $session['user']['deathpower'], $deathoverlord);
+$output->output("`n`nYou have `6%s`) favor with `\$%s`).", $session['user']['deathpower'], $deathoverlord);

@@ -1,13 +1,18 @@
 <?php
 
-$sql = "SELECT name,superuser from " . db_prefix("accounts") . " WHERE acctid='$userid'";
-$res = db_query($sql);
-require_once("lib/charcleanup.php");
-char_cleanup($userid, CHAR_DELETE_MANUAL);
+declare(strict_types=1);
+
+use Lotgd\PlayerFunctions;
+use Lotgd\Translator;
+use Lotgd\MySQL\Database;
+
+$sql = "SELECT name,superuser from " . Database::prefix("accounts") . " WHERE acctid='$userid'";
+$res = Database::query($sql);
+PlayerFunctions::charCleanup($userid, CHAR_DELETE_MANUAL);
 $fail = false;
-while ($row = db_fetch_assoc($res)) {
+while ($row = Database::fetchAssoc($res)) {
     if ($row['superuser'] > 0 && ($session['user']['superuser'] & SU_MEGAUSER) != SU_MEGAUSER) {
-        output("`\$You are trying to delete a user with superuser powers. Regardless of the type, ONLY a megauser can do so due to security reasons.");
+        $output->output("`\$You are trying to delete a user with superuser powers. Regardless of the type, ONLY a megauser can do so due to security reasons.");
         $fail = true;
         break;
     }
@@ -15,7 +20,7 @@ while ($row = db_fetch_assoc($res)) {
     debuglog("deleted user" . $row['name'] . "'0");
 }
 if ($fail !== true) {
-    $sql = "DELETE FROM " . db_prefix("accounts") . " WHERE acctid='$userid'";
-    db_query($sql);
-    output(db_affected_rows() . " user deleted.");
+    $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid='$userid'";
+    Database::query($sql);
+    $output->output(Database::affectedRows() . " user deleted.");
 }

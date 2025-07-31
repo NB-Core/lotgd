@@ -114,12 +114,12 @@ class Modules
                         }
                         $keys = '|' . implode('|', array_keys($info)) . '|';
                         $sql  = 'UPDATE ' . Database::prefix('modules') .
-                            " SET moduleauthor='" . addslashes($info['author']) .
-                            "', category='" . addslashes($info['category']) .
-                            "', formalname='" . addslashes($info['name']) .
-                            "', description='" . addslashes($info['description']) .
-                            "', filemoddate='$filemoddate', infokeys='$keys',version='" . addslashes($info['version']) .
-                            "',download='" . addslashes($info['download']) . "' WHERE modulename='$moduleName'";
+                            " SET moduleauthor='" . addslashes((string) ($info['author'] ?? '')) .
+                            "', category='" . addslashes((string) ($info['category'] ?? '')) .
+                            "', formalname='" . addslashes((string) ($info['name'] ?? '')) .
+                            "', description='" . addslashes((string) ($info['description'] ?? '')) .
+                            "', filemoddate='$filemoddate', infokeys='$keys',version='" . addslashes((string) ($info['version'] ?? '')) .
+                            "',download='" . addslashes((string) ($info['download'] ?? '')) . "' WHERE modulename='$moduleName'";
                         Database::query($sql);
                         debug($sql);
                         $sql = 'UNLOCK TABLES';
@@ -963,7 +963,7 @@ class Modules
                 $moduleinfo = $fname();
                 Translator::tlschema();
                 if (!isset($moduleinfo['name']) || !isset($moduleinfo['category']) || !isset($moduleinfo['author']) || !isset($moduleinfo['version'])) {
-                    $ns = translate_inline('Not specified', 'common');
+                    $ns = Translator::translateInline('Not specified', 'common');
                 }
                 if (!isset($moduleinfo['name'])) {
                     $moduleinfo['name'] = "$ns ($shortname)";
@@ -985,7 +985,7 @@ class Modules
                 }
             }
             if (!is_array($moduleinfo) || count($moduleinfo) < 2) {
-                $mf         = translate_inline('Missing function', 'common');
+                $mf         = Translator::translateInline('Missing function', 'common');
                 $moduleinfo = [
                     'name'        => "$mf ({$shortname}_getmoduleinfo)",
                     'version'     => '0.0',
@@ -1280,9 +1280,9 @@ class Modules
 
         tlschema('events');
         output("`n`nSpecial event triggers:`n");
-        $name    = translate_inline('Name');
-        $rchance = translate_inline('Raw Chance');
-        $nchance = translate_inline('Normalized Chance');
+        $name    = Translator::translateInline('Name');
+        $rchance = Translator::translateInline('Raw Chance');
+        $nchance = Translator::translateInline('Normalized Chance');
         rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
         rawoutput("<tr class='trhead'>");
         rawoutput("<td>$name</td><td>$rchance</td><td>$nchance</td><td>Filename</td><td>exists</td>");
@@ -1329,7 +1329,11 @@ class Modules
                 $curcat = $row['category'];
                 addnav(["%s Modules", $curcat]);
             }
-            addnav_notl(($row['active'] ? '' : '`') . $row['formalname'] . '`0', $linkprefix . $row['modulename']);
+            // Prefix inactive modules with a valid colour code so the name
+            // does not start with an unescaped backtick. Without a colour
+            // letter the first character of the name would be parsed as one,
+            // causing unbalanced HTML tags like `<em>`.
+            addnav_notl(($row['active'] ? '' : '`&') . $row['formalname'] . '`0', $linkprefix . $row['modulename']);
         }
     }
 
@@ -1430,8 +1434,8 @@ class Modules
     {
         if ($thisuser === true) {
             global $session;
-            return translate_inline($session['user']['race'], 'race');
+            return Translator::translateInline($session['user']['race'], 'race');
         }
-        return translate_inline($thisuser, 'race');
+        return Translator::translateInline($thisuser, 'race');
     }
 }

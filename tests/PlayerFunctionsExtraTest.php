@@ -46,7 +46,7 @@ final class PlayerFunctionsExtraTest extends TestCase
         foreach (['cache' => [], 'path' => '', 'checkedOld' => false] as $prop => $val) {
             $p = $ref->getProperty($prop);
             $p->setAccessible(true);
-            $p->setValue($val);
+            $p->setValue(null, $val);
         }
     }
 
@@ -73,7 +73,7 @@ final class PlayerFunctionsExtraTest extends TestCase
         $ref = new \ReflectionClass(DataCache::class);
         $prop = $ref->getProperty('cache');
         $prop->setAccessible(true);
-        $prop->setValue(['exparraydk0' => [50.0, 100.0, 150.0]]);
+        $prop->setValue(null, ['exparraydk0' => [50.0, 100.0, 150.0]]);
         $exp = PlayerFunctions::expForNextLevel(2, 0);
         $this->assertSame(100.0, $exp);
         $this->assertSame([50.0, 100.0, 150.0], DataCache::datacache('exparraydk0'));

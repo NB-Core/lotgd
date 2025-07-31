@@ -34,8 +34,15 @@ class TwigTemplate extends Template
         }
 
         self::$env = new Environment($loader, $options);
+
+    // Add a twig filter for version busting (to enable cached resources based on file modify date as "buster")
+        self::$env->addFilter(new \Twig\TwigFilter('ver', function ($path) {
+            $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+            return $path . '?v=' . (file_exists($full) ? filemtime($full) : time());
+        }));
         self::$isTwigActive = true;
     }
+
 
     public static function deactivate(): void
     {

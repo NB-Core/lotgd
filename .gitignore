@@ -5,3 +5,4 @@
 /.vs
 config/composer.local.json
 .phpunit.result.cache
+dbconnect.php

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // translator ready
 // addnews ready
 // mail ready
@@ -9,8 +11,13 @@ if (!isset($_GET['op']) || $_GET['op'] != 'list') {
     //don't want people to be able to visit the list while logged in -- breaks their navs.
     define("OVERRIDE_FORCED_NAV", true);
 }
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\MySQL\Database;
+
 require_once("common.php");
-require_once("lib/http.php");
 require_once("lib/sanitize.php");
 
 tlschema("logdnet");
@@ -214,8 +221,8 @@ if ($op == "") {
         echo $row . "\n";
     }
 } else {
-    page_header("LoGD Net");
-    addnav("Login page", "index.php");
+    Header::pageHeader("LoGD Net");
+    Nav::add("Login page", "index.php");
     output("`@Below are a list of other LoGD servers that have registered with the LoGD Net.`n");
     output("`2It should be noted that this list is subject to editing and culling by the administrators of logdnet.logd.com. ");
     output("Normally this list is a comprehensive list of all servers that have elected to register with LoGDnet, but I'm making changes to that. ");
@@ -307,7 +314,7 @@ if ($op == "") {
         $i++;
     }
     rawoutput("</table>");
-    page_footer();
+    Footer::pageFooter();
 }
 
 function apply_logdnet_bans($logdnet)

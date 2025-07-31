@@ -148,7 +148,7 @@ class Translator
         $setschema = false;
         // Handle if an array is passed in as the first arg
         if (is_array($args[0])) {
-                    $args[0] = call_user_func_array([self::class, 'sprintfTranslate'], $args[0]);
+            $args[0] = self::sprintfTranslate(...$args[0]);
         } else {
             // array_shift returns the first element of an array and shortens this array by one...
             if (is_bool($args[0]) && array_shift($args)) {
@@ -178,7 +178,7 @@ class Translator
         if (is_array($args) && count($args) > 0) {
             //if it is an array
             //which it should be
-            $return = call_user_func_array("sprintf", $args);
+            $return = sprintf(...$args);
         } else {
             $return = $args;
         }
@@ -202,7 +202,9 @@ class Translator
     public static function translateInline(string|array $in, string|false|null $namespace = false): string|array
     {
         $out = self::translate($in, $namespace);
-            rawoutput(self::tlbuttonClear());
+        if (function_exists('rawoutput')) {
+            \rawoutput(self::tlbuttonClear());
+        }
         return $out;
     }
 
@@ -235,7 +237,7 @@ class Translator
         // translation of mails can't be done in language of recipient by
         // the sender via translation tool.
 
-                $out = call_user_func_array("sprintfTranslate", $in);
+        $out = self::sprintfTranslate(...$in);
 
         tlschema();
         unset($session['tlanguage']);

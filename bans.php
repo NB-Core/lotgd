@@ -1,24 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\UserLookup;
 
 //addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/sanitize.php");
 use Lotgd\Names;
 
 tlschema("bans");
 SuAccess::check(SU_EDIT_BANS);
 
-$op = httpget('op');
-$userid = httpget("userid");
+$op = Http::get('op');
+$userid = Http::get("userid");
 
-page_header("Ban Editor");
+Header::pageHeader("Ban Editor");
 
-$sort = httpget('sort');
+$sort = Http::get('sort');
 
 $gentime = 0;
 $gentimecount = 0;
@@ -28,17 +34,16 @@ if ($sort != "") {
     $order = "$sort";
 }
 $display = 0;
-$query = httppost('q');
+$query = Http::post('q');
 if ($query === false) {
-    $query = httpget('q');
+    $query = Http::get('q');
 }
 if (!$query && $sort) {
     $query = "%";
 }
 
 if ($op == "search" || $op == "") {
-    require_once("lib/lookup_user.php");
-    list($searchresult, $err) = lookup_user($query, $order);
+    list($searchresult, $err) = UserLookup::lookupUser($query, $order);
     $op = "";
     if ($err) {
         output($err);
@@ -58,15 +63,15 @@ $se = translate_inline("Search");
 rawoutput("<input type='submit' class='button' value='$se'>");
 rawoutput("</form>");
 rawoutput("<script language='JavaScript'>document.getElementById('q').focus();</script>");
-addnav("", "bans.php?op=search");
+Nav::add("", "bans.php?op=search");
 
 
 
 SuperuserNav::render();
-addnav("Bans");
-addnav("Add a ban", "bans.php?op=setupban");
-addnav("List/Remove bans", "bans.php?op=removeban");
-addnav("Search for banned user", "bans.php?op=searchban");
+Nav::add("Bans");
+Nav::add("Add a ban", "bans.php?op=setupban");
+Nav::add("List/Remove bans", "bans.php?op=removeban");
+Nav::add("Search for banned user", "bans.php?op=searchban");
 
 
 switch ($op) {
@@ -89,4 +94,4 @@ switch ($op) {
             output("From here, you can issue bans for players from being able to play.`n`nBased on the ID = cookie on the machine AND/OR on the IP they accessed the char last the ban takes effect.`n`nNote: Locked chars stay locked, even after they delete their cookie / change their IP.`n`nHowever, they can make new chars and login in that case. You cannot control this.");
             require("pages/bans/case_.php");
 }
-page_footer();
+Footer::pageFooter();

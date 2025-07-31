@@ -42,7 +42,7 @@ class Outcomes
             }
             $gold += $badguy['creaturegold'];
             if (isset($badguy['creaturelose'])) {
-                $msg = translate_inline($badguy['creaturelose'], 'battle');
+                $msg = Translator::translateInline($badguy['creaturelose'], 'battle');
                 output_notl("`b`&%s`0`b`n", $msg);
             }
             output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
@@ -54,14 +54,14 @@ class Outcomes
             if (!$denyflawless && isset($badguy['denyflawless']) && !empty($badguy['denyflawless'])) {
                 $denyflawless = $badguy['denyflawless'];
             }
-            $expbonus += round(((int)$badguy['creatureexp'] * (1 + .25 * ((int)$badguy['creaturelevel'] - (int)$session['user']['level']))) - (int)$badguy['creatureexp'], 0);
+            $expbonus += (int) round(((int) $badguy['creatureexp'] * (1 + .25 * ((int) $badguy['creaturelevel'] - (int) $session['user']['level']))) - (int) $badguy['creatureexp'], 0);
         }
         $multibonus = $count > 1 ? 1 : 0;
         $expbonus += (int)$session['user']['dragonkills'] * (int)$session['user']['level'] * $multibonus;
         $totalexp = array_sum($options['experience']);
-        $exp = round($totalexp / $count);
-        $gold = round(r_rand(round($gold / $count), round($gold), 0));
-        $expbonus = round($expbonus / $count, 0);
+        $exp = (int) round($totalexp / $count, 0);
+        $gold = (int) round(r_rand(round($gold / $count), round($gold)), 0);
+        $expbonus = (int) round($expbonus / $count, 0);
 
         if ($gold) {
             output("`#You receive `^%s`# gold!`n", $gold);
@@ -94,7 +94,7 @@ class Outcomes
             if (count($enemies) > 1) {
                 output("During this fight you received `^%s`# total experience!`n`0", $exp + $expbonus);
             }
-            $session['user']['experience'] += $expbonus;
+            $session['user']['experience'] += (int) $expbonus;
         } else {
             if (floor($exp + $expbonus) < 0) {
                 $expbonus = -$exp + 1;
@@ -107,9 +107,9 @@ class Outcomes
                 output("`#***Because of the simplistic nature of this fight, you are penalized `^%s`# experience! `n(%s - %s = %s) ", abs($expbonus), $exp, abs($expbonus), $exp + $expbonus);
             }
             output("You receive `^%s`# total experience!`n`0", $exp + $expbonus);
-            $session['user']['experience'] += ($exp + $expbonus);
+            $session['user']['experience'] += (int) ($exp + $expbonus);
         }
-        $session['user']['gold'] += $gold;
+        $session['user']['gold'] += (int) $gold;
         if (!$creaturelevel) {
             $creaturelevel = $badguy['creaturelevel'];
         } else {
@@ -118,7 +118,7 @@ class Outcomes
         if (!$diddamage) {
             output("`c`b`&~~ Flawless Fight! ~~`0`b`c");
             if ($denyflawless) {
-                output("`c`\$%s`0`c", translate_inline($denyflawless));
+                output("`c`\$%s`0`c", Translator::translateInline($denyflawless));
             } elseif ($session['user']['level'] <= $creaturelevel) {
                 output("`c`b`\$You receive an extra turn!`0`b`c`n");
                 $session['user']['turns']++;
@@ -153,7 +153,7 @@ class Outcomes
                 $killer = $badguy['creaturename'];
             }
             if (isset($badguy['creaturewin']) && $badguy['creaturewin'] > '') {
-                $msg = translate_inline($badguy['creaturewin'], 'battle');
+                $msg = Translator::translateInline($badguy['creaturewin'], 'battle');
                 output_notl("`b`&%s`0`b`n", $msg);
             }
         }
@@ -161,7 +161,7 @@ class Outcomes
             $lastname = array_pop($names);
         }
         $enemystring = join(', ', $names);
-        $and = translate_inline('and');
+        $and = Translator::translateInline('and');
         if (isset($lastname) && $lastname > '') {
             $enemystring = "$enemystring $and $lastname";
         }
@@ -198,11 +198,11 @@ class Outcomes
             $add = ($session['user']['dragonkills'] / 100) * .10;
             $dk = round($dk * (.25 + $add));
         }
-        $expflux = round($badguy['creatureexp'] / 10, 0);
-        $expflux = round(r_rand(-$expflux, $expflux), 0);
+        $expflux = (int) round($badguy['creatureexp'] / 10, 0);
+        $expflux = (int) round(r_rand(-$expflux, $expflux), 0);
         $badguy['creatureexp'] += $expflux;
-        $atkflux = round(r_rand(0, $dk), 0);
-        $defflux = round(r_rand(0, ($dk - $atkflux)), 0);
+        $atkflux = (int) round(r_rand(0, $dk), 0);
+        $defflux = (int) round(r_rand(0, ($dk - $atkflux)), 0);
         $hpflux = ($dk - ($atkflux + $defflux)) * 5;
         $badguy['creatureattack'] += $atkflux;
         $badguy['creaturedefense'] += $defflux;
@@ -212,8 +212,8 @@ class Outcomes
             $base = 30 - min(20, round(sqrt((int)$session['user']['dragonkills']) / 2));
             $base /= 1000;
             $bonus = 1 + $base * ($atkflux + $defflux) + .001 * $hpflux;
-            $badguy['creaturegold'] = round((int)$badguy['creaturegold'] * $bonus, 0);
-            $badguy['creatureexp'] = round((int)$badguy['creatureexp'] * $bonus, 0);
+            $badguy['creaturegold'] = (int) round((int) $badguy['creaturegold'] * $bonus, 0);
+            $badguy['creatureexp'] = (int) round((int) $badguy['creatureexp'] * $bonus, 0);
         }
         $badguy = modulehook('creatureencounter', $badguy);
         debug("DEBUG: $dk modification points total.");

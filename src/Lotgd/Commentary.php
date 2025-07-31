@@ -25,18 +25,18 @@ class Commentary
         tlschema('commentary');
         self::$comsecs['village'] = sprintf_translate('%s Square', $vname);
         if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
-            self::$comsecs['superuser'] = translate_inline('Grotto');
+            self::$comsecs['superuser'] = Translator::translateInline('Grotto');
         }
-        self::$comsecs['shade'] = translate_inline('Land of the Shades');
-        self::$comsecs['grassyfield'] = translate_inline('Grassy Field');
+        self::$comsecs['shade'] = Translator::translateInline('Land of the Shades');
+        self::$comsecs['grassyfield'] = Translator::translateInline('Grassy Field');
         self::$comsecs['inn'] = "$iname";
-        self::$comsecs['motd'] = translate_inline('MotD');
-        self::$comsecs['veterans'] = translate_inline('Veterans Club');
-        self::$comsecs['hunterlodge'] = translate_inline("Hunter's Lodge");
-        self::$comsecs['gardens'] = translate_inline('Gardens');
-        self::$comsecs['waiting'] = translate_inline('Clan Hall Waiting Area');
+        self::$comsecs['motd'] = Translator::translateInline('MotD');
+        self::$comsecs['veterans'] = Translator::translateInline('Veterans Club');
+        self::$comsecs['hunterlodge'] = Translator::translateInline("Hunter's Lodge");
+        self::$comsecs['gardens'] = Translator::translateInline('Gardens');
+        self::$comsecs['waiting'] = Translator::translateInline('Clan Hall Waiting Area');
         if (getsetting('betaperplayer', 1) == 1 && @file_exists('pavilion.php')) {
-            self::$comsecs['beta'] = translate_inline('Pavilion');
+            self::$comsecs['beta'] = Translator::translateInline('Pavilion');
         }
         tlschema();
         self::$comsecs = modulehook('moderate', self::$comsecs);
@@ -147,7 +147,7 @@ class Commentary
             $commentary = $args['commentline'];
             $talkline = $args['commenttalk'];
             tlschema($schema);
-            $talkline = translate_inline($talkline);
+            $talkline = Translator::translateInline($talkline);
             tlschema();
             if (getsetting('soap', 1)) {
                 $commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'", "\\1 \\2", $commentary);
@@ -369,7 +369,7 @@ class Commentary
         $outputcomments = [];
         $sect = 'x';
 
-        $del = translate_inline('Del');
+        $del = Translator::translateInline('Del');
         $scriptname = mb_substr($scriptname, strrpos($scriptname, '/') + 1);
         $pos = strpos($real_request_uri, '?');
         $return = $scriptname . ($pos == false ? '' : mb_substr($real_request_uri, $pos));
@@ -433,11 +433,11 @@ class Commentary
             $jump = true;
         }
 
-        $firstu = translate_inline('&lt;&lt; First Unseen');
-        $prev = translate_inline('&lt; Previous');
-        $ref = translate_inline('Refresh');
-        $next = translate_inline('Next &gt;');
-        $lastu = translate_inline('Last Page &gt;&gt;');
+        $firstu = Translator::translateInline('&lt;&lt; First Unseen');
+        $prev = Translator::translateInline('&lt; Previous');
+        $ref = Translator::translateInline('Refresh');
+        $next = Translator::translateInline('Next &gt;');
+        $lastu = Translator::translateInline('Last Page &gt;&gt;');
         if ($rowcount >= $limit || $cid > 0) {
             if (isset($session['user']['recentcomments']) && $session['user']['recentcomments'] != '') {
                 $sql = 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
@@ -710,8 +710,8 @@ class Commentary
                 }
             }
         }
-        if (translate_inline($talkline, $schema) != "says") {
-                $tll = strlen(translate_inline($talkline, $schema)) + 11;
+        if (Translator::translateInline($talkline, $schema) != "says") {
+                $tll = strlen(Translator::translateInline($talkline, $schema)) + 11;
         } else {
             $tll = 0;
         }

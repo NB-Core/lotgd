@@ -13,6 +13,7 @@ require_once("lib/http.php");
 $skin = httppost('template');
 if ($skin !== '' && Template::isValidTemplate($skin)) {
         Template::setTemplateCookie($skin);
+        Template::prepareTemplate(true);
 }
 
 require_once("lib/villagenav.php");
@@ -80,7 +81,12 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
     }
 
 
-    $oldvalues = stripslashes(httppost('oldvalues'));
+    $oldvalues = httppost('oldvalues');
+    $oldvalues = html_entity_decode(
+        (string) $oldvalues,
+        ENT_COMPAT,
+        getsetting('charset', 'ISO-8859-1')
+    );
     $oldvalues = unserialize($oldvalues);
 
     $post = httpallpost();
@@ -294,7 +300,7 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
         "bio" => "Short Character Biography (255 chars max),string,255",
         "nojump" => "Don't jump to comment areas after refreshing or posting a comment?,bool",
     );
-    rawoutput("<script language='JavaScript' src='lib/md5.js'></script>");
+    rawoutput("<script src='lib/md5.js' defer></script>");
     $warn = translate_inline("Your password is too short.  It must be at least 4 characters long.");
     rawoutput("<script language='JavaScript'>
 	<!--
@@ -481,7 +487,7 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
     rawoutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
     $info = Forms::showForm($form, $prefs);
     rawoutput("<input type='hidden' value=\"" .
-            htmlentities(serialize($info), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" name='oldvalues'>");
+            htmlentities(serialize($info), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\" name='oldvalues'>");
 
     rawoutput("</form><br>");
     addnav("", "prefs.php?op=save");

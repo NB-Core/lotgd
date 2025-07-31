@@ -388,6 +388,18 @@ class Output
         return $this->nestedtags_eval;
     }
 
+    public function hasOpenFont(): bool
+    {
+        return !empty($this->nestedtags['font']);
+    }
+
+    public function closeOpenFont(): void
+    {
+        if ($this->hasOpenFont()) {
+            $this->appoencode('`0');
+        }
+    }
+
     public function getColormap()
     {
         return implode('', $this->colormap);

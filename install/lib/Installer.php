@@ -17,6 +17,13 @@ use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\Redirect;
 use Lotgd\Settings;
+use Lotgd\Doctrine\Bootstrap;
+use Doctrine\Migrations\DependencyFactory;
+use Doctrine\Migrations\Configuration\Migration\ConfigurationArray;
+use Doctrine\Migrations\Configuration\EntityManager\ExistingEntityManager;
+use Doctrine\Migrations\Version\Version;
+use Doctrine\Migrations\Version\ExecutionResult;
+use Symfony\Component\Console\Input\ArrayInput;
 
 class Installer
 {
@@ -356,19 +363,19 @@ class Installer
             $this->output->output("`iIf you are unsure of the answer to any of these questions, please check with your server's ISP, or read the documentation on MySQL`i`n");
 
             $this->output->output("`nWhat is the address of your database server?`n");
-            $this->output->rawOutput("<input name='DB_HOST' value=\"" . htmlentities($session['dbinfo']['DB_HOST'], ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_HOST' value=\"" . htmlentities((string)($session['dbinfo']['DB_HOST'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
             $this->tip("If you are running LoGD from the same server as your database, use 'localhost' here.  Otherwise, you will have to find out what the address is of your database server.  Your server's ISP might be able to provide this information.");
 
             $this->output->output("`nWhat is the username you use to connect to the database server?`n");
-            $this->output->rawOutput("<input name='DB_USER' value=\"" . htmlentities($session['dbinfo']['DB_USER'], ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_USER' value=\"" . htmlentities((string)($session['dbinfo']['DB_USER'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
             $this->tip("This username does not have to be the same one you use to connect to the database server for administrative reasons.  However, in order to use this installer, and to install some of the modules, the account you provide here must have the ability to create, modify, and drop tables.  If you want the installer to create a new database for LoGD, the account will also have to have the ability to create databases.  Finally, to run the game, this account must at a minimum be able to select, insert, update, and delete records, and be able to lock tables.  If you're uncertain, grant the account the following privileges: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, and ALTER.");
 
             $this->output->output("`nWhat is the password for this username?`n");
-            $this->output->rawOutput("<input name='DB_PASS' value=\"" . htmlentities($session['dbinfo']['DB_PASS'], ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_PASS' value=\"" . htmlentities((string)($session['dbinfo']['DB_PASS'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
             $this->tip("The password is necessary here in order for the game to successfully connect to the database server.  This information is not shared with anyone, it is simply used to configure the game.");
 
             $this->output->output("`nWhat is the name of the database you wish to install LoGD in?`n");
-            $this->output->rawOutput("<input name='DB_NAME' value=\"" . htmlentities($session['dbinfo']['DB_NAME'], ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_NAME' value=\"" . htmlentities((string)($session['dbinfo']['DB_NAME'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
             $this->tip("Database servers such as MySQL can control many different databases.  This is very useful if you have many different programs each needing their own database.  Each database has a unique name.  Provide the name you wish to use for LoGD in this field.");
 
             $this->output->output("`nDo you want to use datacaching (high load optimization)?`n");
@@ -379,7 +386,7 @@ class Installer
             $this->tip("Do you want to use a datacache for the sql queries? Many internal queries produce the same results and can be cached. This feature is *highly* recommended to use as the MySQL server is usually high frequented. When using in an environment where Safe Mode is enabled; this needs to be a path that has the same UID as the web server runs.");
 
             $this->output->output("`nIf yes, what is the path to the datacache directory?`n");
-            $this->output->rawOutput("<input name='DB_DATACACHEPATH' value=\"" . htmlentities($session['dbinfo']['DB_DATACACHEPATH'], ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_DATACACHEPATH' value=\"" . htmlentities((string)($session['dbinfo']['DB_DATACACHEPATH'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
             $this->tip("If you have chosen to use the datacache function, you have to enter a path here to where temporary files may be stored. Verify that you have the proper permission (777) set to this folder, else you will have lots of errors. Do NOT end with a slash / ... just enter the dir");
 
             /*
@@ -802,16 +809,17 @@ class Installer
             $this->output->output("`2I'm attempting to write a file named 'dbconnect.php' to your site root.");
             $this->output->output("This file tells LoGD how to connect to the database, and is necessary to continue installation.`n");
             $dbconnect =
-            "<?php\n"
-               . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
-            . "\$DB_HOST = \"{$session['dbinfo']['DB_HOST']}\";\n"
-            . "\$DB_USER = \"{$session['dbinfo']['DB_USER']}\";\n"
-            . "\$DB_PASS = \"{$session['dbinfo']['DB_PASS']}\";\n"
-            . "\$DB_NAME = \"{$session['dbinfo']['DB_NAME']}\";\n"
-            . "\$DB_PREFIX = \"{$session['dbinfo']['DB_PREFIX']}\";\n"
-            . "\$DB_USEDATACACHE = " . ((int)$session['dbinfo']['DB_USEDATACACHE']) . ";\n"
-            . "\$DB_DATACACHEPATH = \"{$session['dbinfo']['DB_DATACACHEPATH']}\";\n"
-            . "?>\n";
+                "<?php\n"
+                . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
+                . "return [\n"
+                . "    'DB_HOST' => '{$session['dbinfo']['DB_HOST']}',\n"
+                . "    'DB_USER' => '{$session['dbinfo']['DB_USER']}',\n"
+                . "    'DB_PASS' => '{$session['dbinfo']['DB_PASS']}',\n"
+                . "    'DB_NAME' => '{$session['dbinfo']['DB_NAME']}',\n"
+                . "    'DB_PREFIX' => '{$session['dbinfo']['DB_PREFIX']}',\n"
+                . "    'DB_USEDATACACHE' => " . ((int)$session['dbinfo']['DB_USEDATACACHE']) . ",\n"
+                . "    'DB_DATACACHEPATH' => '{$session['dbinfo']['DB_DATACACHEPATH']}',\n"
+                . "];\n";
                 $failure = false;
                 $dir = dirname('dbconnect.php');
             if (is_writable($dir)) {
@@ -875,15 +883,16 @@ class Installer
                 }
                 $dbconnect =
                     "<?php\n"
-                               . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
-                    . "$DB_HOST = \"{$DB_HOST}\";\n"
-                    . "$DB_USER = \"{$DB_USER}\";\n"
-                    . "$DB_PASS = \"{$DB_PASS}\";\n"
-                    . "$DB_NAME = \"{$DB_NAME}\";\n"
-                    . "$DB_PREFIX = \"{$DB_PREFIX}\";\n"
-                    . "$DB_USEDATACACHE = " . ((int)$DB_USEDATACACHE) . ";\n"
-                    . "$DB_DATACACHEPATH = \"" . addslashes($DB_DATACACHEPATH) . "\";\n"
-                    . "?>\n";
+                    . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
+                    . "return [\n"
+                    . "    'DB_HOST' => '{$DB_HOST}',\n"
+                    . "    'DB_USER' => '{$DB_USER}',\n"
+                    . "    'DB_PASS' => '{$DB_PASS}',\n"
+                    . "    'DB_NAME' => '{$DB_NAME}',\n"
+                    . "    'DB_PREFIX' => '{$DB_PREFIX}',\n"
+                    . "    'DB_USEDATACACHE' => " . ((int)$DB_USEDATACACHE) . ",\n"
+                    . "    'DB_DATACACHEPATH' => " . var_export($DB_DATACACHEPATH, true) . ",\n"
+                    . "];\n";
                 // Check if the file is writeable for us. If yes, we will change the file and notice the admin
                 // if not, they have to change the file themselves...
                         $failure = false;
@@ -1241,72 +1250,15 @@ class Installer
     public function stage9(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX, $settings;
-        require_once(__DIR__ . "/../data/installer_sqlstatements.php");
-        $this->output->output("`@`c`bBuilding the Tables`b`c");
-        $this->output->output("`2I'm now going to build the tables.");
-        $this->output->output("If this is an upgrade, your current tables will be brought in line with the current version.");
-        $this->output->output("If it's an install, the necessary tables will be placed in your database.`n");
-        $this->output->output("`n`@Table Synchronization Logs:`n");
-        $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-        if (empty($DB_PREFIX)) {
-            $DB_PREFIX = $session['dbinfo']['DB_PREFIX'] ?? '';
+        $this->output->output("`@`c`bRunning Database Migrations`b`c");
+        $this->output->output("`2The installer now uses Doctrine migrations to set up the database schema.`n");
+        try {
+            $this->runMigrations();
+            $this->output->output("`@Migrations executed successfully.`n");
+        } catch (\Throwable $e) {
+            $this->output->output("`\$Migration error:`n" . $e->getMessage());
+            return;
         }
-        $descriptors = $this->descriptors($DB_PREFIX);
-        require_once("lib/tabledescriptor.php");
-        foreach ($descriptors as $tablename => $descriptor) {
-            $this->output->output("`3Synchronizing table `#$tablename`3..`n");
-            synctable($tablename, $descriptor, true);
-            if ($session['dbinfo']['upgrade'] == false) {
-                //on a clean install, destroy all old data.
-                Database::query("TRUNCATE TABLE $tablename");
-            }
-        }
-        $this->output->rawOutput("</div>");
-        $this->output->output("`n`2The tables now have new fields and columns added, I'm going to begin importing data now.`n");
-        $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-        $dosql = false;
-        reset($sql_upgrade_statements);
-        foreach ($sql_upgrade_statements as $key => $val) {
-            if ($dosql) {
-                $this->output->output("`3Version `#%s`3: %s SQL statements...`n", $key, count($val));
-                if (count($val) > 0) {
-                    $this->output->output("`^Doing: `6");
-                    reset($val);
-                    $count = 0;
-                    foreach ($val as $id => $sql) {
-                        $onlyupgrade = 0;
-                        if (substr($sql, 0, 2) == "1|") {
-                            $sql = substr($sql, 2);
-                            $onlyupgrade = 1;
-                        }
-                        // Skip any statements that should only be run during
-                        // upgrades from previous versions.
-                        if (!$session['dbinfo']['upgrade'] && $onlyupgrade) {
-                            continue;
-                        }
-                        $count++;
-                        if ($count % 10 == 0 && $count != count($val)) {
-                            $this->output->outputNotl("`6$count...");
-                        }
-                        if (!Database::query($sql)) {
-                            $this->output->output(
-                                "`n`\$Error: `^'%s'`7 executing `#'%s'`7.`n",
-                                Database::error(),
-                                $sql
-                            );
-                        }
-                    }
-                    $this->output->output("$count.`n");
-                }
-            }
-            if (
-                $key == $session['fromversion'] ||
-                    $session['dbinfo']['upgrade'] == false
-            ) {
-                $dosql = true;
-            }
-        }
-        $this->output->rawOutput("</div>");
         /*
            $this->output->output("`n`2Now I'll install the recommended modules.");
            $this->output->output("Please note that these modules will be installed, but not activated.");
@@ -1369,13 +1321,6 @@ class Installer
             }
             $this->output->rawOutput("</div>");
         }
-        $this->output->output("`n`2Finally, I'll clean up old data.`n");
-        $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
-        foreach ($descriptors as $tablename => $descriptor) {
-            $this->output->output("`3Cleaning up `#$tablename`3...`n");
-            synctable($tablename, $descriptor);
-        }
-        $this->output->rawOutput("</div>");
         $this->output->output("`n`n`^You're ready for the next step.");
     }
 
@@ -1496,6 +1441,60 @@ class Installer
             $settings = new Settings('settings');
         }
         $settings->saveSetting($name, $value);
+    }
+
+    /**
+     * Execute Doctrine migrations defined in the configured migrations directory.
+     */
+    private function runMigrations(): void
+    {
+        global $session;
+        $config = require dirname(__DIR__, 2) . '/config/doctrine.php';
+
+        $em = Bootstrap::getEntityManager();
+
+        $dependencyFactory = DependencyFactory::fromEntityManager(
+            new ConfigurationArray(['migrations_paths' => $config['migrations_paths']]),
+            new ExistingEntityManager($em)
+        );
+
+        $storage = $dependencyFactory->getMetadataStorage();
+        $storage->ensureInitialized();
+
+        $executed = $storage->getExecutedMigrations();
+        $map = [
+            '0.9' => '20250724000000',
+            '0.9.1' => '20250724000001',
+            '0.9.7' => '20250724000002',
+            '0.9.8-prerelease.1' => '20250724000003',
+            '0.9.8-prerelease.6' => '20250724000004',
+            '0.9.8-prerelease.11' => '20250724000005',
+            '0.9.8-prerelease.12' => '20250724000006',
+            '0.9.8-prerelease.14a' => '20250724000007',
+            '1.1.0 Dragonprime Edition' => '20250724000008',
+            '1.1.1 Dragonprime Edition' => '20250724000009',
+            '1.1.1.0 Dragonprime Edition +nb' => '20250724000010',
+            '1.1.1.1 Dragonprime Edition +nb' => '20250724000011',
+            '1.2.6 +nb Edition' => '20250724000013',
+            '1.2.7 +nb Edition' => '20250724000014',
+        ];
+
+        $from = $session['fromversion'] ?? '-1';
+        foreach ($map as $ver => $id) {
+            if ($from === '-1' || version_compare($from, $ver, '<')) {
+                $v = new Version($id);
+                if (! $executed->hasMigration($v)) {
+                    $storage->complete(new ExecutionResult($v));
+                }
+            }
+        }
+
+        $aliasResolver = $dependencyFactory->getVersionAliasResolver();
+        $latestVersion = $aliasResolver->resolveVersionAlias('latest');
+        $plan = $dependencyFactory->getMigrationPlanCalculator()->getPlanUntilVersion($latestVersion);
+        $factory = $dependencyFactory->getConsoleInputMigratorConfigurationFactory();
+        $migratorConfig = $factory->getMigratorConfiguration(new ArrayInput([]));
+        $dependencyFactory->getMigrator()->migrate($plan, $migratorConfig);
     }
 
     /**

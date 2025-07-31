@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Cookies;
 
@@ -54,11 +55,11 @@ class CheckBan
             if (!isset($session['message'])) {
                 $session['message'] = '';
             }
-            $session['message'] .= translate_inline("`n`4You fall under a ban currently in place on this website:`n");
+            $session['message'] .= Translator::translateInline("`n`4You fall under a ban currently in place on this website:`n");
             while ($row = Database::fetchAssoc($result)) {
                 $session['message'] .= $row['banreason'] . "`n";
                 if ($row['banexpire'] == DATETIME_DATEMAX) {
-                    $session['message'] .= translate_inline("`\$This ban is permanent!`0");
+                    $session['message'] .= Translator::translateInline("`\$This ban is permanent!`0");
                 } else {
                     $leftover = strtotime($row['banexpire']) - strtotime('now');
                     $hours = floor($leftover / 3600);
@@ -73,7 +74,7 @@ class CheckBan
                 $session['message'] .= "`n";
                 $session['message'] .= sprintf_translate("`n`4The ban was issued by %s`^.`n", $row['banner']);
             }
-            $session['message'] .= translate_inline("`4If you wish, you may appeal your ban with the petition link.");
+            $session['message'] .= Translator::translateInline("`4If you wish, you may appeal your ban with the petition link.");
             tlschema();
             header('Location: index.php');
             exit();

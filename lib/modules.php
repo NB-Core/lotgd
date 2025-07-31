@@ -122,16 +122,28 @@ function get_all_module_prefs(?string $module = null, ?int $user = null): array
 
 function get_module_pref(string $name, ?string $module = null, ?int $user = null)
 {
+    // Breaking Possible Change: Old was "false" for $user, now it's null, I'll fix that for you here, but you need to fix it in your module_addeventhook
+    if ($user === false) {
+        $user = null;
+    }
     return HookHandler::getModulePref($name, $module, $user);
 }
 
 function set_module_pref(string $name, mixed $value, ?string $module = null, ?int $user = null): void
 {
+    // Breaking Possible Change: Old was "false" for $user, now it's null, I'll fix that for you here, but you need to fix it in your module_addeventhook
+    if ($user === false) {
+        $user = null;
+    }
     HookHandler::setModulePref($name, $value, $module, $user);
 }
 
 function increment_module_pref(string $name, int|float $value = 1, ?string $module = null, ?int $user = null): void
 {
+    // Breaking Possible Change: Old was "false" for $user, now it's null, I'll fix that for you here, but you need to fix it in your module_addeventhook
+    if ($user === false) {
+        $user = null;
+    }
     HookHandler::incrementModulePref($name, $value, $module, $user);
 }
 

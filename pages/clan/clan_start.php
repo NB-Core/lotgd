@@ -1,18 +1,24 @@
 <?php
 
-    page_header("Clan Hall for %s", full_sanitize($claninfo['clanname']));
-    addnav("Clan Options");
+declare(strict_types=1);
+
+use Lotgd\Page\Header;
+use Lotgd\Nav;
+use Lotgd\Sanitize;
+
+    Header::pageHeader("Clan Hall for %s", Sanitize::fullSanitize($claninfo['clanname']));
+    Nav::add("Clan Options");
 if ($op == "") {
-        require_once("pages/clan/clan_default.php");
+        require("pages/clan/clan_default.php");
 } elseif ($op == "motd") {
-        require_once("pages/clan/clan_motd.php");
+        require("pages/clan/clan_motd.php");
 } elseif ($op == "membership") {
-        require_once("pages/clan/clan_membership.php");
+        require("pages/clan/clan_membership.php");
 } elseif ($op == "withdrawconfirm") {
-    output("Are you sure you want to withdraw from your clan?");
-    addnav("Withdraw?");
-    addnav("No", "clan.php");
-    addnav("!?Yes", "clan.php?op=withdraw");
+    $output->output("Are you sure you want to withdraw from your clan?");
+    Nav::add("Withdraw?");
+    Nav::add("No", "clan.php");
+    Nav::add("!?Yes", "clan.php?op=withdraw");
 } elseif ($op == "withdraw") {
-    require_once("pages/clan/clan_withdraw.php");
+    require("pages/clan/clan_withdraw.php");
 }

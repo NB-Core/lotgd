@@ -3,17 +3,15 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Accounts;
-// mail ready
-// addnews ready
 use Lotgd\CheckBan;
 use Lotgd\Mail;
 use Lotgd\Serialization;
 use Lotgd\Cookies;
 
-// translator ready
 define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
 require_once("lib/http.php");
+// This must be after common.php for now
 use Lotgd\ServerFunctions;
 
 tlschema("login");
@@ -42,10 +40,32 @@ if ($name != "") {
         } else {
             $password = md5(md5($password));
         }
-        $sql = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
-        $result = db_query($sql);
-        if (db_num_rows($result) == 1) {
-            $session['user'] = db_fetch_assoc($result);
+        static $bootstrapExists = null;
+        if ($bootstrapExists === null) {
+            $bootstrapExists = class_exists('Lotgd\\Doctrine\\Bootstrap');
+        }
+
+        $acctrow = null;
+        if ($bootstrapExists) {
+            $em   = \Lotgd\Doctrine\Bootstrap::getEntityManager();
+            $sqlQuery = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
+            $result = $em->getConnection()->executeQuery($sqlQuery);
+            $acctrow = $result->fetchAssociative();
+            if ($acctrow) {
+                \Lotgd\Accounts::setAccountEntity($em->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
+            }
+        }
+
+        if (!$acctrow) {
+            $sql    = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
+            $result = db_query($sql);
+            if (db_num_rows($result) == 1) {
+                $acctrow = db_fetch_assoc($result);
+            }
+        }
+
+        if ($acctrow) {
+            $session['user'] = $acctrow;
             $baseaccount = $session['user'];
             CheckBan::check($session['user']['login']); //check if this account is banned
             CheckBan::check(); //check if this computer is banned
@@ -69,9 +89,9 @@ if ($name != "") {
                 $session['loggedin'] = true;
                 $session['laston'] = date("Y-m-d H:i:s");
                 $session['sentnotice'] = 0;
-                            $session['user']['dragonpoints'] = \Lotgd\Serialization::safeUnserialize($session['user']['dragonpoints']);
-                            $session['user']['prefs'] = \Lotgd\Serialization::safeUnserialize($session['user']['prefs']);
-                            $session['bufflist'] = \Lotgd\Serialization::safeUnserialize($session['user']['bufflist']);
+                $session['user']['dragonpoints'] = \Lotgd\Serialization::safeUnserialize($session['user']['dragonpoints']);
+                $session['user']['prefs'] = \Lotgd\Serialization::safeUnserialize($session['user']['prefs']);
+                $session['bufflist'] = \Lotgd\Serialization::safeUnserialize($session['user']['bufflist']);
                 if (!is_array($session['bufflist'])) {
                     $session['bufflist'] = array();
                 }
@@ -91,10 +111,17 @@ if ($name != "") {
                 modulehook("player-login");
 
                 if ($session['user']['loggedin']) {
-                                    $session['allowednavs'] = \Lotgd\Serialization::safeUnserialize($session['user']['allowednavs']);
                     $link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
 
                     $str = sprintf_translate("Sending you to %s, have a safe journey", $link);
+                    // Refresh activity timestamp when resuming a logged in session
+                    db_query(
+                        "UPDATE " . db_prefix('accounts')
+                        . " SET loggedin=1, laston='" . date('Y-m-d H:i:s')
+                        . "' WHERE acctid=" . $session['user']['acctid']
+                    );
+                    $session['allowednavs'] = [];
+                    \Lotgd\Nav::add('', $session['user']['restorepage']);
                     header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
                     echo $str;
@@ -109,8 +136,16 @@ if ($name != "") {
                     $session['user']['location'] = $vname;
                 }
 
-                if ($session['user']['restorepage'] > "") {
-                    redirect($session['user']['restorepage']);
+                if (!empty($session['user']['restorepage'])) {
+                    $link = "<a href='{$session['user']['restorepage']}'>{$session['user']['restorepage']}</a>";
+                    $msg  = sprintf_translate('Sending you to %s, have a safe journey', $link);
+                    //$session['allowednavs'] = unserialize($session['user']['allowednavs']);
+                    // Ensure the restore page is allowed in the next request
+                    //\Lotgd\Nav::add('', $session['user']['restorepage']);
+                    header("Location: {$session['user']['restorepage']}");
+                    Accounts::saveUser();
+                    echo $msg;
+                    exit();
                 } else {
                     if ($location == $iname) {
                         redirect("inn.php?op=strolldown");
@@ -181,15 +216,7 @@ if ($name != "") {
     }
 } elseif ($op == "logout") {
     if ($session['user']['loggedin']) {
-        $location = $session['user']['location'];
-        if ($location == $iname) {
-            $session['user']['restorepage'] = "inn.php?op=strolldown";
-        } elseif ($session['user']['superuser'] & (0xFFFFFFFF & ~ SU_DOESNT_GIVE_GROTTO)) {
-            $session['user']['restorepage'] = "superuser.php";
-        } else {
-            $session['user']['restorepage'] = "news.php";
-        }
-        $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0,restorepage='{$session['user']['restorepage']}' WHERE acctid = " . $session['user']['acctid'];
+        $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
         db_query($sql);
         invalidatedatacache("charlisthomepage");
         invalidatedatacache("list.php-warsonline");
@@ -201,6 +228,20 @@ if ($name != "") {
         // like the stafflist which need to invalidate the cache
         // when someone logs in or off can do so.
         modulehook("player-logout");
+
+        // Get allowed navs that are saved, not the ones in the user array, because they are empty (redirect clears)
+        $sql = "SELECT restorepage, allowednavs FROM " . db_prefix('accounts') . " WHERE acctid=" . $session['user']['acctid'];
+        $result = db_query($sql);
+        // Check if we got anything (we should)
+        if (db_num_rows($result) == 1) {
+            $row = db_fetch_assoc($result);
+            $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
+            $allowednavs[$row['restorepage']] = true;
+            // Write back to database
+            $serialized = addslashes(serialize($allowednavs));
+            $sql = "UPDATE " . db_prefix('accounts') . " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
+            db_query($sql);
+        }
     }
     $session = array();
     redirect("index.php");

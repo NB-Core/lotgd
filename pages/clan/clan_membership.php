@@ -1,143 +1,153 @@
 <?php
 
-        addnav("Clan Hall", "clan.php");
-        addnav("Clan Options");
-        output("`i`\$Clan Rank Structure:`n");
-        output("`2Rank >=Officer(20) can promote/demote people equal or lower than his rank.`n");
-        output("`2Rank >=Administrative(25) can promote/demote AND remove people equal or lower than his rank.`n`n");
-        output("`\$Exception: A founder can never be removed, a leader can by another leader.`i`0`n`n");
-        output("`4This is your current clan membership:`n");
-        $setrank = (int) httppost('setrank');
+declare(strict_types=1);
+
+use Lotgd\Nav;
+use Lotgd\Http;
+use Lotgd\MySQL\Database;
+use Lotgd\Modules;
+use Lotgd\DebugLog;
+use Lotgd\SafeEscape;
+use Lotgd\Translator;
+use Lotgd\Sanitize;
+
+        Nav::add("Clan Hall", "clan.php");
+        Nav::add("Clan Options");
+        $output->output("`i`\$Clan Rank Structure:`n");
+        $output->output("`2Rank >=Officer(20) can promote/demote people equal or lower than his rank.`n");
+        $output->output("`2Rank >=Administrative(25) can promote/demote AND remove people equal or lower than his rank.`n`n");
+        $output->output("`\$Exception: A founder can never be removed, a leader can by another leader.`i`0`n`n");
+        $output->output("`4This is your current clan membership:`n");
+        $setrank = (int) Http::post('setrank');
 if ($setrank === 0) {
-    $setrank = (int) httpget('setrank');
+    $setrank = (int) Http::get('setrank');
 }
-        $whoacctid = (int)httpget('whoacctid');
+        $whoacctid = (int)Http::get('whoacctid');
 if ($whoacctid > 0 && $setrank >= 0 && $setrank <= $session['user']['clanrank']) {
-    $sql = "SELECT name,login,clanrank FROM " . db_prefix("accounts") . " WHERE acctid=$whoacctid LIMIT 1";
-    $result = db_query($sql);
-    $row = db_fetch_assoc($result);
+    $sql = "SELECT name,login,clanrank FROM " . Database::prefix("accounts") . " WHERE acctid=$whoacctid LIMIT 1";
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
     $who = $row['login'];
     $whoname = $row['name'];
     if ($setrank > 0) {
-        $args = modulehook("clan-setrank", array("setrank" => $setrank, "login" => $who, "name" => $whoname, "acctid" => $whoacctid, "clanid" => $session['user']['clanid'], "oldrank" => $row['clanrank']));
+        $args = Modules::hook("clan-setrank", array("setrank" => $setrank, "login" => $who, "name" => $whoname, "acctid" => $whoacctid, "clanid" => $session['user']['clanid'], "oldrank" => $row['clanrank']));
         if (!(isset($args['handled']) && $args['handled'])) {
-            $sql = "UPDATE " . db_prefix("accounts") . " SET clanrank=GREATEST(0,least({$session['user']['clanrank']},$setrank)) WHERE acctid=$whoacctid";
-            db_query($sql);
-            debuglog("Player {$session['user']['name']} changed rank of {$whoname} to {$setrank}.", $whoacctid);
+            $sql = "UPDATE " . Database::prefix("accounts") . " SET clanrank=GREATEST(0,least({$session['user']['clanrank']},$setrank)) WHERE acctid=$whoacctid";
+            Database::query($sql);
+            DebugLog::add("Player {$session['user']['name']} changed rank of {$whoname} to {$setrank}.", $whoacctid);
         }
     }
 }
-        $remove = httpget('remove');
+        $remove = Http::get('remove');
 if ($remove > "") {
-    $sql = "SELECT name,login,clanrank FROM " . db_prefix("accounts") . " WHERE acctid='$remove'";
-    $row = db_fetch_assoc(db_query($sql));
-    $args = modulehook("clan-setrank", array("setrank" => 0, "login" => $row['login'], "name" => $row['name'], "acctid" => $remove, "clanid" => $session['user']['clanid'], "oldrank" => $row['clanrank']));
-    $sql = "UPDATE " . db_prefix("accounts") . " SET clanrank=" . CLAN_APPLICANT . ",clanid=0,clanjoindate='" . DATETIME_DATEMIN . "' WHERE acctid='$remove' AND clanrank<={$session['user']['clanrank']}";
-    db_query($sql);
-    debuglog("Player {$session['user']['name']} removed player {$row['login']} from {$claninfo['clanname']}.", $remove);
+    $sql = "SELECT name,login,clanrank FROM " . Database::prefix("accounts") . " WHERE acctid='$remove'";
+    $row = Database::fetchAssoc(Database::query($sql));
+    $args = Modules::hook("clan-setrank", array("setrank" => 0, "login" => $row['login'], "name" => $row['name'], "acctid" => $remove, "clanid" => $session['user']['clanid'], "oldrank" => $row['clanrank']));
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET clanrank=" . CLAN_APPLICANT . ",clanid=0,clanjoindate='" . DATETIME_DATEMIN . "' WHERE acctid='$remove' AND clanrank<={$session['user']['clanrank']}";
+    Database::query($sql);
+    DebugLog::add("Player {$session['user']['name']} removed player {$row['login']} from {$claninfo['clanname']}.", $remove);
     //delete unread application emails from this user.
     //breaks if the applicant has had their name changed via
     //dragon kill, superuser edit, or lodge color change
-    require_once("lib/safeescape.php");
-    $subj = safeescape(serialize(array($apply_short, $row['name'])));
-    $sql = "DELETE FROM " . db_prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='$subj'";
-    db_query($sql);
+    $subj = SafeEscape::escape(serialize(array($apply_short, $row['name'])));
+    $sql = "DELETE FROM " . Database::prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='$subj'";
+    Database::query($sql);
 }
-        $sql = "SELECT name,login,acctid,clanrank,laston,clanjoindate,dragonkills,level FROM " . db_prefix("accounts") . " WHERE clanid={$claninfo['clanid']} ORDER BY clanrank DESC ,dragonkills DESC,level DESC,clanjoindate";
-        $result = db_query($sql);
-        rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-        $rank = translate_inline("Rank");
-        $name = translate_inline("Name");
-        $lev = translate_inline("Level");
-        $dk = translate_inline("Dragon Kills");
-        $jd = translate_inline("Join Date");
-        $lo = translate_inline("Last On");
-        $ops = translate_inline("Operations");
-        $promote = translate_inline("Promote");
-        $demote = translate_inline("Demote");
-        $stepdown = translate_inline("`\$Step down as founder");
-        $remove = translate_inline("Remove From Clan");
-        $submit = translate_inline("Set Rank");
-        $confirm = translate_inline("Are you sure you wish to remove this member from your clan?");
-        rawoutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$lev</td><td>$dk</td><td>$jd</td><td>$lo</td><td>$ops</td></tr>", true);
+        $sql = "SELECT name,login,acctid,clanrank,laston,clanjoindate,dragonkills,level FROM " . Database::prefix("accounts") . " WHERE clanid={$claninfo['clanid']} ORDER BY clanrank DESC ,dragonkills DESC,level DESC,clanjoindate";
+        $result = Database::query($sql);
+        $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
+        $rank = Translator::translateInline("Rank");
+        $name = Translator::translateInline("Name");
+        $lev = Translator::translateInline("Level");
+        $dk = Translator::translateInline("Dragon Kills");
+        $jd = Translator::translateInline("Join Date");
+        $lo = Translator::translateInline("Last On");
+        $ops = Translator::translateInline("Operations");
+        $promote = Translator::translateInline("Promote");
+        $demote = Translator::translateInline("Demote");
+        $stepdown = Translator::translateInline("`\$Step down as founder");
+        $remove = Translator::translateInline("Remove From Clan");
+        $submit = Translator::translateInline("Set Rank");
+        $confirm = Translator::translateInline("Are you sure you wish to remove this member from your clan?");
+        $output->rawOutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$lev</td><td>$dk</td><td>$jd</td><td>$lo</td><td>$ops</td></tr>", true);
         $i = false;
         $tot = 0;
-                require_once("pages/clan/func.php");
+                require("pages/clan/func.php");
         $validranks = array_intersect_key($ranks, range(0, $session['user']['clanrank']));
-while ($row = db_fetch_assoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $i = !$i;
     $list = '';
     foreach ($validranks as $key => $value) {
         if ($key > $session['user']['clanrank'] || $key == CLAN_FOUNDER) {
             continue;
         }
-        $list .= "<option value='$key' " . ($row['clanrank'] == $key ? 'selected ' : '') . ">" . sanitize($value) . "</option>";
+        $list .= "<option value='$key' " . ($row['clanrank'] == $key ? 'selected ' : '') . ">" . Sanitize::sanitize($value) . "</option>";
     }
     $tot += $row['dragonkills'];
-    rawoutput("<tr class='" . ($i ? "trlight" : "trdark") . "'>");
-    rawoutput("<td>");
+    $output->rawOutput("<tr class='" . ($i ? "trlight" : "trdark") . "'>");
+    $output->rawOutput("<td>");
     if (isset($ranks[$row['clanrank']])) {
-        output_notl($ranks[$row['clanrank']]);
+        $output->outputNotl($ranks[$row['clanrank']]);
     } else {
-        output("-unset clan rank-");
+        $output->output("-unset clan rank-");
     }
-    rawoutput("</td><td>");
+    $output->rawOutput("</td><td>");
     $link = "bio.php?char=" . $row['acctid'] . "&ret=" . urlencode($_SERVER['REQUEST_URI']);
-    rawoutput("<a href='$link'>", true);
-    addnav("", $link);
-    output_notl("`&%s`0", $row['name']);
-    rawoutput("</a>");
-    rawoutput("</td><td align='center'>");
-    output_notl("`^%s`0", $row['level']);
-    rawoutput("</td><td align='center'>");
-    output_notl("`\$%s`0", $row['dragonkills']);
-    rawoutput("</td><td>");
-    output_notl("`3%s`0", $row['clanjoindate']);
-    rawoutput("</td><td>");
-    output_notl("`#%s`0", reltime(strtotime($row['laston'])));
-    rawoutput("</td>");
+    $output->rawOutput("<a href='$link'>", true);
+    Nav::add("", $link);
+    $output->outputNotl("`&%s`0", $row['name']);
+    $output->rawOutput("</a>");
+    $output->rawOutput("</td><td align='center'>");
+    $output->outputNotl("`^%s`0", $row['level']);
+    $output->rawOutput("</td><td align='center'>");
+    $output->outputNotl("`\$%s`0", $row['dragonkills']);
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("`3%s`0", $row['clanjoindate']);
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("`#%s`0", reltime(strtotime($row['laston'])));
+    $output->rawOutput("</td>");
     if ($session['user']['clanrank'] >= CLAN_OFFICER && $row['clanrank'] <= $session['user']['clanrank']) {
-        rawoutput("<td nowrap>");
+        $output->rawOutput("<td nowrap>");
         /*if ($row['clanrank']<$session['user']['clanrank'] && $row['clanrank']<CLAN_FOUNDER){
-            rawoutput("[ <a href='clan.php?op=membership&setrank=".clan_nextrank($ranks,$row['clanrank'])."&who=".rawurlencode($row['login'])."&whoname=".rawurlencode($row['name'])."&whoacctid=".$row['acctid']."'>$promote</a> | ");
-            addnav("","clan.php?op=membership&setrank=".clan_nextrank($ranks,$row['clanrank'])."&who=".rawurlencode($row['login'])."&whoname=".rawurlencode($row['name'])."&whoacctid=".$row['acctid']);
+            $output->rawOutput("[ <a href='clan.php?op=membership&setrank=".clan_nextrank($ranks,$row['clanrank'])."&who=".rawurlencode($row['login'])."&whoname=".rawurlencode($row['name'])."&whoacctid=".$row['acctid']."'>$promote</a> | ");
+            Nav::add("","clan.php?op=membership&setrank=".clan_nextrank($ranks,$row['clanrank'])."&who=".rawurlencode($row['login'])."&whoname=".rawurlencode($row['name'])."&whoacctid=".$row['acctid']);
         }else{
-            output_notl("[ `)%s`0 | ", $promote);
+            $output->outputNotl("[ `)%s`0 | ", $promote);
         }
         if ($row['clanrank']<=$session['user']['clanrank'] && $row['clanrank']>CLAN_APPLICANT && $row['login']!=$session['user']['login'] && clan_previousrank($ranks,$row['clanrank']) > 0){
-            rawoutput("<a href='clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']."'>$demote</a> | ");
-            addnav("","clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']);
+            $output->rawOutput("<a href='clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']."'>$demote</a> | ");
+            Nav::add("","clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']);
         }elseif ($row['clanrank']==CLAN_FOUNDER && $row['clanrank']>CLAN_APPLICANT && $row['login']==$session['user']['login']){
-            output_notl("<a href='clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']."'>$stepdown</a> | ",true);
-            addnav("","clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']);
+            $output->outputNotl("<a href='clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']."'>$stepdown</a> | ",true);
+            Nav::add("","clan.php?op=membership&setrank=".clan_previousrank($ranks,$row['clanrank'])."&whoacctid=".$row['acctid']);
         } else {
-            output_notl("`)%s`0 | ", $demote);
+            $output->outputNotl("`)%s`0 | ", $demote);
         }*/
         //new promote/demote system
         if ($row['clanrank'] == CLAN_FOUNDER && $row['login'] == $session['user']['login']) {
-            $conf = translate_inline("Are you really sure to step down as founder? You can NEVER rise again to that rank!");
-            output_notl("<form action='clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid'] . "' METHOD='POST'><input type='submit' class='button' onClick='return confirm(\"$conf\");' value='" . sanitize($stepdown) . "'></form> | ", true);
-            addnav("", "clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid']);
+            $conf = Translator::translateInline("Are you really sure to step down as founder? You can NEVER rise again to that rank!");
+            $output->outputNotl("<form action='clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid'] . "' METHOD='POST'><input type='submit' class='button' onClick='return confirm(\"$conf\");' value='" . Sanitize::sanitize($stepdown) . "'></form> | ", true);
+            Nav::add("", "clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid']);
         } elseif ($row['clanrank'] != CLAN_FOUNDER) {
-            rawoutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'><select name='setrank'>");
-            rawoutput($list);
-            rawoutput("</select>");
-            rawoutput("<input type='submit' class='button' value='$submit'></form>");
-            addnav('', "clan.php?op=membership&whoacctid={$row['acctid']}");
+            $output->rawOutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'><select name='setrank'>");
+            $output->rawOutput($list);
+            $output->rawOutput("</select>");
+            $output->rawOutput("<input type='submit' class='button' value='$submit'></form>");
+            Nav::add('', "clan.php?op=membership&whoacctid={$row['acctid']}");
         }
         if ($row['clanrank'] <= $session['user']['clanrank'] && $row['login'] != $session['user']['login'] && $row['clanrank'] < CLAN_FOUNDER && $session['user']['clanrank'] >= CLAN_ADMINISTRATIVE) {
-            rawoutput("[<a href='clan.php?op=membership&remove=" . $row['acctid'] . "' onClick=\"return confirm('$confirm');\"> $remove</a> ]");
-            addnav('', "clan.php?op=membership&remove=" . $row['acctid']);
+            $output->rawOutput("[<a href='clan.php?op=membership&remove=" . $row['acctid'] . "' onClick=\"return confirm('$confirm');\"> $remove</a> ]");
+            Nav::add('', "clan.php?op=membership&remove=" . $row['acctid']);
         } else {
-            output_notl("`2[ `)%s`2 ]", $remove);
+            $output->outputNotl("`2[ `)%s`2 ]", $remove);
         }
-        rawoutput('</td>');
+        $output->rawOutput('</td>');
     } else {
-        rawoutput("<td>");
-        output("None");
-        rawoutput("</td>");
+        $output->rawOutput("<td>");
+        $output->output("None");
+        $output->rawOutput("</td>");
     }
-    rawoutput('</tr>');
+    $output->rawOutput('</tr>');
 }
-        rawoutput("</table>");
-        output("`n`n`^This clan has a total of `\$%s`^ dragon kills.", $tot);
+        $output->rawOutput("</table>");
+        $output->output("`n`n`^This clan has a total of `\$%s`^ dragon kills.", $tot);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
 use Lotgd\Settings;
 
 class DateTime
@@ -33,7 +34,7 @@ class DateTime
         $s = (int)$x;
         if ($short) {
             $array = ['d' => 'd', 'h' => 'h', 'm' => 'm', 's' => 's'];
-            $array = translate_inline($array, 'datetime');
+            $array = Translator::translateInline($array, 'datetime');
             if ($d > 0) {
                 $o = $d . $array['d'] . ($h > 0 ? $h . $array['h'] : '');
             } elseif ($h > 0) {
@@ -54,7 +55,7 @@ class DateTime
                 'second' => 'second',
                 'seconds' => 'second',
             ];
-            $array = translate_inline($array, 'datetime');
+            $array = Translator::translateInline($array, 'datetime');
             if ($d > 0) {
                 $o = "$d " . ($d > 1 ? $array['days'] : $array['day']) . ($h > 0 ? ", $h " . ($h > 1 ? $array['hours'] : $array['hour']) : '');
             } elseif ($h > 0) {
@@ -73,13 +74,13 @@ class DateTime
         $laston = round((strtotime('now') - strtotime($indate)) / 86400, 0) . ' days';
         tlschema('datetime');
         if (substr($laston, 0, 2) == '1 ') {
-            $laston = translate_inline('1 day');
+            $laston = Translator::translateInline('1 day');
         } elseif (date('Y-m-d', strtotime($laston)) == date('Y-m-d')) {
-            $laston = translate_inline('Today');
+            $laston = Translator::translateInline('Today');
         } elseif (date('Y-m-d', strtotime($laston)) == date('Y-m-d', strtotime('-1 day'))) {
-            $laston = translate_inline('Yesterday');
+            $laston = Translator::translateInline('Yesterday');
         } elseif (strpos($indate, DATETIME_DATEMIN) !== false) {
-            $laston = translate_inline('Never');
+            $laston = Translator::translateInline('Never');
         } else {
             $laston = sprintf_translate('%s days', round((strtotime('now') - strtotime($indate)) / 86400, 0));
             rawoutput(tlbutton_clear());

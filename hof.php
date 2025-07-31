@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // translator ready
 // addnews ready
 // mail ready
@@ -7,44 +9,50 @@
 // New Hall of Fame features by anpera
 // http://www.anpera.net/forum/viewforum.php?f=27
 
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Nav;
+use Lotgd\DateTime;
+use Lotgd\MySQL\Database;
+
 require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/villagenav.php");
 
 tlschema("hof");
 
 $superusermask = SU_HIDE_FROM_LEADERBOARD;
 $standardwhere = "(locked=0 AND (superuser & $superusermask) = 0)";
 
-page_header("Hall of Fame");
-checkday();
+Header::pageHeader("Hall of Fame");
+DateTime::checkDay();
 
-addnav("Navigation");
-villagenav();
+Nav::add("Navigation");
+VillageNav::render();
 
 $playersperpage = 50;
 
-$op = httpget('op');
+$op = Http::get('op');
 if ($op == "") {
     $op = "kills";
 }
-$subop = httpget('subop');
+$subop = Http::get('subop');
 if ($subop == "") {
     $subop = "most";
 }
 
-$sql = "SELECT count(acctid) AS c FROM " . db_prefix("accounts") . " WHERE $standardwhere";
+$sql = "SELECT count(acctid) AS c FROM " . Database::prefix("accounts") . " WHERE $standardwhere";
 $extra = "";
 if ($op == "kills") {
     $extra = " AND dragonkills > 0";
 } elseif ($op == "days") {
     $extra = " AND dragonkills > 0 AND bestdragonage > 0";
 }
-$result = db_query($sql . $extra);
-$row = db_fetch_assoc($result);
+$result = Database::query($sql . $extra);
+$row = Database::fetchAssoc($result);
 $totalplayers = $row['c'];
 
-$page = (int)httpget('page');
+$page = (int) Http::get('page');
 if ($page == 0) {
     $page = 1;
 }
@@ -58,29 +66,29 @@ $to = min($pageoffset + $playersperpage, $totalplayers);
 $limit = "$pageoffset,$playersperpage";
 $me = ''; //query at the end
 
-addnav("Warrior Rankings");
-addnav("Dragon Kills", "hof.php?op=kills&subop=$subop&page=1");
-addnav("Gold", "hof.php?op=money&subop=$subop&page=1");
-addnav("Gems", "hof.php?op=gems&subop=$subop&page=1");
-addnav("Charm", "hof.php?op=charm&subop=$subop&page=1");
-addnav("Toughness", "hof.php?op=tough&subop=$subop&page=1");
-addnav("Resurrections", "hof.php?op=resurrects&subop=$subop&page=1");
-addnav("Dragon Kill Speed", "hof.php?op=days&subop=$subop&page=1");
-addnav("Sorting");
-addnav("Best", "hof.php?op=$op&subop=most&page=$page");
-addnav("Worst", "hof.php?op=$op&subop=least&page=$page");
-addnav("Other Stats");
+Nav::add("Warrior Rankings");
+Nav::add("Dragon Kills", "hof.php?op=kills&subop=$subop&page=1");
+Nav::add("Gold", "hof.php?op=money&subop=$subop&page=1");
+Nav::add("Gems", "hof.php?op=gems&subop=$subop&page=1");
+Nav::add("Charm", "hof.php?op=charm&subop=$subop&page=1");
+Nav::add("Toughness", "hof.php?op=tough&subop=$subop&page=1");
+Nav::add("Resurrections", "hof.php?op=resurrects&subop=$subop&page=1");
+Nav::add("Dragon Kill Speed", "hof.php?op=days&subop=$subop&page=1");
+Nav::add("Sorting");
+Nav::add("Best", "hof.php?op=$op&subop=most&page=$page");
+Nav::add("Worst", "hof.php?op=$op&subop=least&page=$page");
+Nav::add("Other Stats");
 modulehook("hof-add", array());
 if ($totalplayers > $playersperpage) {
-    addnav("Pages");
+    Nav::add("Pages");
     for ($i = 0; $i < $totalplayers; $i += $playersperpage) {
         $pnum = ($i / $playersperpage + 1);
         $min = ($i + 1);
         $max = min($i + $playersperpage, $totalplayers);
         if ($page == $pnum) {
-            addnav(array("`b`#Page %s`0 (%s-%s)`b", $pnum, $min, $max), "hof.php?op=$op&subop=$subop&page=$pnum");
+            Nav::add(array("`b`#Page %s`0 (%s-%s)`b", $pnum, $min, $max), "hof.php?op=$op&subop=$subop&page=$pnum");
         } else {
-            addnav(array("Page %s (%s-%s)", $pnum, $min, $max), "hof.php?op=$op&subop=$subop&page=$pnum");
+            Nav::add(array("Page %s (%s-%s)", $pnum, $min, $max), "hof.php?op=$op&subop=$subop&page=$pnum");
         }
     }
 }
@@ -116,32 +124,32 @@ function display_table(
     $name = translate_inline("Name");
 
     if ($totalplayers > $playersperpage) {
-        output("`c`b`^%s`0`b `7(Page %s: %s-%s of %s)`0`c`n", $title, $page, $from, $to, $totalplayers);
+        $output->output("`c`b`^%s`0`b `7(Page %s: %s-%s of %s)`0`c`n", $title, $page, $from, $to, $totalplayers);
     } else {
-        output("`c`b`^%s`0`b`c`n", $title);
+        $output->output("`c`b`^%s`0`b`c`n", $title);
     }
-    rawoutput("<table cellspacing='0' cellpadding='2' align='center'>");
-    rawoutput("<tr class='trhead'>");
-    output_notl("<td>`b$rank`b</td><td>`b$name`b</td>", true);
+    $output->rawOutput("<table cellspacing='0' cellpadding='2' align='center'>");
+    $output->rawOutput("<tr class='trhead'>");
+    $output->outputNotl("<td>`b$rank`b</td><td>`b$name`b</td>", true);
     if ($data_header !== false) {
         for ($i = 0; $i < count($data_header); $i++) {
-            output_notl("<td>`b{$data_header[$i]}`b</td>", true);
+            $output->outputNotl("<td>`b{$data_header[$i]}`b</td>", true);
         }
     }
-    $result = db_query($sql);
-    if (db_num_rows($result) == 0) {
+    $result = Database::query($sql);
+    if (Database::numRows($result) == 0) {
         $size = ($data_header === false) ? 2 : 2 + count($data_header);
-        output_notl("<tr class='trlight'><td colspan='$size' align='center'>`&$none`0</td></tr>", true);
+        $output->outputNotl("<tr class='trlight'><td colspan='$size' align='center'>`&$none`0</td></tr>", true);
     } else {
         $i = -1;
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $i++;
             if ($row['name'] == $session['user']['name']) {
-                rawoutput("<tr class='hilight'>");
+                $output->rawOutput("<tr class='hilight'>");
             } else {
-                rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
+                $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
             }
-            output_notl("<td>%s</td><td>`&%s`0</td>", ($i + $from), $row['name'], true);
+            $output->outputNotl("<td>%s</td><td>`&%s`0</td>", ($i + $from), $row['name'], true);
             if ($data_header !== false) {
                 for ($j = 0; $j < count($data_header); $j++) {
                     $id = "data" . ($j + 1);
@@ -155,15 +163,15 @@ function display_table(
                     if ($tag !== false) {
                         $val = $val . " " . $tag[$j];
                     }
-                    output_notl("<td align='right'>%s</td>", $val, true);
+                    $output->outputNotl("<td align='right'>%s</td>", $val, true);
                 }
             }
-            rawoutput("</tr>");
+            $output->rawOutput("</tr>");
         }
     }
-    rawoutput("</table>");
+    $output->rawOutput("</table>");
     if ($foot !== false) {
-        output_notl("`n`c%s`c", $foot);
+        $output->outputNotl("`n`c%s`c", $foot);
     }
 }
 
@@ -199,12 +207,12 @@ if ($op == "money") {
 						(CAST(goldinbank as signed)+cast(gold as signed))
 						*(1+0.05*(rand())),$round_money
 						)) as sort1 
-		FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY sort1 $order, level $order, experience $order, acctid $order LIMIT $limit";
+                FROM " . Database::prefix("accounts") . " WHERE $standardwhere ORDER BY sort1 $order, level $order, experience $order, acctid $order LIMIT $limit";
     // for formatting, we need another query...
     $sql = "SELECT name,format(sort1,0) as data1 FROM ($sql) t";
-    $me = "SELECT count(acctid) AS count FROM " . db_prefix("accounts") . " WHERE $standardwhere 
-		AND round((CAST(goldinbank as signed)+cast(gold as signed))*(1+0.05*(rand())),$round_money) 
-		$meop " . ($session['user']['goldinbank'] + $session['user']['gold']);
+    $me = "SELECT count(acctid) AS count FROM " . Database::prefix("accounts") . " WHERE $standardwhere
+                AND round((CAST(goldinbank as signed)+cast(gold as signed))*(1+0.05*(rand())),$round_money)
+                $meop " . ($session['user']['goldinbank'] + $session['user']['gold']);
     //edward pointed out that a cast is necessary as signed+unsigned=boffo
 //  $sql = "SELECT name,(goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) AS data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY data1 $order, level $order, experience $order, acctid $order LIMIT $limit";
 //  $me = "SELECT count(acctid) AS count FROM ".db_prefix("accounts")." WHERE $standardwhere AND (goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) $meop ".($session['user']['goldinbank'] + $session['user']['gold']);
@@ -218,8 +226,8 @@ if ($op == "money") {
     $tags = array("gold");
     $table = array($title, $sql, false, $foot, $headers, $tags);
 } elseif ($op == "gems") {
-    $sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY gems $order, level $order, experience $order, acctid $order LIMIT $limit";
-    $me = "SELECT count(acctid) AS count FROM " . db_prefix("accounts") . " WHERE $standardwhere AND gems $meop {$session['user']['gems']}";
+    $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE $standardwhere ORDER BY gems $order, level $order, experience $order, acctid $order LIMIT $limit";
+    $me = "SELECT count(acctid) AS count FROM " . Database::prefix("accounts") . " WHERE $standardwhere AND gems $meop {$session['user']['gems']}";
     if ($subop == "least") {
         $adverb = "least";
     } else {
@@ -228,8 +236,8 @@ if ($op == "money") {
     $title = "The warriors with the $adverb gems in the land";
     $table = array($title, $sql);
 } elseif ($op == "charm") {
-    $sql = "SELECT name,$sexsel AS data1, $racesel AS data2 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY charm $order, level $order, experience $order, acctid $order LIMIT $limit";
-    $me = "SELECT count(acctid) AS count FROM " . db_prefix("accounts") . " WHERE $standardwhere AND charm $meop {$session['user']['charm']}";
+    $sql = "SELECT name,$sexsel AS data1, $racesel AS data2 FROM " . Database::prefix("accounts") . " WHERE $standardwhere ORDER BY charm $order, level $order, experience $order, acctid $order LIMIT $limit";
+    $me = "SELECT count(acctid) AS count FROM " . Database::prefix("accounts") . " WHERE $standardwhere AND charm $meop {$session['user']['charm']}";
     $adverb = "most beautiful";
     if ($subop == "least") {
         $adverb = "ugliest";
@@ -239,8 +247,8 @@ if ($op == "money") {
     $translate = array("data1" => 1, "data2" => 1);
     $table = array($title, $sql, false, false, $headers, false, $translate);
 } elseif ($op == "tough") {
-    $sql = "SELECT name,level AS data2 , $racesel as data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY maxhitpoints $order, level $order, experience $order, acctid $order LIMIT $limit";
-    $me = "SELECT count(acctid) AS count FROM " . db_prefix("accounts") . " WHERE $standardwhere AND maxhitpoints $meop {$session['user']['maxhitpoints']}";
+    $sql = "SELECT name,level AS data2 , $racesel as data1 FROM " . Database::prefix("accounts") . " WHERE $standardwhere ORDER BY maxhitpoints $order, level $order, experience $order, acctid $order LIMIT $limit";
+    $me = "SELECT count(acctid) AS count FROM " . Database::prefix("accounts") . " WHERE $standardwhere AND maxhitpoints $meop {$session['user']['maxhitpoints']}";
     $adverb = "toughest";
     if ($subop == "least") {
         $adverb = "wimpiest";
@@ -250,8 +258,8 @@ if ($op == "money") {
     $translate = array("data1" => 1);
     $table = array($title, $sql, false, false, $headers, false, $translate);
 } elseif ($op == "resurrects") {
-    $sql = "SELECT name,level AS data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY resurrections $order, level $order, experience $order, acctid $order LIMIT $limit";
-    $me = "SELECT count(acctid) AS count FROM " . db_prefix("accounts") . " WHERE $standardwhere AND resurrections $meop {$session['user']['resurrections']}";
+    $sql = "SELECT name,level AS data1 FROM " . Database::prefix("accounts") . " WHERE $standardwhere ORDER BY resurrections $order, level $order, experience $order, acctid $order LIMIT $limit";
+    $me = "SELECT count(acctid) AS count FROM " . Database::prefix("accounts") . " WHERE $standardwhere AND resurrections $meop {$session['user']['resurrections']}";
     $adverb = "most suicidal";
     if ($subop == "least") {
         $adverb = "least suicidal";
@@ -261,8 +269,8 @@ if ($op == "money") {
     $table = array($title, $sql, false, false, $headers, false);
 } elseif ($op == "days") {
     $unk = translate_inline("Unknown");
-    $sql = "SELECT name, IF(bestdragonage,bestdragonage,'$unk') AS data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere $extra ORDER BY bestdragonage $order, level $order, experience $order, acctid $order LIMIT $limit";
-    $me = "SELECT count(acctid) AS count FROM " . db_prefix("accounts") . " WHERE $standardwhere $extra AND bestdragonage $meop {$session['user']['bestdragonage']}";
+    $sql = "SELECT name, IF(bestdragonage,bestdragonage,'$unk') AS data1 FROM " . Database::prefix("accounts") . " WHERE $standardwhere $extra ORDER BY bestdragonage $order, level $order, experience $order, acctid $order LIMIT $limit";
+    $me = "SELECT count(acctid) AS count FROM " . Database::prefix("accounts") . " WHERE $standardwhere $extra AND bestdragonage $meop {$session['user']['bestdragonage']}";
     $adverb = "fastest";
     if ($subop == "least") {
         $adverb = "slowest";
@@ -273,9 +281,9 @@ if ($op == "money") {
     $table = array($title, $sql, $none, false, $headers, false);
 } else {
     $unk = translate_inline("Unknown");
-    $sql = "SELECT name,dragonkills AS data1,level AS data2,'&nbsp;' AS data3, IF(dragonage,dragonage,'$unk') AS data4, '&nbsp;' AS data5, IF(bestdragonage,bestdragonage,'$unk') AS data6 FROM " . db_prefix("accounts") . " WHERE $standardwhere $extra ORDER BY dragonkills $order,level $order,experience $order, acctid $order LIMIT $limit";
+    $sql = "SELECT name,dragonkills AS data1,level AS data2,'&nbsp;' AS data3, IF(dragonage,dragonage,'$unk') AS data4, '&nbsp;' AS data5, IF(bestdragonage,bestdragonage,'$unk') AS data6 FROM " . Database::prefix("accounts") . " WHERE $standardwhere $extra ORDER BY dragonkills $order,level $order,experience $order, acctid $order LIMIT $limit";
     if ($session['user']['dragonkills'] > 0) {
-        $me = "SELECT count(acctid) AS count FROM " . db_prefix("accounts") . " WHERE $standardwhere $extra AND dragonkills $meop {$session['user']['dragonkills']}";
+        $me = "SELECT count(acctid) AS count FROM " . Database::prefix("accounts") . " WHERE $standardwhere $extra AND dragonkills $meop {$session['user']['dragonkills']}";
     }
     $adverb = "most";
     if ($subop == "least") {
@@ -290,14 +298,14 @@ if ($op == "money") {
 if (isset($table) && is_array($table)) {
     call_user_func_array("display_table", $table);
     if ($me > "" && $totalplayers) {
-        $meresult = db_query($me);
-        $row = db_fetch_assoc($meresult);
+        $meresult = Database::query($me);
+        $row = Database::fetchAssoc($meresult);
         $pct = round(100 * $row['count'] / $totalplayers, 0);
         if ($pct < 1) {
             $pct = 1;
         }
-        output("`c`7You rank within around the top `&%s`7%% in this listing.`0`c", $pct);
+        $output->output("`c`7You rank within around the top `&%s`7%% in this listing.`0`c", $pct);
     }
 }
 
-page_footer();
+Footer::pageFooter();

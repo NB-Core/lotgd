@@ -32,4 +32,24 @@ final class TemplateHelperTest extends TestCase
     {
         $this->assertFalse(Template::isValidTemplate('nonexistent-template'));
     }
+
+    public function testDirectoriesWithoutConfigAreIgnored(): void
+    {
+        $base = dirname(__DIR__) . '/templates_twig';
+        $tempDir = $base . '/test_no_config';
+        $hiddenDir = $base . '/.git';
+
+        mkdir($tempDir);
+        mkdir($hiddenDir);
+
+        try {
+            $templates = Template::getAvailableTemplates();
+        } finally {
+            rmdir($tempDir);
+            rmdir($hiddenDir);
+        }
+
+        $this->assertArrayNotHasKey('twig:test_no_config', $templates);
+        $this->assertArrayNotHasKey('twig:.git', $templates);
+    }
 }

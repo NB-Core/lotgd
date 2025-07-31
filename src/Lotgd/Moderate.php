@@ -81,11 +81,11 @@ class Moderate
     {
         global $session;
 
-        $firstu = translate_inline('&lt;&lt; First Unseen');
-        $prev = translate_inline('&lt; Previous');
-        $ref = translate_inline('Refresh');
-        $next = translate_inline('Next &gt;');
-        $lastu = translate_inline('Last Page &gt;&gt;');
+        $firstu = Translator::translateInline('&lt;&lt; First Unseen');
+        $prev = Translator::translateInline('&lt; Previous');
+        $ref = Translator::translateInline('Refresh');
+        $next = Translator::translateInline('Next &gt;');
+        $lastu = Translator::translateInline('Last Page &gt;&gt;');
 
         if ($rowcount >= $limit || $cid > 0) {
             $sql = "SELECT count(commentid) AS c FROM " . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
@@ -276,8 +276,12 @@ class Moderate
                 $ft = substr($ft, 0, 3);
             }
 
-            $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
-            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+            if (!empty($row['comment'])) {
+                $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
+            }
+            if (!empty($row['name'])) {
+                $row['name'] = HolidayText::holidayize($row['name'], 'comment');
+            }
             if ($row['clanrank']) {
                 $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
             }
@@ -315,7 +319,7 @@ class Moderate
                 $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
             }
 
-            $session['user']['prefs']['timeoffset'] = round($session['user']['prefs']['timeoffset'], 1);
+            $session['user']['prefs']['timeoffset'] = round((float)$session['user']['prefs']['timeoffset'], 1);
 
             if (!array_key_exists('timestamp', $session['user']['prefs'])) {
                 $session['user']['prefs']['timestamp'] = 0;
@@ -354,7 +358,7 @@ class Moderate
             $moderating = true;
         }
 
-        $del = translate_inline('Del');
+        $del = Translator::translateInline('Del');
         $scriptname = substr($_SERVER['SCRIPT_NAME'], strrpos($_SERVER['SCRIPT_NAME'], '/') + 1);
         $pos = strpos($_SERVER['REQUEST_URI'], '?');
         $return = $scriptname . ($pos == false ? '' : substr($_SERVER['REQUEST_URI'], $pos));
@@ -397,11 +401,11 @@ class Moderate
         if ($moderating) {
             $scriptname = substr($_SERVER['SCRIPT_NAME'], strrpos($_SERVER['SCRIPT_NAME'], '/') + 1);
             addnav('', "$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']));
-            $mod_Del1 = htmlentities(translate_inline('Delete Checked Comments'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
-            $mod_Del2 = htmlentities(translate_inline('Delete Checked & Ban (3 days)'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
-            $mod_Del_confirm = addslashes(htmlentities(translate_inline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-            $mod_reason = translate_inline('Reason:');
-            $mod_reason_desc = htmlentities(translate_inline('Banned for comments you posted.'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+            $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+            $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+            $mod_Del_confirm = addslashes(htmlentities(Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+            $mod_reason = Translator::translateInline('Reason:');
+            $mod_reason_desc = htmlentities(Translator::translateInline('Banned for comments you posted.'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
 
             output_notl("<form action='$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']) . "' method='POST'>", true);
             output_notl("<input type='submit' class='button' value=\"$mod_Del1\">", true);

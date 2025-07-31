@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\PlayerFunctions;
@@ -154,8 +155,8 @@ class ExpireChars
             " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
         $result = Database::query($sql);
 
-        $subject = translate_inline(self::$settingsExtended->getSetting('expirationnoticesubject'));
-        $message = translate_inline(self::$settingsExtended->getSetting('expirationnoticetext'));
+        $subject = Translator::translateInline(self::$settingsExtended->getSetting('expirationnoticesubject'));
+        $message = Translator::translateInline(self::$settingsExtended->getSetting('expirationnoticetext'));
         $message = str_replace('{server}', $settings->getSetting('serverurl', 'http://nodomain.notd'), $message);
 
         $collector = [];

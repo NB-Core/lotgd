@@ -276,7 +276,7 @@ $setup = array(
     "Serverurl has moved to basic game setup. Enter it there please as it is now used for char expiration mails too!,note",
         "serverdesc" => "Server Description (75 chars max)",
         "meta_description" => "Default HTML meta description,text",
-        "logdnetserver" => "Master LoGDnet Server (default http://logdnet.logd.com/)",
+        "logdnetserver" => "Master LoGDnet Server (default http://logd.net/)",
     "curltimeout" => "How long we wait for responses from that server (in seconds),range,1,10,1|2",
 
     "Game day Setup,title",

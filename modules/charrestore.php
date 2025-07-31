@@ -9,11 +9,8 @@ declare(strict_types=1);
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\MySQL\Database;
-// translator ready
 use Lotgd\Forms;
-
-// addnews ready
-// mail ready
+use Lotgd\ErrorHandler;
 
 function charrestore_getmoduleinfo(): array
 {
@@ -217,7 +214,7 @@ function charrestore_dohook(string $hookname, array $args): array
                     $errno = E_USER_ERROR;
                     $errfile = "charrestore.php";
                     $errline = 169;
-                    logd_error_handler($errno, $errstr, $errfile, $errline);
+                    ErrorHandler::Register($errno, $errstr, $errfile, $errline);
                     //quit now, which is should anyways, this is a precaution, so we don't delete the data of the char
                     exit(0);
                 }

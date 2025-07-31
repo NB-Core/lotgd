@@ -580,6 +580,8 @@ class Nav
         }
         $extra = '';
         $ignoreuntil = '';
+        global $output;
+        $output->closeOpenFont();
         if ($link === false) {
             $text = HolidayText::holidayize($text, 'nav');
             $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhead', ['title' => appoencode($text, $priv)]);
@@ -704,6 +706,9 @@ class Nav
                     } else {
                         self::$quickkeys[$key] = "window.location='$link$extra'";
                     }
+                }
+                if (is_string($text)) {
+                    $text = preg_replace('/^`0+/', '', $text);
                 }
                 $n = Template::templateReplace('navitem', [
                     'text' => appoencode($text, $priv),
@@ -961,27 +966,23 @@ class Nav
      *
      * This method converts various representations of preference values into
      * a consistent string format. The following rules are applied:
-     * - `null`, an empty string, or `'off'` are normalized to `'off'`.
-     * - `0` or `'0'` are normalized to `'off'`.
-     * - `1` or `'1'` are normalized to `'asc'`.
-     * - Any other value is cast to a string and returned as-is.
+     * - `1`, `'1'` or `'asc'` return `'asc'`.
+     * - `'desc'` returns `'desc'`.
+     * - All other values return `'off'`.
      *
      * @param mixed $value The preference value to normalize. Can be `null`, a string, or a number.
      *
-     * @return string The normalized preference value: `'off'`, `'asc'`, or the string representation of the input.
+     * @return string The normalized preference value: `'off'`, `'asc'`, or `'desc'.
      */
     private static function normalizeOrder($value): string
     {
-        if ($value === null || $value === '' || $value === 'off') {
-            return 'off';
-        }
-        if ($value === 0 || $value === '0') {
-            return 'off';
-        }
-        if ($value === 1 || $value === '1') {
+        if (in_array($value, ['asc', 1, '1'], true)) {
             return 'asc';
         }
-        return (string) $value;
+        if ($value === 'desc') {
+            return 'desc';
+        }
+        return 'off';
     }
 
     /**

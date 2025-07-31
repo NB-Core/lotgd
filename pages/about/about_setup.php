@@ -1,11 +1,16 @@
 <?php
 
-use Lotgd\Forms;
+declare(strict_types=1);
 
-addnav("About LoGD");
-addnav("About LoGD", "about.php");
-addnav("Module Info", "about.php?op=listmodules");
-addnav("License Info", "about.php?op=license");
+use Lotgd\Forms;
+use Lotgd\Nav;
+use Lotgd\Modules\HookHandler;
+use Lotgd\DateTime;
+
+Nav::add("About LoGD");
+Nav::add("About LoGD", "about.php");
+Nav::add("Module Info", "about.php?op=listmodules");
+Nav::add("License Info", "about.php?op=license");
 $setup = array(
     "Game Setup,title",
     "pvp" => "Enable Slay Other Players,viewonly",
@@ -55,21 +60,21 @@ $useful = array(
     "nextnewday" => "Next new day,viewonly"
 );
 
-$secstonextday = secondstonextgameday($details);
+$secstonextday = DateTime::secondsToNextGameDay($details);
 $useful_vals = array(
     "dayduration" => round(($details['dayduration'] / 60 / 60), 0) . " hours",
-    "curgametime" => getgametime(),
+    "curgametime" => DateTime::getGameTime(),
     "curservertime" => date("Y-m-d h:i:s a"),
     "lastnewday" => date("h:i:s a", strtotime("-{$details['realsecssofartoday']} seconds")),
     "nextnewday" => date("h:i:s a", strtotime("+{$details['realsecstotomorrow']} seconds")) . " (" . date("H\\h i\\m s\\s", $secstonextday) . ")"
 );
 
-output("`@<h3>Settings for this game</h3>`n`n", true);
+$output->output("`@<h3>Settings for this game</h3>`n`n", true);
 
 $localsettings = $settings->getArray();
 
 $args = array('settings' => array(),'values' => array());
-$args = modulehook("showsettings", $args);
+$args = HookHandler::hook("showsettings", $args);
 $form = array_merge($setup, $args['settings']);
 $form = array_merge($form, $useful);
 $vals = array_merge($localsettings, $args['values']);

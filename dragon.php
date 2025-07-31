@@ -11,6 +11,7 @@ use Lotgd\PlayerFunctions;
 use Lotgd\Http;
 use Lotgd\Battle;
 use Lotgd\Names;
+use Lotgd\AddNews;
 
 tlschema("dragon");
 $battle = false;
@@ -172,9 +173,22 @@ if ($op == "") {
             array_key_exists($row['Field'], $nochange) &&
                 $nochange[$row['Field']]
         ) {
-        } else {
-            $session['user'][$row['Field']] = $row["Default"];
+            continue;
         }
+
+        $value = $row['Default'];
+        $type = strtolower($row['Type']);
+        $baseType = strtok($type, '(');
+
+        if (strpos($baseType, 'int') !== false) {
+            $value = (int) $value;
+        } elseif (in_array($baseType, ['float', 'double', 'decimal'])) {
+            $value = (float) $value;
+        } elseif ($baseType === 'tinyint' && $type === 'tinyint(1)') {
+            $value = (bool) $value;
+        }
+
+        $session['user'][$row['Field']] = $value;
     }
     $session['user']['gold'] = getsetting("newplayerstartgold", 50);
     $session['user']['location'] = getsetting('villagename', LOCATION_FIELDS);
@@ -215,7 +229,7 @@ if ($op == "") {
     }
 
     // Set the new title.
-        $newname = Names::change_player_title($newtitle);
+    $newname = Names::changePlayerTitle($newtitle);
     $session['user']['title'] = $newtitle;
     $session['user']['name'] = $newname;
 
@@ -243,7 +257,7 @@ if ($op == "") {
     // allow explanative text as well.
     modulehook("dragonkilltext");
 
-    $regname = get_player_basename();
+    $regname = Names::getPlayerBasename();
     //get the dragons name
     $badguys = @unserialize($badguys);
     $badguy = array("creaturename" => translate_inline("`@The Green Dragon`0"));

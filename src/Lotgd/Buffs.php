@@ -39,11 +39,16 @@ class Buffs
         foreach ($session['bufflist'] as $buffname => $buff) {
             if (!isset($buff['fields_calculated'])) {
                 foreach ($buff as $property => $value) {
-            // Sanitize if somebody uses int here
-                    $value = (string)$value;
+                    // Sanitize if somebody uses int here
+                    if (!is_array($value)) {
+                        $value = (string) $value;
+                    }
                     $origstring = $value;
-                    $value = preg_replace('/<([A-Za-z0-9]+)\\|([A-Za-z0-9]+)>/', "get_module_pref('\\2','\\1')", $value);
-                    $value = preg_replace('/<([A-Za-z0-9]+)>/', "\$session['user']['\\1']", $value);
+
+                    if (!is_array($value)) {
+                        $value = preg_replace('/<([A-Za-z0-9]+)\\|([A-Za-z0-9]+)>/', "get_module_pref('\\2','\\1')", $value);
+                        $value = preg_replace('/<([A-Za-z0-9]+)>/', "\$session['user']['\\1']", $value);
+                    }
 
                     if (!defined('OLDSU')) {
                         define('OLDSU', $session['user']['superuser']);
@@ -428,9 +433,9 @@ class Buffs
                 $session['user']['hitpoints'] += $hptoregen;
                 $hptoregen = abs($hptoregen);
                 if ($hptoregen == 0) {
-                    $msg = (isset($buff['effectnodmgmsg']) ? $buff['effectnodmgmsg'] : translate_inline('No damage, hosé'));
+                    $msg = (isset($buff['effectnodmgmsg']) ? $buff['effectnodmgmsg'] : Translator::translateInline('No damage, hosé'));
                 } else {
-                    $msg = (isset($buff['effectgmsg']) ? $buff['effectmsg'] : translate_inline('Tons of damage, hosé'));
+                    $msg = (isset($buff['effectgmsg']) ? $buff['effectmsg'] : Translator::translateInline('Tons of damage, hosé'));
                 }
 
                 if (is_array($msg)) {

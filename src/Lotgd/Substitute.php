@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
+
 /**
  * Helper to replace battle text variables with runtime values.
  */
@@ -37,7 +39,7 @@ class Substitute
             '{creatureweapon}',
         ];
         $replace = [
-            translate_inline($session['user']['sex'] ? 'her' : 'him', 'buffs'),
+            Translator::translateInline($session['user']['sex'] ? 'her' : 'him', 'buffs'),
             ($session['user']['sex'] ? 'she' : 'he'),
             ($session['user']['sex'] ? 'her' : 'his'),
             $session['user']['weapon'],

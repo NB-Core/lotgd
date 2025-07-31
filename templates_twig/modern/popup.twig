@@ -5,8 +5,8 @@
     <title>{{ title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
-    <link rel="stylesheet" href="{{ template_path }}/assets/style.css"/>
-    <link rel="stylesheet" href="/templates/common/colors.css"/>
+    <link rel="stylesheet" href="{{ (template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body bgcolor="#000000" text="#CCCCCC">

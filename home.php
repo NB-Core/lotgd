@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // translator ready
 use Lotgd\Forms;
 use Lotgd\Nav;
@@ -13,7 +15,10 @@ use Lotgd\Cookies;
 
 define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
-require_once("lib/http.php");
+
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+
 
 if (isset($_POST['template'])) {
         $skin = $_POST['template'];
@@ -36,9 +41,9 @@ if (!isset($session['message'])) {
 
 tlschema("home");
 
-$op = httpget('op');
+$op = Http::get('op');
 
-page_header();
+Header::pageHeader();
 output("`cWelcome to Legend of the Green Dragon, a browser based role playing game, based on Seth Able's Legend of the Red Dragon.`n");
 
 if (getsetting("homecurtime", 1)) {
@@ -75,19 +80,19 @@ if (getsetting("homenewestplayer", 1)) {
 }
 
 clearnav();
-addnav("New to LoGD?");
-addnav("Create a character", "create.php");
-addnav("Game Functions");
-addnav("Forgotten Password", "create.php?op=forgot");
-addnav("List Warriors", "list.php");
-addnav("Daily News", "news.php");
-addnav("Other Info");
-addnav("About LoGD", "about.php");
-addnav("Game Setup Info", "about.php?op=setup");
-addnav("LoGD Net", "logdnet.php?op=list");
-addnav("Legal");
+Nav::add("New to LoGD?");
+Nav::add("Create a character", "create.php");
+Nav::add("Game Functions");
+Nav::add("Forgotten Password", "create.php?op=forgot");
+Nav::add("List Warriors", "list.php");
+Nav::add("Daily News", "news.php");
+Nav::add("Other Info");
+Nav::add("About LoGD", "about.php");
+Nav::add("Game Setup Info", "about.php?op=setup");
+Nav::add("LoGD Net", "logdnet.php?op=list");
+Nav::add("Legal");
 if (getsetting('impressum', '') != '') {
-    addnav("Imprint", "about.php");
+    Nav::add("Imprint", "about.php");
 }
 
 modulehook("index", array());
@@ -117,7 +122,7 @@ if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0
     if (isset($session['message']) && $session['message'] > "") {
         output_notl("`b`\$%s`b`n", $session['message'], true);
     }
-    rawoutput("<script language='JavaScript' src='lib/md5.js'></script>");
+    rawoutput("<script src='lib/md5.js' defer></script>");
     rawoutput("<script language='JavaScript'>
 	<!--
 	function md5pass(){
@@ -139,7 +144,7 @@ if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0
         rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">" . templatereplace("login", $templateVars) . "</form>");
         output("Did you forget your password? Visit the <a href='create.php?op=forgot'>password reset page</a> to retrieve a new one!`n", true);
     output_notl("`c");
-    addnav("", "login.php");
+    Nav::add("", "login.php");
     modulehook("index-login", array());
 } else {
     output("`\$`bServer full!`b`n`^Please wait until some users have logged out.`n`n`0");
@@ -183,7 +188,7 @@ if (getsetting("homeskinselect", 1)) {
 }
 modulehook("index_bottom", array());
 
-page_footer();
+Footer::pageFooter();
 if ($op == "timeout") {
     session_unset();
     session_destroy(); // destroy if timeout

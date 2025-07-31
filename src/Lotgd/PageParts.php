@@ -450,7 +450,7 @@ class PageParts
         $row['seencount'] = (int)$row['seencount'];
         $row['notseen'] = (int)$row['notseen'];
         if ($row['notseen'] > 0) {
-            return sprintf(translate_inline("%s new mail(s)", "common"), $row['notseen']);
+            return sprintf(Translator::translateInline("%s new mail(s)", "common"), $row['notseen']);
         } else {
             return '';
         }
@@ -497,14 +497,14 @@ class PageParts
             $l = $settings->getSetting('defaultlanguage', 'en');
             $d = $settings->getSetting('serverdesc', 'Another LoGD Server');
             $e = $settings->getSetting('gameadminemail', 'postmaster@localhost.com');
-            $u = $settings->getSetting('logdnetserver', 'http://logdnet.logd.com/');
+            $u = $settings->getSetting('logdnetserver', 'http://lotgd.net/');
             if (!preg_match('/\/$/', $u)) {
                 $u = $u . '/';
                 $settings->saveSetting('logdnetserver', $u);
             }
 
             $v = $logd_version;
-            $c = rawurlencode($c);
+            $c = rawurlencode((string) $c);
             $a = rawurlencode($a);
             $l = rawurlencode($l);
             $d = rawurlencode($d);
@@ -731,6 +731,47 @@ class PageParts
             'header',
             ['headscript' => $markup]
         );
+    }
+
+    /**
+     * Generate the canonical link element for the current page.
+     */
+    public static function canonicalLink(): string
+    {
+        global $REQUEST_URI, $SCRIPT_NAME, $settings;
+
+        $serverUrl = isset($settings)
+            ? rtrim($settings->getSetting('serverurl', 'http://' . $_SERVER['HTTP_HOST']), '/')
+            : 'http://' . $_SERVER['HTTP_HOST'];
+
+        $uri = $REQUEST_URI ?? '';
+        if ($uri === '') {
+            $uri = $SCRIPT_NAME ?? '';
+        }
+
+        // Remove the session "c" parameter while keeping the rest intact
+        $parsedUrl = parse_url($uri);
+        if ($parsedUrl === false) {
+            // Handle the malformed URL case
+            $parsedUrl = [];
+        }
+        $queryString = $parsedUrl['query'] ?? '';
+        if (is_string($queryString)) {
+            parse_str($queryString, $queryParams);
+        } else {
+            $queryParams = [];
+        }
+        unset($queryParams['c']); // Remove the 'c' parameter
+        if (empty($queryParams)) {
+            unset($parsedUrl['query']);
+        } else {
+            $parsedUrl['query'] = http_build_query($queryParams);
+        }
+        $uri = ($parsedUrl['path'] ?? '') . (!empty($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '');
+
+        $page = ltrim($uri, '/');
+
+        return sprintf('<link rel="canonical" href="%s/%s" />', $serverUrl, $page);
     }
 
     /**

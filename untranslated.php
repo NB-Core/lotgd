@@ -1,7 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\MySQL\Database;
 
 // translator ready
 // addnews ready
@@ -14,147 +21,146 @@ define("OVERRIDE_FORCED_NAV", true);
 // Originally Written by Christian Rutsch
 // Slightly modified by JT Traub
 require_once("common.php");
-require_once("lib/http.php");
 
 SuAccess::check(SU_IS_TRANSLATOR);
 
 tlschema("untranslated");
 
-$op = httpget('op');
-page_header("Untranslated Texts");
+$op = Http::get('op');
+Header::pageHeader("Untranslated Texts");
 
 //chcek if he/she is allowed to edit that language
 if (!in_array($session['user']['prefs']['language'], explode(",", $session['user']['translatorlanguages']))) {
-    output("Sorry, please change your language to one you are allowed to translate.`n`n");
+    $output->output("Sorry, please change your language to one you are allowed to translate.`n`n");
     SuperuserNav::render();
-    page_footer();
+    Footer::pageFooter();
 }
 
 if ($op == "list") {
-    $mode = httpget('mode');
-    $namespace = httpget('ns');
+    $mode = Http::get('mode');
+    $namespace = Http::get('ns');
 
     if ($mode == "save") {
-        $intext = httppost('intext');
-        $outtext = httppost('outtext');
+        $intext = Http::post('intext');
+        $outtext = Http::post('outtext');
         if ($outtext <> "") {
             $login = $session['user']['login'];
             $language = $session['user']['prefs']['language'];
-            $sql = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$language','$namespace','$intext','$outtext','$login','$logd_version')";
-            db_query($sql);
-            $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
-            db_query($sql);
+            $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$language','$namespace','$intext','$outtext','$login','$logd_version')";
+            Database::query($sql);
+            $sql = "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
+            Database::query($sql);
         }
     }
 
     if ($mode == "edit") {
-        rawoutput("<form action='untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace) . "' method='post'>");
-        addnav("", "untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace));
+        $output->rawOutput("<form action='untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace) . "' method='post'>");
+        Nav::add("", "untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace));
     } else {
-        rawoutput("<form action='untranslated.php?op=list' method='get'>");
-        addnav("", "untranslated.php?op=list");
+        $output->rawOutput("<form action='untranslated.php?op=list' method='get'>");
+        Nav::add("", "untranslated.php?op=list");
     }
 
-    $sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' GROUP BY namespace ORDER BY namespace ASC";
-    $result = db_query($sql);
-    rawoutput("<input type='hidden' name='op' value='list'>");
-        rawoutput("<label for='ns'>");
-        output("Known Namespaces:");
-        rawoutput("</label>");
-        rawoutput("<select name='ns' id='ns'>");
-    while ($row = db_fetch_assoc($result)) {
+    $sql = "SELECT namespace,count(*) AS c FROM " . Database::prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' GROUP BY namespace ORDER BY namespace ASC";
+    $result = Database::query($sql);
+    $output->rawOutput("<input type='hidden' name='op' value='list'>");
+        $output->rawOutput("<label for='ns'>");
+        $output->output("Known Namespaces:");
+        $output->rawOutput("</label>");
+        $output->rawOutput("<select name='ns' id='ns'>");
+    while ($row = Database::fetchAssoc($result)) {
         rawoutput("<option value=\"" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"" . ((htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) == $namespace) ? "selected" : "") . ">" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . " ({$row['c']})</option>");
     }
-    rawoutput("</select>");
-    rawoutput("<input type='submit' class='button' value='" . translate_inline("Show") . "'>");
-    rawoutput("<br>");
+    $output->rawOutput("</select>");
+    $output->rawOutput("<input type='submit' class='button' value='" . translate_inline("Show") . "'>");
+    $output->rawOutput("<br>");
 
     if ($mode == "edit") {
         rawoutput(translate_inline("Text:") . "<br>");
-        rawoutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(httpget('intext')), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea><br/>");
+        rawoutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(Http::get('intext')), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea><br/>");
         rawoutput(translate_inline("Translation:") . "<br>");
         rawoutput("<textarea name='outtext' cols='60' rows='5'></textarea><br/>");
         rawoutput("<input type='submit' value='" . translate_inline("Save") . "' class='button'>");
     } else {
         rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
         rawoutput("<tr class='trhead'><td>" . translate_inline("Ops") . "</td><td>" . translate_inline("Text") . "</td></tr>");
-        $sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' AND namespace='" . $namespace . "'";
-        $result = db_query($sql);
-        if (db_num_rows($result) > 0) {
+        $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' AND namespace='" . $namespace . "'";
+        $result = Database::query($sql);
+        if (Database::numRows($result) > 0) {
             $i = 0;
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = Database::fetchAssoc($result)) {
                 $i++;
                 rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
                 rawoutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . translate_inline("Edit") . "</a>");
-                addnav("", "untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']));
+                Nav::add("", "untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']));
                 rawoutput("</td><td>");
-                rawoutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")));
-                rawoutput("</td></tr>");
+                $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")));
+                $output->rawOutput("</td></tr>");
             }
         } else {
-            rawoutput("<tr><td colspan='2'>" . translate_inline("No rows found") . "</td></tr>");
+            $output->rawOutput("<tr><td colspan='2'>" . translate_inline("No rows found") . "</td></tr>");
         }
-        rawoutput("</table>");
+        $output->rawOutput("</table>");
     }
 
-    rawoutput("</form>");
+    $output->rawOutput("</form>");
 } else {
     if ($op == "step2") {
-        $intext = httppost('intext');
-        $outtext = httppost('outtext');
-        $namespace = httppost('namespace');
-        $language = httppost('language');
+        $intext = Http::post('intext');
+        $outtext = Http::post('outtext');
+        $namespace = Http::post('namespace');
+        $language = Http::post('language');
         if ($outtext <> "") {
             $login = $session['user']['login'];
-            $sql = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$language','$namespace','$intext','$outtext','$login','$logd_version')";
-            db_query($sql);
-            $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
-            db_query($sql);
+            $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$language','$namespace','$intext','$outtext','$login','$logd_version')";
+            Database::query($sql);
+            $sql = "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
+            Database::query($sql);
             invalidatedatacache("translations-" . $namespace . "-" . $language);
         }
     }
 
-    $sql = "SELECT count(intext) AS count FROM " . db_prefix("untranslated");
-    $count = db_fetch_assoc(db_query($sql));
+    $sql = "SELECT count(intext) AS count FROM " . Database::prefix("untranslated");
+    $count = Database::fetchAssoc(Database::query($sql));
     if ($count['count'] > 0) {
-        $sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE language = '" . $session['user']['prefs']['language'] . "' ORDER BY rand(" . e_rand() . ") LIMIT 1";
-        $result = db_query($sql);
-        if (db_num_rows($result) == 1) {
-            $row = db_fetch_assoc($result);
+        $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language = '" . $session['user']['prefs']['language'] . "' ORDER BY rand(" . e_rand() . ") LIMIT 1";
+        $result = Database::query($sql);
+        if (Database::numRows($result) == 1) {
+            $row = Database::fetchAssoc($result);
             $row['intext'] = stripslashes($row['intext']);
             $submit = translate_inline("Save Translation");
             $skip = translate_inline("Skip Translation");
-            rawoutput("<form action='untranslated.php?op=step2' method='post'>");
-            output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
-            rawoutput("<table width='80%'>");
-            rawoutput("<tr><td width='30%'>");
-            output("Target Language: %s", $row['language']);
-            rawoutput("</td><td></td></tr>");
-            rawoutput("<tr><td width='30%'>");
-            output("Namespace: %s", $row['namespace']);
-            rawoutput("</td><td></td></tr>");
-            rawoutput("<tr><td width='30%'><textarea cols='35' rows='4' name='intext'>" . $row['intext'] . "</textarea></td>");
-            rawoutput("<td width='30%'><textarea cols='25' rows='4' name='outtext'></textarea></td></tr></table>");
-            rawoutput("<input type='hidden' name='id' value='{$row['id']}'>");
-            rawoutput("<input type='hidden' name='language' value='{$row['language']}'>");
-            rawoutput("<input type='hidden' name='namespace' value='{$row['namespace']}'>");
-            rawoutput("<input type='submit' value='$submit' class='button'>");
-            rawoutput("</form>");
-            rawoutput("<form action='untranslated.php' method='post'>");
-            rawoutput("<input type='submit' value='$skip' class='button'>");
-            rawoutput("</form>");
-            addnav("", "untranslated.php?op=step2");
-            addnav("", "untranslated.php");
+            $output->rawOutput("<form action='untranslated.php?op=step2' method='post'>");
+            $output->output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
+            $output->rawOutput("<table width='80%'>");
+            $output->rawOutput("<tr><td width='30%'>");
+            $output->output("Target Language: %s", $row['language']);
+            $output->rawOutput("</td><td></td></tr>");
+            $output->rawOutput("<tr><td width='30%'>");
+            $output->output("Namespace: %s", $row['namespace']);
+            $output->rawOutput("</td><td></td></tr>");
+            $output->rawOutput("<tr><td width='30%'><textarea cols='35' rows='4' name='intext'>" . $row['intext'] . "</textarea></td>");
+            $output->rawOutput("<td width='30%'><textarea cols='25' rows='4' name='outtext'></textarea></td></tr></table>");
+            $output->rawOutput("<input type='hidden' name='id' value='{$row['id']}'>");
+            $output->rawOutput("<input type='hidden' name='language' value='{$row['language']}'>");
+            $output->rawOutput("<input type='hidden' name='namespace' value='{$row['namespace']}'>");
+            $output->rawOutput("<input type='submit' value='$submit' class='button'>");
+            $output->rawOutput("</form>");
+            $output->rawOutput("<form action='untranslated.php' method='post'>");
+            $output->rawOutput("<input type='submit' value='$skip' class='button'>");
+            $output->rawOutput("</form>");
+            Nav::add("", "untranslated.php?op=step2");
+            Nav::add("", "untranslated.php");
         } else {
-            output("There are `&%s`^ untranslated texts in the database, but none for your selected language.", $count['count']);
-            output("Please change your language to translate these texts.");
+            $output->output("There are `&%s`^ untranslated texts in the database, but none for your selected language.", $count['count']);
+            $output->output("Please change your language to translate these texts.");
         }
     } else {
-        output("There are no untranslated texts in the database!");
-        output("Congratulations!!!");
+        $output->output("There are no untranslated texts in the database!");
+        $output->output("Congratulations!!!");
     } // end if
 } // end list if
-addnav("R?Restart Translator", "untranslated.php");
-addnav("N?Translate by Namespace", "untranslated.php?op=list");
+Nav::add("R?Restart Translator", "untranslated.php");
+Nav::add("N?Translate by Namespace", "untranslated.php?op=list");
 SuperuserNav::render();
-page_footer();
+Footer::pageFooter();

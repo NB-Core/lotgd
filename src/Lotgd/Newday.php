@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
 use Lotgd\ExpireChars;
@@ -13,10 +14,15 @@ class Newday
     public static function dbCleanup(): void
     {
         savesetting("lastdboptimize", date("Y-m-d H:i:s"));
-        $result = Database::query("SHOW TABLES");
+        // Fetch all table names at once to avoid leaving an unbuffered
+        // result active which can cause "Cannot execute queries while other
+        // unbuffered queries are active" errors with PDO MySQL.
+        $rows = Database::getDoctrineConnection()
+            ->fetchAllAssociative('SHOW TABLES');
+
         $tables = [];
         $start = getmicrotime();
-        while ($row = Database::fetchAssoc($result)) {
+        foreach ($rows as $row) {
             foreach ($row as $val) {
                 Database::query("OPTIMIZE TABLE $val");
                 $tables[] = $val;
@@ -245,7 +251,7 @@ class Newday
                 $head = explode(',', $label);
                 if (count($head) > 1) {
                     rawoutput("<tr><td colspan='2' nowrap>");
-                    output("`b`4%s`0`b`n", translate_inline($head[0]));
+                    output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
                     rawoutput("</td></tr>");
                     continue;
                 }
@@ -259,7 +265,7 @@ class Newday
                 }
             }
             rawoutput("<tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
-            $click = translate_inline('Spend');
+            $click = Translator::translateInline('Spend');
             rawoutput("<input id='dksub' type='submit' class='button' value='$click'>");
             rawoutput("</td></tr><tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
             rawoutput('<div id="amtLeft"></div>');
@@ -313,7 +319,7 @@ class Newday
                 }
                 if (count($head) > 1) {
                     rawoutput("<tr><td colspan='2' nowrap>");
-                    output("`b`4%s`0`b`n", translate_inline($head[0]));
+                    output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
                     rawoutput('</td></tr>');
                     continue;
                 }

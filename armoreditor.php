@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * \file armoreditor.php
  * This file represents the grotto armor editor where you can create or edit new weapons for the shop.
@@ -14,19 +16,23 @@ use Lotgd\Forms;
 // addnews ready
 // mail ready
 require_once("common.php");
-require_once("lib/http.php");
+
+use Lotgd\Http;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
 
 SuAccess::check(SU_EDIT_EQUIPMENT);
 
 tlschema("armor");
 
-page_header("Armor Editor");
-$armorlevel = (int)httpget('level');
+Header::pageHeader("Armor Editor");
+$armorlevel = (int)Http::get('level');
 SuperuserNav::render();
-addnav("Armor Editor");
-addnav("Armor Editor Home", "armoreditor.php?level=$armorlevel");
+Nav::add("Armor Editor");
+Nav::add("Armor Editor Home", "armoreditor.php?level=$armorlevel");
 
-addnav("Add armor", "armoreditor.php?op=add&level=$armorlevel");
+Nav::add("Add armor", "armoreditor.php?op=add&level=$armorlevel");
 $values = array(1 => 48,225,585,990,1575,2250,2790,3420,4230,5040,5850,6840,8010,9000,10350);
 output("`&<h3>Armor for %s Dragon Kills</h3>`0", $armorlevel, true);
 
@@ -35,8 +41,8 @@ $armorarray = array(
     "armorid" => "Armor ID,hidden",
     "armorname" => "Armor Name",
     "defense" => "Defense,range,1,15,1");
-$op = httpget('op');
-$id = httpget('id');
+$op = Http::get('op');
+$id = Http::get('id');
 if ($op == "edit" || $op == "add") {
     if ($op == "edit") {
         $sql = "SELECT * FROM " . db_prefix("armor") . " WHERE armorid='$id'";
@@ -48,7 +54,7 @@ if ($op == "edit" || $op == "add") {
         $row = db_fetch_assoc($result);
     }
     rawoutput("<form action='armoreditor.php?op=save&level=$armorlevel' method='POST'>");
-    addnav("", "armoreditor.php?op=save&level=$armorlevel");
+    Nav::add("", "armoreditor.php?op=save&level=$armorlevel");
     Forms::showForm($armorarray, $row);
     rawoutput("</form>");
 } elseif ($op == "del") {
@@ -56,11 +62,11 @@ if ($op == "edit" || $op == "add") {
     db_query($sql);
     //output($sql);
     $op = "";
-    httpset("op", $op);
+    Http::set('op', $op);
 } elseif ($op == "save") {
-    $armorid = httppost('armorid');
-    $armorname = httppost('armorname');
-    $defense = httppost('defense');
+    $armorid = Http::post('armorid');
+    $armorname = Http::post('armorname');
+    $defense = Http::post('defense');
     if ($armorid > 0) {
         $sql = "UPDATE " . db_prefix("armor") . " SET armorname=\"$armorname\",defense=\"$defense\",value=" . $values[$defense] . " WHERE armorid='$armorid'";
     } else {
@@ -68,7 +74,7 @@ if ($op == "edit" || $op == "add") {
     }
     db_query($sql);
     $op = "";
-    httpset("op", $op);
+    Http::set('op', $op);
 }
 if ($op == "") {
     $sql = "SELECT max(level+1) AS level FROM " . db_prefix("armor");
@@ -77,9 +83,9 @@ if ($op == "") {
     $max = $row['level'];
     for ($i = 0; $i <= $max; $i++) {
         if ($i == 1) {
-            addnav(array("Armor for %s DK",$i), "armoreditor.php?level=$i");
+            Nav::add(array("Armor for %s DK",$i), "armoreditor.php?level=$i");
         } else {
-            addnav(array("Armor for %s DKs",$i), "armoreditor.php?level=$i");
+            Nav::add(array("Armor for %s DKs",$i), "armoreditor.php?level=$i");
         }
     }
     $sql = "SELECT * FROM " . db_prefix("armor") . " WHERE level=$armorlevel ORDER BY defense";
@@ -100,8 +106,8 @@ if ($op == "") {
         $row = db_fetch_assoc($result);
         rawoutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'>");
         rawoutput("<td>[<a href='armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel'>$edit</a>|<a href='armoreditor.php?op=del&id={$row['armorid']}&level=$armorlevel' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
-        addnav("", "armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel");
-        addnav("", "armoreditor.php?op=del&id={$row['armorid']}&level=$armorlevel");
+        Nav::add("", "armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel");
+        Nav::add("", "armoreditor.php?op=del&id={$row['armorid']}&level=$armorlevel");
         rawoutput("<td>");
         output_notl($row['armorname']);
         rawoutput("</td><td>");
@@ -115,4 +121,4 @@ if ($op == "") {
     }
     rawoutput("</table>");
 }
-page_footer();
+Footer::pageFooter();

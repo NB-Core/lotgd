@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+if (!defined('DATACACHE_FILENAME_PREFIX')) {
+    define('DATACACHE_FILENAME_PREFIX', 'datacache-');
+}
+
 /**
  * Lightweight file based data cache helper.
  */
@@ -61,13 +65,23 @@ class DataCache
         if ($settings->getSetting('usedatacache', 0)) {
             $fullname = self::makecachetempname($name);
             self::$cache[$name] = $data;
-            $fp = fopen($fullname, 'w');
-            if ($fp) {
-                fwrite($fp, json_encode($data));
-                fclose($fp);
+
+            $encoded = json_encode($data);
+            if ($encoded === false) {
+                return false;
             }
-            return true;
+
+            $fp = @fopen($fullname, 'w');
+            if ($fp === false) {
+                return false;
+            }
+
+            $written = fwrite($fp, $encoded);
+            fclose($fp);
+
+            return $written !== false;
         }
+
         return false;
     }
 

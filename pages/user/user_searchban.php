@@ -1,27 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
+use Lotgd\UserLookup;
+use Lotgd\Nav;
+use Lotgd\Translator;
+use Lotgd\MySQL\Database;
+
 $subop = httpget("subop");
-$none = translate_inline('NONE');
+$none = Translator::translateInline('NONE');
 if ($subop == "xml") {
     header("Content-Type: text/xml");
-    $sql = "SELECT DISTINCT " . db_prefix("accounts") . ".name FROM " . db_prefix("bans") . ", " . db_prefix("accounts") . " WHERE (ipfilter='" . addslashes(httpget("ip")) . "' AND " .
-        db_prefix("bans") . ".uniqueid='" .
+    $sql = "SELECT DISTINCT " . Database::prefix("accounts") . ".name FROM " . Database::prefix("bans") . ", " . Database::prefix("accounts") . " WHERE (ipfilter='" . addslashes(httpget("ip")) . "' AND " .
+        Database::prefix("bans") . ".uniqueid='" .
         addslashes(httpget("id")) . "') AND ((substring(" .
-        db_prefix("accounts") . ".lastip,1,length(ipfilter))=ipfilter " .
-        "AND ipfilter<>'') OR (" .  db_prefix("bans") . ".uniqueid=" .
-        db_prefix("accounts") . ".uniqueid AND " .
-        db_prefix("bans") . ".uniqueid<>''))";
-    $r = db_query($sql);
-    echo "<xml>";
-    while ($ro = db_fetch_assoc($r)) {
-        echo "<name name=\"";
-        echo urlencode(appoencode("`0{$ro['name']}"));
-        echo "\"/>";
+        Database::prefix("accounts") . ".lastip,1,length(ipfilter))=ipfilter " .
+        "AND ipfilter<>'') OR (" .  Database::prefix("bans") . ".uniqueid=" .
+        Database::prefix("accounts") . ".uniqueid AND " .
+        Database::prefix("bans") . ".uniqueid<>''))";
+    $r = Database::query($sql);
+    $output->rawOutput("<xml>");
+    while ($ro = Database::fetchAssoc($r)) {
+        $output->rawOutput("<name name=\"" . urlencode(appoencode("`0{$ro['name']}")) . "\"/>");
     }
-    if (db_num_rows($r) == 0) {
-        echo "<name name=\"$none\"/>";
+    if (Database::numRows($r) == 0) {
+        $output->rawOutput("<name name=\"$none\"/>");
     }
-    echo "</xml>";
+    $output->rawOutput("</xml>");
     exit();
 }
 $operator = "<=";
@@ -29,40 +34,39 @@ $operator = "<=";
 
 $target = httppost('target');
 $since = 'WHERE 0';
-$submit = translate_inline("Search");
+$submit = Translator::translateInline("Search");
 if ($target == '') {
-    rawoutput("<form action='user.php?op=searchban' method='POST'>");
-    addnav("", "user.php?op=searchban");
-    output("Search banned user by name: ");
-    rawoutput("<input name='target' value='$target'>");
-    rawoutput("<input type='submit' class='button' value='$submit'></from><br><br>");
+    $output->rawOutput("<form action='user.php?op=searchban' method='POST'>");
+    Nav::add("", "user.php?op=searchban");
+    $output->output("Search banned user by name: ");
+    $output->rawOutput("<input name='target' value='$target'>");
+    $output->rawOutput("<input type='submit' class='button' value='$submit'></form><br><br>");
 } elseif (is_numeric($target)) {
     //none
     $sql = "SELECT lastip,uniqueid FROM accounts WHERE acctid=" . $target;
-    $result = db_query($sql);
-    $row = db_fetch_assoc($result);
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
     $since = "WHERE ipfilter LIKE '%" . $row['lastip'] . "%' OR uniqueid LIKE '%" . $row['uniqueid'] . "%'";
 } else {
-    require_once("lib/lookup_user.php");
-    $names = lookup_user($target);
+    $names = UserLookup::lookup($target);
     if ($names[0] !== false) {
-        rawoutput("<form action='user.php?op=searchban' method='POST'>");
-        addnav("", "user.php?op=searchban");
-                rawoutput("<label for='target'>");
-                output("Search banned user by name: ");
-                rawoutput("</label>");
-                rawoutput("<select name='target' id='target'>");
-        while ($row = db_fetch_assoc($names[0])) {
-            rawoutput("<option value='" . $row['acctid'] . "'>" . $row['login'] . "</option>");
+        $output->rawOutput("<form action='user.php?op=searchban' method='POST'>");
+        Nav::add("", "user.php?op=searchban");
+                $output->rawOutput("<label for='target'>");
+                $output->output("Search banned user by name: ");
+                $output->rawOutput("</label>");
+                $output->rawOutput("<select name='target' id='target'>");
+        while ($row = Database::fetchAssoc($names[0])) {
+            $output->rawOutput("<option value='" . $row['acctid'] . "'>" . $row['login'] . "</option>");
         }
-        rawoutput("</select>");
-        rawoutput("<input type='submit' class='button' value='$submit'></from><br><br>");
+        $output->rawOutput("</select>");
+        $output->rawOutput("<input type='submit' class='button' value='$submit'></form><br><br>");
     }
 }
 
-$sql = "SELECT * FROM " . db_prefix("bans") . " $since ORDER BY banexpire ASC";
-$result = db_query($sql);
-rawoutput("<script language='JavaScript'>
+$sql = "SELECT * FROM " . Database::prefix("bans") . " $since ORDER BY banexpire ASC";
+$result = Database::query($sql);
+$output->rawOutput("<script language='JavaScript'>
 function getUserInfo(ip,id,divid){
 	var filename='user.php?op=removeban&subop=xml&ip='+ip+'&id='+id;
 	//set up the DOM object
@@ -85,30 +89,30 @@ function getUserInfo(ip,id,divid){
 }
 </script>
 ");
-rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
-$ops = translate_inline("Ops");
-$bauth = translate_inline("Ban Author");
-$ipd = translate_inline("IP/ID");
-$dur = translate_inline("Duration");
-$mssg = translate_inline("Message");
-$aff = translate_inline("Affects");
-$l = translate_inline("Last");
-    rawoutput("<tr class='trhead'><td>$ops</td><td>$bauth</td><td>$ipd</td><td>$dur</td><td>$mssg</td><td>$aff</td><td>$l</td></tr>");
+$output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
+$ops = Translator::translateInline("Ops");
+$bauth = Translator::translateInline("Ban Author");
+$ipd = Translator::translateInline("IP/ID");
+$dur = Translator::translateInline("Duration");
+$mssg = Translator::translateInline("Message");
+$aff = Translator::translateInline("Affects");
+$l = Translator::translateInline("Last");
+    $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$bauth</td><td>$ipd</td><td>$dur</td><td>$mssg</td><td>$aff</td><td>$l</td></tr>");
 $i = 0;
-while ($row = db_fetch_assoc($result)) {
-    $liftban = translate_inline("Lift&nbsp;ban");
-    $showuser = translate_inline("Click&nbsp;to&nbsp;show&nbsp;users");
-    rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-    rawoutput("<td><a href='user.php?op=delban&ipfilter=" . URLEncode($row['ipfilter']) . "&uniqueid=" . URLEncode($row['uniqueid']) . "'>");
-    output_notl("%s", $liftban, true);
-    rawoutput("</a>");
-    addnav("", "user.php?op=delban&ipfilter=" . URLEncode($row['ipfilter']) . "&uniqueid=" . URLEncode($row['uniqueid']));
-    rawoutput("</td><td>");
-    output_notl("`&%s`0", $row['banner']);
-    rawoutput("</td><td>");
-    output_notl("%s", $row['ipfilter']);
-    output_notl("%s", $row['uniqueid']);
-    rawoutput("</td><td>");
+while ($row = Database::fetchAssoc($result)) {
+    $liftban = Translator::translateInline("Lift&nbsp;ban");
+    $showuser = Translator::translateInline("Click&nbsp;to&nbsp;show&nbsp;users");
+    $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
+    $output->rawOutput("<td><a href='user.php?op=delban&ipfilter=" . URLEncode($row['ipfilter']) . "&uniqueid=" . URLEncode($row['uniqueid']) . "'>");
+    $output->outputNotl("%s", $liftban, true);
+    $output->rawOutput("</a>");
+    Nav::add("", "user.php?op=delban&ipfilter=" . URLEncode($row['ipfilter']) . "&uniqueid=" . URLEncode($row['uniqueid']));
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("`&%s`0", $row['banner']);
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("%s", $row['ipfilter']);
+    $output->outputNotl("%s", $row['uniqueid']);
+    $output->rawOutput("</td><td>");
         // "43200" used so will basically round to nearest day rather than floor number of days
 
     $expire = sprintf_translate(
@@ -116,32 +120,32 @@ while ($row = db_fetch_assoc($result)) {
         round((strtotime($row['banexpire']) + 43200 - strtotime("now")) / 86400, 0)
     );
     if (substr($expire, 0, 2) == "1 ") {
-        $expire = translate_inline("1 day");
+        $expire = Translator::translateInline("1 day");
     }
     if (date("Y-m-d", strtotime($row['banexpire'])) == date("Y-m-d")) {
-        $expire = translate_inline("Today");
+        $expire = Translator::translateInline("Today");
     }
     if (
         date("Y-m-d", strtotime($row['banexpire'])) ==
             date("Y-m-d", strtotime("1 day"))
     ) {
-        $expire = translate_inline("Tomorrow");
+        $expire = Translator::translateInline("Tomorrow");
     }
     if ($row['banexpire'] == "0000-00-00 00:00:00") {
-        $expire = translate_inline("Never");
+        $expire = Translator::translateInline("Never");
     }
-    output_notl("%s", $expire);
-    rawoutput("</td><td>");
-    output_notl("%s", $row['banreason']);
-    rawoutput("</td><td>");
+    $output->outputNotl("%s", $expire);
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("%s", $row['banreason']);
+    $output->rawOutput("</td><td>");
     $file = "user.php?op=removeban&subop=xml&ip={$row['ipfilter']}&id={$row['uniqueid']}";
-    rawoutput("<div id='user$i'><a href='$file' target='_blank' onClick=\"getUserInfo('{$row['ipfilter']}','{$row['uniqueid']}',$i); return false;\">");
-    output_notl("%s", $showuser, true);
-    rawoutput("</a></div>");
-    addnav("", $file);
-    rawoutput("</td><td>");
-    output_notl("%s", relativedate($row['lasthit']));
-    rawoutput("</td></tr>");
+    $output->rawOutput("<div id='user$i'><a href='$file' target='_blank' onClick=\"getUserInfo('{$row['ipfilter']}','{$row['uniqueid']}',$i); return false;\">");
+    $output->outputNotl("%s", $showuser, true);
+    $output->rawOutput("</a></div>");
+    Nav::add("", $file);
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("%s", relativedate($row['lasthit']));
+    $output->rawOutput("</td></tr>");
     $i++;
 }
-rawoutput("</table>");
+$output->rawOutput("</table>");
