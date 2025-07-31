@@ -45,7 +45,7 @@ $sql = "SELECT login, name, level, sex, title, specialty, hashorse, acctid, resu
 $result = Database::query($sql);
 if ($target = Database::fetchAssoc($result)) {
   // Let a module get the values if necessary
-    $target = Modules::modulehook("biotarget", $target);
+    $target = HookHandler::hook("biotarget", $target);
     $target['login'] = rawurlencode($target['login']);
     $id = $target['acctid'];
     $target['return_link'] = $return;
@@ -61,7 +61,7 @@ if ($target = Database::fetchAssoc($result)) {
         Nav::add("Edit User", "user.php?op=edit&userid=$id");
     }
 
-    Modules::modulehook("biotop", $target);
+    HookHandler::hook("biotop", $target);
 
     $output->output("`^Biography for %s`^.", $target['name']);
     $write = translate_inline("Write Mail");
@@ -72,7 +72,7 @@ if ($target = Database::fetchAssoc($result)) {
 
     if ($target['clanname'] > "" && getsetting("allowclans", false)) {
         $ranks = array(CLAN_APPLICANT => "`!Applicant`0",CLAN_MEMBER => "`#Member`0",CLAN_OFFICER => "`^Officer`0",CLAN_LEADER => "`&Leader`0", CLAN_FOUNDER => "`\$Founder");
-        $ranks = Modules::modulehook("clanranks", array("ranks" => $ranks, "clanid" => $target['clanid']));
+        $ranks = HookHandler::hook("clanranks", array("ranks" => $ranks, "clanid" => $target['clanid']));
         tlschema("clans"); //just to be in the right schema
         array_push($ranks['ranks'], "`\$Founder");
         $ranks = translate_inline($ranks['ranks']);
@@ -106,7 +106,7 @@ if ($target = Database::fetchAssoc($result)) {
     $genders = translate_inline($genders);
     $output->output("`^Gender: `@%s`n", $genders[$target['sex']]);
 
-    $specialties = Modules::modulehook(
+    $specialties = HookHandler::hook(
         "specialtynames",
         array("" => translate_inline("Unspecified"))
     );
@@ -118,14 +118,14 @@ if ($target = Database::fetchAssoc($result)) {
     $mount = Database::fetchAssoc($result);
 
     $mount['acctid'] = $target['acctid'];
-    $mount = Modules::modulehook("bio-mount", $mount);
+    $mount = HookHandler::hook("bio-mount", $mount);
     $none = translate_inline("`iNone`i");
     if (!isset($mount['mountname']) || $mount['mountname'] == "") {
           $mount['mountname'] = $none;
     }
     $output->output("`^Creature: `@%s`0`n", $mount['mountname']);
 
-    Modules::modulehook("biostat", $target);
+    HookHandler::hook("biostat", $target);
 
     if ($target['dragonkills'] > 0) {
         $output->output("`^Dragon Kills: `@%s`n", $target['dragonkills']);
