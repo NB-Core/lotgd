@@ -16,5 +16,5 @@ if (empty($row) || !isset($row['output']) || $row['output'] == '') {
 } else {
     $display = gzuncompress($row['output']);
 }
-$output->rawOutput(str_replace('.focus();', '.blur();', str_replace('<iframe src=', '<iframe Xsrc=', $display)));
+echo str_replace('.focus();', '.blur();', str_replace('<iframe src=', '<iframe Xsrc=', $display));
 exit(0);
