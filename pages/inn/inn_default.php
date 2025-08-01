@@ -6,7 +6,7 @@ use Lotgd\Http;
 use Lotgd\Nav;
 
 if ($com == "" && !$comment && $op != "fleedragon") {
-    if (module_events("inn", getsetting("innchance", 0)) != 0) {
+    if (module_events("inn", (int)getsetting("innchance", 0)) != 0) {
         if (checknavs()) {
             page_footer();
         } else {
