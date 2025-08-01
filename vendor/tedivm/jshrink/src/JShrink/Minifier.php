@@ -628,10 +628,24 @@ class Minifier
         }
 
         $this->echo($this->b);
+        // Flag to make sure that we don't end the regex too early because of
+        // unescaped forward slashes inside a character class. e.g /[/]/
+        // In non-v-mode, The only characters that cannot appear literally are \, ], and -
+        // In v-mode more characters are reserved and forbidden from appearing literally
+        // including but not limited to [ ] \ /
+        $character_class = false;
+        $character_class_index = null;
 
         while (($this->a = $this->getChar()) !== false) {
-            if ($this->a === '/') {
+            if ($this->a === '/' && !$character_class) {
                 break;
+            }
+            
+            if ($this->a === '[') {
+                $character_class = true;
+                $character_class_index = $this->index;
+            } elseif ($this->a === ']') {
+                $character_class = false;
             }
 
             if ($this->a === '\\') {
@@ -640,6 +654,9 @@ class Minifier
             }
 
             if ($this->a === "\n") {
+                if ($character_class) {
+                    throw new \RuntimeException('Unclosed character class at position: ' . $character_class_index);
+                }
                 throw new \RuntimeException('Unclosed regex pattern at position: ' . $this->index);
             }
 
