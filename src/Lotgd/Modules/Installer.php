@@ -77,6 +77,45 @@ class Installer
         return false;
     }
 
+    /**
+     * Force uninstall even when module file is missing.
+     */
+    public static function forceUninstall(string $module): bool
+    {
+        global $mostrecentmodule;
+
+        if (Modules::inject($module, true)) {
+            $fname = $module . '_uninstall';
+            output('Running module uninstall script`n');
+            Translator::tlschema("module-{$module}");
+            $returnvalue = $fname();
+            if (!$returnvalue) {
+                return false;
+            }
+            Translator::tlschema();
+        } else {
+            $mostrecentmodule = $module;
+        }
+
+        $sql = 'DELETE FROM ' . Database::prefix('modules') . " WHERE modulename='$module'";
+        Database::query($sql);
+
+        HookHandler::wipeHooks();
+
+        $sql = 'DELETE FROM ' . Database::prefix('module_settings') . " WHERE modulename='$module'";
+        Database::query($sql);
+        invalidatedatacache("modulesettings-$module");
+
+        $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module'";
+        Database::query($sql);
+
+        $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module'";
+        Database::query($sql);
+        invalidatedatacache("inject-$module");
+        massinvalidate('module_prepare');
+        return true;
+    }
+
     public static function install(string $module, bool $force = true): bool
     {
         global $mostrecentmodule, $session;

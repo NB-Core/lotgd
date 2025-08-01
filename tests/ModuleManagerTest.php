@@ -68,4 +68,9 @@ final class ModuleManagerTest extends TestCase
         ModuleManager::reinstall('mod');
         $this->assertStringContainsString("SET filemoddate='" . DATETIME_DATEMIN . "'", \Lotgd\MySQL\Database::$lastSql);
     }
+
+    public function testForceUninstallReturnsTrue(): void
+    {
+        $this->assertTrue(ModuleManager::forceUninstall('mod'));
+    }
 }

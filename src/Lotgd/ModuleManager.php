@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
+use Lotgd\Modules\Installer;
 
 class ModuleManager
 {
@@ -123,5 +124,20 @@ class ModuleManager
         massinvalidate('module-prepare');
         injectmodule($module, true);
         return true;
+    }
+
+    /**
+     * Force remove a module without requiring the module file.
+     */
+    public static function forceUninstall(string $module): bool
+    {
+        if (Installer::forceUninstall($module)) {
+            massinvalidate('hook');
+            massinvalidate('module-prepare');
+            invalidatedatacache("inject-$module");
+            return true;
+        }
+
+        return false;
     }
 }
