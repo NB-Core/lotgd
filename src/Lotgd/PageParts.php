@@ -378,7 +378,16 @@ class PageParts
             return $charstat;
         } else {
             $ret = "";
-            if ($ret = Datacache::datacache("charlisthomepage")) {
+            $mode = (int) getsetting('homeonline_mode', 0);
+            $minutesSetting = (int) getsetting('homeonline_minutes', 15);
+            if (isset($settings)) {
+                $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
+            } else {
+                $loginTimeout = 90; //default to 90 seconds if not set
+            }
+            $cacheMinutes = $mode === 2 ? $minutesSetting : (int) ceil($loginTimeout / 60);
+            $cacheKey = "charlisthomepage-$mode-$cacheMinutes";
+            if ($ret = Datacache::datacache($cacheKey)) {
             } else {
                 $onlinecount = 0;
                 $list = modulehook("onlinecharlist", array("count" => 0, "list" => ""));
@@ -386,13 +395,12 @@ class PageParts
                     $onlinecount = $list['count'];
                     $ret = $list['list'];
                 } else {
-                    if (isset($settings)) {
-                        $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
+                    if ($mode === 2) {
+                        $minutes = $minutesSetting;
+                        $sql = "SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $minutes . " minutes")) . "' ORDER BY level DESC";
                     } else {
-                        $loginTimeout = 90; //default to 90 seconds if not set
+                        $sql = "SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $loginTimeout . " seconds")) . "' ORDER BY level DESC";
                     }
-
-                    $sql = "SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $loginTimeout . " seconds")) . "' ORDER BY level DESC";
                     $result = Database::query($sql);
                     $rows = array();
                     while ($row = Database::fetchAssoc($result)) {
@@ -400,7 +408,14 @@ class PageParts
                     }
                     Database::freeResult($result);
                     $rows = modulehook("loggedin", $rows);
-                    $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
+                    if ($mode === 0) {
+                        $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
+                    } elseif ($mode === 1) {
+                        $timeLabel = DateTime::readableTime($loginTimeout, false);
+                        $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters in the last %s:`b`n"), $timeLabel));
+                    } else {
+                        $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters last %s minutes:`b`n"), $minutes));
+                    }
                     foreach ($rows as $row) {
                         $ret .= appoencode("`^{$row['name']}`n");
                         $onlinecount++;
@@ -413,7 +428,7 @@ class PageParts
                     $settings->saveSetting("OnlineCount", $onlinecount);
                     $settings->saveSetting("OnlineCountLast", strtotime("now"));
                 }
-                Datacache::updatedatacache("charlisthomepage", $ret);
+                Datacache::updatedatacache($cacheKey, $ret);
             }
             return $ret;
         }

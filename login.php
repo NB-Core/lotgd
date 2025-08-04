@@ -98,7 +98,7 @@ if ($name != "") {
                 if (!is_array($session['user']['dragonpoints'])) {
                     $session['user']['dragonpoints'] = array();
                 }
-                invalidatedatacache("charlisthomepage");
+                massinvalidate('charlisthomepage');
                 invalidatedatacache("list.php-warsonline");
                 $session['user']['laston'] = date("Y-m-d H:i:s");
 
@@ -218,7 +218,7 @@ if ($name != "") {
     if ($session['user']['loggedin']) {
         $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
         db_query($sql);
-        invalidatedatacache("charlisthomepage");
+        massinvalidate('charlisthomepage');
         invalidatedatacache("list.php-warsonline");
 
         // Handle the change in number of users online

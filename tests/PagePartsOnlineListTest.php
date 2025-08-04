@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Lotgd\Tests;
+
+use Lotgd\DateTime;
+use Lotgd\Output;
+use Lotgd\PageParts;
+use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\DummySettings;
+use PHPUnit\Framework\TestCase;
+
+final class PagePartsOnlineListTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        global $session, $settings, $output;
+        class_exists(Database::class);
+        $session = ['loggedin' => false];
+        $output = new Output();
+        $settings = new DummySettings([
+            'usedatacache' => 0,
+            'LOGINTIMEOUT' => 900,
+            'homeonline_mode' => 0,
+            'homeonline_minutes' => 15,
+            'enabletranslation' => false,
+        ]);
+        Database::$lastSql = '';
+        Database::$instance = new class {
+            public array $queries = [];
+            public function query(string $sql)
+            {
+                $this->queries[] = $sql;
+                return [];
+            }
+        };
+    }
+
+    protected function tearDown(): void
+    {
+        global $session, $settings, $output;
+        unset($session, $settings, $output);
+    }
+
+    public function testMode0CurrentOnline(): void
+    {
+        global $settings;
+        $settings->saveSetting('homeonline_mode', 0);
+        $outputString = PageParts::charStats();
+        $this->assertStringContainsString('loggedin=1', Database::$lastSql);
+        $this->assertStringContainsString('Online Characters (0 players):', $outputString);
+    }
+
+    public function testMode1UsesTimeout(): void
+    {
+        global $settings;
+        $settings->saveSetting('homeonline_mode', 1);
+        $outputString = PageParts::charStats();
+        $this->assertStringContainsString('loggedin=1', Database::$lastSql);
+        $expected = 'Online Characters in the last ' . DateTime::readableTime(900, false) . ':';
+        $this->assertStringContainsString($expected, $outputString);
+    }
+
+    public function testMode2UsesCustomMinutes(): void
+    {
+        global $settings;
+        $settings->saveSetting('homeonline_mode', 2);
+        $settings->saveSetting('homeonline_minutes', 30);
+        $expectedDate = date('Y-m-d H:i:s', strtotime('-30 minutes'));
+        $outputString = PageParts::charStats();
+        $this->assertStringNotContainsString('loggedin=1', Database::$lastSql);
+        $this->assertStringContainsString($expectedDate, Database::$lastSql);
+        $this->assertStringContainsString('Online Characters last 30 minutes:', $outputString);
+    }
+}
+
