@@ -35,6 +35,9 @@ if ($op == 'mass') {
     if (httppost("reinstall")) {
         $op = "reinstall";
     }
+    if (httppost("remove")) {
+        $op = "remove";
+    }
     if (httppost("install")) {
         $op = "install";
     }
@@ -77,6 +80,10 @@ foreach ($modules as $key => $module) {
             httpset('op', "");
     } elseif ($op == "reinstall") {
             ModuleManager::reinstall($module);
+            $op = "";
+            httpset('op', "");
+    } elseif ($op == "remove") {
+            ModuleManager::forceUninstall($module);
             $op = "";
             httpset('op', "");
     }
@@ -124,6 +131,8 @@ if ($op == "") {
         $activate = translate_inline("Activate");
         $uninstall = translate_inline("Uninstall");
         $reinstall = translate_inline("Reinstall");
+        $remove = translate_inline("Remove");
+        $removeconfirm = translate_inline("Are you sure you wish to remove this module?  All user preferences and module settings will be lost.");
         $strsettings = translate_inline("Settings");
         $strnosettings = translate_inline("`\$No Settings`0");
         $uninstallconfirm = translate_inline("Are you sure you wish to uninstall this module?  All user preferences and module settings will be lost.  If you wish to temporarily remove access to the module, you may simply deactivate it.");
@@ -175,6 +184,10 @@ if ($op == "") {
             output_notl($reinstall);
             rawoutput("</a>");
             addnav("", "modules.php?op=reinstall&module={$row['modulename']}&cat=$cat");
+            rawoutput(" | <a href='modules.php?op=remove&module={$row['modulename']}&cat=$cat' onClick='return confirm(\"$removeconfirm\");'>");
+            output_notl($remove);
+            rawoutput("</a>");
+            addnav("", "modules.php?op=remove&module={$row['modulename']}&cat=$cat");
 
             if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
                 if (strstr($row['infokeys'], "|settings|")) {
@@ -210,10 +223,12 @@ if ($op == "") {
         $deactivate = translate_inline("Deactivate");
         $reinstall = translate_inline("Reinstall");
         $uninstall = translate_inline("Uninstall");
+        $remove = translate_inline("Remove");
         rawoutput("<input type='submit' name='activate' class='button' value='$activate'>");
         rawoutput("<input type='submit' name='deactivate' class='button' value='$deactivate'>");
         rawoutput("<input type='submit' name='reinstall' class='button' value='$reinstall'>");
         rawoutput("<input type='submit' name='uninstall' class='button' value='$uninstall'>");
+        rawoutput("<input type='submit' name='remove' class='button' value='$remove'>");
         rawoutput("</form>");
     } else {
         $sorting = httpget('sorting');

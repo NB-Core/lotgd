@@ -96,6 +96,20 @@ namespace {
     if (!function_exists('debug')) {
         function debug($t, $force = false): void
         {
+            global $forms_output, $mostrecentmodule;
+
+            if (is_array($t)) {
+                $t = appoencode(\Lotgd\DumpItem::dump($t), true);
+            }
+
+            $origin = $mostrecentmodule ?? '';
+
+            if ('' === $origin) {
+                $trace  = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+                $origin = basename($trace[2]['file'] ?? '');
+            }
+
+            $forms_output .= "<button onclick=\"this.nextElementSibling.classList.toggle('hidden');\">Show Debug Output</button><div class='debug'>{$origin}: {$t}</div>";
         }
     }
 

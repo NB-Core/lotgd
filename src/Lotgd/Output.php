@@ -194,16 +194,29 @@ class Output
      */
     public function debug($text, $force = false)
     {
-        global $session;
+        global $session, $mostrecentmodule;
+
         $temp = $this->getBlockNewOutput();
         $this->setBlockNewOutput(false);
+
         if ($force || (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
             if (is_array($text)) {
                 $text = appoencode(DumpItem::dump($text), true);
             }
+
+            $origin = $mostrecentmodule ?? '';
+
+            if ('' === $origin) {
+                $trace  = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+                $origin = basename($trace[2]['file'] ?? '');
+            }
+
+            $text = "{$origin}: {$text}";
+
             // Toggle visibility of debug output to make the page cleaner if you want to
             $this->rawOutput("<button onclick=\"this.nextElementSibling.classList.toggle('hidden');\">Show Debug Output</button><div class='debug'>$text</div>");
         }
+
         $this->setBlockNewOutput($temp);
     }
 

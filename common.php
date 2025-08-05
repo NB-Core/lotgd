@@ -498,7 +498,8 @@ if ($session['user']['superuser'] == 0) {
 
 Template::prepareTemplate();
 
-if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
+if (($session['user']['loggedin'] ?? false)
+    && (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER))) {
     if (!isset($session['user']['hashorse'])) {
         $session['user']['hashorse'] = 0;
     }
@@ -547,7 +548,9 @@ if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
     Translator::translatorSetup();
 }
 
-if ((!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) && $settings->getSetting('debug', 0)) {
+if (($session['user']['loggedin'] ?? false)
+    && (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER))
+    && $settings->getSetting('debug', 0)) {
     //Server runs in Debug mode, tell the superuser about it
     if (($session['user']['superuser'] & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
         tlschema("debug");

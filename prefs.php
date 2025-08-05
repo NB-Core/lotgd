@@ -41,7 +41,7 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
     $session['user'] = array();
     $session['loggedin'] = false;
     $session['user']['loggedin'] = false;
-    invalidatedatacache("charlisthomepage");
+    massinvalidate('charlisthomepage');
     invalidatedatacache("list.php-warsonline");
 } elseif ($op == "forcechangeemail") {
     checkday();
