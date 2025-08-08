@@ -6,6 +6,7 @@
 session_start();
 //unset($_SESSION['logdnet']);
 //session_register("session");
+require_once __DIR__ . '/../autoload.php';
 if (isset($_GET['op']) && $_GET['op'] == "register") {
     if (
         !isset($_SESSION['logdnet']) || !isset($_SESSION['logdnet']['']) ||
@@ -31,8 +32,7 @@ if (isset($_GET['op']) && $_GET['op'] == "register") {
             "&l=" . $l . // primary language of this server -- you may change
                       // this if it turns out to be inaccurate.
             "";
-        require_once("../lib/pullurl.php");
-        $info = @pullurl($url);
+        $info = @\Lotgd\PullUrl::pull($url);
         if ($info !== false) {
             $info = base64_decode(join("", $info));
             $_SESSION['logdnet'] = unserialize($info);
