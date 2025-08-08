@@ -100,15 +100,15 @@ addnavheader("Module Categories");
 $currentHeader = "Module Categories";
 foreach ($seencats as $cat => $count) {
         $category = $cat;
-        $header   = "Module Categories";
+        $headerName   = "Module Categories";
         $subnav   = '';
     if (strpos($cat, "|") !== false) {
-            list($header, $subnav) = explode("|", $cat, 2);
+            list($headerName, $subnav) = explode("|", $cat, 2);
             $category = $subnav;
     }
-    if ($header !== $currentHeader) {
-            addnavheader($header);
-            $currentHeader = $header;
+    if ($headerName !== $currentHeader) {
+            addnavheader($headerName);
+            $currentHeader = $headerName;
     }
     if ($subnav !== '') {
             addnavsubheader($subnav);
@@ -117,7 +117,6 @@ foreach ($seencats as $cat => $count) {
 }
 
 $cat = httpget('cat');
-
 if ($op == "") {
     if ($cat) {
         $sortby = httpget('sortby');
