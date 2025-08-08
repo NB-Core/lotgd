@@ -962,4 +962,6 @@ $sql_upgrade_statements = array(
     ),
 "1.2.7 +nb Edition" => array(
     ),
+"1.3.2.+nb Edition" => array(
+    ),
 );
