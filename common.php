@@ -167,6 +167,19 @@ $session =& $_SESSION['session'];
 ob_start();
 if (file_exists("dbconnect.php")) {
     $config = require "dbconnect.php";
+
+    if (!is_array($config)) {
+        $config = [
+            'DB_HOST' => $DB_HOST ?? '',
+            'DB_USER' => $DB_USER ?? '',
+            'DB_PASS' => $DB_PASS ?? '',
+            'DB_NAME' => $DB_NAME ?? '',
+            'DB_PREFIX' => $DB_PREFIX ?? '',
+            'DB_USEDATACACHE' => $DB_USEDATACACHE ?? 0,
+            'DB_DATACACHEPATH' => $DB_DATACACHEPATH ?? '',
+        ];
+    }
+
     $DB_HOST = $config['DB_HOST'] ?? '';
     $DB_USER = $config['DB_USER'] ?? '';
     $DB_PASS = $config['DB_PASS'] ?? '';
@@ -205,7 +218,7 @@ if (file_exists("dbconnect.php")) {
 //  $link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
 $link = false;
 if (!defined("DB_NODB")) {
-        $link = Database::connect($config['DB_HOST'], $config['DB_USER'], $config['DB_PASS']);
+        $link = Database::connect($config['DB_HOST'] ?? '', $config['DB_USER'] ?? '', $config['DB_PASS'] ?? '');
 
         //set charset to utf8 (table default, don't change that!)
     if (!Database::setCharset("utf8mb4")) {
