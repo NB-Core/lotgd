@@ -39,4 +39,22 @@ final class TemplateTest extends TestCase
 
         $this->assertSame('twig:aurora', $result);
     }
+
+    public function testLoadTemplateAppliesModuleHookChanges(): void
+    {
+        global $modulehook_returns;
+
+        $path = dirname(__DIR__) . '/templates/test_template.htm';
+        file_put_contents($path, "<!--!test-->original");
+        $modulehook_returns = ['template-test' => ['content' => 'modified']];
+
+        try {
+            $result = Template::loadTemplate('test_template.htm');
+        } finally {
+            unlink($path);
+            unset($modulehook_returns);
+        }
+
+        $this->assertSame('modified', $result['test']);
+    }
 }
