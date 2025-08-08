@@ -630,7 +630,7 @@ class Commentary
         if ($session['user']['prefs']['timestamp'] == 1) {
             $session['user']['prefs']['timeformat'] = $session['user']['prefs']['timeformat'] ?? '[m/d h:ia]';
             $time = strtotime($row['postdate']) + ($session['user']['prefs']['timeoffset'] * 60 * 60);
-            $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', $time);
+            $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', (int)$time);
             $op = $s . $op;
         } elseif ($session['user']['prefs']['timestamp'] == 2) {
             $s = reltime(strtotime($row['postdate']));
