@@ -63,6 +63,11 @@ namespace {
     if (!function_exists('modulehook')) {
         function modulehook($name, $data = [], $allowinactive = false, $only = false)
         {
+            global $modulehook_returns;
+            if (isset($modulehook_returns[$name])) {
+                return array_merge($data, $modulehook_returns[$name]);
+            }
+
             return $data;
         }
     }
