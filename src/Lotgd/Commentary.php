@@ -152,7 +152,6 @@ class Commentary
             if (getsetting('soap', 1)) {
                 $commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'", "\\1 \\2", $commentary);
             }
-            $commentary = addslashes($commentary);
             if ($talkline != 'says' && mb_substr($commentary, 0, 1) != ':' && mb_substr($commentary, 0, 2) != '::' && mb_substr($commentary, 0, 3) != '/me' && mb_substr($commentary, 0, 5) != '/game') {
                 $commentary = ":`3$talkline, \"`#$commentary`3\"";
             }
@@ -165,7 +164,7 @@ class Commentary
                 $result = Database::query($sql);
                 if (Database::numRows($result) > 0) {
                     $row = Database::fetchAssoc($result);
-                    if ($row['comment'] != stripslashes($commentary) || $row['author'] != $session['user']['acctid']) {
+                    if ($row['comment'] != $commentary || $row['author'] != $session['user']['acctid']) {
                         self::injectRawComment($section, (int)$session['user']['acctid'], $commentary);
                         $session['user']['laston'] = date('Y-m-d H:i:s');
                     } else {
