@@ -6,6 +6,7 @@ use Lotgd\Modules;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Nav;
+use Lotgd\Commentary;
 
         Modules::hook("collapse{", ["name" => "clanentry"]);
         $output->output("Having pressed the secret levers and turned the secret knobs on the lock of the door to your clan's hall, you gain entrance and chat with your clan mates.`n`n");

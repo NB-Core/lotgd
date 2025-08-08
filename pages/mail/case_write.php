@@ -71,7 +71,7 @@ if (is_array($row)) {
     }
 }
 rawoutput("<form action='mail.php?op=send' method='post'>");
-rawoutput("<input type='hidden' name='returnto' value=\"" . htmlentities(stripslashes($msgid), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\">");
+rawoutput("<input type='hidden' name='returnto' value=\"" . ((string)$msgid) . "\">");
 $superusers = array();
 $acctid_to = 0; //only for hook right now
 if (isset($row['login']) && $row['login'] != "" && $forwardto == 0) {
@@ -132,7 +132,7 @@ foreach ($superusers as $val) {
 }
 rawoutput("</script>");
 output("`2Subject:");
-rawoutput("<input name='subject' value=\"" . htmlentities($subject, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . htmlentities(stripslashes(httpget('subject')), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"><br>");
+rawoutput("<input name='subject' value=\"" . htmlentities((string)$subject, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . htmlentities(stripslashes((string)httpget('subject')), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"><br>");
 rawoutput("<div id='warning' style='visibility: hidden; display: none;'>");
 //superuser messages do not get translated.
 output("`2Notice: `^%s`n", $superusermessage);
@@ -157,7 +157,7 @@ $rows = max(10, $prefs['mailheight']);
 rawoutput("<table style='border:0;cellspacing:10'><tr><td><input type='button' onClick=\"increase(textarea$key,1);\" value='+' accesskey='+'></td><td><input type='button' onClick=\"increase(textarea$key,-1);\" value='-' accesskey='-'></td>");
 rawoutput("<td><input type='button' onClick=\"cincrease(textarea$key,-1);\" value='<-'></td><td><input type='button' onClick=\"cincrease(textarea$key,1);\" value='->' accesskey='-'></td></tr></table>");
 //substr is necessary if you have chars that take up more than 1 byte. That breaks the entire HTMLentities up and it returns nothing
-rawoutput("<textarea id='textarea$key' class='input' onKeyUp='sizeCount(this);' name='$keyout' cols='$cols' rows='$rows'>" . htmlentities(str_replace("`n", "\n", Sanitize::sanitizeMb(substr($body, 0, getsetting("mailsizelimit", 1024, getsetting("charset", "ISO-8859-1"))))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . htmlentities(Sanitize::sanitizeMb(stripslashes(httpget('body'))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea>");
+rawoutput("<textarea id='textarea$key' class='input' onKeyUp='sizeCount(this);' name='$keyout' cols='$cols' rows='$rows'>" . htmlentities(str_replace("`n", "\n", Sanitize::sanitizeMb(substr($body, 0, (int)getsetting("mailsizelimit", 1024, getsetting("charset", "ISO-8859-1"))))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . htmlentities(Sanitize::sanitizeMb(stripslashes((string)httpget('body'))), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea>");
 //rawoutput("<textarea name='body' id='textarea' class='input' cols='60' rows='9' onKeyUp='sizeCount(this);'>".htmlentities($body, ENT_COMPAT, getsetting("charset", "ISO-8859-1")).htmlentities(stripslashes(httpget('body')), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</textarea><br>");
 $send = Translator::translateInline("Send");
 $sendclose = Translator::translateInline("Send and Close");

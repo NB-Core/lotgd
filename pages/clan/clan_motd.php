@@ -14,12 +14,12 @@ use Lotgd\Nltoappon;
         Header::pageHeader("Update Clan Description / MoTD");
         Nav::add("Clan Options");
 if ($session['user']['clanrank'] >= CLAN_OFFICER) {
-    $clanmotd = Sanitize::sanitizeMb(mb_substr(Http::post('clanmotd'), 0, 4096));
+    $clanmotd = Sanitize::sanitizeMb(mb_substr((string)Http::post('clanmotd'), 0, 4096));
     if (
         Http::postIsset('clanmotd') &&
             stripslashes($clanmotd) != $claninfo['clanmotd']
     ) {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET clanmotd='$clanmotd',motdauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
+        $sql = "UPDATE " . Database::prefix("clans") . " SET clanmotd='".addslashes($clanmotd)."',motdauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);
         DataCache::invalidatedatacache("clandata-{$claninfo['clanid']}");
         $claninfo['clanmotd'] = stripslashes($clanmotd);

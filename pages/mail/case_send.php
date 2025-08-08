@@ -12,7 +12,7 @@ $result = db_query($sql);
 $return = (int) httppost("returnto");
 if (db_num_rows($result) > 0) {
         $row1 = db_fetch_assoc($result);
-        $checkUnread = getsetting("onlyunreadmails", true);
+        $checkUnread = (bool)getsetting("onlyunreadmails", true);
     if (Mail::isInboxFull($row1['acctid'], $checkUnread)) {
             output("`\$You cannot send that person mail, their mailbox is full!`0`n`n");
     } else {
