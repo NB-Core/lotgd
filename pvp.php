@@ -129,7 +129,7 @@ if ($battle) {
         if (Http::get('inn')) {
             $extra = "?inn=1";
         }
-                FightNav::fightnav(false, false, "pvp.php$extra");
+                Battle::fightnav(false, false, "pvp.php$extra");
     }
 }
 page_footer();

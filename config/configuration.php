@@ -48,7 +48,7 @@ $setup = array(
         "defaultskin" => "Which template should be the default? (ships with twig:aurora),theme",
     "listonlyonline" => "Show Warriors List with only online folks (prevent paging)?,bool",
     "homeonline_mode" => "Online list mode,enum,0,Current online,1,Online in last timeout,2,Online in last X minutes",
-    "homeonline_minutes" => "Minutes for 'last X minutes' mode,range,1,1440,1",
+    "homeonline_minutes" => "Minutes for 'last X minutes' mode,range,1,480,1",
     "impressum" => "Tell the world something about the person running this server. (e.g. name and address),textarea",
 
     "Beta Setup,title",
