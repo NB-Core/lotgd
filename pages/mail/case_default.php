@@ -7,160 +7,197 @@ use Lotgd\PlayerFunctions;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
 
-output("`b`iMail Box`i`b");
-if (isset($session['message'])) {
-    output($session['message']);
-}
-$session['message'] = "";
-$sortorder = httpget('sortorder');
-if ($sortorder == '') {
-    $sortorder = 'date';
-}
-$order = match ($sortorder) {
+/**
+ * Default mail case handler.
+ */
+function mailDefault(): void
+{
+    global $session;
+
+    output('`b`iMail Box`i`b');
+    if (isset($session['message'])) {
+        output($session['message']);
+    }
+    $session['message'] = '';
+
+    $sortOrder = httpget('sortorder');
+    if ($sortOrder === '') {
+        $sortOrder = 'date';
+    }
+    $order = match ($sortOrder) {
         'subject' => 'subject',
         'name'    => 'name',
-        default   => 'sent'
-};
-$sorting_direction = (int)httpget('direction');
-if ($sorting_direction == 0) {
-    $direction = "DESC";
-} else {
-    $direction = "ASC";
+        default   => 'sent',
+    };
+
+    $sortingDirection = (int) httpget('direction');
+    $direction = $sortingDirection === 0 ? 'DESC' : 'ASC';
+    $newDirection = (int) ! $sortingDirection;
+
+    $rows = Mail::getInbox($session['user']['acctid'], $order, $direction);
+    $dbNumRows = count($rows);
+
+    if ($dbNumRows > 0) {
+        $noSubject = Translator::translateInline('`i(No Subject)`i');
+        $subject = Translator::translateInline('Subject');
+        $from = Translator::translateInline('Sender');
+        $date = Translator::translateInline('SendDate');
+        $arrow = ($sortingDirection ? 'arrow_down.png' : 'arrow_up.png');
+
+        renderMailTableHeader($sortOrder, $sortingDirection, $newDirection, $subject, $from, $date, $arrow);
+
+        $userList = [];
+        foreach ($rows as $row) {
+            if ($row['acctid']) {
+                $userList[] = $row['acctid'];
+            }
+        }
+
+        $userStatusList = PlayerFunctions::massIsPlayerOnline($userList);
+
+        $fromList = renderMailRows($rows, $userStatusList, $noSubject);
+
+        renderMailFooter($fromList);
+    } else {
+        output('`i`4Aww, you have no mail, how sad.`i');
+    }
+
+    output('`n`n`i`lYou currently have %s messages in your inbox.`nYou will no longer be able to receive messages from players if you have more than %s unread messages in your inbox.  `nMessages are automatically deleted (read or unread) after %s days.', $dbNumRows, getsetting('inboxlimit', 50), getsetting('oldmail', 14));
 }
-$newdirection = (int)!$sorting_direction;
 
-$rows = Mail::getInbox($session['user']['acctid'], $order, $direction);
-$db_num_rows = count($rows);
-if ($db_num_rows > 0) {
-    $no_subject = Translator::translateInline("`i(No Subject)`i");
-    $subject = Translator::translateInline("Subject");
-    $from = Translator::translateInline("Sender");
-    $date = Translator::translateInline("SendDate");
-    $arrow = ($sorting_direction ? "arrow_down.png" : "arrow_up.png");
+mailDefault();
 
+/**
+ * Render the mail table header.
+ */
+function renderMailTableHeader(string $sortOrder, int $sortingDirection, int $newDirection, string $subject, string $from, string $date, string $arrow): void
+{
     rawoutput("<form action='mail.php?op=process' onsubmit=\"return confirm('Do you really want to delete/move/process those entries?');\" method='post'><table>");
     rawoutput("<tr class='trhead'><td></td>");
-    rawoutput("<td>" . ($sortorder == 'subject' ? "<img src='images/shapes/$arrow' alt='$arrow'" : "") . "<a href='mail.php?sortorder=subject&direction=" . ($sortorder == 'subject' ? $newdirection : $sorting_direction) . "'>$subject</a></td>");
-    rawoutput("<td>" . ($sortorder == 'name' ? "<img src='images/shapes/$arrow' alt='$arrow'" : "") . "<a href='mail.php?sortorder=name&direction=" . ($sortorder == 'name' ? $newdirection : $sorting_direction) . "'>$from</a></td>");
-    rawoutput("<td>" . ($sortorder == 'date' ? "<img src='images/shapes/$arrow' alt='$arrow'" : "") . "<a href='mail.php?sortorder=date&direction=" . ($sortorder == 'date' ? $newdirection : $sorting_direction) . "'>$date</a></td>");
-    rawoutput("</tr>");
-       $from_list = array();
-       $userlist = array();
+    rawoutput("<td>" . ($sortOrder === 'subject' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=subject&direction=" . ($sortOrder === 'subject' ? $newDirection : $sortingDirection) . "'>$subject</a></td>");
+    rawoutput("<td>" . ($sortOrder === 'name' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=name&direction=" . ($sortOrder === 'name' ? $newDirection : $sortingDirection) . "'>$from</a></td>");
+    rawoutput("<td>" . ($sortOrder === 'date' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=date&direction=" . ($sortOrder === 'date' ? $newDirection : $sortingDirection) . "'>$date</a></td>");
+    rawoutput('</tr>');
+}
+
+/**
+ * Render mail rows and return the from list.
+ */
+function renderMailRows(array $rows, array $userStatusList, string $noSubject): array
+{
+    $fromList = [];
 
     foreach ($rows as $row) {
-        if ($row['acctid']) {
-                $userlist[] = $row['acctid'];
-        }
-    }
-
-        $user_statuslist = PlayerFunctions::massIsPlayerOnline($userlist);
-
-    foreach ($rows as $row) {
-        rawoutput("<tr>");
+        rawoutput('<tr>');
         rawoutput("<td nowrap><input type='checkbox' id='" . $row['messageid'] . "' name='msg[]' value='{$row['messageid']}'>");
-        rawoutput("<img src='images/" . ($row['seen'] ? "old" : "new") . "scroll.GIF' width='16px' height='16px' alt='" . ($row['seen'] ? "Old" : "New") . "'></td>");
-        rawoutput("<td>");
-        $status_image = "";
-        if ((int)$row['msgfrom'] == 0) {
-            $row['name'] = Translator::translateInline("`i`^System`0`i");
-            // Only translate the subject if it's an array, ie, it came from the game.
+        rawoutput("<img src='images/" . ($row['seen'] ? 'old' : 'new') . "scroll.GIF' width='16px' height='16px' alt='" . ($row['seen'] ? 'Old' : 'New') . "'></td>");
+        rawoutput('<td>');
+
+        $statusImage = '';
+        if ((int) $row['msgfrom'] === 0) {
+            $row['name'] = Translator::translateInline('`i`^System`0`i');
             if (isset($row['subject'])) {
-                $row_subject = \Lotgd\Serialization::safeUnserialize($row['subject']);
+                $rowSubject = \Lotgd\Serialization::safeUnserialize($row['subject']);
             } else {
-                $row_subject = "";
+                $rowSubject = '';
             }
-            if ($row_subject !== false && $row_subject != null && is_array($row_subject)) {
-                $row['subject'] = Translator::sprintfTranslate(...$row_subject);
+            if ($rowSubject !== false && $rowSubject !== null && is_array($rowSubject)) {
+                $row['subject'] = Translator::sprintfTranslate(...$rowSubject);
             }
-        } elseif ($row['name'] == '') {
-            $row['name'] = Translator::translateInline("`i`^Deleted User`0`i");
+        } elseif ($row['name'] === '') {
+            $row['name'] = Translator::translateInline('`i`^Deleted User`0`i');
         } else {
-            //get status
-            $online = $user_statuslist[$row['acctid']];
-            $status = ($online ? "online" : "offline");
-            $status_image = "<img src='images/$status.gif' alt='$status'>";
+            $online = $userStatusList[$row['acctid']];
+            $status = $online ? 'online' : 'offline';
+            $statusImage = "<img src='images/$status.gif' alt='$status'>";
         }
-        //collect sanitized names plus message IDs for later use
+
         $sname = Sanitize::sanitize($row['name']);
-        if (!isset($from_list[$sname])) {
-            $from_list[$sname] = "'" . $row['messageid'] . "'";
+        if (! isset($fromList[$sname])) {
+            $fromList[$sname] = "'" . $row['messageid'] . "'";
         } else {
-            $from_list[$sname] .= ", '" . $row['messageid'] . "'";
+            $fromList[$sname] .= ", '" . $row['messageid'] . "'";
         }
-        // In one line so the Translator doesn't screw the Html up
+
         rawoutput("<a href='mail.php?op=read&id={$row['messageid']}'>");
-        output_notl(((trim($row['subject'])) ? $row['subject'] : $no_subject));
-        rawoutput("</a>");
+        output_notl((trim($row['subject']) ? $row['subject'] : $noSubject));
+        rawoutput('</a>');
         rawoutput("</td><td><a href='mail.php?op=read&id={$row['messageid']}'>");
         output_notl($row['name']);
-        rawoutput("</a>$status_image</td><td><a href='mail.php?op=read&id={$row['messageid']}'>" . date("M d, h:i a", strtotime($row['sent'])) . "</a></td>");
-        rawoutput("</tr>");
+        rawoutput("</a>$statusImage</td><td><a href='mail.php?op=read&id={$row['messageid']}'>" . date('M d, h:i a', strtotime($row['sent'])) . '</a></td>');
+        rawoutput('</tr>');
     }
-    rawoutput("</table>");
+
+    rawoutput('</table>');
+
+    return $fromList;
+}
+
+/**
+ * Render footer scripts and controls for the mail table.
+ */
+function renderMailFooter(array $fromList): void
+{
     $script = "<script language='Javascript'>
-					function check_all() {
-						var elements = document.getElementsByName(\"msg[]\");
-						var max = elements.length;
-						var Zaehler=0;
-                                                var checktext='" . Translator::translateInline("Check all") . "';
-                                                var unchecktext='" . Translator::translateInline("Uncheck all") . "';
-						var check = false;
-						for (Zaehler=0;Zaehler<max;Zaehler++) {
-							if (elements[Zaehler].checked==true) {
-								check=true;
-								break;
-							}
-						}
-						if (check==false) {
-							for (Zaehler=0;Zaehler<max;Zaehler++) {
-								elements[Zaehler].checked=true;
-								document.getElementById('button_check').value=unchecktext;
-							}
-						} else {
-							for (Zaehler=0;Zaehler<max;Zaehler++) {
-								elements[Zaehler].checked=false;
-								document.getElementById('button_check').value=checktext;
-							}
-						}
-					}
-					function check_name(who) {
-						if (who=='') return;
-					";
+                                        function check_all() {
+                                                var elements = document.getElementsByName(\"msg[]\");
+                                                var max = elements.length;
+                                                var Zaehler=0;
+                                                var checktext='" . Translator::translateInline('Check all') . "';
+                                                var unchecktext='" . Translator::translateInline('Uncheck all') . "';
+                                                var check = false;
+                                                for (Zaehler=0;Zaehler<max;Zaehler++) {
+                                                        if (elements[Zaehler].checked==true) {
+                                                                check=true;
+                                                                break;
+                                                        }
+                                                }
+                                                if (check==false) {
+                                                        for (Zaehler=0;Zaehler<max;Zaehler++) {
+                                                                elements[Zaehler].checked=true;
+                                                                document.getElementById('button_check').value=unchecktext;
+                                                        }
+                                                } else {
+                                                        for (Zaehler=0;Zaehler<max;Zaehler++) {
+                                                                elements[Zaehler].checked=false;
+                                                                document.getElementById('button_check').value=checktext;
+                                                        }
+                                                }
+                                        }
+                                        function check_name(who) {
+                                                if (who=='') return;
+                                        ";
     $add = '';
     $i = 0;
     $option = "<option value=''>---</option>
-		";
-    foreach ($from_list as $key => $ids) {
-        if ($add == '') {
-            $add = "new Array(" . $ids . ")";
+                ";
+    foreach ($fromList as $key => $ids) {
+        if ($add === '') {
+            $add = 'new Array(' . $ids . ')';
         } else {
-            $add .= ",new Array(" . $ids . ")";
+            $add .= ',new Array(' . $ids . ')';
         }
         $option .= "<option value='$i'>" . $key . "</option>
-			";
+                        ";
         $i++;
     }
     $script .= "var container = new Array($add);
-			var who = document.getElementById('check_name_select').value;
-                        var unchecktext='" . Translator::translateInline("Uncheck all") . "';
-			for (var i=0;i<container[who].length;i++) {
-				document.getElementById(container[who][i]).checked=true;
-			}
-			document.getElementById('button_check').value=unchecktext;
-		}
-					</script>";
+                        var who = document.getElementById('check_name_select').value;
+                        var unchecktext='" . Translator::translateInline('Uncheck all') . "';
+                        for (var i=0;i<container[who].length;i++) {
+                                document.getElementById(container[who][i]).checked=true;
+                        }
+                        document.getElementById('button_check').value=unchecktext;
+                }
+                                        </script>";
     rawoutput($script);
-    $checkall = htmlentities(Translator::translateInline("Check All"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-    $delchecked = htmlentities(Translator::translateInline("Delete Checked"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-    $checknames = htmlentities(Translator::translateInline("`vCheck by Name"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-        output_notl("<label for='check_name_select'>" . $checknames . "</label> <select onchange='check_name()' id='check_name_select'>" . $option . "</select><br>", true);
+    $checkall = htmlentities(Translator::translateInline('Check All'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+    $delchecked = htmlentities(Translator::translateInline('Delete Checked'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+    $checknames = htmlentities(Translator::translateInline('`vCheck by Name'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+    output_notl("<label for='check_name_select'>" . $checknames . "</label> <select onchange='check_name()' id='check_name_select'>" . $option . "</select><br>", true);
     rawoutput("<input type='button' id='button_check' value=\"$checkall\" class='button' onClick='check_all()'>");
     rawoutput("<input type='submit' class='button' value=\"$delchecked\">");
-    //enter here more input buttons as you like, you can then evaluate them via the mailfunctions hook
-    modulehook("mailform", array());
-    //end of hooking
-    rawoutput("</form>");
-} else {
-    output("`i`4Aww, you have no mail, how sad.`i");
+    modulehook('mailform', []);
+    rawoutput('</form>');
 }
-output("`n`n`i`lYou currently have %s messages in your inbox.`nYou will no longer be able to receive messages from players if you have more than %s unread messages in your inbox.  `nMessages are automatically deleted (read or unread) after %s days.", $db_num_rows, getsetting('inboxlimit', 50), getsetting("oldmail", 14));
+
