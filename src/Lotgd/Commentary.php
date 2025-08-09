@@ -205,6 +205,7 @@ class Commentary
      * @return string Sanitized comment text
      */
     private static function sanitizeComment(string $comment): string
+    {
         $commentary = str_replace('`n', '', soap($comment));
         $colorcount = 0;
         $length = strlen($commentary);
