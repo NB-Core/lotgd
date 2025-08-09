@@ -9,7 +9,7 @@ use Lotgd\Mail;
  *
  * @return void
  */
-function MailSend(): void
+function mailSend(): void
 {
     global $session, $op, $id;
 
@@ -122,5 +122,5 @@ function escapeAndTruncateBody(string $body): string
     return addslashes(substr(stripslashes($body), 0, $limit));
 }
 
-MailSend();
+mailSend();
 
