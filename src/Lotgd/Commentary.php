@@ -198,8 +198,13 @@ class Commentary
     /**
      * Clean up user supplied commentary, remove line breaks and limit colour codes.
      */
+    /**
+     * Sanitize user supplied commentary, remove line breaks and limit colour codes.
+     *
+     * @param string $comment Raw comment text to sanitize
+     * @return string Sanitized comment text
+     */
     private static function sanitizeComment(string $comment): string
-    {
         $commentary = str_replace('`n', '', soap($comment));
         $colorcount = 0;
         $length = strlen($commentary);
