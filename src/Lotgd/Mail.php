@@ -105,7 +105,7 @@ class Mail
         $host = getsetting('gamemailhost', 'localhost');
         $mailusername = getsetting('gamemailusername', '');
         $mailpassword = getsetting('gamemailpassword', '');
-        $smtpauth = getsetting('gamailsmtpauth', false);
+        $smtpauth = getsetting('gamemailsmtpauth', false);
         $smtpsecure = getsetting('gamemailsmtpsecure', 'tls');
         $port = getsetting('gamemailsmtpport', '587');
 
