@@ -145,65 +145,142 @@ class Commentary
 
     /**
      * Insert a user comment into the database, performing validation and hooks.
+     *
+     * @param string     $section Section identifier for the commentary stream
+     * @param string     $talkline Verb used to prefix the comment
+     * @param string     $comment  Raw comment text
+     * @param string|bool $schema  Translation schema for the talkline
      */
     public static function injectCommentary(string $section, string $talkline, string $comment, $schema = false): void
     {
         global $session, $doublepost;
+
+        // Use the current translation namespace when no schema is provided
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
+
         $comment = stripslashes($comment);
         tlschema('commentary');
         $doublepost = 0;
-        $emptypost = 0;
-        $colorcount = 0;
-        if ($comment != '') {
-            $commentary = str_replace('`n', '', soap($comment));
-            $y = strlen($commentary);
-            for ($x = 0; $x < $y; $x++) {
-                if (mb_substr($commentary, $x, 1) == '`') {
-                    $colorcount++;
-                    if ($colorcount >= getsetting('maxcolors', 10)) {
-                        $commentary = mb_substr($commentary, 0, $x) . color_sanitize(mb_substr($commentary, $x));
-                        $x = $y;
-                    }
-                    $x++;
-                }
-            }
-            $args = ['section' => $section, 'commentline' => $commentary, 'commenttalk' => $talkline];
-            $args = modulehook('commentary', $args);
-            $commentary = $args['commentline'];
-            $talkline = $args['commenttalk'];
-            tlschema($schema);
-            $talkline = Translator::translateInline($talkline);
-            tlschema();
-            if (getsetting('soap', 1)) {
-                $commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'", "\\1 \\2", $commentary);
-            }
-            if ($talkline != 'says' && mb_substr($commentary, 0, 1) != ':' && mb_substr($commentary, 0, 2) != '::' && mb_substr($commentary, 0, 3) != '/me' && mb_substr($commentary, 0, 5) != '/game') {
-                $commentary = ":`3$talkline, \"`#$commentary`3\"";
-            }
-            $args = modulehook('gmcommentarea', ['section' => $section, 'allow_gm' => false, 'commentary' => $commentary]);
-            if (mb_substr($commentary, 0, 5) == '/game' && ((($session['user']['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) || $args['allow_gm'] === true)) {
-                self::injectSystemComment($section, $args['commentary']);
-            } else {
-                $commentary = $args['commentary'];
-                $sql = 'SELECT comment,author FROM ' . Database::prefix('commentary') . " WHERE section='$section' ORDER BY commentid DESC LIMIT 1";
-                $result = Database::query($sql);
-                if (Database::numRows($result) > 0) {
-                    $row = Database::fetchAssoc($result);
-                    if ($row['comment'] != $commentary || $row['author'] != $session['user']['acctid']) {
-                        self::injectRawComment($section, (int)$session['user']['acctid'], $commentary);
-                        $session['user']['laston'] = date('Y-m-d H:i:s');
-                    } else {
-                        $doublepost = 1;
-                    }
-                } else {
-                    self::injectRawComment($section, (int)$session['user']['acctid'], $commentary);
-                }
-            }
-            tlschema();
+
+        if ($comment === '') {
+            return;
         }
+
+        // Sanitize user input and enforce color limits
+        $commentary = self::sanitizeComment($comment);
+
+        // Apply module hooks and format the talkline
+        [$commentary, $talkline] = self::applyHooks($section, $commentary, $talkline, $schema);
+
+        // Determine if comment is a /game command and if the user is a GM
+        $args = modulehook('gmcommentarea', ['section' => $section, 'allow_gm' => false, 'commentary' => $commentary]);
+        $isGameComment = strncmp($commentary, '/game', 5) === 0;
+        $isGm = (($session['user']['superuser'] & SU_IS_GAMEMASTER) === SU_IS_GAMEMASTER) || $args['allow_gm'] === true;
+
+        if ($isGameComment && $isGm) {
+            // Persist system messages posted by game masters
+            self::injectSystemComment($section, $args['commentary']);
+        } else {
+            // Check for duplicate posts and persist the comment
+            $commentary = $args['commentary'];
+            $commentarySql = self::buildCommentQuery($section);
+            $result = Database::query($commentarySql);
+            $authorId = (int) $session['user']['acctid'];
+
+            $doublepost = self::persistComment($result, $commentary, $authorId, $section);
+        }
+
+        tlschema();
+    }
+
+    /**
+     * Clean up user supplied commentary, remove line breaks and limit colour codes.
+     */
+    private static function sanitizeComment(string $comment): string
+    {
+        $commentary = str_replace('`n', '', soap($comment));
+        $colorcount = 0;
+        $length = strlen($commentary);
+
+        for ($x = 0; $x < $length; $x++) {
+            if (mb_substr($commentary, $x, 1) === '`') {
+                $colorcount++;
+                if ($colorcount >= getsetting('maxcolors', 10)) {
+                    $commentary = mb_substr($commentary, 0, $x) . color_sanitize(mb_substr($commentary, $x));
+                    break;
+                }
+
+                $x++;
+            }
+        }
+
+        return $commentary;
+    }
+
+    /**
+     * Apply module hooks and translate the talkline if needed.
+     *
+     * @return array{string,string} Updated commentary and talkline
+     */
+    private static function applyHooks(string $section, string $commentary, string $talkline, $schema): array
+    {
+        $args = ['section' => $section, 'commentline' => $commentary, 'commenttalk' => $talkline];
+        $args = modulehook('commentary', $args);
+        $commentary = $args['commentline'];
+        $talkline = $args['commenttalk'];
+
+        tlschema($schema);
+        $talkline = Translator::translateInline($talkline);
+        tlschema();
+
+        if (getsetting('soap', 1)) {
+            $commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'", '\\1 \\2', $commentary);
+        }
+
+        if ($talkline !== 'says' && mb_substr($commentary, 0, 1) !== ':' && mb_substr($commentary, 0, 2) !== '::' && mb_substr($commentary, 0, 3) !== '/me' && mb_substr($commentary, 0, 5) !== '/game') {
+            $commentary = ":`3$talkline, \"`#$commentary`3\"";
+        }
+
+        return [$commentary, $talkline];
+    }
+
+    /**
+     * Build the SQL query used to retrieve the latest comment in a section.
+     */
+    private static function buildCommentQuery(string $section): string
+    {
+        return 'SELECT comment, author FROM '
+            . Database::prefix('commentary')
+            . " WHERE section = '$section'"
+            . ' ORDER BY commentid DESC LIMIT 1';
+    }
+
+    /**
+     * Persist a comment if it is not a duplicate of the latest entry.
+     *
+     * @return int 1 if the comment is a double post, 0 otherwise
+     */
+    private static function persistComment($result, string $commentary, int $authorId, string $section): int
+    {
+        global $session;
+
+        if (Database::numRows($result) > 0) {
+            $row = Database::fetchAssoc($result);
+            if ($row['comment'] !== $commentary || (int) $row['author'] !== $authorId) {
+                self::injectRawComment($section, $authorId, $commentary);
+                $session['user']['laston'] = date('Y-m-d H:i:s');
+
+                return 0;
+            }
+
+            return 1;
+        }
+
+        self::injectRawComment($section, $authorId, $commentary);
+
+        return 0;
     }
 
     /**
