@@ -155,6 +155,7 @@ class Mail
             $mail->Send();
             return true;
         } catch (Exception $e) {
+            error_log($mail->ErrorInfo);
             debug(sprintf('Error sending notification mail: %s', $mail->ErrorInfo), true);
             return false;
         }
