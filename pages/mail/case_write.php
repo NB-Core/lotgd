@@ -20,8 +20,9 @@ function mailWrite(): void
     $forwardTo  = (int) httppost('forwardto');
     $toGet      = (string) httpget('to');
     $toPost     = (string) httppost('to');
+    $bodyGet    = (string) httpget('body'); // Prefilled request value for body text
 
-    $body  = '';
+    $body  = ''; // Loaded message body when replying or forwarding
     $row   = '';
     $msgId = 0;
 
@@ -167,7 +168,7 @@ function mailWrite(): void
         getsetting('charset', 'ISO-8859-1')
     );
     $textBody .= htmlentities(
-        Sanitize::sanitizeMb(stripslashes((string) httpget('body'))),
+        Sanitize::sanitizeMb(stripslashes($bodyGet)),
         ENT_COMPAT,
         getsetting('charset', 'ISO-8859-1')
     );
