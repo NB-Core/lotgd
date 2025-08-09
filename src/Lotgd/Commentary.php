@@ -50,48 +50,76 @@ class Commentary
     public static function addCommentary(): void
     {
         global $session, $emptypost;
+
+        // Gather request parameters
         $section = httppost('section');
         $talkline = httppost('talkline');
         $schema = httppost('schema');
-        $comment = trim((string)httppost('insertcommentary'));
+        $comment = trim((string) httppost('insertcommentary'));
         $counter = httppost('counter');
-        $remove = URLDecode((string)httpget('removecomment'));
-        if ($remove > 0) {
-            $return = httpget('returnpath');
-            $section = httpget('section');
-            $sql = 'SELECT ' . Database::prefix('commentary') . '.*,' . Database::prefix('accounts') . '.name,' . Database::prefix('accounts') . '.acctid, ' . Database::prefix('accounts') . '.clanrank,' . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' INNER JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE commentid=' . ((string)$remove);
-            $row = Database::fetchAssoc(Database::query($sql));
-            $sql = 'INSERT LOW_PRIORITY INTO ' . Database::prefix('moderatedcomments') . " (moderator,moddate,comment) VALUES ('{$session['user']['acctid']}',\"" . date('Y-m-d H:i:s') . "\",\"" . addslashes(serialize($row)) . "\")";
-            Database::query($sql);
-            $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE commentid='$remove';";
-            Database::query($sql);
-            invalidatedatacache("comments-$section");
-            invalidatedatacache('comments-or11');
-            $session['user']['specialinc'] == '';
-            $return = cmd_sanitize($return);
-            $return = mb_substr($return, strrpos($return, '/') + 1);
-            if (strpos($return, '?') === false && strpos($return, '&') !== false) {
-                $x = strpos($return, '&');
-                $return = mb_substr($return, 0, $x - 1) . '?' . mb_substr($return, $x + 1);
-            }
-            redirect($return);
+        $removeId = (int) URLDecode((string) httpget('removecomment'));
+        $returnPath = httpget('returnpath');
+        $sectionFromUrl = httpget('section');
+        $rawSectionFromUrl = rawurldecode($sectionFromUrl);
+
+        // Handle comment removal request
+        if ($removeId > 0) {
+            self::handleRemoval($sectionFromUrl, $returnPath, $removeId);
+
+            return;
         }
+
+        // Prevent double submissions using session counter
         if (array_key_exists('commentcounter', $session) && $session['commentcounter'] == $counter) {
+            // Ensure there is data to process
             if ($section || $talkline || $comment) {
                 $tcom = color_sanitize($comment);
+
+                // Ignore empty or trivial posts
                 if ($tcom == '' || $tcom == ':' || $tcom == '::' || $tcom == '/me') {
                     $emptypost = 1;
                 } else {
-                    if (rawurldecode(httpget('section')) != $section) {
-                        output('`\$Please post in the section you should!');
-                        debug(rawurldecode(httpget('section')) . "-" . $section);
+                    // Check that the form section matches the URL section
+                    if ($rawSectionFromUrl != $section) {
+                        output('`$Please post in the section you should!');
+                        debug($rawSectionFromUrl . "-" . $section);
                     } else {
+                        // Valid comment, inject into the database
                         self::injectCommentary($section, $talkline, $comment, $schema);
                     }
                 }
             }
         }
     }
+
+    /**
+     * Remove a commentary post and log the action.
+     */
+    private static function handleRemoval(string $section, string $returnPath, int $removeId): void
+    {
+        global $session;
+
+        $sql = 'SELECT ' . Database::prefix('commentary') . '.*,' . Database::prefix('accounts') . '.name,' . Database::prefix('accounts') . '.acctid, ' . Database::prefix('accounts') . '.clanrank,' . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' INNER JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid=' . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE commentid=' . $removeId;
+        $row = Database::fetchAssoc(Database::query($sql));
+        $sql = 'INSERT LOW_PRIORITY INTO ' . Database::prefix('moderatedcomments') . " (moderator,moddate,comment) VALUES ('{$session['user']['acctid']}',\"" . date('Y-m-d H:i:s') . "\",\"" . addslashes(serialize($row)) . "\")";
+        Database::query($sql);
+
+        $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE commentid='$removeId';";
+        Database::query($sql);
+
+        invalidatedatacache("comments-$section");
+        invalidatedatacache('comments-or11');
+        $session['user']['specialinc'] == '';
+
+        $returnPath = cmd_sanitize($returnPath);
+        $returnPath = mb_substr($returnPath, strrpos($returnPath, '/') + 1);
+        if (strpos($returnPath, '?') === false && strpos($returnPath, '&') !== false) {
+            $x = strpos($returnPath, '&');
+            $returnPath = mb_substr($returnPath, 0, $x - 1) . '?' . mb_substr($returnPath, $x + 1);
+        }
+        redirect($returnPath);
+    }
+
 
     /**
      * Insert a system generated message into the commentary stream.
