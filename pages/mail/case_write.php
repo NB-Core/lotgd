@@ -308,7 +308,7 @@ function renderSizeCountScript(): void
     $sizeMsg = Translator::translateInline($sizeMsg);
     $sizeMsg = sprintf($sizeMsg, getsetting('mailsizelimit', 1024));
 
-    $sizeMsgOver = '`$Max message size is `@%s`$, you are over by `^XX`$ characters!`';
+    $sizeMsgOver = '`$Max message size is `@%s`$, you are over by `^XX`$ characters!';
     $sizeMsgOver = Translator::translateInline($sizeMsgOver);
     $sizeMsgOver = sprintf($sizeMsgOver, getsetting('mailsizelimit', 1024));
 
