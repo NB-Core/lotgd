@@ -191,9 +191,9 @@ function renderMailFooter(array $fromList): void
                 }
                                         </script>";
     rawoutput($script);
-    $checkall = htmlentities(Translator::translateInline('Check All'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
-    $delchecked = htmlentities(Translator::translateInline('Delete Checked'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
-    $checknames = htmlentities(Translator::translateInline('`vCheck by Name'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+    $checkall = htmlentities(Translator::translateInline('Check All'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $delchecked = htmlentities(Translator::translateInline('Delete Checked'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $checknames = htmlentities(Translator::translateInline('`vCheck by Name'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     output_notl("<label for='check_name_select'>" . $checknames . "</label> <select onchange='check_name()' id='check_name_select'>" . $option . "</select><br>", true);
     rawoutput("<input type='button' id='button_check' value=\"$checkall\" class='button' onClick='check_all()'>");
     rawoutput("<input type='submit' class='button' value=\"$delchecked\">");
