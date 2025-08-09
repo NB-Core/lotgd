@@ -860,7 +860,7 @@ SQL;
         if ($op == '') {
             if ($linkBios) {
                 $op = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
-            } elseif (mb_substr($ft, 0, 5) == '/game' && empty($row['name'])) {
+            } elseif (mb_substr($ft, 0, 5) == '/game' && ($row['name'] === '' || $row['name'] === null)) {
                 $op = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
             } else {
                 $op = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
