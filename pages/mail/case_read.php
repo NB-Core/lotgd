@@ -30,7 +30,12 @@ function mailRead(): void
     global $session;
 
     // Get message id from request
-    $messageId = (int) httpget('id');
+    $idParam = httpget('id');
+    if (!isset($idParam) || !is_numeric($idParam) || (int)$idParam <= 0) {
+        output('Invalid message ID.');
+        return;
+    }
+    $messageId = (int) $idParam;
 
     // Retrieve the message details
     $message = Mail::getMessage($session['user']['acctid'], $messageId);
