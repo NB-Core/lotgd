@@ -138,7 +138,7 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
  */
 function renderMailFooter(array $fromList): void
 {
-    $script = "<script language='Javascript'>
+    $script = "<script type='text/javascript'>
                                         function check_all() {
                                                 var elements = document.getElementsByName(\"msg[]\");
                                                 var max = elements.length;
