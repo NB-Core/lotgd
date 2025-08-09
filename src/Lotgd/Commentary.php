@@ -99,12 +99,43 @@ class Commentary
     {
         global $session;
 
-        $sql = 'SELECT ' . Database::prefix('commentary') . '.*,' . Database::prefix('accounts') . '.name,' . Database::prefix('accounts') . '.acctid, ' . Database::prefix('accounts') . '.clanrank,' . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' INNER JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid=' . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE commentid=' . $removeId;
+        $commentary = Database::prefix('commentary');
+        $accounts   = Database::prefix('accounts');
+        $clans      = Database::prefix('clans');
+
+        $sql = <<<SQL
+SELECT
+    c.*,             -- full commentary row
+    a.name,          -- account name
+    a.acctid,        -- account identifier
+    a.clanrank,      -- author's clan rank
+    cl.clanshort     -- clan abbreviation
+FROM {$commentary} c
+INNER JOIN {$accounts} a ON a.acctid = c.author -- link author data
+LEFT JOIN {$clans} cl ON cl.clanid = a.clanid   -- link clan data
+WHERE commentid = {$removeId}
+SQL;
         $row = Database::fetchAssoc(Database::query($sql));
-        $sql = 'INSERT LOW_PRIORITY INTO ' . Database::prefix('moderatedcomments') . " (moderator,moddate,comment) VALUES ('{$session['user']['acctid']}',\"" . date('Y-m-d H:i:s') . "\",\"" . addslashes(serialize($row)) . "\")";
+
+        $moderated = Database::prefix('moderatedcomments');
+        $now       = date('Y-m-d H:i:s');
+        $comment   = addslashes(serialize($row));
+
+        $sql = <<<SQL
+INSERT LOW_PRIORITY INTO {$moderated}
+    (moderator, moddate, comment)            -- moderation record columns
+VALUES
+    ('{$session['user']['acctid']}',         -- moderator ID
+     '{$now}',                               -- time of moderation
+     '{$comment}'                            -- serialized comment data
+    )
+SQL;
         Database::query($sql);
 
-        $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE commentid='$removeId';";
+        $sql = <<<SQL
+DELETE FROM {$commentary}                 -- remove comment entry
+WHERE commentid = {$removeId}             -- by comment identifier
+SQL;
         Database::query($sql);
 
         invalidatedatacache("comments-$section");
