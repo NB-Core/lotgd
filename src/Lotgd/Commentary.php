@@ -719,112 +719,26 @@ SQL;
     {
         global $session;
 
-        // Build a return URL for profile links. Ajax requests reuse the last
-        // page URL stored in the session.
-        if ($_SERVER['REQUEST_URI'] == '/ext/ajax_process.php') {
-            $real_request_uri = $session['last_comment_request_uri'] ?? $_SERVER['REQUEST_URI'];
-        } else {
-            $real_request_uri = $_SERVER['REQUEST_URI'];
-            $session['last_comment_request_uri'] = $real_request_uri;
-        }
+        $realRequestUri = self::determineReturnUrl();
+        $row['comment'] = sanitize_mb(comment_sanitize($row['comment']));
+        $ft = self::parseCommandPrefix($row['comment']);
+        $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($realRequestUri);
 
-        // Clean up colour codes and ensure valid UTF-8
-        $row['comment'] = comment_sanitize($row['comment']);
-        $row['comment'] = sanitize_mb($row['comment']);
-
-        // Determine any command prefix (like ::, : or /me) at the start of the comment
-        $ft = '';
-        for ($x = 0; mb_strlen($ft) < 5 && $x < mb_strlen($row['comment']); $x++) {
-            if (mb_substr($row['comment'], $x, 1) == '`' && strlen($ft) == 0) {
-                $x++;
-            } else {
-                $ft .= mb_substr($row['comment'], $x, 1);
-            }
-        }
-
-        // Destination for the author's bio
-        $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($real_request_uri);
-
-        // Trim prefix to a recognised command token
-        if (mb_substr($ft, 0, 2) == '::') {
-            $ft = mb_substr($ft, 0, 2);
-        } elseif (mb_substr($ft, 0, 1) == ':') {
-            $ft = mb_substr($ft, 0, 1);
-        } elseif (mb_substr($ft, 0, 3) == '/me') {
-            $ft = mb_substr($ft, 0, 3);
-        }
-
-        // Apply holiday translations to comment and name
         if (!empty($row['comment'])) {
             $row['comment'] = HolidayText::holidayize($row['comment'], 'comment');
         }
-        if (!empty($row['name'])) {
-            $row['name'] = HolidayText::holidayize($row['name'], 'comment');
-        }
 
+        $row['name'] = self::formatName($row);
 
-        // Prepend clan tag to the author's name
-        if ($row['clanrank']) {
-            $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
-            $row['name'] = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank']/10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank']/10)]}&gt; `&" : '') . $row['name'];
-        }
+        $op = self::buildCommentHtml($ft, $row, $link, $linkBios);
 
-        // Inject chat tags for staff or moderators
-        if (getsetting('enable_chat_tags', 1) == 1) {
-            if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
-                $row['name'] = '`$' . getsetting('chat_tag_megauser', '[ADMIN]') . '`0' . $row['name'];
-            } else {
-                if (($row['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
-                    $chat_tag_gm = getsetting('chat_tag_gm', '[GM]');
-                    $row['name'] = '`$' . $chat_tag_gm . '`0' . $row['name'];
-                }
-                if (($row['superuser'] & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
-                    $chat_tag_mod = getsetting('chat_tag_mod', '[MOD]');
-                    $row['name'] = '`$' . $chat_tag_mod . '`0' . $row['name'];
-                }
-            }
-        }
-
-        $op = '';
-        // Handle roleplay prefixes such as "/me" or the :: shout format
-        if ($ft == '::' || $ft == '/me' || $ft == ':') {
-            $x = strpos($row['comment'], $ft);
-            if ($x !== false) {
-                if ($linkBios) {
-                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
-                } else {
-                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
-                }
-            }
-        }
-
-        // Game messages without an author
-        if ($op == '' && $ft == '/game' && !$row['name']) {
-            $x = strpos($row['comment'], $ft);
-            if ($x !== false) {
-                $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
-            }
-        }
-
-        // Default display if we did not handle a special prefix above
-        if ($op == '') {
-            if ($linkBios) {
-                $op = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
-            } elseif (mb_substr($ft, 0, 5) == '/game' && !$row['name']) {
-                $op = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-            } else {
-                $op = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
-            }
-        }
-
-        // Timestamp preferences
         $session['user']['prefs']['timeoffset'] = $session['user']['prefs']['timeoffset'] ?? 0;
         $session['user']['prefs']['timestamp'] = $session['user']['prefs']['timestamp'] ?? 0;
 
         if ($session['user']['prefs']['timestamp'] == 1) {
             $session['user']['prefs']['timeformat'] = $session['user']['prefs']['timeformat'] ?? '[m/d h:ia]';
             $time = strtotime($row['postdate']) + ($session['user']['prefs']['timeoffset'] * 60 * 60);
-            $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', (int)$time);
+            $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', (int) $time);
             $op = $s . $op;
         } elseif ($session['user']['prefs']['timestamp'] == 2) {
             $s = reltime(strtotime($row['postdate']));
@@ -836,6 +750,122 @@ SQL;
         }
 
         addnav('', $link);
+
+        return $op;
+    }
+
+    /**
+     * Determine the request URI used when linking to a player's bio.
+     */
+    private static function determineReturnUrl(): string
+    {
+        global $session;
+
+        if ($_SERVER['REQUEST_URI'] == '/ext/ajax_process.php') {
+            return $session['last_comment_request_uri'] ?? $_SERVER['REQUEST_URI'];
+        }
+
+        $session['last_comment_request_uri'] = $_SERVER['REQUEST_URI'];
+
+        return $_SERVER['REQUEST_URI'];
+    }
+
+    /**
+     * Extract a command prefix (such as ::, : or /me) from a comment.
+     */
+    private static function parseCommandPrefix(string $comment): string
+    {
+        $ft = '';
+        for ($x = 0; mb_strlen($ft) < 5 && $x < mb_strlen($comment); $x++) {
+            if (mb_substr($comment, $x, 1) == '`' && strlen($ft) == 0) {
+                $x++;
+            } else {
+                $ft .= mb_substr($comment, $x, 1);
+            }
+        }
+
+        if (mb_substr($ft, 0, 2) == '::') {
+            return mb_substr($ft, 0, 2);
+        }
+        if (mb_substr($ft, 0, 1) == ':') {
+            return mb_substr($ft, 0, 1);
+        }
+        if (mb_substr($ft, 0, 3) == '/me') {
+            return mb_substr($ft, 0, 3);
+        }
+        if (mb_substr($ft, 0, 5) == '/game') {
+            return mb_substr($ft, 0, 5);
+        }
+
+        return '';
+    }
+
+    /**
+     * Format a player's name with holiday text, clan tags and staff badges.
+     */
+    private static function formatName(array $row): string
+    {
+        $name = $row['name'] ?? '';
+
+        if ($name !== '') {
+            $name = HolidayText::holidayize($name, 'comment');
+        }
+
+        if (!empty($row['clanrank'])) {
+            $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
+            $name = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank'] / 10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank'] / 10)]}&gt; `&" : '') . $name;
+        }
+
+        if (getsetting('enable_chat_tags', 1) == 1) {
+            if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
+                $name = '`$' . getsetting('chat_tag_megauser', '[ADMIN]') . '`0' . $name;
+            } else {
+                if (($row['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
+                    $name = '`$' . getsetting('chat_tag_gm', '[GM]') . '`0' . $name;
+                }
+                if (($row['superuser'] & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
+                    $name = '`$' . getsetting('chat_tag_mod', '[MOD]') . '`0' . $name;
+                }
+            }
+        }
+
+        return $name;
+    }
+
+    /**
+     * Render the final HTML for a comment line.
+     */
+    private static function buildCommentHtml(string $ft, array $row, string $link, bool $linkBios): string
+    {
+        $op = '';
+
+        if ($ft == '::' || $ft == '/me' || $ft == ':') {
+            $x = strpos($row['comment'], $ft);
+            if ($x !== false) {
+                if ($linkBios) {
+                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                } else {
+                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+                }
+            }
+        }
+
+        if ($op == '' && $ft == '/game' && (!isset($row['name']) || $row['name'] === '')) {
+            $x = strpos($row['comment'], $ft);
+            if ($x !== false) {
+                $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
+            }
+        }
+
+        if ($op == '') {
+            if ($linkBios) {
+                $op = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
+            } elseif (mb_substr($ft, 0, 5) == '/game' && ($row['name'] === '' || $row['name'] === null)) {
+                $op = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
+            } else {
+                $op = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`3\"`0`n";
+            }
+        }
 
         return $op;
     }
