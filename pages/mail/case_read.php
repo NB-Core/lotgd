@@ -41,7 +41,7 @@ function mailRead(): void
     $message = Mail::getMessage($session['user']['acctid'], $messageId);
 
     if (! $message) {
-        output('Eek, no such message was found!');
+        output('The requested message could not be found.');
 
         return;
     }
