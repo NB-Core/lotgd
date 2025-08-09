@@ -293,6 +293,125 @@ class Commentary
     }
 
     /**
+     * Calculate pagination information for the commentary view.
+     *
+     * @param string     $section    Commentary section identifier
+     * @param int        $limit      Number of comments per page
+     * @param mixed      $comscroll  Raw HTTP request value for comscroll
+     *
+     * @return array{int,int,int}   [current page, last comment id, new comment count]
+     */
+    private static function getPaginationData(string $section, int $limit, $comscroll): array
+    {
+        global $session;
+
+        // Normalise the requested page number
+        $com = (int) $comscroll;
+        if ($com < 0) {
+            $com = 0;
+        }
+
+        if (!isset($session['lastcom'])) {
+            $session['lastcom'] = 0;
+        }
+
+        // Determine the last comment id when scrolling forward
+        $cid = 0;
+        if ($comscroll !== false && (int) $session['lastcom'] === $com + 1) {
+            $cid = (int) $session['lastcommentid'];
+        }
+
+        $session['lastcom'] = $com;
+
+        // Count new comments when scrolling
+        $newadded = 0;
+        if ($com > 0 || $cid > 0) {
+            $sql = self::buildNewAddedSql($section, $cid);
+            $result = Database::query($sql);
+            $row = Database::fetchAssoc($result);
+            $newadded = (int) $row['newadded'];
+            Database::freeResult($result);
+        }
+
+        return [$com, $cid, $newadded];
+    }
+
+    /**
+     * Build the SQL used to count new comments when paginating.
+     */
+    private static function buildNewAddedSql(string $section, int $cid): string
+    {
+        return 'SELECT COUNT(commentid) AS newadded FROM '
+            . Database::prefix('commentary') . ' LEFT JOIN '
+            . Database::prefix('accounts') . ' ON '
+            . Database::prefix('accounts') . '.acctid = '
+            . Database::prefix('commentary') . ".author WHERE section='$section' AND "
+            . '(' . Database::prefix('accounts') . '.locked=0 or '
+            . Database::prefix('accounts') . ".locked is null) AND commentid > '$cid'";
+    }
+
+    /**
+     * Build the SQL query used to fetch commentary rows for a section.
+     */
+    private static function buildCommentFetchSql(string $section, int $limit, int $com, int $cid): string
+    {
+        $base = 'SELECT '
+            . Database::prefix('commentary') . '.*, '
+            . Database::prefix('accounts') . '.name, '
+            . Database::prefix('accounts') . '.acctid, '
+            . Database::prefix('accounts') . '.superuser, '
+            . Database::prefix('accounts') . '.clanrank, '
+            . Database::prefix('clans') . '.clanshort FROM '
+            . Database::prefix('commentary') . ' LEFT JOIN '
+            . Database::prefix('accounts') . ' ON '
+            . Database::prefix('accounts') . '.acctid = '
+            . Database::prefix('commentary') . '.author LEFT JOIN '
+            . Database::prefix('clans') . ' ON '
+            . Database::prefix('clans') . '.clanid='
+            . Database::prefix('accounts') . ".clanid WHERE section = '$section'"
+            . ' AND (' . Database::prefix('accounts') . '.locked=0 OR '
+            . Database::prefix('accounts') . '.locked is null) ';
+
+        if ($cid === 0) {
+            return $base . 'ORDER BY commentid DESC LIMIT ' . ($com * $limit) . ',' . $limit;
+        }
+
+        return $base . "AND commentid > '$cid' ORDER BY commentid ASC LIMIT $limit";
+    }
+
+    /**
+     * Retrieve commentary rows from the database.
+     *
+     * @return array<int, array>
+     */
+    private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid, string $real_request_uri): array
+    {
+        $sql = self::buildCommentFetchSql($section, $limit, $com, $cid);
+        $useCache = $cid === 0 && $com === 0 && strstr($real_request_uri, '/moderate.php') !== $real_request_uri;
+
+        if ($useCache) {
+            $result = Database::queryCached($sql, "comments-{$section}");
+        } else {
+            $result = Database::query($sql);
+        }
+
+        $buffer = [];
+        while ($row = Database::fetchAssoc($result)) {
+            $buffer[] = $row;
+        }
+
+        if (!$useCache) {
+            Database::freeResult($result);
+        }
+
+        if ($cid !== 0) {
+            $buffer = array_reverse($buffer);
+        }
+
+        return $buffer;
+    }
+
+    /**
      * Display a block of commentary and an optional input form.
      */
     public static function commentDisplay(string $intro, string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false): void
@@ -310,8 +429,16 @@ class Commentary
     /**
      * Render commentary lines for a given section.
      */
-    public static function viewCommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false, bool $viewonly = false, bool $returnastext = false, $scriptname_pre = false): ?string
-    {
+    public static function viewCommentary(
+        string $section,
+        string $message = 'Interject your own commentary?',
+        int $limit = 10,
+        string $talkline = 'says',
+        $schema = false,
+        bool $viewonly = false,
+        bool $returnastext = false,
+        $scriptname_pre = false
+    ): ?string {
         global $session, $REQUEST_URI, $doublepost, $emptypost;
 
         // The guard for null is removed as $section is declared as string and cannot be null.
@@ -331,6 +458,9 @@ class Commentary
 
         $session['last_comment_section'] = $section;
         $session['last_comment_scriptname'] = $scriptname;
+
+        // Capture pagination request parameter
+        $comscroll = httpget('comscroll');
 
         rawoutput("<div id='$section-comment'>");
         if ($returnastext !== false) {
@@ -368,87 +498,9 @@ class Commentary
             output("`$`bWell, they say silence is a virtue.`b`0`n");
         }
 
-        $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
-
-        $com = (int)httpget('comscroll');
-        if ($com < 0) {
-            $com = 0;
-        }
-        $cc = false;
-        if (!isset($session['lastcom'])) {
-            $session['lastcom'] = 0;
-        }
-        if (httpget('comscroll') !== false && (int)$session['lastcom'] == $com + 1) {
-            $cid = (int)$session['lastcommentid'];
-        } else {
-            $cid = 0;
-        }
-
-        $session['lastcom'] = $com;
-
-        if ($com > 0 || $cid > 0) {
-            $sql = 'SELECT COUNT(commentid) AS newadded FROM '
-                . Database::prefix('commentary') . ' LEFT JOIN '
-                . Database::prefix('accounts') . ' ON '
-                . Database::prefix('accounts') . '.acctid = '
-                . Database::prefix('commentary') . '.author WHERE section=\'' . $section . "' AND "
-                . '(' . Database::prefix('accounts') . '.locked=0 or ' . Database::prefix('accounts') . '.locked is null) AND commentid > \'' . $cid . "'";
-            $result = Database::query($sql);
-            $row = Database::fetchAssoc($result);
-            $newadded = $row['newadded'];
-        } else {
-            $newadded = 0;
-        }
-
-        $commentbuffer = [];
-        if ($cid == 0) {
-            $sql = "SELECT " . Database::prefix("commentary") . ".*, " .
-                Database::prefix("accounts") . ".name, " .
-                Database::prefix("accounts") . ".acctid, " .
-                Database::prefix("accounts") . ".superuser, " .
-                Database::prefix("accounts") . ".clanrank, " .
-                Database::prefix("clans") .  ".clanshort FROM " .
-                Database::prefix("commentary") . " LEFT JOIN " .
-                Database::prefix("accounts") . " ON " .
-                Database::prefix("accounts") .  ".acctid = " .
-                Database::prefix("commentary") . ".author LEFT JOIN " .
-                Database::prefix("clans") . " ON " .
-                Database::prefix("clans") . ".clanid=" .
-                Database::prefix("accounts") .
-                ".clanid WHERE section = '$section' AND " .
-                "( " . Database::prefix("accounts") . ".locked=0 OR " . Database::prefix("accounts") . ".locked is null ) " .
-                "ORDER BY commentid DESC LIMIT " .
-                ($com * $limit) . ",$limit";
-            if ($com == 0 && strstr($real_request_uri, '/moderate.php') !== $real_request_uri) {
-                $result = Database::queryCached($sql, "comments-{$section}");
-            } else {
-                $result = Database::query($sql);
-            }
-            while ($row = Database::fetchAssoc($result)) {
-                $commentbuffer[] = $row;
-            }
-        } else {
-            $sql = "SELECT " . Database::prefix("commentary") . ".*, " .
-                Database::prefix("accounts") . ".name, " .
-                Database::prefix("accounts") . ".acctid, " .
-                Database::prefix("accounts") . ".superuser, " .
-                Database::prefix("accounts") . ".clanrank, " .
-                Database::prefix("clans") . ".clanshort FROM " . Database::prefix("commentary") .
-                " LEFT JOIN " . Database::prefix("accounts") . " ON " .
-                Database::prefix("accounts") . ".acctid = " .
-                Database::prefix("commentary") . ".author LEFT JOIN " .
-                Database::prefix("clans") . " ON " . Database::prefix("clans") . ".clanid=" .
-                Database::prefix("accounts") .
-                ".clanid WHERE section = '$section' AND " .
-                "( " . Database::prefix("accounts") . ".locked=0 OR " . Database::prefix("accounts") . ".locked is null ) " .
-                "AND commentid > '$cid' " .
-                "ORDER BY commentid ASC LIMIT $limit";
-            $result = Database::query($sql);
-            while ($row = Database::fetchAssoc($result)) {
-                $commentbuffer[] = $row;
-            }
-            $commentbuffer = array_reverse($commentbuffer);
-        }
+        // Determine pagination data and fetch comments
+        [$com, $cid, $newadded] = self::getPaginationData($section, $limit, $comscroll);
+        $commentbuffer = self::fetchCommentBuffer($section, $limit, $com, $cid, $real_request_uri);
 
         $rowcount = count($commentbuffer);
         if ($rowcount > 0) {
@@ -614,9 +666,6 @@ class Commentary
             output_notl(" <a href=\"$last\">$lastu</a>", true);
         } else {
             output_notl("$next $lastu", true);
-        }
-        if (!$cc) {
-            Database::freeResult($result);
         }
         tlschema();
         if ($needclose) {
