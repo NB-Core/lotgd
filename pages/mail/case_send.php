@@ -16,12 +16,12 @@ if (db_num_rows($result) > 0) {
     if (Mail::isInboxFull($row1['acctid'], $checkUnread)) {
             output("`\$You cannot send that person mail, their mailbox is full!`0`n`n");
     } else {
-        $subject = str_replace("`n", "", httppost('subject'));
-        $body = str_replace("`n", "\n", httppost('body'));
+        $subject = str_replace("`n", "", (string)httppost('subject'));
+        $body = str_replace("`n", "\n", (string)httppost('body'));
         $body = str_replace("\r\n", "\n", $body);
         $body = str_replace("\r", "\n", $body);
         $body = addslashes(substr(stripslashes($body), 0, (int)getsetting("mailsizelimit", 1024)));
-        Mail::systemMail($row1['acctid'], $subject, $body, $session['user']['acctid']);
+        Mail::systemMail($row1['acctid'], $subject, $body, (int)$session['user']['acctid']);
         invalidatedatacache("mail-{$row1['acctid']}");
         output("Your message was sent!`n");
         if (httppost('sendclose')) {
