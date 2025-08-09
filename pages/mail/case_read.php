@@ -69,7 +69,7 @@ function mailRead(): void
         if ($subject !== false && is_array($subject)) {
             $message['subject'] = Translator::sprintfTranslate(...$subject);
         } else {
-            $message['subject'] = $subject;
+            $message['subject'] = $message['subject'];
         }
 
         // Translate body if needed
