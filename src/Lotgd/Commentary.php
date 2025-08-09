@@ -253,6 +253,9 @@ class Commentary
 
     /**
      * Build the SQL query used to retrieve the latest comment in a section.
+     *
+     * @param string $section The section to retrieve the latest comment from
+     * @return string The SQL query string
      */
     private static function buildCommentQuery(string $section): string
     {
