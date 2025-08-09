@@ -77,7 +77,7 @@ function mailRead(): void
         if ($body !== false && is_array($body)) {
             $message['body'] = Translator::sprintfTranslate(...$body);
         } else {
-            $message['body'] = $body;
+            $message['body'] = $message['body'];
         }
     } elseif ($message['name'] === '') {
         $message['name'] = Translator::translateInline('`^Deleted User');
