@@ -387,7 +387,7 @@ class Commentary
     private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid, string $real_request_uri): array
     {
         $sql = self::buildCommentFetchSql($section, $limit, $com, $cid);
-        $useCache = $cid === 0 && $com === 0 && strstr($real_request_uri, '/moderate.php') !== $real_request_uri;
+        $useCache = $cid === 0 && $com === 0 && strstr($real_request_uri, '/moderate.php') === false;
 
         if ($useCache) {
             $result = Database::queryCached($sql, "comments-{$section}");
