@@ -850,7 +850,7 @@ SQL;
             }
         }
 
-        if ($op == '' && $ft == '/game' && empty($row['name'])) {
+        if ($op == '' && $ft == '/game' && (!isset($row['name']) || $row['name'] === '')) {
             $x = strpos($row['comment'], $ft);
             if ($x !== false) {
                 $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'))) . "`0`n";
