@@ -304,7 +304,7 @@ function renderResizeScripts(): void
  */
 function renderSizeCountScript(): void
 {
-    $sizeMsg = '`#Max message size is `@%s`#, you have `^XX`# characters left.`';
+    $sizeMsg = '`#Max message size is `@%s`#, you have `^XX`# characters left.';
     $sizeMsg = Translator::translateInline($sizeMsg);
     $sizeMsg = sprintf($sizeMsg, getsetting('mailsizelimit', 1024));
 
