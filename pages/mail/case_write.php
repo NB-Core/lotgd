@@ -204,7 +204,7 @@ function getSuperuserFlag(string $login): int
  */
 function getAccountByLogin(string $login): ?array
 {
-    $sql    = 'SELECT login,name, superuser FROM ' . db_prefix('accounts') . " WHERE login=\"$login\"";
+    $sql    = 'SELECT login,name, superuser FROM ' . db_prefix('accounts') . " WHERE login='" . addslashes($login) . "'";
     $result = db_query($sql);
     $row    = db_fetch_assoc($result);
 
