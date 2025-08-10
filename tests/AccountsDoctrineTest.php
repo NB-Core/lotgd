@@ -94,4 +94,21 @@ final class AccountsDoctrineTest extends TestCase
         $entity = Accounts::getAccountEntity();
         $this->assertSame(1.5, $entity->getGentime());
     }
+
+    public function testSaveUserHandlesMissingAllowednavs(): void
+    {
+        unset($GLOBALS['session']['allowednavs']);
+        set_error_handler(static function (int $errno, string $errstr): bool {
+            throw new \ErrorException($errstr, 0, $errno);
+        });
+
+        try {
+            Accounts::saveUser();
+        } finally {
+            restore_error_handler();
+        }
+
+        $entity = Accounts::getAccountEntity();
+        $this->assertNotNull($entity);
+    }
 }

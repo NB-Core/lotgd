@@ -76,7 +76,7 @@ class Accounts
             // Ensure that any temporary stat modifications are removed.
             Buffs::restoreBuffFields();
 
-            $session['user']['allowednavs'] = serialize($session['allowednavs']);
+            $session['user']['allowednavs'] = serialize($session['allowednavs'] ?? []);
             $session['user']['bufflist']    = serialize($session['bufflist']);
             // legacy support, allows boolean values for alive
             $session['user']['alive']       = (int) $session['user']['alive'];
