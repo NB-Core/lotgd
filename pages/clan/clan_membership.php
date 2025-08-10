@@ -16,7 +16,7 @@ use Lotgd\Sanitize;
  */
 function clanMembership(): void
 {
-    global $output, $session, $claninfo, $apply_short;
+    global $output, $session, $claninfo, $apply_short, $ranks;
 
     Nav::add('Clan Hall', 'clan.php');
     Nav::add('Clan Options');
