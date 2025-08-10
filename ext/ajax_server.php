@@ -34,33 +34,38 @@ use function Jaxon\jaxon;
 function mail_status($args = false): Response
 {
     global $start_timeout_show_seconds, $session;
-    chdir("..");
-    if ($args === false) {
-        return jaxon()->newResponse();
-    };
-    $timeout_setting = getsetting("LOGINTIMEOUT", 360); // seconds
-    $new = maillink();
-    $tabtext = maillinktabtext();
+    $cwd = getcwd();
+    chdir(__DIR__ . '/..');
+    try {
+        if ($args === false) {
+            return jaxon()->newResponse();
+        };
+        $timeout_setting = getsetting("LOGINTIMEOUT", 360); // seconds
+        $new = maillink();
+        $tabtext = maillinktabtext();
 
-    // Get the highest message ID for the current user there is
-    $sql = "SELECT MAX(messageid) AS lastid FROM " . db_prefix('mail') . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
-    $result = db_query($sql);
-    $row = db_fetch_assoc($result);
-    if ($row === false) {
-        $row = ['lastid' => 0];
-    }
-    db_free_result($result);
-    $lastMailId = (int)($row['lastid'] ?? 0);
-    $objResponse = jaxon()->newResponse();
-    $objResponse->assign("maillink", "innerHTML", $new);
-    if ($tabtext == '') { // there are no unseen mails
+        // Get the highest message ID for the current user there is
+        $sql = "SELECT MAX(messageid) AS lastid FROM " . db_prefix('mail') . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
+        $result = db_query($sql);
+        $row = db_fetch_assoc($result);
+        if ($row === false) {
+            $row = ['lastid' => 0];
+        }
+        db_free_result($result);
+        $lastMailId = (int)($row['lastid'] ?? 0);
+        $objResponse = jaxon()->newResponse();
+        $objResponse->assign("maillink", "innerHTML", $new);
+        if ($tabtext == '') { // there are no unseen mails
+            return $objResponse;
+        } else {
+            $tabtext = translate_inline('Legend of the Green Dragon', 'home') . ' - ' . $tabtext;
+            $objResponse->script("document.title=\"" . $tabtext . "\";");
+            $objResponse->script('lotgdMailNotify(' .  $lastMailId . ');');
+        }
         return $objResponse;
-    } else {
-        $tabtext = translate_inline('Legend of the Green Dragon', 'home') . ' - ' . $tabtext;
-        $objResponse->script("document.title=\"" . $tabtext . "\";");
-        $objResponse->script('lotgdMailNotify(' .  $lastMailId . ');');
+    } finally {
+        chdir($cwd);
     }
-    return $objResponse;
 }
 
 /**
@@ -72,35 +77,40 @@ function mail_status($args = false): Response
 function timeout_status($args = false): Response
 {
     global $start_timeout_show_seconds, $never_timeout_if_browser_open;
-    chdir("..");
-    if ($args === false) {
-        return jaxon()->newResponse();
-    };
-    global $session;
-    $warning = '';
-    if ($never_timeout_if_browser_open == 1) {
-        $session['user']['laston'] = date("Y-m-d H:i:s"); // set to now
-        //manual db update
-        $sql = "UPDATE " . db_prefix('accounts') . " set laston='" . $session['user']['laston'] . "' WHERE acctid=" . $session['user']['acctid'];
-        db_query($sql);
-    }
-    $timeout = strtotime($session['user']['laston']) - strtotime(date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")));
-    if ($timeout <= 1) {
-        $warning = "" . appoencode("`\$`b") . "Your session has timed out!" . appoencode("`b");
-    } elseif ($timeout < $start_timeout_show_seconds) {
-        if ($timeout > 60) {
-            $min = floor($timeout / 60);
-            $sec = $timeout % 60;
-            $warning = "<br/>" . appoencode("`t") . sprintf_translate("TIMEOUT in %d minute%s und %d second%s!", $min, $min > 1 ? translate_inline('s') : '', $sec, $sec != 1 ? translate_inline('s') : '');
-        } else {
-            $warning = "<br/>" . appoencode("`t") . sprintf_translate("TIMEOUT in %d second%s!", $timeout, $timeout != 1 ? translate_inline('s') : '');
-        }
-    } else {
+    $cwd = getcwd();
+    chdir(__DIR__ . '/..');
+    try {
+        if ($args === false) {
+            return jaxon()->newResponse();
+        };
+        global $session;
         $warning = '';
+        if ($never_timeout_if_browser_open == 1) {
+            $session['user']['laston'] = date("Y-m-d H:i:s"); // set to now
+            //manual db update
+            $sql = "UPDATE " . db_prefix('accounts') . " set laston='" . $session['user']['laston'] . "' WHERE acctid=" . $session['user']['acctid'];
+            db_query($sql);
+        }
+        $timeout = strtotime($session['user']['laston']) - strtotime(date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")));
+        if ($timeout <= 1) {
+            $warning = "" . appoencode("`\$`b") . "Your session has timed out!" . appoencode("`b");
+        } elseif ($timeout < $start_timeout_show_seconds) {
+            if ($timeout > 60) {
+                $min = floor($timeout / 60);
+                $sec = $timeout % 60;
+                $warning = "<br/>" . appoencode("`t") . sprintf_translate("TIMEOUT in %d minute%s und %d second%s!", $min, $min > 1 ? translate_inline('s') : '', $sec, $sec != 1 ? translate_inline('s') : '');
+            } else {
+                $warning = "<br/>" . appoencode("`t") . sprintf_translate("TIMEOUT in %d second%s!", $timeout, $timeout != 1 ? translate_inline('s') : '');
+            }
+        } else {
+            $warning = '';
+        }
+        $objResponse = jaxon()->newResponse();
+        $objResponse->assign("notify", "innerHTML", $warning);
+        return $objResponse;
+    } finally {
+        chdir($cwd);
     }
-    $objResponse = jaxon()->newResponse();
-    $objResponse->assign("notify", "innerHTML", $warning);
-    return $objResponse;
 }
 
 
