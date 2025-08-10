@@ -872,6 +872,8 @@ SQL;
      */
     public static function talkLine(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
     {
+        global $session;
+
         $args = modulehook("insertcomment", array("section" => $section));
         if (
             array_key_exists("mute", $args) && $args['mute'] &&
