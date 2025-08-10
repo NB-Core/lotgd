@@ -10,7 +10,6 @@ use Lotgd\Mail;
 tlschema("mail");
 $args = modulehook("header-mail", array("done" => 0));
 
-$superusermessage = getsetting("superuseryommessage", "Asking an admin for gems, gold, weapons, armor, or anything else which you have not earned will not be honored.  If you are experiencing problems with the game, please use the 'Petition for Help' link instead of contacting an admin directly.");
 
 $op = httpget('op');
 $id = (int)httpget('id');
