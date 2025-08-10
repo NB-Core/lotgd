@@ -81,7 +81,9 @@ function timeout_status($args = false): Response
 {
     global $start_timeout_show_seconds, $never_timeout_if_browser_open;
     $cwd = getcwd();
-    chdir(__DIR__ . '/..');
+    if (!chdir(__DIR__ . '/..')) {
+        throw new \RuntimeException("Failed to change directory to " . (__DIR__ . '/..'));
+    }
     try {
         if ($args === false) {
             return jaxon()->newResponse();
