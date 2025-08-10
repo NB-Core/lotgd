@@ -281,7 +281,6 @@ if ($op == "") {
     foreach ($statuses as $key => $val) {
         $plain = full_sanitize($val);
 	// Skip empty or unnamed petition categories to mark
-	 debug($val);
 	if (empty($val)) continue;
         Nav::add(
             array("%s?Mark %s", substr($plain, 0, 1), $val),
