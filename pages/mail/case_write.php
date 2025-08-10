@@ -132,7 +132,7 @@ function mailWrite(): void
 
     rawoutput("<div id='warning' style='visibility: hidden; display: none;'>");
     // superuser messages do not get translated.
-    output("`2Notice: `^%s`n", $superusermessage);
+    output("`2Notice: `^%s`n", getsetting('superuseryommessage', 'Asking an admin for gems, gold, weapons, armor, or anything else which you have not earned will not be honored. If you are experiencing problems with the game, please use the \'Petition for Help\' link instead of contacting an admin directly.'));
     // Give modules a chance to put info in here to this user
     modulehook('mail-write-notify', ['acctid_to' => $acctidTo]);
     rawoutput('</div>');
