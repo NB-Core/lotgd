@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\Page\Header;
 use Lotgd\Nav;
+use Lotgd\Commentary;
 
     Header::pageHeader("Clan Halls");
     Nav::add("Clan Options");
