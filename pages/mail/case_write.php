@@ -11,7 +11,7 @@ use Lotgd\Translator;
  */
 function mailWrite(): void
 {
-    global $session;
+    global $session, $superusermessage;
 
     // Capture request values
     $subject    = (string) httppost('subject');
