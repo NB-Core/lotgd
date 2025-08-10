@@ -492,7 +492,14 @@ class PageParts
         $paypalstr = '<table align="center"><tr><td>';
         $currency = isset($settings) ? $settings->getSetting('paypalcurrency', 'USD') : 'USD';
 
-        if (!isset($_SESSION['logdnet']) || !isset($_SESSION['logdnet']['']) || $_SESSION['logdnet'][''] == '' || date('Y-m-d H:i:s', strtotime('-1 hour')) > $session['user']['laston']) {
+        $laston = $session['user']['laston'] ?? '1970-01-01 00:00:00';
+
+        if (
+            !isset($_SESSION['logdnet'])
+            || !isset($_SESSION['logdnet'][''])
+            || $_SESSION['logdnet'][''] == ''
+            || date('Y-m-d H:i:s', strtotime('-1 hour')) > $laston
+        ) {
             $already_registered_logdnet = false;
         } else {
             $already_registered_logdnet = true;
