@@ -21,7 +21,7 @@ function mailDefault(): void
     $session['message'] = '';
 
     $sortOrder = httpget('sortorder');
-    if ($sortOrder === '') {
+    if ($sortOrder === false || $sortOrder === '') {
         $sortOrder = 'date';
     }
     $order = match ($sortOrder) {
