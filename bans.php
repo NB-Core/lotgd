@@ -43,7 +43,7 @@ if (!$query && $sort) {
 }
 
 if ($op == "search" || $op == "") {
-    list($searchresult, $err) = UserLookup::lookupUser($query, $order);
+    list($searchresult, $err) = UserLookup::lookup($query, $order);
     $op = "";
     if ($err) {
         output($err);

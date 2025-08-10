@@ -52,14 +52,14 @@ class Commentary
         global $session, $emptypost;
 
         // Gather request parameters
-        $section = httppost('section');
-        $talkline = httppost('talkline');
-        $schema = httppost('schema');
+        $section = (string)httppost('section');
+        $talkline = (string)httppost('talkline');
+        $schema = (string)httppost('schema');
         $comment = trim((string) httppost('insertcommentary'));
-        $counter = httppost('counter');
+        $counter = (int)httppost('counter');
         $removeId = (int) URLDecode((string) httpget('removecomment'));
-        $returnPath = httpget('returnpath');
-        $sectionFromUrl = httpget('section');
+        $returnPath = (string)httpget('returnpath');
+        $sectionFromUrl = (string)httpget('section');
         $rawSectionFromUrl = rawurldecode($sectionFromUrl);
 
         // Handle comment removal request
