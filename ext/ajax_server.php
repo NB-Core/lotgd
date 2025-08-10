@@ -35,7 +35,10 @@ function mail_status($args = false): Response
 {
     global $start_timeout_show_seconds, $session;
     $cwd = getcwd();
-    chdir(__DIR__ . '/..');
+    if (!chdir(__DIR__ . '/..')) {
+        // Failed to change directory, return an empty response or handle error
+        return jaxon()->newResponse();
+    }
     try {
         if ($args === false) {
             return jaxon()->newResponse();
