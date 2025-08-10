@@ -227,9 +227,6 @@ SQL;
     }
 
     /**
-     * Clean up user supplied commentary, remove line breaks and limit colour codes.
-     */
-    /**
      * Sanitize user supplied commentary, remove line breaks and limit colour codes.
      *
      * @param string $comment Raw comment text to sanitize
