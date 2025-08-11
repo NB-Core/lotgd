@@ -34,7 +34,7 @@ $max += $row['c'];
 $sql = "SELECT COUNT(id) AS c FROM $debuglog_archive WHERE target=$userid";
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
-$max = $row['c'];
+$max += $row['c'];
 
 $sql = "SELECT COUNT(id) AS c FROM $debuglog_archive WHERE actor=$userid";
 $result = Database::query($sql);
