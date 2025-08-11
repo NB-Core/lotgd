@@ -46,7 +46,7 @@ $max += $row['c'];
 $start = (int)httpget('start');
 
 $sql = "(
-                        SELECT {$debuglog}. *,
+                        SELECT {$debuglog}.*,
                                 CAST({$debuglog}.field AS CHAR)   AS field,
                                 CAST({$debuglog}.value AS CHAR)   AS value,
                                 CAST({$debuglog}.message AS CHAR) AS message,
