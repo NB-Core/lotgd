@@ -213,7 +213,7 @@ class Moderate
             $com = 0;
         }
         // If the user has scrolled, load comments after the last seen id
-        if (httpget('comscroll') !== false && (int)$session['lastcom'] == $com + 1) {
+        if (httpget('comscroll') !== false && isset($session['lastcom']) && (int)$session['lastcom'] == $com + 1) {
             $cid = (int)$session['lastcommentid'];
         } else {
             $cid = 0;

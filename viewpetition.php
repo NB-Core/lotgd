@@ -174,7 +174,7 @@ if ($op == "") {
         if (array_key_exists('status', $row) && $row['status'] != $laststatus) {
             $output->rawOutput("<tr class='" . ($i ? "trlight" : "trdark") . "'>");
             $output->rawOutput("<td colspan='7' style='background-color:#FAA000'>");
-            $output->outputNotl("%s", $statuses[$row['status']], true);
+            $output->outputNotl("%s", (array_key_exists($row['status'],$statuses)?$statuses[$row['status']]:'Undefined '.$row['status']), true);
             $output->rawOutput("</td></tr>");
             $i = 1;
             $laststatus = $row['status'];
@@ -238,7 +238,7 @@ if ($op == "") {
         Nav::add("Overview");
     }
     foreach ($catcount as $categorynumber => $amount) {
-        Nav::add(array("`t%s`t(%s)",$statuses[$categorynumber],$amount), "viewpetition.php?page=" . ((int)Http::get('page')));
+        Nav::add(array("`t%s`t(%s)",array_key_exists($categorynumber,$statuses)?$statuses[$categorynumber]:'Undefined '.$categorynumber,$amount), "viewpetition.php?page=" . ((int)Http::get('page')));
     }
 
     //end

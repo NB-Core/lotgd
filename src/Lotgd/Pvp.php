@@ -167,7 +167,7 @@ class Pvp
             reltime((int) $badguy['fightstartdate'])
         ];
 
-        Mail::systemMail($badguy['acctid'], ['`2You were killed while in %s`2', $killedloc], $mailmessage);
+        Mail::systemMail($badguy['acctid'], Translator::sprintfTranslate(['`2You were killed while in %s`2', $killedloc]), $mailmessage);
 
         $sql = "UPDATE " . Database::prefix('accounts') . " SET alive=0, goldinbank=(goldinbank+IF(gold<{$badguy['creaturegold']},gold-{$badguy['creaturegold']},0)),gold=IF(gold<{$badguy['creaturegold']},0,gold-{$badguy['creaturegold']}), experience=IF(experience>=$lostexp,experience-$lostexp,0) WHERE acctid=" . (int) $badguy['acctid'];
         debuglog($sql, (int) $badguy['acctid'], $session['user']['acctid']);
