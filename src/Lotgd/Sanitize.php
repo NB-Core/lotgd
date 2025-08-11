@@ -16,7 +16,7 @@ class Sanitize
     public static function sanitize(string|int|float|null $in): string
     {
         global $output;
-        if ($in == '' || $in === null) {
+        if ($in === '' || $in === null) {
             return '';
         }
         $out = preg_replace('/[`][0' . $output->getColormapEscaped() . 'bicnHw]/', '', (string) $in);
