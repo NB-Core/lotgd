@@ -79,7 +79,7 @@ $sql = "(
                                 LEFT JOIN {$accounts} AS a2 ON a2.acctid = {$debuglog_archive}.target
                                 WHERE {$debuglog_archive}.actor = {$userid}
                 ) UNION (
-                        SELECT {$debuglog_archive}. *,
+                        SELECT {$debuglog_archive}.*,
                                 CAST({$debuglog_archive}.field AS CHAR)   AS field,
                                 CAST({$debuglog_archive}.value AS CHAR)   AS value,
                                 CAST({$debuglog_archive}.message AS CHAR) AS message,
