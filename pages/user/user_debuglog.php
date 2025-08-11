@@ -47,9 +47,9 @@ $start = (int)httpget('start');
 
 $sql = "(
                         SELECT {$debuglog}.*,
-                                CAST({$debuglog}.field AS CHAR)   AS field,
-                                CAST({$debuglog}.value AS CHAR)   AS value,
-                                CAST({$debuglog}.message AS CHAR) AS message,
+                                CAST({$debuglog}.field AS CHAR)   AS field_cast,
+                                CAST({$debuglog}.value AS CHAR)   AS value_cast,
+                                CAST({$debuglog}.message AS CHAR) AS message_cast,
                                 CAST(a1.name AS CHAR)             AS actorname,
                                 CAST(a2.name AS CHAR)             AS targetname
                                 FROM {$debuglog}
