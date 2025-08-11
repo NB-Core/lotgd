@@ -100,14 +100,14 @@ while ($row = Database::fetchAssoc($result)) {
     $time = date("H:i:s", strtotime($row['date'])) . " (" . reltime(strtotime($row['date'])) . ")";
     $output->outputNotl(
         "`#%s (%s) `^%s - `&%s`7 %s`0",
-        Sanitize::sanitize($row['field']),
-        Sanitize::sanitize($row['value']),
+        Sanitize::sanitize((string)$row['field']),
+        Sanitize::sanitize((string)$row['value']),
         $time,
-        Sanitize::sanitize($row['actorname']),
-        Sanitize::sanitize($row['message'])
+        Sanitize::sanitize((string)$row['actorname']),
+        Sanitize::sanitize((string)$row['message'])
     );
     if ($row['target']) {
-        $output->output(" \-- Recipient = `\$%s`0", Sanitize::sanitize($row['targetname']));
+        $output->output(" \-- Recipient = `\$%s`0", Sanitize::sanitize((string)$row['targetname']));
     }
     $output->outputNotl("`n");
 }
