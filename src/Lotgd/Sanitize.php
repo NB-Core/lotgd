@@ -9,17 +9,17 @@ class Sanitize
     /**
      * Strip game colour codes from a string.
      *
-     * @param string|null $in Input string
+     * @param string|int|float|null $in Input value
      *
      * @return string Sanitized value
      */
-    public static function sanitize(?string $in): string
+    public static function sanitize(string|int|float|null $in): string
     {
         global $output;
         if ($in == '' || $in === null) {
             return '';
         }
-        $out = preg_replace('/[`][0' . $output->getColormapEscaped() . 'bicnHw]/', '', $in);
+        $out = preg_replace('/[`][0' . $output->getColormapEscaped() . 'bicnHw]/', '', (string) $in);
         return $out;
     }
 
