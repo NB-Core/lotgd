@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
+use Lotgd\Sanitize;
 
 if ($petition != "") {
     Nav::add("Navigation");
@@ -97,9 +98,16 @@ while ($row = Database::fetchAssoc($result)) {
         $odate = $dom;
     }
     $time = date("H:i:s", strtotime($row['date'])) . " (" . reltime(strtotime($row['date'])) . ")";
-    $output->outputNotl("`#%s (%s) `^%s - `&%s`7 %s`0", $row['field'], $row['value'], $time, $row['actorname'], $row['message']);
+    $output->outputNotl(
+        "`#%s (%s) `^%s - `&%s`7 %s`0",
+        Sanitize::sanitize($row['field']),
+        Sanitize::sanitize($row['value']),
+        $time,
+        Sanitize::sanitize($row['actorname']),
+        Sanitize::sanitize($row['message'])
+    );
     if ($row['target']) {
-        $output->output(" \-- Recipient = `\$%s`0", $row['targetname']);
+        $output->output(" \-- Recipient = `\$%s`0", Sanitize::sanitize($row['targetname']));
     }
     $output->outputNotl("`n");
 }
