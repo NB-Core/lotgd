@@ -23,7 +23,7 @@ function mailWrite(): void
     $bodyGet    = (string) httpget('body'); // Prefilled request value for body text
 
     $body  = ''; // Loaded message body when replying or forwarding
-    $row   = '';
+    $row   = [];
     $msgId = 0;
 
     if ($replyTo > 0) {
