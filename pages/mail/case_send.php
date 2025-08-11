@@ -21,9 +21,8 @@ function mailSend(): void
     $sendBack = (bool) httppost('sendback');
     $return = (int) httppost('returnto');
 
-    if ($to === '' || $subject === '' || $body === '') {
+    if ($to === '' || $body === '') {
         output('Missing required fields.`n');
-
         return;
     }
 
@@ -64,7 +63,7 @@ function mailSend(): void
         $op = 'read';
         httpset('op', 'read');
         $id = $return;
-        httpset('id', $id);
+        httpset('id', (string)$id, true);
     } else {
         $op = '';
         httpset('op', '');

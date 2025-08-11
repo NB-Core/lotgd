@@ -32,7 +32,7 @@ function mailRead(): void
     // Get message id from request
     $idParam = httpget('id');
     if (!isset($idParam) || !is_numeric($idParam) || (int)$idParam <= 0) {
-        output('Invalid message ID.');
+        output('Invalid message ID: ' . $idParam);
         return;
     }
     $messageId = (int) $idParam;

@@ -116,7 +116,7 @@ function mailWrite(): void
         if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
             $superusers[] = $row['login'];
         }
-    } else {
+    } elseif (is_array($row)) {
         renderRecipientSelection($toPost, $superusers, $acctidTo, $row);
     }
 
