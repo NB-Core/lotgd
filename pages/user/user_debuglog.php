@@ -57,7 +57,7 @@ $sql = "(
                                 LEFT JOIN {$accounts} AS a2 ON a2.acctid = {$debuglog}.target
                                 WHERE {$debuglog}.actor = {$userid}
                 ) UNION (
-                        SELECT {$debuglog}. *,
+                        SELECT {$debuglog}.*,
                                 CAST({$debuglog}.field AS CHAR)   AS field,
                                 CAST({$debuglog}.value AS CHAR)   AS value,
                                 CAST({$debuglog}.message AS CHAR) AS message,
