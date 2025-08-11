@@ -34,17 +34,28 @@ class Database
      *                    Returns a boolean (true/false) for certain operations (e.g., success/failure).
      *                    Returns a string in specific cases (e.g., error messages or debug information).
      */
-    public static function query(string $sql, bool $die = true): array|bool|string|null
+    public static function query(string $sql, bool $die = true): array|bool|object|string|null
     {
         global $accounts_table, $mail_table, $last_query_result;
         self::$lastSql = $sql;
 
         if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && (self::$doctrineConnection || \Lotgd\Doctrine\Bootstrap::$conn)) {
             $conn = self::getDoctrineConnection();
-            $conn->executeQuery($sql);
-            self::$affected_rows = 1;
-            $last_query_result = [['ok' => true]];
-            return $last_query_result;
+            $trim = ltrim($sql);
+            while ($trim !== '' && $trim[0] === '(') {
+                $trim = ltrim(substr($trim, 1));
+            }
+            $keyword = strtolower(strtok($trim, " \t\n\r"));
+            $readOps = ['select', 'show', 'describe', 'desc', 'explain', 'pragma', 'optimize', 'analyze'];
+            if (in_array($keyword, $readOps, true)) {
+                $last_query_result = $conn->executeQuery($sql);
+                self::$affected_rows = $last_query_result->rowCount();
+                return $last_query_result;
+            }
+
+            self::$affected_rows = $conn->executeStatement($sql);
+            $last_query_result = true;
+            return true;
         }
 
         if (strpos($sql, 'DESCRIBE ') === 0) {
@@ -180,10 +191,14 @@ class Database
      * of {@link \mysqli_result::fetch_assoc()} so that repeated calls continue
      * to return subsequent rows.
      */
-    public static function fetchAssoc(array|\mysqli_result &$result): mixed
+    public static function fetchAssoc(array|object &$result): mixed
     {
         if (is_array($result)) {
             return array_shift($result);
+        }
+
+        if (is_object($result) && method_exists($result, 'fetchAssociative')) {
+            return $result->fetchAssociative();
         }
 
         if ($result instanceof \mysqli_result) {
@@ -193,14 +208,21 @@ class Database
         return null;
     }
 
-    public static function freeResult(array|\mysqli_result &$result): bool
+    public static function freeResult(array|object &$result): bool
     {
+        if (is_object($result) && method_exists($result, 'free')) {
+            $result->free();
+        }
         $result = null;
         return true;
     }
 
-    public static function numRows(array|\mysqli_result $result): int
+    public static function numRows(array|object $result): int
     {
+        if (is_object($result) && method_exists($result, 'rowCount')) {
+            return $result->rowCount();
+        }
+
         return is_array($result) ? count($result) : 0;
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
+use Lotgd\Tests\Stubs\DoctrineResult;
 use Lotgd\MySQL\Database;
 use Lotgd\Tests\Stubs\DbMysqli;
 use PHPUnit\Framework\TestCase;
@@ -57,6 +58,13 @@ final class DatabaseDoctrineTest extends TestCase
         $result = Database::query('SELECT 1');
 
         $this->assertSame(1, Database::numRows($result));
+    }
+
+    public function testUnionQueryWrappedInParenthesesReturnsDoctrineResult(): void
+    {
+        $result = Database::query('(SELECT 1) UNION (SELECT 2)');
+
+        $this->assertInstanceOf(DoctrineResult::class, $result);
     }
 
     public function testAffectedRowsAfterStatement(): void

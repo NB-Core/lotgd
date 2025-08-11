@@ -100,6 +100,9 @@ class Database
         if (self::$doctrine || $bootstrapExists) {
             $conn = self::$doctrine ?? self::getDoctrineConnection();
             $trim = ltrim($sql);
+            while ($trim !== '' && $trim[0] === '(') {
+                $trim = ltrim(substr($trim, 1));
+            }
             $keyword = strtolower(strtok($trim, " \t\n\r"));
             $readOps = ['select', 'show', 'describe', 'desc', 'explain', 'pragma', 'optimize', 'analyze'];
             if (in_array($keyword, $readOps, true)) {
