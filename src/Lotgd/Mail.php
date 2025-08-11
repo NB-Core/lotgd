@@ -19,8 +19,16 @@ class Mail
     /**
      * Send a system generated mail to a user.
      */
-    public static function systemMail(int $to, string $subject, string $body, int $from = 0, bool $noemail = false): void
+    public static function systemMail(int $to, string|array $subject, string|array $body, int $from = 0, bool $noemail = false): void
     {
+        if (is_array($subject)) {
+            $subject = Translator::sprintfTranslate(...$subject);
+        }
+
+        if (is_array($body)) {
+            $body = Translator::sprintfTranslate(...$body);
+        }
+
         $sql = 'SELECT prefs,emailaddress FROM ' . Database::prefix('accounts') . " WHERE acctid='$to'";
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
