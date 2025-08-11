@@ -46,33 +46,53 @@ $max += $row['c'];
 $start = (int)httpget('start');
 
 $sql = "(
-			SELECT $debuglog. * , a1.name AS actorname, a2.name AS targetname
-				FROM $debuglog
-				LEFT JOIN $accounts AS a1 ON a1.acctid = $debuglog.actor
-				LEFT JOIN $accounts AS a2 ON a2.acctid = $debuglog.target
-				WHERE $debuglog.actor = $userid
-		) UNION (
-			SELECT $debuglog. * , a2.name AS targetname, a1.name AS actorname
-				FROM $debuglog
-				LEFT JOIN $accounts AS a1 ON a1.acctid = $debuglog.actor
-				LEFT JOIN $accounts AS a2 ON a2.acctid = $debuglog.target
-				WHERE $debuglog.target = $userid
-		) UNION (
-			SELECT $debuglog_archive. * , a1.name AS actorname, a2.name AS targetname
-				FROM $debuglog_archive
-				LEFT JOIN $accounts AS a1 ON a1.acctid = $debuglog_archive.actor
-				LEFT JOIN $accounts AS a2 ON a2.acctid = $debuglog_archive.target
-				WHERE $debuglog_archive.actor = $userid
-		) UNION (
-			SELECT $debuglog_archive. * , a2.name AS targetname, a1.name AS actorname
-				FROM $debuglog_archive
-				LEFT JOIN $accounts AS a1 ON a1.acctid = $debuglog_archive.actor
-				LEFT JOIN $accounts AS a2 ON a2.acctid = $debuglog_archive.target
-				WHERE $debuglog_archive.target = $userid
-		)
+                        SELECT {$debuglog}. *,
+                                CAST({$debuglog}.field AS CHAR)   AS field,
+                                CAST({$debuglog}.value AS CHAR)   AS value,
+                                CAST({$debuglog}.message AS CHAR) AS message,
+                                CAST(a1.name AS CHAR)             AS actorname,
+                                CAST(a2.name AS CHAR)             AS targetname
+                                FROM {$debuglog}
+                                LEFT JOIN {$accounts} AS a1 ON a1.acctid = {$debuglog}.actor
+                                LEFT JOIN {$accounts} AS a2 ON a2.acctid = {$debuglog}.target
+                                WHERE {$debuglog}.actor = {$userid}
+                ) UNION (
+                        SELECT {$debuglog}. *,
+                                CAST({$debuglog}.field AS CHAR)   AS field,
+                                CAST({$debuglog}.value AS CHAR)   AS value,
+                                CAST({$debuglog}.message AS CHAR) AS message,
+                                CAST(a2.name AS CHAR)             AS targetname,
+                                CAST(a1.name AS CHAR)             AS actorname
+                                FROM {$debuglog}
+                                LEFT JOIN {$accounts} AS a1 ON a1.acctid = {$debuglog}.actor
+                                LEFT JOIN {$accounts} AS a2 ON a2.acctid = {$debuglog}.target
+                                WHERE {$debuglog}.target = {$userid}
+                ) UNION (
+                        SELECT {$debuglog_archive}. *,
+                                CAST({$debuglog_archive}.field AS CHAR)   AS field,
+                                CAST({$debuglog_archive}.value AS CHAR)   AS value,
+                                CAST({$debuglog_archive}.message AS CHAR) AS message,
+                                CAST(a1.name AS CHAR)                    AS actorname,
+                                CAST(a2.name AS CHAR)                    AS targetname
+                                FROM {$debuglog_archive}
+                                LEFT JOIN {$accounts} AS a1 ON a1.acctid = {$debuglog_archive}.actor
+                                LEFT JOIN {$accounts} AS a2 ON a2.acctid = {$debuglog_archive}.target
+                                WHERE {$debuglog_archive}.actor = {$userid}
+                ) UNION (
+                        SELECT {$debuglog_archive}. *,
+                                CAST({$debuglog_archive}.field AS CHAR)   AS field,
+                                CAST({$debuglog_archive}.value AS CHAR)   AS value,
+                                CAST({$debuglog_archive}.message AS CHAR) AS message,
+                                CAST(a2.name AS CHAR)                    AS targetname,
+                                CAST(a1.name AS CHAR)                    AS actorname
+                                FROM {$debuglog_archive}
+                                LEFT JOIN {$accounts} AS a1 ON a1.acctid = {$debuglog_archive}.actor
+                                LEFT JOIN {$accounts} AS a2 ON a2.acctid = {$debuglog_archive}.target
+                                WHERE {$debuglog_archive}.target = {$userid}
+                )
 
-		ORDER BY date DESC
-		LIMIT $start,500";
+                ORDER BY date DESC
+                LIMIT {$start},500";
 
 $next = $start + 500;
 $prev = $start - 500;
