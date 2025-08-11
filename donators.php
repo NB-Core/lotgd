@@ -114,7 +114,7 @@ if ($op == "add2") {
     } else {
         debuglog("Received donator points -- Manually assigned, not based on a known dollar donation [$reason]", false, $id, "donation", $amt, false);
     }
-    Mail::systemMail($id, array("Donation Points Added"), array("`2You have received %s donation points for %s.",$points,$reason));
+    Mail::systemMail($id, "Donation Points Added", sprintf_translate("`2You have received %s donation points for %s.",$points,$reason));
     httpset('op', "");
     $op = "";
 }
