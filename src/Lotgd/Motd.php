@@ -145,7 +145,7 @@ class Motd
     /**
      * Display edit form for a MOTD record.
      */
-    public static function motdForm(int $id): void
+    public static function motdForm(int $id, array $data = []): void
     {
         require_once 'lib/showform.php';
         $sql = 'SELECT motdtitle,motdbody,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
@@ -160,19 +160,30 @@ class Motd
             $body = '';
             $poll = '0';
         }
-        $form = array(
+        $form = [
             'Motd,title',
             'motdtitle' => 'Title,string,50',
             'motdbody'  => 'Body,textarea,37',
             'motdtype'  => 'Type,viewhiddenonly',
-        );
+        ];
         if ($id > 0) {
             $form['changeauthor'] = 'Change Author,checklist';
             $form['changedate'] = 'Change Date (force popup),checklist';
         }
         output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
-        $data = ['motdtitle' => $title, 'motdbody' => $body, 'motdtype' => $poll, 'changeauthor' => '0', 'changedate' => '0'];
-        Forms::showForm($form, $data);
+        $defaults = [
+            'motdtitle'    => $title,
+            'motdbody'     => $body,
+            'motdtype'     => $poll,
+            'changeauthor' => '0',
+            'changedate'   => '0',
+        ];
+        $data = array_merge($defaults, $data);
+        Forms::showForm($form, $data, true);
+        $preview = Translator::translateInline('Preview');
+        $save = Translator::translateInline('Save');
+        rawoutput("<input type='submit' name='preview' class='button' value='$preview'>");
+        rawoutput("<input type='submit' class='button' value='$save'>");
         rawoutput('</form>');
     }
 

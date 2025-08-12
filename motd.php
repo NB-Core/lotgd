@@ -39,13 +39,20 @@ if ($op == "vote") {
     exit();
 }
 if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_POST_MOTD)) {
-    if ($op == "save") {
-            Motd::saveMotd((int)$id);
+    if (httppost('preview')) {
+        $title = httppost('motdtitle');
+        $body = nltoappon((string) httppost('motdbody'));
+        Motd::motdItem($title, $body, $session['user']['name'], date('Y-m-d H:i:s'), (int) $id);
+        Motd::motdForm((int) $id, $_POST);
     } else {
+        if ($op == "save") {
+            Motd::saveMotd((int) $id);
+        } else {
             Motd::savePoll();
-    }
+        }
         header("Location: motd.php");
         exit();
+    }
 }
 if ($op == "add" || $op == "addpoll" || $op == "del") {
     if ($session['user']['superuser'] & SU_POST_MOTD) {
