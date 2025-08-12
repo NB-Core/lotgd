@@ -179,6 +179,7 @@ class Motd
             'changedate'   => '0',
         ];
         $data = array_merge($defaults, $data);
+        // The third parameter 'true' enables form preview mode.
         Forms::showForm($form, $data, true);
         $preview = Translator::translateInline('Preview');
         $save = Translator::translateInline('Save');
