@@ -8,6 +8,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\DebugLog;
 use Lotgd\GameLog;
+use Lotgd\Translator;
 
         Modules::hook("clan-withdraw", array('clanid' => $session['user']['clanid'], 'clanrank' => $session['user']['clanrank'], 'acctid' => $session['user']['acctid']));
 if ($session['user']['clanrank'] >= CLAN_LEADER) {
@@ -50,12 +51,14 @@ if ($session['user']['clanrank'] >= CLAN_LEADER) {
 }
         $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE clanid='{$session['user']['clanid']}' AND clanrank>=" . CLAN_OFFICER . " AND acctid<>'{$session['user']['acctid']}'";
         $result = Database::query($sql);
-        $withdraw_subj = array("`\$Clan Withdraw: `&%s`0",$session['user']['name']);
-        $msg = array("`^One of your clan members has resigned their membership.  `&%s`^ has surrendered their position within your clan!",$session['user']['name']);
-        $sql = "DELETE FROM " . Database::prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='" . addslashes(serialize($withdraw_subj)) . "'"; //addslashes for names with ' inside
+        $withdraw_subj = array("`\$Clan Withdraw: `&%s`0", $session['user']['name']);
+        $withdraw_msg = array("`^One of your clan members has resigned their membership.  `&%s`^ has surrendered their position within your clan!", $session['user']['name']);
+        $withdrawSubj = Translator::sprintfTranslate(...$withdraw_subj);
+        $withdrawMsg = Translator::sprintfTranslate(...$withdraw_msg);
+        $sql = "DELETE FROM " . Database::prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='" . Database::escape($withdrawSubj) . "'";
         Database::query($sql);
 while ($row = Database::fetchAssoc($result)) {
-    Mail::systemMail($row['acctid'], $withdraw_subj, $msg);
+    Mail::systemMail($row['acctid'], $withdrawSubj, $withdrawMsg);
 }
 
         DebugLog::add($session['user']['login'] . " has withdrawn from his/her clan no. " . $session['user']['clanid']);

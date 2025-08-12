@@ -23,11 +23,12 @@ if ($to > 0) {
     $session['user']['clanjoindate'] = date("Y-m-d H:i:s");
     $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE clanid='{$session['user']['clanid']}' AND clanrank>=" . CLAN_OFFICER;
     $result = Database::query($sql);
-    $sql = "DELETE FROM " .  Database::prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='" . Database::escape(serialize($apply_subj)) . "'";
+    $applySubj = Translator::sprintfTranslate(...$apply_subj);
+    $msg = Translator::sprintfTranslate("`^You have a new clan applicant!  `&%s`^ has completed a membership application for your clan!", $session['user']['name']);
+    $sql = "DELETE FROM " .  Database::prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='" . Database::escape($applySubj) . "'";
     Database::query($sql);
     while ($row = Database::fetchAssoc($result)) {
-        $msg = array("`^You have a new clan applicant!  `&%s`^ has completed a membership application for your clan!",$session['user']['name']);
-        Mail::systemMail($row['acctid'], $apply_subj, $msg);
+        Mail::systemMail($row['acctid'], $applySubj, $msg);
     }
 
     // send reminder mail if clan of choice has a description
@@ -40,7 +41,15 @@ if ($to > 0) {
         $subject = "Clan Application Reminder";
         $mail = "`&Did you remember to read the description of the clan of your choice before applying?  Note that some clans may have requirements that you have to fulfill before you can become a member.  If you are not accepted into the clan of your choice anytime soon, it may be because you have not fulfilled these requirements.  For your convenience, the description of the clan you are applying to is reproduced below.`n`n`c`#%s`@ <`^%s`@>`0`c`n%s";
 
-        Mail::systemMail($session['user']['acctid'], array($subject), array($mail, $row['clanname'], $row['clanshort'], addslashes(Nltoappon::convert($row['clandesc']))));
+        $subject = Translator::sprintfTranslate($subject);
+        $mail = Translator::sprintfTranslate(
+            $mail,
+            $row['clanname'],
+            $row['clanshort'],
+            addslashes(Nltoappon::convert($row['clandesc']))
+        );
+
+        Mail::systemMail($session['user']['acctid'], $subject, $mail);
     }
 } else {
     $order = (int)Http::get('order');
