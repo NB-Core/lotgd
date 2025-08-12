@@ -10,6 +10,7 @@ use Lotgd\Translator;
 use Lotgd\Nav;
 use Lotgd\Modules;
 use Lotgd\Nltoappon;
+use Lotgd\Page\Header;
 
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     $clanname = Http::post('clanname');

@@ -26,7 +26,7 @@ function renderClanDefault(): void
     /**
      * MoTD display section.
      */
-    if ($claninfo['clanmotd'] !== '') {
+    if (isset($claninfo['clanmotd']) && $claninfo['clanmotd'] !== null && $claninfo['clanmotd'] !== '') {
         $output->rawOutput("<div style='margin-left: 15px; padding-left: 15px;'>");
         $output->output("`&`bCurrent MoTD:`b `#by %s`2`n", $motdAuthorName);
         $output->outputNotl(nltoappon($claninfo['clanmotd']) . "`n");
@@ -44,7 +44,7 @@ function renderClanDefault(): void
     /**
      * Clan description display.
      */
-    if ($claninfo['clandesc'] !== '') {
+    if (isset($claninfo['clandesc']) && $claninfo['clandesc'] !== null && $claninfo['clandesc'] !== '') {
         Modules::hook('collapse{', ['name' => 'collapsedesc']);
         $output->output("`n`n`&`bCurrent Description:`b `#by %s`2`n", $descAuthorName);
         $output->outputNotl(nltoappon($claninfo['clandesc']));
