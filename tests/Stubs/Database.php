@@ -13,6 +13,7 @@ class Database
     public static int $onlineCounter = 0;
     public static int $affected_rows = 0;
     public static string $lastSql = '';
+    public static string $lastCacheName = '';
     public static array $describe_rows = [];
     public static array $keys_rows = [];
     public static ?object $doctrineConnection = null;
@@ -248,6 +249,8 @@ class Database
 
     public static function queryCached(string $sql, string $name, int $duration = 900): array
     {
+        self::$lastSql = $sql;
+        self::$lastCacheName = $name;
         return [];
     }
 

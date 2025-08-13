@@ -291,7 +291,11 @@ class Translator
         if (isset($settings) && !$settings->getSetting("cachetranslations", 0)) {
             $result = Database::query($sql);
         } else {
-            $result = Database::queryCached($sql, "translations-" . $namespace . "-" . $language, 600);
+            $cacheNamespace = $namespace;
+            if (strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH) {
+                $cacheNamespace = sha1($cacheNamespace);
+            }
+            $result = Database::queryCached($sql, "translations-" . $cacheNamespace . "-" . $language, 600);
             //store it for 10 Minutes, normally you don't need to refresh this often
         }
         $out = array();

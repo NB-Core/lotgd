@@ -6,6 +6,8 @@ namespace Lotgd;
 
 class Sanitize
 {
+    public const URI_MAX_LENGTH = 200;
+
     /**
      * Strip game colour codes from a string.
      *
@@ -165,6 +167,9 @@ class Sanitize
         $uri = self::cmdSanitize($uri);
         if (substr($uri, -1) == '?') {
             $uri = substr($uri, 0, -1);
+        }
+        if (strlen($uri) > self::URI_MAX_LENGTH) {
+            $uri = substr($uri, 0, self::URI_MAX_LENGTH);
         }
         return $uri;
     }
