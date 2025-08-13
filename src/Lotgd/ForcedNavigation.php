@@ -26,14 +26,17 @@ class ForcedNavigation
                 global $baseaccount;
                 $baseaccount = $session['user'];
                 self::$baseAccount = $session['user'];
-                $session['bufflist'] = unserialize($session['user']['bufflist']);
+                $session['bufflist'] = Serialization::safeUnserialize($session['user']['bufflist']);
                 if (!is_array($session['bufflist'])) {
                     $session['bufflist'] = [];
                 }
-                $session['user']['dragonpoints'] = unserialize($session['user']['dragonpoints']);
-                $session['user']['prefs'] = unserialize($session['user']['prefs']);
+                $session['user']['dragonpoints'] = Serialization::safeUnserialize($session['user']['dragonpoints']);
                 if (!is_array($session['user']['dragonpoints'])) {
                     $session['user']['dragonpoints'] = [];
+                }
+                $session['user']['prefs'] = Serialization::safeUnserialize($session['user']['prefs']);
+                if (!is_array($session['user']['prefs'])) {
+                    $session['user']['prefs'] = [];
                 }
                 $allowednavs = Serialization::safeUnserialize($session['user']['allowednavs']);
                 if (is_array($allowednavs)) {
