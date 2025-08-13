@@ -52,6 +52,13 @@ final class SanitizeExtraTest extends TestCase
         $this->assertSame('page.php', Sanitize::translatorPage($clean));
     }
 
+    public function testTranslatorUriMaxLength(): void
+    {
+        $uri = 'page.php?op=' . str_repeat('a', 500);
+        $clean = Sanitize::translatorUri($uri);
+        $this->assertLessThanOrEqual(Sanitize::URI_MAX_LENGTH, strlen($clean));
+    }
+
     public function testModulenameSanitize(): void
     {
         $this->assertSame('ModuleName', Sanitize::modulenameSanitize('Module!Name'));
