@@ -145,7 +145,14 @@ class DataCache
         }
         $name = rawurlencode($name);
         $name = str_replace('_', '-', $name);
-        $name = DATACACHE_FILENAME_PREFIX . preg_replace("'[^A-Za-z0-9.-]'", '', $name);
+        $name = preg_replace("'[^A-Za-z0-9.-]'", '', $name);
+
+        if (strlen($name) > 200) {
+            // Preserve a short prefix but replace the rest with a hash when the key is too long
+            $name = substr($name, 0, 40) . '-' . sha1($name);
+        }
+
+        $name = DATACACHE_FILENAME_PREFIX . $name;
         $fullname = self::$path . '/' . $name;
         $fullname = preg_replace("'//'", '/', $fullname);
         $fullname = preg_replace("'\\\\'", '\\', $fullname);

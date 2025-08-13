@@ -77,6 +77,17 @@ final class DataCacheTest extends TestCase
         $this->assertFileDoesNotExist(DataCache::makecachetempname('failpath'));
     }
 
+    public function testLongCacheKeyIsHashed(): void
+    {
+        $longKey = str_repeat('a', 250);
+        $data = ['foo' => 'bar'];
+
+        $this->assertTrue(DataCache::updatedatacache($longKey, $data));
+        $expected = DATACACHE_FILENAME_PREFIX . substr($longKey, 0, 40) . '-' . sha1($longKey);
+        $this->assertSame($expected, basename(DataCache::makecachetempname($longKey)));
+        $this->assertSame($data, DataCache::datacache($longKey));
+    }
+
     public function testUpdateCacheFailureOnJsonError(): void
     {
         $resource = tmpfile();
