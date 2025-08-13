@@ -20,6 +20,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\DateTime;
+use Lotgd\Nltoappon;
 
 require_once("common.php");
 
@@ -132,7 +133,7 @@ if ($target = Database::fetchAssoc($result)) {
     }
 
     if ($target['bio'] > "") {
-        $output->output("`^Bio: `@`n%s`n", soap($target['bio']));
+        $output->output("`^Bio: `@`n%s`n", Nltoappon::convert(soap($target['bio'])));
     }
 
     HookHandler::hook("bioinfo", $target);
