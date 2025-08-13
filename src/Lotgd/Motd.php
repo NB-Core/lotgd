@@ -167,16 +167,16 @@ class Motd
             'motdtype'  => 'Type,viewhiddenonly',
         ];
         if ($id > 0) {
-            $form['changeauthor'] = 'Change Author,checklist';
-            $form['changedate'] = 'Change Date (force popup),checklist';
+            $form['changeauthor'] = 'Change Author,checkbox';
+            $form['changedate'] = 'Change Date (force popup),checkbox';
         }
         output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
         $defaults = [
             'motdtitle'    => $title,
             'motdbody'     => $body,
             'motdtype'     => $poll,
-            'changeauthor' => '0',
-            'changedate'   => '0',
+            'changeauthor' => 0,
+            'changedate'   => 0,
         ];
         $data = array_merge($defaults, $data);
         // The third parameter 'true' enables form preview mode.
