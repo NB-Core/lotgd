@@ -23,6 +23,12 @@ final class DateTimeTest extends TestCase
         $this->assertSame('2 days, 3 hours', DateTime::readableTime($seconds, false));
     }
 
+    public function testReadableTimeAcceptsFloat(): void
+    {
+        $seconds = 61.7; // 1 minute and 1 second (fraction ignored)
+        $this->assertSame('1m1s', DateTime::readableTime($seconds));
+    }
+
     public function testRelTimeShortFormat(): void
     {
         $diff = 3600 + 60; // 1 hour and 1 minute

@@ -21,10 +21,12 @@ class DateTime
 
     /**
      * Convert a duration in seconds to a readable string.
+     *
+     * Accepts seconds as a float but ignores the fractional part.
      */
-    public static function readableTime(int $date, bool $short = true): string
+    public static function readableTime(float $date, bool $short = true): string
     {
-        $x = abs($date);
+        $x = (int) abs($date);
         $d = (int)($x / 86400);
         $x %= 86400;
         $h = (int)($x / 3600);
