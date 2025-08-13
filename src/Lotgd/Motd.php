@@ -11,6 +11,7 @@ namespace Lotgd;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
+use Lotgd\Nltoappon;
 
 class Motd
 {
@@ -62,6 +63,7 @@ class Motd
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
         output_notl('<h4>%s</h4>', $subject, true);
         modulehook('motd-item-intercept', ['id' => $id]);
+        $body = Nltoappon::convert($body);
         output_notl('<div>%s</div>', $body, true);
         output_notl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
         self::motdAdminLinks($id, false);
@@ -89,7 +91,8 @@ class Motd
 
         rawoutput('<div class="pollitem">');
         output_notl('<h4>%s</h4>', $subject, true);
-        output_notl('<div>%s</div>', stripslashes((string)$bodyData['body']), true);
+        $bodyText = Nltoappon::convert(stripslashes((string)$bodyData['body']));
+        output_notl('<div>%s</div>', $bodyText, true);
         output_notl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
 
         $sql = 'SELECT count(resultid) AS c, choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' GROUP BY choice ORDER BY choice";
