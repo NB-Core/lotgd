@@ -6,6 +6,7 @@ namespace Lotgd;
 
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
+use Lotgd\Serialization;
 
 class ForcedNavigation
 {
