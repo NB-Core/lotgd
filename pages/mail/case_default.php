@@ -106,8 +106,10 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
             }
         } elseif ($row['name'] === '') {
             $row['name'] = Translator::translateInline('`i`^Deleted User`0`i');
+        } elseif (empty($row['name']) || !$row['acctid']) {
+            $row['name'] = Translator::translateInline('`i`^Deleted User`0`i');
         } else {
-            $online = $userStatusList[$row['acctid']];
+            $online = $userStatusList[$row['acctid']] ?? false;
             $status = $online ? 'online' : 'offline';
             $statusImage = "<img src='images/$status.gif' alt='$status'>";
         }

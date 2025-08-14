@@ -94,6 +94,7 @@ if ($totalplayers > $playersperpage) {
 }
 
 function display_table(
+    global $output;
     $title,
     $sql,
     $none = false,

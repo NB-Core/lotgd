@@ -190,7 +190,7 @@ class Mail
             return;
         }
         $ids = implode("','", array_map('intval', $messageIds));
-        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid IN (\'$ids\')";
+        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid IN ('$ids')";
         Database::query($sql);
         invalidatedatacache("mail-$userId");
     }
