@@ -94,7 +94,6 @@ if ($totalplayers > $playersperpage) {
 }
 
 function display_table(
-    global $output;
     $title,
     $sql,
     $none = false,
@@ -103,7 +102,7 @@ function display_table(
     $tag = false,
     $translate = false
 ) {
-    global $session, $from, $to, $page, $playersperpage, $totalplayers;
+    global $session, $from, $to, $page, $playersperpage, $totalplayers, $output;
 
     $title = translate_inline($title);
     if ($foot !== false) {
