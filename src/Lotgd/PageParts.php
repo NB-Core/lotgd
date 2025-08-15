@@ -441,34 +441,74 @@ class PageParts
  */
     public static function mailLink()
     {
-        global $session;
-        $sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
-        $result = Database::queryCached($sql, "mail-{$session['user']['acctid']}", 86400);
-        $row = Database::fetchAssoc($result);
-        Database::freeResult($result);
-        $row['seencount'] = (int)$row['seencount'];
-        $row['notseen'] = (int)$row['notseen'];
+        if (! self::isAuthenticated()) {
+            return '';
+        }
+
+        $row = self::getMailCounts();
+
         if ($row['notseen'] > 0) {
             return sprintf("<a href='mail.php' target='_blank' onClick=\"" . self::popup("mail.php") . ";return false;\" class='hotmotd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
-        } else {
-            return sprintf("<a href='mail.php' target='_blank' onClick=\"" . self::popup("mail.php") . ";return false;\" class='motd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
         }
+
+        return sprintf("<a href='mail.php' target='_blank' onClick=\"" . self::popup("mail.php") . ";return false;\" class='motd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
     }
+
 /* same, but only the text for the tab */
     public static function mailLinkTabText()
     {
+        if (! self::isAuthenticated()) {
+            return '';
+        }
+
+        $row = self::getMailCounts();
+
+        if ($row['notseen'] > 0) {
+            return sprintf(Translator::translateInline("%s new mail(s)", "common"), $row['notseen']);
+        }
+
+        return '';
+    }
+
+    /**
+     * Retrieve mail counts for the current user.
+     *
+     * @return array{seencount:int, notseen:int}|null
+     */
+    private static function getMailCounts(): ?array
+    {
         global $session;
-        $sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM " . Database::prefix("mail") . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
+        static $counts = null;
+
+        if ($counts !== null) {
+            return $counts;
+        }
+
+        if (! self::isAuthenticated()) {
+            return null;
+        }
+
+        $sql = "SELECT sum(if(seen=1,1,0)) AS seencount, sum(if(seen=0,1,0)) AS notseen FROM "
+            . Database::prefix("mail")
+            . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
+
         $result = Database::queryCached($sql, "mail-{$session['user']['acctid']}", 86400);
         $row = Database::fetchAssoc($result);
         Database::freeResult($result);
-        $row['seencount'] = (int)$row['seencount'];
-        $row['notseen'] = (int)$row['notseen'];
-        if ($row['notseen'] > 0) {
-            return sprintf(Translator::translateInline("%s new mail(s)", "common"), $row['notseen']);
-        } else {
-            return '';
-        }
+
+        $counts = [
+            'seencount' => (int) $row['seencount'],
+            'notseen'   => (int) $row['notseen'],
+        ];
+
+        return $counts;
+    }
+
+    private static function isAuthenticated(): bool
+    {
+        global $session;
+
+        return isset($session['user']['acctid']);
     }
 
     /**
