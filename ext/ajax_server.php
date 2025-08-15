@@ -89,6 +89,10 @@ function timeout_status($args = false): Response
             return jaxon()->newResponse();
         };
         global $session;
+        if (!isset($session['user'])) {
+            error_log('timeout_status: session user not set');
+            return jaxon()->newResponse();
+        }
         $warning = '';
         if ($never_timeout_if_browser_open == 1) {
             $session['user']['laston'] = date("Y-m-d H:i:s"); // set to now
