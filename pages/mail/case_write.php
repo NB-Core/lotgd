@@ -103,7 +103,7 @@ function mailWrite(): void
     rawoutput("<input type='hidden' name='returnto' value=\"$msgId\">");
 
     $superusers = [];
-    $acctidTo   = 0; // only for hook right now
+    $acctidTo   = 0; // recipient account ID for hooks
 
     if (isset($row['login']) && $row['login'] !== '' && $forwardTo == 0) {
         output_notl(
@@ -232,13 +232,14 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
         for ($x = 0; $x < $toLen; ++$x) {
             $string .= $to[$x] . '%';
         }
-        $sql       = 'SELECT login,name,superuser FROM ' . db_prefix('accounts') . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
+        // Fallback search includes acctid for precise recipient identification
+        $sql       = 'SELECT acctid,login,name,superuser FROM ' . db_prefix('accounts') . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
         $result    = db_query($sql);
         $dbNumRows = db_num_rows($result);
     }
 
     if ($dbNumRows == 1) {
-        $row = db_fetch_assoc($result);
+        $row = db_fetch_assoc($result); // fetch login, name, superuser, and acctid
         output_notl(
             "<input type='hidden' id='to' name='to' value=\"" .
             htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) .
