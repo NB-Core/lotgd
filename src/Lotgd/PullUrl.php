@@ -93,6 +93,24 @@ class PullUrl
     public static function pull(string $url)
     {
         // Prefer file() to avoid open_basedir issues.
-        return @file($url);
+        $data = @file($url);
+        if (false !== $data) {
+            return $data;
+        }
+
+        debug("file() failed for $url, trying curl()");
+        $data = self::curl($url);
+        if (false !== $data) {
+            return $data;
+        }
+
+        debug("curl() failed for $url, trying socket connection");
+        $data = self::sock($url);
+        if (false !== $data) {
+            return $data;
+        }
+
+        debug("Unable to fetch $url using available methods");
+        return false;
     }
 }
