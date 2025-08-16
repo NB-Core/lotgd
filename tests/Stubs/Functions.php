@@ -154,6 +154,13 @@ namespace {
         }
     }
 
+    if (!function_exists('e_rand')) {
+        function e_rand(int $min = 0, int $max = PHP_INT_MAX): int
+        {
+            return mt_rand($min, $max);
+        }
+    }
+
     if (!function_exists('soap')) {
         function soap($input, $debug = false, $skiphook = false)
         {

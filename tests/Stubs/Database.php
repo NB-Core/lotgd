@@ -93,6 +93,14 @@ class Database
             return $last_query_result;
         }
 
+        if (preg_match("/SELECT deathmessage,taunt FROM deathmessages/", $sql)) {
+            $last_query_result = [[
+                'deathmessage' => '{goodguyname} met {badguyname} {where}.',
+                'taunt'        => 1,
+            ]];
+            return $last_query_result;
+        }
+
         if (strpos($sql, 'INSERT INTO mail') === 0) {
             if (preg_match("/\((?:'|\")?(\d+)(?:'|\")?,(?:'|\")?(\d+)(?:'|\")?,(?:'|\")?(.*?)(?:'|\")?,(?:'|\")?(.*?)(?:'|\")?,(?:'|\")?(.*?)(?:'|\")?\)/", $sql, $m)) {
                 $from = (int) $m[1];
