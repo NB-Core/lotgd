@@ -180,7 +180,7 @@ class Translator
         if ($placeholderCount !== $argCount) {
             trigger_error(sprintf('sprintfTranslate expected %d arguments, got %d', $placeholderCount, $argCount), E_USER_WARNING);
             if ($placeholderCount > $argCount) {
-                $args = array_merge($args, array_fill(0, $placeholderCount - $argCount, ''));
+                $args = array_pad($args, $placeholderCount + 1, '');
             }
         }
         ob_start();
