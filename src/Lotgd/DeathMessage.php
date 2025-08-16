@@ -63,8 +63,10 @@ class DeathMessage
             $taunt = 1;
             $deathmessage = "`5\"`6{goodguyname}'s mother wears combat boots`5\", screams {badguyname}.";
         }
-        if (isset($extra[0]) && $extra[0] == '{where}') {
+        if (isset($extra[0]) && $extra[0] === '{where}') {
             $deathmessage = str_replace($extra[0], $extrarep[0] ?? 'UNKNOWN', $deathmessage);
+            array_shift($extra);
+            array_shift($extrarep);
         }
         $deathmessage = Substitute::applyArray($deathmessage, $extra, $extrarep);
         array_unshift($deathmessage, true, 'deathmessages');
