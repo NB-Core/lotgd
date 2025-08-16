@@ -3,10 +3,17 @@
 // Legacy wrapper for \Lotgd\Forest\Outcomes class
 
 use Lotgd\Forest\Outcomes;
+use Lotgd\Translator;
 
-require_once("lib/output.php");
-require_once("lib/nav.php");
-require_once("lib/playerfunctions.php");
+if (!function_exists('output')) {
+    require_once 'lib/output.php';
+}
+if (!function_exists('addnav')) {
+    require_once 'lib/nav.php';
+}
+if (!function_exists('restore_buff_fields')) {
+    require_once 'lib/playerfunctions.php';
+}
 
 function forestvictory($enemies, $denyflawless = false): void
 {
@@ -15,11 +22,10 @@ function forestvictory($enemies, $denyflawless = false): void
 
 function forestdefeat($enemies, $where = 'in the forest'): void
 {
-    // Normalize $where to ensure it is always a string
     if (is_array($where)) {
-        $where = implode(', ', $where); // Convert array to string
+        $where = Translator::sprintfTranslate(...$where);
     } elseif (!is_string($where)) {
-        $where = 'in the forest'; // Fallback to default value
+        $where = 'in the forest';
     }
     Outcomes::defeat($enemies, $where);
 }
