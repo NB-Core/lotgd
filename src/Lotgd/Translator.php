@@ -193,7 +193,7 @@ class Translator
     // 1) Match all regular printf-style placeholders (including flags, width, precision, *)
     //    Supported types: b,c,d,e,E,f,F,g,G,o,s,u,x,X (as in PHP)
         preg_match_all(
-            '/(?<!%)%(?:(\d+)\$)?[-+ 0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdeEfFgGosuxX]/',
+            '/(?<!%)%(?:(\d+)\$)?[-+0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdeEfFgGosuxX]/',
             $format,
             $m
         );
@@ -209,8 +209,8 @@ class Translator
         $maxPosFromStars = $posStarNumbers ? max($posStarNumbers) : 0;
 
     // Non-positional stars (each consumes an extra argument), e.g. %*s and %. *f
-        $nonPosStarWidth = preg_match_all('/(?<!%)%(?:\d+\$)?[-+ 0#\']*\*(?!\d+\$)/', $format);
-        $nonPosStarPrec  = preg_match_all('/(?<!%)%(?:\d+\$)?[-+ 0#\']*(?:\d+)?\.\*(?!\d+\$)/', $format);
+        $nonPosStarWidth = preg_match_all('/(?<!%)%(?:\d+\$)?[-+0#\']*\*(?!\d+\$)/', $format);
+        $nonPosStarPrec  = preg_match_all('/(?<!%)%(?:\d+\$)?[-+0#\']*(?:\d+)?\.\*(?!\d+\$)/', $format);
         $nonPosStarCount = (int)$nonPosStarWidth + (int)$nonPosStarPrec;
 
     // Determine expected argument count:
@@ -236,7 +236,7 @@ class Translator
 
     // Guard against stray single '%' (turn into '%%' unless it's a valid specifier or '%%')
         $format = preg_replace(
-            '/(?<!%)%(?!(?:\d+\$)?[-+ 0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdeEfFgGosuxX]|%)/',
+            '/(?<!%)%(?!(?:\d+\$)?[-+0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdeEfFgGosuxX]|%)/',
             '%%',
             $format
         );
