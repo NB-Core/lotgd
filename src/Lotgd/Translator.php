@@ -178,8 +178,13 @@ class Translator
         $placeholderCount = count($matches[0]);
         $argCount = count($args) - 1;
         if ($placeholderCount !== $argCount) {
-            trigger_error(sprintf('sprintfTranslate expected %d arguments, got %d', $placeholderCount, $argCount), E_USER_WARNING);
-            if ($placeholderCount > $argCount) {
+            if ($argCount > $placeholderCount) {
+                $args = array_slice($args, 0, $placeholderCount + 1);
+            } else {
+                trigger_error(
+                    sprintf('sprintfTranslate expected %d arguments, got %d', $placeholderCount, $argCount),
+                    E_USER_WARNING
+                );
                 $args = array_pad($args, $placeholderCount + 1, '');
             }
         }

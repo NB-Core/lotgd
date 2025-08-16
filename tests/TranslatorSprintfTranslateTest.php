@@ -45,5 +45,18 @@ final class TranslatorSprintfTranslateTest extends TestCase
         $this->assertNotEmpty($warnings);
         $this->assertStringContainsString('expected 2 arguments, got 1', $warnings[0][1]);
     }
+
+    public function testSprintfTranslateWithExtraArgumentsDropsExtraWithoutWarning(): void
+    {
+        $warnings = [];
+        set_error_handler(function (int $errno, string $errstr) use (&$warnings): bool {
+            $warnings[] = [$errno, $errstr];
+            return true;
+        }, E_USER_WARNING);
+        $result = Translator::sprintfTranslate('Values: %s and %s', 'First', 'Second', 'Third');
+        restore_error_handler();
+        $this->assertSame('Values: First and Second', $result);
+        $this->assertEmpty($warnings);
+    }
 }
 
