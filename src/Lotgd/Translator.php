@@ -193,7 +193,7 @@ class Translator
     // 1) Match all regular printf-style placeholders (including flags, width, precision, *)
     //    Supported types: b,c,d,e,E,f,F,g,G,o,s,u,x,X (as in PHP)
         preg_match_all(
-            '/(?<!%)%(?:(\d+)\$)?[-+0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdeEfFgGosuxX]/',
+            '/(?<!%)%(?:(\d+)\$)?[-+0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdefgGosuxX]/',
             $format,
             $m
         );
