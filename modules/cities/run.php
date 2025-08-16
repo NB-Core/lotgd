@@ -200,9 +200,10 @@ if ($battle) {
             "runmodule.php?module=cities&city=" . urlencode($city) . "&d=$danger&continue=1"
         );
     } elseif ($defeat) {
-            Outcomes::defeat($newenemies, sprintf("travelling to %s", $city));
+        require_once 'lib/forestoutcomes.php';
+        forestdefeat($newenemies, ['travelling to %s', $city]);
     } else {
         FightNav::fightnav(true, true, "runmodule.php?module=cities&city=" . urlencode($city) . "&d=$danger");
     }
-            page_footer();
+    page_footer();
 }
