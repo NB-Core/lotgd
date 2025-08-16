@@ -68,4 +68,3 @@ class ClanRepository
         Database::query($sql);
     }
 }
-

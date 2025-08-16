@@ -54,4 +54,3 @@ final class TranslatorNamespaceTest extends TestCase
         $this->assertFileExists($cacheFile);
     }
 }
-

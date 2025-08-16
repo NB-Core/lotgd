@@ -202,4 +202,3 @@ function renderMailFooter(array $fromList): void
     modulehook('mailform', []);
     rawoutput('</form>');
 }
-

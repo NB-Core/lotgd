@@ -77,4 +77,3 @@ final class SprintfTranslateTest extends TestCase
         $this->assertSame('Value with stray % sign', $result);
     }
 }
-

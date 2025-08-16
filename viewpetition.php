@@ -174,7 +174,7 @@ if ($op == "") {
         if (array_key_exists('status', $row) && $row['status'] != $laststatus) {
             $output->rawOutput("<tr class='" . ($i ? "trlight" : "trdark") . "'>");
             $output->rawOutput("<td colspan='7' style='background-color:#FAA000'>");
-            $output->outputNotl("%s", (array_key_exists($row['status'],$statuses)?$statuses[$row['status']]:'Undefined '.$row['status']), true);
+            $output->outputNotl("%s", (array_key_exists($row['status'], $statuses) ? $statuses[$row['status']] : 'Undefined ' . $row['status']), true);
             $output->rawOutput("</td></tr>");
             $i = 1;
             $laststatus = $row['status'];
@@ -238,7 +238,7 @@ if ($op == "") {
         Nav::add("Overview");
     }
     foreach ($catcount as $categorynumber => $amount) {
-        Nav::add(array("`t%s`t(%s)",array_key_exists($categorynumber,$statuses)?$statuses[$categorynumber]:'Undefined '.$categorynumber,$amount), "viewpetition.php?page=" . ((int)Http::get('page')));
+        Nav::add(array("`t%s`t(%s)",array_key_exists($categorynumber, $statuses) ? $statuses[$categorynumber] : 'Undefined ' . $categorynumber,$amount), "viewpetition.php?page=" . ((int)Http::get('page')));
     }
 
     //end
@@ -280,8 +280,10 @@ if ($op == "") {
     Nav::add("Petition Ops");
     foreach ($statuses as $key => $val) {
         $plain = full_sanitize($val);
-	// Skip empty or unnamed petition categories to mark
-	if (empty($val)) continue;
+    // Skip empty or unnamed petition categories to mark
+        if (empty($val)) {
+            continue;
+        }
         Nav::add(
             array("%s?Mark %s", substr($plain, 0, 1), $val),
             "viewpetition.php?setstat=$key&id=$id"

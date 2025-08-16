@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace {
     if (!function_exists('httpget')) {
-        function httpget(string $name) {
+        function httpget(string $name)
+        {
             return $_GET[$name] ?? '';
         }
     }
@@ -52,43 +53,45 @@ namespace {
     }
 
     if (!function_exists('popup_footer')) {
-        function popup_footer(): void {}
+        function popup_footer(): void
+        {
+        }
     }
 
 }
 
 namespace Lotgd\Tests {
 
-use PHPUnit\Framework\TestCase;
+    use PHPUnit\Framework\TestCase;
 
-final class MailWriteComposeTest extends TestCase
-{
-    protected function setUp(): void
+    final class MailWriteComposeTest extends TestCase
     {
-        global $session, $forms_output, $test_accounts_query_result, $output;
-        $session = ['user' => ['acctid' => 1, 'prefs' => []]];
-        $forms_output = '';
-        $output = new class {
-            public function appoencode($data, $priv = false)
-            {
-                return $data;
-            }
-        };
-        $test_accounts_query_result = [
+        protected function setUp(): void
+        {
+            global $session, $forms_output, $test_accounts_query_result, $output;
+            $session = ['user' => ['acctid' => 1, 'prefs' => []]];
+            $forms_output = '';
+            $output = new class {
+                public function appoencode($data, $priv = false)
+                {
+                    return $data;
+                }
+            };
+            $test_accounts_query_result = [
             ['login' => 'john', 'name' => 'John', 'superuser' => 0],
             ['login' => 'jane', 'name' => 'Jane', 'superuser' => 0],
-        ];
-        $_GET = [];
-        $_POST = [];
-    }
+            ];
+            $_GET = [];
+            $_POST = [];
+        }
 
-    public function testRecipientDropdownShownForPartialNames(): void
-    {
-        global $forms_output;
-        $_POST['to'] = 'ja';
-        require __DIR__ . '/../pages/mail/case_write.php';
-        $this->assertStringContainsString("<select name='to'", $forms_output);
+        public function testRecipientDropdownShownForPartialNames(): void
+        {
+            global $forms_output;
+            $_POST['to'] = 'ja';
+            require __DIR__ . '/../pages/mail/case_write.php';
+            $this->assertStringContainsString("<select name='to'", $forms_output);
+        }
     }
-}
 
 }

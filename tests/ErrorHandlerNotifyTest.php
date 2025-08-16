@@ -42,4 +42,3 @@ final class ErrorHandlerNotifyTest extends TestCase
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
     }
 }
-

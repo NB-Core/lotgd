@@ -334,4 +334,3 @@ function renderSizeCountScript(): void
 }
 
 mailWrite();
-

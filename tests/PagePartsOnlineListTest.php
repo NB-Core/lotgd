@@ -74,4 +74,3 @@ final class PagePartsOnlineListTest extends TestCase
         $this->assertStringContainsString('Online Characters last 30 minutes:', $outputString);
     }
 }
-

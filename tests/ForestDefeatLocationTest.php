@@ -28,4 +28,3 @@ final class ForestDefeatLocationTest extends TestCase
         $this->assertSame('travelling to Gotham', \Lotgd\Forest\Outcomes::$lastWhere);
     }
 }
-

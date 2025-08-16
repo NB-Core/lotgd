@@ -122,4 +122,3 @@ function escapeAndTruncateBody(string $body): string
 }
 
 mailSend();
-

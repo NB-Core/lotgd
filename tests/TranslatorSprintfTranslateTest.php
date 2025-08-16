@@ -58,4 +58,3 @@ final class TranslatorSprintfTranslateTest extends TestCase
         $this->assertEmpty($warnings);
     }
 }
-

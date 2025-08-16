@@ -19,7 +19,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
         Http::postIsset('clanmotd') &&
             stripslashes($clanmotd) != $claninfo['clanmotd']
     ) {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET clanmotd='".addslashes($clanmotd)."',motdauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
+        $sql = "UPDATE " . Database::prefix("clans") . " SET clanmotd='" . addslashes($clanmotd) . "',motdauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);
         DataCache::invalidatedatacache("clandata-{$claninfo['clanid']}");
         $claninfo['clanmotd'] = stripslashes($clanmotd);

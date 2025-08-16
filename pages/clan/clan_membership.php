@@ -259,4 +259,3 @@ function clanMembership(): void
 }
 
 clanMembership();
-

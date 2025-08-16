@@ -145,23 +145,36 @@ class Translator
     public static function sprintfTranslate(): string
     {
         $args = func_get_args();
+        if (!$args) {
+            return '';
+        }
+
         $setschema = false;
-        // Handle if an array is passed in as the first arg
+
+    // If first arg is an array, treat it as a nested sprintfTranslate call
         if (is_array($args[0])) {
             $args[0] = self::sprintfTranslate(...$args[0]);
         } else {
-            // array_shift returns the first element of an array and shortens this array by one...
+            // Preserve original semantics:
+            // If first arg is bool, shift it (condition), then shift schema name and set it temporarily
             if (is_bool($args[0]) && array_shift($args)) {
                 tlschema(array_shift($args));
                 $setschema = true;
             }
-            $args[0] = str_replace("`%", "`%%", $args[0]);
-            $args[0] = self::translate($args[0]);
+
+            // Escape backtick-percent -> backtick-double-percent so it doesn't act as a format marker
+            $args[0] = str_replace("`%", "`%%", (string)$args[0]);
+
+            // Translate the format string
+            $args[0] = self::translate((string)$args[0]);
+
+            // Reset schema if we set it above
             if ($setschema) {
                 tlschema();
             }
         }
-        //skip the first entry which is the output text
+
+    // Skip first entry (the format string) and recursively translate any sub-arrays
         $skipped = false;
         foreach ($args as $key => $val) {
             if (!$skipped) {
@@ -169,35 +182,94 @@ class Translator
                 continue;
             }
             if (is_array($val)) {
-                //When passed a sub-array this represents an independant
-                //translation to happen then be inserted in the master string.
+                // Sub-translation; its result will be inserted into the master format
                 $args[$key] = self::sprintfTranslate(...$val);
             }
         }
-        preg_match_all('/(?<!%)%(?:(\d+)\$)?[0-9\+\-#\.]*[a-zA-Z]/', (string)$args[0], $matches);
-        $placeholderCount = count($matches[0]);
 
-        $maxPosition = max(array_merge(array_filter($matches[1]), [0]));
-        $expected = max($placeholderCount, $maxPosition);
+    // --------- Robust counting, padding, and safe vsprintf ---------
+        $format = (string)$args[0];
 
-        $args = array_pad(array_slice($args, 0, $expected + 1), $expected + 1, '');
-        $args[0] = preg_replace('/(?<!%)%(?!(?:\d+\$)?[0-9\+\-#\.]*[a-zA-Z]|%)/', '%%', $args[0]);
-        ob_start();
-        if (is_array($args) && count($args) > 0) {
-            //if it is an array
-            //which it should be
-            $return = sprintf(...$args);
-        } else {
-            $return = $args;
+    // 1) Match all regular printf-style placeholders (including flags, width, precision, *)
+    //    Supported types: b,c,d,e,E,f,F,g,G,o,s,u,x,X (as in PHP)
+        preg_match_all(
+            '/(?<!%)%(?:(\d+)\$)?[-+ 0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdeEfFgGosuxX]/',
+            $format,
+            $m
+        );
+        $placeholderCount = count($m[0]);
+
+    // Positional value indices from %2$s etc.
+        $posNumbers = array_map('intval', array_filter($m[1]));
+        $maxPosFromValue = $posNumbers ? max($posNumbers) : 0;
+
+    // Positional indices referenced by star width/precision, e.g. %*3$s or %. *4$f
+        preg_match_all('/\*(\d+)\$/', $format, $starPosAll);
+        $posStarNumbers = array_map('intval', $starPosAll[1]);
+        $maxPosFromStars = $posStarNumbers ? max($posStarNumbers) : 0;
+
+    // Non-positional stars (each consumes an extra argument), e.g. %*s and %. *f
+        $nonPosStarWidth = preg_match_all('/(?<!%)%(?:\d+\$)?[-+ 0#\']*\*(?!\d+\$)/', $format);
+        $nonPosStarPrec  = preg_match_all('/(?<!%)%(?:\d+\$)?[-+ 0#\']*(?:\d+)?\.\*(?!\d+\$)/', $format);
+        $nonPosStarCount = (int)$nonPosStarWidth + (int)$nonPosStarPrec;
+
+    // Determine expected argument count:
+    // - without positional args: placeholders + non-positional * args
+    // - with positional args: max of all referenced positions (values and *-positions)
+        $maxPosition = max($maxPosFromValue, $maxPosFromStars);
+        $expected = max($placeholderCount + $nonPosStarCount, $maxPosition);
+
+    // Guard: if our strict regex missed something but the format still has a lone '%' specifier,
+    // ensure expected >= 1 to avoid PHP 8 ValueError on vsprintf([])
+        if ($expected === 0 && preg_match('/(?<!%)%(?!%)/', $format)) {
+            $expected = 1;
         }
-        $err = ob_get_contents();
-        ob_end_clean();
-        if ($err > "") {
-            $args['error'] = $err;
-            debug($err);
+
+    // Build the values array: take all user-supplied values after the format
+    // (do NOT hard-cut to $expected here; extra values are ignored by vsprintf)
+        $values = array_slice($args, 1);
+
+    // If too few values, pad to expected with empty strings
+        if ($expected > count($values)) {
+            $values = array_pad($values, $expected, '');
         }
-        return $return;
+
+    // Guard against stray single '%' (turn into '%%' unless it's a valid specifier or '%%')
+        $format = preg_replace(
+            '/(?<!%)%(?!(?:\d+\$)?[-+ 0#\']*(?:\*(?:\d+\$)?|\d+)?(?:\.(?:\*(?:\d+\$)?|\d+))?[bcdeEfFgGosuxX]|%)/',
+            '%%',
+            $format
+        );
+
+    // Render – use vsprintf(format, array). In PHP 8, too-few args throw ValueError.
+    // We catch it, pad based on the message, and retry once.
+        try {
+            $return = vsprintf($format, $values);
+        } catch (\ValueError $ex) {
+            // Try to parse "must contain N items, M given"
+            if (preg_match('/contain\s+(\d+)\s+items,\s+(\d+)\s+given/i', $ex->getMessage(), $mm)) {
+                $need = (int)$mm[1];
+                $have = (int)$mm[2];
+                if ($have < $need) {
+                    $values = array_pad($values, $need, '');
+                    // Retry once after padding
+                    $return = vsprintf($format, $values);
+                } else {
+                    // Unexpected, fall back to raw format
+                    $return = $format;
+                }
+            } else {
+                // Unknown error shape; return format to avoid a hard crash
+                $return = $format;
+            }
+        }
+
+    // Optional: keep existing debug hookup via output buffering for other warnings (if any)
+    // Note: ValueError is already handled above; typical warnings are rare at this point.
+
+        return (string)$return;
     }
+
 
     /**
      * Translate text and append translator controls inline.
