@@ -32,7 +32,7 @@ final class TranslatorSprintfTranslateTest extends TestCase
         $this->assertSame('Hello World', $result);
     }
 
-    public function testSprintfTranslateWithMissingArgumentsLogsWarningAndPads(): void
+    public function testSprintfTranslateWithMissingArgumentsPadsWithoutWarning(): void
     {
         $warnings = [];
         set_error_handler(function (int $errno, string $errstr) use (&$warnings): bool {
@@ -42,8 +42,7 @@ final class TranslatorSprintfTranslateTest extends TestCase
         $result = Translator::sprintfTranslate('Value: %s %s', 'First');
         restore_error_handler();
         $this->assertSame('Value: First ', $result);
-        $this->assertNotEmpty($warnings);
-        $this->assertStringContainsString('expected 2 arguments, got 1', $warnings[0][1]);
+        $this->assertEmpty($warnings);
     }
 
     public function testSprintfTranslateWithExtraArgumentsDropsExtraWithoutWarning(): void
