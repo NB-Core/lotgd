@@ -45,6 +45,19 @@ final class SprintfTranslateTest extends TestCase
         $this->assertSame('Progress: Done 03%', $result);
     }
 
+    public function testNonSequentialPositionWithMissingArgumentPads(): void
+    {
+        $warnings = [];
+        set_error_handler(function (int $errno, string $errstr) use (&$warnings): bool {
+            $warnings[] = [$errno, $errstr];
+            return true;
+        }, E_USER_WARNING);
+        $result = Translator::sprintfTranslate('%1$s %3$s', 'First');
+        restore_error_handler();
+        $this->assertSame('First ', $result);
+        $this->assertSame([], $warnings);
+    }
+
     public function testStrayPercentDoesNotCrash(): void
     {
         $result = Translator::sprintfTranslate('Value with stray % sign');
