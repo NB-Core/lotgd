@@ -174,25 +174,13 @@ class Translator
                 $args[$key] = self::sprintfTranslate(...$val);
             }
         }
-        preg_match_all('/(?<!%)%(?:\d+\$)?[0-9\+\-#\.]*[a-zA-Z]/', (string) $args[0], $matches);
+        preg_match_all('/(?<!%)%(?:(\d+)\$)?[0-9\+\-#\.]*[a-zA-Z]/', (string)$args[0], $matches);
         $placeholderCount = count($matches[0]);
 
-        $maxPosition = 0;
-        foreach ($matches[0] as $placeholder) {
-            if (preg_match('/(\d+)\$/', $placeholder, $posMatch)) {
-                $maxPosition = max($maxPosition, (int) $posMatch[1]);
-            }
-        }
+        $maxPosition = max(array_filter($matches[1]) ?: [0]);
         $expected = max($placeholderCount, $maxPosition);
 
-        $argCount = count($args) - 1;
-        if ($expected !== $argCount) {
-            if ($argCount > $expected) {
-                $args = array_slice($args, 0, $expected + 1);
-            } else {
-                $args = array_pad($args, $expected + 1, '');
-            }
-        }
+        $args = array_pad(array_slice($args, 0, $expected + 1), $expected + 1, '');
         $args[0] = preg_replace('/(?<!%)%(?!(?:\d+\$)?[0-9\+\-#\.]*[a-zA-Z]|%)/', '%%', $args[0]);
         ob_start();
         if (is_array($args) && count($args) > 0) {
