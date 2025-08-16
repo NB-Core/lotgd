@@ -174,6 +174,14 @@ class Translator
                 $args[$key] = self::sprintfTranslate(...$val);
             }
         }
+        $placeholderCount = substr_count(preg_replace('/%%/', '', (string) $args[0]), '%');
+        $argCount = count($args) - 1;
+        if ($placeholderCount !== $argCount) {
+            trigger_error(sprintf('sprintfTranslate expected %d arguments, got %d', $placeholderCount, $argCount), E_USER_WARNING);
+            if ($placeholderCount > $argCount) {
+                $args = array_merge($args, array_fill(0, $placeholderCount - $argCount, ''));
+            }
+        }
         ob_start();
         if (is_array($args) && count($args) > 0) {
             //if it is an array
