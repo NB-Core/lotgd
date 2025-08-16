@@ -177,7 +177,7 @@ class Translator
         preg_match_all('/(?<!%)%(?:(\d+)\$)?[0-9\+\-#\.]*[a-zA-Z]/', (string)$args[0], $matches);
         $placeholderCount = count($matches[0]);
 
-        $maxPosition = max(array_filter($matches[1]) ?: [0]);
+        $maxPosition = max(array_merge(array_filter($matches[1]), [0]));
         $expected = max($placeholderCount, $maxPosition);
 
         $args = array_pad(array_slice($args, 0, $expected + 1), $expected + 1, '');
