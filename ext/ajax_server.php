@@ -47,6 +47,11 @@ function mail_status($args = false): Response
         $new = maillink();
         $tabtext = maillinktabtext();
 
+        if (!isset($session['user']['acctid'])) {
+            error_log('mail_status: session user acctid not set');
+            return jaxon()->newResponse();
+        }
+
         // Get the highest message ID for the current user there is
         $sql = "SELECT MAX(messageid) AS lastid FROM " . db_prefix('mail') . " WHERE msgto=\"" . $session['user']['acctid'] . "\"";
         $result = db_query($sql);
