@@ -134,7 +134,7 @@ function timeout_status($args = false): Response
  * @param array|bool $args Parameter array from the client
  * @return Response
  */
-function commentary_text($args = false): Reponse
+function commentary_text($args = false): Response
 {
     global $session;
     if ($args === false || !is_array($args)) {
