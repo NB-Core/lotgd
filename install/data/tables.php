@@ -646,9 +646,6 @@ function get_all_tables()
             'unique' => '1',
             'columns' => 'clanid'
             ),
-        'key-clanname' => array(
-            'name' => 'clanname', 'type' => 'key', 'columns' => 'clanname'
-            ),
         'key-clanshort' => array(
             'name' => 'clanshort', 'type' => 'key', 'columns' => 'clanshort'
             )
