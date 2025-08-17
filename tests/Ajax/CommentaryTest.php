@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Lotgd\Tests\Ajax;
+
+use PHPUnit\Framework\TestCase;
+
+/**
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
+ */
+final class CommentaryTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        global $session, $output, $test_comment_rows;
+        $session = [];
+        $_SERVER['SCRIPT_NAME'] = 'test.php';
+        $output = new class {
+            public function appoencode($data, $priv = false)
+            {
+                return $data;
+            }
+        };
+        $test_comment_rows = [];
+
+        eval(<<<'STUBS'
+namespace Lotgd {
+    class Commentary {
+        public static function viewCommentary(
+            string $section,
+            string $message,
+            int $limit,
+            string $talkline,
+            string $schema,
+            bool $viewonly,
+            int $returnLink
+        ): string {
+            return '<div class="block">Mocked Commentary</div>';
+        }
+        public static function renderCommentLine(array $row, bool $linkBios): string {
+            return '<span>' . $row['comment'] . '</span>';
+        }
+    }
+}
+namespace {
+    if (!function_exists('db_prefix')) {
+        function db_prefix(string $name): string { return $name; }
+    }
+    if (!function_exists('db_query')) {
+        function db_query(string $sql): array { global $test_comment_rows; return $test_comment_rows; }
+    }
+    if (!function_exists('db_fetch_assoc')) {
+        function db_fetch_assoc(array &$result): ?array { return array_shift($result); }
+    }
+    if (!function_exists('db_free_result')) {
+        function db_free_result(&$result): void { $result = null; }
+    }
+}
+STUBS
+        );
+
+        require_once __DIR__ . '/../../ext/ajax_server.php';
+    }
+
+    public function testCommentaryTextSetsInnerHtml(): void
+    {
+        $response = \commentary_text([
+            'section' => 'test-section',
+            'schema' => 'schema',
+            'viewonly' => true,
+        ]);
+
+        $commands = $response->getCommands();
+        $this->assertCount(1, $commands);
+        $this->assertSame('as', $commands[0]['cmd']);
+        $this->assertSame('test-section', $commands[0]['id']);
+        $this->assertSame('innerHTML', $commands[0]['prop']);
+        $this->assertSame('<div class="block">Mocked Commentary</div>', $commands[0]['data']);
+    }
+
+    public function testCommentaryRefreshAppendsNewCommentsAndUpdatesScripts(): void
+    {
+        global $test_comment_rows;
+        $test_comment_rows = [
+            [
+                'commentid' => 1,
+                'comment' => 'First',
+                'acctid' => 1,
+                'name' => 'User1',
+                'superuser' => 0,
+                'clanrank' => 0,
+                'clanshort' => '',
+            ],
+            [
+                'commentid' => 2,
+                'comment' => 'Second',
+                'acctid' => 2,
+                'name' => 'User2',
+                'superuser' => 0,
+                'clanrank' => 0,
+                'clanshort' => '',
+            ],
+        ];
+
+        $response = \commentary_refresh('test-section', 0);
+        $commands = $response->getCommands();
+
+        $this->assertSame('ap', $commands[0]['cmd']);
+        $this->assertSame('test-section-comment', $commands[0]['id']);
+        $expectedHtml = "<div data-cid='1'><span>First</span></div><div data-cid='2'><span>Second</span></div>";
+        $this->assertSame($expectedHtml, $commands[0]['data']);
+
+        $this->assertSame('js', $commands[1]['cmd']);
+        $this->assertSame('lotgd_lastCommentId = 2;', $commands[1]['data']);
+
+        $this->assertSame('js', $commands[2]['cmd']);
+        $this->assertSame('lotgdCommentNotify(2);', $commands[2]['data']);
+    }
+}
