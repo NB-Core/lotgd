@@ -10,8 +10,27 @@ declare(strict_types=1);
  * back to the distributed defaults and logs a warning.
  */
 
-$defaults = require __DIR__ . '/../../config/async.settings.php.dist';
-$customFile = __DIR__ . '/../../config/async.settings.php';
+$defaultsFile = __DIR__ . '/../../config/async.settings.php.dist';
+$customFile   = __DIR__ . '/../../config/async.settings.php';
+
+if (is_readable($defaultsFile)) {
+    $defaults = require $defaultsFile;
+} else {
+    trigger_error(
+        'Default asynchronous settings file missing; using internal defaults.',
+        E_USER_WARNING
+    );
+
+    $defaults = [
+        'mail_debug'                  => 0,
+        'never_timeout_if_browser_open' => 0,
+        'ajax_rate_limit_seconds'     => 1.0,
+        'check_mail_timeout_seconds'  => 10,
+        'check_timeout_seconds'       => 5,
+        'start_timeout_show_seconds'  => 300,
+        'clear_script_execution_seconds' => -1,
+    ];
+}
 
 if (is_readable($customFile)) {
     $settings = array_merge($defaults, require $customFile);
