@@ -74,8 +74,8 @@ class Footer
                         $favicon        = modulehook('pageparts-favicon', $favicon);
                         $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
             if (isset($settings) && $settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                if (file_exists('ext/ajax_base_setup.php')) {
-                    require 'ext/ajax_base_setup.php';
+                if (file_exists('async/setup.php')) {
+                    require 'async/setup.php';
                 }
             }
         } else {
@@ -204,8 +204,8 @@ class Footer
                 $pre_headscript   = PageParts::canonicalLink();
                 $maillink_add_after = '';
         if (getsetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-            if (file_exists('ext/ajax_base_setup.php')) {
-                require 'ext/ajax_base_setup.php';
+            if (file_exists('async/setup.php')) {
+                require 'async/setup.php';
             }
         }
 
@@ -213,8 +213,8 @@ class Footer
 
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
             if (getsetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                if (file_exists('ext/ajax_maillink.php')) {
-                    require 'ext/ajax_maillink.php';
+                if (file_exists('async/maillink.php')) {
+                    require 'async/maillink.php';
                 }
             } else {
                 $maillink_add_after = '';

@@ -17,7 +17,7 @@ Features of this fork include:
 - numerous other changes documented in `CHANGELOG.txt`
 - compatibility with PHP 8.3
 - PHPMailer replacing the sendmail system
-- mail notifications that auto-refresh via Ajax
+- mail notifications that auto-refresh via Ajax (resources under `async/`)
 - incremental chat updates via `commentary_refresh` to load new messages without reloading the page
 - Ajax requests are rate limited to roughly one per second; faster requests
   receive an HTTP 429 response. When enabling Ajax features, copy

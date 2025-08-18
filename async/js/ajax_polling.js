@@ -5,7 +5,7 @@
  *
  * This module schedules periodic checks for new mail, commentary updates
  * and session timeout status using Jaxon callbacks defined on the server.
- * Timing values are injected by {@code ext/ajax_maillink.php} as global
+ * Timing values are injected by {@code async/maillink.php} as global
  * variables.
  */
 

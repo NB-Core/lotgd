@@ -637,8 +637,8 @@ class PageParts
         $mailHtml = '';
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
             if (getsetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                if (file_exists('ext/ajax_maillink.php')) {
-                    require 'ext/ajax_maillink.php';
+                if (file_exists('async/maillink.php')) {
+                    require 'async/maillink.php';
                 }
                 $mailHtml = $maillink_add_pre . "<div id='maillink'>" . self::mailLink() . "</div>" . $maillink_add_after;
             } else {
