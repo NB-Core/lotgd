@@ -14,16 +14,16 @@ $defaults = require __DIR__ . '/../../config/async.settings.php.dist';
 $customFile = __DIR__ . '/../../config/async.settings.php';
 
 if (is_readable($customFile)) {
-    $settings = array_merge($defaults, require $customFile);
+    $asyncSettings = array_merge($defaults, require $customFile);
 } else {
     trigger_error(
         'Custom asynchronous settings file missing; using defaults.',
         E_USER_WARNING
     );
-    $settings = $defaults;
+    $asyncSettings = $defaults;
 }
 
-extract($settings, EXTR_SKIP);
+extract($asyncSettings, EXTR_SKIP);
 
 if ($mail_debug == 1) {
     $check_mail_timeout_seconds = 500;   // how often check for new mail
