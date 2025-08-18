@@ -8,6 +8,8 @@ declare(strict_types=1);
  * side scripts.
  */
 
+require_once __DIR__ . '/../../vendor/autoload.php';
+
 use Jaxon\Jaxon;                      // Use the jaxon core class
 use Jaxon\Response\Response;          // and the Response class
 use Lotgd\Async\Handler\Commentary;
