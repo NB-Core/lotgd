@@ -18,6 +18,7 @@ class Database
     public static array $keys_rows = [];
     public static ?object $doctrineConnection = null;
     public static ?object $instance = null;
+    public static array $queryCacheResults = [];
 
     public static function prefix(string $name, bool $force = false): string
     {
@@ -259,7 +260,7 @@ class Database
     {
         self::$lastSql = $sql;
         self::$lastCacheName = $name;
-        return [];
+        return self::$queryCacheResults[$name] ?? [];
     }
 
     public static function getDoctrineConnection()
