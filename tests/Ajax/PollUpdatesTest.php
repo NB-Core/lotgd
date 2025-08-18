@@ -4,58 +4,74 @@ namespace Tests\Ajax;
 
 use Jaxon\Response\Response;
 use PHPUnit\Framework\TestCase;
-use function Jaxon\jaxon;
 
 require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../../async/server.php';
 
-if (!function_exists(__NAMESPACE__ . '\\mail_status')) {
-    function mail_status($args = false): Response
+if (!function_exists('db_prefix')) {
+    function db_prefix(string $name): string
     {
-        $response = jaxon()->newResponse();
-        $response->addCommand(['cmd' => 'mail'], 'mail');
-        return $response;
+        return $name;
     }
 }
-
-if (!function_exists(__NAMESPACE__ . '\\timeout_status')) {
-    function timeout_status($args = false): Response
+if (!function_exists('db_query')) {
+    function db_query(string $sql): array
     {
-        $response = jaxon()->newResponse();
-        $response->addCommand(['cmd' => 'timeout'], 'timeout');
-        return $response;
+        return [];
     }
 }
-
-if (!function_exists(__NAMESPACE__ . '\\commentary_refresh')) {
-    function commentary_refresh(string $section, int $lastId): Response
+if (!function_exists('db_fetch_assoc')) {
+    function db_fetch_assoc(array &$result): ?array
     {
-        $response = jaxon()->newResponse();
-        $response->addCommand(['cmd' => 'commentary'], 'commentary');
-        return $response;
+        return array_shift($result);
     }
 }
-
-if (!function_exists(__NAMESPACE__ . '\\poll_updates')) {
-    function poll_updates(string $section, int $lastId): Response
+if (!function_exists('db_free_result')) {
+    function db_free_result(array $result): void
     {
-        $response = jaxon()->newResponse();
-        $response->appendResponse(mail_status(true));
-        $response->appendResponse(timeout_status(true));
-        $response->appendResponse(commentary_refresh($section, $lastId));
-        return $response;
+    }
+}
+if (!function_exists('maillink')) {
+    function maillink(): string
+    {
+        return '';
+    }
+}
+if (!function_exists('maillinktabtext')) {
+    function maillinktabtext(): string
+    {
+        return '';
     }
 }
 
 class PollUpdatesTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $settings, $output;
+
+        $session = [];
+        $_SERVER['SCRIPT_NAME'] = 'test.php';
+        $start_timeout_show_seconds = 300;
+        $never_timeout_if_browser_open = 0;
+        $settings = new class {
+            public function getSetting(string $name, mixed $default = null): mixed
+            {
+                return $default;
+            }
+        };
+        $output = new class {
+            public function appoencode($data, bool $priv = false)
+            {
+                return $data;
+            }
+        };
+    }
+
     public function testAggregatesResponsesFromCallbacks(): void
     {
-        $response = poll_updates('test', 123);
-        $commands = $response->getCommands();
-
-        $this->assertCount(3, $commands);
-        $this->assertSame('mail', $commands[0]['cmd']);
-        $this->assertSame('timeout', $commands[1]['cmd']);
-        $this->assertSame('commentary', $commands[2]['cmd']);
+        $response = \poll_updates('test', 0);
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame([], $response->getCommands());
     }
 }

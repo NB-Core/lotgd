@@ -96,6 +96,8 @@ namespace Lotgd\Tests\Ajax {
             $maillink_result = '<a>mail</a>';
             $maillink_tabtext = '';
             $db_result = [['lastid' => 0]];
+
+            require_once __DIR__ . '/../../async/server.php';
         }
 
         public function testUnreadMailTriggersNotify(): void

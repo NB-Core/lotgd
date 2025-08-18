@@ -101,6 +101,7 @@ namespace {
 STUBS
         );
 
+        require_once __DIR__ . '/../../async/server.php';
     }
 
     public function testCommentaryTextSetsInnerHtml(): void
