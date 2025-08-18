@@ -637,10 +637,13 @@ class PageParts
         $mailHtml = '';
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
             if (getsetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                if (file_exists('async/maillink.php')) {
-                    require 'async/maillink.php';
+                $maillink_add_pre = '';
+                $maillink_add_after = '';
+                $asyncFile = __DIR__ . '/../../async/maillink.php';
+                if (file_exists($asyncFile)) {
+                    require $asyncFile;
                 }
-                $mailHtml = $maillink_add_pre . "<div id='maillink'>" . self::mailLink() . "</div>" . $maillink_add_after;
+                $mailHtml = ($maillink_add_pre ?? '') . "<div id='maillink'>" . self::mailLink() . "</div>" . ($maillink_add_after ?? '');
             } else {
                 $mailHtml = self::mailLink();
             }
