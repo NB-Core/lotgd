@@ -20,8 +20,9 @@ Features of this fork include:
 - mail notifications that auto-refresh via Ajax
 - incremental chat updates via `commentary_refresh` to load new messages without reloading the page
 - Ajax requests are rate limited to roughly one per second; faster requests
-  receive an HTTP 429 response. Adjust $ajax_rate_limit_seconds in
-  `ext/ajax_settings.php` to change the threshold
+  receive an HTTP 429 response. When enabling Ajax features, copy
+  `config/async.settings.php.dist` to `config/async.settings.php` and adjust
+  `$ajax_rate_limit_seconds` as needed.
 - Composer integration for third-party modules
   - after modifying Composer settings, run `composer dump-autoload` to recognize new namespaces
   - after running `composer install` or `composer dump-autoload`, include `autoload.php` to load all dependencies

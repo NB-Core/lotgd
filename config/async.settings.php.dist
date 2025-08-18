@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * Default asynchronous settings for Ajax polling.
+ *
+ * Copy this file to `config/async.settings.php` and modify values as needed.
+ */
+
+return [
+    // Debug flag: set to 1 for extended debug intervals.
+    'mail_debug' => 0,
+
+    // Prevent session timeout while the browser remains open.
+    'never_timeout_if_browser_open' => 0,
+
+    // Minimum time in seconds between Ajax requests from the same session.
+    'ajax_rate_limit_seconds' => 1.0,
+
+    // Interval settings when mail_debug is disabled.
+    'check_mail_timeout_seconds' => 10,
+    'check_timeout_seconds' => 5,
+    'start_timeout_show_seconds' => 300,
+    'clear_script_execution_seconds' => -1,
+];
