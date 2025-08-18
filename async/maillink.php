@@ -8,6 +8,8 @@ declare(strict_types=1);
  * asynchronous mail and commentary polling.
  */
 
+require_once __DIR__ . '/common/jaxon.php';
+
 global $jaxon;
 $s_js = $jaxon->getJs();
 $s_script = $jaxon->getScript();
