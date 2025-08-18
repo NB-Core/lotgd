@@ -10,9 +10,10 @@ declare(strict_types=1);
 
 use Jaxon\Jaxon;                      // Use the jaxon core class
 use Jaxon\Response\Response;          // and the Response class
+use Lotgd\Async\Handler\Commentary;
+use Lotgd\Async\Handler\Mail;
+use Lotgd\Async\Handler\Timeout;
 use function Jaxon\jaxon;
-
-require_once __DIR__ . '/../server.php';
 // Load asynchronous configuration settings
 $defaults = require __DIR__ . '/../../config/async.settings.php.dist';
 $customFile = __DIR__ . '/../../config/async.settings.php';
@@ -39,10 +40,8 @@ $jaxon = jaxon();
 // Set the Jaxon request processing URI
 $jaxon->setOption('core.request.uri', 'async/process.php');
 
-// Register callable functions
+// Register callable classes
 
-$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'mail_status');
-$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_text');
-$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'timeout_status');
-$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'commentary_refresh');
-$jaxon->register(Jaxon::CALLABLE_FUNCTION, 'poll_updates');
+$jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
+$jaxon->register(Jaxon::CALLABLE_CLASS, Timeout::class);
+$jaxon->register(Jaxon::CALLABLE_CLASS, Commentary::class);

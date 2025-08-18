@@ -53,37 +53,12 @@ namespace {
             return $GLOBALS['maillink_tabtext'] ?? '';
         }
     }
-
-    if (!function_exists('mail_status')) {
-        function mail_status($args = false): \Jaxon\Response\Response
-        {
-            global $session, $maillink_result, $maillink_tabtext, $db_result;
-
-            $response = \Jaxon\jaxon()->newResponse();
-            if ($args === false || !isset($session['user']['acctid'])) {
-                return $response;
-            }
-
-            $new = maillink();
-            $tabtext = maillinktabtext();
-            $row = $db_result[0] ?? ['lastid' => 0];
-
-            $response->assign('maillink', 'innerHTML', $new);
-            if ($tabtext === '') {
-                return $response;
-            }
-
-            $response->script("document.title=\"Legend of the Green Dragon - {$tabtext}\";");
-            $response->script('lotgdMailNotify(' . ((int)($row['lastid'] ?? 0)) . ');');
-
-            return $response;
-        }
-    }
 }
 
 namespace Lotgd\Tests\Ajax {
 
     use Jaxon\Response\Response;
+    use Lotgd\Async\Handler\Mail;
     use PHPUnit\Framework\TestCase;
 
     final class MailStatusTest extends TestCase
@@ -97,7 +72,7 @@ namespace Lotgd\Tests\Ajax {
             $maillink_tabtext = '';
             $db_result = [['lastid' => 0]];
 
-            require_once __DIR__ . '/../../async/server.php';
+            require_once __DIR__ . '/../bootstrap.php';
         }
 
         public function testUnreadMailTriggersNotify(): void
@@ -107,7 +82,7 @@ namespace Lotgd\Tests\Ajax {
             $maillink_tabtext = '1 new mail';
             $db_result = [['lastid' => 7]];
 
-            $response = \mail_status(true);
+            $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
 
             $assign = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'as' && ($c['id'] ?? '') === 'maillink'));
@@ -127,7 +102,7 @@ namespace Lotgd\Tests\Ajax {
             $maillink_tabtext = '';
             $db_result = [['lastid' => 5]];
 
-            $response = \mail_status(true);
+            $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
 
             $scripts = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'js'));
@@ -140,7 +115,7 @@ namespace Lotgd\Tests\Ajax {
 
             $session = [];
 
-            $response = \mail_status(true);
+            $response = (new Mail())->mailStatus(true);
             $this->assertSame([], $response->getCommands());
         }
     }

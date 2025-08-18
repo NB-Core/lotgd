@@ -3,10 +3,10 @@
 namespace Tests\Ajax;
 
 use Jaxon\Response\Response;
+use Lotgd\Async\Handler\Commentary;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../../async/server.php';
 
 if (!function_exists('db_prefix')) {
     function db_prefix(string $name): string
@@ -70,7 +70,8 @@ class PollUpdatesTest extends TestCase
 
     public function testAggregatesResponsesFromCallbacks(): void
     {
-        $response = \poll_updates('test', 0);
+        $handler = new Commentary();
+        $response = $handler->pollUpdates('test', 0);
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame([], $response->getCommands());
     }

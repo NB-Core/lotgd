@@ -3,46 +3,11 @@
 declare(strict_types=1);
 
 namespace {
-    function commentary_text($args = false): \Jaxon\Response\Response
-    {
-        if ($args === false || !is_array($args)) {
-            return \Jaxon\jaxon()->newResponse();
-        }
-
-        $section = $args['section'];
-        $new = \Lotgd\Commentary::viewCommentary($section, '', 25, 'says', $args['schema'], $args['viewonly'], 1);
-        $response = \Jaxon\jaxon()->newResponse();
-        $response->assign($section, 'innerHTML', $new);
-        return $response;
-    }
-
-    function commentary_refresh(string $section, int $lastId): \Jaxon\Response\Response
-    {
-        global $test_comment_rows;
-
-        $comments = [];
-        $newId = $lastId;
-        foreach ($test_comment_rows as $row) {
-            $newId = $row['commentid'];
-            $line = \Lotgd\Commentary::renderCommentLine($row, true);
-            $line = appoencode($line, true);
-            $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
-        }
-
-        $html = implode('', $comments);
-        $response = \Jaxon\jaxon()->newResponse();
-        if ($html !== '') {
-            $response->append("{$section}-comment", 'innerHTML', $html);
-            $response->script("lotgd_lastCommentId = $newId;");
-            $response->script('lotgdCommentNotify(' . count($comments) . ');');
-        }
-
-        return $response;
-    }
 }
 
 namespace Lotgd\Tests\Ajax {
 
+use Lotgd\Async\Handler\Commentary;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -101,12 +66,13 @@ namespace {
 STUBS
         );
 
-        require_once __DIR__ . '/../../async/server.php';
+        require_once __DIR__ . '/../bootstrap.php';
     }
 
     public function testCommentaryTextSetsInnerHtml(): void
     {
-        $response = \commentary_text([
+        $handler = new Commentary();
+        $response = $handler->commentaryText([
             'section' => 'test-section',
             'schema' => 'schema',
             'viewonly' => true,
@@ -144,7 +110,8 @@ STUBS
             ],
         ];
 
-        $response = \commentary_refresh('test-section', 0);
+        $handler = new Commentary();
+        $response = $handler->commentaryRefresh('test-section', 0);
         $commands = $response->getCommands();
 
         $this->assertSame('ap', $commands[0]['cmd']);
