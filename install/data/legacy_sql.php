@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__, 2) . '/config/constants.php';
+require_once dirname(__DIR__, 2) . '/src/Lotgd/Config/constants.php';
 require_once dirname(__DIR__, 2) . '/lib/dbmysqli.php';
 require_once dirname(__DIR__, 2) . '/src/Lotgd/MySQL/Database.php';
 
