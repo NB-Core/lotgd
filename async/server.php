@@ -29,6 +29,7 @@ use function Jaxon\jaxon;
  * Return mail and timeout status information for the active user.
  *
  * @param bool $args Trigger flag from the client
+ *
  * @return Response
  */
 function mail_status($args = false): Response
@@ -42,7 +43,7 @@ function mail_status($args = false): Response
     try {
         if ($args === false) {
             return jaxon()->newResponse();
-        };
+        }
         $timeout_setting = getsetting("LOGINTIMEOUT", 360); // seconds
         $new = maillink();
         $tabtext = maillinktabtext();
@@ -65,11 +66,10 @@ function mail_status($args = false): Response
         $objResponse->assign("maillink", "innerHTML", $new);
         if ($tabtext == '') { // there are no unseen mails
             return $objResponse;
-        } else {
-            $tabtext = translate_inline('Legend of the Green Dragon', 'home') . ' - ' . $tabtext;
-            $objResponse->script("document.title=\"" . $tabtext . "\";");
-            $objResponse->script('lotgdMailNotify(' .  $lastMailId . ');');
         }
+        $tabtext = translate_inline('Legend of the Green Dragon', 'home') . ' - ' . $tabtext;
+        $objResponse->script("document.title=\"" . $tabtext . "\";");
+        $objResponse->script('lotgdMailNotify(' . $lastMailId . ');');
         return $objResponse;
     } finally {
         chdir($cwd);
@@ -80,6 +80,7 @@ function mail_status($args = false): Response
  * Update last activity time and report remaining session timeout.
  *
  * @param bool $args Trigger flag from the client
+ *
  * @return Response
  */
 function timeout_status($args = false): Response
@@ -92,7 +93,7 @@ function timeout_status($args = false): Response
     try {
         if ($args === false) {
             return jaxon()->newResponse();
-        };
+        }
         global $session;
         if (!isset($session['user'])) {
             error_log('timeout_status: session user not set');
@@ -127,11 +128,11 @@ function timeout_status($args = false): Response
     }
 }
 
-
 /**
  * Retrieve a block of commentary for a given section.
  *
  * @param array|bool $args Parameter array from the client
+ *
  * @return Response
  */
 function commentary_text($args = false): Response
@@ -139,7 +140,7 @@ function commentary_text($args = false): Response
     global $session;
     if ($args === false || !is_array($args)) {
         return jaxon()->newResponse();
-    };
+    }
     $section = $args['section'];
     $message = "";
     $limit = 25;
@@ -156,62 +157,64 @@ function commentary_text($args = false): Response
  * Return new commentary posts after a given comment ID.
  *
  * @param string $section The commentary section name
- * @param int $lastId ID of the last comment already displayed
+ * @param int    $lastId  ID of the last comment already displayed
+ *
  * @return Response
  */
 function commentary_refresh(string $section, int $lastId): Response
 {
-        global $session;
-        $comments = [];
-        $nobios = ['motd.php' => true];
-        $scriptname = $session['last_comment_scriptname'] ?? $_SERVER['SCRIPT_NAME'];
+    global $session;
+    $comments = [];
+    $nobios = ['motd.php' => true];
+    $scriptname = $session['last_comment_scriptname'] ?? $_SERVER['SCRIPT_NAME'];
     if (!array_key_exists(basename($scriptname), $nobios)) {
-            $nobios[basename($scriptname)] = false;
+        $nobios[basename($scriptname)] = false;
     }
-        $linkbios = !$nobios[basename($scriptname)];
-        $sql = 'SELECT ' . db_prefix('commentary') . '.*, '
-            . db_prefix('accounts') . '.name, '
-            . db_prefix('accounts') . '.acctid, '
-            . db_prefix('accounts') . '.superuser, '
-            . db_prefix('accounts') . '.clanrank, '
-            . db_prefix('clans') . '.clanshort FROM ' . db_prefix('commentary')
-            . ' LEFT JOIN ' . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = '
-            . db_prefix('commentary') . '.author LEFT JOIN ' . db_prefix('clans')
-            . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid '
-            . "WHERE section='" . addslashes($section) . "' AND commentid > '" . (int)$lastId
-            . "' ORDER BY commentid ASC";
-        $result = db_query($sql);
-        $newId = $lastId;
+    $linkbios = !$nobios[basename($scriptname)];
+    $sql = 'SELECT ' . db_prefix('commentary') . '.*, '
+        . db_prefix('accounts') . '.name, '
+        . db_prefix('accounts') . '.acctid, '
+        . db_prefix('accounts') . '.superuser, '
+        . db_prefix('accounts') . '.clanrank, '
+        . db_prefix('clans') . '.clanshort FROM ' . db_prefix('commentary')
+        . ' LEFT JOIN ' . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = '
+        . db_prefix('commentary') . '.author LEFT JOIN ' . db_prefix('clans')
+        . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid '
+        . "WHERE section='" . addslashes($section) . "' AND commentid > '" . (int)$lastId
+        . "' ORDER BY commentid ASC";
+    $result = db_query($sql);
+    $newId = $lastId;
     while ($row = db_fetch_assoc($result)) {
-            $newId = $row['commentid'];
-            $line = Commentary::renderCommentLine($row, $linkbios);
-            // Convert colour codes but preserve embedded HTML like profile links
-            $line = appoencode($line, true);
-            $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
+        $newId = $row['commentid'];
+        $line = Commentary::renderCommentLine($row, $linkbios);
+        // Convert colour codes but preserve embedded HTML like profile links
+        $line = appoencode($line, true);
+        $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
     }
-        db_free_result($result);
-        $html = implode('', $comments);
-        $objResponse = jaxon()->newResponse();
+    db_free_result($result);
+    $html = implode('', $comments);
+    $objResponse = jaxon()->newResponse();
     if ($html !== '') {
-            $objResponse->append("{$section}-comment", 'innerHTML', $html);
-            $objResponse->script("lotgd_lastCommentId = $newId;");
-            $objResponse->script('lotgdCommentNotify(' . count($comments) . ');');
+        $objResponse->append("{$section}-comment", 'innerHTML', $html);
+        $objResponse->script("lotgd_lastCommentId = $newId;");
+        $objResponse->script('lotgdCommentNotify(' . count($comments) . ');');
     }
-        return $objResponse;
+    return $objResponse;
 }
 
 /**
  * Combined polling for mail, timeout and commentary updates.
  *
  * @param string $section The commentary section name
- * @param int $lastId The last comment ID already displayed
+ * @param int    $lastId  The last comment ID already displayed
+ *
  * @return Response
  */
 function poll_updates(string $section, int $lastId): Response
 {
-        $response = jaxon()->newResponse();
-        $response->appendResponse(mail_status(true));
-        $response->appendResponse(timeout_status(true));
-        $response->appendResponse(commentary_refresh($section, $lastId));
-        return $response;
+    $response = jaxon()->newResponse();
+    $response->appendResponse(mail_status(true));
+    $response->appendResponse(timeout_status(true));
+    $response->appendResponse(commentary_refresh($section, $lastId));
+    return $response;
 }

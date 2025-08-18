@@ -38,7 +38,7 @@ namespace Lotgd\Tests\Ajax {
                 }
             };
 
-            require_once __DIR__ . '/../../ext/ajax_server.php';
+            require_once __DIR__ . '/../../async/server.php';
         }
 
         public function testTimeoutWarningIsReturned(): void
