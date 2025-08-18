@@ -66,7 +66,7 @@ $logd_version = "2.0.0-rc +nb Edition";
 require_once("lib/output.php");
 $output = new Output();
 LocalConfig::apply();
-require_once("config/constants.php");
+require_once("src/Lotgd/Config/constants.php");
 use Lotgd\ErrorHandler;
 ErrorHandler::register();
 

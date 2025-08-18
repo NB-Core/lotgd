@@ -257,8 +257,8 @@ addnav("Extended settings", "configuration.php?settings=extended");
 addnav("", $REQUEST_URI);
 
 //get arrays
-require("config/configuration.php");
-require("config/configuration_extended.php");
+require("src/Lotgd/Config/configuration.php");
+require("src/Lotgd/Config/configuration_extended.php");
 
 
 module_editor_navs('settings', 'configuration.php?op=modulesettings&module=');
