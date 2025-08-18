@@ -7,10 +7,11 @@ declare(strict_types=1);
  * interface. It injects Jaxon scripts and variables required by the
  * asynchronous mail and commentary polling.
  */
-
+ 
+require_once __DIR__ . '/common/bootstrap.php';
 require_once __DIR__ . '/common/jaxon.php';
 
-global $jaxon;
+global $jaxon, $session;
 $s_js = $jaxon->getJs();
 $s_script = $jaxon->getScript();
 $maillink_add_pre = $s_js . $s_script;
