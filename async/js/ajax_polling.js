@@ -67,7 +67,7 @@ function lotgdCommentNotify(count)
 
 /**
  * Start periodic mail polling if the interval is configured.
- * Invokes the {@code jaxon_mail_status} callback every
+ * Invokes the {@code JaxonLotgd.Async.Handler.Mail.mailStatus} callback every
  * {@code lotgd_mail_interval_ms} milliseconds.
  */
 function set_mail_ajax()
@@ -76,15 +76,18 @@ function set_mail_ajax()
         return;
     }
     active_mail_interval = window.setInterval(function () {
-        if (typeof jaxon_mail_status === 'function') {
-            jaxon_mail_status(1);
+        if (typeof JaxonLotgd !== 'undefined'
+            && JaxonLotgd.Async && JaxonLotgd.Async.Handler
+            && JaxonLotgd.Async.Handler.Mail
+            && typeof JaxonLotgd.Async.Handler.Mail.mailStatus === 'function') {
+            JaxonLotgd.Async.Handler.Mail.mailStatus(1);
         }
     }, lotgd_mail_interval_ms);
 }
 
 /**
  * Start periodic commentary refresh if the interval is configured.
- * Calls the {@code jaxon_commentary_refresh} callback with the
+ * Calls the {@code JaxonLotgd.Async.Handler.Commentary.commentaryRefresh} callback with the
  * last known comment ID so only new posts are fetched.
  */
 function set_comment_ajax()
@@ -93,15 +96,18 @@ function set_comment_ajax()
         return;
     }
     active_comment_interval = window.setInterval(function () {
-        if (typeof jaxon_commentary_refresh === 'function') {
-            jaxon_commentary_refresh(lotgd_comment_section, lotgd_lastCommentId);
+        if (typeof JaxonLotgd !== 'undefined'
+            && JaxonLotgd.Async && JaxonLotgd.Async.Handler
+            && JaxonLotgd.Async.Handler.Commentary
+            && typeof JaxonLotgd.Async.Handler.Commentary.commentaryRefresh === 'function') {
+            JaxonLotgd.Async.Handler.Commentary.commentaryRefresh(lotgd_comment_section, lotgd_lastCommentId);
         }
     }, lotgd_comment_interval_ms);
 }
 
 /**
  * Start periodic session timeout checks if the interval is configured.
- * Calls the {@code jaxon_timeout_status} callback to determine how
+ * Calls the {@code JaxonLotgd.Async.Handler.Timeout.timeoutStatus} callback to determine how
  * much time the user has left before being logged out.
  */
 function set_timeout_ajax()
@@ -110,15 +116,18 @@ function set_timeout_ajax()
         return;
     }
     active_timeout_interval = window.setInterval(function () {
-        if (typeof jaxon_timeout_status === 'function') {
-            jaxon_timeout_status(1);
+        if (typeof JaxonLotgd !== 'undefined'
+            && JaxonLotgd.Async && JaxonLotgd.Async.Handler
+            && JaxonLotgd.Async.Handler.Timeout
+            && typeof JaxonLotgd.Async.Handler.Timeout.timeoutStatus === 'function') {
+            JaxonLotgd.Async.Handler.Timeout.timeoutStatus(1);
         }
     }, lotgd_timeout_interval_ms);
 }
 
 /**
  * Start polling for all updates using a single server call.
- * Calls {@code jaxon_poll_updates} with the current commentary
+ * Calls {@code JaxonLotgd.Async.Handler.Commentary.pollUpdates} with the current commentary
  * section and last comment id at the configured interval.
  */
 function set_poll_ajax()
@@ -128,8 +137,11 @@ function set_poll_ajax()
     }
     window.clearInterval(active_poll_interval); // Clear any existing interval
     active_poll_interval = window.setInterval(function () {
-        if (typeof jaxon_poll_updates === 'function') {
-            jaxon_poll_updates(lotgd_comment_section, lotgd_lastCommentId);
+        if (typeof JaxonLotgd !== 'undefined'
+            && JaxonLotgd.Async && JaxonLotgd.Async.Handler
+            && JaxonLotgd.Async.Handler.Commentary
+            && typeof JaxonLotgd.Async.Handler.Commentary.pollUpdates === 'function') {
+            JaxonLotgd.Async.Handler.Commentary.pollUpdates(lotgd_comment_section, lotgd_lastCommentId);
         }
     }, lotgd_poll_interval_ms);
 }
@@ -140,8 +152,11 @@ function set_poll_ajax()
  */
 function clear_ajax()
 {
-    if (typeof jaxon_timeout_status === 'function') {
-        jaxon_timeout_status(1);   // ensure final timeout message
+    if (typeof JaxonLotgd !== 'undefined'
+        && JaxonLotgd.Async && JaxonLotgd.Async.Handler
+        && JaxonLotgd.Async.Handler.Timeout
+        && typeof JaxonLotgd.Async.Handler.Timeout.timeoutStatus === 'function') {
+        JaxonLotgd.Async.Handler.Timeout.timeoutStatus(1);   // ensure final timeout message
     }
     window.clearInterval(active_timeout_interval);
     window.clearInterval(active_mail_interval);
