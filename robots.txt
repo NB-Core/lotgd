@@ -6,7 +6,7 @@ Disallow: /install/
 Disallow: /scripts/
 Disallow: /vendor/
 Disallow: /config/
-Disallow: /ext/
+Disallow: /async/
 Disallow: /errors/
 Disallow: /pages/
 Disallow: /templates/

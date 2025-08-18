@@ -11,9 +11,8 @@ declare(strict_types=1);
 // File ajax_process.php
 define("OVERRIDE_FORCED_NAV", true);
 
-require_once(__DIR__ . '/lotgd_common.php');
-require_once(__DIR__ . '/ajax_common.php');
-require_once(__DIR__ . '/ajax_server.php');
+require_once __DIR__ . '/common/bootstrap.php';
+require_once __DIR__ . '/common/jaxon.php';
 
 // Simple rate limiting for Jaxon requests.  If an Ajax request arrives less
 // than the configured threshold after the previous one, we respond with HTTP 429 and skip
@@ -21,7 +20,7 @@ require_once(__DIR__ . '/ajax_server.php');
 // accepted to avoid locking out legitimate retries.
 if ($jaxon->canProcessRequest()) {
     $now       = microtime(true);
-    $threshold = $ajax_rate_limit_seconds; // from ajax_settings.php
+    $threshold = $ajax_rate_limit_seconds; // from async settings
 
     if (isset($_SESSION['lastrequest']) && ($now - $_SESSION['lastrequest']) < $threshold) {
         http_response_code(429);

@@ -2,7 +2,46 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests\Ajax;
+namespace {
+    function commentary_text($args = false): \Jaxon\Response\Response
+    {
+        if ($args === false || !is_array($args)) {
+            return \Jaxon\jaxon()->newResponse();
+        }
+
+        $section = $args['section'];
+        $new = \Lotgd\Commentary::viewCommentary($section, '', 25, 'says', $args['schema'], $args['viewonly'], 1);
+        $response = \Jaxon\jaxon()->newResponse();
+        $response->assign($section, 'innerHTML', $new);
+        return $response;
+    }
+
+    function commentary_refresh(string $section, int $lastId): \Jaxon\Response\Response
+    {
+        global $test_comment_rows;
+
+        $comments = [];
+        $newId = $lastId;
+        foreach ($test_comment_rows as $row) {
+            $newId = $row['commentid'];
+            $line = \Lotgd\Commentary::renderCommentLine($row, true);
+            $line = appoencode($line, true);
+            $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
+        }
+
+        $html = implode('', $comments);
+        $response = \Jaxon\jaxon()->newResponse();
+        if ($html !== '') {
+            $response->append("{$section}-comment", 'innerHTML', $html);
+            $response->script("lotgd_lastCommentId = $newId;");
+            $response->script('lotgdCommentNotify(' . count($comments) . ');');
+        }
+
+        return $response;
+    }
+}
+
+namespace Lotgd\Tests\Ajax {
 
 use PHPUnit\Framework\TestCase;
 
@@ -44,6 +83,7 @@ namespace Lotgd {
         }
     }
 }
+
 namespace {
     if (!function_exists('db_prefix')) {
         function db_prefix(string $name): string { return $name; }
@@ -118,4 +158,5 @@ STUBS
         $this->assertSame('js', $commands[2]['cmd']);
         $this->assertSame('lotgdCommentNotify(2);', $commands[2]['data']);
     }
+}
 }

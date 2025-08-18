@@ -53,6 +53,32 @@ namespace {
             return $GLOBALS['maillink_tabtext'] ?? '';
         }
     }
+
+    if (!function_exists('mail_status')) {
+        function mail_status($args = false): \Jaxon\Response\Response
+        {
+            global $session, $maillink_result, $maillink_tabtext, $db_result;
+
+            $response = \Jaxon\jaxon()->newResponse();
+            if ($args === false || !isset($session['user']['acctid'])) {
+                return $response;
+            }
+
+            $new = maillink();
+            $tabtext = maillinktabtext();
+            $row = $db_result[0] ?? ['lastid' => 0];
+
+            $response->assign('maillink', 'innerHTML', $new);
+            if ($tabtext === '') {
+                return $response;
+            }
+
+            $response->script("document.title=\"Legend of the Green Dragon - {$tabtext}\";");
+            $response->script('lotgdMailNotify(' . ((int)($row['lastid'] ?? 0)) . ');');
+
+            return $response;
+        }
+    }
 }
 
 namespace Lotgd\Tests\Ajax {

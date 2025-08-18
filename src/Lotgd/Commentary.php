@@ -477,7 +477,7 @@ SQL;
             $scriptname = $scriptname_pre;
         }
 
-        if ($_SERVER['REQUEST_URI'] == '/ext/ajax_process.php') {
+        if ($_SERVER['REQUEST_URI'] == '/async/process.php') {
             $real_request_uri = $session['last_comment_request_uri'];
         } else {
             $real_request_uri = $_SERVER['REQUEST_URI'];
@@ -758,7 +758,7 @@ SQL;
     {
         global $session;
 
-        if ($_SERVER['REQUEST_URI'] == '/ext/ajax_process.php') {
+        if ($_SERVER['REQUEST_URI'] == '/async/process.php') {
             return $session['last_comment_request_uri'] ?? $_SERVER['REQUEST_URI'];
         }
 

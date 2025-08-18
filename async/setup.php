@@ -8,15 +8,15 @@ declare(strict_types=1);
  * asynchronous features like mail and commentary updates.
  */
 
-require_once(__DIR__ . '/ajax_common.php');
+require_once __DIR__ . '/common/jaxon.php';
 
 global $jaxon;
 $s_css = $jaxon->getCss();
 
 if (isset($pre_headscript)) {
-    $pre_headscript .= $s_css . "<script src=\"/ext/js/jquery.min.js\" defer></script>";
+    $pre_headscript .= $s_css . "<script src=\"/async/js/jquery.min.js\" defer></script>";
 } else {
     $pre_headscript = "";
 }
 //$pre_headscript.="ha$s_js ha";
-addnav("", "ext/ajax_process.php");
+addnav("", "async/process.php");

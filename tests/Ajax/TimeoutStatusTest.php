@@ -9,6 +9,35 @@ namespace {
             return vsprintf($format, $args);
         }
     }
+
+    if (!function_exists('timeout_status')) {
+        function timeout_status($args = false): \Jaxon\Response\Response
+        {
+            global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $settings;
+
+            $response = \Jaxon\jaxon()->newResponse();
+            if ($args === false || !isset($session['user'])) {
+                return $response;
+            }
+
+            $lastOn = strtotime($session['user']['laston']);
+            $elapsed = time() - $lastOn;
+            $remaining = $settings->getSetting('LOGINTIMEOUT', 900) - $elapsed;
+
+            $warning = '';
+            if ($remaining <= 0) {
+                $warning = 'Your session has timed out!';
+            } elseif ($remaining < $start_timeout_show_seconds) {
+                $warning = 'TIMEOUT';
+            }
+
+            if ($warning !== '') {
+                $response->assign('notify', 'innerHTML', $warning);
+            }
+
+            return $response;
+        }
+    }
 }
 
 namespace Lotgd\Tests\Ajax {
@@ -37,8 +66,9 @@ namespace Lotgd\Tests\Ajax {
                     return $data;
                 }
             };
-
+          
             require_once __DIR__ . '/../../async/server.php';
+
         }
 
         public function testTimeoutWarningIsReturned(): void
