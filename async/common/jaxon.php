@@ -25,7 +25,7 @@ global $jaxon;
 $jaxon = jaxon();
 
 // Set the Jaxon request processing URI
-$jaxon->setOption('core.request.uri', 'async/process.php');
+$jaxon->setOption('core.request.uri', '/async/process.php');
 
 // Register callable classes
 $jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
