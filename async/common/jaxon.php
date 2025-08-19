@@ -26,6 +26,11 @@ $jaxon = jaxon();
 // Set the Jaxon request processing URI
 $jaxon->setOption('core.request.uri', '/async/process.php');
 
+// Configure the Jaxon client library and namespace
+$jaxon->setOption('js.app.export', true);
+$jaxon->setOption('js.app.dir', __DIR__ . '/../js');
+$jaxon->setOption('js.app.uri', '/async/js');
+
 // Register callable classes
 $jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Commentary::class);
