@@ -10,13 +10,18 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/common/jaxon.php';
 
-global $jaxon, $s_js;
-$s_css = $jaxon->getCss();
+global $jaxon;
 
-if (isset($pre_headscript)) {
-    $pre_headscript .= $s_css . $s_js . "<script src=\"/async/js/jquery.min.js\" defer></script>";
-} else {
-    $pre_headscript = $s_css . $s_js . "<script src=\"/async/js/jquery.min.js\" defer></script>";
-}
+$s_js = $jaxon->getJs();
+$s_script = $jaxon->getScript();
+
+$pre_headscript = ($pre_headscript ?? '')
+    . $jaxon->getCss()
+    . $s_js
+    . "<script src='/async/js/lotgd.jaxon.js'></script>"
+    . $s_script
+    . "<script src='/async/js/jquery.min.js' defer></script>"
+    . "<script src='/async/js/ajax_polling.js' defer></script>";
+
 addnav("", "async/process.php");
 
