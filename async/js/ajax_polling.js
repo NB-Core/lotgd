@@ -167,7 +167,10 @@ function clear_ajax()
 // Start polling once the DOM is ready using configuration variables
 // supplied by the server. Commentary and timeout checks only run
 // if the corresponding variables are present.
-$(function () {
+$(function startPolling() {
+    if (typeof window.JaxonLotgd === 'undefined') {
+        return setTimeout(startPolling, 250);
+    }
     set_poll_ajax();
     if (typeof lotgd_clear_delay_ms !== 'undefined') {
         window.setTimeout(clear_ajax, lotgd_clear_delay_ms);
