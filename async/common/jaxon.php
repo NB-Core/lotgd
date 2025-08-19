@@ -30,6 +30,7 @@ $jaxon->setOption('core.request.uri', '/async/process.php');
 $jaxon->setOption('js.app.export', true);
 $jaxon->setOption('js.app.dir', __DIR__ . '/../js');
 $jaxon->setOption('js.app.uri', '/async/js');
+$jaxon->setOption('js.app.file', 'lotgd.jaxon');
 
 // Register callable classes
 $jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
