@@ -639,6 +639,12 @@ class PageParts
             if (getsetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 $maillink_add_pre = '';
                 $maillink_add_after = '';
+                $setupFile = __DIR__ . '/../../async/setup.php';
+                if (file_exists($setupFile)) {
+                    set_error_handler(fn () => true, E_USER_WARNING);
+                    require_once $setupFile;
+                    restore_error_handler();
+                }
                 $asyncFile = __DIR__ . '/../../async/maillink.php';
                 if (file_exists($asyncFile)) {
                     require $asyncFile;
