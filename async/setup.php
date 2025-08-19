@@ -10,13 +10,13 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/common/jaxon.php';
 
-global $jaxon;
+global $jaxon, $s_js;
 $s_css = $jaxon->getCss();
 
 if (isset($pre_headscript)) {
-    $pre_headscript .= $s_css . "<script src=\"/async/js/jquery.min.js\" defer></script>";
+    $pre_headscript .= $s_css . $s_js . "<script src=\"/async/js/jquery.min.js\" defer></script>";
 } else {
-    $pre_headscript = "";
+    $pre_headscript = $s_css . $s_js . "<script src=\"/async/js/jquery.min.js\" defer></script>";
 }
-//$pre_headscript.="ha$s_js ha";
 addnav("", "async/process.php");
+
