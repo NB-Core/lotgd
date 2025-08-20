@@ -25,8 +25,8 @@ $jaxon = jaxon();
 
 // Set the Jaxon request processing URI
 $jaxon->setOption('core.request.uri', '/async/process.php');
-// Set a prefix for generated JavaScript classes so the global object is created
-$jaxon->setOption('core.prefix.class', 'JaxonLotgd');
+// Use the default prefix for generated JavaScript classes
+$jaxon->setOption('core.prefix.class', 'Jaxon');
 
 // Configure the Jaxon client library and namespace
 $jaxon->setOption('js.app.export', true);
