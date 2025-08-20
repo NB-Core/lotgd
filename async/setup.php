@@ -49,107 +49,123 @@ if ($clear_script_execution > 0 && $clear_script_execution < $login_timeout) {
 
 $polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId, clear_delay: lotgd_clear_delay_ms});";
 
-// Clean, working direct AJAX polling solution
+// Fixed parameter format for Jaxon
 $polling_script .= "
-// Clean direct AJAX polling implementation
-function pollUpdatesDirectly() {
-    console.log('POLLING: Starting poll request...');
+// Test different parameter formats to find what works
+function testParameterFormats() {
+    console.log('TESTING: Trying different parameter formats...');
     
-    const formData = new URLSearchParams();
-    formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
-    formData.append('jxnmthd', 'pollUpdates');
-    formData.append('jxnargs[0]', lotgd_comment_section || 'superuser');
-    formData.append('jxnargs[1]', String(lotgd_lastCommentId || 0));
-    formData.append('jxnr', Math.random().toString().substring(2));
+    // Format 1: Standard jxnargs array format
+    const formData1 = new URLSearchParams();
+    formData1.append('jxncls', 'Lotgd.Async.Handler.Commentary');
+    formData1.append('jxnmthd', 'pollUpdates');
+    formData1.append('jxnargs[0]', lotgd_comment_section || 'superuser');
+    formData1.append('jxnargs[1]', String(lotgd_lastCommentId || 0));
+    formData1.append('jxnr', Math.random().toString().substring(2));
     
+    // Format 2: Different argument encoding
+    const formData2 = new URLSearchParams();
+    formData2.append('jxncls', 'Lotgd.Async.Handler.Commentary');
+    formData2.append('jxnmthd', 'pollUpdates');
+    formData2.append('jxnargs[]', lotgd_comment_section || 'superuser');
+    formData2.append('jxnargs[]', String(lotgd_lastCommentId || 0));
+    formData2.append('jxnr', Math.random().toString().substring(2));
+    
+    // Format 3: JSON parameter encoding
+    const formData3 = new URLSearchParams();
+    formData3.append('jxncls', 'Lotgd.Async.Handler.Commentary');
+    formData3.append('jxnmthd', 'pollUpdates');
+    formData3.append('jxnargs', JSON.stringify([lotgd_comment_section || 'superuser', lotgd_lastCommentId || 0]));
+    formData3.append('jxnr', Math.random().toString().substring(2));
+    
+    console.log('TESTING: Format 1 (indexed):', formData1.toString());
+    console.log('TESTING: Format 2 (array):', formData2.toString());
+    console.log('TESTING: Format 3 (JSON):', formData3.toString());
+    
+    // Try format 1 first
     fetch('/async/process.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString()
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: formData1.toString()
     })
     .then(response => {
-        console.log('POLLING: Response status:', response.status);
-        if (!response.ok) {
-            return response.text().then(text => {
-                console.error('POLLING: Server error response:', text.substring(0, 500));
-                throw new Error('HTTP ' + response.status + ': ' + text.substring(0, 200));
-            });
-        }
+        console.log('TESTING: Format 1 response status:', response.status);
         return response.text();
     })
     .then(data => {
+        if (data.includes('Application Error')) {
+            console.log('TESTING: Format 1 failed, trying format 2...');
+            
+            return fetch('/async/process.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: formData2.toString()
+            });
+        } else {
+            console.log('TESTING: Format 1 worked!');
+            try {
+                const json = JSON.parse(data);
+                console.log('TESTING: Success with format 1:', json);
+            } catch (e) {
+                console.log('TESTING: Format 1 non-JSON response:', data.substring(0, 200));
+            }
+            return null;
+        }
+    })
+    .then(response => {
+        if (!response) return null;
+        
+        console.log('TESTING: Format 2 response status:', response.status);
+        return response.text();
+    })
+    .then(data => {
+        if (!data) return null;
+        
+        if (data.includes('Application Error')) {
+            console.log('TESTING: Format 2 failed, trying format 3...');
+            
+            return fetch('/async/process.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: formData3.toString()
+            });
+        } else {
+            console.log('TESTING: Format 2 worked!');
+            try {
+                const json = JSON.parse(data);
+                console.log('TESTING: Success with format 2:', json);
+            } catch (e) {
+                console.log('TESTING: Format 2 non-JSON response:', data.substring(0, 200));
+            }
+            return null;
+        }
+    })
+    .then(response => {
+        if (!response) return;
+        
+        console.log('TESTING: Format 3 response status:', response.status);
+        return response.text();
+    })
+    .then(data => {
+        if (!data) return;
+        
+        console.log('TESTING: Format 3 result:', data.substring(0, 200));
         try {
             const json = JSON.parse(data);
-            console.log('POLLING: Success! Processing', json.jxnobj?.length || 0, 'commands');
-            
-            // Process Jaxon response commands
-            if (json.jxnobj && Array.isArray(json.jxnobj)) {
-                let updates = {mail: false, notify: false, comments: false};
-                
-                json.jxnobj.forEach(cmd => {
-                    if (cmd.id && cmd.prop && cmd.data !== undefined) {
-                        const element = document.getElementById(cmd.id);
-                        if (element && cmd.prop === 'innerHTML') {
-                            element.innerHTML = cmd.data;
-                            console.log('POLLING: Updated', cmd.id);
-                            
-                            if (cmd.id === 'maillink') updates.mail = true;
-                            if (cmd.id === 'notify') updates.notify = true;
-                            if (cmd.id.includes('comment')) updates.comments = true;
-                        }
-                    }
-                    
-                    // Execute script commands (e.g., to update comment IDs)
-                    if (cmd.cmd === 'scr' && cmd.data) {
-                        try {
-                            eval(cmd.data);
-                            console.log('POLLING: Executed:', cmd.data);
-                        } catch (e) {
-                            console.error('POLLING: Script error:', e);
-                        }
-                    }
-                });
-                
-                console.log('POLLING: Updates -', updates);
-            }
+            console.log('TESTING: Success with format 3:', json);
         } catch (e) {
-            console.error('POLLING: Parse error:', e);
-            console.log('POLLING: Raw response:', data.substring(0, 200));
+            console.log('TESTING: All formats failed');
         }
     })
     .catch(error => {
-        console.error('POLLING: Request failed:', error.message);
+        console.error('TESTING: Network error:', error);
     });
 }
 
-// Simple polling system
-var lotgd_polling_interval;
-function startPolling() {
-    if (typeof lotgd_poll_interval_ms === 'undefined' || lotgd_poll_interval_ms <= 0) {
-        console.log('POLLING: Invalid interval, not starting');
-        return;
-    }
-    
-    console.log('POLLING: Starting with interval', lotgd_poll_interval_ms, 'ms');
-    
-    // Clear any existing interval
-    if (lotgd_polling_interval) {
-        clearInterval(lotgd_polling_interval);
-    }
-    
-    // Start polling
-    lotgd_polling_interval = setInterval(pollUpdatesDirectly, lotgd_poll_interval_ms);
-}
-
-// Initialize after a delay
+// Initialize with testing
 setTimeout(function() {
-    console.log('POLLING: Initializing system...');
-    // Test once immediately
-    pollUpdatesDirectly();
-    // Start regular polling
-    startPolling();
+    console.log('POLLING: Starting parameter format testing...');
+    testParameterFormats();
 }, 2000);
 
 // Disable the old ajax_polling.js by overriding its functions

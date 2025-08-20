@@ -85,6 +85,11 @@ class Commentary
      */
     public function pollUpdates(string $section, int $lastId): Response
     {
+        // DEBUG: Log what we're receiving
+        error_log("JAXON DEBUG: pollUpdates called with section: " . var_export($section, true) . ", lastId: " . var_export($lastId, true));
+        error_log("JAXON DEBUG: POST data: " . var_export($_POST, true));
+        error_log("JAXON DEBUG: Raw input: " . file_get_contents('php://input'));
+        
         $response = jaxon()->newResponse();
         $response->appendResponse((new Mail())->mailStatus(true));
         $response->appendResponse((new Timeout())->timeoutStatus(true));
