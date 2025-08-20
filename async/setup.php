@@ -37,52 +37,97 @@ $polling_script .= "var lotgd_timeout_delay_ms = " . ((getsetting('LOGINTIMEOUT'
 $polling_script .= "var lotgd_clear_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $clear_script_execution_seconds) * 1000) . ";";
 $polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId});";
 
-// TEST: Try a direct AJAX call to see if the issue is with Jaxon or the server
+// Fixed direct AJAX call with proper Jaxon parameter format
 $polling_script .= "
-// Test direct AJAX call without Jaxon functions
+// Test direct AJAX call with corrected parameter format
 function testDirectAjax() {
     console.log('DIRECT: Testing direct AJAX call...');
+    
+    // Build Jaxon-compatible POST data
+    const formData = new URLSearchParams();
+    formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
+    formData.append('jxnmthd', 'pollUpdates');
+    formData.append('jxnargs[0]', lotgd_comment_section || 'superuser');
+    formData.append('jxnargs[1]', lotgd_lastCommentId || 0);
+    
+    // Add required Jaxon fields
+    formData.append('jxnr', Math.random().toString().substring(2));
+    
+    console.log('DIRECT: Sending data:', {
+        section: lotgd_comment_section,
+        lastId: lotgd_lastCommentId,
+        formData: formData.toString()
+    });
     
     fetch('/async/process.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: 'jxncls=Lotgd.Async.Handler.Commentary&jxnmthd=pollUpdates&jxnargs[]=superuser&jxnargs[]=20991005'
+        body: formData.toString()
     })
-    .then(response => response.text())
+    .then(response => {
+        console.log('DIRECT: Response status:', response.status);
+        return response.text();
+    })
     .then(data => {
-        console.log('DIRECT: Response:', data);
+        console.log('DIRECT: Raw response:', data);
         try {
             const json = JSON.parse(data);
             console.log('DIRECT: JSON response:', json);
+            
+            // Process the response like Jaxon would
+            if (json.jxnobj && Array.isArray(json.jxnobj)) {
+                json.jxnobj.forEach(cmd => {
+                    console.log('DIRECT: Processing command:', cmd);
+                    if (cmd.id && cmd.prop && cmd.data !== undefined) {
+                        const element = document.getElementById(cmd.id);
+                        if (element) {
+                            if (cmd.prop === 'innerHTML') {
+                                element.innerHTML = cmd.data;
+                                console.log('DIRECT: Updated', cmd.id, 'with:', cmd.data);
+                            }
+                        }
+                    }
+                });
+            }
         } catch (e) {
-            console.log('DIRECT: Non-JSON response:', data);
+            console.error('DIRECT: Failed to parse JSON:', e);
+            console.log('DIRECT: Non-JSON response (might be error page):', data.substring(0, 500));
         }
     })
     .catch(error => {
-        console.error('DIRECT: Error:', error);
+        console.error('DIRECT: Network error:', error);
     });
 }
 
-// Enhanced debugging for Jaxon calls
-if (typeof jaxon !== 'undefined' && jaxon.request) {
-    var originalJaxonRequest = jaxon.request;
-    jaxon.request = function(config, options) {
-        console.log('JAXON: Making request with config:', config, 'options:', options);
-        console.log('JAXON: jaxon.config:', jaxon.config);
+// Also test individual methods
+function testIndividualMethods() {
+    // Test Mail status
+    console.log('DIRECT: Testing Mail.mailStatus...');
+    const mailData = new URLSearchParams();
+    mailData.append('jxncls', 'Lotgd.Async.Handler.Mail');
+    mailData.append('jxnmthd', 'mailStatus');
+    mailData.append('jxnargs[0]', 'true');
+    mailData.append('jxnr', Math.random().toString().substring(2));
+    
+    fetch('/async/process.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: mailData.toString()
+    })
+    .then(response => response.text())
+    .then(data => {
         try {
-            var result = originalJaxonRequest.call(this, config, options);
-            console.log('JAXON: Request result:', result);
-            return result;
+            const json = JSON.parse(data);
+            console.log('DIRECT: Mail response:', json);
         } catch (e) {
-            console.error('JAXON: Request failed:', e);
-            return false;
+            console.log('DIRECT: Mail response (non-JSON):', data.substring(0, 200));
         }
-    };
+    });
 }
 
-// Inline polling solution
+// Inline polling solution using direct AJAX
 var active_poll_interval;
 function startInlinePolling() {
     if (typeof lotgd_poll_interval_ms === 'undefined') {
@@ -90,7 +135,7 @@ function startInlinePolling() {
         return;
     }
     
-    console.log('INLINE: Starting polling with interval:', lotgd_poll_interval_ms);
+    console.log('INLINE: Starting direct AJAX polling with interval:', lotgd_poll_interval_ms);
     console.log('INLINE: Comment section:', lotgd_comment_section, 'Last ID:', lotgd_lastCommentId);
     
     if (active_poll_interval) {
@@ -98,7 +143,6 @@ function startInlinePolling() {
     }
     
     active_poll_interval = setInterval(function() {
-        // Try direct AJAX call instead of Jaxon functions
         testDirectAjax();
     }, lotgd_poll_interval_ms);
 }
@@ -108,8 +152,10 @@ setTimeout(function() {
     console.log('INLINE: Starting inline polling...');
     // Test direct AJAX immediately
     testDirectAjax();
+    // Test individual methods
+    setTimeout(testIndividualMethods, 2000);
     // Start interval polling
-    startInlinePolling();
+    setTimeout(startInlinePolling, 4000);
 }, 3000);
 ";
 
