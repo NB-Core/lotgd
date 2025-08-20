@@ -19,8 +19,6 @@ $pre_headscript = ($pre_headscript ?? '')
     . $jaxon->getCss()
     . $s_js;
 
-$pre_headscript .= "<script>window.JaxonLotgd = window.JaxonLotgd || {Async:{Handler:{}}};</script>";
-
 $pre_headscript .= "<script src='/async/js/lotgd.jaxon.js'></script>"
     . $s_script
     . "<script src='/async/js/jquery.min.js' defer></script>"

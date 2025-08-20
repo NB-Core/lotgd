@@ -15,28 +15,27 @@ jaxon.config.defaultMode = "asynchronous";
 jaxon.config.defaultMethod = "POST";
 jaxon.config.responseType = "JSON";
 
-if(JaxonLotgd.Async.Handler.Mail === undefined) {
-    JaxonLotgd.Async.Handler.Mail = {};
-}
-JaxonLotgd.Async.Handler.Mail.mailStatus = function() {
+var Jx = "JaxonLotgd";
+var handler = (window[Jx] = window[Jx] || {Async:{Handler:{}}}).Async.Handler;
+
+handler.Mail = handler.Mail || {};
+handler.Mail.mailStatus = function() {
     return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Mail', jxnmthd: 'mailStatus' }, { parameters: arguments });
 };
-if(JaxonLotgd.Async.Handler.Timeout === undefined) {
-    JaxonLotgd.Async.Handler.Timeout = {};
-}
-JaxonLotgd.Async.Handler.Timeout.timeoutStatus = function() {
+
+handler.Timeout = handler.Timeout || {};
+handler.Timeout.timeoutStatus = function() {
     return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Timeout', jxnmthd: 'timeoutStatus' }, { parameters: arguments });
 };
-if(JaxonLotgd.Async.Handler.Commentary === undefined) {
-    JaxonLotgd.Async.Handler.Commentary = {};
-}
-JaxonLotgd.Async.Handler.Commentary.commentaryText = function() {
+
+handler.Commentary = handler.Commentary || {};
+handler.Commentary.commentaryText = function() {
     return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Commentary', jxnmthd: 'commentaryText' }, { parameters: arguments });
 };
-JaxonLotgd.Async.Handler.Commentary.commentaryRefresh = function() {
+handler.Commentary.commentaryRefresh = function() {
     return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Commentary', jxnmthd: 'commentaryRefresh' }, { parameters: arguments });
 };
-JaxonLotgd.Async.Handler.Commentary.pollUpdates = function() {
+handler.Commentary.pollUpdates = function() {
     return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Commentary', jxnmthd: 'pollUpdates' }, { parameters: arguments });
 };
 
