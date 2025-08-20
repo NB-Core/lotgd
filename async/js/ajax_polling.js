@@ -164,19 +164,44 @@ function clear_ajax()
     window.clearInterval(active_poll_interval);
 }
 
-// Start polling once the DOM is ready using configuration variables
-// supplied by the server. Commentary and timeout checks only run
-// if the corresponding variables are present.
-$(function startPolling() {
-    if (typeof window.JaxonLotgd === 'undefined') {
-        return setTimeout(startPolling, 250);
-    }
+/**
+ * Initialize polling once JaxonLotgd is ready
+ */
+function initializePolling() {
     set_poll_ajax();
     if (typeof lotgd_clear_delay_ms !== 'undefined') {
         window.setTimeout(clear_ajax, lotgd_clear_delay_ms);
     }
-    // Individual polling functions remain defined but are unused
-    // set_mail_ajax();
-    // set_comment_ajax();
-    // set_timeout_ajax();
+}
+
+/**
+ * Start polling with improved JaxonLotgd availability detection
+ */
+function startPolling() {
+    // Check if JaxonLotgd is ready using the ready flag
+    if (window.JaxonLotgdReady === true) {
+        initializePolling();
+        return;
+    }
+    
+    // Check if JaxonLotgd is available directly
+    if (typeof window.JaxonLotgd !== 'undefined'
+        && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
+        initializePolling();
+        return;
+    }
+    
+    // Wait and retry
+    setTimeout(startPolling, 250);
+}
+
+// Start polling once DOM is ready and JaxonLotgd is available
+$(function() {
+    // Listen for the JaxonLotgdReady event if available
+    if (typeof window.addEventListener === 'function') {
+        window.addEventListener('JaxonLotgdReady', initializePolling, { once: true });
+    }
+    
+    // Also use the polling fallback method
+    startPolling();
 });
