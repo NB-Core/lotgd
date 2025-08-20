@@ -36,13 +36,49 @@ $polling_script .= "var lotgd_poll_interval_ms = " . ($check_mail_timeout_second
 $polling_script .= "var lotgd_timeout_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $start_timeout_show_seconds) * 1000) . ";";
 $polling_script .= "var lotgd_clear_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $clear_script_execution_seconds) * 1000) . ";";
 $polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section});";
+
+// INLINE POLLING SOLUTION - since ajax_polling.js isn't loading properly
+$polling_script .= "
+// Inline polling solution
+var active_poll_interval;
+function startInlinePolling() {
+    if (typeof lotgd_poll_interval_ms === 'undefined') {
+        console.log('INLINE: lotgd_poll_interval_ms not defined');
+        return;
+    }
+    
+    console.log('INLINE: Starting polling with interval:', lotgd_poll_interval_ms);
+    if (active_poll_interval) {
+        clearInterval(active_poll_interval);
+    }
+    
+    active_poll_interval = setInterval(function() {
+        if (typeof Lotgd !== 'undefined' 
+            && Lotgd.Async && Lotgd.Async.Handler 
+            && Lotgd.Async.Handler.Commentary
+            && typeof Lotgd.Async.Handler.Commentary.pollUpdates === 'function') {
+            
+            console.log('INLINE: Calling pollUpdates');
+            Lotgd.Async.Handler.Commentary.pollUpdates(lotgd_comment_section || '', lotgd_lastCommentId || 0);
+        } else {
+            console.log('INLINE: Handlers not ready yet');
+        }
+    }, lotgd_poll_interval_ms);
+}
+
+// Start polling after a short delay
+setTimeout(function() {
+    console.log('INLINE: Starting inline polling...');
+    startInlinePolling();
+}, 3000);
+";
+
 $polling_script .= "</script>";
 $polling_script .= "<div id='notify'></div>";
 
 $pre_headscript .= $polling_script;
 
-// CRITICAL: Load jQuery WITHOUT defer so it's available before polling script
-// Then load polling script with defer to ensure jQuery is ready
+// Load jQuery and attempt external polling script (as backup)
 $pre_headscript .= "<script src='/async/js/jquery.min.js'></script>"
     . "<script src='/async/js/ajax_polling.js' defer></script>";
 
