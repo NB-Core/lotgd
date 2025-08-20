@@ -18,12 +18,12 @@ $s_script = $jaxon->getScript();
 // Build the script loading sequence ensuring proper dependency order
 $pre_headscript = ($pre_headscript ?? '')
     . $jaxon->getCss()
-    . $s_js;
+    . $s_js
+    . $s_script;
 
-// Add the lotgd.jaxon.js script with a defer attribute to ensure jaxon core loads first
-// Also add jQuery and polling scripts with defer to ensure proper loading order
-$pre_headscript .= $s_script
-    . "<script src='/async/js/lotgd.jaxon.js' defer></script>"
+// Add our custom scripts AFTER the Jaxon-generated scripts
+// Remove defer from lotgd.jaxon.js to ensure it runs immediately after the generated code
+$pre_headscript .= "<script src='/async/js/lotgd.jaxon.js'></script>"
     . "<script src='/async/js/jquery.min.js' defer></script>"
     . "<script src='/async/js/ajax_polling.js' defer></script>";
 
