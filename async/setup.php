@@ -22,7 +22,7 @@ $pre_headscript = ($pre_headscript ?? '')
 
 // CRITICAL: Add our namespace creation BEFORE the PHP-generated script
 // This ensures JaxonLotgd exists when the generated code references it
-$pre_headscript .= "<script src='/async/js/lotgd.jaxon.js'></script>"
+$pre_headscript .= "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
     . $s_script;
 
 // Add remaining scripts
