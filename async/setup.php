@@ -21,9 +21,13 @@ $pre_headscript = ($pre_headscript ?? '')
     . $s_js;
 
 // CRITICAL: Add our namespace creation BEFORE the PHP-generated script
-// This ensures JaxonLotgd exists when the generated code references it
+// This ensures Lotgd namespace exists when the generated code references it
 $pre_headscript .= "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
     . $s_script;
+
+// Include maillink variables for polling - this was missing!
+require_once __DIR__ . '/maillink.php';
+$pre_headscript .= $maillink_add_after;
 
 // Add remaining scripts
 $pre_headscript .= "<script src='/async/js/jquery.min.js' defer></script>"
