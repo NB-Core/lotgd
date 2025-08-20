@@ -17,35 +17,10 @@
         jaxon.config.defaultMethod = "POST";
         jaxon.config.responseType = "JSON";
 
-        // Create the JaxonLotgd namespace structure to match server-side class registration
-        window.JaxonLotgd = window.JaxonLotgd || {};
-        JaxonLotgd.Async = JaxonLotgd.Async || {};
-        JaxonLotgd.Async.Handler = JaxonLotgd.Async.Handler || {};
-
-        // Define the Mail handler
-        JaxonLotgd.Async.Handler.Mail = JaxonLotgd.Async.Handler.Mail || {};
-        JaxonLotgd.Async.Handler.Mail.mailStatus = function() {
-            return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Mail', jxnmthd: 'mailStatus' }, { parameters: arguments });
-        };
-
-        // Define the Timeout handler
-        JaxonLotgd.Async.Handler.Timeout = JaxonLotgd.Async.Handler.Timeout || {};
-        JaxonLotgd.Async.Handler.Timeout.timeoutStatus = function() {
-            return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Timeout', jxnmthd: 'timeoutStatus' }, { parameters: arguments });
-        };
-
-        // Define the Commentary handler
-        JaxonLotgd.Async.Handler.Commentary = JaxonLotgd.Async.Handler.Commentary || {};
-        JaxonLotgd.Async.Handler.Commentary.commentaryText = function() {
-            return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Commentary', jxnmthd: 'commentaryText' }, { parameters: arguments });
-        };
-        JaxonLotgd.Async.Handler.Commentary.commentaryRefresh = function() {
-            return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Commentary', jxnmthd: 'commentaryRefresh' }, { parameters: arguments });
-        };
-        JaxonLotgd.Async.Handler.Commentary.pollUpdates = function() {
-            return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Commentary', jxnmthd: 'pollUpdates' }, { parameters: arguments });
-        };
-
+        // Create a convenient alias for the Jaxon-generated namespace
+        // The actual generated namespace will be Jaxon.Lotgd.Async.Handler.*
+        window.JaxonLotgd = window.Jaxon = window.Jaxon || {};
+        
         // Initialize jaxon dialogs if not already present
         jaxon.dialogs = jaxon.dialogs || {};
 
