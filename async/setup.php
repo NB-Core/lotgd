@@ -37,27 +37,20 @@ $polling_script .= "var lotgd_timeout_delay_ms = " . ((getsetting('LOGINTIMEOUT'
 $polling_script .= "var lotgd_clear_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $clear_script_execution_seconds) * 1000) . ";";
 $polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId});";
 
-// Fixed direct AJAX call with proper Jaxon parameter format
+// Working direct AJAX polling solution
 $polling_script .= "
-// Test direct AJAX call with corrected parameter format
-function testDirectAjax() {
-    console.log('DIRECT: Testing direct AJAX call...');
+// Working direct AJAX polling - calls the combined pollUpdates method
+function pollUpdatesDirectly() {
+    console.log('DIRECT: Calling pollUpdates...');
     
-    // Build Jaxon-compatible POST data
     const formData = new URLSearchParams();
     formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
     formData.append('jxnmthd', 'pollUpdates');
     formData.append('jxnargs[0]', lotgd_comment_section || 'superuser');
-    formData.append('jxnargs[1]', lotgd_lastCommentId || 0);
-    
-    // Add required Jaxon fields
+    formData.append('jxnargs[1]', String(lotgd_lastCommentId || 0));
     formData.append('jxnr', Math.random().toString().substring(2));
     
-    console.log('DIRECT: Sending data:', {
-        section: lotgd_comment_section,
-        lastId: lotgd_lastCommentId,
-        formData: formData.toString()
-    });
+    console.log('DIRECT: Polling with section:', lotgd_comment_section, 'lastId:', lotgd_lastCommentId);
     
     fetch('/async/process.php', {
         method: 'POST',
@@ -67,95 +60,82 @@ function testDirectAjax() {
         body: formData.toString()
     })
     .then(response => {
-        console.log('DIRECT: Response status:', response.status);
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
         return response.text();
     })
     .then(data => {
-        console.log('DIRECT: Raw response:', data);
         try {
             const json = JSON.parse(data);
-            console.log('DIRECT: JSON response:', json);
+            console.log('DIRECT: Success! Response:', json);
             
-            // Process the response like Jaxon would
+            // Process the Jaxon response commands
             if (json.jxnobj && Array.isArray(json.jxnobj)) {
                 json.jxnobj.forEach(cmd => {
-                    console.log('DIRECT: Processing command:', cmd);
                     if (cmd.id && cmd.prop && cmd.data !== undefined) {
                         const element = document.getElementById(cmd.id);
                         if (element) {
                             if (cmd.prop === 'innerHTML') {
                                 element.innerHTML = cmd.data;
-                                console.log('DIRECT: Updated', cmd.id, 'with:', cmd.data);
+                                console.log('DIRECT: Updated', cmd.id);
                             }
                         }
                     }
+                    
+                    // Handle script commands for comment ID updates
+                    if (cmd.cmd === 'scr' && cmd.data) {
+                        try {
+                            eval(cmd.data);
+                            console.log('DIRECT: Executed script:', cmd.data);
+                        } catch (e) {
+                            console.error('DIRECT: Script error:', e);
+                        }
+                    }
                 });
+                
+                // Count response types
+                const mailCount = json.jxnobj.filter(cmd => cmd.id === 'maillink').length;
+                const notifyCount = json.jxnobj.filter(cmd => cmd.id === 'notify').length;
+                const commentCount = json.jxnobj.filter(cmd => cmd.id && cmd.id.includes('comment')).length;
+                console.log('DIRECT: Response contains - Mail:', mailCount, 'Notify:', notifyCount, 'Comments:', commentCount);
             }
         } catch (e) {
-            console.error('DIRECT: Failed to parse JSON:', e);
-            console.log('DIRECT: Non-JSON response (might be error page):', data.substring(0, 500));
+            console.error('DIRECT: JSON parse error:', e);
+            console.log('DIRECT: Raw response:', data.substring(0, 500));
         }
     })
     .catch(error => {
-        console.error('DIRECT: Network error:', error);
+        console.error('DIRECT: Request failed:', error);
     });
 }
 
-// Also test individual methods
-function testIndividualMethods() {
-    // Test Mail status
-    console.log('DIRECT: Testing Mail.mailStatus...');
-    const mailData = new URLSearchParams();
-    mailData.append('jxncls', 'Lotgd.Async.Handler.Mail');
-    mailData.append('jxnmthd', 'mailStatus');
-    mailData.append('jxnargs[0]', 'true');
-    mailData.append('jxnr', Math.random().toString().substring(2));
-    
-    fetch('/async/process.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: mailData.toString()
-    })
-    .then(response => response.text())
-    .then(data => {
-        try {
-            const json = JSON.parse(data);
-            console.log('DIRECT: Mail response:', json);
-        } catch (e) {
-            console.log('DIRECT: Mail response (non-JSON):', data.substring(0, 200));
-        }
-    });
-}
-
-// Inline polling solution using direct AJAX
-var active_poll_interval;
-function startInlinePolling() {
+// Standalone polling system using direct AJAX
+var polling_interval;
+function startDirectPolling() {
     if (typeof lotgd_poll_interval_ms === 'undefined') {
-        console.log('INLINE: lotgd_poll_interval_ms not defined');
+        console.log('DIRECT: No polling interval defined');
         return;
     }
     
-    console.log('INLINE: Starting direct AJAX polling with interval:', lotgd_poll_interval_ms);
-    console.log('INLINE: Comment section:', lotgd_comment_section, 'Last ID:', lotgd_lastCommentId);
+    console.log('DIRECT: Starting polling every', lotgd_poll_interval_ms, 'ms');
     
-    if (active_poll_interval) {
-        clearInterval(active_poll_interval);
+    // Clear any existing interval
+    if (polling_interval) {
+        clearInterval(polling_interval);
     }
     
-    active_poll_interval = setInterval(function() {
-        testDirectAjax();
-    }, lotgd_poll_interval_ms);
+    // Start regular polling
+    polling_interval = setInterval(pollUpdatesDirectly, lotgd_poll_interval_ms);
 }
 
-// Start polling after a short delay
+// Initialize polling
 setTimeout(function() {
-    console.log('INLINE: Starting inline polling...');
-    // Test direct AJAX immediately
-    testDirectAjax();
-    // Test individual methods
-    setTimeout(testIndividualMethods, 2000);
-    // Start interval polling
-    setTimeout(startInlinePolling, 4000);
+    console.log('DIRECT: Starting direct polling system...');
+    // Test immediately
+    pollUpdatesDirectly();
+    // Start regular polling
+    setTimeout(startDirectPolling, 5000);
 }, 3000);
 ";
 

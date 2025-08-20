@@ -33,9 +33,9 @@ $jaxon->setOption('js.app.export', false);
 $jaxon->setOption('js.app.dir', __DIR__ . '/../js');
 $jaxon->setOption('js.app.uri', '/async/js');
 
-// DEBUG: Add debug output to see what's being generated
-$jaxon->setOption('core.debug.on', true);
-$jaxon->setOption('core.debug.verbose', true);
+// DISABLE debug mode to prevent writeDebugMessage errors
+$jaxon->setOption('core.debug.on', false);
+$jaxon->setOption('core.debug.verbose', false);
 
 // Register callable classes
 $jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
@@ -44,8 +44,4 @@ $jaxon->register(Jaxon::CALLABLE_CLASS, Timeout::class);
 
 // Generate the script tag for Jaxon Javascript and make it available
 $s_js = $jaxon->getJs();
-
-// DEBUG: Output what was generated
-error_log("JAXON DEBUG: Generated JS length: " . strlen($s_js));
-error_log("JAXON DEBUG: Generated script content preview: " . substr($jaxon->getScript(), 0, 500));
 
