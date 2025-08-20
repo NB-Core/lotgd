@@ -25,7 +25,7 @@ $pre_headscript = ($pre_headscript ?? '')
 $pre_headscript .= "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
     . $s_script;
 
-// Add polling variables directly here instead of using maillink.php
+// Add polling variables directly here
 // Load the async settings
 require_once __DIR__ . '/common/settings.php';
 
@@ -41,8 +41,9 @@ $polling_script .= "<div id='notify'></div>";
 
 $pre_headscript .= $polling_script;
 
-// Add remaining scripts
-$pre_headscript .= "<script src='/async/js/jquery.min.js' defer></script>"
+// CRITICAL: Load jQuery WITHOUT defer so it's available before polling script
+// Then load polling script with defer to ensure jQuery is ready
+$pre_headscript .= "<script src='/async/js/jquery.min.js'></script>"
     . "<script src='/async/js/ajax_polling.js' defer></script>";
 
 addnav("", "async/process.php");
