@@ -49,7 +49,7 @@ if ($clear_script_execution > 0 && $clear_script_execution < $login_timeout) {
 
 $polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId, clear_delay: lotgd_clear_delay_ms});";
 
-// Working AJAX polling solution
+// Working AJAX polling solution with fixed JavaScript
 $polling_script .= "
 // Test the simple method first
 function testSimpleMethod() {
@@ -67,22 +67,36 @@ function testSimpleMethod() {
     })
     .then(response => {
         console.log('TEST: Simple method response status:', response.status);
-        return response.text();
+        return response.text().then(data => ({status: response.status, data: data}));
     })
-    .then(data => {
-        if (response.status === 200) {
-            console.log('TEST: Simple method works! Response:', data);
+    .then(result => {
+        if (result.status === 200) {
+            console.log('TEST: Simple method works! Response:', result.data);
             try {
-                const json = JSON.parse(data);
+                const json = JSON.parse(result.data);
                 console.log('TEST: JSON response:', json);
+                
+                // Process the response
+                if (json.jxnobj && Array.isArray(json.jxnobj)) {
+                    json.jxnobj.forEach(cmd => {
+                        if (cmd.id && cmd.prop && cmd.data !== undefined) {
+                            const element = document.getElementById(cmd.id);
+                            if (element && cmd.prop === 'innerHTML') {
+                                element.innerHTML = cmd.data;
+                                console.log('TEST: Updated', cmd.id, 'with:', cmd.data);
+                            }
+                        }
+                    });
+                }
+                
                 // If simple method works, try pollUpdates
                 setTimeout(testPollingMethod, 1000);
             } catch (e) {
-                console.log('TEST: Non-JSON response:', data.substring(0, 200));
+                console.log('TEST: Non-JSON response:', result.data.substring(0, 200));
             }
         } else {
-            console.error('TEST: Simple method failed with status:', response.status);
-            console.log('TEST: Error response:', data.substring(0, 500));
+            console.error('TEST: Simple method failed with status:', result.status);
+            console.log('TEST: Error response:', result.data.substring(0, 500));
         }
     })
     .catch(error => {
@@ -110,25 +124,31 @@ function testPollingMethod() {
     })
     .then(response => {
         console.log('POLLING: Response status:', response.status);
-        return response.text();
+        return response.text().then(data => ({status: response.status, data: data}));
     })
-    .then(data => {
-        if (data.includes('Application Error')) {
-            console.error('POLLING: Still getting server error:', data.substring(0, 500));
-        } else {
-            console.log('POLLING: Success! Response length:', data.length);
+    .then(result => {
+        if (result.data.includes('Application Error')) {
+            console.error('POLLING: Still getting server error:', result.data.substring(0, 500));
+        } else if (result.status === 200) {
+            console.log('POLLING: Success! Response length:', result.data.length);
             try {
-                const json = JSON.parse(data);
+                const json = JSON.parse(result.data);
                 console.log('POLLING: JSON response with', json.jxnobj?.length || 0, 'commands');
                 
                 // Process the response
                 if (json.jxnobj && Array.isArray(json.jxnobj)) {
+                    let updates = {mail: false, notify: false, comments: false};
+                    
                     json.jxnobj.forEach(cmd => {
                         if (cmd.id && cmd.prop && cmd.data !== undefined) {
                             const element = document.getElementById(cmd.id);
                             if (element && cmd.prop === 'innerHTML') {
                                 element.innerHTML = cmd.data;
                                 console.log('POLLING: Updated', cmd.id);
+                                
+                                if (cmd.id === 'maillink') updates.mail = true;
+                                if (cmd.id === 'notify') updates.notify = true;
+                                if (cmd.id.includes('comment')) updates.comments = true;
                             }
                         }
                         if (cmd.cmd === 'scr' && cmd.data) {
@@ -140,14 +160,19 @@ function testPollingMethod() {
                             }
                         }
                     });
+                    
+                    console.log('POLLING: Updates -', updates);
                 }
                 
                 // If successful, start regular polling
                 startRegularPolling();
             } catch (e) {
                 console.error('POLLING: JSON parse error:', e);
-                console.log('POLLING: Raw response:', data.substring(0, 300));
+                console.log('POLLING: Raw response:', result.data.substring(0, 300));
             }
+        } else {
+            console.error('POLLING: Failed with status:', result.status);
+            console.log('POLLING: Error response:', result.data.substring(0, 500));
         }
     })
     .catch(error => {
@@ -159,7 +184,10 @@ function testPollingMethod() {
 function startRegularPolling() {
     console.log('POLLING: Starting regular polling every', lotgd_poll_interval_ms, 'ms');
     
-    setInterval(testPollingMethod, lotgd_poll_interval_ms);
+    setInterval(function() {
+        console.log('POLLING: Regular poll...');
+        testPollingMethod();
+    }, lotgd_poll_interval_ms);
 }
 
 // Initialize with testing
