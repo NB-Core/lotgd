@@ -25,8 +25,8 @@ $jaxon = jaxon();
 
 // Set the Jaxon request processing URI
 $jaxon->setOption('core.request.uri', '/async/process.php');
-// Use JaxonLotgd as the prefix since that's what the generated code expects
-$jaxon->setOption('core.prefix.class', 'JaxonLotgd');
+// Use empty prefix to get clean namespace: Lotgd.Async.Handler.*
+$jaxon->setOption('core.prefix.class', '');
 
 // Configure the Jaxon client library - disable auto-export since we manage our own JS files
 $jaxon->setOption('js.app.export', false);

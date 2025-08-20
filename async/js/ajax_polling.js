@@ -66,17 +66,17 @@ function lotgdCommentNotify(count)
 }
 
 /**
- * Get the correct handler object based on what's available.
- * Supports both legacy JaxonLotgd and new Jaxon.Lotgd structures.
+ * Get the correct handler object - Clean implementation.
+ * Uses the clean Lotgd.Async.Handler structure with JaxonLotgd fallback.
  */
 function getJaxonHandlers() {
-    // Try the generated structure first: Jaxon.Lotgd.Async.Handler
-    if (typeof Jaxon !== 'undefined' 
-        && Jaxon.Lotgd && Jaxon.Lotgd.Async && Jaxon.Lotgd.Async.Handler) {
-        return Jaxon.Lotgd.Async.Handler;
+    // Primary: Use the clean structure
+    if (typeof Lotgd !== 'undefined' 
+        && Lotgd.Async && Lotgd.Async.Handler) {
+        return Lotgd.Async.Handler;
     }
     
-    // Fallback to legacy structure: JaxonLotgd.Async.Handler
+    // Fallback: Legacy JaxonLotgd structure
     if (typeof JaxonLotgd !== 'undefined' 
         && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
         return JaxonLotgd.Async.Handler;
@@ -177,10 +177,10 @@ function initializePolling() {
 }
 
 /**
- * Start polling with improved Jaxon availability detection
+ * Start polling with clean handler detection
  */
 function startPolling() {
-    // Check if JaxonLotgd is ready using the ready flag
+    // Check if ready flag is set
     if (window.JaxonLotgdReady === true) {
         initializePolling();
         return;

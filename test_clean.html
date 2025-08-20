@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jaxon Clean Test</title>
+</head>
+<body>
+    <h1>Jaxon Clean Implementation Test</h1>
+    <div id="status">Testing...</div>
+    
+    <!-- Step 1: Load Jaxon core library -->
+    <script src="https://cdn.jsdelivr.net/gh/jaxon-php/jaxon-js@4.0.9/dist/jaxon.core.js"></script>
+    
+    <!-- Step 2: Jaxon configuration -->
+    <script>
+        try {
+            if(typeof jaxon.config == undefined)
+                jaxon.config = {};
+        }
+        catch(e) {
+            jaxon = {};
+            jaxon.config = {};
+        };
+
+        jaxon.config.requestURI = "/async/process.php";
+        jaxon.config.statusMessages = false;
+        jaxon.config.waitCursor = true;
+        jaxon.config.version = "Jaxon 4.x";
+        jaxon.config.defaultMode = "asynchronous";
+        jaxon.config.defaultMethod = "POST";
+        jaxon.config.responseType = "JSON";
+    </script>
+    
+    <!-- Step 3: Our clean namespace creation -->
+    <script src="async/js/lotgd.jaxon.js"></script>
+    
+    <!-- Step 4: Simulated clean PHP-generated script -->
+    <script>
+        // This simulates what PHP generates with empty prefix: Lotgd.Async.Handler.*
+        if(Lotgd.Async.Handler.Mail === undefined) {
+            Lotgd.Async.Handler.Mail = {};
+        }
+        Lotgd.Async.Handler.Mail.mailStatus = function() {
+            return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Mail', jxnmthd: 'mailStatus' }, { parameters: arguments });
+        };
+        
+        if(Lotgd.Async.Handler.Timeout === undefined) {
+            Lotgd.Async.Handler.Timeout = {};
+        }
+        Lotgd.Async.Handler.Timeout.timeoutStatus = function() {
+            return jaxon.request({ jxncls: 'Lotgd.Async.Handler.Timeout', jxnmthd: 'timeoutStatus' }, { parameters: arguments });
+        };
+        
+        console.log('Clean PHP-generated script completed successfully');
+    </script>
+    
+    <!-- Step 5: Test -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusDiv = document.getElementById('status');
+            
+            setTimeout(function() {
+                let results = [];
+                let success = true;
+                
+                // Test 1: Check clean namespace
+                if (typeof Lotgd !== 'undefined' && Lotgd.Async && Lotgd.Async.Handler) {
+                    results.push('? Clean Lotgd.Async.Handler namespace exists');
+                } else {
+                    results.push('? Clean Lotgd.Async.Handler namespace missing');
+                    success = false;
+                }
+                
+                // Test 2: Check backward compatibility alias
+                if (typeof JaxonLotgd !== 'undefined' && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
+                    results.push('? JaxonLotgd compatibility alias exists');
+                } else {
+                    results.push('? JaxonLotgd compatibility alias missing');
+                    success = false;
+                }
+                
+                // Test 3: Test handlers work
+                try {
+                    if (typeof Lotgd.Async.Handler.Mail.mailStatus === 'function') {
+                        results.push('? Mail.mailStatus function works');
+                    } else {
+                        results.push('? Mail.mailStatus function missing');
+                        success = false;
+                    }
+                } catch (e) {
+                    results.push('? Error accessing Mail handler: ' + e.message);
+                    success = false;
+                }
+                
+                // Test 4: Test getJaxonHandlers function
+                try {
+                    function getJaxonHandlers() {
+                        if (typeof Lotgd !== 'undefined' && Lotgd.Async && Lotgd.Async.Handler) {
+                            return Lotgd.Async.Handler;
+                        }
+                        if (typeof JaxonLotgd !== 'undefined' && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
+                            return JaxonLotgd.Async.Handler;
+                        }
+                        return null;
+                    }
+                    
+                    const handlers = getJaxonHandlers();
+                    if (handlers && handlers.Mail && typeof handlers.Mail.mailStatus === 'function') {
+                        results.push('? getJaxonHandlers() finds working handlers');
+                    } else {
+                        results.push('? getJaxonHandlers() cannot find working handlers');
+                        success = false;
+                    }
+                } catch (e) {
+                    results.push('? Error in getJaxonHandlers(): ' + e.message);
+                    success = false;
+                }
+                
+                // Test 5: Verify no unwanted namespaces
+                if (typeof JaxonLotgdLotgd === 'undefined') {
+                    results.push('? No JaxonLotgdLotgd duplication');
+                } else {
+                    results.push('?? JaxonLotgdLotgd still exists (should be cleaned up)');
+                }
+                
+                statusDiv.innerHTML = results.join('<br>');
+                statusDiv.style.color = success ? 'green' : 'red';
+                
+                console.log('Clean test results:', results);
+                console.log('Available namespaces:', {
+                    Lotgd: typeof Lotgd,
+                    JaxonLotgd: typeof JaxonLotgd,
+                    JaxonLotgdLotgd: typeof JaxonLotgdLotgd
+                });
+            }, 500);
+        });
+    </script>
+</body>
+</html>

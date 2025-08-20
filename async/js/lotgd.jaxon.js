@@ -62,16 +62,22 @@
         }
     }
 
-    // Create the JaxonLotgd namespace structure that the PHP-generated code expects
-    // Note: The PHP getScript() seems to generate code expecting JaxonLotgd, not Jaxon.Lotgd
-    window.JaxonLotgd = window.JaxonLotgd || {};
-    window.JaxonLotgd.Async = window.JaxonLotgd.Async || {};
-    window.JaxonLotgd.Async.Handler = window.JaxonLotgd.Async.Handler || {};
+    // Create the clean namespace that PHP will generate: Lotgd.Async.Handler.*
+    window.Lotgd = window.Lotgd || {};
+    window.Lotgd.Async = window.Lotgd.Async || {};
+    window.Lotgd.Async.Handler = window.Lotgd.Async.Handler || {};
     
-    // Create empty handler objects - the PHP-generated script will add the methods
-    window.JaxonLotgd.Async.Handler.Mail = window.JaxonLotgd.Async.Handler.Mail || {};
-    window.JaxonLotgd.Async.Handler.Timeout = window.JaxonLotgd.Async.Handler.Timeout || {};
-    window.JaxonLotgd.Async.Handler.Commentary = window.JaxonLotgd.Async.Handler.Commentary || {};
+    // Create empty handler objects - PHP will add the methods
+    window.Lotgd.Async.Handler.Mail = window.Lotgd.Async.Handler.Mail || {};
+    window.Lotgd.Async.Handler.Timeout = window.Lotgd.Async.Handler.Timeout || {};
+    window.Lotgd.Async.Handler.Commentary = window.Lotgd.Async.Handler.Commentary || {};
+    
+    // Create the JaxonLotgd alias for backward compatibility
+    window.JaxonLotgd = {
+        Async: {
+            Handler: window.Lotgd.Async.Handler
+        }
+    };
     
     // Mark as ready
     window.JaxonLotgdReady = true;
@@ -81,6 +87,6 @@
         window.dispatchEvent(new CustomEvent('JaxonLotgdReady'));
     }
     
-    console.log('JaxonLotgd namespace created for PHP-generated handlers');
+    console.log('Clean Jaxon namespace created: Lotgd.Async.Handler');
     
 })();
