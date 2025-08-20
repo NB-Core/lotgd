@@ -9,6 +9,8 @@
  * variables.
  */
 
+console.log('DEBUG: ajax_polling.js loaded');
+
 var active_mail_interval;     // ID of the mail polling interval (unused)
 var active_comment_interval;  // ID of the commentary polling interval (unused)
 var active_timeout_interval;  // ID of the timeout polling interval (unused)
@@ -73,15 +75,18 @@ function getJaxonHandlers() {
     // Primary: Use the clean structure
     if (typeof Lotgd !== 'undefined' 
         && Lotgd.Async && Lotgd.Async.Handler) {
+        console.log('DEBUG: Using Lotgd.Async.Handler');
         return Lotgd.Async.Handler;
     }
     
     // Fallback: Legacy JaxonLotgd structure
     if (typeof JaxonLotgd !== 'undefined' 
         && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
+        console.log('DEBUG: Using JaxonLotgd.Async.Handler');
         return JaxonLotgd.Async.Handler;
     }
     
+    console.log('DEBUG: No handlers found');
     return null;
 }
 
@@ -91,11 +96,14 @@ function getJaxonHandlers() {
 function set_mail_ajax()
 {
     if (typeof lotgd_mail_interval_ms === 'undefined') {
+        console.log('DEBUG: lotgd_mail_interval_ms not defined, skipping mail polling');
         return;
     }
+    console.log('DEBUG: Starting mail polling with interval:', lotgd_mail_interval_ms);
     active_mail_interval = window.setInterval(function () {
         var handlers = getJaxonHandlers();
         if (handlers && handlers.Mail && typeof handlers.Mail.mailStatus === 'function') {
+            console.log('DEBUG: Calling Mail.mailStatus');
             handlers.Mail.mailStatus(1);
         }
     }, lotgd_mail_interval_ms);
@@ -107,11 +115,14 @@ function set_mail_ajax()
 function set_comment_ajax()
 {
     if (typeof lotgd_comment_interval_ms === 'undefined') {
+        console.log('DEBUG: lotgd_comment_interval_ms not defined, skipping comment polling');
         return;
     }
+    console.log('DEBUG: Starting comment polling with interval:', lotgd_comment_interval_ms);
     active_comment_interval = window.setInterval(function () {
         var handlers = getJaxonHandlers();
         if (handlers && handlers.Commentary && typeof handlers.Commentary.commentaryRefresh === 'function') {
+            console.log('DEBUG: Calling Commentary.commentaryRefresh');
             handlers.Commentary.commentaryRefresh(lotgd_comment_section, lotgd_lastCommentId);
         }
     }, lotgd_comment_interval_ms);
@@ -123,11 +134,14 @@ function set_comment_ajax()
 function set_timeout_ajax()
 {
     if (typeof lotgd_timeout_interval_ms === 'undefined') {
+        console.log('DEBUG: lotgd_timeout_interval_ms not defined, skipping timeout polling');
         return;
     }
+    console.log('DEBUG: Starting timeout polling with interval:', lotgd_timeout_interval_ms);
     active_timeout_interval = window.setInterval(function () {
         var handlers = getJaxonHandlers();
         if (handlers && handlers.Timeout && typeof handlers.Timeout.timeoutStatus === 'function') {
+            console.log('DEBUG: Calling Timeout.timeoutStatus');
             handlers.Timeout.timeoutStatus(1);
         }
     }, lotgd_timeout_interval_ms);
@@ -139,13 +153,18 @@ function set_timeout_ajax()
 function set_poll_ajax()
 {
     if (typeof lotgd_poll_interval_ms === 'undefined') {
+        console.log('DEBUG: lotgd_poll_interval_ms not defined, skipping combined polling');
         return;
     }
+    console.log('DEBUG: Starting combined polling with interval:', lotgd_poll_interval_ms);
     window.clearInterval(active_poll_interval); // Clear any existing interval
     active_poll_interval = window.setInterval(function () {
         var handlers = getJaxonHandlers();
         if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
+            console.log('DEBUG: Calling Commentary.pollUpdates');
             handlers.Commentary.pollUpdates(lotgd_comment_section, lotgd_lastCommentId);
+        } else {
+            console.log('DEBUG: pollUpdates not available, handlers:', handlers);
         }
     }, lotgd_poll_interval_ms);
 }
@@ -156,6 +175,7 @@ function set_poll_ajax()
  */
 function clear_ajax()
 {
+    console.log('DEBUG: Clearing all polling intervals');
     var handlers = getJaxonHandlers();
     if (handlers && handlers.Timeout && typeof handlers.Timeout.timeoutStatus === 'function') {
         handlers.Timeout.timeoutStatus(1);   // ensure final timeout message
@@ -170,8 +190,10 @@ function clear_ajax()
  * Initialize polling once Jaxon handlers are ready
  */
 function initializePolling() {
+    console.log('DEBUG: initializePolling called');
     set_poll_ajax();
     if (typeof lotgd_clear_delay_ms !== 'undefined') {
+        console.log('DEBUG: Setting clear timeout for:', lotgd_clear_delay_ms);
         window.setTimeout(clear_ajax, lotgd_clear_delay_ms);
     }
 }
@@ -180,29 +202,54 @@ function initializePolling() {
  * Start polling with clean handler detection
  */
 function startPolling() {
+    console.log('DEBUG: startPolling called');
     // Check if ready flag is set
     if (window.JaxonLotgdReady === true) {
+        console.log('DEBUG: JaxonLotgdReady is true, initializing polling');
         initializePolling();
         return;
     }
     
     // Check if handlers are available
     if (getJaxonHandlers() !== null) {
+        console.log('DEBUG: Handlers available, initializing polling');
         initializePolling();
         return;
     }
     
+    console.log('DEBUG: Not ready yet, will retry in 250ms');
     // Wait and retry
     setTimeout(startPolling, 250);
 }
 
 // Start polling once DOM is ready and Jaxon handlers are available
-$(function() {
-    // Listen for the JaxonLotgdReady event if available
-    if (typeof window.addEventListener === 'function') {
-        window.addEventListener('JaxonLotgdReady', initializePolling, { once: true });
+console.log('DEBUG: Setting up DOM ready listeners, typeof $ =', typeof $);
+
+// Try both jQuery and vanilla JS approaches
+if (typeof $ !== 'undefined') {
+    console.log('DEBUG: Using jQuery for DOM ready');
+    $(function() {
+        console.log('DEBUG: jQuery DOM ready fired');
+        // Listen for the JaxonLotgdReady event if available
+        if (typeof window.addEventListener === 'function') {
+            window.addEventListener('JaxonLotgdReady', function() {
+                console.log('DEBUG: JaxonLotgdReady event received');
+                initializePolling();
+            }, { once: true });
+        }
+        
+        // Also use the polling fallback method
+        startPolling();
+    });
+} else {
+    console.log('DEBUG: jQuery not available, using vanilla JS DOM ready');
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DEBUG: Vanilla DOM ready fired');
+            startPolling();
+        });
+    } else {
+        console.log('DEBUG: DOM already ready, starting immediately');
+        startPolling();
     }
-    
-    // Also use the polling fallback method
-    startPolling();
-});
+}

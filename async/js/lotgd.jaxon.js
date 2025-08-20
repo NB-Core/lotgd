@@ -89,4 +89,35 @@
     
     console.log('Clean Jaxon namespace created: Lotgd.Async.Handler');
     
+    // DEBUGGING: Start polling immediately without waiting for jQuery
+    // This should tell us if the problem is jQuery dependency
+    console.log('DEBUG: Starting immediate polling test...');
+    setTimeout(function() {
+        console.log('DEBUG: Checking polling readiness...');
+        console.log('DEBUG: typeof Lotgd =', typeof window.Lotgd);
+        console.log('DEBUG: JaxonLotgdReady =', window.JaxonLotgdReady);
+        console.log('DEBUG: lotgd_poll_interval_ms =', typeof window.lotgd_poll_interval_ms !== 'undefined' ? window.lotgd_poll_interval_ms : 'undefined');
+        
+        if (typeof window.Lotgd !== 'undefined' 
+            && window.Lotgd.Async && window.Lotgd.Async.Handler
+            && window.Lotgd.Async.Handler.Commentary
+            && typeof window.Lotgd.Async.Handler.Commentary.pollUpdates === 'function'
+            && typeof window.lotgd_poll_interval_ms !== 'undefined') {
+            
+            console.log('DEBUG: All polling requirements met, testing manual call...');
+            try {
+                window.Lotgd.Async.Handler.Commentary.pollUpdates(window.lotgd_comment_section || '', window.lotgd_lastCommentId || 0);
+                console.log('DEBUG: Manual polling call successful!');
+            } catch (e) {
+                console.error('DEBUG: Manual polling call failed:', e);
+            }
+        } else {
+            console.error('DEBUG: Polling requirements not met:', {
+                Lotgd: typeof window.Lotgd,
+                pollUpdates: typeof window.Lotgd?.Async?.Handler?.Commentary?.pollUpdates,
+                pollInterval: typeof window.lotgd_poll_interval_ms
+            });
+        }
+    }, 2000);
+    
 })();
