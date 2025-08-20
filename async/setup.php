@@ -49,123 +49,123 @@ if ($clear_script_execution > 0 && $clear_script_execution < $login_timeout) {
 
 $polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId, clear_delay: lotgd_clear_delay_ms});";
 
-// Fixed parameter format for Jaxon
+// Working AJAX polling solution
 $polling_script .= "
-// Test different parameter formats to find what works
-function testParameterFormats() {
-    console.log('TESTING: Trying different parameter formats...');
+// Test the simple method first
+function testSimpleMethod() {
+    console.log('TEST: Calling simple test method...');
     
-    // Format 1: Standard jxnargs array format
-    const formData1 = new URLSearchParams();
-    formData1.append('jxncls', 'Lotgd.Async.Handler.Commentary');
-    formData1.append('jxnmthd', 'pollUpdates');
-    formData1.append('jxnargs[0]', lotgd_comment_section || 'superuser');
-    formData1.append('jxnargs[1]', String(lotgd_lastCommentId || 0));
-    formData1.append('jxnr', Math.random().toString().substring(2));
+    const formData = new URLSearchParams();
+    formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
+    formData.append('jxnmthd', 'test');
+    formData.append('jxnr', Math.random().toString().substring(2));
     
-    // Format 2: Different argument encoding
-    const formData2 = new URLSearchParams();
-    formData2.append('jxncls', 'Lotgd.Async.Handler.Commentary');
-    formData2.append('jxnmthd', 'pollUpdates');
-    formData2.append('jxnargs[]', lotgd_comment_section || 'superuser');
-    formData2.append('jxnargs[]', String(lotgd_lastCommentId || 0));
-    formData2.append('jxnr', Math.random().toString().substring(2));
-    
-    // Format 3: JSON parameter encoding
-    const formData3 = new URLSearchParams();
-    formData3.append('jxncls', 'Lotgd.Async.Handler.Commentary');
-    formData3.append('jxnmthd', 'pollUpdates');
-    formData3.append('jxnargs', JSON.stringify([lotgd_comment_section || 'superuser', lotgd_lastCommentId || 0]));
-    formData3.append('jxnr', Math.random().toString().substring(2));
-    
-    console.log('TESTING: Format 1 (indexed):', formData1.toString());
-    console.log('TESTING: Format 2 (array):', formData2.toString());
-    console.log('TESTING: Format 3 (JSON):', formData3.toString());
-    
-    // Try format 1 first
     fetch('/async/process.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: formData1.toString()
+        body: formData.toString()
     })
     .then(response => {
-        console.log('TESTING: Format 1 response status:', response.status);
+        console.log('TEST: Simple method response status:', response.status);
         return response.text();
     })
     .then(data => {
-        if (data.includes('Application Error')) {
-            console.log('TESTING: Format 1 failed, trying format 2...');
-            
-            return fetch('/async/process.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: formData2.toString()
-            });
-        } else {
-            console.log('TESTING: Format 1 worked!');
+        if (response.status === 200) {
+            console.log('TEST: Simple method works! Response:', data);
             try {
                 const json = JSON.parse(data);
-                console.log('TESTING: Success with format 1:', json);
+                console.log('TEST: JSON response:', json);
+                // If simple method works, try pollUpdates
+                setTimeout(testPollingMethod, 1000);
             } catch (e) {
-                console.log('TESTING: Format 1 non-JSON response:', data.substring(0, 200));
+                console.log('TEST: Non-JSON response:', data.substring(0, 200));
             }
-            return null;
-        }
-    })
-    .then(response => {
-        if (!response) return null;
-        
-        console.log('TESTING: Format 2 response status:', response.status);
-        return response.text();
-    })
-    .then(data => {
-        if (!data) return null;
-        
-        if (data.includes('Application Error')) {
-            console.log('TESTING: Format 2 failed, trying format 3...');
-            
-            return fetch('/async/process.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: formData3.toString()
-            });
         } else {
-            console.log('TESTING: Format 2 worked!');
-            try {
-                const json = JSON.parse(data);
-                console.log('TESTING: Success with format 2:', json);
-            } catch (e) {
-                console.log('TESTING: Format 2 non-JSON response:', data.substring(0, 200));
-            }
-            return null;
-        }
-    })
-    .then(response => {
-        if (!response) return;
-        
-        console.log('TESTING: Format 3 response status:', response.status);
-        return response.text();
-    })
-    .then(data => {
-        if (!data) return;
-        
-        console.log('TESTING: Format 3 result:', data.substring(0, 200));
-        try {
-            const json = JSON.parse(data);
-            console.log('TESTING: Success with format 3:', json);
-        } catch (e) {
-            console.log('TESTING: All formats failed');
+            console.error('TEST: Simple method failed with status:', response.status);
+            console.log('TEST: Error response:', data.substring(0, 500));
         }
     })
     .catch(error => {
-        console.error('TESTING: Network error:', error);
+        console.error('TEST: Simple method network error:', error);
     });
+}
+
+// Test the improved pollUpdates method
+function testPollingMethod() {
+    console.log('POLLING: Testing improved pollUpdates...');
+    
+    const formData = new URLSearchParams();
+    formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
+    formData.append('jxnmthd', 'pollUpdates');
+    formData.append('jxnargs[0]', lotgd_comment_section || 'superuser');
+    formData.append('jxnargs[1]', String(lotgd_lastCommentId || 0));
+    formData.append('jxnr', Math.random().toString().substring(2));
+    
+    console.log('POLLING: Sending:', formData.toString());
+    
+    fetch('/async/process.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: formData.toString()
+    })
+    .then(response => {
+        console.log('POLLING: Response status:', response.status);
+        return response.text();
+    })
+    .then(data => {
+        if (data.includes('Application Error')) {
+            console.error('POLLING: Still getting server error:', data.substring(0, 500));
+        } else {
+            console.log('POLLING: Success! Response length:', data.length);
+            try {
+                const json = JSON.parse(data);
+                console.log('POLLING: JSON response with', json.jxnobj?.length || 0, 'commands');
+                
+                // Process the response
+                if (json.jxnobj && Array.isArray(json.jxnobj)) {
+                    json.jxnobj.forEach(cmd => {
+                        if (cmd.id && cmd.prop && cmd.data !== undefined) {
+                            const element = document.getElementById(cmd.id);
+                            if (element && cmd.prop === 'innerHTML') {
+                                element.innerHTML = cmd.data;
+                                console.log('POLLING: Updated', cmd.id);
+                            }
+                        }
+                        if (cmd.cmd === 'scr' && cmd.data) {
+                            try {
+                                eval(cmd.data);
+                                console.log('POLLING: Executed script:', cmd.data);
+                            } catch (e) {
+                                console.error('POLLING: Script error:', e);
+                            }
+                        }
+                    });
+                }
+                
+                // If successful, start regular polling
+                startRegularPolling();
+            } catch (e) {
+                console.error('POLLING: JSON parse error:', e);
+                console.log('POLLING: Raw response:', data.substring(0, 300));
+            }
+        }
+    })
+    .catch(error => {
+        console.error('POLLING: Network error:', error);
+    });
+}
+
+// Start regular polling once we know it works
+function startRegularPolling() {
+    console.log('POLLING: Starting regular polling every', lotgd_poll_interval_ms, 'ms');
+    
+    setInterval(testPollingMethod, lotgd_poll_interval_ms);
 }
 
 // Initialize with testing
 setTimeout(function() {
-    console.log('POLLING: Starting parameter format testing...');
-    testParameterFormats();
+    console.log('POLLING: Initializing with step-by-step testing...');
+    testSimpleMethod();
 }, 2000);
 
 // Disable the old ajax_polling.js by overriding its functions

@@ -81,19 +81,64 @@ class Commentary
     }
 
     /**
-     * Combined polling for mail, timeout and commentary updates.
+     * Simple test method to check if Jaxon is working at all.
      */
-    public function pollUpdates(string $section, int $lastId): Response
+    public function test(): Response
+    {
+        error_log("JAXON DEBUG: test() method called successfully");
+        $response = jaxon()->newResponse();
+        $response->assign('notify', 'innerHTML', 'Test successful at ' . date('H:i:s'));
+        return $response;
+    }
+
+    /**
+     * Combined polling for mail, timeout and commentary updates.
+     * Made more robust to handle parameter issues.
+     */
+    public function pollUpdates($section = null, $lastId = null): Response
     {
         // DEBUG: Log what we're receiving
         error_log("JAXON DEBUG: pollUpdates called with section: " . var_export($section, true) . ", lastId: " . var_export($lastId, true));
+        error_log("JAXON DEBUG: func_get_args(): " . var_export(func_get_args(), true));
         error_log("JAXON DEBUG: POST data: " . var_export($_POST, true));
-        error_log("JAXON DEBUG: Raw input: " . file_get_contents('php://input'));
+        
+        // Handle parameter conversion issues
+        if ($section === null || $section === '') {
+            $section = 'superuser'; // fallback
+        }
+        if ($lastId === null) {
+            $lastId = 0; // fallback
+        }
+        
+        // Ensure proper types
+        $section = (string) $section;
+        $lastId = (int) $lastId;
+        
+        error_log("JAXON DEBUG: After type conversion - section: $section, lastId: $lastId");
         
         $response = jaxon()->newResponse();
-        $response->appendResponse((new Mail())->mailStatus(true));
-        $response->appendResponse((new Timeout())->timeoutStatus(true));
-        $response->appendResponse($this->commentaryRefresh($section, $lastId));
+        
+        try {
+            $response->appendResponse((new Mail())->mailStatus(true));
+            error_log("JAXON DEBUG: Mail handler completed");
+        } catch (Exception $e) {
+            error_log("JAXON DEBUG: Mail handler failed: " . $e->getMessage());
+        }
+        
+        try {
+            $response->appendResponse((new Timeout())->timeoutStatus(true));
+            error_log("JAXON DEBUG: Timeout handler completed");
+        } catch (Exception $e) {
+            error_log("JAXON DEBUG: Timeout handler failed: " . $e->getMessage());
+        }
+        
+        try {
+            $response->appendResponse($this->commentaryRefresh($section, $lastId));
+            error_log("JAXON DEBUG: Commentary handler completed");
+        } catch (Exception $e) {
+            error_log("JAXON DEBUG: Commentary handler failed: " . $e->getMessage());
+        }
+        
         return $response;
     }
 }
