@@ -37,8 +37,24 @@ $polling_script .= "var lotgd_timeout_delay_ms = " . ((getsetting('LOGINTIMEOUT'
 $polling_script .= "var lotgd_clear_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $clear_script_execution_seconds) * 1000) . ";";
 $polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId});";
 
-// INLINE POLLING SOLUTION - since ajax_polling.js isn't loading properly
+// INLINE POLLING SOLUTION with enhanced debugging
 $polling_script .= "
+// Enhanced debugging for Jaxon calls
+if (typeof jaxon !== 'undefined' && jaxon.request) {
+    var originalJaxonRequest = jaxon.request;
+    jaxon.request = function(config, options) {
+        console.log('JAXON: Making request with config:', config, 'options:', options);
+        try {
+            var result = originalJaxonRequest.call(this, config, options);
+            console.log('JAXON: Request result:', result);
+            return result;
+        } catch (e) {
+            console.error('JAXON: Request failed:', e);
+            return false;
+        }
+    };
+}
+
 // Inline polling solution
 var active_poll_interval;
 function startInlinePolling() {
@@ -61,10 +77,16 @@ function startInlinePolling() {
             && typeof Lotgd.Async.Handler.Commentary.pollUpdates === 'function') {
             
             console.log('INLINE: Calling pollUpdates with section:', lotgd_comment_section, 'lastId:', lotgd_lastCommentId);
+            console.log('INLINE: Function source:', Lotgd.Async.Handler.Commentary.pollUpdates.toString());
             
             // Call pollUpdates and track the response
-            var response = Lotgd.Async.Handler.Commentary.pollUpdates(lotgd_comment_section || '', lotgd_lastCommentId || 0);
-            console.log('INLINE: pollUpdates response:', response);
+            try {
+                var response = Lotgd.Async.Handler.Commentary.pollUpdates(lotgd_comment_section || '', lotgd_lastCommentId || 0);
+                console.log('INLINE: pollUpdates response:', response);
+                console.log('INLINE: Response type:', typeof response);
+            } catch (e) {
+                console.error('INLINE: pollUpdates threw error:', e);
+            }
             
         } else {
             console.log('INLINE: Handlers not ready yet');
@@ -72,15 +94,41 @@ function startInlinePolling() {
     }, lotgd_poll_interval_ms);
 }
 
-// Test individual commentary method
-function testCommentaryRefresh() {
-    if (typeof Lotgd !== 'undefined' 
-        && Lotgd.Async && Lotgd.Async.Handler 
-        && Lotgd.Async.Handler.Commentary
-        && typeof Lotgd.Async.Handler.Commentary.commentaryRefresh === 'function') {
-        
-        console.log('INLINE: Testing commentaryRefresh directly...');
-        Lotgd.Async.Handler.Commentary.commentaryRefresh(lotgd_comment_section || '', lotgd_lastCommentId || 0);
+// Test individual methods to see which ones work
+function testIndividualMethods() {
+    console.log('INLINE: Testing individual methods...');
+    
+    // Test Mail.mailStatus
+    try {
+        if (Lotgd.Async.Handler.Mail && typeof Lotgd.Async.Handler.Mail.mailStatus === 'function') {
+            console.log('INLINE: Testing Mail.mailStatus...');
+            var mailResult = Lotgd.Async.Handler.Mail.mailStatus(true);
+            console.log('INLINE: Mail.mailStatus result:', mailResult);
+        }
+    } catch (e) {
+        console.error('INLINE: Mail.mailStatus error:', e);
+    }
+    
+    // Test Timeout.timeoutStatus
+    try {
+        if (Lotgd.Async.Handler.Timeout && typeof Lotgd.Async.Handler.Timeout.timeoutStatus === 'function') {
+            console.log('INLINE: Testing Timeout.timeoutStatus...');
+            var timeoutResult = Lotgd.Async.Handler.Timeout.timeoutStatus(true);
+            console.log('INLINE: Timeout.timeoutStatus result:', timeoutResult);
+        }
+    } catch (e) {
+        console.error('INLINE: Timeout.timeoutStatus error:', e);
+    }
+    
+    // Test Commentary.commentaryRefresh
+    try {
+        if (Lotgd.Async.Handler.Commentary && typeof Lotgd.Async.Handler.Commentary.commentaryRefresh === 'function') {
+            console.log('INLINE: Testing Commentary.commentaryRefresh...');
+            var commentResult = Lotgd.Async.Handler.Commentary.commentaryRefresh(lotgd_comment_section || '', lotgd_lastCommentId || 0);
+            console.log('INLINE: Commentary.commentaryRefresh result:', commentResult);
+        }
+    } catch (e) {
+        console.error('INLINE: Commentary.commentaryRefresh error:', e);
     }
 }
 
@@ -89,8 +137,8 @@ setTimeout(function() {
     console.log('INLINE: Starting inline polling...');
     startInlinePolling();
     
-    // Also test commentary refresh separately after 5 seconds
-    setTimeout(testCommentaryRefresh, 5000);
+    // Test individual methods after 5 seconds
+    setTimeout(testIndividualMethods, 5000);
 }, 3000);
 ";
 
