@@ -81,27 +81,20 @@ class Commentary
     }
 
     /**
-     * Simple test method to check if Jaxon is working at all.
+     * Simple test method to check if Jaxon is working.
      */
     public function test(): Response
     {
-        error_log("JAXON DEBUG: test() method called successfully");
         $response = jaxon()->newResponse();
-        $response->assign('notify', 'innerHTML', 'Test successful at ' . date('H:i:s'));
+        $response->assign('notify', 'innerHTML', 'AJAX Test successful at ' . date('H:i:s'));
         return $response;
     }
 
     /**
      * Combined polling for mail, timeout and commentary updates.
-     * Made more robust to handle parameter issues.
      */
     public function pollUpdates($section = null, $lastId = null): Response
     {
-        // DEBUG: Log what we're receiving
-        error_log("JAXON DEBUG: pollUpdates called with section: " . var_export($section, true) . ", lastId: " . var_export($lastId, true));
-        error_log("JAXON DEBUG: func_get_args(): " . var_export(func_get_args(), true));
-        error_log("JAXON DEBUG: POST data: " . var_export($_POST, true));
-        
         // Handle parameter conversion issues
         if ($section === null || $section === '') {
             $section = 'superuser'; // fallback
@@ -114,29 +107,24 @@ class Commentary
         $section = (string) $section;
         $lastId = (int) $lastId;
         
-        error_log("JAXON DEBUG: After type conversion - section: $section, lastId: $lastId");
-        
         $response = jaxon()->newResponse();
         
         try {
             $response->appendResponse((new Mail())->mailStatus(true));
-            error_log("JAXON DEBUG: Mail handler completed");
         } catch (Exception $e) {
-            error_log("JAXON DEBUG: Mail handler failed: " . $e->getMessage());
+            error_log("AJAX polling: Mail handler error - " . $e->getMessage());
         }
         
         try {
             $response->appendResponse((new Timeout())->timeoutStatus(true));
-            error_log("JAXON DEBUG: Timeout handler completed");
         } catch (Exception $e) {
-            error_log("JAXON DEBUG: Timeout handler failed: " . $e->getMessage());
+            error_log("AJAX polling: Timeout handler error - " . $e->getMessage());
         }
         
         try {
             $response->appendResponse($this->commentaryRefresh($section, $lastId));
-            error_log("JAXON DEBUG: Commentary handler completed");
         } catch (Exception $e) {
-            error_log("JAXON DEBUG: Commentary handler failed: " . $e->getMessage());
+            error_log("AJAX polling: Commentary handler error - " . $e->getMessage());
         }
         
         return $response;

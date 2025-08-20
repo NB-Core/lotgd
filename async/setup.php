@@ -47,67 +47,12 @@ if ($clear_script_execution > 0 && $clear_script_execution < $login_timeout) {
     $polling_script .= "var lotgd_clear_delay_ms = null;"; // Disable auto-clear
 }
 
-$polling_script .= "console.log('Polling variables set:', {poll_interval: lotgd_poll_interval_ms, comment_section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId, clear_delay: lotgd_clear_delay_ms});";
+$polling_script .= "console.log('AJAX polling initialized:', {interval: lotgd_poll_interval_ms + 'ms', section: lotgd_comment_section});";
 
-// Working AJAX polling solution with fixed JavaScript
+// Clean AJAX polling implementation
 $polling_script .= "
-// Test the simple method first
-function testSimpleMethod() {
-    console.log('TEST: Calling simple test method...');
-    
-    const formData = new URLSearchParams();
-    formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
-    formData.append('jxnmthd', 'test');
-    formData.append('jxnr', Math.random().toString().substring(2));
-    
-    fetch('/async/process.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: formData.toString()
-    })
-    .then(response => {
-        console.log('TEST: Simple method response status:', response.status);
-        return response.text().then(data => ({status: response.status, data: data}));
-    })
-    .then(result => {
-        if (result.status === 200) {
-            console.log('TEST: Simple method works! Response:', result.data);
-            try {
-                const json = JSON.parse(result.data);
-                console.log('TEST: JSON response:', json);
-                
-                // Process the response
-                if (json.jxnobj && Array.isArray(json.jxnobj)) {
-                    json.jxnobj.forEach(cmd => {
-                        if (cmd.id && cmd.prop && cmd.data !== undefined) {
-                            const element = document.getElementById(cmd.id);
-                            if (element && cmd.prop === 'innerHTML') {
-                                element.innerHTML = cmd.data;
-                                console.log('TEST: Updated', cmd.id, 'with:', cmd.data);
-                            }
-                        }
-                    });
-                }
-                
-                // If simple method works, try pollUpdates
-                setTimeout(testPollingMethod, 1000);
-            } catch (e) {
-                console.log('TEST: Non-JSON response:', result.data.substring(0, 200));
-            }
-        } else {
-            console.error('TEST: Simple method failed with status:', result.status);
-            console.log('TEST: Error response:', result.data.substring(0, 500));
-        }
-    })
-    .catch(error => {
-        console.error('TEST: Simple method network error:', error);
-    });
-}
-
-// Test the improved pollUpdates method
-function testPollingMethod() {
-    console.log('POLLING: Testing improved pollUpdates...');
-    
+// AJAX polling implementation
+function pollForUpdates() {
     const formData = new URLSearchParams();
     formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
     formData.append('jxnmthd', 'pollUpdates');
@@ -115,91 +60,78 @@ function testPollingMethod() {
     formData.append('jxnargs[1]', String(lotgd_lastCommentId || 0));
     formData.append('jxnr', Math.random().toString().substring(2));
     
-    console.log('POLLING: Sending:', formData.toString());
-    
     fetch('/async/process.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: formData.toString()
     })
-    .then(response => {
-        console.log('POLLING: Response status:', response.status);
-        return response.text().then(data => ({status: response.status, data: data}));
-    })
+    .then(response => response.text().then(data => ({status: response.status, data: data})))
     .then(result => {
-        if (result.data.includes('Application Error')) {
-            console.error('POLLING: Still getting server error:', result.data.substring(0, 500));
-        } else if (result.status === 200) {
-            console.log('POLLING: Success! Response length:', result.data.length);
+        if (result.status === 200 && !result.data.includes('Application Error')) {
             try {
                 const json = JSON.parse(result.data);
-                console.log('POLLING: JSON response with', json.jxnobj?.length || 0, 'commands');
-                
-                // Process the response
                 if (json.jxnobj && Array.isArray(json.jxnobj)) {
-                    let updates = {mail: false, notify: false, comments: false};
+                    let hasUpdates = false;
                     
                     json.jxnobj.forEach(cmd => {
                         if (cmd.id && cmd.prop && cmd.data !== undefined) {
                             const element = document.getElementById(cmd.id);
                             if (element && cmd.prop === 'innerHTML') {
-                                element.innerHTML = cmd.data;
-                                console.log('POLLING: Updated', cmd.id);
-                                
-                                if (cmd.id === 'maillink') updates.mail = true;
-                                if (cmd.id === 'notify') updates.notify = true;
-                                if (cmd.id.includes('comment')) updates.comments = true;
+                                if (cmd.cmd === 'ap') { // append
+                                    element.innerHTML += cmd.data;
+                                } else { // assign
+                                    element.innerHTML = cmd.data;
+                                }
+                                hasUpdates = true;
                             }
                         }
-                        if (cmd.cmd === 'scr' && cmd.data) {
+                        if (cmd.cmd === 'js' && cmd.data) {
                             try {
                                 eval(cmd.data);
-                                console.log('POLLING: Executed script:', cmd.data);
                             } catch (e) {
-                                console.error('POLLING: Script error:', e);
+                                console.error('AJAX: Script execution error:', e);
                             }
                         }
                     });
                     
-                    console.log('POLLING: Updates -', updates);
+                    if (hasUpdates) {
+                        console.log('AJAX: Updates applied (' + json.jxnobj.length + ' commands)');
+                    }
                 }
-                
-                // If successful, start regular polling
-                startRegularPolling();
             } catch (e) {
-                console.error('POLLING: JSON parse error:', e);
-                console.log('POLLING: Raw response:', result.data.substring(0, 300));
+                console.error('AJAX: Response parsing error:', e);
             }
-        } else {
-            console.error('POLLING: Failed with status:', result.status);
-            console.log('POLLING: Error response:', result.data.substring(0, 500));
+        } else if (result.status !== 200) {
+            console.error('AJAX: Server error (HTTP ' + result.status + ')');
         }
     })
     .catch(error => {
-        console.error('POLLING: Network error:', error);
+        console.error('AJAX: Network error:', error);
     });
 }
 
-// Start regular polling once we know it works
-function startRegularPolling() {
-    console.log('POLLING: Starting regular polling every', lotgd_poll_interval_ms, 'ms');
+// Start polling system
+function startAjaxPolling() {
+    console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
-    setInterval(function() {
-        console.log('POLLING: Regular poll...');
-        testPollingMethod();
-    }, lotgd_poll_interval_ms);
+    // Initial poll
+    pollForUpdates();
+    
+    // Regular polling
+    setInterval(pollForUpdates, lotgd_poll_interval_ms);
 }
 
-// Initialize with testing
+// Initialize after page load
 setTimeout(function() {
-    console.log('POLLING: Initializing with step-by-step testing...');
-    testSimpleMethod();
-}, 2000);
+    if (typeof lotgd_poll_interval_ms !== 'undefined' && lotgd_poll_interval_ms > 0) {
+        startAjaxPolling();
+    }
+}, 1000);
 
-// Disable the old ajax_polling.js by overriding its functions
-window.set_poll_ajax = function() { console.log('OLD POLLING: Disabled'); };
-window.clear_ajax = function() { console.log('OLD POLLING: Disabled'); };
-window.initializePolling = function() { console.log('OLD POLLING: Disabled'); };
+// Disable old polling system
+window.set_poll_ajax = function() {};
+window.clear_ajax = function() {};
+window.initializePolling = function() {};
 ";
 
 $polling_script .= "</script>";
@@ -207,7 +139,7 @@ $polling_script .= "<div id='notify'></div>";
 
 $pre_headscript .= $polling_script;
 
-// Load jQuery but DON'T load the old ajax_polling.js that's interfering
+// Load jQuery but skip the old ajax_polling.js
 $pre_headscript .= "<script src='/async/js/jquery.min.js'></script>";
 
 addnav("", "async/process.php");
