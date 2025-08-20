@@ -49,8 +49,49 @@ if ($clear_script_execution > 0 && $clear_script_execution < $login_timeout) {
 
 $polling_script .= "console.log('AJAX polling initialized:', {interval: lotgd_poll_interval_ms + 'ms', section: lotgd_comment_section});";
 
-// Clean AJAX polling implementation
+// Add missing notification functions and clean AJAX polling implementation
 $polling_script .= "
+// Global mail counter for notifications
+var lotgd_lastUnreadMailId = 0;
+
+// Notification functions (previously in ajax_polling.js)
+function lotgdShowNotification(title, message) {
+    if (!('Notification' in window)) {
+        return;
+    }
+    if (Notification.permission === 'granted') {
+        new Notification(title, {body: message, icon: '/favicon.ico'});
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(function (permission) {
+            if (permission === 'granted') {
+                new Notification(title, {body: message, icon: '/favicon.ico'});
+            }
+        });
+    }
+}
+
+function lotgdMailNotify(count) {
+    if (lotgd_lastUnreadMailId === 0) {
+        // First time we get the count, just store it
+        lotgd_lastUnreadMailId = count;
+        return;
+    }
+    if (count > lotgd_lastUnreadMailId && !document.hasFocus()) {
+        var msg = count === 1 ? 'You have 1 unread message' :
+            'You have ' + count + ' unread messages';
+        lotgdShowNotification('Unread game messages', msg);
+    }
+    lotgd_lastUnreadMailId = count;
+}
+
+function lotgdCommentNotify(count) {
+    if (count > 0 && !document.hasFocus()) {
+        var msg = count === 1 ? 'A new comment was posted' :
+            count + ' new comments were posted';
+        lotgdShowNotification('Unread comments', msg);
+    }
+}
+
 // AJAX polling implementation
 function pollForUpdates() {
     const formData = new URLSearchParams();
