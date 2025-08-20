@@ -18,13 +18,15 @@ $s_script = $jaxon->getScript();
 // Build the script loading sequence ensuring proper dependency order
 $pre_headscript = ($pre_headscript ?? '')
     . $jaxon->getCss()
-    . $s_js
+    . $s_js;
+
+// CRITICAL: Add our namespace creation BEFORE the PHP-generated script
+// This ensures JaxonLotgd exists when the generated code references it
+$pre_headscript .= "<script src='/async/js/lotgd.jaxon.js'></script>"
     . $s_script;
 
-// Add our custom scripts AFTER the Jaxon-generated scripts
-// Remove defer from lotgd.jaxon.js to ensure it runs immediately after the generated code
-$pre_headscript .= "<script src='/async/js/lotgd.jaxon.js'></script>"
-    . "<script src='/async/js/jquery.min.js' defer></script>"
+// Add remaining scripts
+$pre_headscript .= "<script src='/async/js/jquery.min.js' defer></script>"
     . "<script src='/async/js/ajax_polling.js' defer></script>";
 
 addnav("", "async/process.php");

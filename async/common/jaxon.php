@@ -25,8 +25,8 @@ $jaxon = jaxon();
 
 // Set the Jaxon request processing URI
 $jaxon->setOption('core.request.uri', '/async/process.php');
-// Use Jaxon as the prefix for generated JavaScript classes to avoid double "Lotgd"
-$jaxon->setOption('core.prefix.class', 'Jaxon');
+// Use JaxonLotgd as the prefix since that's what the generated code expects
+$jaxon->setOption('core.prefix.class', 'JaxonLotgd');
 
 // Configure the Jaxon client library - disable auto-export since we manage our own JS files
 $jaxon->setOption('js.app.export', false);
