@@ -101,20 +101,24 @@ class PullUrl
     public static function pull(string $url)
     {
         // Prefer file() to avoid open_basedir issues.
-        $data = @file($url);
-        if (false !== $data) {
+        set_error_handler(static function (): bool {
+            return true;
+        });
+        $data = file($url);
+        restore_error_handler();
+        if ($data !== false) {
             return $data;
         }
 
-        debug("file() failed for $url, trying curl()");
+        debug('file() failed: ' . $url);
         $data = self::curl($url);
-        if (false !== $data) {
+        if ($data !== false) {
             return $data;
         }
 
         debug("curl() failed for $url, trying socket connection");
         $data = self::sock($url);
-        if (false !== $data) {
+        if ($data !== false) {
             return $data;
         }
 
