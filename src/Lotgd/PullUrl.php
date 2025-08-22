@@ -101,7 +101,7 @@ class PullUrl
     public static function pull(string $url)
     {
         // Prefer file() to avoid open_basedir issues.
-        set_error_handler(static function (): bool {
+        set_error_handler(static function ($errno, $errstr, $errfile, $errline): bool {
             return true;
         });
         $data = file($url);
