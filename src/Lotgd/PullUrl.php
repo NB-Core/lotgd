@@ -110,7 +110,7 @@ class PullUrl
             return $data;
         }
 
-        debug('file() failed: ' . $url);
+        debug("file() failed for $url, trying curl()");
         $data = self::curl($url);
         if ($data !== false) {
             return $data;
