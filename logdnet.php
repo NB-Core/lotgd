@@ -16,6 +16,8 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
+use Lotgd\ErrorHandler;
+use Lotgd\Backtrace;
 
 require_once("common.php");
 require_once("lib/sanitize.php");
@@ -250,68 +252,86 @@ if ($op == "") {
         savesetting("logdnetserver", $u);
     }
     if ($u != "") {
-        $servers = pullurl($u . "logdnet.php?op=net");
+        try {
+            $servers = pullurl($u . "logdnet.php?op=net");
+            if (!$servers) {
+                $servers = array();
+            }
+            $i = 0;
+            foreach ($servers as $val) {
+                // remove newlines from the pulled content
+                $val = trim($val);
+                $row = unserialize($val);
+                if (!is_array($row)) {
+                    if (getsetting('logdnet_error_notify', 0)) {
+                        ErrorHandler::errorNotify(E_WARNING, 'Invalid logdnet row', __FILE__, __LINE__, Backtrace::show());
+                    }
+                    continue;
+                }
+
+                // If we aren't given an address, continue on.
+                if (
+                    substr($row['address'], 0, 7) != "http://" &&
+                    substr($row['address'], 0, 8) != "https://"
+                ) {
+                    continue;
+                }
+
+                // Give undescribed servers a boring descriptionn
+                if (trim($row['description']) == "") {
+                    $row['description'] = "Another boring and undescribed LotGD server";
+                }
+
+                // Strip out any embedded html.
+                $row['description'] =
+                    preg_replace("|<[a-zA-Z0-9/ =]+>|", "", $row['description']);
+
+                // Clean up the desc
+                $row['description'] = logdnet_sanitize($row['description']);
+                $row['description'] = soap($row['description']);
+                // Limit descs to 75 characters.
+                if (strlen($row['description']) > 75) {
+                    $row['description'] = substr($row['description'], 0, 75);
+                }
+
+
+//make valid
+                $row['description'] = sanitize_mb($row['description']);
+                $row['version'] = sanitize_mb($row['version']);
+
+
+                $row['description'] = htmlentities(stripslashes($row['description']), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+                $row['description'] = str_replace("`&amp;", "`&", $row['description']);
+
+                // Correct for old logdnet servers
+                if ($row['version'] == "") {
+                    $row['version'] = translate_inline("Unknown");
+                }
+
+                // Output the information we have.
+                rawoutput("<tr class='" . ($i % 2 == 0 ? "trlight" : "trdark") . "'>");
+                rawoutput("<td><a href=\"" . HTMLEntities($row['address'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" target='_blank'>");
+                output_notl("`&%s`0", $row['description'], true);
+                rawoutput("</a></td><td>");
+                output_notl("`^%s`0", $row['version']); // so we are able to translate "`^Unknown`0"
+                rawoutput("</td></tr>");
+                $i++;
+            }
+        } catch (\Throwable $e) {
+            if (getsetting('logdnet_error_notify', 0)) {
+                ErrorHandler::errorNotify(
+                    E_WARNING,
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine(),
+                    Backtrace::show($e->getTrace())
+                );
+            }
+        }
     } else {
         rawoutput("<tr><td colspan='2')>");
         output("Sorry, no logdnet host server was defined in the game settings");
         rawoutput("</td></tr>");
-    }
-    if (!$servers) {
-        $servers = array();
-    }
-    $i = 0;
-    foreach ($servers as $val) {
-        // remove newlines from the pulled content
-        $val = trim($val);
-        $row = unserialize($val);
-
-        // If we aren't given an address, continue on.
-        if (
-            substr($row['address'], 0, 7) != "http://" &&
-                substr($row['address'], 0, 8) != "https://"
-        ) {
-            continue;
-        }
-
-        // Give undescribed servers a boring descriptionn
-        if (trim($row['description']) == "") {
-            $row['description'] = "Another boring and undescribed LotGD server";
-        }
-
-        // Strip out any embedded html.
-        $row['description'] =
-            preg_replace("|<[a-zA-Z0-9/ =]+>|", "", $row['description']);
-
-        // Clean up the desc
-        $row['description'] = logdnet_sanitize($row['description']);
-        $row['description'] = soap($row['description']);
-        // Limit descs to 75 characters.
-        if (strlen($row['description']) > 75) {
-            $row['description'] = substr($row['description'], 0, 75);
-        }
-
-
-//make valid
-        $row['description'] = sanitize_mb($row['description']);
-        $row['version'] = sanitize_mb($row['version']);
-
-
-        $row['description'] = htmlentities(stripslashes($row['description']), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-        $row['description'] = str_replace("`&amp;", "`&", $row['description']);
-
-        // Correct for old logdnet servers
-        if ($row['version'] == "") {
-            $row['version'] = translate_inline("Unknown");
-        }
-
-        // Output the information we have.
-        rawoutput("<tr class='" . ($i % 2 == 0 ? "trlight" : "trdark") . "'>");
-        rawoutput("<td><a href=\"" . HTMLEntities($row['address'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" target='_blank'>");
-        output_notl("`&%s`0", $row['description'], true);
-        rawoutput("</a></td><td>");
-        output_notl("`^%s`0", $row['version']); // so we are able to translate "`^Unknown`0"
-        rawoutput("</td></tr>");
-        $i++;
     }
     rawoutput("</table>");
     Footer::pageFooter();
