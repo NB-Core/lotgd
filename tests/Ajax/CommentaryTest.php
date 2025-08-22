@@ -86,7 +86,7 @@ STUBS
         $this->assertSame('<div class="block">Mocked Commentary</div>', $commands[0]['data']);
     }
 
-    public function testCommentaryRefreshAppendsNewCommentsAndUpdatesScripts(): void
+    public function testCommentaryRefreshAppendsNewCommentsAndUpdatesScriptsWithoutNotifyOnInitialLoad(): void
     {
         global $test_comment_rows;
         $test_comment_rows = [
@@ -122,8 +122,38 @@ STUBS
         $this->assertSame('js', $commands[1]['cmd']);
         $this->assertSame('lotgd_lastCommentId = 2;', $commands[1]['data']);
 
+        $this->assertCount(2, $commands);
+    }
+
+    public function testCommentaryRefreshNotifiesWhenLastIdSmallerThanNewest(): void
+    {
+        global $test_comment_rows;
+        $test_comment_rows = [
+            [
+                'commentid' => 2,
+                'comment' => 'Second',
+                'acctid' => 2,
+                'name' => 'User2',
+                'superuser' => 0,
+                'clanrank' => 0,
+                'clanshort' => '',
+            ],
+        ];
+
+        $handler = new Commentary();
+        $response = $handler->commentaryRefresh('test-section', 1);
+        $commands = $response->getCommands();
+
+        $this->assertSame('ap', $commands[0]['cmd']);
+        $this->assertSame('test-section-comment', $commands[0]['id']);
+        $expectedHtml = "<div data-cid='2'><span>Second</span></div>";
+        $this->assertSame($expectedHtml, $commands[0]['data']);
+
+        $this->assertSame('js', $commands[1]['cmd']);
+        $this->assertSame('lotgd_lastCommentId = 2;', $commands[1]['data']);
+
         $this->assertSame('js', $commands[2]['cmd']);
-        $this->assertSame('lotgdCommentNotify(2);', $commands[2]['data']);
+        $this->assertSame('lotgdCommentNotify(1);', $commands[2]['data']);
     }
 }
 }
