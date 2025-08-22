@@ -279,7 +279,7 @@ $setup = array(
         "serverdesc" => "Server Description (75 chars max)",
         "meta_description" => "Default HTML meta description,text",
         "logdnetserver" => "Master LoGDnet Server (default http://logd.net/)",
-        "logdnet_error_notify" => "Report errors about LoGDnet via error_notify?,bool|1",
+        "logdnet_error_notify" => "Report errors about LoGDnet via error_notify?,bool",
     "curltimeout" => "How long we wait for responses from that server (in seconds),range,1,10,1|2",
 
     "Game day Setup,title",
