@@ -128,7 +128,21 @@ function pollForUpdates() {
                         }
                         if (cmd.cmd === 'js' && cmd.data) {
                             try {
+                                const beforeId = window.lotgd_lastCommentId;
                                 eval(cmd.data);
+
+                                if (window.lotgd_lastCommentId === beforeId) {
+                                    const match = cmd.data.match(/lotgd_lastCommentId\s*=\s*(\d+)/);
+
+                                    if (match) {
+                                        window.lotgd_lastCommentId = parseInt(match[1], 10);
+                                        console.log('AJAX: lastCommentId parsed to', window.lotgd_lastCommentId);
+                                    } else {
+                                        console.warn('AJAX: lastCommentId unchanged after script:', cmd.data);
+                                    }
+                                } else {
+                                    console.log('AJAX: lastCommentId updated to', window.lotgd_lastCommentId);
+                                }
                             } catch (e) {
                                 console.error('AJAX: Script execution error:', e);
                             }
