@@ -259,9 +259,18 @@ if ($op == "") {
             }
             $i = 0;
             foreach ($servers as $val) {
-                // remove newlines from the pulled content
+                // Ensure we have a string value
+                if (!is_string($val)) {
+                    continue;
+                }
+
+                // Remove newlines from the pulled content
                 $val = trim($val);
-                $row = unserialize($val);
+                if ($val === '') {
+                    continue;
+                }
+
+                $row = @unserialize($val);
                 if (!is_array($row)) {
                     if (getsetting('logdnet_error_notify', 1)) {
                         ErrorHandler::errorNotify(E_WARNING, 'Invalid logdnet row', __FILE__, __LINE__, Backtrace::show());
