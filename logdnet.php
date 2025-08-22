@@ -247,11 +247,12 @@ if ($op == "") {
     require_once("lib/pullurl.php");
     $servers = array();
     $u = getsetting("logdnetserver", "http://logdnet.logd.com/");
+    $logdnet = getsetting('logdnet', 0);
     if (!preg_match("/\/$/", $u)) {
         $u = $u . "/";
         savesetting("logdnetserver", $u);
     }
-    if ($u != "") {
+    if ($logdnet && $u != "") {
         try {
             $servers = pullurl($u . "logdnet.php?op=net");
             if (!$servers) {
@@ -337,8 +338,12 @@ if ($op == "") {
                 );
             }
         }
+    } elseif (!$logdnet) {
+        rawoutput("<tr><td colspan='2'>");
+        output("LoGDnet server listings are currently disabled.");
+        rawoutput("</td></tr>");
     } else {
-        rawoutput("<tr><td colspan='2')>");
+        rawoutput("<tr><td colspan='2'>");
         output("Sorry, no logdnet host server was defined in the game settings");
         rawoutput("</td></tr>");
     }
