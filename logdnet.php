@@ -263,7 +263,7 @@ if ($op == "") {
                 $val = trim($val);
                 $row = unserialize($val);
                 if (!is_array($row)) {
-                    if (getsetting('logdnet_error_notify', 0)) {
+                    if (getsetting('logdnet_error_notify', 1)) {
                         ErrorHandler::errorNotify(E_WARNING, 'Invalid logdnet row', __FILE__, __LINE__, Backtrace::show());
                     }
                     continue;
@@ -318,7 +318,7 @@ if ($op == "") {
                 $i++;
             }
         } catch (\Throwable $e) {
-            if (getsetting('logdnet_error_notify', 0)) {
+            if (getsetting('logdnet_error_notify', 1)) {
                 ErrorHandler::errorNotify(
                     E_WARNING,
                     $e->getMessage(),
