@@ -32,7 +32,15 @@ class PullUrl
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $val);
         curl_setopt($ch, CURLOPT_TIMEOUT, $val);
         $ret = curl_exec($ch);
+        if ($ret === false) {
+            debug(curl_error($ch));
+            curl_close($ch);
+            return false;
+        }
         curl_close($ch);
+        if (!is_string($ret)) {
+            return false;
+        }
         $val = explode("\n", $ret);
         $total = count($val);
         $cur = 0;
