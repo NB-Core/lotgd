@@ -75,7 +75,9 @@ class Commentary
         if ($html !== '') {
             $objResponse->append("{$section}-comment", 'innerHTML', $html);
             $objResponse->script("lotgd_lastCommentId = $newId;");
-            $objResponse->script('lotgdCommentNotify(' . count($comments) . ');');
+            if ($lastId > 0 && $lastId < $newId) {
+                $objResponse->script('lotgdCommentNotify(' . count($comments) . ');');
+            }
         }
         return $objResponse;
     }
