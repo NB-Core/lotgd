@@ -169,9 +169,6 @@ function pollForUpdates() {
 function startAjaxPolling() {
     console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
-    // Initial poll
-    pollForUpdates();
-    
     // Regular polling
     setInterval(pollForUpdates, lotgd_poll_interval_ms);
 }
