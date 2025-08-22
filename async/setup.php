@@ -97,8 +97,8 @@ function pollForUpdates() {
     const formData = new URLSearchParams();
     formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
     formData.append('jxnmthd', 'pollUpdates');
-    formData.append('jxnargs[0]', lotgd_comment_section || 'superuser');
-    formData.append('jxnargs[1]', String(lotgd_lastCommentId || 0));
+    formData.append('jxnargs[0]', 'S' + (lotgd_comment_section || 'superuser'));
+    formData.append('jxnargs[1]', 'N' + String(lotgd_lastCommentId || 0));
     formData.append('jxnr', Math.random().toString().substring(2));
     
     fetch('/async/process.php', {
