@@ -92,12 +92,13 @@ class Database
         }
         self::$dbinfo['queriesthishit']++;
         $starttime = DateTime::getMicroTime();
-        static $bootstrapExists = null;
-        if ($bootstrapExists === null) {
-            $bootstrapExists = class_exists(\Lotgd\Doctrine\Bootstrap::class);
+        static $configExists = null;
+        if ($configExists === null) {
+            $rootDir = dirname(__DIR__, 3);
+            $configExists = file_exists($rootDir . '/dbconnect.php');
         }
 
-        if (self::$doctrine || $bootstrapExists) {
+        if (self::$doctrine || $configExists) {
             $conn = self::$doctrine ?? self::getDoctrineConnection();
             $trim = ltrim($sql);
             while ($trim !== '' && $trim[0] === '(') {
