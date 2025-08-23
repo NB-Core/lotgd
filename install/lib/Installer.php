@@ -1487,11 +1487,13 @@ class Installer
         ];
 
         $from = $session['fromversion'] ?? '-1';
-        foreach ($map as $ver => $id) {
-            if ($from === '-1' || version_compare($from, $ver, '<')) {
-                $v = new Version($id);
-                if (! $executed->hasMigration($v)) {
-                    $storage->complete(new ExecutionResult($v));
+        if ($from !== '-1') {
+            foreach ($map as $ver => $id) {
+                if (version_compare($from, $ver, '<')) {
+                    $v = new Version($id);
+                    if (! $executed->hasMigration($v)) {
+                        $storage->complete(new ExecutionResult($v));
+                    }
                 }
             }
         }
