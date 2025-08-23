@@ -189,8 +189,14 @@ class ErrorHandler
      */
     public static function handleException(\Throwable $exception): void
     {
+        global $settings;
+
         $trace = Backtrace::show($exception->getTrace());
         self::renderError($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
+
+        if ($settings->getSetting('notify_on_error', 0)) {
+            self::errorNotify(E_ERROR, $exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
+        }
     }
 
     /**
