@@ -952,7 +952,9 @@ class Installer
     public function stage7(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $settings;
-        require(__DIR__ . "/../data/installer_sqlstatements.php");
+        if ($session['dbinfo']['upgrade'] ?? false) {
+            require __DIR__ . '/../data/installer_sqlstatements.php';
+        }
         if (Http::post("type") > "") {
             if (Http::post("type") == "install") {
                 $session['fromversion'] = "-1";
@@ -990,18 +992,23 @@ class Installer
                 }
             }
             $this->output->rawOutput("<input type='radio' value='upgrade' name='type'" . ($session['dbinfo']['upgrade'] ? " checked" : "") . ">");
-            $this->output->output(" `2Perform an upgrade from ");
+            $this->output->output(" `2Perform an upgrade" . ($session['dbinfo']['upgrade'] ? " from" : "") . " ");
             if ($version == "-1") {
                 $version = "0.9.7";
             }
-            reset($sql_upgrade_statements);
-            $this->output->rawOutput("<select name='version'>");
-            foreach ($sql_upgrade_statements as $key => $val) {
-                if ($key != "-1") {
-                    $this->output->rawOutput("<option value='$key'" . ($version == $key ? " selected" : "") . ">$key</option>");
+            if ($session['dbinfo']['upgrade']) {
+                if (!isset($sql_upgrade_statements)) {
+                    require __DIR__ . '/../data/installer_sqlstatements.php';
                 }
+                reset($sql_upgrade_statements);
+                $this->output->rawOutput("<select name='version'>");
+                foreach ($sql_upgrade_statements as $key => $val) {
+                    if ($key != "-1") {
+                        $this->output->rawOutput("<option value='$key'" . ($version == $key ? " selected" : "") . ">$key</option>");
+                    }
+                }
+                $this->output->rawOutput("</select>");
             }
-            $this->output->rawOutput("</select>");
             $this->output->rawOutput("<br><input type='radio' value='install' name='type'" . ($session['dbinfo']['upgrade'] ? "" : " checked") . ">");
             $this->output->output(" `2Perform a clean install.");
             $this->output->rawOutput("</td></tr></table>");

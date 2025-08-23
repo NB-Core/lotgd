@@ -3,10 +3,10 @@
 $creaturefields = "(creatureid,creaturename,creaturelevel,creatureweapon,creaturelose,creaturewin,creaturegold,creatureexp,creaturehealth,creatureattack,creaturedefense,creatureaiscript,createdby,forest,graveyard,oldcreatureexp)";
 $creaturefields111 = "(creatureid,creaturename,creaturelevel,creatureweapon,creaturelose,creaturewin,creaturegold,creatureexp,creaturehealth,creatureattack,creaturedefense,creatureaiscript,createdby,forest,graveyard)";
 
-if (!isset($settings) || !$settings instanceof \Lotgd\Settings) {
-    throw new \Exception('Settings object is not initialized.');
+$defaultVillage = 'Degolburg';
+if (isset($settings) && $settings instanceof \Lotgd\Settings) {
+    $defaultVillage = $settings->getSetting('villagename', $defaultVillage);
 }
-$defaultVillage = $settings->getSetting("villagename", LOCATION_FIELDS);
 
 $sql_upgrade_statements = array(
 "-1" => array(), //needed just as a placeholder for new installs.
