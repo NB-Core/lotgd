@@ -56,11 +56,18 @@ chdir(__DIR__);
 
 require_once("common.php");
 if (file_exists("dbconnect.php")) {
-       require_once("dbconnect.php");
+    require_once("dbconnect.php");
 }
 
-// Load settings
-$settings = new Settings();
+// Load settings only when a database connection is available
+$settings = null;
+if (!defined('DB_NODB') || !DB_NODB) {
+    try {
+        $settings = new Settings();
+    } catch (\Throwable $th) {
+        $settings = null;
+    }
+}
 
 $noinstallnavs = false;
 
