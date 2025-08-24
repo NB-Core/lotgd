@@ -42,7 +42,8 @@ class Bootstrap
 
         $paths = [$rootDir . '/src/Lotgd/Entity'];
 
-        $cacheDir = ($settings['DB_DATACACHEPATH'] ?? sys_get_temp_dir()) . '/doctrine';
+        $path = !empty($settings['DB_DATACACHEPATH']) ? $settings['DB_DATACACHEPATH'] : sys_get_temp_dir();
+        $cacheDir = $path . '/doctrine';
 
         // Disable metadata caching only when datacache path is not configured
         $isDevMode = empty($settings['DB_USEDATACACHE']) || empty($settings['DB_DATACACHEPATH']);
