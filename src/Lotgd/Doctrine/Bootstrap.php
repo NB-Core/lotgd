@@ -26,6 +26,9 @@ class Bootstrap
             throw new \RuntimeException('dbconnect.php not found');
         }
 
+        global $DB_PREFIX;
+        $DB_PREFIX = $settings['DB_PREFIX'] ?? '';
+
         $connection = [
             'driver'       => 'pdo_mysql',
             'host'         => $settings['DB_HOST'] ?? 'localhost',
