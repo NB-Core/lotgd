@@ -19,10 +19,26 @@ class Database
     public static ?object $doctrineConnection = null;
     public static ?object $instance = null;
     public static array $queryCacheResults = [];
+    public static string $last_error = '';
+
+    public static function connect(string $host, string $user, string $pass): bool
+    {
+        return self::getInstance()->connect($host, $user, $pass);
+    }
+
+    public static function selectDb(string $dbname): bool
+    {
+        return self::getInstance()->selectDb($dbname);
+    }
 
     public static function prefix(string $name, bool $force = false): string
     {
         return $name;
+    }
+
+    public static function error(): string
+    {
+        return self::$instance && method_exists(self::$instance, 'error') ? self::$instance->error() : self::$last_error;
     }
 
     /**
@@ -67,6 +83,11 @@ class Database
 
         if (strpos($sql, 'SHOW KEYS FROM') === 0) {
             $last_query_result = self::$keys_rows;
+            return $last_query_result;
+        }
+
+        if (strpos($sql, 'SHOW DATABASES LIKE') === 0) {
+            $last_query_result = [['Database' => 'lotgd']];
             return $last_query_result;
         }
 
