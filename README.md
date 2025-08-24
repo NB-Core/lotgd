@@ -69,7 +69,7 @@ To run Legend of the Green Dragon on a typical web host you will need:
 ## Getting Started
 1. Clone the repository.
 2. Run `composer install`.
-3. Open `installer.php` in your browser and follow the prompts.
+3. Open `installer.php` in your browser and follow the prompts. When asked for a cache directory, set `DB_DATACACHEPATH` to a writable path such as `data/cache`.
 4. (Optional) Use Docker—see [docs/Docker.md](docs/Docker.md).
 
 ## Maintenance
@@ -261,6 +261,10 @@ Build the Docker containers and start the environment:
 ```bash
 docker-compose up -d --build
 ```
+
+### Step 4: Run the Installer
+
+With the containers running, open `installer.php` in your browser. When prompted for a cache directory, set `DB_DATACACHEPATH` to a writable location (for example `data/cache`) to enable caching.
 
 ---
 
