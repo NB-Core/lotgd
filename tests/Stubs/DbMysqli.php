@@ -14,6 +14,16 @@ class DbMysqli
         return 'mysql_result';
     }
 
+    public function connect($host, $user, $pass)
+    {
+        return true;
+    }
+
+    public function selectDb($dbname)
+    {
+        return true;
+    }
+
     public function fetchAssoc($result): array
     {
         return ['ok' => true];
