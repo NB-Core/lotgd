@@ -1,0 +1,162 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Doctrine\Migrations\Configuration\EntityManager {
+    class ExistingEntityManager
+    {
+        public function __construct(private readonly mixed $em)
+        {
+        }
+    }
+}
+
+namespace Doctrine\Migrations {
+    use Doctrine\Migrations\Version\ExecutionResult;
+    use Doctrine\Migrations\Version\Version;
+    use Symfony\Component\Console\Input\ArrayInput;
+
+    class DependencyFactory
+    {
+        public static ?self $instance = null;
+        /** @var Version[] */
+        public array $migrated = [];
+
+        public static function fromEntityManager(mixed $config, mixed $em): self
+        {
+            return self::$instance = new self();
+        }
+
+        public function getMetadataStorage(): object
+        {
+            return new class {
+                public function ensureInitialized(): void {}
+                public function getExecutedMigrations(): object
+                {
+                    return new class {
+                        public function hasMigration(Version $v): bool
+                        {
+                            return false;
+                        }
+                    };
+                }
+                public function complete(ExecutionResult $result): void {}
+            };
+        }
+
+        public function getVersionAliasResolver(): object
+        {
+            return new class {
+                public function resolveVersionAlias(string $alias): Version
+                {
+                    $files = glob(dirname(__DIR__, 2) . '/migrations/Version*.php');
+                    $ids   = array_map(fn($f) => substr(basename($f, '.php'), 7), $files);
+                    rsort($ids);
+                    return new Version($ids[0]);
+                }
+            };
+        }
+
+        public function getMigrationPlanCalculator(): object
+        {
+            return new class {
+                public function getPlanUntilVersion(Version $v): array
+                {
+                    return [$v];
+                }
+            };
+        }
+
+        public function getConsoleInputMigratorConfigurationFactory(): object
+        {
+            return new class {
+                public function getMigratorConfiguration(ArrayInput $input): array
+                {
+                    return [];
+                }
+            };
+        }
+
+        public function getMigrator(): object
+        {
+            return new class($this) {
+                public function __construct(private DependencyFactory $factory) {}
+                public function migrate(array $plan, array $config): void
+                {
+                    $this->factory->migrated = $plan;
+                }
+            };
+        }
+    }
+}
+
+namespace Lotgd\Tests\Installer {
+
+use Lotgd\Installer\Installer;
+use Lotgd\Output;
+use Lotgd\Tests\Stubs\DummySettings;
+use PHPUnit\Framework\TestCase;
+
+require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
+
+class Stage9Test extends TestCase
+{
+    protected function setUp(): void
+    {
+        global $session, $logd_version, $recommended_modules, $noinstallnavs,
+            $DB_USEDATACACHE, $settings, $REQUEST_URI, $output;
+
+        $REQUEST_URI        = '/installer.php';
+        $session            = [
+            'dbinfo'            => [
+                'DB_HOST'         => 'localhost',
+                'DB_USER'         => 'user',
+                'DB_PASS'         => 'pass',
+                'DB_NAME'         => 'lotgd',
+                'DB_PREFIX'       => '',
+                'DB_USEDATACACHE' => 0,
+                'DB_DATACACHEPATH'=> '',
+            ],
+            'moduleoperations' => [],
+            'skipmodules'      => true,
+            'fromversion'      => '-1',
+        ];
+        $logd_version       = '2.0.0-rc +nb Edition';
+        $recommended_modules = [];
+        $noinstallnavs      = false;
+        $DB_USEDATACACHE    = false;
+        $settings           = new DummySettings();
+        $output             = new Output();
+
+        file_put_contents(
+            __DIR__ . '/../../dbconnect.php',
+            "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>''];"
+        );
+    }
+
+    public function testStage9RunsMigrationsAndChecksForAdmin(): void
+    {
+        global $output;
+        $installer = new Installer();
+
+        $installer->runStage(9);
+        $installer->runStage(10);
+        $outputText = $output->getRawOutput();
+
+        $files    = glob(__DIR__ . '/../../migrations/Version*.php');
+        $versions = array_map(fn($f) => substr(basename($f, '.php'), 7), $files);
+        rsort($versions);
+        $latest = $versions[0];
+
+        $migrated = array_map(
+            fn($v) => (string) $v,
+            \Doctrine\Migrations\DependencyFactory::$instance->migrated
+        );
+        $this->assertContains($latest, $migrated, 'Latest migration was not applied');
+
+        $this->assertStringContainsString('superuser account', $outputText);
+    }
+}
+
+}
+
