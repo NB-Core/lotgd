@@ -7,8 +7,9 @@ namespace Lotgd\Tests\Stubs;
 /**
  * Fake database used for tests.
  */
-class Database
-{
+if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
+    class Database
+    {
     public static array $settings_table = [];
     public static int $onlineCounter = 0;
     public static int $affected_rows = 0;
@@ -310,4 +311,5 @@ class Database
     }
 }
 
-class_alias(Database::class, 'Lotgd\\MySQL\\Database');
+    class_alias(Database::class, 'Lotgd\\MySQL\\Database');
+}
