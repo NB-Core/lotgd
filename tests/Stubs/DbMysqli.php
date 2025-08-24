@@ -7,6 +7,20 @@ namespace Lotgd\Tests\Stubs;
 class DbMysqli
 {
     public array $queries = [];
+    public array $connectArgs = [];
+    public ?string $selectedDb = null;
+
+    public function connect($host, $user, $pass)
+    {
+        $this->connectArgs = [$host, $user, $pass];
+        return true;
+    }
+
+    public function selectDb($dbname)
+    {
+        $this->selectedDb = $dbname;
+        return true;
+    }
 
     public function query(string $sql)
     {
