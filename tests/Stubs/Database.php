@@ -7,7 +7,6 @@ namespace Lotgd\Tests\Stubs;
 /**
  * Fake database used for tests.
  */
-
 if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
     class Database
     {
