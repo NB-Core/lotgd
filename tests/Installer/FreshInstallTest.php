@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class FreshInstallTest extends TestCase
 {
-    private const SOCKET = '/var/run/mysqld/mysqld.sock';
+    private const SOCKET = '/tmp/lotgd_mysqld.sock';
     private const DB_HOST = 'localhost';
     private const DB_USER = 'root';
     private const DB_PASS = '';
@@ -21,12 +21,6 @@ final class FreshInstallTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        if (! is_dir('/run/mysqld')) {
-            mkdir('/run/mysqld', 0755, true);
-        }
-        @chown('/run/mysqld', 'mysql');
-        @chgrp('/run/mysqld', 'mysql');
-
         mysqli_report(MYSQLI_REPORT_OFF);
         ini_set('mysqli.default_socket', self::SOCKET);
 

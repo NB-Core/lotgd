@@ -7,7 +7,7 @@ namespace {
     require __DIR__ . '/../../src/Lotgd/Config/constants.php';
     require __DIR__ . '/../Stubs/Functions.php';
 
-    ini_set('mysqli.default_socket', '/var/run/mysqld/mysqld.sock');
+    ini_set('mysqli.default_socket', '/tmp/lotgd_mysqld.sock');
     define('IS_INSTALLER', true);
 }
 
