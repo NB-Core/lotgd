@@ -20,6 +20,16 @@ class Database
     public static ?object $instance = null;
     public static array $queryCacheResults = [];
 
+    public static function connect(string $host, string $user, string $pass): bool
+    {
+        return self::getInstance()->connect($host, $user, $pass);
+    }
+
+    public static function selectDb(string $dbname): bool
+    {
+        return self::getInstance()->selectDb($dbname);
+    }
+
     public static function prefix(string $name, bool $force = false): string
     {
         return $name;
