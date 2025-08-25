@@ -6,19 +6,13 @@ require_once dirname(__DIR__, 2) . '/src/Lotgd/Config/constants.php';
 require_once dirname(__DIR__, 2) . '/lib/dbmysqli.php';
 require_once dirname(__DIR__, 2) . '/src/Lotgd/MySQL/Database.php';
 
-if (!class_exists('Lotgd\\Settings')) {
-    class LegacySettings
+$settings = new class
+{
+    public function getSetting(string|int $name, mixed $default = false): mixed
     {
-        public function getSetting(string|int $name, mixed $default = false): mixed
-        {
-            return $default;
-        }
+        return $default;
     }
-
-    class_alias('LegacySettings', 'Lotgd\\Settings');
-}
-
-$settings = new \Lotgd\Settings();
+};
 
 $config = require dirname(__DIR__, 2) . '/dbconnect.php';
 global $DB_PREFIX;
