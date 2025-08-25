@@ -354,6 +354,7 @@ class Database
         } else {
             $prefix = $force;
         }
+        error_log('db_prefix(' . $tablename . ') -> ' . $prefix);
         return $prefix . $tablename;
     }
 }
