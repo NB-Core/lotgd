@@ -17,6 +17,7 @@ $settings = new class
 $config = require dirname(__DIR__, 2) . '/dbconnect.php';
 global $DB_PREFIX;
 $DB_PREFIX = $config['DB_PREFIX'] ?? '';
+error_log('Legacy SQL DB_PREFIX=' . $DB_PREFIX);
 
 include __DIR__ . '/installer_sqlstatements.php';
 

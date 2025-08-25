@@ -28,6 +28,7 @@ class Bootstrap
 
         global $DB_PREFIX;
         $DB_PREFIX = $settings['DB_PREFIX'] ?? '';
+        error_log('Bootstrap DB_PREFIX=' . $DB_PREFIX);
 
         $connection = [
             'driver'       => 'pdo_mysql',
