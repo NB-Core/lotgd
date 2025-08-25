@@ -14,6 +14,10 @@ namespace Lotgd\Tests {
 use Lotgd\Installer\InstallerLogger;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @runInSeparateProcess
+ * @preserveGlobalState disabled
+ */
 final class InstallerLoggerTest extends TestCase
 {
     public function testLogReturnsFalseWithoutWarningsWhenDirectoryIsNotWritable(): void
