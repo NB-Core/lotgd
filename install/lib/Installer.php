@@ -1258,6 +1258,7 @@ class Installer
     public function stage9(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX, $settings;
+        $session['skipmodules'] = $session['skipmodules'] ?? false;
         $this->output->output("`@`c`bRunning Database Migrations`b`c");
         $this->output->output("`2The installer now uses Doctrine migrations to set up the database schema.`n");
         try {
@@ -1279,7 +1280,7 @@ class Installer
            }
            $this->output->rawOutput("</div>");
          */
-        if (!$session['skipmodules']) {
+        if (!($session['skipmodules'] ?? false)) {
             $this->output->output("`n`2Now I'll install and configure your modules.");
             reset($session['moduleoperations']);
             $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
