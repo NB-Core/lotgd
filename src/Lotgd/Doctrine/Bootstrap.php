@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Lotgd\MySQL\Database;
 
 class Bootstrap
 {
@@ -28,6 +29,7 @@ class Bootstrap
 
         global $DB_PREFIX;
         $DB_PREFIX = $settings['DB_PREFIX'] ?? '';
+        Database::setPrefix($DB_PREFIX);
         error_log('Bootstrap DB_PREFIX=' . $DB_PREFIX);
 
         $connection = [
