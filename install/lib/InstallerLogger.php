@@ -28,6 +28,13 @@ class InstallerLogger
         return rtrim($fallback, '/') . '/install.log';
     }
 
+    /**
+     * Append a message to the installer log file.
+     *
+     * @param string $message Message to write to the log.
+     *
+     * @return bool True on success, false otherwise.
+     */
     public static function log(string $message): bool
     {
         $logFile = self::getLogFilePath();
