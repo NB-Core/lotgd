@@ -1455,11 +1455,13 @@ class Installer
      */
     private function runMigrations(): void
     {
-        global $session;
+        global $session, $DB_PREFIX;
+
+        $db        = require dirname(__DIR__, 2) . '/dbconnect.php';
+        $DB_PREFIX = $db['DB_PREFIX'] ?? '';
+        InstallerLogger::log('DB_PREFIX set to ' . $DB_PREFIX);
 
         $config = require dirname(__DIR__, 2) . '/config/doctrine.php';
-        global $DB_PREFIX;
-        $DB_PREFIX = $config['db_prefix'] ?? '';
 
         $em = Bootstrap::getEntityManager();
 
