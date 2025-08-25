@@ -808,8 +808,8 @@ $sql_upgrade_statements = array(
 "UPDATE " . db_prefix("accounts") . " SET specialty='' WHERE specialty='0'",
 ),
 "0.9.8-prerelease.12" => array(
-"1|UPDATE " . db_prefix("creatures") . " SET forest=1",
-"1|UPDATE " . db_prefix("creatures") . " SET graveyard=1 where location=1",
+"UPDATE " . db_prefix("creatures") . " SET forest=1",
+"UPDATE " . db_prefix("creatures") . " SET graveyard=1 where location=1",
 ),
 "0.9.8-prerelease.13" => array(),
 "0.9.8-prerelease.14" => array(),
