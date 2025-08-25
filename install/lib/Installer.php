@@ -262,7 +262,8 @@ class Installer
             if ($showform) {
                 $this->output->rawOutput("<form action='installer.php?stage=$stage' method='POST'>");
                 $this->output->output("Enter a name for your superuser account:");
-                $this->output->rawOutput("<input name='name' value=\"" . htmlentities(Http::post("name"), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+                $postedName = Http::post('name');
+                $this->output->rawOutput("<input name='name' value=\"" . htmlentities((string) $postedName, ENT_COMPAT, $this->getSetting('charset', 'ISO-8859-1')) . "\">");
                 $this->output->output("`nEnter a password: ");
                 $this->output->rawOutput("<input name='pass1' type='password'>");
                 $this->output->output("`nConfirm your password: ");
