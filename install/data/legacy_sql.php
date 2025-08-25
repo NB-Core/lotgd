@@ -20,6 +20,10 @@ if (!class_exists('Lotgd\\Settings')) {
 
 $settings = new \Lotgd\Settings();
 
+$config = require dirname(__DIR__, 2) . '/dbconnect.php';
+global $DB_PREFIX;
+$DB_PREFIX = $config['DB_PREFIX'] ?? '';
+
 include __DIR__ . '/installer_sqlstatements.php';
 
 return $sql_upgrade_statements;
