@@ -1508,7 +1508,12 @@ class Installer
         $plan = $dependencyFactory->getMigrationPlanCalculator()->getPlanUntilVersion($latestVersion);
         $factory = $dependencyFactory->getConsoleInputMigratorConfigurationFactory();
         $migratorConfig = $factory->getMigratorConfiguration(new ArrayInput([]));
-        $dependencyFactory->getMigrator()->migrate($plan, $migratorConfig);
+        try {
+            $dependencyFactory->getMigrator()->migrate($plan, $migratorConfig);
+        } catch (\Throwable $e) {
+            InstallerLogger::log('Migration error: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**
