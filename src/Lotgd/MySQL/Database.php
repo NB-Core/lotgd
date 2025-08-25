@@ -37,6 +37,19 @@ class Database
     ];
 
     /**
+     * Default table prefix for prefixed database tables.
+     */
+    private static string $prefix = '';
+
+    /**
+     * Set the default table prefix.
+     */
+    public static function setPrefix(string $prefix): void
+    {
+        self::$prefix = $prefix;
+    }
+
+    /**
      * Get a statistic from the database info store.
      */
     public static function getInfo(string $key, mixed $default = null): mixed
@@ -341,20 +354,20 @@ class Database
      */
     public static function prefix(string $tablename, ?string $force = null): string
     {
-        global $DB_PREFIX;
         if ($force === null) {
             $special_prefixes = [];
             if (file_exists('prefixes.php')) {
                 require_once 'prefixes.php';
             }
-            $prefix = $DB_PREFIX;
+            $prefix = self::$prefix;
             if (isset($special_prefixes[$tablename])) {
                 $prefix = $special_prefixes[$tablename];
             }
         } else {
             $prefix = $force;
         }
-        error_log('db_prefix(' . $tablename . ') -> ' . $prefix);
-        return $prefix . $tablename;
+        $table = $prefix . $tablename;
+        error_log('db_prefix(' . $tablename . ') -> ' . $table);
+        return $table;
     }
 }
