@@ -1,15 +1,17 @@
 <?php
 
-$config = require dirname(__DIR__) . '/dbconnect.php';
+$db = require dirname(__DIR__) . '/dbconnect.php';
 
 return [
     'driver' => 'pdo_mysql',
-    'host' => $config['DB_HOST'] ?? 'localhost',
-    'dbname' => $config['DB_NAME'] ?? '',
-    'user' => $config['DB_USER'] ?? '',
-    'password' => $config['DB_PASS'] ?? '',
+    'host' => $db['DB_HOST'] ?? 'localhost',
+    'dbname' => $db['DB_NAME'] ?? '',
+    'user' => $db['DB_USER'] ?? '',
+    'password' => $db['DB_PASS'] ?? '',
     'charset' => 'utf8mb4',
+    'db_prefix' => $db['DB_PREFIX'] ?? '',
     'migrations_paths' => [
-        'Lotgd\Migrations' => dirname(__DIR__) . '/migrations',
+        'Lotgd\\Migrations' => dirname(__DIR__) . '/migrations',
     ],
 ];
+

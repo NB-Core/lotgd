@@ -1456,7 +1456,10 @@ class Installer
     private function runMigrations(): void
     {
         global $session;
+
         $config = require dirname(__DIR__, 2) . '/config/doctrine.php';
+        global $DB_PREFIX;
+        $DB_PREFIX = $config['db_prefix'] ?? '';
 
         $em = Bootstrap::getEntityManager();
 
