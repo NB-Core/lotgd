@@ -65,7 +65,7 @@ function db_table_exists($tablename)
 {
     return Database::tableExists($tablename);
 }
-function db_prefix($tablename, $force = false)
+function db_prefix($tablename, $force = null)
 {
     return Database::prefix($tablename, $force);
 }
