@@ -367,7 +367,6 @@ class Database
             $prefix = $force;
         }
         $table = $prefix . $tablename;
-        error_log('db_prefix(' . $tablename . ') -> ' . $table);
         return $table;
     }
 }
