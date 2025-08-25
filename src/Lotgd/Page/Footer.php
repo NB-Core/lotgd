@@ -45,6 +45,14 @@ class Footer
 
         Buffs::restoreBuffFields();
 
+        $defaultFaviconLink =
+            "<link rel=\"shortcut icon\" HREF=\"/images/favicon/favicon.ico\" TYPE=\"image/x-icon\"/>" .
+            "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/images/favicon/apple-touch-icon.png\">" .
+            "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/images/favicon/favicon-32x32.png\">" .
+            "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">" .
+            "<link rel=\"manifest\" href=\"/images/favicon/site.webmanifest\">";
+        $pre_headscript = $defaultFaviconLink;
+
         if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
             $sql     = 'SELECT motddate FROM ' . Database::prefix('motd') . ' ORDER BY motditem DESC LIMIT 1';
             $result  = Database::query($sql);
@@ -63,23 +71,15 @@ class Footer
             } else {
                 $session['needtoviewmotd'] = false;
             }
-            $favicon = [
-                'favicon-link' =>
-                "<link rel=\"shortcut icon\" HREF=\"/images/favicon/favicon.ico\" TYPE=\"image/x-icon\"/>" .
-                "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/images/favicon/apple-touch-icon.png\">" .
-                "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/images/favicon/favicon-32x32.png\">" .
-                "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">" .
-                "<link rel=\"manifest\" href=\"/images/favicon/site.webmanifest\">",
-            ];
-                        $favicon        = modulehook('pageparts-favicon', $favicon);
-                        $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
+            $favicon = ['favicon-link' => $defaultFaviconLink];
+            $favicon        = modulehook('pageparts-favicon', $favicon);
+            $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
             if (isset($settings) && $settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('async/setup.php')) {
                     require 'async/setup.php';
                 }
             }
         } else {
-            $pre_headscript = '';
             $headscript     = '';
         }
 
