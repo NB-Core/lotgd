@@ -352,9 +352,9 @@ class Database
     /**
      * Get a table name with the configured prefix.
      */
-    public static function prefix(string $tablename, ?string $force = null): string
+    public static function prefix(string $tablename, string|false|null $force = null): string
     {
-        if ($force === null) {
+        if ($force === null || $force === false) {
             $special_prefixes = [];
             if (file_exists('prefixes.php')) {
                 require_once 'prefixes.php';
