@@ -17,7 +17,12 @@ final class Version20250724000015 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('DROP INDEX IF EXISTS clanname ON ' . Database::prefix('clans'));
+        $schemaManager = $this->connection->createSchemaManager();
+        $table         = Database::prefix('clans');
+
+        if (array_key_exists('clanname', $schemaManager->listTableIndexes($table))) {
+            $this->addSql('DROP INDEX clanname ON ' . $table);
+        }
     }
 
     public function down(Schema $schema): void
