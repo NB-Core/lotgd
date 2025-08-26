@@ -237,4 +237,66 @@ final class TableDescriptorTest extends TestCase
             Database::$lastSql
         );
     }
+
+    public function testSynctablePreservesExplicitColumnCollation(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'title',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'latin1_swedish_ci',
+            ],
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_bin',
+            ],
+        ];
+        Database::$keys_rows = [];
+        Database::$table_status_rows = [['Collation' => 'latin1_swedish_ci']];
+        Database::$lastSql = '';
+        $descriptor = [
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'title' => ['name' => 'title', 'type' => 'text'],
+            'body' => ['name' => 'body', 'type' => 'text', 'collation' => 'utf8mb4_bin'],
+        ];
+        TableDescriptor::synctable('dummy', $descriptor);
+        $this->assertStringContainsString(
+            'CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+            Database::$lastSql
+        );
+        $this->assertStringContainsString(
+            'CHANGE body body text NOT NULL COLLATE utf8mb4_bin',
+            Database::$lastSql
+        );
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'title',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_unicode_ci',
+            ],
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_bin',
+            ],
+        ];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$lastSql = '';
+        TableDescriptor::synctable('dummy', $descriptor);
+        $this->assertStringNotContainsString('CHANGE body body text', Database::$lastSql);
+    }
 }
