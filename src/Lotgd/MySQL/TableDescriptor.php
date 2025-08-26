@@ -69,11 +69,10 @@ class TableDescriptor
             }
             if (!$tableCharset && $tableCollation) {
                 // Pull charset from a supplied collation (eg. utf8mb4_unicode_ci
-                // -> utf8mb4). Unknown formats revert to utf8mb4.
+                // -> utf8mb4). If the collation does not encode a charset (e.g.
+                // 'binary') leave the charset unknown for now.
                 if (strpos($tableCollation, '_') !== false) {
                     $tableCharset = explode('_', $tableCollation, 2)[0];
-                } else {
-                    $tableCharset = 'utf8mb4';
                 }
             }
             if ($tableCharset && !$tableCollation) {
@@ -81,16 +80,33 @@ class TableDescriptor
                 // MySQL would use for that charset.
                 $tableCollation = self::defaultCollation($tableCharset);
             }
-            // Final fallbacks used when neither descriptor value is given.
-            $tableCharset = $tableCharset ?? 'utf8mb4';
-            $tableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
+            if (!$tableCharset && !$tableCollation) {
+                $tableCharset = 'utf8mb4';
+                $tableCollation = 'utf8mb4_unicode_ci';
+            }
             $collationEsc = Database::escape($tableCollation);
-            $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+            if ($tableCharset) {
+                $tableCharsetEsc = Database::escape($tableCharset);
+                $result = Database::query(
+                    "SHOW COLLATION WHERE Collation = '$collationEsc' AND Charset = '$tableCharsetEsc'"
+                );
+            } else {
+                $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+            }
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 throw new \InvalidArgumentException("Collation '$tableCollation' does not exist.");
             }
-            if ($row['Charset'] !== $tableCharset) {
+            if (!$tableCharset) {
+                $tableCharset = $row['Charset'];
+                while ($check = Database::fetchAssoc($result)) {
+                    if ($check['Charset'] !== $tableCharset) {
+                        throw new \InvalidArgumentException(
+                            "Collation '$tableCollation' maps to multiple charsets; specify charset explicitly."
+                        );
+                    }
+                }
+            } elseif ($row['Charset'] !== $tableCharset) {
                 throw new \InvalidArgumentException(
                     "Collation '$tableCollation' does not match charset '$tableCharset'."
                 );
@@ -317,21 +333,39 @@ class TableDescriptor
         if (!$tableCharset && $tableCollation) {
             if (strpos($tableCollation, '_') !== false) {
                 $tableCharset = explode('_', $tableCollation, 2)[0];
-            } else {
-                $tableCharset = 'utf8mb4';
             }
         }
         if ($tableCharset && !$tableCollation) {
             $tableCollation = self::defaultCollation($tableCharset);
         }
+        if (!$tableCharset && !$tableCollation) {
+            $tableCharset = 'utf8mb4';
+            $tableCollation = 'utf8mb4_unicode_ci';
+        }
         if ($tableCollation) {
             $collationEsc = Database::escape($tableCollation);
-            $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+            if ($tableCharset) {
+                $tableCharsetEsc = Database::escape($tableCharset);
+                $result = Database::query(
+                    "SHOW COLLATION WHERE Collation = '$collationEsc' AND Charset = '$tableCharsetEsc'"
+                );
+            } else {
+                $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+            }
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 throw new \InvalidArgumentException("Collation '$tableCollation' does not exist.");
             }
-            if ($tableCharset && $row['Charset'] !== $tableCharset) {
+            if (!$tableCharset) {
+                $tableCharset = $row['Charset'];
+                while ($check = Database::fetchAssoc($result)) {
+                    if ($check['Charset'] !== $tableCharset) {
+                        throw new \InvalidArgumentException(
+                            "Collation '$tableCollation' maps to multiple charsets; specify charset explicitly."
+                        );
+                    }
+                }
+            } elseif ($row['Charset'] !== $tableCharset) {
                 throw new \InvalidArgumentException(
                     "Collation '$tableCollation' does not match charset '$tableCharset'."
                 );
