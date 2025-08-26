@@ -76,6 +76,24 @@ final class TableDescriptorTest extends TestCase
         $this->assertSame('latin1_swedish_ci', $descriptor['collation']);
     }
 
+    public function testCollationWithoutUnderscoreDoesNotSetCharset(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4',
+            ],
+        ];
+        $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
+        $this->assertArrayNotHasKey('charset', $descriptor['body']);
+        $sql = TableDescriptor::descriptorCreateSql($descriptor['body']);
+        $this->assertStringNotContainsString('CHARACTER SET', $sql);
+    }
+
     public function testSynctableAltersTableCollation(): void
     {
         Database::$full_columns_rows = [
