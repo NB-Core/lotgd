@@ -59,6 +59,19 @@ final class TableDescriptorTest extends TestCase
         $this->assertSame($expected, $descriptor['somecolumn']);
     }
 
+    public function testDescriptorCreateSqlGeneratesDefaultNull(): void
+    {
+        $descriptor = [
+            'name' => 'somecolumn',
+            'type' => 'int',
+            'null' => true,
+            'default' => null,
+        ];
+
+        $sql = TableDescriptor::descriptorCreateSql($descriptor);
+        $this->assertStringContainsString('DEFAULT NULL', $sql);
+    }
+
     public function testCollationIsCaptured(): void
     {
         Database::$full_columns_rows = [
@@ -123,7 +136,7 @@ final class TableDescriptorTest extends TestCase
         $descriptor = [
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'body' => ['name' => 'body', 'type' => 'text'],
+            'body' => ['name' => 'body', 'type' => 'text', 'default' => null],
         ];
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringContainsString(
@@ -149,7 +162,7 @@ final class TableDescriptorTest extends TestCase
         $descriptor = [
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'body' => ['name' => 'body', 'type' => 'text'],
+            'body' => ['name' => 'body', 'type' => 'text', 'default' => null],
         ];
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringContainsString(
@@ -190,7 +203,7 @@ final class TableDescriptorTest extends TestCase
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
         Database::$lastSql = '';
         $descriptor = [
-            'body' => ['name' => 'body', 'type' => 'text'],
+            'body' => ['name' => 'body', 'type' => 'text', 'default' => null],
         ];
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringNotContainsString('CHANGE', Database::$lastSql);
@@ -275,8 +288,13 @@ final class TableDescriptorTest extends TestCase
         $descriptor = [
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'title' => ['name' => 'title', 'type' => 'text'],
-            'body' => ['name' => 'body', 'type' => 'text', 'collation' => 'utf8mb4_bin'],
+            'title' => ['name' => 'title', 'type' => 'text', 'default' => null],
+            'body' => [
+                'name' => 'body',
+                'type' => 'text',
+                'collation' => 'utf8mb4_bin',
+                'default' => null,
+            ],
         ];
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringContainsString(
@@ -284,7 +302,7 @@ final class TableDescriptorTest extends TestCase
             Database::$lastSql
         );
         $this->assertStringContainsString(
-            'CHANGE body body text NOT NULL COLLATE utf8mb4_bin',
+            'CHANGE body body text NOT NULL DEFAULT NULL COLLATE utf8mb4_bin',
             Database::$lastSql
         );
         Database::$full_columns_rows = [
