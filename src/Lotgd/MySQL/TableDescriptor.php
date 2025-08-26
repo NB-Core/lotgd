@@ -283,9 +283,6 @@ class TableDescriptor
                 $item['collation'] = $row['Collation'];
                 if (strpos($row['Collation'], '_') !== false) {
                     $item['charset'] = explode('_', $row['Collation'], 2)[0];
-                } else {
-                    // Collation name does not follow expected pattern; do not set charset
-                    $item['charset'] = null;
                 }
             }
             $descriptor[$item['name']] = $item;
@@ -377,7 +374,7 @@ class TableDescriptor
             . $input['type']
             . (isset($input['null']) && $input['null'] ? "" : " NOT NULL")
             . (isset($input['default']) ? " default '{$input['default']}'" : "")
-            . (isset($input['charset']) ? " CHARACTER SET {$input['charset']}" : "")
+            . (!empty($input['charset']) ? " CHARACTER SET {$input['charset']}" : "")
             . (isset($input['collation']) ? " COLLATE {$input['collation']}" : "")
             . " " . $input['extra'];
         }
