@@ -271,10 +271,17 @@ if ($op == "") {
                     continue;
                 }
 
-                $row = @unserialize($val);
+                $row = safeUnserialize($val);
+                if ($row === false) {
+                    continue;
+                }
+
                 if (!is_array($row)) {
-                    if (getsetting('logdnet_error_notify', 1)) {
+                    static $notified = false;
+                    $debug = isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT);
+                    if ((!$notified || $debug) && getsetting('logdnet_error_notify', 1)) {
                         ErrorHandler::errorNotify(E_WARNING, 'Invalid logdnet row', __FILE__, __LINE__, Backtrace::show());
+                        $notified = true;
                     }
                     continue;
                 }
@@ -349,6 +356,23 @@ if ($op == "") {
     }
     rawoutput("</table>");
     Footer::pageFooter();
+}
+
+function safeUnserialize(string $val): array|false
+{
+    set_error_handler(static function () {
+        return true;
+    });
+
+    try {
+        $result = unserialize($val, ['allowed_classes' => false]);
+    } catch (\Throwable $e) {
+        $result = false;
+    }
+
+    restore_error_handler();
+
+    return is_array($result) ? $result : false;
 }
 
 function apply_logdnet_bans($logdnet)
