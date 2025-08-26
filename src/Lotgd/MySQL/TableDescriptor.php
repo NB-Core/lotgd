@@ -373,7 +373,9 @@ class TableDescriptor
         $row = Database::fetchAssoc($status);
         if ($row && !empty($row['Collation'])) {
             $descriptor['collation'] = $row['Collation'];
-            $descriptor['charset'] = explode('_', $row['Collation'], 2)[0];
+            if (strpos($row['Collation'], '_') !== false) {
+                $descriptor['charset'] = explode('_', $row['Collation'], 2)[0];
+            }
         }
         $sql = "SHOW KEYS FROM $tablename";
         $result = Database::query($sql);

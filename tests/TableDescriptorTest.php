@@ -108,6 +108,24 @@ final class TableDescriptorTest extends TestCase
         $this->assertStringNotContainsString('CHARACTER SET', $sql);
     }
 
+    public function testTableStatusCollationWithoutUnderscoreDoesNotSetCharset(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_unicode_ci',
+            ],
+        ];
+        Database::$table_status_rows = [['Collation' => 'binary']];
+        $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
+        $this->assertSame('binary', $descriptor['collation']);
+        $this->assertArrayNotHasKey('charset', $descriptor);
+    }
+
     public function testTableCreateFromDescriptorFallsBackToDefaultCharset(): void
     {
         $descriptor = [
