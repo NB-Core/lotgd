@@ -613,7 +613,7 @@ class TableDescriptor
                 if ($input['default'] === null) {
                     $return .= " DEFAULT NULL";
                 } elseif (is_string($input['default'])) {
-                    if (preg_match('/^[A-Z_]+(?:\(\))?$/i', $input['default'])) {
+                    if (preg_match('/^[A-Z_]+(?:\([^)]*\))?$/i', $input['default'])) {
                         $return .= " DEFAULT {$input['default']}";
                     } else {
                         $escapedDefault = Database::escape($input['default']);
