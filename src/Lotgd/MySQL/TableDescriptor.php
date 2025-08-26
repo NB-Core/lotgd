@@ -435,9 +435,20 @@ class TableDescriptor
             }
             $return = $input['name'] . " "
             . $input['type']
-            . (isset($input['null']) && $input['null'] ? "" : " NOT NULL")
-            . (isset($input['default']) ? " default '{$input['default']}'" : "")
-            . (!empty($input['charset']) ? " CHARACTER SET {$input['charset']}" : "")
+            . (isset($input['null']) && $input['null'] ? "" : " NOT NULL");
+
+            if (array_key_exists('default', $input)) {
+                if ($input['default'] === null) {
+                    $return .= " DEFAULT NULL";
+                } elseif (is_string($input['default'])) {
+                    $escapedDefault = Database::escape($input['default']);
+                    $return .= " DEFAULT '{$escapedDefault}'";
+                } else {
+                    $return .= " DEFAULT {$input['default']}";
+                }
+            }
+
+            $return .= (!empty($input['charset']) ? " CHARACTER SET {$input['charset']}" : "")
             . (isset($input['collation']) ? " COLLATE {$input['collation']}" : "")
             . " " . $input['extra'];
         }
