@@ -272,17 +272,25 @@ if ($op == "") {
                 }
 
                 $row = safeUnserialize($val);
+                // Logdnet failures are non-fatal and are skipped without user-facing errors.
                 if ($row === false) {
                     continue;
                 }
 
                 if (!is_array($row)) {
-                    static $notified = false;
-                    $debug = isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT);
-                    if ((!$notified || $debug) && getsetting('logdnet_error_notify', 1)) {
-                        ErrorHandler::errorNotify(E_WARNING, 'Invalid logdnet row', __FILE__, __LINE__, Backtrace::show());
-                        $notified = true;
+                    static $reported = [];
+                    $errorString = 'Invalid logdnet row: ' . $val;
+
+                    if (!in_array($errorString, $reported, true)) {
+                        $reported[] = $errorString;
+
+                        if (getsetting('logdnet_error_notify', 1)) {
+                            ErrorHandler::errorNotify(E_WARNING, $errorString, __FILE__, __LINE__, Backtrace::show());
+                        }
+                    } else {
+                        debug($errorString);
                     }
+
                     continue;
                 }
 
