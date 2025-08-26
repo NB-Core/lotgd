@@ -251,7 +251,12 @@ class TableDescriptor
             }
             if (!empty($row['Collation'])) {
                 $item['collation'] = $row['Collation'];
-                $item['charset'] = explode('_', $row['Collation'], 2)[0];
+                if (strpos($row['Collation'], '_') !== false) {
+                    $item['charset'] = explode('_', $row['Collation'], 2)[0];
+                } else {
+                    // Collation name does not follow expected pattern; do not set charset
+                    $item['charset'] = null;
+                }
             }
             $descriptor[$item['name']] = $item;
         }
