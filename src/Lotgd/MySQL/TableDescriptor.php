@@ -43,6 +43,15 @@ class TableDescriptor
             $existing = self::tableCreateDescriptor($tablename);
             $tableCharset = $descriptor['charset'] ?? null;
             $tableCollation = $descriptor['collation'] ?? null;
+            if (
+                $tableCharset
+                && $tableCollation
+                && strpos($tableCollation, $tableCharset . '_') !== 0
+            ) {
+                throw new \InvalidArgumentException(
+                    "Table charset '$tableCharset' and collation '$tableCollation' are incompatible."
+                );
+            }
             if (!$tableCharset && $tableCollation) {
                 // Extract charset from collation only if it contains an underscore
                 if (strpos($tableCollation, '_') !== false) {
@@ -111,18 +120,27 @@ class TableDescriptor
                     }
                 }
 
-                $newsql = self::descriptorCreateSql($val);
-
                 $hasExplicitCharset = array_key_exists('charset', $val);
                 $hasExplicitCollation = array_key_exists('collation', $val);
                 $colCharset = $val['charset'] ?? null;
                 $colCollation = $val['collation'] ?? null;
+                if (
+                    $colCharset
+                    && $colCollation
+                    && strpos($colCollation, $colCharset . '_') !== 0
+                ) {
+                    $name = $val['name'] ?? $key;
+                    throw new \InvalidArgumentException(
+                        "Column '$name' charset '$colCharset' and collation '$colCollation' are incompatible."
+                    );
+                }
                 if (!$colCharset && $colCollation && strpos($colCollation, '_') !== false) {
                     $colCharset = explode('_', $colCollation, 2)[0];
                 }
                 if ($colCharset && !$colCollation) {
                     $colCollation = self::defaultCollation($colCharset);
                 }
+                $newsql = self::descriptorCreateSql($val);
                 $needsPostConvert = ($hasExplicitCharset && $colCharset !== $tableCharset)
                     || ($hasExplicitCollation && $colCollation !== $tableCollation);
 
@@ -217,6 +235,15 @@ class TableDescriptor
         $type = "INNODB";
         $tableCharset = $descriptor['charset'] ?? null;
         $tableCollation = $descriptor['collation'] ?? null;
+        if (
+            $tableCharset
+            && $tableCollation
+            && strpos($tableCollation, $tableCharset . '_') !== 0
+        ) {
+            throw new \InvalidArgumentException(
+                "Table charset '$tableCharset' and collation '$tableCollation' are incompatible."
+            );
+        }
         if (!$tableCharset && $tableCollation) {
             if (strpos($tableCollation, '_') !== false) {
                 $tableCharset = explode('_', $tableCollation, 2)[0];
@@ -266,6 +293,17 @@ class TableDescriptor
                 } else {
                     $key = $val['name'];
                 }
+            }
+            $colCharset = $val['charset'] ?? null;
+            $colCollation = $val['collation'] ?? null;
+            if (
+                $colCharset
+                && $colCollation
+                && strpos($colCollation, $colCharset . '_') !== 0
+            ) {
+                throw new \InvalidArgumentException(
+                    "Column '{$val['name']}' charset '$colCharset' and collation '$colCollation' are incompatible."
+                );
             }
             if ($i > 0) {
                 $sql .= ",\n";

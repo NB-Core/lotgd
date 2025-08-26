@@ -328,4 +328,29 @@ final class TableDescriptorTest extends TestCase
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringNotContainsString('CHANGE body body text', Database::$lastSql);
     }
+
+    public function testTableCreateFromDescriptorRejectsMismatchedTableCharsetAndCollation(): void
+    {
+        $descriptor = [
+            'charset' => 'utf8mb4',
+            'collation' => 'latin1_swedish_ci',
+            'id' => ['name' => 'id', 'type' => 'int'],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+    }
+
+    public function testTableCreateFromDescriptorRejectsMismatchedColumnCharsetAndCollation(): void
+    {
+        $descriptor = [
+            'id' => [
+                'name' => 'id',
+                'type' => 'text',
+                'charset' => 'utf8mb4',
+                'collation' => 'latin1_swedish_ci',
+            ],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+    }
 }
