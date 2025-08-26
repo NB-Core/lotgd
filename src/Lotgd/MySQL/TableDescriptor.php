@@ -260,7 +260,8 @@ class TableDescriptor
             }
             $descriptor[$item['name']] = $item;
         }
-        $status = Database::query("SHOW TABLE STATUS LIKE '$tablename'");
+        $tablename_escaped = addslashes($tablename);
+        $status = Database::query("SHOW TABLE STATUS LIKE '$tablename_escaped'");
         $row = Database::fetchAssoc($status);
         if ($row && !empty($row['Collation'])) {
             $descriptor['collation'] = $row['Collation'];
