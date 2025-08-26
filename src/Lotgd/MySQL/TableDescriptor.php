@@ -218,7 +218,11 @@ class TableDescriptor
         $tableCharset = $descriptor['charset'] ?? null;
         $tableCollation = $descriptor['collation'] ?? null;
         if (!$tableCharset && $tableCollation) {
-            $tableCharset = explode('_', $tableCollation, 2)[0];
+            if (strpos($tableCollation, '_') !== false) {
+                $tableCharset = explode('_', $tableCollation, 2)[0];
+            } else {
+                $tableCharset = 'utf8mb4';
+            }
         }
         if ($tableCharset && !$tableCollation) {
             $tableCollation = self::defaultCollation($tableCharset);
