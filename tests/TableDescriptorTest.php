@@ -232,9 +232,17 @@ final class TableDescriptorTest extends TestCase
         $this->assertStringNotContainsString('CHANGE', Database::$lastSql);
     }
 
-    public function testSynctableDetectsColumnCollationMismatch(): void
+    public function testSynctableAltersOnlyMismatchedColumn(): void
     {
         Database::$full_columns_rows = [
+            [
+                'Field' => 'title',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_unicode_ci',
+            ],
             [
                 'Field' => 'body',
                 'Type' => 'text',
@@ -246,17 +254,24 @@ final class TableDescriptorTest extends TestCase
         ];
         Database::$keys_rows = [];
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$collation_rows = [[['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']]];
         Database::$lastSql = '';
         $descriptor = [
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'body' => ['name' => 'body', 'type' => 'text'],
+            'title' => ['name' => 'title', 'type' => 'text', 'default' => null],
+            'body' => ['name' => 'body', 'type' => 'text', 'default' => null],
         ];
         TableDescriptor::synctable('dummy', $descriptor);
-        $this->assertStringContainsString(
+        $this->assertStringNotContainsString(
             'CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
             Database::$lastSql
         );
+        $this->assertStringContainsString(
+            'CHANGE body body text NOT NULL DEFAULT NULL  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+            Database::$lastSql
+        );
+        $this->assertStringNotContainsString('CHANGE title', Database::$lastSql);
     }
 
     public function testSynctableDerivesCollationFromCharset(): void
