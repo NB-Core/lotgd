@@ -52,6 +52,9 @@ class TableDescriptor
                     $tableCharset = 'utf8mb4';
                 }
             }
+            if ($tableCharset && !$tableCollation) {
+                $tableCollation = self::defaultCollation($tableCharset);
+            }
             $tableCharset = $tableCharset ?? 'utf8mb4';
             $tableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
             $existingCollation = $existing['collation'] ?? null;
@@ -183,6 +186,9 @@ class TableDescriptor
         $tableCollation = $descriptor['collation'] ?? null;
         if (!$tableCharset && $tableCollation) {
             $tableCharset = explode('_', $tableCollation, 2)[0];
+        }
+        if ($tableCharset && !$tableCollation) {
+            $tableCollation = self::defaultCollation($tableCharset);
         }
         unset($descriptor['charset'], $descriptor['collation']);
         reset($descriptor);
@@ -327,6 +333,26 @@ class TableDescriptor
         }//end while
 
         return $descriptor;
+    }
+
+    /**
+     * Determine the default collation for a given charset.
+     */
+    private static function defaultCollation(string $charset): string
+    {
+        $candidate = $charset . '_unicode_ci';
+        $candidateEsc = Database::escape($candidate);
+        $charsetEsc = Database::escape($charset);
+        $result = Database::query("SHOW COLLATION WHERE Collation = '$candidateEsc'");
+        if (Database::numRows($result) > 0) {
+            return $candidate;
+        }
+        $result = Database::query("SHOW COLLATION WHERE Charset = '$charsetEsc' AND `Default` = 'Yes'");
+        $row = Database::fetchAssoc($result);
+        if ($row && isset($row['Collation'])) {
+            return $row['Collation'];
+        }
+        return $candidate;
     }
 
     /**
