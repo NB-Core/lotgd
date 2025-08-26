@@ -81,6 +81,42 @@ Modules may ship schema descriptions for their tables. `TableDescriptor::schemat
 default results in `default => null` so schema updates generate a `DEFAULT NULL`
 clause when required.
 
+### Collation and Encoding
+
+`synctable()` now enforces the `utf8mb4` character set and
+`utf8mb4_unicode_ci` collation for tables and columns by default. This
+combination supports the full Unicode range, including emoji, and in
+practice is the only sensible choice. Other collations may break foreign
+text or symbols, so only override them when you fully understand the
+consequences:
+
+```php
+$desc = [
+    // Apply a different charset and collation to the whole table (discouraged)
+    'charset'   => 'latin1',
+    'collation' => 'latin1_swedish_ci',
+    'id'   => ['name' => 'id', 'type' => 'int unsigned auto_increment'],
+    // Column‑specific override back to utf8mb4
+    'name' => [
+        'name' => 'name',
+        'type' => 'varchar(255)',
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+    ],
+    'key-id' => ['type' => 'primary key', 'columns' => 'id'],
+];
+synctable('mytable', $desc);
+```
+
+Both `charset` and `collation` keys can appear at the top level to affect the
+entire table or within individual column definitions to override the defaults.
+Because `utf8mb4_unicode_ci` sorts and compares virtually all scripts and
+emoji correctly, choosing a different collation is rarely sensible. If you
+change it, be certain you understand why.
+
+Ensure that the application's output encoding matches the database encoding to
+avoid memory errors when strings are converted between PHP and MySQL.
+
 ## Database Migrations
 
 The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory defined in `config/doctrine.php`.
