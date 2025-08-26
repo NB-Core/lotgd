@@ -143,4 +143,26 @@ final class TableDescriptorTest extends TestCase
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringNotContainsString('CHANGE', Database::$lastSql);
     }
+
+    public function testSynctableNoChangeWithoutCollationInDescriptor(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_unicode_ci',
+            ],
+        ];
+        Database::$keys_rows = [];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$lastSql = '';
+        $descriptor = [
+            'body' => ['name' => 'body', 'type' => 'text'],
+        ];
+        TableDescriptor::synctable('dummy', $descriptor);
+        $this->assertStringNotContainsString('CHANGE', Database::$lastSql);
+    }
 }
