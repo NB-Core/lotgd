@@ -93,7 +93,8 @@ class TableDescriptor
                 }
                 if (isset($existing[$key])) {
                     if (!isset($val['collation'])) {
-                        if (isset($existing[$key]['collation']) && $existing[$key]['collation'] !== $tableCollation) {
+                        $safeTableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
+                        if (isset($existing[$key]['collation']) && $existing[$key]['collation'] !== $safeTableCollation) {
                             $columnsNeedConversion = true;
                         }
                         unset($existing[$key]['collation']);
