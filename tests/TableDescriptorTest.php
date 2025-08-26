@@ -165,4 +165,31 @@ final class TableDescriptorTest extends TestCase
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringNotContainsString('CHANGE', Database::$lastSql);
     }
+
+    public function testSynctableDetectsColumnCollationMismatch(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'latin1_swedish_ci',
+            ],
+        ];
+        Database::$keys_rows = [];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$lastSql = '';
+        $descriptor = [
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'body' => ['name' => 'body', 'type' => 'text'],
+        ];
+        TableDescriptor::synctable('dummy', $descriptor);
+        $this->assertStringContainsString(
+            'CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+            Database::$lastSql
+        );
+    }
 }
