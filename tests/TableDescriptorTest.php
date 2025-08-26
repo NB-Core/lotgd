@@ -450,4 +450,44 @@ final class TableDescriptorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         TableDescriptor::synctable('dummy', $descriptor);
     }
+
+    public function testTableCreateFromDescriptorRejectsAmbiguousBinaryCollation(): void
+    {
+        Database::$collation_rows = [[
+            ['Collation' => 'binary', 'Charset' => 'latin1'],
+            ['Collation' => 'binary', 'Charset' => 'utf8mb4'],
+        ]];
+        $descriptor = [
+            'collation' => 'binary',
+            'id' => ['name' => 'id', 'type' => 'int'],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+    }
+
+    public function testSynctableRejectsAmbiguousBinaryCollation(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_unicode_ci',
+            ],
+        ];
+        Database::$keys_rows = [];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$collation_rows = [[
+            ['Collation' => 'binary', 'Charset' => 'latin1'],
+            ['Collation' => 'binary', 'Charset' => 'utf8mb4'],
+        ]];
+        $descriptor = [
+            'collation' => 'binary',
+            'body' => ['name' => 'body', 'type' => 'text', 'default' => null],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::synctable('dummy', $descriptor);
+    }
 }
