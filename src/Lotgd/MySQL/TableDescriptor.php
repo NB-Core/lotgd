@@ -44,7 +44,13 @@ class TableDescriptor
             $tableCharset = $descriptor['charset'] ?? null;
             $tableCollation = $descriptor['collation'] ?? null;
             if (!$tableCharset && $tableCollation) {
-                $tableCharset = explode('_', $tableCollation, 2)[0];
+                // Extract charset from collation only if it contains an underscore
+                if (strpos($tableCollation, '_') !== false) {
+                    $tableCharset = explode('_', $tableCollation, 2)[0];
+                } else {
+                    // Collation format is unexpected; fallback to default charset
+                    $tableCharset = 'utf8mb4';
+                }
             }
             $tableCharset = $tableCharset ?? 'utf8mb4';
             $tableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
