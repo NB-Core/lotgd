@@ -138,6 +138,26 @@ final class TableDescriptorTest extends TestCase
         $this->assertArrayNotHasKey('charset', $descriptor);
     }
 
+    public function testTableNameWithUnderscoreMatchesExactly(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'id',
+                'Type' => 'int',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => null,
+            ],
+        ];
+        Database::$table_status_rows = [
+            ['Name' => 'dummyXtable', 'Collation' => 'latin1_swedish_ci'],
+            ['Name' => 'dummy_table', 'Collation' => 'utf8mb4_unicode_ci'],
+        ];
+        $descriptor = TableDescriptor::tableCreateDescriptor('dummy_table');
+        $this->assertSame('utf8mb4_unicode_ci', $descriptor['collation']);
+    }
+
     public function testTableCreateFromDescriptorRejectsUnknownCollation(): void
     {
         Database::$collation_rows = [[]];
