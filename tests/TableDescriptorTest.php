@@ -95,6 +95,17 @@ final class TableDescriptorTest extends TestCase
         $this->assertStringNotContainsString('CHARACTER SET', $sql);
     }
 
+    public function testTableCreateFromDescriptorFallsBackToDefaultCharset(): void
+    {
+        $descriptor = [
+            'collation' => 'utf16',
+            'id' => ['name' => 'id', 'type' => 'int'],
+        ];
+        $sql = TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+        $this->assertStringContainsString('DEFAULT CHARSET=utf8mb4', $sql);
+        $this->assertStringContainsString('COLLATE=utf16', $sql);
+    }
+
     public function testSynctableAltersTableCollation(): void
     {
         Database::$full_columns_rows = [
