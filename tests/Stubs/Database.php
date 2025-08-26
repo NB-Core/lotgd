@@ -19,6 +19,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static array $keys_rows = [];
         public static array $full_columns_rows = [];
         public static array $table_status_rows = [];
+        public static array $collation_rows = [];
         public static ?object $doctrineConnection = null;
         public static ?object $instance = null;
         public static array $queryCacheResults = [];
@@ -96,6 +97,15 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
 
             if (strpos($sql, 'SHOW KEYS FROM') === 0) {
                 $last_query_result = self::$keys_rows;
+                return $last_query_result;
+            }
+
+            if (strpos($sql, 'SHOW COLLATION') === 0) {
+                if (self::$collation_rows) {
+                    $last_query_result = array_shift(self::$collation_rows);
+                } else {
+                    $last_query_result = [];
+                }
                 return $last_query_result;
             }
 
