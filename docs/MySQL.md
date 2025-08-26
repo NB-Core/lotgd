@@ -110,9 +110,11 @@ synctable('mytable', $desc);
 
 Both `charset` and `collation` keys can appear at the top level to affect the
 entire table or within individual column definitions to override the defaults.
-Because `utf8mb4_unicode_ci` sorts and compares virtually all scripts and
-emoji correctly, choosing a different collation is rarely sensible. If you
-change it, be certain you understand why.
+If you omit `charset` but provide `collation`, the engine will infer the
+character set from the collation name automatically. Because
+`utf8mb4_unicode_ci` sorts and compares virtually all scripts and emoji
+correctly, choosing a different collation is rarely sensible. If you change it,
+be certain you understand why.
 
 Ensure that the application's output encoding matches the database encoding to
 avoid memory errors when strings are converted between PHP and MySQL.

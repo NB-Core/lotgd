@@ -41,8 +41,19 @@ class TableDescriptor
         } else {
             //the table exists, so we need to compare it against the descriptor.
             $existing = self::tableCreateDescriptor($tablename);
-            $tableCharset = $descriptor['charset'] ?? 'utf8mb4';
-            $tableCollation = $descriptor['collation'] ?? 'utf8mb4_unicode_ci';
+            $tableCharset = $descriptor['charset'] ?? null;
+            $tableCollation = $descriptor['collation'] ?? null;
+            if (!$tableCharset && $tableCollation) {
+                // Extract charset from collation only if it contains an underscore
+                if (strpos($tableCollation, '_') !== false) {
+                    $tableCharset = explode('_', $tableCollation, 2)[0];
+                } else {
+                    // Collation format is unexpected; fallback to default charset
+                    $tableCharset = 'utf8mb4';
+                }
+            }
+            $tableCharset = $tableCharset ?? 'utf8mb4';
+            $tableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
             $existingCollation = $existing['collation'] ?? null;
             unset($descriptor['charset'], $descriptor['collation']);
             unset($existing['charset'], $existing['collation']);
@@ -162,6 +173,9 @@ class TableDescriptor
         $type = "INNODB";
         $tableCharset = $descriptor['charset'] ?? null;
         $tableCollation = $descriptor['collation'] ?? null;
+        if (!$tableCharset && $tableCollation) {
+            $tableCharset = explode('_', $tableCollation, 2)[0];
+        }
         unset($descriptor['charset'], $descriptor['collation']);
         reset($descriptor);
         $i = 0;
