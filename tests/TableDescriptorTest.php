@@ -371,4 +371,29 @@ final class TableDescriptorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
     }
+
+    public function testSynctableRejectsMismatchedTableCharsetAndCollation(): void
+    {
+        $descriptor = [
+            'charset' => 'utf8mb4',
+            'collation' => 'latin1_swedish_ci',
+            'id' => ['name' => 'id', 'type' => 'int'],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::synctable('dummy', $descriptor);
+    }
+
+    public function testSynctableRejectsMismatchedColumnCharsetAndCollation(): void
+    {
+        $descriptor = [
+            'id' => [
+                'name' => 'id',
+                'type' => 'text',
+                'charset' => 'utf8mb4',
+                'collation' => 'latin1_swedish_ci',
+            ],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::synctable('dummy', $descriptor);
+    }
 }
