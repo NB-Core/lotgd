@@ -100,7 +100,7 @@ class TableDescriptor
             unset($existing['charset'], $existing['collation']);
             reset($descriptor);
             $changes = array();
-            $columnsNeedConversion = false;
+            $columnsNeedConversion = [];
             // Statements to reapply explicit column encodings after a table level
             // conversion. Filled only when columns request non-default charsets or
             // collations.
@@ -137,21 +137,26 @@ class TableDescriptor
                     }
                 }
                 if (isset($existing[$key])) {
+                    $columnName = $existing[$key]['name'];
+                    $needsConversion = false;
                     // When the descriptor omits an encoding, strip the existing
                     // charset/collation so comparisons use table defaults and mark
                     // that a conversion may be required.
                     if (!isset($val['collation'])) {
                         $safeTableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
                         if (isset($existing[$key]['collation']) && $existing[$key]['collation'] !== $safeTableCollation) {
-                            $columnsNeedConversion = true;
+                            $needsConversion = true;
                         }
                         unset($existing[$key]['collation']);
                     }
                     if (!isset($val['charset'])) {
                         if (isset($existing[$key]['charset']) && $existing[$key]['charset'] !== $tableCharset) {
-                            $columnsNeedConversion = true;
+                            $needsConversion = true;
                         }
                         unset($existing[$key]['charset']);
+                    }
+                    if ($needsConversion) {
+                        $columnsNeedConversion[$columnName] = ['newsql' => null, 'changeIndex' => null];
                     }
                 }
 
@@ -176,6 +181,10 @@ class TableDescriptor
                     $colCollation = self::defaultCollation($colCharset);
                 }
                 $newsql = self::descriptorCreateSql($val);
+                if (isset($existing[$key]) && isset($columnsNeedConversion[$existing[$key]['name']])
+                    && $columnsNeedConversion[$existing[$key]['name']]['newsql'] === null) {
+                    $columnsNeedConversion[$existing[$key]['name']]['newsql'] = $newsql;
+                }
                 $needsPostConvert = ($hasExplicitCharset && $colCharset !== $tableCharset)
                     || ($hasExplicitCollation && $colCollation !== $tableCollation);
 
@@ -211,25 +220,41 @@ class TableDescriptor
                             array_push($changes, "DROP PRIMARY KEY");
                             array_push($changes, "ADD $newsql");
                         } else {
-                            array_push(
+                            $idx = array_push(
                                 $changes,
                                 "CHANGE {$existing[$key]['name']} $newsql"
-                            );
+                            ) - 1;
+                            if (isset($columnsNeedConversion[$existing[$key]['name']])) {
+                                $columnsNeedConversion[$existing[$key]['name']]['changeIndex'] = $idx;
+                                $columnsNeedConversion[$existing[$key]['name']]['newsql'] = $newsql;
+                            }
+                        }
+                    } else {
+                        if (isset($columnsNeedConversion[$existing[$key]['name']]) && $columnsNeedConversion[$existing[$key]['name']]['newsql'] === null) {
+                            $columnsNeedConversion[$existing[$key]['name']]['newsql'] = $newsql;
                         }
                     }
                 }
                 unset($existing[$key]);
             }//end foreach
-            // If the table's collation differs from the desired one or any
-            // existing columns need encoding changes, run a table-wide CONVERT.
-            // Afterwards, apply stored column changes to restore explicit
-            // charsets/collations as necessary.
-            if (($existingCollation !== null && $existingCollation !== $tableCollation) || $columnsNeedConversion) {
+            // If the table's collation differs from the desired one, run a
+            // table-wide CONVERT and then reapply explicit column encodings.
+            // Otherwise, individually alter any columns that require charset
+            // conversion.
+            if ($existingCollation !== null && $existingCollation !== $tableCollation) {
                 $changes[] = "CONVERT TO CHARACTER SET $tableCharset COLLATE $tableCollation";
                 foreach ($postConvert as $stmt) {
                     $changes[] = $stmt['sql'];
                 }
             } else {
+                foreach ($columnsNeedConversion as $col => $info) {
+                    $sql = "CHANGE $col {$info['newsql']} CHARACTER SET $tableCharset COLLATE $tableCollation";
+                    if ($info['changeIndex'] !== null) {
+                        $changes[$info['changeIndex']] = $sql;
+                    } else {
+                        $changes[] = $sql;
+                    }
+                }
                 foreach ($postConvert as $stmt) {
                     if ($stmt['needsChange']) {
                         $changes[] = $stmt['sql'];
