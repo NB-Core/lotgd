@@ -33,7 +33,7 @@ class TableDescriptor
      * @param array  $descriptor Schema description to match against.
      * @param bool   $nodrop     If true, columns not in the descriptor are left intact.
      *
-     * @return int|null Number of schema changes applied or null when none are required.
+     * @return int|null Number of schema changes applied. Creating a missing table counts as 1. Returns null when no changes are required or creation failed.
      */
     public static function synctable(string $tablename, array $descriptor, bool $nodrop = false): ?int
     {
@@ -47,9 +47,13 @@ class TableDescriptor
             if (!Database::query($sql)) {
                 output("`\$Error:`^ %s`n", Database::error());
                 rawoutput("<pre>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</pre>");
-            } else {
-                output("`^Table `#%s`^ created.`n", $tablename);
+
+                return null;
             }
+
+            output("`^Table `#%s`^ created.`n", $tablename);
+
+            return 1;
         } else {
             //the table exists, so we need to compare it against the descriptor.
             $existing = self::tableCreateDescriptor($tablename);

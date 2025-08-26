@@ -96,6 +96,17 @@ final class TableDescriptorTest extends TestCase
         $this->assertStringContainsString('DEFAULT CURRENT_TIMESTAMP(6)', $sql);
     }
 
+    public function testSynctableReturnsOneWhenTableCreated(): void
+    {
+        Database::$tableExists = false;
+        $descriptor = [
+            'id' => ['name' => 'id', 'type' => 'int'],
+        ];
+
+        $this->assertSame(1, TableDescriptor::synctable('dummy', $descriptor));
+        Database::$tableExists = true;
+    }
+
     public function testCollationIsCaptured(): void
     {
         Database::$full_columns_rows = [

@@ -20,6 +20,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static array $full_columns_rows = [];
         public static array $table_status_rows = [];
         public static array $collation_rows = [];
+        public static bool $tableExists = true;
         public static ?object $doctrineConnection = null;
         public static ?object $instance = null;
         public static array $queryCacheResults = [];
@@ -328,7 +329,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
 
         public static function tableExists(string $table): bool
         {
-            return true;
+            return self::$tableExists;
         }
 
         public static function queryCached(string $sql, string $name, int $duration = 900): array
