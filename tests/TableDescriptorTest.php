@@ -17,7 +17,7 @@ final class TableDescriptorTest extends TestCase
         Database::$keys_rows = [];
         Database::$full_columns_rows = [];
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
-        Database::$collation_rows = [];
+        Database::$collation_rows = [[['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']]];
     }
 
     public function testDefaultZeroIsDetected(): void
@@ -126,15 +126,15 @@ final class TableDescriptorTest extends TestCase
         $this->assertArrayNotHasKey('charset', $descriptor);
     }
 
-    public function testTableCreateFromDescriptorFallsBackToDefaultCharset(): void
+    public function testTableCreateFromDescriptorRejectsUnknownCollation(): void
     {
+        Database::$collation_rows = [[]];
         $descriptor = [
             'collation' => 'utf16',
             'id' => ['name' => 'id', 'type' => 'int'],
         ];
-        $sql = TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
-        $this->assertStringContainsString('DEFAULT CHARSET=utf8mb4', $sql);
-        $this->assertStringContainsString('COLLATE=utf16', $sql);
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
     }
 
     public function testSynctableAltersTableCollation(): void
@@ -151,6 +151,10 @@ final class TableDescriptorTest extends TestCase
         ];
         Database::$keys_rows = [];
         Database::$table_status_rows = [['Collation' => 'latin1_swedish_ci']];
+        Database::$collation_rows = [
+            [['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']],
+            [['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']],
+        ];
         $descriptor = [
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
@@ -200,6 +204,7 @@ final class TableDescriptorTest extends TestCase
         ];
         Database::$keys_rows = [];
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$collation_rows = [[['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']]];
         Database::$lastSql = '';
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringNotContainsString('CHANGE', Database::$lastSql);
@@ -268,7 +273,11 @@ final class TableDescriptorTest extends TestCase
         ];
         Database::$keys_rows = [];
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
-        Database::$collation_rows = [[], [['Collation' => 'latin1_swedish_ci']]];
+        Database::$collation_rows = [
+            [],
+            [['Collation' => 'latin1_swedish_ci']],
+            [['Collation' => 'latin1_swedish_ci', 'Charset' => 'latin1']],
+        ];
         $descriptor = [
             'charset' => 'latin1',
             'body' => ['name' => 'body', 'type' => 'text'],
@@ -302,6 +311,10 @@ final class TableDescriptorTest extends TestCase
         ];
         Database::$keys_rows = [];
         Database::$table_status_rows = [['Collation' => 'latin1_swedish_ci']];
+        Database::$collation_rows = [
+            [['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']],
+            [['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']],
+        ];
         Database::$lastSql = '';
         $descriptor = [
             'charset' => 'utf8mb4',
@@ -342,9 +355,35 @@ final class TableDescriptorTest extends TestCase
             ],
         ];
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$collation_rows = [
+            [['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']],
+        ];
         Database::$lastSql = '';
         TableDescriptor::synctable('dummy', $descriptor);
         $this->assertStringNotContainsString('CHANGE body body text', Database::$lastSql);
+    }
+
+    public function testSynctableRejectsUnknownCollation(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'utf8mb4_unicode_ci',
+            ],
+        ];
+        Database::$keys_rows = [];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$collation_rows = [[]];
+        $descriptor = [
+            'collation' => 'utf16',
+            'body' => ['name' => 'body', 'type' => 'text', 'default' => null],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::synctable('dummy', $descriptor);
     }
 
     public function testTableCreateFromDescriptorRejectsMismatchedTableCharsetAndCollation(): void
