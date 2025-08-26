@@ -17,6 +17,8 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static string $lastCacheName = '';
         public static array $describe_rows = [];
         public static array $keys_rows = [];
+        public static array $full_columns_rows = [];
+        public static array $table_status_rows = [];
         public static ?object $doctrineConnection = null;
         public static ?object $instance = null;
         public static array $queryCacheResults = [];
@@ -77,8 +79,18 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
                 return true;
             }
 
+            if (strpos($sql, 'SHOW FULL COLUMNS FROM') === 0) {
+                $last_query_result = self::$full_columns_rows;
+                return $last_query_result;
+            }
+
             if (strpos($sql, 'DESCRIBE ') === 0) {
                 $last_query_result = self::$describe_rows;
+                return $last_query_result;
+            }
+
+            if (strpos($sql, 'SHOW TABLE STATUS LIKE') === 0) {
+                $last_query_result = self::$table_status_rows;
                 return $last_query_result;
             }
 
@@ -93,6 +105,11 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             }
 
             $mysqli = self::getInstance();
+
+            if (strpos($sql, 'ALTER TABLE') === 0) {
+                $last_query_result = true;
+                return true;
+            }
 
             if (preg_match("/SELECT prefs,emailaddress FROM accounts WHERE acctid='?(\d+)'?/", $sql, $m)) {
                 $acctid = (int) $m[1];

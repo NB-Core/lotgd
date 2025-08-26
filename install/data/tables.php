@@ -962,6 +962,8 @@ function get_all_tables()
             )
         ),
     'mail' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'messageid' => array(
             'name' => 'messageid',
             'type' => 'int(11) unsigned',

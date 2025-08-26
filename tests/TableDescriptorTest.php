@@ -15,18 +15,20 @@ final class TableDescriptorTest extends TestCase
         class_exists(Database::class);
         Database::$describe_rows = [];
         Database::$keys_rows = [];
+        Database::$full_columns_rows = [];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
     }
 
     public function testDefaultZeroIsDetected(): void
     {
-        Database::$describe_rows = [
+        Database::$full_columns_rows = [
             [
                 'Field' => 'noaddskillpoints',
                 'Type' => 'tinyint unsigned',
                 'Null' => 'NO',
-                'Key' => '',
                 'Default' => '0',
                 'Extra' => '',
+                'Collation' => null,
             ],
         ];
         $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
@@ -35,23 +37,68 @@ final class TableDescriptorTest extends TestCase
 
     public function testDefaultNullIsDetected(): void
     {
-        Database::$describe_rows = [
+        Database::$full_columns_rows = [
             [
                 'Field' => 'somecolumn',
                 'Type' => 'int',
                 'Null' => 'YES',
-                'Key' => '',
                 'Default' => 'NULL',
                 'Extra' => '',
+                'Collation' => null,
             ],
         ];
         $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
         $expected = [
             'name' => 'somecolumn',
             'type' => 'int',
+            'null' => true,
             'default' => null,
         ];
 
         $this->assertSame($expected, $descriptor['somecolumn']);
+    }
+
+    public function testCollationIsCaptured(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'latin1_swedish_ci',
+            ],
+        ];
+        Database::$table_status_rows = [['Collation' => 'latin1_swedish_ci']];
+        $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
+        $this->assertSame('latin1_swedish_ci', $descriptor['body']['collation']);
+        $this->assertSame('latin1_swedish_ci', $descriptor['collation']);
+    }
+
+    public function testSynctableAltersTableCollation(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'body',
+                'Type' => 'text',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => 'latin1_swedish_ci',
+            ],
+        ];
+        Database::$keys_rows = [];
+        Database::$table_status_rows = [['Collation' => 'latin1_swedish_ci']];
+        $descriptor = [
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'body' => ['name' => 'body', 'type' => 'text'],
+        ];
+        TableDescriptor::synctable('dummy', $descriptor);
+        $this->assertStringContainsString(
+            'CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+            Database::$lastSql
+        );
     }
 }
