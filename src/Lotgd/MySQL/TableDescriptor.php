@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Lotgd\MySQL;
 
+/**
+ * Helper for creating, reading and synchronising table descriptors.
+ *
+ * The class is mostly used by the installer and upgrade routines to keep the
+ * database schema in step with the descriptors stored in the source code.
+ */
 class TableDescriptor
 {
 // translator ready
@@ -22,6 +28,12 @@ class TableDescriptor
 
     /**
      * Synchronise a table with the provided descriptor.
+     *
+     * @param string $tablename  Fully qualified table name.
+     * @param array  $descriptor Schema description to match against.
+     * @param bool   $nodrop     If true, columns not in the descriptor are left intact.
+     *
+     * @return int|null Number of schema changes applied or null when none are required.
      */
     public static function synctable(string $tablename, array $descriptor, bool $nodrop = false): ?int
     {
@@ -43,6 +55,9 @@ class TableDescriptor
             $existing = self::tableCreateDescriptor($tablename);
             $tableCharset = $descriptor['charset'] ?? null;
             $tableCollation = $descriptor['collation'] ?? null;
+            // Determine target table charset and collation: prefer explicit values
+            // from the descriptor, otherwise derive charset from the collation or
+            // fall back to UTF‑8 defaults.
             if (
                 $tableCharset
                 && $tableCollation
@@ -53,17 +68,20 @@ class TableDescriptor
                 );
             }
             if (!$tableCharset && $tableCollation) {
-                // Extract charset from collation only if it contains an underscore
+                // Pull charset from a supplied collation (eg. utf8mb4_unicode_ci
+                // -> utf8mb4). Unknown formats revert to utf8mb4.
                 if (strpos($tableCollation, '_') !== false) {
                     $tableCharset = explode('_', $tableCollation, 2)[0];
                 } else {
-                    // Collation format is unexpected; fallback to default charset
                     $tableCharset = 'utf8mb4';
                 }
             }
             if ($tableCharset && !$tableCollation) {
+                // Descriptor only provided charset – lookup the default collation
+                // MySQL would use for that charset.
                 $tableCollation = self::defaultCollation($tableCharset);
             }
+            // Final fallbacks used when neither descriptor value is given.
             $tableCharset = $tableCharset ?? 'utf8mb4';
             $tableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
             $existingCollation = $existing['collation'] ?? null;
@@ -72,6 +90,9 @@ class TableDescriptor
             reset($descriptor);
             $changes = array();
             $columnsNeedConversion = false;
+            // Statements to reapply explicit column encodings after a table level
+            // conversion. Filled only when columns request non-default charsets or
+            // collations.
             $postConvert = [];
             foreach ($descriptor as $key => $val) {
                 if ($key == "RequireMyISAM") {
@@ -105,6 +126,9 @@ class TableDescriptor
                     }
                 }
                 if (isset($existing[$key])) {
+                    // When the descriptor omits an encoding, strip the existing
+                    // charset/collation so comparisons use table defaults and mark
+                    // that a conversion may be required.
                     if (!isset($val['collation'])) {
                         $safeTableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
                         if (isset($existing[$key]['collation']) && $existing[$key]['collation'] !== $safeTableCollation) {
@@ -185,6 +209,10 @@ class TableDescriptor
                 }
                 unset($existing[$key]);
             }//end foreach
+            // If the table's collation differs from the desired one or any
+            // existing columns need encoding changes, run a table-wide CONVERT.
+            // Afterwards, apply stored column changes to restore explicit
+            // charsets/collations as necessary.
             if (($existingCollation !== null && $existingCollation !== $tableCollation) || $columnsNeedConversion) {
                 $changes[] = "CONVERT TO CHARACTER SET $tableCharset COLLATE $tableCollation";
                 foreach ($postConvert as $stmt) {
@@ -228,6 +256,11 @@ class TableDescriptor
 
     /**
      * Generate SQL to create a table from the given descriptor.
+     *
+     * @param string $tablename  Name of the table to create.
+     * @param array  $descriptor Column and option definitions.
+     *
+     * @return string Fully composed CREATE TABLE statement.
      */
     public static function tableCreateFromDescriptor(string $tablename, array $descriptor): string
     {
@@ -235,6 +268,7 @@ class TableDescriptor
         $type = "INNODB";
         $tableCharset = $descriptor['charset'] ?? null;
         $tableCollation = $descriptor['collation'] ?? null;
+        // Step 1: validate and normalise table level charset/collation options.
         if (
             $tableCharset
             && $tableCollation
@@ -254,6 +288,8 @@ class TableDescriptor
         if ($tableCharset && !$tableCollation) {
             $tableCollation = self::defaultCollation($tableCharset);
         }
+        // Step 2: remove table level options; loop through descriptor items to
+        //    build column/index SQL snippets.
         unset($descriptor['charset'], $descriptor['collation']);
         reset($descriptor);
         $i = 0;
@@ -311,6 +347,8 @@ class TableDescriptor
             $sql .= self::descriptorCreateSql($val);
             $i++;
         }
+        // Step 3: append engine and default encoding settings to final CREATE
+        //    TABLE statement.
         $sql .= ") Engine=$type";
         if ($tableCharset || $tableCollation) {
             $sql .= " DEFAULT CHARSET=" . ($tableCharset ?? 'utf8mb4');
@@ -325,6 +363,10 @@ class TableDescriptor
 
     /**
      * Build a descriptor array from an existing table.
+     *
+     * @param string $tablename Table to introspect.
+     *
+     * @return array Descriptor mirroring the current table structure.
      */
     public static function tableCreateDescriptor(string $tablename): array
     {
@@ -335,7 +377,8 @@ class TableDescriptor
     //reserved function words, expand if necessary, currently not a global setting
         $reserved_words = array('function', 'table','key');
 
-    //fetch column desc's
+    // 1. Fetch column definitions from the database and parse them into the
+    //    descriptor array.
         $sql = "SHOW FULL COLUMNS FROM $tablename";
         $result = Database::query($sql);
         while ($row = Database::fetchAssoc($result)) {
@@ -368,6 +411,8 @@ class TableDescriptor
             }
             $descriptor[$item['name']] = $item;
         }
+        // 2. Obtain table level charset/collation and then
+        // 3. Generate key/index entries.
         $tablename_escaped = addslashes($tablename);
         $status = Database::query("SHOW TABLE STATUS LIKE '$tablename_escaped'");
         $row = Database::fetchAssoc($status);
@@ -433,7 +478,11 @@ class TableDescriptor
     }
 
     /**
-     * Convert a descriptor element to SQL.
+     * Convert a descriptor element to a SQL fragment.
+     *
+     * @param array $input Descriptor for a column or index.
+     *
+     * @return string SQL definition suitable for inclusion in CREATE/ALTER statements.
      */
     public static function descriptorCreateSql(array $input): string
     {
@@ -497,6 +546,10 @@ class TableDescriptor
 
     /**
      * Normalise a descriptor type value.
+     *
+     * @param string $type Raw descriptor type.
+     *
+     * @return string Canonicalised type string.
      */
     public static function descriptorSanitizeType(string $type): string
     {
