@@ -90,8 +90,34 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
                 return $last_query_result;
             }
 
-            if (strpos($sql, 'SHOW TABLE STATUS LIKE') === 0) {
-                $last_query_result = self::$table_status_rows;
+            if (preg_match("/SHOW TABLE STATUS WHERE Name = '([^']+)'/i", $sql, $m)) {
+                $name = stripslashes($m[1]);
+                $rows = self::$table_status_rows;
+                if ($rows && array_key_exists('Name', $rows[0])) {
+                    $rows = array_values(
+                        array_filter(
+                            $rows,
+                            fn ($row) => ($row['Name'] ?? '') === $name
+                        )
+                    );
+                }
+                $last_query_result = $rows;
+                return $last_query_result;
+            }
+
+            if (preg_match("/SHOW TABLE STATUS LIKE '([^']+)'/i", $sql, $m)) {
+                $pattern = stripslashes($m[1]);
+                $regex = '/^' . str_replace(['%', '_'], ['.*', '.'], preg_quote($pattern, '/')) . '$/i';
+                $rows = self::$table_status_rows;
+                if ($rows && array_key_exists('Name', $rows[0])) {
+                    $rows = array_values(
+                        array_filter(
+                            $rows,
+                            fn ($row) => preg_match($regex, $row['Name'] ?? '')
+                        )
+                    );
+                }
+                $last_query_result = $rows;
                 return $last_query_result;
             }
 

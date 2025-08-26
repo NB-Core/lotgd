@@ -496,8 +496,8 @@ class TableDescriptor
         }
         // 2. Obtain table level charset/collation and then
         // 3. Generate key/index entries.
-        $tablename_escaped = addslashes($tablename);
-        $status = Database::query("SHOW TABLE STATUS LIKE '$tablename_escaped'");
+        $tablenameEsc = Database::escape($tablename);
+        $status = Database::query("SHOW TABLE STATUS WHERE Name = '$tablenameEsc'");
         $row = Database::fetchAssoc($status);
         if ($row && !empty($row['Collation'])) {
             $descriptor['collation'] = $row['Collation'];
