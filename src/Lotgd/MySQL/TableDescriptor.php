@@ -63,6 +63,7 @@ class TableDescriptor
             reset($descriptor);
             $changes = array();
             $columnsNeedConversion = false;
+            $postConvert = [];
             foreach ($descriptor as $key => $val) {
                 if ($key == "RequireMyISAM") {
                     continue;
@@ -109,15 +110,38 @@ class TableDescriptor
                         unset($existing[$key]['charset']);
                     }
                 }
+
                 $newsql = self::descriptorCreateSql($val);
+
+                $hasExplicitCharset = array_key_exists('charset', $val);
+                $hasExplicitCollation = array_key_exists('collation', $val);
+                $colCharset = $val['charset'] ?? null;
+                $colCollation = $val['collation'] ?? null;
+                if (!$colCharset && $colCollation && strpos($colCollation, '_') !== false) {
+                    $colCharset = explode('_', $colCollation, 2)[0];
+                }
+                if ($colCharset && !$colCollation) {
+                    $colCollation = self::defaultCollation($colCharset);
+                }
+                $needsPostConvert = ($hasExplicitCharset && $colCharset !== $tableCharset)
+                    || ($hasExplicitCollation && $colCollation !== $tableCollation);
+
                 if (!isset($existing[$key])) {
                     //this is a new column.
                     array_push($changes, "ADD $newsql");
+                    if ($needsPostConvert) {
+                        $postConvert[] = ['sql' => "CHANGE {$val['name']} $newsql", 'needsChange' => false];
+                    }
                 } else {
                     //this is an existing column, let's make sure the
                     //descriptors match.
                     $oldsql = self::descriptorCreateSql($existing[$key]);
-                    if ($oldsql != $newsql) {
+                    if ($needsPostConvert) {
+                        $postConvert[] = [
+                            'sql' => "CHANGE {$existing[$key]['name']} $newsql",
+                            'needsChange' => $oldsql != $newsql,
+                        ];
+                    } elseif ($oldsql != $newsql) {
                         //this descriptor line has changed.  Change the
                         //table to suit.
                         debug("Old: $oldsql<br>New:$newsql");
@@ -139,12 +163,21 @@ class TableDescriptor
                                 "CHANGE {$existing[$key]['name']} $newsql"
                             );
                         }
-                    }//end if
-                }//end if
+                    }
+                }
                 unset($existing[$key]);
             }//end foreach
             if (($existingCollation !== null && $existingCollation !== $tableCollation) || $columnsNeedConversion) {
                 $changes[] = "CONVERT TO CHARACTER SET $tableCharset COLLATE $tableCollation";
+                foreach ($postConvert as $stmt) {
+                    $changes[] = $stmt['sql'];
+                }
+            } else {
+                foreach ($postConvert as $stmt) {
+                    if ($stmt['needsChange']) {
+                        $changes[] = $stmt['sql'];
+                    }
+                }
             }
             //drop no longer needed columns
             if (!$nodrop) {
