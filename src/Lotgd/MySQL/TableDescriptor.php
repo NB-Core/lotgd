@@ -79,6 +79,14 @@ class TableDescriptor
                         $key = $val['name'];
                     }
                 }
+                if (isset($existing[$key])) {
+                    if (!isset($val['collation'])) {
+                        unset($existing[$key]['collation']);
+                    }
+                    if (!isset($val['charset'])) {
+                        unset($existing[$key]['charset']);
+                    }
+                }
                 $newsql = self::descriptorCreateSql($val);
                 if (!isset($existing[$key])) {
                     //this is a new column.
