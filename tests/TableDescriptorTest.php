@@ -72,6 +72,18 @@ final class TableDescriptorTest extends TestCase
         $this->assertStringContainsString('DEFAULT NULL', $sql);
     }
 
+    public function testDescriptorCreateSqlUnquotedExpressionDefault(): void
+    {
+        $descriptor = [
+            'name' => 'created',
+            'type' => 'datetime',
+            'default' => 'CURRENT_TIMESTAMP',
+        ];
+
+        $sql = TableDescriptor::descriptorCreateSql($descriptor);
+        $this->assertStringContainsString('DEFAULT CURRENT_TIMESTAMP', $sql);
+    }
+
     public function testCollationIsCaptured(): void
     {
         Database::$full_columns_rows = [
