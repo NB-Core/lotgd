@@ -59,6 +59,7 @@ class TableDescriptor
             unset($existing['charset'], $existing['collation']);
             reset($descriptor);
             $changes = array();
+            $columnsNeedConversion = false;
             foreach ($descriptor as $key => $val) {
                 if ($key == "RequireMyISAM") {
                     continue;
@@ -92,9 +93,16 @@ class TableDescriptor
                 }
                 if (isset($existing[$key])) {
                     if (!isset($val['collation'])) {
+                        $safeTableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
+                        if (isset($existing[$key]['collation']) && $existing[$key]['collation'] !== $safeTableCollation) {
+                            $columnsNeedConversion = true;
+                        }
                         unset($existing[$key]['collation']);
                     }
                     if (!isset($val['charset'])) {
+                        if (isset($existing[$key]['charset']) && $existing[$key]['charset'] !== $tableCharset) {
+                            $columnsNeedConversion = true;
+                        }
                         unset($existing[$key]['charset']);
                     }
                 }
@@ -132,7 +140,7 @@ class TableDescriptor
                 }//end if
                 unset($existing[$key]);
             }//end foreach
-            if ($existingCollation !== null && $existingCollation !== $tableCollation) {
+            if (($existingCollation !== null && $existingCollation !== $tableCollation) || $columnsNeedConversion) {
                 $changes[] = "CONVERT TO CHARACTER SET $tableCharset COLLATE $tableCollation";
             }
             //drop no longer needed columns
