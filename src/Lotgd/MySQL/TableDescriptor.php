@@ -30,7 +30,7 @@ class TableDescriptor
         if (!Database::tableExists($tablename)) {
             //the table doesn't exist, so we create it and are done.
             reset($descriptor);
-            $sql = table_create_from_descriptor($tablename, $descriptor);
+            $sql = self::tableCreateFromDescriptor($tablename, $descriptor);
             debug($sql);
             if (!Database::query($sql)) {
                 output("`\$Error:`^ %s`n", Database::error());
@@ -40,14 +40,19 @@ class TableDescriptor
             }
         } else {
             //the table exists, so we need to compare it against the descriptor.
-            $existing = table_create_descriptor($tablename);
+            $existing = self::tableCreateDescriptor($tablename);
+            $tableCharset = $descriptor['charset'] ?? 'utf8mb4';
+            $tableCollation = $descriptor['collation'] ?? 'utf8mb4_unicode_ci';
+            $existingCollation = $existing['collation'] ?? null;
+            unset($descriptor['charset'], $descriptor['collation']);
+            unset($existing['charset'], $existing['collation']);
             reset($descriptor);
             $changes = array();
             foreach ($descriptor as $key => $val) {
                 if ($key == "RequireMyISAM") {
                     continue;
                 }
-                $val['type'] = descriptor_sanitize_type($val['type']);
+                $val['type'] = self::descriptorSanitizeType($val['type']);
                 if (!isset($val['name'])) {
                     if (
                         ($val['type'] == "key" ||
@@ -74,14 +79,14 @@ class TableDescriptor
                         $key = $val['name'];
                     }
                 }
-                $newsql = descriptor_createsql($val);
+                $newsql = self::descriptorCreateSql($val);
                 if (!isset($existing[$key])) {
                     //this is a new column.
                     array_push($changes, "ADD $newsql");
                 } else {
                     //this is an existing column, let's make sure the
                     //descriptors match.
-                    $oldsql = descriptor_createsql($existing[$key]);
+                    $oldsql = self::descriptorCreateSql($existing[$key]);
                     if ($oldsql != $newsql) {
                         //this descriptor line has changed.  Change the
                         //table to suit.
@@ -108,6 +113,9 @@ class TableDescriptor
                 }//end if
                 unset($existing[$key]);
             }//end foreach
+            if ($existingCollation !== null && $existingCollation !== $tableCollation) {
+                $changes[] = "CONVERT TO CHARACTER SET $tableCharset COLLATE $tableCollation";
+            }
             //drop no longer needed columns
             if (!$nodrop) {
                 reset($existing);
@@ -144,6 +152,9 @@ class TableDescriptor
     {
         $sql = "CREATE TABLE $tablename (\n";
         $type = "INNODB";
+        $tableCharset = $descriptor['charset'] ?? null;
+        $tableCollation = $descriptor['collation'] ?? null;
+        unset($descriptor['charset'], $descriptor['collation']);
         reset($descriptor);
         $i = 0;
         foreach ($descriptor as $key => $val) {
@@ -186,10 +197,18 @@ class TableDescriptor
             if ($i > 0) {
                 $sql .= ",\n";
             }
-            $sql .= descriptor_createsql($val);
+            $sql .= self::descriptorCreateSql($val);
             $i++;
         }
         $sql .= ") Engine=$type";
+        if ($tableCharset || $tableCollation) {
+            $sql .= " DEFAULT CHARSET=" . ($tableCharset ?? 'utf8mb4');
+            if ($tableCollation) {
+                $sql .= " COLLATE=$tableCollation";
+            }
+        } else {
+            $sql .= " DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        }
         return $sql;
     }
 
@@ -206,7 +225,7 @@ class TableDescriptor
         $reserved_words = array('function', 'table','key');
 
     //fetch column desc's
-        $sql = "DESCRIBE $tablename";
+        $sql = "SHOW FULL COLUMNS FROM $tablename";
         $result = Database::query($sql);
         while ($row = Database::fetchAssoc($result)) {
             $item = array();
@@ -217,7 +236,7 @@ class TableDescriptor
                 $item['name'] = $row['Field'];
             }
             $item['type'] = $row['Type'];
-            if ($row['Null'] == "Yes") {
+            if ($row['Null'] == "YES") {
                 $item['null'] = true;
             }
             if (array_key_exists('Default', $row)) {
@@ -230,7 +249,17 @@ class TableDescriptor
             if (isset($row['Extra']) && !empty(trim($row['Extra']))) {
                 $item['extra'] = $row['Extra'];
             }
+            if (!empty($row['Collation'])) {
+                $item['collation'] = $row['Collation'];
+                $item['charset'] = explode('_', $row['Collation'], 2)[0];
+            }
             $descriptor[$item['name']] = $item;
+        }
+        $status = Database::query("SHOW TABLE STATUS LIKE '$tablename'");
+        $row = Database::fetchAssoc($status);
+        if ($row && !empty($row['Collation'])) {
+            $descriptor['collation'] = $row['Collation'];
+            $descriptor['charset'] = explode('_', $row['Collation'], 2)[0];
         }
         $sql = "SHOW KEYS FROM $tablename";
         $result = Database::query($sql);
@@ -312,6 +341,8 @@ class TableDescriptor
             . $input['type']
             . (isset($input['null']) && $input['null'] ? "" : " NOT NULL")
             . (isset($input['default']) ? " default '{$input['default']}'" : "")
+            . (isset($input['charset']) ? " CHARACTER SET {$input['charset']}" : "")
+            . (isset($input['collation']) ? " COLLATE {$input['collation']}" : "")
             . " " . $input['extra'];
         }
         return $return;
