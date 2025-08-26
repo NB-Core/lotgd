@@ -84,6 +84,17 @@ class TableDescriptor
             // Final fallbacks used when neither descriptor value is given.
             $tableCharset = $tableCharset ?? 'utf8mb4';
             $tableCollation = $tableCollation ?? 'utf8mb4_unicode_ci';
+            $collationEsc = Database::escape($tableCollation);
+            $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+            $row = Database::fetchAssoc($result);
+            if (!$row) {
+                throw new \InvalidArgumentException("Collation '$tableCollation' does not exist.");
+            }
+            if ($row['Charset'] !== $tableCharset) {
+                throw new \InvalidArgumentException(
+                    "Collation '$tableCollation' does not match charset '$tableCharset'."
+                );
+            }
             $existingCollation = $existing['collation'] ?? null;
             unset($descriptor['charset'], $descriptor['collation']);
             unset($existing['charset'], $existing['collation']);
@@ -287,6 +298,19 @@ class TableDescriptor
         }
         if ($tableCharset && !$tableCollation) {
             $tableCollation = self::defaultCollation($tableCharset);
+        }
+        if ($tableCollation) {
+            $collationEsc = Database::escape($tableCollation);
+            $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+            $row = Database::fetchAssoc($result);
+            if (!$row) {
+                throw new \InvalidArgumentException("Collation '$tableCollation' does not exist.");
+            }
+            if ($tableCharset && $row['Charset'] !== $tableCharset) {
+                throw new \InvalidArgumentException(
+                    "Collation '$tableCollation' does not match charset '$tableCharset'."
+                );
+            }
         }
         // Step 2: remove table level options; loop through descriptor items to
         //    build column/index SQL snippets.
