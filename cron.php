@@ -2,10 +2,11 @@
 
 require_once __DIR__ . '/autoload.php';
 
+use Lotgd\BootstrapErrorHandler;
+use Lotgd\ErrorHandler;
+use Lotgd\Mail;
 use Lotgd\Newday;
 use Lotgd\Settings;
-use Lotgd\Mail;
-use Lotgd\ErrorHandler;
 
 define('CRON_NEWDAY', 1);
 define('CRON_DBCLEANUP', 2);
@@ -19,12 +20,14 @@ if (!($settings instanceof Settings)) {
     $settings = new Settings('settings');
 }
 
-ErrorHandler::register();
+BootstrapErrorHandler::register();
 
 $result = @chdir($GAME_DIR);
 if (!defined('CRON_TEST')) {
     require_once 'common.php';
 }
+
+ErrorHandler::register();
 
 $cron_args = $argv;
 array_shift($cron_args);
