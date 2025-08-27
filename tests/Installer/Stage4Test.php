@@ -25,6 +25,9 @@ final class Stage4Test extends TestCase
         Database::$instance = null;
         Database::$doctrineConnection = null;
 
+        // Remove any existing dbconnect.php to ensure a clean state
+        @unlink(dirname(__DIR__, 2) . '/dbconnect.php');
+
         // Swap config directory with an empty one
         $this->configDir = dirname(__DIR__, 2) . '/config';
         $this->configBackup = $this->configDir . '_backup';
@@ -44,6 +47,9 @@ final class Stage4Test extends TestCase
         if (is_dir($this->configBackup)) {
             rename($this->configBackup, $this->configDir);
         }
+
+        // Clean up dbconnect.php created during the test run
+        @unlink(dirname(__DIR__, 2) . '/dbconnect.php');
 
         parent::tearDown();
     }
