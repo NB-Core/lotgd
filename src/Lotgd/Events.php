@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Http;
+use Lotgd\Util\ScriptName;
 
 class Events
 {
@@ -27,7 +28,7 @@ class Events
     public static function handleEvent(string $location, ?string $baseLink = null, ?string $needHeader = null): bool
     {
         if ($baseLink === null) {
-                $baseLink = substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], "/") + 1) . "?";
+                $baseLink = ScriptName::current() . '.php?';
         } else {
                 //debug("Base link was specified as $baseLink");
                 //debug(debug_backtrace());
