@@ -61,7 +61,10 @@ final class FreshInstallTest extends TestCase
         if (self::$serverAvailable) {
             exec(sprintf('mysqladmin --socket=%s -u %s shutdown >/dev/null 2>&1', self::SOCKET, self::DB_USER));
         }
-        @unlink(__DIR__ . '/../../dbconnect.php');
+        $file = __DIR__ . '/../../dbconnect.php';
+        if (is_file($file)) {
+            unlink($file);
+        }
     }
 
     public function testFreshInstall(): void
