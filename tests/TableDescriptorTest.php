@@ -107,6 +107,37 @@ final class TableDescriptorTest extends TestCase
         Database::$tableExists = true;
     }
 
+    public function testSynctableThrowsExceptionOnAlterFailure(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'id',
+                'Type' => 'int',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => null,
+            ],
+        ];
+        Database::$alterFail = true;
+
+        $descriptor = [
+            'id' => ['name' => 'id', 'type' => 'int'],
+            'name' => ['name' => 'name', 'type' => 'int'],
+        ];
+
+        $result = null;
+
+        try {
+            $result = TableDescriptor::synctable('dummy', $descriptor);
+            $this->fail('Expected exception was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertNull($result);
+        }
+
+        Database::$alterFail = false;
+    }
+
     public function testCollationIsCaptured(): void
     {
         Database::$full_columns_rows = [

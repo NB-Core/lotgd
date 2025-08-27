@@ -322,7 +322,13 @@ class TableDescriptor
                 //we have changes to do!  Woohoo!
                 $sql = "ALTER TABLE $tablename \n" . join(",\n", $changes);
                 debug(nl2br($sql));
-                Database::query($sql);
+                $result = Database::query($sql);
+                if ($result === false) {
+                    throw new \RuntimeException(Database::error());
+
+                    return null;
+                }
+
                 return count($changes);
             }
         // end if
