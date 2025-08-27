@@ -25,6 +25,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static ?object $instance = null;
         public static array $queryCacheResults = [];
         public static string $last_error = '';
+        public static bool $alterFail = false;
 
         public static function connect(string $host, string $user, string $pass): bool
         {
@@ -144,6 +145,12 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             $mysqli = self::getInstance();
 
             if (strpos($sql, 'ALTER TABLE') === 0) {
+                if (self::$alterFail) {
+                    self::$last_error = 'Alter table failed';
+                    $last_query_result = false;
+                    return false;
+                }
+
                 $last_query_result = true;
                 return true;
             }
