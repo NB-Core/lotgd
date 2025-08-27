@@ -325,8 +325,6 @@ class TableDescriptor
                 $result = Database::query($sql);
                 if ($result === false) {
                     throw new \RuntimeException(Database::error());
-
-                    return null;
                 }
 
                 return count($changes);
