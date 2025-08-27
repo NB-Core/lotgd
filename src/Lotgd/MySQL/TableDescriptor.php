@@ -428,8 +428,10 @@ class TableDescriptor
         //    build column/index SQL snippets.
         unset($descriptor['charset'], $descriptor['collation']);
         reset($descriptor);
+        $columnMap = [];
         $i = 0;
         foreach ($descriptor as $key => $val) {
+            $val['type'] = self::descriptorSanitizeType($val['type']);
             if ($key === "RequireMyISAM" && $val == 1) {
                 // Let's hope that we don't run into badly formatted strings
                 // but you know what, if we do, tough
@@ -502,6 +504,59 @@ class TableDescriptor
             }
             if ($colCharset && !$colCollation) {
                 $colCollation = self::defaultCollation($colCharset);
+            }
+            if ($val['type'] === 'key' || $val['type'] === 'unique key') {
+                $indexLimit = $type === 'MyISAM' ? 1000 : 767;
+                $columns = is_array($val['columns']) ? $val['columns'] : explode(',', $val['columns']);
+                $columnInfo = [];
+                $totalBytes = 0;
+                foreach ($columns as $col) {
+                    $col = trim($col);
+                    if ($col === '') {
+                        continue;
+                    }
+                    if (preg_match('/^`?([\w]+)`?(?:\((\d+)\))?$/', $col, $m)) {
+                        $name = $m[1];
+                        $prefix = isset($m[2]) ? (int) $m[2] : null;
+                        $def = $columnMap[$name] ?? null;
+                        $charset = $def['charset'] ?? $tableCharset;
+                        $bytesPerChar = $charset ? self::charsetBytes($charset) : 1;
+                        $length = $prefix ?? self::columnLength($def['type'] ?? '');
+                        $isString = $length !== null;
+                        $bytes = $isString ? $length * $bytesPerChar : self::numericBytes($def['type'] ?? '');
+                        $columnInfo[] = [
+                            'name'      => $name,
+                            'explicit'  => $prefix !== null,
+                            'length'    => $length,
+                            'bytes'     => $bytes,
+                            'bytesChar' => $bytesPerChar,
+                            'isString'  => $isString,
+                        ];
+                        $totalBytes += $bytes;
+                    }
+                }
+                if ($totalBytes > $indexLimit && $totalBytes > 0) {
+                    $ratio = $indexLimit / $totalBytes;
+                    foreach ($columnInfo as &$info) {
+                        if (!$info['isString']) {
+                            continue;
+                        }
+                        $newLen = max(1, (int) floor($info['length'] * $ratio));
+                        $info['length'] = $newLen;
+                    }
+                    unset($info);
+                }
+                $adjusted = [];
+                foreach ($columnInfo as $info) {
+                    $colStr = $info['name'];
+                    if ($info['isString'] && ($totalBytes > $indexLimit || $info['explicit'])) {
+                        $colStr .= '(' . $info['length'] . ')';
+                    }
+                    $adjusted[] = $colStr;
+                }
+                $val['columns'] = $adjusted;
+            } else {
+                $columnMap[$val['name']] = $val;
             }
             if ($i > 0) {
                 $sql .= ",\n";
@@ -640,6 +695,52 @@ class TableDescriptor
     }
 
     /**
+     * Determine the bytes-per-character for a charset.
+     */
+    private static function charsetBytes(string $charset): int
+    {
+        static $cache = [];
+        if (isset($cache[$charset])) {
+            return $cache[$charset];
+        }
+        $charsetEsc = Database::escape($charset);
+        $result = Database::query("SHOW CHARACTER SET WHERE Charset = '$charsetEsc'");
+        $row = Database::fetchAssoc($result);
+        $bytes = isset($row['Maxlen']) ? (int) $row['Maxlen'] : 1;
+        $cache[$charset] = $bytes;
+        return $bytes;
+    }
+
+    /**
+     * Extract the character length from a column type.
+     */
+    private static function columnLength(string $type): ?int
+    {
+        if (preg_match('/^(?:var)?char\((\d+)\)/i', $type, $m)) {
+            return (int) $m[1];
+        }
+        return null;
+    }
+
+    /**
+     * Approximate byte width for numeric columns.
+     */
+    private static function numericBytes(string $type): int
+    {
+        $type = strtolower($type);
+        return match (true) {
+            str_starts_with($type, 'tinyint')   => 1,
+            str_starts_with($type, 'smallint')  => 2,
+            str_starts_with($type, 'mediumint') => 3,
+            str_starts_with($type, 'bigint')    => 8,
+            str_starts_with($type, 'int')       => 4,
+            str_starts_with($type, 'double')    => 8,
+            str_starts_with($type, 'float')     => 4,
+            default                             => 0,
+        };
+    }
+
+    /**
      * Convert a descriptor element to a SQL fragment.
      *
      * @param array $input Descriptor for a column or index.
@@ -649,11 +750,19 @@ class TableDescriptor
     public static function descriptorCreateSql(array $input): string
     {
         $input['type'] = self::descriptorSanitizeType($input['type']);
+        if (isset($input['columns']) && is_array($input['columns'])) {
+            if (!empty($input['columns']) && is_array(current($input['columns']))) {
+                $cols = [];
+                foreach ($input['columns'] as $col) {
+                    $cols[] = $col['name'] . (isset($col['length']) ? '(' . $col['length'] . ')' : '');
+                }
+                $input['columns'] = implode(',', $cols);
+            } else {
+                $input['columns'] = implode(',', $input['columns']);
+            }
+        }
         if ($input['type'] == "key" || $input['type'] == 'unique key') {
             //this is a standard index
-            if (is_array($input['columns'])) {
-                $input['columns'] = join(",", $input['columns']);
-            }
             if (!isset($input['name'])) {
                 //if the user didn't define a name we should give it one
                 if (strpos($input['columns'], ",") !== false) {
@@ -675,9 +784,6 @@ class TableDescriptor
             . "({$input['columns']})";
         } elseif ($input['type'] == "primary key") {
             //this is a primary key
-            if (is_array($input['columns'])) {
-                $input['columns'] = join(",", $input['columns']);
-            }
             $return = "PRIMARY KEY ({$input['columns']})";
         } else {
             //this is a standard column
