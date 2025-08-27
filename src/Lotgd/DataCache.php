@@ -72,11 +72,10 @@ class DataCache
             }
 
             $dir = dirname($fullname);
-            if (is_file($dir)) {
-                return false;
-            }
-            if (!is_dir($dir) && !@mkdir($dir, 0777, true)) {
-                return false;
+            if (!is_dir($dir)) {
+                if (is_file($dir) || (!@mkdir($dir, 0777, true) && !is_dir($dir))) {
+                    return false;
+                }
             }
 
             $fp = @fopen($fullname, 'w');
