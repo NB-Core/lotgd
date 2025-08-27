@@ -71,6 +71,11 @@ class DataCache
                 return false;
             }
 
+            $dir = dirname($fullname);
+            if (!is_dir($dir) && !@mkdir($dir, 0777, true)) {
+                return false;
+            }
+
             $fp = @fopen($fullname, 'w');
             if ($fp === false) {
                 return false;
