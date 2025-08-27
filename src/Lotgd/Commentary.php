@@ -6,6 +6,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+use Lotgd\Util\ScriptName;
 
 class Commentary
 {
@@ -472,9 +473,9 @@ SQL;
         // The guard for null is removed as $section is declared as string and cannot be null.
 
         if ($scriptname_pre === false) {
-            $scriptname = $_SERVER['SCRIPT_NAME'];
+            $scriptname = ScriptName::current();
         } else {
-            $scriptname = $scriptname_pre;
+            $scriptname = pathinfo(basename((string) $scriptname_pre), PATHINFO_FILENAME);
         }
 
         if ($_SERVER['REQUEST_URI'] == '/async/process.php') {
@@ -509,11 +510,11 @@ SQL;
         }
         tlschema('commentary');
 
-        $nobios = ['motd.php' => true];
-        if (!array_key_exists(basename($scriptname), $nobios)) {
-            $nobios[basename($scriptname)] = false;
+        $nobios = ['motd' => true];
+        if (!array_key_exists($scriptname, $nobios)) {
+            $nobios[$scriptname] = false;
         }
-        $linkbios = !$nobios[basename($scriptname)];
+        $linkbios = !$nobios[$scriptname];
 
         if ($message == 'X') {
             $linkbios = true;
@@ -563,10 +564,10 @@ SQL;
         $sect = 'x';
 
         $del = Translator::translateInline('Del');
-        $scriptname = mb_substr($scriptname, strrpos($scriptname, '/') + 1);
+        $scriptnameForReturn = $scriptname . '.php';
         $pos = strpos($real_request_uri, '?');
-        $return = $scriptname . ($pos == false ? '' : mb_substr($real_request_uri, $pos));
-        $one = (strstr($return, '?') == false ? '?' : '&');
+        $return = $scriptnameForReturn . ($pos === false ? '' : mb_substr($real_request_uri, $pos));
+        $one = (strstr($return, '?') === false ? '?' : '&');
 
         $editrights = ($session['user']['superuser'] & SU_EDIT_COMMENTS ? 1 : 0);
         for (; $i >= 0; $i--) {
