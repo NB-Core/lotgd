@@ -171,13 +171,13 @@ if ($target = Database::fetchAssoc($result)) {
     tlschema();
 
     if ($ret == "") {
-        $return = substr($return, strrpos($return, "/") + 1);
+        $return = basename($return);
         tlschema("nav");
         Nav::add("Return");
         Nav::add("Return to the warrior list", $return);
         tlschema();
     } else {
-        $return = substr($return, strrpos($return, "/") + 1);
+        $return = basename($return);
         tlschema("nav");
         Nav::add("Return");
         if ($return == "list.php") {
@@ -194,13 +194,13 @@ if ($target = Database::fetchAssoc($result)) {
     Header::pageHeader("Character has been deleted");
     $output->output("This character is already deleted.");
     if ($ret == "") {
-        $return = substr($return, strrpos($return, "/") + 1);
+        $return = basename($return);
         tlschema("nav");
         Nav::add("Return");
         Nav::add("Return to the warrior list", $return);
         tlschema();
     } else {
-        $return = substr($return, strrpos($return, "/") + 1);
+        $return = basename($return);
         tlschema("nav");
         Nav::add("Return");
         if ($return == "list.php") {

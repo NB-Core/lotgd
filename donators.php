@@ -20,7 +20,7 @@ SuperuserNav::render();
 
 $ret = httpget('ret');
 $return = cmd_sanitize($ret);
-$return = substr($return, strrpos($return, "/") + 1);
+$return = basename($return);
 tlschema("nav");
 addnav("Return whence you came", $return);
 tlschema();
