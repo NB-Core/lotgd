@@ -11,6 +11,7 @@ use Lotgd\TwigTemplate;
 use Lotgd\Sanitize;
 use Lotgd\HolidayText;
 use Lotgd\Buffs;
+use Lotgd\Util\ScriptName;
 
 class Header
 {
@@ -28,7 +29,7 @@ class Header
         Translator::translatorSetup();
         Template::prepareTemplate();
         if (isset($SCRIPT_NAME)) {
-            $script = substr($SCRIPT_NAME, 0, strrpos($SCRIPT_NAME, '.'));
+            $script = ScriptName::current();
             if ($script) {
                 if (!array_key_exists($script, PageParts::$runHeaders)) {
                     PageParts::$runHeaders[$script] = false;
