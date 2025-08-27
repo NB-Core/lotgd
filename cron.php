@@ -1,6 +1,9 @@
 <?php
 
+require_once __DIR__ . '/autoload.php';
+
 use Lotgd\Newday;
+use Lotgd\Settings;
 
 define('CRON_NEWDAY', 1);
 define('CRON_DBCLEANUP', 2);
@@ -8,9 +11,11 @@ define('CRON_COMMENTCLEANUP', 4);
 define('CRON_CHARCLEANUP', 8);
 
 define("ALLOW_ANONYMOUS", true);
-require("settings.php");
+require 'settings.php';
+
+$settings = new Settings();
 $result = chdir($GAME_DIR);
-require_once("common.php");
+require_once 'common.php';
 
 $cron_args = $argv;
 array_shift($cron_args);
@@ -24,17 +29,17 @@ if (is_array($cron_args) && count($cron_args) < 1) {
 
 if (!$result || $GAME_DIR == '') {
     //ERROR, could not change the directory or directory empty
-    $email = getsetting('gameadminemail', '');
-    if ($email == '') {
+    $email = $settings->getSetting('gameadminemail', '');
+    if ($email === '') {
         exit(0); //well, we can't go further
     }
-    mail($email, "Cronjob Setup Screwed", sprintf("Sorry, but the gamedir is not set for your cronjob setup at your game at %s.\n\nPlease correct the error or you will have *NO* server newdays.", getsetting('serverurl', '')));
+    mail($email, 'Cronjob Setup Screwed', sprintf("Sorry, but the gamedir is not set for your cronjob setup at your game at %s.\n\nPlease correct the error or you will have *NO* server newdays.", $settings->getSetting('serverurl', '')));
     exit(0); //that's it.
 }
 
 /* Prevent execution if no value has been entered... if it is a wrong value, it will still break!*/
 if ($GAME_DIR != '') {
-        savesetting("newdaySemaphore", gmdate("Y-m-d H:i:s"));
+    $settings->saveSetting('newdaySemaphore', gmdate('Y-m-d H:i:s'));
     if ($executionstyle & CRON_NEWDAY) {
         Newday::runOnce();
     }
@@ -45,8 +50,8 @@ if ($GAME_DIR != '') {
         if (isset($cron_args[1])) {
             $force_db = (((int)$cron_args[1]) ? 1 : 0);
         }
-        if (strtotime(getsetting("lastdboptimize", date("Y-m-d H:i:s", strtotime("-1 day")))) < strtotime("-1 day") || $force_db) {
-                Newday::dbCleanup();
+        if (strtotime($settings->getSetting('lastdboptimize', date('Y-m-d H:i:s', strtotime('-1 day')))) < strtotime('-1 day') || $force_db) {
+            Newday::dbCleanup();
         }
     }
     if ($executionstyle & CRON_COMMENTCLEANUP) {
