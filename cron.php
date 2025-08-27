@@ -22,7 +22,7 @@ if (!($settings instanceof Settings)) {
 
 BootstrapErrorHandler::register();
 
-$result = @chdir($GAME_DIR);
+$result = ($GAME_DIR !== '' && is_dir($GAME_DIR)) ? chdir($GAME_DIR) : false;
 if (!defined('CRON_TEST')) {
     require_once 'common.php';
 }
