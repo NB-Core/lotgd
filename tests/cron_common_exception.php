@@ -14,8 +14,6 @@ if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') !== __FILE__) {
 use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Tests\Stubs\PHPMailer;
 
-$testFile = $argv[1] ?? null;
-
 global $settings, $GAME_DIR, $argv, $mail_sent_count, $output;
 
 $cacheDir = sys_get_temp_dir();
@@ -58,11 +56,7 @@ $output = new class {
     }
 };
 
-register_shutdown_function(function () use ($testFile, $GAME_DIR, $settingsFile, $originalSettings): void {
-    if ($testFile) {
-        file_put_contents($testFile, (string) ($GLOBALS['mail_sent_count'] ?? ''));
-    }
-
+register_shutdown_function(function () use ($GAME_DIR, $settingsFile, $originalSettings): void {
     file_put_contents($settingsFile, $originalSettings);
 
     $file = $GAME_DIR . '/common.php';
