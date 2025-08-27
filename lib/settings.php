@@ -31,7 +31,7 @@ function getsetting($settingname, $default)
 {
     global $settings;
     if (!($settings instanceof Settings)) {
-        return '';
+        $settings = new Settings('settings');
     }
     return $settings->getSetting($settingname, $default);
 }
