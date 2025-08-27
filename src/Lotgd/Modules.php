@@ -1189,7 +1189,7 @@ class Modules
     public static function moduleEvents(string $eventtype, int $basechance, ?string $baseLink = null): int
     {
         if ($baseLink === null) {
-            $baseLink = substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1) . '?';
+            $baseLink = ScriptName::current() . '.php?';
         }
 
         if (e_rand(1, 100) <= $basechance) {
@@ -1227,7 +1227,7 @@ class Modules
         global $navsection, $mostrecentmodule;
 
         if ($baseLink === null) {
-            $baseLink = substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1) . '?';
+            $baseLink = ScriptName::current() . '.php?';
         }
 
         if (!isset($mostrecentmodule)) {
@@ -1259,14 +1259,14 @@ class Modules
      */
     public static function displayEvents(string $eventtype, $forcescript = false): void
     {
-        global $PHP_SELF, $session;
+        global $session;
 
         if (!($session['user']['superuser'] & SU_DEVELOPER)) {
             return;
         }
 
         if ($forcescript === false) {
-            $script = substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1);
+            $script = ScriptName::current() . '.php';
         } else {
             $script = $forcescript;
         }

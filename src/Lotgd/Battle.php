@@ -10,6 +10,7 @@ use Lotgd\Buffs;
 use Lotgd\FightBar;
 use Lotgd\BellRand;
 use Lotgd\Substitute;
+use Lotgd\Util\ScriptName;
 
 class Battle
 {
@@ -350,7 +351,7 @@ class Battle
         global $session, $newenemies, $companions;
         tlschema('fightnav');
         if ($script === false) {
-            $script = substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1) . '?';
+            $script = ScriptName::current() . '.php?';
         } else {
             if (!strpos($script, '?')) {
                 $script .= '?';
