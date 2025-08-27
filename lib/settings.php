@@ -35,3 +35,13 @@ function getsetting($settingname, $default)
     }
     return $settings->getSetting($settingname, $default);
 }
+
+function get_admin_email($default = 'postmaster@localhost')
+{
+    global $settings;
+    if (!($settings instanceof Settings)) {
+        $settings = new Settings('settings');
+    }
+
+    return (string) $settings->getSetting('gameadminemail', $default);
+}
