@@ -12,6 +12,7 @@ use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
 use Lotgd\Mail;
+use Lotgd\Util\ScriptName;
 
 class Pvp
 {
@@ -268,7 +269,7 @@ class Pvp
             $location = $session['user']['location'];
         }
         if ($link === false) {
-            $link = basename($_SERVER['SCRIPT_NAME']);
+            $link = ScriptName::current() . '.php';
         }
         if ($extra === false) {
             $extra = '?act=attack';

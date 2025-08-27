@@ -14,6 +14,7 @@ use Lotgd\Translator;
 use Lotgd\Forms;
 use Lotgd\Sanitize;
 use Lotgd\Modules\Installer;
+use Lotgd\Util\ScriptName;
 
 class Modules
 {
@@ -378,7 +379,7 @@ class Modules
         }
 
         if (!is_array($args)) {
-            $where = $mostrecentmodule ?: ($_SERVER['SCRIPT_NAME'] ?? '');
+            $where = $mostrecentmodule ?: ScriptName::current();
             debug("Args parameter to modulehook $hookName from $where is not an array.");
         }
 

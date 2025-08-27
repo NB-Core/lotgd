@@ -6,6 +6,7 @@ namespace Lotgd\Async\Handler;
 
 use Jaxon\Response\Response;
 use Lotgd\Commentary as CoreCommentary;
+use Lotgd\Util\ScriptName;
 use function Jaxon\jaxon;
 
 /**
@@ -43,12 +44,12 @@ class Commentary
     {
         global $session;
         $comments = [];
-        $nobios = ['motd.php' => true];
-        $scriptname = $session['last_comment_scriptname'] ?? $_SERVER['SCRIPT_NAME'];
-        if (!array_key_exists(basename($scriptname), $nobios)) {
-            $nobios[basename($scriptname)] = false;
+        $nobios = ['motd' => true];
+        $scriptname = $session['last_comment_scriptname'] ?? ScriptName::current();
+        if (!array_key_exists($scriptname, $nobios)) {
+            $nobios[$scriptname] = false;
         }
-        $linkbios = !$nobios[basename($scriptname)];
+        $linkbios = !$nobios[$scriptname];
         $sql = 'SELECT ' . db_prefix('commentary') . '.*, '
             . db_prefix('accounts') . '.name, '
             . db_prefix('accounts') . '.acctid, '
