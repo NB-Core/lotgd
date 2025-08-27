@@ -6,6 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\MySQL\TableDescriptor;
 use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\DbMysqli;
 use PHPUnit\Framework\TestCase;
 
 final class TableDescriptorTest extends TestCase
@@ -401,6 +402,81 @@ final class TableDescriptorTest extends TestCase
             Database::$lastSql
         );
         $this->assertStringNotContainsString('CHANGE title', Database::$lastSql);
+    }
+
+    public function testSynctableReplacesZeroDatetime(): void
+    {
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'id',
+                'Type' => 'int',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => null,
+            ],
+            [
+                'Field' => 'created',
+                'Type' => 'datetime',
+                'Null' => 'NO',
+                'Default' => null,
+                'Extra' => '',
+                'Collation' => null,
+            ],
+        ];
+        Database::$keys_rows = [];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+        Database::$collation_rows = [[['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']]];
+
+        $mock = new class extends DbMysqli {
+            public array $table = [['id' => 1, 'created' => '0000-00-00 00:00:00']];
+
+            public function query(string $sql)
+            {
+                $this->queries[] = $sql;
+                if (preg_match(
+                    "/SELECT COUNT\(\*\) AS c FROM dummy WHERE created='0000-00-00 00:00:00'/",
+                    $sql
+                )) {
+                    $count = 0;
+                    foreach ($this->table as $row) {
+                        if ($row['created'] === '0000-00-00 00:00:00') {
+                            $count++;
+                        }
+                    }
+                    return [['c' => $count]];
+                }
+                if (preg_match(
+                    "/UPDATE dummy SET created='([^']+)' WHERE created='0000-00-00 00:00:00'/",
+                    $sql,
+                    $m
+                )) {
+                    foreach ($this->table as &$row) {
+                        if ($row['created'] === '0000-00-00 00:00:00') {
+                            $row['created'] = $m[1];
+                        }
+                    }
+                    return true;
+                }
+
+                return parent::query($sql);
+            }
+        };
+
+        $original = Database::$instance;
+        Database::$instance = $mock;
+
+        $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
+        $descriptor['extra'] = ['name' => 'extra', 'type' => 'int'];
+
+        try {
+            $changes = TableDescriptor::synctable('dummy', $descriptor);
+        } finally {
+            Database::$instance = $original;
+        }
+
+        $this->assertSame(DATETIME_DATEMIN, $mock->table[0]['created']);
+        $this->assertSame(1, $changes);
     }
 
     public function testSynctableDerivesCollationFromCharset(): void
