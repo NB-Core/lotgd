@@ -13,6 +13,7 @@ use Lotgd\Forms;
 use Lotgd\HolidayText;
 use Lotgd\Commentary;
 use Lotgd\Translator;
+use Lotgd\Util\ScriptName;
 
 class Moderate
 {
@@ -359,10 +360,10 @@ class Moderate
         }
 
         $del = Translator::translateInline('Del');
-        $scriptname = substr($_SERVER['SCRIPT_NAME'], strrpos($_SERVER['SCRIPT_NAME'], '/') + 1);
+        $scriptname = ScriptName::current() . '.php';
         $pos = strpos($_SERVER['REQUEST_URI'], '?');
-        $return = $scriptname . ($pos == false ? '' : substr($_SERVER['REQUEST_URI'], $pos));
-        $one = (strstr($return, '?') == false ? '?' : '&');
+        $return = $scriptname . ($pos === false ? '' : substr($_SERVER['REQUEST_URI'], $pos));
+        $one = (strstr($return, '?') === false ? '?' : '&');
 
         for (; $i >= 0; $i--) {
             $out = '';
@@ -399,7 +400,7 @@ class Moderate
         }
 
         if ($moderating) {
-            $scriptname = substr($_SERVER['SCRIPT_NAME'], strrpos($_SERVER['SCRIPT_NAME'], '/') + 1);
+            $scriptname = ScriptName::current() . '.php';
             addnav('', "$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']));
             $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
             $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
