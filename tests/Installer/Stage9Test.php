@@ -134,6 +134,15 @@ class Stage9Test extends TestCase
         );
     }
 
+    protected function tearDown(): void
+    {
+        $config = __DIR__ . '/../../dbconnect.php';
+
+        if (file_exists($config)) {
+            unlink($config);
+        }
+    }
+
     public function testStage9RunsMigrationsAndChecksForAdmin(): void
     {
         global $output;

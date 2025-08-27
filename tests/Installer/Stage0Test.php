@@ -8,22 +8,34 @@ use PHPUnit\Framework\TestCase;
 
 final class Stage0Test extends TestCase
 {
+    private string $config;
+    private string $backup;
+
+    protected function setUp(): void
+    {
+        $root          = dirname(__DIR__, 2);
+        $this->config  = $root . '/dbconnect.php';
+        $this->backup  = $this->config . '.bak';
+
+        if (file_exists($this->config)) {
+            rename($this->config, $this->backup);
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        if (file_exists($this->backup)) {
+            rename($this->backup, $this->config);
+        } elseif (file_exists($this->config)) {
+            unlink($this->config);
+        }
+    }
+
     public function testInstallerOutputsDefaultFavicon(): void
     {
-        $root = dirname(__DIR__, 2);
-        $config = $root . '/dbconnect.php';
-        $backup = $config . '.bak';
-
-        if (file_exists($config)) {
-            rename($config, $backup);
-        }
-
+        $root   = dirname(__DIR__, 2);
         $cmd    = sprintf('cd %s && php installer.php', escapeshellarg($root));
         $output = shell_exec($cmd);
-
-        if (file_exists($backup)) {
-            rename($backup, $config);
-        }
 
         $this->assertIsString($output);
         $this->assertStringContainsString('/images/favicon/favicon.ico', $output);
