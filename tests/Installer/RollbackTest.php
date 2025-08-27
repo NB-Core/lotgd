@@ -83,7 +83,7 @@ final class RollbackTest extends TestCase
     {
         $db = new class extends DbMysqli {
             public string $error = '';
-            public function connect($host, $user, $pass)
+            public function connect(string $host, string $user, string $pass): bool
             {
                 echo 'Access denied for user';
                 $this->error = 'Access denied for user';
