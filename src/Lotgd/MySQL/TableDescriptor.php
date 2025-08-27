@@ -561,7 +561,7 @@ class TableDescriptor
         if ($row && isset($row['Collation'])) {
             return $row['Collation'];
         }
-        return $candidate;
+        throw new \InvalidArgumentException("Charset '$charset' lacks a default collation.");
     }
 
     /**
