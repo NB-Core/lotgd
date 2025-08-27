@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\MySQL;
 
+use RuntimeException;
+
 /**
  * Helper for creating, reading and synchronising table descriptors.
  *
@@ -45,10 +47,7 @@ class TableDescriptor
             $sql = self::tableCreateFromDescriptor($tablename, $descriptor);
             debug($sql);
             if (!Database::query($sql)) {
-                output("`\$Error:`^ %s`n", Database::error());
-                rawoutput("<pre>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</pre>");
-
-                return null;
+                throw new RuntimeException(Database::error());
             }
 
             output("`^Table `#%s`^ created.`n", $tablename);
