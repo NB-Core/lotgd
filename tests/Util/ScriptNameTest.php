@@ -20,4 +20,16 @@ class ScriptNameTest extends TestCase
         $_SERVER['SCRIPT_NAME'] = '/village/';
         $this->assertSame('village', ScriptName::current());
     }
+
+    public function testPathWithoutSlash(): void
+    {
+        $_SERVER['SCRIPT_NAME'] = 'village.php';
+        $this->assertSame('village', ScriptName::current());
+    }
+
+    public function testPathWithoutSlashOrExtension(): void
+    {
+        $_SERVER['SCRIPT_NAME'] = 'village';
+        $this->assertSame('village', ScriptName::current());
+    }
 }
