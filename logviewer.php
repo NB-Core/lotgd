@@ -17,7 +17,8 @@ addnav('Navigation');
 SuperuserNav::render();
 
 $logDir = __DIR__ . '/logs';
-$requested = basename(httpget('file'));
+$param = httpget('file');
+$requested = $param !== false ? basename($param) : '';
 $files = [];
 if (is_dir($logDir)) {
     $files = array_values(array_filter(scandir($logDir), static function ($file) use ($logDir) {
