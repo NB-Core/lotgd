@@ -120,12 +120,16 @@ class ErrorHandler
     public static function errorNotify(int $errno, string $errstr, string $errfile, int $errline, string $backtrace): void
     {
         global $session, $settings;
+        if ((!isset($settings) || !($settings instanceof Settings)) && !function_exists('getsetting')) {
+            $settings = new Settings('settings');
+        }
+
         $sendto = explode(';', isset($settings) && $settings instanceof Settings
             ? $settings->getSetting('notify_address', '')
-            : getsetting('notify_address', ''));
+            : (function_exists('getsetting') ? getsetting('notify_address', '') : ''));
         $howoften = isset($settings) && $settings instanceof Settings
             ? $settings->getSetting('notify_every', 30)
-            : getsetting('notify_every', 30);
+            : (function_exists('getsetting') ? getsetting('notify_every', 30) : 30);
         $data = DataCache::datacache('error_notify', 86400);
         if (!is_array($data)) {
             $data = ['firstrun' => false, 'errors' => []];
@@ -166,7 +170,9 @@ class ErrorHandler
                     debug("Notifying $email of this error.");
                     $admin = isset($settings) && $settings instanceof Settings
                         ? $settings->getSetting('gameadminemail', 'postmaster@localhost')
-                        : getsetting('gameadminemail', 'postmaster@localhost');
+                        : (function_exists('getsetting')
+                            ? getsetting('gameadminemail', 'postmaster@localhost')
+                            : 'postmaster@localhost');
                     $from = [$admin => $admin];
                     \Lotgd\Mail::send([$email => $email], $body, $subject, $from, false, 'text/html');
                 }
@@ -194,9 +200,13 @@ class ErrorHandler
         $trace = Backtrace::show($exception->getTrace());
         self::renderError($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
 
+        if ((!isset($settings) || !($settings instanceof Settings)) && !function_exists('getsetting')) {
+            $settings = new Settings('settings');
+        }
+
         $notify = isset($settings) && $settings instanceof Settings
             ? (bool) $settings->getSetting('notify_on_error', 0)
-            : (bool) getsetting('notify_on_error', 0);
+            : (bool) (function_exists('getsetting') ? getsetting('notify_on_error', 0) : 0);
 
         if ($notify) {
             self::errorNotify(E_ERROR, $exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
