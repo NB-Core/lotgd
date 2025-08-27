@@ -194,7 +194,11 @@ class ErrorHandler
         $trace = Backtrace::show($exception->getTrace());
         self::renderError($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
 
-        if ($settings->getSetting('notify_on_error', 0)) {
+        $notify = isset($settings) && $settings instanceof Settings
+            ? (bool) $settings->getSetting('notify_on_error', 0)
+            : (bool) getsetting('notify_on_error', 0);
+
+        if ($notify) {
             self::errorNotify(E_ERROR, $exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
         }
     }
