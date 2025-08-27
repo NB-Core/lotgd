@@ -121,6 +121,22 @@ collation is rarely sensible. If you change it, be certain you understand why.
 Ensure that the application's output encoding matches the database encoding to
 avoid memory errors when strings are converted between PHP and MySQL.
 
+`synctable()` and `TableDescriptor::tableCreateFromDescriptor()` validate the
+provided charset and collation. They throw an `InvalidArgumentException` for
+unknown or incompatible pairs, and a `RuntimeException` if SQL execution fails.
+Installation scripts can catch these exceptions to surface clearer error
+messages:
+
+```php
+try {
+    synctable('mytable', $desc);
+} catch (\InvalidArgumentException $e) {
+    // unsupported charset/collation
+} catch (\RuntimeException $e) {
+    // SQL query failed
+}
+```
+
 ## Database Migrations
 
 The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory defined in `config/doctrine.php`.
