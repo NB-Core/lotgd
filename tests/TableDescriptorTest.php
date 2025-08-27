@@ -545,4 +545,15 @@ final class TableDescriptorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         TableDescriptor::synctable('dummy', $descriptor);
     }
+
+    public function testUnknownCharsetWithoutDefaultCollationThrows(): void
+    {
+        Database::$collation_rows = [[], []];
+        $descriptor = [
+            'charset' => 'mystery_charset',
+            'id' => ['name' => 'id', 'type' => 'int'],
+        ];
+        $this->expectException(\InvalidArgumentException::class);
+        TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+    }
 }
