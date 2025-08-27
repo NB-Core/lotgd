@@ -24,6 +24,12 @@ final class FreshInstallTest extends TestCase
         mysqli_report(MYSQLI_REPORT_OFF);
         ini_set('mysqli.default_socket', self::SOCKET);
 
+        exec('command -v mysqld >/dev/null 2>&1', $out, $ret);
+        if ($ret !== 0) {
+            self::markTestSkipped('MySQL server not available');
+            return;
+        }
+
         exec(sprintf('mysqladmin --socket=%s -u %s shutdown >/dev/null 2>&1', self::SOCKET, self::DB_USER));
         exec('pkill mysqld >/dev/null 2>&1');
 
@@ -44,6 +50,7 @@ final class FreshInstallTest extends TestCase
         }
         self::$serverAvailable = $started;
         if (! $started) {
+            self::markTestSkipped('MySQL server not available');
             return;
         }
 
