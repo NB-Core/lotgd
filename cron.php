@@ -24,7 +24,22 @@ BootstrapErrorHandler::register();
 
 $result = ($GAME_DIR !== '' && is_dir($GAME_DIR)) ? chdir($GAME_DIR) : false;
 if (!defined('CRON_TEST')) {
-    require_once 'common.php';
+    try {
+        require_once 'common.php';
+    } catch (\Throwable $e) {
+        error_log($e->getMessage());
+        $email = $settings->getSetting('gameadminemail', '');
+        if ($email !== '') {
+            $body = sprintf(
+                'Cronjob at %s failed to load common.php: %s',
+                $settings->getSetting('serverurl', ''),
+                $e->getMessage()
+            );
+            Mail::send([$email => $email], $body, 'Cronjob Error', [$email => $email]);
+        }
+
+        exit(1);
+    }
 }
 
 ErrorHandler::register();
