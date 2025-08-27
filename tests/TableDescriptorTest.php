@@ -96,6 +96,18 @@ final class TableDescriptorTest extends TestCase
         $this->assertStringContainsString('DEFAULT CURRENT_TIMESTAMP(6)', $sql);
     }
 
+    public function testDescriptorCreateSqlQuotedLowercaseDefault(): void
+    {
+        $descriptor = [
+            'name' => 'weapon',
+            'type' => 'varchar(255)',
+            'default' => 'Fists',
+        ];
+
+        $sql = TableDescriptor::descriptorCreateSql($descriptor);
+        $this->assertStringContainsString("DEFAULT 'Fists'", $sql);
+    }
+
     public function testSynctableReturnsOneWhenTableCreated(): void
     {
         Database::$tableExists = false;
