@@ -31,6 +31,10 @@ final class RollbackTest extends TestCase
         $GLOBALS['DB_USEDATACACHE'] = false;
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testInterruptedMigrationResumes(): void
     {
         $installer1 = new class extends Installer {
