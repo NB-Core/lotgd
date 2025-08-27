@@ -872,12 +872,13 @@ class Installer
             $sub = substr($version, 0, 5);
             $sub = (int)str_replace(".", "", $sub);
             if ($sub < 110) {
-                        $fp = fopen("dbconnect.php", "r+");
+                        $assignments = [];
+                        $fp = fopen('dbconnect.php', 'r+');
                 if ($fp) {
                     while (!feof($fp)) {
                         $buffer = fgets($fp, 4096);
-                        if (strpos($buffer, "$DB") !== false) {
-                            @eval($buffer);
+                        if (strpos($buffer, '$DB') !== false && preg_match('/\$(DB_[A-Z_]+)\s*=\s*([^;]*);/', $buffer, $matches)) {
+                            $assignments[$matches[1]] = trim($matches[2], " \t\"'");
                         }
                     }
                     fclose($fp);
@@ -886,13 +887,13 @@ class Installer
                     "<?php\n"
                     . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
                     . "return [\n"
-                    . "    'DB_HOST' => '{$DB_HOST}',\n"
-                    . "    'DB_USER' => '{$DB_USER}',\n"
-                    . "    'DB_PASS' => '{$DB_PASS}',\n"
-                    . "    'DB_NAME' => '{$DB_NAME}',\n"
-                    . "    'DB_PREFIX' => '{$DB_PREFIX}',\n"
-                    . "    'DB_USEDATACACHE' => " . ((int)$DB_USEDATACACHE) . ",\n"
-                    . "    'DB_DATACACHEPATH' => " . var_export($DB_DATACACHEPATH, true) . ",\n"
+                    . "    'DB_HOST' => '" . ($assignments['DB_HOST'] ?? '') . "',\n"
+                    . "    'DB_USER' => '" . ($assignments['DB_USER'] ?? '') . "',\n"
+                    . "    'DB_PASS' => '" . ($assignments['DB_PASS'] ?? '') . "',\n"
+                    . "    'DB_NAME' => '" . ($assignments['DB_NAME'] ?? '') . "',\n"
+                    . "    'DB_PREFIX' => '" . ($assignments['DB_PREFIX'] ?? '') . "',\n"
+                    . "    'DB_USEDATACACHE' => " . ((int)($assignments['DB_USEDATACACHE'] ?? 0)) . ",\n"
+                    . "    'DB_DATACACHEPATH' => " . var_export($assignments['DB_DATACACHEPATH'] ?? '', true) . ",\n"
                     . "];\n";
                 // Check if the file is writeable for us. If yes, we will change the file and notice the admin
                 // if not, they have to change the file themselves...
