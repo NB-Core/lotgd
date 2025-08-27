@@ -24,7 +24,31 @@ BootstrapErrorHandler::register();
 
 $result = ($GAME_DIR !== '' && is_dir($GAME_DIR)) ? chdir($GAME_DIR) : false;
 if (!defined('CRON_TEST')) {
-    require_once 'common.php';
+    try {
+        require_once 'common.php';
+    } catch (\Throwable $e) {
+        $message = sprintf(
+            '[%s] Cron common.php failure: %s in %s on line %d%s',
+            date('c'),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            PHP_EOL
+        );
+        error_log($message, 3, __DIR__ . '/logs/bootstrap.log');
+
+        $email = $settings->getSetting('gameadminemail', '');
+        if ($email !== '') {
+            $body = sprintf(
+                'Cronjob at %s failed to load common.php: %s',
+                $settings->getSetting('serverurl', ''),
+                $e->getMessage()
+            );
+            Mail::send([$email => $email], $body, 'Cronjob Error', [$email => $email]);
+        }
+
+        exit(1);
+    }
 }
 
 ErrorHandler::register();
