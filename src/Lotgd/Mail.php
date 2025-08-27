@@ -8,14 +8,33 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
-use Lotgd\Translator;
+use Lotgd\Censor;
+use Lotgd\DataCache;
 use Lotgd\MySQL\Database;
+use Lotgd\Sanitize;
 use Lotgd\Settings;
-use PHPMailer\PHPMailer\PHPMailer;
+use Lotgd\Translator;
 use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
 class Mail
 {
+    private static $settings = null;
+
+    private static function getSettings()
+    {
+        global $settings;
+        if (is_object($settings) && method_exists($settings, 'getSetting')) {
+            return $settings;
+        }
+
+        if (! is_object(self::$settings)) {
+            self::$settings = new Settings();
+        }
+
+        return self::$settings;
+    }
+
     /**
      * Send a system generated mail to a user.
      */
@@ -41,15 +60,16 @@ class Mail
             $subject = str_replace(["\n", '`n'], '', $subject);
             $body = SafeEscape::escape($body);
             if (!(isset($prefs['dirtyemail']) && $prefs['dirtyemail'])) {
-                $subject = soap($subject, false, 'mail');
-                $body = soap($body, false, 'mail');
+                $subject = Censor::soap($subject, false, 'mail');
+                $body = Censor::soap($body, false, 'mail');
             }
         }
 
-        $body = addslashes(substr(stripslashes($body), 0, (int)getsetting('mailsizelimit', 1024)));
+        $settings = self::getSettings();
+        $body = addslashes(substr(stripslashes($body), 0, (int) $settings->getSetting('mailsizelimit', 1024)));
         $sql = 'INSERT INTO ' . Database::prefix('mail') . " (msgfrom,msgto,subject,body,sent) VALUES ('" . (int)$from . "','" . (int)$to . "','$subject','$body','" . date('Y-m-d H:i:s') . "')";
         Database::query($sql);
-        invalidatedatacache("mail-$to");
+        DataCache::invalidatedatacache("mail-$to");
         $email = false;
         if (isset($prefs['emailonmail']) && $prefs['emailonmail'] && $from > 0) {
             $email = true;
@@ -66,7 +86,7 @@ class Mail
             $result = Database::query($sql);
             $row1 = Database::fetchAssoc($result);
             if (Database::numRows($result) > 0 && $row1['name'] != '') {
-                $fromline = full_sanitize($row1['name']);
+                $fromline = Sanitize::fullSanitize($row1['name']);
             } else {
                 $fromline = Translator::translateInline('The Green Dragon', 'mail');
             }
@@ -74,28 +94,29 @@ class Mail
             $result = Database::query($sql);
             $row1 = Database::fetchAssoc($result);
             Database::freeResult($result);
-            $toline = full_sanitize($row1['name']);
+            $toline = Sanitize::fullSanitize($row1['name']);
             $body = preg_replace("'[`]n'", "\n", $body);
-            $body = full_sanitize($body);
-            $subject = htmlentities(full_sanitize($subject), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+            $body = Sanitize::fullSanitize($body);
+            $subject = htmlentities(Sanitize::fullSanitize($subject), ENT_COMPAT, $settings->getSetting('charset', 'ISO-8859-1'));
             $settings_extended = new Settings('settings_extended');
-            $subj = translate_mail($settings_extended->getSetting('notificationmailsubject'), $to);
-            $msg = translate_mail($settings_extended->getSetting('notificationmailtext'), $to);
+            $subj = Translator::translateMail($settings_extended->getSetting('notificationmailsubject'), $to);
+            $msg = Translator::translateMail($settings_extended->getSetting('notificationmailtext'), $to);
             $replace = [
                 '{subject}' => stripslashes($subject),
                 '{sendername}' => $fromline,
                 '{receivername}' => $toline,
                 '{body}' => stripslashes($body),
-                '{gameurl}' => getsetting('serverurl', 'https://lotgd.com'),
+                '{gameurl}' => $settings->getSetting('serverurl', 'https://lotgd.com'),
             ];
             $mailbody = str_replace(array_keys($replace), array_values($replace), $msg);
             $mailsubj = str_replace(array_keys($replace), array_values($replace), $subj);
             $mailbody = str_replace('`n', "\n\n", $mailbody);
             $to_array = [$emailadd => $toline];
-            $from_array = [getsetting('gameadminemail', 'postmaster@localhost') => getsetting('gameadminemail', 'postmaster@localhost')];
+            $adminEmail = $settings->getSetting('gameadminemail', 'postmaster@localhost');
+            $from_array = [$adminEmail => $adminEmail];
             self::send($to_array, $mailbody, $mailsubj, $from_array, false, 'text/plain');
         }
-        invalidatedatacache("mail-$to");
+        DataCache::invalidatedatacache("mail-$to");
     }
 
     /**
@@ -110,12 +131,13 @@ class Mail
      */
     public static function send(array $to, string $body, string $subject, array $from, $cc = false, string $contenttype = 'text/plain'): bool
     {
-        $host = getsetting('gamemailhost', 'localhost');
-        $mailusername = getsetting('gamemailusername', '');
-        $mailpassword = getsetting('gamemailpassword', '');
-        $smtpauth = getsetting('gamemailsmtpauth', false);
-        $smtpsecure = getsetting('gamemailsmtpsecure', 'tls');
-        $port = getsetting('gamemailsmtpport', '587');
+        $settings = self::getSettings();
+        $host = $settings->getSetting('gamemailhost', 'localhost');
+        $mailusername = $settings->getSetting('gamemailusername', '');
+        $mailpassword = $settings->getSetting('gamemailpassword', '');
+        $smtpauth = $settings->getSetting('gamemailsmtpauth', false);
+        $smtpsecure = $settings->getSetting('gamemailsmtpsecure', 'tls');
+        $port = $settings->getSetting('gamemailsmtpport', '587');
 
         try {
             $mail = new PHPMailer(true);
@@ -164,7 +186,6 @@ class Mail
             return true;
         } catch (Exception $e) {
             error_log($mail->ErrorInfo);
-            debug(sprintf('Error sending notification mail: %s', $mail->ErrorInfo), true);
             return false;
         }
     }
@@ -176,7 +197,7 @@ class Mail
     {
         $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid=$messageId";
         Database::query($sql);
-        invalidatedatacache("mail-$userId");
+        DataCache::invalidatedatacache("mail-$userId");
     }
 
     /**
@@ -192,7 +213,7 @@ class Mail
         $ids = implode("','", array_map('intval', $messageIds));
         $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid IN ('$ids')";
         Database::query($sql);
-        invalidatedatacache("mail-$userId");
+        DataCache::invalidatedatacache("mail-$userId");
     }
 
     /**
@@ -202,7 +223,7 @@ class Mail
     {
         $sql = 'UPDATE ' . Database::prefix('mail') . " SET seen=0 WHERE msgto=$userId AND messageid=$messageId";
         Database::query($sql);
-        invalidatedatacache("mail-$userId");
+        DataCache::invalidatedatacache("mail-$userId");
     }
 
     /**
@@ -222,7 +243,7 @@ class Mail
      */
     public static function isInboxFull(int $userId, bool $onlyUnread = false): bool
     {
-        $limit = (int) getsetting('inboxlimit', 50);
+        $limit = (int) self::getSettings()->getSetting('inboxlimit', 50);
         return self::inboxCount($userId, $onlyUnread) >= $limit;
     }
 
@@ -283,7 +304,7 @@ class Mail
         $sql = 'UPDATE ' . Database::prefix('mail')
             . " SET seen=1 WHERE msgto='$userId' AND messageid='$messageId'";
         Database::query($sql);
-        invalidatedatacache("mail-$userId");
+        DataCache::invalidatedatacache("mail-$userId");
     }
 
     /**
