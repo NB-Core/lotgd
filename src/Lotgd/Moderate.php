@@ -188,12 +188,14 @@ class Moderate
         }
         tlschema('commentary');
 
+        $scriptname = ScriptName::current() . '.php';
+
         // Some pages should not link to character bios from commentary lines
         $nobios = ['motd.php' => true];
-        if (!array_key_exists(basename($_SERVER['SCRIPT_NAME']), $nobios)) {
-            $nobios[basename($_SERVER['SCRIPT_NAME'])] = false;
+        if (!array_key_exists($scriptname, $nobios)) {
+            $nobios[$scriptname] = false;
         }
-        $linkbios = !$nobios[basename($_SERVER['SCRIPT_NAME'])];
+        $linkbios = !$nobios[$scriptname];
         if ($message == 'X') {
             $linkbios = true;
         }
