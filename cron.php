@@ -27,7 +27,16 @@ if (!defined('CRON_TEST')) {
     try {
         require_once 'common.php';
     } catch (\Throwable $e) {
-        error_log($e->getMessage());
+        $message = sprintf(
+            '[%s] Cron common.php failure: %s in %s on line %d%s',
+            date('c'),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            PHP_EOL
+        );
+        error_log($message, 3, __DIR__ . '/logs/bootstrap.log');
+
         $email = $settings->getSetting('gameadminemail', '');
         if ($email !== '') {
             $body = sprintf(
