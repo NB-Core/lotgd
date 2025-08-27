@@ -197,6 +197,27 @@ class TableDescriptor
                 if (!$colCharset && $colCollation && strpos($colCollation, '_') !== false) {
                     $colCharset = explode('_', $colCollation, 2)[0];
                 }
+                if ($colCollation) {
+                    $colCollationEsc = Database::escape($colCollation);
+                    $result = Database::query(
+                        "SHOW COLLATION WHERE Collation = '$colCollationEsc'"
+                    );
+                    $row = Database::fetchAssoc($result);
+                    $name = $val['name'] ?? $key;
+                    if (!$row) {
+                        throw new \InvalidArgumentException(
+                            "Column '$name' collation '$colCollation' does not exist."
+                        );
+                    }
+                    if ($colCharset && $row['Charset'] !== $colCharset) {
+                        throw new \InvalidArgumentException(
+                            "Column '$name' collation '$colCollation' does not match charset '$colCharset'."
+                        );
+                    }
+                    if (!$colCharset) {
+                        $colCharset = $row['Charset'];
+                    }
+                }
                 if ($colCharset && !$colCollation) {
                     $colCollation = self::defaultCollation($colCharset);
                 }
@@ -427,6 +448,32 @@ class TableDescriptor
                 throw new \InvalidArgumentException(
                     "Column '{$val['name']}' charset '$colCharset' and collation '$colCollation' are incompatible."
                 );
+            }
+            if (!$colCharset && $colCollation && strpos($colCollation, '_') !== false) {
+                $colCharset = explode('_', $colCollation, 2)[0];
+            }
+            if ($colCollation) {
+                $colCollationEsc = Database::escape($colCollation);
+                $result = Database::query(
+                    "SHOW COLLATION WHERE Collation = '$colCollationEsc'"
+                );
+                $row = Database::fetchAssoc($result);
+                if (!$row) {
+                    throw new \InvalidArgumentException(
+                        "Column '{$val['name']}' collation '$colCollation' does not exist."
+                    );
+                }
+                if ($colCharset && $row['Charset'] !== $colCharset) {
+                    throw new \InvalidArgumentException(
+                        "Column '{$val['name']}' collation '$colCollation' does not match charset '$colCharset'."
+                    );
+                }
+                if (!$colCharset) {
+                    $colCharset = $row['Charset'];
+                }
+            }
+            if ($colCharset && !$colCollation) {
+                $colCollation = self::defaultCollation($colCharset);
             }
             if ($i > 0) {
                 $sql .= ",\n";
