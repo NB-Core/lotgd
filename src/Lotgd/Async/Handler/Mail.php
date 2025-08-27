@@ -19,18 +19,13 @@ class Mail
     {
         global $session;
 
-        if ($args === false) {
+        if ($args === false || empty($session['user']['acctid'])) {
             return jaxon()->newResponse();
         }
 
         $timeoutSetting = getsetting('LOGINTIMEOUT', 360); // seconds
         $new = maillink();
         $tabtext = maillinktabtext();
-
-        if (!isset($session['user']['acctid'])) {
-            error_log('mailStatus: session user acctid not set');
-            return jaxon()->newResponse();
-        }
 
         // Get the highest message ID for the current user there is
         $sql = 'SELECT MAX(messageid) AS lastid FROM ' . db_prefix('mail')
