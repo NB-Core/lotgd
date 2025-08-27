@@ -6,7 +6,8 @@ namespace Lotgd\Tests;
 
 use Lotgd\MySQL\TableDescriptor;
 use Lotgd\Tests\Stubs\Database;
-use Lotgd\Tests\Stubs\DbMysqli;
+use Lotgd\Tests\Stubs\DoctrineConnection;
+use Lotgd\Tests\Stubs\DoctrineResult;
 use PHPUnit\Framework\TestCase;
 
 final class TableDescriptorTest extends TestCase
@@ -19,6 +20,7 @@ final class TableDescriptorTest extends TestCase
         Database::$full_columns_rows = [];
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
         Database::$collation_rows = [[['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']]];
+        Database::$doctrineConnection = null;
     }
 
     public function testDefaultZeroIsDetected(): void
@@ -428,55 +430,58 @@ final class TableDescriptorTest extends TestCase
         Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
         Database::$collation_rows = [[['Collation' => 'utf8mb4_unicode_ci', 'Charset' => 'utf8mb4']]];
 
-        $mock = new class extends DbMysqli {
+        $mockConn = new class extends DoctrineConnection {
             public array $table = [['id' => 1, 'created' => '0000-00-00 00:00:00']];
 
-            public function query(string $sql)
+            public function executeQuery(string $sql): DoctrineResult
+            {
+                $this->queries[] = $sql;
+                if (str_starts_with($sql, 'SHOW FULL COLUMNS FROM dummy')) {
+                    return new DoctrineResult(Database::$full_columns_rows);
+                }
+                if (str_starts_with($sql, 'SHOW KEYS FROM dummy')) {
+                    return new DoctrineResult(Database::$keys_rows);
+                }
+                if (str_starts_with($sql, 'SHOW TABLE STATUS WHERE Name')) {
+                    return new DoctrineResult(Database::$table_status_rows);
+                }
+                if (str_starts_with($sql, 'SHOW COLLATION')) {
+                    $rows = array_shift(Database::$collation_rows);
+                    return new DoctrineResult($rows ?? []);
+                }
+                return new DoctrineResult([['c' => 0]]);
+            }
+
+            public function executeStatement(string $sql, array $params = []): int
             {
                 $this->queries[] = $sql;
                 if (preg_match(
-                    "/SELECT COUNT\(\*\) AS c FROM dummy WHERE created='0000-00-00 00:00:00'/",
+                    "/UPDATE dummy SET created = :DATETIME_DATEMIN WHERE created = '0000-00-00 00:00:00'/",
                     $sql
-                )) {
-                    $count = 0;
-                    foreach ($this->table as $row) {
-                        if ($row['created'] === '0000-00-00 00:00:00') {
-                            $count++;
-                        }
-                    }
-                    return [['c' => $count]];
-                }
-                if (preg_match(
-                    "/UPDATE dummy SET created='([^']+)' WHERE created='0000-00-00 00:00:00'/",
-                    $sql,
-                    $m
                 )) {
                     foreach ($this->table as &$row) {
                         if ($row['created'] === '0000-00-00 00:00:00') {
-                            $row['created'] = $m[1];
+                            $row['created'] = $params['DATETIME_DATEMIN'] ?? $row['created'];
                         }
                     }
-                    return true;
                 }
-
-                return parent::query($sql);
+                return 1;
             }
         };
-
-        $original = Database::$instance;
-        Database::$instance = $mock;
+        Database::$doctrineConnection = $mockConn;
 
         $descriptor = TableDescriptor::tableCreateDescriptor('dummy');
         $descriptor['extra'] = ['name' => 'extra', 'type' => 'int'];
+        $descriptor['created']['default'] = DATETIME_DATEMIN;
 
-        try {
-            $changes = TableDescriptor::synctable('dummy', $descriptor);
-        } finally {
-            Database::$instance = $original;
-        }
+        $changes = TableDescriptor::synctable('dummy', $descriptor);
 
-        $this->assertSame(DATETIME_DATEMIN, $mock->table[0]['created']);
-        $this->assertSame(1, $changes);
+        $this->assertSame(DATETIME_DATEMIN, $mockConn->table[0]['created']);
+        $this->assertSame(2, $changes);
+        $this->assertStringContainsString(
+            "DEFAULT '" . DATETIME_DATEMIN . "'",
+            Database::$lastSql
+        );
     }
 
     public function testSynctableDerivesCollationFromCharset(): void
