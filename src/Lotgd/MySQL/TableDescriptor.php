@@ -119,12 +119,17 @@ class TableDescriptor
             unset($descriptor['charset'], $descriptor['collation']);
             unset($existing['charset'], $existing['collation']);
             reset($descriptor);
+            $tablenameEsc = Database::escape($tablename);
+            $status = Database::query("SHOW TABLE STATUS WHERE Name = '$tablenameEsc'");
+            $statusRow = Database::fetchAssoc($status);
+            $engine = strtoupper($statusRow['Engine'] ?? 'INNODB');
             $changes = array();
             $columnsNeedConversion = [];
             // Statements to reapply explicit column encodings after a table level
             // conversion. Filled only when columns request non-default charsets or
             // collations.
             $postConvert = [];
+            $columnMap = [];
             foreach ($descriptor as $key => $val) {
                 if ($key == "RequireMyISAM") {
                     continue;
@@ -221,6 +226,9 @@ class TableDescriptor
                 if ($colCharset && !$colCollation) {
                     $colCollation = self::defaultCollation($colCharset);
                 }
+                if ($val['type'] === 'key' || $val['type'] === 'unique key') {
+                    [$val['columns']] = self::adjustIndexColumns($val['columns'], $columnMap, $tableCharset, $engine);
+                }
                 $newsql = self::descriptorCreateSql($val);
                 if (isset($existing[$key]) && isset($columnsNeedConversion[$existing[$key]['name']])
                     && $columnsNeedConversion[$existing[$key]['name']]['newsql'] === null) {
@@ -277,6 +285,13 @@ class TableDescriptor
                     }
                 }
                 unset($existing[$key]);
+                if (
+                    $val['type'] !== 'key'
+                    && $val['type'] !== 'unique key'
+                    && $val['type'] !== 'primary key'
+                ) {
+                    $columnMap[$val['name']] = $val;
+                }
             }//end foreach
             // If the table's collation differs from the desired one, run a
             // table-wide CONVERT and then reapply explicit column encodings.
@@ -506,55 +521,7 @@ class TableDescriptor
                 $colCollation = self::defaultCollation($colCharset);
             }
             if ($val['type'] === 'key' || $val['type'] === 'unique key') {
-                $indexLimit = $type === 'MyISAM' ? 1000 : 767;
-                $columns = is_array($val['columns']) ? $val['columns'] : explode(',', $val['columns']);
-                $columnInfo = [];
-                $totalBytes = 0;
-                foreach ($columns as $col) {
-                    $col = trim($col);
-                    if ($col === '') {
-                        continue;
-                    }
-                    if (preg_match('/^`?([\w]+)`?(?:\((\d+)\))?$/', $col, $m)) {
-                        $name = $m[1];
-                        $prefix = isset($m[2]) ? (int) $m[2] : null;
-                        $def = $columnMap[$name] ?? null;
-                        $charset = $def['charset'] ?? $tableCharset;
-                        $bytesPerChar = $charset ? self::charsetBytes($charset) : 1;
-                        $length = $prefix ?? self::columnLength($def['type'] ?? '');
-                        $isString = $length !== null;
-                        $bytes = $isString ? $length * $bytesPerChar : self::numericBytes($def['type'] ?? '');
-                        $columnInfo[] = [
-                            'name'      => $name,
-                            'explicit'  => $prefix !== null,
-                            'length'    => $length,
-                            'bytes'     => $bytes,
-                            'bytesChar' => $bytesPerChar,
-                            'isString'  => $isString,
-                        ];
-                        $totalBytes += $bytes;
-                    }
-                }
-                if ($totalBytes > $indexLimit && $totalBytes > 0) {
-                    $ratio = $indexLimit / $totalBytes;
-                    foreach ($columnInfo as &$info) {
-                        if (!$info['isString']) {
-                            continue;
-                        }
-                        $newLen = max(1, (int) floor($info['length'] * $ratio));
-                        $info['length'] = $newLen;
-                    }
-                    unset($info);
-                }
-                $adjusted = [];
-                foreach ($columnInfo as $info) {
-                    $colStr = $info['name'];
-                    if ($info['isString'] && ($totalBytes > $indexLimit || $info['explicit'])) {
-                        $colStr .= '(' . $info['length'] . ')';
-                    }
-                    $adjusted[] = $colStr;
-                }
-                $val['columns'] = $adjusted;
+                [$val['columns']] = self::adjustIndexColumns($val['columns'], $columnMap, $tableCharset, $type);
             } else {
                 $columnMap[$val['name']] = $val;
             }
@@ -738,6 +705,70 @@ class TableDescriptor
             str_starts_with($type, 'float')     => 4,
             default                             => 0,
         };
+    }
+
+    /**
+     * Adjust index column prefixes to satisfy engine key length limits.
+     *
+     * @param string|array $columns    Column list from the descriptor.
+     * @param array        $columnMap  Map of column definitions.
+     * @param string|null  $tableCharset Default table charset.
+     * @param string       $engine     Storage engine name.
+     *
+     * @return array{0: array, 1: bool} Adjusted column list and whether truncation occurred.
+     */
+    private static function adjustIndexColumns(string|array $columns, array $columnMap, ?string $tableCharset, string $engine): array
+    {
+        $indexLimit = strtoupper($engine) === 'MYISAM' ? 1000 : 767;
+        $columns = is_array($columns) ? $columns : explode(',', $columns);
+        $columnInfo = [];
+        $totalBytes = 0;
+        foreach ($columns as $col) {
+            $col = trim($col);
+            if ($col === '') {
+                continue;
+            }
+            if (preg_match('/^`?([\w]+)`?(?:\((\d+)\))?$/', $col, $m)) {
+                $name = $m[1];
+                $prefix = isset($m[2]) ? (int) $m[2] : null;
+                $def = $columnMap[$name] ?? null;
+                $charset = $def['charset'] ?? $tableCharset;
+                $bytesPerChar = $charset ? self::charsetBytes($charset) : 1;
+                $length = $prefix ?? self::columnLength($def['type'] ?? '');
+                $isString = $length !== null;
+                $bytes = $isString ? $length * $bytesPerChar : self::numericBytes($def['type'] ?? '');
+                $columnInfo[] = [
+                    'name'      => $name,
+                    'explicit'  => $prefix !== null,
+                    'length'    => $length,
+                    'bytes'     => $bytes,
+                    'bytesChar' => $bytesPerChar,
+                    'isString'  => $isString,
+                ];
+                $totalBytes += $bytes;
+            }
+        }
+        $needsTruncate = $totalBytes > $indexLimit && $totalBytes > 0;
+        if ($needsTruncate) {
+            $ratio = $indexLimit / $totalBytes;
+            foreach ($columnInfo as &$info) {
+                if (!$info['isString']) {
+                    continue;
+                }
+                $newLen = max(1, (int) floor($info['length'] * $ratio));
+                $info['length'] = $newLen;
+            }
+            unset($info);
+        }
+        $adjusted = [];
+        foreach ($columnInfo as $info) {
+            $colStr = $info['name'];
+            if ($info['isString'] && ($needsTruncate || $info['explicit'])) {
+                $colStr .= '(' . $info['length'] . ')';
+            }
+            $adjusted[] = $colStr;
+        }
+        return [$adjusted, $needsTruncate];
     }
 
     /**
