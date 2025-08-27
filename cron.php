@@ -4,6 +4,7 @@ require_once __DIR__ . '/autoload.php';
 
 use Lotgd\Newday;
 use Lotgd\Settings;
+use Lotgd\Mail;
 
 define('CRON_NEWDAY', 1);
 define('CRON_DBCLEANUP', 2);
@@ -11,11 +12,15 @@ define('CRON_COMMENTCLEANUP', 4);
 define('CRON_CHARCLEANUP', 8);
 
 define("ALLOW_ANONYMOUS", true);
-require 'settings.php';
+require __DIR__ . '/settings.php';
 
-$settings = new Settings();
-$result = chdir($GAME_DIR);
-require_once 'common.php';
+if (!($settings instanceof Settings)) {
+    $settings = new Settings('settings');
+}
+$result = @chdir($GAME_DIR);
+if (!defined('CRON_TEST')) {
+    require_once 'common.php';
+}
 
 $cron_args = $argv;
 array_shift($cron_args);
@@ -31,10 +36,20 @@ if (!$result || $GAME_DIR == '') {
     //ERROR, could not change the directory or directory empty
     $email = $settings->getSetting('gameadminemail', '');
     if ($email === '') {
-        exit(0); //well, we can't go further
+        if (!defined('CRON_TEST')) {
+            exit(0); //well, we can't go further
+        }
+        return;
     }
-    mail($email, 'Cronjob Setup Screwed', sprintf("Sorry, but the gamedir is not set for your cronjob setup at your game at %s.\n\nPlease correct the error or you will have *NO* server newdays.", $settings->getSetting('serverurl', '')));
-    exit(0); //that's it.
+    $body = sprintf(
+        "Sorry, but the gamedir is not set for your cronjob setup at your game at %s.\n\nPlease correct the error or you will have *NO* server newdays.",
+        $settings->getSetting('serverurl', '')
+    );
+    Mail::send([$email => $email], $body, 'Cronjob Setup Screwed', [$email => $email]);
+    if (!defined('CRON_TEST')) {
+        exit(0); //that's it.
+    }
+    return;
 }
 
 /* Prevent execution if no value has been entered... if it is a wrong value, it will still break!*/

@@ -59,6 +59,11 @@ class ErrorHandler
             return; // @ operator used
         }
         ini_set('display_errors', '1');
+        $hasSettings = is_object($settings) && method_exists($settings, 'getSetting');
+        if (!$settings instanceof Settings && !$hasSettings) {
+            $settings = new Settings('settings');
+            $hasSettings = true;
+        }
         $inErrorHandler++;
         if ($inErrorHandler > 1) {
             if ($errno & (E_USER_WARNING | E_WARNING)) {
@@ -72,9 +77,7 @@ class ErrorHandler
         switch ($errno) {
             case E_NOTICE:
             case E_USER_NOTICE:
-                $showNotices = isset($settings) && $settings instanceof Settings
-                    ? $settings->getSetting('show_notices', 0)
-                    : getsetting('show_notices', 0);
+                $showNotices = $hasSettings ? $settings->getSetting('show_notices', 0) : 0;
                 if ($showNotices && ($session['user']['superuser'] & SU_SHOW_PHPNOTICE)) {
                     debug("PHP Notice: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.");
                 }
@@ -90,7 +93,7 @@ class ErrorHandler
                 } else {
                     $backtrace = '';
                 }
-                if (isset($settings) && !empty($settings->getSetting('notify_on_warn', 0))) {
+                if ($hasSettings && !empty($settings->getSetting('notify_on_warn', 0))) {
                     self::errorNotify($errno, $errstr, $errfile, $errline, $backtrace);
                 }
                 break;
@@ -98,7 +101,7 @@ class ErrorHandler
             case E_USER_ERROR:
                 $backtrace = Backtrace::show();
                 self::renderError($errstr, $errfile, $errline, $backtrace);
-                if (isset($settings) && !empty($settings->getSetting('notify_on_error', 0))) {
+                if ($hasSettings && !empty($settings->getSetting('notify_on_error', 0))) {
                     self::errorNotify($errno, $errstr, $errfile, $errline, $backtrace);
                 }
                 die();
@@ -120,21 +123,16 @@ class ErrorHandler
     public static function errorNotify(int $errno, string $errstr, string $errfile, int $errline, string $backtrace): void
     {
         global $session, $settings;
-        if (!$settings instanceof Settings && !function_exists('getsetting')) {
+        $hasSettings = is_object($settings) && method_exists($settings, 'getSetting');
+        if (!$settings instanceof Settings && !$hasSettings) {
             $settings = new Settings('settings');
+            $hasSettings = true;
         }
 
-        $addressList = '';
-        if ($settings instanceof Settings) {
-            $addressList = (string) $settings->getSetting('notify_address', '');
-        } elseif (function_exists('getsetting')) {
-            $addressList = (string) getsetting('notify_address', '');
-        }
+        $addressList = $hasSettings ? (string) $settings->getSetting('notify_address', '') : '';
         $sendto = array_filter(array_map('trim', explode(';', $addressList)));
 
-        $howoften = $settings instanceof Settings
-            ? (int) $settings->getSetting('notify_every', 30)
-            : (function_exists('getsetting') ? (int) getsetting('notify_every', 30) : 30);
+        $howoften = $hasSettings ? (int) $settings->getSetting('notify_every', 30) : 30;
         $data = DataCache::datacache('error_notify', 86400);
         if (!is_array($data)) {
             $data = ['firstrun' => false, 'errors' => []];
@@ -173,11 +171,9 @@ class ErrorHandler
                 $body = $html_text;
                 foreach ($sendto as $email) {
                     debug("Notifying $email of this error.");
-                    $admin = $settings instanceof Settings
+                    $admin = $hasSettings
                         ? $settings->getSetting('gameadminemail', 'postmaster@localhost')
-                        : (function_exists('getsetting')
-                            ? getsetting('gameadminemail', 'postmaster@localhost')
-                            : 'postmaster@localhost');
+                        : 'postmaster@localhost';
                     $from = [$admin => $admin];
                     \Lotgd\Mail::send([$email => $email], $body, $subject, $from, false, 'text/html');
                 }
@@ -205,16 +201,13 @@ class ErrorHandler
         $trace = Backtrace::show($exception->getTrace());
         self::renderError($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
 
-        if (!$settings instanceof Settings && !function_exists('getsetting')) {
+        $hasSettings = is_object($settings) && method_exists($settings, 'getSetting');
+        if (!$settings instanceof Settings && !$hasSettings) {
             $settings = new Settings('settings');
+            $hasSettings = true;
         }
 
-        $notify = false;
-        if ($settings instanceof Settings) {
-            $notify = (bool) $settings->getSetting('notify_on_error', 0);
-        } elseif (function_exists('getsetting')) {
-            $notify = (bool) getsetting('notify_on_error', 0);
-        }
+        $notify = $hasSettings ? (bool) $settings->getSetting('notify_on_error', 0) : false;
 
         if ($notify) {
             self::errorNotify(E_ERROR, $exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
