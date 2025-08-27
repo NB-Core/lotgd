@@ -93,7 +93,6 @@ require_once("lib/settings.php");
 require_once("lib/buffs.php");
 require_once("lib/addnews.php");
 require_once("lib/template.php");
-require_once("lib/settings.php");
 require_once("lib/redirect.php");
 require_once("lib/censor.php");
 require_once("lib/saveuser.php");
@@ -102,7 +101,6 @@ require_once("lib/sql.php");
 require_once("lib/mounts.php");
 require_once("lib/debuglog.php");
 require_once("lib/datacache.php");
-require_once("lib/buffs.php");
 require_once("lib/fightnav.php");
 
 ErrorHandler::register();
