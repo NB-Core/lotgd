@@ -37,12 +37,13 @@ class PhpGenericEnvironment
             }
             $_SERVER['REQUEST_URI'] = $REQUEST_URI;
         }
-        $SCRIPT_NAME = substr($SCRIPT_NAME, strrpos($SCRIPT_NAME, '/') + 1);
+        $SCRIPT_NAME = basename($SCRIPT_NAME);
         if (strpos($REQUEST_URI, '?')) {
             $REQUEST_URI = $SCRIPT_NAME . substr($REQUEST_URI, strpos($REQUEST_URI, '?'));
         } else {
             $REQUEST_URI = $SCRIPT_NAME;
         }
+        $_SERVER['REQUEST_URI'] = $REQUEST_URI;
     }
 
     /**
