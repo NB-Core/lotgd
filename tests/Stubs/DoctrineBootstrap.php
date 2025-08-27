@@ -38,7 +38,7 @@ class DoctrineConnection
         return new DoctrineResult([["ok" => true]]);
     }
 
-    public function executeStatement(string $sql): int
+    public function executeStatement(string $sql, array $params = []): int
     {
         $this->queries[] = $sql;
         return 1;

@@ -334,8 +334,9 @@ class TableDescriptor
                 }
             }
             if (count($changes) > 0) {
-                // Before altering the table, normalise zero datetimes.
-                foreach ($existingColumns as $col) {
+                // Before altering the table, normalise zero datetimes for columns
+                // whose descriptor default is DATETIME_DATEMIN.
+                foreach ($descriptor as $key => $col) {
                     if (!is_array($col) || !isset($col['type'])) {
                         continue;
                     }
@@ -347,15 +348,16 @@ class TableDescriptor
                     ) {
                         continue;
                     }
-                    if (str_starts_with($type, 'datetime') || str_starts_with($type, 'timestamp')) {
-                        $column = $col['name'];
-                        $checkSql = "SELECT COUNT(*) AS c FROM $tablename WHERE $column='0000-00-00 00:00:00'";
-                        $res = Database::query($checkSql);
-                        $row = Database::fetchAssoc($res);
-                        if ($row && (int) ($row['c'] ?? 0) > 0) {
-                            $updateSql = "UPDATE $tablename SET $column='" . DATETIME_DATEMIN . "' WHERE $column='0000-00-00 00:00:00'";
-                            Database::query($updateSql);
+                    if (
+                        (str_starts_with($type, 'datetime') || str_starts_with($type, 'timestamp'))
+                        && (($col['default'] ?? null) === DATETIME_DATEMIN)
+                    ) {
+                        $column = $col['name'] ?? $key;
+                        if (!isset($existingColumns[$column])) {
+                            continue;
                         }
+                        $updateSql = "UPDATE $tablename SET $column = :DATETIME_DATEMIN WHERE $column = '0000-00-00 00:00:00'";
+                        Database::getDoctrineConnection()->executeStatement($updateSql, ['DATETIME_DATEMIN' => DATETIME_DATEMIN]);
                     }
                 }
                 //we have changes to do!  Woohoo!
