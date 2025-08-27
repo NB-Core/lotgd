@@ -20,13 +20,22 @@ $settings = new DummySettings([
     'gameadminemail'  => 'admin@example.com',
 ]);
 
-$GAME_DIR = '/PATH/TO/GAME';
-$argv = [];
+$GAME_DIR = sys_get_temp_dir() . '/cron-test-' . uniqid();
+$argv     = [];
 
 if (!is_dir($GAME_DIR)) {
     mkdir($GAME_DIR, 0777, true);
 }
 copy(__DIR__ . '/fixtures/cron_exception/common.php', $GAME_DIR . '/common.php');
+
+$settingsFile     = __DIR__ . '/../settings.php';
+$originalSettings = file_get_contents($settingsFile);
+$updatedSettings  = str_replace(
+    "\$GAME_DIR = '/PATH/TO/GAME';",
+    "\$GAME_DIR = '{$GAME_DIR}';",
+    $originalSettings
+);
+file_put_contents($settingsFile, $updatedSettings);
 
 $mail_sent_count = 0;
 new PHPMailer();
@@ -38,9 +47,19 @@ $output = new class {
     }
 };
 
-register_shutdown_function(function () use ($testFile): void {
+register_shutdown_function(function () use ($testFile, $GAME_DIR, $settingsFile, $originalSettings): void {
     if ($testFile) {
         file_put_contents($testFile, (string) ($GLOBALS['mail_sent_count'] ?? ''));
+    }
+
+    file_put_contents($settingsFile, $originalSettings);
+
+    $file = $GAME_DIR . '/common.php';
+    if (is_file($file)) {
+        unlink($file);
+    }
+    if (is_dir($GAME_DIR)) {
+        rmdir($GAME_DIR);
     }
 });
 
