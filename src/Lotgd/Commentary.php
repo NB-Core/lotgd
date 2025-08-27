@@ -144,7 +144,7 @@ SQL;
         $session['user']['specialinc'] == '';
 
         $returnPath = cmd_sanitize($returnPath);
-        $returnPath = mb_substr($returnPath, strrpos($returnPath, '/') + 1);
+        $returnPath = basename($returnPath);
         if (strpos($returnPath, '?') === false && strpos($returnPath, '&') !== false) {
             $x = strpos($returnPath, '&');
             $returnPath = mb_substr($returnPath, 0, $x - 1) . '?' . mb_substr($returnPath, $x + 1);
