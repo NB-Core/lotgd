@@ -81,9 +81,8 @@ class DbMysqli
         return '';
     }
 
-    public function escape(string $string): string
-    {
-        return $string;
+        // Mimic MySQLi real_escape_string for test purposes
+        return addslashes($string);
     }
 
     public function freeResult($result): bool
