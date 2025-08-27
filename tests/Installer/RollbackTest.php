@@ -9,7 +9,6 @@ use Lotgd\Output;
 use Lotgd\Tests\Stubs\DbMysqli;
 use PHPUnit\Framework\TestCase;
 
-/** @runTestsInSeparateProcesses */
 final class RollbackTest extends TestCase
 {
     private Output $output;
