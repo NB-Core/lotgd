@@ -36,17 +36,23 @@ class DumpItem
     /**
      * Dump an item as PHP code representation.
      *
-     * @param mixed  $item
+     * @param mixed  $item   Item to dump
      * @param string $indent Indentation characters
+     *
      * @return string
-     */
-    /**
-     * Return a PHP code representation of the supplied variable.
      */
     public static function dumpAsCode(mixed $item, string $indent = "\t"): string
     {
         $out = '';
-        $temp = is_array($item) ? $item : @unserialize($item);
+        $temp = $item;
+
+        if (is_string($item)) {
+            $unserialized = self::tryUnserialize($item);
+            if ($unserialized !== null) {
+                $temp = $unserialized;
+            }
+        }
+
         if (is_array($temp)) {
             $out .= "array(\n$indent";
             $row = [];
@@ -60,8 +66,36 @@ class DumpItem
             }
             $out .= "\n$indent)";
         } else {
-            $out .= "'" . htmlentities(addslashes($item), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "'";
+            $out .= "'" . htmlentities(addslashes((string) $temp), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "'";
         }
+
         return $out;
+    }
+
+    /**
+     * Attempt to unserialize a string without emitting warnings.
+     *
+     * @param string $value Serialized string
+     *
+     * @return mixed|null Unserialized value or null on failure
+     */
+    private static function tryUnserialize(string $value): mixed
+    {
+        try {
+            set_error_handler(static function (): bool {
+                return true;
+            });
+            $result = @unserialize($value);
+            restore_error_handler();
+
+            if (false === $result && 'b:0;' !== $value) {
+                return null;
+            }
+
+            return $result;
+        } catch (\Throwable) {
+            restore_error_handler();
+            return null;
+        }
     }
 }
