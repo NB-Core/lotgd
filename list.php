@@ -47,17 +47,29 @@ $totalplayers = $row['c'];
 
 $op = Http::get('op');
 $page = Http::get('page');
-$search = "";
-$limit = "";
+$search = '';
+$limit = '';
 
 if ($op == "search") {
-    $search = "%";
-    $n = Database::escape(Http::post('name'));
-    for ($x = 0; $x < strlen($n); $x++) {
-        $search .= substr($n, $x, 1) . "%";
+    $rawName = Http::post('name');
+    $n = '';
+
+    if (is_string($rawName)) {
+        $n = Database::escape($rawName);
     }
-    $search = " AND name LIKE '" . addslashes($search) . "' ";
-} else {
+
+    if ($n !== '') {
+        $search = "%";
+        for ($x = 0; $x < strlen($n); $x++) {
+            $search .= substr($n, $x, 1) . "%";
+        }
+        $search = " AND name LIKE '" . addslashes($search) . "' ";
+    } else {
+        $op = "";
+    }
+}
+
+if ($op !== "search") {
     $pageoffset = (int)$page;
     if ($pageoffset > 0) {
         $pageoffset--;
