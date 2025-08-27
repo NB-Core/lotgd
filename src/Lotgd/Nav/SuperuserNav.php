@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Nav;
 
+use Lotgd\Util\ScriptName;
+
 /**
  * Navigation helpers for superuser areas.
  */
@@ -18,7 +20,7 @@ class SuperuserNav
         tlschema('nav');
         addnav('Navigation');
         if ($session['user']['superuser'] & ~ SU_DOESNT_GIVE_GROTTO) {
-            $script = substr($SCRIPT_NAME, 0, strpos($SCRIPT_NAME, '.'));
+            $script = ScriptName::current();
             if ($script != 'superuser') {
                 $args = modulehook('grottonav');
                 if (!array_key_exists('handled', $args) || !$args['handled']) {

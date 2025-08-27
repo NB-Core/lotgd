@@ -14,6 +14,7 @@ use Lotgd\Buffs;
 use Lotgd\Nav;
 use Lotgd\Accounts;
 use Lotgd\MySQL\Database;
+use Lotgd\Util\ScriptName;
 
 class Footer
 {
@@ -31,7 +32,7 @@ class Footer
             $footer = $template['footer'];
         }
 
-        $script = !empty($SCRIPT_NAME) ? substr($SCRIPT_NAME, 0, strpos($SCRIPT_NAME, '.')) : '';
+        $script = ScriptName::current();
         list($header, $footer) = PageParts::applyFooterHooks($header, $footer, $script);
 
         $builtnavs = Nav::buildNavs();

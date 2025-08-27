@@ -18,6 +18,7 @@ use Lotgd\Nav;
 use Lotgd\LocalConfig;
 use Lotgd\PageParts;
 use Lotgd\Page\Header;
+use Lotgd\Util\ScriptName;
 use Lotgd\Page\Footer;
 use Lotgd\Redirect;
 use Lotgd\Template;
@@ -346,7 +347,7 @@ if (!AJAX_MODE) {
     ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS, OVERRIDE_FORCED_NAV);
 }
 
-$script = substr($SCRIPT_NAME, 0, strrpos($SCRIPT_NAME, "."));
+$script = ScriptName::current();
 if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
     mass_module_prepare(array(
                 'template-header','template-footer','template-statstart','template-stathead','template-statrow','template-statbuff','template-statend',
