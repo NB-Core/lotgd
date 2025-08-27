@@ -30,7 +30,7 @@ if ($op == "keepalive") {
     db_query($sql);
     $return = httpget('return');
     $return = cmd_sanitize($return);
-    $return = substr($return, strrpos($return, "/") + 1);
+    $return = basename($return);
     redirect($return);
 }
 

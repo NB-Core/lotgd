@@ -92,7 +92,7 @@ if ($op == "commentdelete") {
     db_query($sql);
     $return = httpget('return');
     $return = cmd_sanitize($return);
-    $return = substr($return, strrpos($return, "/") + 1);
+    $return = basename($return);
     if (strpos($return, "?") === false && strpos($return, "&") !== false) {
         $x = strpos($return, "&");
         $return = substr($return, 0, $x - 1) . "?" . substr($return, $x + 1);
