@@ -24,7 +24,6 @@ class Timeout
         }
 
         if (!isset($session['user'])) {
-            error_log('timeoutStatus: session user not set');
             return jaxon()->newResponse();
         }
 
