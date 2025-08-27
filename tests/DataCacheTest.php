@@ -77,6 +77,17 @@ final class DataCacheTest extends TestCase
         $this->assertFileDoesNotExist(DataCache::makecachetempname('failpath'));
     }
 
+    public function testUpdateCacheFailureWhenBasePathIsFile(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'cachefile');
+        $GLOBALS['settings']->saveSetting('datacachepath', $file);
+
+        $this->assertFalse(DataCache::updatedatacache('filebase', ['x' => 1]));
+        $this->assertFileDoesNotExist(DataCache::makecachetempname('filebase'));
+
+        unlink($file);
+    }
+
     public function testLongCacheKeyIsHashed(): void
     {
         $longKey = str_repeat('a', 250);
