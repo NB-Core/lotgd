@@ -15,7 +15,8 @@ final class PagePartsOnlineListTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $session, $settings, $output;
+        global $session, $settings, $output, $modulehook_returns;
+        $modulehook_returns = [];
         class_exists(Database::class);
         $session = ['loggedin' => false];
         $output = new Output();
@@ -39,8 +40,9 @@ final class PagePartsOnlineListTest extends TestCase
 
     protected function tearDown(): void
     {
-        global $session, $settings, $output;
+        global $session, $settings, $output, $modulehook_returns;
         unset($session, $settings, $output);
+        $modulehook_returns = [];
     }
 
     public function testMode0CurrentOnline(): void
