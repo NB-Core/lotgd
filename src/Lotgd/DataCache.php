@@ -72,6 +72,9 @@ class DataCache
             }
 
             $dir = dirname($fullname);
+            if (is_file($dir)) {
+                return false;
+            }
             if (!is_dir($dir) && !@mkdir($dir, 0777, true)) {
                 return false;
             }
