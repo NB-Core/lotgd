@@ -394,7 +394,7 @@ if (isset($settings) && $logd_version != $settings->getSetting('installer_versio
             Footer::pageFooter();
     }
         define("NO_SAVE_USER", true);
-} elseif (isset($settings) && $logd_version == $settings->getSetting("installer_version", "-1")  && file_exists('installer.php') && substr($_SERVER['SCRIPT_NAME'], -13) != "installer.php") {
+} elseif (isset($settings) && $logd_version == $settings->getSetting("installer_version", "-1")  && file_exists('installer.php') && basename($_SERVER['SCRIPT_NAME']) !== 'installer.php') {
         // here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
     if (!AJAX_MODE) {
             Header::pageHeader("Major Security Risk");
