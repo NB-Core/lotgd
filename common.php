@@ -82,7 +82,6 @@ require_once("lib/nav.php");
 require_once("lib/http.php");
 require_once("lib/e_rand.php");
 require_once("lib/pageparts.php");
-require_once("lib/sanitize.php");
 require_once("lib/tempstat.php");
 require_once("lib/su_access.php");
 require_once("lib/datetime.php");
