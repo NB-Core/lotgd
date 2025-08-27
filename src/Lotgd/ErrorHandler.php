@@ -117,20 +117,25 @@ class ErrorHandler
     /**
      * Send an e-mail notification about a PHP error.
      *
-     * @param int    $errno     PHP error level
-     * @param string $errstr    Error message
-     * @param string $errfile   File in which the error occurred
-     * @param int    $errline   Line number of the error
+     * @param int   $errno     PHP error level
+     * @param mixed $errstr    Error message
+     * @param string $errfile  File in which the error occurred
+     * @param int    $errline  Line number of the error
      * @param string $backtrace HTML stack trace
      * @return void
      */
-    public static function errorNotify(int $errno, string $errstr, string $errfile, int $errline, string $backtrace): void
+    public static function errorNotify(int $errno, $errstr, string $errfile, int $errline, string $backtrace): void
     {
         global $session, $settings;
         $hasSettings = is_object($settings) && method_exists($settings, 'getSetting');
         if (!$settings instanceof Settings && !$hasSettings) {
             $settings = new Settings('settings');
             $hasSettings = true;
+        }
+
+        $msg = is_string($errstr) ? $errstr : json_encode($errstr);
+        if (strlen($msg) <= 0) {
+            return;
         }
 
         $addressList = $hasSettings ? (string) $settings->getSetting('notify_address', '') : '';
@@ -155,9 +160,9 @@ class ErrorHandler
             }
         }
         $doNotice = false;
-        if (!array_key_exists($errstr, $data['errors'])) {
+        if (!array_key_exists($msg, $data['errors'])) {
             $doNotice = true;
-        } elseif (strtotime('now') - ($data['errors'][$errstr]) > $howoften * 60) {
+        } elseif (strtotime('now') - ($data['errors'][$msg]) > $howoften * 60) {
             $doNotice = true;
         }
         if (!isset($data['firstrun'])) {
@@ -171,8 +176,8 @@ class ErrorHandler
                 if ($session && isset($session['user']['name']) && isset($session['user']['acctid'])) {
                     $userstr = 'Error triggered by user ' . $session['user']['name'] . ' (' . $session['user']['acctid'] . ")\n";
                 }
-                $plain_text = "$userstr$errstr in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
-                $html_text = "<html><body>$errstr in $errfile ($errline)<hr>$backtrace</body></html>";
+                $plain_text = "$userstr$msg in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
+                $html_text = "<html><body>$msg in $errfile ($errline)<hr>$backtrace</body></html>";
                 $hostname = $_SERVER['HTTP_HOST'] ?? 'not called from browser, no hostname';
                 $subject = "$hostname $errno";
                 $body = $html_text;
@@ -184,9 +189,9 @@ class ErrorHandler
                     $from = [$admin => $admin];
                     \Lotgd\Mail::send([$email => $email], $body, $subject, $from, false, 'text/html');
                 }
-                $data['errors'][$errstr] = strtotime('now');
+                $data['errors'][$msg] = strtotime('now');
             } else {
-                debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$errstr]) / 60, 2) . ' minutes.');
+                debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$msg]) / 60, 2) . ' minutes.');
             }
         }
         if (!DataCache::updatedatacache('error_notify', $data)) {
