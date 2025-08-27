@@ -107,6 +107,37 @@ final class TableDescriptorTest extends TestCase
         Database::$tableExists = true;
     }
 
+    public function testSynctableThrowsExceptionOnCreateFailure(): void
+    {
+        Database::$tableExists = false;
+        $originalInstance = Database::$instance;
+        Database::$instance = new class {
+            public function query(string $sql)
+            {
+                return false;
+            }
+
+            public function error(): string
+            {
+                return 'creation failed';
+            }
+        };
+
+        $descriptor = [
+            'id' => ['name' => 'id', 'type' => 'int'],
+        ];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('creation failed');
+
+        try {
+            TableDescriptor::synctable('dummy', $descriptor);
+        } finally {
+            Database::$instance = $originalInstance;
+            Database::$tableExists = true;
+        }
+    }
+
     public function testSynctableThrowsExceptionOnAlterFailure(): void
     {
         Database::$full_columns_rows = [
