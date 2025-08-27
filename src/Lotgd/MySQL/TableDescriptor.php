@@ -56,6 +56,7 @@ class TableDescriptor
         } else {
             //the table exists, so we need to compare it against the descriptor.
             $existing = self::tableCreateDescriptor($tablename);
+            $existingColumns = $existing;
             $tableCharset = $descriptor['charset'] ?? null;
             $tableCollation = $descriptor['collation'] ?? null;
             // Determine target table charset and collation: prefer explicit values
@@ -318,6 +319,30 @@ class TableDescriptor
                 }
             }
             if (count($changes) > 0) {
+                // Before altering the table, normalise zero datetimes.
+                foreach ($existingColumns as $col) {
+                    if (!is_array($col) || !isset($col['type'])) {
+                        continue;
+                    }
+                    $type = strtolower($col['type']);
+                    if (
+                        $type === 'key'
+                        || $type === 'unique key'
+                        || $type === 'primary key'
+                    ) {
+                        continue;
+                    }
+                    if (str_starts_with($type, 'datetime') || str_starts_with($type, 'timestamp')) {
+                        $column = $col['name'];
+                        $checkSql = "SELECT COUNT(*) AS c FROM $tablename WHERE $column='0000-00-00 00:00:00'";
+                        $res = Database::query($checkSql);
+                        $row = Database::fetchAssoc($res);
+                        if ($row && (int) ($row['c'] ?? 0) > 0) {
+                            $updateSql = "UPDATE $tablename SET $column='" . DATETIME_DATEMIN . "' WHERE $column='0000-00-00 00:00:00'";
+                            Database::query($updateSql);
+                        }
+                    }
+                }
                 //we have changes to do!  Woohoo!
                 $sql = "ALTER TABLE $tablename \n" . join(",\n", $changes);
                 debug(nl2br($sql));
