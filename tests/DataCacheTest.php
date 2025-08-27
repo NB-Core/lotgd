@@ -70,7 +70,7 @@ final class DataCacheTest extends TestCase
 
     public function testUpdateCacheFailureOnBadPath(): void
     {
-        $invalidPath = '/nonexistent/' . uniqid();
+        $invalidPath = '/dev/null/' . uniqid();
         $GLOBALS['settings']->saveSetting('datacachepath', $invalidPath);
 
         $this->assertFalse(DataCache::updatedatacache('failpath', ['x' => 1]));
