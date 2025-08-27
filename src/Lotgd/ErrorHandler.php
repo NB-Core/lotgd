@@ -148,7 +148,8 @@ class ErrorHandler
         $data = DataCache::datacache('error_notify', 86400);
         if (!is_array($data)) {
             $data = ['firstrun' => false, 'errors' => []];
-            if (!DataCache::updatedatacache('error_notify', $data)) {
+            if ($settings->getSetting('usedatacache', 0)
+                && !DataCache::updatedatacache('error_notify', $data)) {
                 error_log('Unable to write datacache for error_notify');
             }
         } else {
@@ -194,7 +195,8 @@ class ErrorHandler
                 debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$msg]) / 60, 2) . ' minutes.');
             }
         }
-        if (!DataCache::updatedatacache('error_notify', $data)) {
+        if ($settings->getSetting('usedatacache', 0)
+            && !DataCache::updatedatacache('error_notify', $data)) {
             error_log('Unable to write datacache for error_notify');
         }
         debug($data);
