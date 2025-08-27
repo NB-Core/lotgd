@@ -7,3 +7,5 @@ config/composer.local.json
 config/async.settings.php
 .phpunit.result.cache
 dbconnect.php
+
+logs/*.log
