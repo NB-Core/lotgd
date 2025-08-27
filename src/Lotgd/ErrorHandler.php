@@ -131,6 +131,9 @@ class ErrorHandler
 
         $addressList = $hasSettings ? (string) $settings->getSetting('notify_address', '') : '';
         $sendto = array_filter(array_map('trim', explode(';', $addressList)));
+        if (empty($sendto)) {
+            $sendto = [$settings->getSetting('gameadminemail', 'postmaster@localhost')];
+        }
 
         $howoften = $hasSettings ? (int) $settings->getSetting('notify_every', 30) : 30;
         $data = DataCache::datacache('error_notify', 86400);
