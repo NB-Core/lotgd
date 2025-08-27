@@ -26,7 +26,11 @@ class ErrorHandler
      */
     public static function renderError(string $message, string $file, int $line, string $backtrace): void
     {
-        http_response_code(500);
+        if ('cli' === PHP_SAPI) {
+            error_log(sprintf('HTTP 500: "%s" in %s at %s', $message, $file, $line));
+        } elseif (!headers_sent()) {
+            http_response_code(500);
+        }
         echo "<!DOCTYPE html>\n";
         echo "<html lang='en'><head>\n";
         echo "<meta charset='UTF-8'>\n";
