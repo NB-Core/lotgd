@@ -755,4 +755,25 @@ final class TableDescriptorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
     }
+
+    public function testIndexColumnsAreAutoTruncated(): void
+    {
+        $descriptor = [
+            'name' => ['name' => 'name', 'type' => 'varchar(255)'],
+            'key-name' => ['type' => 'key', 'name' => 'name_idx', 'columns' => 'name'],
+        ];
+        $sql = TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+        $this->assertStringContainsString('KEY name_idx (name(191))', $sql);
+    }
+
+    public function testMultiColumnIndexTruncationIsDistributed(): void
+    {
+        $descriptor = [
+            'foo' => ['name' => 'foo', 'type' => 'varchar(255)'],
+            'bar' => ['name' => 'bar', 'type' => 'varchar(255)'],
+            'key-foobar' => ['type' => 'key', 'name' => 'foobar_idx', 'columns' => 'foo,bar'],
+        ];
+        $sql = TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+        $this->assertStringContainsString('KEY foobar_idx (foo(95),bar(95))', $sql);
+    }
 }

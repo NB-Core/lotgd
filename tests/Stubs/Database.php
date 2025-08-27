@@ -137,6 +137,26 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
                 return $last_query_result;
             }
 
+            if (strpos($sql, 'SHOW CHARACTER SET') === 0) {
+                $charset = 'utf8mb4';
+                if (preg_match("/WHERE Charset = '([^']+)'/i", $sql, $m)) {
+                    $charset = stripslashes($m[1]);
+                } elseif (preg_match("/LIKE '([^']+)'/i", $sql, $m)) {
+                    $charset = stripslashes($m[1]);
+                }
+                $maxlen = match ($charset) {
+                    'utf8mb4' => 4,
+                    'utf8'    => 3,
+                    'latin1'  => 1,
+                    default   => 1,
+                };
+                $last_query_result = [[
+                    'Charset' => $charset,
+                    'Maxlen'  => $maxlen,
+                ]];
+                return $last_query_result;
+            }
+
             if (strpos($sql, 'SHOW DATABASES LIKE') === 0) {
                 $last_query_result = [['Database' => 'lotgd']];
                 return $last_query_result;

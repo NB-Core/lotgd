@@ -181,6 +181,9 @@ $DB_DATACACHEPATH = "/your/caching/dir"; // without trailing slash
 
 - Translators should replace hard coded names in dialogues with `%s` using the Translation Wizard.
 - Verify that the server supported languages are configured correctly.
+- Index definitions that exceed MySQL's key length limits are now automatically
+  truncated by the installer. String columns in composite indexes are reduced to
+  safe prefixes (for example `(191)` for `utf8mb4`) when necessary.
 
 ----------------------------------------------------------------------
 
