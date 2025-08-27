@@ -1,8 +1,9 @@
 <?php
 
-use Lotgd\SuAccess;
-
 require_once __DIR__ . '/autoload.php';
+
+use Lotgd\BootstrapErrorHandler;
+use Lotgd\SuAccess;
 use Lotgd\AddNews;
 use Lotgd\Buffs;
 use Lotgd\Mounts;
@@ -23,6 +24,9 @@ use Lotgd\Template;
 use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
 use Lotgd\Cookies;
+use Lotgd\ErrorHandler;
+
+BootstrapErrorHandler::register();
 // translator ready
 // addnews ready
 // mail ready
@@ -67,8 +71,6 @@ require_once("lib/output.php");
 $output = new Output();
 LocalConfig::apply();
 require_once("src/Lotgd/Config/constants.php");
-use Lotgd\ErrorHandler;
-ErrorHandler::register();
 
 // Legacy, because modules may rely on that, but those files are already migrated to namespace structure
 require_once("lib/dbwrapper.php");
@@ -103,7 +105,7 @@ require_once("lib/datacache.php");
 require_once("lib/buffs.php");
 require_once("lib/fightnav.php");
 
-
+ErrorHandler::register();
 
 //start the gzip compression
 if (isset($gz_handler_on) && $gz_handler_on) {
