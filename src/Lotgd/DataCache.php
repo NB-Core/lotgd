@@ -63,23 +63,27 @@ class DataCache
             return false;
         }
         if ($settings->getSetting('usedatacache', 0)) {
+            $base = $settings->getSetting('datacachepath', '/tmp');
+            if (file_exists($base) && !is_dir($base)) {
+                return false;
+            }
+            $parent = dirname($base);
+            if (!is_dir($parent)) {
+                return false;
+            }
+            if (!is_dir($base)) {
+                if (!@mkdir($base, 0777, true) && !is_dir($base)) {
+                    return false;
+                }
+            }
+
+            self::$path = $base;
             $fullname = self::makecachetempname($name);
             self::$cache[$name] = $data;
 
             $encoded = json_encode($data);
             if ($encoded === false) {
                 return false;
-            }
-
-            $dir = dirname($fullname);
-            if (is_file($dir)) {
-                return false;
-            }
-            if (!is_dir($dir)) {
-                @mkdir($dir, 0777, true);
-                if (!is_dir($dir)) {
-                    return false;
-                }
             }
 
             $fp = @fopen($fullname, 'w');
