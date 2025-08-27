@@ -23,6 +23,7 @@ class SuperuserNav
                 $args = modulehook('grottonav');
                 if (!array_key_exists('handled', $args) || !$args['handled']) {
                     addnav('G?Return to the Grotto', 'superuser.php');
+                    addnav('L?View Log Files', 'logviewer.php');
                 }
             }
         }
