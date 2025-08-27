@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Stubs;
 
+#[\AllowDynamicProperties]
 class PHPMailer
 {
     public array $to = [];
@@ -12,6 +13,17 @@ class PHPMailer
     public $Body = '';
     public $AltBody = '';
     public $Subject = '';
+    public $Host = '';
+    public $Username = '';
+    public $Password = '';
+    public $SMTPAuth = false;
+    public $SMTPSecure = '';
+    public $Port = 0;
+    public $From = '';
+    public $FromName = '';
+    public $WordWrap = 0;
+    public $CharSet = '';
+    public $ErrorInfo = '';
 
     public function __construct(bool $exc = false)
     {
