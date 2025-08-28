@@ -295,7 +295,23 @@ class Database
     public static function getServerVersion(): string
     {
         if (self::$doctrine) {
-            return self::$doctrine->getServerVersion();
+            $conn = self::$doctrine;
+
+            // Doctrine DBAL 3+ exposes "getNativeConnection" while older versions use
+            // "getWrappedConnection". Try both to access the underlying driver.
+            if (method_exists($conn, 'getNativeConnection')) {
+                $driverConn = $conn->getNativeConnection();
+            } elseif (method_exists($conn, 'getWrappedConnection')) {
+                $driverConn = $conn->getWrappedConnection();
+            } else {
+                $driverConn = null;
+            }
+
+            if ($driverConn && method_exists($driverConn, 'getServerVersion')) {
+                return $driverConn->getServerVersion();
+            }
+
+            return (string) $conn->fetchOne('SELECT VERSION()');
         }
 
         if (self::$instance) {
