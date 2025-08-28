@@ -300,7 +300,8 @@ $setup = array(
     "permacollect" => "Permanently collect untranslated texts (overrides the next settings!),bool",
     "collecttexts" => "Are we currently collecting untranslated texts?,viewonly",
     "tl_maxallowed" => "Collect untranslated texts if you have fewer player than this logged in. (0 never collects),int",
-    "charset" => "Which charset should be used for htmlentities?",
+    "charset" => "Which charset should be used for htmlentities?,viewonly",
+    "UTF-8 is enforced as the character encoding and cannot be changed.,note",
 
     "Error Notification,title",
     "Note: you MUST have data caching turned on if you want to use this feature.  Also the first error within any 24 hour period will not generate a notice; I'm sorry: that's really just how it is for technical reasons.,note",
