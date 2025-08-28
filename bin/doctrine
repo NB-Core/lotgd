@@ -1,0 +1,39 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$argv = $_SERVER['argv'];
+array_shift($argv); // remove script name
+
+$fromVersion = null;
+$filtered = [];
+while ($argv) {
+    $arg = array_shift($argv);
+    if (str_starts_with($arg, '--from-version=')) {
+        $fromVersion = substr($arg, 15);
+        continue;
+    }
+    if ($arg === '--from-version') {
+        $fromVersion = array_shift($argv) ?: '';
+        continue;
+    }
+    $filtered[] = $arg;
+}
+
+if ($fromVersion !== null && $fromVersion !== '') {
+    $cmd = __DIR__ . '/legacy-upgrade --from-version ' . escapeshellarg($fromVersion);
+    passthru($cmd, $code);
+    if ($code !== 0) {
+        exit($code);
+    }
+}
+
+$vendor = __DIR__ . '/../vendor/bin/doctrine-migrations';
+$command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($vendor);
+if ($filtered) {
+    $command .= ' ' . implode(' ', array_map('escapeshellarg', $filtered));
+}
+
+passthru($command, $exitCode);
+exit($exitCode);
