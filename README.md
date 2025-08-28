@@ -207,6 +207,17 @@ If you have problems, please visit Dragonprime at the address above.
 
 Legacy installation and upgrade instructions have moved to
 [docs/LegacyREADME.md](docs/LegacyREADME.md).
+
+When upgrading from a legacy release, provide the version you are upgrading
+from through the `LOTGD_BASE_VERSION` environment variable before running the
+installer or Doctrine migrations. This allows migrations to load the
+appropriate legacy SQL.
+
+```bash
+LOTGD_BASE_VERSION="1.1.1 Dragonprime Edition" php vendor/bin/doctrine-migrations migrate
+```
+
+If the variable is omitted, legacy SQL migrations are skipped.
 - [Installation](#installation)
   - [Step 1: Clone the Repository](#step-1-clone-the-repository)
   - [Step 2: Set Up the Docker Environment](#step-2-set-up-the-docker-environment)

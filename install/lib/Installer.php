@@ -1496,6 +1496,9 @@ class Installer
 
         $from = $session['fromversion'] ?? '-1';
         if ($from !== '-1') {
+            // Expose the source version so migrations can load legacy SQL when upgrading
+            $_ENV['LOTGD_BASE_VERSION'] = $from;
+
             foreach ($map as $ver => $id) {
                 if (version_compare($from, $ver, '<')) {
                     $v = new Version($id);
