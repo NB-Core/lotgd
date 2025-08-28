@@ -14,7 +14,7 @@ use Lotgd\Nltoappon;
         Header::pageHeader("Update Clan Description / MoTD");
         Nav::add("Clan Options");
 if ($session['user']['clanrank'] >= CLAN_OFFICER) {
-    $clanmotd = Sanitize::sanitizeMb(mb_substr((string)Http::post('clanmotd'), 0, 4096));
+    $clanmotd = Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, getsetting('charset', 'ISO-8859-1')));
     if (
         Http::postIsset('clanmotd') &&
             stripslashes($clanmotd) != $claninfo['clanmotd']
