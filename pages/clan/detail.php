@@ -49,14 +49,14 @@ if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     Nav::add("", "clan.php?detail=$detail");
     $output->output("Superuser / Moderator renaming:`n");
     $output->output("Long Name: ");
-    $output->rawOutput("<input name='clanname' value=\"" . htmlentities($row1['clanname'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" maxlength=50 size=50>");
+    $output->rawOutput("<input name='clanname' value=\"" . htmlentities($row1['clanname'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" maxlength=50 size=50>");
     $output->output("`nShort Name: ");
-    $output->rawOutput("<input name='clanshort' value=\"" . htmlentities($row1['clanshort'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" maxlength=5 size=5>");
+    $output->rawOutput("<input name='clanshort' value=\"" . htmlentities($row1['clanshort'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" maxlength=5 size=5>");
     $output->outputNotl("`n");
     $save = Translator::translateInline("Save");
     $output->rawOutput("<input type='submit' class='button' value=\"$save\">");
-    $snu = htmlentities(Translator::translateInline("Save & UNblock public description"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
-    $snb = htmlentities(Translator::translateInline("Save & Block public description"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+    $snu = htmlentities(Translator::translateInline("Save & UNblock public description"), ENT_COMPAT, getsetting("charset", "UTF-8"));
+    $snb = htmlentities(Translator::translateInline("Save & Block public description"), ENT_COMPAT, getsetting("charset", "UTF-8"));
     if ($row1['descauthor'] == "4294967295") {
         $output->rawOutput("<input type='submit' name='unblock' value=\"$snu\" class='button'>");
     } else {

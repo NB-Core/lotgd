@@ -84,7 +84,7 @@ function namecolor_form()
     rawoutput($regname);
     output(", which looks like %s`7`n`n", $regname);
     output("How would you like your name to look?`n");
-    rawoutput("<form action='runmodule.php?module=namecolor&op=namepreview' method='POST'><input name='newname' value=\"" . HTmLEntities($regname, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"> <input type='submit' class='button' value='Preview'></form>");
+    rawoutput("<form action='runmodule.php?module=namecolor&op=namepreview' method='POST'><input name='newname' value=\"" . HTmLEntities($regname, ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"> <input type='submit' class='button' value='Preview'></form>");
     addnav("", "runmodule.php?module=namecolor&op=namepreview");
 }
 

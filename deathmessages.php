@@ -54,7 +54,7 @@ switch ($op) {
         $output->output("{where}         = The location like 'in the forest' or 'in the fields' or whatnot`n");
         $save = Translator::translateInline("Save");
         $output->output("`n`n`4Deathmessage: ");
-        $output->rawOutput("<input name='deathmessage' value=\"" . HTMLEntities($row['deathmessage'], ENT_COMPAT, Settings::getsetting("charset", "ISO-8859-1")) . "\" size='70'><br>");
+        $output->rawOutput("<input name='deathmessage' value=\"" . HTMLEntities($row['deathmessage'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\" size='70'><br>");
         $output->output("Is this a Forest Deathmessage: ");
         $output->rawOutput("<input name='forest' " . ((int)$row['forest'] ? "checked" : "") . " value='1' type='checkbox'><br>");
         $output->output("Is this a Graveyard Deathmessage: ");

@@ -48,7 +48,7 @@ if (Database::numRows($result) > 0) {
                 "&#149; &#60;%s&#62; <a href='clan.php?detail=%s'>%s</a> %s`n",
                 $row['clanshort'],
                 $row['clanid'],
-                htmlentities(Sanitize::fullSanitize($row['clanname']), ENT_COMPAT, getsetting("charset", "ISO-8859-1")),
+                htmlentities(Sanitize::fullSanitize($row['clanname']), ENT_COMPAT, getsetting("charset", "UTF-8")),
                 $memb,
                 true
             );

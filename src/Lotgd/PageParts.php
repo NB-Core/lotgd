@@ -579,7 +579,7 @@ class PageParts
                 "<input type='hidden' name='cmd' value='_xclick'>" .
                 "<input type='hidden' name='business' value='logd@mightye.org'>" .
                 "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from " . Sanitize::fullSanitize($session['user']['name']) . "'>" .
-                "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>" .
+                "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'UTF-8') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>" .
                 "<input type='hidden' name='no_shipping' value='1'>" .
                 "<input type='hidden' name='notify_url' value='http://lotgd.net/payment.php'>" .
                 "<input type='hidden' name='cn' value='Your Character Name'>" .
@@ -596,7 +596,7 @@ class PageParts
                 . "<input type='hidden' name='cmd' value='_xclick'>"
                 . "<input type='hidden' name='business' value='$paysite'>"
                 . "<input type='hidden' name='item_name' value='" . (isset($settings) ? $settings->getSetting('paypaltext', 'Legend of the Green Dragon Site Donation from') : 'Legend of the Green Dragon Site Donation From') . " " . Sanitize::fullSanitize($session['user']['name']) . "'>"
-                . "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>"
+                . "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'UTF-8') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>"
                 . "<input type='hidden' name='no_shipping' value='1'>";
             if (file_exists('payment.php')) {
                 $paypalstr .= "<input type='hidden' name='notify_url' value='http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . "/payment.php'>";

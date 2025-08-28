@@ -22,7 +22,7 @@ function mailAddress(int $id, string $preop): void
     $output->output("`b`2Address:`b`n");
     $to = Translator::translateInline("To: ");
     $forwardto = Translator::translateInline("Forward To: ");
-    $search = htmlentities(Translator::translateInline("Search"), ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+    $search = htmlentities(Translator::translateInline("Search"), ENT_COMPAT, getsetting("charset", "UTF-8"));
     $forwardlink = '';
 
     if ($id > 0) {
@@ -32,7 +32,7 @@ function mailAddress(int $id, string $preop): void
 
     $output->outputNotl(
         "`2$to <input name='to' id='to' value=\""
-        . htmlentities($preop, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))
+        . htmlentities($preop, ENT_COMPAT, getsetting("charset", "UTF-8"))
         . "\">",
         true
     );

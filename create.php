@@ -373,7 +373,7 @@ if (getsetting("allowcreation", 1) == 0) {
         output("`&`c`bCreate a Character`b`c`0");
         $refer = httpget('r');
         if ($refer) {
-            $refer = "&r=" . htmlentities($refer, ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+            $refer = "&r=" . htmlentities($refer, ENT_COMPAT, getsetting("charset", "UTF-8"));
         }
 
         rawoutput("<script src='lib/md5.js' defer></script>");

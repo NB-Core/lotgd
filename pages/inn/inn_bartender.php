@@ -103,7 +103,7 @@ if ($act == "") {
     $output->output("`% Got it?`0\"  You can practice below:");
     $output->rawOutput("<form action=\"$REQUEST_URI\" method='POST'>", true);
     $testtext = Http::post('testtext');
-    $output->output("You entered %s`n", prevent_colors(HTMLEntities($testtext, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))), true);
+    $output->output("You entered %s`n", prevent_colors(HTMLEntities($testtext, ENT_COMPAT, getsetting("charset", "UTF-8"))), true);
     $output->output("It looks like %s`n", $testtext);
     $try = translate_inline("Try");
     $output->rawOutput("<input name='testtext' id='input'>");

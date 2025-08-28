@@ -87,10 +87,10 @@ if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
     if ($session['user']['loggedin']) {
         $output->output("Your Character's Name: ");
         $output->outputNotl("%s", $session['user']['name']);
-        $output->rawOutput("<input type='hidden' name='charname' value=\"" . htmlentities($session['user']['name'], ENT_COMPAT, $settings->getSetting("charset", "ISO-8859-1")) . "\">");
+        $output->rawOutput("<input type='hidden' name='charname' value=\"" . htmlentities($session['user']['name'], ENT_COMPAT, $settings->getSetting("charset", "UTF-8")) . "\">");
         $output->output("`nYour email address: ");
         $output->outputNotl("%s", htmlentities($session['user']['emailaddress']));
-        $output->rawOutput("<input type='hidden' name='email' value=\"" . htmlentities($session['user']['emailaddress'], ENT_COMPAT, $settings->getSetting("charset", "ISO-8859-1")) . "\">");
+        $output->rawOutput("<input type='hidden' name='email' value=\"" . htmlentities($session['user']['emailaddress'], ENT_COMPAT, $settings->getSetting("charset", "UTF-8")) . "\">");
     } else {
         $output->output("Your Character's Name: ");
         $output->rawOutput("<input name='charname' size='46'>");
@@ -106,7 +106,7 @@ if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
     $types = $settings->getSetting('petition_types', 'General');
     $types = explode(",", $types);
     foreach ($types as $type) {
-        $type = htmlentities($type, ENT_COMPAT, $settings->getSetting("charset", "ISO-8859-1"));
+        $type = htmlentities($type, ENT_COMPAT, $settings->getSetting("charset", "UTF-8"));
         $output->rawOutput("<option value='" . $type . "'>$type</option>");
     }
     $output->rawOutput("</select><br/>");

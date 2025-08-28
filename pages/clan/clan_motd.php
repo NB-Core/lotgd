@@ -73,17 +73,17 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     $output->rawOutput("<form action='clan.php?op=motd' method='POST'>");
     Nav::add("", "clan.php?op=motd");
     $output->output("`&`bMoTD:`b `7(4096 chars)`n");
-    $output->rawOutput("<textarea name='clanmotd' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clanmotd'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea><br>");
+    $output->rawOutput("<textarea name='clanmotd' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clanmotd'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br>");
     $output->output("`n`&`bDescription:`b `7(4096 chars)`n");
     $blocked = Translator::translateInline("Your clan has been blocked from posting a description.`n");
     if ($claninfo['descauthor'] == INT_MAX) {
         $output->outputNotl($blocked);
     } else {
-        $output->rawOutput("<textarea name='clandesc' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clandesc'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</textarea><br>");
+        $output->rawOutput("<textarea name='clandesc' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clandesc'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br>");
     }
     if ($session['user']['clanrank'] >= CLAN_LEADER) {
         $output->output("`n`&`bCustom Talk Line`b `7(blank means \"says\" -- 15 chars max)`n");
-        $output->rawOutput("<input name='customsay' value=\"" . htmlentities($claninfo['customsay'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\" class='input' maxlength=\"15\"><br/>");
+        $output->rawOutput("<input name='customsay' value=\"" . htmlentities($claninfo['customsay'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" class='input' maxlength=\"15\"><br/>");
     }
     $save = Translator::translateInline("Save");
     $output->rawOutput("<input type='submit' class='button' value='$save'>");
