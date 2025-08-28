@@ -4,12 +4,17 @@
 // translator ready
 // mail ready
 
-$defines = array();
-function myDefine($name, $value)
-{
-    global $defines;
-    define($name, $value);
-    $defines[$name] = $value;
+if (!isset($defines)) {
+    $defines = array();
+}
+
+if (!function_exists('myDefine')) {
+    function myDefine($name, $value)
+    {
+        global $defines;
+        define($name, $value);
+        $defines[$name] = $value;
+    }
 }
 
 //Superuser constants
