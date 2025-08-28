@@ -8,6 +8,7 @@ use Lotgd\MySQL\TableDescriptor;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Tests\Stubs\DoctrineResult;
+use Lotgd\Tests\Stubs\DoctrineBootstrap;
 use PHPUnit\Framework\TestCase;
 
 final class TableDescriptorTest extends TestCase
@@ -15,6 +16,7 @@ final class TableDescriptorTest extends TestCase
     protected function setUp(): void
     {
         class_exists(Database::class);
+        class_exists(DoctrineBootstrap::class);
         Database::$describe_rows = [];
         Database::$keys_rows = [];
         Database::$full_columns_rows = [];
@@ -456,11 +458,14 @@ final class TableDescriptorTest extends TestCase
             {
                 $this->queries[] = $sql;
                 if (preg_match(
-                    "/UPDATE dummy SET created = :DATETIME_DATEMIN WHERE created = '0000-00-00 00:00:00'/",
+                    "/UPDATE dummy SET created = :DATETIME_DATEMIN WHERE created < :DATETIME_DATEMIN OR created = :zeroDate/",
                     $sql
                 )) {
                     foreach ($this->table as &$row) {
-                        if ($row['created'] === '0000-00-00 00:00:00') {
+                        if (
+                            $row['created'] < ($params['DATETIME_DATEMIN'] ?? $row['created'])
+                            || $row['created'] === '0000-00-00 00:00:00'
+                        ) {
                             $row['created'] = $params['DATETIME_DATEMIN'] ?? $row['created'];
                         }
                     }
@@ -482,6 +487,60 @@ final class TableDescriptorTest extends TestCase
             "DEFAULT '" . DATETIME_DATEMIN . "'",
             Database::$lastSql
         );
+    }
+
+    public function testSynctableConvertsZeroDatesWithoutException(): void
+    {
+        $conn = new class extends DoctrineConnection {
+            public function executeQuery(string $sql): DoctrineResult
+            {
+                $this->queries[] = $sql;
+                if (str_starts_with($sql, 'SHOW FULL COLUMNS FROM dummy')) {
+                    return new DoctrineResult(Database::$full_columns_rows);
+                }
+                if (str_starts_with($sql, 'SHOW KEYS FROM dummy')) {
+                    return new DoctrineResult(Database::$keys_rows);
+                }
+                if (str_starts_with($sql, 'SHOW TABLE STATUS WHERE Name')) {
+                    return new DoctrineResult(Database::$table_status_rows);
+                }
+                if (str_starts_with($sql, 'SHOW COLLATION')) {
+                    $rows = array_shift(Database::$collation_rows);
+                    return new DoctrineResult($rows ?? []);
+                }
+
+                return new DoctrineResult([['c' => 0]]);
+            }
+        };
+        Database::$doctrineConnection = $conn;
+        Database::$full_columns_rows = [
+            [
+                'Field' => 'created',
+                'Type' => 'datetime',
+                'Null' => 'NO',
+                'Default' => '0000-00-00 00:00:00',
+                'Extra' => '',
+                'Collation' => null,
+            ],
+        ];
+        Database::$table_status_rows = [['Collation' => 'utf8mb4_unicode_ci']];
+
+        $descriptor = [
+            'created' => ['name' => 'created', 'type' => 'datetime', 'default' => DATETIME_DATEMIN],
+        ];
+
+        $changes = TableDescriptor::synctable('dummy', $descriptor);
+
+        $this->assertSame(1, $changes);
+        $this->assertNotEmpty($conn->queries);
+        $found = false;
+        foreach ($conn->queries as $sql) {
+            if (str_contains($sql, '< :DATETIME_DATEMIN')) {
+                $found = true;
+                break;
+            }
+        }
+        $this->assertTrue($found, 'Normalization update was not executed');
     }
 
     public function testSynctableDerivesCollationFromCharset(): void
