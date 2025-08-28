@@ -32,7 +32,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
             stripslashes($clandesc) != $claninfo['clandesc'] &&
             $claninfo['descauthor'] != 4294967295
     ) {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET clandesc='" . addslashes(mb_substr(stripslashes($clandesc), 0, 4096, 'UTF-8')) . "',descauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
+        $sql = "UPDATE " . Database::prefix("clans") . " SET clandesc='" . addslashes(mb_substr(stripslashes($clandesc), 0, 4096, getsetting('charset', 'ISO-8859-1'))) . "',descauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);
         DataCache::invalidatedatacache("clandata-{$claninfo['clanid']}");
         $output->output("Updating description`n");
