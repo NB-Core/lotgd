@@ -321,7 +321,7 @@ if (isset($settings) && $logd_version == $settings->getSetting("installer_versio
     define("IS_INSTALLER", false);
 }
 
-$charset = isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'utf8';
+$charset = isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8';
 
 header("Content-Type: text/html; charset=" . $charset);
 
