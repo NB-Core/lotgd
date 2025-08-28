@@ -20,6 +20,8 @@ final class Version20250724000000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        require_once dirname(__DIR__) . '/src/Lotgd/Config/constants.php';
+
         Database::setDoctrineConnection($this->connection);
         require_once dirname(__DIR__) . '/install/data/tables.php';
         require_once dirname(__DIR__) . '/lib/tabledescriptor.php';
@@ -38,6 +40,8 @@ final class Version20250724000000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
+        require_once dirname(__DIR__) . '/src/Lotgd/Config/constants.php';
+
         Database::setDoctrineConnection($this->connection);
         require_once dirname(__DIR__) . '/install/data/tables.php';
         $tables = array_keys(get_all_tables());
