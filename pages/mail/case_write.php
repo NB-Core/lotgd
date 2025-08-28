@@ -155,13 +155,18 @@ function mailWrite(): void
         "<table style='border:0;cellspacing:10'><tr><td><input type='button' onClick=\"increase(textarea1,1);\" value='+' accesskey='+'></td><td><input type='button' onClick=\"increase(textarea1,-1);\" value='-' accesskey='-'></td><td><input type='button' onClick=\"cincrease(textarea1,-1);\" value='<-'></td><td><input type='button' onClick=\"cincrease(textarea1,1);\" value='->' accesskey='-'></td></tr></table>"
     );
 
-    // substr is necessary if you have chars that take up more than 1 byte.
+    // mb_substr is necessary if you have chars that take up more than 1 byte.
     $textBody = htmlentities(
         str_replace(
             '`n',
             "\n",
             Sanitize::sanitizeMb(
-                substr($body, 0, (int) getsetting('mailsizelimit', 1024, getsetting('charset', 'ISO-8859-1')))
+                mb_substr(
+                    $body,
+                    0,
+                    (int) getsetting('mailsizelimit', 1024, getsetting('charset', 'ISO-8859-1')),
+                    'UTF-8'
+                )
             )
         ),
         ENT_COMPAT,
