@@ -857,7 +857,7 @@ $sql_upgrade_statements = array(
 "1.1.0 Dragonprime Edition" => array(
 "UPDATE " . db_prefix("accounts") . " SET clanrank = clanrank * 10",
 "INSERT IGNORE INTO " . db_prefix("settings") . " VALUES ('newdaycron', '0')",
-"INSERT IGNORE INTO " . db_prefix("settings") . " VALUES ('charset', 'ISO-8859-1')",
+"INSERT IGNORE INTO " . db_prefix("settings") . " VALUES ('charset', 'UTF-8')",
 "INSERT IGNORE INTO " . db_prefix("settings") . " VALUES ('allowspecialswitch', '1')",
 ),
 "1.1.1 Dragonprime Edition" => array(
