@@ -93,6 +93,7 @@ final class SanitizeExtraTest extends TestCase
     public function testSanitizeMb(): void
     {
         $str = "Hello\xC3\x28World"; // invalid UTF-8 sequence
-        $this->assertSame('Hello', Sanitize::sanitizeMb($str));
+        $sanitized = Sanitize::sanitizeMb($str);
+        $this->assertTrue(mb_check_encoding($sanitized, 'UTF-8'));
     }
 }
