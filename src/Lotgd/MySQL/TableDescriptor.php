@@ -459,17 +459,13 @@ class TableDescriptor
         $columnMap = [];
         $i = 0;
         foreach ($descriptor as $key => $val) {
-            $val['type'] = self::descriptorSanitizeType($val['type']);
-            if ($key === "RequireMyISAM" && $val == 1) {
-                // Let's hope that we don't run into badly formatted strings
-                // but you know what, if we do, tough
-                if (Database::getServerVersion() < "4.0.14") {
-                    $type = "MyISAM";
+            if ($key === 'RequireMyISAM') {
+                if ($val == 1 && Database::getServerVersion() < '4.0.14') {
+                    $type = 'MyISAM';
                 }
                 continue;
-            } elseif ($key === "RequireMyISAM") {
-                continue;
             }
+            $val['type'] = self::descriptorSanitizeType($val['type']);
             if (!isset($val['name'])) {
                 if (
                     ($val['type'] == "key" ||
