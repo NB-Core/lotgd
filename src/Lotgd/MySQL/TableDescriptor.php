@@ -240,7 +240,7 @@ class TableDescriptor
                 if ($colCharset && !$colCollation) {
                     $colCollation = self::defaultCollation($colCharset);
                 }
-                if ($val['type'] === 'key' || $val['type'] === 'unique key') {
+                if (in_array($val['type'], ['key', 'unique key', 'primary key'], true)) {
                     [$val['columns']] = self::adjustIndexColumns($val['columns'], $columnMap, $tableCharset, $engine);
                 }
                 $newsql = self::descriptorCreateSql($val);
@@ -555,7 +555,7 @@ class TableDescriptor
             if ($colCharset && !$colCollation) {
                 $colCollation = self::defaultCollation($colCharset);
             }
-            if ($val['type'] === 'key' || $val['type'] === 'unique key') {
+            if (in_array($val['type'], ['key', 'unique key', 'primary key'], true)) {
                 [$val['columns']] = self::adjustIndexColumns($val['columns'], $columnMap, $tableCharset, $type);
             } else {
                 $columnMap[$val['name']] = $val;
