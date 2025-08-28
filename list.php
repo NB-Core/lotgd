@@ -100,8 +100,14 @@ if ($page == "" && $op == "") {
     $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' ORDER BY level DESC, dragonkills DESC, login ASC";
     $result = Database::queryCached($sql, "list.php-warsonline");
 } elseif ($op == 'clan') {
+    if (empty($session['user']['clanid'])) {
+        // User is not part of a clan; redirect to the main list.
+        redirect('list.php');
+    }
+    $clanId = (int) $session['user']['clanid'];
+
     $title = translate_inline("Clan Members Online");
-    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' AND clanid='{$session['user']['clanid']}' ORDER BY level DESC, dragonkills DESC, login ASC";
+    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' AND clanid='{$clanId}' ORDER BY level DESC, dragonkills DESC, login ASC";
     $result = Database::query($sql);
 } else {
     $remove_offline = false;
