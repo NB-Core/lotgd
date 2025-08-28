@@ -102,7 +102,7 @@ class Backtrace
     public static function getType(mixed $in): string
     {
         global $settings;
-        $charset = isset($settings) ? $settings->getSetting('charset', 'ISO-8859-1') : 'UTF-8';
+        $charset = isset($settings) ? $settings->getSetting('charset', 'UTF-8') : 'UTF-8';
         $return = '';
         if (is_string($in)) {
             $return .= "<span class='string'>\"";

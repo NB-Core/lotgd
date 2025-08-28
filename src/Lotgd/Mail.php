@@ -107,7 +107,7 @@ class Mail
             $toline = Sanitize::fullSanitize($row1['name']);
             $body = preg_replace("'[`]n'", "\n", $body);
             $body = Sanitize::fullSanitize($body);
-            $subject = htmlentities(Sanitize::fullSanitize($subject), ENT_COMPAT, $settings->getSetting('charset', 'ISO-8859-1'));
+            $subject = htmlentities(Sanitize::fullSanitize($subject), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
             $settings_extended = new Settings('settings_extended');
             $subj = Translator::translateMail($settings_extended->getSetting('notificationmailsubject'), $to);
             $msg = Translator::translateMail($settings_extended->getSetting('notificationmailtext'), $to);

@@ -200,7 +200,7 @@ class Installer
         );
         if (isset($licensemd5s[md5($license)])) {
             // Reload it so we get the right line breaks, etc.
-            $license = htmlentities($license, ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1"));
+            $license = htmlentities($license, ENT_COMPAT, $this->getSetting("charset", "UTF-8"));
             $license = nl2br($license);
             $this->output->output("`n`n`b`@Plain Text:`b`n`7");
             $this->output->rawOutput($license);
@@ -263,7 +263,7 @@ class Installer
                 $this->output->rawOutput("<form action='installer.php?stage=$stage' method='POST'>");
                 $this->output->output("Enter a name for your superuser account:");
                 $postedName = Http::post('name');
-                $this->output->rawOutput("<input name='name' value=\"" . htmlentities((string) $postedName, ENT_COMPAT, $this->getSetting('charset', 'ISO-8859-1')) . "\">");
+                $this->output->rawOutput("<input name='name' value=\"" . htmlentities((string) $postedName, ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "\">");
                 $this->output->output("`nEnter a password: ");
                 $this->output->rawOutput("<input name='pass1' type='password'>");
                 $this->output->output("`nConfirm your password: ");
@@ -316,7 +316,7 @@ class Installer
                 $this->output->rawOutput("
                     <form method='POST' action='installer.php?stage=11'>
                         <input type='hidden' name='delete_installer' value='1'>
-                        <input type='submit' class='button' value='" . htmlentities(Translator::translateInline("Delete installer.php now"), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "'>
+                        <input type='submit' class='button' value='" . htmlentities(Translator::translateInline("Delete installer.php now"), ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "'>
                     </form>
                 ");
             }
@@ -364,19 +364,19 @@ class Installer
             $this->output->output("`iIf you are unsure of the answer to any of these questions, please check with your server's ISP, or read the documentation on MySQL`i`n");
 
             $this->output->output("`nWhat is the address of your database server?`n");
-            $this->output->rawOutput("<input name='DB_HOST' value=\"" . htmlentities((string)($session['dbinfo']['DB_HOST'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_HOST' value=\"" . htmlentities((string)($session['dbinfo']['DB_HOST'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "\">");
             $this->tip("If you are running LoGD from the same server as your database, use 'localhost' here.  Otherwise, you will have to find out what the address is of your database server.  Your server's ISP might be able to provide this information.");
 
             $this->output->output("`nWhat is the username you use to connect to the database server?`n");
-            $this->output->rawOutput("<input name='DB_USER' value=\"" . htmlentities((string)($session['dbinfo']['DB_USER'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_USER' value=\"" . htmlentities((string)($session['dbinfo']['DB_USER'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "\">");
             $this->tip("This username does not have to be the same one you use to connect to the database server for administrative reasons.  However, in order to use this installer, and to install some of the modules, the account you provide here must have the ability to create, modify, and drop tables.  If you want the installer to create a new database for LoGD, the account will also have to have the ability to create databases.  Finally, to run the game, this account must at a minimum be able to select, insert, update, and delete records, and be able to lock tables.  If you're uncertain, grant the account the following privileges: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, and ALTER.");
 
             $this->output->output("`nWhat is the password for this username?`n");
-            $this->output->rawOutput("<input name='DB_PASS' value=\"" . htmlentities((string)($session['dbinfo']['DB_PASS'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_PASS' value=\"" . htmlentities((string)($session['dbinfo']['DB_PASS'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "\">");
             $this->tip("The password is necessary here in order for the game to successfully connect to the database server.  This information is not shared with anyone, it is simply used to configure the game.");
 
             $this->output->output("`nWhat is the name of the database you wish to install LoGD in?`n");
-            $this->output->rawOutput("<input name='DB_NAME' value=\"" . htmlentities((string)($session['dbinfo']['DB_NAME'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_NAME' value=\"" . htmlentities((string)($session['dbinfo']['DB_NAME'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "\">");
             $this->tip("Database servers such as MySQL can control many different databases.  This is very useful if you have many different programs each needing their own database.  Each database has a unique name.  Provide the name you wish to use for LoGD in this field.");
 
             $this->output->output("`nDo you want to use datacaching (high load optimization)?`n");
@@ -387,7 +387,7 @@ class Installer
             $this->tip("Do you want to use a datacache for the sql queries? Many internal queries produce the same results and can be cached. This feature is *highly* recommended to use as the MySQL server is usually high frequented. When using in an environment where Safe Mode is enabled; this needs to be a path that has the same UID as the web server runs.");
 
             $this->output->output("`nIf yes, what is the path to the datacache directory?`n");
-            $this->output->rawOutput("<input name='DB_DATACACHEPATH' value=\"" . htmlentities((string)($session['dbinfo']['DB_DATACACHEPATH'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\">");
+            $this->output->rawOutput("<input name='DB_DATACACHEPATH' value=\"" . htmlentities((string)($session['dbinfo']['DB_DATACACHEPATH'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "\">");
             $this->tip("If you have chosen to use the datacache function, you have to enter a path here to where temporary files may be stored. Verify that you have the proper permission (777) set to this folder, else you will have lots of errors. Do NOT end with a slash / ... just enter the dir");
 
             /*
@@ -586,11 +586,11 @@ class Installer
                         $datacache = $session['dbinfo']['DB_DATACACHEPATH'];
                     if (!is_dir($datacache)) {
                                 $this->output->output("`2Result: `\$Fail`n");
-                                array_push($issues, "`^The datacache path '" . htmlentities($datacache, ENT_COMPAT, $this->getSetting('charset', 'ISO-8859-1')) . "' does not exist or is not a directory.`n");
+                                array_push($issues, "`^The datacache path '" . htmlentities($datacache, ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "' does not exist or is not a directory.`n");
                                 $session['stagecompleted'] = 3;
                     } elseif (!is_writable($datacache)) {
                                     $this->output->output("`2Result: `\$Fail`n");
-                                    array_push($issues, "`^The datacache path '" . htmlentities($datacache, ENT_COMPAT, $this->getSetting('charset', 'ISO-8859-1')) . "' is not writable.`n");
+                                    array_push($issues, "`^The datacache path '" . htmlentities($datacache, ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "' is not writable.`n");
                                     $session['stagecompleted'] = 3;
                     } else {
                         error_clear_last();
@@ -614,7 +614,7 @@ class Installer
                                     ) {
                                         $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
                                     }
-                                                    $this->output->rawOutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, $this->getSetting('charset', 'ISO-8859-1')) . "</blockquote>");
+                                                    $this->output->rawOutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "</blockquote>");
                                 }
                                     array_push($issues, "`^I was not able to write to your datacache directory!`n");
                                     $session['stagecompleted'] = 3;
@@ -635,7 +635,7 @@ class Installer
                                         ) {
                                             $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
                                         }
-                                        $this->output->rawOutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, $this->getSetting('charset', 'ISO-8859-1')) . "</blockquote>");
+                                        $this->output->rawOutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "</blockquote>");
                                     } else {
                                         $this->output->rawOutput("<blockquote>`^Failed to delete the dummy file.`</blockquote>");
                                     }
@@ -655,7 +655,7 @@ class Installer
                                 ) {
                                         $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
                                 }
-                                $this->output->rawOutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, $this->getSetting('charset', 'ISO-8859-1')) . "</blockquote>");
+                                $this->output->rawOutput("<blockquote>" . htmlentities($err['message'], ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "</blockquote>");
                             }
                                     array_push($issues, "`^I was not able to write to your datacache directory! Check your permissions there!`n");
                                     $session['stagecompleted'] = 3;
@@ -784,7 +784,7 @@ class Installer
         $this->output->rawOutput("<form action='installer.php?stage=5' method='POST'>");
         $this->output->output("`nTo provide a table prefix, enter it here.");
         $this->output->output("If you don't know what this means, you should either leave it blank, or enter an intuitive value such as \"logd\".`n");
-        $this->output->rawOutput("<input name='DB_PREFIX' value=\"" . htmlentities($session['dbinfo']['DB_PREFIX'], ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "\"><br>");
+        $this->output->rawOutput("<input name='DB_PREFIX' value=\"" . htmlentities($session['dbinfo']['DB_PREFIX'], ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "\"><br>");
         $submit = Translator::translateInline("Submit your prefix.");
         $this->output->rawOutput("<input type='submit' value='$submit' class='button'>");
         $this->output->rawOutput("</form>");
@@ -859,7 +859,7 @@ class Installer
                     $this->output->output("`n`\$Unfortunately, I was not able to write your dbconnect.php file.");
                     $this->output->output("`2You will have to create this file yourself, and upload it to your web server.");
                 $this->output->output("The contents of this file should be as follows:`3");
-                $this->output->rawOutput("<blockquote><pre>" . htmlentities($dbconnect, ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "</pre></blockquote>");
+                $this->output->rawOutput("<blockquote><pre>" . htmlentities($dbconnect, ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "</pre></blockquote>");
                 $this->output->output("`2Create a new file, past the entire contents from above into it (everything from and including `3<?php`2 up to and including `3?>`2 ).");
                 $this->output->output("When you have that done, save the file as 'dbconnect.php' and upload this to the location you have LoGD at.");
                 $this->output->output("You can refresh this page to see if you were successful.");
@@ -933,7 +933,7 @@ class Installer
                     $this->output->output("`2With this new version the settings for datacaching had to be moved to `idbconnect.php`i.");
                     $this->output->output("Due to your system settings and privleges for this file, I was not able to perform the changes by myself.");
                     $this->output->output("This part involves you: We have to ask you to replace the content of your existing `idbconnect.php`i with the following code:`n`n`&");
-                    $this->output->rawOutput("<blockquote><pre>" . htmlentities($dbconnect, ENT_COMPAT, $this->getSetting("charset", "ISO-8859-1")) . "</pre></blockquote>");
+                    $this->output->rawOutput("<blockquote><pre>" . htmlentities($dbconnect, ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "</pre></blockquote>");
                     $this->output->output("`2This will let you use your existing datacaching settings.`n`n");
                     $this->output->output("If you have done this, you are ready for the next step.");
                 } else {

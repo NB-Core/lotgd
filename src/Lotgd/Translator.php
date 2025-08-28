@@ -367,7 +367,7 @@ class Translator
 			FROM " . Database::prefix("translations") . "
 			WHERE language='$language'
 				AND $where";
-    /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1")))); */
+    /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")))); */
         if (isset($settings) && !$settings->getSetting("cachetranslations", 0)) {
             $result = Database::query($sql);
         } else {

@@ -279,19 +279,19 @@ function charrestore_run(): void
         addnav("", "runmodule.php?module=charrestore&op=list" . $retnav);
         rawoutput("<table><tr><td>");
         output("Character Login: ");
-        rawoutput("<input name='login' value=\"" . htmlentities(stripslashes(httppost("login")), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"><br>");
+        rawoutput("<input name='login' value=\"" . htmlentities(stripslashes(httppost("login")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
         rawoutput("</td><td>");
         output("Character Email: ");
-        rawoutput("<input name='email' value=\"" . htmlentities(stripslashes(httppost("email")), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"><br>");
+        rawoutput("<input name='email' value=\"" . htmlentities(stripslashes(httppost("email")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
         rawoutput("</td><td>");
         output("Display hash value for which email: ");
-        rawoutput("<input name='email_hashcheck' placeholder='for information only' value=\"" . htmlentities(stripslashes(httppost("email_hashcheck")), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"><br>");
+        rawoutput("<input name='email_hashcheck' placeholder='for information only' value=\"" . htmlentities(stripslashes(httppost("email_hashcheck")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
         rawoutput("</td></tr><tr><td>");
         output("After date: ");
-        rawoutput("<input name='start' placeholder='YYYY-MM-DD format' value=\"" . htmlentities(stripslashes(httppost("start")), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"><br>");
+        rawoutput("<input name='start' placeholder='YYYY-MM-DD format' value=\"" . htmlentities(stripslashes(httppost("start")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
         rawoutput("</td><td>");
         output("Before date: ");
-        rawoutput("<input name='end' placeholder='YYYY-MM-DD format' value=\"" . htmlentities(stripslashes(httppost("end")), ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "\"><br>");
+        rawoutput("<input name='end' placeholder='YYYY-MM-DD format' value=\"" . htmlentities(stripslashes(httppost("end")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
         rawoutput("</td></tr></table>");
         $submit = translate_inline("Submit");
         rawoutput("<input type='submit' value='$submit' class='button'>");
@@ -544,7 +544,7 @@ function charrestore_run(): void
                 output("`\$Something funky has happened, preventing this account from correctly being created.");
                 output("I'm sorry, you may have to recreate this account by hand.");
                 output("The SQL I tried was:`n");
-                rawoutput("<pre>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "</pre>");
+                rawoutput("<pre>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</pre>");
             }
         }
     } elseif (httpget('op') == "hashconvert") {

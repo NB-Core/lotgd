@@ -229,7 +229,7 @@ class Output
         if (!isset($settings)) {
             $charset = 'UTF-8';
         } else {
-            $charset = $settings->getSetting('charset', 'ISO-8859-1');
+            $charset = $settings->getSetting('charset', 'UTF-8');
         }
         $start = 0;
         $out   = '';
