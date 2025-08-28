@@ -31,17 +31,20 @@ $repo = $entityManager->getRepository(Lotgd\Entity\Account::class);
 Schema migrations reside in the `migrations/` directory and are configured
 through two files:
 
-* `migrations.php` – defines migration paths and the **connection name**.
-* `migrations-db.php` – provides database credentials keyed by connection name.
+* `migrations.php` – defines migration paths. When using a single connection no
+  additional options are required. For multiple connections you may specify a
+  `connection` key to select which database configuration to use.
+* `migrations-db.php` – provides the database credentials. With one connection
+  it returns the parameters directly. To support multiple connections return an
+  array keyed by connection name.
 
-In `migrations.php` the `connection` value is only a label. The actual
-credentials belong in `migrations-db.php`:
+In a single connection setup `migrations.php` only lists `migrations_paths` and
+`migrations-db.php` contains the connection details:
 
 ```php
 <?php
 // migrations.php
 return [
-    'connection' => 'lotgd',
     'migrations_paths' => [
         'Lotgd\\Migrations' => __DIR__ . '/../migrations',
     ],
@@ -52,16 +55,18 @@ return [
 <?php
 // migrations-db.php
 return [
-    'lotgd' => [
-        'driver' => 'pdo_mysql',
-        'host' => 'localhost',
-        'dbname' => 'lotgd',
-        'user' => 'lotgd_user',
-        'password' => 'secret',
-        'charset' => 'utf8mb4',
-    ],
+    'driver' => 'pdo_mysql',
+    'host' => 'localhost',
+    'dbname' => 'lotgd',
+    'user' => 'lotgd_user',
+    'password' => 'secret',
+    'charset' => 'utf8mb4',
 ];
 ```
+
+If you need more than one connection, add a `connection` key in
+`migrations.php` and return an array of credentials keyed by name from
+`migrations-db.php`.
 
 Run pending migrations:
 
