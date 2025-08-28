@@ -26,8 +26,13 @@ final class Version20250724000000 extends AbstractMigration
 
         $tables = get_all_tables();
         foreach ($tables as $name => $descriptor) {
-            $sql = TableDescriptor::tableCreateFromDescriptor(Database::prefix($name), $descriptor);
-            $this->addSql($sql);
+            $full = Database::prefix($name);
+            if (Database::tableExists($full)) {
+                TableDescriptor::synctable($full, $descriptor);
+            } else {
+                $sql = TableDescriptor::tableCreateFromDescriptor($full, $descriptor);
+                $this->addSql($sql);
+            }
         }
     }
 
