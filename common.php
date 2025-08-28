@@ -220,9 +220,9 @@ $link = false;
 if (!defined("DB_NODB")) {
         $link = Database::connect($config['DB_HOST'] ?? '', $config['DB_USER'] ?? '', $config['DB_PASS'] ?? '');
 
-        //set charset to utf8 (table default, don't change that!)
+        //set charset to UTF-8 (table default, don't change that!)
     if (!Database::setCharset("utf8mb4")) {
-            echo "Error setting db connection charset to utf8...please check your db connection!";
+            echo "Error setting db connection charset to UTF-8...please check your db connection!";
             exit(0);
     }
 }
