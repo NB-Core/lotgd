@@ -113,22 +113,30 @@ class Settings
         }
         if (!isset($this->settings[$settingname])) {
             $this->loadSettings();
-        } else {
-            return $this->settings[$settingname];
-        }
-        if (!isset($this->settings[$settingname])) {
-            if (file_exists("config/" . $this->tablename . ".php")) {
-                require "config/" . $this->tablename . ".php";
-            }
-            if ($default === false) {
-                $setDefault = $defaults[$settingname] ?? '';
+            if (!isset($this->settings[$settingname])) {
+                if (file_exists('config/' . $this->tablename . '.php')) {
+                    require 'config/' . $this->tablename . '.php';
+                }
+                if ($default === false) {
+                    $value = $defaults[$settingname] ?? '';
+                } else {
+                    $value = $default;
+                }
+                $this->saveSetting($settingname, $value);
             } else {
-                $setDefault = $default;
+                $value = $this->settings[$settingname];
             }
-            $this->saveSetting($settingname, $setDefault);
-            return $setDefault;
+        } else {
+            $value = $this->settings[$settingname];
         }
-        return $this->settings[$settingname];
+
+        if ($settingname === 'charset' && $value !== 'UTF-8') {
+            $this->saveSetting('charset', 'UTF-8');
+
+            return 'UTF-8';
+        }
+
+        return $value;
     }
 
     /**

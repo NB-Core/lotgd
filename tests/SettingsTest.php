@@ -54,4 +54,21 @@ final class SettingsTest extends TestCase
         $settings->loadSettings();
         $this->assertSame('2', $settings->getSetting('x'));
     }
+
+    public function testCharsetValueCoercedWhenDifferent(): void
+    {
+        \Lotgd\MySQL\Database::$settings_table = ['charset' => 'ISO-8859-1'];
+        $settings = new Settings('settings');
+        $this->assertSame('UTF-8', $settings->getSetting('charset'));
+        $this->assertArrayHasKey('charset', \Lotgd\MySQL\Database::$settings_table);
+        $this->assertSame('UTF-8', \Lotgd\MySQL\Database::$settings_table['charset']);
+    }
+
+    public function testCharsetValueCoercedWhenMissing(): void
+    {
+        \Lotgd\MySQL\Database::$settings_table = [];
+        $settings = new Settings('settings');
+        $this->assertSame('UTF-8', $settings->getSetting('charset', 'ISO-8859-1'));
+        $this->assertSame('UTF-8', $settings->getSetting('charset'));
+    }
 }
