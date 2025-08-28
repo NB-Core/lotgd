@@ -23,7 +23,11 @@ if (
         $session['user']['superuser'] & SU_VIEW_SOURCE
 ) {
     $dir = str_replace("\\", "/", dirname($url) . "/");
-    $subdir = str_replace("\\", "/", dirname($_SERVER['SCRIPT_NAME']) . "/");
+    $scriptPath = $_SERVER['SCRIPT_NAME'] ?? '';
+    $scriptBase = \Lotgd\Util\ScriptName::current();
+    $pos = strrpos($scriptPath, $scriptBase);
+    $scriptDir = $pos !== false ? substr($scriptPath, 0, $pos) : dirname($scriptPath);
+    $subdir = str_replace("\\", "/", $scriptDir . "/");
     if ($subdir == "//") {
         $subdir = "/";
     }
@@ -71,7 +75,7 @@ if (
         }
 
         $sdir = substr($dir, strlen($subdir));
-        if ($sdir == dirname($_SERVER['SCRIPT_NAME'])) {
+        if ($sdir == $scriptDir) {
             $sdir = "";
         }
         $base = "./$sdir";
@@ -112,7 +116,7 @@ if (
 
     foreach ($legal_dirs as $key) {
         //$skey = substr($key,strlen($subdir));
-        //if ($key==dirname($_SERVER['SCRIPT_NAME'])) $skey="";
+        //if ($key==$scriptDir) $skey="";
         //$d = dir("./$skey");
         //if (substr($key,0,2)=="//") $key = substr($key,1);
         //if ($key=="//") $key="/";
