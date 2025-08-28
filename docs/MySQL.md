@@ -119,7 +119,9 @@ and compares virtually all scripts and emoji correctly, choosing a different
 collation is rarely sensible. If you change it, be certain you understand why.
 
 Ensure that the application's output encoding matches the database encoding to
-avoid memory errors when strings are converted between PHP and MySQL.
+avoid memory errors when strings are converted between PHP and MySQL. The engine
+always outputs UTF-8, so configure your database with UTF-8 compatible encodings
+such as `utf8mb4`.
 
 `synctable()` and `TableDescriptor::tableCreateFromDescriptor()` validate the
 provided charset and collation. They throw an `InvalidArgumentException` for

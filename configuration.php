@@ -33,6 +33,9 @@ switch ($type_setting) {
                 $old = $settings_extended->getArray();
                 $current = $settings_extended->getArray();
                 foreach ($post as $key => $val) {
+                    if ('charset' === $key) {
+                        continue;
+                    }
                     if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
                         if (!isset($old[$key])) {
                             $old[$key] = "";
@@ -118,6 +121,9 @@ switch ($type_setting) {
                 $old = $settings->getArray();
                 $current = $settings->getArray();
                 foreach ($post as $key => $val) {
+                    if ('charset' === $key) {
+                        continue;
+                    }
                     if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
                         if (!isset($old[$key])) {
                             $old[$key] = "";
@@ -311,6 +317,7 @@ switch ($type_setting) {
                 $useful_vals = array(
                     "datacachepath" => $DB_DATACACHEPATH,
                     "usedatacache" => $DB_USEDATACACHE,
+                    "charset" => getsetting('charset', 'UTF-8'),
                     "defaultsuperuser" => getsetting('defaultsuperuser', 0), // this needs to be there as the showform loads from the database; so a value has to be present if it's not set, and this is a technical field
                     "dayduration" => round(($details['dayduration'] / 60 / 60), 0) . " hours",
                     "gziphandler" => $gz_handler_on,
