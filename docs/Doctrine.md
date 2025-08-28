@@ -29,31 +29,32 @@ $repo = $entityManager->getRepository(Lotgd\Entity\Account::class);
 ## Running Migrations
 
 Schema migrations reside in the `migrations/` directory and are configured
-through two files:
+through two files stored in `config/`:
 
-* `migrations.php` – defines migration paths. When using a single connection no
-  additional options are required. For multiple connections you may specify a
-  `connection` key to select which database configuration to use.
-* `migrations-db.php` – provides the database credentials. With one connection
-  it returns the parameters directly. To support multiple connections return an
-  array keyed by connection name.
+* `config/migrations.php` – defines migration paths. When using a single
+  connection no additional options are required. For multiple connections you
+  may specify a `connection` key to select which database configuration to use.
+* `config/migrations-db.php` – provides the database credentials. With one
+  connection it returns the parameters directly. To support multiple connections
+  return an array keyed by connection name.
 
-In a single connection setup `migrations.php` only lists `migrations_paths` and
-`migrations-db.php` contains the connection details:
+In a single connection setup `config/migrations.php` only lists
+`migrations_paths` and `config/migrations-db.php` contains the connection
+details:
 
 ```php
 <?php
-// migrations.php
+// config/migrations.php
 return [
     'migrations_paths' => [
-        'Lotgd\\Migrations' => __DIR__ . '/../migrations',
+        'Lotgd\\Migrations' => dirname(__DIR__) . '/migrations',
     ],
 ];
 ```
 
 ```php
 <?php
-// migrations-db.php
+// config/migrations-db.php
 return [
     'driver' => 'pdo_mysql',
     'host' => 'localhost',
@@ -65,8 +66,8 @@ return [
 ```
 
 If you need more than one connection, add a `connection` key in
-`migrations.php` and return an array of credentials keyed by name from
-`migrations-db.php`.
+`config/migrations.php` and return an array of credentials keyed by name from
+`config/migrations-db.php`.
 
 Run pending migrations:
 
@@ -75,8 +76,9 @@ Run pending migrations:
 php vendor/bin/doctrine-migrations migrate
 ```
 
-The command automatically reads `migrations.php` and `migrations-db.php` from
-the project root. If you store them elsewhere, pass the paths explicitly:
+The command automatically reads `config/migrations.php` and
+`config/migrations-db.php`. If you store them elsewhere, pass the paths
+explicitly:
 
 ```bash
 php vendor/bin/doctrine-migrations \
