@@ -164,8 +164,8 @@ function mailWrite(): void
                 mb_substr(
                     $body,
                     0,
-                    (int) getsetting('mailsizelimit', 1024, getsetting('charset', 'UTF-8')),
-                    'UTF-8'
+                    (int) getsetting('mailsizelimit', 1024),
+                    getsetting('charset', 'ISO-8859-1')
                 )
             )
         ),
