@@ -24,7 +24,7 @@ if ($type == "ip") {
 }
 $duration = (int)httppost("duration");
 if ($duration == 0) {
-    $duration = "0000-00-00";
+    $duration = DATETIME_DATEMIN;
 } else {
     $duration = date("Y-m-d", strtotime("+$duration days"));
 }
