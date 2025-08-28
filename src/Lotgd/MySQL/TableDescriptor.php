@@ -6,7 +6,6 @@ namespace Lotgd\MySQL;
 
 use RuntimeException;
 
-use function debug;
 
 /**
  * Helper for creating, reading and synchronising table descriptors.
@@ -47,7 +46,7 @@ class TableDescriptor
             //the table doesn't exist, so we create it and are done.
             reset($descriptor);
             $sql = self::tableCreateFromDescriptor($tablename, $descriptor);
-            debug($sql);
+            error_log($sql);
             if (!Database::query($sql)) {
                 throw new RuntimeException(Database::error());
             }
@@ -146,7 +145,19 @@ class TableDescriptor
                         if (substr($key, 0, 4) == "key-") {
                             $val['name'] = substr($key, 4);
                         } else {
-                            debug("<b>Warning</b>: the descriptor for <b>$tablename</b> includes a {$val['type']} which isn't named correctly.  It should be named key-$key. In your code, it should look something like this (the important change is bolded):<br> \"<b>key-$key</b>\"=>array(\"type\"=>\"{$val['type']}\",\"columns\"=>\"{$val['columns']}\")<br> The consequence of this is that your keys will be destroyed and recreated each time the table is synchronized until this is addressed.");
+                            $message = sprintf(
+                                'Warning: the descriptor for %s includes a %s which is not named correctly. '
+                                . 'It should be named key-%s. In your code, it should look something like this: '
+                                . '"key-%s"=>array("type"=>"%s","columns"=>"%s"). '
+                                . 'The consequence of this is that your keys will be destroyed and recreated each time the table is synchronized until this is addressed.',
+                                $tablename,
+                                $val['type'],
+                                $key,
+                                $key,
+                                $val['type'],
+                                $val['columns']
+                            );
+                            error_log($message);
                             $val['name'] = $key;
                         }
                     } else {
@@ -257,7 +268,7 @@ class TableDescriptor
                     } elseif ($oldsql != $newsql) {
                         //this descriptor line has changed.  Change the
                         //table to suit.
-                        debug("Old: $oldsql<br>New:$newsql");
+                        error_log("Old: $oldsql\nNew: $newsql");
                         if (
                             $existing[$key]['type'] == "key" ||
                             $existing[$key]['type'] == "unique key"
@@ -369,13 +380,13 @@ class TableDescriptor
                                 ]
                             );
                         } catch (\Throwable $e) {
-                            debug($e->getMessage());
+                            error_log($e->getMessage());
                         }
                     }
                 }
                 //we have changes to do!  Woohoo!
                 $sql = "ALTER TABLE $tablename \n" . join(",\n", $changes);
-                debug(nl2br($sql));
+                error_log($sql);
                 $result = Database::query($sql);
                 if ($result === false) {
                     throw new \RuntimeException(Database::error());
@@ -477,7 +488,19 @@ class TableDescriptor
                     if (substr($key, 0, 4) == "key-") {
                         $val['name'] = substr($key, 4);
                     } else {
-                        debug("<b>Warning</b>: the descriptor for <b>$tablename</b> includes a {$val['type']} which isn't named correctly.  It should be named key-$key.  In your code, it should look something like this (the important change is bolded):<br> \"<b>key-$key</b>\"=>array(\"type\"=>\"{$val['type']}\",\"columns\"=>\"{$val['columns']}\")<br> The consequence of this is that your keys will be destroyed and recreated each time the table is synchronized until this is addressed.");
+                        $message = sprintf(
+                            'Warning: the descriptor for %s includes a %s which is not named correctly. '
+                            . 'It should be named key-%s. In your code, it should look something like this: '
+                            . '"key-%s"=>array("type"=>"%s","columns"=>"%s"). '
+                            . 'The consequence of this is that your keys will be destroyed and recreated each time the table is synchronized until this is addressed.',
+                            $tablename,
+                            $val['type'],
+                            $key,
+                            $key,
+                            $val['type'],
+                            $val['columns']
+                        );
+                        error_log($message);
                         $val['name'] = $key;
                     }
                 } else {
