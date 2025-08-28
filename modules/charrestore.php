@@ -485,7 +485,7 @@ function charrestore_run(): void
                 } elseif (! isset($known_columns[$key])) {
                     output("`2Dropping the column `^%s`n", $key);
                 } else {
-                    if ($val === "0000-00-00 00:00:00") {
+                    if ($val < DATETIME_DATEMIN) {
                         $val = DATETIME_DATEMIN; // fix old time stamps
                     }
                     array_push($keys, $key);
