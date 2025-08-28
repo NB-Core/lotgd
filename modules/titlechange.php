@@ -102,7 +102,7 @@ function titlechange_run(): void
             }
             output("`7How would you like your title to look?`n");
             rawoutput("<form action='runmodule.php?module=titlechange&op=titlepreview' method='POST'>");
-            $n = htmlentities($otitle, ENT_COMPAT, getsetting("charset", "ISO-8859-1"));
+            $n = htmlentities($otitle, ENT_COMPAT, getsetting("charset", "UTF-8"));
             debug($n);
             rawoutput("<input id='input' name='newname' width='25' maxlength='25' value=\"$n\">");
             rawoutput("<input type='submit' class='button' value='Preview'>");

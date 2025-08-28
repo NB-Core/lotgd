@@ -119,12 +119,12 @@ function graveyard_haunt_run(): void
                 rawoutput("<tr class='trhead'><td>$name</td><td>$lev</td></tr>");
                 for ($i = 0; $i < Database::numRows($result); $i++) {
                     $row = Database::fetchAssoc($result);
-                    rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td><a href='runmodule.php?module=graveyard_haunt&op=stage3&name=" . HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")) . "'>");
+                    rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td><a href='runmodule.php?module=graveyard_haunt&op=stage3&name=" . HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "'>");
                     output_notl("%s", $row['name']);
                     rawoutput("</a></td><td>");
                     output_notl("%s", $row['level']);
                     rawoutput("</td></tr>", true);
-                    addnav("", "runmodule.php?module=graveyard_haunt&op=stage3&name=" . HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")));
+                    addnav("", "runmodule.php?module=graveyard_haunt&op=stage3&name=" . HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "UTF-8")));
                 }
                 rawoutput("</table>", true);
             }

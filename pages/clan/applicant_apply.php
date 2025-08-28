@@ -78,7 +78,7 @@ if ($row['c'] == 1) {
                 $output->outputNotl(
                     "&#149; <a href='clan.php?op=apply&to=%s'>%s</a> %s`n",
                     $row['clanid'],
-                    Sanitize::fullSanitize(htmlentities($row['clanname'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))),
+                    Sanitize::fullSanitize(htmlentities($row['clanname'], ENT_COMPAT, getsetting("charset", "UTF-8"))),
                     $memb,
                     true
                 );
