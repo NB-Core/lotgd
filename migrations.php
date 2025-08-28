@@ -1,4 +1,8 @@
 <?php
 
-return require __DIR__ . '/config/doctrine.php';
+return [
+    'migrations_paths' => [
+        'Lotgd\\Migrations' => __DIR__ . '/migrations',
+    ],
+];
 

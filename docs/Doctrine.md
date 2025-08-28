@@ -66,6 +66,7 @@ return [
 Run pending migrations:
 
 ```bash
+
 php vendor/bin/doctrine-migrations migrate
 ```
 
