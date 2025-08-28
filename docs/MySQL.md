@@ -144,7 +144,7 @@ try {
 
 The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory and are configured through `migrations.php` and `migrations-db.php`.
 
-In `migrations.php` the `connection` value is only a name that matches the credentials array in `migrations-db.php`.
+`migrations.php` defines the migration paths. With a single database connection it contains only `migrations_paths` and all connection parameters reside in `migrations-db.php`. If multiple connections are required, add a `connection` key in `migrations.php` and return an array of credentials keyed by name from `migrations-db.php`.
 
 ### Running Migrations
 
