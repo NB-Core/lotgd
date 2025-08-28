@@ -16,6 +16,12 @@ final class Version20250724000010 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        $base = $_ENV['LOTGD_BASE_VERSION'] ?? null;
+
+        if ('1.1.1 Dragonprime Edition' !== $base) {
+            return;
+        }
+
         $m = require dirname(__DIR__) . '/install/data/legacy_sql.php';
         foreach ($m['1.1.1 Dragonprime Edition'] as $sql) {
             $this->addSql($sql);

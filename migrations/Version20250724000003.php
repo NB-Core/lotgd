@@ -16,6 +16,12 @@ final class Version20250724000003 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        $base = $_ENV['LOTGD_BASE_VERSION'] ?? null;
+
+        if ('0.9.7' !== $base) {
+            return;
+        }
+
         $m = require dirname(__DIR__) . '/install/data/legacy_sql.php';
         foreach ($m['0.9.7'] as $sql) {
             $this->addSql($sql);
