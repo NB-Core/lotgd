@@ -16,16 +16,7 @@ final class Version20250724000013 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $base = $_ENV['LOTGD_BASE_VERSION'] ?? null;
-
-        if ('1.2.6 +nb Edition' !== $base) {
-            return;
-        }
-
-        $m = require dirname(__DIR__) . '/install/data/legacy_sql.php';
-        foreach ($m['1.2.6 +nb Edition'] as $sql) {
-            $this->addSql($sql);
-        }
+        // Legacy SQL handled via bin/legacy-upgrade.
     }
 
     public function down(Schema $schema): void

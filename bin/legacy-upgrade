@@ -1,0 +1,30 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/../autoload.php';
+
+use Lotgd\Legacy\LegacySql;
+
+$options = getopt('', ['from-version:']);
+if (! isset($options['from-version'])) {
+    fwrite(STDERR, "Usage: bin/legacy-upgrade --from-version=<version>\n");
+    exit(1);
+}
+
+$from = $options['from-version'];
+
+$statements = require __DIR__ . '/../install/data/legacy_sql.php';
+$toRun     = LegacySql::filterStatements($statements, $from);
+
+if ($toRun === []) {
+    fwrite(STDOUT, "No legacy SQL needed for version {$from}\n");
+    exit(0);
+}
+
+foreach ($toRun as $sql) {
+    db_query($sql);
+}
+
+echo "Legacy upgrade from {$from} completed.\n";
