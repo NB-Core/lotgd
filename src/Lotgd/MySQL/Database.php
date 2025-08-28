@@ -82,6 +82,14 @@ class Database
     }
 
     /**
+     * Assign the Doctrine DBAL connection.
+     */
+    public static function setDoctrineConnection(Connection $conn): void
+    {
+        self::$doctrine = $conn;
+    }
+
+    /**
      * Set the client character set.
      */
     public static function setCharset(string $charset): bool
