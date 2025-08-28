@@ -118,7 +118,7 @@ function escapeAndTruncateBody(string $body): string
 {
     $limit = (int) getsetting('mailsizelimit', 1024);
 
-    return addslashes(mb_substr(stripslashes($body), 0, $limit, 'UTF-8'));
+    return addslashes(mb_substr(stripslashes($body), 0, $limit, getsetting('charset', 'ISO-8859-1')));
 }
 
 mailSend();
