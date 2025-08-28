@@ -68,7 +68,17 @@ final class SettingsTest extends TestCase
     {
         \Lotgd\MySQL\Database::$settings_table = [];
         $settings = new Settings('settings');
+
+        \Lotgd\MySQL\Database::$affected_rows = 0;
+        \Lotgd\MySQL\Database::$lastSql = '';
         $this->assertSame('UTF-8', $settings->getSetting('charset', 'ISO-8859-1'));
+        $this->assertStringContainsString('INSERT INTO settings', \Lotgd\MySQL\Database::$lastSql);
+        $this->assertSame(1, \Lotgd\MySQL\Database::$affected_rows);
+
+        \Lotgd\MySQL\Database::$affected_rows = 0;
+        \Lotgd\MySQL\Database::$lastSql = '';
         $this->assertSame('UTF-8', $settings->getSetting('charset'));
+        $this->assertSame('', \Lotgd\MySQL\Database::$lastSql);
+        $this->assertSame(0, \Lotgd\MySQL\Database::$affected_rows);
     }
 }
