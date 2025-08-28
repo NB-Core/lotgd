@@ -208,15 +208,23 @@ If you have problems, please visit Dragonprime at the address above.
 Legacy installation and upgrade instructions have moved to
 [docs/LegacyREADME.md](docs/LegacyREADME.md).
 
-When upgrading from a legacy release, pass the version you are upgrading from
-to the Doctrine command line tool. This applies all legacy SQL for newer
-versions before running migrations.
+When upgrading from a legacy release, run the legacy upgrade script before
+migrations. This applies all legacy SQL for newer versions prior to running
+Doctrine migrations.
 
-```bash
-php bin/doctrine --from-version="1.1.1 Dragonprime Edition" migrate
-```
+1. **Step 1** (pre-migration versions only):
 
-If `--from-version` is omitted, legacy SQL processing is skipped.
+   ```bash
+   php bin/legacy-upgrade --from-version="1.1.1 Dragonprime Edition"
+   ```
+
+2. **Step 2**:
+
+   ```bash
+   php vendor/bin/doctrine-migrations migrate
+   ```
+
+Omitting `--from-version` bypasses legacy SQL entirely.
 - [Installation](#installation)
   - [Step 1: Clone the Repository](#step-1-clone-the-repository)
   - [Step 2: Set Up the Docker Environment](#step-2-set-up-the-docker-environment)
