@@ -48,7 +48,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
     global $session;
     switch ($hookname) {
         case "insertcomment":
-            $section = htmlspecialchars($args['section'] ?? '', ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+            $section = htmlspecialchars($args['section'] ?? '', ENT_QUOTES, getsetting('charset', 'UTF-8'));
             rawoutput("<form action='runmodule.php?module=mpdf_downloader&op=grab' method='POST' style='display:inline'>");
             rawoutput("<input type='hidden' name='section' value='$section'>");
             rawoutput("Lines: <input name='lines' value='100' size='4'> ");
@@ -61,7 +61,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
             break;
         case 'mailform':
         case 'mailform-archive':
-            $label = htmlentities(translate_inline("Grab checked as PDF"), ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+            $label = htmlentities(translate_inline("Grab checked as PDF"), ENT_COMPAT, getsetting('charset', 'UTF-8'));
             rawoutput("<input type='submit' class='button' name='pdf_mail' value=\"{$label}\"> ");
             break;
         case 'header-mail':
@@ -153,7 +153,7 @@ function mpdf_downloader_run(): void
             $html = '';
             foreach ($rows as $row) {
                 $line = mpdf_downloader_convert($row);
-                $html .= '<p>' . htmlentities($line, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</p>';
+                $html .= '<p>' . htmlentities($line, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '</p>';
             }
             $mpdf->WriteHTML($html);
             $currentDateTime = new DateTime('now', new DateTimeZone('UTC'));
@@ -192,7 +192,7 @@ function mpdf_downloader_convert(array $row): string
     // to produce a plain text line for the output file
     $line = Commentary::renderCommentLine($row, false);
     $line = strip_tags($line);
-    $line = html_entity_decode($line, ENT_QUOTES, getsetting('charset', 'ISO-8859-1'));
+    $line = html_entity_decode($line, ENT_QUOTES, getsetting('charset', 'UTF-8'));
     $line = full_sanitize($line);
     return trim($line);
 }

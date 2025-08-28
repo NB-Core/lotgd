@@ -13,7 +13,7 @@ $oldvalues = httppost('oldvalues');
 $oldvalues = html_entity_decode(
     (string) $oldvalues,
     ENT_COMPAT,
-    getsetting('charset', 'ISO-8859-1')
+    getsetting('charset', 'UTF-8')
 );
 $oldvalues = unserialize($oldvalues);
 // Handle recombining the old name

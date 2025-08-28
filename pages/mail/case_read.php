@@ -12,7 +12,7 @@ use Lotgd\Translator;
  */
 function buildNavigationLink(int $id, string $label): string
 {
-    $charset = getsetting('charset', 'ISO-8859-1');
+    $charset = getsetting('charset', 'UTF-8');
     $encodedLabel = htmlentities($label, ENT_COMPAT, $charset);
 
     if ($id > 0) {
@@ -127,7 +127,7 @@ function mailRead(): void
     rawoutput("<td><a href='mail.php?op=unread&id={$message['messageid']}' class='motd'>$unreadLabel</a></td>");
 
     if ((int) $message['msgfrom'] !== 0) {
-        $escapedProblem = htmlentities($reportMessage, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+        $escapedProblem = htmlentities($reportMessage, ENT_COMPAT, getsetting('charset', 'UTF-8'));
         rawoutput("<td><form action=\"petition.php\" method='post'><input type='hidden' name='problem' value=\"$escapedProblem\"/><input type='hidden' name='abuse' value=\"yes\"/><input type='hidden' name='abuseplayer' value=\"$reportPlayer\"/><input type='submit' class='motd' value='$reportLabel'/></form></td>");
     } else {
         rawoutput('<td>&nbsp;</td>');

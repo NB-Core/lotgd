@@ -66,7 +66,7 @@ class DumpItem
             }
             $out .= "\n$indent)";
         } else {
-            $out .= "'" . htmlentities(addslashes((string) $temp), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "'";
+            $out .= "'" . htmlentities(addslashes((string) $temp), ENT_COMPAT, getsetting('charset', 'UTF-8')) . "'";
         }
 
         return $out;
