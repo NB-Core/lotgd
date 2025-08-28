@@ -6,6 +6,7 @@ namespace Lotgd\MySQL;
 
 use RuntimeException;
 
+use const DATETIME_DATEMIN;
 
 /**
  * Helper for creating, reading and synchronising table descriptors.
