@@ -108,7 +108,7 @@ function mailWrite(): void
     if (isset($row['login']) && $row['login'] !== '' && $forwardTo == 0) {
         output_notl(
             "<input type='hidden' name='to' id='to' value=\"" .
-            htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) .
+            htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) .
             "\">",
             true
         );
@@ -125,8 +125,8 @@ function mailWrite(): void
     output('`2Subject:');
     rawoutput(
         "<input name='subject' value=\"" .
-        htmlentities($subject, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) .
-        htmlentities(stripslashes($subjectGet), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) .
+        htmlentities($subject, ENT_COMPAT, getsetting('charset', 'UTF-8')) .
+        htmlentities(stripslashes($subjectGet), ENT_COMPAT, getsetting('charset', 'UTF-8')) .
         "\"><br>"
     );
 
@@ -164,18 +164,18 @@ function mailWrite(): void
                 mb_substr(
                     $body,
                     0,
-                    (int) getsetting('mailsizelimit', 1024, getsetting('charset', 'ISO-8859-1')),
+                    (int) getsetting('mailsizelimit', 1024, getsetting('charset', 'UTF-8')),
                     'UTF-8'
                 )
             )
         ),
         ENT_COMPAT,
-        getsetting('charset', 'ISO-8859-1')
+        getsetting('charset', 'UTF-8')
     );
     $textBody .= htmlentities(
         Sanitize::sanitizeMb(stripslashes($bodyGet)),
         ENT_COMPAT,
-        getsetting('charset', 'ISO-8859-1')
+        getsetting('charset', 'UTF-8')
     );
 
     rawoutput(
@@ -247,7 +247,7 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
         $row = db_fetch_assoc($result); // fetch login, name, superuser, and acctid
         output_notl(
             "<input type='hidden' id='to' name='to' value=\"" .
-            htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) .
+            htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) .
             "\">",
             true
         );
@@ -269,7 +269,7 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
 
         while ($row = db_fetch_assoc($result)) {
             output_notl(
-                "<option value=\"" . htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\">",
+                "<option value=\"" . htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\">",
                 true
             );
             output_notl('%s', Sanitize::fullSanitize($row['name']));

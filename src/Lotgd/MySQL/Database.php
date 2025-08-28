@@ -136,7 +136,7 @@ class Database
                 return [];
             }
             if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEVELOPER)) {
-                die("<pre>" . HTMLEntities($sql, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '</pre>' . self::error() . Backtrace::show());
+                die("<pre>" . HTMLEntities($sql, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '</pre>' . self::error() . Backtrace::show());
             }
             die('A most bogus error has occurred.  I apologise, but the page you were trying to access is broken.  Please use your browser\'s back button and try again.');
         }
@@ -146,7 +146,7 @@ class Database
             if (strlen($s) > 800) {
                 $s = substr($s, 0, 400) . ' ... ' . substr($s, strlen($s) - 400);
             }
-            debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '`n');
+            debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '`n');
         }
         unset(self::$dbinfo['affected_rows']);
         self::$dbinfo['affected_rows'] = $affected ?? self::affectedRows();

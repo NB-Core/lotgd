@@ -71,7 +71,7 @@ class Buffs
                                 if ($errors == '') {
                                     debug("Buffs[$buffname][$property] evaluates successfully to $val");
                                 } else {
-                                    debug("Buffs[$buffname][$property] has an evaluation error<br>" . htmlentities($origstring, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . ' becomes <br>' . htmlentities($value, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . '<br>' . $errors);
+                                    debug("Buffs[$buffname][$property] has an evaluation error<br>" . htmlentities($origstring, ENT_COMPAT, getsetting('charset', 'UTF-8')) . ' becomes <br>' . htmlentities($value, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '<br>' . $errors);
                                     $val = '';
                                 }
                                 self::$debuggedBuffs[$buffname][$property] = true;

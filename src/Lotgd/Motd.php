@@ -202,9 +202,9 @@ class Motd
         output('`$NOTE:`^ Polls cannot be edited after creation.`0`n`n');
         rawoutput("<form action='motd.php?op=savenew' method='post'>");
         output('Subject: ');
-        rawoutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "\"><br/>");
+        rawoutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br/>");
         output('Body:`n');
-        rawoutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</textarea><br/>");
+        rawoutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, getsetting('charset', 'UTF-8')) . "</textarea><br/>");
         $option = Translator::translateInline('Option');
         output('Choices:`n');
         $pollitem = "$option <input name='opt[]'><br/>";

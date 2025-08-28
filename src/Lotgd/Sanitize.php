@@ -275,8 +275,8 @@ class Sanitize
         if ($str == '') {
             return '';
         }
-        while (!mb_check_encoding($str, getsetting('charset', 'ISO-8859-1')) && mb_strlen($str, getsetting('charset', 'ISO-8859-1')) > 0) {
-            $str = mb_substr($str, 0, mb_strlen($str, getsetting('charset', 'ISO-8859-1')) - 1, getsetting('charset', 'ISO-8859-1'));
+        while (!mb_check_encoding($str, getsetting('charset', 'UTF-8')) && mb_strlen($str, getsetting('charset', 'UTF-8')) > 0) {
+            $str = mb_substr($str, 0, mb_strlen($str, getsetting('charset', 'UTF-8')) - 1, getsetting('charset', 'UTF-8'));
         }
         return $str;
     }

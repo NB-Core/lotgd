@@ -49,10 +49,10 @@ if (is_array($release)) {
     $published = isset($release['published_at']) ? substr($release['published_at'], 0, 10) : '';
     $url = $release['html_url'] ?? 'https://github.com/NB-Core/lotgd/releases';
 
-    output("`^Release:`0 %s`n", HTMLEntities($name, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-    output("`^Tag:`0 %s`n", HTMLEntities($tag, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-    output("`^Published:`0 %s`n", HTMLEntities($published, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')));
-    output_notl("`^Link:`0 <a href='" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "' target='_blank'>" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'ISO-8859-1')) . "</a>`n", true);
+    output("`^Release:`0 %s`n", HTMLEntities($name, ENT_COMPAT, getsetting('charset', 'UTF-8')));
+    output("`^Tag:`0 %s`n", HTMLEntities($tag, ENT_COMPAT, getsetting('charset', 'UTF-8')));
+    output("`^Published:`0 %s`n", HTMLEntities($published, ENT_COMPAT, getsetting('charset', 'UTF-8')));
+    output_notl("`^Link:`0 <a href='" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "' target='_blank'>" . HTMLEntities($url, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "</a>`n", true);
 } else {
     output("`4No release information available at this time.`n");
 }
