@@ -250,7 +250,7 @@ if ($dp < $dkills) {
         );
     }
     $rp = $session['user']['restorepage'];
-    $x = max(strrpos("&", $rp), strrpos("?", $rp));
+    $x = max(strrpos($rp, '&'), strrpos($rp, '?'));
     if ($x > 0) {
         $rp = substr($rp, 0, $x);
     }
