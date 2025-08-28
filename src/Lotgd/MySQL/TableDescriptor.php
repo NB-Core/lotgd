@@ -6,6 +6,8 @@ namespace Lotgd\MySQL;
 
 use RuntimeException;
 
+use function debug;
+
 /**
  * Helper for creating, reading and synchronising table descriptors.
  *
