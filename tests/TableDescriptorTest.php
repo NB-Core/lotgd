@@ -830,6 +830,16 @@ final class TableDescriptorTest extends TestCase
         $this->assertStringContainsString('KEY name_idx (name(191))', $sql);
     }
 
+    public function testPrimaryKeyColumnsAreAutoTruncated(): void
+    {
+        $descriptor = [
+            'id' => ['name' => 'id', 'type' => 'varchar(255)'],
+            'key-PRIMARY' => ['type' => 'primary key', 'name' => 'PRIMARY', 'columns' => 'id'],
+        ];
+        $sql = TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+        $this->assertStringContainsString('PRIMARY KEY (id(191))', $sql);
+    }
+
     public function testMultiColumnIndexTruncationIsDistributed(): void
     {
         $descriptor = [
