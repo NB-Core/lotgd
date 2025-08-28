@@ -83,6 +83,7 @@ clause when required.
 
 ### Collation and Encoding
 
+All core tables are created using the `utf8mb4` character set and `utf8mb4_unicode_ci` collation.
 `synctable()` now enforces the `utf8mb4` character set and
 `utf8mb4_unicode_ci` collation for tables and columns by default. This
 combination supports the full Unicode range, including emoji, and in

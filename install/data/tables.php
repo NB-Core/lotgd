@@ -7,6 +7,8 @@ function get_all_tables()
 {
     return array(
     'accounts' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'acctid' => array(
             'name' => 'acctid', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment' //the unique account ID
             ),
@@ -351,6 +353,8 @@ function get_all_tables()
             ),
         ),
     'accounts_output' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'acctid' => array(
             'name' => 'acctid', 'type' => 'int(11) unsigned'
             ),
@@ -365,6 +369,8 @@ function get_all_tables()
             ),
         ),
     'companions' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'companionid' => array(
             'name' => 'companionid', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment',
             ),
@@ -442,6 +448,8 @@ function get_all_tables()
             ),
     ),
     'debug' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'id' => array(
             'name' => 'id',
             'type' => 'bigint(11) unsigned',
@@ -482,6 +490,8 @@ function get_all_tables()
     ),
 
     'deathmessages' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'id' => array(
             'name' => 'deathmessageid',
             'type' => 'int(11) unsigned',
@@ -519,6 +529,8 @@ function get_all_tables()
             )
         ),
     'paylog' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'payid' => array(
             'name' => 'payid', 'type' => 'int(11)', 'null' => '0', 'extra' => 'auto_increment'
             ),
@@ -566,6 +578,8 @@ function get_all_tables()
             ),
         ),
     'armor' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'armorid' => array(
             'name' => 'armorid',
             'type' => 'int(11) unsigned',
@@ -591,6 +605,8 @@ function get_all_tables()
             ),
         ),
     'bans' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'ipfilter' => array(
             'name' => 'ipfilter', 'type' => 'varchar(15)'
             ),
@@ -616,6 +632,8 @@ function get_all_tables()
             ),
         ),
     'clans' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'clanid' => array(
             'name' => 'clanid', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment'
             ),
@@ -651,6 +669,8 @@ function get_all_tables()
             )
         ),
     'commentary' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'commentid' => array(
             'name' => 'commentid',
             'type' => 'int(11) unsigned',
@@ -684,6 +704,8 @@ function get_all_tables()
             )
         ),
     'creatures' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'creatureid' => array(
             'name' => 'creatureid', 'type' => 'int(11)', 'extra' => 'auto_increment'
             ),
@@ -749,6 +771,8 @@ function get_all_tables()
             )
         ),
     'debuglog' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'id' => array(
             'name' => 'id', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment'
             ),
@@ -787,6 +811,8 @@ function get_all_tables()
             ),
         ),
     'debuglog_archive' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'id' => array(
             'name' => 'id', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment'
             ),
@@ -825,6 +851,8 @@ function get_all_tables()
             ),
         ),
     'faillog' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'eventid' => array(
             'name' => 'eventid',
             'type' => 'int(11) unsigned',
@@ -862,6 +890,8 @@ function get_all_tables()
             )
         ),
     'gamelog' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'logid' => array(
             'name' => 'logid',
             'type' => 'int(11) unsigned',
@@ -903,12 +933,16 @@ function get_all_tables()
             ),
         ),
     'logdnetbans' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'banid' => array('name' => 'banid','type' => 'int(11) unsigned','extra' => 'auto_increment'),
         'bantype' => array('name' => 'bantype','type' => 'varchar(20)'),
         'banvalue' => array('name' => 'banvalue','type' => 'varchar(255)'),
         'key-PRIMARY' => array('name' => 'PRIMARY','type' => 'PRIMARY KEY','unique' => '1','columns' => 'banid'),
         ),
     'logdnet' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'serverid' => array(
             'name' => 'serverid',
             'type' => 'int(11) unsigned',
@@ -1001,6 +1035,8 @@ function get_all_tables()
             )
         ),
     'masters' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'creatureid' => array(
             'name' => 'creatureid',
             'type' => 'int(11) unsigned',
@@ -1044,6 +1080,8 @@ function get_all_tables()
             )
         ),
     'moderatedcomments' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'modid' => array(
             'name' => 'modid', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment'
             ),
@@ -1064,6 +1102,8 @@ function get_all_tables()
             )
         ),
     'module_event_hooks' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'event_type' => array(
             'name' => 'event_type', 'type' => 'varchar(20)'
             ),
@@ -1081,6 +1121,8 @@ function get_all_tables()
             )
         ),
     'module_hooks' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'modulename' => array(
             'name' => 'modulename', 'type' => 'varchar(50)'
             ),
@@ -1107,6 +1149,8 @@ function get_all_tables()
             ),
         ),
     'module_objprefs' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'modulename' => array(
             'name' => 'modulename', 'type' => 'varchar(50)'
             ),
@@ -1131,6 +1175,8 @@ function get_all_tables()
         ),
 
     'module_settings' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'modulename' => array(
             'name' => 'modulename', 'type' => 'varchar(50)'
             ),
@@ -1148,6 +1194,8 @@ function get_all_tables()
             )
         ),
     'module_userprefs' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'modulename' => array(
             'name' => 'modulename', 'type' => 'varchar(50)'
             ),
@@ -1171,6 +1219,8 @@ function get_all_tables()
             ),
         ),
     'modules' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'modulename' => array(
             'name' => 'modulename', 'type' => 'varchar(50)'
             ),
@@ -1228,6 +1278,8 @@ function get_all_tables()
             )
         ),
     'motd' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'motditem' => array(
             'name' => 'motditem',
             'type' => 'int(11) unsigned',
@@ -1256,6 +1308,8 @@ function get_all_tables()
             )
         ),
     'mounts' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'mountid' => array(
             'name' => 'mountid',
             'type' => 'int(11) unsigned',
@@ -1314,6 +1368,8 @@ function get_all_tables()
             )
         ),
     'nastywords' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'words' => array(
             'name' => 'words', 'type' => 'text', 'null' => '1'
             ),
@@ -1322,6 +1378,8 @@ function get_all_tables()
             )
         ),
     'news' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'newsid' => array(
             'name' => 'newsid', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment'
             ),
@@ -1354,6 +1412,8 @@ function get_all_tables()
             ),
         ),
     'petitions' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'petitionid' => array(
             'name' => 'petitionid',
             'type' => 'int(11) unsigned',
@@ -1396,6 +1456,8 @@ function get_all_tables()
             )
         ),
     'pollresults' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'resultid' => array(
             'name' => 'resultid',
             'type' => 'int(11) unsigned',
@@ -1418,6 +1480,8 @@ function get_all_tables()
             )
         ),
     'referers' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         // This table needs to be myISAM since pre-4.0.14 mysql cannot index
         // on blob tables under innoDB and we have no way to determine
         // with 100% accuracy (mysql_get_server_info merely returns an
@@ -1460,6 +1524,8 @@ function get_all_tables()
             )
         ),
     'settings' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'setting' => array(
             'name' => 'setting', 'type' => 'varchar(25)'
             ),
@@ -1474,6 +1540,8 @@ function get_all_tables()
             )
         ),
     'settings_extended' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'setting' => array(
             'name' => 'setting', 'type' => 'varchar(50)'
             ),
@@ -1488,6 +1556,8 @@ function get_all_tables()
             )
         ),
     'taunts' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'tauntid' => array(
             'name' => 'tauntid',
             'type' => 'int(11) unsigned',
@@ -1507,6 +1577,8 @@ function get_all_tables()
             )
         ),
     'untranslated' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         // This table needs to be myISAM since pre-4.0.14 mysql cannot index
         // on blob tables under innoDB and we have no way to determine
         // with 100% accuracy (mysql_get_server_info merely returns an
@@ -1535,6 +1607,8 @@ function get_all_tables()
             ),
         ),
     'translations' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'tid' => array(
             'name' => 'tid', 'type' => 'int(11)', 'extra' => 'auto_increment'
             ),
@@ -1570,6 +1644,8 @@ function get_all_tables()
             ),
         ),
     'weapons' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'weaponid' => array(
             'name' => 'weaponid',
             'type' => 'int(11) unsigned',
@@ -1595,6 +1671,8 @@ function get_all_tables()
             )
         ),
     'titles' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'titleid' => array(
             'name' => 'titleid', 'type' => 'int(11) unsigned',
             'extra' => 'auto_increment'
