@@ -114,6 +114,11 @@ class Settings
         if (!isset($this->settings[$settingname])) {
             $this->loadSettings();
             if (!isset($this->settings[$settingname])) {
+                if ($settingname === 'charset') {
+                    $this->saveSetting('charset', 'UTF-8');
+
+                    return 'UTF-8';
+                }
                 if (file_exists('config/' . $this->tablename . '.php')) {
                     require 'config/' . $this->tablename . '.php';
                 }
