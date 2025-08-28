@@ -30,7 +30,6 @@ class Bootstrap
         global $DB_PREFIX;
         $DB_PREFIX = $settings['DB_PREFIX'] ?? '';
         Database::setPrefix($DB_PREFIX);
-        error_log('Bootstrap DB_PREFIX=' . $DB_PREFIX);
 
         $connection = [
             'driver'       => 'pdo_mysql',
@@ -50,7 +49,6 @@ class Bootstrap
 
         $path = !empty($settings['DB_DATACACHEPATH']) ? $settings['DB_DATACACHEPATH'] : sys_get_temp_dir();
         $cacheDir = $path . '/doctrine';
-        error_log('Doctrine cache dir=' . $cacheDir);
 
         // Disable metadata caching only when datacache path is not configured
         $isDevMode = empty($settings['DB_USEDATACACHE']) || empty($settings['DB_DATACACHEPATH']);
