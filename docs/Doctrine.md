@@ -32,10 +32,10 @@ Schema migrations reside in the `migrations/` directory. Execute them with the
 Doctrine migration tool:
 
 ```bash
-php vendor/bin/doctrine-migrations migrate --configuration=config/doctrine.php
+php vendor/bin/doctrine-migrations migrate --configuration=migrations.php --db-configuration=migrations-db.php
 ```
 
-The command reads its configuration from `config/doctrine.php`.
+The command reads migration paths from `migrations.php` and database credentials from `migrations-db.php`.
 
 ## Persisting an Account
 
