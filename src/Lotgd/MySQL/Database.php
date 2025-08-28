@@ -294,7 +294,15 @@ class Database
      */
     public static function getServerVersion(): string
     {
-        return self::getInstance()->getServerVersion();
+        if (self::$doctrine) {
+            return self::$doctrine->getServerVersion();
+        }
+
+        if (self::$instance) {
+            return self::$instance->getServerVersion();
+        }
+
+        throw new \RuntimeException('No database connection available to determine server version.');
     }
 
     /**
