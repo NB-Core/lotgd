@@ -28,14 +28,61 @@ $repo = $entityManager->getRepository(Lotgd\Entity\Account::class);
 
 ## Running Migrations
 
-Schema migrations reside in the `migrations/` directory. Execute them with the
-Doctrine migration tool:
+Schema migrations reside in the `migrations/` directory and are configured
+through two files:
 
-```bash
-php vendor/bin/doctrine-migrations migrate --configuration=config/doctrine.php
+* `migrations.php` – defines migration paths and the **connection name**.
+* `migrations-db.php` – provides database credentials keyed by connection name.
+
+In `migrations.php` the `connection` value is only a label. The actual
+credentials belong in `migrations-db.php`:
+
+```php
+<?php
+// migrations.php
+return [
+    'connection' => 'lotgd',
+    'migrations_paths' => [
+        'Lotgd\\Migrations' => __DIR__ . '/../migrations',
+    ],
+];
 ```
 
-The command reads its configuration from `config/doctrine.php`.
+```php
+<?php
+// migrations-db.php
+return [
+    'lotgd' => [
+        'driver' => 'pdo_mysql',
+        'host' => 'localhost',
+        'dbname' => 'lotgd',
+        'user' => 'lotgd_user',
+        'password' => 'secret',
+        'charset' => 'utf8mb4',
+    ],
+];
+```
+
+Run pending migrations:
+
+```bash
+php vendor/bin/doctrine-migrations migrate
+```
+
+The command automatically reads `migrations.php` and `migrations-db.php` from
+the project root. If you store them elsewhere, pass the paths explicitly:
+
+```bash
+php vendor/bin/doctrine-migrations \
+    --configuration=config/migrations.php \
+    --db-configuration=config/migrations-db.php migrate
+```
+
+### Upgrade Notes
+
+Earlier versions used a single `config/doctrine.php`. Replace it with the split
+configuration above and run `php vendor/bin/doctrine-migrations migrate` when
+upgrading.
 
 ## Persisting an Account
 

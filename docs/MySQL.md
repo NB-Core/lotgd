@@ -141,14 +141,24 @@ try {
 
 ## Database Migrations
 
-The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory defined in `config/doctrine.php`.
+The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory and are configured through `migrations.php` and `migrations-db.php`.
+
+In `migrations.php` the `connection` value is only a name that matches the credentials array in `migrations-db.php`.
 
 ### Running Migrations
 
 Execute pending migrations with the Doctrine command line tool:
 
 ```bash
-vendor/bin/doctrine-migrations migrations:migrate
+php vendor/bin/doctrine-migrations migrate
+```
+
+The command uses the default `migrations.php` and `migrations-db.php` files in the project root. If your configuration lives elsewhere, provide their paths explicitly:
+
+```bash
+php vendor/bin/doctrine-migrations \
+    --configuration=config/migrations.php \
+    --db-configuration=config/migrations-db.php migrate
 ```
 
 This will apply all new migrations to the configured database. During development you can generate additional migrations using `migrations:diff` or `migrations:generate`.
