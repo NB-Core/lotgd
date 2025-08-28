@@ -66,7 +66,17 @@ class Mail
         }
 
         $settings = self::getSettings();
-        $body = addslashes(substr(stripslashes($body), 0, (int) $settings->getSetting('mailsizelimit', 1024)));
+        $limit = (int) $settings->getSetting('mailsizelimit', 1024);
+        $charset = $settings->getSetting('charset', 'UTF-8');
+        $body = stripslashes($body);
+
+        if (extension_loaded('mbstring')) {
+            $body = mb_substr($body, 0, $limit, $charset);
+        } else {
+            $body = substr($body, 0, $limit);
+        }
+
+        $body = addslashes($body);
         $sql = 'INSERT INTO ' . Database::prefix('mail') . " (msgfrom,msgto,subject,body,sent) VALUES ('" . (int)$from . "','" . (int)$to . "','$subject','$body','" . date('Y-m-d H:i:s') . "')";
         Database::query($sql);
         DataCache::invalidatedatacache("mail-$to");
