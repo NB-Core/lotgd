@@ -1,6 +1,6 @@
 <?php
 
-$db = require __DIR__ . '/dbconnect.php';
+$db = require dirname(__DIR__) . '/dbconnect.php';
 
 return [
     'driver' => $db['DB_DRIVER'] ?? 'pdo_mysql',
