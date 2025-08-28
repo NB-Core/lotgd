@@ -3,13 +3,15 @@
 $db = require dirname(__DIR__) . '/dbconnect.php';
 
 return [
-    'driver' => 'pdo_mysql',
-    'host' => $db['DB_HOST'] ?? 'localhost',
-    'dbname' => $db['DB_NAME'] ?? '',
-    'user' => $db['DB_USER'] ?? '',
-    'password' => $db['DB_PASS'] ?? '',
-    'charset' => 'utf8mb4',
-    'db_prefix' => $db['DB_PREFIX'] ?? '',
+    'connection' => [
+        'driver' => 'pdo_mysql',
+        'host' => $db['DB_HOST'] ?? 'localhost',
+        'dbname' => $db['DB_NAME'] ?? '',
+        'user' => $db['DB_USER'] ?? '',
+        'password' => $db['DB_PASS'] ?? '',
+        'charset' => 'utf8mb4',
+        'db_prefix' => $db['DB_PREFIX'] ?? '',
+    ],
     'migrations_paths' => [
         'Lotgd\\Migrations' => dirname(__DIR__) . '/migrations',
     ],
