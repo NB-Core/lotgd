@@ -356,8 +356,19 @@ class TableDescriptor
                         if (!isset($existingColumns[$column])) {
                             continue;
                         }
-                        $updateSql = "UPDATE $tablename SET $column = :DATETIME_DATEMIN WHERE $column = '0000-00-00 00:00:00'";
-                        Database::getDoctrineConnection()->executeStatement($updateSql, ['DATETIME_DATEMIN' => DATETIME_DATEMIN]);
+                        $updateSql = "UPDATE $tablename SET $column = :DATETIME_DATEMIN"
+                            . " WHERE $column < :DATETIME_DATEMIN OR $column = :zeroDate";
+                        try {
+                            Database::getDoctrineConnection()->executeStatement(
+                                $updateSql,
+                                [
+                                    'DATETIME_DATEMIN' => DATETIME_DATEMIN,
+                                    'zeroDate' => '0000-00-00 00:00:00',
+                                ]
+                            );
+                        } catch (\Throwable $e) {
+                            debug($e->getMessage());
+                        }
                     }
                 }
                 //we have changes to do!  Woohoo!
