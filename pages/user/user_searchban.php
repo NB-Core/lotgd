@@ -131,7 +131,7 @@ while ($row = Database::fetchAssoc($result)) {
     ) {
         $expire = Translator::translateInline("Tomorrow");
     }
-    if ($row['banexpire'] == "0000-00-00 00:00:00") {
+    if ($row['banexpire'] == DATETIME_DATEMIN) {
         $expire = Translator::translateInline("Never");
     }
     $output->outputNotl("%s", $expire);

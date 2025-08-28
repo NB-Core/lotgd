@@ -28,7 +28,7 @@ if ($subop == "xml") {
     $output->rawOutput("</xml>");
     exit();
 }
-    Database::query("DELETE FROM " . Database::prefix("bans") . " WHERE banexpire < \"" . date("Y-m-d") . "\" AND banexpire>'0000-00-00'");
+Database::query("DELETE FROM " . Database::prefix("bans") . " WHERE banexpire < \"" . date("Y-m-d") . "\" AND banexpire>'" . DATETIME_DATEMIN . "'");
 $duration =  httpget("duration");
 if (httpget('notbefore')) {
     $operator = ">=";
@@ -37,17 +37,17 @@ if (httpget('notbefore')) {
 }
 
 if ($duration == "") {
-    $since = " WHERE banexpire $operator '" . date("Y-m-d H:i:s", strtotime("+2 weeks")) . "' AND banexpire > '0000-00-00 00:00:00'";
+    $since = " WHERE banexpire $operator '" . date("Y-m-d H:i:s", strtotime("+2 weeks")) . "' AND banexpire > '" . DATETIME_DATEMIN . "'";
         $output->output("`bShowing bans that will expire within 2 weeks.`b`n`n");
 } else {
     if ($duration == "forever") {
-        $since = " WHERE banexpire='0000-00-00 00:00:00'";
+        $since = " WHERE banexpire='" . DATETIME_DATEMIN . "'";
         $output->output("`bShowing all permanent bans`b`n`n");
     } elseif ($duration == "all") {
         $since = "";
         $output->output("`bShowing all bans`b`n`n");
     } else {
-        $since = " WHERE banexpire $operator '" . date("Y-m-d H:i:s", strtotime("+" . $duration)) . "' AND banexpire > '0000-00-00 00:00:00'";
+        $since = " WHERE banexpire $operator '" . date("Y-m-d H:i:s", strtotime("+" . $duration)) . "' AND banexpire > '" . DATETIME_DATEMIN . "'";
         $output->output("`bShowing bans that will expire within %s.`b`n`n", $duration);
     }
 }
@@ -148,7 +148,7 @@ while ($row = Database::fetchAssoc($result)) {
     ) {
         $expire = Translator::translateInline("Tomorrow");
     }
-    if ($row['banexpire'] == "0000-00-00 00:00:00") {
+    if ($row['banexpire'] == DATETIME_DATEMIN) {
         $expire = Translator::translateInline("Never");
     }
     $output->outputNotl("%s", $expire);
