@@ -1010,13 +1010,15 @@ class Modules
     }
 
     /**
-     * Remove all hooks for the current module.
+     * Remove all hooks and event hooks for the current module.
      */
     public static function wipeHooks(): void
     {
         global $mostrecentmodule;
 
         $sql = 'DELETE FROM ' . Database::prefix('module_hooks') . " WHERE modulename='$mostrecentmodule'";
+        Database::query($sql);
+        $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks') . " WHERE modulename='$mostrecentmodule'";
         Database::query($sql);
         invalidatedatacache('hook-' . $mostrecentmodule);
         invalidatedatacache('module_prepare');
