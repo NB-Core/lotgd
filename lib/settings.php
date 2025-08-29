@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Settings;
+use Lotgd\MySQL\Database;
 
 function savesetting($settingname, $value)
 {
@@ -31,8 +32,13 @@ function getsetting($settingname, $default)
 {
     global $settings;
     if (!($settings instanceof Settings)) {
+        if (!Database::tableExists(Database::prefix('settings'))) {
+            return $default;
+        }
+
         $settings = new Settings('settings');
     }
+
     return $settings->getSetting($settingname, $default);
 }
 

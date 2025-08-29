@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
+use Doctrine\DBAL\Exception\TableNotFoundException;
 
 class Settings
 {
@@ -68,12 +69,22 @@ class Settings
             $this->settings = DataCache::datacache('game' . $this->tablename);
             if (!is_array($this->settings)) {
                 $this->settings = [];
-                $sql = 'SELECT * FROM ' . $this->tablename;
-                $result = Database::query($sql);
-                while ($row = Database::fetchAssoc($result)) {
-                    $this->settings[$row['setting']] = $row['value'];
+
+                if (!Database::tableExists($this->tablename)) {
+                    return;
                 }
-                Database::freeResult($result);
+
+                try {
+                    $sql = 'SELECT * FROM ' . $this->tablename;
+                    $result = Database::query($sql);
+                    while ($row = Database::fetchAssoc($result)) {
+                        $this->settings[$row['setting']] = $row['value'];
+                    }
+                    Database::freeResult($result);
+                } catch (TableNotFoundException $e) {
+                    return;
+                }
+
                 DataCache::updatedatacache('game' . $this->tablename, $this->settings);
             }
         }
