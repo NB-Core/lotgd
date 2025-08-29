@@ -850,4 +850,14 @@ final class TableDescriptorTest extends TestCase
         $sql = TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
         $this->assertStringContainsString('KEY foobar_idx (foo(95),bar(95))', $sql);
     }
+
+    public function testPrimaryKeyReservedWordIsQuoted(): void
+    {
+        $descriptor = [
+            'function' => ['name' => 'function', 'type' => 'int'],
+            'key-PRIMARY' => ['type' => 'primary key', 'name' => 'PRIMARY', 'columns' => 'function'],
+        ];
+        $sql = TableDescriptor::tableCreateFromDescriptor('dummy', $descriptor);
+        $this->assertStringContainsString('PRIMARY KEY (`function`)', $sql);
+    }
 }

@@ -31,6 +31,11 @@ class TableDescriptor
 // There's no support for foreign keys that INNODB offers.  Sorry.
 
     /**
+     * MySQL reserved words that require quoting in generated SQL.
+     */
+    private const RESERVED_WORDS = ['function', 'table', 'key'];
+
+    /**
      * Synchronise a table with the provided descriptor.
      *
      * @param string $tablename  Fully qualified table name.
@@ -777,6 +782,7 @@ class TableDescriptor
             if ($col === '') {
                 continue;
             }
+            $quoted = $col !== '' && $col[0] === '`';
             if (preg_match('/^`?([\w]+)`?(?:\((\d+)\))?$/', $col, $m)) {
                 $name = $m[1];
                 $prefix = isset($m[2]) ? (int) $m[2] : null;
@@ -786,13 +792,15 @@ class TableDescriptor
                 $length = $prefix ?? self::columnLength($def['type'] ?? '');
                 $isString = $length !== null;
                 $bytes = $isString ? $length * $bytesPerChar : self::numericBytes($def['type'] ?? '');
+                $needsQuote = $quoted || in_array(strtolower($name), self::RESERVED_WORDS, true);
                 $columnInfo[] = [
-                    'name'      => $name,
-                    'explicit'  => $prefix !== null,
-                    'length'    => $length,
-                    'bytes'     => $bytes,
-                    'bytesChar' => $bytesPerChar,
-                    'isString'  => $isString,
+                    'name'       => $name,
+                    'explicit'   => $prefix !== null,
+                    'length'     => $length,
+                    'bytes'      => $bytes,
+                    'bytesChar'  => $bytesPerChar,
+                    'isString'   => $isString,
+                    'needsQuote' => $needsQuote,
                 ];
                 $totalBytes += $bytes;
             }
@@ -811,7 +819,7 @@ class TableDescriptor
         }
         $adjusted = [];
         foreach ($columnInfo as $info) {
-            $colStr = $info['name'];
+            $colStr = $info['needsQuote'] ? '`' . $info['name'] . '`' : $info['name'];
             if ($info['isString'] && ($needsTruncate || $info['explicit'])) {
                 $colStr .= '(' . $info['length'] . ')';
             }
