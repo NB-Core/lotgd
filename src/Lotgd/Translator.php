@@ -7,6 +7,7 @@ namespace Lotgd;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Cookies;
+use Doctrine\DBAL\Exception\TableNotFoundException;
 
 class Translator
 {
@@ -78,7 +79,11 @@ class Translator
     {
         global $session,$settings;
 
-        if (!isset($settings) || $settings->getSetting("enabletranslation", true) == false) {
+        if (
+            !self::$translation_is_enabled
+            || !isset($settings)
+            || $settings->getSetting("enabletranslation", true) == false
+        ) {
             return $indata;
         }
 
@@ -281,6 +286,9 @@ class Translator
      */
     public static function translateInline(string|array $in, string|false|null $namespace = false): string|array
     {
+        if (!self::$translation_is_enabled) {
+            return $in;
+        }
         $out = self::translate($in, $namespace);
         if (function_exists('rawoutput')) {
             \rawoutput(self::tlbuttonClear());
@@ -298,6 +306,15 @@ class Translator
      */
     public static function translateMail(mixed $in, int $to = 0): string
     {
+        if (!self::$translation_is_enabled) {
+            if (!is_array($in)) {
+                return (string) $in;
+            }
+            $args = $in;
+            $format = (string) array_shift($args);
+            return vsprintf($format, $args);
+        }
+
         global $session;
         tlschema("mail"); // should be same schema like systemmails!
         if (!is_array($in)) {
@@ -333,6 +350,9 @@ class Translator
      */
     public static function tl(string $in): string
     {
+        if (!self::$translation_is_enabled) {
+            return $in;
+        }
         $out = self::translate($in);
         return self::tlbuttonClear() . $out;
     }
@@ -351,6 +371,11 @@ class Translator
             return [];
         }
 
+        if (!Database::tableExists(Database::prefix('translations'))) {
+            self::$translation_is_enabled = false;
+            return [];
+        }
+
         global $language, $session;
         if (defined("LANGUAGE")) {
             if ($language === false) {
@@ -366,21 +391,26 @@ class Translator
         } else {
             $where = "(uri='$page' OR uri='$uri')";
         }
-        $sql = "
-			SELECT intext,outtext
-			FROM " . Database::prefix("translations") . "
-			WHERE language='$language'
-				AND $where";
-    /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")))); */
-        if (isset($settings) && !$settings->getSetting("cachetranslations", 0)) {
-            $result = Database::query($sql);
-        } else {
-            $cacheNamespace = $namespace;
-            if (strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH) {
-                $cacheNamespace = sha1($cacheNamespace);
+        try {
+            $sql = "
+                        SELECT intext,outtext
+                        FROM " . Database::prefix("translations") . "
+                        WHERE language='$language'
+                                AND $where";
+            /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")))); */
+            if (isset($settings) && !$settings->getSetting("cachetranslations", 0)) {
+                $result = Database::query($sql);
+            } else {
+                $cacheNamespace = $namespace;
+                if (strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH) {
+                    $cacheNamespace = sha1($cacheNamespace);
+                }
+                $result = Database::queryCached($sql, "translations-" . $cacheNamespace . "-" . $language, 600);
+                //store it for 10 Minutes, normally you don't need to refresh this often
             }
-            $result = Database::queryCached($sql, "translations-" . $cacheNamespace . "-" . $language, 600);
-            //store it for 10 Minutes, normally you don't need to refresh this often
+        } catch (TableNotFoundException $e) {
+            self::$translation_is_enabled = false;
+            return [];
         }
         $out = array();
         while ($row = Database::fetchAssoc($result)) {
