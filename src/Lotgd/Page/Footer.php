@@ -122,13 +122,15 @@ class Footer
 
         $palreplace = (strpos($footer, '{paypal}') || strpos($header, '{paypal}')) ? '{paypal}' : '{stats}';
 
-        list($header, $footer) = PageParts::buildPaypalDonationMarkup(
-            $palreplace,
-            $header,
-            $footer,
-            $settings ?? null,
-            $logd_version
-        );
+        if (defined('DB_CHOSEN')) {
+            list($header, $footer) = PageParts::buildPaypalDonationMarkup(
+                $palreplace,
+                $header,
+                $footer,
+                $settings ?? null,
+                $logd_version
+            );
+        }
 
         list($header, $footer) = PageParts::generateNavigationOutput($header, $footer, $builtnavs);
         if (TwigTemplate::isActive()) {
