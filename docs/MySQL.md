@@ -73,6 +73,8 @@ SQL errors throw exceptions with detailed messages from `DbMysqli`. In debug mod
 
 Modules may ship schema descriptions for their tables. `TableDescriptor::schematize()` converts descriptor arrays into CREATE or ALTER statements during `install.php`.
 
+Modules that define their own tables **must** call `TableDescriptor::synctable()` during install and upgrade routines. This keeps schemas in sync and guarantees the `utf8mb4` charset and `utf8mb4_unicode_ci` collation are applied.
+
 #### Detecting default values
 
 `TableDescriptor::tableCreateDescriptor()` reads column metadata using
