@@ -80,6 +80,7 @@ Regular upkeep tasks:
 - Run `composer test` to execute the unit tests.
 - Schedule `cron.php` via cron for automated jobs.
 - Configure SMTP settings in `config/configuration.php`.
+- If you change `DB_PREFIX`, clear the cache directory to avoid reusing metadata from the previous prefix.
 
 ## Further Reading
 

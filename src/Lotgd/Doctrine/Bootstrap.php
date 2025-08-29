@@ -55,11 +55,12 @@ class Bootstrap
         // Disable metadata caching only when datacache path is not configured
         $isDevMode = empty($settings['DB_USEDATACACHE']) || empty($settings['DB_DATACACHEPATH']);
 
+        // Include the table prefix in the cache namespace so metadata isn't reused across different prefixes.
         if (class_exists(FilesystemAdapter::class)) {
-            $cache = new FilesystemAdapter('', 0, $cacheDir);
+            $cache = new FilesystemAdapter($DB_PREFIX, 0, $cacheDir);
         } else {
             // Fallback to an in-memory cache when Symfony cache is missing.
-            $cache = new ArrayAdapter();
+            $cache = (new ArrayAdapter())->withSubNamespace($DB_PREFIX);
         }
 
         $config = ORMSetup::createAnnotationMetadataConfiguration(
