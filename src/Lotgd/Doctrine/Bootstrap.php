@@ -6,9 +6,11 @@ namespace Lotgd\Doctrine;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
+use Doctrine\Common\EventManager;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Lotgd\MySQL\Database;
+use Lotgd\Doctrine\TablePrefixSubscriber;
 
 class Bootstrap
 {
@@ -67,6 +69,9 @@ class Bootstrap
             $cache
         );
 
-        return EntityManager::create($connection, $config);
+        $eventManager = new EventManager();
+        $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
+
+        return EntityManager::create($connection, $config, $eventManager);
     }
 }
