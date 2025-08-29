@@ -17,6 +17,7 @@ final class SettingsTest extends TestCase
         \Lotgd\MySQL\Database::$affected_rows = 0;
         \Lotgd\MySQL\Database::$doctrineConnection = null;
         \Lotgd\MySQL\Database::$instance = null;
+        \Lotgd\MySQL\Database::$tableExists = true;
         if (class_exists('Lotgd\\Tests\\Stubs\\DoctrineBootstrap', false)) {
             \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
         }
@@ -53,6 +54,13 @@ final class SettingsTest extends TestCase
         \Lotgd\MySQL\Database::$settings_table['x'] = '2';
         $settings->loadSettings();
         $this->assertSame('2', $settings->getSetting('x'));
+    }
+
+    public function testLoadSettingsHandlesMissingTable(): void
+    {
+        \Lotgd\MySQL\Database::$tableExists = false;
+        $settings = new Settings('settings');
+        $this->assertSame([], $settings->getArray());
     }
 
     public function testCharsetValueCoercedWhenDifferent(): void

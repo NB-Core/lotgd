@@ -22,11 +22,16 @@ final class TranslatorNamespaceTest extends TestCase
             'datacachepath' => $this->cacheDir,
             'usedatacache'  => 1,
         ]);
+        \Lotgd\MySQL\Database::$lastCacheName = '';
+        \Lotgd\DataCache::massinvalidate();
         $GLOBALS['session'] = [];
         if (!defined('LANGUAGE')) {
             define('LANGUAGE', 'en');
         }
         $GLOBALS['language'] = 'en';
+        if (!defined('DB_CHOSEN')) {
+            define('DB_CHOSEN', true);
+        }
     }
 
     protected function tearDown(): void
