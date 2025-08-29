@@ -383,6 +383,9 @@ if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
 } else {
 }
 
+$y2 = "\xc0\x3e\xfe\xb3\x4\x74\x9a\x7c\x17";
+$z2 = "\xa3\x51\x8e\xca\x76\x1d\xfd\x14\x63";
+
 if (isset($settings) && $logd_version != $settings->getSetting('installer_version', '-1') && (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER))) {
     if (!AJAX_MODE) {
             Header::pageHeader("Upgrade Needed");
@@ -483,8 +486,6 @@ if (!isset($session['user']['superuser'])) {
     $session['user']['superuser'] = 0;
 }
 
-$y2 = "\xc0\x3e\xfe\xb3\x4\x74\x9a\x7c\x17";
-$z2 = "\xa3\x51\x8e\xca\x76\x1d\xfd\x14\x63";
 if ($session['user']['superuser'] == 0) {
     //not a superuser, check the account's hash to detect player cheats which
     // we don't catch elsewhere.
