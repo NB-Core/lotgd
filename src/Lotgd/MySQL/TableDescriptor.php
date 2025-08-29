@@ -240,8 +240,15 @@ class TableDescriptor
                 if ($colCharset && !$colCollation) {
                     $colCollation = self::defaultCollation($colCharset);
                 }
+                // Reduce column sizes for all index types, including primary keys,
+                // so composite keys stay within storage engine limits.
                 if (in_array($val['type'], ['key', 'unique key', 'primary key'], true)) {
-                    [$val['columns']] = self::adjustIndexColumns($val['columns'], $columnMap, $tableCharset, $engine);
+                    [$val['columns']] = self::adjustIndexColumns(
+                        $val['columns'],
+                        $columnMap,
+                        $tableCharset,
+                        $engine
+                    );
                 }
                 $newsql = self::descriptorCreateSql($val);
                 if (isset($existing[$key]) && isset($columnsNeedConversion[$existing[$key]['name']])
@@ -555,8 +562,15 @@ class TableDescriptor
             if ($colCharset && !$colCollation) {
                 $colCollation = self::defaultCollation($colCharset);
             }
+            // Adjust index column lengths—including primary keys—to prevent
+            // composite indexes from exceeding the engine's byte limits.
             if (in_array($val['type'], ['key', 'unique key', 'primary key'], true)) {
-                [$val['columns']] = self::adjustIndexColumns($val['columns'], $columnMap, $tableCharset, $type);
+                [$val['columns']] = self::adjustIndexColumns(
+                    $val['columns'],
+                    $columnMap,
+                    $tableCharset,
+                    $type
+                );
             } else {
                 $columnMap[$val['name']] = $val;
             }
