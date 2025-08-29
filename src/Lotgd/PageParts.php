@@ -216,9 +216,24 @@ class PageParts
 
         self::wipeCharStats();
 
-        $u =& $session['user'];
+        $u = $session['user'] ?? [];
+        if (!is_array($u)) {
+            $u = [];
+        }
 
-        if (isset($session['loggedin']) && $session['loggedin']) {
+        $loggedIn = isset($session['loggedin']) && $session['loggedin'];
+        foreach (['race', 'name'] as $key) {
+            if (!isset($u[$key])) {
+                $loggedIn = false;
+            }
+        }
+
+        if (!$loggedIn) {
+            $u['race'] = $u['race'] ?? RACE_UNKNOWN;
+            $u['name'] = $u['name'] ?? '';
+        }
+
+        if ($loggedIn) {
             $u['hitpoints'] = round((int)$u['hitpoints'], 0);
             $u['experience'] = round((float)$u['experience'], 0);
             $u['maxhitpoints'] = round((int)$u['maxhitpoints'], 0);
@@ -228,6 +243,9 @@ class PageParts
                 $spirits[(int)$u['spirits']] = Translator::translateInline("DEAD", "stats");
             }
             //calculate_buff_fields();
+            if (!isset($session['bufflist']) || !is_array($session['bufflist'])) {
+                $session['bufflist'] = [];
+            }
             reset($session['bufflist']);
             /*not so easy anymore
               $atk=$u['attack'];
