@@ -1129,8 +1129,8 @@ function get_all_tables()
         'location' => array(
             'name' => 'location', 'type' => 'varchar(50)'
             ),
-        'function' => array(
-            'name' => '`function`', 'type' => 'varchar(50)'
+        'hook_callback' => array(
+            'name' => 'hook_callback', 'type' => 'varchar(50)'
             ),
         'whenactive' => array(
             'name' => 'whenactive', 'type' => 'text'
@@ -1142,7 +1142,7 @@ function get_all_tables()
             'name' => 'PRIMARY',
             'type' => 'primary key',
             'unique' => '1',
-            'columns' => 'modulename,location,`function`'
+            'columns' => 'modulename,location,hook_callback'
             ),
         'key-location' => array(
             'name' => 'location', 'type' => 'key', 'columns' => 'location'

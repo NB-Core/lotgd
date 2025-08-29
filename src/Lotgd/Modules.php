@@ -312,7 +312,7 @@ class Modules
 
         $namesStr = "'" . implode("', '", $hookNames) . "'";
         $sql  = 'SELECT '
-            . "$Pmodule_hooks.modulename, $Pmodule_hooks.location, $Pmodule_hooks.`function`, $Pmodule_hooks.whenactive"
+            . "$Pmodule_hooks.modulename, $Pmodule_hooks.location, $Pmodule_hooks.hook_callback, $Pmodule_hooks.whenactive"
             . ' FROM ' . $Pmodule_hooks
             . ' INNER JOIN ' . $Pmodules
             . ' ON ' . $Pmodules . '.modulename = ' . $Pmodule_hooks . '.modulename'
@@ -329,7 +329,7 @@ class Modules
                 self::$modulehookQueries[$row['location']] = [];
             }
             self::$modulehookQueries[$row['location']][] = $row;
-            self::$modulePreload[$row['location']][$row['modulename']] = $row['function'];
+            self::$modulePreload[$row['location']][$row['modulename']] = $row['hook_callback'];
         }
 
         $moduleList = "'" . implode("', '", $moduleNames) . "'";
@@ -411,7 +411,7 @@ class Modules
             $sql = 'SELECT '
                 . Database::prefix('module_hooks') . '.modulename,'
                 . Database::prefix('module_hooks') . '.location,'
-                . Database::prefix('module_hooks') . '.`function`,'
+                . Database::prefix('module_hooks') . '.hook_callback,'
                 . Database::prefix('module_hooks') . '.whenactive'
                 . ' FROM ' . Database::prefix('module_hooks')
                 . ' INNER JOIN ' . Database::prefix('modules')
@@ -453,13 +453,13 @@ class Modules
                 $cond = trim($row['whenactive']);
                 if ($cond == '' || module_condition($cond) == true) {
                     $starttime = getmicrotime();
-                    if (function_exists($row['function'])) {
+                    if (function_exists($row['hook_callback'])) {
                         if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT)) {
-                            rawoutput('<!-- Hook: ' . $hookName . ' on module ' . $row['function'] . ' called... -->');
+                            rawoutput('<!-- Hook: ' . $hookName . ' on module ' . $row['hook_callback'] . ' called... -->');
                         }
-                        $res = $row['function']($hookName, $args);
+                        $res = $row['hook_callback']($hookName, $args);
                     } else {
-                        trigger_error('Unknown function ' . $row['function'] . ' for hookname ' . $hookName . ' in module ' . $row['modulename'] . '.', E_USER_WARNING);
+                        trigger_error('Unknown function ' . $row['hook_callback'] . ' for hookname ' . $hookName . ' in module ' . $row['modulename'] . '.', E_USER_WARNING);
                     }
                     $endtime = getmicrotime();
                     if (($endtime - $starttime >= 1.00 && isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
@@ -471,7 +471,7 @@ class Modules
                     }
 
                     if (!is_array($res)) {
-                        trigger_error($row['function'] . ' did not return an array in the module ' . $row['modulename'] . ' for hook ' . $hookName . '.', E_USER_WARNING);
+                        trigger_error($row['hook_callback'] . ' did not return an array in the module ' . $row['modulename'] . ' for hook ' . $hookName . '.', E_USER_WARNING);
                         $res = $args;
                     }
 
@@ -1072,7 +1072,7 @@ class Modules
 
         $sql = 'DELETE FROM ' . Database::prefix('module_hooks')
             . " WHERE modulename='$mostrecentmodule' AND location='" . addslashes($hookname)
-            . "' AND `function`='" . addslashes($functioncall) . "'";
+            . "' AND hook_callback='" . addslashes($functioncall) . "'";
         Database::query($sql);
         invalidatedatacache("hook-$hookname");
         invalidatedatacache('module_prepare');
@@ -1103,7 +1103,7 @@ class Modules
         }
 
         $sql = 'REPLACE INTO ' . Database::prefix('module_hooks')
-            . " (modulename,location,`function`,whenactive,priority) VALUES ('$mostrecentmodule','" . addslashes($hookname)
+            . " (modulename,location,hook_callback,whenactive,priority) VALUES ('$mostrecentmodule','" . addslashes($hookname)
             . "','" . addslashes($functioncall) . "','" . addslashes($whenactive) . "','" . $priority . "')";
         Database::query($sql);
         invalidatedatacache("hook-$hookname");
