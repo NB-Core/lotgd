@@ -140,7 +140,7 @@ class Modules
             return true;
         }
 
-        output("`n`\$Module '`^%s`\$' (%s) was not found in the modules directory.`n", $moduleName, $modulefilename);
+        output("`n`\$Module '`^%s`\$' (%s) was not found in the modules directory.`0`n", $moduleName, $modulefilename);
         output_notl(Backtrace::show(), true);
         self::$injectedModules[$force][$moduleName] = false;
         return false;
