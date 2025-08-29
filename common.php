@@ -185,6 +185,7 @@ if (file_exists("dbconnect.php")) {
     $DB_PASS = $config['DB_PASS'] ?? '';
     $DB_NAME = $config['DB_NAME'] ?? '';
     $DB_PREFIX = $config['DB_PREFIX'] ?? '';
+    \Lotgd\MySQL\Database::setPrefix($DB_PREFIX);
     $DB_USEDATACACHE = $config['DB_USEDATACACHE'] ?? 0;
     $DB_DATACACHEPATH = $config['DB_DATACACHEPATH'] ?? '';
 } else {
