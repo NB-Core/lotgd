@@ -24,7 +24,7 @@ class Footer
             $template, $y2, $z2, $logd_version, $copyright, $SCRIPT_NAME, $footer,
             $settings;
 
-        $z = $y2 ^ $z2;
+        $z = isset($y2, $z2) ? $y2 ^ $z2 : 'copyright';
         if (TwigTemplate::isActive()) {
             $footer = '';
             $header = $header ?? '';
@@ -223,7 +223,7 @@ class Footer
         }
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);
 
-        $z = $y2 ^ $z2;
+        $z = isset($y2, $z2) ? $y2 ^ $z2 : 'copyright';
         list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, [
             'script' => '',
             'mail'   => (strpos($header, '{mail}') !== false || strpos($footer, '{mail}') !== false)
