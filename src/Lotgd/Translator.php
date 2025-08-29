@@ -347,6 +347,10 @@ class Translator
      */
     public static function translateLoadNamespace(string $namespace, string|false $language = false)
     {
+        if (!defined('DB_CHOSEN') || !DB_CHOSEN) {
+            return [];
+        }
+
         global $language, $session;
         if (defined("LANGUAGE")) {
             if ($language === false) {

@@ -140,7 +140,11 @@ class Footer
             PageParts::$twigVars['bodyad']   = '';
         }
 
-        $motd_link = PageParts::motdLink();
+        if (defined('DB_CHOSEN') && DB_CHOSEN) {
+            $motd_link = PageParts::motdLink();
+        } else {
+            $motd_link = '';
+        }
         $motd_link = modulehook('motd-link', ['link' => $motd_link]);
         $motd_link = $motd_link['link'];
 
