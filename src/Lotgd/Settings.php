@@ -40,6 +40,10 @@ class Settings
      */
     public function saveSetting(string|int $settingname, mixed $value): bool
     {
+        if (!Database::tableExists($this->tablename)) {
+            return false;
+        }
+
         $this->loadSettings();
         if (!isset($this->settings[$settingname]) && $value) {
             $settingValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
@@ -126,7 +130,9 @@ class Settings
             $this->loadSettings();
             if (!isset($this->settings[$settingname])) {
                 if ($settingname === 'charset') {
-                    $this->saveSetting('charset', 'UTF-8');
+                    if (Database::tableExists($this->tablename)) {
+                        $this->saveSetting('charset', 'UTF-8');
+                    }
 
                     return 'UTF-8';
                 }
@@ -138,7 +144,9 @@ class Settings
                 } else {
                     $value = $default;
                 }
-                $this->saveSetting($settingname, $value);
+                if (Database::tableExists($this->tablename)) {
+                    $this->saveSetting($settingname, $value);
+                }
             } else {
                 $value = $this->settings[$settingname];
             }
@@ -147,7 +155,9 @@ class Settings
         }
 
         if ($settingname === 'charset' && $value !== 'UTF-8') {
-            $this->saveSetting('charset', 'UTF-8');
+            if (Database::tableExists($this->tablename)) {
+                $this->saveSetting('charset', 'UTF-8');
+            }
 
             return 'UTF-8';
         }
