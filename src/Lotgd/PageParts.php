@@ -548,7 +548,9 @@ class PageParts
         global $session;
 
         $paypalstr = '<table align="center"><tr><td>';
-        $currency = isset($settings) ? $settings->getSetting('paypalcurrency', 'USD') : 'USD';
+        $currency = (isset($settings) && defined('DB_CHOSEN'))
+            ? $settings->getSetting('paypalcurrency', 'USD')
+            : 'USD';
 
         $laston = $session['user']['laston'] ?? '1970-01-01 00:00:00';
 
