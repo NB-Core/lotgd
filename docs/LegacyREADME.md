@@ -13,6 +13,10 @@ If you are upgrading from **0.9.7** or earlier, move the deprecated
 After the upgrade completes, read the [Post Installation](#post-installation)
 section to verify your configuration.
 
+## Upgrade Notes
+
+- The `module_hooks` table now uses a `hook_callback` column instead of the reserved word `function`. Run the corresponding migration and update any custom modules referencing this column.
+
 
 ## INSTALLATION:
 
