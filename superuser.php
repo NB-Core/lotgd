@@ -166,6 +166,10 @@ if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
 /*//*/
 }
 
+if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
+                    addnav('L?View Log Files', 'logviewer.php');
+}
+
 addnav("Module Configurations");
 
 modulehook("superuser", array(), true);
