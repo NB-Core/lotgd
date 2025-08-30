@@ -60,8 +60,8 @@ class Mail
             $subject = str_replace(["\n", '`n'], '', $subject);
             $body = SafeEscape::escape($body);
             if (!(isset($prefs['dirtyemail']) && $prefs['dirtyemail'])) {
-                $subject = Censor::soap($subject, false, 'mail');
-                $body = Censor::soap($body, false, 'mail');
+                $subject = Censor::soap($subject, false, true);
+                $body = Censor::soap($body, false, true);
             }
         }
 
