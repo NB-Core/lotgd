@@ -13,9 +13,11 @@ final class ErrorHandlerNotifyNoAddressTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $settings, $mail_sent_count, $output;
+        global $settings, $mail_sent_count, $output, $last_subject;
 
         $mail_sent_count = 0;
+        $last_subject = '';
+        unset($_SERVER['HTTP_HOST']);
         $settings = new DummySettings([
             'notify_on_error' => 1,
             'gameadminemail' => 'admin@example.com',
@@ -39,5 +41,6 @@ final class ErrorHandlerNotifyNoAddressTest extends TestCase
         ErrorHandler::errorNotify(E_ERROR, 'Test error', 'file.php', 42, '<trace>');
 
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
+        $this->assertSame('LotGD Error on CLI execution – hostname unavailable', $GLOBALS['last_subject']);
     }
 }
