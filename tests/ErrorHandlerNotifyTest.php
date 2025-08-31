@@ -13,9 +13,10 @@ final class ErrorHandlerNotifyTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $settings, $mail_sent_count, $output;
+        global $settings, $mail_sent_count, $output, $last_subject;
 
         $mail_sent_count = 0;
+        $last_subject = '';
         $settings = new DummySettings([
             'notify_on_error' => 1,
             'notify_address' => 'admin@example.com',
@@ -37,8 +38,10 @@ final class ErrorHandlerNotifyTest extends TestCase
 
     public function testErrorNotificationIsSent(): void
     {
+        $_SERVER['HTTP_HOST'] = 'example.com';
         ErrorHandler::errorNotify(E_ERROR, 'Test error', 'file.php', 42, '<trace>');
 
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
+        $this->assertSame('LotGD Error on example.com', $GLOBALS['last_subject']);
     }
 }

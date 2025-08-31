@@ -63,6 +63,7 @@ class PHPMailer
     public function Send()
     {
         $GLOBALS['mail_sent_count'] = ($GLOBALS['mail_sent_count'] ?? 0) + 1;
+        $GLOBALS['last_subject'] = $this->Subject;
     }
 }
 

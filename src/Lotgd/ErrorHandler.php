@@ -113,6 +113,19 @@ class ErrorHandler
     }
 
     /**
+     * Translate a PHP error number into a readable label.
+     */
+    private static function errorLabel(int $errno): string
+    {
+        return match ($errno) {
+            E_ERROR, E_USER_ERROR => 'Error',
+            E_WARNING, E_USER_WARNING => 'Warning',
+            E_NOTICE, E_USER_NOTICE => 'Notice',
+            default => 'Unknown',
+        };
+    }
+
+    /**
      * Send an e-mail notification about a PHP error.
      *
      * @param int   $errno     PHP error level
@@ -175,10 +188,11 @@ class ErrorHandler
                 if ($session && isset($session['user']['name']) && isset($session['user']['acctid'])) {
                     $userstr = 'Error triggered by user ' . $session['user']['name'] . ' (' . $session['user']['acctid'] . ")\n";
                 }
-                $plain_text = "$userstr$msg in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
-                $html_text = "<html><body>$msg in $errfile ($errline)<hr>$backtrace</body></html>";
-                $hostname = $_SERVER['HTTP_HOST'] ?? 'not called from browser, no hostname';
-                $subject = "$hostname $errno";
+                $label = self::errorLabel($errno);
+                $hostname = $_SERVER['HTTP_HOST'] ?? 'CLI execution – hostname unavailable';
+                $plain_text = "Host: $hostname\nType: $label\n$userstr$msg in $errfile ($errline)\n" . Sanitize::sanitizeHtml($backtrace);
+                $html_text = "<html><body>Host: $hostname<br>Type: $label<br>$msg in $errfile ($errline)<hr>$backtrace</body></html>";
+                $subject = sprintf('LotGD %s on %s', $label, $hostname);
                 $body = $html_text;
                 foreach ($sendto as $email) {
                     debug("Notifying $email of this error.");
