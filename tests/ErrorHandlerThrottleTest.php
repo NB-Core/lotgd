@@ -70,6 +70,17 @@ final class ErrorHandlerThrottleTest extends TestCase
         ErrorHandler::errorNotify(E_ERROR, 'Test error', 'file.php', 42, '<trace>');
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
 
+        $cacheFile = DataCache::makecachetempname('error_notify');
+        $this->assertFileExists($cacheFile);
+
+        $contents = file_get_contents($cacheFile);
+        $this->assertNotFalse($contents);
+        $data = json_decode($contents, true);
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('errors', $data);
+        $this->assertArrayHasKey('Test error', $data['errors']);
+        $this->assertLessThanOrEqual(5, time() - $data['errors']['Test error']);
+
         ErrorHandler::errorNotify(E_ERROR, 'Test error', 'file.php', 42, '<trace>');
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
     }
