@@ -207,6 +207,8 @@ MODULE
             'flag' => 'on',
             'count' => 2.0,
         ], $prefs);
+    }
+
     public function testClassFalseUser(): void
     {
         $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', false, 'off');
