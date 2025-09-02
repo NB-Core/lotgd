@@ -42,6 +42,11 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             return $name;
         }
 
+        public static function setPrefix(string $prefix): void
+        {
+            // Intentionally left blank for tests.
+        }
+
         public static function error(): string
         {
             return self::$instance && method_exists(self::$instance, 'error') ? self::$instance->error() : self::$last_error;
