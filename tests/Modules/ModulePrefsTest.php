@@ -140,8 +140,12 @@ MODULE
      * @param int|null    $user
      * @param mixed       $expected
      */
-    private function runLifecycle(callable $set, callable $get, callable $inc, callable $clear, ?string $module, ?int $user, $expected): void
+    private function runLifecycle(callable $set, callable $get, callable $inc, callable $clear, ?string $module, false|int|null $user, $expected): void
     {
+        if ($user === false) {
+            $user = null;
+        }
+
         $set('flag', 'on', $module, $user);
         $set('count', 0, $module, $user);
         self::assertSame('on', $get('flag', $module, $user));
@@ -168,6 +172,11 @@ MODULE
     public function testWrapperEmptyModule(): void
     {
         $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', '', 1, null);
+    }
+
+    public function testWrapperFalseUser(): void
+    {
+        $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', 'modA', false, 'off');
     }
 
     public function testClassExplicitUserAndModule(): void
@@ -198,6 +207,9 @@ MODULE
             'flag' => 'on',
             'count' => 2.0,
         ], $prefs);
+    public function testClassFalseUser(): void
+    {
+        $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', false, 'off');
     }
 }
 }

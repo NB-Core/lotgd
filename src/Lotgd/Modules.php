@@ -242,14 +242,18 @@ class Modules
         }
 
         foreach ($reqs as $key => $val) {
-            $info = explode('|', $val);
-            if (! self::isInstalled($key, $info[0])) {
+            if (is_int($key)) {
+                [$key, $ver] = array_pad(explode('|', $val), 2, '');
+            } else {
+                [$ver] = explode('|', $val);
+            }
+            if (! self::isInstalled($key, $ver)) {
                 return false;
             }
             $status = self::getStatus($key);
             if (
                 ! (
-                $status & MODULE_INJECTED
+                    $status & MODULE_INJECTED
                 ) && $forceinject
             ) {
                 $result = $result && self::inject($key);

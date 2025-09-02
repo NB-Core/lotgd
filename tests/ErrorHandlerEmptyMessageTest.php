@@ -10,7 +10,7 @@ use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Tests\Stubs\PHPMailer;
 use PHPUnit\Framework\TestCase;
 
-final class ErrorHandlerThrottleTest extends TestCase
+final class ErrorHandlerEmptyMessageTest extends TestCase
 {
     private string $cacheDir;
 
@@ -25,6 +25,7 @@ final class ErrorHandlerThrottleTest extends TestCase
         $this->cacheDir = sys_get_temp_dir() . '/lotgd_cache_' . uniqid();
         mkdir($this->cacheDir, 0700, true);
 
+        // Reset DataCache static properties
         $ref = new \ReflectionClass(DataCache::class);
         foreach (['cache' => [], 'path' => '', 'checkedOld' => false] as $prop => $val) {
             $p = $ref->getProperty($prop);
@@ -33,12 +34,10 @@ final class ErrorHandlerThrottleTest extends TestCase
         }
 
         $settings = new DummySettings([
-            'notify_on_error' => 1,
             'notify_address' => 'admin@example.com',
             'gameadminemail' => 'admin@example.com',
             'usedatacache' => 1,
             'datacachepath' => $this->cacheDir,
-            'notify_every' => 30,
         ]);
 
         // Ensure the PHPMailer stub is loaded so Mail::send uses it
@@ -65,23 +64,12 @@ final class ErrorHandlerThrottleTest extends TestCase
         unset($settings, $_SERVER['HTTP_HOST']);
     }
 
-    public function testErrorNotificationIsThrottled(): void
+    public function testEmptyMessageDoesNothing(): void
     {
-        ErrorHandler::errorNotify(E_ERROR, 'Test error', 'file.php', 42, '<trace>');
-        $this->assertSame(1, $GLOBALS['mail_sent_count']);
+        ErrorHandler::errorNotify(E_ERROR, '', 'file.php', 1, '');
 
-        $cacheFile = DataCache::makecachetempname('error_notify');
-        $this->assertFileExists($cacheFile);
-
-        $contents = file_get_contents($cacheFile);
-        $this->assertNotFalse($contents);
-        $data = json_decode($contents, true);
-        $this->assertIsArray($data);
-        $this->assertArrayHasKey('errors', $data);
-        $this->assertArrayHasKey('Test error', $data['errors']);
-        $this->assertLessThanOrEqual(5, time() - $data['errors']['Test error']);
-
-        ErrorHandler::errorNotify(E_ERROR, 'Test error', 'file.php', 42, '<trace>');
-        $this->assertSame(1, $GLOBALS['mail_sent_count']);
+        $this->assertSame(0, $GLOBALS['mail_sent_count']);
+        $this->assertFalse(DataCache::datacache('error_notify'));
+        $this->assertSame([], glob($this->cacheDir . '/*'));
     }
 }
