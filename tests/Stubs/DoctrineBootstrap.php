@@ -31,6 +31,7 @@ class DoctrineResult
 class DoctrineConnection
 {
     public array $queries = [];
+    public array $params = ['charset' => 'utf8mb4'];
 
     public function executeQuery(string $sql): DoctrineResult
     {
@@ -62,6 +63,11 @@ class DoctrineConnection
                 return true;
             }
         };
+    }
+
+    public function getParams(): array
+    {
+        return $this->params;
     }
 }
 
