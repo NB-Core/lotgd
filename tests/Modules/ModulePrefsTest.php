@@ -27,6 +27,12 @@ namespace {
             \Lotgd\Modules\HookHandler::clearModulePref($name, $module, $user);
         }
     }
+    if (!function_exists('get_all_module_prefs')) {
+        function get_all_module_prefs(?string $module = null, ?int $user = null): array
+        {
+            return \Lotgd\Modules\HookHandler::getAllModulePrefs($module, $user);
+        }
+    }
 }
 
 namespace Lotgd\Tests\Modules {
@@ -177,6 +183,21 @@ MODULE
     public function testClassEmptyModule(): void
     {
         $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], '', 1, null);
+    }
+
+    public function testGetAllModulePrefs(): void
+    {
+        set_module_pref('flag', 'on', 'modA', 1);
+        set_module_pref('count', 0, 'modA', 1);
+        increment_module_pref('count', 1, 'modA', 1);
+        increment_module_pref('count', 1, 'modA', 1);
+
+        $prefs = get_all_module_prefs('modA', 1);
+
+        self::assertSame([
+            'flag' => 'on',
+            'count' => 2.0,
+        ], $prefs);
     }
 }
 }
