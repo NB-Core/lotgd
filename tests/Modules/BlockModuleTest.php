@@ -17,7 +17,7 @@ use Lotgd\Modules;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
-function modulehook(string $name, array $args = [], bool $allowinactive = false, $only = false): array
+function modulehook_block(string $name, array $args = [], bool $allowinactive = false, $only = false): array
 {
     return Modules::hook($name, $args, $allowinactive, $only);
 }
@@ -102,13 +102,13 @@ MODULE
         Modules::block('foo');
         self::assertTrue(Modules::isModuleBlocked('foo'));
 
-        $blocked = modulehook('test', []);
+        $blocked = modulehook_block('test', []);
         self::assertArrayNotHasKey('foo', $blocked);
 
         Modules::unblock('foo');
         self::assertFalse(Modules::isModuleBlocked('foo'));
 
-        $unblocked = modulehook('test', []);
+        $unblocked = modulehook_block('test', []);
         self::assertArrayHasKey('foo', $unblocked);
         self::assertTrue($unblocked['foo']);
     }

@@ -29,7 +29,7 @@ use Lotgd\MySQL\Database;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
-function modulehook(string $hookName, array $args = [], bool $allowInactive = false, $only = false): array
+function modulehook_options(string $hookName, array $args = [], bool $allowInactive = false, $only = false): array
 {
     return HookHandler::hook($hookName, $args, $allowInactive, $only);
 }
@@ -60,7 +60,7 @@ final class ModuleHookOptionsTest extends TestCase
     {
         Database::$queryCacheResults['hook-sample'] = $this->hooksAll;
 
-        $result = modulehook('sample', [], false, 'a');
+        $result = modulehook_options('sample', [], false, 'a');
 
         $this->assertSame(['a' => 'A'], $result);
     }
@@ -68,11 +68,11 @@ final class ModuleHookOptionsTest extends TestCase
     public function testInactiveModulesRunWhenAllowed(): void
     {
         Database::$queryCacheResults['hook-sample'] = $this->hooksActive;
-        $activeResult = modulehook('sample', []);
+        $activeResult = modulehook_options('sample', []);
         $this->assertSame(['a' => 'A'], $activeResult);
 
         Database::$queryCacheResults['hook-sample'] = $this->hooksAll;
-        $result = modulehook('sample', [], true);
+        $result = modulehook_options('sample', [], true);
 
         $this->assertSame(['a' => 'A', 'b' => 'B'], $result);
     }
@@ -81,7 +81,7 @@ final class ModuleHookOptionsTest extends TestCase
     {
         Database::$queryCacheResults['hook-empty'] = [];
 
-        $result = modulehook('empty', []);
+        $result = modulehook_options('empty', []);
 
         $this->assertIsArray($result);
         $this->assertSame([], $result);
