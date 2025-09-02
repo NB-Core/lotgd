@@ -1,0 +1,83 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {
+    if (!function_exists('set_module_setting')) {
+        function set_module_setting(string $name, mixed $value, ?string $module = null): void
+        {
+            \Lotgd\Modules\HookHandler::setModuleSetting($name, $value, $module);
+        }
+    }
+    if (!function_exists('get_module_setting')) {
+        function get_module_setting(string $name, ?string $module = null): mixed
+        {
+            return \Lotgd\Modules\HookHandler::getModuleSetting($name, $module);
+        }
+    }
+    if (!function_exists('increment_module_setting')) {
+        function increment_module_setting(string $name, int|float $value = 1, ?string $module = null): void
+        {
+            \Lotgd\Modules\HookHandler::incrementModuleSetting($name, $value, $module);
+        }
+    }
+    if (!function_exists('clear_module_settings')) {
+        function clear_module_settings(?string $module = null): void
+        {
+            \Lotgd\Modules\HookHandler::clearModuleSettings($module);
+        }
+    }
+}
+
+namespace Lotgd\Tests\Modules {
+
+use Lotgd\Tests\Stubs\Database;
+use PHPUnit\Framework\TestCase;
+
+final class ModuleSettingsTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        class_exists(Database::class);
+        \Lotgd\MySQL\Database::$queryCacheResults = [];
+        \Lotgd\MySQL\Database::$lastSql = '';
+        global $module_settings, $mostrecentmodule;
+        $module_settings = [];
+        $mostrecentmodule = '';
+    }
+
+    public function testModuleSettingLifecycle(): void
+    {
+        global $mostrecentmodule;
+        $mostrecentmodule = 'mymodule';
+
+        set_module_setting('key', 'value');
+        $this->assertSame('value', get_module_setting('key'));
+
+        set_module_setting('counter', '0');
+        increment_module_setting('counter');
+        increment_module_setting('counter');
+        $this->assertSame(2.0, get_module_setting('counter'));
+
+        clear_module_settings();
+        $this->assertNull(get_module_setting('key'));
+        $this->assertNull(get_module_setting('counter'));
+    }
+
+    public function testModuleSettingLifecycleWithEmptyModule(): void
+    {
+        set_module_setting('key', 'value', '');
+        $this->assertSame('value', get_module_setting('key', ''));
+
+        set_module_setting('counter', '0', '');
+        increment_module_setting('counter', 1, '');
+        increment_module_setting('counter', 1, '');
+        $this->assertSame(2.0, get_module_setting('counter', ''));
+
+        clear_module_settings('');
+        $this->assertNull(get_module_setting('key', ''));
+        $this->assertNull(get_module_setting('counter', ''));
+    }
+}
+
+}
