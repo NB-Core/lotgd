@@ -27,6 +27,12 @@ namespace {
             \Lotgd\Modules\HookHandler::clearModuleSettings($module);
         }
     }
+    if (!function_exists('get_all_module_settings')) {
+        function get_all_module_settings(?string $module = null): array
+        {
+            return \Lotgd\Modules\HookHandler::getAllModuleSettings($module);
+        }
+    }
 }
 
 namespace Lotgd\Tests\Modules {
@@ -77,6 +83,24 @@ final class ModuleSettingsTest extends TestCase
         clear_module_settings('');
         $this->assertNull(get_module_setting('key', ''));
         $this->assertNull(get_module_setting('counter', ''));
+    }
+
+    public function testGetAllModuleSettings(): void
+    {
+        global $mostrecentmodule;
+        $mostrecentmodule = 'mymodule';
+
+        set_module_setting('key', 'value');
+        set_module_setting('counter', '0');
+        increment_module_setting('counter');
+        increment_module_setting('counter');
+
+        $settings = get_all_module_settings('mymodule');
+
+        $this->assertSame([
+            'key' => 'value',
+            'counter' => 2.0,
+        ], $settings);
     }
 }
 
