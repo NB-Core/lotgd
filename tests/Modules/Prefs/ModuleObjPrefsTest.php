@@ -69,14 +69,14 @@ final class ModuleObjPrefsTest extends TestCase
                     return 1;
                 }
 
-                if (preg_match("/UPDATE module_objprefs SET value=value\\+([0-9.]+) WHERE modulename='([^']+)' AND setting='([^']+)' AND objtype='([^']+)' AND objid=([0-9]+)/", $sql, $m)) {
+                if (preg_match("/UPDATE module_objprefs SET value=value\\+(-?[0-9.]+) WHERE modulename='([^']+)' AND setting='([^']+)' AND objtype='([^']+)' AND objid=([0-9]+)/", $sql, $m)) {
                     $increment = (float) $m[1];
                     $key       = "objpref-{$m[4]}-{$m[5]}-{$m[3]}-{$m[2]}";
                     if (isset($this->objprefs[$key])) {
-                        $new                                 = (string) ((float) $this->objprefs[$key] + $increment);
-                        $this->objprefs[$key]                = $new;
-                        Database::$queryCacheResults[$key]   = [['value' => $new]];
-                        Database::$affected_rows             = 1;
+                        $new                               = (string) ((float) $this->objprefs[$key] + $increment);
+                        $this->objprefs[$key]              = $new;
+                        Database::$queryCacheResults[$key] = [['value' => $new]];
+                        Database::$affected_rows           = 1;
                         return 1;
                     }
                     Database::$affected_rows = 0;
@@ -125,6 +125,19 @@ final class ModuleObjPrefsTest extends TestCase
         increment_module_objpref('creature', 1, 'key', 1, 'testmod');
         increment_module_objpref('creature', 1, 'key', 1, 'testmod');
         self::assertSame(2, (int) get_module_objpref('creature', 1, 'key', 'testmod'));
+
+        increment_module_objpref('creature', 1, 'key', -1, 'testmod');
+        self::assertSame(1.0, (float) get_module_objpref('creature', 1, 'key', 'testmod'));
+
+        increment_module_objpref('creature', 1, 'key', 1.5, 'testmod');
+        self::assertSame(2.5, (float) get_module_objpref('creature', 1, 'key', 'testmod'));
+
+        $conn     = Database::$doctrineConnection;
+        $preCache = Database::$queryCacheResults;
+        $prePrefs = $conn->objprefs;
+        module_delete_objprefs('creature', 2);
+        self::assertSame($preCache, Database::$queryCacheResults);
+        self::assertSame($prePrefs, $conn->objprefs);
 
         module_delete_objprefs('creature', 1);
         self::assertNull(get_module_objpref('creature', 1, 'key', 'testmod'));
