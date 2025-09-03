@@ -35,5 +35,16 @@ namespace Lotgd\Tests\Modules\Hooks {
                 ['objprefEdit', ['qux', 'quux', 123]],
             ], \Lotgd\Modules\HookHandler::$calls);
         }
+
+        public function testDisplayWrappersDefaultArguments(): void
+        {
+            module_display_events('foo');
+            module_editor_navs('bar', '');
+
+            self::assertSame([
+                ['displayEvents', ['foo', false]],
+                ['editorNavs', ['bar', '']],
+            ], \Lotgd\Modules\HookHandler::$calls);
+        }
     }
 }
