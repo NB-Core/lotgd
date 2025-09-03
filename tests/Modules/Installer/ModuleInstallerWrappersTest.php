@@ -18,12 +18,13 @@ namespace Lotgd\Tests\Modules\Installer {
     {
         protected function setUp(): void
         {
-            eval('namespace Lotgd\\Modules; class Installer { public static $activateArgs; public static $activateReturn; public static $deactivateArgs; public static $deactivateReturn; public static $installArgs; public static $installReturn; public static $uninstallArgs; public static $uninstallReturn; public static $conditionArgs; public static $conditionReturn; public static function activate(string $module): bool { self::$activateArgs = [$module]; return self::$activateReturn; } public static function deactivate(string $module): bool { self::$deactivateArgs = [$module]; return self::$deactivateReturn; } public static function install(string $module, bool $force = true): bool { self::$installArgs = [$module, $force]; return self::$installReturn; } public static function uninstall(string $module): bool { self::$uninstallArgs = [$module]; return self::$uninstallReturn; } public static function condition(string $condition): bool { self::$conditionArgs = [$condition]; return self::$conditionReturn; } }');
+            eval('namespace Lotgd\\Modules; class Installer { public static $activateArgs; public static $activateReturn; public static $deactivateArgs; public static $deactivateReturn; public static $installArgs; public static $installReturn; public static $uninstallArgs; public static $uninstallReturn; public static $conditionArgs; public static $conditionReturn; public static $statusArgs; public static $statusReturn; public static function activate(string $module): bool { self::$activateArgs = [$module]; return self::$activateReturn; } public static function deactivate(string $module): bool { self::$deactivateArgs = [$module]; return self::$deactivateReturn; } public static function install(string $module, bool $force = true): bool { self::$installArgs = [$module, $force]; return self::$installReturn; } public static function uninstall(string $module): bool { self::$uninstallArgs = [$module]; return self::$uninstallReturn; } public static function condition(string $condition): bool { self::$conditionArgs = [$condition]; return self::$conditionReturn; } public static function getInstallStatus(bool $with_db = true): array { self::$statusArgs = [$with_db]; return self::$statusReturn; } }');
             \Lotgd\Modules\Installer::$activateArgs = [];
             \Lotgd\Modules\Installer::$deactivateArgs = [];
             \Lotgd\Modules\Installer::$installArgs = [];
             \Lotgd\Modules\Installer::$uninstallArgs = [];
             \Lotgd\Modules\Installer::$conditionArgs = [];
+            \Lotgd\Modules\Installer::$statusArgs = [];
         }
 
         public function testActivateModule(): void
@@ -65,6 +66,13 @@ namespace Lotgd\Tests\Modules\Installer {
             self::assertTrue($result);
             self::assertSame(['2 > 1'], \Lotgd\Modules\Installer::$conditionArgs);
         }
+
+        public function testGetInstallStatus(): void
+        {
+            \Lotgd\Modules\Installer::$statusReturn = ['ok'];
+            $result = get_module_install_status(false);
+            self::assertSame(['ok'], $result);
+            self::assertSame([false], \Lotgd\Modules\Installer::$statusArgs);
+        }
     }
 }
-
