@@ -32,12 +32,20 @@ namespace Lotgd\Tests\Modules {
             \Lotgd\Modules::$getRaceNameReturn = 'orc';
 
             $status = get_module_install_status(false);
-            $race   = get_racename();
-
             self::assertSame(['ok'], $status);
-            self::assertSame('orc', $race);
             self::assertSame([false], \Lotgd\Modules\Installer::$getInstallStatusArgs);
+
+            $status = get_module_install_status();
+            self::assertSame(['ok'], $status);
+            self::assertSame([true], \Lotgd\Modules\Installer::$getInstallStatusArgs);
+
+            $race = get_racename();
+            self::assertSame('orc', $race);
             self::assertSame([true], \Lotgd\Modules::$getRaceNameArgs);
+
+            $race = get_racename('');
+            self::assertSame('orc', $race);
+            self::assertSame([''], \Lotgd\Modules::$getRaceNameArgs);
         }
     }
 }
