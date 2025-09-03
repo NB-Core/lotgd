@@ -163,6 +163,7 @@ function load_module_prefs(string $module, ?int $user = null): void
 
 function get_module_info(string $shortname, bool $with_db = true): array
 {
+    $shortname = modulename_sanitize($shortname);
     return Modules::getModuleInfo($shortname, $with_db);
 }
 
