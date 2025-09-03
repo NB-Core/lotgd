@@ -33,14 +33,26 @@ namespace Lotgd\Tests\Modules {
             $events = module_events('bar', 3, 'baz');
             module_do_event('qux', 'corge', false, 'grault');
 
+            $collectDefault = module_collect_events('type');
+            $eventsDefaultLink = module_events('type', 0);
+            $eventsNullLink = module_events('type', 1, null);
+            module_do_event('type', '', true);
+
             self::assertSame(['alpha'], $collect);
             self::assertSame(7, $events);
+            self::assertSame(['alpha'], $collectDefault);
+            self::assertSame(7, $eventsDefaultLink);
+            self::assertSame(7, $eventsNullLink);
             self::assertSame([
                 ['semAcquire', []],
                 ['semRelease', []],
                 ['collectEvents', ['foo', true]],
                 ['moduleEvents', ['bar', 3, 'baz']],
                 ['doEvent', ['qux', 'corge', false, 'grault']],
+                ['collectEvents', ['type', false]],
+                ['moduleEvents', ['type', 0, null]],
+                ['moduleEvents', ['type', 1, null]],
+                ['doEvent', ['type', '', true, null]],
             ], \Lotgd\Modules\HookHandler::$calls);
         }
     }
