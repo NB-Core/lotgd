@@ -49,6 +49,10 @@ function unblockmodule(string $modulename): void
 
 function mass_module_prepare(array $hooknames): bool
 {
+    if ([] === $hooknames) {
+        return true;
+    }
+
     return HookHandler::massPrepare($hooknames);
 }
 
