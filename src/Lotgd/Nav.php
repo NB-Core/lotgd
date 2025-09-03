@@ -529,10 +529,23 @@ class Nav
         return $builtnavs;
     }
 
-    public static function privateAddNav($text, $link = false, $priv = false, $pop = false, $popsize = '500x300')
+    /**
+     * Add a navigation link or header.
+     *
+     * @param string|array          $text    Link label or header text
+     * @param string|false|null     $link    Target URL; false for header, '' or null for help text
+     * @param bool                  $priv    Passed to appoencode()
+     * @param bool                  $pop     Open in popup window
+     * @param string                $popsize Popup size when $pop is true
+     *
+     * @return string|false HTML for the navigation item or false when blocked
+     */
+    public static function privateAddNav($text, string|false|null $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
         global $nav, $session, $REQUEST_URI, $notranslate, $settings;
-        if ($link != false) {
+
+        if ($link !== false) {
+            $link = (string) $link;
             if (self::isBlocked($link)) {
                 return false;
             }
