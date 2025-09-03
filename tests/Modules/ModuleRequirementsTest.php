@@ -81,11 +81,11 @@ namespace Lotgd\Tests\Modules {
             $prop->setAccessible(true);
             $prop->setValue(null, [1 => [], 0 => []]);
 
-            $this->assertTrue(Modules::checkRequirements(['dep|1.0'], true));
+            $this->assertFalse(Modules::checkRequirements(['dep|1.0'], true));
 
             $current = $prop->getValue();
             $this->assertArrayHasKey('dep', $current[0]);
-            $this->assertTrue($current[0]['dep']);
+            $this->assertFalse($current[0]['dep']);
         }
     }
 }

@@ -64,6 +64,15 @@ class Modules
             }
             require_once $modulefilename;
             $mostrecentmodule = $moduleName;
+
+            $installFname   = $moduleName . '_install';
+            $uninstallFname = $moduleName . '_uninstall';
+            if (! function_exists($installFname) || ! function_exists($uninstallFname)) {
+                Translator::tlschema();
+                self::$injectedModules[$force][$moduleName] = false;
+                return false;
+            }
+
             $info            = '';
             if (! $force) {
                 $fname = $moduleName . '_getmoduleinfo';
