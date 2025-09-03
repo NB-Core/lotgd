@@ -50,6 +50,21 @@ namespace Lotgd\Tests\Modules {
             $this->assertFalse(Modules::checkRequirements(['dep|1.0']));
         }
 
+        public function testInstalledDependencyVersionMismatchFails(): void
+        {
+            $filemoddate = date('Y-m-d H:i:s', filemtime($this->moduleFile));
+            Database::$queryCacheResults['inject-dep'] = [
+                [
+                    'active'      => 1,
+                    'filemoddate' => $filemoddate,
+                    'infokeys'    => '|',
+                    'version'     => '1.0',
+                ],
+            ];
+
+            $this->assertFalse(Modules::checkRequirements(['dep|2.0']));
+        }
+
         public function testForceInjectCallsInject(): void
         {
             $filemoddate = date('Y-m-d H:i:s', filemtime($this->moduleFile));
