@@ -2,19 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests\Modules;
+namespace Lotgd\Tests\Modules\Hooks;
 
 use PHPUnit\Framework\TestCase;
 
 /**
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
+ * @group hooks
  */
 final class MassModulePrepareTest extends TestCase
 {
     public function testMassModulePrepareDelegatesHooks(): void
     {
-        require __DIR__ . '/../Stubs/MassModulePrepareFunctions.php';
+        require __DIR__ . '/../../Stubs/MassModulePrepareFunctions.php';
         \Lotgd\Modules\HookHandler::$received = [];
         \Lotgd\Modules\HookHandler::$calls    = 0;
 
@@ -28,7 +29,7 @@ final class MassModulePrepareTest extends TestCase
 
     public function testMassModulePrepareWithEmptyHooksReturnsTrue(): void
     {
-        require __DIR__ . '/../Stubs/MassModulePrepareFunctions.php';
+        require __DIR__ . '/../../Stubs/MassModulePrepareFunctions.php';
         \Lotgd\Modules\HookHandler::$received = [];
         \Lotgd\Modules\HookHandler::$calls    = 0;
 

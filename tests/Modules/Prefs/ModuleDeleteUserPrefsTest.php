@@ -11,12 +11,15 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Prefs {
 
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @group prefs
+ */
 final class ModuleDeleteUserPrefsTest extends TestCase
 {
     protected function setUp(): void

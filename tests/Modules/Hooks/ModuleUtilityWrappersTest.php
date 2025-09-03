@@ -2,19 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Hooks {
     use PHPUnit\Framework\TestCase;
 
     /**
      * @runTestsInSeparateProcesses
      * @preserveGlobalState disabled
+     * @group hooks
      */
     final class ModuleUtilityWrappersTest extends TestCase
     {
         protected function setUp(): void
         {
             if (!function_exists(__NAMESPACE__ . '\\get_module_install_status')) {
-                $code = file_get_contents(dirname(__DIR__, 2) . '/lib/modules.php');
+                $code = file_get_contents(dirname(__DIR__, 3) . '/lib/modules.php');
                 $code = preg_replace('/^<\\?php\\s*declare\\(strict_types=1\\);\\s*/', '', $code);
                 eval('namespace ' . __NAMESPACE__ . '; ' . $code);
             }

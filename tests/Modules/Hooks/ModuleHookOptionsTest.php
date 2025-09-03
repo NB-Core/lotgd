@@ -21,7 +21,7 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Hooks {
 
 use Lotgd\Modules;
 use Lotgd\Modules\HookHandler;
@@ -34,6 +34,9 @@ function modulehook_options(string $hookName, array $args = [], bool $allowInact
     return HookHandler::hook($hookName, $args, $allowInactive, $only);
 }
 
+/**
+ * @group hooks
+ */
 final class ModuleHookOptionsTest extends TestCase
 {
     private array $hooksAll;

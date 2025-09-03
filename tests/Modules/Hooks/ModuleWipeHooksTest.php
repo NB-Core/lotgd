@@ -26,7 +26,7 @@ namespace Lotgd\Tests\Modules\Hooks {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Hooks {
 
 use Lotgd\Tests\Modules\ModuleWipeHooks\Stubs\HookHandler;
 use PHPUnit\Framework\TestCase;
@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
+ * @group hooks
  */
 final class ModuleWipeHooksTest extends TestCase
 {

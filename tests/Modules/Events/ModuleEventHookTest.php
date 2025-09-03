@@ -37,13 +37,16 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Events {
 
 use Lotgd\Tests\Modules\Fixtures\HookHandlerMock;
 use PHPUnit\Framework\TestCase;
 use function module_addeventhook;
 use function module_dropeventhook;
 
+/**
+ * @group events
+ */
 final class ModuleEventHookTest extends TestCase
 {
     protected function setUp(): void

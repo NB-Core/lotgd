@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests;
+namespace Lotgd\Tests\Modules\Injection;
 
 use Lotgd\Modules;
 use Lotgd\Tests\Stubs\Database;
@@ -13,6 +13,9 @@ function injectmodule(string $moduleName): bool
     return Modules::inject($moduleName);
 }
 
+/**
+ * @group injection
+ */
 final class InjectModuleFailureTest extends TestCase
 {
     private string $moduleFile;
@@ -21,7 +24,7 @@ final class InjectModuleFailureTest extends TestCase
     {
         class_exists(Database::class);
         \Lotgd\MySQL\Database::$queryCacheResults = [];
-        $this->moduleFile = __DIR__ . '/../../modules/inactive.php';
+        $this->moduleFile = __DIR__ . '/../../../modules/inactive.php';
         file_put_contents($this->moduleFile, "<?php\n");
     }
 

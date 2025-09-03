@@ -11,7 +11,7 @@ namespace Lotgd {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Hooks {
 
 use Lotgd\Modules;
 use Lotgd\Tests\Stubs\Database;
@@ -22,13 +22,16 @@ function modulehook_block(string $name, array $args = [], bool $allowinactive = 
     return Modules::hook($name, $args, $allowinactive, $only);
 }
 
+/**
+ * @group hooks
+ */
 final class BlockModuleTest extends TestCase
 {
     private string $moduleFile;
 
     protected function setUp(): void
     {
-        $this->moduleFile = dirname(__DIR__, 2) . '/modules/foo.php';
+        $this->moduleFile = dirname(__DIR__, 3) . '/modules/foo.php';
 
         file_put_contents($this->moduleFile, <<<'MODULE'
 <?php
