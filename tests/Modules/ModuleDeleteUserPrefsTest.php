@@ -60,6 +60,17 @@ final class ModuleDeleteUserPrefsTest extends TestCase
         self::assertArrayHasKey(2, $module_prefs);
         self::assertContains("module_userprefs-$userId", $massinvalidates);
     }
+
+    public function testDeletingWithEmptyPrefsDoesNothing(): void
+    {
+        global $module_prefs;
+
+        $userId = 1;
+
+        module_delete_userprefs($userId);
+
+        self::assertSame([], $module_prefs);
+    }
 }
 
 }
