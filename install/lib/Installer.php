@@ -1031,6 +1031,7 @@ class Installer
     public function stage8(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        $recommended_modules = is_array($recommended_modules) ? $recommended_modules : [];
         if (array_key_exists('modulesok', $_POST)) {
             $session['moduleoperations'] = $_POST['modules'];
             $session['stagecompleted'] = $stage;
