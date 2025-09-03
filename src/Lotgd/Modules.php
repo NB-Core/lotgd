@@ -726,8 +726,13 @@ class Modules
      */
     public static function deleteUserPrefs(int $user): void
     {
+        global $module_prefs;
+
         $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE userid='$user'";
         Database::query($sql);
+
+        unset($module_prefs[$user]);
+        massinvalidate("module_userprefs-$user");
     }
 
     /**
