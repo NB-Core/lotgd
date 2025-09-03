@@ -207,7 +207,7 @@ MODULE
             'flag' => 'on',
             'count' => 2.0,
         ], $prefs);
-    }
+    } // end testGetAllModulePrefs
 
     public function testClassFalseUser(): void
     {
