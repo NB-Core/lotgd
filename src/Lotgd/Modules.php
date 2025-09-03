@@ -221,7 +221,8 @@ class Modules
      */
     public static function isInstalled(string $moduleName, string|false $version = false): bool
     {
-        return (bool) (self::getStatus($moduleName, $version) & (MODULE_INSTALLED | MODULE_VERSION_OK));
+        $status = self::getStatus($moduleName, $version);
+        return (bool) (($status & MODULE_INSTALLED) && ($status & MODULE_VERSION_OK));
     }
 
     /**
