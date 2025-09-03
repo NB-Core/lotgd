@@ -209,6 +209,16 @@ MODULE
         ], $prefs);
     } // end testGetAllModulePrefs
 
+    public function testIncrementModulePrefWithNegativeAndFractionalValues(): void
+    {
+        foreach ([-1.0, 1.5] as $increment) {
+            set_module_pref('count', 0, 'modA', 1);
+            increment_module_pref('count', $increment, 'modA', 1);
+
+            self::assertSame($increment, get_module_pref('count', 'modA', 1), "increment {$increment}");
+        }
+    }
+
     public function testClassFalseUser(): void
     {
         $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', false, 'off');
