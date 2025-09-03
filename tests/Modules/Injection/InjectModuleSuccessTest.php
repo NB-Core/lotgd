@@ -9,14 +9,26 @@ use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
 if (!function_exists(__NAMESPACE__ . '\\injectmodule')) {
-    function injectmodule(string $moduleName): bool
+    function injectmodule(string $moduleName, bool $force = false, bool $withDb = true): bool
     {
-        return Modules::inject($moduleName);
+        global $testInjectedModules;
+
+        $testInjectedModules ??= [];
+
+        if (! $force && ($testInjectedModules[$moduleName] ?? false)) {
+            return false;
+        }
+
+        $testInjectedModules[$moduleName] = true;
+
+        return Modules::inject($moduleName, $force, $withDb);
     }
 }
 
 /**
  * @group injection
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
  */
 final class InjectModuleSuccessTest extends TestCase
 {
@@ -54,6 +66,8 @@ PHP;
         $prop = $ref->getProperty('injectedModules');
         $prop->setAccessible(true);
         $prop->setValue(null, [1 => [], 0 => []]);
+
+        $GLOBALS['testInjectedModules'] = [];
     }
 
     protected function tearDown(): void
@@ -84,5 +98,40 @@ PHP;
 
         $this->assertArrayHasKey('tempModule', $injected[0]);
         $this->assertTrue($injected[0]['tempModule']);
+    }
+
+    public function testReinjectModuleWithForce(): void
+    {
+        chdir($this->moduleDir);
+
+        $this->assertTrue(injectmodule('tempModule'));
+        $this->assertFalse(injectmodule('tempModule'));
+        $this->assertTrue(injectmodule('tempModule', true));
+
+        chdir($this->origCwd);
+
+        $ref  = new \ReflectionClass(Modules::class);
+        $prop = $ref->getProperty('injectedModules');
+        $prop->setAccessible(true);
+        $injected = $prop->getValue();
+
+        $this->assertArrayHasKey('tempModule', $injected[1]);
+        $this->assertTrue($injected[1]['tempModule']);
+    }
+
+    public function testForceInjectionWithoutDbSkipsLookup(): void
+    {
+        chdir($this->moduleDir);
+
+        injectmodule('tempModule');
+
+        \Lotgd\MySQL\Database::$lastCacheName = '';
+        \Lotgd\MySQL\Database::$queryCacheResults = [];
+
+        $this->assertTrue(injectmodule('tempModule', true, false));
+
+        chdir($this->origCwd);
+
+        $this->assertSame('', \Lotgd\MySQL\Database::$lastCacheName);
     }
 }
