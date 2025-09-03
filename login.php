@@ -121,8 +121,10 @@ if ($name != "") {
                         . "' WHERE acctid=" . $session['user']['acctid']
                     );
                     $session['allowednavs'] = [];
-                    \Lotgd\Nav::add('', $session['user']['restorepage']);
-                    header("Location: {$session['user']['restorepage']}");
+                    if (!empty($session['user']['restorepage'])) {
+                        \Lotgd\Nav::add('', $session['user']['restorepage']);
+                        header("Location: {$session['user']['restorepage']}");
+                    }
                     Accounts::saveUser();
                     echo $str;
                     exit();
