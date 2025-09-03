@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests;
+namespace Lotgd\Tests\Modules\Injection;
 
 use Lotgd\Modules;
 use Lotgd\Tests\Stubs\Database;
@@ -15,7 +15,10 @@ if (!function_exists(__NAMESPACE__ . '\\injectmodule')) {
     }
 }
 
-final class InjectModuleIncompleteTest extends TestCase
+/**
+ * @group injection
+ */
+final class InjectModuleSuccessTest extends TestCase
 {
     private string $moduleDir;
     private string $moduleFile;
@@ -30,15 +33,17 @@ final class InjectModuleIncompleteTest extends TestCase
         $this->moduleDir = sys_get_temp_dir() . '/lotgd_module_' . uniqid();
         mkdir($this->moduleDir . '/modules', 0777, true);
 
-        $this->moduleFile = $this->moduleDir . '/modules/badModule.php';
+        $this->moduleFile = $this->moduleDir . '/modules/tempModule.php';
         $code = <<<'PHP'
 <?php
-function badModule_getmoduleinfo(): array { return ['name' => 'Bad Module', 'version' => '1.0']; }
+function tempModule_getmoduleinfo(): array { return ['name' => 'Temp Module', 'version' => '1.0']; }
+function tempModule_install(): bool { return true; }
+function tempModule_uninstall(): bool { return true; }
 PHP;
         file_put_contents($this->moduleFile, $code);
 
         $filemoddate = date('Y-m-d H:i:s', filemtime($this->moduleFile));
-        \Lotgd\MySQL\Database::$queryCacheResults['inject-badModule'] = [[
+        \Lotgd\MySQL\Database::$queryCacheResults['inject-tempModule'] = [[
             'active' => 1,
             'filemoddate' => $filemoddate,
             'infokeys' => '|name|version|',
@@ -64,20 +69,20 @@ PHP;
         \Lotgd\MySQL\Database::$queryCacheResults = [];
     }
 
-    public function testInjectionFailsAndDoesNotRegister(): void
+    public function testInjectsModuleAndRegisters(): void
     {
         chdir($this->moduleDir);
-        $result = injectmodule('badModule');
+        $result = injectmodule('tempModule');
         chdir($this->origCwd);
 
-        $this->assertFalse($result);
+        $this->assertTrue($result);
 
         $ref  = new \ReflectionClass(Modules::class);
         $prop = $ref->getProperty('injectedModules');
         $prop->setAccessible(true);
         $injected = $prop->getValue();
 
-        $this->assertArrayHasKey('badModule', $injected[0]);
-        $this->assertFalse($injected[0]['badModule']);
+        $this->assertArrayHasKey('tempModule', $injected[0]);
+        $this->assertTrue($injected[0]['tempModule']);
     }
 }

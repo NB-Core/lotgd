@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests\Modules\Fixtures {
+namespace Lotgd\Tests\Modules\Events\Fixtures {
     /**
      * Simple mock used to capture calls to the HookHandler facade.
      */
@@ -24,7 +24,7 @@ namespace Lotgd\Tests\Modules\Fixtures {
 }
 
 namespace {
-    use Lotgd\Tests\Modules\Fixtures\HookHandlerMock;
+    use Lotgd\Tests\Modules\Events\Fixtures\HookHandlerMock;
 
     function module_addeventhook(string $type, string $chance): void
     {
@@ -37,13 +37,16 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Events {
 
-use Lotgd\Tests\Modules\Fixtures\HookHandlerMock;
+use Lotgd\Tests\Modules\Events\Fixtures\HookHandlerMock;
 use PHPUnit\Framework\TestCase;
 use function module_addeventhook;
 use function module_dropeventhook;
 
+/**
+ * @group events
+ */
 final class ModuleEventHookTest extends TestCase
 {
     protected function setUp(): void

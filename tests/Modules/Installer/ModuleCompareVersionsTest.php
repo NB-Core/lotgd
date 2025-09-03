@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests\Modules;
+namespace Lotgd\Tests\Modules\Installer;
 
 use Lotgd\Modules;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @group installer
+ */
 final class ModuleCompareVersionsTest extends TestCase
 {
     public function testReturnsNegativeWhenFirstVersionLower(): void

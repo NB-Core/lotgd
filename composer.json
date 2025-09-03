@@ -23,6 +23,7 @@
     "autoload-dev": {
         "psr-4": {
             "Lotgd\\Tests\\": "tests/",
+            "Lotgd\\Tests\\Modules\\": "tests/Modules/",
             "Lotgd\\Tests\\Stubs\\": "tests/Stubs/"
         }
     },

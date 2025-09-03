@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Installer {
     use PHPUnit\Framework\TestCase;
 
-    $code = file_get_contents(dirname(__DIR__, 2) . '/lib/modules.php');
+    $code = file_get_contents(dirname(__DIR__, 3) . '/lib/modules.php');
     $code = preg_replace('/^<\?php\s*declare\(strict_types=1\);\s*/', '', $code);
     eval('namespace ' . __NAMESPACE__ . '; ' . $code);
 
     /**
      * @runTestsInSeparateProcesses
      * @preserveGlobalState disabled
+     * @group installer
      */
     final class ModuleInstallerWrappersTest extends TestCase
     {

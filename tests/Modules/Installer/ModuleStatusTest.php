@@ -11,12 +11,15 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Installer {
     use Lotgd\Modules;
     use Lotgd\Tests\Stubs\Database;
     use PHPUnit\Framework\TestCase;
     use ReflectionProperty;
 
+    /**
+     * @group installer
+     */
     final class ModuleStatusTest extends TestCase
     {
         protected function setUp(): void
@@ -41,7 +44,7 @@ namespace Lotgd\Tests\Modules {
         public function testInstalledInactiveReturnsInstalledOnly(): void
         {
             $name = 'inactivemodule';
-            $file = __DIR__ . "/../../modules/{$name}.php";
+            $file = __DIR__ . "/../../../modules/{$name}.php";
             file_put_contents($file, "<?php\n");
             Database::$queryCacheResults["inject-$name"] = [
                 ['active' => 0, 'filemoddate' => '', 'infokeys' => '|', 'version' => '1.0'],
@@ -55,7 +58,7 @@ namespace Lotgd\Tests\Modules {
         public function testActiveAndInjectedReturnsInstalledActiveInjected(): void
         {
             $name = 'activemodule';
-            $file = __DIR__ . "/../../modules/{$name}.php";
+            $file = __DIR__ . "/../../../modules/{$name}.php";
             file_put_contents($file, "<?php\n");
             Database::$queryCacheResults["inject-$name"] = [
                 ['active' => 1, 'filemoddate' => '', 'infokeys' => '|', 'version' => '1.0'],
