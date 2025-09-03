@@ -35,7 +35,7 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Prefs {
 
 use Lotgd\Modules;
 use Lotgd\Tests\Stubs\Database;
@@ -44,6 +44,9 @@ use Lotgd\Tests\Stubs\DoctrineResult;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
+/**
+ * @group prefs
+ */
 final class ModulePrefsTest extends TestCase
 {
     private string $moduleFile;
@@ -76,7 +79,7 @@ final class ModulePrefsTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue(null, []);
 
-        $this->moduleFile = dirname(__DIR__, 2) . '/modules/modA.php';
+        $this->moduleFile = dirname(__DIR__, 3) . '/modules/modA.php';
         file_put_contents($this->moduleFile, <<<'MODULE'
 <?php
 

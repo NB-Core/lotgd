@@ -17,12 +17,15 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Installer {
     use Lotgd\Modules;
     use Lotgd\Tests\Stubs\Database;
     use PHPUnit\Framework\TestCase;
     use ReflectionProperty;
 
+    /**
+     * @group installer
+     */
     final class ModuleRequirementsTest extends TestCase
     {
         private string $moduleFile;
@@ -30,7 +33,7 @@ namespace Lotgd\Tests\Modules {
         protected function setUp(): void
         {
             class_exists(Database::class);
-            $this->moduleFile = __DIR__ . '/../../modules/dep.php';
+            $this->moduleFile = __DIR__ . '/../../../modules/dep.php';
             file_put_contents($this->moduleFile, "<?php\nfunction dep_getmoduleinfo() { return []; }\n");
         }
 

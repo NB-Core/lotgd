@@ -17,13 +17,16 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Settings {
 
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Tests\Stubs\DoctrineResult;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @group settings
+ */
 final class ModuleLoadSettingsPrefsTest extends TestCase
 {
     protected function setUp(): void

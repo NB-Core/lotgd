@@ -16,7 +16,7 @@ namespace {
     }
 }
 
-namespace Lotgd\Tests\Modules {
+namespace Lotgd\Tests\Modules\Hooks {
 
 use Lotgd\Modules;
 use Lotgd\MySQL\Database;
@@ -37,6 +37,9 @@ function modulehook_validation(string $hookName, $args = [], bool $allowInactive
     return Modules::hook($hookName, $args, $allowInactive, $only);
 }
 
+/**
+ * @group hooks
+ */
 final class ModuleHookValidationTest extends TestCase
 {
     protected function setUp(): void
