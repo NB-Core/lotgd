@@ -102,6 +102,19 @@ final class ModuleSettingsTest extends TestCase
             'counter' => 2.0,
         ], $settings);
     }
+
+    public function testIncrementModuleSettingWithNegativeAndFractionalValues(): void
+    {
+        global $mostrecentmodule;
+        $mostrecentmodule = 'mymodule';
+
+        foreach ([-1.0, 1.5] as $increment) {
+            set_module_setting('counter', '0');
+            increment_module_setting('counter', $increment);
+
+            $this->assertSame($increment, get_module_setting('counter'), "increment {$increment}");
+        }
+    }
 }
 
 }
