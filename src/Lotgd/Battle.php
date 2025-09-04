@@ -958,8 +958,11 @@ class Battle
 
     public static function rollCompanionDamage(&$badguy, $companion)
     {
-        global $creatureattack,$creatureatkmod,$adjustment,$options;
-        global $creaturedefmod,$compdefmod,$compatkmod,$buffset,$atk,$def;
+        global $creatureattack, $creatureatkmod, $adjustment, $options;
+        global $creaturedefmod, $compdefmod, $compatkmod, $buffset, $atk, $def;
+
+        $creaturedmg = 0;
+        $selfdmg     = 0;
 
         if ($badguy['creaturehealth'] > 0 && $companion['hitpoints'] > 0) {
             if ($options['type'] == 'pvp') {
@@ -982,7 +985,7 @@ class Battle
             debug("Adjusted self defense: $adjustedselfdefense");
             */
             $bad_check = 1;
-            while (!isset($creaturedmg) || !isset($selfdmg) || $creaturedmg == 0 && $selfdmg == 0) {
+            while ($creaturedmg == 0 && $selfdmg == 0) {
                 $atk = $companion['attack'] * $compatkmod;
                 if (random_int(1, 20) == 1 && $options['type'] != "pvp") {
                     $atk *= 3;
@@ -1034,14 +1037,16 @@ class Battle
             }
         } else {
             $creaturedmg = 0;
-            $selfdmg = 0;
+            $selfdmg     = 0;
         }
-    // Handle god mode's invulnerability
+
+        // Handle god mode's invulnerability
         if ($buffset['invulnerable']) {
             $creaturedmg = abs($creaturedmg);
-            $selfdmg = -abs($selfdmg);
+            $selfdmg     = -abs($selfdmg);
         }
-        return array("creaturedmg" => (isset($creaturedmg) ? $creaturedmg : 0),"selfdmg" => (isset($selfdmg) ? $selfdmg : 0));
+
+        return ['creaturedmg' => $creaturedmg, 'selfdmg' => $selfdmg];
     }
 
 /**
@@ -1115,7 +1120,7 @@ class Battle
     public static function executeAiScript($script)
     {
         global $unsetme;
-        if (!empty($scrip)) {
+        if (!empty($script)) {
             eval($script);
         }
     }
