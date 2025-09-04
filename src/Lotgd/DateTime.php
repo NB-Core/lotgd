@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
-use Lotgd\Translator;
+use Lotgd\Nav;
+use Lotgd\Output;
+use Lotgd\Redirect;
 use Lotgd\Settings;
+use Lotgd\Translator;
 
 use const \DATETIME_DATEMIN;
 use const \DATETIME_TODAY;
@@ -88,7 +91,7 @@ class DateTime
             $laston = Translator::translateInline('Never');
         } else {
             $laston = Translator::sprintfTranslate('%s days', round((strtotime('now') - strtotime($indate)) / 86400, 0));
-            rawoutput(tlbutton_clear());
+            Output::getInstance()->rawOutput(Translator::tlbuttonClear());
         }
         Translator::tlschema();
         return $laston;
@@ -98,13 +101,13 @@ class DateTime
     {
         global $session, $revertsession, $REQUEST_URI;
         if ($session['user']['loggedin']) {
-            output_notl('<!--CheckNewDay()-->', true);
+            Output::getInstance()->outputNotl('<!--CheckNewDay()-->', true);
             if (self::isNewDay()) {
                 $session = $revertsession;
                 $session['user']['restorepage'] = $REQUEST_URI;
                 $session['allowednavs'] = [];
-                addnav('', 'newday.php');
-                redirect('newday.php');
+                Nav::add('', 'newday.php');
+                Redirect::redirect('newday.php');
             }
         }
     }
