@@ -56,11 +56,6 @@ parameters:
 			path: src/Lotgd/Async/Handler/Timeout.php
 
 		-
-			message: "#^Constant SU_DEVELOPER not found\\.$#"
-			count: 2
-			path: src/Lotgd/Battle.php
-
-		-
 			message: "#^Function addnav not found\\.$#"
 			count: 13
 			path: src/Lotgd/Battle.php
@@ -216,11 +211,6 @@ parameters:
 			path: src/Lotgd/Buffs.php
 
 		-
-			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Censor.php
-
-		-
 			message: "#^Function getsetting not found\\.$#"
 			count: 1
 			path: src/Lotgd/Censor.php
@@ -246,16 +236,6 @@ parameters:
 			path: src/Lotgd/CharStats.php
 
 		-
-			message: "#^Constant DATETIME_DATEMAX not found\\.$#"
-			count: 2
-			path: src/Lotgd/CheckBan.php
-
-		-
-			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
-			count: 1
-			path: src/Lotgd/CheckBan.php
-
-		-
 			message: "#^Function sprintf_translate not found\\.$#"
 			count: 3
 			path: src/Lotgd/CheckBan.php
@@ -264,41 +244,6 @@ parameters:
 			message: "#^Function tlschema not found\\.$#"
 			count: 2
 			path: src/Lotgd/CheckBan.php
-
-		-
-			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
-			count: 1
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Constant LOCATION_FIELDS not found\\.$#"
-			count: 2
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Constant LOCATION_INN not found\\.$#"
-			count: 2
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
-			count: 3
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
-			count: 4
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Constant SU_IS_GAMEMASTER not found\\.$#"
-			count: 7
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Constant SU_MEGAUSER not found\\.$#"
-			count: 2
-			path: src/Lotgd/Commentary.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -426,31 +371,6 @@ parameters:
 			path: src/Lotgd/Commentary.php
 
 		-
-			message: "#^Constant SU_ANYONE_CAN_SET not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/configuration.php
-
-		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/configuration.php
-
-		-
-			message: "#^Constant SU_DEVELOPER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/configuration.php
-
-		-
-			message: "#^Constant SU_INFINITE_DAYS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/configuration.php
-
-		-
-			message: "#^Constant SU_VIEW_SOURCE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/configuration.php
-
-		-
 			message: "#^Function getsetting not found\\.$#"
 			count: 1
 			path: src/Lotgd/Config/configuration.php
@@ -459,226 +379,6 @@ parameters:
 			message: "#^Variable \\$session might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Config/configuration.php
-
-		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_DEVELOPER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_EDIT_CONFIG not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_EDIT_DONATIONS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_EDIT_USERS not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_HIDE_FROM_LEADERBOARD not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_INFINITE_DAYS not found\\.$#"
-			count: 3
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_IS_BANMASTER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_MEGAUSER not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_NEVER_EXPIRE not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_OVERRIDE_YOM_WARNING not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_POST_MOTD not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_RAW_SQL not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_SHOW_PHPNOTICE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_VIEW_SOURCE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/constants.php
-
-		-
-			message: "#^Constant SU_ANYONE_CAN_SET not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_AUDIT_MODERATION not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_DEVELOPER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_CONFIG not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_CREATURES not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_DONATIONS not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_EQUIPMENT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_MOUNTS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_PAYLOG not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_PETITIONS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_RIDDLES not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_EDIT_USERS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_GIVE_GROTTO not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_INFINITE_DAYS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_IS_BANMASTER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_IS_GAMEMASTER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_IS_TRANSLATOR not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_MANAGE_MODULES not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_MEGAUSER not found\\.$#"
-			count: 3
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_MODERATE_CLANS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_NEVER_EXPIRE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_OVERRIDE_YOM_WARNING not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_POST_MOTD not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_RAW_SQL not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_SHOW_PHPNOTICE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant SU_VIEW_SOURCE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/user_account.php
 
 		-
 			message: "#^Function getsetting not found\\.$#"
@@ -704,16 +404,6 @@ parameters:
 			message: "#^Variable \\$session might not be defined\\.$#"
 			count: 4
 			path: src/Lotgd/Config/user_account.php
-
-		-
-			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
-			count: 2
-			path: src/Lotgd/DateTime.php
-
-		-
-			message: "#^Constant DATETIME_TODAY not found\\.$#"
-			count: 1
-			path: src/Lotgd/DateTime.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -761,16 +451,6 @@ parameters:
 			path: src/Lotgd/DumpItem.php
 
 		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 2
-			path: src/Lotgd/ErrorHandler.php
-
-		-
-			message: "#^Constant SU_SHOW_PHPNOTICE not found\\.$#"
-			count: 1
-			path: src/Lotgd/ErrorHandler.php
-
-		-
 			message: "#^Function debug not found\\.$#"
 			count: 6
 			path: src/Lotgd/ErrorHandler.php
@@ -779,16 +459,6 @@ parameters:
 			message: "#^Function rawoutput not found\\.$#"
 			count: 1
 			path: src/Lotgd/ErrorHandler.php
-
-		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Constant SU_DEVELOPER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Events.php
 
 		-
 			message: "#^Function checknavs not found\\.$#"
@@ -829,21 +499,6 @@ parameters:
 			message: "#^Undefined variable\\: \\$row$#"
 			count: 1
 			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Constant CHAR_DELETE_AUTO not found\\.$#"
-			count: 1
-			path: src/Lotgd/ExpireChars.php
-
-		-
-			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
-			count: 1
-			path: src/Lotgd/ExpireChars.php
-
-		-
-			message: "#^Constant NO_ACCOUNT_EXPIRATION not found\\.$#"
-			count: 2
-			path: src/Lotgd/ExpireChars.php
 
 		-
 			message: "#^Function getsetting not found\\.$#"
@@ -926,16 +581,6 @@ parameters:
 			path: src/Lotgd/Forest/Outcomes.php
 
 		-
-			message: "#^Constant LOCATION_FIELDS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Forms.php
-
-		-
-			message: "#^Constant SU_IS_GAMEMASTER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Forms.php
-
-		-
 			message: "#^Function appoencode not found\\.$#"
 			count: 1
 			path: src/Lotgd/Forms.php
@@ -999,21 +644,6 @@ parameters:
 			message: "#^Static method Lotgd\\\\Forms\\:\\:renderField\\(\\) invoked with 8 parameters, 7 required\\.$#"
 			count: 1
 			path: src/Lotgd/Forms.php
-
-		-
-			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
-			count: 1
-			path: src/Lotgd/Moderate.php
-
-		-
-			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
-			count: 3
-			path: src/Lotgd/Moderate.php
-
-		-
-			message: "#^Constant SU_EDIT_USERS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Moderate.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -1106,11 +736,6 @@ parameters:
 			path: src/Lotgd/Moderate.php
 
 		-
-			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
-			count: 1
-			path: src/Lotgd/ModuleManager.php
-
-		-
 			message: "#^Function activate_module not found\\.$#"
 			count: 1
 			path: src/Lotgd/ModuleManager.php
@@ -1149,56 +774,6 @@ parameters:
 			message: "#^Function uninstall_module not found\\.$#"
 			count: 1
 			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Constant MODULE_ACTIVE not found\\.$#"
-			count: 2
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant MODULE_FILE_NOT_PRESENT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant MODULE_INJECTED not found\\.$#"
-			count: 4
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant MODULE_INSTALLED not found\\.$#"
-			count: 2
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant MODULE_NOT_INSTALLED not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant MODULE_NO_INFO not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant MODULE_VERSION_OK not found\\.$#"
-			count: 3
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant MODULE_VERSION_TOO_LOW not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 3
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Constant SU_DEVELOPER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -1361,11 +936,6 @@ parameters:
 			path: src/Lotgd/Modules/Installer.php
 
 		-
-			message: "#^Constant SU_POST_MOTD not found\\.$#"
-			count: 1
-			path: src/Lotgd/Motd.php
-
-		-
 			message: "#^Function addnav not found\\.$#"
 			count: 2
 			path: src/Lotgd/Motd.php
@@ -1411,16 +981,6 @@ parameters:
 			path: src/Lotgd/MountName.php
 
 		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 1
-			path: src/Lotgd/MySQL/Database.php
-
-		-
-			message: "#^Constant SU_DEVELOPER not found\\.$#"
-			count: 1
-			path: src/Lotgd/MySQL/Database.php
-
-		-
 			message: "#^Function debug not found\\.$#"
 			count: 1
 			path: src/Lotgd/MySQL/Database.php
@@ -1436,17 +996,7 @@ parameters:
 			path: src/Lotgd/MySQL/Database.php
 
 		-
-			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
-			count: 1
-			path: src/Lotgd/MySQL/TableDescriptor.php
-
-		-
 			message: "#^Function output not found\\.$#"
-			count: 1
-			path: src/Lotgd/MySQL/TableDescriptor.php
-
-		-
-			message: "#^Used constant DATETIME_DATEMIN not found\\.$#"
 			count: 1
 			path: src/Lotgd/MySQL/TableDescriptor.php
 
@@ -1476,11 +1026,6 @@ parameters:
 			path: src/Lotgd/Nav.php
 
 		-
-			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
-			count: 1
-			path: src/Lotgd/Nav/SuperuserNav.php
-
-		-
 			message: "#^Function addnav not found\\.$#"
 			count: 3
 			path: src/Lotgd/Nav/SuperuserNav.php
@@ -1499,21 +1044,6 @@ parameters:
 			message: "#^Function tlschema not found\\.$#"
 			count: 2
 			path: src/Lotgd/Nav/VillageNav.php
-
-		-
-			message: "#^Constant LOCATION_FIELDS not found\\.$#"
-			count: 1
-			path: src/Lotgd/Newday.php
-
-		-
-			message: "#^Constant SU_MANAGE_MODULES not found\\.$#"
-			count: 2
-			path: src/Lotgd/Newday.php
-
-		-
-			message: "#^Constant SU_MEGAUSER not found\\.$#"
-			count: 2
-			path: src/Lotgd/Newday.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -1591,11 +1121,6 @@ parameters:
 			path: src/Lotgd/Newday.php
 
 		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Output.php
-
-		-
 			message: "#^Function appoencode not found\\.$#"
 			count: 1
 			path: src/Lotgd/Output.php
@@ -1623,31 +1148,6 @@ parameters:
 		-
 			message: "#^Class Lotgd\\\\DataCache referenced with incorrect case\\: Lotgd\\\\Datacache\\.$#"
 			count: 2
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Constant RACE_UNKNOWN not found\\.$#"
-			count: 3
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
-			count: 1
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Constant SU_EDIT_PETITIONS not found\\.$#"
-			count: 1
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Constant SU_EDIT_USERS not found\\.$#"
-			count: 1
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Constant SU_MANAGE_MODULES not found\\.$#"
-			count: 1
 			path: src/Lotgd/PageParts.php
 
 		-
@@ -1701,16 +1201,6 @@ parameters:
 			path: src/Lotgd/PageParts.php
 
 		-
-			message: "#^Constant INT_MAX not found\\.$#"
-			count: 1
-			path: src/Lotgd/Partner.php
-
-		-
-			message: "#^Constant SEX_MALE not found\\.$#"
-			count: 3
-			path: src/Lotgd/Partner.php
-
-		-
 			message: "#^Function getsetting not found\\.$#"
 			count: 6
 			path: src/Lotgd/Partner.php
@@ -1719,31 +1209,6 @@ parameters:
 			message: "#^Function httpallget not found\\.$#"
 			count: 1
 			path: src/Lotgd/PhpGenericEnvironment.php
-
-		-
-			message: "#^Constant CLAN_APPLICANT not found\\.$#"
-			count: 1
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Constant CLAN_FOUNDER not found\\.$#"
-			count: 2
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Constant CLAN_LEADER not found\\.$#"
-			count: 4
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
-			count: 1
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Constant SEX_MALE not found\\.$#"
-			count: 1
-			path: src/Lotgd/PlayerFunctions.php
 
 		-
 			message: "#^Function debug not found\\.$#"
@@ -1774,16 +1239,6 @@ parameters:
 			message: "#^Function debug not found\\.$#"
 			count: 5
 			path: src/Lotgd/PullUrl.php
-
-		-
-			message: "#^Constant CLAN_APPLICANT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Pvp.php
-
-		-
-			message: "#^Constant SEX_MALE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Pvp.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -1836,16 +1291,6 @@ parameters:
 			path: src/Lotgd/Pvp.php
 
 		-
-			message: "#^Constant CLAN_APPLICANT not found\\.$#"
-			count: 1
-			path: src/Lotgd/Repository/ClanRepository.php
-
-		-
-			message: "#^Constant CLAN_LEADER not found\\.$#"
-			count: 1
-			path: src/Lotgd/Repository/ClanRepository.php
-
-		-
 			message: "#^Function getsetting not found\\.$#"
 			count: 5
 			path: src/Lotgd/Sanitize.php
@@ -1869,11 +1314,6 @@ parameters:
 			message: "#^Function getsetting not found\\.$#"
 			count: 1
 			path: src/Lotgd/Spell.php
-
-		-
-			message: "#^Constant SU_EDIT_USERS not found\\.$#"
-			count: 1
-			path: src/Lotgd/SuAccess.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -1911,11 +1351,6 @@ parameters:
 			path: src/Lotgd/SuAccess.php
 
 		-
-			message: "#^Constant DEFAULT_TEMPLATE not found\\.$#"
-			count: 5
-			path: src/Lotgd/Template.php
-
-		-
 			message: "#^Function getsetting not found\\.$#"
 			count: 1
 			path: src/Lotgd/Template.php
@@ -1924,16 +1359,6 @@ parameters:
 			message: "#^Variable \\$template might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Template.php
-
-		-
-			message: "#^Constant LANGUAGE not found\\.$#"
-			count: 1
-			path: src/Lotgd/Translator.php
-
-		-
-			message: "#^Constant SU_IS_TRANSLATOR not found\\.$#"
-			count: 3
-			path: src/Lotgd/Translator.php
 
 		-
 			message: "#^Function getsetting not found\\.$#"
@@ -1962,5 +1387,9 @@ parameters:
 
 		-
 			message: "#^Variable \\$settings in isset\\(\\) is never defined\\.$#"
+			count: 1
+			path: src/Lotgd/Translator.php
+		-
+			message: "#^Constant LANGUAGE not found\\.$#"
 			count: 1
 			path: src/Lotgd/Translator.php
