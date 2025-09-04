@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Static method Lotgd\\\\MySQL\\\\Database\\:\\:affectedRows\\(\\) invoked with 1 parameter, 0 required\\.$#"
-			count: 1
-			path: src/Lotgd/Accounts.php
-
-
-		-
 			message: "#^Variable \\$badguyatkmod might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Battle.php
