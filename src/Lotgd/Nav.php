@@ -543,7 +543,7 @@ class Nav
      */
     public static function privateAddNav($text, string|false|null $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
-        global $nav, $session, $REQUEST_URI, $notranslate, $settings;
+        global $nav, $session, $REQUEST_URI, $notranslate;
 
         if ($link !== false) {
             $link = (string) $link;

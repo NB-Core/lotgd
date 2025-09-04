@@ -5,6 +5,8 @@ namespace Tests\Ajax;
 use Jaxon\Response\Response;
 use Lotgd\Async\Handler\Commentary;
 use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\MailDummySettings;
+use Lotgd\Settings;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../bootstrap.php';
@@ -25,18 +27,13 @@ class PollUpdatesTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $settings, $output;
+        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $output;
 
         $session = [];
         $_SERVER['SCRIPT_NAME'] = 'test.php';
         $start_timeout_show_seconds = 300;
         $never_timeout_if_browser_open = 0;
-        $settings = new class {
-            public function getSetting(string $name, mixed $default = null): mixed
-            {
-                return $default;
-            }
-        };
+        Settings::setInstance(new MailDummySettings(['LOGINTIMEOUT' => 360]));
         $output = new class {
             public function appoencode($data, bool $priv = false)
             {
@@ -44,6 +41,8 @@ class PollUpdatesTest extends TestCase
             }
         };
         Database::$mockResults = [
+            [], // mailStatus
+            [], // timeoutStatus
             [], // commentaryRefresh
         ];
     }

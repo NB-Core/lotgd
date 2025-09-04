@@ -66,8 +66,8 @@ class Template
      */
     public static function prepareTemplate(bool $force = false): void
     {
-        global $settings;
-        if (!$force) {
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        if (! $force) {
             if (defined('TEMPLATE_IS_PREPARED')) {
                 return;
             }
@@ -86,12 +86,9 @@ class Template
             [$templateType, $templatename] = explode(':', $templatename, 2);
         }
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
-            if (isset($settings) && $settings instanceof Settings) {
-                // Pull the skin from settings (the distribution ships with DEFAULT_TEMPLATE).
-                // Administrators can change this via the 'defaultskin' setting.
+            if ($settings instanceof Settings) {
                 $templatename = $settings->getSetting('defaultskin', DEFAULT_TEMPLATE);
             } else {
-                // Use DEFAULT_TEMPLATE when settings are unavailable
                 $templatename = DEFAULT_TEMPLATE;
             }
             if (strpos($templatename, ':') !== false) {
@@ -107,10 +104,9 @@ class Template
 
         if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
             // Initialize Twig environment for Twig templates
-            $cachePath = null;
-            if ($settings instanceof Settings) {
-                $cachePath = $settings->getSetting('datacachepath', '/tmp');
-            }
+            $cachePath = $settings instanceof Settings
+                ? $settings->getSetting('datacachepath', '/tmp')
+                : '/tmp';
             TwigTemplate::init($templatename, $cachePath);
             $template = [];
         } else {

@@ -19,17 +19,12 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 class Mail
 {
-    private static $settings = null;
+    private static ?Settings $settings = null;
 
-    private static function getSettings()
+    private static function getSettings(): Settings
     {
-        global $settings;
-        if (is_object($settings) && method_exists($settings, 'getSetting')) {
-            return $settings;
-        }
-
-        if (! is_object(self::$settings)) {
-            self::$settings = new Settings();
+        if (! self::$settings instanceof Settings) {
+            self::$settings = Settings::getInstance();
         }
 
         return self::$settings;

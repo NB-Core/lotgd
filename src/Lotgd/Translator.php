@@ -29,16 +29,12 @@ class Translator
      */
     public static function translatorSetup(): void
     {
-        global $settings;
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         //Determine what language to use
         if (defined("TRANSLATOR_IS_SET_UP")) {
             return;
         }
         define("TRANSLATOR_IS_SET_UP", true);
-
-        if (!isset($settings)) {
-            return; // not yet setup most likely
-        }
 
         global $language, $session;
         $language = "";
@@ -51,7 +47,9 @@ class Translator
             }
         }
         if ($language == "") {
-            $language = $settings->getsetting("defaultlanguage", "en");
+            $language = $settings instanceof Settings
+                ? $settings->getsetting("defaultlanguage", "en")
+                : "en";
         }
 
                 define("LANGUAGE", preg_replace("/[^a-z]/i", "", $language));
@@ -77,12 +75,12 @@ class Translator
      */
     public static function translate(string|array $indata, string|false|null $namespace = false): string|array
     {
-        global $session,$settings;
+        global $session;
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
 
         if (
-            !self::$translation_is_enabled
-            || !isset($settings)
-            || $settings->getSetting("enabletranslation", true) == false
+            ! self::$translation_is_enabled
+            || ($settings instanceof Settings && $settings->getSetting('enabletranslation', true) == false)
         ) {
             return $indata;
         }
@@ -130,7 +128,7 @@ class Translator
         Database::query($sql);
                     }
                     */
-                } elseif ($settings->getsetting("collecttexts", false)) {
+                } elseif ($settings instanceof Settings && $settings->getsetting("collecttexts", false)) {
                     $sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . LANGUAGE . "', " .  "'$namespace')";
                     Database::query($sql, false);
                 }
@@ -533,9 +531,10 @@ class Translator
         if ($schema === false) {
             // Revert one entry: remove current namespace and set previous
             if (!empty($stack)) {
-                self::$translation_namespace = (string)array_pop($stack);
+                self::$translation_namespace = (string) array_pop($stack);
             } else {
-                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI);
+                // Default to empty string when REQUEST_URI is unavailable
+                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI ?? '');
             }
         } else {
             // Push current namespace to stack, set new one
@@ -551,12 +550,13 @@ class Translator
      */
     public static function translatorCheckCollectTexts(): void
     {
-        global $session, $settings;
-        if (!isset($settings)) {
-            return; // not yet setup most likely
+        global $session;
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        if (! $settings instanceof Settings) {
+            return;
         }
 
-        $tlmax = $settings->getSetting("tl_maxallowed", 0);
+        $tlmax = $settings->getSetting('tl_maxallowed', 0);
 
         if ($settings->getSetting("permacollect", 0)) {
             $settings->saveSetting("collecttexts", 1);

@@ -21,7 +21,8 @@ class Timeout
      */
     public function timeoutStatus(bool $args = false): Response
     {
-        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $settings, $output;
+        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $output;
+        $settings = Settings::getInstance();
 
         if ($args === false) {
             return jaxon()->newResponse();
@@ -45,7 +46,8 @@ class Timeout
         Translator::enableTranslation(false);
 
         if ($timeout <= 1) {
-            $warning = '' . $output->appoencode('`$`b') . 'Your session has timed out!' . $output->appoencode('`b');
+            // Preserve legacy behaviour by including the TIMEOUT keyword
+            $warning = $output->appoencode('`$`b') . 'TIMEOUT: Your session has timed out!' . $output->appoencode('`b');
         } elseif ($timeout < $start_timeout_show_seconds) {
             if ($timeout > 60) {
                 $min = floor($timeout / 60);

@@ -9,6 +9,8 @@ use Lotgd\Async\Handler\Commentary;
 use Lotgd\Async\Handler\Mail;
 use Lotgd\Async\Handler\Timeout;
 use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\MailDummySettings;
+use Lotgd\Settings;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,6 +31,7 @@ final class HandlerResponseTest extends TestCase
             }
         };
         require_once __DIR__ . '/../bootstrap.php';
+        Settings::setInstance(new MailDummySettings(['LOGINTIMEOUT' => 360]));
         Database::$mockResults = [];
     }
 

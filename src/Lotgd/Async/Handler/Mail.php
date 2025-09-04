@@ -21,13 +21,13 @@ class Mail
      */
     public function mailStatus(bool $args = false): Response
     {
-        global $session, $settings;
+        global $session;
+        $settings = Settings::getInstance();
 
         if ($args === false || empty($session['user']['acctid'])) {
             return jaxon()->newResponse();
         }
 
-        $settings = $settings ?? new Settings();
         $timeoutSetting = (int) $settings->getSetting('LOGINTIMEOUT', 360); // seconds
         $new = PageParts::mailLink();
         $tabtext = PageParts::mailLinkTabText();

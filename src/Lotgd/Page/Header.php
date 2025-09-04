@@ -13,12 +13,14 @@ use Lotgd\HolidayText;
 use Lotgd\Buffs;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 class Header
 {
     public static function pageHeader(...$args): void
     {
-        global $header, $SCRIPT_NAME, $session, $template, $settings;
+        global $header, $SCRIPT_NAME, $session, $template;
+        $settings = Settings::getInstance();
 
         PageParts::$noPopups['login.php'] = true;
         PageParts::$noPopups['motd.php'] = true;
@@ -69,7 +71,7 @@ class Header
             $header = str_replace('{meta_description}', $metaDesc, $header);
         }
         $header .= Translator::tlbuttonPop();
-        if (isset($settings) && $settings->getSetting('debug', 0)) {
+        if ($settings->getSetting('debug', 0)) {
             $session['debugstart'] = microtime();
         }
     }

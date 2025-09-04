@@ -35,7 +35,7 @@ class Newday
 
     public static function commentCleanup(): void
     {
-        global $settings;
+        $settings = Settings::getInstance();
 
         $timestamp = self::calculateExpirationTimestamp('2 month');
         Database::query('DELETE FROM ' . Database::prefix('referers') . " WHERE last < '$timestamp'");
@@ -48,7 +48,7 @@ class Newday
         if ($ok) {
             $sql = 'DELETE FROM ' . Database::prefix('debuglog') . " WHERE date <'$timestamp'";
             Database::query($sql);
-            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiredebuglog', 18) . ' days');
+        $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiredebuglog', 18) . ' days');
             $sql = 'DELETE FROM ' . Database::prefix('debuglog_archive') . " WHERE date <'$timestamp'";
             if ($settings->getSetting('expiredebuglog', 18) > 0) {
                 Database::query($sql);
@@ -112,7 +112,7 @@ class Newday
 
     public static function runOnce(): void
     {
-        global $settings;
+        $settings = Settings::getInstance();
 
         HookHandler::hook('newday-runonce', []);
 
@@ -136,7 +136,7 @@ class Newday
             }
         }
 
-        if (!$settings->getSetting('newdaycron', 0)) {
+        if (! $settings->getSetting('newdaycron', 0)) {
             self::dbCleanup();
             self::commentCleanup();
             self::charCleanup();
@@ -344,7 +344,8 @@ class Newday
 
     public static function setRace(string $resline): void
     {
-        global $session, $settings;
+        global $session;
+        $settings = Settings::getInstance();
         $setrace = httpget('setrace');
         if ($setrace != '') {
             $vname = $settings->getSetting('villagename', LOCATION_FIELDS);

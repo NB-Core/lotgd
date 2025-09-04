@@ -21,15 +21,12 @@ class Redirect
      */
     public static function redirect(string $location, string|bool $reason = false): void
     {
-        global $session, $REQUEST_URI, $settings;
+        global $session, $REQUEST_URI;
+        $settings = Settings::getInstance();
         if (strpos($location, 'badnav.php') === false) {
             $session['allowednavs'] = [];
             Nav::add('', $location);
-            if (isset($settings) && $settings instanceof Settings) {
-                $charset = $settings->getSetting('charset', 'UTF-8');
-            } else {
-                $charset = 'UTF-8'; // Default charset if settings not available
-            }
+            $charset = $settings->getSetting('charset', 'UTF-8');
             $failoutput = new Output();
             $failoutput->outputNotl("`lWhoops, your navigation is broken. Hopefully we can restore it.`n`n");
             $failoutput->outputNotl('`$');

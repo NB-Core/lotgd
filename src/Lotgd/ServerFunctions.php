@@ -21,7 +21,7 @@ class ServerFunctions
      */
     public static function isTheServerFull(): bool
     {
-        global $settings;
+        $settings = Settings::getInstance();
         if (abs($settings->getSetting('OnlineCountLast', 0) - strtotime('now')) > 60) {
             $sql = "SELECT count(acctid) as counter FROM " . Database::prefix('accounts') . " WHERE locked=0 AND loggedin=1 AND laston>'" . date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')) . "'";
             $result = Database::query($sql);
