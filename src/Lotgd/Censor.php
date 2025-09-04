@@ -21,10 +21,10 @@ class Censor
      */
     public static function soap(string $input, bool $debug = false, bool $skiphook = false): string
     {
-        global $session;
+        global $session, $output;
         $final_output = $input;
-        $output = Sanitize::fullSanitize($input);
-        $mix_mask = str_pad('', strlen($output), 'X');
+        $sanitized = Sanitize::fullSanitize($input);
+        $mix_mask = str_pad('', strlen($sanitized), 'X');
         if (getsetting('soap', 1)) {
             $search = self::nastyWordList();
             $exceptions = array_flip(self::goodWordList());
@@ -32,7 +32,7 @@ class Censor
             foreach ($search as $word) {
                 do {
                     if ($word > '') {
-                        $times = preg_match_all($word, $output, $matches);
+                        $times = preg_match_all($word, $sanitized, $matches);
                     } else {
                         $times = 0;
                     }
@@ -48,16 +48,16 @@ class Censor
                             $x--;
                             $times--;
                             if ($debug) {
-                                output("This word is ok because it was caught by an exception: `b`^%s`7`b`n", $longword);
+                                $output->output("This word is ok because it was caught by an exception: `b`^%s`7`b`n", $longword);
                             }
                         } else {
                             if ($debug) {
-                                output("`7This word is not ok: \"`%%s`7\"; it blocks on the pattern `i%s`i at \"`\$%s`7\".`n", Sanitize::sanitizeMb($longword), $word, $shortword);
+                                $output->output("`7This word is not ok: \"`%%s`7\"; it blocks on the pattern `i%s`i at \"`\$%s`7\".`n", Sanitize::sanitizeMb($longword), $word, $shortword);
                             }
                             $len = strlen($shortword);
                             $pad = str_pad('', $len, '_');
-                            $p = strpos($output, $shortword);
-                            $output = substr($output, 0, $p) . $pad . substr($output, $p + $len);
+                            $p = strpos($sanitized, $shortword);
+                            $sanitized = substr($sanitized, 0, $p) . $pad . substr($sanitized, $p + $len);
                             $mix_mask = substr($mix_mask, 0, $p) . $pad . substr($mix_mask, $p + $len);
                             $changed_content = true;
                         }
@@ -76,7 +76,7 @@ class Censor
                 $y++;
             }
             if (($session['user']['superuser'] & SU_EDIT_COMMENTS) && $changed_content) {
-                output("`0The filter would have tripped on \"`#%s`0\" but since you're a moderator, I'm going to be lenient on you.  The text would have read, \"`#%s`0\"`n`n", $input, $final_output);
+                $output->output("`0The filter would have tripped on \"`#%s`0\" but since you're a moderator, I'm going to be lenient on you.  The text would have read, \"`#%s`0\"`n`n", $input, $final_output);
                 return $input;
             }
             if ($changed_content && !$skiphook) {

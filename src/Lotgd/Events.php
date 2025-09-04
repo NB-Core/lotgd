@@ -33,7 +33,7 @@ class Events
                 //debug("Base link was specified as $baseLink");
                 //debug(debug_backtrace());
         }
-        global $session, $playermount, $badguy;
+        global $session, $playermount, $badguy, $output;
         $skipdesc = false;
 
         tlschema("events");
@@ -58,14 +58,14 @@ class Events
                     page_header($needHeader);
             }
 
-            output("`^`c`bSomething Special!`c`b`0");
+            $output->output("`^`c`bSomething Special!`c`b`0");
             if (strchr($specialinc, ":")) {
                 $array = explode(":", $specialinc);
                 $starttime = getmicrotime();
                 module_do_event($location, $array[1], $allowinactive, $baseLink);
                 $endtime = getmicrotime();
                 if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
-                    debug("Slow Event (" . round($endtime - $starttime, 2) . "s): $hookname - {$row['modulename']}`n");
+                    $output->debug("Slow Event (" . round($endtime - $starttime, 2) . "s): $hookname - {$row['modulename']}`n");
                 }
             }
             if (checknavs()) {

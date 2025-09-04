@@ -26,9 +26,9 @@ class SuAccess
      */
     public static function check(int $level): void
     {
-        global $session;
+        global $session, $output;
         self::$pageLevel |= $level;
-        rawoutput("<!--Su_Restricted-->");
+        $output->rawOutput("<!--Su_Restricted-->");
         if ($session['user']['superuser'] & $level) {
             $return = HookHandler::hook('check_su_access', ['enabled' => true, 'level' => $level]);
             if ($return['enabled']) {
@@ -36,8 +36,8 @@ class SuAccess
                 return;
             }
             page_header('Oops.');
-            output("Looks like you're probably an admin with appropriate permissions to perform this action, but a module is preventing you from doing so.");
-            output('Sorry about that!');
+            $output->output("Looks like you're probably an admin with appropriate permissions to perform this action, but a module is preventing you from doing so.");
+            $output->output('Sorry about that!');
             tlschema('nav');
             addnav('M?Return to the Mundane', 'village.php');
             tlschema();
@@ -46,8 +46,8 @@ class SuAccess
         clearnav();
         $session['output'] = '';
         page_header('INFIDEL!');
-        output('For attempting to defile the gods, you have been smitten down!`n`n');
-        output("%s`\$, Overlord of Death`) appears before you in a vision, seizing your mind with his, and wordlessly telling you that he finds no favor with you.`n`n", getsetting('deathoverlord', '`$Ramius'));
+        $output->output('For attempting to defile the gods, you have been smitten down!`n`n');
+        $output->output("%s`\$, Overlord of Death`) appears before you in a vision, seizing your mind with his, and wordlessly telling you that he finds no favor with you.`n`n", getsetting('deathoverlord', '`$Ramius'));
         AddNews::add("`&%s was smitten down for attempting to defile the gods (they tried to hack superuser pages).", $session['user']['name']);
         debuglog("Lost {$session['user']['gold']} and " . ($session['user']['experience'] * 0.25) . " experience trying to hack superuser pages.");
         $session['user']['hitpoints'] = 0;
