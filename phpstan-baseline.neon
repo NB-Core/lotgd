@@ -1,11 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
-			count: 1
-			path: src/Lotgd/Accounts.php
-
-		-
 			message: "#^Static method Lotgd\\\\MySQL\\\\Database\\:\\:affectedRows\\(\\) invoked with 1 parameter, 0 required\\.$#"
 			count: 1
 			path: src/Lotgd/Accounts.php
