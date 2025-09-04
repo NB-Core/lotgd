@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Nav;
 
+use Lotgd\Modules\HookHandler;
+
 /**
  * Navigation helper for returning to the village.
  */
@@ -16,7 +18,7 @@ class VillageNav
         if ($extra === false) {
             $extra = '';
         }
-        $args = modulehook('villagenav');
+        $args = HookHandler::hook('villagenav');
         if (array_key_exists('handled', $args) && $args['handled']) {
             return;
         }

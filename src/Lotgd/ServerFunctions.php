@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
+use Lotgd\Modules\HookHandler;
 
 class ServerFunctions
 {
@@ -99,7 +100,7 @@ class ServerFunctions
             $resetactions = count($sets) > 0 ? ',' . implode(',', $sets) : '';
             $sql = 'UPDATE ' . Database::prefix('accounts') . " SET dragonpoints=''$resetactions WHERE acctid=" . $row['acctid'];
             Database::query($sql);
-            modulehook('dragonpointreset', [$row]);
+            HookHandler::hook('dragonpointreset', [$row]);
         }
     }
 

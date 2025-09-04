@@ -15,6 +15,7 @@ use Lotgd\Nav;
 use Lotgd\Accounts;
 use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
 
 class Footer
 {
@@ -73,7 +74,7 @@ class Footer
                 $session['needtoviewmotd'] = false;
             }
             $favicon = ['favicon-link' => $defaultFaviconLink];
-            $favicon        = modulehook('pageparts-favicon', $favicon);
+            $favicon        = HookHandler::hook('pageparts-favicon', $favicon);
             $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
             if (isset($settings) && $settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('async/setup.php')) {
@@ -145,7 +146,7 @@ class Footer
         } else {
             $motd_link = '';
         }
-        $motd_link = modulehook('motd-link', ['link' => $motd_link]);
+        $motd_link = HookHandler::hook('motd-link', ['link' => $motd_link]);
         $motd_link = $motd_link['link'];
 
         list($header, $footer) = PageParts::assembleMailLink($header, $footer);

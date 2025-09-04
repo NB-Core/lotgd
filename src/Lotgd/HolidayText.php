@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Modules\HookHandler;
+
 /**
  * Text helper to replace certain messages with seasonal variants.
  */
@@ -31,7 +33,7 @@ class HolidayText
             if (isset($currenthook) && $currenthook === 'holiday') {
                 return $text;
             }
-            $args = modulehook('holiday', $args);
+            $args = HookHandler::hook('holiday', $args);
         }
         $text = $args['text'];
         return $text;

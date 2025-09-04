@@ -15,6 +15,7 @@ use Lotgd\PageParts;
 use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\Nav;
+use Lotgd\Modules\HookHandler;
 
 class Outcomes
 {
@@ -68,7 +69,7 @@ class Outcomes
             debuglog('received gold for slaying a monster.', false, false, 'forestwin', $gold);
         }
         $gemChance = $settings->getSetting('forestgemchance', 25);
-        $args = modulehook('alter-gemchance', ['chance' => $gemChance]);
+        $args = HookHandler::hook('alter-gemchance', ['chance' => $gemChance]);
         $gemchances = (int)$args['chance'];
         $maxLevel = $settings->getSetting('maxlevel', 15);
         if ($session['user']['level'] < $maxLevel && e_rand(1, $gemchances) == 1) {
@@ -215,11 +216,11 @@ class Outcomes
             $badguy['creaturegold'] = (int) round((int) $badguy['creaturegold'] * $bonus, 0);
             $badguy['creatureexp'] = (int) round((int) $badguy['creatureexp'] * $bonus, 0);
         }
-        $badguy = modulehook('creatureencounter', $badguy);
+        $badguy = HookHandler::hook('creatureencounter', $badguy);
         debug("DEBUG: $dk modification points total.");
         debug("DEBUG: +$atkflux allocated to attack.");
         debug("DEBUG: +$defflux allocated to defense.");
         debug("DEBUG: +" . ($hpflux / 5) . "*5 to hitpoints.");
-        return modulehook('buffbadguy', $badguy);
+        return HookHandler::hook('buffbadguy', $badguy);
     }
 }

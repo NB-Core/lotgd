@@ -6,6 +6,7 @@ namespace Lotgd;
 
 use Lotgd\Translator;
 use Lotgd\DumpItem;
+use Lotgd\Modules\HookHandler;
 
 class Forms
 {
@@ -183,7 +184,7 @@ JS;
         $showform_id++;
         $formSections = [];
         $returnvalues = [];
-        $extensions = modulehook('showformextensions', []);
+        $extensions = HookHandler::hook('showformextensions', []);
 
         rawoutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
         rawoutput("<div id='showFormSection$showform_id'></div>");
@@ -347,7 +348,7 @@ JS;
                 $vname = getsetting('villagename', LOCATION_FIELDS);
                 $vloc[$vname] = 'village';
                 $vloc['all'] = 1;
-                $vloc = modulehook('validlocation', $vloc);
+                $vloc = HookHandler::hook('validlocation', $vloc);
                 unset($vloc['all']);
                 reset($vloc);
                 rawoutput("<select id='$entityId' name='$keyout'>");

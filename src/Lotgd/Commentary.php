@@ -7,6 +7,7 @@ namespace Lotgd;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
 
 class Commentary
 {
@@ -40,7 +41,7 @@ class Commentary
             self::$comsecs['beta'] = Translator::translateInline('Pavilion');
         }
         tlschema();
-        self::$comsecs = modulehook('moderate', self::$comsecs);
+        self::$comsecs = HookHandler::hook('moderate', self::$comsecs);
         rawoutput(tlbutton_clear());
         return self::$comsecs;
     }
@@ -207,7 +208,7 @@ SQL;
         [$commentary, $talkline] = self::applyHooks($section, $commentary, $talkline, $schema);
 
         // Determine if comment is a /game command and if the user is a GM
-        $args = modulehook('gmcommentarea', ['section' => $section, 'allow_gm' => false, 'commentary' => $commentary]);
+        $args = HookHandler::hook('gmcommentarea', ['section' => $section, 'allow_gm' => false, 'commentary' => $commentary]);
         $isGameComment = strncmp($commentary, '/game', 5) === 0;
         $isGm = (($session['user']['superuser'] & SU_IS_GAMEMASTER) === SU_IS_GAMEMASTER) || $args['allow_gm'] === true;
 
@@ -262,7 +263,7 @@ SQL;
     private static function applyHooks(string $section, string $commentary, string $talkline, $schema): array
     {
         $args = ['section' => $section, 'commentline' => $commentary, 'commenttalk' => $talkline];
-        $args = modulehook('commentary', $args);
+        $args = HookHandler::hook('commentary', $args);
         $commentary = $args['commentline'];
         $talkline = $args['commenttalk'];
 
@@ -445,7 +446,7 @@ SQL;
      */
     public static function commentDisplay(string $intro, string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false): void
     {
-        $args = modulehook('blockcommentarea', ['section' => $section]);
+        $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
         if (isset($args['block']) && ($args['block'] == 'yes')) {
             return;
         }
@@ -500,7 +501,7 @@ SQL;
 
         rawoutput("<a name='$section'></a>");
 
-        $args = modulehook('blockcommentarea', ['section' => $section]);
+        $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
         if (isset($args['block']) && ($args['block'] == 'yes')) {
             return null;
         }
@@ -591,20 +592,20 @@ SQL;
         foreach ($outputcomments as $sec => $v) {
             if ($sec != 'x') {
                 if ($needclose) {
-                    modulehook('}collapse');
+                    HookHandler::hook('}collapse');
                 }
                 output_notl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
                 addnav('', "moderate.php?area=$sec");
-                modulehook('collapse{', ['name' => 'com-' . $sec]);
+                HookHandler::hook('collapse{', ['name' => 'com-' . $sec]);
                 $needclose = 1;
             } else {
-                modulehook('collapse{', ['name' => 'com-' . $section]);
+                HookHandler::hook('collapse{', ['name' => 'com-' . $section]);
                 $needclose = 1;
             }
             reset($v);
             foreach ($v as $key => $val) {
                 $args = ['commentline' => $val];
-                $args = modulehook('viewcommentary', $args);
+                $args = HookHandler::hook('viewcommentary', $args);
                 $val = $args['commentline'];
                 output_notl($val, true);
             }
@@ -698,7 +699,7 @@ SQL;
         }
         tlschema();
         if ($needclose) {
-            modulehook('}collapse');
+            HookHandler::hook('}collapse');
         }
         rawoutput('</div>');
         return null;
@@ -875,7 +876,7 @@ SQL;
     {
         global $session;
 
-        $args = modulehook("insertcomment", array("section" => $section));
+        $args = HookHandler::hook("insertcomment", array("section" => $section));
         if (
             array_key_exists("mute", $args) && $args['mute'] &&
                         !($session['user']['superuser'] & SU_EDIT_COMMENTS)

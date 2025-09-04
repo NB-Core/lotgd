@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Nav\VillageNav;
+use Lotgd\Modules\HookHandler;
 
 class Forest
 {
@@ -37,7 +38,7 @@ class Forest
         addnav('Other');
         if ($session['user']['level'] >= getsetting('maxlevel', 15) && $session['user']['seendragon'] == 0) {
             $isforest = 0;
-            $vloc = modulehook('validforestloc', []);
+            $vloc = HookHandler::hook('validforestloc', []);
             foreach ($vloc as $i => $l) {
                 if ($session['user']['location'] == $i) {
                     $isforest = 1;
@@ -54,9 +55,9 @@ class Forest
             output('The thick foliage of the forest restricts your view to only a few yards in most places.');
             output('The paths would be imperceptible except for your trained eye.');
             output('You move as silently as a soft breeze across the thick moss covering the ground, wary to avoid stepping on a twig or any of the numerous pieces of bleached bone that populate the forest floor, lest you betray your presence to one of the vile beasts that wander the forest.`n');
-            modulehook('forest-desc');
+            HookHandler::hook('forest-desc');
         }
-        modulehook('forest', []);
+        HookHandler::hook('forest', []);
         module_display_events('forest', 'forest.php');
         tlschema();
     }

@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
+use Lotgd\Modules\HookHandler;
 
 class SuAccess
 {
@@ -29,7 +30,7 @@ class SuAccess
         self::$pageLevel |= $level;
         rawoutput("<!--Su_Restricted-->");
         if ($session['user']['superuser'] & $level) {
-            $return = modulehook('check_su_access', ['enabled' => true, 'level' => $level]);
+            $return = HookHandler::hook('check_su_access', ['enabled' => true, 'level' => $level]);
             if ($return['enabled']) {
                 $session['user']['laston'] = date('Y-m-d H:i:s');
                 return;

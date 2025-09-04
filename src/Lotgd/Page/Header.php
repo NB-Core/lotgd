@@ -12,6 +12,7 @@ use Lotgd\Sanitize;
 use Lotgd\HolidayText;
 use Lotgd\Buffs;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
 
 class Header
 {
@@ -36,11 +37,11 @@ class Header
                 }
                 if (!PageParts::$runHeaders[$script]) {
                     if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-                        modulehook('everyheader', ['script' => $script]);
+                        HookHandler::hook('everyheader', ['script' => $script]);
                     }
                     PageParts::$runHeaders[$script] = true;
                     if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-                        modulehook("header-$script");
+                        HookHandler::hook("header-$script");
                     }
                 }
             }
@@ -80,7 +81,7 @@ class Header
         Translator::translatorSetup();
         Template::prepareTemplate();
 
-        modulehook('header-popup');
+        HookHandler::hook('header-popup');
 
         $arguments = func_get_args();
         if (!$arguments || count($arguments) === 0) {

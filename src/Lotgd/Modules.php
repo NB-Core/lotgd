@@ -15,6 +15,7 @@ use Lotgd\Forms;
 use Lotgd\Sanitize;
 use Lotgd\Modules\Installer;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
 
 class Modules
 {
@@ -1201,7 +1202,7 @@ class Modules
             }
         }
 
-        return modulehook('collect-events', $events);
+        return HookHandler::hook('collect-events', $events);
     }
 
     /**
@@ -1263,7 +1264,7 @@ class Modules
             $fname = $module . '_runevent';
             $fname($type, $baseLink);
             Translator::tlschema();
-            modulehook("runevent_$module", ['type' => $type, 'baselink' => $baseLink, 'get' => httpallget(), 'post' => httpallpost()]);
+            HookHandler::hook("runevent_$module", ['type' => $type, 'baselink' => $baseLink, 'get' => httpallget(), 'post' => httpallpost()]);
             $navsection = $oldnavsection;
         }
 

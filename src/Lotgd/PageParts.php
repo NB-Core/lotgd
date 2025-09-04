@@ -26,6 +26,7 @@ use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
+use Lotgd\Modules\HookHandler;
 
 class PageParts
 {
@@ -386,7 +387,7 @@ class PageParts
                 self::addCharStat("Creature", $playermount['mountname'] . "`0");
             }
 
-            modulehook("charstats");
+            HookHandler::hook("charstats");
 
             $charstat = self::getCharStats($buffs);
 
@@ -408,7 +409,7 @@ class PageParts
             if ($ret = Datacache::datacache($cacheKey)) {
             } else {
                 $onlinecount = 0;
-                $list = modulehook("onlinecharlist", array("count" => 0, "list" => ""));
+                $list = HookHandler::hook("onlinecharlist", array("count" => 0, "list" => ""));
                 if (isset($list['handled']) && $list['handled']) {
                     $onlinecount = $list['count'];
                     $ret = $list['list'];
@@ -425,7 +426,7 @@ class PageParts
                         $rows[] = $row;
                     }
                     Database::freeResult($result);
-                    $rows = modulehook("loggedin", $rows);
+                    $rows = HookHandler::hook("loggedin", $rows);
                     if ($mode === 0) {
                         $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
                     } elseif ($mode === 1) {
@@ -741,7 +742,7 @@ class PageParts
                 $pets .= $color . $val . '`0';
             }
             $ret_args = array('petitioncount' => $pets);
-            $ret_args = modulehook('petitioncount', $ret_args);
+            $ret_args = HookHandler::hook('petitioncount', $ret_args);
             $pets = $ret_args['petitioncount'];
             $p .= $pets;
             $pcount = templatereplace('petitioncount', array('petitioncount' => appoencode($p, true)));
@@ -773,12 +774,12 @@ class PageParts
     public static function applyFooterHooks(string $header, string $footer, string $script): array
     {
         // Gather module hook results for footer replacements
-        $replacementbits = modulehook("footer-$script", []);
+        $replacementbits = HookHandler::hook("footer-$script", []);
         if ($script == 'runmodule' && (($module = httpget('module'))) > '') {
-            $replacementbits = modulehook("footer-$module", $replacementbits);
+            $replacementbits = HookHandler::hook("footer-$module", $replacementbits);
         }
         $replacementbits['__scriptfile__'] = $script;
-        $replacementbits = modulehook('everyfooter', $replacementbits);
+        $replacementbits = HookHandler::hook('everyfooter', $replacementbits);
         unset($replacementbits['__scriptfile__']);
 
         // Build a simple token => string mapping
@@ -795,7 +796,7 @@ class PageParts
      */
     public static function applyPopupFooterHooks(string $header, string $footer): array
     {
-        $replacementbits = modulehook('footer-popup', []);
+        $replacementbits = HookHandler::hook('footer-popup', []);
 
         $replacements = [];
         foreach ($replacementbits as $key => $val) {

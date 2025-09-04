@@ -14,6 +14,7 @@ use Lotgd\HolidayText;
 use Lotgd\Commentary;
 use Lotgd\Translator;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
 
 class Moderate
 {
@@ -162,7 +163,7 @@ class Moderate
         // Decide whether to limit to a specific section or view all
         if ($viewall === false) {
             rawoutput("<a name='$section'></a>");
-            $args = modulehook('blockcommentarea', ['section' => $section]);
+            $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
             if (isset($args['block']) && ($args['block'] == 'yes')) {
                 return;
             }
@@ -424,27 +425,27 @@ class Moderate
         foreach ($outputcomments as $sec => $v) {
             if ($sec != 'x') {
                 if ($needclose) {
-                    modulehook('}collapse');
+                    HookHandler::hook('}collapse');
                 }
                 output_notl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
                 addnav('', "moderate.php?area=$sec");
-                modulehook('collapse{', ['name' => 'com-' . $sec]);
+                HookHandler::hook('collapse{', ['name' => 'com-' . $sec]);
                 $needclose = 1;
             } else {
-                modulehook('collapse{', ['name' => 'com-' . $section]);
+                HookHandler::hook('collapse{', ['name' => 'com-' . $section]);
                 $needclose = 1;
             }
             reset($v);
             foreach ($v as $key => $val) {
                 $args = ['commentline' => $val];
-                $args = modulehook('viewcommentary', $args);
+                $args = HookHandler::hook('viewcommentary', $args);
                 $val = $args['commentline'];
                 output_notl($val, true);
             }
         }
 
         if ($moderating && $needclose) {
-            modulehook('}collapse');
+            HookHandler::hook('}collapse');
             $needclose = 0;
         }
 
@@ -459,7 +460,7 @@ class Moderate
         }
 
         if ($session['user']['loggedin']) {
-            $args = modulehook('insertcomment', ['section' => $section]);
+            $args = HookHandler::hook('insertcomment', ['section' => $section]);
             if (array_key_exists('mute', $args) && $args['mute'] && !($session['user']['superuser'] & SU_EDIT_COMMENTS)) {
                 output_notl('%s', $args['mutemsg']);
             } elseif ($counttoday < ($limit / 2) || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) || !getsetting('postinglimit', 1)) {
@@ -481,7 +482,7 @@ class Moderate
         self::showNavLinks($section, $limit, $cid, $rowcount, $jump, $com, $REQUEST_URI, $newadded);
         tlschema();
         if ($needclose) {
-            modulehook('}collapse');
+            HookHandler::hook('}collapse');
         }
     }
 }
