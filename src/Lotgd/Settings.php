@@ -31,6 +31,18 @@ class Settings
     }
 
     /**
+     * Retrieve the global Settings instance.
+     */
+    public static function getInstance(): self
+    {
+        global $settings;
+        if (!$settings instanceof self) {
+            $settings = new self('settings');
+        }
+        return $settings;
+    }
+
+    /**
      * Persist a setting value.
      *
      * @param string|int $settingname Setting identifier

@@ -12,6 +12,11 @@ use Lotgd\BellRand;
 use Lotgd\Substitute;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Nav;
+use Lotgd\Output;
+use Lotgd\PlayerFunctions;
+use Lotgd\Settings;
+use Lotgd\Sanitize;
 
 class Battle
 {
@@ -38,17 +43,18 @@ class Battle
             }
 
             $creatureattack = $badguy['creatureattack'] * $creatureatkmod;
-            $adjustedselfdefense = (get_player_defense() * $adjustment * $defmod);
+            $adjustedselfdefense = (PlayerFunctions::getPlayerDefense() * $adjustment * $defmod);
 
             if (!isset($badguy['physicalresistance'])) {
                 $badguy['physicalresistance'] = 0;
             }
-            $powerattack = (int) getsetting('forestpowerattackchance', 10);
-            $powerattackmulti = (float) getsetting('forestpowerattackmulti', 3);
+            $settings = Settings::getInstance();
+            $powerattack = (int) $settings->getSetting('forestpowerattackchance', 10);
+            $powerattackmulti = (float) $settings->getSetting('forestpowerattackmulti', 3);
 
             while (!isset($creaturedmg) || !isset($selfdmg) || ($creaturedmg == 0 && $selfdmg == 0)) {
-                $atk = get_player_attack() * $atkmod;
-                if (e_rand(1, 20) == 1 && $options['type'] != 'pvp') {
+                $atk = PlayerFunctions::getPlayerAttack() * $atkmod;
+                if (random_int(1, 20) == 1 && $options['type'] != 'pvp') {
                     $atk *= 2;
                 }
                 $patkroll = BellRand::generate(0, $atk);
@@ -67,7 +73,7 @@ class Battle
                 $pdefroll = BellRand::generate(0, $adjustedselfdefense);
                 $catkroll = BellRand::generate(0, $creatureattack);
                 if ($powerattack != 0 && $options['type'] != 'pvp') {
-                    if (e_rand(1, $powerattack) == 1) {
+                    if (random_int(1, $powerattack) == 1) {
                         $catkroll *= $powerattackmulti;
                     }
                 }
@@ -75,11 +81,11 @@ class Battle
                 if ($selfdmg < 0) {
                     $selfdmg = (int) ($selfdmg / 2);
                     $selfdmg = round($selfdmg * $buffset['dmgmod'], 0);
-                    $selfdmg = min(0, round($selfdmg - ((int) get_player_physical_resistance()), 0));
+                    $selfdmg = min(0, round($selfdmg - ((int) PlayerFunctions::getPlayerPhysicalResistance()), 0));
                 }
                 if ($selfdmg > 0) {
                     $selfdmg = round($selfdmg * $buffset['badguydmgmod'], 0);
-                    $selfdmg = max(0, round($selfdmg - ((int) get_player_physical_resistance()), 0));
+                    $selfdmg = max(0, round($selfdmg - ((int) PlayerFunctions::getPlayerPhysicalResistance()), 0));
                 }
             }
         } else {
@@ -101,7 +107,7 @@ class Battle
     public static function reportPowerMove(int $crit, int $dmg)
     {
         global $session;
-        $uatk = get_player_attack();
+        $uatk = PlayerFunctions::getPlayerAttack();
         if ($crit > $uatk) {
             $power = 0;
             if ($crit > $uatk * 4) {
@@ -118,11 +124,11 @@ class Battle
                 $power = 1;
             }
             if ($power) {
-                tlschema('battle');
-                output($msg);
-                tlschema();
+                Translator::tlschema('battle');
+                Output::getInstance()->output($msg);
+                Translator::tlschema();
 
-                $dmg += e_rand((int)($crit / 4), (int)($crit / 2));
+                $dmg += random_int((int)($crit / 4), (int)($crit / 2));
                 $dmg = max($dmg, 1);
             }
         }
@@ -152,11 +158,11 @@ class Battle
                 $msg = "`&The gods have suspended some of your enhancements!`n";
             }
             if ($schema) {
-                tlschema($schema);
+                Translator::tlschema($schema);
             }
-            output(sanitize_mb($msg));
+            Output::getInstance()->output(Sanitize::sanitizeMb($msg));
             if ($schema) {
-                tlschema();
+                Translator::tlschema();
             }
         }
     }
@@ -177,11 +183,11 @@ class Battle
                 $msg = "`&The gods have suspended some of your enhancements!`n";
             }
             if ($schema) {
-                tlschema($schema);
+                Translator::tlschema($schema);
             }
-            output($msg);
+            Output::getInstance()->output($msg);
             if ($schema) {
-                tlschema();
+                Translator::tlschema();
             }
         }
     }
@@ -198,11 +204,11 @@ class Battle
                 $msg = "`&The gods have restored all suspended enhancements.`n`n";
             }
             if ($schema) {
-                tlschema($schema);
+                Translator::tlschema($schema);
             }
-            output($msg);
+            Output::getInstance()->output($msg);
             if ($schema) {
-                tlschema();
+                Translator::tlschema();
             }
         }
     }
@@ -234,11 +240,11 @@ class Battle
                 $msg = "`&The gods have restored all suspended enhancements.`n`n";
             }
             if ($schema) {
-                tlschema($schema);
+                Translator::tlschema($schema);
             }
-            output($msg);
+            Output::getInstance()->output($msg);
             if ($schema) {
-                tlschema();
+                Translator::tlschema();
             }
         }
     }
@@ -294,7 +300,7 @@ class Battle
     public static function selectTaunt(): string
     {
         $sql = 'SELECT taunt FROM ' . Database::prefix('taunts') .
-        ' ORDER BY rand(' . e_rand() . ') LIMIT 1';
+        ' ORDER BY rand(' . random_int(0, mt_getrandmax()) . ') LIMIT 1';
 
         $result = Database::query($sql);
         if ($result) {
@@ -313,7 +319,7 @@ class Battle
     public static function selectTauntArray(): array
     {
         $sql = 'SELECT taunt FROM ' . Database::prefix('taunts') .
-        ' ORDER BY rand(' . e_rand() . ') LIMIT 1';
+        ' ORDER BY rand(' . random_int(0, mt_getrandmax()) . ') LIMIT 1';
 
         $result = Database::query($sql);
         if ($result) {
@@ -350,7 +356,7 @@ class Battle
     public static function fightnav(bool $allowSpecial = true, bool $allowFlee = true, $script = false): void
     {
         global $session, $newenemies, $companions;
-        tlschema('fightnav');
+        Translator::tlschema('fightnav');
         if ($script === false) {
             $script = ScriptName::current() . '.php?';
         } else {
@@ -366,53 +372,56 @@ class Battle
             $fight = 'F?Torment';
             $run   = 'R?Flee';
         }
-        addnav($fight, $script . 'op=fight');
+        Nav::add($fight, $script . 'op=fight');
         if ($allowFlee) {
-            addnav($run, $script . 'op=run');
+            Nav::add($run, $script . 'op=run');
         }
-        if ($session['user']['superuser'] & SU_DEVELOPER) {
-            addnav('Abort', $script);
+        if ($session['user']['superuser'] & \SU_DEVELOPER) {
+            Nav::add('Abort', $script);
         }
 
-        if (getsetting('autofight', 0)) {
-            addnav('Automatic Fighting');
-            addnav('5?For 5 Rounds', $script . 'op=fight&auto=five');
-            addnav('1?For 10 Rounds', $script . 'op=fight&auto=ten');
-            $auto = getsetting('autofightfull', 0);
+        $settings = Settings::getInstance();
+        if ($settings->getSetting('autofight', 0)) {
+            Nav::add('Automatic Fighting');
+            Nav::add('5?For 5 Rounds', $script . 'op=fight&auto=five');
+            Nav::add('1?For 10 Rounds', $script . 'op=fight&auto=ten');
+            $auto = $settings->getSetting('autofightfull', 0);
             if (($auto == 1 || ($auto == 2 && !$allowFlee)) && count($newenemies) == 1) {
-                addnav('U?Until End', $script . 'op=fight&auto=full');
+                Nav::add('U?Until End', $script . 'op=fight&auto=full');
             } elseif ($auto == 1 || ($auto == 2 && !$allowFlee)) {
-                addnav('U?Until first enemy dies', $script . 'op=fight&auto=full');
+                Nav::add('U?Until first enemy dies', $script . 'op=fight&auto=full');
             }
         }
 
         if ($allowSpecial) {
-            addnav('Special Abilities');
+            Nav::add('Special Abilities');
             HookHandler::hook('fightnav-specialties', ['script' => $script]);
 
-            if ($session['user']['superuser'] & SU_DEVELOPER) {
-                addnav('`&Super user`0', '');
-                addnav('!?`&&#149; __GOD MODE', $script . 'op=fight&skill=godmode', true);
+            if ($session['user']['superuser'] & \SU_DEVELOPER) {
+                Nav::add('`&Super user`0', '');
+                Nav::add('!?`&&#149; __GOD MODE', $script . 'op=fight&skill=godmode', true);
             }
             HookHandler::hook('fightnav', ['script' => $script]);
         }
 
         if (count($newenemies) > 1) {
-            addnav('Targets');
+            Nav::add('Targets');
             foreach ($newenemies as $index => $badguy) {
                 if ($badguy['creaturehealth'] <= 0 || (isset($badguy['dead']) && $badguy['dead'] == true)) {
                     continue;
                 }
-                addnav(["%s%s`0", (isset($badguy['istarget']) && $badguy['istarget']) ? '`#*`0' : '', $badguy['creaturename']], $script . "op=fight&newtarget=$index");
+                Nav::add(["%s%s`0", (isset($badguy['istarget']) && $badguy['istarget']) ? '`#*`0' : '', $badguy['creaturename']], $script . "op=fight&newtarget=$index");
             }
         }
-        tlschema();
+        Translator::tlschema();
     }
 
     public static function showEnemies($enemies = [])
     {
         global $enemycounter, $session;
-        $u=&$session['user']; //fast and better, by pointer
+        $output = Output::getInstance();
+        $settings = Settings::getInstance();
+        $u = &$session['user']; //fast and better, by pointer
         static $fightbar = null;
         if ($fightbar === null) {
             //only once per fight
@@ -438,19 +447,19 @@ class Battle
             if (isset($session['user']['prefs']['forestcreaturebar'])) {
                 $barDisplay = (int)$session['user']['prefs']['forestcreaturebar'];
             } else {
-                $barDisplay = getsetting('forestcreaturebar', 0); //get default
+                $barDisplay = $settings->getSetting('forestcreaturebar', 0); //get default
                 $session['user']['prefs']['forestcreaturebar'] = $barDisplay;
             }
             if ($u['alive']) {
                 $hitpointstext = Translator::translateInline("Hitpoints");
-                $healthtext = appoencode(Translator::translateInline("`^Health"));
+                $healthtext = $output->appoencode(Translator::translateInline("`^Health"));
             } else {
                 $hitpointstext = Translator::translateInline("Soulpoints");
-                $healthtext = appoencode(Translator::translateInline("`)Soul"));
+                $healthtext = $output->appoencode(Translator::translateInline("`)Soul"));
             }
             switch ($barDisplay) {
                 case 2:
-                    output(
+                    $output->output(
                         "%s%s%s%s (Level %s)`n",
                         $ccode,
                         (isset($badguy['istarget']) && $badguy['istarget'] && $enemycounter > 1) ? "*" : "",
@@ -458,17 +467,17 @@ class Battle
                         $ccode,
                         $badguy['creaturelevel']
                     );
-                    rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-                    output_notl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
-                    rawoutput("</td><td>");
-                    rawoutput($fightbar->getBar((int)$badguy['creaturehealth'], (int)$badguy['creaturemaxhealth']));
-                    rawoutput("</td><td>");
-                    output_notl("(%s/%s) %s`0`n", $health, $maxhealth, $badguy['creaturehealth'] > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
-                    rawoutput("</td></tr></table>");
+                    $output->rawOutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+                    $output->outputNotl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
+                    $output->rawOutput("</td><td>");
+                    $output->rawOutput($fightbar->getBar((int)$badguy['creaturehealth'], (int)$badguy['creaturemaxhealth']));
+                    $output->rawOutput("</td><td>");
+                    $output->outputNotl("(%s/%s) %s`0`n", $health, $maxhealth, $badguy['creaturehealth'] > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
+                    $output->rawOutput("</td></tr></table>");
                     break;
 
                 case 1:
-                    output(
+                    $output->output(
                         "%s%s%s%s (Level %s)`n",
                         $ccode,
                         (isset($badguy['istarget']) && $badguy['istarget'] && $enemycounter > 1) ? "*" : "",
@@ -476,17 +485,17 @@ class Battle
                         $ccode,
                         $badguy['creaturelevel']
                     );
-                    rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-                    output_notl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
-                    rawoutput("</td><td>");
-                    rawoutput($fightbar->getBar((int)$badguy['creaturehealth'], (int)$badguy['creaturemaxhealth']));
-                    rawoutput("</td><td>");
-                    output_notl("%s`0`n", $badguy['creaturehealth'] > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
-                    rawoutput("</td></tr></table>");
+                    $output->rawOutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+                    $output->outputNotl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
+                    $output->rawOutput("</td><td>");
+                    $output->rawOutput($fightbar->getBar((int)$badguy['creaturehealth'], (int)$badguy['creaturemaxhealth']));
+                    $output->rawOutput("</td><td>");
+                    $output->outputNotl("%s`0`n", $badguy['creaturehealth'] > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
+                    $output->rawOutput("</td></tr></table>");
                     // no break
 
                 default:
-                    output(
+                    $output->output(
                         "%s%s%s%s's %s%s (Level %s): `6%s`0`n",
                         $ccode,
                         (isset($badguy['istarget']) && $badguy['istarget'] && $enemycounter > 1) ? "*" : "",
@@ -503,7 +512,7 @@ class Battle
             $hitpointstext = $u['name'] . "`0";
             $dead = false;
         } else {
-            $hitpointstext = sprintf_translate("Soul of %s", $u['name']);
+            $hitpointstext = Translator::sprintfTranslate("Soul of %s", $u['name']);
             $dead = true;
             $maxsoul = 50 + 10 * $u['level'] + $u['dragonkills'] * 2;
         }
@@ -513,48 +522,48 @@ class Battle
         //your faction display (companions?)
         switch ($barDisplay) {
             case 2:
-                output(
+                $output->output(
                     "`l%s:`n",
                     $hitpointstext
                 );
-                rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-                output_notl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
-                rawoutput("</td><td>");
+                $output->rawOutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+                $output->outputNotl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
+                $output->rawOutput("</td><td>");
                 if (!$dead) {
-                    rawoutput($fightbar->getBar($hitpoints, $maxhitpoints));
+                    $output->rawOutput($fightbar->getBar($hitpoints, $maxhitpoints));
                 } else {
-                    rawoutput($fightbar->getBar($hitpoints, $maxsoul));
+                    $output->rawOutput($fightbar->getBar($hitpoints, $maxsoul));
                 }
-                rawoutput("</td><td>");
+                $output->rawOutput("</td><td>");
                 if (!$dead) {
-                    output_notl("(%s/%s) %s`0`n", $hitpoints, $maxhitpoints, $hitpoints > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
+                    $output->outputNotl("(%s/%s) %s`0`n", $hitpoints, $maxhitpoints, $hitpoints > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
                 } else {
-                    output_notl("(%s/%s) %s`0`n", $hitpoints, $maxsoul, $hitpoints > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
+                    $output->outputNotl("(%s/%s) %s`0`n", $hitpoints, $maxsoul, $hitpoints > 0 ? "" : Translator::translateInline("`7DEFEATED`0"), true);
                 }
 
-                rawoutput("</td></tr></table>");
+                $output->rawOutput("</td></tr></table>");
                 break;
 
             case 1:
-                output(
+                $output->output(
                     "`l%s:`n",
                     $hitpointstext
                 );
-                rawoutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
-                output_notl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
-                rawoutput("</td><td>");
+                $output->rawOutput("<table style='border:0;padding:0;margin:0;margin-left:20px;'><tr><td>");
+                $output->outputNotl("&nbsp;&nbsp;&nbsp;%s: ", $healthtext, true);
+                $output->rawOutput("</td><td>");
                 if (!$dead) {
-                    rawoutput($fightbar->getBar($hitpoints, $maxhitpoints));
+                    $output->rawOutput($fightbar->getBar($hitpoints, $maxhitpoints));
                 } else {
-                    rawoutput($fightbar->getBar($hitpoints, $maxsoul));
+                    $output->rawOutput($fightbar->getBar($hitpoints, $maxsoul));
                 }
-                rawoutput("</td><td>");
+                $output->rawOutput("</td><td>");
 
-                rawoutput("</td></tr></table>");
+                $output->rawOutput("</td></tr></table>");
                 // no break
 
             default:
-                output("`l%s: `6%s`0`n", $hitpointstext, $u['hitpoints']);
+                $output->output("`l%s: `6%s`0`n", $hitpointstext, $u['hitpoints']);
         }
     }
 
@@ -567,9 +576,10 @@ class Battle
     public static function prepareFight($options = false)
     {
         global $companions;
-        $basicoptions = array(
-        "maxattacks" => (int)getsetting("maxattacks", 4),
-        );
+        $settings = Settings::getInstance();
+        $basicoptions = [
+        "maxattacks" => (int) $settings->getSetting('maxattacks', 4),
+        ];
         if (!is_array($options)) {
             $options = array();
         }
@@ -635,11 +645,11 @@ class Battle
             }
             if ($nomsg !== true) {
                 if ($schema) {
-                    tlschema($schema);
+                    Translator::tlschema($schema);
                 }
-                output($nomsg);
+                Output::getInstance()->output($nomsg);
                 if ($schema) {
-                    tlschema();
+                    Translator::tlschema();
                 }
             }
         }
@@ -675,11 +685,11 @@ class Battle
             }
             if ($nomsg !== true) {
                 if ($schema) {
-                    tlschema($schema);
+                    Translator::tlschema($schema);
                 }
-                output($nomsg);
+                Output::getInstance()->output($nomsg);
                 if ($schema) {
-                    tlschema();
+                    Translator::tlschema();
                 }
             }
         }
@@ -731,6 +741,7 @@ class Battle
     {
         global $session,$creatureattack,$creatureatkmod,$adjustment;
         global $creaturedefmod,$defmod,$atkmod,$atk,$def,$count,$defended,$needtosstopfighting;
+        $output = Output::getInstance();
 
         if (isset($companion['suspended']) && $companion['suspended'] == true) {
             return $companion;
@@ -740,23 +751,23 @@ class Battle
             $damage_done = $roll['creaturedmg'];
             $damage_received = $roll['selfdmg'];
             if ($damage_done == 0) {
-                 output("`^%s`4 tries to hit %s but `\$MISSES!`n", $companion['name'], $badguy['creaturename']);
+                 $output->output("`^%s`4 tries to hit %s but `\$MISSES!`n", $companion['name'], $badguy['creaturename']);
             } elseif ($damage_done < 0) {
-                output("`^%s`4 tries to hit %s but %s `\$RIPOSTES`4 for `^%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $badguy['creaturename'], abs($damage_done));
+                $output->output("`^%s`4 tries to hit %s but %s `\$RIPOSTES`4 for `^%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $badguy['creaturename'], abs($damage_done));
                 $companion['hitpoints'] += $damage_done;
             } else {
-                output("`^%s`4 hits %s for `^%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $damage_done);
+                $output->output("`^%s`4 hits %s for `^%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $damage_done);
                 $badguy['creaturehealth'] -= $damage_done;
             }
 
             if ($badguy['creaturehealth'] >= 0) {
                 if ($damage_received == 0) {
-                    output("`^%s`4 tries to hit `\$%s`4 but `^MISSES!`n", $badguy['creaturename'], $companion['name']);
+                    $output->output("`^%s`4 tries to hit `\$%s`4 but `^MISSES!`n", $badguy['creaturename'], $companion['name']);
                 } elseif ($damage_received < 0) {
-                    output("`^%s`4 tries to hit `\$%s`4 but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $companion['name'], abs($damage_received));
+                    $output->output("`^%s`4 tries to hit `\$%s`4 but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $companion['name'], abs($damage_received));
                     $badguy['creaturehealth'] += $damage_received;
                 } else {
-                    output("`^%s`4 hits `\$%s`4 for `\$%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $damage_received);
+                    $output->output("`^%s`4 hits `\$%s`4 for `\$%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $damage_received);
                     $companion['hitpoints'] -= $damage_received;
                 }
             }
@@ -776,9 +787,9 @@ class Battle
                     $msg = "{companion} heals your wounds. You regenerate {damage} hitpoint(s).";
                 }
                     $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}"), array($companion['name'],$hptoheal));
-                    tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                    output($msg);
-                    tlschema();
+                    Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                    $output->output($msg);
+                    Translator::tlschema();
             } else {
                     // Okay. We really have to do this :(
                     global $newcompanions;
@@ -799,9 +810,9 @@ class Battle
                             $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
                         }
                         $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}","{target}"), array($companion['name'],$hptoheal,$mycompanion['name']));
-                        tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                        output($msg);
-                        tlschema();
+                        Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                        $output->output($msg);
+                        Translator::tlschema();
                         $healed = true;
                         $newcompanions[$myname] = $mycompanion;
                     }
@@ -830,9 +841,9 @@ class Battle
                                         $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
                                     }
                                     $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}","{target}"), array($companion['name'],$hptoheal,$mycompanion['name']));
-                                    tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                                    output($msg);
-                                    tlschema();
+                                    Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                                    $output->output($msg);
+                                    Translator::tlschema();
                                     $healed = true;
                                     $companions[$myname] = $mycompanion;
                                 // These are some totally senseless comments.
@@ -849,12 +860,12 @@ class Battle
                 $damage_received = $roll['selfdmg'];
             if ($badguy['creaturehealth'] >= 0) {
                 if ($damage_received == 0) {
-                    output("`^%s`4 tries to hit `\$%s`4 but `^MISSES!`n", $badguy['creaturename'], $companion['name']);
+                    $output->output("`^%s`4 tries to hit `\$%s`4 but `^MISSES!`n", $badguy['creaturename'], $companion['name']);
                 } elseif ($damage_received < 0) {
-                    output("`^%s`4 tries to hit `\$%s`4 but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $companion['name'], abs($damage_received));
+                    $output->output("`^%s`4 tries to hit `\$%s`4 but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $companion['name'], abs($damage_received));
                     $badguy['creaturehealth'] += $damage_received;
                 } else {
-                    output("`^%s`4 hits `\$%s`4 for `\$%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $damage_received);
+                    $output->output("`^%s`4 hits `\$%s`4 for `\$%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $damage_received);
                     $companion['hitpoints'] -= $damage_received;
                 }
             }
@@ -865,23 +876,23 @@ class Battle
             $damage_done = $roll['creaturedmg'];
             $damage_received = $roll['selfdmg'];
             if ($damage_done == 0) {
-                       output("`^%s`4 tries to hit %s but `^MISSES!`n", $companion['name'], $badguy['creaturename']);
+                       $output->output("`^%s`4 tries to hit %s but `^MISSES!`n", $companion['name'], $badguy['creaturename']);
             } elseif ($damage_done < 0) {
-                       output("`^%s`4 tries to hit %s but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $badguy['creaturename'], abs($damage_done));
+                       $output->output("`^%s`4 tries to hit %s but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $badguy['creaturename'], abs($damage_done));
                        $companion['hitpoints'] += $damage_done;
             } else {
-                output("`^%s`4 hits %s for `\$%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $damage_done);
+                $output->output("`^%s`4 hits %s for `\$%s`4 points of damage!`n", $companion['name'], $badguy['creaturename'], $damage_done);
                 $badguy['creaturehealth'] -= $damage_done;
             }
 
             if ($badguy['creaturehealth'] >= 0) {
                 if ($damage_received == 0) {
-                    output("`^%s`4 tries to hit `\$%s`4 but `^MISSES!`n", $badguy['creaturename'], $companion['name']);
+                    $output->output("`^%s`4 tries to hit `\$%s`4 but `^MISSES!`n", $badguy['creaturename'], $companion['name']);
                 } elseif ($damage_received < 0) {
-                    output("`^%s`4 tries to hit `\$%s`4 but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $companion['name'], abs($damage_received));
+                    $output->output("`^%s`4 tries to hit `\$%s`4 but %s `^RIPOSTES`4 for `^%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $companion['name'], abs($damage_received));
                     $badguy['creaturehealth'] += $damage_received;
                 } else {
-                    output("`^%s`4 hits `\$%s`4 for `\$%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $damage_received);
+                    $output->output("`^%s`4 hits `\$%s`4 for `\$%s`4 points of damage!`n", $badguy['creaturename'], $companion['name'], $damage_received);
                     $companion['hitpoints'] -= $damage_received;
                 }
             }
@@ -895,9 +906,9 @@ class Battle
                     $msg = "{companion} shoots a magical arrow at {badguy} but misses.";
                 }
                        $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name']));
-                       tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                       output($msg);
-                       tlschema();
+                       Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                       $output->output($msg);
+                       Translator::tlschema();
             } else {
                 if (isset($companion['magicmsg'])) {
                     $msg = $companion['magicmsg'];
@@ -905,9 +916,9 @@ class Battle
                     $msg = "{companion} shoots a magical arrow at {badguy} and deals {damage} damage.";
                 }
                       $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}"), array($companion['name'],$damage_done));
-                      tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                      output($msg);
-                      tlschema();
+                      Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                      $output->output($msg);
+                      Translator::tlschema();
                       $badguy['creaturehealth'] -= $damage_done;
             }
                       $companion['hitpoints'] -= $companion['abilities']['magic'];
@@ -926,10 +937,10 @@ class Battle
                 $msg = "`5Your companion catches his last breath before it dies.";
             }
             $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name']));
-            tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
-            output($msg);
-            output_notl("`0`n");
-            tlschema();
+            Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+            $output->output($msg);
+            $output->outputNotl("`0`n");
+            Translator::tlschema();
             if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
                 $companion['hitpoints'] = 0;
             } else {
@@ -975,7 +986,7 @@ class Battle
             $bad_check = 1;
             while (!isset($creaturedmg) || !isset($selfdmg) || $creaturedmg == 0 && $selfdmg == 0) {
                 $atk = $companion['attack'] * $compatkmod;
-                if (e_rand(1, 20) == 1 && $options['type'] != "pvp") {
+                if (random_int(1, 20) == 1 && $options['type'] != "pvp") {
                     $atk *= 3;
                 }
                 /*
@@ -1059,7 +1070,7 @@ class Battle
             $result = Database::query($sql);
             if ($row = Database::fetchAssoc($result)) {
                 $newenemies[$nextindex] = $row;
-                output("`^%s`2 summons `^%s`2 for help!`n", $badguy['creaturename'], $row['creaturename']);
+                Output::getInstance()->output("`^%s`2 summons `^%s`2 for help!`n", $badguy['creaturename'], $row['creaturename']);
             }
         } elseif (is_array($creature)) {
             $newenemies[$nextindex] = $creature;
@@ -1076,21 +1087,22 @@ class Battle
     public static function battleHeal($amount, $target = false)
     {
         global $newenemies, $enemies, $badguy;
+        $output = Output::getInstance();
         if ($amount > 0) {
             if ($target === false) {
                 $badguy['creaturehealth'] += $amount;
-                output("`^%s`2 heals itself for `^%s`2 hitpoints.", $badguy['creaturename'], $amount);
+                $output->output("`^%s`2 heals itself for `^%s`2 hitpoints.", $badguy['creaturename'], $amount);
             } else {
                 if (isset($newenemies[$target])) {
                     // Target had its turn already...
                     if ($newenemies[$target]['dead'] == false) {
                         $newenemies[$target]['creaturehealth'] += $amount;
-                        output("`^%s`2 heal `^%s`2 for `^%s`2 hitpoints.", $badguy['creaturename'], $newenemies[$target]['creaturename'], $amount);
+                        $output->output("`^%s`2 heal `^%s`2 for `^%s`2 hitpoints.", $badguy['creaturename'], $newenemies[$target]['creaturename'], $amount);
                     }
                 } else {
                     if ($enemies[$target]['dead'] == false) {
                         $enemies[$target]['creaturehealth'] += $amount;
-                        output("`^%s`2 heal `^%s`2 for `^%s`2 hitpoints.", $badguy['creaturename'], $enemies[$target]['creaturename'], $amount);
+                        $output->output("`^%s`2 heal `^%s`2 for `^%s`2 hitpoints.", $badguy['creaturename'], $enemies[$target]['creaturename'], $amount);
                     }
                 }
             }
