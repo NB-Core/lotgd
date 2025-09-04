@@ -73,6 +73,7 @@ LocalConfig::apply();
 require_once("src/Lotgd/Config/constants.php");
 
 // Legacy, because modules may rely on that, but those files are already migrated to namespace structure
+require_once("lib/dbwrapper.php");
 require_once("lib/modules.php");
 require_once("lib/translator.php");
 require_once("lib/sanitize.php");

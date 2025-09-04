@@ -448,6 +448,7 @@ class Buffs
                 }
                 $session['user']['hitpoints'] += $hptoregen;
                 $hptoregen = abs($hptoregen);
+                $msg = '';
                 if ($hptoregen == 0) {
                     $msg = (isset($buff['effectnodmgmsg']) ? $buff['effectnodmgmsg'] : Translator::translateInline('No damage, hosé'));
                 } else {
@@ -529,6 +530,7 @@ class Buffs
                     } elseif ($who == 1) {
                         $session['user']['hitpoints'] -= $damage;
                     }
+                    $msg = '';
                     if ($damage < 0) {
                         if (isset($buff['effectfailmsg'])) {
                             $msg = $buff['effectfailmsg'];
@@ -581,6 +583,7 @@ class Buffs
             if ($healhp < 0) {
                 $healhp = 0;
             }
+            $msg = '';
             if ($healhp == 0) {
                 $msg = (isset($buff['effectnodmgmsg']) ? $buff['effectnodmgmsg'] : '');
             } else {

@@ -151,8 +151,8 @@ class Accounts
             if (isset($session['output']) && $session['output']) {
                 $sql_output = 'UPDATE ' . Database::prefix('accounts_output') .
                     " SET output='" . addslashes(gzcompress($session['output'], 1)) . "' WHERE acctid={$session['user']['acctid']};";
-                $result = Database::query($sql_output);
-                if (Database::affectedRows($result) < 1) {
+                Database::query($sql_output);
+                if (Database::affectedRows() < 1) {
                     $sql_output = 'REPLACE INTO ' . Database::prefix('accounts_output') .
                         " VALUES ({$session['user']['acctid']},'" . addslashes(gzcompress($session['output'], 1)) . "');";
                     Database::query($sql_output);

@@ -31,6 +31,8 @@ class Battle
     {
         global $session, $creatureattack, $creatureatkmod, $adjustment;
         global $creaturedefmod, $defmod, $atkmod, $buffset, $atk, $def, $options;
+        $creaturedmg = 0;
+        $selfdmg     = 0;
 
         if ($badguy['creaturehealth'] > 0 && $session['user']['hitpoints'] > 0) {
             if ($options['type'] == 'pvp') {
@@ -52,7 +54,7 @@ class Battle
             $powerattack = (int) $settings->getSetting('forestpowerattackchance', 10);
             $powerattackmulti = (float) $settings->getSetting('forestpowerattackmulti', 3);
 
-            while (!isset($creaturedmg) || !isset($selfdmg) || ($creaturedmg == 0 && $selfdmg == 0)) {
+            while ($creaturedmg == 0 && $selfdmg == 0) {
                 $atk = PlayerFunctions::getPlayerAttack() * $atkmod;
                 if (random_int(1, 20) == 1 && $options['type'] != 'pvp') {
                     $atk *= 2;
@@ -88,9 +90,6 @@ class Battle
                     $selfdmg = max(0, round($selfdmg - ((int) PlayerFunctions::getPlayerPhysicalResistance()), 0));
                 }
             }
-        } else {
-            $creaturedmg = 0;
-            $selfdmg = 0;
         }
 
         if ($buffset['invulnerable']) {
@@ -99,8 +98,8 @@ class Battle
         }
 
         return [
-            'creaturedmg' => (isset($creaturedmg) ? $creaturedmg : 0),
-            'selfdmg' => (isset($selfdmg) ? $selfdmg : 0),
+            'creaturedmg' => $creaturedmg,
+            'selfdmg' => $selfdmg,
         ];
     }
 
@@ -253,31 +252,30 @@ class Battle
     {
         global $session, $badguy;
         if (!isset($session['bufflist']['bodyguard'])) {
+            $badguyatkmod = 1.0;
+            $defmod       = 1.0;
+            $rounds       = -1;
+
             switch ($level) {
                 case 1:
                     $badguyatkmod = 1.05;
                     $defmod = 0.95;
-                    $rounds = -1;
                     break;
                 case 2:
                     $badguyatkmod = 1.1;
                     $defmod = 0.9;
-                    $rounds = -1;
                     break;
                 case 3:
                     $badguyatkmod = 1.2;
                     $defmod = 0.8;
-                    $rounds = -1;
                     break;
                 case 4:
                     $badguyatkmod = 1.3;
                     $defmod = 0.7;
-                    $rounds = -1;
                     break;
                 case 5:
                     $badguyatkmod = 1.4;
                     $defmod = 0.6;
-                    $rounds = -1;
                     break;
             }
             Buffs::applyBuff('bodyguard', [
@@ -428,6 +426,19 @@ class Battle
             $fightbar = new FightBar();
         }
 
+        $barDisplay = (int) ($session['user']['prefs']['forestcreaturebar'] ?? $settings->getSetting('forestcreaturebar', 0));
+        if (!isset($session['user']['prefs']['forestcreaturebar'])) {
+            $session['user']['prefs']['forestcreaturebar'] = $barDisplay;
+        }
+
+        if ($u['alive']) {
+            $hitpointstext = Translator::translateInline("Hitpoints");
+            $healthtext    = $output->appoencode(Translator::translateInline("`^Health"));
+        } else {
+            $hitpointstext = Translator::translateInline("Soulpoints");
+            $healthtext    = $output->appoencode(Translator::translateInline("`)Soul"));
+        }
+
         //show all enemies including their stats
         foreach ($enemies as $index => $badguy) {
             if ((isset($badguy['istarget']) && $badguy['istarget'] == true) && $enemycounter > 1) {
@@ -443,19 +454,6 @@ class Battle
             } else {
                 $health = $badguy['creaturehealth'];
                 $maxhealth = $badguy['creaturemaxhealth'];
-            }
-            if (isset($session['user']['prefs']['forestcreaturebar'])) {
-                $barDisplay = (int)$session['user']['prefs']['forestcreaturebar'];
-            } else {
-                $barDisplay = $settings->getSetting('forestcreaturebar', 0); //get default
-                $session['user']['prefs']['forestcreaturebar'] = $barDisplay;
-            }
-            if ($u['alive']) {
-                $hitpointstext = Translator::translateInline("Hitpoints");
-                $healthtext = $output->appoencode(Translator::translateInline("`^Health"));
-            } else {
-                $hitpointstext = Translator::translateInline("Soulpoints");
-                $healthtext = $output->appoencode(Translator::translateInline("`)Soul"));
             }
             switch ($barDisplay) {
                 case 2:
@@ -960,8 +958,11 @@ class Battle
 
     public static function rollCompanionDamage(&$badguy, $companion)
     {
-        global $creatureattack,$creatureatkmod,$adjustment,$options;
-        global $creaturedefmod,$compdefmod,$compatkmod,$buffset,$atk,$def;
+        global $creatureattack, $creatureatkmod, $adjustment, $options;
+        global $creaturedefmod, $compdefmod, $compatkmod, $buffset, $atk, $def;
+
+        $creaturedmg = 0;
+        $selfdmg     = 0;
 
         if ($badguy['creaturehealth'] > 0 && $companion['hitpoints'] > 0) {
             if ($options['type'] == 'pvp') {
@@ -984,7 +985,7 @@ class Battle
             debug("Adjusted self defense: $adjustedselfdefense");
             */
             $bad_check = 1;
-            while (!isset($creaturedmg) || !isset($selfdmg) || $creaturedmg == 0 && $selfdmg == 0) {
+            while ($creaturedmg == 0 && $selfdmg == 0) {
                 $atk = $companion['attack'] * $compatkmod;
                 if (random_int(1, 20) == 1 && $options['type'] != "pvp") {
                     $atk *= 3;
@@ -1036,14 +1037,16 @@ class Battle
             }
         } else {
             $creaturedmg = 0;
-            $selfdmg = 0;
+            $selfdmg     = 0;
         }
-    // Handle god mode's invulnerability
+
+        // Handle god mode's invulnerability
         if ($buffset['invulnerable']) {
             $creaturedmg = abs($creaturedmg);
-            $selfdmg = -abs($selfdmg);
+            $selfdmg     = -abs($selfdmg);
         }
-        return array("creaturedmg" => (isset($creaturedmg) ? $creaturedmg : 0),"selfdmg" => (isset($selfdmg) ? $selfdmg : 0));
+
+        return ['creaturedmg' => $creaturedmg, 'selfdmg' => $selfdmg];
     }
 
 /**
@@ -1117,7 +1120,7 @@ class Battle
     public static function executeAiScript($script)
     {
         global $unsetme;
-        if (!empty($scrip)) {
+        if (!empty($script)) {
             eval($script);
         }
     }
