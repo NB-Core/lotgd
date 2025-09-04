@@ -8,6 +8,7 @@ namespace {
 namespace Lotgd\Tests\Ajax {
 
 use Lotgd\Async\Handler\Commentary;
+use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -28,7 +29,6 @@ final class CommentaryTest extends TestCase
             }
         };
         $test_comment_rows = [];
-
         eval(<<<'STUBS'
 namespace Lotgd {
     class Commentary {
@@ -48,25 +48,11 @@ namespace Lotgd {
         }
     }
 }
-
-namespace {
-    if (!function_exists('db_prefix')) {
-        function db_prefix(string $name): string { return $name; }
-    }
-    if (!function_exists('db_query')) {
-        function db_query(string $sql): array { global $test_comment_rows; return $test_comment_rows; }
-    }
-    if (!function_exists('db_fetch_assoc')) {
-        function db_fetch_assoc(array &$result): ?array { return array_shift($result); }
-    }
-    if (!function_exists('db_free_result')) {
-        function db_free_result(&$result): void { $result = null; }
-    }
-}
 STUBS
         );
 
         require_once __DIR__ . '/../bootstrap.php';
+        Database::$mockResults = [];
     }
 
     public function testCommentaryTextSetsInnerHtml(): void
@@ -109,6 +95,7 @@ STUBS
                 'clanshort' => '',
             ],
         ];
+        Database::$mockResults = [$test_comment_rows];
 
         $handler = new Commentary();
         $response = $handler->commentaryRefresh('test-section', 0);
@@ -139,6 +126,7 @@ STUBS
                 'clanshort' => '',
             ],
         ];
+        Database::$mockResults = [$test_comment_rows];
 
         $handler = new Commentary();
         $response = $handler->commentaryRefresh('test-section', 1);

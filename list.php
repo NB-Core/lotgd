@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 // addnews ready
 // translator ready
 // mail ready
@@ -12,7 +14,6 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
-use Lotgd\MySQL\Database;
 
 require_once("common.php");
 
@@ -136,7 +137,7 @@ if ($max > getsetting("maxlistsize", 100)) {
 
 // prepare for hook
 $rows = array();
-while ($row = db_fetch_assoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $rows[] = $row;
 }
 // cut to max size

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Nav;
@@ -30,21 +32,21 @@ if ($op == "" || $op == "sql") {
     if ($sql != "") {
         $sql = stripslashes($sql);
         modulehook("rawsql-execsql", array("sql" => $sql));
-        $r = db_query($sql, false);
+        $r = Database::query($sql, false);
         if (!$r) {
-            $output->output("`\$SQL Error:`& %s`0`n`n", db_error($r));
+            $output->output("`\$SQL Error:`& %s`0`n`n", Database::error($r));
         } else {
-            if (db_affected_rows() > 0) {
-                $output->output("`&%s rows affected.`n`n", db_affected_rows());
+            if (Database::affectedRows() > 0) {
+                $output->output("`&%s rows affected.`n`n", Database::affectedRows());
             } else {
                 $output->output("No rows have been changed.`n`n");
             }
             $output->rawOutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
             if ($r !== true) {
                 // if $r===true, it was an UPDATE or DELETE statement, which obviously has no result lines
-                $number = db_num_rows($r);
+                $number = Database::numRows($r);
                 for ($i = 0; $i < $number; $i++) {
-                    $row = db_fetch_assoc($r);
+                    $row = Database::fetchAssoc($r);
                     if ($i == 0) {
                         $output->rawOutput("<tr class='trhead'>");
                         $keys = array_keys($row);

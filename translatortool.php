@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -53,42 +54,42 @@ if ($op == "") {
         $sql = "SELECT * ";
     }
     $sql .= "
-		FROM " . db_prefix("translations") . "
+		FROM " . Database::prefix("translations") . "
 		WHERE language='" . LANGUAGE . "'
 			AND intext='$text'
 			AND (uri='$page' OR uri='$uri')";
     if ($trans > "") {
-        $result = db_query($sql);
+        $result = Database::query($sql);
         invalidatedatacache("translations-" . $uri . "-" . $language);
-        if (db_num_rows($result) == 0) {
-            $sql = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES ('" . LANGUAGE . "','$uri','$text','$trans','{$session['user']['login']}','$logd_version ')";
-            $sql1 = "DELETE FROM " . db_prefix("untranslated") .
+        if (Database::numRows($result) == 0) {
+            $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES ('" . LANGUAGE . "','$uri','$text','$trans','{$session['user']['login']}','$logd_version ')";
+            $sql1 = "DELETE FROM " . Database::prefix("untranslated") .
                 " WHERE intext='$text' AND language='" . LANGUAGE .
                 "' AND namespace='$url'";
-            db_query($sql1);
-        } elseif (db_num_rows($result) == 1) {
-            $row = db_fetch_assoc($result);
+            Database::query($sql1);
+        } elseif (Database::numRows($result) == 1) {
+            $row = Database::fetchAssoc($result);
             // MySQL is case insensitive so we need to do it here.
             if ($row['intext'] == $text) {
-                $sql = "UPDATE " . db_prefix("translations") . " SET author='{$session['user']['login']}', version='$logd_version', uri='$uri', outtext='$trans' WHERE tid={$row['tid']}";
+                $sql = "UPDATE " . Database::prefix("translations") . " SET author='{$session['user']['login']}', version='$logd_version', uri='$uri', outtext='$trans' WHERE tid={$row['tid']}";
             } else {
-                $sql = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES ('" . LANGUAGE . "','$uri','$text','$trans','{$session['user']['login']}','$logd_version ')";
-                $sql1 = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext='$text' AND language='" . LANGUAGE . "' AND namespace='$url'";
-                db_query($sql1);
+                $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES ('" . LANGUAGE . "','$uri','$text','$trans','{$session['user']['login']}','$logd_version ')";
+                $sql1 = "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext='$text' AND language='" . LANGUAGE . "' AND namespace='$url'";
+                Database::query($sql1);
             }
-        } elseif (db_num_rows($result) > 1) {
+        } elseif (Database::numRows($result) > 1) {
         /* To say the least, this case is bad. Simply because if there are duplicates, you make them even more equal. But most likely you won't get this far, as the code itself should not produce duplicates unless you insert manually or via module the same row more than once*/
             $rows = array();
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = Database::fetchAssoc($result)) {
                 // MySQL is case insensitive so we need to do it here.
                 if ($row['intext'] == $text) {
                     $rows[] = $row['tid'];
                 }
             }
-            $sql = "UPDATE " . db_prefix("translations") . " SET author='{$session['user']['login']}', version='$logd_version', uri='$page', outtext='$trans' WHERE tid IN (" . join(",", $rows) . ")";
+            $sql = "UPDATE " . Database::prefix("translations") . " SET author='{$session['user']['login']}', version='$logd_version', uri='$page', outtext='$trans' WHERE tid IN (" . join(",", $rows) . ")";
         }
     }
-    db_query($sql);
+    Database::query($sql);
     if (httppost("savenotclose") > "") {
         header("Location: translatortool.php?op=list&u=$page");
         exit();
@@ -99,15 +100,15 @@ if ($op == "") {
     }
 } elseif ($op == "list") {
     popup_header("Translation List");
-    $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='" . LANGUAGE . "' GROUP BY uri ORDER BY uri ASC";
-    $result = db_query($sql);
+    $sql = "SELECT uri,count(*) AS c FROM " . Database::prefix("translations") . " WHERE language='" . LANGUAGE . "' GROUP BY uri ORDER BY uri ASC";
+    $result = Database::query($sql);
     output_notl("<form action='translatortool.php' method='GET'>", true);
     output_notl("<input type='hidden' name='op' value='list'>", true);
         output_notl("<label for='u'>", true);
         output("Known Namespaces:");
         output_notl("</label>", true);
         output_notl("<select name='u' id='u'>", true);
-    while ($row = db_fetch_assoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         output_notl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>", true);
     }
     output_notl("</select>", true);
@@ -122,11 +123,11 @@ if ($op == "") {
     $norows = translate_inline("No rows found");
     output_notl("<table border='0' cellpadding='2' cellspacing='0'>", true);
     output_notl("<tr class='trhead'><td>$ops</td><td>$from</td><td>$to</td><td>$version</td><td>$author</td></tr>", true);
-    $sql = "SELECT * FROM " . db_prefix("translations") . " WHERE language='" . LANGUAGE . "' AND uri='" . httpget("u") . "'";
-    $result = db_query($sql);
-    if (db_num_rows($result) > 0) {
+    $sql = "SELECT * FROM " . Database::prefix("translations") . " WHERE language='" . LANGUAGE . "' AND uri='" . httpget("u") . "'";
+    $result = Database::query($sql);
+    if (Database::numRows($result) > 0) {
         $i = 0;
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $i++;
             output_notl("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>", true);
             $edit = translate_inline("Edit");

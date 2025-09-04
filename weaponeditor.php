@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -41,21 +42,21 @@ $op = httpget('op');
 $id = httpget('id');
 if ($op == "edit" || $op == "add") {
     if ($op == "edit") {
-        $sql = "SELECT * FROM " . db_prefix("weapons") . " WHERE weaponid='$id'";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
     } else {
-        $sql = "SELECT max(damage+1) AS damage FROM " . db_prefix("weapons") . " WHERE level=$weaponlevel";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = "SELECT max(damage+1) AS damage FROM " . Database::prefix("weapons") . " WHERE level=$weaponlevel";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
     }
     rawoutput("<form action='weaponeditor.php?op=save&level=$weaponlevel' method='POST'>");
     addnav("", "weaponeditor.php?op=save&level=$weaponlevel");
     Forms::showForm($weaponarray, $row);
     rawoutput("</form>");
 } elseif ($op == "del") {
-    $sql = "DELETE FROM " . db_prefix("weapons") . " WHERE weaponid='$id'";
-    db_query($sql);
+    $sql = "DELETE FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
+    Database::query($sql);
     $op = "";
     httpset("op", $op);
 } elseif ($op == "save") {
@@ -63,19 +64,19 @@ if ($op == "edit" || $op == "add") {
     $damage = httppost("damage");
     $weaponname = httppost("weaponname");
     if ($weaponid > 0) {
-        $sql = "UPDATE " . db_prefix("weapons") . " SET weaponname=\"$weaponname\",damage=\"$damage\",value=" .  $values[$damage] . " WHERE weaponid='$weaponid'";
+        $sql = "UPDATE " . Database::prefix("weapons") . " SET weaponname=\"$weaponname\",damage=\"$damage\",value=" .  $values[$damage] . " WHERE weaponid='$weaponid'";
     } else {
-        $sql = "INSERT INTO " . db_prefix("weapons") . " (level,damage,weaponname,value) VALUES ($weaponlevel,\"$damage\",\"$weaponname\"," . $values[$damage] . ")";
+        $sql = "INSERT INTO " . Database::prefix("weapons") . " (level,damage,weaponname,value) VALUES ($weaponlevel,\"$damage\",\"$weaponname\"," . $values[$damage] . ")";
     }
-    db_query($sql);
+    Database::query($sql);
     //output($sql);
     $op = "";
     httpset("op", $op);
 }
 if ($op == "") {
-    $sql = "SELECT max(level+1) as level FROM " . db_prefix("weapons");
-    $res = db_query($sql);
-    $row = db_fetch_assoc($res);
+    $sql = "SELECT max(level+1) as level FROM " . Database::prefix("weapons");
+    $res = Database::query($sql);
+    $row = Database::fetchAssoc($res);
     $max = $row['level'];
     for ($i = 0; $i <= $max; $i++) {
         if ($i == 1) {
@@ -84,8 +85,8 @@ if ($op == "") {
             addnav(array("Weapons for %s DKs",$i), "weaponeditor.php?level=$i");
         }
     }
-    $sql = "SELECT * FROM " . db_prefix("weapons") . " WHERE level=$weaponlevel ORDER BY damage";
-    $result = db_query($sql);
+    $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE level=$weaponlevel ORDER BY damage";
+    $result = Database::query($sql);
     $ops = translate_inline("Ops");
     $name = translate_inline("Name");
     $cost = translate_inline("Cost");
@@ -97,9 +98,9 @@ if ($op == "") {
 
     rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     rawoutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$damage</td><td>$level</td></tr>");
-    $number = db_num_rows($result);
+    $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $row = db_fetch_assoc($result);
+        $row = Database::fetchAssoc($result);
         rawoutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'>");
         rawoutput("<td>[<a href='weaponeditor.php?op=edit&id={$row['weaponid']}&level=$weaponlevel'>$edit</a>|<a href='weaponeditor.php?op=del&id={$row['weaponid']}&level=$weaponlevel' onClick='return confirm(\"Are you sure you wish to delete this weapon?\");'>$del</a>]</td>");
         addnav("", "weaponeditor.php?op=edit&id={$row['weaponid']}&level=$weaponlevel");

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 use Lotgd\Mail;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
@@ -198,9 +200,9 @@ function mailWrite(): void
  */
 function getSuperuserFlag(string $login): int
 {
-    $sql    = 'SELECT superuser FROM ' . db_prefix('accounts') . " WHERE login = '" . addslashes($login) . "'";
-    $result = db_query($sql);
-    $acct   = db_fetch_assoc($result);
+    $sql    = 'SELECT superuser FROM ' . Database::prefix('accounts') . " WHERE login = '" . addslashes($login) . "'";
+    $result = Database::query($sql);
+    $acct   = Database::fetchAssoc($result);
 
     return $acct['superuser'] ?? 0;
 }
@@ -210,9 +212,9 @@ function getSuperuserFlag(string $login): int
  */
 function getAccountByLogin(string $login): ?array
 {
-    $sql    = 'SELECT login,name, superuser FROM ' . db_prefix('accounts') . " WHERE login='" . addslashes($login) . "'";
-    $result = db_query($sql);
-    $row    = db_fetch_assoc($result);
+    $sql    = 'SELECT login,name, superuser FROM ' . Database::prefix('accounts') . " WHERE login='" . addslashes($login) . "'";
+    $result = Database::query($sql);
+    $row    = Database::fetchAssoc($result);
 
     return $row ?: null;
 }
@@ -226,10 +228,10 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
     output('`2To: ');
     rawoutput('</label>');
 
-    $sql   = 'SELECT acctid,login,name,superuser FROM ' . db_prefix('accounts') .
+    $sql   = 'SELECT acctid,login,name,superuser FROM ' . Database::prefix('accounts') .
         " WHERE login = '" . addslashes($to) . "' AND locked = 0";
-    $result    = db_query($sql);
-    $dbNumRows = db_num_rows($result);
+    $result    = Database::query($sql);
+    $dbNumRows = Database::numRows($result);
 
     if ($dbNumRows !== 1) {
         $string = '%';
@@ -238,13 +240,13 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
             $string .= $to[$x] . '%';
         }
         // Fallback search includes acctid for precise recipient identification
-        $sql       = 'SELECT acctid,login,name,superuser FROM ' . db_prefix('accounts') . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
-        $result    = db_query($sql);
-        $dbNumRows = db_num_rows($result);
+        $sql       = 'SELECT acctid,login,name,superuser FROM ' . Database::prefix('accounts') . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
+        $result    = Database::query($sql);
+        $dbNumRows = Database::numRows($result);
     }
 
     if ($dbNumRows == 1) {
-        $row = db_fetch_assoc($result); // fetch login, name, superuser, and acctid
+        $row = Database::fetchAssoc($result); // fetch login, name, superuser, and acctid
         output_notl(
             "<input type='hidden' id='to' name='to' value=\"" .
             htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) .
@@ -267,7 +269,7 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
         output_notl("<select name='to' id='to' onchange='check_su_warning();'>", true);
         $superusers = [];
 
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             output_notl(
                 "<option value=\"" . htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\">",
                 true

@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Lotgd\Installer;
 
 use Lotgd\MySQL\Database;
+
 use Lotgd\Output;
 use Lotgd\Http;
 use Lotgd\Nav;
@@ -409,7 +410,6 @@ class Installer
     public function stage4(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        require_once("lib/dbwrapper.php");
         if (Http::postIsset("DB_HOST")) {
             $session['dbinfo']['DB_HOST'] = Http::post("DB_HOST");
             $session['dbinfo']['DB_USER'] = Http::post("DB_USER");

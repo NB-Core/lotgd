@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Async\Handler;
 
+use Lotgd\MySQL\Database;
+
 use Jaxon\Response\Response;
 use function Jaxon\jaxon;
 
@@ -32,9 +34,9 @@ class Timeout
         if ($never_timeout_if_browser_open == 1) {
             $session['user']['laston'] = date('Y-m-d H:i:s'); // set to now
             // manual db update
-            $sql = 'UPDATE ' . db_prefix('accounts') . " set laston='" . $session['user']['laston']
+            $sql = 'UPDATE ' . Database::prefix('accounts') . " set laston='" . $session['user']['laston']
                 . "' WHERE acctid=" . $session['user']['acctid'];
-            db_query($sql);
+            Database::query($sql);
         }
 
         $timeout = strtotime($session['user']['laston']) - strtotime(date('Y-m-d H:i:s', strtotime('-' . getsetting('LOGINTIMEOUT', 900) . ' seconds')));

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Nav;
@@ -39,17 +41,17 @@ modulehook("paylog", array());
 
 $op = (string) Http::get('op');
 if ($op == "") {
-    $sql = "SELECT info,txnid FROM " . db_prefix("paylog") . " WHERE processdate='" . DATETIME_DATEMIN . "'";
-    $result = db_query($sql);
-    while ($row = db_fetch_assoc($result)) {
+    $sql = "SELECT info,txnid FROM " . Database::prefix("paylog") . " WHERE processdate='" . DATETIME_DATEMIN . "'";
+    $result = Database::query($sql);
+    while ($row = Database::fetchAssoc($result)) {
         $info = unserialize($row['info']);
-        $sql = "UPDATE " . db_prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", strtotime($info['payment_date'])) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
-        db_query($sql);
+        $sql = "UPDATE " . Database::prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", strtotime($info['payment_date'])) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
+        Database::query($sql);
     }
-    $sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM " . db_prefix('paylog') . " GROUP BY month ORDER BY month DESC";
-    $result = db_query($sql);
+    $sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM " . Database::prefix('paylog') . " GROUP BY month ORDER BY month DESC";
+    $result = Database::query($sql);
     Nav::add('Months');
-    while ($row = db_fetch_assoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         Nav::add(array("%s %s %s", date("M Y", strtotime($row['month'] . '-01')), getsetting('paypalcurrency', 'USD'), $row['profit']), "paylog.php?month={$row['month']}");
     }
     $month = (string) Http::get('month');
@@ -58,8 +60,8 @@ if ($op == "") {
     }
     $startdate = $month . "-01 00:00:00";
     $enddate = date("Y-m-d H:i:s", strtotime("+1 month", strtotime($startdate)));
-    $sql = "SELECT " . db_prefix("paylog") . ".*," . db_prefix("accounts") . ".name," . db_prefix("accounts") . ".donation," . db_prefix("accounts") . ".donationspent FROM " . db_prefix("paylog") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("paylog") . ".acctid = " . db_prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
-    $result = db_query($sql);
+    $sql = "SELECT " . Database::prefix("paylog") . ".*," . Database::prefix("accounts") . ".name," . Database::prefix("accounts") . ".donation," . Database::prefix("accounts") . ".donationspent FROM " . Database::prefix("paylog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("paylog") . ".acctid = " . Database::prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
+    $result = Database::query($sql);
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
     $type = translate_inline("Type");
     $gross = translate_inline("Gross");
@@ -69,9 +71,9 @@ if ($op == "") {
     $id = translate_inline("Transaction ID");
     $who = translate_inline("Who");
     $output->rawOutput("<tr class='trhead'><td>Date</td><td>$id</td><td>$type</td><td>$gross</td><td>$fee</td><td>$net</td><td>$processed</td><td>$who</td></tr>");
-    $number = db_num_rows($result);
+    $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $row = db_fetch_assoc($result);
+        $row = Database::fetchAssoc($result);
         $info = unserialize($row['info']);
         $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td nowrap>");
         $output->outputNotl(date("m/d H:i", strtotime($info['payment_date'])));

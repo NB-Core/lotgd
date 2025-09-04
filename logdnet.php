@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 // translator ready
 // addnews ready
 // mail ready
@@ -15,7 +17,6 @@ use Lotgd\Http;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
-use Lotgd\MySQL\Database;
 use Lotgd\ErrorHandler;
 use Lotgd\Backtrace;
 
@@ -105,9 +106,9 @@ if ($op == "") {
     }
 
     // See if we know this server.
-    $sql = "SELECT lastupdate,serverid,lastping,recentips FROM " . db_prefix("logdnet") . " WHERE address='" . db_real_escape_string($addy) . "'";
-    $result = db_query($sql);
-    $row = db_fetch_assoc($result);
+    $sql = "SELECT lastupdate,serverid,lastping,recentips FROM " . Database::prefix("logdnet") . " WHERE address='" . Database::escape($addy) . "'";
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
 
     // Clean up the desc
     $desc = logdnet_sanitize($desc);
@@ -118,7 +119,7 @@ if ($op == "") {
     }
 
     $date = date("Y-m-d H:i:s");
-    if (db_num_rows($result) > 0) {
+    if (Database::numRows($result) > 0) {
         // This is an already known server.
 
         // Eric, this below code does NOT work and causes a server to NEVER
@@ -141,42 +142,42 @@ if ($op == "") {
             // Only one update per minute allowed.
         if (strtotime($row['lastping']) < strtotime("-1 minutes")) {
             // Increase the popularity of this server
-                           $sql = "UPDATE " . db_prefix("logdnet") .
-                                   " SET lang='" . db_real_escape_string($lang) .
-                                   "',count='" . (int)$count . "',recentips='" . db_real_escape_string($ips) .
-                                   "',priority=priority+1,description='" . db_real_escape_string($desc) .
-                                   "',version='" . db_real_escape_string($vers) .
-                                   "',admin='" . db_real_escape_string($admin) .
+                           $sql = "UPDATE " . Database::prefix("logdnet") .
+                                   " SET lang='" . Database::escape($lang) .
+                                   "',count='" . (int)$count . "',recentips='" . Database::escape($ips) .
+                                   "',priority=priority+1,description='" . Database::escape($desc) .
+                                   "',version='" . Database::escape($vers) .
+                                   "',admin='" . Database::escape($admin) .
                                    "',lastupdate='$date',lastping='$date' WHERE serverid=" . (int)$row['serverid'];
-                           db_query($sql);
+                           Database::query($sql);
         }
     //  }
     } else {
         // This is a new server, so add it and give it a small priority boost.
-               $sql = "INSERT INTO " . db_prefix("logdnet") .
+               $sql = "INSERT INTO " . Database::prefix("logdnet") .
                        " (address,description,version,admin,priority,lastupdate,lastping,count,recentips,lang) VALUES ('" .
-                       db_real_escape_string($addy) . "','" .
-                       db_real_escape_string($desc) . "','" .
-                       db_real_escape_string($vers) . "','" .
-                       db_real_escape_string($admin) . "',10,'$date','$date','$count','" .
-                       db_real_escape_string($_SERVER['REMOTE_ADDR']) . "','" .
-                       db_real_escape_string($lang) . "')";
-               $result = db_query($sql);
+                       Database::escape($addy) . "','" .
+                       Database::escape($desc) . "','" .
+                       Database::escape($vers) . "','" .
+                       Database::escape($admin) . "',10,'$date','$date','$count','" .
+                       Database::escape($_SERVER['REMOTE_ADDR']) . "','" .
+                       Database::escape($lang) . "')";
+               $result = Database::query($sql);
     }
 
     // Do these next two things whether we've added a new server or
     // updated an old one
 
     // Delete servers older than a week
-    $sql = "DELETE FROM " . db_prefix("logdnet") . " WHERE lastping < '" . date("Y-m-d H:i:s", strtotime("-2 weeks")) . "'";
-    db_query($sql);
+    $sql = "DELETE FROM " . Database::prefix("logdnet") . " WHERE lastping < '" . date("Y-m-d H:i:s", strtotime("-2 weeks")) . "'";
+    Database::query($sql);
 
     // Degrade the popularity of any server which hasn't been updated in the
     // past 5 minutes by 1%.  This means that unpopular servers will fall
     // toward the bottom of the list.
     $since = date("Y-m-d H:i:s", strtotime("-5 minutes"));
-    $sql = "UPDATE " .  db_prefix("logdnet") . " SET priority=priority*0.99,lastupdate='" . date("Y-m-d H:i:s") . "' WHERE lastupdate < '$since'";
-    db_query($sql);
+    $sql = "UPDATE " .  Database::prefix("logdnet") . " SET priority=priority*0.99,lastupdate='" . date("Y-m-d H:i:s") . "' WHERE lastupdate < '$since'";
+    Database::query($sql);
 
     //Now, if we're using version 2 of LoGDnet, we'll return the appropriate code.
     $v = httpget("v");
@@ -207,12 +208,12 @@ if ($op == "") {
 
     // I'm going to do a slightly niftier sort manually in a bit which always
     // pops the most recent 'official' versions to the top of the list.
-    $sql = "SELECT address,description,version,admin,priority FROM " . db_prefix("logdnet") . " WHERE lastping > '" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
-    $result = db_query($sql);
+    $sql = "SELECT address,description,version,admin,priority FROM " . Database::prefix("logdnet") . " WHERE lastping > '" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
+    $result = Database::query($sql);
     $rows = array();
-    $number = db_num_rows($result);
+    $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $rows[] = db_fetch_assoc($result);
+        $rows[] = Database::fetchAssoc($result);
     }
     $rows = apply_logdnet_bans($rows);
     usort($rows, "lotgdsort");
@@ -385,9 +386,9 @@ function safeUnserialize(string $val): array|false
 
 function apply_logdnet_bans($logdnet)
 {
-    $sql = "SELECT * FROM " . db_prefix("logdnetbans");
-    $result = db_query($sql, "logdnetbans");
-    while ($row = db_fetch_assoc($result)) {
+    $sql = "SELECT * FROM " . Database::prefix("logdnetbans");
+    $result = Database::query($sql, "logdnetbans");
+    while ($row = Database::fetchAssoc($result)) {
         reset($logdnet);
         foreach ($logdnet as $i => $net) {
             if (preg_match("/{$row['banvalue']}/i", $net[$row['bantype']])) {

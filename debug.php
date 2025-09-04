@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -51,7 +52,7 @@ switch ($debug) {
 					AVG(value + 0) AS medium,
 					COUNT(id) AS counter
 				FROM 
-					`" . db_prefix('debug') . "` 
+					`" . Database::prefix('debug') . "` 
 				WHERE 
 					type = 'hooktime'
 				GROUP BY 
@@ -76,7 +77,7 @@ switch ($debug) {
 				SUM(value + 0) AS sum,
 				AVG(value + 0) AS medium,
 				COUNT(id) AS counter
-			FROM " . db_prefix('debug') . "
+			FROM " . Database::prefix('debug') . "
 			WHERE type = 'pagegentime'
 			GROUP BY type, category, subcategory
 			ORDER BY $order $ascdesc
@@ -92,9 +93,9 @@ $none = translate_inline("`iNone`i");
 $notset = translate_inline("`iNot set`i");
 rawoutput("<table border=0 cellpadding=2 cellspacing=1><tr class='trhead'><td>$category</td><td>$subcategory</td><td>$sum_desc</td><td>$med_desc</td><td>$hits</td></tr>");
 debug($sql);
-$result = db_query($sql);
+$result = Database::query($sql);
 $i = true;
-while ($row = db_fetch_assoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $i = !$i;
     rawoutput("<tr class='" . ($i ? 'trdark' : 'trlight') . "'><td valign='top'>");
     output_notl("`b" . $row['category'] . "`b");

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 // translator ready
 // addnews ready
 // mail ready
@@ -15,7 +17,6 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
-use Lotgd\MySQL\Database;
 
 require_once("common.php");
 
@@ -214,8 +215,8 @@ if ($op == "money") {
                 AND round((CAST(goldinbank as signed)+cast(gold as signed))*(1+0.05*(rand())),$round_money)
                 $meop " . ($session['user']['goldinbank'] + $session['user']['gold']);
     //edward pointed out that a cast is necessary as signed+unsigned=boffo
-//  $sql = "SELECT name,(goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) AS data1 FROM " . db_prefix("accounts") . " WHERE $standardwhere ORDER BY data1 $order, level $order, experience $order, acctid $order LIMIT $limit";
-//  $me = "SELECT count(acctid) AS count FROM ".db_prefix("accounts")." WHERE $standardwhere AND (goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) $meop ".($session['user']['goldinbank'] + $session['user']['gold']);
+//  $sql = "SELECT name,(goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) AS data1 FROM " . Database::prefix("accounts") . " WHERE $standardwhere ORDER BY data1 $order, level $order, experience $order, acctid $order LIMIT $limit";
+//  $me = "SELECT count(acctid) AS count FROM ".Database::prefix("accounts")." WHERE $standardwhere AND (goldinbank+gold+round((((rand()*10)-5)/100)*(goldinbank+gold))) $meop ".($session['user']['goldinbank'] + $session['user']['gold']);
     $adverb = "richest";
     if ($subop == "least") {
         $adverb = "poorest";

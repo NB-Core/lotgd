@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 // addnews ready
 use Lotgd\Forms;
@@ -32,8 +33,8 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
        $userid = (int)httpget('userid');
     require_once("lib/charcleanup.php");
     char_cleanup($userid, CHAR_DELETE_SUICIDE);
-       $sql = "DELETE FROM " . db_prefix("accounts") . " WHERE acctid=$userid";
-    db_query($sql);
+       $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
+    Database::query($sql);
     output("Your character has been deleted!");
     AddNews::add("`#%s quietly passed from this world.", $session['user']['name']);
     addnav("Login Page", "index.php");
@@ -351,13 +352,13 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
     // Okay, allow modules to add prefs one at a time.
     // We are going to do it this way to *ensure* that modules don't conflict
     // in namespace.
-    $sql = "SELECT modulename FROM " . db_prefix("modules") . " WHERE infokeys LIKE '%|prefs|%' AND active=1 ORDER BY modulename";
-    $result = db_query($sql);
+    $sql = "SELECT modulename FROM " . Database::prefix("modules") . " WHERE infokeys LIKE '%|prefs|%' AND active=1 ORDER BY modulename";
+    $result = Database::query($sql);
     $everfound = 0;
     $foundmodules = array();
     $msettings = array();
     $mdata = array();
-    while ($row = db_fetch_assoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         $module = $row['modulename'];
         $info = get_module_info($module);
         if (!isset($info['prefs']) || count($info['prefs']) <= 0) {
@@ -443,9 +444,9 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
         }
     }
     if ($foundmodules != array()) {
-        $sql = "SELECT * FROM " . db_prefix("module_userprefs") . " WHERE modulename IN ('" . implode("','", $foundmodules) . "') AND (setting LIKE 'user_%' OR setting LIKE 'check_%') AND userid='" . $session['user']['acctid'] . "'";
-        $result1 = db_query($sql);
-        while ($row1 = db_fetch_assoc($result1)) {
+        $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE modulename IN ('" . implode("','", $foundmodules) . "') AND (setting LIKE 'user_%' OR setting LIKE 'check_%') AND userid='" . $session['user']['acctid'] . "'";
+        $result1 = Database::query($sql);
+        while ($row1 = Database::fetchAssoc($result1)) {
             $mdata[$row1['modulename'] . "___" . $row1['setting']] = $row1['value'];
         }
         $form = array_merge($form, $msettings);

@@ -4,33 +4,10 @@ namespace Tests\Ajax;
 
 use Jaxon\Response\Response;
 use Lotgd\Async\Handler\Commentary;
+use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../bootstrap.php';
-
-if (!function_exists('db_prefix')) {
-    function db_prefix(string $name): string
-    {
-        return $name;
-    }
-}
-if (!function_exists('db_query')) {
-    function db_query(string $sql): array
-    {
-        return [];
-    }
-}
-if (!function_exists('db_fetch_assoc')) {
-    function db_fetch_assoc(array &$result): ?array
-    {
-        return array_shift($result);
-    }
-}
-if (!function_exists('db_free_result')) {
-    function db_free_result(array $result): void
-    {
-    }
-}
 if (!function_exists('maillink')) {
     function maillink(): string
     {
@@ -66,6 +43,9 @@ class PollUpdatesTest extends TestCase
                 return $data;
             }
         };
+        Database::$mockResults = [
+            [], // commentaryRefresh
+        ];
     }
 
     public function testAggregatesResponsesFromCallbacks(): void

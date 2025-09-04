@@ -24,6 +24,13 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static ?object $doctrineConnection = null;
         public static ?object $instance = null;
         public static array $queryCacheResults = [];
+        /**
+         * Queue of mock results returned by {@see query} for unit tests.
+         * Each call to {@see query} will shift the next entry.
+         *
+         * @var array<int, array|object|bool|string|null>
+         */
+        public static array $mockResults = [];
         public static string $last_error = '';
         public static bool $alterFail = false;
 
@@ -67,6 +74,11 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         {
             global $accounts_table, $mail_table, $last_query_result;
             self::$lastSql = $sql;
+
+            if (self::$mockResults) {
+                $last_query_result = array_shift(self::$mockResults);
+                return $last_query_result;
+            }
 
             if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && (self::$doctrineConnection || \Lotgd\Doctrine\Bootstrap::$conn)) {
                 $conn = self::getDoctrineConnection();

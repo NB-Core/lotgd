@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 //addnews ready
 // mail ready
 // translator ready
@@ -20,30 +21,30 @@ function specialtymysticpower_getmoduleinfo(){
 }
 
 function specialtymysticpower_install(){
-	$sql = "DESCRIBE " . db_prefix("accounts");
-	$result = db_query($sql);
+	$sql = "DESCRIBE " . Database::prefix("accounts");
+	$result = Database::query($sql);
 	$specialty="MP";
-	while($row = db_fetch_assoc($result)) {
+	while($row = Database::fetchAssoc($result)) {
 		// Convert the user over
 		if ($row['Field'] == "magic") {
 			debug("Migrating mystic powers field");
-			$sql = "INSERT INTO " . db_prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtymysticpower', 'skill', acctid, magic FROM " . db_prefix("accounts");
-			db_query($sql);
+			$sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtymysticpower', 'skill', acctid, magic FROM " . Database::prefix("accounts");
+			Database::query($sql);
 			debug("Dropping magic field from accounts table");
-			$sql = "ALTER TABLE " . db_prefix("accounts") . " DROP magic";
-			db_query($sql);
+			$sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP magic";
+			Database::query($sql);
 		} elseif ($row['Field']=="magicuses") {
 			debug("Migrating mystic powers uses field");
-			$sql = "INSERT INTO " . db_prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtymysticpower', 'uses', acctid, magicuses FROM " . db_prefix("accounts");
-			db_query($sql);
+			$sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtymysticpower', 'uses', acctid, magicuses FROM " . Database::prefix("accounts");
+			Database::query($sql);
 			debug("Dropping magicuses field from accounts table");
-			$sql = "ALTER TABLE " . db_prefix("accounts") . " DROP magicuses";
-			db_query($sql);
+			$sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP magicuses";
+			Database::query($sql);
 		}
 	}
 	debug("Migrating Mystic Powers Specialty");
-	$sql = "UPDATE " . db_prefix("accounts") . " SET specialty='$specialty' WHERE specialty='2'";
-	db_query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='$specialty' WHERE specialty='2'";
+	Database::query($sql);
 
 	module_addhook("choose-specialty");
 	module_addhook("set-specialty");
@@ -61,8 +62,8 @@ function specialtymysticpower_install(){
 function specialtymysticpower_uninstall(){
 	// Reset the specialty of anyone who had this specialty so they get to
 	// rechoose at new day
-	$sql = "UPDATE " . db_prefix("accounts") . " SET specialty='' WHERE specialty='MP'";
-	db_query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='' WHERE specialty='MP'";
+	Database::query($sql);
 	return true;
 }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Async\Handler;
 
+use Lotgd\MySQL\Database;
+
 use Jaxon\Response\Response;
 use function Jaxon\jaxon;
 
@@ -28,14 +30,14 @@ class Mail
         $tabtext = maillinktabtext();
 
         // Get the highest message ID for the current user there is
-        $sql = 'SELECT MAX(messageid) AS lastid FROM ' . db_prefix('mail')
+        $sql = 'SELECT MAX(messageid) AS lastid FROM ' . Database::prefix('mail')
             . ' WHERE msgto=\'' . $session['user']['acctid'] . '\'';
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
         if ($row === false) {
             $row = ['lastid' => 0];
         }
-        db_free_result($result);
+        Database::freeResult($result);
         $lastMailId = (int) ($row['lastid'] ?? 0);
 
         $objResponse = jaxon()->newResponse();

@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 // translator ready
 // addnews ready
 // mail ready
@@ -41,13 +42,13 @@ function raceelf_uninstall(){
 	global $session;
 	$vname = getsetting("villagename", LOCATION_FIELDS);
 	$gname = get_module_setting("villagename");
-	$sql = "UPDATE " . db_prefix("accounts") . " SET location='$vname' WHERE location = '$gname'";
-	db_query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET location='$vname' WHERE location = '$gname'";
+	Database::query($sql);
 	if ($session['user']['location'] == $gname)
 		$session['user']['location'] = $vname;
 	// Force anyone who was a Elf to rechoose race
-	$sql = "UPDATE  " . db_prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Elf'";
-	db_query($sql);
+	$sql = "UPDATE  " . Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Elf'";
+	Database::query($sql);
 	if ($session['user']['race'] == 'Elf')
 		$session['user']['race'] = RACE_UNKNOWN;
 	return true;
@@ -84,16 +85,16 @@ function raceelf_dohook($hookname,$args){
 		if ($args['setting'] == "villagename" && $args['module']=="raceelf") {
 			if ($session['user']['location'] == $args['old'])
 				$session['user']['location'] = $args['new'];
-			$sql = "UPDATE " . db_prefix("accounts") .
+			$sql = "UPDATE " . Database::prefix("accounts") .
 				" SET location='" . addslashes($args['new']) .
 				"' WHERE location='" . addslashes($args['old']) . "'";
-			db_query($sql);
+			Database::query($sql);
 			if (is_module_active("cities")) {
-				$sql = "UPDATE " . db_prefix("module_userprefs") .
+				$sql = "UPDATE " . Database::prefix("module_userprefs") .
 					" SET value='" . addslashes($args['new']) .
 					"' WHERE modulename='cities' AND setting='homecity'" .
 					"AND value='" . addslashes($args['old']) . "'";
-				db_query($sql);
+				Database::query($sql);
 			}
 		}
 		break;
@@ -187,10 +188,10 @@ function raceelf_dohook($hookname,$args){
 			$args['schemas']['talk'] = "module-raceelf";
 			$new = get_module_setting("newest-$city", "cities");
 			if ($new != 0) {
-				$sql =  "SELECT name FROM " . db_prefix("accounts") .
+				$sql =  "SELECT name FROM " . Database::prefix("accounts") .
 					" WHERE acctid='$new'";
-				$result = db_query_cached($sql, "newest-$city");
-				$row = db_fetch_assoc($result);
+				$result = Database::queryCached($sql, "newest-$city");
+				$row = Database::fetchAssoc($result);
 				$args['newestplayer'] = $row['name'];
 				$args['newestid']=$new;
 			} else {

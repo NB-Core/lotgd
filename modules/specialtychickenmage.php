@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 /*  Title:    Specialty - Chicken Mage
  *  Author:   Ben "blarg" Wong (blargeth -at- gmail -dot- com)
  *  Credits:  Based on the structure and naming conventions of the 
@@ -62,8 +63,8 @@ function specialtychickenmage_install(){
 
 function specialtychickenmage_uninstall(){
 	// reset
-	$sql = "UPDATE " . db_prefix("accounts") . " SET specialty='' WHERE specialty='CM'";
-	db_query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='' WHERE specialty='CM'";
+	Database::query($sql);
 	return true;
 }
 

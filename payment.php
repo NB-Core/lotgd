@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 // mail ready
 // addnews ready
 // translator ready
@@ -10,7 +12,6 @@ set_error_handler("payment_error");
 define("ALLOW_ANONYMOUS", true);
 use Lotgd\Http;
 use Lotgd\Page\Footer;
-use Lotgd\MySQL\Database;
 
 require_once("common.php");
 
@@ -79,7 +80,7 @@ if (!$fp) {
                 }
                 $sql = "SELECT * FROM " . Database::prefix("paylog") . " WHERE txnid='{$txn_id}'";
                 $result = Database::query($sql);
-                if (db_num_rows($result) == 1) {
+                if (Database::numRows($result) == 1) {
                     $emsg .= "Already logged this transaction ID ($txn_id)\n";
                     payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
                 }

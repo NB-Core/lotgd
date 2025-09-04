@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -20,14 +21,14 @@ addnav("Q?`%Quit`0 to the heavens", "login.php?op=logout", true);
 
 $op = httpget('op');
 if ($op == "keepalive") {
-    $sql = "UPDATE " . db_prefix("accounts") . " SET laston='" . date("Y-m-d H:i:s") . "' WHERE acctid='{$session['user']['acctid']}'";
-    db_query($sql);
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET laston='" . date("Y-m-d H:i:s") . "' WHERE acctid='{$session['user']['acctid']}'";
+    Database::query($sql);
     global $REQUEST_URI;
     echo '<html><meta http-equiv="Refresh" content="30;url=' . $REQUEST_URI . '"></html><body>' . date("Y-m-d H:i:s") . "</body></html>";
     exit();
 } elseif ($op == "newsdelete") {
-    $sql = "DELETE FROM " . db_prefix("news") . " WHERE newsid='" . httpget('newsid') . "'";
-    db_query($sql);
+    $sql = "DELETE FROM " . Database::prefix("news") . " WHERE newsid='" . httpget('newsid') . "'";
+    Database::query($sql);
     $return = httpget('return');
     $return = cmd_sanitize($return);
     $return = basename($return);

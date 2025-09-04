@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Async\Handler;
 
+use Lotgd\MySQL\Database;
+
 use Jaxon\Response\Response;
 use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Util\ScriptName;
@@ -50,27 +52,27 @@ class Commentary
             $nobios[$scriptname] = false;
         }
         $linkbios = !$nobios[$scriptname];
-        $sql = 'SELECT ' . db_prefix('commentary') . '.*, '
-            . db_prefix('accounts') . '.name, '
-            . db_prefix('accounts') . '.acctid, '
-            . db_prefix('accounts') . '.superuser, '
-            . db_prefix('accounts') . '.clanrank, '
-            . db_prefix('clans') . '.clanshort FROM ' . db_prefix('commentary')
-            . ' LEFT JOIN ' . db_prefix('accounts') . ' ON ' . db_prefix('accounts') . '.acctid = '
-            . db_prefix('commentary') . '.author LEFT JOIN ' . db_prefix('clans')
-            . ' ON ' . db_prefix('clans') . '.clanid=' . db_prefix('accounts') . '.clanid '
+        $sql = 'SELECT ' . Database::prefix('commentary') . '.*, '
+            . Database::prefix('accounts') . '.name, '
+            . Database::prefix('accounts') . '.acctid, '
+            . Database::prefix('accounts') . '.superuser, '
+            . Database::prefix('accounts') . '.clanrank, '
+            . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary')
+            . ' LEFT JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = '
+            . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans')
+            . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid '
             . "WHERE section='" . addslashes($section) . "' AND commentid > '" . (int) $lastId
             . "' ORDER BY commentid ASC";
-        $result = db_query($sql);
+        $result = Database::query($sql);
         $newId = $lastId;
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $newId = $row['commentid'];
             $line = CoreCommentary::renderCommentLine($row, $linkbios);
             // Convert colour codes but preserve embedded HTML like profile links
             $line = appoencode($line, true);
             $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
         }
-        db_free_result($result);
+        Database::freeResult($result);
         $html = implode('', $comments);
         $objResponse = jaxon()->newResponse();
         if ($html !== '') {

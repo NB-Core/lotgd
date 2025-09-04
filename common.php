@@ -74,7 +74,6 @@ LocalConfig::apply();
 require_once("src/Lotgd/Config/constants.php");
 
 // Legacy, because modules may rely on that, but those files are already migrated to namespace structure
-require_once("lib/dbwrapper.php");
 require_once("lib/modules.php");
 require_once("lib/translator.php");
 require_once("lib/sanitize.php");
@@ -185,7 +184,7 @@ if (file_exists("dbconnect.php")) {
     $DB_PASS = $config['DB_PASS'] ?? '';
     $DB_NAME = $config['DB_NAME'] ?? '';
     $DB_PREFIX = $config['DB_PREFIX'] ?? '';
-    \Lotgd\MySQL\Database::setPrefix($DB_PREFIX);
+    Database::setPrefix($DB_PREFIX);
     $DB_USEDATACACHE = $config['DB_USEDATACACHE'] ?? 0;
     $DB_DATACACHEPATH = $config['DB_DATACACHEPATH'] ?? '';
 } else {
@@ -216,7 +215,7 @@ if (file_exists("dbconnect.php")) {
 //
 // Line is important for installer only, step 5
 //if (defined("IS_INSTALLER") && httpget('stage')>5)
-//  $link = db_pconnect($DB_HOST, $DB_USER, $DB_PASS);
+//  $link = Database::pconnect($DB_HOST, $DB_USER, $DB_PASS);
 $link = false;
 if (!defined("DB_NODB")) {
         $link = Database::connect($config['DB_HOST'] ?? '', $config['DB_USER'] ?? '', $config['DB_PASS'] ?? '');

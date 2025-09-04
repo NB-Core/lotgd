@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\MySQL;
 
+use Lotgd\MySQL\Database;
+
 use RuntimeException;
 
 use const DATETIME_DATEMIN;
@@ -46,7 +48,7 @@ class TableDescriptor
      */
     public static function synctable(string $tablename, array $descriptor, bool $nodrop = false): ?int
     {
-    //table names should be db_prefix'd before they get in to
+    //table names should be Database::prefix'd before they get in to
     //this function.
         if (!Database::tableExists($tablename)) {
             //the table doesn't exist, so we create it and are done.
@@ -609,7 +611,7 @@ class TableDescriptor
     public static function tableCreateDescriptor(string $tablename): array
     {
     //this function assumes that $tablename is already passed
-    //through db_prefix.
+    //through Database::prefix.
         $descriptor = array();
 
     //reserved function words, expand if necessary, currently not a global setting

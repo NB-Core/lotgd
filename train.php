@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -29,19 +30,19 @@ output("`b`cBluspring's Warrior Training`c`b");
 
 $mid = httpget("master");
 if ($mid) {
-    $sql = "SELECT * FROM " . db_prefix("masters") . " WHERE creatureid=$mid";
+    $sql = "SELECT * FROM " . Database::prefix("masters") . " WHERE creatureid=$mid";
 } else {
-    $sql = "SELECT max(creaturelevel) as level FROM " . db_prefix("masters") . " WHERE creaturelevel <= " . $session['user']['level'];
-    $res = db_query($sql);
-    $row = db_fetch_assoc($res);
+    $sql = "SELECT max(creaturelevel) as level FROM " . Database::prefix("masters") . " WHERE creaturelevel <= " . $session['user']['level'];
+    $res = Database::query($sql);
+    $row = Database::fetchAssoc($res);
     $l = (int)$row['level'];
 
-    $sql = "SELECT * FROM " . db_prefix("masters") . " WHERE creaturelevel=$l ORDER BY RAND(" . e_rand() . ") LIMIT 1";
+    $sql = "SELECT * FROM " . Database::prefix("masters") . " WHERE creaturelevel=$l ORDER BY RAND(" . e_rand() . ") LIMIT 1";
 }
 
-$result = db_query($sql);
-if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel', 15)) {
-    $master = db_fetch_assoc($result);
+$result = Database::query($sql);
+if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('maxlevel', 15)) {
+    $master = Database::fetchAssoc($result);
     $mid = $master['creatureid'];
     $master['creaturename'] = stripslashes($master['creaturename']);
     $master['creaturewin'] = stripslashes($master['creaturewin']);
@@ -215,8 +216,8 @@ if (db_num_rows($result) > 0 && $session['user']['level'] < getsetting('maxlevel
                 output("None in the land are mightier than you!`n");
             }
             if ($session['user']['referer'] > 0 && ($session['user']['level'] >= getsetting("referminlevel", 4) || $session['user']['dragonkills'] > 0) && $session['user']['refererawarded'] < 1) {
-                $sql = "UPDATE " . db_prefix("accounts") . " SET donation=donation+" . getsetting("refereraward", 25) . " WHERE acctid={$session['user']['referer']}";
-                db_query($sql);
+                $sql = "UPDATE " . Database::prefix("accounts") . " SET donation=donation+" . getsetting("refereraward", 25) . " WHERE acctid={$session['user']['referer']}";
+                Database::query($sql);
                 $session['user']['refererawarded'] = 1;
                 $subj = array("`%One of your referrals advanced!`0");
                 $body = array("`&%s`# has advanced to level `^%s`#, and so you have earned `^%s`# points!", $session['user']['name'], $session['user']['level'], getsetting("refereraward", 25));
