@@ -7,6 +7,7 @@ namespace Lotgd;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Serialization;
+use Lotgd\Output;
 
 class ForcedNavigation
 {
@@ -17,8 +18,8 @@ class ForcedNavigation
      */
     public static function doForcedNav(bool $anonymous, bool $overrideforced): void
     {
-        global $session, $REQUEST_URI, $output;
-        $output->rawOutput("<!--\nAllowAnonymous: " . ($anonymous ? "True" : "False") . "\nOverride Forced Nav: " . ($overrideforced ? "True" : "False") . "\n-->");
+        global $session, $REQUEST_URI;
+        Output::getInstance()->rawOutput("<!--\nAllowAnonymous: " . ($anonymous ? "True" : "False") . "\nOverride Forced Nav: " . ($overrideforced ? "True" : "False") . "\n-->");
         if (isset($session['loggedin']) && $session['loggedin']) {
             $sql = "SELECT * FROM " . Database::prefix('accounts') . " WHERE acctid='" . $session['user']['acctid'] . "'";
             $result = Database::query($sql);

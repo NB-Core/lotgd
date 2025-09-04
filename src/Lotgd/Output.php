@@ -15,6 +15,8 @@ use Lotgd\Translator;
 
 class Output
 {
+    private static ?self $instance = null;
+
     private $output;             // text collected for display
     private $block_new_output;   // whether new output should be ignored
     private $colors;             // color code => CSS class
@@ -92,11 +94,7 @@ class Output
      */
     public static function getInstance(): self
     {
-        global $output;
-        if (!$output instanceof self) {
-            $output = new self();
-        }
-        return $output;
+        return self::$instance ??= new self();
     }
 
     /**

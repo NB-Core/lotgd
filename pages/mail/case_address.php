@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\Translator;
 use Lotgd\Http;
+use Lotgd\Output;
 
 $id = (int) Http::get('id');
 $preop = (string) Http::get('preop');
@@ -16,7 +17,7 @@ $preop = (string) Http::get('preop');
  */
 function mailAddress(int $id, string $preop): void
 {
-    global $output;
+    $output = Output::getInstance();
 
     $output->outputNotl("<form action='mail.php?op=write' method='post'>", true);
     $output->output("`b`2Address:`b`n");

@@ -16,12 +16,13 @@ use Lotgd\Accounts;
 use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
 
 class Footer
 {
     public static function pageFooter(bool $saveuser = true): void
     {
-        global $output, $header, $nav, $session, $REMOTE_ADDR, $REQUEST_URI, $pagestarttime,
+        global $header, $nav, $session, $REMOTE_ADDR, $REQUEST_URI, $pagestarttime,
             $template, $y2, $z2, $logd_version, $copyright, $SCRIPT_NAME, $footer,
             $settings;
 
@@ -154,6 +155,8 @@ class Footer
         list($header, $footer) = PageParts::assemblePetitionDisplay($header, $footer);
         $sourcelink = 'source.php?url=' . preg_replace('/[?].*/', '', ($_SERVER['REQUEST_URI']));
 
+        $output = Output::getInstance();
+
         $replacements = [
             'stats'   => $statsOutput,
             'script'  => $script,
@@ -200,7 +203,7 @@ class Footer
 
     public static function popupFooter(): void
     {
-        global $output, $header, $session, $y2, $z2, $copyright, $template;
+        global $header, $session, $y2, $z2, $copyright, $template;
 
         $headscript = '';
         if (TwigTemplate::isActive()) {
@@ -218,6 +221,8 @@ class Footer
         }
 
         list($header, $footer) = PageParts::applyPopupFooterHooks($header, $footer);
+
+        $output = Output::getInstance();
 
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
             if (getsetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {

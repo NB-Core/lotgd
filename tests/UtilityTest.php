@@ -16,8 +16,7 @@ final class UtilityTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $output;
-        $output = new Output();
+        Output::getInstance();
     }
 
     public function testEmailValidatorValidAndInvalid(): void

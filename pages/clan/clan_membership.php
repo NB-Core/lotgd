@@ -10,13 +10,16 @@ use Lotgd\DebugLog;
 use Lotgd\SafeEscape;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
+use Lotgd\Output;
 
 /**
  * Handle clan membership operations.
  */
 function clanMembership(): void
 {
-    global $output, $session, $claninfo, $apply_short, $ranks;
+    global $session, $claninfo, $apply_short, $ranks;
+
+    $output = Output::getInstance();
 
     Nav::add('Clan Hall', 'clan.php');
     Nav::add('Clan Options');

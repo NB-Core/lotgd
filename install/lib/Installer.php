@@ -38,8 +38,7 @@ class Installer
 
     public function __construct()
     {
-        global $output;
-        $this->output = $output instanceof Output ? $output : new Output();
+        $this->output = Output::getInstance();
     }
 
     /**

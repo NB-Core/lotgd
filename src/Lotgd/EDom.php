@@ -14,7 +14,6 @@ class EDom
      */
     public static function includeScript(): void
     {
-        global $output;
-        $output->rawOutput("<script src='src/Lotgd/e_dom.js' defer></script>");
+        Output::getInstance()->rawOutput("<script src='src/Lotgd/e_dom.js' defer></script>");
     }
 }

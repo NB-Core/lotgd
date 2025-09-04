@@ -9,6 +9,7 @@ declare(strict_types=1);
 use Lotgd\Commentary;
 use Lotgd\MountName;
 use Lotgd\MySQL\Database;
+use Lotgd\Output;
 
 // translator ready
 // addnews ready
@@ -141,8 +142,7 @@ function darkhorse_bartender($from)
         output("He continues, \"`%To do colorsh, here'sh what you need to do.  Firsht, you ushe a &#0096; mark (found right above the tab key) followed by 1, 2, 3, 4, 5, 6, 7, !, @, #, $, %, ^, &, ), q or Q.");
         output("They are not written into shtone, you know, and may change at any time later on....`0\"`n`n");
         output("`lEach of thoshe correshpondsh with a color to look like this: `n");
-        global $output;
-              $colors = $output->getColormapEscapedArray();
+        $colors = Output::getInstance()->getColormapEscapedArray();
         rawoutput("<table><tr><td>");
         output("`2Color Code");
         rawoutput("</td><td>");

@@ -13,8 +13,11 @@ final class SanitizeExtraTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $output, $settings;
-        $output = new Output();
+        global $settings;
+        $ref = new \ReflectionClass(Output::class);
+        $prop = $ref->getProperty('instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, new Output());
         $settings = new DummySettingsSanitize(['charset' => 'UTF-8']);
     }
 
@@ -79,8 +82,6 @@ final class SanitizeExtraTest extends TestCase
 
     public function testSanitizeColorname(): void
     {
-        global $output;
-        $output = new Output();
         $this->assertSame('Bl`%u@e', Sanitize::sanitizeColorname(false, 'Bl`%u@e'));
     }
 

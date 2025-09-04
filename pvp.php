@@ -13,11 +13,12 @@ use Lotgd\AddNews;
 use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Http;
+use Lotgd\Output;
 
-global $output;
 
 tlschema("pvp");
 
+$output = Output::getInstance();
 $iname = getsetting("innname", LOCATION_INN);
 $battle = false;
 

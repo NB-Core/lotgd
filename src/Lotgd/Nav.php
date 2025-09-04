@@ -594,8 +594,7 @@ class Nav
         }
         $extra = '';
         $ignoreuntil = '';
-        global $output;
-        $output->closeOpenFont();
+        Output::getInstance()->closeOpenFont();
         if ($link === false) {
             $text = HolidayText::holidayize($text, 'nav');
             $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhead', ['title' => appoencode($text, $priv)]);
@@ -1004,9 +1003,12 @@ class Nav
      */
     public static function clearOutput(): void
     {
-        global $output, $nestedtags, $header, $nav, $session;
+        global $nestedtags, $header, $nav, $session;
         self::clearNav();
-        $output = new Output();
+        $ref = new \ReflectionClass(Output::class);
+        $prop = $ref->getProperty('instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, new Output());
         $header = '';
         $nav = '';
     }

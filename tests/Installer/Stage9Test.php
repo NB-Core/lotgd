@@ -104,7 +104,7 @@ class Stage9Test extends TestCase
     protected function setUp(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs,
-            $DB_USEDATACACHE, $settings, $REQUEST_URI, $output;
+            $DB_USEDATACACHE, $settings, $REQUEST_URI;
 
         $REQUEST_URI        = '/installer.php';
         $session            = [
@@ -126,7 +126,10 @@ class Stage9Test extends TestCase
         $noinstallnavs      = false;
         $DB_USEDATACACHE    = false;
         $settings           = new DummySettings();
-        $output             = new Output();
+        $ref = new \ReflectionClass(Output::class);
+        $prop = $ref->getProperty('instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, new Output());
 
         file_put_contents(
             __DIR__ . '/../../dbconnect.php',
@@ -145,12 +148,11 @@ class Stage9Test extends TestCase
 
     public function testStage9RunsMigrationsAndChecksForAdmin(): void
     {
-        global $output;
         $installer = new Installer();
 
         $installer->runStage(9);
         $installer->runStage(10);
-        $outputText = $output->getRawOutput();
+        $outputText = Output::getInstance()->getRawOutput();
 
         $files    = glob(__DIR__ . '/../../migrations/Version*.php');
         $versions = array_map(fn($f) => substr(basename($f, '.php'), 7), $files);
