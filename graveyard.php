@@ -4,6 +4,7 @@ use Lotgd\Buffs;
 use Lotgd\DeathMessage;
 use Lotgd\Battle;
 use Lotgd\AddNews;
+use Lotgd\Translator;
 
 // addnews ready.
 // translator ready
@@ -12,7 +13,7 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/events.php");
 
-tlschema("graveyard");
+Translator::getInstance()->setSchema("graveyard");
 
 page_header("The Graveyard");
 $skipgraveyardtext = handle_event("graveyard");
@@ -48,9 +49,9 @@ switch ($op) {
                 output("`)You have `\$LOST `^%s`) favor with `\$%s`).", $favor, $deathoverlord);
                 $session['user']['deathpower'] -= $favor;
             }
-            tlschema("nav");
+            Translator::getInstance()->setSchema("nav");
             addnav("G?Return to the Graveyard", "graveyard.php");
-            tlschema();
+            Translator::getInstance()->setSchema();
         } else {
             output("`)As you try to flee, you are summoned back to the fight!`n`n");
             $battle = true;
@@ -80,9 +81,9 @@ if ($battle) {
     $session['user']['soulpoints'] = $session['user']['hitpoints'];
     $session['user']['hitpoints'] = $originalhitpoints;
     if ($victory) {
-        tlschema("battle");
+        Translator::getInstance()->setSchema("battle");
         $msg = translate_inline($badguy['creaturelose']);
-        tlschema();
+        Translator::getInstance()->setSchema();
         output_notl("`b`&%s`0`b`n", $msg);
         output("`b`\$You have tormented %s!`0`b`n", $badguy['creaturename']);
         output("`#You receive `^%s`# favor with `\$%s`#!`n`0", $badguy['creatureexp'], $deathoverlord);
@@ -104,9 +105,9 @@ if ($battle) {
             output("`b`&You have been defeated by `%%s`&!!!`n", $badguy['creaturename']);
             output("You may not torment any more souls today.");
             $session['user']['gravefights'] = 0;
-            tlschema("nav");
+            Translator::getInstance()->setSchema("nav");
             addnav("G?Return to the Graveyard", "graveyard.php");
-            tlschema();
+            Translator::getInstance()->setSchema();
         } else {
                 Battle::fightnav(false, true, "graveyard.php");
         }

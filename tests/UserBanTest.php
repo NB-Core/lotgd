@@ -27,12 +27,6 @@ namespace {
             return $date;
         }
     }
-    if (!function_exists('sprintf_translate')) {
-        function sprintf_translate(string $format, ...$args): string
-        {
-            return vsprintf($format, $args);
-        }
-    }
     if (!function_exists('debuglog')) {
         function debuglog(string $message): void
         {
@@ -53,9 +47,23 @@ namespace Lotgd {
     if (!class_exists(__NAMESPACE__ . '\\Translator')) {
         class Translator
         {
+            public static function getInstance(): self
+            {
+                return new self();
+            }
+
             public static function translateInline(string $text): string
             {
                 return $text;
+            }
+
+            public function sprintfTranslate(string $format, ...$args): string
+            {
+                return vsprintf($format, $args);
+            }
+
+            public function setSchema(mixed $schema = null): void
+            {
             }
         }
     }

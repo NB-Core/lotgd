@@ -11,9 +11,9 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
-use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 // addnews ready
 // mail ready
@@ -24,7 +24,7 @@ require_once("common.php");
 
 SuAccess::check(SU_EDIT_MOUNTS);
 
-Translator::tlschema("companions");
+Translator::getInstance()->setSchema("companions");
 
 Header::pageHeader("Companion Editor");
 

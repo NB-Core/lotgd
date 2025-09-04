@@ -11,12 +11,12 @@ use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Backtrace;
-use Lotgd\Translator;
 use Lotgd\Forms;
 use Lotgd\Sanitize;
 use Lotgd\Modules\Installer;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class Modules
 {
@@ -43,13 +43,13 @@ class Modules
         $moduleName = Sanitize::modulenameSanitize($moduleName);
         $modulefilename = "modules/{$moduleName}.php";
         if (file_exists($modulefilename)) {
-            Translator::tlschema("module-{$moduleName}");
+            Translator::getInstance()->setSchema("module-{$moduleName}");
             if ($withDb) {
                 $sql    = 'SELECT active,filemoddate,infokeys,version FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
                 $result = Database::queryCached($sql, "inject-$moduleName", 3600);
                 if (! $force) {
                     if (Database::numRows($result) == 0) {
-                        Translator::tlschema();
+                        Translator::getInstance()->setSchema();
                         debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n", $moduleName));
                         massinvalidate();
                         self::$injectedModules[$force][$moduleName] = false;
@@ -57,7 +57,7 @@ class Modules
                     }
                     $row = Database::fetchAssoc($result);
                     if (! $row['active']) {
-                        Translator::tlschema();
+                        Translator::getInstance()->setSchema();
                         debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n", $moduleName));
                         self::$injectedModules[$force][$moduleName] = false;
                         return false;
@@ -70,7 +70,7 @@ class Modules
             $installFname   = $moduleName . '_install';
             $uninstallFname = $moduleName . '_uninstall';
             if (! function_exists($installFname) || ! function_exists($uninstallFname)) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
                 self::$injectedModules[$force][$moduleName] = false;
                 return false;
             }
@@ -93,7 +93,7 @@ class Modules
                 }
                 if (! self::checkRequirements($info['requires'])) {
                     self::$injectedModules[$force][$moduleName] = false;
-                    Translator::tlschema();
+                    Translator::getInstance()->setSchema();
                     output_notl("`n`3Module `#%s`3 does not meet its prerequisites.`n", $moduleName);
                     return false;
                 }
@@ -146,7 +146,7 @@ class Modules
                     }
                 }
             }
-            Translator::tlschema();
+            Translator::getInstance()->setSchema();
             self::$injectedModules[$force][$moduleName] = true;
             return true;
         }
@@ -462,7 +462,7 @@ class Modules
 
             if (self::inject($row['modulename'], $allowInactive)) {
                 $oldnavsection = $navsection;
-                Translator::tlschema('module-' . $row['modulename']);
+                Translator::getInstance()->setSchema('module-' . $row['modulename']);
 
                 if (!array_key_exists('whenactive', $row)) {
                     $row['whenactive'] = '';
@@ -494,7 +494,7 @@ class Modules
 
                     $args       = $res;
                     $navsection = $oldnavsection;
-                    Translator::tlschema();
+                    Translator::getInstance()->setSchema();
                 }
             }
         }
@@ -982,9 +982,9 @@ class Modules
         if (self::inject($shortname, true, $withDb)) {
             $fname = $shortname . '_getmoduleinfo';
             if (function_exists($fname)) {
-                Translator::tlschema("module-$shortname");
+                Translator::getInstance()->setSchema("module-$shortname");
                 $moduleinfo = $fname();
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
                 if (!isset($moduleinfo['name']) || !isset($moduleinfo['category']) || !isset($moduleinfo['author']) || !isset($moduleinfo['version'])) {
                     $ns = Translator::translateInline('Not specified', 'common');
                 }
@@ -1227,9 +1227,9 @@ class Modules
                 }
                 if ($chance > $sum && $chance <= $sum + $event['normchance']) {
                     $_POST['i_am_a_hack'] = 'true';
-                    Translator::tlschema('events');
+                    Translator::getInstance()->setSchema('events');
                     output('`^`c`bSomething Special!`c`b`0');
-                    Translator::tlschema();
+                    Translator::getInstance()->setSchema();
                     $op = httpget('op');
                     httpset('op', '');
                     self::doEvent($eventtype, $event['modulename'], false, $baseLink);
@@ -1262,10 +1262,10 @@ class Modules
         $_POST['i_am_a_hack'] = 'true';
         if (self::inject($module, $allowinactive)) {
             $oldnavsection = $navsection;
-            Translator::tlschema("module-$module");
+            Translator::getInstance()->setSchema("module-$module");
             $fname = $module . '_runevent';
             $fname($type, $baseLink);
-            Translator::tlschema();
+            Translator::getInstance()->setSchema();
             HookHandler::hook("runevent_$module", ['type' => $type, 'baselink' => $baseLink, 'get' => httpallget(), 'post' => httpallpost()]);
             $navsection = $oldnavsection;
         }
@@ -1303,7 +1303,7 @@ class Modules
 
         usort($events, [self::class, 'eventSort']);
 
-        tlschema('events');
+        Translator::getInstance()->setSchema('events');
         output("`n`nSpecial event triggers:`n");
         $name    = Translator::translateInline('Name');
         $rchance = Translator::translateInline('Raw Chance');
@@ -1390,9 +1390,9 @@ class Modules
             while ($row = Database::fetchAssoc($result)) {
                 $data[$row['setting']] = $row['value'];
             }
-            Translator::tlschema("module-$module");
+            Translator::getInstance()->setSchema("module-$module");
             Forms::showForm($msettings, $data);
-            Translator::tlschema();
+            Translator::getInstance()->setSchema();
         }
     }
 

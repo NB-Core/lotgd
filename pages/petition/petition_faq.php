@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Lotgd\Translator;
 use Lotgd\Page\Header;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
-Translator::tlschema('faq');
+Translator::getInstance()->setSchema('faq');
 Header::popupHeader("Frequently Asked Questions (FAQ)");
 $output->output("`^Welcome to Legend of the Green Dragon.`n`n");
 $output->output("`@You wake up one day, and you're in a village for some reason.");

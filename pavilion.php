@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\Translator;
 
 require_once 'common.php';
 require_once 'lib/villagenav.php';
@@ -9,7 +10,7 @@ require_once 'lib/villagenav.php';
 // addnews ready
 // mail ready
 
-tlschema('pavilion');
+Translator::getInstance()->setSchema('pavilion');
 Commentary::addCommentary();
 checkday();
 

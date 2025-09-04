@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // addnews ready
 use Lotgd\Forms;
@@ -19,7 +20,7 @@ if ($skin !== '' && Template::isValidTemplate($skin)) {
 
 require_once("lib/villagenav.php");
 
-tlschema("prefs");
+Translator::getInstance()->setSchema("prefs");
 
 require_once("lib/is_email.php");
 require_once("lib/sanitize.php");

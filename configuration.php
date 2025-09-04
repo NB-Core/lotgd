@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -18,7 +19,7 @@ $settings_extended = new Settings('settings_extended');
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-tlschema("configuration");
+Translator::getInstance()->setSchema("configuration");
 
 $op = httpget('op');
 $module = httpget('module');
@@ -234,9 +235,9 @@ switch ($type_setting) {
                             }
                             rawoutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);
                             addnav("", "configuration.php?op=modulesettings&module=$module&save=1");
-                            tlschema("module-$module");
+                            Translator::getInstance()->setSchema("module-$module");
                             Forms::showForm($msettings, $module_settings[$mostrecentmodule]);
-                            tlschema();
+                            Translator::getInstance()->setSchema();
                             rawoutput("</form>", true);
                         } else {
                             output("The %s module does not appear to define any module settings.", $module);
@@ -304,7 +305,7 @@ switch ($type_setting) {
                         $off += 86400;
                     }
                     $x = strtotime("+" . $off . " secs");
-                    $str = sprintf_translate(
+                    $str = Translator::getInstance()->sprintfTranslate(
                         "In %s at %s (+%s)",
                         reltime($x),
                         date("h:i a", $x),

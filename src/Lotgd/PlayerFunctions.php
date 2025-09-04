@@ -11,6 +11,7 @@ use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class PlayerFunctions
 {
@@ -116,7 +117,7 @@ class PlayerFunctions
         $weapondmg = (int)$user['weapondmg'];
         $levelbonus = (int)$user['level'] - 1;
         $miscbonus -= $weapondmg + $levelbonus;
-        $explained = sprintf_translate('%s STR + %s SPD + %s WIS+ %s INT + %s Weapon + %s Train + %s MISC ', $strbonus, $speedbonus, $wisdombonus, $intbonus, $weapondmg, $levelbonus, $miscbonus);
+        $explained = Translator::getInstance()->sprintfTranslate('%s STR + %s SPD + %s WIS+ %s INT + %s Weapon + %s Train + %s MISC ', $strbonus, $speedbonus, $wisdombonus, $intbonus, $weapondmg, $levelbonus, $miscbonus);
         return $explained;
     }
 
@@ -164,7 +165,7 @@ class PlayerFunctions
         $armordef = (int)$user['armordef'];
         $levelbonus = (int)$user['level'] - 1;
         $miscbonus -= $armordef + $levelbonus;
-        $explained = sprintf_translate('%s WIS + %s CON + %s SPD + %s Armor + %s Train + %s MISC ', $wisdombonus, $constbonus, $speedbonus, $armordef, $levelbonus, $miscbonus);
+        $explained = Translator::getInstance()->sprintfTranslate('%s WIS + %s CON + %s SPD + %s Armor + %s Train + %s MISC ', $wisdombonus, $constbonus, $speedbonus, $armordef, $levelbonus, $miscbonus);
         return $explained;
     }
 

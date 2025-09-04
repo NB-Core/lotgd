@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // addnews ready
 // translator ready
@@ -12,7 +13,7 @@ require_once("lib/http.php");
 require_once("lib/events.php");
 use Lotgd\Battle;
 
-tlschema("forest");
+Translator::getInstance()->setSchema("forest");
 
 $fight = false;
 page_header("The Forest");

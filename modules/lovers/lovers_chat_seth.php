@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 function lovers_chat_seth()
 {
     global $session;
@@ -24,12 +25,12 @@ function lovers_chat_seth()
             case -2:
             case -1:
             case 0:
-                        $msg = sprintf_translate("You make me glad I'm not attracted to %s!", $attractedto);
+                        $msg = Translator::getInstance()->sprintfTranslate("You make me glad I'm not attracted to %s!", $attractedto);
                 break;
             case 1:
             case 2:
             case 3:
-                    $msg = sprintf_translate("I've seen some handsome %s in my day, but I'm afraid you aren't one of them.", $attractedto);
+                    $msg = Translator::getInstance()->sprintfTranslate("I've seen some handsome %s in my day, but I'm afraid you aren't one of them.", $attractedto);
                 break;
             case 4:
             case 5:
@@ -54,10 +55,10 @@ function lovers_chat_seth()
             case 16:
             case 17:
             case 18:
-                    $msg = sprintf_translate("Few %s would be able to resist you!", $sexuality);
+                    $msg = Translator::getInstance()->sprintfTranslate("Few %s would be able to resist you!", $sexuality);
                 break;
             default:
-                $msg = sprintf_translate("I hate you, why, you are simply one of the most handsome %s ever!", $attractedto);
+                $msg = Translator::getInstance()->sprintfTranslate("I hate you, why, you are simply one of the most handsome %s ever!", $attractedto);
         }
         output("Finally he reaches a conclusion and states, \"%s`0\"", $msg);
     }

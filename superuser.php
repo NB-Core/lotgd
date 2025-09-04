@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -14,7 +15,7 @@ require_once("lib/http.php");
 
 SuAccess::check(0xFFFFFFFF & ~ SU_DOESNT_GIVE_GROTTO);
 Commentary::addCommentary();
-tlschema("superuser");
+Translator::getInstance()->setSchema("superuser");
 
 SuperuserNav::render();
 addnav("Q?`%Quit`0 to the heavens", "login.php?op=logout", true);
@@ -41,7 +42,7 @@ $lines = modulehook("superuser-headlines", array());
 output_notl("`c");
 foreach ($lines as $line) {
     //output it like an announcement, if any argument is given, automatically(!) centered
-    //ATTENTION! pre-translate your stuff in your own schema with translate_inline or sprintf_translate!
+    //ATTENTION! pre-translate your stuff in your own schema with translate_inline or Translator::getInstance()->sprintfTranslate()!
     if (is_array($line)) {
         call_user_func_array('output_notl', $line);
     } else {

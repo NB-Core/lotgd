@@ -9,12 +9,12 @@ declare(strict_types=1);
 namespace Lotgd;
 use Lotgd\Settings;
 
-use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
 use Lotgd\Mail;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class Pvp
 {
@@ -323,7 +323,7 @@ class Pvp
 
         $pvp = HookHandler::hook('pvpmodifytargets', $pvp);
 
-        tlschema('pvp');
+        Translator::getInstance()->setSchema('pvp');
         $n = Translator::translateInline('Name');
         $l = Translator::translateInline('Level');
         $loc = Translator::translateInline('Location');
@@ -412,6 +412,6 @@ class Pvp
                 }
             }
         }
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 }

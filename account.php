@@ -8,6 +8,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -15,7 +16,7 @@ use Lotgd\Nav\VillageNav;
 require_once("common.php");
 
 
-tlschema("account");
+Translator::getInstance()->setSchema("account");
 
 Header::pageHeader("Account Information");
 Commentary::addCommentary();
@@ -72,6 +73,6 @@ foreach ($stats as $entry) {
 rawoutput("</table>");
 
 
-tlschema();
+Translator::getInstance()->setSchema();
 
 Footer::pageFooter();

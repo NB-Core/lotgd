@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
@@ -46,7 +47,7 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
         // Execute the module run function and measure execution time
         $starttime = DateTime::getMicroTime();
     $fname = $mostrecentmodule . "_run";
-    tlschema("module-$mostrecentmodule");
+    Translator::getInstance()->setSchema("module-$mostrecentmodule");
     $fname();
         $endtime = DateTime::getMicroTime();
     if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
@@ -60,12 +61,12 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
         //remember, this gets only called if you're a user with debug output triggering this!
                 Modules::hook("modules_slowmodule", $stats);
     }
-    tlschema();
+    Translator::getInstance()->setSchema();
 } else {
         // The requested module was not found; redirect appropriately
         ForcedNavigation::doForcedNav(false, false);
 
-        tlschema("badnav");
+        Translator::getInstance()->setSchema("badnav");
 
         page_header("Error");
     if ($session['user']['loggedin']) {

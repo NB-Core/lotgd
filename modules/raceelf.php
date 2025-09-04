@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
@@ -147,15 +148,15 @@ function raceelf_dohook($hookname,$args){
 		break;
 	case "moderate":
 		if (is_module_active("cities")) {
-			tlschema("commentary");
-			$args["village-$race"]=sprintf_translate("City of %s", $city);
-			tlschema();
+			Translator::getInstance()->setSchema("commentary");
+			$args["village-$race"]=Translator::getInstance()->sprintfTranslate("City of %s", $city);
+			Translator::getInstance()->setSchema();
 		}
 		break;
 	case "travel":
 		$capital = getsetting("villagename", LOCATION_FIELDS);
 		$hotkey = substr($city, 0, 1);
-		tlschema("module-cities");
+		Translator::getInstance()->setSchema("module-cities");
 		if ($session['user']['location']==$capital){
 			addnav("Safer Travel");
 			addnav(array("%s?Go to %s", $hotkey, $city),"runmodule.php?module=cities&op=travel&city=$city");
@@ -167,7 +168,7 @@ function raceelf_dohook($hookname,$args){
 			addnav("Superuser");
 			addnav(array("%s?Go to %s", $hotkey, $city),"runmodule.php?module=cities&op=travel&city=$city&su=1");
 		}
-		tlschema();
+		Translator::getInstance()->setSchema();
 		break;	
 	case "villagetext":
 		raceelf_checkcity();

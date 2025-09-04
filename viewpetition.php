@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -12,7 +13,6 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
-use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -20,7 +20,7 @@ use Lotgd\Translator;
 
 require_once("common.php");
 
-Translator::tlschema('petition');
+Translator::getInstance()->setSchema('petition');
 
 SuAccess::check(SU_EDIT_PETITIONS);
 

@@ -8,13 +8,14 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
 use Lotgd\DateTime;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once 'common.php';
 
-tlschema('rock');
+Translator::getInstance()->setSchema('rock');
 
 // This idea is Imusade's from lotgd.net
 if (

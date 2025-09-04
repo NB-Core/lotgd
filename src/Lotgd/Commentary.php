@@ -6,9 +6,9 @@ namespace Lotgd;
 use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
-use Lotgd\Translator;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class Commentary
 {
@@ -26,11 +26,14 @@ class Commentary
         if (is_array(self::$comsecs) && count(self::$comsecs)) {
             return self::$comsecs;
         }
+      
         $vname = $settings->getSetting('villagename', LOCATION_FIELDS);
         $iname = $settings->getSetting('innname', LOCATION_INN);
-        tlschema('commentary');
-        self::$comsecs['village'] = sprintf_translate('%s Square', $vname);
-        if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
+        $translator = Translator::getInstance();
+        $translator->setSchema('commentary');
+        self::$comsecs['village'] = $translator->sprintfTranslate('%s Square', $vname);
+
+      if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
             self::$comsecs['superuser'] = Translator::translateInline('Grotto');
         }
         self::$comsecs['shade'] = Translator::translateInline('Land of the Shades');
@@ -44,7 +47,7 @@ class Commentary
         if ($settings->getSetting('betaperplayer', 1) == 1 && @file_exists('pavilion.php')) {
             self::$comsecs['beta'] = Translator::translateInline('Pavilion');
         }
-        tlschema();
+        $translator->setSchema();
         self::$comsecs = HookHandler::hook('moderate', self::$comsecs);
         rawoutput(tlbutton_clear());
         return self::$comsecs;
@@ -198,7 +201,7 @@ SQL;
         }
 
         $comment = stripslashes($comment);
-        tlschema('commentary');
+        Translator::getInstance()->setSchema('commentary');
         $doublepost = 0;
 
         if ($comment === '') {
@@ -229,7 +232,7 @@ SQL;
             $doublepost = self::persistComment($result, $commentary, $authorId, $section);
         }
 
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 
     /**
@@ -271,9 +274,9 @@ SQL;
         $commentary = $args['commentline'];
         $talkline = $args['commenttalk'];
 
-        tlschema($schema);
+        Translator::getInstance()->setSchema($schema);
         $talkline = Translator::translateInline($talkline);
-        tlschema();
+        Translator::getInstance()->setSchema();
 
         if (Settings::getInstance()->getSetting('soap', 1)) {
             $commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'", '\\1 \\2', $commentary);
@@ -516,7 +519,7 @@ SQL;
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
-        tlschema('commentary');
+        Translator::getInstance()->setSchema('commentary');
 
         $nobios = ['motd' => true];
         if (!array_key_exists($scriptname, $nobios)) {
@@ -704,7 +707,7 @@ SQL;
         } else {
             output_notl("$next $lastu", true);
         }
-        tlschema();
+        Translator::getInstance()->setSchema();
         if ($needclose) {
             HookHandler::hook('}collapse');
         }
@@ -920,7 +923,7 @@ SQL;
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
-        tlschema("commentary");
+        Translator::getInstance()->setSchema("commentary");
 
         $settings = Settings::getInstance();
 
@@ -997,6 +1000,6 @@ SQL;
                 output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
         }
         rawoutput("<div id='previewtext'></div></form>");
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 }

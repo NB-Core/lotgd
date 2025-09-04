@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Translator;
 
 require_once 'common.php';
 require_once 'lib/http.php';
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-tlschema('logviewer');
+Translator::getInstance()->setSchema('logviewer');
 
 page_header('Log Viewer');
 addnav('Navigation');

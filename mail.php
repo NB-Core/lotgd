@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
@@ -7,7 +8,7 @@ define("OVERRIDE_FORCED_NAV", true);
 require_once("common.php");
 use Lotgd\Mail;
 
-tlschema("mail");
+Translator::getInstance()->setSchema("mail");
 $args = modulehook("header-mail", array("done" => 0));
 
 

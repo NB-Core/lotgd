@@ -5,9 +5,9 @@ declare(strict_types=1);
 use Lotgd\PlayerFunctions;
 use Lotgd\Forms;
 use Lotgd\Nav;
-use Lotgd\Translator;
 use Lotgd\Modules;
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 $result = Database::query("SELECT * FROM " . Database::prefix("accounts") . " WHERE acctid=" . (int)$userid);
 $row = Database::fetchAssoc($result);
@@ -110,9 +110,9 @@ if (httpget("subop") == "") {
         }
         $output->rawOutput("<form action='user.php?op=savemodule&module=$module&userid=$userid$returnpetition' method='POST'>");
         Nav::add("", "user.php?op=savemodule&module=$module&userid=$userid$returnpetition");
-        tlschema("module-$module");
+        Translator::getInstance()->setSchema("module-$module");
         Forms::showForm($msettings, $data);
-        tlschema();
+        Translator::getInstance()->setSchema();
         $output->rawOutput("</form>");
     } else {
         $output->output("The $module module doesn't appear to define any user preferences.");

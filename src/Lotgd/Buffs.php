@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Substitute;
-use Lotgd\Translator;
 use Lotgd\Modules\HookHandler;
 use Lotgd\CreateString;
 use Lotgd\Output;
 use Lotgd\PlayerFunctions;
 use Lotgd\Settings;
+use Lotgd\Translator;
 
 class Buffs
 {
@@ -297,7 +297,7 @@ class Buffs
         global $session, $badguy, $count;
         $output = Output::getInstance();
 
-        Translator::tlschema('buffs');
+        Translator::getInstance()->setSchema('buffs');
         reset($session['bufflist']);
 
         $result = [
@@ -321,7 +321,7 @@ class Buffs
             }
 
             if ($buff['schema']) {
-                Translator::tlschema($buff['schema']);
+                Translator::getInstance()->setSchema($buff['schema']);
             }
 
             if (isset($buff['startmsg'])) {
@@ -479,9 +479,9 @@ class Buffs
                                 $output->output($msg);
                                 if ($hptoregen < 0 && $companion['hitpoints'] <= 0) {
                                     if (isset($companion['dyingtext'])) {
-                                        Translator::tlschema('battle');
+                                        Translator::getInstance()->setSchema('battle');
                                         $output->output($companion['dyingtext']);
-                                        Translator::tlschema();
+                                        Translator::getInstance()->setSchema();
                                     }
                                     if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
                                         $companion['hitpoints'] = 0;
@@ -559,10 +559,10 @@ class Buffs
                 }
             }
             if ($buff['schema']) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
 
         return $result;
     }
@@ -571,13 +571,13 @@ class Buffs
     {
         global $session, $badguy;
         $output = Output::getInstance();
-        Translator::tlschema('buffs');
+        Translator::getInstance()->setSchema('buffs');
         foreach ($ltaps as $buff) {
             if (isset($buff['suspended']) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                Translator::tlschema($buff['schema']);
+                Translator::getInstance()->setSchema($buff['schema']);
             }
             $healhp = $session['user']['maxhitpoints'] - $session['user']['hitpoints'];
             if ($healhp < 0) {
@@ -611,23 +611,23 @@ class Buffs
                 $output->output($msg);
             }
             if ($buff['schema']) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
     }
 
     public static function processDmgshield($dshield, $damage)
     {
         global $session, $badguy;
         $output = Output::getInstance();
-        Translator::tlschema('buffs');
+        Translator::getInstance()->setSchema('buffs');
         foreach ($dshield as $buff) {
             if (isset($buff['suspended']) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                Translator::tlschema($buff['schema']);
+                Translator::getInstance()->setSchema($buff['schema']);
             }
             $realdamage = round($damage * $buff['damageshield'], 0);
             if ($realdamage < 0) {
@@ -662,23 +662,23 @@ class Buffs
                 $output->output($msg);
             }
             if ($buff['schema']) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
     }
 
     public static function expireBuffs()
     {
         global $session, $badguy;
         $output = Output::getInstance();
-        Translator::tlschema('buffs');
+        Translator::getInstance()->setSchema('buffs');
         foreach ($session['bufflist'] as $key => $buff) {
             if (array_key_exists('suspended', $buff) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                Translator::tlschema($buff['schema']);
+                Translator::getInstance()->setSchema($buff['schema']);
             }
             if (array_key_exists('used', $buff) && $buff['used']) {
                 $session['bufflist'][$key]['used'] = 0;
@@ -701,24 +701,24 @@ class Buffs
                 }
             }
             if ($buff['schema']) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
     }
 
     public static function expireBuffsAfterbattle()
     {
         global $session, $badguy;
         $output = Output::getInstance();
-        Translator::tlschema('buffs');
+        Translator::getInstance()->setSchema('buffs');
         reset($session['bufflist']);
         foreach ($session['bufflist'] as $key => $buff) {
             if (array_key_exists('suspended', $buff) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                Translator::tlschema($buff['schema']);
+                Translator::getInstance()->setSchema($buff['schema']);
             }
             if (array_key_exists('used', $buff) && $buff['used']) {
                 if (array_key_exists('expireafterfight', $buff) && (int) $buff['expireafterfight'] == 1) {
@@ -737,9 +737,9 @@ class Buffs
                 }
             }
             if ($buff['schema']) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
     }
 }

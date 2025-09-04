@@ -13,9 +13,9 @@ use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\HolidayText;
 use Lotgd\Commentary;
-use Lotgd\Translator;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class Moderate
 {
@@ -191,7 +191,7 @@ class Moderate
         if ($schema === null) {
             $schema = Translator::getNamespace();
         }
-        tlschema('commentary');
+        Translator::getInstance()->setSchema('commentary');
 
         $scriptname = ScriptName::current() . '.php';
 
@@ -484,7 +484,7 @@ class Moderate
 
         // Render pagination navigation for the comment block
         self::showNavLinks($section, $limit, $cid, $rowcount, $jump, $com, $REQUEST_URI, $newadded);
-        tlschema();
+        Translator::getInstance()->setSchema();
         if ($needclose) {
             HookHandler::hook('}collapse');
         }

@@ -9,15 +9,15 @@ use Lotgd\Http;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
-use Lotgd\Translator;
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // addnews ready
 // mail ready
 // translator ready
 require_once("common.php");
 
-Translator::tlschema("deathmessage");
+Translator::getInstance()->setSchema("deathmessage");
 
 SuAccess::check(SU_EDIT_CREATURES);
 

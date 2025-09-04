@@ -2,6 +2,7 @@
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Translator;
 
 // addnews ready
 // translator ready
@@ -11,7 +12,7 @@ require_once("lib/http.php");
 require_once("lib/sanitize.php");
 use Lotgd\ModuleManager;
 SuAccess::check(SU_MANAGE_MODULES);
-tlschema("modulemanage");
+Translator::getInstance()->setSchema("modulemanage");
 
 page_header("Module Manager");
 

@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\Buffs;
 use Lotgd\MountName;
@@ -12,7 +13,9 @@ require_once("lib/http.php");
 require_once("lib/sanitize.php");
 require_once("lib/villagenav.php");
 
-tlschema('stables');
+$translator = Translator::getInstance();
+
+$translator->setSchema('stables');
 
 $basetext = array(
     "title" => "Merick's Stables",
@@ -67,9 +70,9 @@ $basetext['schemas'] = $schemas;
 $texts = modulehook("stabletext", $basetext);
 $schemas = $texts['schemas'];
 
-tlschema($schemas['title']);
+$translator->setSchema($schemas['title']);
 page_header($texts['title']);
-tlschema();
+$translator->setSchema();
 
 addnav("Other");
 villagenav();
@@ -95,29 +98,29 @@ global $playermount;
 
 if ($op == "") {
     checkday();
-    tlschema($schemas['desc']);
+    $translator->setSchema($schemas['desc']);
     if (is_array($texts['desc'])) {
         foreach ($texts['desc'] as $description) {
-            output_notl(sprintf_translate($description));
+            output_notl($translator->sprintfTranslate($description));
         }
     } else {
         output($texts['desc']);
     }
-    tlschema();
+    $translator->setSchema();
     modulehook("stables-desc");
 } elseif ($op == "examine") {
     $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
     $result = Database::queryCached($sql, "mountdata-$id", 3600);
     if (Database::numRows($result) <= 0) {
-        tlschema($schemas['nosuchbeast']);
+        $translator->setSchema($schemas['nosuchbeast']);
         output($texts['nosuchbeast']);
-        tlschema();
+        $translator->setSchema();
     } else {
         // Idea taken from Robert of dragonprime.cawsquad.net
         $t = e_rand(0, count($texts['finebeast']) - 1);
-        tlschema($schemas['finebeast']);
+        $translator->setSchema($schemas['finebeast']);
         output($texts['finebeast'][$t]);
-        tlschema();
+        $translator->setSchema();
         $mount = Database::fetchAssoc($result);
         $mount = modulehook("mount-modifycosts", $mount);
         output("`7Creature: `&%s`0`n", $mount['mountname']);
@@ -128,12 +131,12 @@ if ($op == "") {
     }
 } elseif ($op == 'buymount') {
     if ($session['user']['hashorse']) {
-        tlschema($schemas['confirmsale']);
+        $translator->setSchema($schemas['confirmsale']);
         output(
             $texts['confirmsale'],
             translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"])
         );
-        tlschema();
+        $translator->setSchema();
         addnav("Confirm trade");
         addnav("Yes", "stables.php?op=confirmbuy&id=$id");
         addnav("No", "stables.php");
@@ -147,9 +150,9 @@ if ($op == 'confirmbuy') {
     $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
     $result = Database::queryCached($sql, "mountdata-$id", 3600);
     if (Database::numRows($result) <= 0) {
-        tlschema($schemas['nosuchbeast']);
+        $translator->setSchema($schemas['nosuchbeast']);
         output($texts['nosuchbeast']);
-        tlschema();
+        $translator->setSchema();
     } else {
         $mount = Database::fetchAssoc($result);
         $mount = modulehook("mount-modifycosts", $mount);
@@ -157,18 +160,18 @@ if ($op == 'confirmbuy') {
             ($session['user']['gold'] + $repaygold) < $mount['mountcostgold'] ||
             ($session['user']['gems'] + $repaygems) < $mount['mountcostgems']
         ) {
-            tlschema($schemas['toolittle']);
+            $translator->setSchema($schemas['toolittle']);
             output($texts['toolittle'], $mount['mountname'], $mount['mountcostgold'], $mount['mountcostgems']);
-            tlschema();
+            $translator->setSchema();
         } else {
             if ($session['user']['hashorse'] > 0) {
-                tlschema($schemas['replacemount']);
+                $translator->setSchema($schemas['replacemount']);
                 output($texts['replacemount'], $lcname, $mount['mountname']);
-                tlschema();
+                $translator->setSchema();
             } else {
-                tlschema($schemas['newmount']);
+                $translator->setSchema($schemas['newmount']);
                 output($texts['newmount'], $mount['mountname']);
-                tlschema();
+                $translator->setSchema();
             }
             if (isset($playermount['mountname'])) {
                 $debugmount1 = $playermount['mountname'];
@@ -203,58 +206,58 @@ if ($op == 'confirmbuy') {
     }
 } elseif ($op == 'feed') {
     if (getsetting("allowfeed", 0) == 0) {
-        tlschema($schemas['nofeed']);
+        $translator->setSchema($schemas['nofeed']);
         output(
             $texts['nofeed'],
             translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"])
         );
-        tlschema();
+        $translator->setSchema();
     } elseif ($session['user']['gold'] >= $grubprice) {
         $buff = unserialize($playermount['mountbuff']);
         if ($buff['schema'] == "") {
             $buff['schema'] = "mounts";
         }
         if (isset($session['bufflist']['mount']['rounds']) && $session['bufflist']['mount']['rounds'] == $buff['rounds']) {
-            tlschema($schemas['nothungry']);
+            $translator->setSchema($schemas['nothungry']);
             output($texts['nothungry'], $name);
-            tlschema();
+            $translator->setSchema();
         } else {
             if (isset($session['bufflist']['mount']['rounds']) && $session['bufflist']['mount']['rounds'] > $buff['rounds'] * .5) {
                 $grubprice = round($grubprice / 2, 0);
-                tlschema($schemas['halfhungry']);
+                $translator->setSchema($schemas['halfhungry']);
                 output($texts['halfhungry'], $name, $name, $grubprice);
-                tlschema();
+                $translator->setSchema();
                 $session['user']['gold'] -= $grubprice;
             } else {
                 $session['user']['gold'] -= $grubprice;
-                tlschema($schemas['hungry']);
+                $translator->setSchema($schemas['hungry']);
                 output($texts['hungry'], $name, $name, $grubprice);
-                tlschema();
+                $translator->setSchema();
             }
             debuglog("spent $grubprice feeding their mount");
             Buffs::applyBuff('mount', $buff);
             $session['user']['fedmount'] = 1;
-            tlschema($schemas['mountfull']);
+            $translator->setSchema($schemas['mountfull']);
             output(
                 $texts['mountfull'],
                 translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"]),
                 (isset($playermount['basename']) && $playermount['basename'] ?
                  $playermount['basename'] : $playermount['mountname'])
             );
-            tlschema();
+            $translator->setSchema();
         }
     } else {
-        tlschema($schemas['nofeedgold']);
+        $translator->setSchema($schemas['nofeedgold']);
         output($texts['nofeedgold'], $lcname);
-        tlschema();
+        $translator->setSchema();
     }
 } elseif ($op == 'sellmount') {
-    tlschema($schemas['confirmsale']);
+    $translator->setSchema($schemas['confirmsale']);
     output(
         $texts['confirmsale'],
         translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"])
     );
-    tlschema();
+    $translator->setSchema();
     addnav("Confirm sale");
     addnav("Yes", "stables.php?op=confirmsell");
     addnav("No", "stables.php");
@@ -279,29 +282,29 @@ if ($op == 'confirmbuy') {
         $amtstr .= "%s gems";
     }
     if ($repaygold > 0 && $repaygems > 0) {
-        $amtstr = sprintf_translate($amtstr, $repaygold, $repaygems);
+        $amtstr = $translator->sprintfTranslate($amtstr, $repaygold, $repaygems);
     } elseif ($repaygold > 0) {
-        $amtstr = sprintf_translate($amtstr, $repaygold);
+        $amtstr = $translator->sprintfTranslate($amtstr, $repaygold);
     } else {
-        $amtstr = sprintf_translate($amtstr, $repaygems);
+        $amtstr = $translator->sprintfTranslate($amtstr, $repaygems);
     }
 
-    tlschema($schemas['mountsold']);
+    $translator->setSchema($schemas['mountsold']);
     output(
         $texts['mountsold'],
         (isset($playermount['newname']) ?
                $playermount['newname'] : $playermount['mountname']),
         $amtstr
     );
-    tlschema();
+    $translator->setSchema();
 }
 
 if ($confirm == 0) {
     if ($session['user']['hashorse'] > 0) {
         addnav(array("%s", color_sanitize($name)));
-        tlschema($schemas['offer']);
+        $translator->setSchema($schemas['offer']);
         output($texts['offer'], $repaygold, $repaygems, $lcname);
-        tlschema();
+        $translator->setSchema();
         addnav(array("Sell %s`0", $lcname), "stables.php?op=sellmount");
         if (getsetting("allowfeed", 0) && $session['user']['fedmount'] == 0) {
             addnav(

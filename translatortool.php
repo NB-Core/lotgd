@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -9,7 +10,7 @@ use Lotgd\Nav\SuperuserNav;
 // mail ready
 define("OVERRIDE_FORCED_NAV", true);
 require_once("common.php");
-tlschema("translatortool");
+Translator::getInstance()->setSchema("translatortool");
 
 SuAccess::check(SU_IS_TRANSLATOR);
 $op = httpget("op");

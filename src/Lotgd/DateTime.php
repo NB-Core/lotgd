@@ -80,7 +80,7 @@ class DateTime
     public static function relativeDate(string $indate): string
     {
         $laston = round((strtotime('now') - strtotime($indate)) / 86400, 0) . ' days';
-        Translator::tlschema('datetime');
+        Translator::getInstance()->setSchema('datetime');
         if (substr($laston, 0, 2) == '1 ') {
             $laston = Translator::translateInline('1 day');
         } elseif (date('Y-m-d', strtotime($laston)) == date('Y-m-d')) {
@@ -93,7 +93,7 @@ class DateTime
             $laston = Translator::sprintfTranslate('%s days', round((strtotime('now') - strtotime($indate)) / 86400, 0));
             Output::getInstance()->rawOutput(Translator::tlbuttonClear());
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
         return $laston;
     }
 

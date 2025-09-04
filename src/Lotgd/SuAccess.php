@@ -11,6 +11,7 @@ use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class SuAccess
 {
@@ -39,9 +40,9 @@ class SuAccess
             page_header('Oops.');
             $output->output("Looks like you're probably an admin with appropriate permissions to perform this action, but a module is preventing you from doing so.");
             $output->output('Sorry about that!');
-            tlschema('nav');
+            Translator::getInstance()->setSchema('nav');
             addnav('M?Return to the Mundane', 'village.php');
-            tlschema();
+            Translator::getInstance()->setSchema();
             page_footer();
         }
         clearnav();

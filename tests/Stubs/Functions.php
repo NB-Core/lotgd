@@ -80,13 +80,6 @@ namespace {
         }
     }
 
-    if (!function_exists('tlschema')) {
-        function tlschema($schema = false): void
-        {
-            \Lotgd\Translator::tlschema($schema);
-        }
-    }
-
     if (!function_exists('getsetting')) {
         function getsetting($name, $default)
         {
