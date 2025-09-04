@@ -211,7 +211,6 @@ class PageParts
     public static function charStats(): string
     {
         global $session, $playermount, $companions;
-        $settings = Settings::getInstance();
         if (defined("IS_INSTALLER") && IS_INSTALLER === true) {
             return "";
         }
@@ -400,8 +399,8 @@ class PageParts
             $ret = "";
             $mode = (int) getsetting('homeonline_mode', 0);
             $minutesSetting = (int) getsetting('homeonline_minutes', 15);
-            if (isset($settings)) {
-                $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
+            if (Settings::hasInstance()) {
+                $loginTimeout = Settings::getInstance()->getSetting("LOGINTIMEOUT", 900);
             } else {
                 $loginTimeout = 90; //default to 90 seconds if not set
             }
@@ -444,7 +443,8 @@ class PageParts
                         $ret .= appoencode(Translator::translateInline("`iNone`i"));
                     }
                 }
-                if (isset($settings)) {
+                if (Settings::hasInstance()) {
+                    $settings = Settings::getInstance();
                     $settings->saveSetting("OnlineCount", $onlinecount);
                     $settings->saveSetting("OnlineCountLast", strtotime("now"));
                 }
