@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Caught class Lotgd\\\\Async\\\\Handler\\\\Exception not found\\.$#"
-			count: 3
-			path: src/Lotgd/Async/Handler/Commentary.php
-
-
-		-
 			message: "#^Variable \\$badguyatkmod might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Battle.php

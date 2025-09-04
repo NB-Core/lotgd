@@ -9,6 +9,7 @@ use Jaxon\Response\Response;
 use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Util\ScriptName;
 use Lotgd\Output;
+use Lotgd\Async\Handler\Exception;
 use function Jaxon\jaxon;
 
 /**
@@ -99,6 +100,8 @@ class Commentary
 
     /**
      * Combined polling for mail, timeout and commentary updates.
+     *
+     * @throws Exception When any sub-handler fails
      */
     public function pollUpdates($section = null, $lastId = null): Response
     {
@@ -118,20 +121,20 @@ class Commentary
         
         try {
             $response->appendResponse((new Mail())->mailStatus(true));
-        } catch (Exception $e) {
-            error_log("AJAX polling: Mail handler error - " . $e->getMessage());
+        } catch (\Throwable $e) {
+            throw new Exception('AJAX polling: Mail handler error', 0, $e);
         }
-        
+
         try {
             $response->appendResponse((new Timeout())->timeoutStatus(true));
-        } catch (Exception $e) {
-            error_log("AJAX polling: Timeout handler error - " . $e->getMessage());
+        } catch (\Throwable $e) {
+            throw new Exception('AJAX polling: Timeout handler error', 0, $e);
         }
-        
+
         try {
             $response->appendResponse($this->commentaryRefresh($section, $lastId));
-        } catch (Exception $e) {
-            error_log("AJAX polling: Commentary handler error - " . $e->getMessage());
+        } catch (\Throwable $e) {
+            throw new Exception('AJAX polling: Commentary handler error', 0, $e);
         }
         
         return $response;
