@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -15,7 +16,7 @@ require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-tlschema("gamelog");
+Translator::getInstance()->setSchema("gamelog");
 
 page_header("Game Log");
 addnav("Navigation");

@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -13,7 +14,7 @@ require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_DONATIONS);
 
-tlschema("donation");
+Translator::getInstance()->setSchema("donation");
 
 page_header("Donator's Page");
 SuperuserNav::render();
@@ -22,9 +23,9 @@ SuperuserNav::render();
 $ret = httpget('ret');
 $return = cmd_sanitize($ret);
 $return = basename($return);
-tlschema("nav");
+Translator::getInstance()->setSchema("nav");
 addnav("Return whence you came", $return);
-tlschema();
+Translator::getInstance()->setSchema();
 
 $add = translate_inline("Add Donation");
 rawoutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>");
@@ -115,7 +116,7 @@ if ($op == "add2") {
     } else {
         debuglog("Received donator points -- Manually assigned, not based on a known dollar donation [$reason]", false, $id, "donation", $amt, false);
     }
-    Mail::systemMail($id, "Donation Points Added", sprintf_translate("`2You have received %s donation points for %s.", $points, $reason));
+    Mail::systemMail($id, "Donation Points Added", Translator::getInstance()->sprintfTranslate("`2You have received %s donation points for %s.", $points, $reason));
     httpset('op', "");
     $op = "";
 }

@@ -21,13 +21,13 @@ use Lotgd\Accounts;
 use Lotgd\PlayerFunctions;
 use Lotgd\HolidayText;
 use Lotgd\Template;
-use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
 use Lotgd\Output;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class PageParts
 {
@@ -272,13 +272,13 @@ class PageParts
                 }
                 // Short circuit if the name is blank
                 if ((isset($val['name']) && $val['name'] > "") || $session['user']['superuser'] & SU_DEBUG_OUTPUT) {
-                    tlschema($val['schema']);
+                    Translator::getInstance()->setSchema($val['schema']);
                     //  if ($val['name']=="")
                     //      $val['name'] = "DEBUG: {$key}";
                     //  removed due to performance reasons. foreach is better with only $val than to have $key ONLY for the short happiness of one debug. much greater performance gain here
                     if (is_array($val['name'])) {
                         $val['name'][0] = str_replace("`%", "`%%", $val['name'][0]);
-                        $val['name'] = call_user_func_array("sprintf_translate", $val['name']);
+                        $val['name'] = Translator::getInstance()->sprintfTranslate(...$val['name']);
                     } else { //in case it's a string
                         $val['name'] = Translator::translateInline($val['name']);
                     }
@@ -292,7 +292,7 @@ class PageParts
                     } else {
                         $buffs .= $output->appoencode("`#{$val['name']}`n", true);
                     }
-                    tlschema();
+                    Translator::getInstance()->setSchema();
                     $buffcount++;
                 }
             }

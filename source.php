@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
@@ -9,7 +10,7 @@ require_once("common.php");
 require_once("lib/errorhandling.php");
 require_once("lib/http.php");
 
-tlschema("source");
+Translator::getInstance()->setSchema("source");
 
 $url = httpget('url');
 if ($url) {

@@ -3,13 +3,32 @@
 declare(strict_types=1);
 
 namespace {
-    if (!function_exists('sprintf_translate')) {
-        function sprintf_translate(string $format, ...$args): string
+}
+
+namespace Lotgd {
+    if (!class_exists(__NAMESPACE__ . '\\Translator')) {
+        class Translator
         {
-            return vsprintf($format, $args);
+            public static function getInstance(): self
+            {
+                return new self();
+            }
+
+            public static function translateInline(string $text): string
+            {
+                return $text;
+            }
+
+            public static function enableTranslation(bool $enable): void
+            {
+            }
+
+            public function sprintfTranslate(string $format, ...$args): string
+            {
+                return vsprintf($format, $args);
+            }
         }
     }
-
 }
 
 namespace Lotgd\Tests\Ajax {

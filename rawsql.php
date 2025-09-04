@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -16,7 +17,7 @@ use Lotgd\Http;
 // mail ready
 require_once 'common.php';
 
-tlschema("rawsql");
+Translator::getInstance()->setSchema("rawsql");
 
 SuAccess::check(SU_RAW_SQL);
 

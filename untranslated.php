@@ -9,6 +9,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -24,7 +25,7 @@ require_once("common.php");
 
 SuAccess::check(SU_IS_TRANSLATOR);
 
-tlschema("untranslated");
+Translator::getInstance()->setSchema("untranslated");
 
 $op = Http::get('op');
 Header::pageHeader("Untranslated Texts");

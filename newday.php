@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\Buffs;
 use Lotgd\Newday;
@@ -16,7 +17,7 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/sanitize.php");
 
-tlschema("newday");
+Translator::getInstance()->setSchema("newday");
 //mass_module_prepare(array("newday-intercept", "newday"));
 modulehook("newday-intercept", array());
 
@@ -160,7 +161,7 @@ if ($dp < $dkills) {
     $tempbuf = unserialize($session['user']['bufflist']);
     $session['user']['bufflist'] = "";
     Buffs::stripAllBuffs();
-    tlschema("buffs");
+    Translator::getInstance()->setSchema("buffs");
     foreach ($tempbuf as $key => $val) {
         if (
             array_key_exists('survivenewday', $val) &&
@@ -168,7 +169,7 @@ if ($dp < $dkills) {
         ) {
             //$session['bufflist'][$key]=$val;
             if (array_key_exists('schema', $val) && $val['schema']) {
-                tlschema($val['schema']);
+                Translator::getInstance()->setSchema($val['schema']);
             }
             Buffs::applyBuff($key, $val);
             if (
@@ -179,11 +180,11 @@ if ($dp < $dkills) {
                 output_notl("`n");
             }
             if (array_key_exists('schema', $val) && $val['schema']) {
-                tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
     }
-    tlschema();
+    Translator::getInstance()->setSchema();
 
     output("`2Hitpoints have been restored to `^%s`2.`n", $session['user']['maxhitpoints']);
 

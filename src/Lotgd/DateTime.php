@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
-use Lotgd\Translator;
 use Lotgd\Settings;
+use Lotgd\Translator;
 
 use const \DATETIME_DATEMIN;
 use const \DATETIME_TODAY;
@@ -77,7 +77,7 @@ class DateTime
     public static function relativeDate(string $indate): string
     {
         $laston = round((strtotime('now') - strtotime($indate)) / 86400, 0) . ' days';
-        Translator::tlschema('datetime');
+        Translator::getInstance()->setSchema('datetime');
         if (substr($laston, 0, 2) == '1 ') {
             $laston = Translator::translateInline('1 day');
         } elseif (date('Y-m-d', strtotime($laston)) == date('Y-m-d')) {
@@ -90,7 +90,7 @@ class DateTime
             $laston = Translator::sprintfTranslate('%s days', round((strtotime('now') - strtotime($indate)) / 86400, 0));
             rawoutput(tlbutton_clear());
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
         return $laston;
     }
 

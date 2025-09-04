@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 /**
  * Core module handling multiple cities and travel events.
  */
@@ -232,14 +233,14 @@ function cities_dohook(string $hookname, array $args): array
             break;
         case "village":
             if ($capital) {
-                tlschema($args['schemas']['fightnav']);
+                Translator::getInstance()->setSchema($args['schemas']['fightnav']);
                 addnav($args['fightnav']);
-                tlschema();
+                Translator::getInstance()->setSchema();
                 addnav("H?Healer's Hut", "healer.php?return=village.php");
             }
-            tlschema($args['schemas']['gatenav']);
+            Translator::getInstance()->setSchema($args['schemas']['gatenav']);
             addnav($args['gatenav']);
-            tlschema();
+            Translator::getInstance()->setSchema();
             addnav("Travel", "runmodule.php?module=cities&op=travel");
             if (get_module_pref("paidcost") > 0) {
                 set_module_pref("paidcost", 0);
@@ -266,10 +267,10 @@ function cities_dohook(string $hookname, array $args): array
             }
             break;
         case "stablelocs":
-            $args[$city] = sprintf_translate("The City of %s", $city);
+            $args[$city] = Translator::getInstance()->sprintfTranslate("The City of %s", $city);
             break;
         case "camplocs":
-            $args[$city] = sprintf_translate("The City of %s", $city);
+            $args[$city] = Translator::getInstance()->sprintfTranslate("The City of %s", $city);
             break;
     }
     return $args;

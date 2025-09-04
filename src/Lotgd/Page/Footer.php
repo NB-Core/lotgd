@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Lotgd\Page;
 
 use Lotgd\PageParts;
-use Lotgd\Translator;
 use Lotgd\Template;
 use Lotgd\TwigTemplate;
 use Lotgd\Sanitize;
@@ -17,6 +16,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Translator;
 
 class Footer
 {
@@ -42,7 +42,7 @@ class Footer
         Buffs::restoreBuffFields();
         Buffs::calculateBuffFields();
 
-        Translator::tlschema('common');
+        Translator::getInstance()->setSchema('common');
 
         $statsOutput = PageParts::charStats();
 
@@ -172,7 +172,7 @@ class Footer
 
         list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, $replacements);
 
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
 
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, [

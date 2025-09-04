@@ -9,6 +9,7 @@ use Lotgd\Http;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -17,7 +18,7 @@ require_once("common.php");
 
 SuAccess::check(SU_IS_TRANSLATOR);
 Commentary::addCommentary();
-tlschema("translatorlounge");
+Translator::getInstance()->setSchema("translatorlounge");
 
 SuperuserNav::render();
 

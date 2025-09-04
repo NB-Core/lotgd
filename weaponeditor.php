@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -13,7 +14,7 @@ require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_EQUIPMENT);
 
-tlschema("weapon");
+Translator::getInstance()->setSchema("weapon");
 
 page_header("Weapon Editor");
 $weaponlevel = (int)httpget("level");

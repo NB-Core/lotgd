@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -15,7 +16,7 @@ require_once("lib/http.php");
 // This must be after common.php for now
 use Lotgd\ServerFunctions;
 
-tlschema("login");
+Translator::getInstance()->setSchema("login");
 translator_setup();
 $op = httpget('op');
 $name = httppost('name');
@@ -114,7 +115,7 @@ if ($name != "") {
                 if ($session['user']['loggedin']) {
                     $link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
 
-                    $str = sprintf_translate("Sending you to %s, have a safe journey", $link);
+                    $str = Translator::getInstance()->sprintfTranslate("Sending you to %s, have a safe journey", $link);
                     // Refresh activity timestamp when resuming a logged in session
                     Database::query(
                         "UPDATE " . Database::prefix('accounts')
@@ -141,7 +142,7 @@ if ($name != "") {
 
                 if (!empty($session['user']['restorepage'])) {
                     $link = "<a href='{$session['user']['restorepage']}'>{$session['user']['restorepage']}</a>";
-                    $msg  = sprintf_translate('Sending you to %s, have a safe journey', $link);
+                    $msg  = Translator::getInstance()->sprintfTranslate('Sending you to %s, have a safe journey', $link);
                     //$session['allowednavs'] = unserialize($session['user']['allowednavs']);
                     // Ensure the restore page is allowed in the next request
                     //\Lotgd\Nav::add('', $session['user']['restorepage']);

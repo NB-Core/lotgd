@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -20,7 +21,7 @@ require_once("lib/is_email.php");
 $settings_extended = new Settings('settings_extended');
 use Lotgd\ServerFunctions;
 
-tlschema("create");
+Translator::getInstance()->setSchema("create");
 
 $trash = getsetting("expiretrashacct", 1);
 $new = getsetting("expirenewacct", 10);

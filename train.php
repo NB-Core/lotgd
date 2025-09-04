@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -16,7 +17,7 @@ require_once("lib/http.php");
 require_once("lib/villagenav.php");
 require_once("lib/experience.php");
 
-tlschema("train");
+Translator::getInstance()->setSchema("train");
 
 page_header("Bluspring's Warrior Training");
 

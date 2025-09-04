@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
-use Lotgd\Translator;
 use Lotgd\Nav;
 use Lotgd\Http;
+use Lotgd\Translator;
 
 $subop = Http::get('subop');
 $none = Translator::translateInline('NONE');
@@ -135,7 +135,7 @@ while ($row = Database::fetchAssoc($result)) {
     $output->rawOutput("</td><td>");
         // "43200" used so will basically round to nearest day rather than floor number of days
 
-    $expire = sprintf_translate(
+    $expire = Translator::getInstance()->sprintfTranslate(
         "%s days",
         round((strtotime($row['banexpire']) + 43200 - strtotime("now")) / 86400, 0)
     );

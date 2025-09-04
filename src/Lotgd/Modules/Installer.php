@@ -49,12 +49,12 @@ class Installer
         if (Modules::inject($module, true)) {
             $fname = $module . '_uninstall';
             output('Running module uninstall script`n');
-            Translator::tlschema("module-{$module}");
+            Translator::getInstance()->setSchema("module-{$module}");
             $returnvalue = $fname();
             if (!$returnvalue) {
                 return false;
             }
-            Translator::tlschema();
+            Translator::getInstance()->setSchema();
 
             $sql = 'DELETE FROM ' . Database::prefix('modules') . " WHERE modulename='$module'";
             Database::query($sql);
@@ -87,12 +87,12 @@ class Installer
         if (Modules::inject($module, true)) {
             $fname = $module . '_uninstall';
             output('Running module uninstall script`n');
-            Translator::tlschema("module-{$module}");
+            Translator::getInstance()->setSchema("module-{$module}");
             $returnvalue = $fname();
             if (!$returnvalue) {
                 return false;
             }
-            Translator::tlschema();
+            Translator::getInstance()->setSchema();
         } else {
             $mostrecentmodule = $module;
         }

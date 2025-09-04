@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\Commentary;
 
@@ -11,7 +12,9 @@ require_once("lib/http.php");
 require_once("lib/events.php");
 require_once("lib/experience.php");
 
-tlschema('village');
+$translator = Translator::getInstance();
+
+$translator->setSchema('village');
 //mass_module_prepare(array("village","validlocation","villagetext","village-desc"));
 // See if the user is in a valid location and if not, put them back to
 // a place which is valid
@@ -112,9 +115,9 @@ $texts = modulehook("villagetext", $origtexts);
 $texts = modulehook("villagetext-{$session['user']['location']}", $texts);
 $schemas = $texts['schemas'];
 
-tlschema($schemas['title']);
+$translator->setSchema($schemas['title']);
 page_header($texts['title']);
-tlschema();
+$translator->setSchema();
 
 Commentary::addCommentary();
 $skipvillagedesc = handle_event("village");
@@ -166,57 +169,57 @@ if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
     }
 }
 
-tlschema($schemas['fields']);
+$translator->setSchema($schemas['fields']);
 addnav($texts['fields']);
 addnav("Q?`%Quit`0 to the fields", "login.php?op=logout", true);
-tlschema();
+$translator->setSchema();
 
-tlschema($schemas['gatenav']);
+$translator->setSchema($schemas['gatenav']);
 addnav($texts['gatenav']);
-tlschema();
+$translator->setSchema();
 
 addnav("F?Forest", "forest.php");
 if (getsetting("pvp", 1)) {
     addnav("S?Slay Other Players", "pvp.php");
 }
 if (getsetting("enablecompanions", true)) {
-    tlschema($schemas['mercenarycamp']);
+    $translator->setSchema($schemas['mercenarycamp']);
     addnav($texts['mercenarycamp'], "mercenarycamp.php");
-    tlschema();
+    $translator->setSchema();
 }
 
-tlschema($schemas['fightnav']);
+$translator->setSchema($schemas['fightnav']);
 addnav($texts['fightnav']);
-tlschema();
+$translator->setSchema();
 addnav("u?Bluspring's Warrior Training", "train.php");
 if (@file_exists("lodge.php")) {
     addnav("J?JCP's Hunter Lodge", "lodge.php");
 }
 
-tlschema($schemas['marketnav']);
+$translator->setSchema($schemas['marketnav']);
 addnav($texts['marketnav']);
-tlschema();
-tlschema($schemas['weaponshop']);
+$translator->setSchema();
+$translator->setSchema($schemas['weaponshop']);
 addnav("W?" . $texts['weaponshop'], "weapons.php");
-tlschema();
-tlschema($schemas['armorshop']);
+$translator->setSchema();
+$translator->setSchema($schemas['armorshop']);
 addnav("A?" . $texts['armorshop'], "armor.php");
-tlschema();
+$translator->setSchema();
 addnav("B?Ye Olde Bank", "bank.php");
 addnav("Z?Ze Gypsy Tent", "gypsy.php");
 if (getsetting("betaperplayer", 1) == 1 && @file_exists("pavilion.php")) {
     addnav("E?Eye-catching Pavilion", "pavilion.php");
 }
 
-tlschema($schemas['tavernnav']);
+$translator->setSchema($schemas['tavernnav']);
 addnav($texts['tavernnav']);
-tlschema();
-tlschema($schemas['innname']);
+$translator->setSchema();
+$translator->setSchema($schemas['innname']);
 addnav("I?" . $texts['innname'] . "`0", "inn.php", true);
-tlschema();
-tlschema($schemas['stablename']);
+$translator->setSchema();
+$translator->setSchema($schemas['stablename']);
 addnav("M?" . $texts['stablename'] . "`0", "stables.php");
-tlschema();
+$translator->setSchema();
 
 addnav("G?The Gardens", "gardens.php");
 addnav("R?Curious Looking Rock", "rock.php");
@@ -224,24 +227,24 @@ if (getsetting("allowclans", 1)) {
     addnav("C?Clan Halls", "clan.php");
 }
 
-tlschema($schemas['infonav']);
+$translator->setSchema($schemas['infonav']);
 addnav($texts['infonav']);
-tlschema();
+$translator->setSchema();
 addnav("??F.A.Q. (newbies start here)", "petition.php?op=faq", false, true);
 addnav("N?Daily News", "news.php");
 addnav("L?List Warriors", "list.php");
 addnav("o?Hall o' Fame", "hof.php");
 
-tlschema($schemas['othernav']);
+$translator->setSchema($schemas['othernav']);
 addnav($texts['othernav']);
-tlschema();
+$translator->setSchema();
 addnav("A?Account Info", "account.php");
 addnav("P?Preferences", "prefs.php");
 if (!file_exists("lodge.php")) {
     addnav("Refer a Friend", "referral.php");
 }
 
-tlschema('nav');
+$translator->setSchema('nav');
 addnav("Superuser");
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     addnav(",?Comment Moderation", "moderate.php");
@@ -252,7 +255,7 @@ if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
 if ($session['user']['superuser'] & SU_INFINITE_DAYS) {
     addnav("/?New Day", "newday.php");
 }
-tlschema();
+$translator->setSchema();
 //let users try to cheat, we protect against this and will know if they try.
 addnav("", "superuser.php");
 addnav("", "user.php");
@@ -272,23 +275,23 @@ addnav("", "weaponeditor.php");
 
 if (!$skipvillagedesc) {
     modulehook("collapse{", array("name" => "villagedesc-" . $session['user']['location']));
-    tlschema($schemas['text']);
+    $translator->setSchema($schemas['text']);
     output($texts['text']);
-    tlschema();
+    $translator->setSchema();
     modulehook("}collapse");
     modulehook("collapse{", array("name" => "villageclock-" . $session['user']['location']));
-    tlschema($schemas['clock']);
+    $translator->setSchema($schemas['clock']);
     output($texts['clock'], getgametime());
-    tlschema();
+    $translator->setSchema();
     modulehook("}collapse");
     modulehook("village-desc", $texts);
     //support for a special village-only hook
     modulehook("village-desc-{$session['user']['location']}", $texts);
     if ($texts['newestplayer'] > "" && $texts['newest']) {
         modulehook("collapse{", array("name" => "villagenewest-" . $session['user']['location']));
-        tlschema($schemas['newest']);
+        $translator->setSchema($schemas['newest']);
         output($texts['newest'], $texts['newestplayer']);
-        tlschema();
+        $translator->setSchema();
         $id = $texts['newestid'];
         if ($session['user']['superuser'] & SU_EDIT_USERS && $id) {
             $edit = translate_inline("Edit");
@@ -309,9 +312,9 @@ if ($skipvillagedesc) {
 
 $args = modulehook("blockcommentarea", array("section" => $texts['section']));
 if (!isset($args['block']) || $args['block'] != 'yes') {
-        tlschema($schemas['talk']);
+        $translator->setSchema($schemas['talk']);
         output($texts['talk']);
-        tlschema();
+        $translator->setSchema();
             Commentary::commentDisplay("", $texts['section'], "Speak", 25, $texts['sayline'], $schemas['sayline']);
 }
 

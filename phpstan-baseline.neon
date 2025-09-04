@@ -10,7 +10,6 @@ parameters:
 			count: 3
 			path: src/Lotgd/Async/Handler/Commentary.php
 
-
 		-
 			message: "#^Variable \\$badguyatkmod might not be defined\\.$#"
 			count: 1
@@ -60,17 +59,6 @@ parameters:
 			message: "#^Variable \\$matches might not be defined\\.$#"
 			count: 6
 			path: src/Lotgd/Censor.php
-
-
-		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 3
-			path: src/Lotgd/CheckBan.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/CheckBan.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -168,18 +156,8 @@ parameters:
 			path: src/Lotgd/Commentary.php
 
 		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 1
-			path: src/Lotgd/Commentary.php
-
-		-
 			message: "#^Function tlbutton_clear not found\\.$#"
 			count: 1
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 10
 			path: src/Lotgd/Commentary.php
 
 		-
@@ -252,12 +230,10 @@ parameters:
 			count: 1
 			path: src/Lotgd/DateTime.php
 
-
 		-
 			message: "#^Function tlbutton_clear not found\\.$#"
 			count: 1
 			path: src/Lotgd/DateTime.php
-
 
 		-
 			message: "#^Function e_rand not found\\.$#"
@@ -305,11 +281,6 @@ parameters:
 			path: src/Lotgd/Events.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/Events.php
-
-		-
 			message: "#^Undefined variable\\: \\$hookname$#"
 			count: 1
 			path: src/Lotgd/Events.php
@@ -347,11 +318,6 @@ parameters:
 		-
 			message: "#^Function output not found\\.$#"
 			count: 5
-			path: src/Lotgd/Forest.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
 			path: src/Lotgd/Forest.php
 
 		-
@@ -440,11 +406,6 @@ parameters:
 			path: src/Lotgd/Forms.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 6
-			path: src/Lotgd/Forms.php
-
-		-
 			message: "#^Function translate not found\\.$#"
 			count: 2
 			path: src/Lotgd/Forms.php
@@ -522,11 +483,6 @@ parameters:
 		-
 			message: "#^Function reltime not found\\.$#"
 			count: 1
-			path: src/Lotgd/Moderate.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
 			path: src/Lotgd/Moderate.php
 
 		-
@@ -690,11 +646,6 @@ parameters:
 			path: src/Lotgd/Modules.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
 			message: "#^Static method Lotgd\\\\MySQL\\\\Database\\:\\:affectedRows\\(\\) invoked with 1 parameter, 0 required\\.$#"
 			count: 1
 			path: src/Lotgd/Modules.php
@@ -785,16 +736,6 @@ parameters:
 			path: src/Lotgd/Motd.php
 
 		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 2
-			path: src/Lotgd/MountName.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/MountName.php
-
-		-
 			message: "#^Function debug not found\\.$#"
 			count: 1
 			path: src/Lotgd/MySQL/Database.php
@@ -825,11 +766,6 @@ parameters:
 			path: src/Lotgd/Nav.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 8
-			path: src/Lotgd/Nav.php
-
-		-
 			message: "#^Function translate not found\\.$#"
 			count: 2
 			path: src/Lotgd/Nav.php
@@ -840,17 +776,7 @@ parameters:
 			path: src/Lotgd/Nav/SuperuserNav.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/Nav/SuperuserNav.php
-
-		-
 			message: "#^Function addnav not found\\.$#"
-			count: 2
-			path: src/Lotgd/Nav/VillageNav.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
 			count: 2
 			path: src/Lotgd/Nav/VillageNav.php
 
@@ -975,11 +901,6 @@ parameters:
 			path: src/Lotgd/PageParts.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/PageParts.php
-
-		-
 			message: "#^Variable \\$maillink_add_after on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: src/Lotgd/PageParts.php
@@ -1022,11 +943,6 @@ parameters:
 		-
 			message: "#^Function module_delete_userprefs not found\\.$#"
 			count: 1
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 2
 			path: src/Lotgd/PlayerFunctions.php
 
 		-
@@ -1080,11 +996,6 @@ parameters:
 			path: src/Lotgd/Pvp.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/Pvp.php
-
-		-
 			message: "#^Function getsetting not found\\.$#"
 			count: 5
 			path: src/Lotgd/Sanitize.php
@@ -1097,11 +1008,6 @@ parameters:
 		-
 			message: "#^Function output not found\\.$#"
 			count: 1
-			path: src/Lotgd/Specialty.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
 			path: src/Lotgd/Specialty.php
 
 		-
@@ -1136,11 +1042,6 @@ parameters:
 
 		-
 			message: "#^Function page_header not found\\.$#"
-			count: 2
-			path: src/Lotgd/SuAccess.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
 			count: 2
 			path: src/Lotgd/SuAccess.php
 

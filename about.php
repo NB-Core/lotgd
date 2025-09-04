@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
@@ -24,7 +25,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 
-tlschema("about");
+Translator::getInstance()->setSchema("about");
 
 Header::pageHeader("About Legend of the Green Dragon Core Engine");
 $details = gametimedetails();

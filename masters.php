@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -12,7 +13,7 @@ require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_CREATURES);
 
-tlschema("masters");
+Translator::getInstance()->setSchema("masters");
 
 $op = httpget('op');
 $id = (int)httpget('id');

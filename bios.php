@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 /**
  * \file bios.php
@@ -23,7 +24,7 @@ use Lotgd\Nav;
 // mail ready
 require_once("common.php");
 
-tlschema("bio");
+Translator::getInstance()->setSchema("bio");
 SuAccess::check(SU_EDIT_COMMENTS);
 
 $op = Http::get('op');

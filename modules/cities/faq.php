@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 /**
  * FAQ page for the multiple cities module.
  */
 
-    tlschema("faq");
+    Translator::getInstance()->setSchema("faq");
     popup_header("Multi-Village Questions");
     $c = translate_inline("Return to Contents");
     rawoutput("<a href='petition.php?op=faq'>$c</a><hr>");

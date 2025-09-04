@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Nav;
 
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 /**
  * Navigation helper for returning to the village.
@@ -22,12 +23,12 @@ class VillageNav
         if (array_key_exists('handled', $args) && $args['handled']) {
             return;
         }
-        tlschema('nav');
+        Translator::getInstance()->setSchema('nav');
         if ($session['user']['alive']) {
             addnav(["V?Return to %s", $loc], "village.php$extra");
         } else {
             addnav('S?Return to the Shades', 'shades.php');
         }
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 }

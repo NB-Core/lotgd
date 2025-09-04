@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Translator;
 // addnews ready
 // translator ready
 // mail ready
@@ -8,7 +9,7 @@ use Lotgd\Forest;
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
-tlschema("healer");
+Translator::getInstance()->setSchema("healer");
 
 $config = unserialize($session['user']['donationconfig']);
 
@@ -23,9 +24,9 @@ $result = modulehook("healmultiply", array("alterpct" => 1.0));
 $cost *= $result['alterpct'];
 $cost = round($cost, 0);
 
-tlschema("nav");
+Translator::getInstance()->setSchema("nav");
 addnav("`bNavigation`b");
-tlschema();
+Translator::getInstance()->setSchema();
 
 $op = httpget('op');
 if ($op == "") {
@@ -122,7 +123,7 @@ foreach ($companions as $name => $companion) {
     }
 }
 //needs to be after the code
-tlschema("nav");
+Translator::getInstance()->setSchema("nav");
 addnav("`bNavigation`b");
 if ($return == "") {
     if ($playerheal || $compheal) {
@@ -136,6 +137,6 @@ if ($return == "") {
 } else {
     addnav("R?Return whence you came", $return);
 }
-tlschema("");
+Translator::getInstance()->setSchema("");
 output_notl("`0");
 page_footer();

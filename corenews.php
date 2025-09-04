@@ -3,10 +3,11 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DataCache;
+use Lotgd\Translator;
 
 require("common.php");
 
-tlschema("corenews");
+Translator::getInstance()->setSchema("corenews");
 SuAccess::check(SU_MEGAUSER);
 
 page_header("Core News");

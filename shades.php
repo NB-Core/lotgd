@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -8,7 +9,7 @@ use Lotgd\Commentary;
 require_once("common.php");
 
 
-tlschema("shades");
+Translator::getInstance()->setSchema("shades");
 
 page_header("Land of the Shades");
 Commentary::addCommentary();
@@ -35,7 +36,7 @@ modulehook("shades", array()); // if this is too low, you can use footer-shades.
 
 Commentary::commentDisplay("`n`QNearby, some lost souls lament:`n", "shade", "Despair", 25, "despairs");
 
-tlschema("nav");
+Translator::getInstance()->setSchema("nav");
 
 // the mute module blocks players from speaking until they
 // read the FAQs, and if they first try to speak when dead
@@ -58,6 +59,6 @@ if ($session['user']['superuser'] & SU_INFINITE_DAYS) {
     addnav("/?New Day", "newday.php");
 }
 
-tlschema();
+Translator::getInstance()->setSchema();
 
 page_footer();

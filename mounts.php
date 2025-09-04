@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -33,7 +34,7 @@ if ($op == "xml") {
 
 SuAccess::check(SU_EDIT_MOUNTS);
 
-tlschema("mounts");
+Translator::getInstance()->setSchema("mounts");
 
 page_header("Mount Editor");
 
@@ -404,7 +405,7 @@ function mountform($mount)
     // they are located in 'Degolburg' (ie, getgamesetting('villagename'));
     // Some later module can remove them however.
     $vname = getsetting('villagename', LOCATION_FIELDS);
-    $locs = array($vname => sprintf_translate("The Village of %s", $vname));
+    $locs = array($vname => Translator::getInstance()->sprintfTranslate("The Village of %s", $vname));
     $locs = modulehook("stablelocs", $locs);
     $locs['all'] = translate_inline("Everywhere");
     ksort($locs);

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
@@ -16,7 +17,7 @@ use Lotgd\Http;
 use Lotgd\Output;
 
 
-tlschema("pvp");
+Translator::getInstance()->setSchema("pvp");
 
 $output = Output::getInstance();
 $iname = getsetting("innname", LOCATION_INN);
@@ -34,9 +35,9 @@ if ($op == "" && $act != "attack") {
         'schemas' => array('atkmsg' => 'pvp')
     );
     $args = modulehook("pvpstart", $args);
-    tlschema($args['schemas']['atkmsg']);
+    Translator::getInstance()->setSchema($args['schemas']['atkmsg']);
     $output->output($args['atkmsg'], $session['user']['playerfights']);
-    tlschema();
+    Translator::getInstance()->setSchema();
     Nav::add("L?Refresh List of Warriors", "pvp.php");
         Pvp::listTargets();
     VillageNav::render();

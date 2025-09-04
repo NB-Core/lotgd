@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
-use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
 use Lotgd\FightBar;
@@ -17,6 +16,7 @@ use Lotgd\Output;
 use Lotgd\PlayerFunctions;
 use Lotgd\Settings;
 use Lotgd\Sanitize;
+use Lotgd\Translator;
 
 class Battle
 {
@@ -124,9 +124,9 @@ class Battle
                 $power = 1;
             }
             if ($power) {
-                Translator::tlschema('battle');
+                Translator::getInstance()->setSchema('battle');
                 Output::getInstance()->output($msg);
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
 
                 $dmg += random_int((int)($crit / 4), (int)($crit / 2));
                 $dmg = max($dmg, 1);
@@ -158,11 +158,11 @@ class Battle
                 $msg = "`&The gods have suspended some of your enhancements!`n";
             }
             if ($schema) {
-                Translator::tlschema($schema);
+                Translator::getInstance()->setSchema($schema);
             }
             Output::getInstance()->output(Sanitize::sanitizeMb($msg));
             if ($schema) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
     }
@@ -183,11 +183,11 @@ class Battle
                 $msg = "`&The gods have suspended some of your enhancements!`n";
             }
             if ($schema) {
-                Translator::tlschema($schema);
+                Translator::getInstance()->setSchema($schema);
             }
             Output::getInstance()->output($msg);
             if ($schema) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
     }
@@ -204,11 +204,11 @@ class Battle
                 $msg = "`&The gods have restored all suspended enhancements.`n`n";
             }
             if ($schema) {
-                Translator::tlschema($schema);
+                Translator::getInstance()->setSchema($schema);
             }
             Output::getInstance()->output($msg);
             if ($schema) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
     }
@@ -240,11 +240,11 @@ class Battle
                 $msg = "`&The gods have restored all suspended enhancements.`n`n";
             }
             if ($schema) {
-                Translator::tlschema($schema);
+                Translator::getInstance()->setSchema($schema);
             }
             Output::getInstance()->output($msg);
             if ($schema) {
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
             }
         }
     }
@@ -356,7 +356,7 @@ class Battle
     public static function fightnav(bool $allowSpecial = true, bool $allowFlee = true, $script = false): void
     {
         global $session, $newenemies, $companions;
-        Translator::tlschema('fightnav');
+        Translator::getInstance()->setSchema('fightnav');
         if ($script === false) {
             $script = ScriptName::current() . '.php?';
         } else {
@@ -413,7 +413,7 @@ class Battle
                 Nav::add(["%s%s`0", (isset($badguy['istarget']) && $badguy['istarget']) ? '`#*`0' : '', $badguy['creaturename']], $script . "op=fight&newtarget=$index");
             }
         }
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
     }
 
     public static function showEnemies($enemies = [])
@@ -645,11 +645,11 @@ class Battle
             }
             if ($nomsg !== true) {
                 if ($schema) {
-                    Translator::tlschema($schema);
+                    Translator::getInstance()->setSchema($schema);
                 }
                 Output::getInstance()->output($nomsg);
                 if ($schema) {
-                    Translator::tlschema();
+                    Translator::getInstance()->setSchema();
                 }
             }
         }
@@ -685,11 +685,11 @@ class Battle
             }
             if ($nomsg !== true) {
                 if ($schema) {
-                    Translator::tlschema($schema);
+                    Translator::getInstance()->setSchema($schema);
                 }
                 Output::getInstance()->output($nomsg);
                 if ($schema) {
-                    Translator::tlschema();
+                    Translator::getInstance()->setSchema();
                 }
             }
         }
@@ -787,9 +787,9 @@ class Battle
                     $msg = "{companion} heals your wounds. You regenerate {damage} hitpoint(s).";
                 }
                     $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}"), array($companion['name'],$hptoheal));
-                    Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                    Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
                     $output->output($msg);
-                    Translator::tlschema();
+                    Translator::getInstance()->setSchema();
             } else {
                     // Okay. We really have to do this :(
                     global $newcompanions;
@@ -810,9 +810,9 @@ class Battle
                             $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
                         }
                         $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}","{target}"), array($companion['name'],$hptoheal,$mycompanion['name']));
-                        Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                        Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
                         $output->output($msg);
-                        Translator::tlschema();
+                        Translator::getInstance()->setSchema();
                         $healed = true;
                         $newcompanions[$myname] = $mycompanion;
                     }
@@ -841,9 +841,9 @@ class Battle
                                         $msg = "{companion} heals {target}'s wounds. {target} regenerates {damage} hitpoints.";
                                     }
                                     $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}","{target}"), array($companion['name'],$hptoheal,$mycompanion['name']));
-                                    Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                                    Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
                                     $output->output($msg);
-                                    Translator::tlschema();
+                                    Translator::getInstance()->setSchema();
                                     $healed = true;
                                     $companions[$myname] = $mycompanion;
                                 // These are some totally senseless comments.
@@ -906,9 +906,9 @@ class Battle
                     $msg = "{companion} shoots a magical arrow at {badguy} but misses.";
                 }
                        $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name']));
-                       Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                       Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
                        $output->output($msg);
-                       Translator::tlschema();
+                       Translator::getInstance()->setSchema();
             } else {
                 if (isset($companion['magicmsg'])) {
                     $msg = $companion['magicmsg'];
@@ -916,9 +916,9 @@ class Battle
                     $msg = "{companion} shoots a magical arrow at {badguy} and deals {damage} damage.";
                 }
                       $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}"), array($companion['name'],$damage_done));
-                      Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+                      Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
                       $output->output($msg);
-                      Translator::tlschema();
+                      Translator::getInstance()->setSchema();
                       $badguy['creaturehealth'] -= $damage_done;
             }
                       $companion['hitpoints'] -= $companion['abilities']['magic'];
@@ -937,10 +937,10 @@ class Battle
                 $msg = "`5Your companion catches his last breath before it dies.";
             }
             $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name']));
-            Translator::tlschema(isset($companion['schema']) ? $companion['schema'] : "battle");
+            Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
             $output->output($msg);
             $output->outputNotl("`0`n");
-            Translator::tlschema();
+            Translator::getInstance()->setSchema();
             if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
                 $companion['hitpoints'] = 0;
             } else {
