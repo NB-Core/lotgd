@@ -17,6 +17,8 @@ jobs:
           php-version: '8.3'
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
+      - name: Run static analysis
+        run: composer static
 #      - name: Run PHPCS
 #        run: composer lint
       - name: Lint PHP files
