@@ -151,7 +151,6 @@ class Motd
      */
     public static function motdForm(int $id, array $data = []): void
     {
-        require_once 'lib/showform.php';
         $sql = 'SELECT motdtitle,motdbody,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
         $result = Database::query($sql);
         if (Database::numRows($result) > 0) {
