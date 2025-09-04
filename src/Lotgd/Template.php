@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\ServerFunctions;
 use Lotgd\Cookies;
@@ -246,8 +247,9 @@ class Template
      */
     public static function loadTemplate(string $templatename): array
     {
+        $settings = Settings::getInstance();
         if ($templatename == "" || !file_exists("templates/$templatename")) {
-                $templatename = getsetting("defaultskin", DEFAULT_TEMPLATE);
+                $templatename = $settings->getSetting("defaultskin", DEFAULT_TEMPLATE);
         }
         if ($templatename == "" || !file_exists("templates/$templatename")) {
                 $templatename = DEFAULT_TEMPLATE;

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 /**
  * Simple spell checking helper used to highlight unknown words.
@@ -26,7 +27,7 @@ class Spell
     {
         $dict =& self::$dictionary;
         if ($words === false) {
-            $words = getsetting('dictionary', '/usr/share/dict/words');
+            $words = Settings::getInstance()->getSetting('dictionary', '/usr/share/dict/words');
         }
         if (file_exists($words)) {
             if (!is_array($dict) || count($dict) == 0) {

@@ -26,6 +26,7 @@ use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
+
 use Lotgd\Output;
 use Lotgd\Modules\HookHandler;
 
@@ -213,6 +214,8 @@ class PageParts
     {
         global $session, $playermount, $companions;
         $output = Output::getInstance();
+
+        $settings = Settings::getInstance();
         if (defined("IS_INSTALLER") && IS_INSTALLER === true) {
             return "";
         }
@@ -318,8 +321,8 @@ class PageParts
                 // They are equal, display in the 1 signifigant digit format.
                 $def = round($def, 1);
             }
-            $point = getsetting('moneydecimalpoint', ".");
-            $sep = getsetting('moneythousandssep', ",");
+            $point = $settings->getSetting('moneydecimalpoint', ".");
+            $sep = $settings->getSetting('moneythousandssep', ",");
 
             self::addCharStat("Character Info");
             self::addCharStat("Name", $u['name']);
@@ -399,13 +402,9 @@ class PageParts
             return $charstat;
         } else {
             $ret = "";
-            $mode = (int) getsetting('homeonline_mode', 0);
-            $minutesSetting = (int) getsetting('homeonline_minutes', 15);
-            if (Settings::hasInstance()) {
-                $loginTimeout = Settings::getInstance()->getSetting("LOGINTIMEOUT", 900);
-            } else {
-                $loginTimeout = 90; //default to 90 seconds if not set
-            }
+            $mode = (int) $settings->getSetting('homeonline_mode', 0);
+            $minutesSetting = (int) $settings->getSetting('homeonline_minutes', 15);
+            $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
             $cacheMinutes = $mode === 2 ? $minutesSetting : (int) ceil($loginTimeout / 60);
             $cacheKey = "charlisthomepage-$mode-$cacheMinutes";
             if ($ret = Datacache::datacache($cacheKey)) {
@@ -445,11 +444,10 @@ class PageParts
                         $ret .= $output->appoencode(Translator::translateInline("`iNone`i"));
                     }
                 }
-                if (Settings::hasInstance()) {
-                    $settings = Settings::getInstance();
-                    $settings->saveSetting("OnlineCount", $onlinecount);
-                    $settings->saveSetting("OnlineCountLast", strtotime("now"));
-                }
+            if (Settings::hasInstance()) {
+                $settings->saveSetting("OnlineCount", $onlinecount);
+                $settings->saveSetting("OnlineCountLast", strtotime("now"));
+            }
                 Datacache::updatedatacache($cacheKey, $ret);
             }
             return $ret;
@@ -629,7 +627,7 @@ class PageParts
             $paypalstr .= "<input type='hidden' name='cn' value='Your Character Name'>"
                 . "<input type='hidden' name='cs' value='1'>"
                 . "<input type='hidden' name='currency_code' value='$currency'>"
-                . "<input type='hidden' name='lc' value='" . getsetting('paypalcountry-code', 'US') . "'>"
+                . "<input type='hidden' name='lc' value='" . $settings->getSetting('paypalcountry-code', 'US') . "'>"
                 . "<input type='hidden' name='bn' value='PP-DonationsBF'>"
                 . "<input type='hidden' name='tax' value='0'>"
                 . "<input type='image' src='images/paypal2.gif' border='0' name='submit' alt='Donate to the Site'>"
@@ -659,9 +657,11 @@ class PageParts
     {
         global $session;
 
+        $settings = Settings::getInstance();
+
         $mailHtml = '';
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
-            if (getsetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+            if ($settings->getSetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 $maillink_add_pre = '';
                 $maillink_add_after = '';
                 $setupFile = __DIR__ . '/../../async/setup.php';

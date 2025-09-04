@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Backtrace;
@@ -376,6 +377,7 @@ class Modules
     {
         global $navsection, $mostrecentmodule;
         global $session, $currenthook;
+        $settings = Settings::getInstance();
 
         if (defined('IS_INSTALLER') && IS_INSTALLER) {
             return $args;
@@ -411,7 +413,7 @@ class Modules
                     } elseif (is_object($val)) {
                         $arg .= 'object(' . get_class($val) . ')';
                     } else {
-                        $arg .= htmlentities(substr((string) $val, 0, 25), ENT_COMPAT, getsetting('charset', 'UTF-8'));
+                        $arg .= htmlentities(substr((string) $val, 0, 25), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
                     }
                     rawoutput('  arg: ' . $arg);
                 }
@@ -480,7 +482,7 @@ class Modules
                     if (($endtime - $starttime >= 1.00 && isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
                         debug('Slow Hook (' . round($endtime - $starttime, 2) . 's): ' . $hookName . ' - ' . $row['modulename'] . '`n');
                     }
-                    if (getsetting('debug', 0)) {
+                    if ($settings->getSetting('debug', 0)) {
                         $sql = 'INSERT INTO ' . Database::prefix('debug') . " VALUES (0,'hooktime','" . $hookName . "','" . $row['modulename'] . "','" . ($endtime - $starttime) . "');";
                         Database::query($sql);
                     }

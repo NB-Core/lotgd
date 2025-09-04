@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
@@ -24,8 +25,10 @@ class Pvp
     {
         global $session;
 
-        $days = getsetting('pvpimmunity', 5);
-        $exp = getsetting('pvpminexp', 1500);
+        $settings = Settings::getInstance();
+
+        $days = $settings->getSetting('pvpimmunity', 5);
+        $exp = $settings->getSetting('pvpminexp', 1500);
         if (
             $session['user']['age'] <= $days &&
             $session['user']['dragonkills'] == 0 &&
@@ -51,7 +54,9 @@ class Pvp
     public static function setupTarget($name)
     {
         global $session;
-        $pvptime = getsetting('pvptimeout', 600);
+
+        $settings = Settings::getInstance();
+        $pvptime = $settings->getSetting('pvptimeout', 600);
         $pvptimeout = date('Y-m-d H:i:s', strtotime("-$pvptime seconds"));
 
         // Legacy support for numeric id or login name
@@ -76,7 +81,7 @@ class Pvp
             if ($row['pvpflag'] > $pvptimeout) {
                 output("`\$Oops:`4 That user is currently engaged by someone else, you'll have to wait your turn!");
                 return false;
-            } elseif (strtotime($row['laston']) > strtotime('-' . getsetting('LOGINTIMEOUT', 900) . ' sec') && $row['loggedin']) {
+            } elseif (strtotime($row['laston']) > strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' sec') && $row['loggedin']) {
                 output("`\$Error:`4 That user is now online, and cannot be attacked until they log off again.");
                 return false;
             } elseif ($session['user']['playerfights'] > 0) {
@@ -103,6 +108,8 @@ class Pvp
     {
         global $session;
 
+        $settings = Settings::getInstance();
+
         $sql = "SELECT gold FROM " . Database::prefix('accounts') . " WHERE acctid='" . (int) $badguy['acctid'] . "'";
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
@@ -126,9 +133,9 @@ class Pvp
         output("`#You receive `^%s`# gold!`n", $winamount);
         $session['user']['gold'] += $winamount;
 
-        $exp = round(getsetting('pvpattgain', 10) * $badguy['creatureexp'] / 100, 0);
-        if (getsetting('pvphardlimit', 0)) {
-            $max = getsetting('pvphardlimitamount', 15000);
+        $exp = round($settings->getSetting('pvpattgain', 10) * $badguy['creatureexp'] / 100, 0);
+        if ($settings->getSetting('pvphardlimit', 0)) {
+            $max = $settings->getSetting('pvphardlimitamount', 15000);
             if ($exp > $max) {
                 $exp = $max;
             }
@@ -146,7 +153,7 @@ class Pvp
         output("You receive `^%s`# experience!`n`0", $wonexp);
         $session['user']['experience'] += $wonexp;
 
-        $lostexp = round($badguy['creatureexp'] * getsetting('pvpdeflose', 5) / 100, 0);
+        $lostexp = round($badguy['creatureexp'] * $settings->getSetting('pvpdeflose', 5) / 100, 0);
 
         debuglog("gained $winamount ({$badguy['creaturegold']} base) gold and $wonexp exp (loser lost $lostexp) for killing ", $badguy['acctid']);
 
@@ -162,7 +169,7 @@ class Pvp
             $msg,
             $killedloc, $session['user']['name'],
             $session['user']['weapon'], $badguy['playerstarthp'],
-            $session['user']['hitpoints'], getsetting('pvpdeflose', 5),
+            $session['user']['hitpoints'], $settings->getSetting('pvpdeflose', 5),
             $lostexp, $badguy['creaturegold'], $args['pvpmessageadd'],
             $killedloc, $killedloc,
             date('D, M d h:i a', (int) $badguy['fightstartdate']),
@@ -188,6 +195,8 @@ class Pvp
     {
         global $session;
 
+        $settings = Settings::getInstance();
+
         addnav('Daily news', 'news.php');
         $killedin = $badguy['location'];
         $badguy['acctid'] = (int) $badguy['acctid'];
@@ -202,9 +211,9 @@ class Pvp
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
 
-        $wonexp = round($session['user']['experience'] * getsetting('pvpdefgain', 10) / 100, 0);
-        if (getsetting('pvphardlimit', 0)) {
-            $max = getsetting('pvphardlimitamount', 15000);
+        $wonexp = round($session['user']['experience'] * $settings->getSetting('pvpdefgain', 10) / 100, 0);
+        if ($settings->getSetting('pvphardlimit', 0)) {
+            $max = $settings->getSetting('pvphardlimitamount', 15000);
             if ($wonexp > $max) {
                 $wonexp = $max;
             }
@@ -213,7 +222,7 @@ class Pvp
             $wonexp = 0;
         }
 
-        $lostexp = round($session['user']['experience'] * getsetting('pvpattlose', 15) / 100, 0);
+        $lostexp = round($session['user']['experience'] * $settings->getSetting('pvpattlose', 15) / 100, 0);
 
         $args = ['pvpmsgadd' => '', 'taunt' => $taunt, 'handled' => false, 'badguy' => $badguy, 'options' => $options];
         $args = HookHandler::hook('pvploss', $args);
@@ -244,10 +253,10 @@ class Pvp
         debuglog("lost {$session['user']['gold']} ($winamount to winner) gold and $lostexp exp ($wonexp to winner) being slain by ", $badguy['acctid']);
         $session['user']['gold'] = 0;
         $session['user']['hitpoints'] = 0;
-        $session['user']['experience'] = round($session['user']['experience'] * (100 - getsetting('pvpattlose', 15)) / 100, 0);
+        $session['user']['experience'] = round($session['user']['experience'] * (100 - $settings->getSetting('pvpattlose', 15)) / 100, 0);
         output("`b`&You have been slain by `%%s`&!!!`n", $badguy['creaturename']);
         output("`4All gold on hand has been lost!`n");
-        output("`4%s%% of experience has been lost!`n", getsetting('pvpattlose', 15));
+        output("`4%s%% of experience has been lost!`n", $settings->getSetting('pvpattlose', 15));
         output('You may begin fighting again tomorrow.');
         return $args['handled'];
     }
@@ -263,7 +272,9 @@ class Pvp
     public static function listTargets($location = false, $link = false, $extra = false, $sql = false): void
     {
         global $session;
-        $pvptime = getsetting('pvptimeout', 600);
+
+        $settings = Settings::getInstance();
+        $pvptime = $settings->getSetting('pvptimeout', 600);
         $pvptimeout = date('Y-m-d H:i:s', strtotime("-$pvptime seconds"));
 
         if ($location === false) {
@@ -276,14 +287,14 @@ class Pvp
             $extra = '?act=attack';
         }
 
-        $days = getsetting('pvpimmunity', 5);
-        $exp = getsetting('pvpminexp', 1500);
+        $days = $settings->getSetting('pvpimmunity', 5);
+        $exp = $settings->getSetting('pvpminexp', 1500);
         $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
         $id = $session['user']['acctid'];
-        $levdiff = getsetting('pvprange', 2);
+        $levdiff = $settings->getSetting('pvprange', 2);
         $lev1 = $session['user']['level'] - $levdiff + 1;
         $lev2 = $session['user']['level'] + $levdiff;
-        $last = date('Y-m-d H:i:s', strtotime('-' . getsetting('LOGINTIMEOUT', 900) . ' sec'));
+        $last = date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' sec'));
 
         if ($sql === false) {
             $loc = addslashes($location);

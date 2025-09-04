@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
@@ -197,13 +198,15 @@ class Motd
     {
         $title = httppost('motdtitle');
         $body  = httppost('motdbody');
+        $settings = Settings::getInstance();
+        $charset  = $settings->getSetting('charset', 'UTF-8');
 
         output('`$NOTE:`^ Polls cannot be edited after creation.`0`n`n');
         rawoutput("<form action='motd.php?op=savenew' method='post'>");
         output('Subject: ');
-        rawoutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br/>");
+        rawoutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, $charset) . "\"><br/>");
         output('Body:`n');
-        rawoutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, getsetting('charset', 'UTF-8')) . "</textarea><br/>");
+        rawoutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, $charset) . "</textarea><br/>");
         $option = Translator::translateInline('Option');
         output('Choices:`n');
         $pollitem = "$option <input name='opt[]'><br/>";

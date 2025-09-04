@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 class Sanitize
 {
@@ -235,7 +236,8 @@ class Sanitize
      */
     public static function sanitizeColorname(bool $spaceallowed, string $inname, bool $admin = false): string
     {
-        if ($admin && getsetting('allowoddadminrenames', 0)) {
+        $settings = Settings::getInstance();
+        if ($admin && $settings->getSetting('allowoddadminrenames', 0)) {
             return $inname;
         }
         $output = Output::getInstance();
@@ -271,8 +273,11 @@ class Sanitize
         if ($str == '') {
             return '';
         }
-        while (!mb_check_encoding($str, getsetting('charset', 'UTF-8')) && mb_strlen($str, getsetting('charset', 'UTF-8')) > 0) {
-            $str = mb_substr($str, 0, mb_strlen($str, getsetting('charset', 'UTF-8')) - 1, getsetting('charset', 'UTF-8'));
+        $settings = Settings::getInstance();
+        $charset = $settings->getSetting('charset', 'UTF-8');
+
+        while (!mb_check_encoding($str, $charset) && mb_strlen($str, $charset) > 0) {
+            $str = mb_substr($str, 0, mb_strlen($str, $charset) - 1, $charset);
         }
         return $str;
     }

@@ -51,11 +51,6 @@ parameters:
 			path: src/Lotgd/Commentary.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 25
-			path: src/Lotgd/Commentary.php
-
-		-
 			message: "#^Function httpget not found\\.$#"
 			count: 4
 			path: src/Lotgd/Commentary.php
@@ -136,19 +131,9 @@ parameters:
 			path: src/Lotgd/Commentary.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/configuration.php
-
-		-
 			message: "#^Variable \\$session might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Config/configuration.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/user_account.php
 
 		-
 			message: "#^Function translate_inline not found\\.$#"
@@ -170,17 +155,10 @@ parameters:
 			count: 4
 			path: src/Lotgd/Config/user_account.php
 
-
-
 		-
 			message: "#^Function e_rand not found\\.$#"
 			count: 2
 			path: src/Lotgd/DeathMessage.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/DumpItem.php
 
 		-
 			message: "#^Function debug not found\\.$#"
@@ -233,11 +211,6 @@ parameters:
 			path: src/Lotgd/Events.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/ForcedNavigation.php
-
-		-
 			message: "#^Function redirect not found\\.$#"
 			count: 4
 			path: src/Lotgd/ForcedNavigation.php
@@ -245,11 +218,6 @@ parameters:
 		-
 			message: "#^Function addnav not found\\.$#"
 			count: 10
-			path: src/Lotgd/Forest.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 3
 			path: src/Lotgd/Forest.php
 
 		-
@@ -320,11 +288,6 @@ parameters:
 		-
 			message: "#^Function debug not found\\.$#"
 			count: 1
-			path: src/Lotgd/Forms.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 29
 			path: src/Lotgd/Forms.php
 
 		-
@@ -405,11 +368,6 @@ parameters:
 		-
 			message: "#^Function full_sanitize not found\\.$#"
 			count: 1
-			path: src/Lotgd/Moderate.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 19
 			path: src/Lotgd/Moderate.php
 
 		-
@@ -524,11 +482,6 @@ parameters:
 
 		-
 			message: "#^Function getmicrotime not found\\.$#"
-			count: 2
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
 			count: 2
 			path: src/Lotgd/Modules.php
 
@@ -668,11 +621,6 @@ parameters:
 			path: src/Lotgd/Motd.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Motd.php
-
-		-
 			message: "#^Function httppost not found\\.$#"
 			count: 10
 			path: src/Lotgd/Motd.php
@@ -710,11 +658,6 @@ parameters:
 		-
 			message: "#^Function debug not found\\.$#"
 			count: 1
-			path: src/Lotgd/MySQL/Database.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
 			path: src/Lotgd/MySQL/Database.php
 
 		-
@@ -853,16 +796,6 @@ parameters:
 			path: src/Lotgd/Page/CharStats.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Page/Footer.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 4
-			path: src/Lotgd/Page/Header.php
-
-		-
 			message: "#^Class Lotgd\\\\DataCache referenced with incorrect case\\: Lotgd\\\\Datacache\\.$#"
 			count: 2
 			path: src/Lotgd/PageParts.php
@@ -875,11 +808,6 @@ parameters:
 		-
 			message: "#^Function check_temp_stat not found\\.$#"
 			count: 19
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 6
 			path: src/Lotgd/PageParts.php
 
 		-
@@ -908,11 +836,6 @@ parameters:
 			path: src/Lotgd/PageParts.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 6
-			path: src/Lotgd/Partner.php
-
-		-
 			message: "#^Function httpallget not found\\.$#"
 			count: 1
 			path: src/Lotgd/PhpGenericEnvironment.php
@@ -925,11 +848,6 @@ parameters:
 		-
 			message: "#^Function e_rand not found\\.$#"
 			count: 1
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 9
 			path: src/Lotgd/PlayerFunctions.php
 
 		-
@@ -968,11 +886,6 @@ parameters:
 			path: src/Lotgd/Pvp.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 20
-			path: src/Lotgd/Pvp.php
-
-		-
 			message: "#^Function output not found\\.$#"
 			count: 24
 			path: src/Lotgd/Pvp.php
@@ -998,11 +911,6 @@ parameters:
 			path: src/Lotgd/Pvp.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 5
-			path: src/Lotgd/Sanitize.php
-
-		-
 			message: "#^Variable \\$defaults on left side of \\?\\? is never defined\\.$#"
 			count: 1
 			path: src/Lotgd/Settings.php
@@ -1018,11 +926,6 @@ parameters:
 			path: src/Lotgd/Specialty.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Spell.php
-
-		-
 			message: "#^Function addnav not found\\.$#"
 			count: 2
 			path: src/Lotgd/SuAccess.php
@@ -1034,11 +937,6 @@ parameters:
 
 		-
 			message: "#^Function debuglog not found\\.$#"
-			count: 1
-			path: src/Lotgd/SuAccess.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
 			count: 1
 			path: src/Lotgd/SuAccess.php
 
@@ -1058,19 +956,9 @@ parameters:
 			path: src/Lotgd/SuAccess.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Template.php
-
-		-
 			message: "#^Variable \\$template might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Template.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Translator.php
 
 		-
 			message: "#^Function popup not found\\.$#"
