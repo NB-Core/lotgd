@@ -29,7 +29,7 @@ class Translator
      */
     public static function translatorSetup(): void
     {
-        $settings = Settings::getInstance();
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         //Determine what language to use
         if (defined("TRANSLATOR_IS_SET_UP")) {
             return;
@@ -47,7 +47,9 @@ class Translator
             }
         }
         if ($language == "") {
-            $language = $settings->getsetting("defaultlanguage", "en");
+            $language = $settings instanceof Settings
+                ? $settings->getsetting("defaultlanguage", "en")
+                : "en";
         }
 
                 define("LANGUAGE", preg_replace("/[^a-z]/i", "", $language));
@@ -74,11 +76,11 @@ class Translator
     public static function translate(string|array $indata, string|false|null $namespace = false): string|array
     {
         global $session;
-        $settings = Settings::getInstance();
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
 
         if (
             ! self::$translation_is_enabled
-            || $settings->getSetting('enabletranslation', true) == false
+            || ($settings instanceof Settings && $settings->getSetting('enabletranslation', true) == false)
         ) {
             return $indata;
         }
@@ -126,7 +128,7 @@ class Translator
         Database::query($sql);
                     }
                     */
-                } elseif ($settings->getsetting("collecttexts", false)) {
+                } elseif ($settings instanceof Settings && $settings->getsetting("collecttexts", false)) {
                     $sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . LANGUAGE . "', " .  "'$namespace')";
                     Database::query($sql, false);
                 }
@@ -548,7 +550,10 @@ class Translator
     public static function translatorCheckCollectTexts(): void
     {
         global $session;
-        $settings = Settings::getInstance();
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        if (! $settings instanceof Settings) {
+            return;
+        }
 
         $tlmax = $settings->getSetting('tl_maxallowed', 0);
 

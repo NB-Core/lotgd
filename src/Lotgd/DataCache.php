@@ -29,15 +29,15 @@ class DataCache
     public static function datacache(string $name, int $duration = 60): mixed
     {
         global $datacache;
+        if (isset(self::$cache[$name])) {
+            return self::$cache[$name];
+        }
         if (! Settings::hasInstance()) {
             return false;
         }
         $settings = Settings::getInstance();
 
         if ($settings->getSetting('usedatacache', 0)) {
-            if (isset(self::$cache[$name])) {
-                return self::$cache[$name];
-            }
             $fullname = self::makecachetempname($name);
             if (file_exists($fullname) && @filemtime($fullname) > strtotime("-$duration seconds")) {
                 $fullfile = @file_get_contents($fullname);

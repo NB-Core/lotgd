@@ -66,7 +66,7 @@ class Template
      */
     public static function prepareTemplate(bool $force = false): void
     {
-        $settings = Settings::getInstance();
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         if (! $force) {
             if (defined('TEMPLATE_IS_PREPARED')) {
                 return;
@@ -86,7 +86,11 @@ class Template
             [$templateType, $templatename] = explode(':', $templatename, 2);
         }
         if ($templatename == '' || (!file_exists("templates/$templatename") && !is_dir("templates_twig/$templatename"))) {
-            $templatename = $settings->getSetting('defaultskin', DEFAULT_TEMPLATE);
+            if ($settings instanceof Settings) {
+                $templatename = $settings->getSetting('defaultskin', DEFAULT_TEMPLATE);
+            } else {
+                $templatename = DEFAULT_TEMPLATE;
+            }
             if (strpos($templatename, ':') !== false) {
                 [$templateType, $templatename] = explode(':', $templatename, 2);
             }
@@ -100,8 +104,9 @@ class Template
 
         if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
             // Initialize Twig environment for Twig templates
-            $cachePath = null;
-            $cachePath = $settings->getSetting('datacachepath', '/tmp');
+            $cachePath = $settings instanceof Settings
+                ? $settings->getSetting('datacachepath', '/tmp')
+                : '/tmp';
             TwigTemplate::init($templatename, $cachePath);
             $template = [];
         } else {

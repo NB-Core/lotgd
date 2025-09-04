@@ -36,12 +36,10 @@ class Settings
      */
     public static function getInstance(): self
     {
-        if (! self::$instance instanceof self) {
-            if (isset($GLOBALS['settings']) && $GLOBALS['settings'] instanceof self) {
-                self::$instance = $GLOBALS['settings'];
-            } else {
-                self::$instance = new self();
-            }
+        if (isset($GLOBALS['settings']) && $GLOBALS['settings'] instanceof self) {
+            self::$instance = $GLOBALS['settings'];
+        } elseif (! self::$instance instanceof self) {
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -54,7 +52,8 @@ class Settings
 
     public static function hasInstance(): bool
     {
-        return self::$instance instanceof self;
+        return self::$instance instanceof self
+            || (isset($GLOBALS['settings']) && $GLOBALS['settings'] instanceof self);
     }
 
     /**

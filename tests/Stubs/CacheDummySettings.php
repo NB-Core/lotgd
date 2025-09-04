@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Stubs;
 
-class CacheDummySettings
+use Lotgd\Settings;
+
+class CacheDummySettings extends Settings
 {
     private array $values;
 

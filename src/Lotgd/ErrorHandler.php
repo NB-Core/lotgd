@@ -61,7 +61,7 @@ class ErrorHandler
             return; // @ operator used
         }
         ini_set('display_errors', '1');
-        $settings = Settings::getInstance();
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         $inErrorHandler++;
         if ($inErrorHandler > 1) {
             if ($errno & (E_USER_WARNING | E_WARNING)) {
@@ -75,7 +75,9 @@ class ErrorHandler
         switch ($errno) {
             case E_NOTICE:
             case E_USER_NOTICE:
-                $showNotices = $settings->getSetting('show_notices', 0);
+                $showNotices = $settings instanceof Settings
+                    ? $settings->getSetting('show_notices', 0)
+                    : 0;
                 if ($showNotices && ($session['user']['superuser'] & SU_SHOW_PHPNOTICE)) {
                     debug("PHP Notice: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.");
                 }
@@ -91,7 +93,7 @@ class ErrorHandler
                 } else {
                     $backtrace = '';
                 }
-                if (! empty($settings->getSetting('notify_on_warn', 0))) {
+                if ($settings instanceof Settings && ! empty($settings->getSetting('notify_on_warn', 0))) {
                     self::errorNotify($errno, $errstr, $errfile, $errline, $backtrace);
                 }
                 break;
@@ -99,7 +101,7 @@ class ErrorHandler
             case E_USER_ERROR:
                 $backtrace = Backtrace::show();
                 self::renderError($errstr, $errfile, $errline, $backtrace);
-                if (! empty($settings->getSetting('notify_on_error', 0))) {
+                if ($settings instanceof Settings && ! empty($settings->getSetting('notify_on_error', 0))) {
                     self::errorNotify($errno, $errstr, $errfile, $errline, $backtrace);
                 }
                 die();
@@ -134,7 +136,10 @@ class ErrorHandler
     public static function errorNotify(int $errno, $errstr, string $errfile, int $errline, string $backtrace): void
     {
         global $session;
-        $settings = Settings::getInstance();
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        if (! $settings instanceof Settings) {
+            return;
+        }
 
         $msg = is_string($errstr) ? $errstr : json_encode($errstr);
         if (strlen($msg) <= 0) {
@@ -215,8 +220,10 @@ class ErrorHandler
         $trace = Backtrace::show($exception->getTrace());
         self::renderError($exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
 
-        $settings = Settings::getInstance();
-        $notify = (bool) $settings->getSetting('notify_on_error', 0);
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        $notify = $settings instanceof Settings
+            ? (bool) $settings->getSetting('notify_on_error', 0)
+            : false;
 
         if ($notify) {
             self::errorNotify(E_ERROR, $exception->getMessage(), $exception->getFile(), $exception->getLine(), $trace);
