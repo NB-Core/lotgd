@@ -7,6 +7,10 @@ namespace Lotgd;
 use Lotgd\Substitute;
 use Lotgd\Translator;
 use Lotgd\Modules\HookHandler;
+use Lotgd\CreateString;
+use Lotgd\Output;
+use Lotgd\PlayerFunctions;
+use Lotgd\Settings;
 
 class Buffs
 {
@@ -16,6 +20,8 @@ class Buffs
     public static function calculateBuffFields(): void
     {
         global $session, $badguy;
+        $output = Output::getInstance();
+        $settings = Settings::getInstance();
 
         if (!isset($session['bufflist']) || !$session['bufflist']) {
             return;
@@ -26,7 +32,7 @@ class Buffs
             if (!isset($buff['tempstats_calculated'])) {
                 foreach ($buff as $property => $value) {
                     if (substr($property, 0, 9) == 'tempstat-') {
-                        apply_temp_stat(substr($property, 9), $value);
+                        PlayerFunctions::applyTempStat(substr($property, 9), $value);
                     }
                 }
                 $session['bufflist'][$buffname]['tempstats_calculated'] = true;
@@ -70,9 +76,16 @@ class Buffs
 
                             if (!isset(self::$debuggedBuffs[$buffname][$property])) {
                                 if ($errors == '') {
-                                    debug("Buffs[$buffname][$property] evaluates successfully to $val");
+                                    $output->debug("Buffs[$buffname][$property] evaluates successfully to $val");
                                 } else {
-                                    debug("Buffs[$buffname][$property] has an evaluation error<br>" . htmlentities($origstring, ENT_COMPAT, getsetting('charset', 'UTF-8')) . ' becomes <br>' . htmlentities($value, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '<br>' . $errors);
+                                    $output->debug(
+                                        "Buffs[$buffname][$property] has an evaluation error<br>" .
+                                        htmlentities($origstring, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) .
+                                        ' becomes <br>' .
+                                        htmlentities($value, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) .
+                                        '<br>' .
+                                        $errors
+                                    );
                                     $val = '';
                                 }
                                 self::$debuggedBuffs[$buffname][$property] = true;
@@ -89,10 +102,10 @@ class Buffs
 
                     $session['user']['superuser'] = OLDSU;
 
-                    if (!isset($output)) {
-                        $output = '';
+                    if (!isset($evalOutput)) {
+                        $evalOutput = '';
                     }
-                    if ($output == '') {
+                    if ($evalOutput == '') {
                         $overwrite = true;
                         if (is_string($val) && is_string($origstring)) {
                             if ($val == $origstring) {
@@ -142,7 +155,7 @@ class Buffs
             if (array_key_exists('tempstats_calculated', $buff) && $buff['tempstats_calculated']) {
                 foreach ($buff as $property => $value) {
                     if (substr($property, 0, 9) == 'tempstat-') {
-                        apply_temp_stat(substr($property, 9), -$value);
+                        PlayerFunctions::applyTempStat(substr($property, 9), -$value);
                     }
                 }
                 unset($session['bufflist'][$buffname]['tempstats_calculated']);
@@ -188,7 +201,7 @@ class Buffs
             unset($companions[$name]);
             $remove_result = true;
         }
-        $session['user']['companions'] = createstring($companions);
+        $session['user']['companions'] = CreateString::run($companions);
         return $remove_result;
     }
 
@@ -212,17 +225,18 @@ class Buffs
                 $removed = true;
             }
         }
-        $session['user']['companions'] = createstring($companions);
+        $session['user']['companions'] = CreateString::run($companions);
         return $removed;
     }
 
     public static function applyCompanion($name, $companion, $ignorelimit = false)
     {
         global $session, $companions;
+        $output = Output::getInstance();
         if (!is_array($companions)) {
             $companions = @unserialize($session['user']['companions']);
         }
-        $companionsallowed = getsetting('companionsallowed', 1);
+        $companionsallowed = Settings::getInstance()->getSetting('companionsallowed', 1);
         $args = HookHandler::hook('companionsallowed', ['maxallowed' => $companionsallowed]);
         $companionsallowed = $args['maxallowed'];
         $current = 0;
@@ -244,10 +258,10 @@ class Buffs
                 $companion['ignorelimit'] = true;
             }
             $companions[$name] = $companion;
-            $session['user']['companions'] = createstring($companions);
+            $session['user']['companions'] = CreateString::run($companions);
             return true;
         }
-        debug('Failed to add companion due to restrictions regarding the maximum amount of companions allowed.');
+        $output->debug('Failed to add companion due to restrictions regarding the maximum amount of companions allowed.');
         return false;
     }
 
@@ -281,8 +295,9 @@ class Buffs
     public static function activateBuffs($tag)
     {
         global $session, $badguy, $count;
+        $output = Output::getInstance();
 
-        tlschema('buffs');
+        Translator::tlschema('buffs');
         reset($session['bufflist']);
 
         $result = [
@@ -306,18 +321,18 @@ class Buffs
             }
 
             if ($buff['schema']) {
-                tlschema($buff['schema']);
+                Translator::tlschema($buff['schema']);
             }
 
             if (isset($buff['startmsg'])) {
                 if (is_array($buff['startmsg'])) {
                     $buff['startmsg'] = str_replace('`%', '`%%', $buff['startmsg']);
-                    $msg = sprintf_translate($buff['startmsg']);
+                    $msg = Translator::sprintfTranslate($buff['startmsg']);
                     $msg = Substitute::apply("`5" . $msg . "`0`n");
-                    output_notl($msg);
+                    $output->outputNotl($msg);
                 } else {
                     $msg = Substitute::applyArray("`5" . $buff['startmsg'] . "`0`n");
-                    output($msg);
+                    $output->output($msg);
                 }
 
                 unset($session['bufflist'][$key]['startmsg']);
@@ -376,12 +391,12 @@ class Buffs
                 if (isset($buff['roundmsg'])) {
                     if (is_array($buff['roundmsg'])) {
                         $buff['roundmsg'] = str_replace('`%', '`%%', $buff['roundmsg']);
-                        $msg = sprintf_translate($buff['roundmsg']);
+                        $msg = Translator::sprintfTranslate($buff['roundmsg']);
                         $msg = Substitute::apply("`5" . $msg . "`0`n");
-                        output_notl($msg);
+                        $output->outputNotl($msg);
                     } else {
                         $msg = Substitute::applyArray("`5" . $buff['roundmsg'] . "`0`n");
-                        output($msg);
+                        $output->output($msg);
                     }
                 }
             }
@@ -440,12 +455,12 @@ class Buffs
                 }
 
                 if (is_array($msg)) {
-                    $msg = sprintf_translate($msg);
+                    $msg = Translator::sprintfTranslate($msg);
                     $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
-                    output_notl($msg);
+                    $output->outputNotl($msg);
                 } elseif ($msg != '') {
                     $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
-                    output($msg);
+                    $output->output($msg);
                 }
                 if (isset($buff['aura']) && $buff['aura'] == true) {
                     global $companions;
@@ -460,12 +475,12 @@ class Buffs
                                 $hptoregen = min($auraeffect, $companion['maxhitpoints'] - $companion['hitpoints']);
                                 $companions[$name]['hitpoints'] += $hptoregen;
                                 $msg = Substitute::applyArray('`)' . $buff['auramsg'] . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
-                                output($msg);
+                                $output->output($msg);
                                 if ($hptoregen < 0 && $companion['hitpoints'] <= 0) {
                                     if (isset($companion['dyingtext'])) {
-                                        tlschema('battle');
-                                        output($companion['dyingtext']);
-                                        tlschema();
+                                        Translator::tlschema('battle');
+                                        $output->output($companion['dyingtext']);
+                                        Translator::tlschema();
                                     }
                                     if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
                                         $companion['hitpoints'] = 0;
@@ -503,7 +518,7 @@ class Buffs
                 $max = (int) $max;
                 $minioncounter = 1;
                 while ($minioncounter <= ((int)$buff['minioncount']) && $who >= 0) {
-                    $damage = e_rand($min, $max);
+                    $damage = random_int($min, $max);
                     if ($who == 0) {
                         $badguy['creaturehealth'] -= $damage;
                         if ($badguy['creaturehealth'] <= 0) {
@@ -528,12 +543,12 @@ class Buffs
                         }
                     }
                     if (is_array($msg)) {
-                        $msg = sprintf_translate($msg);
+                        $msg = Translator::sprintfTranslate($msg);
                         $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
-                        output_notl($msg);
+                        $output->outputNotl($msg);
                     } elseif ($msg > '') {
                         $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
-                        output($msg);
+                        $output->output($msg);
                     }
                     if ($badguy['dead'] == true) {
                         break;
@@ -542,10 +557,10 @@ class Buffs
                 }
             }
             if ($buff['schema']) {
-                tlschema();
+                Translator::tlschema();
             }
         }
-        tlschema();
+        Translator::tlschema();
 
         return $result;
     }
@@ -553,13 +568,14 @@ class Buffs
     public static function processLifetaps($ltaps, $damage)
     {
         global $session, $badguy;
-        tlschema('buffs');
+        $output = Output::getInstance();
+        Translator::tlschema('buffs');
         foreach ($ltaps as $buff) {
             if (isset($buff['suspended']) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                tlschema($buff['schema']);
+                Translator::tlschema($buff['schema']);
             }
             $healhp = $session['user']['maxhitpoints'] - $session['user']['hitpoints'];
             if ($healhp < 0) {
@@ -584,30 +600,31 @@ class Buffs
             }
             $session['user']['hitpoints'] += $healhp;
             if (is_array($msg)) {
-                $msg = sprintf_translate($msg);
+                $msg = Translator::sprintfTranslate($msg);
                 $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
-                output_notl($msg);
+                $output->outputNotl($msg);
             } elseif ($msg > '') {
                 $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
-                output($msg);
+                $output->output($msg);
             }
             if ($buff['schema']) {
-                tlschema();
+                Translator::tlschema();
             }
         }
-        tlschema();
+        Translator::tlschema();
     }
 
     public static function processDmgshield($dshield, $damage)
     {
         global $session, $badguy;
-        tlschema('buffs');
+        $output = Output::getInstance();
+        Translator::tlschema('buffs');
         foreach ($dshield as $buff) {
             if (isset($buff['suspended']) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                tlschema($buff['schema']);
+                Translator::tlschema($buff['schema']);
             }
             $realdamage = round($damage * $buff['damageshield'], 0);
             if ($realdamage < 0) {
@@ -634,30 +651,31 @@ class Buffs
                 $count = 1;
             }
             if (is_array($msg)) {
-                $msg = sprintf_translate($msg);
+                $msg = Translator::sprintfTranslate($msg);
                 $msg = Substitute::apply('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
-                output_notl($msg);
+                $output->outputNotl($msg);
             } elseif ($msg > '') {
                 $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
-                output($msg);
+                $output->output($msg);
             }
             if ($buff['schema']) {
-                tlschema();
+                Translator::tlschema();
             }
         }
-        tlschema();
+        Translator::tlschema();
     }
 
     public static function expireBuffs()
     {
         global $session, $badguy;
-        tlschema('buffs');
+        $output = Output::getInstance();
+        Translator::tlschema('buffs');
         foreach ($session['bufflist'] as $key => $buff) {
             if (array_key_exists('suspended', $buff) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                tlschema($buff['schema']);
+                Translator::tlschema($buff['schema']);
             }
             if (array_key_exists('used', $buff) && $buff['used']) {
                 $session['bufflist'][$key]['used'] = 0;
@@ -668,56 +686,57 @@ class Buffs
                     if (isset($buff['wearoff']) && $buff['wearoff']) {
                         if (is_array($buff['wearoff'])) {
                             $buff['wearoff'] = str_replace('`%', '`%%', $buff['wearoff']);
-                            $msg = sprintf_translate($buff['wearoff']);
+                            $msg = Translator::sprintfTranslate($buff['wearoff']);
                             $msg = Substitute::apply('`5' . $msg . '`0`n');
-                            output_notl($msg);
+                            $output->outputNotl($msg);
                         } else {
                             $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
-                            output($msg);
+                            $output->output($msg);
                         }
                     }
                     self::stripBuff($key);
                 }
             }
             if ($buff['schema']) {
-                tlschema();
+                Translator::tlschema();
             }
         }
-        tlschema();
+        Translator::tlschema();
     }
 
     public static function expireBuffsAfterbattle()
     {
         global $session, $badguy;
-        tlschema('buffs');
+        $output = Output::getInstance();
+        Translator::tlschema('buffs');
         reset($session['bufflist']);
         foreach ($session['bufflist'] as $key => $buff) {
             if (array_key_exists('suspended', $buff) && $buff['suspended']) {
                 continue;
             }
             if ($buff['schema']) {
-                tlschema($buff['schema']);
+                Translator::tlschema($buff['schema']);
             }
             if (array_key_exists('used', $buff) && $buff['used']) {
                 if (array_key_exists('expireafterfight', $buff) && (int) $buff['expireafterfight'] == 1) {
                     if (isset($buff['wearoff']) && $buff['wearoff']) {
                         if (is_array($buff['wearoff'])) {
                             $buff['wearoff'] = str_replace('`%', '`%%', $buff['wearoff']);
-                            $msg = sprintf_translate($buff['wearoff']);
+                            $msg = Translator::sprintfTranslate($buff['wearoff']);
                             $msg = Substitute::apply('`5' . $msg . '`0`n');
-                            output_notl($msg);
+                            $output->outputNotl($msg);
                         } else {
                             $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
-                            output($msg);
+                            $output->output($msg);
                         }
                     }
                     self::stripBuff($key);
                 }
             }
             if ($buff['schema']) {
-                tlschema();
+                Translator::tlschema();
             }
         }
-        tlschema();
+        Translator::tlschema();
     }
 }
