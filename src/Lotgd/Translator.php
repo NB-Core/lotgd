@@ -29,16 +29,12 @@ class Translator
      */
     public static function translatorSetup(): void
     {
-        global $settings;
+        $settings = Settings::getInstance();
         //Determine what language to use
         if (defined("TRANSLATOR_IS_SET_UP")) {
             return;
         }
         define("TRANSLATOR_IS_SET_UP", true);
-
-        if (!isset($settings)) {
-            return; // not yet setup most likely
-        }
 
         global $language, $session;
         $language = "";
@@ -77,12 +73,12 @@ class Translator
      */
     public static function translate(string|array $indata, string|false|null $namespace = false): string|array
     {
-        global $session,$settings;
+        global $session;
+        $settings = Settings::getInstance();
 
         if (
-            !self::$translation_is_enabled
-            || !isset($settings)
-            || $settings->getSetting("enabletranslation", true) == false
+            ! self::$translation_is_enabled
+            || $settings->getSetting('enabletranslation', true) == false
         ) {
             return $indata;
         }
@@ -551,12 +547,10 @@ class Translator
      */
     public static function translatorCheckCollectTexts(): void
     {
-        global $session, $settings;
-        if (!isset($settings)) {
-            return; // not yet setup most likely
-        }
+        global $session;
+        $settings = Settings::getInstance();
 
-        $tlmax = $settings->getSetting("tl_maxallowed", 0);
+        $tlmax = $settings->getSetting('tl_maxallowed', 0);
 
         if ($settings->getSetting("permacollect", 0)) {
             $settings->saveSetting("collecttexts", 1);

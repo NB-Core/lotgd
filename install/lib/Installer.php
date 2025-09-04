@@ -218,7 +218,7 @@ class Installer
      */
     public function stage10(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE,$settings;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         $this->output->output("`@`c`bSuperuser Accounts`b`c");
         $this->output->debug($logd_version, true);
         $sql = "SELECT login, password FROM " . Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
@@ -284,7 +284,7 @@ class Installer
      */
     public function stage11(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE,$settings;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         $this->output->output("`@`c`bAll Done!`b`c");
         $this->output->output("Your install of Legend of the Green Dragon has been completed!`n");
         $this->output->output("`nRemember us when you have hundreds of users on your server, enjoying the game.");
@@ -953,7 +953,7 @@ class Installer
      */
     public function stage7(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $settings;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         if ($session['dbinfo']['upgrade'] ?? false) {
             require __DIR__ . '/../data/installer_sqlstatements.php';
         }
@@ -1259,7 +1259,7 @@ class Installer
      */
     public function stage9(): void
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX, $settings;
+        global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE, $DB_PREFIX;
         $session['skipmodules'] = $session['skipmodules'] ?? false;
         $this->output->output("`@`c`bRunning Database Migrations`b`c");
         $this->output->output("`2The installer now uses Doctrine migrations to set up the database schema.`n");
@@ -1438,20 +1438,12 @@ class Installer
 
     private function getSetting(string $name, $default = '')
     {
-        global $settings;
-        if ($settings instanceof Settings) {
-            return $settings->getSetting($name, $default);
-        }
-        return $default;
+        return Settings::getInstance()->getSetting($name, $default);
     }
 
     private function saveSetting(string $name, $value): void
     {
-        global $settings;
-        if (! ($settings instanceof Settings)) {
-            $settings = new Settings('settings');
-        }
-        $settings->saveSetting($name, $value);
+        Settings::getInstance()->saveSetting($name, $value);
     }
 
     /**

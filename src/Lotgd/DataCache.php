@@ -28,10 +28,11 @@ class DataCache
      */
     public static function datacache(string $name, int $duration = 60): mixed
     {
-        global $datacache, $settings;
-        if (!isset($settings)) {
-            return false; // not yet setup most likely
+        global $datacache;
+        if (! Settings::hasInstance()) {
+            return false;
         }
+        $settings = Settings::getInstance();
 
         if ($settings->getSetting('usedatacache', 0)) {
             if (isset(self::$cache[$name])) {
@@ -58,10 +59,10 @@ class DataCache
      */
     public static function updatedatacache(string $name, mixed $data): bool
     {
-        global $settings;
-        if (!isset($settings)) {
+        if (! Settings::hasInstance()) {
             return false;
         }
+        $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
             $base = $settings->getSetting('datacachepath', '/tmp');
             if (file_exists($base) && !is_dir($base)) {
@@ -105,10 +106,10 @@ class DataCache
      */
     public static function invalidatedatacache(string $name, bool $withpath = true): void
     {
-        global $settings;
-        if (!isset($settings)) {
+        if (! Settings::hasInstance()) {
             return;
         }
+        $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
             $fullname = $withpath ? self::makecachetempname($name) : $name;
             if (file_exists($fullname)) {
@@ -125,10 +126,10 @@ class DataCache
      */
     public static function massinvalidate(string $name = ''): void
     {
-        global $settings;
-        if (!isset($settings)) {
+        if (! Settings::hasInstance()) {
             return;
         }
+        $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
             $name = DATACACHE_FILENAME_PREFIX . $name;
             if (self::$path == '') {
@@ -151,10 +152,10 @@ class DataCache
      */
     public static function makecachetempname(string $name): string
     {
-        global $settings;
-        if (!isset($settings)) {
+        if (! Settings::hasInstance()) {
             return '';
         }
+        $settings = Settings::getInstance();
         if (self::$path == '') {
             self::$path = $settings->getSetting('datacachepath', '/tmp');
         }

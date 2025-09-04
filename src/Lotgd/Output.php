@@ -237,12 +237,7 @@ class Output
      */
     public function appoencode($data, $priv = false)
     {
-        global $settings;
-        if (!isset($settings)) {
-            $charset = 'UTF-8';
-        } else {
-            $charset = $settings->getSetting('charset', 'UTF-8');
-        }
+        $charset = Settings::getInstance()->getSetting('charset', 'UTF-8');
         $start = 0;
         $out   = '';
         if (($pos = strpos($data, '`')) !== false) {

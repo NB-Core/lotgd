@@ -27,7 +27,8 @@ class Outcomes
      */
     public static function victory(array $enemies, bool|string $denyflawless = false): void
     {
-        global $session, $options, $settings;
+        global $session, $options;
+        $settings = Settings::getInstance();
         $diddamage = false;
         $creaturelevel = 0;
         $gold = 0;
@@ -143,7 +144,8 @@ class Outcomes
      */
     public static function defeat(array $enemies, string $where = 'in the forest'): void
     {
-        global $session, $settings;
+        global $session;
+        $settings = Settings::getInstance();
         $percent = $settings->getSetting('forestexploss', 10);
         Nav::add('Daily news', 'news.php');
         $names = [];
@@ -192,7 +194,8 @@ class Outcomes
      */
     public static function buffBadguy(array $badguy): array
     {
-        global $session, $settings;
+        global $session;
+        $settings = Settings::getInstance();
         static $dk = false;
         if ($dk === false) {
             $dk = get_player_dragonkillmod(true);

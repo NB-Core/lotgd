@@ -121,7 +121,7 @@ class DateTime
 
     public static function getGameTime(): string
     {
-        global $settings;
+        $settings = Settings::getInstance();
         return gmdate($settings->getSetting('gametime', 'g:i a'), self::gametime());
     }
 
@@ -133,7 +133,7 @@ class DateTime
 
     public static function convertGameTime(int $intime, bool $debug = false): int
     {
-        global $settings;
+        $settings = Settings::getInstance();
         $intime -= $settings->getSetting('gameoffsetseconds', 0);
         $epoch = strtotime($settings->getSetting('game_epoch', gmdate('Y-m-d 00:00:00 O', strtotime('-30 days'))));
         $now = strtotime(gmdate('Y-m-d H:i:s O', $intime));
@@ -146,7 +146,7 @@ class DateTime
 
     public static function gameTimeDetails(): array
     {
-        global $settings;
+        $settings = Settings::getInstance();
         $ret = [];
         $ret['now'] = date('Y-m-d 00:00:00');
         $ret['gametime'] = self::gametime();

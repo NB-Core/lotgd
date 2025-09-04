@@ -210,7 +210,8 @@ class PageParts
  */
     public static function charStats(): string
     {
-        global $session, $playermount, $companions, $settings;
+        global $session, $playermount, $companions;
+        $settings = Settings::getInstance();
         if (defined("IS_INSTALLER") && IS_INSTALLER === true) {
             return "";
         }
@@ -830,11 +831,10 @@ class PageParts
      */
     public static function canonicalLink(): string
     {
-        global $REQUEST_URI, $SCRIPT_NAME, $settings;
+        global $REQUEST_URI, $SCRIPT_NAME;
+        $settings = Settings::getInstance();
 
-        $serverUrl = isset($settings)
-            ? rtrim($settings->getSetting('serverurl', 'http://' . $_SERVER['HTTP_HOST']), '/')
-            : 'http://' . $_SERVER['HTTP_HOST'];
+        $serverUrl = rtrim($settings->getSetting('serverurl', 'http://' . $_SERVER['HTTP_HOST']), '/');
 
         $uri = $REQUEST_URI ?? '';
         if ($uri === '') {
@@ -934,7 +934,8 @@ class PageParts
      */
     public static function computePageGenerationStats(float $pagestarttime): string
     {
-        global $session, $settings, $SCRIPT_NAME;
+        global $session, $SCRIPT_NAME;
+        $settings = Settings::getInstance();
 
         $gentime = DateTime::getMicroTime() - $pagestarttime;
         if (!isset($session['user']['gentime'])) {
@@ -945,7 +946,7 @@ class PageParts
             $session['user']['gentimecount'] = 0;
         }
         $session['user']['gentimecount']++;
-        if (isset($settings) && $settings->getSetting('debug', 0)) {
+        if ($settings->getSetting('debug', 0)) {
             $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','" . ($gentime) . "');";
             Database::query($sql);
             $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','" . (round(Database::getInfo('querytime', 0), 3)) . "');";

@@ -14,6 +14,7 @@ use Doctrine\DBAL\Exception\TableNotFoundException;
 
 class Settings
 {
+    private static ?self $instance = null;
     private string $tablename;
     /** @var array|null */
     private $settings = null;
@@ -21,11 +22,11 @@ class Settings
     /**
      * Initialize the settings handler.
      *
-     * @param string|false $tablename Optional table name
+     * @param string $tablename Optional table name
      */
-    public function __construct(string|false $tablename = false)
+    public function __construct(string $tablename = 'settings')
     {
-        $this->tablename = $tablename === false ? Database::prefix('settings') : Database::prefix($tablename);
+        $this->tablename = Database::prefix($tablename);
         $this->settings = null;
         $this->loadSettings();
     }
@@ -35,11 +36,25 @@ class Settings
      */
     public static function getInstance(): self
     {
-        global $settings;
-        if (!$settings instanceof self) {
-            $settings = new self('settings');
+        if (! self::$instance instanceof self) {
+            if (isset($GLOBALS['settings']) && $GLOBALS['settings'] instanceof self) {
+                self::$instance = $GLOBALS['settings'];
+            } else {
+                self::$instance = new self();
+            }
         }
-        return $settings;
+
+        return self::$instance;
+    }
+
+    public static function setInstance(?self $instance): void
+    {
+        self::$instance = $instance;
+    }
+
+    public static function hasInstance(): bool
+    {
+        return self::$instance instanceof self;
     }
 
     /**

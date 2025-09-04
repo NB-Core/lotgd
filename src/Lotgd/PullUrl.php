@@ -24,10 +24,8 @@ class PullUrl
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $val = 5;
         if (defined('DB_CONNECTED') && DB_CONNECTED === true) {
-            global $settings;
-            if ($settings instanceof Settings) {
-                $val = $settings->getSetting('curltimeout', 5);
-            }
+            $settings = Settings::getInstance();
+            $val = $settings->getSetting('curltimeout', 5);
         }
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $val);
         curl_setopt($ch, CURLOPT_TIMEOUT, $val);

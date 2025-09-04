@@ -21,7 +21,8 @@ class Timeout
      */
     public function timeoutStatus(bool $args = false): Response
     {
-        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $settings, $output;
+        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $output;
+        $settings = Settings::getInstance();
 
         if ($args === false) {
             return jaxon()->newResponse();

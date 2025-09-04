@@ -41,7 +41,7 @@ class ExpireChars
      */
     private static function needsExpiration(): bool
     {
-        global $settings;
+        $settings = Settings::getInstance();
         $lastExpire = strtotime($settings->getSetting('last_char_expire', DATETIME_DATEMIN));
         if ($lastExpire >= strtotime('-23 hours')) {
             return false;
@@ -56,10 +56,10 @@ class ExpireChars
      */
     private static function cleanupExpiredAccounts(): void
     {
-        global $settings;
-        $old = (int)$settings->getSetting('expireoldacct', 45);
-        $new = (int)$settings->getSetting('expirenewacct', 10);
-        $trash = (int)$settings->getSetting('expiretrashacct', 1);
+        $settings = Settings::getInstance();
+        $old = (int) $settings->getSetting('expireoldacct', 45);
+        $new = (int) $settings->getSetting('expirenewacct', 10);
+        $trash = (int) $settings->getSetting('expiretrashacct', 1);
 
         $rows = self::fetchAccountsToExpire($old, $new, $trash);
         if (empty($rows)) {
@@ -148,8 +148,8 @@ class ExpireChars
      */
     private static function notifyUpcomingExpirations(): void
     {
-        global $settings;
-        $old = max(1, ((int)$settings->getSetting('expireoldacct', 45)) - ((int)$settings->getSetting('notifydaysbeforedeletion', 5)));
+        $settings = Settings::getInstance();
+        $old = max(1, ((int) $settings->getSetting('expireoldacct', 45)) - ((int) $settings->getSetting('notifydaysbeforedeletion', 5)));
         $sql = 'SELECT login,acctid,emailaddress FROM ' . Database::prefix('accounts') .
             " WHERE 1=0 " . ($old > 0 ? "OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '') .
             " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
