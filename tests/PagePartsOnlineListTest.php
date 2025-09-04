@@ -11,12 +11,19 @@ use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
+ */
 final class PagePartsOnlineListTest extends TestCase
 {
     protected function setUp(): void
     {
         global $session, $settings, $output, $modulehook_returns;
         $modulehook_returns = [];
+        if (! class_exists('Lotgd\\Modules\\HookHandler', false)) {
+            eval('namespace Lotgd\\Modules; class HookHandler { public static function hook($name, $data = [], $allowinactive = false, $only = false) { global $modulehook_returns; return $modulehook_returns[$name] ?? $data; } }');
+        }
         class_exists(Database::class);
         $session = ['loggedin' => false];
         $output = new Output();

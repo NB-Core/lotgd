@@ -11,6 +11,10 @@ use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
+ */
 final class CharStatsEmptySessionTest extends TestCase
 {
     public function testCharStatsHandlesEmptySession(): void
@@ -19,6 +23,9 @@ final class CharStatsEmptySessionTest extends TestCase
         $modulehook_returns = [
             'onlinecharlist' => ['handled' => true, 'count' => 0, 'list' => ''],
         ];
+        if (! class_exists('Lotgd\\Modules\\HookHandler', false)) {
+            eval('namespace Lotgd\\Modules; class HookHandler { public static function hook($name, $data = [], $allowinactive = false, $only = false) { global $modulehook_returns; return $modulehook_returns[$name] ?? $data; } }');
+        }
         class_exists(Database::class);
         class_exists(DataCache::class);
         $session = [];

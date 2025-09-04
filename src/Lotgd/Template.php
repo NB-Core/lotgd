@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\ServerFunctions;
 use Lotgd\Cookies;
+use Lotgd\Modules\HookHandler;
 
 class Template
 {
@@ -265,7 +266,7 @@ class Template
             if ($fieldname != "") {
                 $template[$fieldname] = substr($val, strpos($val, "-->") + 3);
                 if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-                    $args = modulehook("template-{$fieldname}", ['content' => $template[$fieldname]]);
+                    $args = HookHandler::hook("template-{$fieldname}", ['content' => $template[$fieldname]]);
                     if (is_array($args) && array_key_exists('content', $args)) {
                         $template[$fieldname] = $args['content'];
                     }

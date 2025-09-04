@@ -12,6 +12,7 @@ use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\Nltoappon;
+use Lotgd\Modules\HookHandler;
 
 class Motd
 {
@@ -62,7 +63,7 @@ class Motd
         rawoutput("<a name='$anchor'>");
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
         output_notl('<h4>%s</h4>', $subject, true);
-        modulehook('motd-item-intercept', ['id' => $id]);
+        HookHandler::hook('motd-item-intercept', ['id' => $id]);
         $body = Nltoappon::convert($body);
         output_notl('<div>%s</div>', $body, true);
         output_notl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);

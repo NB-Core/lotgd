@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
+use Lotgd\Modules\HookHandler;
 
 class PlayerFunctions
 {
@@ -21,7 +22,7 @@ class PlayerFunctions
     public static function charCleanup(int $id, int $type): void
     {
         // Run module hooks for character deletion
-        modulehook('delete_character', ['acctid' => $id, 'deltype' => $type]);
+        HookHandler::hook('delete_character', ['acctid' => $id, 'deltype' => $type]);
 
         // Remove output cache records for this player
         Database::query('DELETE FROM ' . Database::prefix('accounts_output') . " WHERE acctid=$id;");
@@ -214,7 +215,7 @@ class PlayerFunctions
             $sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
             $result = Database::query($sql);
             $row = Database::fetchAssoc($result);
-            $row = modulehook('is-player-online', $row);
+            $row = HookHandler::hook('is-player-online', $row);
             if (!$row) {
                 return false;
             }
@@ -245,7 +246,7 @@ class PlayerFunctions
             while ($user = Database::fetchAssoc($result)) {
                 $rows[] = $user;
             }
-            $rows = modulehook('warriorlist', $rows);
+            $rows = HookHandler::hook('warriorlist', $rows);
             foreach ($rows as $user) {
                 $users[$user['acctid']] = 1;
                 if (isset($user['laston']) && isset($user['loggedin'])) {

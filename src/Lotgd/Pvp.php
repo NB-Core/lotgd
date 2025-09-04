@@ -13,6 +13,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
 use Lotgd\Mail;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
 
 class Pvp
 {
@@ -38,7 +39,7 @@ class Pvp
                 output("`\$Warning!`^ Players are immune from Player vs Player (PvP) combat for their first %s days in the game or until they have earned %s experience, or until they attack another player.  If you choose to attack another player, you will lose this immunity!`n`n", $days, $exp);
             }
         }
-        modulehook('pvpwarning', ['dokill' => $dokill]);
+        HookHandler::hook('pvpwarning', ['dokill' => $dokill]);
     }
 
     /**
@@ -84,7 +85,7 @@ class Pvp
                 $row['creatureexp'] = round($row['creatureexp'], 0);
                 $row['playerstarthp'] = $session['user']['hitpoints'];
                 $row['fightstartdate'] = strtotime('now');
-                $row = modulehook('pvpadjust', $row);
+                $row = HookHandler::hook('pvpadjust', $row);
                 self::warn(true);
                 return $row;
             }
@@ -150,7 +151,7 @@ class Pvp
         debuglog("gained $winamount ({$badguy['creaturegold']} base) gold and $wonexp exp (loser lost $lostexp) for killing ", $badguy['acctid']);
 
         $args = ['pvpmessageadd' => '', 'handled' => false, 'badguy' => $badguy, 'options' => $options];
-        $args = modulehook('pvpwin', $args);
+        $args = HookHandler::hook('pvpwin', $args);
 
         if ($session['user']['sex'] == SEX_MALE) {
             $msg = "`2While you were in %s, `^%s`2 initiated an attack on you with his `^%s`2, and defeated you!`n`nYou noticed he had an initial hp of `^%s`2 and just before you died he had `^%s`2 remaining.`n`nAs a result, you lost `\$%s%%`2 of your experience (approximately %s points), and `^%s`2 gold.`n%s`nDon't you think it's time for some revenge?`n`n`b`7Technical Notes:`b`nAlthough you might not have been in %s`7 when you got this message, you were in %s`7 when the fight was started, which was at %s according to the server (the fight lasted about %s).";
@@ -215,7 +216,7 @@ class Pvp
         $lostexp = round($session['user']['experience'] * getsetting('pvpattlose', 15) / 100, 0);
 
         $args = ['pvpmsgadd' => '', 'taunt' => $taunt, 'handled' => false, 'badguy' => $badguy, 'options' => $options];
-        $args = modulehook('pvploss', $args);
+        $args = HookHandler::hook('pvploss', $args);
 
         $msg = '`^%s`2 attacked you while you were in %s`2, but you were victorious!`n`n';
         if ($row['level'] < $badguy['creaturelevel']) {
@@ -309,7 +310,7 @@ class Pvp
             $pvp[] = $row;
         }
 
-        $pvp = modulehook('pvpmodifytargets', $pvp);
+        $pvp = HookHandler::hook('pvpmodifytargets', $pvp);
 
         tlschema('pvp');
         $n = Translator::translateInline('Name');
@@ -389,7 +390,7 @@ class Pvp
             while ($row = Database::fetchAssoc($result)) {
                 $loc = $row['location'];
                 $count = $row['counter'];
-                $args = modulehook('pvpcount', ['count' => $count, 'loc' => $loc]);
+                $args = HookHandler::hook('pvpcount', ['count' => $count, 'loc' => $loc]);
                 if (isset($args['handled']) && $args['handled']) {
                     continue;
                 }

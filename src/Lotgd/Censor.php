@@ -6,6 +6,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
+use Lotgd\Modules\HookHandler;
 
 class Censor
 {
@@ -79,7 +80,7 @@ class Censor
                 return $input;
             }
             if ($changed_content && !$skiphook) {
-                modulehook('censor', ['input' => $input]);
+                HookHandler::hook('censor', ['input' => $input]);
             }
             return $final_output;
         }

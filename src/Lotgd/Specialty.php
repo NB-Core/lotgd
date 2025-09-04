@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Modules\HookHandler;
+
 class Specialty
 {
     /**
@@ -23,7 +25,7 @@ class Specialty
         }
         tlschema('skills');
         if ($session['user']['specialty'] != '') {
-            modulehook('incrementspecialty', ['color' => $colorcode]);
+            HookHandler::hook('incrementspecialty', ['color' => $colorcode]);
         } else {
             output("`7You have no direction in the world, you should rest and make some important decisions about your life.`0`n");
         }

@@ -14,6 +14,7 @@ use Lotgd\Translator;
 use Lotgd\Nav\NavigationItem;
 use Lotgd\Nav\NavigationSection;
 use Lotgd\Nav\NavigationSubSection;
+use Lotgd\Modules\HookHandler;
 
 // Maintain state within the class instead of the global namespace
 
@@ -467,7 +468,7 @@ class Nav
                         $key_string = $headerKey;
                     }
                     $args = ['name' => "nh-{$key_string}", 'title' => ($key_string ? $key_string : 'Unnamed Navs')];
-                    $args = modulehook('collapse-nav{', $args);
+                    $args = HookHandler::hook('collapse-nav{', $args);
                     if (isset($args['content'])) {
                         $collapseheader = $args['content'];
                     }
@@ -507,7 +508,7 @@ class Nav
                     }
                 }
                 if ($tkey > '' && $section->collapse) {
-                    $args = modulehook('}collapse-nav');
+                    $args = HookHandler::hook('}collapse-nav');
                     if (isset($args['content'])) {
                         $collapsefooter = $args['content'];
                     }

@@ -7,6 +7,10 @@ namespace Lotgd\Tests;
 use Lotgd\Template;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
+ */
 final class TemplateTest extends TestCase
 {
     protected function setUp(): void
@@ -43,6 +47,10 @@ final class TemplateTest extends TestCase
     public function testLoadTemplateAppliesModuleHookChanges(): void
     {
         global $modulehook_returns;
+
+        if (! class_exists('Lotgd\\Modules\\HookHandler', false)) {
+            eval('namespace Lotgd\\Modules; class HookHandler { public static function hook($name, $data = [], $allowinactive = false, $only = false) { global $modulehook_returns; return $modulehook_returns[$name] ?? $data; } }');
+        }
 
         $path = dirname(__DIR__) . '/templates/test_template.htm';
         file_put_contents($path, "<!--!test-->original");

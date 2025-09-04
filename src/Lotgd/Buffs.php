@@ -6,6 +6,7 @@ namespace Lotgd;
 
 use Lotgd\Substitute;
 use Lotgd\Translator;
+use Lotgd\Modules\HookHandler;
 
 class Buffs
 {
@@ -164,7 +165,7 @@ class Buffs
         if (isset($session['bufflist'][$name])) {
             self::restoreBuffFields();
         }
-        $buff = modulehook('modify-buff', ['name' => $name, 'buff' => $buff]);
+        $buff = HookHandler::hook('modify-buff', ['name' => $name, 'buff' => $buff]);
         $session['bufflist'][$name] = $buff['buff'];
         self::calculateBuffFields();
     }
@@ -222,7 +223,7 @@ class Buffs
             $companions = @unserialize($session['user']['companions']);
         }
         $companionsallowed = getsetting('companionsallowed', 1);
-        $args = modulehook('companionsallowed', ['maxallowed' => $companionsallowed]);
+        $args = HookHandler::hook('companionsallowed', ['maxallowed' => $companionsallowed]);
         $companionsallowed = $args['maxallowed'];
         $current = 0;
         if (!$ignorelimit) {

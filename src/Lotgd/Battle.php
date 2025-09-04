@@ -11,6 +11,7 @@ use Lotgd\FightBar;
 use Lotgd\BellRand;
 use Lotgd\Substitute;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
 
 class Battle
 {
@@ -343,7 +344,7 @@ class Battle
             'schema' => 'skill',
             ]);
         }
-        modulehook('apply-specialties');
+        HookHandler::hook('apply-specialties');
     }
 
     public static function fightnav(bool $allowSpecial = true, bool $allowFlee = true, $script = false): void
@@ -387,13 +388,13 @@ class Battle
 
         if ($allowSpecial) {
             addnav('Special Abilities');
-            modulehook('fightnav-specialties', ['script' => $script]);
+            HookHandler::hook('fightnav-specialties', ['script' => $script]);
 
             if ($session['user']['superuser'] & SU_DEVELOPER) {
                 addnav('`&Super user`0', '');
                 addnav('!?`&&#149; __GOD MODE', $script . 'op=fight&skill=godmode', true);
             }
-            modulehook('fightnav', ['script' => $script]);
+            HookHandler::hook('fightnav', ['script' => $script]);
         }
 
         if (count($newenemies) > 1) {
@@ -573,7 +574,7 @@ class Battle
             $options = array();
         }
         $fightoptions = $options + $basicoptions;
-        $fightoptions = modulehook("fightoptions", $fightoptions);
+        $fightoptions = HookHandler::hook("fightoptions", $fightoptions);
 
         // We'll also reset the companions here...
         self::prepareCompanions();

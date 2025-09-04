@@ -11,3 +11,7 @@ require_once __DIR__ . '/Stubs/Functions.php';
 require_once realpath(__DIR__ . '/../src/Lotgd/Repository/AccountRepository.php');
 require_once realpath(__DIR__ . '/../src/Lotgd/Repository/SettingRepository.php');
 require_once realpath(__DIR__ . '/../src/Lotgd/Repository/ExtendedSettingRepository.php');
+class_exists(\Lotgd\DataCache::class);
+if (! class_exists('Lotgd\\Datacache', false)) {
+    class_alias(\Lotgd\DataCache::class, 'Lotgd\\Datacache');
+}

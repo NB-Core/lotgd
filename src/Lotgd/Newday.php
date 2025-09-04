@@ -8,6 +8,7 @@ use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
 use Lotgd\ExpireChars;
+use Lotgd\Modules\HookHandler;
 
 class Newday
 {
@@ -109,7 +110,7 @@ class Newday
 
     public static function runOnce(): void
     {
-        modulehook('newday-runonce', []);
+        HookHandler::hook('newday-runonce', []);
 
         if (getsetting('usedatacache', 0)) {
             $path = getsetting('datacachepath', '/tmp');
@@ -150,7 +151,7 @@ class Newday
             }
             $pdks[$type] = (int) httppost($type);
         }
-        modulehook('pdkpointrecalc');
+        HookHandler::hook('pdkpointrecalc');
         $pdktotal = 0;
         foreach ($labels as $type => $label) {
             $head = explode(',', $label);
@@ -345,11 +346,11 @@ class Newday
             $vname = getsetting('villagename', LOCATION_FIELDS);
             $session['user']['race'] = $setrace;
             $session['user']['location'] = $vname;
-            modulehook('setrace');
+            HookHandler::hook('setrace');
             addnav('Continue', "newday.php?continue=1$resline");
         } else {
             output('Where do you recall growing up?`n`n');
-            modulehook('chooserace');
+            HookHandler::hook('chooserace');
         }
         if (navcount() == 0) {
             clearoutput();
@@ -376,12 +377,12 @@ class Newday
         $setspecialty = httpget('setspecialty');
         if ($setspecialty != '') {
             $session['user']['specialty'] = $setspecialty;
-            modulehook('set-specialty');
+            HookHandler::hook('set-specialty');
             addnav('Continue', "newday.php?continue=1$resline");
         } else {
             page_header('A little history about yourself');
             output('What do you recall doing as a child?`n`n');
-            modulehook('choose-specialty');
+            HookHandler::hook('choose-specialty');
         }
         if (navcount() == 0) {
             clearoutput();
