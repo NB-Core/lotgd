@@ -35,6 +35,8 @@ class Newday
 
     public static function commentCleanup(): void
     {
+        global $settings;
+
         $timestamp = self::calculateExpirationTimestamp('2 month');
         Database::query('DELETE FROM ' . Database::prefix('referers') . " WHERE last < '$timestamp'");
         GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('referers') . " older than $timestamp.", 'maintenance');
@@ -46,9 +48,9 @@ class Newday
         if ($ok) {
             $sql = 'DELETE FROM ' . Database::prefix('debuglog') . " WHERE date <'$timestamp'";
             Database::query($sql);
-            $timestamp = self::calculateExpirationTimestamp(getsetting('expiredebuglog', 18) . ' days');
+            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiredebuglog', 18) . ' days');
             $sql = 'DELETE FROM ' . Database::prefix('debuglog_archive') . " WHERE date <'$timestamp'";
-            if (getsetting('expiredebuglog', 18) > 0) {
+            if ($settings->getSetting('expiredebuglog', 18) > 0) {
                 Database::query($sql);
             }
             GameLog::log('Moved ' . Database::affectedRows() . ' from ' . Database::prefix('debuglog') . ' to ' . Database::prefix('debuglog_archive') . " older than $timestamp.", 'maintenance');
@@ -56,44 +58,44 @@ class Newday
             GameLog::log('ERROR, problems with moving the debuglog to the archive', 'maintenance');
         }
 
-        $timestamp = self::calculateExpirationTimestamp(getsetting('oldmail', 14) . ' days');
+        $timestamp = self::calculateExpirationTimestamp($settings->getSetting('oldmail', 14) . ' days');
         $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE sent<'$timestamp'";
         Database::query($sql);
         GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('mails') . " older than $timestamp.", 'maintenance');
         massinvalidate('mail');
 
-        if ((int) getsetting('expirecontent', 180) > 0) {
-            $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
+        if ((int) $settings->getSetting('expirecontent', 180) > 0) {
+            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
             $sql = 'DELETE FROM ' . Database::prefix('news') . " WHERE newsdate<'$timestamp'";
             GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('news') . " older than $timestamp.", 'comment expiration');
             Database::query($sql);
         }
 
-        $timestamp = self::calculateExpirationTimestamp(getsetting('expiregamelog', 30) . ' days');
+        $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiregamelog', 30) . ' days');
         $sql = 'DELETE FROM ' . Database::prefix('gamelog') . " WHERE date < '$timestamp' ";
-        if (getsetting('expiregamelog', 30) > 0) {
+        if ($settings->getSetting('expiregamelog', 30) > 0) {
             Database::query($sql);
             GameLog::log('Cleaned up ' . Database::prefix('gamelog') . ' table removing ' . Database::affectedRows() . " older than $timestamp.", 'maintenance');
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE postdate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
-        if (getsetting('expirecontent', 180) > 0) {
-            $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
+        $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE postdate<'" . self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days') . "'";
+        if ($settings->getSetting('expirecontent', 180) > 0) {
+            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
             Database::query($sql);
             GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('commentary') . " older than $timestamp.", 'comment expiration');
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('moderatedcomments') . " WHERE moddate<'" . self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days') . "'";
-        if (getsetting('expirecontent', 180) > 0) {
-            $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
+        $sql = 'DELETE FROM ' . Database::prefix('moderatedcomments') . " WHERE moddate<'" . self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days') . "'";
+        if ($settings->getSetting('expirecontent', 180) > 0) {
+            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
             Database::query($sql);
             GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('moderatedcomments') . " older than $timestamp.", 'comment expiration');
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('faillog') . " WHERE date<'" . self::calculateExpirationTimestamp(getsetting('expirefaillog', 1) . ' days') . "'";
-        if (getsetting('expirefaillog', 1) > 0) {
+        $sql = 'DELETE FROM ' . Database::prefix('faillog') . " WHERE date<'" . self::calculateExpirationTimestamp($settings->getSetting('expirefaillog', 1) . ' days') . "'";
+        if ($settings->getSetting('expirefaillog', 1) > 0) {
             Database::query($sql);
-            $timestamp = self::calculateExpirationTimestamp(getsetting('expirecontent', 180) . ' days');
+            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
             GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('faillog') . " older than $timestamp.", 'maintenance');
         }
     }
@@ -110,10 +112,12 @@ class Newday
 
     public static function runOnce(): void
     {
+        global $settings;
+
         HookHandler::hook('newday-runonce', []);
 
-        if (getsetting('usedatacache', 0)) {
-            $path = getsetting('datacachepath', '/tmp');
+        if ($settings->getSetting('usedatacache', 0)) {
+            $path = $settings->getSetting('datacachepath', '/tmp');
             $handle = @opendir($path);
             if ($handle === false) {
                 trigger_error("Unable to open datacache directory: $path", E_USER_WARNING);
@@ -132,7 +136,7 @@ class Newday
             }
         }
 
-        if (!getsetting('newdaycron', 0)) {
+        if (!$settings->getSetting('newdaycron', 0)) {
             self::dbCleanup();
             self::commentCleanup();
             self::charCleanup();
@@ -340,10 +344,10 @@ class Newday
 
     public static function setRace(string $resline): void
     {
-        global $session;
+        global $session, $settings;
         $setrace = httpget('setrace');
         if ($setrace != '') {
-            $vname = getsetting('villagename', LOCATION_FIELDS);
+            $vname = $settings->getSetting('villagename', LOCATION_FIELDS);
             $session['user']['race'] = $setrace;
             $session['user']['location'] = $vname;
             HookHandler::hook('setrace');
