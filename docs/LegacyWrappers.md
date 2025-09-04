@@ -57,7 +57,6 @@ The following wrappers exist for backwards compatibility:
 - `lib/pullurl.php` → `\Lotgd\PullUrl`
 - `lib/pvplist.php`, `lib/pvpsupport.php`, `lib/pvpwarning.php` → `\Lotgd\Pvp`
 - `lib/redirect.php` → `\Lotgd\Redirect`
-- `lib/register_global.php` → `\Lotgd\RegisterGlobal`
 - `lib/safeescape.php` → `\Lotgd\SafeEscape`
 - `lib/sanitize.php` → `\Lotgd\Sanitize`
 - `lib/saveuser.php` → `\Lotgd\Accounts::saveUser()`

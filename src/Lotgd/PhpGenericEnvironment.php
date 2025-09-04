@@ -51,8 +51,7 @@ class PhpGenericEnvironment
      */
     public static function setup(): void
     {
-        require_once 'lib/register_global.php';
-        register_global($_SERVER);
+        RegisterGlobal::register($_SERVER);
         self::sanitizeUri();
     }
 }
