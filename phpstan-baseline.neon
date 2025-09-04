@@ -15,10 +15,6 @@ parameters:
 			count: 3
 			path: src/Lotgd/Async/Handler/Commentary.php
 
-		-
-			message: "#^Function appoencode not found\\.$#"
-			count: 1
-			path: src/Lotgd/Async/Handler/Commentary.php
 
 		-
 			message: "#^Function getsetting not found\\.$#"
