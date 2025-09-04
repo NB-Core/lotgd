@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Lotgd\Async\Handler;
 
 use Lotgd\MySQL\Database;
-
 use Jaxon\Response\Response;
 use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Util\ScriptName;
+use Lotgd\Output;
 use function Jaxon\jaxon;
 
 /**
@@ -65,11 +65,13 @@ class Commentary
             . "' ORDER BY commentid ASC";
         $result = Database::query($sql);
         $newId = $lastId;
+        /** @var Output $output */
+        global $output;
         while ($row = Database::fetchAssoc($result)) {
             $newId = $row['commentid'];
             $line = CoreCommentary::renderCommentLine($row, $linkbios);
             // Convert colour codes but preserve embedded HTML like profile links
-            $line = appoencode($line, true);
+            $line = $output->appoencode($line, true);
             $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
         }
         Database::freeResult($result);
