@@ -232,31 +232,6 @@ parameters:
 			count: 4
 			path: src/Lotgd/Config/user_account.php
 
-		-
-			message: "#^Function addnav not found\\.$#"
-			count: 1
-			path: src/Lotgd/DateTime.php
-
-		-
-			message: "#^Function output_notl not found\\.$#"
-			count: 1
-			path: src/Lotgd/DateTime.php
-
-		-
-			message: "#^Function rawoutput not found\\.$#"
-			count: 1
-			path: src/Lotgd/DateTime.php
-
-		-
-			message: "#^Function redirect not found\\.$#"
-			count: 1
-			path: src/Lotgd/DateTime.php
-
-
-		-
-			message: "#^Function tlbutton_clear not found\\.$#"
-			count: 1
-			path: src/Lotgd/DateTime.php
 
 
 		-
