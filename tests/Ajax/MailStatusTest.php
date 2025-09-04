@@ -3,43 +3,6 @@
 declare(strict_types=1);
 
 namespace {
-    if (!function_exists('db_prefix')) {
-        function db_prefix(string $name): string
-        {
-            return $name;
-        }
-    }
-
-    if (!function_exists('db_query')) {
-        function db_query(string $sql): array
-        {
-            global $test_accounts_query_result;
-            if (strpos($sql, "login = '") !== false) {
-                return [];
-            }
-            if (strpos($sql, 'name LIKE') !== false) {
-                return $test_accounts_query_result ?? [];
-            }
-            if (strpos($sql, 'SELECT MAX(messageid)') !== false) {
-                return $GLOBALS['db_result'] ?? [];
-            }
-            return $GLOBALS['db_result'] ?? [];
-        }
-    }
-
-    if (!function_exists('db_fetch_assoc')) {
-        function db_fetch_assoc(array &$result): ?array
-        {
-            return array_shift($result);
-        }
-    }
-
-    if (!function_exists('db_free_result')) {
-        function db_free_result(array $result): void
-        {
-        }
-    }
-
     if (!function_exists('maillink')) {
         function maillink(): string
         {
@@ -59,28 +22,28 @@ namespace Lotgd\Tests\Ajax {
 
     use Jaxon\Response\Response;
     use Lotgd\Async\Handler\Mail;
+    use Lotgd\Tests\Stubs\Database;
     use PHPUnit\Framework\TestCase;
 
     final class MailStatusTest extends TestCase
     {
         protected function setUp(): void
         {
-            global $session, $maillink_result, $maillink_tabtext, $db_result;
+            global $session, $maillink_result, $maillink_tabtext;
 
             $session = ['user' => ['acctid' => 1]];
             $maillink_result = '<a>mail</a>';
             $maillink_tabtext = '';
-            $db_result = [['lastid' => 0]];
-
             require_once __DIR__ . '/../bootstrap.php';
+            Database::$mockResults = [[['lastid' => 0]]];
         }
 
         public function testUnreadMailTriggersNotify(): void
         {
-            global $maillink_tabtext, $db_result;
+            global $maillink_tabtext;
 
             $maillink_tabtext = '1 new mail';
-            $db_result = [['lastid' => 7]];
+            Database::$mockResults = [[['lastid' => 7]]];
 
             $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
@@ -97,10 +60,10 @@ namespace Lotgd\Tests\Ajax {
 
         public function testNoUnreadMailNoNotify(): void
         {
-            global $maillink_tabtext, $db_result;
+            global $maillink_tabtext;
 
             $maillink_tabtext = '';
-            $db_result = [['lastid' => 5]];
+            Database::$mockResults = [[['lastid' => 5]]];
 
             $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
@@ -114,6 +77,7 @@ namespace Lotgd\Tests\Ajax {
             global $session;
 
             $session = [];
+            Database::$mockResults = [];
 
             $response = (new Mail())->mailStatus(true);
             $this->assertSame([], $response->getCommands());
