@@ -7,6 +7,9 @@ namespace Lotgd;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
+use Lotgd\DataCache;
+use const \SU_EDIT_COMMENTS;
 
 class Censor
 {
@@ -25,7 +28,8 @@ class Censor
         $final_output = $input;
         $sanitized = Sanitize::fullSanitize($input);
         $mix_mask = str_pad('', strlen($sanitized), 'X');
-        if (getsetting('soap', 1)) {
+        $settings = Settings::getInstance();
+        if ($settings->getSetting('soap', 1)) {
             $search = self::nastyWordList();
             $exceptions = array_flip(self::goodWordList());
             $changed_content = false;
@@ -146,7 +150,7 @@ class Censor
         $search = "$start(" . trim($search) . ")+$end";
         $search = str_replace("$start()+$end", "", $search);
         $search = explode(" ", $search);
-        updatedatacache("nastywordlist", $search);
+        DataCache::updatedatacache('nastywordlist', $search);
 
         return $search;
     }
