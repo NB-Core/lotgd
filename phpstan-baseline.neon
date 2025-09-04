@@ -57,12 +57,6 @@ parameters:
 			path: src/Lotgd/Buffs.php
 
 		-
-			message: "#^Variable \\$matches might not be defined\\.$#"
-			count: 6
-			path: src/Lotgd/Censor.php
-
-
-		-
 			message: "#^Function sprintf_translate not found\\.$#"
 			count: 3
 			path: src/Lotgd/CheckBan.php
