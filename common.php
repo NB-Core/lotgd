@@ -22,6 +22,7 @@ use Lotgd\Util\ScriptName;
 use Lotgd\Page\Footer;
 use Lotgd\Redirect;
 use Lotgd\Template;
+use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
 use Lotgd\Cookies;
 use Lotgd\ErrorHandler;
@@ -183,7 +184,7 @@ if (file_exists("dbconnect.php")) {
     $DB_PASS = $config['DB_PASS'] ?? '';
     $DB_NAME = $config['DB_NAME'] ?? '';
     $DB_PREFIX = $config['DB_PREFIX'] ?? '';
-    \Lotgd\MySQL\Database::setPrefix($DB_PREFIX);
+    Database::setPrefix($DB_PREFIX);
     $DB_USEDATACACHE = $config['DB_USEDATACACHE'] ?? 0;
     $DB_DATACACHEPATH = $config['DB_DATACACHEPATH'] ?? '';
 } else {
@@ -214,13 +215,13 @@ if (file_exists("dbconnect.php")) {
 //
 // Line is important for installer only, step 5
 //if (defined("IS_INSTALLER") && httpget('stage')>5)
-//  $link = \Lotgd\MySQL\Database::pconnect($DB_HOST, $DB_USER, $DB_PASS);
+//  $link = Database::pconnect($DB_HOST, $DB_USER, $DB_PASS);
 $link = false;
 if (!defined("DB_NODB")) {
-        $link = \Lotgd\MySQL\Database::connect($config['DB_HOST'] ?? '', $config['DB_USER'] ?? '', $config['DB_PASS'] ?? '');
+        $link = Database::connect($config['DB_HOST'] ?? '', $config['DB_USER'] ?? '', $config['DB_PASS'] ?? '');
 
         //set charset to UTF-8 (table default, don't change that!)
-    if (!\Lotgd\MySQL\Database::setCharset("utf8mb4")) {
+    if (!Database::setCharset("utf8mb4")) {
             echo "Error setting db connection charset to UTF-8...please check your db connection!";
             exit(0);
     }
@@ -236,7 +237,7 @@ if ($link === false) {
                 //Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
                 $notified = false;
         if (file_exists("lib/smsnotify.php")) {
-                $smsmessage = "No DB Server: " . \Lotgd\MySQL\Database::error();
+                $smsmessage = "No DB Server: " . Database::error();
                 require_once("lib/smsnotify.php");
                 $notified = true;
         }
@@ -271,11 +272,11 @@ if ($link === false) {
 }
 
 if (!defined("DB_NODB")) {
-    if (!DB_CONNECTED || !@\Lotgd\MySQL\Database::selectDb($config['DB_NAME'])) {
+    if (!DB_CONNECTED || !@Database::selectDb($config['DB_NAME'])) {
         if ((!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) && DB_CONNECTED) {
             // Ignore this bit.  It's only really for Eric's server or people that want to trigger something when the database is jerky
             if (file_exists("lib/smsnotify.php")) {
-                                $smsmessage = "Cant Attach to DB: " . \Lotgd\MySQL\Database::error();
+                                $smsmessage = "Cant Attach to DB: " . Database::error();
                 require_once("lib/smsnotify.php");
                 $notified = true;
             }
@@ -467,16 +468,16 @@ if (
     $host = str_replace(":80", "", $_SERVER['HTTP_HOST']);
 
     if ($site != $host) {
-                $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("referers") . " WHERE uri='{$_SERVER['HTTP_REFERER']}'";
-                $result = \Lotgd\MySQL\Database::query($sql);
-                $row = \Lotgd\MySQL\Database::fetchAssoc($result);
-                \Lotgd\MySQL\Database::freeResult($result);
+                $sql = "SELECT * FROM " . Database::prefix("referers") . " WHERE uri='{$_SERVER['HTTP_REFERER']}'";
+                $result = Database::query($sql);
+                $row = Database::fetchAssoc($result);
+                Database::freeResult($result);
         if (isset($row['refererid']) && $row['refererid'] > "") {
-                $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("referers") . " SET count=count+1,last='" . date("Y-m-d H:i:s") . "',site='" . addslashes($site) . "',dest='" . addslashes($host) . "/" . addslashes($REQUEST_URI) . "',ip='{$_SERVER['REMOTE_ADDR']}' WHERE refererid='{$row['refererid']}'";
+                $sql = "UPDATE " . Database::prefix("referers") . " SET count=count+1,last='" . date("Y-m-d H:i:s") . "',site='" . addslashes($site) . "',dest='" . addslashes($host) . "/" . addslashes($REQUEST_URI) . "',ip='{$_SERVER['REMOTE_ADDR']}' WHERE refererid='{$row['refererid']}'";
         } else {
-                $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("referers") . " (uri,count,last,site,dest,ip) VALUES ('{$_SERVER['HTTP_REFERER']}',1,'" . date("Y-m-d H:i:s") . "','" . addslashes($site) . "','" . addslashes($host) . "/" . addslashes($REQUEST_URI) . "','{$_SERVER['REMOTE_ADDR']}')";
+                $sql = "INSERT INTO " . Database::prefix("referers") . " (uri,count,last,site,dest,ip) VALUES ('{$_SERVER['HTTP_REFERER']}',1,'" . date("Y-m-d H:i:s") . "','" . addslashes($site) . "','" . addslashes($host) . "/" . addslashes($REQUEST_URI) . "','{$_SERVER['REMOTE_ADDR']}')";
         }
-                \Lotgd\MySQL\Database::query($sql);
+                Database::query($sql);
     }
 }
 
@@ -540,10 +541,10 @@ if (
     }
 
     if (isset($session['user']['clanid'])) {
-            $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("clans") . " WHERE clanid='{$session['user']['clanid']}'";
-            $result = \Lotgd\MySQL\Database::queryCached($sql, "clandata-{$session['user']['clanid']}", 3600);
-        if (\Lotgd\MySQL\Database::numRows($result) > 0) {
-                $claninfo = \Lotgd\MySQL\Database::fetchAssoc($result);
+            $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanid='{$session['user']['clanid']}'";
+            $result = Database::queryCached($sql, "clandata-{$session['user']['clanid']}", 3600);
+        if (Database::numRows($result) > 0) {
+                $claninfo = Database::fetchAssoc($result);
         } else {
             $claninfo = array();
             $session['user']['clanid'] = 0;

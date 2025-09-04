@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 use Lotgd\Mail;
 
 /**
@@ -26,16 +28,16 @@ function mailSend(): void
         return;
     }
 
-    $sql = 'SELECT acctid FROM ' . \Lotgd\MySQL\Database::prefix('accounts') . " WHERE login='$to'";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = 'SELECT acctid FROM ' . Database::prefix('accounts') . " WHERE login='$to'";
+    $result = Database::query($sql);
 
-    if (\Lotgd\MySQL\Database::numRows($result) <= 0) {
+    if (Database::numRows($result) <= 0) {
         output('Could not find the recipient, please try again.`n');
 
         return;
     }
 
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $row = Database::fetchAssoc($result);
     $checkUnread = (bool) getsetting('onlyunreadmails', true);
 
     if (Mail::isInboxFull($row['acctid'], $checkUnread)) {

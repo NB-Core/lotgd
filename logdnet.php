@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 // translator ready
 // addnews ready
 // mail ready
@@ -104,9 +106,9 @@ if ($op == "") {
     }
 
     // See if we know this server.
-    $sql = "SELECT lastupdate,serverid,lastping,recentips FROM " . \Lotgd\MySQL\Database::prefix("logdnet") . " WHERE address='" . \Lotgd\MySQL\Database::escape($addy) . "'";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT lastupdate,serverid,lastping,recentips FROM " . Database::prefix("logdnet") . " WHERE address='" . Database::escape($addy) . "'";
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
 
     // Clean up the desc
     $desc = logdnet_sanitize($desc);
@@ -117,7 +119,7 @@ if ($op == "") {
     }
 
     $date = date("Y-m-d H:i:s");
-    if (\Lotgd\MySQL\Database::numRows($result) > 0) {
+    if (Database::numRows($result) > 0) {
         // This is an already known server.
 
         // Eric, this below code does NOT work and causes a server to NEVER
@@ -140,42 +142,42 @@ if ($op == "") {
             // Only one update per minute allowed.
         if (strtotime($row['lastping']) < strtotime("-1 minutes")) {
             // Increase the popularity of this server
-                           $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("logdnet") .
-                                   " SET lang='" . \Lotgd\MySQL\Database::escape($lang) .
-                                   "',count='" . (int)$count . "',recentips='" . \Lotgd\MySQL\Database::escape($ips) .
-                                   "',priority=priority+1,description='" . \Lotgd\MySQL\Database::escape($desc) .
-                                   "',version='" . \Lotgd\MySQL\Database::escape($vers) .
-                                   "',admin='" . \Lotgd\MySQL\Database::escape($admin) .
+                           $sql = "UPDATE " . Database::prefix("logdnet") .
+                                   " SET lang='" . Database::escape($lang) .
+                                   "',count='" . (int)$count . "',recentips='" . Database::escape($ips) .
+                                   "',priority=priority+1,description='" . Database::escape($desc) .
+                                   "',version='" . Database::escape($vers) .
+                                   "',admin='" . Database::escape($admin) .
                                    "',lastupdate='$date',lastping='$date' WHERE serverid=" . (int)$row['serverid'];
-                           \Lotgd\MySQL\Database::query($sql);
+                           Database::query($sql);
         }
     //  }
     } else {
         // This is a new server, so add it and give it a small priority boost.
-               $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("logdnet") .
+               $sql = "INSERT INTO " . Database::prefix("logdnet") .
                        " (address,description,version,admin,priority,lastupdate,lastping,count,recentips,lang) VALUES ('" .
-                       \Lotgd\MySQL\Database::escape($addy) . "','" .
-                       \Lotgd\MySQL\Database::escape($desc) . "','" .
-                       \Lotgd\MySQL\Database::escape($vers) . "','" .
-                       \Lotgd\MySQL\Database::escape($admin) . "',10,'$date','$date','$count','" .
-                       \Lotgd\MySQL\Database::escape($_SERVER['REMOTE_ADDR']) . "','" .
-                       \Lotgd\MySQL\Database::escape($lang) . "')";
-               $result = \Lotgd\MySQL\Database::query($sql);
+                       Database::escape($addy) . "','" .
+                       Database::escape($desc) . "','" .
+                       Database::escape($vers) . "','" .
+                       Database::escape($admin) . "',10,'$date','$date','$count','" .
+                       Database::escape($_SERVER['REMOTE_ADDR']) . "','" .
+                       Database::escape($lang) . "')";
+               $result = Database::query($sql);
     }
 
     // Do these next two things whether we've added a new server or
     // updated an old one
 
     // Delete servers older than a week
-    $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("logdnet") . " WHERE lastping < '" . date("Y-m-d H:i:s", strtotime("-2 weeks")) . "'";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "DELETE FROM " . Database::prefix("logdnet") . " WHERE lastping < '" . date("Y-m-d H:i:s", strtotime("-2 weeks")) . "'";
+    Database::query($sql);
 
     // Degrade the popularity of any server which hasn't been updated in the
     // past 5 minutes by 1%.  This means that unpopular servers will fall
     // toward the bottom of the list.
     $since = date("Y-m-d H:i:s", strtotime("-5 minutes"));
-    $sql = "UPDATE " .  \Lotgd\MySQL\Database::prefix("logdnet") . " SET priority=priority*0.99,lastupdate='" . date("Y-m-d H:i:s") . "' WHERE lastupdate < '$since'";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "UPDATE " .  Database::prefix("logdnet") . " SET priority=priority*0.99,lastupdate='" . date("Y-m-d H:i:s") . "' WHERE lastupdate < '$since'";
+    Database::query($sql);
 
     //Now, if we're using version 2 of LoGDnet, we'll return the appropriate code.
     $v = httpget("v");
@@ -206,12 +208,12 @@ if ($op == "") {
 
     // I'm going to do a slightly niftier sort manually in a bit which always
     // pops the most recent 'official' versions to the top of the list.
-    $sql = "SELECT address,description,version,admin,priority FROM " . \Lotgd\MySQL\Database::prefix("logdnet") . " WHERE lastping > '" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT address,description,version,admin,priority FROM " . Database::prefix("logdnet") . " WHERE lastping > '" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
+    $result = Database::query($sql);
     $rows = array();
-    $number = \Lotgd\MySQL\Database::numRows($result);
+    $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $rows[] = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $rows[] = Database::fetchAssoc($result);
     }
     $rows = apply_logdnet_bans($rows);
     usort($rows, "lotgdsort");
@@ -384,9 +386,9 @@ function safeUnserialize(string $val): array|false
 
 function apply_logdnet_bans($logdnet)
 {
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("logdnetbans");
-    $result = \Lotgd\MySQL\Database::query($sql, "logdnetbans");
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    $sql = "SELECT * FROM " . Database::prefix("logdnetbans");
+    $result = Database::query($sql, "logdnetbans");
+    while ($row = Database::fetchAssoc($result)) {
         reset($logdnet);
         foreach ($logdnet as $i => $net) {
             if (preg_match("/{$row['banvalue']}/i", $net[$row['bantype']])) {

@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -14,15 +15,15 @@ $id = httpget('id');
 
 if ($op == "xml") {
     header("Content-Type: text/xml");
-    $sql = "select name from " . \Lotgd\MySQL\Database::prefix("accounts") . " where hashorse=$id";
-    $r = \Lotgd\MySQL\Database::query($sql);
+    $sql = "select name from " . Database::prefix("accounts") . " where hashorse=$id";
+    $r = Database::query($sql);
     echo("<xml>");
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($r)) {
+    while ($row = Database::fetchAssoc($r)) {
         echo("<name name=\"");
         echo(urlencode(appoencode("`0{$row['name']}")));
         echo("\"/>");
     }
-    if (\Lotgd\MySQL\Database::numRows($r) == 0) {
+    if (Database::numRows($r) == 0) {
         echo("<name name=\"" . translate_inline("NONE") . "\"/>");
     }
     echo("</xml>");
@@ -42,27 +43,27 @@ addnav("Mount Editor");
 addnav("Add a mount", "mounts.php?op=add");
 
 if ($op == "deactivate") {
-    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("mounts") . " SET mountactive=0 WHERE mountid='$id'";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "UPDATE " . Database::prefix("mounts") . " SET mountactive=0 WHERE mountid='$id'";
+    Database::query($sql);
     $op = "";
     httpset("op", "");
     invalidatedatacache("mountdata-$id");
 } elseif ($op == "activate") {
-    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("mounts") . " SET mountactive=1 WHERE mountid='$id'";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "UPDATE " . Database::prefix("mounts") . " SET mountactive=1 WHERE mountid='$id'";
+    Database::query($sql);
     $op = "";
     httpset("op", "");
     invalidatedatacache("mountdata-$id");
 } elseif ($op == "del") {
     //refund for anyone who has a mount of this type.
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("mounts") . " WHERE mountid='$id'";
-    $result = \Lotgd\MySQL\Database::queryCached($sql, "mountdata-$id", 3600);
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
-    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET gems=gems+{$row['mountcostgems']}, goldinbank=goldinbank+{$row['mountcostgold']}, hashorse=0 WHERE hashorse={$row['mountid']}";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
+    $result = Database::queryCached($sql, "mountdata-$id", 3600);
+    $row = Database::fetchAssoc($result);
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET gems=gems+{$row['mountcostgems']}, goldinbank=goldinbank+{$row['mountcostgold']}, hashorse=0 WHERE hashorse={$row['mountid']}";
+    Database::query($sql);
     //drop the mount.
-    $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("mounts") . " WHERE mountid='$id'";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "DELETE FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
+    Database::query($sql);
     module_delete_objprefs('mounts', $id);
     $op = "";
     httpset("op", "");
@@ -70,9 +71,9 @@ if ($op == "deactivate") {
 } elseif ($op == "give") {
     $session['user']['hashorse'] = $id;
     // changed to make use of the cached query
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("mounts") . " WHERE mountid='$id'";
-    $result = \Lotgd\MySQL\Database::queryCached($sql, "mountdata-$id", 3600);
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
+    $result = Database::queryCached($sql, "mountdata-$id", 3600);
+    $row = Database::fetchAssoc($result);
     $buff = unserialize($row['mountbuff']);
     if ($buff['schema'] == "") {
         $buff['schema'] = "mounts";
@@ -97,15 +98,15 @@ if ($op == "deactivate") {
 
             list($sql, $keys, $vals) = postparse(false, 'mount');
             if ($id > "") {
-                $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("mounts") .
+                $sql = "UPDATE " . Database::prefix("mounts") .
                     " SET $sql WHERE mountid='$id'";
             } else {
-                $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("mounts") .
+                $sql = "INSERT INTO " . Database::prefix("mounts") .
                     " ($keys) VALUES ($vals)";
             }
-            \Lotgd\MySQL\Database::query($sql);
+            Database::query($sql);
             invalidatedatacache("mountdata-$id");
-            if (\Lotgd\MySQL\Database::affectedRows() > 0) {
+            if (Database::affectedRows() > 0) {
                 output("`^Mount saved!`0`n");
             } else {
                 output("`^Mount `\$not`^ saved: `\$%s`0`n", $sql);
@@ -130,10 +131,10 @@ if ($op == "deactivate") {
 }
 
 if ($op == "") {
-    $sql = "SELECT count(acctid) AS c, hashorse FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " GROUP BY hashorse";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT count(acctid) AS c, hashorse FROM " . Database::prefix("accounts") . " GROUP BY hashorse";
+    $result = Database::query($sql);
     $mounts = array();
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         $mounts[$row['hashorse']] = $row['c'];
     }
     rawoutput("<script language='JavaScript'>
@@ -157,7 +158,7 @@ if ($op == "") {
 	}
 	</script>");
 
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("mounts") . " ORDER BY mountcategory, mountcostgems, mountcostgold";
+    $sql = "SELECT * FROM " . Database::prefix("mounts") . " ORDER BY mountcategory, mountcostgems, mountcostgold";
     $ops = translate_inline("Ops");
     $name = translate_inline("Name");
     $cost = translate_inline("Cost");
@@ -174,13 +175,13 @@ if ($op == "") {
 
     rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     rawoutput("<tr class='trhead'><td nowrap>$ops</td><td>$name</td><td>$cost</td><td>$feat</td><td nowrap>$owners</td></tr>");
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $result = Database::query($sql);
     $cat = "";
     $count = 0;
 
-    $number = \Lotgd\MySQL\Database::numRows($result);
+    $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $row = Database::fetchAssoc($result);
         if ($cat != $row['mountcategory']) {
             rawoutput("<tr class='trlight'><td colspan='5'>");
             output("Category: %s", $row['mountcategory']);
@@ -246,9 +247,9 @@ if ($op == "") {
     mountform(array());
 } elseif ($op == "edit") {
     addnav("Mount Editor Home", "mounts.php");
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("mounts") . " WHERE mountid='$id'";
-    $result = \Lotgd\MySQL\Database::queryCached($sql, "mountdata-$id", 3600);
-    if (\Lotgd\MySQL\Database::numRows($result) <= 0) {
+    $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
+    $result = Database::queryCached($sql, "mountdata-$id", 3600);
+    if (Database::numRows($result) <= 0) {
         output("`iThis mount was not found.`i");
     } else {
         addnav("Mount properties", "mounts.php?op=edit&id=$id");
@@ -262,7 +263,7 @@ if ($op == "") {
             addnav("", "mounts.php?op=save&subop=module&id=$id&module=$module");
         } else {
             output("Mount Editor:`n");
-            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+            $row = Database::fetchAssoc($result);
             $row['mountbuff'] = unserialize($row['mountbuff']);
             mountform($row);
         }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 // translator ready
 use Lotgd\Forms;
 use Lotgd\Nav;
@@ -74,10 +76,10 @@ if (getsetting("homenewestplayer", 1)) {
     $name = "";
     $newplayer = getsetting("newestplayer", "");
     if ($newplayer != 0) {
-        $sql = "SELECT name FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE acctid='$newplayer'";
-        $result = \Lotgd\MySQL\Database::queryCached($sql, "newest");
-        if (\Lotgd\MySQL\Database::numRows($result) > 0) {
-            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid='$newplayer'";
+        $result = Database::queryCached($sql, "newest");
+        if (Database::numRows($result) > 0) {
+            $row = Database::fetchAssoc($result);
             $name = $row['name'];
         }
     } else {
@@ -107,9 +109,9 @@ if (getsetting('impressum', '') != '') {
 modulehook("index", array());
 
 if (abs(getsetting("OnlineCountLast", 0) - strtotime("now")) > 60) {
-    $sql = "SELECT count(acctid) as onlinecount FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "'";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    $onlinecount = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT count(acctid) as onlinecount FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "'";
+    $result = Database::query($sql);
+    $onlinecount = Database::fetchAssoc($result);
     $onlinecount = $onlinecount ['onlinecount'];
     savesetting("OnlineCount", $onlinecount);
     savesetting("OnlineCountLast", strtotime("now"));

@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\Commentary;
 use Lotgd\Accounts;
@@ -30,10 +31,10 @@ if ($session['user']['superuser'] & SU_POST_MOTD) {
 if ($op == "vote") {
     $motditem = httppost('motditem');
     $choice = (string)httppost('choice');
-    $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("pollresults") . " WHERE motditem='$motditem' AND account='{$session['user']['acctid']}'";
-    \Lotgd\MySQL\Database::query($sql);
-    $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("pollresults") . " (choice,account,motditem) VALUES ('$choice','{$session['user']['acctid']}','$motditem')";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "DELETE FROM " . Database::prefix("pollresults") . " WHERE motditem='$motditem' AND account='{$session['user']['acctid']}'";
+    Database::query($sql);
+    $sql = "INSERT INTO " . Database::prefix("pollresults") . " (choice,account,motditem) VALUES ('$choice','{$session['user']['acctid']}','$motditem')";
+    Database::query($sql);
     invalidatedatacache("poll-$motditem");
     header("Location: motd.php");
     exit();
@@ -100,18 +101,18 @@ if ($op == "") {
         $p_year = $date_array[0];
         $p_month = $date_array[1];
         $month_post_end = date("Y-m-t", strtotime($p_year . "-" . $p_month . "-" . "01")); // get last day of month this way, it's a valid DATETIME now
-        $sql = "SELECT " . \Lotgd\MySQL\Database::prefix("motd") . ".*,name AS motdauthorname FROM " . \Lotgd\MySQL\Database::prefix("motd") . " LEFT JOIN " . \Lotgd\MySQL\Database::prefix("accounts") . " ON " . \Lotgd\MySQL\Database::prefix("accounts") . ".acctid = " . \Lotgd\MySQL\Database::prefix("motd") . ".motdauthor WHERE motddate >= '{$month_post}-01' AND motddate <= '{$month_post_end}' ORDER BY motddate DESC";
-                $result = \Lotgd\MySQL\Database::queryCached($sql, "motd-$month_post");
-                $result = \Lotgd\MySQL\Database::query($sql);
+        $sql = "SELECT " . Database::prefix("motd") . ".*,name AS motdauthorname FROM " . Database::prefix("motd") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid = " . Database::prefix("motd") . ".motdauthor WHERE motddate >= '{$month_post}-01' AND motddate <= '{$month_post_end}' ORDER BY motddate DESC";
+                $result = Database::queryCached($sql, "motd-$month_post");
+                $result = Database::query($sql);
     } else {
-        $sql = "SELECT " . \Lotgd\MySQL\Database::prefix("motd") . ".*,name AS motdauthorname FROM " . \Lotgd\MySQL\Database::prefix("motd") . " LEFT JOIN " . \Lotgd\MySQL\Database::prefix("accounts") . " ON " . \Lotgd\MySQL\Database::prefix("accounts") . ".acctid = " . \Lotgd\MySQL\Database::prefix("motd") . ".motdauthor ORDER BY motddate DESC limit $newcount," . ($newcount + $count);
+        $sql = "SELECT " . Database::prefix("motd") . ".*,name AS motdauthorname FROM " . Database::prefix("motd") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid = " . Database::prefix("motd") . ".motdauthor ORDER BY motddate DESC limit $newcount," . ($newcount + $count);
         if ($newcount = 0) { //cache only the last x items
-            $result = \Lotgd\MySQL\Database::queryCached($sql, "motd");
+            $result = Database::queryCached($sql, "motd");
         } else {
-            $result = \Lotgd\MySQL\Database::query($sql);
+            $result = Database::query($sql);
         }
     }
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         if (!isset($session['user']['lastmotd'])) {
             $session['user']['lastmotd'] = DATETIME_DATEMIN;
         }
@@ -141,15 +142,15 @@ if ($op == "") {
         Motd::motditem("Beta!","For those who might be unaware, this website is still in beta mode.  I'm working on it when I have time, which generally means a couple of changes a week.  Feel free to drop suggestions, I'm open to anything :-)","","", "");
     */
 
-    $result = \Lotgd\MySQL\Database::query("SELECT mid(motddate,1,7) AS d, count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("motd") . " GROUP BY d ORDER BY d DESC");
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $result = Database::query("SELECT mid(motddate,1,7) AS d, count(*) AS c FROM " . Database::prefix("motd") . " GROUP BY d ORDER BY d DESC");
+    $row = Database::fetchAssoc($result);
     rawoutput("<form action='motd.php' method='POST'>");
         rawoutput("<label for='month'>");
         output("MoTD Archives:");
         rawoutput("</label>");
         rawoutput("<select name='month' id='month' onChange='this.form.submit();' >");
     rawoutput("<option value=''>--Current--</option>");
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         $time = strtotime("{$row['d']}-01");
         $m = translate_inline(date("M", $time));
         rawoutput("<option value='{$row['d']}'" . ($month_post == $row['d'] ? " selected" : "") . ">$m" . date(", Y", $time) . " ({$row['c']})</option>");
@@ -166,9 +167,9 @@ if ($op == "") {
 
 $session['needtoviewmotd'] = false;
 
-$sql = "SELECT motddate FROM " . \Lotgd\MySQL\Database::prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
-$result = \Lotgd\MySQL\Database::queryCached($sql, "motddate");
-$row = \Lotgd\MySQL\Database::fetchAssoc($result);
+$sql = "SELECT motddate FROM " . Database::prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
+$result = Database::queryCached($sql, "motddate");
+$row = Database::fetchAssoc($result);
 $session['user']['lastmotd'] = $row['motddate'];
 
 popup_footer();

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 // addnews ready
 // translator ready
 // mail ready
@@ -39,9 +41,9 @@ if ($session['user']['loggedin']) {
 
 $playersperpage = 50;
 
-$sql = "SELECT count(acctid) AS c FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE locked=0";
-$result = \Lotgd\MySQL\Database::query($sql);
-$row = \Lotgd\MySQL\Database::fetchAssoc($result);
+$sql = "SELECT count(acctid) AS c FROM " . Database::prefix("accounts") . " WHERE locked=0";
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $totalplayers = $row['c'];
 
 $op = Http::get('op');
@@ -54,7 +56,7 @@ if ($op == "search") {
     $n = '';
 
     if (is_string($rawName)) {
-        $n = \Lotgd\MySQL\Database::escape($rawName);
+        $n = Database::escape($rawName);
     }
 
     if ($n !== '') {
@@ -96,8 +98,8 @@ if (getsetting('listonlyonline', 1) == 0 || (getsetting('listonlyonline', 1) == 
 $remove_offline = true;
 if ($page == "" && $op == "") {
     $title = translate_inline("Warriors Currently Online");
-    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' ORDER BY level DESC, dragonkills DESC, login ASC";
-    $result = \Lotgd\MySQL\Database::queryCached($sql, "list.php-warsonline");
+    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' ORDER BY level DESC, dragonkills DESC, login ASC";
+    $result = Database::queryCached($sql, "list.php-warsonline");
 } elseif ($op == 'clan') {
     if (empty($session['user']['clanid'])) {
         // User is not part of a clan; redirect to the main list.
@@ -106,8 +108,8 @@ if ($page == "" && $op == "") {
     $clanId = (int) $session['user']['clanid'];
 
     $title = translate_inline("Clan Members Online");
-    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' AND clanid='{$clanId}' ORDER BY level DESC, dragonkills DESC, login ASC";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' AND clanid='{$clanId}' ORDER BY level DESC, dragonkills DESC, login ASC";
+    $result = Database::query($sql);
 } else {
     $remove_offline = false;
     if ($totalplayers > $playersperpage && $op != "search") {
@@ -116,8 +118,8 @@ if ($page == "" && $op == "") {
         $title = sprintf_translate("Warriors of the realm");
     }
     $output->rawOutput(tlbutton_clear());
-    $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
+    $result = Database::query($sql);
 }
 if ($session['user']['loggedin']) {
     $search = translate_inline("Search by name: ");
@@ -127,7 +129,7 @@ if ($session['user']['loggedin']) {
     Nav::add("", "list.php?op=search");
 }
 
-$max = \Lotgd\MySQL\Database::numRows($result);
+$max = Database::numRows($result);
 if ($max > getsetting("maxlistsize", 100)) {
     $output->output("`\$Too many names match that search.  Showing only the first %s.`0`n", getsetting("maxlistsize", 100));
     $max = getsetting("maxlistsize", 100);
@@ -135,7 +137,7 @@ if ($max > getsetting("maxlistsize", 100)) {
 
 // prepare for hook
 $rows = array();
-while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $rows[] = $row;
 }
 // cut to max size

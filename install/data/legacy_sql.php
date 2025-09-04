@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 require_once dirname(__DIR__, 2) . '/src/Lotgd/Config/constants.php';
 
 $config = require dirname(__DIR__, 2) . '/dbconnect.php';
@@ -9,7 +11,7 @@ global $DB_PREFIX;
 $DB_PREFIX = $config['DB_PREFIX'] ?? '';
 
 require_once dirname(__DIR__, 2) . '/lib/dbmysqli.php';
-\Lotgd\MySQL\Database::setPrefix($DB_PREFIX);
+Database::setPrefix($DB_PREFIX);
 error_log('Legacy SQL DB_PREFIX=' . $DB_PREFIX);
 
 $settings = new class

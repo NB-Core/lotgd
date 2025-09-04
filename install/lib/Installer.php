@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Installer;
 
+use Lotgd\MySQL\Database;
+
 use Lotgd\Output;
 use Lotgd\Http;
 use Lotgd\Nav;
@@ -90,19 +92,19 @@ class Installer
                                     $this->output->output("`n`nNote that the entire html folder is volume-linked, so the database connection file and more will be stored there, too.");
         }
         if (defined("DB_CHOSEN") && DB_CHOSEN) {
-                                    $sql = "SELECT count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
-                                    $result = \Lotgd\MySQL\Database::query($sql);
-                                    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+                                    $sql = "SELECT count(*) AS c FROM " . Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
+                                    $result = Database::query($sql);
+                                    $row = Database::fetchAssoc($result);
             if ($row['c'] == 0) {
                 $needsauthentication = false;
             }
             if (!empty(Http::post("username"))) {
                 //if you have login troubles and wiped your own password, here in the installer you can debug-output it
                 //$this->output->debug(md5(md5(stripslashes(Http::post("password")))), true);
-                $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='" . Http::post("username") . "' AND password='" . md5(md5(stripslashes(Http::post("password")))) . "' AND superuser & " . SU_MEGAUSER;
-                $result = \Lotgd\MySQL\Database::query($sql);
-                if (\Lotgd\MySQL\Database::numRows($result) > 0) {
-                    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+                $sql = "SELECT * FROM " . Database::prefix("accounts") . " WHERE login='" . Http::post("username") . "' AND password='" . md5(md5(stripslashes(Http::post("password")))) . "' AND superuser & " . SU_MEGAUSER;
+                $result = Database::query($sql);
+                if (Database::numRows($result) > 0) {
+                    $row = Database::fetchAssoc($result);
                     //$this->output->debug($row['password'], true);
                     //$this->output->debug(Http::post('password'), true);
                     // Okay, we have a username with megauser, now we need to do
@@ -138,9 +140,9 @@ class Installer
                     $this->output->output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
                 }
             } else {
-                $sql = "SELECT count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
-                $result = \Lotgd\MySQL\Database::query($sql);
-                $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+                $sql = "SELECT count(*) AS c FROM " . Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
+                $result = Database::query($sql);
+                $row = Database::fetchAssoc($result);
                 if ($row['c'] > 0) {
                     $needsauthentication = true;
                 } else {
@@ -219,9 +221,9 @@ class Installer
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE,$settings;
         $this->output->output("`@`c`bSuperuser Accounts`b`c");
         $this->output->debug($logd_version, true);
-        $sql = "SELECT login, password FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
-        $result = \Lotgd\MySQL\Database::query($sql);
-        if (\Lotgd\MySQL\Database::numRows($result) == 0) {
+        $sql = "SELECT login, password FROM " . Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
+        $result = Database::query($sql);
+        if (Database::numRows($result) == 0) {
             if (Http::post("name") > "") {
                 $showform = false;
                 if (Http::post("pass1") != Http::post("pass2")) {
@@ -243,11 +245,11 @@ class Installer
                     SU_VIEW_SOURCE | SU_NEVER_EXPIRE;
                     $name = Http::post("name");
                     $pass = md5(md5(stripslashes(Http::post("pass1"))));
-                    $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='$name'";
-                    \Lotgd\MySQL\Database::query($sql);
-                    $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("accounts") . " (login,password,superuser,name,playername,ctitle,title,regdate,badguy,companions, allowednavs, bufflist, dragonpoints, prefs, donationconfig,specialinc,specialmisc,emailaddress,replaceemail,emailvalidation,hauntedby,bio) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin `&$name`0','`%Admin','', NOW(),'','','','','','','','','','','','','','')";
-                    $result = \Lotgd\MySQL\Database::query($sql);
-                    if (\Lotgd\MySQL\Database::affectedRows($result) == 0) {
+                    $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE login='$name'";
+                    Database::query($sql);
+                    $sql = "INSERT INTO " . Database::prefix("accounts") . " (login,password,superuser,name,playername,ctitle,title,regdate,badguy,companions, allowednavs, bufflist, dragonpoints, prefs, donationconfig,specialinc,specialmisc,emailaddress,replaceemail,emailvalidation,hauntedby,bio) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin `&$name`0','`%Admin','', NOW(),'','','','','','','','','','','','','','')";
+                    $result = Database::query($sql);
+                    if (Database::affectedRows($result) == 0) {
                         print_r($sql);
                         die("Failed to create Admin account. Your first check should be to make sure that MYSQL (if that is your type) is not in strict mode.");
                     }
@@ -419,7 +421,7 @@ class Installer
         $this->output->output("`@`c`bTesting the Database Connection`b`c`2");
         $this->output->output("Trying to establish a connection with the database:`n");
         ob_start();
-        $connected = \Lotgd\MySQL\Database::connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
+        $connected = Database::connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
         $error = ob_get_contents();
         ob_end_clean();
         if (!$connected) {
@@ -434,23 +436,23 @@ class Installer
             $this->output->output("`^Yahoo, I was able to connect to the database server!`n`n");
             $this->output->output("`2This means that the database server address, database username, and database password you provided were probably accurate, and that your database server is running and accepting connections.`n");
             $this->output->output("`nI'm now going to attempt to connect to the LoGD database you provided.`n");
-            $link = \Lotgd\MySQL\Database::getInstance();
+            $link = Database::getInstance();
             define("LINK", $link);
             if (Http::get("op") == "trycreate") {
                 $this->createDb($link, $session['dbinfo']['DB_NAME']);
             }
             $dbName = $session['dbinfo']['DB_NAME'];
             $sql = "SHOW DATABASES LIKE '" . addslashes($dbName) . "';";
-            $dbExistsResult = \Lotgd\MySQL\Database::query($sql);
-            $dbExists = \Lotgd\MySQL\Database::numRows($dbExistsResult) > 0;
+            $dbExistsResult = Database::query($sql);
+            $dbExists = Database::numRows($dbExistsResult) > 0;
 
             if (!$dbExists) {
                 $this->output->output("`n`^It looks like the database `%{$session['dbinfo']['DB_NAME']}`^ does not exist yet.`n");
                 $this->output->output("`2If you would like me to create it for you, please click the button below.`nIf you do not want me to create it, please return to the previous step and provide a different database name.`n");
                 $this->output->output("`nTo create the database, <a href='installer.php?stage=4&op=trycreate'>click here</a>.`n", true);
-            } elseif (!\Lotgd\MySQL\Database::selectDb($session['dbinfo']['DB_NAME'])) {
+            } elseif (!Database::selectDb($session['dbinfo']['DB_NAME'])) {
                 $this->output->output("`\$Rats!  I was not able to connect to the database.");
-                $error = \Lotgd\MySQL\Database::error();
+                $error = Database::error();
                 if ($error == "Unknown database '{$session['dbinfo']['DB_NAME']}'") {
                     $this->output->output("`2It looks like the database for LoGD hasn't been created yet.");
                     $this->output->output("I can attempt to create it for you if you like, but in order for that to work, the account you provided has to have permissions to create a new database.");
@@ -471,10 +473,10 @@ class Installer
                 $this->output->output("`n`^Test: `#Creating a table`n");
                 //try to destroy the table if it's already here.
                 $sql = "DROP TABLE IF EXISTS logd_environment_test";
-                \Lotgd\MySQL\Database::query($sql, false);
+                Database::query($sql, false);
                 $sql = "CREATE TABLE logd_environment_test (a int(11) unsigned not null)";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`^Warning:`2 The installer will not be able to create the tables necessary to install LoGD.  If these tables already exist, or you have created them manually, then you can ignore this.  Also, many modules rely on being able to create tables, so you will not be able to use these modules.");
@@ -483,8 +485,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Modifying a table`n");
                 $sql = "ALTER TABLE logd_environment_test CHANGE a b varchar(50) not null";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`^Warning:`2 The installer will not be able to modify existing tables (if any) to line up with new configurations.  Also, many modules rely on table modification permissions, so you will not be able to use these modules.");
@@ -493,8 +495,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Creating an index`n");
                 $sql = "ALTER TABLE logd_environment_test ADD INDEX(b)";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`^Warning:`2 The installer will not be able to create indices on your tables.  Indices are extremely important for an active server, but can be done without on a small server.");
@@ -503,8 +505,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Inserting a row`n");
                 $sql = "INSERT INTO logd_environment_test (b) VALUES ('testing')";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`\$Critical:`2 The game will not be able to function with out the ability to insert rows.");
@@ -514,8 +516,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Selecting a row`n");
                 $sql = "SELECT * FROM logd_environment_test";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`\$Critical:`2 The game will not be able to function with out the ability to select rows.");
@@ -525,8 +527,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Updating a row`n");
                 $sql = "UPDATE logd_environment_test SET b='MightyE'";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`\$Critical:`2 The game will not be able to function with out the ability to update rows.");
@@ -536,8 +538,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Deleting a row`n");
                 $sql = "DELETE FROM logd_environment_test";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`\$Critical:`2 The game database will grow very large with out the ability to delete rows.");
@@ -547,8 +549,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Locking a table`n");
                 $sql = "LOCK TABLES logd_environment_test WRITE";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`\$Critical:`2 The game will not run correctly without the ability to lock tables.");
@@ -558,8 +560,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Unlocking a table`n");
                 $sql = "UNLOCK TABLES";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`\$Critical:`2 The game will not run correctly without the ability to unlock tables.");
@@ -569,8 +571,8 @@ class Installer
                 }
                     $this->output->output("`n`^Test: `#Deleting a table`n");
                 $sql = "DROP TABLE logd_environment_test";
-                \Lotgd\MySQL\Database::query($sql);
-                if ($error = \Lotgd\MySQL\Database::error()) {
+                Database::query($sql);
+                if ($error = Database::error()) {
                     $this->output->output("`2Result: `\$Fail`n");
                     $this->output->rawOutput("<blockquote>$error</blockquote>");
                     array_push($issues, "`^Warning:`2 The installer will not be able to delete old tables (if any).  Also, many modules need to be able to delete the tables they put in place when they are uninstalled.  Although the game will function, you may end up with a lot of old data sitting around.");
@@ -696,12 +698,12 @@ class Installer
         $missing = 0;
         $conflict = array();
 
-        $link = \Lotgd\MySQL\Database::connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
-        \Lotgd\MySQL\Database::selectDb($session['dbinfo']['DB_NAME']);
+        $link = Database::connect($session['dbinfo']['DB_HOST'], $session['dbinfo']['DB_USER'], $session['dbinfo']['DB_PASS']);
+        Database::selectDb($session['dbinfo']['DB_NAME']);
         $sql = "SHOW TABLES";
-        $result = \Lotgd\MySQL\Database::query($sql);
+        $result = Database::query($sql);
         //the conflicts seems not to work - we should check this.
-        while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             foreach ($row as $key => $val) {
                 if (isset($descriptors[$val])) {
                     $game++;
@@ -754,12 +756,12 @@ class Installer
 
         //Display rights - I won't parse them, sue me for laziness, and this should work nicely to explain any errors
         $sql = "SHOW GRANTS FOR CURRENT_USER()";
-        $result = \Lotgd\MySQL\Database::query($sql);
+        $result = Database::query($sql);
         $this->output->output("`2These are the rights for your mysql user, `\$make sure you have the 'LOCK TABLES' privileges OR a \"GRANT ALL PRIVLEGES\" on the tables.`2`n`n");
         $this->output->output("If you do not know what this means, ask your hosting provider that supplied you with the database credentials.`n`n");
         $this->output->rawOutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
         $i = 0;
-        while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             if ($i == 0) {
                 $this->output->rawOutput("<tr class='trhead'>");
                 $keys = array_keys($row);
@@ -1071,10 +1073,10 @@ class Installer
 
             //check if we have no table there right now (fresh install)
             if (isset($session['dbinfo']) && $session['dbinfo']['upgrade']) {
-                $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("modules") . " ORDER BY category,active DESC,formalname";
-                $result = @\Lotgd\MySQL\Database::query($sql);
+                $sql = "SELECT * FROM " . Database::prefix("modules") . " ORDER BY category,active DESC,formalname";
+                $result = @Database::query($sql);
                 if ($result !== false) {
-                    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+                    while ($row = Database::fetchAssoc($result)) {
                         if (!array_key_exists($row['category'], $all_modules)) {
                             $all_modules[$row['category']] = array();
                         }

@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 // translator ready
 // addnews ready
 // mail ready
@@ -41,13 +42,13 @@ function racetroll_uninstall(){
 	global $session;
 	$vname = getsetting("villagename", LOCATION_FIELDS);
 	$gname = get_module_setting("villagename");
-	$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET location='$vname' WHERE location = '$gname'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET location='$vname' WHERE location = '$gname'";
+	Database::query($sql);
 	if ($session['user']['location'] == $gname)
 		$session['user']['location'] = $vname;
 	// Force anyone who was a Troll to rechoose race
-	$sql = "UPDATE  " . \Lotgd\MySQL\Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Troll'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE  " . Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Troll'";
+	Database::query($sql);
 	if ($session['user']['race'] == 'Troll')
 		$session['user']['race'] = RACE_UNKNOWN;
 
@@ -85,16 +86,16 @@ function racetroll_dohook($hookname,$args){
 		if ($args['setting'] == "villagename" && $args['module']=="racetroll") {
 			if ($session['user']['location'] == $args['old'])
 				$session['user']['location'] = $args['new'];
-			$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") .
+			$sql = "UPDATE " . Database::prefix("accounts") .
 				" SET location='" . addslashes($args['new']) .
 				"' WHERE location='" . addslashes($args['old']) . "'";
-			\Lotgd\MySQL\Database::query($sql);
+			Database::query($sql);
 			if (is_module_active("cities")) {
-				$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("module_userprefs") .
+				$sql = "UPDATE " . Database::prefix("module_userprefs") .
 					" SET value='" . addslashes($args['new']) .
 					"' WHERE modulename='cities' AND setting='homecity'" .
 					"AND value='" . addslashes($args['old']) . "'";
-				\Lotgd\MySQL\Database::query($sql);
+				Database::query($sql);
 			}
 		}
 		break;
@@ -188,10 +189,10 @@ function racetroll_dohook($hookname,$args){
 			$args['schemas']['talk'] = "module-racetroll";
 			$new = get_module_setting("newest-$city", "cities");
 			if ($new != 0) {
-				$sql =  "SELECT name FROM " . \Lotgd\MySQL\Database::prefix("accounts") .
+				$sql =  "SELECT name FROM " . Database::prefix("accounts") .
 					" WHERE acctid='$new'";
-				$result = \Lotgd\MySQL\Database::queryCached($sql, "newest-$city");
-				$row = \Lotgd\MySQL\Database::fetchAssoc($result);
+				$result = Database::queryCached($sql, "newest-$city");
+				$row = Database::fetchAssoc($result);
 				$args['newestplayer'] = $row['name'];
 				$args['newestid']=$new;
 			} else {

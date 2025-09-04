@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 // translator ready
 // addnews ready
 // mail ready
@@ -50,8 +51,8 @@ function racecat_install(){
 function racecat_uninstall(){
 	global $session;
 	// Force anyone who was a Felyne to rechoose race
-	$sql = "UPDATE  " . \Lotgd\MySQL\Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Felyne'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE  " . Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Felyne'";
+	Database::query($sql);
 	if ($session['user']['race'] == 'Felyne')
 		$session['user']['race'] = RACE_UNKNOWN;
 	return true;

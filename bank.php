@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 /**
  * \file bank.php
  * This file holds the entire bank code for the village bank. You can withdraw or depost gold here as user.
@@ -79,17 +81,17 @@ if ($op == "") {
     for ($x = 0; $x < strlen($to); $x++) {
         $string .= substr($to, $x, 1) . "%";
     }
-    $sql = "SELECT name,login FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT name,login FROM " . Database::prefix("accounts") . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
+    $result = Database::query($sql);
     $amt = abs((int)Http::post('amount'));
-    if (\Lotgd\MySQL\Database::numRows($result) == 1) {
-        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    if (Database::numRows($result) == 1) {
+        $row = Database::fetchAssoc($result);
         $msg = translate_inline("Complete Transfer");
         rawoutput("<form action='bank.php?op=transfer3' method='POST'>");
         output("`6Transfer `^%s`6 to `&%s`6.", $amt, $row['name']);
         rawoutput("<input type='hidden' name='to' value='" . HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "'><input type='hidden' name='amount' value='$amt'><input type='submit' class='button' value='$msg'></form>", true);
         Nav::add("", "bank.php?op=transfer3");
-    } elseif (\Lotgd\MySQL\Database::numRows($result) > 100) {
+    } elseif (Database::numRows($result) > 100) {
         output("`@Elessa`6 looks at you disdainfully and coldly, but politely, suggests you try narrowing down the field of who you want to send money to just a little bit!`n`n");
         $msg = translate_inline("Preview Transfer");
         rawoutput("<form action='bank.php?op=transfer2' method='POST'>");
@@ -101,13 +103,13 @@ if ($op == "") {
         rawoutput("<input type='submit' class='button' value='$msg'></form>");
         rawoutput("<script language='javascript'>document.getElementById('amount').focus();</script>", true);
         Nav::add("", "bank.php?op=transfer2");
-    } elseif (\Lotgd\MySQL\Database::numRows($result) > 1) {
+    } elseif (Database::numRows($result) > 1) {
         rawoutput("<form action='bank.php?op=transfer3' method='POST'>");
                 rawoutput("<label for='bank_to'>");
                 output("`6Transfer `^%s`6 to ", $amt);
                 rawoutput("</label>");
                 rawoutput("<select name='to' id='bank_to' class='input'>");
-        while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             rawoutput("<option value=\"" . HTMLEntities($row['login'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">" . Sanitize::fullSanitize($row['name']) . "</option>");
         }
         $msg = translate_inline("Complete Transfer");
@@ -123,10 +125,10 @@ if ($op == "") {
     if ($session['user']['gold'] + $session['user']['goldinbank'] < $amt) {
         output("`@Elessa`6 stands up to her full, but still diminutive height and glares at you, \"`@How can you transfer `^%s`@ gold when you only possess `^%s`@?`6\"", number_format($amt, 0, $point, $sep), number_format($session['user']['gold'] + $session['user']['goldinbank'], 0, $point, $sep));
     } else {
-        $sql = "SELECT name,acctid,level,transferredtoday FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='$to'";
-        $result = \Lotgd\MySQL\Database::query($sql);
-        if (\Lotgd\MySQL\Database::numRows($result) == 1) {
-            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $sql = "SELECT name,acctid,level,transferredtoday FROM " . Database::prefix("accounts") . " WHERE login='$to'";
+        $result = Database::query($sql);
+        if (Database::numRows($result) == 1) {
+            $row = Database::fetchAssoc($result);
             $maxout = $session['user']['level'] * getsetting("maxtransferout", 25);
             $maxtfer = $row['level'] * getsetting("transferperlevel", 25);
             if ($session['user']['amountouttoday'] + $amt > $maxout) {
@@ -148,8 +150,8 @@ if ($op == "") {
                     $session['user']['gold'] = 0;
                 }
                 $session['user']['amountouttoday'] += $amt;
-                $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET goldinbank=goldinbank+$amt,transferredtoday=transferredtoday+1 WHERE acctid='{$row['acctid']}'";
-                \Lotgd\MySQL\Database::query($sql);
+                $sql = "UPDATE " . Database::prefix("accounts") . " SET goldinbank=goldinbank+$amt,transferredtoday=transferredtoday+1 WHERE acctid='{$row['acctid']}'";
+                Database::query($sql);
                 output("`@Elessa`6 smiles, \"`@The transfer has been completed!`6\"");
                 $subj = array("`^You have received a money transfer!`0");
                 $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!",$session['user']['name'],$amt);

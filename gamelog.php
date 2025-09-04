@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -27,7 +28,7 @@ $sortorder = (int) httpget('sortorder'); // 0 = DESC 1= ASC
 $sortby = httpget('sortby');
 if ($category > "") {
     $cat = "&cat=$category";
-    $sqlcat = "AND " . \Lotgd\MySQL\Database::prefix("gamelog") . ".category = '$category'";
+    $sqlcat = "AND " . Database::prefix("gamelog") . ".category = '$category'";
 } else {
     $cat = '';
     $sqlcat = '';
@@ -40,13 +41,13 @@ if ($sortby != '') {
     $sqlsort = " ORDER BY " . $sortby . " " . $asc_desc;
 }
 
-$sql = "SELECT count(logid) AS c FROM " . \Lotgd\MySQL\Database::prefix("gamelog") . " WHERE 1 $sqlcat";
-$result = \Lotgd\MySQL\Database::query($sql);
-$row = \Lotgd\MySQL\Database::fetchAssoc($result);
+$sql = "SELECT count(logid) AS c FROM " . Database::prefix("gamelog") . " WHERE 1 $sqlcat";
+$result = Database::query($sql);
+$row = Database::fetchAssoc($result);
 $max = $row['c'];
 
 
-$sql = "SELECT " . \Lotgd\MySQL\Database::prefix("gamelog") . ".*, " . \Lotgd\MySQL\Database::prefix("accounts") . ".name AS name FROM " . \Lotgd\MySQL\Database::prefix("gamelog") . " LEFT JOIN " . \Lotgd\MySQL\Database::prefix("accounts") . " ON " . \Lotgd\MySQL\Database::prefix("gamelog") . ".who = " . \Lotgd\MySQL\Database::prefix("accounts") . ".acctid WHERE 1 $sqlcat $sqlsort LIMIT $start,$step";
+$sql = "SELECT " . Database::prefix("gamelog") . ".*, " . Database::prefix("accounts") . ".name AS name FROM " . Database::prefix("gamelog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("gamelog") . ".who = " . Database::prefix("accounts") . ".acctid WHERE 1 $sqlcat $sqlsort LIMIT $start,$step";
 $next = $start + $step;
 $prev = $start - $step;
 addnav("Operations");
@@ -61,12 +62,12 @@ if ($next < $max) {
 if ($start > 0) {
     addnav("Previous page", "gamelog.php?start=$prev$cat&sortorder=$sortorder&sortby=$sortby");
 }
-$result = \Lotgd\MySQL\Database::query($sql);
+$result = Database::query($sql);
 $odate = "";
 $categories = array();
 
 $i = 0;
-while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+while ($row = Database::fetchAssoc($result)) {
     $dom = date("D, M d", strtotime($row['date']));
     if ($odate != $dom) {
         output_notl("`n`b`@%s`0`b`n", $dom);

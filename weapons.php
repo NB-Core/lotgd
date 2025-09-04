@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 // translator ready
 // addnews ready
@@ -64,12 +65,12 @@ if ($op == "") {
     tlschema();
 
 
-    $sql = "SELECT max(level) AS level FROM " .  \Lotgd\MySQL\Database::prefix("weapons") . " WHERE level<=" . (int)$session['user']['dragonkills'];
-    $result = \Lotgd\MySQL\Database::query($sql);
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT max(level) AS level FROM " .  Database::prefix("weapons") . " WHERE level<=" . (int)$session['user']['dragonkills'];
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
 
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("weapons") . " WHERE level = " . (int)$row['level'] . " ORDER BY damage ASC";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE level = " . (int)$row['level'] . " ORDER BY damage ASC";
+    $result = Database::query($sql);
 
     tlschema($schemas['tradein']);
     if (is_array($texts['tradein'])) {
@@ -93,7 +94,7 @@ if ($op == "") {
     output_notl($wcost);
     rawoutput("</td></tr>");
     $i = 0;
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         $link = true;
         $row = modulehook("modify-weapon", $row);
         if (isset($row['skip']) && $row['skip'] === true) {
@@ -135,9 +136,9 @@ if ($op == "") {
     villagenav();
 } elseif ($op == "buy") {
     $id = httpget("id");
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("weapons") . " WHERE weaponid='$id'";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    if (\Lotgd\MySQL\Database::numRows($result) == 0) {
+    $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
+    $result = Database::query($sql);
+    if (Database::numRows($result) == 0) {
         tlschema($schemas['nosuchweapon']);
         output($texts['nosuchweapon']);
         tlschema();
@@ -146,7 +147,7 @@ if ($op == "") {
         tlschema();
         villagenav();
     } else {
-        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $row = Database::fetchAssoc($result);
         $row = modulehook("modify-weapon", $row);
         if ($row['value'] > ($session['user']['gold'] + $tradeinvalue)) {
             tlschema($schemas['notenoughgold']);

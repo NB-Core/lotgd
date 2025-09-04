@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\Buffs;
 
@@ -86,8 +87,8 @@ if ($op == "") {
     }
     addnav("It is a new day", "news.php");
     Buffs::stripAllBuffs();
-    $sql = "DESCRIBE " . \Lotgd\MySQL\Database::prefix("accounts");
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "DESCRIBE " . Database::prefix("accounts");
+    $result = Database::query($sql);
 
     $dkpoints = 0;
     foreach ($session['user']['dragonpoints'] as $val) {
@@ -168,7 +169,7 @@ if ($op == "") {
     ) {
         $session['user']['bestdragonage'] = $session['user']['dragonage'];
     }
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         if (
             array_key_exists($row['Field'], $nochange) &&
                 $nochange[$row['Field']]

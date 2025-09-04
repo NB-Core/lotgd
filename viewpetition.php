@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\MySQL\Database;
+
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Commentary;
@@ -46,33 +48,33 @@ $id = Http::get("id") ?? "";
 $insertCommentary = (string) Http::post('insertcommentary');
 if (!empty(trim($insertCommentary))) {
     /* Update the bug if someone adds comments as well */
-    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("petitions") . " SET closeuserid='{$session['user']['acctid']}',closedate='" . date("Y-m-d H:i:s") . "' WHERE petitionid='$id'";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "UPDATE " . Database::prefix("petitions") . " SET closeuserid='{$session['user']['acctid']}',closedate='" . date("Y-m-d H:i:s") . "' WHERE petitionid='$id'";
+    Database::query($sql);
 }
 
 // Eric decide he didn't want petitions to be manually deleted
 //
 //if ($op=="del"){
-//  $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("petitions") . " WHERE petitionid='$id'";
-//  \Lotgd\MySQL\Database::query($sql);
-//  $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("commentary") . " WHERE section='pet-$id'";
-//  \Lotgd\MySQL\Database::query($sql);
+//  $sql = "DELETE FROM " . Database::prefix("petitions") . " WHERE petitionid='$id'";
+//  Database::query($sql);
+//  $sql = "DELETE FROM " . Database::prefix("commentary") . " WHERE section='pet-$id'";
+//  Database::query($sql);
 //  invalidatedatacache("petition_counts");
 //  $op="";
 //}
 Header::pageHeader("Petition Viewer");
 if ($op == "") {
-    $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("petitions") . " WHERE status=2 AND closedate<'" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
-    \Lotgd\MySQL\Database::query($sql);
+    $sql = "DELETE FROM " . Database::prefix("petitions") . " WHERE status=2 AND closedate<'" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
+    Database::query($sql);
     $setstat = Http::get("setstat");
     invalidatedatacache("petition_counts");
     if ($setstat != "") {
-        $sql = "SELECT status FROM " . \Lotgd\MySQL\Database::prefix("petitions") . " WHERE petitionid='$id'";
-        $result = \Lotgd\MySQL\Database::query($sql);
-        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $sql = "SELECT status FROM " . Database::prefix("petitions") . " WHERE petitionid='$id'";
+        $result = Database::query($sql);
+        $row = Database::fetchAssoc($result);
         if ($row['status'] != $setstat) {
-            $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("petitions") . " SET status='$setstat',closeuserid='{$session['user']['acctid']}',closedate='" . date("Y-m-d H:i:s") . "' WHERE petitionid='$id'";
-            \Lotgd\MySQL\Database::query($sql);
+            $sql = "UPDATE " . Database::prefix("petitions") . " SET status='$setstat',closeuserid='{$session['user']['acctid']}',closedate='" . date("Y-m-d H:i:s") . "' WHERE petitionid='$id'";
+            Database::query($sql);
         }
     }
     $sort = "";
@@ -83,9 +85,9 @@ if ($op == "") {
     }
 
     $petitionsperpage = 50;
-    $sql = "SELECT count(petitionid) AS c from " . \Lotgd\MySQL\Database::prefix("petitions");
-    $result = \Lotgd\MySQL\Database::query($sql);
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT count(petitionid) AS c from " . Database::prefix("petitions");
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
     $totalpages = ceil($row['c'] / $petitionsperpage);
 
     $page = Http::get("page");
@@ -124,26 +126,26 @@ if ($op == "") {
     $sql =
     "SELECT
 		petitionid,
-		" . \Lotgd\MySQL\Database::prefix("accounts") . ".name,
-		" . \Lotgd\MySQL\Database::prefix("petitions") . ".date,
-		" . \Lotgd\MySQL\Database::prefix("petitions") . ".status,
-		" . \Lotgd\MySQL\Database::prefix("petitions") . ".body,
-		" . \Lotgd\MySQL\Database::prefix("petitions") . ".closedate,
+		" . Database::prefix("accounts") . ".name,
+		" . Database::prefix("petitions") . ".date,
+		" . Database::prefix("petitions") . ".status,
+		" . Database::prefix("petitions") . ".body,
+		" . Database::prefix("petitions") . ".closedate,
 		accts.name AS closer,
 		CASE status $sort END AS sortorder
 	FROM
-		" . \Lotgd\MySQL\Database::prefix("petitions") . "
+		" . Database::prefix("petitions") . "
 	LEFT JOIN
-		" . \Lotgd\MySQL\Database::prefix("accounts") . "
-	ON	" . \Lotgd\MySQL\Database::prefix("accounts") . ".acctid=" . \Lotgd\MySQL\Database::prefix("petitions") . ".author
+		" . Database::prefix("accounts") . "
+	ON	" . Database::prefix("accounts") . ".acctid=" . Database::prefix("petitions") . ".author
 	LEFT JOIN
-		" . \Lotgd\MySQL\Database::prefix("accounts") . " AS accts
-	ON	accts.acctid=" . \Lotgd\MySQL\Database::prefix("petitions") . ".closeuserid
+		" . Database::prefix("accounts") . " AS accts
+	ON	accts.acctid=" . Database::prefix("petitions") . ".closeuserid
 	ORDER BY
 		sortorder ASC,
 		date ASC
 	LIMIT $limit";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $result = Database::query($sql);
     Nav::add("Petitions");
     Nav::add("Refresh", "viewpetition.php");
     $num = Translator::translateInline('Num');
@@ -161,16 +163,16 @@ if ($op == "") {
     $i = 0;
     $laststatus = -1;
     $catcount = array();
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         if (isset($catcount[$row['status']])) {
             $catcount[$row['status']]++;
         } else {
             $catcount[$row['status']] = 1;
         }
         $i = !$i;
-        $sql = "SELECT count(commentid) AS c FROM " . \Lotgd\MySQL\Database::prefix("commentary") .  " WHERE section='pet-{$row['petitionid']}'";
-        $res = \Lotgd\MySQL\Database::query($sql);
-        $counter = \Lotgd\MySQL\Database::fetchAssoc($res);
+        $sql = "SELECT count(commentid) AS c FROM " . Database::prefix("commentary") .  " WHERE section='pet-{$row['petitionid']}'";
+        $res = Database::query($sql);
+        $counter = Database::fetchAssoc($res);
         if (array_key_exists('status', $row) && $row['status'] != $laststatus) {
             $output->rawOutput("<tr class='" . ($i ? "trlight" : "trdark") . "'>");
             $output->rawOutput("<td colspan='7' style='background-color:#FAA000'>");
@@ -290,9 +292,9 @@ if ($op == "") {
         );
     }
 
-    $sql = "SELECT " . \Lotgd\MySQL\Database::prefix("accounts") . ".name," .  \Lotgd\MySQL\Database::prefix("accounts") . ".login," .  \Lotgd\MySQL\Database::prefix("accounts") . ".acctid," .  "author,date,closedate,status,petitionid,ip,body,pageinfo," .  "accts.name AS closer FROM " .  \Lotgd\MySQL\Database::prefix("petitions") . " LEFT JOIN " .  \Lotgd\MySQL\Database::prefix("accounts ") . "ON " .  \Lotgd\MySQL\Database::prefix("accounts") . ".acctid=author LEFT JOIN " .  \Lotgd\MySQL\Database::prefix("accounts") . " AS accts ON accts.acctid=" .  "closeuserid WHERE petitionid='$id' ORDER BY date ASC";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT " . Database::prefix("accounts") . ".name," .  Database::prefix("accounts") . ".login," .  Database::prefix("accounts") . ".acctid," .  "author,date,closedate,status,petitionid,ip,body,pageinfo," .  "accts.name AS closer FROM " .  Database::prefix("petitions") . " LEFT JOIN " .  Database::prefix("accounts ") . "ON " .  Database::prefix("accounts") . ".acctid=author LEFT JOIN " .  Database::prefix("accounts") . " AS accts ON accts.acctid=" .  "closeuserid WHERE petitionid='$id' ORDER BY date ASC";
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
     Nav::add("User Ops");
     if (isset($row['login'])) {
         Nav::add("View User Biography", "bio.php?char=" . $row['acctid']
@@ -369,10 +371,10 @@ if ($op == "") {
 }
 
 if ($id && $op != "") {
-    $prevsql = "SELECT p1.petitionid, p1.status FROM " . \Lotgd\MySQL\Database::prefix("petitions") . " AS p1, " . \Lotgd\MySQL\Database::prefix("petitions") . " AS p2
+    $prevsql = "SELECT p1.petitionid, p1.status FROM " . Database::prefix("petitions") . " AS p1, " . Database::prefix("petitions") . " AS p2
 			WHERE p1.petitionid<'$id' AND p2.petitionid='$id' AND p1.status=p2.status ORDER BY p1.petitionid DESC LIMIT 1";
-    $prevresult = \Lotgd\MySQL\Database::query($prevsql);
-    $prevrow = \Lotgd\MySQL\Database::fetchAssoc($prevresult);
+    $prevresult = Database::query($prevsql);
+    $prevrow = Database::fetchAssoc($prevresult);
     if ($prevrow) {
         $previd = $prevrow['petitionid'];
         $s = $prevrow['status'];
@@ -380,10 +382,10 @@ if ($id && $op != "") {
         Nav::add("Petitions");
         Nav::add(array("Previous %s",$status), "viewpetition.php?op=view&id=$previd");
     }
-    $nextsql = "SELECT p1.petitionid, p1.status FROM " . \Lotgd\MySQL\Database::prefix("petitions") . " AS p1, " . \Lotgd\MySQL\Database::prefix("petitions") . " AS p2
+    $nextsql = "SELECT p1.petitionid, p1.status FROM " . Database::prefix("petitions") . " AS p1, " . Database::prefix("petitions") . " AS p2
 			WHERE p1.petitionid>'$id' AND p2.petitionid='$id' AND p1.status=p2.status ORDER BY p1.petitionid ASC LIMIT 1";
-    $nextresult = \Lotgd\MySQL\Database::query($nextsql);
-    $nextrow = \Lotgd\MySQL\Database::fetchAssoc($nextresult);
+    $nextresult = Database::query($nextsql);
+    $nextrow = Database::fetchAssoc($nextresult);
     if ($nextrow) {
         $nextid = $nextrow['petitionid'];
         $s = $nextrow['status'];

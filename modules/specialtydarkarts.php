@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 //addnews ready
 // mail ready
 // translator ready
@@ -20,30 +21,30 @@ function specialtydarkarts_getmoduleinfo(){
 }
 
 function specialtydarkarts_install(){
-	$sql = "DESCRIBE " . \Lotgd\MySQL\Database::prefix("accounts");
-	$result = \Lotgd\MySQL\Database::query($sql);
+	$sql = "DESCRIBE " . Database::prefix("accounts");
+	$result = Database::query($sql);
 	$specialty="DA";
-	while($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+	while($row = Database::fetchAssoc($result)) {
 		// Convert the user over
 		if ($row['Field'] == "darkarts") {
 			debug("Migrating darkarts field");
-			$sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtydarkarts', 'skill', acctid, darkarts FROM " . \Lotgd\MySQL\Database::prefix("accounts");
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtydarkarts', 'skill', acctid, darkarts FROM " . Database::prefix("accounts");
+			Database::query($sql);
 			debug("Dropping darkarts field from accounts table");
-			$sql = "ALTER TABLE " . \Lotgd\MySQL\Database::prefix("accounts") . " DROP darkarts";
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP darkarts";
+			Database::query($sql);
 		} elseif ($row['Field']=="darkartuses") {
 			debug("Migrating darkarts uses field");
-			$sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtydarkarts', 'uses', acctid, darkartuses FROM " . \Lotgd\MySQL\Database::prefix("accounts");
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtydarkarts', 'uses', acctid, darkartuses FROM " . Database::prefix("accounts");
+			Database::query($sql);
 			debug("Dropping darkartuses field from accounts table");
-			$sql = "ALTER TABLE " . \Lotgd\MySQL\Database::prefix("accounts") . " DROP darkartuses";
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP darkartuses";
+			Database::query($sql);
 		}
 	}
 	debug("Migrating Darkarts Specialty");
-	$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET specialty='$specialty' WHERE specialty='1'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='$specialty' WHERE specialty='1'";
+	Database::query($sql);
 
 	module_addhook("choose-specialty");
 	module_addhook("set-specialty");
@@ -61,8 +62,8 @@ function specialtydarkarts_install(){
 function specialtydarkarts_uninstall(){
 	// Reset the specialty of anyone who had this specialty so they get to
 	// rechoose at new day
-	$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET specialty='' WHERE specialty='DA'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='' WHERE specialty='DA'";
+	Database::query($sql);
 	return true;
 }
 

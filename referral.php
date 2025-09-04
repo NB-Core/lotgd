@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 // translator ready
 // addnews ready
@@ -36,8 +37,8 @@ if ($session['user']['loggedin']) {
     output("If you do, the site will know that you were the one who sent them here.");
     output("When they reach level %s for the first time, you'll get your points!", getsetting("referminlevel", 4));
 
-    $sql = "SELECT name,level,refererawarded FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE referer={$session['user']['acctid']} ORDER BY dragonkills,level";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT name,level,refererawarded FROM " . Database::prefix("accounts") . " WHERE referer={$session['user']['acctid']} ORDER BY dragonkills,level";
+    $result = Database::query($sql);
     $name = translate_inline("Name");
     $level = translate_inline("Level");
     $awarded = translate_inline("Awarded?");
@@ -46,9 +47,9 @@ if ($session['user']['loggedin']) {
     $none = translate_inline("`iNone`i");
     output("`n`nAccounts which you referred:`n");
     rawoutput("<table border='0' cellpadding='3' cellspacing='0'><tr><td>$name</td><td>$level</td><td>$awarded</td></tr>");
-    $number = \Lotgd\MySQL\Database::numRows($result);
+    $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $row = Database::fetchAssoc($result);
         rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
         output_notl($row['name']);
         rawoutput("</td><td>");
@@ -57,7 +58,7 @@ if ($session['user']['loggedin']) {
         output_notl($row['refererawarded'] ? $yes : $no);
         rawoutput("</td></tr>");
     }
-    if (\Lotgd\MySQL\Database::numRows($result) == 0) {
+    if (Database::numRows($result) == 0) {
         rawoutput("<tr><td colspan='3' align='center'>");
         output_notl($none);
         rawoutput("</td></tr>");

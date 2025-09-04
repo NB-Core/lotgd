@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -87,9 +88,9 @@ addnav("Search for banned user", "bans.php?op=searchban");
 
 // Collect a list of the mounts
 $mounts = "0," . translate_inline("None");
-$sql = "SELECT mountid,mountname,mountcategory FROM " . \Lotgd\MySQL\Database::prefix("mounts") .  " ORDER BY mountcategory";
-$result = \Lotgd\MySQL\Database::query($sql);
-while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+$sql = "SELECT mountid,mountname,mountcategory FROM " . Database::prefix("mounts") .  " ORDER BY mountcategory";
+$result = Database::query($sql);
+while ($row = Database::fetchAssoc($result)) {
     $mounts .= ",{$row['mountid']},{$row['mountcategory']}: " . color_sanitize($row['mountname']);
 }
 
@@ -118,9 +119,9 @@ $races = modulehook("racenames");
 //all races here expect such ones no module covers, so we add the users race first.
 if ($op == 'edit' || $op == 'save') {
     //add the race
-    $sql = "SELECT race FROM " . \Lotgd\MySQL\Database::prefix('accounts') . " WHERE acctid=$userid LIMIT 1;";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT race FROM " . Database::prefix('accounts') . " WHERE acctid=$userid LIMIT 1;";
+    $result = Database::query($sql);
+    $row = Database::fetchAssoc($result);
     // Unknown race, else it will scramble the array
     $racesenum = RACE_UNKNOWN . "," . translate_inline("Undecided", "race") . ",";
     foreach ($races as $race) {
@@ -138,9 +139,9 @@ if ($op == 'edit' || $op == 'save') {
     //later on: enumpretrans, because races are already translated in a way...
 }
 require("src/Lotgd/Config/user_account.php");
-$sql = "SELECT clanid,clanname,clanshort FROM " . \Lotgd\MySQL\Database::prefix("clans") . " ORDER BY clanshort";
-$result = \Lotgd\MySQL\Database::query($sql);
-while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+$sql = "SELECT clanid,clanname,clanshort FROM " . Database::prefix("clans") . " ORDER BY clanshort";
+$result = Database::query($sql);
+while ($row = Database::fetchAssoc($result)) {
     //ok, we had nuts here wo made clan names with commas - so I replace them with ; ...
     $userinfo['clanid'] .= ",{$row['clanid']}," . str_replace(",", ";", "<{$row['clanshort']}> {$row['clanname']}");
 }

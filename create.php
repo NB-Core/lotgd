@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -42,12 +43,12 @@ if ($op == 'val' || $op == 'forgotval') {
 
 if ($op == "forgotval") {
     $id = httpget('id');
-    $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE forgottenpassword='" . \Lotgd\MySQL\Database::escape($id) . "' AND forgottenpassword!=''";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    if (\Lotgd\MySQL\Database::numRows($result) > 0) {
-        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
-        $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET forgottenpassword='' WHERE forgottenpassword='$id';";
-        \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation FROM " . Database::prefix("accounts") . " WHERE forgottenpassword='" . Database::escape($id) . "' AND forgottenpassword!=''";
+    $result = Database::query($sql);
+    if (Database::numRows($result) > 0) {
+        $row = Database::fetchAssoc($result);
+        $sql = "UPDATE " . Database::prefix("accounts") . " SET forgottenpassword='' WHERE forgottenpassword='$id';";
+        Database::query($sql);
         output("`#`cYour login request has been validated.  You may now log in.`c`0");
         rawoutput("<form action='login.php' method='POST'>");
         rawoutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
@@ -67,8 +68,8 @@ if ($op == "forgotval") {
         }
         //rare case: we have somebody who deleted his first validation email and then requests a forgotten PW...
         if ($row['emailvalidation'] != "" && substr($row['emailvalidation'], 0, 1) != "x") {
-            $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix('accounts') . " SET emailvalidation='' WHERE acctid=" . $row['acctid'];
-            \Lotgd\MySQL\Database::query($sql);
+            $sql = "UPDATE " . Database::prefix('accounts') . " SET emailvalidation='' WHERE acctid=" . $row['acctid'];
+            Database::query($sql);
         }
     } else {
         output("`#Your request could not be verified.`n`n");
@@ -77,29 +78,29 @@ if ($op == "forgotval") {
     }
 } elseif ($op == "val") {
     $id = httpget('id');
-    $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE emailvalidation='" . \Lotgd\MySQL\Database::escape($id) . "' AND emailvalidation!=''";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    if (\Lotgd\MySQL\Database::numRows($result) > 0) {
-        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+    $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress FROM " . Database::prefix("accounts") . " WHERE emailvalidation='" . Database::escape($id) . "' AND emailvalidation!=''";
+    $result = Database::query($sql);
+    if (Database::numRows($result) > 0) {
+        $row = Database::fetchAssoc($result);
         if ($row['replaceemail'] != '') {
             $replace_array = explode("|", $row['replaceemail']);
             $replaceemail = $replace_array[0]; //1==date
             //note: remove any forgotten password request!
-            $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET emailaddress='" . $replaceemail . "', replaceemail='',forgottenpassword='' WHERE emailvalidation='$id';";
-            \Lotgd\MySQL\Database::query($sql);
+            $sql = "UPDATE " . Database::prefix("accounts") . " SET emailaddress='" . $replaceemail . "', replaceemail='',forgottenpassword='' WHERE emailvalidation='$id';";
+            Database::query($sql);
             output("`#`c Email changed successfully!`c`0`n");
                         DebugLog::add("Email change request validated by link from " . $row['emailaddress'] . " to " . $replaceemail, $row['acctid'], $row['acctid'], "Email");
             //If a superuser changes email, we want to know about it... at least those who can ee it anyway, the user editors...
             if ($row['superuser'] > 0) {
                 // 5 failed attempts for superuser, 10 for regular user
                 // send a system message to admin
-                $sql = "SELECT acctid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE (superuser&" . SU_EDIT_USERS . ")";
-                $result2 = \Lotgd\MySQL\Database::query($sql);
+                $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE (superuser&" . SU_EDIT_USERS . ")";
+                $result2 = Database::query($sql);
                 $subj = translate_mail(array("`#%s`j has changed the email address",$row['name']), 0);
                 $alert = translate_mail(array("Email change request validated by link to %s from %s originally for login '%s'.",$replaceemail,$row['emailaddress'],$row['login']), 0);
-                while ($row2 = \Lotgd\MySQL\Database::fetchAssoc($result2)) {
+                while ($row2 = Database::fetchAssoc($result2)) {
                     $msg = translate_mail(array("This message is generated as a result of an email change to a superuser account.  Log Follows:`n`n%s",$alert), 0);
-                    if (\Lotgd\MySQL\Database::affectedRows() > 0) {
+                    if (Database::affectedRows() > 0) {
                         $noemail = true;
                     } else {
                         $noemail = false;
@@ -108,8 +109,8 @@ if ($op == "forgotval") {
                 }
             }
         }
-        $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET emailvalidation='' WHERE emailvalidation='$id';";
-        \Lotgd\MySQL\Database::query($sql);
+        $sql = "UPDATE " . Database::prefix("accounts") . " SET emailvalidation='' WHERE emailvalidation='$id';";
+        Database::query($sql);
         output("`#`cYour email has been validated.  You may now log in.`c`0");
         output(
             "Your email has been validated, your login name is `^%s`0.`n`n",
@@ -145,15 +146,15 @@ if ($op == "forgotval") {
 if ($op == "forgot") {
     $charname = httppost('charname');
     if ($charname != "") {
-        $sql = "SELECT acctid,login,emailaddress,forgottenpassword,password FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='" . \Lotgd\MySQL\Database::escape($charname) . "'";
-        $result = \Lotgd\MySQL\Database::query($sql);
-        if (\Lotgd\MySQL\Database::numRows($result) > 0) {
-            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $sql = "SELECT acctid,login,emailaddress,forgottenpassword,password FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape($charname) . "'";
+        $result = Database::query($sql);
+        if (Database::numRows($result) > 0) {
+            $row = Database::fetchAssoc($result);
             if (trim($row['emailaddress']) != "") {
                 if ($row['forgottenpassword'] == "") {
                     $row['forgottenpassword'] = substr("x" . md5(date("Y-m-d H:i:s") . $row['password']), 0, 32);
-                    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET forgottenpassword='{$row['forgottenpassword']}' where login='{$row['login']}'";
-                    \Lotgd\MySQL\Database::query($sql);
+                    $sql = "UPDATE " . Database::prefix("accounts") . " SET forgottenpassword='{$row['forgottenpassword']}' where login='{$row['login']}'";
+                    Database::query($sql);
                 }
 
                 $subj = translate_mail($settings_extended->getSetting('forgottenpasswordmailsubject'), $row['acctid']);
@@ -214,9 +215,9 @@ if (getsetting("allowcreation", 1) == 0) {
             $pass1 = httppost('pass1');
             $pass2 = httppost('pass2');
             if (getsetting("blockdupeemail", 0) == 1 && getsetting("requireemail", 0) == 1) {
-                $sql = "SELECT login FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE emailaddress='" . \Lotgd\MySQL\Database::escape($email) . "'";
-                $result = \Lotgd\MySQL\Database::query($sql);
-                if (\Lotgd\MySQL\Database::numRows($result) > 0) {
+                $sql = "SELECT login FROM " . Database::prefix("accounts") . " WHERE emailaddress='" . Database::escape($email) . "'";
+                $result = Database::query($sql);
+                if (Database::numRows($result) > 0) {
                     $blockaccount = true;
                     $msg .= translate_inline("You may have only one account.`n");
                 }
@@ -257,12 +258,12 @@ if (getsetting("allowcreation", 1) == 0) {
             }
 
             if (!$blockaccount) {
-                $sql = "SELECT name FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='$shortname'";
-                $result = \Lotgd\MySQL\Database::query($sql);
-                $count = \Lotgd\MySQL\Database::numRows($result);
-                $sql = "SELECT playername FROM " . \Lotgd\MySQL\Database::prefix("accounts") ;
-                $result = \Lotgd\MySQL\Database::query($sql);
-                while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+                $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";
+                $result = Database::query($sql);
+                $count = Database::numRows($result);
+                $sql = "SELECT playername FROM " . Database::prefix("accounts") ;
+                $result = Database::query($sql);
+                while ($row = Database::fetchAssoc($result)) {
                     if (Sanitize::sanitize($row['playername']) == $shortname) {
                         $count++;
                         break;
@@ -285,10 +286,10 @@ if (getsetting("allowcreation", 1) == 0) {
                     }
                     $refer = httpget('r');
                     if ($refer > "") {
-                        $sql = "SELECT acctid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='" . \Lotgd\MySQL\Database::escape($refer) . "'";
-                        $result = \Lotgd\MySQL\Database::query($sql);
-                        if (\Lotgd\MySQL\Database::numRows($result) > 0) {
-                            $ref = \Lotgd\MySQL\Database::fetchAssoc($result);
+                        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape($refer) . "'";
+                        $result = Database::query($sql);
+                        if (Database::numRows($result) > 0) {
+                            $ref = Database::fetchAssoc($result);
                             $referer = $ref['acctid'];
                         } else {
                             //expired, deleted...
@@ -304,22 +305,22 @@ if (getsetting("allowcreation", 1) == 0) {
                     } else {
                         $dbpass = md5(md5($pass1));
                     }
-                    $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("accounts") . "
+                    $sql = "INSERT INTO " . Database::prefix("accounts") . "
 						(playername,name, superuser, title, password, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate,badguy,allowednavs,specialinc,specialmisc,bufflist,dragonpoints,replaceemail,forgottenpassword,prefs,hauntedby,donationconfig,bio,ctitle,companions)
 						VALUES
 						('$shortname','$title $shortname', '" . getsetting("defaultsuperuser", 0) . "', '$title', '$dbpass', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . getsetting("newplayerstartgold", 50) . ", '" . addslashes(getsetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','','','','',0,'','','','','','','','')";
-                    \Lotgd\MySQL\Database::query($sql);
-                    if (\Lotgd\MySQL\Database::affectedRows(LINK) <= 0) {
+                    Database::query($sql);
+                    if (Database::affectedRows(LINK) <= 0) {
                         output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
                     } else {
-                        $sql = "SELECT acctid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='$shortname'";
-                        $result = \Lotgd\MySQL\Database::query($sql);
-                        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+                        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";
+                        $result = Database::query($sql);
+                        $row = Database::fetchAssoc($result);
                         $args = httpallpost();
                         $args['acctid'] = $row['acctid'];
                         //insert output
-                        $sql_output = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("accounts_output") . " VALUES ({$row['acctid']},'');";
-                        \Lotgd\MySQL\Database::query($sql_output);
+                        $sql_output = "INSERT INTO " . Database::prefix("accounts_output") . " VALUES ({$row['acctid']},'');";
+                        Database::query($sql_output);
                         //end
                         modulehook("process-create", $args);
                         if ($emailverification != "") {

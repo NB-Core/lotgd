@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 //addnews ready
 // mail ready
 // translator ready
@@ -20,30 +21,30 @@ function specialtythiefskills_getmoduleinfo(){
 }
 
 function specialtythiefskills_install(){
-	$sql = "DESCRIBE " . \Lotgd\MySQL\Database::prefix("accounts");
-	$result = \Lotgd\MySQL\Database::query($sql);
+	$sql = "DESCRIBE " . Database::prefix("accounts");
+	$result = Database::query($sql);
 	$specialty="TS";
-	while($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+	while($row = Database::fetchAssoc($result)) {
 		// Convert the user over
 		if ($row['Field'] == "thievery") {
 			debug("Migrating thieving skills field");
-			$sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtythiefskills', 'skill', acctid, thievery FROM " . \Lotgd\MySQL\Database::prefix("accounts");
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtythiefskills', 'skill', acctid, thievery FROM " . Database::prefix("accounts");
+			Database::query($sql);
 			debug("Dropping thievery field from accounts table");
-			$sql = "ALTER TABLE " . \Lotgd\MySQL\Database::prefix("accounts") . " DROP thievery";
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP thievery";
+			Database::query($sql);
 		} elseif ($row['Field']=="thieveryuses") {
 			debug("Migrating thieving skills uses field");
-			$sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtythiefskills', 'uses', acctid, thieveryuses FROM " . \Lotgd\MySQL\Database::prefix("accounts");
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtythiefskills', 'uses', acctid, thieveryuses FROM " . Database::prefix("accounts");
+			Database::query($sql);
 			debug("Dropping thieveryuses field from accounts table");
-			$sql = "ALTER TABLE " . \Lotgd\MySQL\Database::prefix("accounts") . " DROP thieveryuses";
-			\Lotgd\MySQL\Database::query($sql);
+			$sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP thieveryuses";
+			Database::query($sql);
 		}
 	}
 	debug("Migrating Thieving Skills Specialty");
-	$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET specialty='$specialty' WHERE specialty='3'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='$specialty' WHERE specialty='3'";
+	Database::query($sql);
 
 	module_addhook("choose-specialty");
 	module_addhook("set-specialty");
@@ -61,8 +62,8 @@ function specialtythiefskills_install(){
 function specialtythiefskills_uninstall(){
 	// Reset the specialty of anyone who had this specialty so they get to
 	// rechoose at new day
-	$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET specialty='' WHERE specialty='TS'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='' WHERE specialty='TS'";
+	Database::query($sql);
 	return true;
 }
 

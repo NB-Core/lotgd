@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\Buffs;
 use Lotgd\Newday;
@@ -324,8 +325,8 @@ if ($dp < $dkills) {
         if (gmdate("Ymd", $gametoday) != gmdate("Ymd", $lastnewdaysemaphore)) {
                 // it appears to be a different game day, acquire semaphore and
                 // check again.
-            $sql = "LOCK TABLES " . \Lotgd\MySQL\Database::prefix("settings") . " WRITE";
-            \Lotgd\MySQL\Database::query($sql);
+            $sql = "LOCK TABLES " . Database::prefix("settings") . " WRITE";
+            Database::query($sql);
             clearsettings();
             $lastnewdaysemaphore = convertgametime(strtotime(getsetting("newdaySemaphore", DATETIME_DATEMIN) . " +0000"));
                 $gametoday = gametime();
@@ -333,12 +334,12 @@ if ($dp < $dkills) {
                 //we need to run the hook, update the setting, and unlock.
                 savesetting("newdaySemaphore", gmdate("Y-m-d H:i:s"));
                 $sql = "UNLOCK TABLES";
-                \Lotgd\MySQL\Database::query($sql);
+                Database::query($sql);
                 Newday::runOnce();
             } else {
                 //someone else beat us to it, unlock.
                 $sql = "UNLOCK TABLES";
-                \Lotgd\MySQL\Database::query($sql);
+                Database::query($sql);
             }
         }
     }

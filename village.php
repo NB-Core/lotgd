@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\Commentary;
 
@@ -31,10 +32,10 @@ if ($newestplayer == $session['user']['acctid']) {
 } else {
     $newtext = "`n`2Wandering near the inn is `&%s`2, looking completely lost.";
     if ((int)$newestplayer != 0) {
-        $sql = "SELECT name FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE acctid='$newestplayer'";
-        $result = \Lotgd\MySQL\Database::queryCached($sql, "newest");
-        if (\Lotgd\MySQL\Database::numRows($result) == 1) {
-            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+        $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid='$newestplayer'";
+        $result = Database::queryCached($sql, "newest");
+        if (Database::numRows($result) == 1) {
+            $row = Database::fetchAssoc($result);
             $newestname = $row['name'];
         } else {
             $newestplayer = "";

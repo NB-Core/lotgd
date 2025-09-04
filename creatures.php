@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -83,8 +84,8 @@ if ($op == "save") {
             $sql .= " forest='$forest', ";
             $sql .= " graveyard='$grave', ";
             $sql .= " createdby='" . $session['user']['login'] . "' ";
-            $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("creatures") . " SET " . $sql . " WHERE creatureid='$id'";
-            $result = \Lotgd\MySQL\Database::query($sql) or output("`\$" . \Lotgd\MySQL\Database::error(LINK) . "`0`n`#$sql`0`n");
+            $sql = "UPDATE " . Database::prefix("creatures") . " SET " . $sql . " WHERE creatureid='$id'";
+            $result = Database::query($sql) or output("`\$" . Database::error(LINK) . "`0`n`#$sql`0`n");
         } else {
             $cols = array();
             $vals = array();
@@ -109,9 +110,9 @@ if ($op == "save") {
                     array_push($vals, $val);
                 }
             }
-            $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("creatures") . " (" . join(",", $cols) . ",createdby) VALUES (\"" . join("\",\"", $vals) . "\",\"" . addslashes($session['user']['login']) . "\")";
-            $result = \Lotgd\MySQL\Database::query($sql);
-            $id = \Lotgd\MySQL\Database::insertId();
+            $sql = "INSERT INTO " . Database::prefix("creatures") . " (" . join(",", $cols) . ",createdby) VALUES (\"" . join("\",\"", $vals) . "\",\"" . addslashes($session['user']['login']) . "\")";
+            $result = Database::query($sql);
+            $id = Database::insertId();
         }
         if ($result) {
             output("`^Creature saved!`0`n");
@@ -136,13 +137,13 @@ if ($op == "save") {
 $op = httpget('op');
 $id = httpget('creatureid');
 if ($op == "del") {
-    $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("creatures") . " WHERE creatureid = '$id'";
-    \Lotgd\MySQL\Database::query($sql);
-    if (\Lotgd\MySQL\Database::affectedRows() > 0) {
+    $sql = "DELETE FROM " . Database::prefix("creatures") . " WHERE creatureid = '$id'";
+    Database::query($sql);
+    if (Database::affectedRows() > 0) {
         output("Creature deleted`n`n");
         module_delete_objprefs('creatures', $id);
     } else {
-        output("Creature not deleted: %s", \Lotgd\MySQL\Database::error(LINK));
+        output("Creature not deleted: %s", Database::error(LINK));
     }
     $op = "";
     httpset('op', "");
@@ -158,8 +159,8 @@ if ($op == "" || $op == "search") {
     } else {
         $where = "creaturelevel='$level'";
     }
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("creatures") . " WHERE $where ORDER BY creaturelevel,creaturename";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE $where ORDER BY creaturelevel,creaturename";
+    $result = Database::query($sql);
     // Search form
     $search = translate_inline("Search");
     rawoutput("<form action='creatures.php?op=search' method='POST'>");
@@ -171,9 +172,9 @@ if ($op == "" || $op == "search") {
     addnav("", "creatures.php?op=search");
 
     addnav("Levels");
-    $sql1 = "SELECT count(creatureid) AS n,creaturelevel FROM " . \Lotgd\MySQL\Database::prefix("creatures") . " group by creaturelevel order by creaturelevel";
-    $result1 = \Lotgd\MySQL\Database::query($sql1);
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result1)) {
+    $sql1 = "SELECT count(creatureid) AS n,creaturelevel FROM " . Database::prefix("creatures") . " group by creaturelevel order by creaturelevel";
+    $result1 = Database::query($sql1);
+    while ($row = Database::fetchAssoc($result1)) {
         addnav(
             array("Level %s: (%s creatures)", $row['creaturelevel'], $row['n']),
             "creatures.php?level={$row['creaturelevel']}"
@@ -204,7 +205,7 @@ if ($op == "" || $op == "search") {
     rawoutput("<td>$opshead</td><td>$idhead</td><td>$name</td><td>$cat</td><td>$lev</td><td>$weapon</td><td>$script</td><td>$winmsg</td><td>$diemsg</td><td>$forest_text</td><td>$graveyard_text</td><td>$author</td></tr>");
     addnav("", "creatures.php");
     $i = true;
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         $i = !$i;
         rawoutput("<tr class='" . ($i ? "trdark" : "trlight") . "'>", true);
         rawoutput("<td>[ <a href='creatures.php?op=edit&creatureid={$row['creatureid']}'>");
@@ -264,12 +265,12 @@ if ($op == "" || $op == "search") {
             addnav("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
         } else {
             if ($op == "edit" && $id != "") {
-                $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("creatures") . " WHERE creatureid=$id";
-                $result = \Lotgd\MySQL\Database::query($sql);
-                if (\Lotgd\MySQL\Database::numRows($result) <> 1) {
+                $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE creatureid=$id";
+                $result = Database::query($sql);
+                if (Database::numRows($result) <> 1) {
                     output("`4Error`0, that creature was not found!");
                 } else {
-                    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
+                    $row = Database::fetchAssoc($result);
                 }
                 $level = $row['creaturelevel'];
             } else {

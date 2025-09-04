@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 
 use Lotgd\Buffs;
 
@@ -108,15 +109,15 @@ if ($op == "") {
         tlschema();
     }
 
-    $sql = "SELECT * FROM " .  \Lotgd\MySQL\Database::prefix("companions") . "
+    $sql = "SELECT * FROM " .  Database::prefix("companions") . "
 				WHERE companioncostdks<={$session['user']['dragonkills']}
 				AND (companionlocation = '{$session['user']['location']}' OR companionlocation = 'all')
 				AND companionactive = 1";
-    $result = \Lotgd\MySQL\Database::query($sql);
+    $result = Database::query($sql);
     tlschema($schemas['buynav']);
     addnav($texts['buynav']);
     tlschema();
-    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    while ($row = Database::fetchAssoc($result)) {
         $row = modulehook("alter-companion", $row);
         if ($row['companioncostgold'] && $row['companioncostgems']) {
             if ($session['user']['gold'] >= $row['companioncostgold'] && $session['user']['gems'] >= $row['companioncostgems'] && !isset($companions[$row['name']])) {
@@ -174,9 +175,9 @@ if ($op == "") {
     addnav("Return to the camp", "mercenarycamp.php?skip=1");
 } elseif ($op == "buy") {
     $id = httpget('id');
-    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("companions") . " WHERE companionid = $id";
-    $result = \Lotgd\MySQL\Database::query($sql);
-    if ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
+    $sql = "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid = $id";
+    $result = Database::query($sql);
+    if ($row = Database::fetchAssoc($result)) {
         $row['attack'] = $row['attack'] + $row['attackperlevel'] * $session['user']['level'];
         $row['defense'] = $row['defense'] + $row['defenseperlevel'] * $session['user']['level'];
         $row['maxhitpoints'] = $row['maxhitpoints'] + $row['maxhitpointsperlevel'] * $session['user']['level'];

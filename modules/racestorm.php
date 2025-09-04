@@ -1,4 +1,5 @@
 <?php
+use Lotgd\MySQL\Database;
 // translator ready
 // addnews ready
 // mail ready
@@ -47,8 +48,8 @@ function racestorm_install(){
 
 function racestorm_uninstall(){
 	global $session;
-	$sql = "UPDATE  " . \Lotgd\MySQL\Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Storm Giant'";
-	\Lotgd\MySQL\Database::query($sql);
+	$sql = "UPDATE  " . Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Storm Giant'";
+	Database::query($sql);
 	if ($session['user']['race'] == 'Storm Giant')
 		$session['user']['race'] = RACE_UNKNOWN;
 	return true;
