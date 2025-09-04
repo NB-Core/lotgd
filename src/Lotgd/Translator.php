@@ -9,6 +9,7 @@ use Lotgd\Sanitize;
 use Lotgd\Cookies;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 
+
 class Translator
 {
     private static array $translation_table = [];
@@ -124,12 +125,12 @@ class Translator
                     if (getsetting("collecttexts", false)) {
         $sql = "DELETE FROM " . Database::prefix("untranslated") .
             " WHERE intext='" . addslashes($indata) .
-            "' AND language='" . LANGUAGE . "'";
+            "' AND language='" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "'";
         Database::query($sql);
                     }
                     */
                 } elseif ($settings instanceof Settings && $settings->getsetting("collecttexts", false)) {
-                    $sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . LANGUAGE . "', " .  "'$namespace')";
+                    $sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "', " .  "'$namespace')";
                     Database::query($sql, false);
                 }
                                 self::tlbuttonPush($indata, !$foundtranslation, $namespace);
@@ -161,7 +162,7 @@ class Translator
             // Preserve original semantics:
             // If first arg is bool, shift it (condition), then shift schema name and set it temporarily
             if (is_bool($args[0]) && array_shift($args)) {
-                tlschema(array_shift($args));
+                self::tlschema(array_shift($args));
                 $setschema = true;
             }
 
@@ -173,7 +174,7 @@ class Translator
 
             // Reset schema if we set it above
             if ($setschema) {
-                tlschema();
+            self::tlschema();
             }
         }
 
@@ -314,7 +315,7 @@ class Translator
         }
 
         global $session;
-        tlschema("mail"); // should be same schema like systemmails!
+        self::tlschema('mail'); // should be same schema like systemmails!
         if (!is_array($in)) {
             $in = array($in);
         }
@@ -334,7 +335,7 @@ class Translator
 
         $out = self::sprintfTranslate(...$in);
 
-        tlschema();
+        self::tlschema();
         unset($session['tlanguage']);
         return $out;
     }
@@ -375,9 +376,9 @@ class Translator
         }
 
         global $language, $session;
-        if (defined("LANGUAGE")) {
+        if (defined('LANGUAGE')) {
             if ($language === false) {
-                $language = LANGUAGE;
+                $language = constant('LANGUAGE');
             }
         } else {
             self::translatorSetup();

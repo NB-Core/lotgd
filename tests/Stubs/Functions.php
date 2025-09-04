@@ -252,6 +252,9 @@ namespace {
     if (!defined('DATACACHE_FILENAME_PREFIX')) {
         define('DATACACHE_FILENAME_PREFIX', 'datacache-');
     }
+    if (!defined('LANGUAGE')) {
+        define('LANGUAGE', 'en');
+    }
 }
 
 namespace Lotgd {
