@@ -5,11 +5,6 @@ parameters:
 			count: 1
 			path: src/Lotgd/Accounts.php
 
-		-
-			message: "#^Caught class Lotgd\\\\Async\\\\Handler\\\\Exception not found\\.$#"
-			count: 3
-			path: src/Lotgd/Async/Handler/Commentary.php
-
 
 		-
 			message: "#^Variable \\$badguyatkmod might not be defined\\.$#"
