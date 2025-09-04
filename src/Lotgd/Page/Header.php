@@ -13,6 +13,7 @@ use Lotgd\HolidayText;
 use Lotgd\Buffs;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 class Header
 {

@@ -8,6 +8,7 @@ namespace Lotgd\Tests\Ajax {
     use Lotgd\Async\Handler\Mail;
     use Lotgd\Tests\Stubs\Database;
     use Lotgd\Tests\Stubs\MailDummySettings;
+    use Lotgd\Settings;
     use PHPUnit\Framework\TestCase;
 
     /**
@@ -17,11 +18,11 @@ namespace Lotgd\Tests\Ajax {
     {
         protected function setUp(): void
         {
-            global $session, $settings;
+            global $session;
 
             $session = ['user' => ['acctid' => 1]];
             require_once __DIR__ . '/../bootstrap.php';
-            $settings = new MailDummySettings(['LOGINTIMEOUT' => 360]);
+            Settings::setInstance(new MailDummySettings(['LOGINTIMEOUT' => 360]));
             Database::$queryCacheResults = [];
         }
 

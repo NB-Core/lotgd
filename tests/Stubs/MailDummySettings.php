@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Stubs;
 
-class MailDummySettings
+use Lotgd\Settings;
+
+class MailDummySettings extends Settings
 {
     private array $values;
 

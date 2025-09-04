@@ -19,6 +19,7 @@ final class CharsetIndexConversionTest extends TestCase
         Database::$full_columns_rows = [];
         Database::$table_status_rows = [];
         Database::$collation_rows = [];
+        Database::$mockResults = [];
         Database::$tableExists = true;
         Database::$doctrineConnection = null;
         DoctrineBootstrap::$conn = null;

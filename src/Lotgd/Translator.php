@@ -531,9 +531,10 @@ class Translator
         if ($schema === false) {
             // Revert one entry: remove current namespace and set previous
             if (!empty($stack)) {
-                self::$translation_namespace = (string)array_pop($stack);
+                self::$translation_namespace = (string) array_pop($stack);
             } else {
-                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI);
+                // Default to empty string when REQUEST_URI is unavailable
+                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI ?? '');
             }
         } else {
             // Push current namespace to stack, set new one

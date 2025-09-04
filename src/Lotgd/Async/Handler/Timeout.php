@@ -46,7 +46,8 @@ class Timeout
         Translator::enableTranslation(false);
 
         if ($timeout <= 1) {
-            $warning = '' . $output->appoencode('`$`b') . 'Your session has timed out!' . $output->appoencode('`b');
+            // Preserve legacy behaviour by including the TIMEOUT keyword
+            $warning = $output->appoencode('`$`b') . 'TIMEOUT: Your session has timed out!' . $output->appoencode('`b');
         } elseif ($timeout < $start_timeout_show_seconds) {
             if ($timeout > 60) {
                 $min = floor($timeout / 60);

@@ -8,6 +8,7 @@ use Lotgd\Mail;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\MailDummySettings;
 use Lotgd\Tests\Stubs\PHPMailer;
+use Lotgd\Settings;
 use PHPUnit\Framework\TestCase;
 
 final class MailTest extends TestCase
@@ -32,7 +33,14 @@ final class MailTest extends TestCase
             'notificationmailsubject' => '{subject}',
             'notificationmailtext' => '{body}',
         ];
-        $GLOBALS['settings'] = new MailDummySettings($GLOBALS['settings_array']);
+        $settings = new MailDummySettings($GLOBALS['settings_array']);
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
+        // Reset Mail's cached settings between tests
+        $ref = new \ReflectionClass(\Lotgd\Mail::class);
+        $prop = $ref->getProperty('settings');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
     }
 
     public function testSystemMailStoresMessageAndSkipsInvalidEmail(): void
@@ -51,7 +59,9 @@ final class MailTest extends TestCase
     public function testInboxCountAndFull(): void
     {
         $GLOBALS['settings_array']['inboxlimit'] = 3;
-        $GLOBALS['settings'] = new MailDummySettings($GLOBALS['settings_array']);
+        $settings = new MailDummySettings($GLOBALS['settings_array']);
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
         $GLOBALS['mail_table'] = [
             ['messageid' => 1, 'msgfrom' => 0, 'msgto' => 1, 'subject' => 'a', 'body' => 'b', 'sent' => 't', 'seen' => 0],
             ['messageid' => 2, 'msgfrom' => 0, 'msgto' => 1, 'subject' => 'c', 'body' => 'd', 'sent' => 't', 'seen' => 1],
