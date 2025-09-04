@@ -34,6 +34,7 @@ class Censor
             $exceptions = array_flip(self::goodWordList());
             $changed_content = false;
             foreach ($search as $word) {
+                $matches = [];
                 do {
                     if ($word > '') {
                         $times = preg_match_all($word, $sanitized, $matches);
