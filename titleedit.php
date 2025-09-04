@@ -39,26 +39,26 @@ switch ($op) {
         $ref = '';
 
         if ((int)$id == 0) {
-            $sql = "INSERT INTO " . db_prefix("titles") . " (titleid,dk,ref,male,female) VALUES ($id,$dk,'$ref','$male','$female')";
+            $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("titles") . " (titleid,dk,ref,male,female) VALUES ($id,$dk,'$ref','$male','$female')";
             $note = "`^New title added.`0";
             $errnote = "`\$Unable to add title.`0";
         } else {
-            $sql = "UPDATE " . db_prefix("titles") . " SET dk=$dk,ref='$ref',male='$male',female='$female' WHERE titleid=$id";
+            $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("titles") . " SET dk=$dk,ref='$ref',male='$male',female='$female' WHERE titleid=$id";
             $note = "`^Title modified.`0";
             $errnote = "`\$Unable to modify title.`0";
         }
-        db_query($sql);
-        if (db_affected_rows() == 0) {
+        \Lotgd\MySQL\Database::query($sql);
+        if (\Lotgd\MySQL\Database::affectedRows() == 0) {
             output($errnote);
-            rawoutput(db_error());
+            rawoutput(\Lotgd\MySQL\Database::error());
         } else {
             output($note);
         }
         $op = "";
         break;
     case "delete":
-        $sql = "DELETE FROM " . db_prefix("titles") . " WHERE titleid='$id'";
-        db_query($sql);
+        $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("titles") . " WHERE titleid='$id'";
+        \Lotgd\MySQL\Database::query($sql);
         output("`^Title deleted.`0");
         $op = "";
         break;
@@ -69,11 +69,11 @@ switch ($op) {
                 require_once("lib/titles.php");
 
         output("`^Rebuilding all titles for all players.`0`n`n");
-        $sql = "SELECT name,title,dragonkills,acctid,sex,ctitle FROM " . db_prefix("accounts");
-        $result = db_query($sql);
-        $number = db_num_rows($result);
+        $sql = "SELECT name,title,dragonkills,acctid,sex,ctitle FROM " . \Lotgd\MySQL\Database::prefix("accounts");
+        $result = \Lotgd\MySQL\Database::query($sql);
+        $number = \Lotgd\MySQL\Database::numRows($result);
         for ($i = 0; $i < $number; $i++) {
-            $row = db_fetch_assoc($result);
+            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
             $oname = $row['name'];
             $dk = $row['dragonkills'];
             $otitle = $row['title'];
@@ -96,10 +96,10 @@ switch ($op) {
                         $session['user']['title'] = $newtitle;
                         $session['user']['name'] = $newname;
                     } else {
-                        $sql = "UPDATE " . db_prefix("accounts") . " SET name='" .
+                        $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET name='" .
                             addslashes($newname) . "', title='" .
                             addslashes($newtitle) . "' WHERE acctid='$id'";
-                        db_query($sql);
+                        \Lotgd\MySQL\Database::query($sql);
                     }
                 } elseif ($otitle != $newtitle) {
                     output(
@@ -112,10 +112,10 @@ switch ($op) {
                     if ($session['user']['acctid'] == $row['acctid']) {
                         $session['user']['title'] = $newtitle;
                     } else {
-                        $sql = "UPDATE " . db_prefix("accounts") .
+                        $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") .
                             " SET title='" . addslashes($newtitle) .
                             "' WHERE acctid='$id'";
-                        db_query($sql);
+                        \Lotgd\MySQL\Database::query($sql);
                     }
                 }
             }
@@ -128,9 +128,9 @@ switch ($op) {
     case "add":
         if ($op == "edit") {
             output("`\$Editing an existing title`n`n");
-            $sql = "SELECT * FROM " . db_prefix("titles") . " WHERE titleid='$id'";
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
+            $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("titles") . " WHERE titleid='$id'";
+            $result = \Lotgd\MySQL\Database::query($sql);
+            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         } elseif ($op == "add") {
             output("`\$Adding a new title`n`n");
             $row = array('titleid' => 0, 'male' => '', 'female' => '', 'dk' => 0);
@@ -146,12 +146,12 @@ switch ($op) {
         //fallthrough
 
     default:
-        $sql = "SELECT * FROM " . db_prefix("titles") . " ORDER BY dk, titleid";
-        $result = db_query($sql);
-        if (db_num_rows($result) < 1) {
+        $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("titles") . " ORDER BY dk, titleid";
+        $result = \Lotgd\MySQL\Database::query($sql);
+        if (\Lotgd\MySQL\Database::numRows($result) < 1) {
             output("");
         } else {
-            $row = db_fetch_assoc($result);
+            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         }
         output("`@`c`b-=Title Editor=-`b`c");
         $ops = translate_inline("Ops");
@@ -167,9 +167,9 @@ switch ($op) {
         // reference tag is currently unused
         // rawoutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$reftag</td><td>$mtit</td><td>$ftit</td></tr>");
         rawoutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$mtit</td><td>$ftit</td></tr>");
-        $result = db_query($sql);
+        $result = \Lotgd\MySQL\Database::query($sql);
         $i = 0;
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
             $id = $row['titleid'];
             rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
             rawoutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|<a href='titleedit.php?op=delete&id=$id' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");

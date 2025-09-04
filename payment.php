@@ -10,7 +10,6 @@ set_error_handler("payment_error");
 define("ALLOW_ANONYMOUS", true);
 use Lotgd\Http;
 use Lotgd\Page\Footer;
-use Lotgd\MySQL\Database;
 
 require_once("common.php");
 
@@ -77,9 +76,9 @@ if (!$fp) {
                     $payment_fee = 0;
                     $txn_type = 'refund';
                 }
-                $sql = "SELECT * FROM " . Database::prefix("paylog") . " WHERE txnid='{$txn_id}'";
-                $result = Database::query($sql);
-                if (db_num_rows($result) == 1) {
+                $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("paylog") . " WHERE txnid='{$txn_id}'";
+                $result = \Lotgd\MySQL\Database::query($sql);
+                if (\Lotgd\MySQL\Database::numRows($result) == 1) {
                     $emsg .= "Already logged this transaction ID ($txn_id)\n";
                     payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
                 }
@@ -112,9 +111,9 @@ function writelog($response)
     $match = array();
     preg_match("'([^:]*):([^/])*'", $item_number, $match);
     if (isset($match[1]) && $match[1] > "") {
-        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='{$match[1]}'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+        $sql = "SELECT acctid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='{$match[1]}'";
+        $result = \Lotgd\MySQL\Database::query($sql);
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         $acctid = $row['acctid'];
         if ($acctid > 0) {
             $donation = $payment_amount;
@@ -130,9 +129,9 @@ function writelog($response)
             //updated to make a setting here for each Dollar, Euro, Shekel
             $hookresult['points'] = round($hookresult['points']);
 
-            $sql = "UPDATE " . Database::prefix("accounts") . " SET donation = donation + '{$hookresult['points']}' WHERE acctid=$acctid";
+            $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET donation = donation + '{$hookresult['points']}' WHERE acctid=$acctid";
 
-            $result = Database::query($sql);
+            $result = \Lotgd\MySQL\Database::query($sql);
             debuglog("Received donator points for donating -- Credited Automatically", false, $acctid, "donation", $hookresult['points'], false);
             if (!is_array($hookresult['messages'])) {
                 $hookresult['messages'] = array($hookresult['messages']);
@@ -140,7 +139,7 @@ function writelog($response)
             foreach ($hookresult['messages'] as $id => $message) {
                 debuglog($message, false, $acctid, "donation", 0, false);
             }
-            if (Database::affectedRows() > 0) {
+            if (\Lotgd\MySQL\Database::affectedRows() > 0) {
                 $processed = 1;
             }
         }
@@ -151,7 +150,7 @@ function writelog($response)
         modulehook("donation", array("id" => $acctid, "amt" => $donation * getsetting('dpointspercurrencyunit', 100), "manual" => false));
     }
     $sql = "
-                INSERT INTO " . Database::prefix("paylog") . " (
+                INSERT INTO " . \Lotgd\MySQL\Database::prefix("paylog") . " (
 			info,
 			response,
 			txnid,
@@ -177,9 +176,9 @@ function writelog($response)
     if (isset($acctid)) {
         debuglog($sql, false, $acctid, "donation", 0, false);
     }
-    $result = Database::query($sql);
+    $result = \Lotgd\MySQL\Database::query($sql);
     modulehook("donation-processed", $post);
-    $err = Database::error();
+    $err = \Lotgd\MySQL\Database::error();
     if ($err) {
         payment_error(E_ERROR, "SQL: $sql\nERR: $err", __FILE__, __LINE__);
     }

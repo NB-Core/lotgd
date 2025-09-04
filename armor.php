@@ -70,12 +70,12 @@ if ($op == "") {
     }
     tlschema();
 
-    $sql = "SELECT max(level) AS level FROM " . db_prefix("armor") . " WHERE level<=" . $session['user']['dragonkills'];
-    $result = db_query($sql);
-    $row = db_fetch_assoc($result);
+    $sql = "SELECT max(level) AS level FROM " . \Lotgd\MySQL\Database::prefix("armor") . " WHERE level<=" . $session['user']['dragonkills'];
+    $result = \Lotgd\MySQL\Database::query($sql);
+    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
 
-    $sql = "SELECT * FROM " . db_prefix("armor") . " WHERE level={$row['level']} ORDER BY value";
-    $result = db_query($sql);
+    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("armor") . " WHERE level={$row['level']} ORDER BY value";
+    $result = \Lotgd\MySQL\Database::query($sql);
 
     tlschema($schemas['tradein']);
     if (is_array($texts['tradein'])) {
@@ -99,7 +99,7 @@ if ($op == "") {
     output_notl($acost);
     rawoutput("</td></tr>");
     $i = 0;
-    while ($row = db_fetch_assoc($result)) {
+    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
         $link = true;
         $row = modulehook("modify-armor", $row);
         if (isset($row['skip']) && $row['skip'] === true) {
@@ -142,9 +142,9 @@ if ($op == "") {
     VillageNav::render();
 } elseif ($op == "buy") {
     $id = Http::get('id');
-    $sql = "SELECT * FROM " . db_prefix("armor") . " WHERE armorid='$id'";
-    $result = db_query($sql);
-    if (db_num_rows($result) == 0) {
+    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("armor") . " WHERE armorid='$id'";
+    $result = \Lotgd\MySQL\Database::query($sql);
+    if (\Lotgd\MySQL\Database::numRows($result) == 0) {
         tlschema($schemas['nosuchweapon']);
         output($texts['nosuchweapon']);
         tlschema();
@@ -153,7 +153,7 @@ if ($op == "") {
         tlschema();
         VillageNav::render();
     } else {
-        $row = db_fetch_assoc($result);
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         $row = modulehook("modify-armor", $row);
         if ($row['value'] > ($session['user']['gold'] + $tradeinvalue)) {
             tlschema($schemas['notenoughgold']);

@@ -86,8 +86,8 @@ if ($op == "") {
     }
     addnav("It is a new day", "news.php");
     Buffs::stripAllBuffs();
-    $sql = "DESCRIBE " . db_prefix("accounts");
-    $result = db_query($sql);
+    $sql = "DESCRIBE " . \Lotgd\MySQL\Database::prefix("accounts");
+    $result = \Lotgd\MySQL\Database::query($sql);
 
     $dkpoints = 0;
     foreach ($session['user']['dragonpoints'] as $val) {
@@ -168,7 +168,7 @@ if ($op == "") {
     ) {
         $session['user']['bestdragonage'] = $session['user']['dragonage'];
     }
-    while ($row = db_fetch_assoc($result)) {
+    while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
         if (
             array_key_exists($row['Field'], $nochange) &&
                 $nochange[$row['Field']]

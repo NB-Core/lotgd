@@ -90,10 +90,10 @@ switch ($type_setting) {
                 $tmp = stripslashes(httppost("villagename"));
                 if ($tmp && $tmp != getsetting('villagename', LOCATION_FIELDS)) {
                     debug("Updating village name -- moving players");
-                    $sql = "UPDATE " . db_prefix("accounts") . " SET location='" .
+                    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET location='" .
                         httppost("villagename") . "' WHERE location='" .
                         addslashes(getsetting('villagename', LOCATION_FIELDS)) . "'";
-                    db_query($sql);
+                    \Lotgd\MySQL\Database::query($sql);
                     if ($session['user']['location'] == getsetting('villagename', LOCATION_FIELDS)) {
                         $session['user']['location'] =
                             stripslashes(httppost('villagename'));
@@ -102,10 +102,10 @@ switch ($type_setting) {
                 $tmp = stripslashes(httppost("innname"));
                 if ($tmp && $tmp != getsetting('innname', LOCATION_INN)) {
                     debug("Updating inn name -- moving players");
-                    $sql = "UPDATE " . db_prefix("accounts") . " SET location='" .
+                    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET location='" .
                         httppost("innname") . "' WHERE location='" .
                         addslashes(getsetting('innname', LOCATION_INN)) . "'";
-                    db_query($sql);
+                    \Lotgd\MySQL\Database::query($sql);
                     if ($session['user']['location'] == getsetting('innname', LOCATION_INN)) {
                         $session['user']['location'] = stripslashes(httppost('innname'));
                     }

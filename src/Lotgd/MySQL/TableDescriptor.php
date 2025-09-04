@@ -46,15 +46,15 @@ class TableDescriptor
      */
     public static function synctable(string $tablename, array $descriptor, bool $nodrop = false): ?int
     {
-    //table names should be db_prefix'd before they get in to
+    //table names should be \Lotgd\MySQL\Database::prefix'd before they get in to
     //this function.
-        if (!Database::tableExists($tablename)) {
+        if (!\Lotgd\MySQL\Database::tableExists($tablename)) {
             //the table doesn't exist, so we create it and are done.
             reset($descriptor);
             $sql = self::tableCreateFromDescriptor($tablename, $descriptor);
             error_log($sql);
-            if (!Database::query($sql)) {
-                throw new RuntimeException(Database::error());
+            if (!\Lotgd\MySQL\Database::query($sql)) {
+                throw new RuntimeException(\Lotgd\MySQL\Database::error());
             }
 
             output("`^Table `#%s`^ created.`n", $tablename);
@@ -95,22 +95,22 @@ class TableDescriptor
                 $tableCharset = 'utf8mb4';
                 $tableCollation = 'utf8mb4_unicode_ci';
             }
-            $collationEsc = Database::escape($tableCollation);
+            $collationEsc = \Lotgd\MySQL\Database::escape($tableCollation);
             if ($tableCharset) {
-                $tableCharsetEsc = Database::escape($tableCharset);
-                $result = Database::query(
+                $tableCharsetEsc = \Lotgd\MySQL\Database::escape($tableCharset);
+                $result = \Lotgd\MySQL\Database::query(
                     "SHOW COLLATION WHERE Collation = '$collationEsc' AND Charset = '$tableCharsetEsc'"
                 );
             } else {
-                $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+                $result = \Lotgd\MySQL\Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
             }
-            $row = Database::fetchAssoc($result);
+            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
             if (!$row) {
                 throw new \InvalidArgumentException("Collation '$tableCollation' does not exist.");
             }
             if (!$tableCharset) {
                 $tableCharset = $row['Charset'];
-                while ($check = Database::fetchAssoc($result)) {
+                while ($check = \Lotgd\MySQL\Database::fetchAssoc($result)) {
                     if ($check['Charset'] !== $tableCharset) {
                         throw new \InvalidArgumentException(
                             "Collation '$tableCollation' maps to multiple charsets; specify charset explicitly."
@@ -126,9 +126,9 @@ class TableDescriptor
             unset($descriptor['charset'], $descriptor['collation']);
             unset($existing['charset'], $existing['collation']);
             reset($descriptor);
-            $tablenameEsc = Database::escape($tablename);
-            $status = Database::query("SHOW TABLE STATUS WHERE Name = '$tablenameEsc'");
-            $statusRow = Database::fetchAssoc($status);
+            $tablenameEsc = \Lotgd\MySQL\Database::escape($tablename);
+            $status = \Lotgd\MySQL\Database::query("SHOW TABLE STATUS WHERE Name = '$tablenameEsc'");
+            $statusRow = \Lotgd\MySQL\Database::fetchAssoc($status);
             $engine = strtoupper($statusRow['Engine'] ?? 'INNODB');
             $changes = array();
             $columnsNeedConversion = [];
@@ -222,11 +222,11 @@ class TableDescriptor
                     $colCharset = explode('_', $colCollation, 2)[0];
                 }
                 if ($colCollation) {
-                    $colCollationEsc = Database::escape($colCollation);
-                    $result = Database::query(
+                    $colCollationEsc = \Lotgd\MySQL\Database::escape($colCollation);
+                    $result = \Lotgd\MySQL\Database::query(
                         "SHOW COLLATION WHERE Collation = '$colCollationEsc'"
                     );
-                    $row = Database::fetchAssoc($result);
+                    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
                     $name = $val['name'] ?? $key;
                     if (!$row) {
                         throw new \InvalidArgumentException(
@@ -385,7 +385,7 @@ class TableDescriptor
                         $updateSql = "UPDATE $tablename SET $column = :DATETIME_DATEMIN"
                             . " WHERE $column < :DATETIME_DATEMIN OR $column = :zeroDate";
                         try {
-                            Database::getDoctrineConnection()->executeStatement(
+                            \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
                                 $updateSql,
                                 [
                                     'DATETIME_DATEMIN' => DATETIME_DATEMIN,
@@ -400,9 +400,9 @@ class TableDescriptor
                 //we have changes to do!  Woohoo!
                 $sql = "ALTER TABLE $tablename \n" . join(",\n", $changes);
                 error_log($sql);
-                $result = Database::query($sql);
+                $result = \Lotgd\MySQL\Database::query($sql);
                 if ($result === false) {
-                    throw new \RuntimeException(Database::error());
+                    throw new \RuntimeException(\Lotgd\MySQL\Database::error());
                 }
 
                 return count($changes);
@@ -450,22 +450,22 @@ class TableDescriptor
             $tableCollation = 'utf8mb4_unicode_ci';
         }
         if ($tableCollation) {
-            $collationEsc = Database::escape($tableCollation);
+            $collationEsc = \Lotgd\MySQL\Database::escape($tableCollation);
             if ($tableCharset) {
-                $tableCharsetEsc = Database::escape($tableCharset);
-                $result = Database::query(
+                $tableCharsetEsc = \Lotgd\MySQL\Database::escape($tableCharset);
+                $result = \Lotgd\MySQL\Database::query(
                     "SHOW COLLATION WHERE Collation = '$collationEsc' AND Charset = '$tableCharsetEsc'"
                 );
             } else {
-                $result = Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
+                $result = \Lotgd\MySQL\Database::query("SHOW COLLATION WHERE Collation = '$collationEsc'");
             }
-            $row = Database::fetchAssoc($result);
+            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
             if (!$row) {
                 throw new \InvalidArgumentException("Collation '$tableCollation' does not exist.");
             }
             if (!$tableCharset) {
                 $tableCharset = $row['Charset'];
-                while ($check = Database::fetchAssoc($result)) {
+                while ($check = \Lotgd\MySQL\Database::fetchAssoc($result)) {
                     if ($check['Charset'] !== $tableCharset) {
                         throw new \InvalidArgumentException(
                             "Collation '$tableCollation' maps to multiple charsets; specify charset explicitly."
@@ -486,7 +486,7 @@ class TableDescriptor
         $i = 0;
         foreach ($descriptor as $key => $val) {
             if ($key === 'RequireMyISAM') {
-                if ($val == 1 && Database::getServerVersion() < '4.0.14') {
+                if ($val == 1 && \Lotgd\MySQL\Database::getServerVersion() < '4.0.14') {
                     $type = 'MyISAM';
                 }
                 continue;
@@ -545,11 +545,11 @@ class TableDescriptor
                 $colCharset = explode('_', $colCollation, 2)[0];
             }
             if ($colCollation) {
-                $colCollationEsc = Database::escape($colCollation);
-                $result = Database::query(
+                $colCollationEsc = \Lotgd\MySQL\Database::escape($colCollation);
+                $result = \Lotgd\MySQL\Database::query(
                     "SHOW COLLATION WHERE Collation = '$colCollationEsc'"
                 );
-                $row = Database::fetchAssoc($result);
+                $row = \Lotgd\MySQL\Database::fetchAssoc($result);
                 if (!$row) {
                     throw new \InvalidArgumentException(
                         "Column '{$val['name']}' collation '$colCollation' does not exist."
@@ -609,7 +609,7 @@ class TableDescriptor
     public static function tableCreateDescriptor(string $tablename): array
     {
     //this function assumes that $tablename is already passed
-    //through db_prefix.
+    //through \Lotgd\MySQL\Database::prefix.
         $descriptor = array();
 
     //reserved function words, expand if necessary, currently not a global setting
@@ -618,8 +618,8 @@ class TableDescriptor
     // 1. Fetch column definitions from the database and parse them into the
     //    descriptor array.
         $sql = "SHOW FULL COLUMNS FROM $tablename";
-        $result = Database::query($sql);
-        while ($row = Database::fetchAssoc($result)) {
+        $result = \Lotgd\MySQL\Database::query($sql);
+        while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
             $item = array();
             // check for reserved
             if (in_array($row['Field'], $reserved_words)) {
@@ -651,9 +651,9 @@ class TableDescriptor
         }
         // 2. Obtain table level charset/collation and then
         // 3. Generate key/index entries.
-        $tablenameEsc = Database::escape($tablename);
-        $status = Database::query("SHOW TABLE STATUS WHERE Name = '$tablenameEsc'");
-        $row = Database::fetchAssoc($status);
+        $tablenameEsc = \Lotgd\MySQL\Database::escape($tablename);
+        $status = \Lotgd\MySQL\Database::query("SHOW TABLE STATUS WHERE Name = '$tablenameEsc'");
+        $row = \Lotgd\MySQL\Database::fetchAssoc($status);
         if ($row && !empty($row['Collation'])) {
             $descriptor['collation'] = $row['Collation'];
             if (strpos($row['Collation'], '_') !== false) {
@@ -661,8 +661,8 @@ class TableDescriptor
             }
         }
         $sql = "SHOW KEYS FROM $tablename";
-        $result = Database::query($sql);
-        while ($row = Database::fetchAssoc($result)) {
+        $result = \Lotgd\MySQL\Database::query($sql);
+        while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
             if ($row['Seq_in_index'] > 1) {
                 //this is a secondary+ column on some previous key;
                 //add this to that column's keys.
@@ -701,14 +701,14 @@ class TableDescriptor
     private static function defaultCollation(string $charset): string
     {
         $candidate = $charset . '_unicode_ci';
-        $candidateEsc = Database::escape($candidate);
-        $charsetEsc = Database::escape($charset);
-        $result = Database::query("SHOW COLLATION WHERE Collation = '$candidateEsc'");
-        if (Database::numRows($result) > 0) {
+        $candidateEsc = \Lotgd\MySQL\Database::escape($candidate);
+        $charsetEsc = \Lotgd\MySQL\Database::escape($charset);
+        $result = \Lotgd\MySQL\Database::query("SHOW COLLATION WHERE Collation = '$candidateEsc'");
+        if (\Lotgd\MySQL\Database::numRows($result) > 0) {
             return $candidate;
         }
-        $result = Database::query("SHOW COLLATION WHERE Charset = '$charsetEsc' AND `Default` = 'Yes'");
-        $row = Database::fetchAssoc($result);
+        $result = \Lotgd\MySQL\Database::query("SHOW COLLATION WHERE Charset = '$charsetEsc' AND `Default` = 'Yes'");
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         if ($row && isset($row['Collation'])) {
             return $row['Collation'];
         }
@@ -724,9 +724,9 @@ class TableDescriptor
         if (isset($cache[$charset])) {
             return $cache[$charset];
         }
-        $charsetEsc = Database::escape($charset);
-        $result = Database::query("SHOW CHARACTER SET WHERE Charset = '$charsetEsc'");
-        $row = Database::fetchAssoc($result);
+        $charsetEsc = \Lotgd\MySQL\Database::escape($charset);
+        $result = \Lotgd\MySQL\Database::query("SHOW CHARACTER SET WHERE Charset = '$charsetEsc'");
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         $bytes = isset($row['Maxlen']) ? (int) $row['Maxlen'] : 1;
         $cache[$charset] = $bytes;
         return $bytes;
@@ -889,7 +889,7 @@ class TableDescriptor
                     if (preg_match('/^[A-Z_]+(?:\([^)]*\))?$/', $input['default'])) {
                         $return .= " DEFAULT {$input['default']}";
                     } else {
-                        $escapedDefault = Database::escape($input['default']);
+                        $escapedDefault = \Lotgd\MySQL\Database::escape($input['default']);
                         $return .= " DEFAULT '{$escapedDefault}'";
                     }
                 } else {

@@ -62,8 +62,8 @@ function specialtychickenmage_install(){
 
 function specialtychickenmage_uninstall(){
 	// reset
-	$sql = "UPDATE " . db_prefix("accounts") . " SET specialty='' WHERE specialty='CM'";
-	db_query($sql);
+	$sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET specialty='' WHERE specialty='CM'";
+	\Lotgd\MySQL\Database::query($sql);
 	return true;
 }
 

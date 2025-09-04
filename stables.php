@@ -105,9 +105,9 @@ if ($op == "") {
     tlschema();
     modulehook("stables-desc");
 } elseif ($op == "examine") {
-    $sql = "SELECT * FROM " . db_prefix("mounts") . " WHERE mountid='$id'";
-    $result = db_query_cached($sql, "mountdata-$id", 3600);
-    if (db_num_rows($result) <= 0) {
+    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("mounts") . " WHERE mountid='$id'";
+    $result = \Lotgd\MySQL\Database::queryCached($sql, "mountdata-$id", 3600);
+    if (\Lotgd\MySQL\Database::numRows($result) <= 0) {
         tlschema($schemas['nosuchbeast']);
         output($texts['nosuchbeast']);
         tlschema();
@@ -117,7 +117,7 @@ if ($op == "") {
         tlschema($schemas['finebeast']);
         output($texts['finebeast'][$t]);
         tlschema();
-        $mount = db_fetch_assoc($result);
+        $mount = \Lotgd\MySQL\Database::fetchAssoc($result);
         $mount = modulehook("mount-modifycosts", $mount);
         output("`7Creature: `&%s`0`n", $mount['mountname']);
         output("`7Description: `&%s`0`n", $mount['mountdesc']);
@@ -143,14 +143,14 @@ if ($op == "") {
     }
 }
 if ($op == 'confirmbuy') {
-    $sql = "SELECT * FROM " . db_prefix("mounts") . " WHERE mountid='$id'";
-    $result = db_query_cached($sql, "mountdata-$id", 3600);
-    if (db_num_rows($result) <= 0) {
+    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("mounts") . " WHERE mountid='$id'";
+    $result = \Lotgd\MySQL\Database::queryCached($sql, "mountdata-$id", 3600);
+    if (\Lotgd\MySQL\Database::numRows($result) <= 0) {
         tlschema($schemas['nosuchbeast']);
         output($texts['nosuchbeast']);
         tlschema();
     } else {
-        $mount = db_fetch_assoc($result);
+        $mount = \Lotgd\MySQL\Database::fetchAssoc($result);
         $mount = modulehook("mount-modifycosts", $mount);
         if (
             ($session['user']['gold'] + $repaygold) < $mount['mountcostgold'] ||
@@ -310,12 +310,12 @@ if ($confirm == 0) {
         }
     }
 
-    $sql = "SELECT mountname,mountid,mountcategory,mountdkcost FROM " . db_prefix("mounts") .  " WHERE mountactive=1 AND mountlocation IN ('all','{$session['user']['location']}') ORDER BY mountcategory,mountcostgems,mountcostgold";
-    $result = db_query($sql);
+    $sql = "SELECT mountname,mountid,mountcategory,mountdkcost FROM " . \Lotgd\MySQL\Database::prefix("mounts") .  " WHERE mountactive=1 AND mountlocation IN ('all','{$session['user']['location']}') ORDER BY mountcategory,mountcostgems,mountcostgold";
+    $result = \Lotgd\MySQL\Database::query($sql);
     $category = "";
-    $number = db_num_rows($result);
+    $number = \Lotgd\MySQL\Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $row = db_fetch_assoc($result);
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         if ($category != $row['mountcategory']) {
             addnav(array("%s", $row['mountcategory']));
             $category = $row['mountcategory'];

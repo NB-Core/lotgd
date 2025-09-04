@@ -45,21 +45,21 @@ $op = Http::get('op');
 $id = Http::get('id');
 if ($op == "edit" || $op == "add") {
     if ($op == "edit") {
-        $sql = "SELECT * FROM " . db_prefix("armor") . " WHERE armorid='$id'";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("armor") . " WHERE armorid='$id'";
+        $result = \Lotgd\MySQL\Database::query($sql);
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
     } else {
-        $sql = "SELECT max(defense+1) AS defense FROM " . db_prefix("armor") . " WHERE level=$armorlevel";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $sql = "SELECT max(defense+1) AS defense FROM " . \Lotgd\MySQL\Database::prefix("armor") . " WHERE level=$armorlevel";
+        $result = \Lotgd\MySQL\Database::query($sql);
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
     }
     rawoutput("<form action='armoreditor.php?op=save&level=$armorlevel' method='POST'>");
     Nav::add("", "armoreditor.php?op=save&level=$armorlevel");
     Forms::showForm($armorarray, $row);
     rawoutput("</form>");
 } elseif ($op == "del") {
-    $sql = "DELETE FROM " . db_prefix("armor") . " WHERE armorid='$id'";
-    db_query($sql);
+    $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("armor") . " WHERE armorid='$id'";
+    \Lotgd\MySQL\Database::query($sql);
     //output($sql);
     $op = "";
     Http::set('op', $op);
@@ -68,18 +68,18 @@ if ($op == "edit" || $op == "add") {
     $armorname = Http::post('armorname');
     $defense = Http::post('defense');
     if ($armorid > 0) {
-        $sql = "UPDATE " . db_prefix("armor") . " SET armorname=\"$armorname\",defense=\"$defense\",value=" . $values[$defense] . " WHERE armorid='$armorid'";
+        $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("armor") . " SET armorname=\"$armorname\",defense=\"$defense\",value=" . $values[$defense] . " WHERE armorid='$armorid'";
     } else {
-        $sql = "INSERT INTO " . db_prefix("armor") . " (level,defense,armorname,value) VALUES ($armorlevel,\"$defense\",\"$armorname\"," . $values[$defense] . ")";
+        $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("armor") . " (level,defense,armorname,value) VALUES ($armorlevel,\"$defense\",\"$armorname\"," . $values[$defense] . ")";
     }
-    db_query($sql);
+    \Lotgd\MySQL\Database::query($sql);
     $op = "";
     Http::set('op', $op);
 }
 if ($op == "") {
-    $sql = "SELECT max(level+1) AS level FROM " . db_prefix("armor");
-    $res = db_query($sql);
-    $row = db_fetch_assoc($res);
+    $sql = "SELECT max(level+1) AS level FROM " . \Lotgd\MySQL\Database::prefix("armor");
+    $res = \Lotgd\MySQL\Database::query($sql);
+    $row = \Lotgd\MySQL\Database::fetchAssoc($res);
     $max = $row['level'];
     for ($i = 0; $i <= $max; $i++) {
         if ($i == 1) {
@@ -88,8 +88,8 @@ if ($op == "") {
             Nav::add(array("Armor for %s DKs",$i), "armoreditor.php?level=$i");
         }
     }
-    $sql = "SELECT * FROM " . db_prefix("armor") . " WHERE level=$armorlevel ORDER BY defense";
-    $result = db_query($sql);
+    $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("armor") . " WHERE level=$armorlevel ORDER BY defense";
+    $result = \Lotgd\MySQL\Database::query($sql);
     $ops = translate_inline("Ops");
     $name = translate_inline("Name");
     $cost = translate_inline("Cost");
@@ -101,9 +101,9 @@ if ($op == "") {
 
     rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     rawoutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$defense</td><td>$level</td></tr>");
-    $number = db_num_rows($result);
+    $number = \Lotgd\MySQL\Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
-        $row = db_fetch_assoc($result);
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         rawoutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'>");
         rawoutput("<td>[<a href='armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel'>$edit</a>|<a href='armoreditor.php?op=del&id={$row['armorid']}&level=$armorlevel' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
         Nav::add("", "armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel");

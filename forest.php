@@ -168,18 +168,18 @@ if ($op == "search") {
                     case false:
                         $multicat = "";
                         //$multicat=(getsetting('multicategory',0)?"GROUP BY creaturecategory":"");   //grouping like that is against newer sql policies, leave it for now
-                        $sql = "SELECT * FROM " . db_prefix("creatures") . " WHERE creaturelevel <= $targetlevel AND creaturelevel >= $mintargetlevel AND forest=1 $multicat ORDER BY rand(" . e_rand() . ") LIMIT $multi";
+                        $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("creatures") . " WHERE creaturelevel <= $targetlevel AND creaturelevel >= $mintargetlevel AND forest=1 $multicat ORDER BY rand(" . e_rand() . ") LIMIT $multi";
                         break;
                     case true:
-                        $sql = "SELECT * FROM " . db_prefix("creatures") . " WHERE creaturelevel <= $targetlevel AND creaturelevel >= $mintargetlevel AND forest=1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
+                        $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("creatures") . " WHERE creaturelevel <= $targetlevel AND creaturelevel >= $mintargetlevel AND forest=1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
                         break;
                 }
             } else {
-                $sql = "SELECT * FROM " . db_prefix("creatures") . " WHERE creaturelevel <= $targetlevel AND creaturelevel >= $mintargetlevel AND forest=1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
+                $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("creatures") . " WHERE creaturelevel <= $targetlevel AND creaturelevel >= $mintargetlevel AND forest=1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
             }
-            $result = db_query($sql);
+            $result = \Lotgd\MySQL\Database::query($sql);
             restore_buff_fields();
-            if (db_num_rows($result) == 0) {
+            if (\Lotgd\MySQL\Database::numRows($result) == 0) {
                 // There is nothing in the database to challenge you, let's
                 // give you a doppleganger.
                 $badguy = array();
@@ -196,7 +196,7 @@ if ($op == "search") {
                 $stack[] = $badguy;
             } else {
                 if ($packofmonsters == true) {
-                    $initialbadguy = db_fetch_assoc($result);
+                    $initialbadguy = \Lotgd\MySQL\Database::fetchAssoc($result);
                     $prefixs = array("Elite","Dangerous","Lethal","Savage","Deadly","Malevolent","Malignant");
                     for ($i = 0; $i < $multi; $i++) {
                         $initialbadguy['creaturelevel'] = e_rand($mintargetlevel, $targetlevel);
@@ -235,7 +235,7 @@ if ($op == "search") {
                         output("`2You encounter a group of `^%i`2 %s`2.`n`n", $multi, $badguy['creaturename']);
                     }
                 } else {
-                    while ($badguy = db_fetch_assoc($result)) {
+                    while ($badguy = \Lotgd\MySQL\Database::fetchAssoc($result)) {
                         //decode and test the AI script file in place if any
                         $aiscriptfile = "scripts/" . $badguy['creatureaiscript'] . ".php";
                         if (file_exists($aiscriptfile)) {

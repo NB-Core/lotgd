@@ -28,14 +28,14 @@ class Mail
         $tabtext = maillinktabtext();
 
         // Get the highest message ID for the current user there is
-        $sql = 'SELECT MAX(messageid) AS lastid FROM ' . db_prefix('mail')
+        $sql = 'SELECT MAX(messageid) AS lastid FROM ' . \Lotgd\MySQL\Database::prefix('mail')
             . ' WHERE msgto=\'' . $session['user']['acctid'] . '\'';
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
+        $result = \Lotgd\MySQL\Database::query($sql);
+        $row = \Lotgd\MySQL\Database::fetchAssoc($result);
         if ($row === false) {
             $row = ['lastid' => 0];
         }
-        db_free_result($result);
+        \Lotgd\MySQL\Database::freeResult($result);
         $lastMailId = (int) ($row['lastid'] ?? 0);
 
         $objResponse = jaxon()->newResponse();

@@ -48,7 +48,7 @@ if ($name != "") {
         $acctrow = null;
         if ($bootstrapExists) {
             $em   = \Lotgd\Doctrine\Bootstrap::getEntityManager();
-            $sqlQuery = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
+            $sqlQuery = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
             $result = $em->getConnection()->executeQuery($sqlQuery);
             $acctrow = $result->fetchAssociative();
             if ($acctrow) {
@@ -57,10 +57,10 @@ if ($name != "") {
         }
 
         if (!$acctrow) {
-            $sql    = "SELECT * FROM " . db_prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
-            $result = db_query($sql);
-            if (db_num_rows($result) == 1) {
-                $acctrow = db_fetch_assoc($result);
+            $sql    = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
+            $result = \Lotgd\MySQL\Database::query($sql);
+            if (\Lotgd\MySQL\Database::numRows($result) == 1) {
+                $acctrow = \Lotgd\MySQL\Database::fetchAssoc($result);
             }
         }
 
@@ -115,8 +115,8 @@ if ($name != "") {
 
                     $str = sprintf_translate("Sending you to %s, have a safe journey", $link);
                     // Refresh activity timestamp when resuming a logged in session
-                    db_query(
-                        "UPDATE " . db_prefix('accounts')
+                    \Lotgd\MySQL\Database::query(
+                        "UPDATE " . \Lotgd\MySQL\Database::prefix('accounts')
                         . " SET loggedin=1, laston='" . date('Y-m-d H:i:s')
                         . "' WHERE acctid=" . $session['user']['acctid']
                     );
@@ -130,7 +130,7 @@ if ($name != "") {
                     exit();
                 }
 
-                db_query("UPDATE " . db_prefix("accounts") . " SET loggedin=" . true . ", laston='" . date("Y-m-d H:i:s") . "' WHERE acctid = " . $session['user']['acctid']);
+                \Lotgd\MySQL\Database::query("UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET loggedin=" . true . ", laston='" . date("Y-m-d H:i:s") . "' WHERE acctid = " . $session['user']['acctid']);
 
                 $session['user']['loggedin'] = true;
                 $location = $session['user']['location'];
@@ -160,25 +160,25 @@ if ($name != "") {
             $session['message'] = translate_inline("`4Error, your login was incorrect`0");
             //now we'll log the failed attempt and begin to issue bans if
             //there are too many, plus notify the admins.
-            $sql = "DELETE FROM " . db_prefix("faillog") . " WHERE date<'" . date("Y-m-d H:i:s", strtotime("-" . (getsetting("expirecontent", 180) / 4) . " days")) . "'";
+            $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("faillog") . " WHERE date<'" . date("Y-m-d H:i:s", strtotime("-" . (getsetting("expirecontent", 180) / 4) . " days")) . "'";
             CheckBan::check();
-            //db_query($sql);
-            $sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE login='$name'";
-            $result = db_query($sql);
-            if (db_num_rows($result) > 0) {
+            //\Lotgd\MySQL\Database::query($sql);
+            $sql = "SELECT acctid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE login='$name'";
+            $result = \Lotgd\MySQL\Database::query($sql);
+            if (\Lotgd\MySQL\Database::numRows($result) > 0) {
                 // just in case there manage to be multiple accounts on
                 // this name.
-                while ($row = db_fetch_assoc($result)) {
+                while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
                     $post = httpallpost();
                                         $cookielgi = Cookies::getLgi() ?? 'no cookie set';
-                    $sql = "INSERT INTO " . db_prefix("faillog") . " VALUES (0,'" . date("Y-m-d H:i:s") . "','" . addslashes(serialize($post)) . "','{$_SERVER['REMOTE_ADDR']}','{$row['acctid']}','$cookielgi')";
-                    db_query($sql);
-                    $sql = "SELECT " . db_prefix("faillog") . ".*," . db_prefix("accounts") . ".superuser,name,login FROM " . db_prefix("faillog") . " INNER JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid=" . db_prefix("faillog") . ".acctid WHERE ip='{$_SERVER['REMOTE_ADDR']}' AND date>'" . date("Y-m-d H:i:s", strtotime("-1 day")) . "'";
-                    $result2 = db_query($sql);
+                    $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("faillog") . " VALUES (0,'" . date("Y-m-d H:i:s") . "','" . addslashes(serialize($post)) . "','{$_SERVER['REMOTE_ADDR']}','{$row['acctid']}','$cookielgi')";
+                    \Lotgd\MySQL\Database::query($sql);
+                    $sql = "SELECT " . \Lotgd\MySQL\Database::prefix("faillog") . ".*," . \Lotgd\MySQL\Database::prefix("accounts") . ".superuser,name,login FROM " . \Lotgd\MySQL\Database::prefix("faillog") . " INNER JOIN " . \Lotgd\MySQL\Database::prefix("accounts") . " ON " . \Lotgd\MySQL\Database::prefix("accounts") . ".acctid=" . \Lotgd\MySQL\Database::prefix("faillog") . ".acctid WHERE ip='{$_SERVER['REMOTE_ADDR']}' AND date>'" . date("Y-m-d H:i:s", strtotime("-1 day")) . "'";
+                    $result2 = \Lotgd\MySQL\Database::query($sql);
                     $c = 0;
                     $alert = "";
                     $su = false;
-                    while ($row2 = db_fetch_assoc($result2)) {
+                    while ($row2 = \Lotgd\MySQL\Database::fetchAssoc($result2)) {
                         if ($row2['superuser'] > 0) {
                             $c += 1;
                             $su = true;
@@ -189,19 +189,19 @@ if ($name != "") {
                     if ($c >= 10) {
                         // 5 failed attempts for superuser, 10 for regular user
                         $banmessage = translate_inline("Automatic System Ban: Too many failed login attempts.");
-                        $sql = "INSERT INTO " . db_prefix("bans") . " VALUES ('{$_SERVER['REMOTE_ADDR']}','','" . date("Y-m-d H:i:s", strtotime("+15 minutes")) . "','$banmessage','System','" . DATETIME_DATEMIN . "')";
-                        db_query($sql);
+                        $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("bans") . " VALUES ('{$_SERVER['REMOTE_ADDR']}','','" . date("Y-m-d H:i:s", strtotime("+15 minutes")) . "','$banmessage','System','" . DATETIME_DATEMIN . "')";
+                        \Lotgd\MySQL\Database::query($sql);
                         if ($su) {
                             // send a system message to admins regarding
                             // this failed attempt if it includes superusers.
-                            $sql = "SELECT acctid FROM " . db_prefix("accounts") . " WHERE (superuser&" . SU_EDIT_USERS . ")";
-                            $result2 = db_query($sql);
+                            $sql = "SELECT acctid FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE (superuser&" . SU_EDIT_USERS . ")";
+                            $result2 = \Lotgd\MySQL\Database::query($sql);
                             $subj = translate_mail(array("`#%s failed to log in too many times!",$_SERVER['REMOTE_ADDR']), 0);
-                            while ($row2 = db_fetch_assoc($result2)) {
+                            while ($row2 = \Lotgd\MySQL\Database::fetchAssoc($result2)) {
                                 //delete old messages that
-                                $sql = "DELETE FROM " . db_prefix("mail") . " WHERE msgto={$row2['acctid']} AND msgfrom=0 AND subject = '" . serialize($subj) . "' AND seen=0";
-                                db_query($sql);
-                                if (db_affected_rows() > 0) {
+                                $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("mail") . " WHERE msgto={$row2['acctid']} AND msgfrom=0 AND subject = '" . serialize($subj) . "' AND seen=0";
+                                \Lotgd\MySQL\Database::query($sql);
+                                if (\Lotgd\MySQL\Database::affectedRows() > 0) {
                                     $noemail = true;
                                 } else {
                                     $noemail = false;
@@ -212,14 +212,14 @@ if ($name != "") {
                         }//end if($su)
                     }//end if($c>=10)
                 }//end while
-            }//end if (db_num_rows)
+            }//end if (\Lotgd\MySQL\Database::numRows)
             redirect("index.php");
         }
     }
 } elseif ($op == "logout") {
     if ($session['user']['loggedin']) {
-        $sql = "UPDATE " . db_prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
-        db_query($sql);
+        $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
+        \Lotgd\MySQL\Database::query($sql);
         massinvalidate('charlisthomepage');
         invalidatedatacache("list.php-warsonline");
 
@@ -232,17 +232,17 @@ if ($name != "") {
         modulehook("player-logout");
 
         // Get allowed navs that are saved, not the ones in the user array, because they are empty (redirect clears)
-        $sql = "SELECT restorepage, allowednavs FROM " . db_prefix('accounts') . " WHERE acctid=" . $session['user']['acctid'];
-        $result = db_query($sql);
+        $sql = "SELECT restorepage, allowednavs FROM " . \Lotgd\MySQL\Database::prefix('accounts') . " WHERE acctid=" . $session['user']['acctid'];
+        $result = \Lotgd\MySQL\Database::query($sql);
         // Check if we got anything (we should)
-        if (db_num_rows($result) == 1) {
-            $row = db_fetch_assoc($result);
+        if (\Lotgd\MySQL\Database::numRows($result) == 1) {
+            $row = \Lotgd\MySQL\Database::fetchAssoc($result);
             $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
             $allowednavs[$row['restorepage']] = true;
             // Write back to database
             $serialized = addslashes(serialize($allowednavs));
-            $sql = "UPDATE " . db_prefix('accounts') . " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
-            db_query($sql);
+            $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix('accounts') . " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
+            \Lotgd\MySQL\Database::query($sql);
         }
     }
     $session = array();

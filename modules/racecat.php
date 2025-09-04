@@ -50,8 +50,8 @@ function racecat_install(){
 function racecat_uninstall(){
 	global $session;
 	// Force anyone who was a Felyne to rechoose race
-	$sql = "UPDATE  " . db_prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Felyne'";
-	db_query($sql);
+	$sql = "UPDATE  " . \Lotgd\MySQL\Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Felyne'";
+	\Lotgd\MySQL\Database::query($sql);
 	if ($session['user']['race'] == 'Felyne')
 		$session['user']['race'] = RACE_UNKNOWN;
 	return true;

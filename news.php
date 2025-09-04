@@ -23,9 +23,9 @@ $newsperpage = 50;
 
 $offset = (int)httpget('offset');
 $timestamp = strtotime((0 - $offset) . " days");
-$sql = "SELECT count(newsid) AS c FROM " . db_prefix("news") . " WHERE newsdate='" . date("Y-m-d", $timestamp) . "'";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$sql = "SELECT count(newsid) AS c FROM " . \Lotgd\MySQL\Database::prefix("news") . " WHERE newsdate='" . date("Y-m-d", $timestamp) . "'";
+$result = \Lotgd\MySQL\Database::query($sql);
+$row = \Lotgd\MySQL\Database::fetchAssoc($result);
 $totaltoday = $row['c'];
 $page = (int)httpget('page');
 if (!$page) {
@@ -36,8 +36,8 @@ if ($pageoffset > 0) {
     $pageoffset--;
 }
 $pageoffset *= $newsperpage;
-$sql = "SELECT * FROM " . db_prefix("news") . " WHERE newsdate='" . date("Y-m-d", $timestamp) . "' ORDER BY newsid DESC LIMIT $pageoffset,$newsperpage";
-$result = db_query($sql);
+$sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("news") . " WHERE newsdate='" . date("Y-m-d", $timestamp) . "' ORDER BY newsid DESC LIMIT $pageoffset,$newsperpage";
+$result = \Lotgd\MySQL\Database::query($sql);
 page_header("LoGD News");
 $date = date("D, M j, Y", $timestamp);
 
@@ -51,9 +51,9 @@ if ($totaltoday > $newsperpage) {
     );
 }
 
-$sql2 = "SELECT " . db_prefix("motd") . ".*,name AS motdauthorname FROM " . db_prefix("motd") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("accounts") . ".acctid = " . db_prefix("motd") . ".motdauthor ORDER BY motddate DESC LIMIT 1";
-$result2 = db_query_cached($sql2, "lastmotd");
-while ($row = db_fetch_assoc($result2)) {
+$sql2 = "SELECT " . \Lotgd\MySQL\Database::prefix("motd") . ".*,name AS motdauthorname FROM " . \Lotgd\MySQL\Database::prefix("motd") . " LEFT JOIN " . \Lotgd\MySQL\Database::prefix("accounts") . " ON " . \Lotgd\MySQL\Database::prefix("accounts") . ".acctid = " . \Lotgd\MySQL\Database::prefix("motd") . ".motdauthor ORDER BY motddate DESC LIMIT 1";
+$result2 = \Lotgd\MySQL\Database::queryCached($sql2, "lastmotd");
+while ($row = \Lotgd\MySQL\Database::fetchAssoc($result2)) {
         require_once("lib/nltoappon.php");
     if ($row['motdauthorname'] == "") {
         $row['motdauthorname'] = translate_inline("`@Green Dragon Staff`0");
@@ -67,7 +67,7 @@ while ($row = db_fetch_assoc($result2)) {
 output_notl("`n");
 output("`c`b`!News for %s %s`0`b`c", $date, $pagestr);
 
-while ($row = db_fetch_assoc($result)) {
+while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
     output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
     if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
         $del = translate_inline("Del");
@@ -90,7 +90,7 @@ while ($row = db_fetch_assoc($result)) {
     tlschema();
     output_notl("`c" . $news . "`c`n");
 }
-if (db_num_rows($result) == 0) {
+if (\Lotgd\MySQL\Database::numRows($result) == 0) {
     output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
     output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
 }

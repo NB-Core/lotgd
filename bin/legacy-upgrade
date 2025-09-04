@@ -24,7 +24,7 @@ if ($toRun === []) {
 }
 
 foreach ($toRun as $sql) {
-    db_query($sql);
+    \Lotgd\MySQL\Database::query($sql);
 }
 
 echo "Legacy upgrade from {$from} completed.\n";

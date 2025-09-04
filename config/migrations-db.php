@@ -9,6 +9,6 @@ return [
     'user' => $db['DB_USER'] ?? '',
     'password' => $db['DB_PASS'] ?? '',
     'charset' => 'utf8mb4',
-    'db_prefix' => $db['DB_PREFIX'] ?? '',
+    '\Lotgd\MySQL\Database::prefix' => $db['DB_PREFIX'] ?? '',
 ];
 

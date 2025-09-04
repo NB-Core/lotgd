@@ -26,16 +26,16 @@ function mailSend(): void
         return;
     }
 
-    $sql = 'SELECT acctid FROM ' . db_prefix('accounts') . " WHERE login='$to'";
-    $result = db_query($sql);
+    $sql = 'SELECT acctid FROM ' . \Lotgd\MySQL\Database::prefix('accounts') . " WHERE login='$to'";
+    $result = \Lotgd\MySQL\Database::query($sql);
 
-    if (db_num_rows($result) <= 0) {
+    if (\Lotgd\MySQL\Database::numRows($result) <= 0) {
         output('Could not find the recipient, please try again.`n');
 
         return;
     }
 
-    $row = db_fetch_assoc($result);
+    $row = \Lotgd\MySQL\Database::fetchAssoc($result);
     $checkUnread = (bool) getsetting('onlyunreadmails', true);
 
     if (Mail::isInboxFull($row['acctid'], $checkUnread)) {

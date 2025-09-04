@@ -27,7 +27,7 @@ $sortorder = (int) httpget('sortorder'); // 0 = DESC 1= ASC
 $sortby = httpget('sortby');
 if ($category > "") {
     $cat = "&cat=$category";
-    $sqlcat = "AND " . db_prefix("gamelog") . ".category = '$category'";
+    $sqlcat = "AND " . \Lotgd\MySQL\Database::prefix("gamelog") . ".category = '$category'";
 } else {
     $cat = '';
     $sqlcat = '';
@@ -40,13 +40,13 @@ if ($sortby != '') {
     $sqlsort = " ORDER BY " . $sortby . " " . $asc_desc;
 }
 
-$sql = "SELECT count(logid) AS c FROM " . db_prefix("gamelog") . " WHERE 1 $sqlcat";
-$result = db_query($sql);
-$row = db_fetch_assoc($result);
+$sql = "SELECT count(logid) AS c FROM " . \Lotgd\MySQL\Database::prefix("gamelog") . " WHERE 1 $sqlcat";
+$result = \Lotgd\MySQL\Database::query($sql);
+$row = \Lotgd\MySQL\Database::fetchAssoc($result);
 $max = $row['c'];
 
 
-$sql = "SELECT " . db_prefix("gamelog") . ".*, " . db_prefix("accounts") . ".name AS name FROM " . db_prefix("gamelog") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("gamelog") . ".who = " . db_prefix("accounts") . ".acctid WHERE 1 $sqlcat $sqlsort LIMIT $start,$step";
+$sql = "SELECT " . \Lotgd\MySQL\Database::prefix("gamelog") . ".*, " . \Lotgd\MySQL\Database::prefix("accounts") . ".name AS name FROM " . \Lotgd\MySQL\Database::prefix("gamelog") . " LEFT JOIN " . \Lotgd\MySQL\Database::prefix("accounts") . " ON " . \Lotgd\MySQL\Database::prefix("gamelog") . ".who = " . \Lotgd\MySQL\Database::prefix("accounts") . ".acctid WHERE 1 $sqlcat $sqlsort LIMIT $start,$step";
 $next = $start + $step;
 $prev = $start - $step;
 addnav("Operations");
@@ -61,12 +61,12 @@ if ($next < $max) {
 if ($start > 0) {
     addnav("Previous page", "gamelog.php?start=$prev$cat&sortorder=$sortorder&sortby=$sortby");
 }
-$result = db_query($sql);
+$result = \Lotgd\MySQL\Database::query($sql);
 $odate = "";
 $categories = array();
 
 $i = 0;
-while ($row = db_fetch_assoc($result)) {
+while ($row = \Lotgd\MySQL\Database::fetchAssoc($result)) {
     $dom = date("D, M d", strtotime($row['date']));
     if ($odate != $dom) {
         output_notl("`n`b`@%s`0`b`n", $dom);
