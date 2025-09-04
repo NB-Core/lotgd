@@ -14,6 +14,7 @@ class EDom
      */
     public static function includeScript(): void
     {
-        rawoutput("<script src='src/Lotgd/e_dom.js' defer></script>");
+        global $output;
+        $output->rawOutput("<script src='src/Lotgd/e_dom.js' defer></script>");
     }
 }
