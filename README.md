@@ -55,7 +55,8 @@ There is no official demo server. You can explore the original at [LotGD.net](ht
 ## Read Me First
 
 Thank you for downloading the modified version of Legend Of the Green Dragon.
-See `CHANGELOG.txt` for a list of changes.
+See `CHANGELOG.txt` for a list of changes up until version 1.3.2.
+👉 See [CHANGELOG.md](CHANGELOG.md) for a detailed history after that up until now.
 
 ## System Requirements
 
@@ -81,6 +82,15 @@ Regular upkeep tasks:
 - Schedule `cron.php` via cron for automated jobs.
 - Configure SMTP settings in `config/configuration.php`.
 - If you change `DB_PREFIX`, clear the cache directory to avoid reusing metadata from the previous prefix.
+
+## What’s new in 2.0
+- Full PSR-4 / Composer refactor
+- Doctrine ORM + migrations
+- Twig template engine
+- Async/Ajax (Jaxon) UX improvements
+- PHP 8.4 baseline
+ 
+👉 See [UPGRADING.md](UPGRADING.md) if you’re moving from 1.3.x
 
 ## Further Reading
 
