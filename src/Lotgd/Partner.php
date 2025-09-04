@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 
@@ -22,19 +23,20 @@ class Partner
     public static function getPartner($player = false): string
     {
         global $session;
+        $settings = Settings::getInstance();
         if (!isset($session['user']['prefs']['sexuality']) || $session['user']['prefs']['sexuality'] == '') {
             $session['user']['prefs']['sexuality'] = !$session['user']['sex'];
         }
         if ($player === false) {
-            $partner = getsetting('barmaid', '`%Violet');
+            $partner = $settings->getSetting('barmaid', '`%Violet');
             if ($session['user']['prefs']['sexuality'] == SEX_MALE) {
-                $partner = getsetting('bard', '`^Seth');
+                $partner = $settings->getSetting('bard', '`^Seth');
             }
         } else {
             if ($session['user']['marriedto'] == INT_MAX) {
-                $partner = getsetting('barmaid', '`%Violet');
+                $partner = $settings->getSetting('barmaid', '`%Violet');
                 if ($session['user']['prefs']['sexuality'] == SEX_MALE) {
-                    $partner = getsetting('bard', '`^Seth');
+                    $partner = $settings->getSetting('bard', '`^Seth');
                 }
             } else {
                 $sql = 'SELECT name FROM ' . Database::prefix('accounts') . ' WHERE acctid = ' . $session['user']['marriedto'];
@@ -43,9 +45,9 @@ class Partner
                     $partner = $row['name'];
                 } else {
                     $session['user']['marriedto'] = 0;
-                    $partner = getsetting('barmaid', '`%Violet');
+                    $partner = $settings->getSetting('barmaid', '`%Violet');
                     if ($session['user']['prefs']['sexuality'] == SEX_MALE) {
-                        $partner = getsetting('bard', '`^Seth');
+                        $partner = $settings->getSetting('bard', '`^Seth');
                     }
                 }
             }

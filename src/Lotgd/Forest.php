@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\Nav\VillageNav;
 use Lotgd\Modules\HookHandler;
@@ -20,7 +21,11 @@ class Forest
     public static function forest(bool $noshowmessage = false): void
     {
         global $session, $playermount;
+
+        $settings = Settings::getInstance();
+
         Translator::getInstance()->setSchema('forest');
+
         addnav('Navigation');
         VillageNav::render();
         addnav('Heal');
@@ -31,13 +36,13 @@ class Forest
             addnav('S?Go Slumming', 'forest.php?op=search&type=slum');
         }
         addnav('T?Go Thrillseeking', 'forest.php?op=search&type=thrill');
-        if (getsetting('suicide', 0)) {
-            if (getsetting('suicidedk', 10) <= $session['user']['dragonkills']) {
+        if ($settings->getSetting('suicide', 0)) {
+            if ($settings->getSetting('suicidedk', 10) <= $session['user']['dragonkills']) {
                 addnav("*?Search `\$Suicidally`0", 'forest.php?op=search&type=suicide');
             }
         }
         addnav('Other');
-        if ($session['user']['level'] >= getsetting('maxlevel', 15) && $session['user']['seendragon'] == 0) {
+        if ($session['user']['level'] >= $settings->getSetting('maxlevel', 15) && $session['user']['seendragon'] == 0) {
             $isforest = 0;
             $vloc = HookHandler::hook('validforestloc', []);
             foreach ($vloc as $i => $l) {

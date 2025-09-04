@@ -57,8 +57,8 @@ class Header
         $title = Sanitize::sanitize(HolidayText::holidayize($title, 'title'));
         Buffs::calculateBuffFields();
 
-        $lang     = defined('LANGUAGE') ? LANGUAGE : getsetting('defaultlanguage', 'en');
-        $metaDesc = getsetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
+        $lang     = defined('LANGUAGE') ? LANGUAGE : $settings->getSetting('defaultlanguage', 'en');
+        $metaDesc = $settings->getSetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
 
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars['title'] = $title;
@@ -92,8 +92,9 @@ class Header
         $title = Translator::sprintfTranslate(...$arguments);
         $title = HolidayText::holidayize($title, 'title');
 
-        $lang     = defined('LANGUAGE') ? LANGUAGE : getsetting('defaultlanguage', 'en');
-        $metaDesc = getsetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
+        $settings = Settings::getInstance();
+        $lang     = defined('LANGUAGE') ? LANGUAGE : $settings->getSetting('defaultlanguage', 'en');
+        $metaDesc = $settings->getSetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
 
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars['title'] = $title;
