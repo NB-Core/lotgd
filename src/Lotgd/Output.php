@@ -211,7 +211,7 @@ class Output
 
         if ($force || (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
             if (is_array($text)) {
-                $text = appoencode(DumpItem::dump($text), true);
+                $text = $this->appoencode(DumpItem::dump($text), true);
             }
 
             $origin = $mostrecentmodule ?? '';

@@ -26,6 +26,7 @@ use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
+use Lotgd\Output;
 use Lotgd\Modules\HookHandler;
 
 class PageParts
@@ -211,6 +212,7 @@ class PageParts
     public static function charStats(): string
     {
         global $session, $playermount, $companions;
+        $output = Output::getInstance();
         if (defined("IS_INSTALLER") && IS_INSTALLER === true) {
             return "";
         }
@@ -286,16 +288,16 @@ class PageParts
                         //$n = Translator::translateInline(str_replace("`%","`%%",$val['name']));
                         $b = Translator::translateInline("`#%s `7(%s rounds left)`n", "buffs");
                         $b = sprintf($b, $val['name'], $val['rounds']);
-                        $buffs .= appoencode($b, true);
+                        $buffs .= $output->appoencode($b, true);
                     } else {
-                        $buffs .= appoencode("`#{$val['name']}`n", true);
+                        $buffs .= $output->appoencode("`#{$val['name']}`n", true);
                     }
                     tlschema();
                     $buffcount++;
                 }
             }
             if ($buffcount == 0) {
-                $buffs .= appoencode(Translator::translateInline("`^None`0"), true);
+                $buffs .= $output->appoencode(Translator::translateInline("`^None`0"), true);
             }
 
             $atk = round($atk, 2);
@@ -428,19 +430,19 @@ class PageParts
                     Database::freeResult($result);
                     $rows = HookHandler::hook("loggedin", $rows);
                     if ($mode === 0) {
-                        $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
+                        $ret .= $output->appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
                     } elseif ($mode === 1) {
                         $timeLabel = DateTime::readableTime($loginTimeout, false);
-                        $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters in the last %s:`b`n"), $timeLabel));
+                        $ret .= $output->appoencode(sprintf(Translator::translateInline("`bOnline Characters in the last %s:`b`n"), $timeLabel));
                     } else {
-                        $ret .= appoencode(sprintf(Translator::translateInline("`bOnline Characters last %s minutes:`b`n"), $minutes));
+                        $ret .= $output->appoencode(sprintf(Translator::translateInline("`bOnline Characters last %s minutes:`b`n"), $minutes));
                     }
                     foreach ($rows as $row) {
-                        $ret .= appoencode("`^{$row['name']}`n");
+                        $ret .= $output->appoencode("`^{$row['name']}`n");
                         $onlinecount++;
                     }
                     if ($onlinecount == 0) {
-                        $ret .= appoencode(Translator::translateInline("`iNone`i"));
+                        $ret .= $output->appoencode(Translator::translateInline("`iNone`i"));
                     }
                 }
                 if (Settings::hasInstance()) {
@@ -498,6 +500,7 @@ class PageParts
     private static function getMailCounts(): ?array
     {
         global $session;
+        $output = Output::getInstance();
         static $counts = null;
 
         if ($counts !== null) {
@@ -708,6 +711,7 @@ class PageParts
     public static function assemblePetitionDisplay(string $header, string $footer): array
     {
         global $session;
+        $output = Output::getInstance();
 
         $pcount = '';
         if (isset($session['user']['superuser']) && $session['user']['superuser'] & SU_EDIT_PETITIONS) {
@@ -746,7 +750,7 @@ class PageParts
             $ret_args = HookHandler::hook('petitioncount', $ret_args);
             $pets = $ret_args['petitioncount'];
             $p .= $pets;
-            $pcount = templatereplace('petitioncount', array('petitioncount' => appoencode($p, true)));
+            $pcount = Template::templateReplace('petitioncount', ['petitioncount' => $output->appoencode($p, true)]);
         }
 
         return self::replaceHeaderFooterTokens(

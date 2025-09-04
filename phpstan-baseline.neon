@@ -61,15 +61,6 @@ parameters:
 			count: 6
 			path: src/Lotgd/Censor.php
 
-		-
-			message: "#^Function appoencode not found\\.$#"
-			count: 1
-			path: src/Lotgd/CharStats.php
-
-		-
-			message: "#^Function templatereplace not found\\.$#"
-			count: 6
-			path: src/Lotgd/CharStats.php
 
 		-
 			message: "#^Function sprintf_translate not found\\.$#"
@@ -415,11 +406,6 @@ parameters:
 			message: "#^Variable \\$badguy might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Forest/Outcomes.php
-
-		-
-			message: "#^Function appoencode not found\\.$#"
-			count: 1
-			path: src/Lotgd/Forms.php
 
 		-
 			message: "#^Function datacache not found\\.$#"
@@ -837,11 +823,6 @@ parameters:
 			path: src/Lotgd/MySQL/TableDescriptor.php
 
 		-
-			message: "#^Function appoencode not found\\.$#"
-			count: 4
-			path: src/Lotgd/Nav.php
-
-		-
 			message: "#^Function popup not found\\.$#"
 			count: 2
 			path: src/Lotgd/Nav.php
@@ -957,11 +938,6 @@ parameters:
 			path: src/Lotgd/Newday.php
 
 		-
-			message: "#^Function appoencode not found\\.$#"
-			count: 1
-			path: src/Lotgd/Output.php
-
-		-
 			message: "#^Function sanitize not found\\.$#"
 			count: 1
 			path: src/Lotgd/Output.php
@@ -992,11 +968,6 @@ parameters:
 			path: src/Lotgd/PageParts.php
 
 		-
-			message: "#^Function appoencode not found\\.$#"
-			count: 9
-			path: src/Lotgd/PageParts.php
-
-		-
 			message: "#^Function check_temp_stat not found\\.$#"
 			count: 19
 			path: src/Lotgd/PageParts.php
@@ -1008,11 +979,6 @@ parameters:
 
 		-
 			message: "#^Function httpget not found\\.$#"
-			count: 1
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Function templatereplace not found\\.$#"
 			count: 1
 			path: src/Lotgd/PageParts.php
 
