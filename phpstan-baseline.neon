@@ -52,51 +52,6 @@ parameters:
 			path: src/Lotgd/Battle.php
 
 		-
-			message: "#^Function apply_temp_stat not found\\.$#"
-			count: 2
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function createstring not found\\.$#"
-			count: 3
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function debug not found\\.$#"
-			count: 3
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function e_rand not found\\.$#"
-			count: 1
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 3
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function output not found\\.$#"
-			count: 10
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function output_notl not found\\.$#"
-			count: 8
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 8
-			path: src/Lotgd/Buffs.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 22
-			path: src/Lotgd/Buffs.php
-
-		-
 			message: "#^Variable \\$msg might not be defined\\.$#"
 			count: 2
 			path: src/Lotgd/Buffs.php
