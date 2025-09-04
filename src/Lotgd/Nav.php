@@ -544,6 +544,7 @@ class Nav
     public static function privateAddNav($text, string|false|null $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
         global $nav, $session, $REQUEST_URI, $notranslate;
+        $output = Output::getInstance();
 
         if ($link !== false) {
             $link = (string) $link;
@@ -597,10 +598,10 @@ class Nav
         Output::getInstance()->closeOpenFont();
         if ($link === false) {
             $text = HolidayText::holidayize($text, 'nav');
-            $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhead', ['title' => appoencode($text, $priv)]);
+            $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhead', ['title' => $output->appoencode($text, $priv)]);
         } elseif ($link === '') {
             $text = HolidayText::holidayize($text, 'nav');
-            $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhelp', ['text' => appoencode($text, $priv)]);
+            $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navhelp', ['text' => $output->appoencode($text, $priv)]);
         } elseif ($link == '!!!addraw!!!') {
             $thisnav .= $text;
         } else {
@@ -724,7 +725,7 @@ class Nav
                     $text = preg_replace('/^`0+/', '', $text);
                 }
                 $n = Template::templateReplace('navitem', [
-                    'text' => appoencode($text, $priv),
+                    'text' => $output->appoencode($text, $priv),
                     'link' => $link . ($pop != true ? $extra : ''),
                     'accesskey' => $keyrep,
                     'popup' => ($pop == true ? "target='_blank'" . ($popsize > '' ? " onClick=\"" . popup($link, $popsize) . "; return false;\"" : '') : ''),
@@ -752,6 +753,7 @@ class Nav
     private static function privateAddSubHeader($text, bool $priv = false): string
     {
         global $nav, $session, $notranslate;
+        $output = Output::getInstance();
         $link = false;
         $thisnav = '';
         $unschema = 0;
@@ -787,7 +789,7 @@ class Nav
             }
         }
         $text = HolidayText::holidayize($text, 'nav');
-        $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navheadsub', ['title' => appoencode($text, $priv)]);
+        $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navheadsub', ['title' => $output->appoencode($text, $priv)]);
         if ($unschema) {
             tlschema();
         }

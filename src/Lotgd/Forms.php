@@ -7,6 +7,7 @@ namespace Lotgd;
 use Lotgd\Translator;
 use Lotgd\DumpItem;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
 
 class Forms
 {
@@ -21,14 +22,15 @@ class Forms
         array|bool $info = false,
         bool $scriptOutput = true
     ): string {
-        global $schema, $session, $output;
+        global $schema, $session;
+        $output = Output::getInstance();
 
         $talkline = Translator::translateInline($talkline, $schema);
         $youhave = Translator::translateInline('You have ');
         $charsleft = Translator::translateInline(' characters left.');
         $startdiv = $startdiv === false ? '' : $startdiv;
 
-        $encodedStart = addslashes(appoencode($startdiv));
+        $encodedStart = addslashes($output->appoencode($startdiv));
         $maxChars = (int) getsetting('maxchars', 200);
 
         $script = <<<JS

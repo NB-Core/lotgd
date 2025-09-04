@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Translator;
+use Lotgd\Template;
+use Lotgd\Output;
 
 class CharStats
 {
@@ -56,25 +58,26 @@ class CharStats
      */
     public function render(string $buffs): string
     {
-        $charstat_str = templatereplace('statstart');
+        $output = Output::getInstance();
+        $charstat_str = Template::templateReplace('statstart');
         foreach ($this->stats as $label => $section) {
             if (count($section)) {
                 $arr = ['title' => Translator::translateInline($label)];
-                $sectionhead = templatereplace('stathead', $arr);
+                $sectionhead = Template::templateReplace('stathead', $arr);
                 foreach ($section as $name => $val) {
                     if ($name == $label) {
                         $a2 = ['title' => Translator::translateInline("`0$name"), 'value' => "`^$val`0"];
-                        $charstat_str .= templatereplace('statbuff', $a2);
+                        $charstat_str .= Template::templateReplace('statbuff', $a2);
                     } else {
                         $a2 = ['title' => Translator::translateInline("`&$name`0"), 'value' => "`^$val`0"];
-                        $charstat_str .= $sectionhead . templatereplace('statrow', $a2);
+                        $charstat_str .= $sectionhead . Template::templateReplace('statrow', $a2);
                         $sectionhead = '';
                     }
                 }
             }
         }
-        $charstat_str .= templatereplace('statbuff', ['title' => Translator::translateInline('`0Buffs'), 'value' => $buffs]);
-        $charstat_str .= templatereplace('statend');
-        return appoencode($charstat_str, true);
+        $charstat_str .= Template::templateReplace('statbuff', ['title' => Translator::translateInline('`0Buffs'), 'value' => $buffs]);
+        $charstat_str .= Template::templateReplace('statend');
+        return $output->appoencode($charstat_str, true);
     }
 }
