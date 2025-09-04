@@ -69,7 +69,6 @@ $logd_version = "2.0.0-rc +nb Edition";
 
 // Include some commonly needed and useful routines
 require_once("lib/output.php");
-$output = new Output();
 LocalConfig::apply();
 require_once("src/Lotgd/Config/constants.php");
 
@@ -578,6 +577,7 @@ if (
 }
 
 // After setup, allow modification of colors and nested tags
+$output = \Lotgd\Output::getInstance();
 $colors = modulehook("core-colors", $output->getColors());
 $output->setColors($colors);
 // and nested tag handling

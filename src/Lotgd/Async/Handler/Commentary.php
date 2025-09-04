@@ -66,7 +66,7 @@ class Commentary
         $result = Database::query($sql);
         $newId = $lastId;
         /** @var Output $output */
-        global $output;
+        $output = Output::getInstance();
         while ($row = Database::fetchAssoc($result)) {
             $newId = $row['commentid'];
             $line = CoreCommentary::renderCommentLine($row, $linkbios);

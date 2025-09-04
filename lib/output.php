@@ -14,42 +14,38 @@ namespace Lotgd {
 
 namespace {
 
+    use Lotgd\Output;
+
     function set_block_new_output($block)
     {
-        global $output;
-        $output->setBlockNewOutput($block);
+        Output::getInstance()->setBlockNewOutput($block);
     }
 
     function rawoutput($indata)
     {
-        global $output;
-        $output->rawOutput($indata);
+        Output::getInstance()->rawOutput($indata);
     }
 
     function output_notl()
     {
-        global $output;
         $args = func_get_args();
-        call_user_func_array([$output, 'outputNotl'], $args);
+        call_user_func_array([Output::getInstance(), 'outputNotl'], $args);
     }
 
     function output()
     {
-        global $output;
         $args = func_get_args();
-        call_user_func_array([$output, 'output'], $args);
+        call_user_func_array([Output::getInstance(), 'output'], $args);
     }
 
     function debug($text, $force = false)
     {
-        global $output;
-        $output->debug($text, $force);
+        Output::getInstance()->debug($text, $force);
     }
 
     function appoencode($data, $priv = false)
     {
-        global $output;
-        return $output->appoencode($data, $priv);
+        return Output::getInstance()->appoencode($data, $priv);
     }
 
 }

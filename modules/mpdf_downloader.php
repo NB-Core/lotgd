@@ -111,7 +111,6 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
 
 function mpdf_downloader_run(): void
 {
-    global $output;
     $op = httpget('op');
     if ($op === 'grab') {
         $section = httppost('section');
@@ -167,13 +166,12 @@ function mpdf_downloader_run(): void
 }
 function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = null): Mpdf
 {
-    global $output;
     $tempDir = getsetting('datacachepath', sys_get_temp_dir());
     $mpdf = new Mpdf(['tempDir' => $tempDir]);
     $serverUrl = rtrim($siteUrl ?: getsetting('serverurl', ''), '/');
     // Use a local logo for the watermark unless a custom one is provided
     $logoUrl = $logoImage ?: __DIR__ . "/mpdf_downloader/images/server-logo.png";
-    $siteName = $output->appoencode(getsetting('serverdesc', $serverUrl));
+    $siteName = Output::getInstance()->appoencode(getsetting('serverdesc', $serverUrl));
 
     $mpdf->SetWatermarkImage($logoUrl, 0.1, '', [120, 0]); // opacity 0.1, position x=190mm, y=10mm
     $mpdf->showWatermarkImage = true;

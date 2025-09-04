@@ -58,7 +58,6 @@ class Motd
      */
     public static function motdItem(string $subject, string $body, string $author, string $date, int $id): void
     {
-        global $output;
         $anchor = 'motd' . date('YmdHis', strtotime($date));
         rawoutput("<a name='$anchor'>");
         rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
@@ -78,7 +77,7 @@ class Motd
      */
     public static function pollItem(int $id, string $subject, string $body, string $author, string $date, bool $showpoll = true): void
     {
-        global $output, $session;
+        global $session;
 
         $sql = 'SELECT count(resultid) AS c, MAX(choice) AS choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' AND account='{$session['user']['acctid']}'";
         $result = Database::query($sql);

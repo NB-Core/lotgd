@@ -5,8 +5,10 @@ declare(strict_types=1);
 use Lotgd\Cookies;
 use Lotgd\MySQL\Database;
 use Lotgd\Http;
+use Lotgd\Output;
 
 $sql = 'INSERT INTO ' . Database::prefix('bans') . ' (banner,';
+$output = Output::getInstance();
 $type = (string) Http::post('type');
 if ($type == "ip") {
     $sql .= "ipfilter";
@@ -37,7 +39,6 @@ if ($type == "ip") {
             Http::post('ip')
     ) {
         $sql = '';
-        global $output;
         $output->output("You don't really want to ban yourself now do you??");
         $output->output("That's your own IP address!");
     }
@@ -50,7 +51,6 @@ if ($type == "ip") {
 }
 if ($sql != "") {
     $result = Database::query($sql);
-    global $output;
     $output->output("%s ban rows entered.`n`n", Database::affectedRows($result));
     $output->outputNotl(Database::error($result));
     debuglog('entered a ban: ' . ($type == 'ip' ? 'IP: ' . Http::post('ip') : 'ID: ' . Http::post('id')) . " Ends after: $duration  Reason: \"" . Http::post('reason') . '\"');
@@ -71,5 +71,5 @@ if ($sql != "") {
         }
     } else {
         $output->output("`\$No account-ids found for that IP/ID!`n`n`0");
-    }
+}
 }

@@ -494,9 +494,12 @@ SQL;
 
         rawoutput("<div id='$section-comment'>");
         if ($returnastext !== false) {
-            global $output;
-            $oldoutput = $output;
-            $output = new output_collector();
+            $oldoutput = Output::getInstance();
+            $ref = new \ReflectionClass(Output::class);
+            $prop = $ref->getProperty('instance');
+            $prop->setAccessible(true);
+            $prop->setValue(null, new output_collector());
+            $collector = Output::getInstance();
         }
 
         rawoutput("<a name='$section'></a>");
@@ -612,8 +615,8 @@ SQL;
         }
 
         if ($returnastext !== false) {
-            $collected = $output->getOutput();
-            $output = $oldoutput;
+            $collected = $collector->getOutput();
+            $prop->setValue(null, $oldoutput);
             return $collected;
         }
         rawoutput('</div>');

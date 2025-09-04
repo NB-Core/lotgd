@@ -375,7 +375,7 @@ class Modules
     public static function hook(string $hookName, array $args = [], bool $allowInactive = false, $only = false)
     {
         global $navsection, $mostrecentmodule;
-        global $output, $session, $currenthook;
+        global $session, $currenthook;
 
         if (defined('IS_INSTALLER') && IS_INSTALLER) {
             return $args;

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace {
+    use Lotgd\Output;
     if (!function_exists('translate_inline')) {
         function translate_inline($text, $ns = false)
         {
@@ -128,8 +129,7 @@ namespace {
     if (!function_exists('appoencode')) {
         function appoencode($data, $priv = false)
         {
-            global $output;
-            return $output->appoencode($data, $priv);
+            return Output::getInstance()->appoencode($data, $priv);
         }
     }
 

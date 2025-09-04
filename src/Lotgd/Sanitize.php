@@ -17,11 +17,10 @@ class Sanitize
      */
     public static function sanitize(string|int|float|null $in): string
     {
-        global $output;
         if ($in === '' || $in === null) {
             return '';
         }
-        $out = preg_replace('/[`][0' . $output->getColormapEscaped() . 'bicnHw]/', '', (string) $in);
+        $out = preg_replace('/[`][0' . Output::getInstance()->getColormapEscaped() . 'bicnHw]/', '', (string) $in);
         return $out;
     }
 
@@ -53,8 +52,7 @@ class Sanitize
         if ($in == '' || $in === null) {
             return '';
         }
-        global $output;
-        $out = preg_replace('/[`][0' . $output->getColormapEscaped() . 'cbi]/', '', $in);
+        $out = preg_replace('/[`][0' . Output::getInstance()->getColormapEscaped() . 'cbi]/', '', $in);
         return $out;
     }
 
@@ -67,11 +65,10 @@ class Sanitize
      */
     public static function commentSanitize(?string $in): string
     {
-        global $output;
         if ($in == '' || $in === null) {
             return '';
         }
-        $out = preg_replace('/[`](?=[^0' . $output->getColormapEscaped() . '])/', chr(1) . chr(1), $in);
+        $out = preg_replace('/[`](?=[^0' . Output::getInstance()->getColormapEscaped() . '])/', chr(1) . chr(1), $in);
         $out = str_replace(chr(1), '`', $out);
         return $out;
     }
@@ -85,8 +82,7 @@ class Sanitize
      */
     public static function logdnetSanitize(string $in): string
     {
-        global $output;
-        $out = preg_replace('/[`](?=[^0' . $output->getColormapEscaped() . 'bicn])/', chr(1) . chr(1), $in);
+        $out = preg_replace('/[`](?=[^0' . Output::getInstance()->getColormapEscaped() . 'bicn])/', chr(1) . chr(1), $in);
         $out = str_replace(chr(1), '`', $out);
         return $out;
     }
@@ -239,10 +235,10 @@ class Sanitize
      */
     public static function sanitizeColorname(bool $spaceallowed, string $inname, bool $admin = false): string
     {
-        global $output;
         if ($admin && getsetting('allowoddadminrenames', 0)) {
             return $inname;
         }
+        $output = Output::getInstance();
         $expr = $spaceallowed ? '([^[:alpha:]`0' . $output->getColormapEscaped() . ' _-])' : '([^[:alpha:]`0' . $output->getColormapEscaped() . '])';
         return preg_replace($expr, '', $inname);
     }
