@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Lotgd\Async\Handler;
 
 use Lotgd\MySQL\Database;
-
+use Lotgd\PageParts;
+use Lotgd\Settings;
+use Lotgd\Translator;
 use Jaxon\Response\Response;
 use function Jaxon\jaxon;
 
@@ -19,15 +21,16 @@ class Mail
      */
     public function mailStatus(bool $args = false): Response
     {
-        global $session;
+        global $session, $settings;
 
         if ($args === false || empty($session['user']['acctid'])) {
             return jaxon()->newResponse();
         }
 
-        $timeoutSetting = getsetting('LOGINTIMEOUT', 360); // seconds
-        $new = maillink();
-        $tabtext = maillinktabtext();
+        $settings = $settings ?? new Settings();
+        $timeoutSetting = (int) $settings->getSetting('LOGINTIMEOUT', 360); // seconds
+        $new = PageParts::mailLink();
+        $tabtext = PageParts::mailLinkTabText();
 
         // Get the highest message ID for the current user there is
         $sql = 'SELECT MAX(messageid) AS lastid FROM ' . Database::prefix('mail')
@@ -48,7 +51,7 @@ class Mail
             return $objResponse;
         }
 
-        $tabtext = translate_inline('Legend of the Green Dragon', 'home')
+        $tabtext = Translator::translateInline('Legend of the Green Dragon', 'home')
             . ' - ' . $tabtext;
         $objResponse->script('document.title="' . $tabtext . '";');
         $objResponse->script('lotgdMailNotify(' . $lastMailId . ');');

@@ -21,26 +21,6 @@ parameters:
 			path: src/Lotgd/Async/Handler/Commentary.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Async/Handler/Mail.php
-
-		-
-			message: "#^Function maillink not found\\.$#"
-			count: 1
-			path: src/Lotgd/Async/Handler/Mail.php
-
-		-
-			message: "#^Function maillinktabtext not found\\.$#"
-			count: 1
-			path: src/Lotgd/Async/Handler/Mail.php
-
-		-
-			message: "#^Function translate_inline not found\\.$#"
-			count: 1
-			path: src/Lotgd/Async/Handler/Mail.php
-
-		-
 			message: "#^Function appoencode not found\\.$#"
 			count: 4
 			path: src/Lotgd/Async/Handler/Timeout.php
