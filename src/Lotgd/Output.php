@@ -88,6 +88,18 @@ class Output
     }
 
     /**
+     * Retrieve the global Output instance.
+     */
+    public static function getInstance(): self
+    {
+        global $output;
+        if (!$output instanceof self) {
+            $output = new self();
+        }
+        return $output;
+    }
+
+    /**
      * Append raw text to the output buffer.
      */
     public function rawOutput(string $indata): void
