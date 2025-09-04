@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 /**
  * \file armoreditor.php
@@ -26,7 +27,7 @@ use Lotgd\Nav;
 
 SuAccess::check(SU_EDIT_EQUIPMENT);
 
-tlschema("armor");
+Translator::getInstance()->setSchema("armor");
 
 Header::pageHeader("Armor Editor");
 $armorlevel = (int)Http::get('level');

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 /**
  * \file badword.php
  * This file holds the Bad Word Editor for the Grotto. With this editor you can define bad words that get filtered or good words that count as exception to a rule. You have a grotto setting to turn this on or off.
@@ -24,7 +25,7 @@ require_once("common.php");
 
 SuAccess::check(SU_EDIT_COMMENTS);
 
-tlschema("badword");
+Translator::getInstance()->setSchema("badword");
 
 $op = Http::get('op');
 //yuck, this page is a mess, but it gets the job done.

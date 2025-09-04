@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\Translator;
 
 // addnews ready
 // translator ready
@@ -10,7 +11,7 @@ require_once("lib/villagenav.php");
 require_once("lib/events.php");
 require_once("lib/http.php");
 
-tlschema("gardens");
+Translator::getInstance()->setSchema("gardens");
 
 page_header("The Gardens");
 

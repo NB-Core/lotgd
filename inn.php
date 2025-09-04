@@ -8,6 +8,7 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Sanitize;
 use Lotgd\Http;
 use Lotgd\Events;
+use Lotgd\Translator;
 
 // addnews ready
 // translator ready
@@ -15,7 +16,7 @@ use Lotgd\Events;
 require_once("common.php");
 use Lotgd\Pvp;
 
-tlschema("inn");
+Translator::getInstance()->setSchema("inn");
 
 Commentary::addCommentary();
 $iname = getsetting("innname", LOCATION_INN);

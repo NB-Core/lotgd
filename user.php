@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -12,7 +13,7 @@ require_once("lib/http.php");
 require_once("lib/sanitize.php");
 use Lotgd\Names;
 
-tlschema("user");
+Translator::getInstance()->setSchema("user");
 SuAccess::check(SU_EDIT_USERS);
 
 $op = httpget('op');

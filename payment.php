@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // mail ready
 // addnews ready
@@ -15,7 +16,7 @@ use Lotgd\Page\Footer;
 
 require_once("common.php");
 
-tlschema("payment");
+Translator::getInstance()->setSchema("payment");
 
 // Send an empty HTTP 200 OK response to acknowledge receipt of the notification
 header('HTTP/1.1 200 OK');

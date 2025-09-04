@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Translator;
 require_once __DIR__ . '/autoload.php';
 
 use Lotgd\BootstrapErrorHandler;
@@ -11,7 +12,6 @@ use Lotgd\HolidayText;
 use Lotgd\Output;
 use Lotgd\Accounts;
 use Lotgd\Settings;
-use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\ForcedNavigation;
 use Lotgd\Nav;
@@ -571,9 +571,9 @@ if (
 ) {
     //Server runs in Debug mode, tell the superuser about it
     if (($session['user']['superuser'] & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
-        tlschema("debug");
+        Translator::getInstance()->setSchema("debug");
         output("<center>`\$<h2>SERVER RUNNING IN DEBUG MODE</h2></center>`n`n", true);
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 }
 

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
-use Lotgd\Translator;
 use Lotgd\DumpItem;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Translator;
 
 class Forms
 {
@@ -224,9 +224,9 @@ JS;
         self::setupTabs($showform_id, $formSections, $startIndex, $tabDisabled);
 
         rawoutput("</td></tr></table>");
-        tlschema('showform');
+        Translator::getInstance()->setSchema('showform');
         $save = Translator::translateInline('Save');
-        tlschema();
+        Translator::getInstance()->setSchema();
         if (!$nosave) {
             rawoutput("<input type='submit' class='button' value='$save'>");
         }
@@ -494,12 +494,12 @@ JS;
                     '6 months', '9 months', '12 months',
                     '1 year'
                 ];
-                tlschema('showform');
+                Translator::getInstance()->setSchema('showform');
                 foreach ($vals as $k => $v) {
                     $vals[$k] = translate($v);
                     rawoutput(tlbutton_pop());
                 }
-                tlschema();
+                Translator::getInstance()->setSchema();
                 rawoutput("<select id='$entityId' name='$keyout'>");
                 foreach ($vals as $k => $v) {
                     rawoutput("<option value=\"" . htmlentities($v, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"" . ($row[$key] == $v ? ' selected' : '') . '>' . htmlentities($v, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '</option>');
@@ -539,11 +539,11 @@ JS;
                 break;
 
             case 'bool':
-                tlschema('showform');
+                Translator::getInstance()->setSchema('showform');
                 $yes = Translator::translateInline('Yes');
                 $no = Translator::translateInline('No');
                 $boolval = isset($row[$key]) ? $row[$key] : 0;
-                tlschema();
+                Translator::getInstance()->setSchema();
                 rawoutput("<select id='$entityId' name='$keyout'>");
                 rawoutput("<option value='0'" . ($boolval == 0 ? ' selected' : '') . ">$no</option>");
                 rawoutput("<option value='1'" . ($boolval == 1 ? ' selected' : '') . ">$yes</option>");

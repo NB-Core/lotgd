@@ -19,6 +19,16 @@ class Translator
     private static array $translation_namespace_stack = [];
     // Maintain translation state within the class
     private static string $translation_namespace = "";
+
+    public static function getInstance(): self
+    {
+        return new self();
+    }
+
+    public function setSchema(string|false|null $schema = false): void
+    {
+        self::tlschema($schema);
+    }
 // translator ready
 // addnews ready
 // mail ready

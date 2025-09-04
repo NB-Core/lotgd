@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -8,7 +9,7 @@ define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
 require_once("lib/http.php");
 
-tlschema("referral");
+Translator::getInstance()->setSchema("referral");
 
 if ($session['user']['loggedin']) {
     page_header("Referral Page");

@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\Nav\VillageNav;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class Forest
 {
@@ -19,7 +20,7 @@ class Forest
     public static function forest(bool $noshowmessage = false): void
     {
         global $session, $playermount;
-        tlschema('forest');
+        Translator::getInstance()->setSchema('forest');
         addnav('Navigation');
         VillageNav::render();
         addnav('Heal');
@@ -59,6 +60,6 @@ class Forest
         }
         HookHandler::hook('forest', []);
         module_display_events('forest', 'forest.php');
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 }

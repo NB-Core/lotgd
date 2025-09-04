@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Translator;
 /**
  * \file clan.php
  * This file contains the base for the clans. This feature can be deactivated in the grotto.
@@ -20,7 +21,7 @@ require_once("lib/sanitize.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
-tlschema("clans");
+Translator::getInstance()->setSchema("clans");
 
 
 addnav("Village");

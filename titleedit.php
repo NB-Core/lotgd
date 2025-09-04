@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -13,7 +14,7 @@ require_once("lib/http.php");
 
 SuAccess::check(SU_EDIT_USERS);
 
-tlschema("retitle");
+Translator::getInstance()->setSchema("retitle");
 
 page_header("Title Editor");
 $op = httpget('op');

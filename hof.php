@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -20,7 +21,7 @@ use Lotgd\DateTime;
 
 require_once("common.php");
 
-tlschema("hof");
+Translator::getInstance()->setSchema("hof");
 
 $superusermask = SU_HIDE_FROM_LEADERBOARD;
 $standardwhere = "(locked=0 AND (superuser & $superusermask) = 0)";

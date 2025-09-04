@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 // addnews ready
 // translator ready
 // mail ready
@@ -24,7 +25,9 @@ use Lotgd\Nltoappon;
 
 require_once("common.php");
 
-tlschema("bio");
+$translator = Translator::getInstance();
+
+$translator->setSchema("bio");
 
 DateTime::checkDay();
 
@@ -53,9 +56,9 @@ if ($target = Database::fetchAssoc($result)) {
 
     Header::pageHeader("Character Biography: %s", Sanitize::fullSanitize($target['name']));
 
-    tlschema("nav");
+    $translator->setSchema("nav");
     Nav::add("Return");
-    tlschema();
+    $translator->setSchema();
 
     if ($session['user']['superuser'] & SU_EDIT_USERS) {
         Nav::add("Superuser");
@@ -74,10 +77,10 @@ if ($target = Database::fetchAssoc($result)) {
     if ($target['clanname'] > "" && getsetting("allowclans", false)) {
         $ranks = array(CLAN_APPLICANT => "`!Applicant`0",CLAN_MEMBER => "`#Member`0",CLAN_OFFICER => "`^Officer`0",CLAN_LEADER => "`&Leader`0", CLAN_FOUNDER => "`\$Founder");
         $ranks = HookHandler::hook("clanranks", array("ranks" => $ranks, "clanid" => $target['clanid']));
-        tlschema("clans"); //just to be in the right schema
+        $translator->setSchema("clans"); //just to be in the right schema
         array_push($ranks['ranks'], "`\$Founder");
         $ranks = translate_inline($ranks['ranks']);
-        tlschema();
+        $translator->setSchema();
         $output->output("`@%s`2 is a %s`2 to `%%s`2`n", $target['name'], str_replace(array("`c","`i"), "", $ranks[$target['clanrank']]), str_replace(array("`c","`i"), "", $target['clanname']));
     }
 
@@ -142,9 +145,9 @@ if ($target = Database::fetchAssoc($result)) {
     $result = Database::query("SELECT * FROM " . Database::prefix("news") . " WHERE accountid={$target['acctid']} ORDER BY newsdate DESC,newsid ASC LIMIT 100");
 
     $odate = "";
-    tlschema("news");
+    $translator->setSchema("news");
     while ($row = Database::fetchAssoc($result)) {
-        tlschema($row['tlschema']);
+        $translator->setSchema($row['tlschema']);
         if ($row['arguments'] > "") {
             $arguments = array();
             $base_arguments = unserialize($row['arguments']);
@@ -152,13 +155,13 @@ if ($target = Database::fetchAssoc($result)) {
             foreach ($base_arguments as $val) {
                 array_push($arguments, $val);
             }
-            $news = call_user_func_array("sprintf_translate", $arguments);
+            $news = $translator->sprintfTranslate(...$arguments);
             $output->rawOutput(tlbutton_clear());
         } else {
             $news = translate_inline($row['newstext']);
             $output->rawOutput(tlbutton_clear());
         }
-        tlschema();
+        $translator->setSchema();
         if ($odate != $row['newsdate']) {
             $output->outputNotl(
                 "`n`b`@%s`0`b`n",
@@ -168,24 +171,24 @@ if ($target = Database::fetchAssoc($result)) {
         }
         $output->outputNotl("`@" . sanitize_mb($news) . "`0`n");
     }
-    tlschema();
+    $translator->setSchema();
 
     if ($ret == "") {
         $return = basename($return);
-        tlschema("nav");
+        $translator->setSchema("nav");
         Nav::add("Return");
         Nav::add("Return to the warrior list", $return);
-        tlschema();
+        $translator->setSchema();
     } else {
         $return = basename($return);
-        tlschema("nav");
+        $translator->setSchema("nav");
         Nav::add("Return");
         if ($return == "list.php") {
             Nav::add("Return to the warrior list", $return);
         } else {
             Nav::add("Return whence you came", $return);
         }
-        tlschema();
+        $translator->setSchema();
     }
 
     HookHandler::hook("bioend", $target);
@@ -195,20 +198,20 @@ if ($target = Database::fetchAssoc($result)) {
     $output->output("This character is already deleted.");
     if ($ret == "") {
         $return = basename($return);
-        tlschema("nav");
+        $translator->setSchema("nav");
         Nav::add("Return");
         Nav::add("Return to the warrior list", $return);
-        tlschema();
+        $translator->setSchema();
     } else {
         $return = basename($return);
-        tlschema("nav");
+        $translator->setSchema("nav");
         Nav::add("Return");
         if ($return == "list.php") {
             Nav::add("Return to the warrior list", $return);
         } else {
             Nav::add("Return whence you came", $return);
         }
-        tlschema();
+        $translator->setSchema();
     }
     Footer::pageFooter();
 }

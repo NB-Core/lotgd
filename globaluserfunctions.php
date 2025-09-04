@@ -9,10 +9,11 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\ServerFunctions;
 use Lotgd\Http;
+use Lotgd\Translator;
 
 require_once 'common.php';
 
-tlschema('globaluserfunctions');
+Translator::getInstance()->setSchema('globaluserfunctions');
 
 SuAccess::check(SU_MEGAUSER);
 

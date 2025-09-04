@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 /**
  * \file battle.php
  * This file holds the generic battle code that gets normally require()'d and executes basic fight functions.
@@ -27,7 +28,7 @@ global $badguy,$enemies,$newenemies,$session,$creatureattack,$creatureatkmod, $b
 global $creaturedefmod,$adjustment,$defmod,$atkmod,$compdefmod,$compatkmod,$buffset,$atk,$def,$options;
 global $companions,$companion,$newcompanions,$count,$defended,$needtostopfighting,$roll;
 
-tlschema("battle");
+Translator::getInstance()->setSchema("battle");
 
 $newcompanions = array();
 $attackstack = @unserialize($session['user']['badguy']);
@@ -86,7 +87,7 @@ if ($op == "fight") {
                 $enemies[$index]['istarget'] = 1;
             } else {
                 if (is_array($badguy['cannotbetarget'])) {
-                    $msg = sprintf_translate($badguy['cannotbetarget']);
+                    $msg = Translator::getInstance()->sprintfTranslate($badguy['cannotbetarget']);
                     $msg = Substitute::apply($msg);
                     output_notl($msg); //Here it's already translated
                 } else {
@@ -482,7 +483,7 @@ if ($op != "newtarget") {
             foreach ($newenemies as $index => $badguy) {
                 if (isset($badguy['fleesifalone']) && $badguy['fleesifalone'] == true) {
                     if (is_array($badguy['fleesifalone'])) {
-                        $msg = sprintf_translate($badguy['fleesifalone']);
+                        $msg = Translator::getInstance()->sprintfTranslate($badguy['fleesifalone']);
                         $msg = Substitute::apply($msg);
                         output_notl($msg); //Here it's already translated
                     } else {
@@ -500,7 +501,7 @@ if ($op != "newtarget") {
             }
         } elseif ($leaderisdead) {
             if (isset($badguy['essentialleader']) && is_array($badguy['essentialleader'])) {
-                $msg = sprintf_translate($badguy['essentialleader']);
+                $msg = Translator::getInstance()->sprintfTranslate($badguy['essentialleader']);
                 $msg = Substitute::apply($msg);
                 output_notl($msg); //Here it's already translated
             } elseif (isset($badguy['essentialleader'])) {
@@ -579,7 +580,7 @@ if ($victory || $defeat) {
 $attackstack = array('enemies' => $newenemies, 'options' => $options);
 $session['user']['badguy'] = createstring($attackstack);
 $session['user']['companions'] = createstring($companions);
-tlschema();
+Translator::getInstance()->setSchema();
 
 function battle_player_attacks(&$badguy)
 {

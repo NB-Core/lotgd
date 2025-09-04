@@ -7,6 +7,7 @@ namespace Lotgd\Tests;
 use Lotgd\AddNews;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
+use Lotgd\Translator;
 
 final class AddNewsTest extends TestCase
 {
@@ -14,13 +15,13 @@ final class AddNewsTest extends TestCase
     {
         class_exists(Database::class);
         $GLOBALS['session'] = ['user' => ['acctid' => 3]];
-        \Lotgd\Translator::tlschema('ns');
+        Translator::getInstance()->setSchema('ns');
         \Lotgd\MySQL\Database::$lastSql = '';
     }
 
     protected function tearDown(): void
     {
-        \Lotgd\Translator::tlschema(false);
+        Translator::getInstance()->setSchema(false);
         unset($GLOBALS['session']);
     }
 

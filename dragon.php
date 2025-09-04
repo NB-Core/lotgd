@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\Buffs;
 
@@ -14,7 +15,7 @@ use Lotgd\Battle;
 use Lotgd\Names;
 use Lotgd\AddNews;
 
-tlschema("dragon");
+Translator::getInstance()->setSchema("dragon");
 $battle = false;
 page_header("The Green Dragon!");
 $op = Http::get('op');
@@ -304,14 +305,14 @@ if ($battle) {
         $session['user']['dragonkills']++;
         output("`&With a mighty final blow, `@%s`& lets out a tremendous bellow and falls at your feet, dead at last.", $badguy['creaturename']);
         AddNews::add("`&%s has slain the hideous creature known as `@%s`&.  All across the land, people rejoice!", $session['user']['name'], $badguy['creaturename']);
-        tlschema("nav");
+        Translator::getInstance()->setSchema("nav");
         addnav("Continue", "dragon.php?op=prologue1&flawless=$flawless");
-        tlschema();
+        Translator::getInstance()->setSchema();
     } else {
         if ($defeat) {
-            tlschema("nav");
+            Translator::getInstance()->setSchema("nav");
             addnav("Daily news", "news.php");
-            tlschema();
+            Translator::getInstance()->setSchema();
                         $taunt = Battle::selectTauntArray();
             if ($session['user']['sex']) {
                 AddNews::add("`%%s`5 has been slain when she encountered `@%s`5!!!  Her bones now litter the cave entrance, just like the bones of those who came before.`n%s", $session['user']['name'], $badguy['creaturename'], $taunt);
