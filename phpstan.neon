@@ -10,3 +10,4 @@ parameters:
         - src/Lotgd/Entity
     bootstrapFiles:
         - vendor/autoload.php
+        - src/Lotgd/Config/constants.php
