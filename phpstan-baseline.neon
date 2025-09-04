@@ -1,0 +1,1971 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
+			count: 1
+			path: src/Lotgd/Accounts.php
+
+		-
+			message: "#^Static method Lotgd\\\\MySQL\\\\Database\\:\\:affectedRows\\(\\) invoked with 1 parameter, 0 required\\.$#"
+			count: 1
+			path: src/Lotgd/Accounts.php
+
+		-
+			message: "#^Caught class Lotgd\\\\Async\\\\Handler\\\\Exception not found\\.$#"
+			count: 3
+			path: src/Lotgd/Async/Handler/Commentary.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 1
+			path: src/Lotgd/Async/Handler/Commentary.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/Async/Handler/Mail.php
+
+		-
+			message: "#^Function maillink not found\\.$#"
+			count: 1
+			path: src/Lotgd/Async/Handler/Mail.php
+
+		-
+			message: "#^Function maillinktabtext not found\\.$#"
+			count: 1
+			path: src/Lotgd/Async/Handler/Mail.php
+
+		-
+			message: "#^Function translate_inline not found\\.$#"
+			count: 1
+			path: src/Lotgd/Async/Handler/Mail.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 4
+			path: src/Lotgd/Async/Handler/Timeout.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/Async/Handler/Timeout.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 2
+			path: src/Lotgd/Async/Handler/Timeout.php
+
+		-
+			message: "#^Function translate_inline not found\\.$#"
+			count: 3
+			path: src/Lotgd/Async/Handler/Timeout.php
+
+		-
+			message: "#^Constant SU_DEVELOPER not found\\.$#"
+			count: 2
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 13
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 2
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function e_rand not found\\.$#"
+			count: 6
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function get_player_attack not found\\.$#"
+			count: 2
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function get_player_defense not found\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function get_player_physical_resistance not found\\.$#"
+			count: 2
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 6
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 38
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 9
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 22
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function sanitize_mb not found\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 28
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$badguyatkmod might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$barDisplay might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$creaturedmg in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 2
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$defmod might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$healthtext might not be defined\\.$#"
+			count: 2
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$rounds might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$scrip in empty\\(\\) is never defined\\.$#"
+			count: 1
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Variable \\$selfdmg in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 2
+			path: src/Lotgd/Battle.php
+
+		-
+			message: "#^Function apply_temp_stat not found\\.$#"
+			count: 2
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function createstring not found\\.$#"
+			count: 3
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 3
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function e_rand not found\\.$#"
+			count: 1
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 3
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 10
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 8
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 8
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 22
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Variable \\$msg might not be defined\\.$#"
+			count: 2
+			path: src/Lotgd/Buffs.php
+
+		-
+			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Censor.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/Censor.php
+
+		-
+			message: "#^Function updatedatacache not found\\.$#"
+			count: 1
+			path: src/Lotgd/Censor.php
+
+		-
+			message: "#^Variable \\$matches might not be defined\\.$#"
+			count: 6
+			path: src/Lotgd/Censor.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 1
+			path: src/Lotgd/CharStats.php
+
+		-
+			message: "#^Function templatereplace not found\\.$#"
+			count: 6
+			path: src/Lotgd/CharStats.php
+
+		-
+			message: "#^Constant DATETIME_DATEMAX not found\\.$#"
+			count: 2
+			path: src/Lotgd/CheckBan.php
+
+		-
+			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
+			count: 1
+			path: src/Lotgd/CheckBan.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 3
+			path: src/Lotgd/CheckBan.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/CheckBan.php
+
+		-
+			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Constant LOCATION_FIELDS not found\\.$#"
+			count: 2
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Constant LOCATION_INN not found\\.$#"
+			count: 2
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
+			count: 3
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
+			count: 4
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Constant SU_IS_GAMEMASTER not found\\.$#"
+			count: 7
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Constant SU_MEGAUSER not found\\.$#"
+			count: 2
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 8
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function appendcount not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function appendlink not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function cmd_sanitize not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function color_sanitize not found\\.$#"
+			count: 2
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function comment_sanitize not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function comscroll_sanitize not found\\.$#"
+			count: 5
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 25
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function httpget not found\\.$#"
+			count: 4
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function httppost not found\\.$#"
+			count: 5
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function invalidatedatacache not found\\.$#"
+			count: 4
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 10
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 16
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 11
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function redirect not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function reltime not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function sanitize_mb not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function soap not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function tlbutton_clear not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 10
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Instantiated class Lotgd\\\\output_collector not found\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Variable \\$commentids might not be defined\\.$#"
+			count: 2
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Variable \\$op might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Commentary.php
+
+		-
+			message: "#^Constant SU_ANYONE_CAN_SET not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/configuration.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/configuration.php
+
+		-
+			message: "#^Constant SU_DEVELOPER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/configuration.php
+
+		-
+			message: "#^Constant SU_INFINITE_DAYS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/configuration.php
+
+		-
+			message: "#^Constant SU_VIEW_SOURCE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/configuration.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/configuration.php
+
+		-
+			message: "#^Variable \\$session might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Config/configuration.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 2
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_DEVELOPER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_EDIT_CONFIG not found\\.$#"
+			count: 2
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_EDIT_DONATIONS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_EDIT_USERS not found\\.$#"
+			count: 2
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_HIDE_FROM_LEADERBOARD not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_INFINITE_DAYS not found\\.$#"
+			count: 3
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_IS_BANMASTER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_MEGAUSER not found\\.$#"
+			count: 2
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_NEVER_EXPIRE not found\\.$#"
+			count: 2
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_OVERRIDE_YOM_WARNING not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_POST_MOTD not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_RAW_SQL not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_SHOW_PHPNOTICE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_VIEW_SOURCE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/constants.php
+
+		-
+			message: "#^Constant SU_ANYONE_CAN_SET not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_AUDIT_MODERATION not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_DEVELOPER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_CONFIG not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_CREATURES not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_DONATIONS not found\\.$#"
+			count: 2
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_EQUIPMENT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_MOUNTS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_PAYLOG not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_PETITIONS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_RIDDLES not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_EDIT_USERS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_GIVE_GROTTO not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_INFINITE_DAYS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_IS_BANMASTER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_IS_GAMEMASTER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_IS_TRANSLATOR not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_MANAGE_MODULES not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_MEGAUSER not found\\.$#"
+			count: 3
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_MODERATE_CLANS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_NEVER_EXPIRE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_OVERRIDE_YOM_WARNING not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_POST_MOTD not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_RAW_SQL not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_SHOW_PHPNOTICE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant SU_VIEW_SOURCE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 2
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Function translate_inline not found\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Variable \\$enum might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Variable \\$mounts might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Variable \\$session might not be defined\\.$#"
+			count: 4
+			path: src/Lotgd/Config/user_account.php
+
+		-
+			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
+			count: 2
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Constant DATETIME_TODAY not found\\.$#"
+			count: 1
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 1
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 1
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 1
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function redirect not found\\.$#"
+			count: 1
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 1
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function tlbutton_clear not found\\.$#"
+			count: 1
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/DateTime.php
+
+		-
+			message: "#^Function e_rand not found\\.$#"
+			count: 2
+			path: src/Lotgd/DeathMessage.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/DumpItem.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 2
+			path: src/Lotgd/ErrorHandler.php
+
+		-
+			message: "#^Constant SU_SHOW_PHPNOTICE not found\\.$#"
+			count: 1
+			path: src/Lotgd/ErrorHandler.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 6
+			path: src/Lotgd/ErrorHandler.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 1
+			path: src/Lotgd/ErrorHandler.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Constant SU_DEVELOPER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Function checknavs not found\\.$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Function getmicrotime not found\\.$#"
+			count: 2
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Function module_do_event not found\\.$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Function page_footer not found\\.$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Function page_header not found\\.$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Undefined variable\\: \\$hookname$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Undefined variable\\: \\$row$#"
+			count: 1
+			path: src/Lotgd/Events.php
+
+		-
+			message: "#^Constant CHAR_DELETE_AUTO not found\\.$#"
+			count: 1
+			path: src/Lotgd/ExpireChars.php
+
+		-
+			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
+			count: 1
+			path: src/Lotgd/ExpireChars.php
+
+		-
+			message: "#^Constant NO_ACCOUNT_EXPIRATION not found\\.$#"
+			count: 2
+			path: src/Lotgd/ExpireChars.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/ForcedNavigation.php
+
+		-
+			message: "#^Function redirect not found\\.$#"
+			count: 4
+			path: src/Lotgd/ForcedNavigation.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 10
+			path: src/Lotgd/Forest.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 3
+			path: src/Lotgd/Forest.php
+
+		-
+			message: "#^Function module_display_events not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forest.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 5
+			path: src/Lotgd/Forest.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/Forest.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 4
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Function debuglog not found\\.$#"
+			count: 3
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Function e_rand not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Function get_player_dragonkillmod not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 19
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 2
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Function page_footer not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Function r_rand not found\\.$#"
+			count: 6
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Variable \\$badguy might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Forest/Outcomes.php
+
+		-
+			message: "#^Constant LOCATION_FIELDS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Constant SU_IS_GAMEMASTER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function datacache not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 29
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function httppost not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 6
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 68
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function tlbutton_pop not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 6
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function translate not found\\.$#"
+			count: 2
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Function updatedatacache not found\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Static method Lotgd\\\\Forms\\:\\:renderField\\(\\) invoked with 8 parameters, 7 required\\.$#"
+			count: 1
+			path: src/Lotgd/Forms.php
+
+		-
+			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Constant SU_EDIT_COMMENTS not found\\.$#"
+			count: 3
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Constant SU_EDIT_USERS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 9
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function appendcount not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function appendlink not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function comment_sanitize not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function comscroll_sanitize not found\\.$#"
+			count: 4
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function full_sanitize not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 19
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function httpget not found\\.$#"
+			count: 2
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 6
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 18
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 5
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function reltime not found\\.$#"
+			count: 1
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Variable \\$auth might not be defined\\.$#"
+			count: 2
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Variable \\$commentids might not be defined\\.$#"
+			count: 4
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Variable \\$op might not be defined\\.$#"
+			count: 3
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Variable \\$rawc might not be defined\\.$#"
+			count: 2
+			path: src/Lotgd/Moderate.php
+
+		-
+			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
+			count: 1
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function activate_module not found\\.$#"
+			count: 1
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function deactivate_module not found\\.$#"
+			count: 1
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function get_module_install_status not found\\.$#"
+			count: 2
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function injectmodule not found\\.$#"
+			count: 2
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function install_module not found\\.$#"
+			count: 1
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function invalidatedatacache not found\\.$#"
+			count: 5
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function massinvalidate not found\\.$#"
+			count: 11
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Function uninstall_module not found\\.$#"
+			count: 1
+			path: src/Lotgd/ModuleManager.php
+
+		-
+			message: "#^Constant MODULE_ACTIVE not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant MODULE_FILE_NOT_PRESENT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant MODULE_INJECTED not found\\.$#"
+			count: 4
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant MODULE_INSTALLED not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant MODULE_NOT_INSTALLED not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant MODULE_NO_INFO not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant MODULE_VERSION_OK not found\\.$#"
+			count: 3
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant MODULE_VERSION_TOO_LOW not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 3
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Constant SU_DEVELOPER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function addnav_notl not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 7
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function e_rand not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function getmicrotime not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function httpallget not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function httpallpost not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function httpget not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function httpset not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function invalidatedatacache not found\\.$#"
+			count: 16
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function massinvalidate not found\\.$#"
+			count: 3
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function module_compare_versions not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function module_condition not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function module_wipehooks not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function modulename_sanitize not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 3
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function r_rand not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 17
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Static method Lotgd\\\\MySQL\\\\Database\\:\\:affectedRows\\(\\) invoked with 1 parameter, 0 required\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Variable \\$exists might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Variable \\$filename might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Variable \\$link might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Variable \\$ns might not be defined\\.$#"
+			count: 3
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Variable \\$res might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Variable \\$result might not be defined\\.$#"
+			count: 2
+			path: src/Lotgd/Modules.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 1
+			path: src/Lotgd/Modules/Installer.php
+
+		-
+			message: "#^Function invalidatedatacache not found\\.$#"
+			count: 7
+			path: src/Lotgd/Modules/Installer.php
+
+		-
+			message: "#^Function massinvalidate not found\\.$#"
+			count: 6
+			path: src/Lotgd/Modules/Installer.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 9
+			path: src/Lotgd/Modules/Installer.php
+
+		-
+			message: "#^Constant SU_POST_MOTD not found\\.$#"
+			count: 1
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 2
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 2
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function httppost not found\\.$#"
+			count: 10
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function invalidatedatacache not found\\.$#"
+			count: 7
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 5
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 7
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 26
+			path: src/Lotgd/Motd.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 2
+			path: src/Lotgd/MountName.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/MountName.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 1
+			path: src/Lotgd/MySQL/Database.php
+
+		-
+			message: "#^Constant SU_DEVELOPER not found\\.$#"
+			count: 1
+			path: src/Lotgd/MySQL/Database.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 1
+			path: src/Lotgd/MySQL/Database.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 2
+			path: src/Lotgd/MySQL/Database.php
+
+		-
+			message: "#^Variable \\$affected on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Lotgd/MySQL/Database.php
+
+		-
+			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
+			count: 1
+			path: src/Lotgd/MySQL/TableDescriptor.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 1
+			path: src/Lotgd/MySQL/TableDescriptor.php
+
+		-
+			message: "#^Used constant DATETIME_DATEMIN not found\\.$#"
+			count: 1
+			path: src/Lotgd/MySQL/TableDescriptor.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 4
+			path: src/Lotgd/Nav.php
+
+		-
+			message: "#^Function popup not found\\.$#"
+			count: 2
+			path: src/Lotgd/Nav.php
+
+		-
+			message: "#^Function sanitize not found\\.$#"
+			count: 8
+			path: src/Lotgd/Nav.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 8
+			path: src/Lotgd/Nav.php
+
+		-
+			message: "#^Function translate not found\\.$#"
+			count: 2
+			path: src/Lotgd/Nav.php
+
+		-
+			message: "#^Constant SU_DOESNT_GIVE_GROTTO not found\\.$#"
+			count: 1
+			path: src/Lotgd/Nav/SuperuserNav.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 3
+			path: src/Lotgd/Nav/SuperuserNav.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/Nav/SuperuserNav.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 2
+			path: src/Lotgd/Nav/VillageNav.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/Nav/VillageNav.php
+
+		-
+			message: "#^Constant LOCATION_FIELDS not found\\.$#"
+			count: 1
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Constant SU_MANAGE_MODULES not found\\.$#"
+			count: 2
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Constant SU_MEGAUSER not found\\.$#"
+			count: 2
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 8
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function appendcount not found\\.$#"
+			count: 1
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function clearoutput not found\\.$#"
+			count: 2
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function getmicrotime not found\\.$#"
+			count: 2
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function httpget not found\\.$#"
+			count: 2
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function httppost not found\\.$#"
+			count: 1
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function massinvalidate not found\\.$#"
+			count: 1
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function navcount not found\\.$#"
+			count: 2
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 24
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 3
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function page_footer not found\\.$#"
+			count: 4
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function page_header not found\\.$#"
+			count: 6
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 22
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Function savesetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Variable \\$type in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Lotgd/Newday.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Output.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 1
+			path: src/Lotgd/Output.php
+
+		-
+			message: "#^Function sanitize not found\\.$#"
+			count: 1
+			path: src/Lotgd/Output.php
+
+		-
+			message: "#^Class Lotgd\\\\DataCache referenced with incorrect case\\: Lotgd\\\\Datacache\\.$#"
+			count: 1
+			path: src/Lotgd/Page/CharStats.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 2
+			path: src/Lotgd/Page/Footer.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 4
+			path: src/Lotgd/Page/Header.php
+
+		-
+			message: "#^Class Lotgd\\\\DataCache referenced with incorrect case\\: Lotgd\\\\Datacache\\.$#"
+			count: 2
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Constant RACE_UNKNOWN not found\\.$#"
+			count: 3
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Constant SU_DEBUG_OUTPUT not found\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Constant SU_EDIT_PETITIONS not found\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Constant SU_EDIT_USERS not found\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Constant SU_MANAGE_MODULES not found\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 3
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Function appoencode not found\\.$#"
+			count: 9
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Function check_temp_stat not found\\.$#"
+			count: 19
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 6
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Function httpget not found\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Function templatereplace not found\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Variable \\$maillink_add_after on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Variable \\$maillink_add_pre on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Variable \\$minutes might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/PageParts.php
+
+		-
+			message: "#^Constant INT_MAX not found\\.$#"
+			count: 1
+			path: src/Lotgd/Partner.php
+
+		-
+			message: "#^Constant SEX_MALE not found\\.$#"
+			count: 3
+			path: src/Lotgd/Partner.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 6
+			path: src/Lotgd/Partner.php
+
+		-
+			message: "#^Function httpallget not found\\.$#"
+			count: 1
+			path: src/Lotgd/PhpGenericEnvironment.php
+
+		-
+			message: "#^Constant CLAN_APPLICANT not found\\.$#"
+			count: 1
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Constant CLAN_FOUNDER not found\\.$#"
+			count: 2
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Constant CLAN_LEADER not found\\.$#"
+			count: 4
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Constant DATETIME_DATEMIN not found\\.$#"
+			count: 1
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Constant SEX_MALE not found\\.$#"
+			count: 1
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 2
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Function e_rand not found\\.$#"
+			count: 1
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 9
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Function module_delete_userprefs not found\\.$#"
+			count: 1
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Function sprintf_translate not found\\.$#"
+			count: 2
+			path: src/Lotgd/PlayerFunctions.php
+
+		-
+			message: "#^Function debug not found\\.$#"
+			count: 5
+			path: src/Lotgd/PullUrl.php
+
+		-
+			message: "#^Constant CLAN_APPLICANT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Constant SEX_MALE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 3
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function debuglog not found\\.$#"
+			count: 4
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function get_player_attack not found\\.$#"
+			count: 1
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function get_player_defense not found\\.$#"
+			count: 1
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 20
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 24
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function output_notl not found\\.$#"
+			count: 5
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function rawoutput not found\\.$#"
+			count: 14
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function reltime not found\\.$#"
+			count: 1
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/Pvp.php
+
+		-
+			message: "#^Constant CLAN_APPLICANT not found\\.$#"
+			count: 1
+			path: src/Lotgd/Repository/ClanRepository.php
+
+		-
+			message: "#^Constant CLAN_LEADER not found\\.$#"
+			count: 1
+			path: src/Lotgd/Repository/ClanRepository.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 5
+			path: src/Lotgd/Sanitize.php
+
+		-
+			message: "#^Variable \\$defaults on left side of \\?\\? is never defined\\.$#"
+			count: 1
+			path: src/Lotgd/Settings.php
+
+		-
+			message: "#^Function output not found\\.$#"
+			count: 1
+			path: src/Lotgd/Specialty.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/Specialty.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/Spell.php
+
+		-
+			message: "#^Constant SU_EDIT_USERS not found\\.$#"
+			count: 1
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Function addnav not found\\.$#"
+			count: 2
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Function clearnav not found\\.$#"
+			count: 1
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Function debuglog not found\\.$#"
+			count: 1
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Function page_footer not found\\.$#"
+			count: 2
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Function page_header not found\\.$#"
+			count: 2
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 2
+			path: src/Lotgd/SuAccess.php
+
+		-
+			message: "#^Constant DEFAULT_TEMPLATE not found\\.$#"
+			count: 5
+			path: src/Lotgd/Template.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 1
+			path: src/Lotgd/Template.php
+
+		-
+			message: "#^Variable \\$template might not be defined\\.$#"
+			count: 1
+			path: src/Lotgd/Template.php
+
+		-
+			message: "#^Constant LANGUAGE not found\\.$#"
+			count: 1
+			path: src/Lotgd/Translator.php
+
+		-
+			message: "#^Constant SU_IS_TRANSLATOR not found\\.$#"
+			count: 3
+			path: src/Lotgd/Translator.php
+
+		-
+			message: "#^Function getsetting not found\\.$#"
+			count: 2
+			path: src/Lotgd/Translator.php
+
+		-
+			message: "#^Function popup not found\\.$#"
+			count: 1
+			path: src/Lotgd/Translator.php
+
+		-
+			message: "#^Function tlschema not found\\.$#"
+			count: 4
+			path: src/Lotgd/Translator.php
+
+		-
+			message: "#^Undefined variable\\: \\$settings$#"
+			count: 1
+			path: src/Lotgd/Translator.php
+
+		-
+			message: "#^Variable \\$namespace in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Lotgd/Translator.php
+
+		-
+			message: "#^Variable \\$settings in isset\\(\\) is never defined\\.$#"
+			count: 1
+			path: src/Lotgd/Translator.php
