@@ -37,26 +37,6 @@ parameters:
 			path: src/Lotgd/Async/Handler/Mail.php
 
 		-
-			message: "#^Function appoencode not found\\.$#"
-			count: 4
-			path: src/Lotgd/Async/Handler/Timeout.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Async/Handler/Timeout.php
-
-		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 2
-			path: src/Lotgd/Async/Handler/Timeout.php
-
-		-
-			message: "#^Function translate_inline not found\\.$#"
-			count: 3
-			path: src/Lotgd/Async/Handler/Timeout.php
-
-		-
 			message: "#^Constant SU_DEVELOPER not found\\.$#"
 			count: 2
 			path: src/Lotgd/Battle.php
