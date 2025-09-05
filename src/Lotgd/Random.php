@@ -7,27 +7,17 @@ namespace Lotgd;
 /**
  * Random number utilities.
  *
- * Provides instance methods corresponding to legacy random helper
+ * Provides static methods corresponding to legacy random helper
  * functions e_rand() and r_rand() for integer and float values.
  */
 class Random
 {
-    private static ?self $instance = null;
-
-    /**
-     * Retrieve the singleton instance.
-     */
-    public static function getInstance(): self
-    {
-        return self::$instance ??= new self();
-    }
-
     /**
      * Random integer helper.
      *
      * Mirrors the behaviour of legacy e_rand().
      */
-    public function e_rand(?int $min = null, ?int $max = null): int
+    public static function e_rand(?int $min = null, ?int $max = null): int
     {
         if ($min === null) {
             return random_int(0, mt_getrandmax());
@@ -60,7 +50,7 @@ class Random
      *
      * Mirrors the behaviour of legacy r_rand().
      */
-    public function r_rand(?float $min = null, ?float $max = null): float
+    public static function r_rand(?float $min = null, ?float $max = null): float
     {
         if ($min === null) {
             return random_int(0, mt_getrandmax());

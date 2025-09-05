@@ -34,7 +34,6 @@ class Outcomes
     {
         global $session, $options;
         $settings = Settings::getInstance();
-        $random = Random::getInstance();
         $output = Output::getInstance();
 
         $diddamage = false;
@@ -47,9 +46,9 @@ class Outcomes
         foreach ($enemies as $badguy) {
             $dropMinGold = $settings->getSetting('dropmingold', 0);
             if ($dropMinGold) {
-                $badguy['creaturegold'] = $random->r_rand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
+                $badguy['creaturegold'] = Random::r_rand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
             } else {
-                $badguy['creaturegold'] = $random->r_rand(0, (int)$badguy['creaturegold']);
+                $badguy['creaturegold'] = Random::r_rand(0, (int)$badguy['creaturegold']);
             }
             $gold += $badguy['creaturegold'];
             if (isset($badguy['creaturelose'])) {
@@ -71,7 +70,7 @@ class Outcomes
         $expbonus += (int)$session['user']['dragonkills'] * (int)$session['user']['level'] * $multibonus;
         $totalexp = array_sum($options['experience']);
         $exp = (int) round($totalexp / $count, 0);
-        $gold = (int) round($random->r_rand(round($gold / $count), round($gold)), 0);
+        $gold = (int) round(Random::r_rand(round($gold / $count), round($gold)), 0);
         $expbonus = (int) round($expbonus / $count, 0);
 
         if ($gold) {
@@ -82,7 +81,7 @@ class Outcomes
         $args = HookHandler::hook('alter-gemchance', ['chance' => $gemChance]);
         $gemchances = (int)$args['chance'];
         $maxLevel = $settings->getSetting('maxlevel', 15);
-        if ($session['user']['level'] < $maxLevel && $random->e_rand(1, $gemchances) == 1) {
+        if ($session['user']['level'] < $maxLevel && Random::e_rand(1, $gemchances) == 1) {
             $output->output("`&You find A GEM!`n`#");
             $session['user']['gems']++;
             DebugLog::add('found gem when slaying a monster.', false, false, 'forestwingem', 1);
@@ -212,12 +211,11 @@ class Outcomes
             $add = ($session['user']['dragonkills'] / 100) * .10;
             $dk = round($dk * (.25 + $add));
         }
-        $random = Random::getInstance();
         $expflux = (int) round($badguy['creatureexp'] / 10, 0);
-        $expflux = (int) round($random->r_rand(-$expflux, $expflux), 0);
+        $expflux = (int) round(Random::r_rand(-$expflux, $expflux), 0);
         $badguy['creatureexp'] += $expflux;
-        $atkflux = (int) round($random->r_rand(0, $dk), 0);
-        $defflux = (int) round($random->r_rand(0, ($dk - $atkflux)), 0);
+        $atkflux = (int) round(Random::r_rand(0, $dk), 0);
+        $defflux = (int) round(Random::r_rand(0, ($dk - $atkflux)), 0);
         $hpflux = ($dk - ($atkflux + $defflux)) * 5;
         $badguy['creatureattack'] += $atkflux;
         $badguy['creaturedefense'] += $defflux;
