@@ -33,7 +33,6 @@ class Footer
         $z = isset($y2, $z2) ? $y2 ^ $z2 : 'copyright';
         if (TwigTemplate::isActive()) {
             $footer = '';
-            $header = $header ?? '';
         } else {
             $footer = $template['footer'];
         }
@@ -216,7 +215,6 @@ class Footer
         $headscript = '';
         if (TwigTemplate::isActive()) {
             $footer = '';
-            $header = $header ?? '';
         } else {
             $footer = $template['popupfoot'];
         }
