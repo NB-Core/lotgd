@@ -28,6 +28,10 @@ class Settings
     {
         $this->tablename = Database::prefix($tablename);
         $this->settings = null;
+
+        self::$instance = $this;
+        $GLOBALS['settings'] = $this;
+
         $this->loadSettings();
     }
 
