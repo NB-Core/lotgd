@@ -17,6 +17,7 @@ final class NavNullLinkTest extends TestCase
         $session = ['user' => ['prefs' => []], 'allowednavs' => [], 'loggedin' => false];
         $nav = '';
         $output = new Output();
+        Nav::clearNav();
         $template = [
             'navitem' => '<a href="{link}"{accesskey}{popup}>{text}</a>',
             'navhelp' => '<span class="navhelp">{text}</span>',

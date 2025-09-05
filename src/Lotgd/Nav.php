@@ -22,13 +22,20 @@ use Lotgd\Translator;
 
 class Nav
 {
+    private static ?self $instance = null;
+
+    private string $nav = '';
+    private string $navsection = '';
+    private string $header = '';
+    /** @var array<int, array{0:mixed,1:mixed}> */
+    private array $notranslate = [];
+
     private static array $blockednavs = [
         'blockpartial' => [],
         'blockfull' => [],
         'unblockpartial' => [],
         'unblockfull' => [],
     ];
-    private static string $navsection = '';
     /** @var array<string, NavigationSection> */
     private static array $sections = [];
     private static ?NavigationSubSection $currentSubSection = null;
@@ -37,6 +44,64 @@ class Nav
     /** @var array<string,bool> */
     private static array $accesskeys = [];
     private static array $quickkeys = [];
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    public function getNav(): string
+    {
+        return $this->nav;
+    }
+
+    public function appendNav(string $string): void
+    {
+        $this->nav .= $string;
+    }
+
+    public function clearNavTree(): void
+    {
+        $this->nav = '';
+    }
+
+    public function getNavSection(): string
+    {
+        return $this->navsection;
+    }
+
+    public function setNavSection(string $section): void
+    {
+        $this->navsection = $section;
+    }
+
+    public function getHeader(): string
+    {
+        return $this->header;
+    }
+
+    public function setHeader(string $header): void
+    {
+        $this->header = $header;
+    }
+
+    public function addNoTranslate(array $entry): void
+    {
+        $this->notranslate[] = $entry;
+    }
+
+    public function isNoTranslate(array $entry): bool
+    {
+        return in_array($entry, $this->notranslate, true);
+    }
+
+    public function clearNoTranslate(): void
+    {
+        $this->notranslate = [];
+    }
     /**
      * Block a navigation link.
      *
@@ -161,31 +226,25 @@ class Nav
      */
     public static function addHeader($text, bool $collapse = true, bool $translate = true): void
     {
-        global $notranslate;
         if (self::$block_new_navs) {
             return;
         }
-        if (is_array($text)) {
-            $key = '!array!' . serialize($text);
-        } else {
-            $key = $text;
-        }
-        self::$navsection = $key;
+        $instance = self::getInstance();
+        $key = is_array($text) ? '!array!' . serialize($text) : $text;
+        $instance->setNavSection($key);
         self::$currentSubSection = null;
         if (!array_key_exists($key, self::$navschema)) {
             self::$navschema[$key] = Translator::getNamespace();
         }
-        if (!isset(self::$sections[self::$navsection])) {
-            self::$sections[self::$navsection] = new NavigationSection($text, $collapse);
+        $sectionKey = $instance->getNavSection();
+        if (!isset(self::$sections[$sectionKey])) {
+            self::$sections[$sectionKey] = new NavigationSection($text, $collapse);
         } else {
-            self::$sections[self::$navsection]->collapse = $collapse;
-            self::$sections[self::$navsection]->headline = $text;
+            self::$sections[$sectionKey]->collapse = $collapse;
+            self::$sections[$sectionKey]->headline = $text;
         }
         if ($translate === false) {
-            if (!isset($notranslate)) {
-                $notranslate = [];
-            }
-            array_push($notranslate, [$key, '']);
+            $instance->addNoTranslate([$key, '']);
         }
     }
 
@@ -203,8 +262,9 @@ class Nav
             return;
         }
         self::addHeader($text, $collapse);
-        if (isset(self::$sections[self::$navsection])) {
-            self::$sections[self::$navsection]->colored = true;
+        $sectionKey = self::getInstance()->getNavSection();
+        if (isset(self::$sections[$sectionKey])) {
+            self::$sections[$sectionKey]->colored = true;
         }
     }
 
@@ -215,19 +275,20 @@ class Nav
      */
     public static function addSubHeader($text, bool $translate = true): void
     {
-        global $notranslate;
         if (self::$block_new_navs) {
             return;
         }
+        $instance = self::getInstance();
         if ($text === '') {
             self::$currentSubSection = null;
             return;
         }
-        if (!isset(self::$sections[self::$navsection])) {
-            self::$sections[self::$navsection] = new NavigationSection(self::$navsection);
+        $sectionKey = $instance->getNavSection();
+        if (!isset(self::$sections[$sectionKey])) {
+            self::$sections[$sectionKey] = new NavigationSection($sectionKey);
         }
         $sub = new NavigationSubSection($text, $translate);
-        self::$sections[self::$navsection]->addSubSection($sub);
+        self::$sections[$sectionKey]->addSubSection($sub);
         self::$currentSubSection = $sub;
 
         $key = is_array($text) ? '!array!' . serialize($text) : $text;
@@ -235,10 +296,7 @@ class Nav
             self::$navschema[$key] = Translator::getNamespace();
         }
         if ($translate === false) {
-            if (!isset($notranslate)) {
-                $notranslate = [];
-            }
-            array_push($notranslate, [$key, '']);
+            $instance->addNoTranslate([$key, '']);
         }
     }
 
@@ -268,10 +326,10 @@ class Nav
      */
     public static function addNotl($text, $link = false, $priv = false, $pop = false, $popsize = '500x300'): void
     {
-        global $notranslate;
         if (self::$block_new_navs) {
             return;
         }
+        $instance = self::getInstance();
         if ($link === false) {
             if ($text != '') {
                 self::addHeader($text, true, false);
@@ -281,19 +339,17 @@ class Nav
             if ($text == '') {
                 call_user_func_array([self::class, 'privateAddNav'], $args);
             } else {
-                if (!isset(self::$sections[self::$navsection])) {
-                    self::$sections[self::$navsection] = new NavigationSection(self::$navsection);
-                }
-                if (!isset($notranslate)) {
-                    $notranslate = [];
+                $sectionKey = $instance->getNavSection();
+                if (!isset(self::$sections[$sectionKey])) {
+                    self::$sections[$sectionKey] = new NavigationSection($sectionKey);
                 }
                 $item = new NavigationItem($args[0], $args[1], $args[2] ?? false, $args[3] ?? false, $args[4] ?? '500x300', false);
                 if (self::$currentSubSection !== null) {
                     self::$currentSubSection->addItem($item);
                 } else {
-                    self::$sections[self::$navsection]->addItem($item);
+                    self::$sections[$sectionKey]->addItem($item);
                 }
-                array_push($notranslate, [$args[0], $args[1]]);
+                $instance->addNoTranslate([$args[0], $args[1]]);
             }
         }
     }
@@ -312,6 +368,7 @@ class Nav
         if (self::$block_new_navs) {
             return;
         }
+        $instance = self::getInstance();
         if ($link === false) {
             if ($text != '') {
                 self::addHeader($text);
@@ -321,8 +378,9 @@ class Nav
             if ($text == '') {
                 call_user_func_array([self::class, 'privateAddNav'], $args);
             } else {
-                if (!isset(self::$sections[self::$navsection])) {
-                    self::$sections[self::$navsection] = new NavigationSection(self::$navsection);
+                $sectionKey = $instance->getNavSection();
+                if (!isset(self::$sections[$sectionKey])) {
+                    self::$sections[$sectionKey] = new NavigationSection($sectionKey);
                 }
                 $t = $args[0];
                 if (is_array($t)) {
@@ -335,7 +393,7 @@ class Nav
                 if (self::$currentSubSection !== null) {
                     self::$currentSubSection->addItem($item);
                 } else {
-                    self::$sections[self::$navsection]->addItem($item);
+                    self::$sections[$sectionKey]->addItem($item);
                 }
             }
         }
@@ -545,8 +603,9 @@ class Nav
      */
     public static function privateAddNav($text, string|false|null $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
-        global $nav, $session, $REQUEST_URI, $notranslate;
+        global $session, $REQUEST_URI;
         $output = Output::getInstance();
+        $instance = self::getInstance();
 
         if ($link !== false) {
             $link = (string) $link;
@@ -557,10 +616,8 @@ class Nav
         $thisnav = '';
         $unschema = 0;
         $translate = true;
-        if (isset($notranslate)) {
-            if (in_array([$text, $link], $notranslate)) {
-                $translate = false;
-            }
+        if ($instance->isNoTranslate([$text, $link])) {
+            $translate = false;
         }
         if (is_array($text)) {
             if ($text[0] && (isset($session['loggedin']) && $session['loggedin'])) {
@@ -748,22 +805,21 @@ class Nav
         if ($unschema) {
             Translator::getInstance()->setSchema();
         }
-        $nav .= $thisnav;
+        $instance->appendNav($thisnav);
         return $thisnav;
     }
 
     private static function privateAddSubHeader($text, bool $priv = false): string
     {
-        global $nav, $session, $notranslate;
+        global $session;
         $output = Output::getInstance();
         $link = false;
         $thisnav = '';
         $unschema = 0;
         $translate = true;
-        if (isset($notranslate)) {
-            if (in_array([$text, $link], $notranslate)) {
-                $translate = false;
-            }
+        $instance = self::getInstance();
+        if ($instance->isNoTranslate([$text, $link])) {
+            $translate = false;
         }
         if (is_array($text)) {
             if ($text[0] && (isset($session['loggedin']) && $session['loggedin'])) {
@@ -795,7 +851,7 @@ class Nav
         if ($unschema) {
             Translator::getInstance()->setSchema();
         }
-        $nav .= $thisnav;
+        $instance->appendNav($thisnav);
         return $thisnav;
     }
 
@@ -825,6 +881,10 @@ class Nav
         global $session;
         $session['allowednavs'] = [];
         self::resetAccessKeys();
+        $instance = self::getInstance();
+        $instance->clearNavTree();
+        $instance->setNavSection('');
+        $instance->clearNoTranslate();
     }
 
     /**
@@ -1007,13 +1067,11 @@ class Nav
      */
     public static function clearOutput(): void
     {
-        global $nestedtags, $header, $nav, $session;
         self::clearNav();
         $ref = new \ReflectionClass(Output::class);
         $prop = $ref->getProperty('instance');
         $prop->setAccessible(true);
         $prop->setValue(null, new Output());
-        $header = '';
-        $nav = '';
+        self::getInstance()->setHeader('');
     }
 }

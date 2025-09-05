@@ -382,10 +382,10 @@ class Modules
      */
     public static function hook(string $hookName, array $args = [], bool $allowInactive = false, $only = false)
     {
-        global $navsection;
         global $session;
         $settings = Settings::getInstance();
         $output   = Output::getInstance();
+        $nav      = Navigation::getInstance();
 
         if (defined('IS_INSTALLER') && IS_INSTALLER) {
             return $args;
@@ -470,7 +470,7 @@ class Modules
             }
 
             if (self::inject($row['modulename'], $allowInactive)) {
-                $oldnavsection = $navsection;
+                $oldnavsection = $nav->getNavSection();
                 Translator::getInstance()->setSchema('module-' . $row['modulename']);
 
                 if (!array_key_exists('whenactive', $row)) {
@@ -502,8 +502,8 @@ class Modules
                         $res = $args;
                     }
 
-                    $args       = $res;
-                    $navsection = $oldnavsection;
+                    $args = $res;
+                    $nav->setNavSection($oldnavsection);
                     Translator::getInstance()->setSchema();
                 }
             }
@@ -1257,23 +1257,22 @@ class Modules
      */
     public static function doEvent(string $type, string $module, bool $allowinactive = false, ?string $baseLink = null): void
     {
-        global $navsection;
-
         if ($baseLink === null) {
             $baseLink = ScriptName::current() . '.php?';
         }
 
         $mod = ModuleManager::getMostRecentModule();
+        $nav = Navigation::getInstance();
 
         $_POST['i_am_a_hack'] = 'true';
         if (self::inject($module, $allowinactive)) {
-            $oldnavsection = $navsection;
+            $oldnavsection = $nav->getNavSection();
             Translator::getInstance()->setSchema("module-$module");
             $fname = $module . '_runevent';
             $fname($type, $baseLink);
             Translator::getInstance()->setSchema();
             HookHandler::hook("runevent_$module", ['type' => $type, 'baselink' => $baseLink, 'get' => Http::allGet(), 'post' => Http::allPost()]);
-            $navsection = $oldnavsection;
+            $nav->setNavSection($oldnavsection);
         }
 
         ModuleManager::setMostRecentModule($mod);

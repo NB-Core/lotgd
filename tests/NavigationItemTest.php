@@ -18,6 +18,7 @@ final class NavigationItemTest extends TestCase
         $session = ['user' => ['prefs' => []], 'allowednavs' => [], 'loggedin' => false];
         $nav = '';
         $output = new Output();
+        Nav::clearNav();
         Template::getInstance()->setTemplate([
             'navitem' => '<a href="{link}"{accesskey}{popup}>{text}</a>'
         ]);

@@ -17,6 +17,7 @@ final class NavFontResetTest extends TestCase
         $session = ['user' => ['prefs' => []], 'allowednavs' => [], 'loggedin' => false];
         $nav = '';
         $output = new Output();
+        Nav::clearNav();
         $template = [
             'navitem' => '<a href="{link}">{text}</a>'
         ];
