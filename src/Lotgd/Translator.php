@@ -10,6 +10,7 @@ use Lotgd\Sanitize;
 use Lotgd\Cookies;
 use Lotgd\Output;
 use Lotgd\PageParts;
+use Lotgd\PhpGenericEnvironment;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 
 
@@ -570,7 +571,6 @@ class Translator
      */
     public static function tlschema(string|false|null $schema = false): void
     {
-        global $REQUEST_URI;
         $stack =& self::$translation_namespace_stack;
 
         if ($schema === false) {
@@ -579,7 +579,7 @@ class Translator
                 self::$translation_namespace = (string) array_pop($stack);
             } else {
                 // Default to empty string when REQUEST_URI is unavailable
-                self::$translation_namespace = Sanitize::translatorUri($REQUEST_URI ?? '');
+                self::$translation_namespace = Sanitize::translatorUri(PhpGenericEnvironment::getRequestUri());
             }
         } else {
             // Push current namespace to stack, set new one

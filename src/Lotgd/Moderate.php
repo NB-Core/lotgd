@@ -15,6 +15,7 @@ use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\Http;
 use Lotgd\DateTime;
+use Lotgd\PhpGenericEnvironment;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
@@ -89,7 +90,7 @@ class Moderate
      * Render pagination and navigation links under the comment block.
      * Encapsulates the old navigation logic for readability.
      */
-    private static function showNavLinks(string $section, int $limit, int $cid, int $rowcount, bool $jump, int $com, string $REQUEST_URI, int $newadded): void
+    private static function showNavLinks(string $section, int $limit, int $cid, int $rowcount, bool $jump, int $com, string $requestUri, int $newadded): void
     {
         global $session;
 
@@ -108,7 +109,7 @@ class Moderate
             Database::freeResult($r);
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
-                $first = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . $val;
+                $first = Sanitize::comscrollSanitize($requestUri) . '&comscroll=' . $val;
                 $first = str_replace('?&', '?', $first);
                 if (!strpos($first, '?')) {
                     $first = str_replace('&', '?', $first);
@@ -123,7 +124,7 @@ class Moderate
                 $output->outputNotl($firstu, true);
             }
 
-            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
+            $req = Sanitize::comscrollSanitize($requestUri) . '&comscroll=' . ($com + 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -138,7 +139,7 @@ class Moderate
             $output->outputNotl("$firstu $prev", true);
         }
 
-        $last = Navigation::appendLink(Sanitize::comscrollSanitize($REQUEST_URI), 'refresh=1');
+        $last = Navigation::appendLink(Sanitize::comscrollSanitize($requestUri), 'refresh=1');
         $last = Navigation::appendCount($last);
         $last = str_replace('?&', '?', $last);
         if ($jump) {
@@ -148,7 +149,7 @@ class Moderate
         Navigation::add('', $last);
 
         if ($com > 0 || ($cid > 0 && $newadded > $limit)) {
-            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
+            $req = Sanitize::comscrollSanitize($requestUri) . '&comscroll=' . ($com - 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -170,7 +171,8 @@ class Moderate
      */
     public static function viewmoderatedcommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', ?string $schema = null, bool $viewall = false): void
     {
-        global $session, $REQUEST_URI;
+        global $session;
+        $requestUri = PhpGenericEnvironment::getRequestUri();
 
         $output = Output::getInstance();
         $translator = Translator::getInstance();
@@ -499,7 +501,7 @@ class Moderate
         $jump = !isset($session['user']['prefs']['nojump']) || $session['user']['prefs']['nojump'] == false;
 
         // Render pagination navigation for the comment block
-        self::showNavLinks($section, $limit, $cid, $rowcount, $jump, $com, $REQUEST_URI, $newadded);
+        self::showNavLinks($section, $limit, $cid, $rowcount, $jump, $com, $requestUri, $newadded);
         $translator->setSchema();
         if ($needclose) {
             HookHandler::hook('}collapse');

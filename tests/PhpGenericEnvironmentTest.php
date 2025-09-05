@@ -18,6 +18,8 @@ final class PhpGenericEnvironmentTest extends TestCase
             'SCRIPT_NAME' => $GLOBALS['SCRIPT_NAME'] ?? null,
             'REQUEST_URI' => $GLOBALS['REQUEST_URI'] ?? null,
             'SERVER_REQUEST_URI' => $_SERVER['REQUEST_URI'] ?? null,
+            'REMOTE_ADDR' => $GLOBALS['REMOTE_ADDR'] ?? null,
+            'PAGESTART' => $GLOBALS['pagestarttime'] ?? null,
         ];
     }
 
@@ -29,6 +31,14 @@ final class PhpGenericEnvironmentTest extends TestCase
                     unset($_SERVER['REQUEST_URI']);
                 } else {
                     $_SERVER['REQUEST_URI'] = $value;
+                }
+                continue;
+            }
+            if ($key === 'PAGESTART') {
+                if ($value === null) {
+                    unset($GLOBALS['pagestarttime']);
+                } else {
+                    $GLOBALS['pagestarttime'] = $value;
                 }
                 continue;
             }
@@ -70,5 +80,17 @@ final class PhpGenericEnvironmentTest extends TestCase
         $this->assertSame('index.php?foo=bar', PhpGenericEnvironment::getServer('REQUEST_URI'));
         $this->assertSame('index.php', $GLOBALS['SCRIPT_NAME']);
         $this->assertSame('index.php?foo=bar', $GLOBALS['REQUEST_URI']);
+    }
+
+    public function testSetupStoresRemoteAddrAndPageStartTime(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '8.8.8.8';
+        $GLOBALS['pagestarttime'] = 123.45;
+
+        $session = [];
+        PhpGenericEnvironment::setup($session);
+
+        $this->assertSame('8.8.8.8', PhpGenericEnvironment::getRemoteAddr());
+        $this->assertSame(123.45, PhpGenericEnvironment::getPageStartTime());
     }
 }

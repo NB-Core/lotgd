@@ -15,12 +15,13 @@ use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\Nav;
+use Lotgd\PhpGenericEnvironment;
 
 class Header
 {
     public static function pageHeader(...$args): void
     {
-        global $SCRIPT_NAME, $session, $template;
+        global $session, $template;
         $settings = Settings::getInstance();
         $nav = Nav::getInstance();
 
@@ -33,7 +34,7 @@ class Header
 
         Translator::translatorSetup();
         Template::prepareTemplate();
-        if (isset($SCRIPT_NAME)) {
+        if (PhpGenericEnvironment::getScriptName() !== '') {
             $script = ScriptName::current();
             if ($script) {
                 if (!array_key_exists($script, PageParts::$runHeaders)) {

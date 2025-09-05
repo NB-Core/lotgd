@@ -14,6 +14,7 @@ use Lotgd\DataCache;
 use Lotgd\DateTime;
 use Lotgd\Censor;
 use Lotgd\Redirect;
+use Lotgd\PhpGenericEnvironment;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
@@ -535,7 +536,8 @@ SQL;
         bool $returnastext = false,
         $scriptname_pre = false
     ): ?string {
-        global $session, $REQUEST_URI;
+        global $session;
+        $requestUri = PhpGenericEnvironment::getRequestUri();
         
         $output = Output::getInstance();
         $translator = Translator::getInstance();
@@ -719,7 +721,7 @@ SQL;
             $val = Database::fetchAssoc($r);
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
-                $first = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($val);
+                $first = Sanitize::comscrollSanitize($requestUri) . '&comscroll=' . ($val);
                 $first = str_replace('?&', '?', $first);
                 if (!strpos($first, '?')) {
                     $first = str_replace('&', '?', $first);
@@ -733,7 +735,7 @@ SQL;
             } else {
                 $output->outputNotl($firstu, true);
             }
-            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
+            $req = Sanitize::comscrollSanitize($requestUri) . '&comscroll=' . ($com + 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -747,7 +749,7 @@ SQL;
         } else {
             $output->outputNotl("$firstu $prev", true);
         }
-        $last = Navigation::appendLink(Sanitize::comscrollSanitize($REQUEST_URI), 'refresh=1');
+        $last = Navigation::appendLink(Sanitize::comscrollSanitize($requestUri), 'refresh=1');
 
         $last = Navigation::appendCount($last);
 
@@ -758,7 +760,7 @@ SQL;
         $output->outputNotl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
         Navigation::add('', $last);
         if ($com > 0 || ($cid > 0 && $newadded > $limit)) {
-            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
+            $req = Sanitize::comscrollSanitize($requestUri) . '&comscroll=' . ($com - 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -987,7 +989,8 @@ SQL;
      */
     public static function talkForm(string $section, string $talkline, int $limit = 10, $schema = false)
     {
-        global $REQUEST_URI, $session;
+        global $session;
+        $requestUri = PhpGenericEnvironment::getRequestUri();
 
         $output = Output::getInstance();
         $translator = Translator::getInstance();
@@ -1027,7 +1030,7 @@ SQL;
         } else {
             $tll = 0;
         }
-        $req = Sanitize::comscrollSanitize($REQUEST_URI) . "&comment=1";
+        $req = Sanitize::comscrollSanitize($requestUri) . "&comment=1";
         if (strpos($req, "?") === false) {
             $req = str_replace("&", "?", $req);
         }

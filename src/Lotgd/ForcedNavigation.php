@@ -10,6 +10,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Serialization;
 use Lotgd\Output;
 use Lotgd\Redirect;
+use Lotgd\PhpGenericEnvironment;
 
 class ForcedNavigation
 {
@@ -20,7 +21,8 @@ class ForcedNavigation
      */
     public static function doForcedNav(bool $anonymous, bool $overrideforced): void
     {
-        global $session, $REQUEST_URI;
+        global $session;
+        $requestUri = PhpGenericEnvironment::getRequestUri();
         Output::getInstance()->rawOutput("<!--\nAllowAnonymous: " . ($anonymous ? "True" : "False") . "\nOverride Forced Nav: " . ($overrideforced ? "True" : "False") . "\n-->");
         if (isset($session['loggedin']) && $session['loggedin']) {
             $sql = "SELECT * FROM " . Database::prefix('accounts') . " WHERE acctid='" . $session['user']['acctid'] . "'";
@@ -62,11 +64,11 @@ class ForcedNavigation
                 Redirect::redirect('index.php', 'Account Disappeared!');
             }
             Database::freeResult($result);
-            if (isset($session['allowednavs'][$REQUEST_URI]) && $session['allowednavs'][$REQUEST_URI] && $overrideforced !== true) {
+            if (isset($session['allowednavs'][$requestUri]) && $session['allowednavs'][$requestUri] && $overrideforced !== true) {
                 $session['allowednavs'] = [];
             } else {
                 if ($overrideforced !== true) {
-                    Redirect::redirect('badnav.php', 'Navigation not allowed to ' . $REQUEST_URI);
+                    Redirect::redirect('badnav.php', 'Navigation not allowed to ' . $requestUri);
                 }
             }
         } else {
@@ -76,7 +78,7 @@ class ForcedNavigation
                     $session = [];
                     return;
                 }
-                Redirect::redirect('index.php?op=timeout', 'Not logged in: ' . $REQUEST_URI);
+                Redirect::redirect('index.php?op=timeout', 'Not logged in: ' . $requestUri);
             }
         }
     }

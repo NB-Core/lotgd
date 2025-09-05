@@ -27,6 +27,16 @@ class PhpGenericEnvironment
     private static string $requestUri = '';
 
     /**
+     * Current REMOTE_ADDR value.
+     */
+    private static string $remoteAddr = '';
+
+    /**
+     * Page generation start time.
+     */
+    private static float $pageStartTime = 0.0;
+
+    /**
      * Reference to the $_SERVER superglobal.
      *
      * @var array<string,mixed>
@@ -86,6 +96,38 @@ class PhpGenericEnvironment
     public static function getRequestUri(): string
     {
         return self::$requestUri;
+    }
+
+    /**
+     * Set the current REMOTE_ADDR value.
+     */
+    public static function setRemoteAddr(string $remoteAddr): void
+    {
+        self::$remoteAddr = $remoteAddr;
+    }
+
+    /**
+     * Get the current REMOTE_ADDR value.
+     */
+    public static function getRemoteAddr(): string
+    {
+        return self::$remoteAddr;
+    }
+
+    /**
+     * Set the current page start time.
+     */
+    public static function setPageStartTime(float $pageStartTime): void
+    {
+        self::$pageStartTime = $pageStartTime;
+    }
+
+    /**
+     * Get the current page start time.
+     */
+    public static function getPageStartTime(): float
+    {
+        return self::$pageStartTime;
     }
 
     /**
@@ -170,8 +212,15 @@ class PhpGenericEnvironment
         self::$pathInfo = $GLOBALS['PATH_INFO'] ?? '';
         self::$scriptName = $GLOBALS['SCRIPT_NAME'] ?? ($_SERVER['SCRIPT_NAME'] ?? '');
         self::$requestUri = $GLOBALS['REQUEST_URI'] ?? ($_SERVER['REQUEST_URI'] ?? '');
+        self::$remoteAddr = $GLOBALS['REMOTE_ADDR'] ?? ($_SERVER['REMOTE_ADDR'] ?? '');
+        self::$pageStartTime = $GLOBALS['pagestarttime'] ?? self::$pageStartTime;
+
+        self::$server['REMOTE_ADDR'] = self::$remoteAddr;
 
         RegisterGlobal::register(self::$server);
         self::sanitizeUri();
+
+        $GLOBALS['REMOTE_ADDR'] = self::$remoteAddr;
+        $GLOBALS['pagestarttime'] = self::$pageStartTime;
     }
 }

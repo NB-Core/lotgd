@@ -10,6 +10,7 @@ use Lotgd\Forms;
 use Lotgd\Output;
 use Lotgd\DataCache;
 use Lotgd\Modules\ModuleManager;
+use Lotgd\PhpGenericEnvironment;
 
 // translator ready
 // addnews ready
@@ -268,7 +269,7 @@ if ($module) {
 addnav("Game Settings");
 addnav("Standard settings", "configuration.php");
 addnav("Extended settings", "configuration.php?settings=extended");
-addnav("", $REQUEST_URI);
+addnav("", PhpGenericEnvironment::getRequestUri());
 
 //get arrays
 require("src/Lotgd/Config/configuration.php");
