@@ -24,10 +24,10 @@ class Forms
         array|bool $info = false,
         bool $scriptOutput = true
     ): string {
-        global $schema, $session;
+        global $session;
         $output = Output::getInstance();
 
-        $talkline = Translator::translateInline($talkline, $schema);
+        $talkline = Translator::translateInline($talkline, Translator::getInstance()->getSchema());
         $youhave = Translator::translateInline('You have ');
         $charsleft = Translator::translateInline(' characters left.');
         $startdiv = $startdiv === false ? '' : $startdiv;
