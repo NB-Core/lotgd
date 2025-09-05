@@ -8,6 +8,8 @@ use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
+use Lotgd\Nav;
 
 class Commentary
 {
@@ -25,6 +27,8 @@ class Commentary
         $vname = getsetting('villagename', LOCATION_FIELDS);
         $iname = getsetting('innname', LOCATION_INN);
         tlschema('commentary');
+        $output = Output::getInstance();
+        $translator = Translator::getInstance();
         self::$comsecs['village'] = sprintf_translate('%s Square', $vname);
         if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
             self::$comsecs['superuser'] = Translator::translateInline('Grotto');
@@ -42,7 +46,7 @@ class Commentary
         }
         tlschema();
         self::$comsecs = HookHandler::hook('moderate', self::$comsecs);
-        rawoutput(tlbutton_clear());
+        $output->rawOutput($translator->clearButton());
         return self::$comsecs;
     }
 
@@ -52,6 +56,7 @@ class Commentary
     public static function addCommentary(): void
     {
         global $session, $emptypost;
+        $output = Output::getInstance();
 
         // Gather request parameters
         $section = (string)httppost('section');
@@ -83,7 +88,7 @@ class Commentary
                 } else {
                     // Check that the form section matches the URL section
                     if ($rawSectionFromUrl != $section) {
-                        output('`$Please post in the section you should!');
+                        $output->output('`$Please post in the section you should!');
                         debug($rawSectionFromUrl . "-" . $section);
                     } else {
                         // Valid comment, inject into the database
@@ -451,7 +456,8 @@ SQL;
             return;
         }
         if ($intro) {
-            output($intro);
+            $output = Output::getInstance();
+            $output->output($intro);
         }
         self::viewCommentary($section, $message, $limit, $talkline, $schema);
     }
@@ -473,7 +479,8 @@ SQL;
 
         // The guard for null is removed as $section is declared as string and cannot be null.
 
-        if ($scriptname_pre === false) {
+        $output = Output::getInstance();
+                if ($scriptname_pre === false) {
             $scriptname = ScriptName::current();
         } else {
             $scriptname = pathinfo(basename((string) $scriptname_pre), PATHINFO_FILENAME);
@@ -492,9 +499,9 @@ SQL;
         // Capture pagination request parameter
         $comscroll = httpget('comscroll');
 
-        rawoutput("<div id='$section-comment'>");
+        $output->rawOutput("<div id='$section-comment'>");
         if ($returnastext !== false) {
-            $oldoutput = Output::getInstance();
+            $oldoutput = $output;
             $ref = new \ReflectionClass(Output::class);
             $prop = $ref->getProperty('instance');
             $prop->setAccessible(true);
@@ -502,7 +509,7 @@ SQL;
             $collector = Output::getInstance();
         }
 
-        rawoutput("<a name='$section'></a>");
+        $output->rawOutput("<a name='$section'></a>");
 
         $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
         if (isset($args['block']) && ($args['block'] == 'yes')) {
@@ -525,10 +532,10 @@ SQL;
         }
 
         if ($doublepost) {
-            output("`$`bDouble post?`b`0`n");
+            $output->output("`$`bDouble post?`b`0`n");
         }
         if ($emptypost) {
-            output("`$`bWell, they say silence is a virtue.`b`0`n");
+            $output->output("`$`bWell, they say silence is a virtue.`b`0`n");
         }
 
         // Determine pagination data and fetch comments
@@ -578,7 +585,7 @@ SQL;
             $out = '';
             if ($editrights || in_array($i, $gm_array)) {
                 $out .= "`2[<a href='" . $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return) . "'>$del</a>`2]`0&nbsp;";
-                addnav('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
+                Nav::add('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
             }
             $out .= $op[$i];
             if (!array_key_exists($sect, $outputcomments) || !is_array($outputcomments[$sect])) {
@@ -597,8 +604,8 @@ SQL;
                 if ($needclose) {
                     HookHandler::hook('}collapse');
                 }
-                output_notl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
-                addnav('', "moderate.php?area=$sec");
+                $output->outputNotl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
+                Nav::add('', "moderate.php?area=$sec");
                 HookHandler::hook('collapse{', ['name' => 'com-' . $sec]);
                 $needclose = 1;
             } else {
@@ -610,7 +617,7 @@ SQL;
                 $args = ['commentline' => $val];
                 $args = HookHandler::hook('viewcommentary', $args);
                 $val = $args['commentline'];
-                output_notl($val, true);
+                $output->outputNotl($val, true);
             }
         }
 
@@ -619,13 +626,13 @@ SQL;
             $prop->setValue(null, $oldoutput);
             return $collected;
         }
-        rawoutput('</div>');
-        rawoutput("<div id='$section-talkline'>");
+        $output->rawOutput('</div>');
+        $output->rawOutput("<div id='$section-talkline'>");
 
         if ($session['user']['loggedin'] && !$viewonly) {
             self::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
         }
-        rawoutput("</div><div id='$section-nav'>");
+        $output->rawOutput("</div><div id='$section-nav'>");
         $jump = false;
         if (!isset($session['user']['prefs']['nojump']) || $session['user']['prefs']['nojump'] == false) {
             $jump = true;
@@ -655,10 +662,10 @@ SQL;
                 if ($jump) {
                     $first .= "#$section";
                 }
-                output_notl("<a href=\"$first\">$firstu</a>", true);
-                addnav('', $first);
+                $output->outputNotl("<a href=\"$first\">$firstu</a>", true);
+                Nav::add('', $first);
             } else {
-                output_notl($firstu, true);
+                $output->outputNotl($firstu, true);
             }
             $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
             $req = str_replace('?&', '?', $req);
@@ -669,10 +676,10 @@ SQL;
             if ($jump) {
                 $req .= "#$section";
             }
-            output_notl("<a href=\"$req\">$prev</a>", true);
-            addnav('', $req);
+            $output->outputNotl("<a href=\"$req\">$prev</a>", true);
+            Nav::add('', $req);
         } else {
-            output_notl("$firstu $prev", true);
+            $output->outputNotl("$firstu $prev", true);
         }
         $last = appendlink(comscroll_sanitize($REQUEST_URI), 'refresh=1');
 
@@ -682,8 +689,8 @@ SQL;
         if ($jump) {
             $last .= "#$section";
         }
-        output_notl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
-        addnav('', $last);
+        $output->outputNotl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
+        Nav::add('', $last);
         if ($com > 0 || ($cid > 0 && $newadded > $limit)) {
             $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
             $req = str_replace('?&', '?', $req);
@@ -694,17 +701,17 @@ SQL;
             if ($jump) {
                 $req .= "#$section";
             }
-            output_notl(" <a href=\"$req\">$next</a>", true);
-            addnav('', $req);
-            output_notl(" <a href=\"$last\">$lastu</a>", true);
+            $output->outputNotl(" <a href=\"$req\">$next</a>", true);
+            Nav::add('', $req);
+            $output->outputNotl(" <a href=\"$last\">$lastu</a>", true);
         } else {
-            output_notl("$next $lastu", true);
+            $output->outputNotl("$next $lastu", true);
         }
         tlschema();
         if ($needclose) {
             HookHandler::hook('}collapse');
         }
-        rawoutput('</div>');
+        $output->rawOutput('</div>');
         return null;
     }
 
@@ -721,7 +728,8 @@ SQL;
     {
         global $session;
 
-        $realRequestUri = self::determineReturnUrl();
+        $output = Output::getInstance();
+                $realRequestUri = self::determineReturnUrl();
         $row['comment'] = sanitize_mb(comment_sanitize($row['comment']));
         $ft = self::parseCommandPrefix($row['comment']);
         $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($realRequestUri);
@@ -751,7 +759,7 @@ SQL;
             $op = "<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> " . $op;
         }
 
-        addnav('', $link);
+        Nav::add('', $link);
 
         return $op;
     }
@@ -878,13 +886,14 @@ SQL;
     public static function talkLine(string $section, string $talkline, int $limit, $schema, int $counttoday, string $message): void
     {
         global $session;
+        $output = Output::getInstance();
 
         $args = HookHandler::hook("insertcomment", array("section" => $section));
         if (
             array_key_exists("mute", $args) && $args['mute'] &&
                         !($session['user']['superuser'] & SU_EDIT_COMMENTS)
         ) {
-                output_notl("%s", $args['mutemsg']);
+                $output->outputNotl("%s", $args['mutemsg']);
         } elseif (
             $counttoday < ($limit / 2)
                         || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO)
@@ -893,13 +902,13 @@ SQL;
         ) {
             if ($message != "X") {
                     $message = "`n`@$message`n";
-                    output($message);
+                    $output->output($message);
                     self::talkForm($section, $talkline, $limit, $schema);
             }
         } else {
                 $message = "`n`@$message`n";
-                output($message);
-                output("Sorry, you've exhausted your posts in this section for now.`0`n");
+                $output->output($message);
+                $output->output("Sorry, you've exhausted your posts in this section for now.`0`n");
         }
     }
 
@@ -909,6 +918,7 @@ SQL;
     public static function talkForm(string $section, string $talkline, int $limit = 10, $schema = false)
     {
         global $REQUEST_URI,$session;
+                $output = Output::getInstance();
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
@@ -930,9 +940,9 @@ SQL;
             }
             if (round($limit / 2, 0) - $counttoday <= 0 && getsetting('postinglimit', 1)) {
                 if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
-                        output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
+                        $output->output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
                 } else {
-                        output("`n`)(You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.)`n");
+                        $output->output("`n`)(You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.)`n");
                         return false;
                 }
             }
@@ -953,30 +963,30 @@ SQL;
         if ($jump) {
                 $req .= "#$section";
         }
-        addnav("", $req);
-        output_notl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
+        Nav::add("", $req);
+        $output->outputNotl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
         Forms::previewfield("insertcommentary", $session['user']['name'], $talkline, true, array("size" => getsetting('chatlinelength', 40), "maxlength" => getsetting('maxchars', 200) - $tll));
-        rawoutput("<input type='hidden' name='talkline' value='$talkline'>");
-        rawoutput("<input type='hidden' name='schema' value='$schema'>");
-        rawoutput("<input type='hidden' name='counter' value='{$session['counter']}'>");
+        $output->rawOutput("<input type='hidden' name='talkline' value='$talkline'>");
+        $output->rawOutput("<input type='hidden' name='schema' value='$schema'>");
+        $output->rawOutput("<input type='hidden' name='counter' value='{$session['counter']}'>");
         $session['commentcounter'] = $session['counter'];
         if ($section == "X") {
                 $vname = getsetting("villagename", LOCATION_FIELDS);
                 $iname = getsetting("innname", LOCATION_INN);
                 $sections = self::commentaryLocs();
                 reset($sections);
-                output_notl("<select name='section'>", true);
+                $output->outputNotl("<select name='section'>", true);
             foreach ($sections as $key => $val) {
-                    output_notl("<option value='$key'>$val</option>", true);
+                    $output->outputNotl("<option value='$key'>$val</option>", true);
             }
-                output_notl("</select>", true);
+                $output->outputNotl("</select>", true);
         } else {
-                output_notl("<input type='hidden' name='section' value='$section'>", true);
+                $output->outputNotl("<input type='hidden' name='section' value='$section'>", true);
         }
         if (round($limit / 2, 0) - $counttoday < 3 && getsetting('postinglimit', 1)) {
-                output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
+                $output->output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
         }
-        rawoutput("<div id='previewtext'></div></form>");
+        $output->rawOutput("<div id='previewtext'></div></form>");
         tlschema();
     }
 }

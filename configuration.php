@@ -6,6 +6,8 @@ use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
 use Lotgd\Forms;
+use Lotgd\Output;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -312,7 +314,7 @@ switch ($type_setting) {
                     );
                     $enum .= ",$i,$str";
                 }
-                rawoutput(tlbutton_clear());
+                Output::getInstance()->rawOutput(Translator::getInstance()->clearButton());
 
                 $secstonewday = secondstonextgameday($details);
                 $useful_vals = array(

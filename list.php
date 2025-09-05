@@ -13,13 +13,18 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
+use Lotgd\Output;
 use Lotgd\DateTime;
+use Lotgd\Redirect;
+use Lotgd\Translator;
 
 require_once("common.php");
 
 tlschema("list");
 
 Header::pageHeader("List Warriors");
+$output = Output::getInstance();
+$translator = Translator::getInstance();
 if ($session['user']['loggedin']) {
     DateTime::checkDay();
     if ($session['user']['alive']) {
@@ -103,7 +108,7 @@ if ($page == "" && $op == "") {
 } elseif ($op == 'clan') {
     if (empty($session['user']['clanid'])) {
         // User is not part of a clan; redirect to the main list.
-        redirect('list.php');
+        Redirect::redirect('list.php');
     }
     $clanId = (int) $session['user']['clanid'];
 
@@ -117,7 +122,7 @@ if ($page == "" && $op == "") {
     } else {
         $title = sprintf_translate("Warriors of the realm");
     }
-    $output->rawOutput(tlbutton_clear());
+    $output->rawOutput($translator->clearButton());
     $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
     $result = Database::query($sql);
 }

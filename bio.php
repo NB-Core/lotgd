@@ -15,18 +15,23 @@ use Lotgd\Http;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
+use Lotgd\Output;
 use Lotgd\Modules;
 use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\DateTime;
 use Lotgd\Nltoappon;
+use Lotgd\Translator;
 
 require_once("common.php");
 
 tlschema("bio");
 
 DateTime::checkDay();
+
+$output = Output::getInstance();
+$translator = Translator::getInstance();
 
 $ret = Http::get('ret');
 if ($ret == "") {
@@ -153,10 +158,10 @@ if ($target = Database::fetchAssoc($result)) {
                 array_push($arguments, $val);
             }
             $news = call_user_func_array("sprintf_translate", $arguments);
-            $output->rawOutput(tlbutton_clear());
+            $output->rawOutput($translator->clearButton());
         } else {
             $news = translate_inline($row['newstext']);
-            $output->rawOutput(tlbutton_clear());
+            $output->rawOutput($translator->clearButton());
         }
         tlschema();
         if ($odate != $row['newsdate']) {

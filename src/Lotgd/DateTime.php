@@ -91,7 +91,7 @@ class DateTime
             $laston = Translator::translateInline('Never');
         } else {
             $laston = Translator::sprintfTranslate('%s days', round((strtotime('now') - strtotime($indate)) / 86400, 0));
-            Output::getInstance()->rawOutput(Translator::tlbuttonClear());
+            Output::getInstance()->rawOutput(Translator::getInstance()->clearButton());
         }
         Translator::tlschema();
         return $laston;
@@ -101,7 +101,8 @@ class DateTime
     {
         global $session, $revertsession, $REQUEST_URI;
         if ($session['user']['loggedin']) {
-            Output::getInstance()->outputNotl('<!--CheckNewDay()-->', true);
+            $output = Output::getInstance();
+            $output->outputNotl('<!--CheckNewDay()-->', true);
             if (self::isNewDay()) {
                 $session = $revertsession;
                 $session['user']['restorepage'] = $REQUEST_URI;

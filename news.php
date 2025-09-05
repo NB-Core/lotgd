@@ -3,6 +3,9 @@ use Lotgd\MySQL\Database;
 
 use Lotgd\Motd;
 use Lotgd\Battle;
+use Lotgd\Output;
+use Lotgd\Translator;
+use Lotgd\Nav;
 
 // translator ready
 // addnews ready
@@ -13,6 +16,9 @@ require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
 tlschema("news");
+
+$output = Output::getInstance();
+$translator = Translator::getInstance();
 
 modulehook("news-intercept", array());
 
@@ -65,15 +71,15 @@ while ($row = Database::fetchAssoc($result2)) {
             Motd::pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'], $row['motdauthorname'], $row['motddate'], false);
     }
 }
-output_notl("`n");
-output("`c`b`!News for %s %s`0`b`c", $date, $pagestr);
+$output->outputNotl("`n");
+$output->output("`c`b`!News for %s %s`0`b`c", $date, $pagestr);
 
 while ($row = Database::fetchAssoc($result)) {
-    output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+    $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
     if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
         $del = translate_inline("Del");
-        rawoutput("[ <a href='superuser.php?op=newsdelete&newsid=" . $row['newsid'] . "&return=" . URLEncode($_SERVER['REQUEST_URI']) . "'>$del</a> ]&nbsp;");
-        addnav("", "superuser.php?op=newsdelete&newsid={$row['newsid']}&return=" . URLEncode($_SERVER['REQUEST_URI']));
+        $output->rawOutput("[ <a href='superuser.php?op=newsdelete&newsid=" . $row['newsid'] . "&return=" . URLEncode($_SERVER['REQUEST_URI']) . "'>$del</a> ]&nbsp;");
+        Nav::add("", "superuser.php?op=newsdelete&newsid={$row['newsid']}&return=" . URLEncode($_SERVER['REQUEST_URI']));
     }
     tlschema($row['tlschema']);
     if ($row['arguments'] > "") {
@@ -84,71 +90,71 @@ while ($row = Database::fetchAssoc($result)) {
             array_push($arguments, $val);
         }
         $news = call_user_func_array("sprintf_translate", $arguments);
-        rawoutput(tlbutton_clear());
+        $output->rawOutput($translator->clearButton());
     } else {
         $news = translate_inline($row['newstext']);
     }
     tlschema();
-    output_notl("`c" . $news . "`c`n");
+    $output->outputNotl("`c" . $news . "`c`n");
 }
 if (Database::numRows($result) == 0) {
-    output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
-    output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
+    $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+    $output->output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
 }
-output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+$output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
 if (!$session['user']['loggedin']) {
-    addnav("Login Screen", "index.php");
+    Nav::add("Login Screen", "index.php");
 } elseif ($session['user']['alive']) {
     villagenav();
 } else {
     tlschema("nav");
-    addnav("Log Out");
-    addnav("Log out", "login.php?op=logout");
+    Nav::add("Log Out");
+    Nav::add("Log out", "login.php?op=logout");
 
     if ($session['user']['sex'] == 1) {
-        addnav("`!`bYou're dead, Jane!`b`0");
+        Nav::add("`!`bYou're dead, Jane!`b`0");
     } else {
-        addnav("`!`bYou're dead, Jim!`b`0");
+        Nav::add("`!`bYou're dead, Jim!`b`0");
     }
-    addnav("S?Land of Shades", "shades.php");
-    addnav("G?The Graveyard", "graveyard.php");
+    Nav::add("S?Land of Shades", "shades.php");
+    Nav::add("G?The Graveyard", "graveyard.php");
         Battle::suspendCompanions("allowinshades", true);
     tlschema();
 }
-addnav("News");
-addnav("Previous News", "news.php?offset=" . ($offset + 1));
+Nav::add("News");
+Nav::add("Previous News", "news.php?offset=" . ($offset + 1));
 if ($offset > 0) {
-    addnav("Next News", "news.php?offset=" . ($offset - 1));
+    Nav::add("Next News", "news.php?offset=" . ($offset - 1));
 }
 if ($session['user']['loggedin']) {
-    addnav("Preferences", "prefs.php");
+    Nav::add("Preferences", "prefs.php");
 }
-addnav("About this game", "about.php");
+Nav::add("About this game", "about.php");
 
 tlschema("nav");
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
-    addnav("Superuser");
-    addnav(",?Comment Moderation", "moderate.php");
+    Nav::add("Superuser");
+    Nav::add(",?Comment Moderation", "moderate.php");
 }
 if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
-    addnav("Superuser");
-    addnav("X?Superuser Grotto", "superuser.php");
+    Nav::add("Superuser");
+    Nav::add("X?Superuser Grotto", "superuser.php");
 }
 if ($session['user']['superuser'] & SU_INFINITE_DAYS) {
-    addnav("Superuser");
-    addnav("/?New Day", "newday.php");
+    Nav::add("Superuser");
+    Nav::add("/?New Day", "newday.php");
 }
 tlschema();
 
-addnav("", "news.php");
+Nav::add("", "news.php");
 if ($totaltoday > $newsperpage) {
-    addnav("Today's news");
+    Nav::add("Today's news");
     for ($i = 0; $i < $totaltoday; $i += $newsperpage) {
         $pnum = $i / $newsperpage + 1;
         if ($pnum == $page) {
-            addnav(array("`b`#Page %s`0`b", $pnum), "news.php?offset=$offset&page=$pnum");
+            Nav::add(array("`b`#Page %s`0`b", $pnum), "news.php?offset=$offset&page=$pnum");
         } else {
-            addnav(array("Page %s", $pnum), "news.php?offset=$offset&page=$pnum");
+            Nav::add(array("Page %s", $pnum), "news.php?offset=$offset&page=$pnum");
         }
     }
 }

@@ -7,11 +7,13 @@ namespace Lotgd;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Cookies;
+use Lotgd\Output;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 
 
 class Translator
 {
+    private static ?self $instance = null;
     private static array $translation_table = [];
     private static array $translatorbuttons = [];
     private static array $seentlbuttons = [];
@@ -290,7 +292,8 @@ class Translator
         }
         $out = self::translate($in, $namespace);
         if (function_exists('rawoutput')) {
-            \rawoutput(self::tlbuttonClear());
+            $output = Output::getInstance();
+            $output->rawOutput(self::tlbuttonClear());
         }
         return $out;
     }
@@ -501,6 +504,22 @@ class Translator
         } else {
                 return "";
         }
+    }
+
+    /**
+     * Retrieve the Translator singleton.
+     */
+    public static function getInstance(): self
+    {
+        return self::$instance ??= new self();
+    }
+
+    /**
+     * Instance wrapper for tlbuttonClear().
+     */
+    public function clearButton(): string
+    {
+        return self::tlbuttonClear();
     }
 
 

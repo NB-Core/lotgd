@@ -11,11 +11,6 @@ parameters:
 			path: src/Lotgd/CheckBan.php
 
 		-
-			message: "#^Function addnav not found\\.$#"
-			count: 8
-			path: src/Lotgd/Commentary.php
-
-		-
 			message: "#^Function appendcount not found\\.$#"
 			count: 1
 			path: src/Lotgd/Commentary.php
@@ -71,21 +66,6 @@ parameters:
 			path: src/Lotgd/Commentary.php
 
 		-
-			message: "#^Function output not found\\.$#"
-			count: 10
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Function output_notl not found\\.$#"
-			count: 16
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Function rawoutput not found\\.$#"
-			count: 11
-			path: src/Lotgd/Commentary.php
-
-		-
 			message: "#^Function redirect not found\\.$#"
 			count: 1
 			path: src/Lotgd/Commentary.php
@@ -107,11 +87,6 @@ parameters:
 
 		-
 			message: "#^Function sprintf_translate not found\\.$#"
-			count: 1
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Function tlbutton_clear not found\\.$#"
 			count: 1
 			path: src/Lotgd/Commentary.php
 
@@ -169,8 +144,6 @@ parameters:
 			message: "#^Variable \\$session might not be defined\\.$#"
 			count: 4
 			path: src/Lotgd/Config/user_account.php
-
-
 
 		-
 			message: "#^Function e_rand not found\\.$#"
@@ -243,11 +216,6 @@ parameters:
 			path: src/Lotgd/ForcedNavigation.php
 
 		-
-			message: "#^Function addnav not found\\.$#"
-			count: 10
-			path: src/Lotgd/Forest.php
-
-		-
 			message: "#^Function getsetting not found\\.$#"
 			count: 3
 			path: src/Lotgd/Forest.php
@@ -255,11 +223,6 @@ parameters:
 		-
 			message: "#^Function module_display_events not found\\.$#"
 			count: 1
-			path: src/Lotgd/Forest.php
-
-		-
-			message: "#^Function output not found\\.$#"
-			count: 5
 			path: src/Lotgd/Forest.php
 
 		-
@@ -746,11 +709,6 @@ parameters:
 			message: "#^Function translate not found\\.$#"
 			count: 2
 			path: src/Lotgd/Nav.php
-
-		-
-			message: "#^Function addnav not found\\.$#"
-			count: 3
-			path: src/Lotgd/Nav/SuperuserNav.php
 
 		-
 			message: "#^Function tlschema not found\\.$#"

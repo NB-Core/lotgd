@@ -3,6 +3,10 @@ use Lotgd\MySQL\Database;
 
 use Lotgd\Commentary;
 use Lotgd\Accounts;
+use Lotgd\Motd;
+use Lotgd\Output;
+use Lotgd\Translator;
+use Lotgd\Nav;
 
 // addnews ready
 // translator ready
@@ -12,7 +16,6 @@ define("OVERRIDE_FORCED_NAV", true);
 require_once("common.php");
 require_once("lib/nltoappon.php");
 require_once("lib/http.php");
-use Lotgd\Motd;
 
 tlschema("motd");
 
@@ -21,11 +24,13 @@ $id = httpget('id');
 
 Commentary::addCommentary();
 popup_header("LoGD Message of the Day (MoTD)");
+$output = Output::getInstance();
+$translator = Translator::getInstance();
 
 if ($session['user']['superuser'] & SU_POST_MOTD) {
     $addm = translate_inline("Add MoTD");
     $addp = translate_inline("Add Poll");
-    rawoutput(" [ <a href='motd.php?op=add'>$addm</a> | <a href='motd.php?op=addpoll'>$addp</a> ]<br/><br/>");
+    $output->rawOutput(" [ <a href='motd.php?op=add'>$addm</a> | <a href='motd.php?op=addpoll'>$addp</a> ]<br/><br/>");
 }
 
 if ($op == "vote") {
@@ -63,10 +68,10 @@ if ($op == "add" || $op == "addpoll" || $op == "del") {
             Motd::motdPollForm($id);
         } elseif ($op == "del") {
             Motd::motdDel($id);
-            output("`^Entry deleted.`0`n");
+            $output->output("`^Entry deleted.`0`n");
             $return = translate_inline("Return to MoTD");
-            rawoutput("<a href='motd.php'>$return</a>");
-            addnav('', 'motd.php');
+            $output->rawOutput("<a href='motd.php'>$return</a>");
+            Nav::add('', 'motd.php');
         }
     } else {
         if ($session['user']['loggedin']) {
@@ -75,7 +80,7 @@ if ($op == "add" || $op == "addpoll" || $op == "del") {
                 "%s was penalized for attempting to defile the gods.",
                 $session['user']['name']
             );
-            output("You've attempted to defile the gods.  You are struck with a wand of forgetfulness.  Some of what you knew, you no longer know.");
+            $output->output("You've attempted to defile the gods.  You are struck with a wand of forgetfulness.  Some of what you knew, you no longer know.");
             Accounts::saveUser();
         }
     }
@@ -144,23 +149,23 @@ if ($op == "") {
 
     $result = Database::query("SELECT mid(motddate,1,7) AS d, count(*) AS c FROM " . Database::prefix("motd") . " GROUP BY d ORDER BY d DESC");
     $row = Database::fetchAssoc($result);
-    rawoutput("<form action='motd.php' method='POST'>");
-        rawoutput("<label for='month'>");
-        output("MoTD Archives:");
-        rawoutput("</label>");
-        rawoutput("<select name='month' id='month' onChange='this.form.submit();' >");
-    rawoutput("<option value=''>--Current--</option>");
+    $output->rawOutput("<form action='motd.php' method='POST'>");
+        $output->rawOutput("<label for='month'>");
+        $output->output("MoTD Archives:");
+        $output->rawOutput("</label>");
+        $output->rawOutput("<select name='month' id='month' onChange='this.form.submit();' >");
+    $output->rawOutput("<option value=''>--Current--</option>");
     while ($row = Database::fetchAssoc($result)) {
         $time = strtotime("{$row['d']}-01");
         $m = translate_inline(date("M", $time));
-        rawoutput("<option value='{$row['d']}'" . ($month_post == $row['d'] ? " selected" : "") . ">$m" . date(", Y", $time) . " ({$row['c']})</option>");
+        $output->rawOutput("<option value='{$row['d']}'" . ($month_post == $row['d'] ? " selected" : "") . ">$m" . date(", Y", $time) . " ({$row['c']})</option>");
     }
-    rawoutput("</select>" . tlbutton_clear());
+    $output->rawOutput("</select>" . $translator->clearButton());
     $showmore = translate_inline("Show more");
-    rawoutput("<input type='hidden' name='newcount' value='" . ($count + $newcount) . "'>");
-    rawoutput("<input type='submit' value='$showmore' name='proceed'  class='button'>");
-    rawoutput(" <input type='submit' value='" . translate_inline("Submit") . "' class='button'>");
-    rawoutput("</form>");
+    $output->rawOutput("<input type='hidden' name='newcount' value='" . ($count + $newcount) . "'>");
+    $output->rawOutput("<input type='submit' value='$showmore' name='proceed'  class='button'>");
+    $output->rawOutput(" <input type='submit' value='" . translate_inline("Submit") . "' class='button'>");
+    $output->rawOutput("</form>");
 
     Commentary::commentDisplay("`n`@Commentary:`0`n", "motd");
 }
