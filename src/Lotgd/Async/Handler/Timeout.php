@@ -16,12 +16,75 @@ use function Jaxon\jaxon;
  */
 class Timeout
 {
+    private static ?self $instance = null;
+
+    private int $startTimeoutShowSeconds = 300;
+
+    private bool $neverTimeoutIfBrowserOpen = false;
+
+    private int $checkMailTimeoutSeconds = 10;
+
+    private int $clearScriptExecutionSeconds = -1;
+
+    private function __construct()
+    {
+    }
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+
+        return self::$instance;
+    }
+
+    public function setStartTimeoutShowSeconds(int $seconds): void
+    {
+        $this->startTimeoutShowSeconds = $seconds;
+    }
+
+    public function getStartTimeoutShowSeconds(): int
+    {
+        return $this->startTimeoutShowSeconds;
+    }
+
+    public function setNeverTimeoutIfBrowserOpen(bool $never): void
+    {
+        $this->neverTimeoutIfBrowserOpen = $never;
+    }
+
+    public function isNeverTimeoutIfBrowserOpen(): bool
+    {
+        return $this->neverTimeoutIfBrowserOpen;
+    }
+
+    public function setCheckMailTimeoutSeconds(int $seconds): void
+    {
+        $this->checkMailTimeoutSeconds = $seconds;
+    }
+
+    public function getCheckMailTimeoutSeconds(): int
+    {
+        return $this->checkMailTimeoutSeconds;
+    }
+
+    public function setClearScriptExecutionSeconds(int $seconds): void
+    {
+        $this->clearScriptExecutionSeconds = $seconds;
+    }
+
+    public function getClearScriptExecutionSeconds(): int
+    {
+        return $this->clearScriptExecutionSeconds;
+    }
+
     /**
      * Update last activity time and report remaining session timeout.
      */
     public function timeoutStatus(bool $args = false): Response
     {
-        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open;
+        global $session;
         $output = Output::getInstance();
         $settings = Settings::getInstance();
 
@@ -35,7 +98,7 @@ class Timeout
 
         $warning = '';
 
-        if ($never_timeout_if_browser_open == 1) {
+        if ($this->isNeverTimeoutIfBrowserOpen()) {
             $session['user']['laston'] = date('Y-m-d H:i:s'); // set to now
             // manual db update
             $sql = 'UPDATE ' . Database::prefix('accounts') . " set laston='" . $session['user']['laston']
@@ -49,7 +112,7 @@ class Timeout
         if ($timeout <= 1) {
             // Preserve legacy behaviour by including the TIMEOUT keyword
             $warning = $output->appoencode('`$`b') . 'TIMEOUT: Your session has timed out!' . $output->appoencode('`b');
-        } elseif ($timeout < $start_timeout_show_seconds) {
+        } elseif ($timeout < $this->getStartTimeoutShowSeconds()) {
             if ($timeout > 60) {
                 $min = floor($timeout / 60);
                 $sec = $timeout % 60;

@@ -40,11 +40,13 @@ namespace Lotgd\Tests\Ajax {
     {
         protected function setUp(): void
         {
-            global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $settings, $output;
+            global $session, $settings, $output;
 
             $session = ['user' => ['acctid' => 1, 'laston' => date('Y-m-d H:i:s', strtotime('-700 seconds'))]];
-            $start_timeout_show_seconds = 300;
-            $never_timeout_if_browser_open = 0;
+
+            Timeout::getInstance()->setStartTimeoutShowSeconds(300);
+            Timeout::getInstance()->setNeverTimeoutIfBrowserOpen(false);
+
             $settings = new class {
                 private array $values = ['LOGINTIMEOUT' => 900];
                 public function getSetting(string $name, mixed $default = null): mixed
@@ -58,14 +60,14 @@ namespace Lotgd\Tests\Ajax {
                     return $data;
                 }
             };
-          
+
             require_once __DIR__ . '/../bootstrap.php';
 
         }
 
         public function testTimeoutWarningIsReturned(): void
         {
-            $response = (new Timeout())->timeoutStatus(true);
+            $response = Timeout::getInstance()->timeoutStatus(true);
             $commands = $response->getCommands();
 
             $this->assertNotEmpty($commands);
@@ -78,7 +80,7 @@ namespace Lotgd\Tests\Ajax {
             global $session;
             $session = [];
 
-            $response = (new Timeout())->timeoutStatus(true);
+            $response = Timeout::getInstance()->timeoutStatus(true);
             $this->assertEmpty($response->getCommands());
         }
     }

@@ -19,7 +19,7 @@ use function Jaxon\jaxon;
 // Load asynchronous configuration settings
 require_once __DIR__ . '/settings.php';
 
-global $jaxon, $s_js;
+global $jaxon;
 // Get the Jaxon singleton object
 $jaxon = jaxon();
 
@@ -41,7 +41,4 @@ $jaxon->setOption('core.debug.verbose', false);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Commentary::class);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Timeout::class);
-
-// Generate the script tag for Jaxon Javascript and make it available
-$s_js = $jaxon->getJs();
 

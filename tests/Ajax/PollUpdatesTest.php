@@ -4,6 +4,7 @@ namespace Tests\Ajax;
 
 use Jaxon\Response\Response;
 use Lotgd\Async\Handler\Commentary;
+use Lotgd\Async\Handler\Timeout;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\MailDummySettings;
 use Lotgd\Settings;
@@ -27,12 +28,14 @@ class PollUpdatesTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $session, $start_timeout_show_seconds, $never_timeout_if_browser_open, $output;
+        global $session, $output;
 
         $session = [];
         $_SERVER['SCRIPT_NAME'] = 'test.php';
-        $start_timeout_show_seconds = 300;
-        $never_timeout_if_browser_open = 0;
+
+        Timeout::getInstance()->setStartTimeoutShowSeconds(300);
+        Timeout::getInstance()->setNeverTimeoutIfBrowserOpen(false);
+
         Settings::setInstance(new MailDummySettings(['LOGINTIMEOUT' => 360]));
         $output = new class {
             public function appoencode($data, bool $priv = false)

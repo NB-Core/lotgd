@@ -13,26 +13,20 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
     require_once __DIR__ . '/common/bootstrap.php';
 }
 
-// Ensure asynchronous settings are loaded so polling timeouts are defined.
-if (!isset($check_mail_timeout_seconds)) {
-    require_once __DIR__ . '/common/settings.php';
-}
+require_once __DIR__ . '/common/settings.php';
 
-global $session,
-    $check_mail_timeout_seconds,
-    $start_timeout_show_seconds,
-    $clear_script_execution_seconds,
-    $s_js;
+global $session;
 
-$check_mail_timeout_seconds ??= 60;
-$start_timeout_show_seconds ??= 1;
-$clear_script_execution_seconds ??= 86400;
+$timeout = \Lotgd\Async\Handler\Timeout::getInstance();
+$checkMailTimeoutSeconds = $timeout->getCheckMailTimeoutSeconds();
+$clearScriptExecutionSeconds = $timeout->getClearScriptExecutionSeconds();
+$startTimeoutShowSeconds = $timeout->getStartTimeoutShowSeconds();
 
 $maillink_add_after = "<script>";
 $maillink_add_after .= "var lotgd_comment_section = " . json_encode($session['last_comment_section'] ?? '') . ";";
 $maillink_add_after .= "var lotgd_lastCommentId = " . (int)($session['lastcommentid'] ?? 0) . ";";
-$maillink_add_after .= "var lotgd_poll_interval_ms = " . ($check_mail_timeout_seconds * 1000) . ";";
-$maillink_add_after .= "var lotgd_timeout_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $start_timeout_show_seconds) * 1000) . ";";
-$maillink_add_after .= "var lotgd_clear_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $clear_script_execution_seconds) * 1000) . ";";
+$maillink_add_after .= "var lotgd_poll_interval_ms = " . ($checkMailTimeoutSeconds * 1000) . ";";
+$maillink_add_after .= "var lotgd_timeout_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $startTimeoutShowSeconds) * 1000) . ";";
+$maillink_add_after .= "var lotgd_clear_delay_ms = " . ((getsetting('LOGINTIMEOUT', 900) - $clearScriptExecutionSeconds) * 1000) . ";";
 $maillink_add_after .= "</script>";
 $maillink_add_after .= "<div id='notify'></div>";

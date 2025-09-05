@@ -126,7 +126,7 @@ class Commentary
         }
 
         try {
-            $response->appendResponse((new Timeout())->timeoutStatus(true));
+            $response->appendResponse(Timeout::getInstance()->timeoutStatus(true));
         } catch (\Throwable $e) {
             throw new Exception('AJAX polling: Timeout handler error', 0, $e);
         }
