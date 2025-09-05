@@ -151,41 +151,6 @@ parameters:
 			path: src/Lotgd/ErrorHandler.php
 
 		-
-			message: "#^Function checknavs not found\\.$#"
-			count: 1
-			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Function getmicrotime not found\\.$#"
-			count: 2
-			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Function module_do_event not found\\.$#"
-			count: 1
-			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Function page_footer not found\\.$#"
-			count: 1
-			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Function page_header not found\\.$#"
-			count: 1
-			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Undefined variable\\: \\$hookname$#"
-			count: 1
-			path: src/Lotgd/Events.php
-
-		-
-			message: "#^Undefined variable\\: \\$row$#"
-			count: 1
-			path: src/Lotgd/Events.php
-
-		-
 			message: "#^Function redirect not found\\.$#"
 			count: 4
 			path: src/Lotgd/ForcedNavigation.php

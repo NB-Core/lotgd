@@ -8,9 +8,15 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\DateTime;
 use Lotgd\Http;
-use Lotgd\Util\ScriptName;
+use Lotgd\Modules\HookHandler;
+use Lotgd\Nav;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
 use Lotgd\Translator;
+use Lotgd\Util\ScriptName;
 
 class Events
 {
@@ -34,7 +40,8 @@ class Events
                 //debug("Base link was specified as $baseLink");
                 //debug(debug_backtrace());
         }
-        global $session, $playermount, $badguy, $output;
+        global $session, $playermount, $badguy;
+        $output = Output::getInstance();
         $skipdesc = false;
 
         Translator::getInstance()->setSchema("events");
@@ -56,22 +63,24 @@ class Events
             $specialinc = $session['user']['specialinc'];
             $session['user']['specialinc'] = "";
             if ($needHeader !== null) {
-                    page_header($needHeader);
+                    Header::pageHeader($needHeader);
             }
 
             $output->output("`^`c`bSomething Special!`c`b`0");
             if (strchr($specialinc, ":")) {
                 $array = explode(":", $specialinc);
-                $starttime = getmicrotime();
-                module_do_event($location, $array[1], $allowinactive, $baseLink);
-                $endtime = getmicrotime();
+                $starttime = DateTime::getMicroTime();
+                $hookname = '';
+                $row = ['modulename' => $array[1]];
+                HookHandler::doEvent($location, $array[1], $allowinactive, $baseLink);
+                $endtime = DateTime::getMicroTime();
                 if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
                     $output->debug("Slow Event (" . round($endtime - $starttime, 2) . "s): $hookname - {$row['modulename']}`n");
                 }
             }
-            if (checknavs()) {
+            if (Nav::checkNavs()) {
                 // The page rendered some linkage, so we just want to exit.
-                page_footer();
+                Footer::pageFooter();
             } else {
                 $skipdesc = true;
                 $session['user']['specialinc'] = "";
