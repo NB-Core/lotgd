@@ -13,12 +13,14 @@ use Lotgd\DataCache;
 use Lotgd\Settings;
 use Lotgd\Output;
 use Lotgd\Nav as Navigation;
+use Lotgd\Http;
+use Lotgd\PageParts;
 
 class Newday
 {
     public static function dbCleanup(): void
     {
-        savesetting("lastdboptimize", date("Y-m-d H:i:s"));
+        Settings::getInstance()->saveSetting("lastdboptimize", date("Y-m-d H:i:s"));
         // Fetch all table names at once to avoid leaving an unbuffered
         // result active which can cause "Cannot execute queries while other
         // unbuffered queries are active" errors with PDO MySQL.
@@ -26,14 +28,14 @@ class Newday
             ->fetchAllAssociative('SHOW TABLES');
 
         $tables = [];
-        $start = getmicrotime();
+        $start = microtime(true);
         foreach ($rows as $row) {
             foreach ($row as $val) {
                 Database::query("OPTIMIZE TABLE $val");
                 $tables[] = $val;
             }
         }
-        $time = round(getmicrotime() - $start, 2);
+        $time = round(microtime(true) - $start, 2);
         GameLog::log('Optimized tables: ' . join(', ', $tables) . " in $time seconds.", 'maintenance');
     }
 
@@ -157,7 +159,7 @@ class Newday
             if (count($head) > 1) {
                 continue;
             }
-            $pdks[$type] = (int) httppost($type);
+            $pdks[$type] = (int) Http::post($type);
         }
         HookHandler::hook('pdkpointrecalc');
         $pdktotal = 0;
@@ -201,7 +203,7 @@ class Newday
     {
         global $session;
         if ($dkills - $dp > 1) {
-            page_header('Dragon Points');
+            PageParts::pageHeader('Dragon Points');
             $output = Output::getInstance();
             $output->output("`@You earn one dragon point each time you slay the dragon.");
             $output->output('Advancements made by spending dragon points are permanent!');
@@ -253,7 +255,7 @@ class Newday
             $text .= "</script>\n";
             $output->rawOutput($text);
             Navigation::add('Reset', "newday.php?pdk=0$resline");
-            $link = appendcount("newday.php?pdk=1$resline");
+            $link = Navigation::appendCount("newday.php?pdk=1$resline");
             $output->rawOutput("<form id='dkForm' action='$link' method='POST'>");
             Navigation::add('', $link);
             $output->rawOutput("<br><table cellpadding='0' cellspacing='0' border='0' width='200'>");
@@ -295,7 +297,7 @@ class Newday
                 }
             }
         } else {
-            page_header('Dragon Points');
+            PageParts::pageHeader('Dragon Points');
             $dist = [];
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
@@ -325,7 +327,7 @@ class Newday
             $output->rawOutput('<blockquote><table>');
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
-                if (isset($type) && $type > 0 && (!isset($dist[$type]) || $dist[$type] == 0)) {
+                if ($type > 0 && (!isset($dist[$type]) || $dist[$type] == 0)) {
                     continue;
                 }
                 if (count($head) > 1) {
@@ -353,7 +355,7 @@ class Newday
         global $session;
         $settings = Settings::getInstance();
         $output = Output::getInstance();
-        $setrace = httpget('setrace');
+        $setrace = Http::get('setrace');
         if ($setrace != '') {
             $vname = $settings->getSetting('villagename', LOCATION_FIELDS);
             $session['user']['race'] = $setrace;
@@ -364,9 +366,9 @@ class Newday
             $output->output('Where do you recall growing up?`n`n');
             HookHandler::hook('chooserace');
         }
-        if (navcount() == 0) {
-            clearoutput();
-            page_header('No Races Installed');
+        if (Navigation::navCount() == 0) {
+            Navigation::clearOutput();
+            PageParts::pageHeader('No Races Installed');
             $output->output("No races were installed in this game.");
             $output->output("So we'll call you a 'human' and get on with it.");
             if ($session['user']['superuser'] & (SU_MEGAUSER | SU_MANAGE_MODULES)) {
@@ -376,10 +378,10 @@ class Newday
             }
             $session['user']['race'] = 'Human';
             Navigation::add('Continue', "newday.php?continue=1$resline");
-            page_footer();
+            PageParts::pageFooter();
         } else {
-            page_header('A little history about yourself');
-            page_footer();
+            PageParts::pageHeader('A little history about yourself');
+            PageParts::pageFooter();
         }
     }
 
@@ -387,19 +389,19 @@ class Newday
     {
         global $session;
         $output = Output::getInstance();
-        $setspecialty = httpget('setspecialty');
+        $setspecialty = Http::get('setspecialty');
         if ($setspecialty != '') {
             $session['user']['specialty'] = $setspecialty;
             HookHandler::hook('set-specialty');
             Navigation::add('Continue', "newday.php?continue=1$resline");
         } else {
-            page_header('A little history about yourself');
+            PageParts::pageHeader('A little history about yourself');
             $output->output('What do you recall doing as a child?`n`n');
             HookHandler::hook('choose-specialty');
         }
-        if (navcount() == 0) {
-            clearoutput();
-            page_header('No Specialties Installed');
+        if (Navigation::navCount() == 0) {
+            Navigation::clearOutput();
+            PageParts::pageHeader('No Specialties Installed');
             $output->output("Since there are no suitable specialties available, we'll make you a student of the mystical powers and get on with it.");
             if ($session['user']['superuser'] & (SU_MEGAUSER | SU_MANAGE_MODULES)) {
                 $output->output('You should go into the module manager off of the super user grotto, install and activate some specialties.');
@@ -408,9 +410,9 @@ class Newday
             }
             $session['user']['specialty'] = 'MP';
             Navigation::add('Continue', "newday.php?continue=1$resline");
-            page_footer();
+            PageParts::pageFooter();
         } else {
-            page_footer();
+            PageParts::pageFooter();
         }
     }
 }

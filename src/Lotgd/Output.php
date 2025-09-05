@@ -12,6 +12,7 @@ namespace Lotgd;
 use Lotgd\DumpItem;
 use Lotgd\HolidayText;
 use Lotgd\Translator;
+use Lotgd\Sanitize;
 
 class Output
 {
@@ -344,7 +345,7 @@ class Output
                             if (!isset($session['user']['weapon'])) {
                                 $session['user']['weapon'] = '';
                             }
-                            $out .= sanitize($session['user']['weapon']);
+                            $out .= Sanitize::sanitize($session['user']['weapon']);
                             break;
                         case '`':
                             $out .= '`';

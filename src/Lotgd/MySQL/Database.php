@@ -121,6 +121,7 @@ class Database
             $configExists = file_exists($rootDir . '/dbconnect.php');
         }
 
+        $affected = 0;
         if (self::$doctrine || $configExists) {
             $conn = self::$doctrine ?? self::getDoctrineConnection();
             $trim = ltrim($sql);
@@ -163,7 +164,7 @@ class Database
             Output::getInstance()->debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, $charset) . '`n');
         }
         unset(self::$dbinfo['affected_rows']);
-        self::$dbinfo['affected_rows'] = $affected ?? self::affectedRows();
+        self::$dbinfo['affected_rows'] = $affected;
         if (!isset(self::$dbinfo['querytime'])) {
             self::$dbinfo['querytime'] = 0;
         }
