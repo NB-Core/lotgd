@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\MySQL;
 
 use Lotgd\MySQL\Database;
+use Lotgd\Output;
 
 use RuntimeException;
 
@@ -59,7 +60,8 @@ class TableDescriptor
                 throw new RuntimeException(Database::error());
             }
 
-            output("`^Table `#%s`^ created.`n", $tablename);
+            $output = Output::getInstance();
+            $output->output("`^Table `#%s`^ created.`n", $tablename);
 
             return 1;
         } else {

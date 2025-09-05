@@ -327,23 +327,23 @@ class PageParts
 
             self::addCharStat("Character Info");
             self::addCharStat("Name", $u['name']);
-            self::addCharStat("Level", "`b" . $u['level'] . check_temp_stat("level", 1) . "`b");
+            self::addCharStat("Level", "`b" . $u['level'] . PlayerFunctions::checkTempStat("level", 1) . "`b");
             // Note: Number formatting here has been introduced, but not in tempstats yet - I think it may be overhead for now, but could be done later
             if ($u['alive']) {
-                self::addCharStat("Hitpoints", $u['hitpoints'] . check_temp_stat("hitpoints", 1) . "`0/" . $u['maxhitpoints'] . check_temp_stat("maxhitpoints", 1));
-                self::addCharStat("Experience", number_format((float)$u['experience'], 0, $point, $sep) . check_temp_stat("experience", 1));
-                self::addCharStat("Strength", $u['strength'] . check_temp_stat("strength", 1));
-                self::addCharStat("Dexterity", $u['dexterity'] . check_temp_stat("dexterity", 1));
-                self::addCharStat("Intelligence", $u['intelligence'] . check_temp_stat("intelligence", 1));
-                self::addCharStat("Constitution", $u['constitution'] . check_temp_stat("constitution", 1));
-                self::addCharStat("Wisdom", $u['wisdom'] . check_temp_stat("wisdom", 1));
-                        self::addCharStat("Attack", $atk . "`\$<span title='" . PlayerFunctions::explainedGetPlayerAttack() . "'>(?)</span>`0" . check_temp_stat("attack", 1));
-                        self::addCharStat("Defense", $def . "`\$<span title='" . PlayerFunctions::explainedGetPlayerDefense() . "'>(?)</span>`0" . check_temp_stat("defense", 1));
-                self::addCharStat("Speed", $spd . check_temp_stat("speed", 1));
+                self::addCharStat("Hitpoints", $u['hitpoints'] . PlayerFunctions::checkTempStat("hitpoints", 1) . "`0/" . $u['maxhitpoints'] . PlayerFunctions::checkTempStat("maxhitpoints", 1));
+                self::addCharStat("Experience", number_format((float)$u['experience'], 0, $point, $sep) . PlayerFunctions::checkTempStat("experience", 1));
+                self::addCharStat("Strength", $u['strength'] . PlayerFunctions::checkTempStat("strength", 1));
+                self::addCharStat("Dexterity", $u['dexterity'] . PlayerFunctions::checkTempStat("dexterity", 1));
+                self::addCharStat("Intelligence", $u['intelligence'] . PlayerFunctions::checkTempStat("intelligence", 1));
+                self::addCharStat("Constitution", $u['constitution'] . PlayerFunctions::checkTempStat("constitution", 1));
+                self::addCharStat("Wisdom", $u['wisdom'] . PlayerFunctions::checkTempStat("wisdom", 1));
+                        self::addCharStat("Attack", $atk . "`\$<span title='" . PlayerFunctions::explainedGetPlayerAttack() . "'>(?)</span>`0" . PlayerFunctions::checkTempStat("attack", 1));
+                        self::addCharStat("Defense", $def . "`\$<span title='" . PlayerFunctions::explainedGetPlayerDefense() . "'>(?)</span>`0" . PlayerFunctions::checkTempStat("defense", 1));
+                self::addCharStat("Speed", $spd . PlayerFunctions::checkTempStat("speed", 1));
             } else {
                 $maxsoul = 50 + 10 * $u['level'] + $u['dragonkills'] * 2;
-                self::addCharStat("Soulpoints", $u['soulpoints'] . check_temp_stat("soulpoints", 1) . "`0/" . $maxsoul);
-                self::addCharStat("Torments", $u['gravefights'] . check_temp_stat("gravefights", 1));
+                self::addCharStat("Soulpoints", $u['soulpoints'] . PlayerFunctions::checkTempStat("soulpoints", 1) . "`0/" . $maxsoul);
+                self::addCharStat("Torments", $u['gravefights'] . PlayerFunctions::checkTempStat("gravefights", 1));
                 self::addCharStat("Psyche", 10 + round(($u['level'] - 1) * 1.5));
                 self::addCharStat("Spirit", 10 + round(($u['level'] - 1) * 1.5));
             }
@@ -375,17 +375,17 @@ class PageParts
             }
             self::addCharStat("Personal Info");
             if ($u['alive']) {
-                self::addCharStat("Turns", $u['turns'] . check_temp_stat("turns", 1));
+                self::addCharStat("Turns", $u['turns'] . PlayerFunctions::checkTempStat("turns", 1));
                 self::addCharStat("PvP", $u['playerfights']);
                 self::addCharStat("Spirits", Translator::translateInline("`b" . $spirits[(int)$u['spirits']] . "`b"));
                 self::addCharStat("Currency");
-                self::addCharStat("Gold", number_format((int)$u['gold'], 0, $point, $sep) . check_temp_stat("gold", 1));
-                self::addCharStat("Bankgold", number_format((int)$u['goldinbank'], 0, $point, $sep) . check_temp_stat("goldinbank", 1));
+                self::addCharStat("Gold", number_format((int)$u['gold'], 0, $point, $sep) . PlayerFunctions::checkTempStat("gold", 1));
+                self::addCharStat("Bankgold", number_format((int)$u['goldinbank'], 0, $point, $sep) . PlayerFunctions::checkTempStat("goldinbank", 1));
             } else {
-                self::addCharStat("Favor", $u['deathpower'] . check_temp_stat("deathpower", 1));
+                self::addCharStat("Favor", $u['deathpower'] . PlayerFunctions::checkTempStat("deathpower", 1));
                 self::addCharStat("Currency");
             }
-            self::addCharStat("Gems", number_format((int)$u['gems'], 0, $point, $sep) . check_temp_stat("gems", 1));
+            self::addCharStat("Gems", number_format((int)$u['gems'], 0, $point, $sep) . PlayerFunctions::checkTempStat("gems", 1));
             self::addCharStat("Equipment Info");
             self::addCharStat("Weapon", $u['weapon']);
             self::addCharStat("Armor", $u['armor']);
@@ -408,6 +408,7 @@ class PageParts
             $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
             $cacheMinutes = $mode === 2 ? $minutesSetting : (int) ceil($loginTimeout / 60);
             $cacheKey = "charlisthomepage-$mode-$cacheMinutes";
+            $minutes = 0;
             if ($ret = DataCache::datacache($cacheKey)) {
             } else {
                 $onlinecount = 0;
@@ -675,7 +676,7 @@ class PageParts
                 if (file_exists($asyncFile)) {
                     require $asyncFile;
                 }
-                $mailHtml = ($maillink_add_pre ?? '') . "<div id='maillink'>" . self::mailLink() . "</div>" . ($maillink_add_after ?? '');
+                $mailHtml = $maillink_add_pre . "<div id='maillink'>" . self::mailLink() . "</div>" . $maillink_add_after;
             } else {
                 $mailHtml = self::mailLink();
             }
