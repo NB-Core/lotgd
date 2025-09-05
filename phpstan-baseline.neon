@@ -10,27 +10,3 @@ parameters:
 
 
 
-                -
-                        message: "#^Variable \\$template might not be defined\\.$#"
-                        count: 1
-                        path: src/Lotgd/Template.php
-
-                -
-                        message: "#^Function popup not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Translator.php
-
-                -
-                        message: "#^Undefined variable\\: \\$settings$#"
-                        count: 1
-                        path: src/Lotgd/Translator.php
-
-                -
-                        message: "#^Variable \\$namespace in isset\\(\\) always exists and is not nullable\\.$#"
-                        count: 1
-                        path: src/Lotgd/Translator.php
-
-                -
-                        message: "#^Variable \\$settings in isset\\(\\) is never defined\\.$#"
-                        count: 1
-                        path: src/Lotgd/Translator.php

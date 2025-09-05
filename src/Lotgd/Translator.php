@@ -9,6 +9,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Cookies;
 use Lotgd\Output;
+use Lotgd\PageParts;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 
 
@@ -102,7 +103,7 @@ class Translator
             $namespace = self::$translation_namespace;
         }
         $outdata = $indata;
-        if (!isset($namespace) || $namespace == "") {
+        if ($namespace === "") {
             self::tlschema();
         }
 
@@ -379,6 +380,7 @@ class Translator
      */
     public static function translateLoadNamespace(string $namespace, string|false $language = false)
     {
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         if (!defined('DB_CHOSEN') || !DB_CHOSEN) {
             return [];
         }
@@ -410,7 +412,7 @@ class Translator
                         WHERE language='$language'
                                 AND $where";
             /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, Settings::getInstance()->getSetting("charset", "UTF-8")))); */
-            if (isset($settings) && !$settings->getSetting("cachetranslations", 0)) {
+            if ($settings instanceof Settings && !$settings->getSetting("cachetranslations", 1)) {
                 $result = Database::query($sql);
             } else {
                 $cacheNamespace = $namespace;
@@ -469,7 +471,7 @@ class Translator
                     $link = "translatortool.php?u=" .
                         rawurlencode($uri) . "&t=" . rawurlencode($indata);
                     $link = "<a href='$link' target='_blank' onClick=\"" .
-                        popup($link) . ";return false;\" class='t" .
+                        PageParts::popup($link) . ";return false;\" class='t" .
                         ($hot ? "hot" : "") .
                         "' title='" .
                         ($hot ? $hotText : $nothotText) .
