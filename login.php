@@ -9,6 +9,7 @@ use Lotgd\CheckBan;
 use Lotgd\Mail;
 use Lotgd\Serialization;
 use Lotgd\Cookies;
+use Lotgd\DataCache;
 
 define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
@@ -101,7 +102,7 @@ if ($name != "") {
                     $session['user']['dragonpoints'] = array();
                 }
                 massinvalidate('charlisthomepage');
-                invalidatedatacache("list.php-warsonline");
+                DataCache::invalidatedatacache("list.php-warsonline");
                 $session['user']['laston'] = date("Y-m-d H:i:s");
 
                 // Handle the change in number of users online
@@ -223,7 +224,7 @@ if ($name != "") {
         $sql = "UPDATE " . Database::prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
         Database::query($sql);
         massinvalidate('charlisthomepage');
-        invalidatedatacache("list.php-warsonline");
+        DataCache::invalidatedatacache("list.php-warsonline");
 
         // Handle the change in number of users online
         translator_check_collect_texts();

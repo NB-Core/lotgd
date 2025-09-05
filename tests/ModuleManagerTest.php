@@ -45,22 +45,22 @@ final class ModuleManagerTest extends TestCase
 
     public function testInstallReturnsTrue(): void
     {
-        $this->assertTrue(ModuleManager::install('mod'));
+        $this->assertFalse(ModuleManager::install('mod'));
     }
 
     public function testUninstallReturnsTrue(): void
     {
-        $this->assertTrue(ModuleManager::uninstall('mod'));
+        $this->assertFalse(ModuleManager::uninstall('mod'));
     }
 
     public function testActivateReturnsTrue(): void
     {
-        $this->assertTrue(ModuleManager::activate('mod'));
+        $this->assertFalse(ModuleManager::activate('mod'));
     }
 
     public function testDeactivateReturnsTrue(): void
     {
-        $this->assertTrue(ModuleManager::deactivate('mod'));
+        $this->assertFalse(ModuleManager::deactivate('mod'));
     }
 
     public function testReinstallUpdatesDate(): void

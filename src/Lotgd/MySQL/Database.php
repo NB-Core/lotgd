@@ -12,6 +12,7 @@ use Lotgd\Settings;
 use Lotgd\Backtrace;
 use Lotgd\DataCache;
 use Lotgd\DateTime;
+use Lotgd\Output;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result as DoctrineResult;
 use Lotgd\Doctrine\Bootstrap;
@@ -157,7 +158,7 @@ class Database
             if (strlen($s) > 800) {
                 $s = substr($s, 0, 400) . ' ... ' . substr($s, strlen($s) - 400);
             }
-            debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, $charset) . '`n');
+            Output::getInstance()->debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, $charset) . '`n');
         }
         unset(self::$dbinfo['affected_rows']);
         self::$dbinfo['affected_rows'] = $affected ?? self::affectedRows();

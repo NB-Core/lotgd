@@ -13,6 +13,7 @@ use Lotgd\Sanitize;
 use Lotgd\Settings;
 use Lotgd\DataCache;
 use Lotgd\Translator;
+use Lotgd\Output;
 
 class ErrorHandler
 {
@@ -62,13 +63,10 @@ class ErrorHandler
         }
         ini_set('display_errors', '1');
         $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        $output   = Output::getInstance();
         $inErrorHandler++;
         if ($inErrorHandler > 1) {
-            if ($errno & (E_USER_WARNING | E_WARNING)) {
-                echo "PHP Warning: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.  Additionally this occurred while within logd_error_handler().<br>";
-            } elseif ($errno & (E_USER_ERROR | E_ERROR)) {
-                echo "PHP ERROR: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.  Additionally this occurred while within logd_error_handler().<br>";
-            }
+            echo "PHP ERROR: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.  Additionally this occurred while within logd_error_handler().<br>";
             $inErrorHandler--;
             return;
         }
@@ -79,13 +77,13 @@ class ErrorHandler
                     ? $settings->getSetting('show_notices', 0)
                     : 0;
                 if ($showNotices && ($session['user']['superuser'] & SU_SHOW_PHPNOTICE)) {
-                    debug("PHP Notice: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.");
+                    $output->debug("PHP Notice: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.", true);
                 }
                 break;
             case E_WARNING:
             case E_USER_WARNING:
                 Translator::getInstance()->setSchema('errorhandler');
-                debug(sprintf('PHP Warning: "%s" in %s at %s.', $errstr, $errfile, $errline), true);
+                $output->debug(sprintf('PHP Warning: "%s" in %s at %s.', $errstr, $errfile, $errline), true);
                 Translator::getInstance()->setSchema();
                 if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT) == SU_DEBUG_OUTPUT) {
                     $backtrace = Backtrace::show();
@@ -137,6 +135,7 @@ class ErrorHandler
     {
         global $session;
         $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        $output   = Output::getInstance();
         if (! $settings instanceof Settings) {
             return;
         }
@@ -178,7 +177,7 @@ class ErrorHandler
             $data['firstrun'] = false;
         }
         if ($data['firstrun']) {
-            debug('First run, not notifying users.');
+            $output->debug('First run, not notifying users.', true);
         } else {
             if ($doNotice) {
                 $userstr = '';
@@ -192,21 +191,21 @@ class ErrorHandler
                 $subject = sprintf('LotGD %s on %s', $label, $hostname);
                 $body = $html_text;
                 foreach ($sendto as $email) {
-                    debug("Notifying $email of this error.");
+                    $output->debug("Notifying $email of this error.", true);
                     $admin = $settings->getSetting('gameadminemail', 'postmaster@localhost');
                     $from = [$admin => $admin];
                     \Lotgd\Mail::send([$email => $email], $body, $subject, $from, false, 'text/html');
                 }
                 $data['errors'][$msg] = strtotime('now');
             } else {
-                debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$msg]) / 60, 2) . ' minutes.');
+                $output->debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$msg]) / 60, 2) . ' minutes.', true);
             }
         }
         if ($settings->getSetting('usedatacache', 0)
             && ! DataCache::updatedatacache('error_notify', $data)) {
             error_log('Unable to write datacache for error_notify');
         }
-        debug($data);
+        $output->debug($data, true);
     }
 
     /**

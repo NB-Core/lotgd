@@ -18,6 +18,7 @@ use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\Redirect;
 use Lotgd\Settings;
+use Lotgd\Modules\Installer as ModuleInstaller;
 use Lotgd\Doctrine\Bootstrap;
 use Doctrine\Migrations\DependencyFactory;
 use Doctrine\Migrations\Configuration\Migration\ConfigurationArray;
@@ -1277,7 +1278,7 @@ class Installer
            $this->output->rawOutput("<div style='width: 100%; height: 150px; max-height: 150px; overflow: auto;'>");
            while (list($key,$modulename)=each($recommended_modules)){
            $this->output->output("`3Installing `#$modulename`$`n");
-           install_module($modulename, false);
+           ModuleInstaller::install($modulename, false);
            }
            $this->output->rawOutput("</div>");
          */
@@ -1292,7 +1293,7 @@ class Installer
                     switch ($op) {
                         case "uninstall":
                             $this->output->output("`3Uninstalling `#$modulename`3: ");
-                            if (uninstall_module($modulename)) {
+                            if (ModuleInstaller::uninstall($modulename)) {
                                 $this->output->output("`@OK!`0`n");
                             } else {
                                 $this->output->output("`\$Failed!`0`n");
@@ -1300,16 +1301,16 @@ class Installer
                             break;
                         case "install":
                             $this->output->output("`3Installing `#$modulename`3: ");
-                            if (install_module($modulename)) {
+                            if (ModuleInstaller::install($modulename)) {
                                 $this->output->output("`@OK!`0`n");
                             } else {
                                 $this->output->output("`\$Failed!`0`n");
                             }
-                            install_module($modulename);
+                            ModuleInstaller::install($modulename);
                             break;
                         case "activate":
                             $this->output->output("`3Activating `#$modulename`3: ");
-                            if (activate_module($modulename)) {
+                            if (ModuleInstaller::activate($modulename)) {
                                 $this->output->output("`@OK!`0`n");
                             } else {
                                 $this->output->output("`\$Failed!`0`n");
@@ -1317,7 +1318,7 @@ class Installer
                             break;
                         case "deactivate":
                             $this->output->output("`3Deactivating `#$modulename`3: ");
-                            if (deactivate_module($modulename)) {
+                            if (ModuleInstaller::deactivate($modulename)) {
                                 $this->output->output("`@OK!`0`n");
                             } else {
                                 $this->output->output("`\$Failed!`0`n");

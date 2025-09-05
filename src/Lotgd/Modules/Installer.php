@@ -8,6 +8,8 @@ use Lotgd\Modules;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
+use Lotgd\DataCache;
+use Lotgd\Output;
 
 class Installer
 {
@@ -20,8 +22,8 @@ class Installer
         }
         $sql = 'UPDATE ' . Database::prefix('modules') . " SET active=1 WHERE modulename='$module'";
         Database::query($sql);
-        invalidatedatacache("inject-$module");
-        massinvalidate('module_prepare');
+        DataCache::invalidatedatacache("inject-$module");
+        DataCache::massinvalidate('module_prepare');
         return Database::affectedRows() > 0;
     }
 
@@ -35,9 +37,9 @@ class Installer
         }
         $sql    = 'UPDATE ' . Database::prefix('modules') . " SET active=0 WHERE modulename='$module'";
         $return = Database::query($sql);
-        invalidatedatacache("inject-$module");
-        massinvalidate('module_prepare');
-        massinvalidate('hook');
+        DataCache::invalidatedatacache("inject-$module");
+        DataCache::massinvalidate('module_prepare');
+        DataCache::massinvalidate('hook');
         if (Database::affectedRows() <= 0 || !$return) {
             return false;
         }
@@ -63,15 +65,15 @@ class Installer
 
             $sql = 'DELETE FROM ' . Database::prefix('module_settings') . " WHERE modulename='$module'";
             Database::query($sql);
-            invalidatedatacache("modulesettings-$module");
+            DataCache::invalidatedatacache("modulesettings-$module");
 
             $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module'";
             Database::query($sql);
 
             $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module'";
             Database::query($sql);
-            invalidatedatacache("inject-$module");
-            massinvalidate('module_prepare');
+            DataCache::invalidatedatacache("inject-$module");
+            DataCache::massinvalidate('module_prepare');
             return true;
         }
         return false;
@@ -104,15 +106,15 @@ class Installer
 
         $sql = 'DELETE FROM ' . Database::prefix('module_settings') . " WHERE modulename='$module'";
         Database::query($sql);
-        invalidatedatacache("modulesettings-$module");
+        DataCache::invalidatedatacache("modulesettings-$module");
 
         $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module'";
         Database::query($sql);
 
         $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module'";
         Database::query($sql);
-        invalidatedatacache("inject-$module");
-        massinvalidate('module_prepare');
+        DataCache::invalidatedatacache("inject-$module");
+        DataCache::massinvalidate('module_prepare');
         return true;
     }
 
@@ -162,13 +164,13 @@ class Installer
                     }
                     if (isset($x[1])) {
                         HookHandler::setModuleSetting($key, $x[1]);
-                        debug("Setting $key to default {$x[1]}");
+                        Output::getInstance()->debug("Setting $key to default {$x[1]}");
                     }
                 }
             }
             output('`^Module installed.  It is not yet active.`n');
-            invalidatedatacache("inject-$mostrecentmodule");
-            massinvalidate('module_prepare');
+            DataCache::invalidatedatacache("inject-$mostrecentmodule");
+            DataCache::massinvalidate('module_prepare');
             return true;
         }
         output('`\$Module could not be injected.');

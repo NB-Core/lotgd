@@ -16,6 +16,7 @@ use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\Nav;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
 
 class Outcomes
 {
@@ -220,10 +221,11 @@ class Outcomes
             $badguy['creatureexp'] = (int) round((int) $badguy['creatureexp'] * $bonus, 0);
         }
         $badguy = HookHandler::hook('creatureencounter', $badguy);
-        debug("DEBUG: $dk modification points total.");
-        debug("DEBUG: +$atkflux allocated to attack.");
-        debug("DEBUG: +$defflux allocated to defense.");
-        debug("DEBUG: +" . ($hpflux / 5) . "*5 to hitpoints.");
+        $output = Output::getInstance();
+        $output->debug("DEBUG: $dk modification points total.");
+        $output->debug("DEBUG: +$atkflux allocated to attack.");
+        $output->debug("DEBUG: +$defflux allocated to defense.");
+        $output->debug("DEBUG: +" . ($hpflux / 5) . "*5 to hitpoints.");
         return HookHandler::hook('buffbadguy', $badguy);
     }
 }

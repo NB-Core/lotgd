@@ -311,7 +311,7 @@ if (getsetting("allowcreation", 1) == 0) {
 						VALUES
 						('$shortname','$title $shortname', '" . getsetting("defaultsuperuser", 0) . "', '$title', '$dbpass', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . getsetting("newplayerstartgold", 50) . ", '" . addslashes(getsetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','','','','',0,'','','','','','','','')";
                     Database::query($sql);
-                    if (Database::affectedRows(LINK) <= 0) {
+                    if (Database::affectedRows() <= 0) {
                         output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
                     } else {
                         $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";

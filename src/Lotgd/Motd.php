@@ -14,6 +14,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\Nltoappon;
 use Lotgd\Modules\HookHandler;
+use Lotgd\DataCache;
 
 class Motd
 {
@@ -252,9 +253,9 @@ class Motd
                 " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",$type,$author)";
         }
         Database::query($sql);
-        invalidatedatacache('motd');
-        invalidatedatacache('lastmotd');
-        invalidatedatacache('motddate');
+        DataCache::invalidatedatacache('motd');
+        DataCache::invalidatedatacache('lastmotd');
+        DataCache::invalidatedatacache('motddate');
     }
 
     /**
@@ -275,7 +276,7 @@ class Motd
         $sql = 'INSERT INTO ' . Database::prefix('motd') .
             " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",1,{$session['user']['acctid']})";
         Database::query($sql);
-        invalidatedatacache('motd');
+        DataCache::invalidatedatacache('motd');
     }
 
     /**
@@ -285,9 +286,9 @@ class Motd
     {
         $sql = 'DELETE FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
         Database::query($sql);
-        invalidatedatacache('motd');
-        invalidatedatacache('lastmotd');
-        invalidatedatacache('motddate');
+        DataCache::invalidatedatacache('motd');
+        DataCache::invalidatedatacache('lastmotd');
+        DataCache::invalidatedatacache('motddate');
     }
 
     /**

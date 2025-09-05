@@ -31,11 +31,6 @@ parameters:
 			path: src/Lotgd/DeathMessage.php
 
 		-
-			message: "#^Function debug not found\\.$#"
-			count: 6
-			path: src/Lotgd/ErrorHandler.php
-
-		-
 			message: "#^Function rawoutput not found\\.$#"
 			count: 1
 			path: src/Lotgd/ErrorHandler.php
@@ -59,11 +54,6 @@ parameters:
 			message: "#^Function output not found\\.$#"
 			count: 5
 			path: src/Lotgd/Forest.php
-
-		-
-			message: "#^Function debug not found\\.$#"
-			count: 4
-			path: src/Lotgd/Forest/Outcomes.php
 
 		-
 			message: "#^Function debuglog not found\\.$#"
@@ -111,11 +101,6 @@ parameters:
 			path: src/Lotgd/Forms.php
 
 		-
-			message: "#^Function debug not found\\.$#"
-			count: 1
-			path: src/Lotgd/Forms.php
-
-		-
 			message: "#^Function httppost not found\\.$#"
 			count: 1
 			path: src/Lotgd/Forms.php
@@ -155,45 +140,6 @@ parameters:
 			count: 1
 			path: src/Lotgd/Forms.php
 
-		-
-			message: "#^Function activate_module not found\\.$#"
-			count: 1
-			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Function deactivate_module not found\\.$#"
-			count: 1
-			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Function get_module_install_status not found\\.$#"
-			count: 2
-			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Function injectmodule not found\\.$#"
-			count: 2
-			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Function install_module not found\\.$#"
-			count: 1
-			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Function invalidatedatacache not found\\.$#"
-			count: 5
-			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Function massinvalidate not found\\.$#"
-			count: 11
-			path: src/Lotgd/ModuleManager.php
-
-		-
-			message: "#^Function uninstall_module not found\\.$#"
-			count: 1
-			path: src/Lotgd/ModuleManager.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -203,11 +149,6 @@ parameters:
 		-
 			message: "#^Function addnav_notl not found\\.$#"
 			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Function debug not found\\.$#"
-			count: 7
 			path: src/Lotgd/Modules.php
 
 		-
@@ -238,16 +179,6 @@ parameters:
 		-
 			message: "#^Function httpset not found\\.$#"
 			count: 2
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Function invalidatedatacache not found\\.$#"
-			count: 16
-			path: src/Lotgd/Modules.php
-
-		-
-			message: "#^Function massinvalidate not found\\.$#"
-			count: 3
 			path: src/Lotgd/Modules.php
 
 		-
@@ -291,11 +222,6 @@ parameters:
 			path: src/Lotgd/Modules.php
 
 		-
-			message: "#^Static method Lotgd\\\\MySQL\\\\Database\\:\\:affectedRows\\(\\) invoked with 1 parameter, 0 required\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
 			message: "#^Variable \\$exists might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Modules.php
@@ -326,21 +252,6 @@ parameters:
 			path: src/Lotgd/Modules.php
 
 		-
-			message: "#^Function debug not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules/Installer.php
-
-		-
-			message: "#^Function invalidatedatacache not found\\.$#"
-			count: 7
-			path: src/Lotgd/Modules/Installer.php
-
-		-
-			message: "#^Function massinvalidate not found\\.$#"
-			count: 6
-			path: src/Lotgd/Modules/Installer.php
-
-		-
 			message: "#^Function output not found\\.$#"
 			count: 9
 			path: src/Lotgd/Modules/Installer.php
@@ -353,11 +264,6 @@ parameters:
 		-
 			message: "#^Function httppost not found\\.$#"
 			count: 10
-			path: src/Lotgd/Motd.php
-
-		-
-			message: "#^Function invalidatedatacache not found\\.$#"
-			count: 7
 			path: src/Lotgd/Motd.php
 
 		-
@@ -374,11 +280,6 @@ parameters:
 			message: "#^Function rawoutput not found\\.$#"
 			count: 26
 			path: src/Lotgd/Motd.php
-
-		-
-			message: "#^Function debug not found\\.$#"
-			count: 1
-			path: src/Lotgd/MySQL/Database.php
 
 		-
 			message: "#^Variable \\$affected on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -442,11 +343,6 @@ parameters:
 
 		-
 			message: "#^Function httppost not found\\.$#"
-			count: 1
-			path: src/Lotgd/Newday.php
-
-		-
-			message: "#^Function massinvalidate not found\\.$#"
 			count: 1
 			path: src/Lotgd/Newday.php
 
@@ -541,11 +437,6 @@ parameters:
 			path: src/Lotgd/PhpGenericEnvironment.php
 
 		-
-			message: "#^Function debug not found\\.$#"
-			count: 2
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
 			message: "#^Function e_rand not found\\.$#"
 			count: 1
 			path: src/Lotgd/PlayerFunctions.php
@@ -554,11 +445,6 @@ parameters:
 			message: "#^Function module_delete_userprefs not found\\.$#"
 			count: 1
 			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Function debug not found\\.$#"
-			count: 5
-			path: src/Lotgd/PullUrl.php
 
 		-
 			message: "#^Function addnav not found\\.$#"

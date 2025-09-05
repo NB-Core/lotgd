@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Lotgd\Cookies;
 use Lotgd\MySQL\Database;
+use Lotgd\Output;
 
 $sql = "INSERT INTO " . Database::prefix("bans") . " (banner,";
+$output = Output::getInstance();
 $type = httppost("type");
 if ($type == "ip") {
     $sql .= "ipfilter";
@@ -48,7 +50,7 @@ if ($type == "ip") {
 }
 if ($sql != "") {
     $result = Database::query($sql);
-    $output->output("%s ban rows entered.`n`n", Database::affectedRows($result));
+    $output->output("%s ban rows entered.`n`n", Database::affectedRows());
     $output->outputNotl("%s", Database::error());
     debuglog("entered a ban: " .  ($type == "ip" ?  "IP: " . httppost("ip") : "ID: " . httppost("id")) . " Ends after: $duration  Reason: \"" .  httppost("reason") . "\"");
     /* log out affected players */
@@ -62,7 +64,7 @@ if ($sql != "") {
         $sql = " UPDATE " . Database::prefix('accounts') . " SET loggedin=0 WHERE acctid IN (" . implode(",", $acctids) . ")";
         $result = Database::query($sql);
         if ($result) {
-            $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows($result));
+            $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows());
         } else {
             $output->output("`\$Nobody was logged out. Acctids (%s) did not return rows!`n`n`0", implode(",", $acctids));
         }
