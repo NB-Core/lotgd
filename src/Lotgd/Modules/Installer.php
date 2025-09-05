@@ -86,7 +86,6 @@ class Installer
      */
     public static function forceUninstall(string $module): bool
     {
-        global $mostrecentmodule;
         $output = Output::getInstance();
 
         if (Modules::inject($module, true)) {
@@ -99,7 +98,7 @@ class Installer
             }
             Translator::getInstance()->setSchema();
         } else {
-            $mostrecentmodule = $module;
+            ModuleManager::setMostRecentModule($module);
         }
 
         $sql = 'DELETE FROM ' . Database::prefix('modules') . " WHERE modulename='$module'";
@@ -123,7 +122,7 @@ class Installer
 
     public static function install(string $module, bool $force = true): bool
     {
-        global $mostrecentmodule, $session;
+        global $session;
         $output = Output::getInstance();
 
         $name = $session['user']['name'] ?? '`@System`0';
@@ -148,13 +147,14 @@ class Installer
                 return false;
             }
             $keys = '|' . implode('|', array_keys($info)) . '|';
-            $sql  = 'INSERT INTO ' . Database::prefix('modules') . " (modulename,formalname,moduleauthor,active,filename,installdate,installedby,category,infokeys,version,download,description) VALUES ('$mostrecentmodule','" . addslashes($info['name']) . "','" . addslashes($info['author']) . "',0,'{$mostrecentmodule}.php','" . date('Y-m-d H:i:s') . "','" . addslashes($name) . "','" . addslashes($info['category']) . "','$keys','" . addslashes($info['version']) . "','" . addslashes($info['download']) . "', '" . addslashes($info['description']) . "')";
+            $moduleName = ModuleManager::getMostRecentModule();
+            $sql  = 'INSERT INTO ' . Database::prefix('modules') . " (modulename,formalname,moduleauthor,active,filename,installdate,installedby,category,infokeys,version,download,description) VALUES ('$moduleName','" . addslashes($info['name']) . "','" . addslashes($info['author']) . "',0,'{$moduleName}.php','" . date('Y-m-d H:i:s') . "','" . addslashes($name) . "','" . addslashes($info['category']) . "','$keys','" . addslashes($info['version']) . "','" . addslashes($info['download']) . "', '" . addslashes($info['description']) . "')";
             $result = Database::query($sql);
             if (!$result) {
                 $output->output('`\$ERROR!`0 The module could not be injected into the database.');
                 return false;
             }
-            $fname        = $mostrecentmodule . '_install';
+            $fname        = $moduleName . '_install';
             $returnvalue  = $fname();
             if (!$returnvalue) {
                 return false;
@@ -173,7 +173,7 @@ class Installer
                 }
             }
             $output->output('`^Module installed.  It is not yet active.`n');
-            DataCache::invalidatedatacache("inject-$mostrecentmodule");
+            DataCache::invalidatedatacache("inject-$moduleName");
             DataCache::massinvalidate('module_prepare');
             return true;
         }

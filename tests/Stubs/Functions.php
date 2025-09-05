@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace {
     use Lotgd\Output;
+    use Lotgd\Modules\ModuleManager;
     if (!function_exists('translate_inline')) {
         function translate_inline($text, $ns = false)
         {
@@ -95,13 +96,13 @@ namespace {
     if (!function_exists('debug')) {
         function debug($t, $force = false): void
         {
-            global $forms_output, $mostrecentmodule;
+            global $forms_output;
 
             if (is_array($t)) {
                 $t = appoencode(\Lotgd\DumpItem::dump($t), true);
             }
 
-            $origin = $mostrecentmodule ?? '';
+            $origin = ModuleManager::getMostRecentModule() ?? '';
 
             if ('' === $origin) {
                 $trace  = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);

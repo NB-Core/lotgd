@@ -16,6 +16,7 @@ use Lotgd\Sanitize;
 use Lotgd\Modules\Installer;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Modules\ModuleManager;
 use Lotgd\Translator;
 use Lotgd\DataCache;
 use Lotgd\Output;
@@ -37,13 +38,12 @@ class Modules
      */
     public static function inject(string $moduleName, bool $force = false, bool $withDb = true): bool
     {
-        global $mostrecentmodule;
         $force = $force ? 1 : 0;
         $output = Output::getInstance();
         $result = null;
 
         if (isset(self::$injectedModules[$force][$moduleName])) {
-            $mostrecentmodule = $moduleName;
+            ModuleManager::setMostRecentModule($moduleName);
             return self::$injectedModules[$force][$moduleName];
         }
 
@@ -72,7 +72,7 @@ class Modules
                 }
             }
             require_once $modulefilename;
-            $mostrecentmodule = $moduleName;
+            ModuleManager::setMostRecentModule($moduleName);
 
             $installFname   = $moduleName . '_install';
             $uninstallFname = $moduleName . '_uninstall';
@@ -251,9 +251,7 @@ class Modules
      */
     public static function checkRequirements(array $reqs, bool $forceinject = false): bool
     {
-        global $mostrecentmodule;
-
-        $oldmodule = $mostrecentmodule;
+        $oldmodule = ModuleManager::getMostRecentModule();
         $result    = true;
 
         if (! is_array($reqs)) {
@@ -279,7 +277,7 @@ class Modules
             }
         }
 
-        $mostrecentmodule = $oldmodule;
+        ModuleManager::setMostRecentModule($oldmodule);
         return $result;
     }
 
@@ -331,7 +329,9 @@ class Modules
         $Pmodule_settings  = Database::prefix('module_settings');
         $Pmodule_userprefs = Database::prefix('module_userprefs');
 
-        global $module_settings, $module_prefs, $session;
+        $module_settings = &ModuleManager::settings();
+        $module_prefs    = &ModuleManager::prefs();
+        global $session;
 
         $namesStr = "'" . implode("', '", $hookNames) . "'";
         $sql  = 'SELECT '
@@ -382,8 +382,8 @@ class Modules
      */
     public static function hook(string $hookName, array $args = [], bool $allowInactive = false, $only = false)
     {
-        global $navsection, $mostrecentmodule;
-        global $session, $currenthook;
+        global $navsection;
+        global $session;
         $settings = Settings::getInstance();
         $output   = Output::getInstance();
 
@@ -391,8 +391,8 @@ class Modules
             return $args;
         }
 
-        $lasthook   = $currenthook;
-        $currenthook = $hookName;
+        $lasthook   = ModuleManager::getCurrentHook();
+        ModuleManager::setCurrentHook($hookName);
         static $hookcomment = [];
 
         if ($args === false) {
@@ -404,7 +404,7 @@ class Modules
         }
 
         if (!is_array($args)) {
-            $where = $mostrecentmodule ?: ScriptName::current();
+            $where = ModuleManager::getMostRecentModule() ?: ScriptName::current();
             $output->debug("Args parameter to modulehook $hookName from $where is not an array.");
         }
 
@@ -452,7 +452,7 @@ class Modules
             $args = ['bogus_args' => $args];
         }
 
-        $mod = $mostrecentmodule;
+        $mod = ModuleManager::getMostRecentModule();
 
         while ($row = Database::fetchAssoc($result)) {
             if ($only !== false && $row['modulename'] != $only) {
@@ -509,8 +509,8 @@ class Modules
             }
         }
 
-        $mostrecentmodule = $mod;
-        $currenthook      = $lasthook;
+        ModuleManager::setMostRecentModule($mod);
+        ModuleManager::setCurrentHook($lasthook);
         return $args;
     }
 
@@ -519,10 +519,10 @@ class Modules
      */
     public static function getAllModuleSettings(?string $module = null): array
     {
-        global $module_settings, $mostrecentmodule;
+        $module_settings = &ModuleManager::settings();
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         self::loadModuleSettings($module);
@@ -535,10 +535,10 @@ class Modules
      */
     public static function getModuleSetting(string $name, ?string $module = null)
     {
-        global $module_settings, $mostrecentmodule;
+        $module_settings = &ModuleManager::settings();
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         self::loadModuleSettings($module);
@@ -567,10 +567,10 @@ class Modules
      */
     public static function setModuleSetting(string $name, $value, ?string $module = null): void
     {
-        global $module_settings, $mostrecentmodule;
+        $module_settings = &ModuleManager::settings();
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         self::loadModuleSettings($module);
@@ -596,12 +596,12 @@ class Modules
      */
     public static function incrementModuleSetting(string $name, $value = 1, ?string $module = null): void
     {
-        global $module_settings, $mostrecentmodule;
+        $module_settings = &ModuleManager::settings();
 
         $value = (float) $value;
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         self::loadModuleSettings($module);
@@ -626,10 +626,10 @@ class Modules
      */
     public static function clearModuleSettings(?string $module = null): void
     {
-        global $module_settings, $mostrecentmodule;
+        $module_settings = &ModuleManager::settings();
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         if (isset($module_settings[$module])) {
@@ -643,7 +643,7 @@ class Modules
      */
     public static function loadModuleSettings(string $module): void
     {
-        global $module_settings;
+        $module_settings = &ModuleManager::settings();
 
         if (!isset($module_settings[$module])) {
             $module_settings[$module] = [];
@@ -670,10 +670,8 @@ class Modules
      */
     public static function getObjPref(string $type, $objid, string $name, ?string $module = null)
     {
-        global $mostrecentmodule;
-
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         $sql = 'SELECT value FROM ' . Database::prefix('module_objprefs')
@@ -706,10 +704,8 @@ class Modules
      */
     public static function setObjPref(string $objtype, $objid, string $name, $value, ?string $module = null): void
     {
-        global $mostrecentmodule;
-
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         $sql = 'REPLACE INTO ' . Database::prefix('module_objprefs')
@@ -723,12 +719,10 @@ class Modules
      */
     public static function incrementObjPref(string $objtype, $objid, string $name, $value = 1, ?string $module = null): void
     {
-        global $mostrecentmodule;
-
         $value = (float) $value;
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
 
         $sql = 'UPDATE ' . Database::prefix('module_objprefs')
@@ -749,7 +743,7 @@ class Modules
      */
     public static function deleteUserPrefs(int $user): void
     {
-        global $module_prefs;
+        $module_prefs = &ModuleManager::prefs();
 
         $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE userid='$user'";
         Database::query($sql);
@@ -763,10 +757,11 @@ class Modules
      */
     public static function getAllModulePrefs(?string $module = null, ?int $user = null): array
     {
-        global $module_prefs, $mostrecentmodule, $session;
+        $module_prefs = &ModuleManager::prefs();
+        global $session;
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
         if ($user === null) {
             $user = $session['user']['acctid'] ?? 0;
@@ -786,10 +781,11 @@ class Modules
      */
     public static function getModulePref(string $name, ?string $module = null, ?int $user = null)
     {
-        global $module_prefs, $mostrecentmodule, $session;
+        $module_prefs = &ModuleManager::prefs();
+        global $session;
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
         if ($user === null && isset($session['user']['acctid'])) {
             $user = $session['user']['acctid'];
@@ -836,10 +832,11 @@ class Modules
      */
     public static function setModulePref(string $name, $value, ?string $module = null, ?int $user = null): void
     {
-        global $module_prefs, $mostrecentmodule, $session;
+        $module_prefs = &ModuleManager::prefs();
+        global $session;
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
         if ($user === null) {
             $uid = $session['user']['acctid'] ?? 0;
@@ -877,12 +874,13 @@ class Modules
      */
     public static function incrementModulePref(string $name, $value = 1, ?string $module = null, ?int $user = null): void
     {
-        global $module_prefs, $mostrecentmodule, $session;
+        $module_prefs = &ModuleManager::prefs();
+        global $session;
 
         $value = (float) $value;
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
         if ($user === null) {
             $uid = $session['user']['acctid'];
@@ -920,10 +918,11 @@ class Modules
      */
     public static function clearModulePref(string $name, ?string $module = null, ?int $user = null): void
     {
-        global $module_prefs, $mostrecentmodule, $session;
+        $module_prefs = &ModuleManager::prefs();
+        global $session;
 
         if ($module === null) {
-            $module = $mostrecentmodule;
+            $module = ModuleManager::getMostRecentModule();
         }
         if ($user === null) {
             $uid = $session['user']['acctid'];
@@ -955,7 +954,8 @@ class Modules
      */
     public static function loadModulePrefs(string $module, ?int $user = null): void
     {
-        global $module_prefs, $session;
+        $module_prefs = &ModuleManager::prefs();
+        global $session;
 
         if ($user === null) {
             $user = $session['user']['acctid'];
@@ -984,10 +984,8 @@ class Modules
      */
     public static function getModuleInfo(string $shortname, bool $withDb = true): array
     {
-        global $mostrecentmodule;
-
         $moduleinfo = [];
-        $mod        = $mostrecentmodule;
+        $mod        = ModuleManager::getMostRecentModule();
 
         if (self::inject($shortname, true, $withDb)) {
             $fname = $shortname . '_getmoduleinfo';
@@ -1030,7 +1028,7 @@ class Modules
             return [];
         }
 
-        $mostrecentmodule = $mod;
+        ModuleManager::setMostRecentModule($mod);
 
         if (!isset($moduleinfo['requires'])) {
             $moduleinfo['requires'] = [];
@@ -1044,13 +1042,13 @@ class Modules
      */
     public static function wipeHooks(): void
     {
-        global $mostrecentmodule;
+        $module = ModuleManager::getMostRecentModule();
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_hooks') . " WHERE modulename='$mostrecentmodule'";
+        $sql = 'DELETE FROM ' . Database::prefix('module_hooks') . " WHERE modulename='$module'";
         Database::query($sql);
-        $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks') . " WHERE modulename='$mostrecentmodule'";
+        $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks') . " WHERE modulename='$module'";
         Database::query($sql);
-        DataCache::invalidatedatacache('hook-' . $mostrecentmodule);
+        DataCache::invalidatedatacache('hook-' . $module);
         DataCache::invalidatedatacache('module_prepare');
     }
 
@@ -1063,12 +1061,12 @@ class Modules
      */
     public static function addEventHook(string $type, string $chance): void
     {
-        global $mostrecentmodule;
+        $module = ModuleManager::getMostRecentModule();
 
         self::dropEventHook($type);
 
         $sql = 'INSERT INTO ' . Database::prefix('module_event_hooks')
-            . " (modulename, event_type, event_chance) VALUES ('" . $mostrecentmodule . "', '$type', '" . addslashes($chance) . "')";
+            . " (modulename, event_type, event_chance) VALUES ('" . $module . "', '$type', '" . addslashes($chance) . "')";
         Database::query($sql);
         DataCache::invalidatedatacache("event-$type-0");
         DataCache::invalidatedatacache("event-$type-1");
@@ -1082,10 +1080,10 @@ class Modules
      */
     public static function dropEventHook(string $type): void
     {
-        global $mostrecentmodule;
+        $module = ModuleManager::getMostRecentModule();
 
         $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks')
-            . " WHERE modulename='$mostrecentmodule' AND event_type='" . addslashes($type) . "'";
+            . " WHERE modulename='$module' AND event_type='" . addslashes($type) . "'";
         Database::query($sql);
         DataCache::invalidatedatacache("event-$type-0");
         DataCache::invalidatedatacache("event-$type-1");
@@ -1096,14 +1094,14 @@ class Modules
      */
     public static function dropHook(string $hookname, $functioncall = false): void
     {
-        global $mostrecentmodule;
+        $module = ModuleManager::getMostRecentModule();
 
         if ($functioncall === false) {
-            $functioncall = $mostrecentmodule . '_dohook';
+            $functioncall = $module . '_dohook';
         }
 
         $sql = 'DELETE FROM ' . Database::prefix('module_hooks')
-            . " WHERE modulename='$mostrecentmodule' AND location='" . addslashes($hookname)
+            . " WHERE modulename='$module' AND location='" . addslashes($hookname)
             . "' AND hook_callback='" . addslashes($functioncall) . "'";
         Database::query($sql);
         DataCache::invalidatedatacache("hook-$hookname");
@@ -1123,19 +1121,19 @@ class Modules
      */
     public static function addHookPriority(string $hookname, int $priority = 50, $functioncall = false, $whenactive = false): void
     {
-        global $mostrecentmodule;
+        $module = ModuleManager::getMostRecentModule();
 
         self::dropHook($hookname, $functioncall);
 
         if ($functioncall === false) {
-            $functioncall = $mostrecentmodule . '_dohook';
+            $functioncall = $module . '_dohook';
         }
         if ($whenactive === false) {
             $whenactive = '';
         }
 
         $sql = 'REPLACE INTO ' . Database::prefix('module_hooks')
-            . " (modulename,location,hook_callback,whenactive,priority) VALUES ('$mostrecentmodule','" . addslashes($hookname)
+            . " (modulename,location,hook_callback,whenactive,priority) VALUES ('$module','" . addslashes($hookname)
             . "','" . addslashes($functioncall) . "','" . addslashes($whenactive) . "','" . $priority . "')";
         Database::query($sql);
         DataCache::invalidatedatacache("hook-$hookname");
@@ -1257,16 +1255,13 @@ class Modules
      */
     public static function doEvent(string $type, string $module, bool $allowinactive = false, ?string $baseLink = null): void
     {
-        global $navsection, $mostrecentmodule;
+        global $navsection;
 
         if ($baseLink === null) {
             $baseLink = ScriptName::current() . '.php?';
         }
 
-        if (!isset($mostrecentmodule)) {
-            $mostrecentmodule = '';
-        }
-        $mod = $mostrecentmodule;
+        $mod = ModuleManager::getMostRecentModule();
 
         $_POST['i_am_a_hack'] = 'true';
         if (self::inject($module, $allowinactive)) {
@@ -1279,7 +1274,7 @@ class Modules
             $navsection = $oldnavsection;
         }
 
-        $mostrecentmodule = $mod;
+        ModuleManager::setMostRecentModule($mod);
     }
 
     public static function eventSort($a, $b)

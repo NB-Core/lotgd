@@ -22,14 +22,13 @@ use Lotgd\Modules;
 use Lotgd\MySQL\Database;
 use PHPUnit\Framework\TestCase;
 use Lotgd\Util\ScriptName;
+use Lotgd\Modules\ModuleManager;
 use ReflectionClass;
 
 function modulehook_validation(string $hookName, $args = [], bool $allowInactive = false, $only = false)
 {
-    global $mostrecentmodule;
-
     if (!is_array($args)) {
-        $where = $mostrecentmodule ?: ScriptName::current();
+        $where = ModuleManager::getMostRecentModule() ?: ScriptName::current();
         debug("Args parameter to modulehook $hookName from $where is not an array.");
         $args = ['bogus_args' => $args];
     }

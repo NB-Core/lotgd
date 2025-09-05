@@ -38,6 +38,7 @@ namespace {
 namespace Lotgd\Tests\Modules\Prefs {
 
 use Lotgd\Modules;
+use Lotgd\Modules\ModuleManager;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Tests\Stubs\DoctrineResult;
@@ -66,10 +67,10 @@ final class ModulePrefsTest extends TestCase
         Database::$doctrineConnection        = $conn;
         \Lotgd\Doctrine\Bootstrap::$conn = $conn;
 
-        global $session, $module_prefs, $mostrecentmodule;
+        global $session;
         $session         = ['user' => ['acctid' => 1, 'loggedin' => true]];
-        $module_prefs    = [];
-        $mostrecentmodule = '';
+        ModuleManager::setPrefs([]);
+        ModuleManager::setMostRecentModule('');
 
         $ref  = new ReflectionClass(Modules::class);
         $prop = $ref->getProperty('injectedModules');

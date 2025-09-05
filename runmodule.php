@@ -12,6 +12,7 @@ define("OVERRIDE_FORCED_NAV", true);
 
 use Lotgd\Http;
 use Lotgd\Modules;
+use Lotgd\Modules\ModuleManager;
 use Lotgd\Nav\VillageNav;
 use Lotgd\ForcedNavigation;
 use Lotgd\DateTime;
@@ -48,15 +49,16 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
 
         // Execute the module run function and measure execution time
         $starttime = DateTime::getMicroTime();
-    $fname = $mostrecentmodule . "_run";
-    Translator::getInstance()->setSchema("module-$mostrecentmodule");
+    $moduleName = ModuleManager::getMostRecentModule();
+    $fname = $moduleName . "_run";
+    Translator::getInstance()->setSchema("module-$moduleName");
     $fname();
         $endtime = DateTime::getMicroTime();
     if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
         //On a side note, you won't ever see this text. A normal module calls page_footer(), which ends execution here....
-        $output->debug("Slow Module (" . round($endtime - $starttime, 2) . "s): $mostrecentmodule`n");
+        $output->debug("Slow Module (" . round($endtime - $starttime, 2) . "s): $moduleName`n");
         $stats = array (
-            "modulename" => $mostrecentmodule,
+            "modulename" => $moduleName,
             "date" => date("Y-m-d H:i:s"),
             "duration" => round($endtime - $starttime, 5),
             );

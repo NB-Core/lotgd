@@ -56,13 +56,11 @@ function mass_module_prepare(array $hooknames): bool
     return HookHandler::massPrepare($hooknames);
 }
 
-$currenthook = "";
 function modulehook(string $hookname, array $args = [], bool $allowinactive = false, $only = false): array
 {
     return HookHandler::hook($hookname, $args, $allowinactive, $only);
 }
 
-$module_settings = array();
 function get_all_module_settings(?string $module = null): array
 {
     return HookHandler::getAllModuleSettings($module);
@@ -118,7 +116,6 @@ function module_delete_userprefs(int $user): void
     HookHandler::deleteUserPrefs($user);
 }
 
-$module_prefs = array();
 function get_all_module_prefs(?string $module = null, ?int $user = null): array
 {
     return HookHandler::getAllModulePrefs($module, $user);
