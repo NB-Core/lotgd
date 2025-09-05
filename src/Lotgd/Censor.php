@@ -153,7 +153,7 @@ class Censor
         $search = "$start(" . trim($search) . ")+$end";
         $search = str_replace("$start()+$end", "", $search);
         $search = explode(" ", $search);
-        DataCache::updatedatacache('nastywordlist', $search);
+        DataCache::getInstance()->updatedatacache('nastywordlist', $search);
 
         return $search;
     }

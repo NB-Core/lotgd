@@ -261,9 +261,9 @@ class Motd
                 " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",$type,$author)";
         }
         Database::query($sql);
-        DataCache::invalidatedatacache('motd');
-        DataCache::invalidatedatacache('lastmotd');
-        DataCache::invalidatedatacache('motddate');
+        DataCache::getInstance()->invalidatedatacache('motd');
+        DataCache::getInstance()->invalidatedatacache('lastmotd');
+        DataCache::getInstance()->invalidatedatacache('motddate');
     }
 
     /**
@@ -284,7 +284,7 @@ class Motd
         $sql = 'INSERT INTO ' . Database::prefix('motd') .
             " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",1,{$session['user']['acctid']})";
         Database::query($sql);
-        DataCache::invalidatedatacache('motd');
+        DataCache::getInstance()->invalidatedatacache('motd');
     }
 
     /**
@@ -294,9 +294,9 @@ class Motd
     {
         $sql = 'DELETE FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
         Database::query($sql);
-        DataCache::invalidatedatacache('motd');
-        DataCache::invalidatedatacache('lastmotd');
-        DataCache::invalidatedatacache('motddate');
+        DataCache::getInstance()->invalidatedatacache('motd');
+        DataCache::getInstance()->invalidatedatacache('lastmotd');
+        DataCache::getInstance()->invalidatedatacache('motddate');
     }
 
     /**

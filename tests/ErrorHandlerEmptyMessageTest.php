@@ -69,7 +69,7 @@ final class ErrorHandlerEmptyMessageTest extends TestCase
         ErrorHandler::errorNotify(E_ERROR, '', 'file.php', 1, '');
 
         $this->assertSame(0, $GLOBALS['mail_sent_count']);
-        $this->assertFalse(DataCache::datacache('error_notify'));
+        $this->assertFalse(DataCache::getInstance()->datacache('error_notify'));
         $this->assertSame([], glob($this->cacheDir . '/*'));
     }
 }

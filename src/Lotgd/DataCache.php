@@ -14,9 +14,18 @@ if (!defined('DATACACHE_FILENAME_PREFIX')) {
 
 class DataCache
 {
+    private static ?self $instance = null;
     private static array $cache = [];
     private static string $path = '';
     private static bool $checkedOld = false;
+
+    /**
+     * Retrieve the global DataCache instance.
+     */
+    public static function getInstance(): self
+    {
+        return self::$instance ??= new self();
+    }
 
     /**
      * Retrieve an entry from the filesystem cache.
@@ -26,9 +35,8 @@ class DataCache
      *
      * @return mixed Cached data or false when not found
      */
-    public static function datacache(string $name, int $duration = 60): mixed
+    public function datacache(string $name, int $duration = 60): mixed
     {
-        global $datacache;
         if (! Settings::hasInstance()) {
             return false;
         }
@@ -39,7 +47,7 @@ class DataCache
         if (isset(self::$cache[$name])) {
             return self::$cache[$name];
         }
-        $fullname = self::makecachetempname($name);
+        $fullname = $this->makecachetempname($name);
         if (file_exists($fullname) && @filemtime($fullname) > strtotime("-$duration seconds")) {
             $fullfile = @file_get_contents($fullname);
             if ($fullfile > '') {
@@ -57,7 +65,7 @@ class DataCache
      * @param string $name Cache key
      * @param mixed  $data Data to store
      */
-    public static function updatedatacache(string $name, mixed $data): bool
+    public function updatedatacache(string $name, mixed $data): bool
     {
         if (! Settings::hasInstance()) {
             return false;
@@ -79,7 +87,7 @@ class DataCache
             }
 
             self::$path = $base;
-            $fullname = self::makecachetempname($name);
+            $fullname = $this->makecachetempname($name);
             self::$cache[$name] = $data;
 
             $encoded = json_encode($data);
@@ -104,14 +112,14 @@ class DataCache
     /**
      * Remove an entry from the cache.
      */
-    public static function invalidatedatacache(string $name, bool $withpath = true): void
+    public function invalidatedatacache(string $name, bool $withpath = true): void
     {
         if (! Settings::hasInstance()) {
             return;
         }
         $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
-            $fullname = $withpath ? self::makecachetempname($name) : $name;
+            $fullname = $withpath ? $this->makecachetempname($name) : $name;
             if (file_exists($fullname)) {
                 unlink($fullname);
             }
@@ -124,7 +132,7 @@ class DataCache
     /**
      * Invalidate all cache entries matching prefix.
      */
-    public static function massinvalidate(string $name = ''): void
+    public function massinvalidate(string $name = ''): void
     {
         if (! Settings::hasInstance()) {
             return;
@@ -138,7 +146,7 @@ class DataCache
             $dir = dir(self::$path);
             while (false !== ($file = $dir->read())) {
                 if (strpos($file, $name) !== false) {
-                    self::invalidatedatacache(self::$path . '/' . $file, false);
+                    $this->invalidatedatacache(self::$path . '/' . $file, false);
                 }
             }
             $dir->close();
@@ -150,7 +158,7 @@ class DataCache
      *
      * @return string Cache filename
      */
-    public static function makecachetempname(string $name): string
+    public function makecachetempname(string $name): string
     {
         if (! Settings::hasInstance()) {
             return '';

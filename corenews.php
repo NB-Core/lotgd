@@ -18,7 +18,7 @@ SuperuserNav::render();
 output("`4Latest release information will be retrieved from GitHub.`n`n");
 
 $cacheKey = 'github_release_latest';
-$release = DataCache::datacache($cacheKey, 86400);
+$release = DataCache::getInstance()->datacache($cacheKey, 86400);
 
 if (!is_array($release)) {
     $context = stream_context_create([
@@ -39,7 +39,7 @@ if (!is_array($release)) {
         $data = json_decode($json, true);
         if (is_array($data)) {
             $release = $data;
-            DataCache::updatedatacache($cacheKey, $release);
+            DataCache::getInstance()->updatedatacache($cacheKey, $release);
         }
     }
 }

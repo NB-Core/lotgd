@@ -44,28 +44,28 @@ final class DataCacheTest extends TestCase
         $name = 'sample';
         $data = ['value' => 42];
 
-        $this->assertTrue(DataCache::updatedatacache($name, $data));
-        $this->assertFileExists(DataCache::makecachetempname($name));
+        $this->assertTrue(DataCache::getInstance()->updatedatacache($name, $data));
+        $this->assertFileExists(DataCache::getInstance()->makecachetempname($name));
 
-        $cached = DataCache::datacache($name);
+        $cached = DataCache::getInstance()->datacache($name);
         $this->assertSame($data, $cached);
 
-        DataCache::invalidatedatacache($name);
-        $this->assertFileDoesNotExist(DataCache::makecachetempname($name));
+        DataCache::getInstance()->invalidatedatacache($name);
+        $this->assertFileDoesNotExist(DataCache::getInstance()->makecachetempname($name));
     }
 
     public function testMassInvalidate(): void
     {
         $prefix = 'pref';
-        DataCache::updatedatacache($prefix . '1', [1]);
-        DataCache::updatedatacache($prefix . '2', [2]);
-        DataCache::updatedatacache('other', [3]);
+        DataCache::getInstance()->updatedatacache($prefix . '1', [1]);
+        DataCache::getInstance()->updatedatacache($prefix . '2', [2]);
+        DataCache::getInstance()->updatedatacache('other', [3]);
 
-        DataCache::massinvalidate($prefix);
+        DataCache::getInstance()->massinvalidate($prefix);
 
-        $this->assertFileDoesNotExist(DataCache::makecachetempname($prefix . '1'));
-        $this->assertFileDoesNotExist(DataCache::makecachetempname($prefix . '2'));
-        $this->assertFileExists(DataCache::makecachetempname('other'));
+        $this->assertFileDoesNotExist(DataCache::getInstance()->makecachetempname($prefix . '1'));
+        $this->assertFileDoesNotExist(DataCache::getInstance()->makecachetempname($prefix . '2'));
+        $this->assertFileExists(DataCache::getInstance()->makecachetempname('other'));
     }
 
     public function testUpdateCacheFailureOnBadPath(): void
@@ -73,8 +73,8 @@ final class DataCacheTest extends TestCase
         $invalidPath = '/dev/null/' . uniqid();
         $GLOBALS['settings']->saveSetting('datacachepath', $invalidPath);
 
-        $this->assertFalse(DataCache::updatedatacache('failpath', ['x' => 1]));
-        $this->assertFileDoesNotExist(DataCache::makecachetempname('failpath'));
+        $this->assertFalse(DataCache::getInstance()->updatedatacache('failpath', ['x' => 1]));
+        $this->assertFileDoesNotExist(DataCache::getInstance()->makecachetempname('failpath'));
     }
 
     public function testUpdateCacheFailureWhenBasePathIsFile(): void
@@ -82,8 +82,8 @@ final class DataCacheTest extends TestCase
         $file = tempnam(sys_get_temp_dir(), 'cachefile');
         $GLOBALS['settings']->saveSetting('datacachepath', $file);
 
-        $this->assertFalse(DataCache::updatedatacache('filebase', ['x' => 1]));
-        $this->assertFileDoesNotExist(DataCache::makecachetempname('filebase'));
+        $this->assertFalse(DataCache::getInstance()->updatedatacache('filebase', ['x' => 1]));
+        $this->assertFileDoesNotExist(DataCache::getInstance()->makecachetempname('filebase'));
 
         unlink($file);
     }
@@ -93,17 +93,17 @@ final class DataCacheTest extends TestCase
         $longKey = str_repeat('a', 250);
         $data = ['foo' => 'bar'];
 
-        $this->assertTrue(DataCache::updatedatacache($longKey, $data));
+        $this->assertTrue(DataCache::getInstance()->updatedatacache($longKey, $data));
         $expected = DATACACHE_FILENAME_PREFIX . substr($longKey, 0, 40) . '-' . sha1($longKey);
-        $this->assertSame($expected, basename(DataCache::makecachetempname($longKey)));
-        $this->assertSame($data, DataCache::datacache($longKey));
+        $this->assertSame($expected, basename(DataCache::getInstance()->makecachetempname($longKey)));
+        $this->assertSame($data, DataCache::getInstance()->datacache($longKey));
     }
 
     public function testUpdateCacheFailureOnJsonError(): void
     {
         $resource = tmpfile();
-        $this->assertFalse(DataCache::updatedatacache('failjson', $resource));
+        $this->assertFalse(DataCache::getInstance()->updatedatacache('failjson', $resource));
         fclose($resource);
-        $this->assertFileDoesNotExist(DataCache::makecachetempname('failjson'));
+        $this->assertFileDoesNotExist(DataCache::getInstance()->makecachetempname('failjson'));
     }
 }

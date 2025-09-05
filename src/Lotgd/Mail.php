@@ -74,7 +74,7 @@ class Mail
         $body = addslashes($body);
         $sql = 'INSERT INTO ' . Database::prefix('mail') . " (msgfrom,msgto,subject,body,sent) VALUES ('" . (int)$from . "','" . (int)$to . "','$subject','$body','" . date('Y-m-d H:i:s') . "')";
         Database::query($sql);
-        DataCache::invalidatedatacache("mail-$to");
+        DataCache::getInstance()->invalidatedatacache("mail-$to");
         $email = false;
         if (isset($prefs['emailonmail']) && $prefs['emailonmail'] && $from > 0) {
             $email = true;
@@ -121,7 +121,7 @@ class Mail
             $from_array = [$adminEmail => $adminEmail];
             self::send($to_array, $mailbody, $mailsubj, $from_array, false, 'text/plain');
         }
-        DataCache::invalidatedatacache("mail-$to");
+        DataCache::getInstance()->invalidatedatacache("mail-$to");
     }
 
     /**
@@ -202,7 +202,7 @@ class Mail
     {
         $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid=$messageId";
         Database::query($sql);
-        DataCache::invalidatedatacache("mail-$userId");
+        DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
     /**
@@ -218,7 +218,7 @@ class Mail
         $ids = implode("','", array_map('intval', $messageIds));
         $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid IN ('$ids')";
         Database::query($sql);
-        DataCache::invalidatedatacache("mail-$userId");
+        DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
     /**
@@ -228,7 +228,7 @@ class Mail
     {
         $sql = 'UPDATE ' . Database::prefix('mail') . " SET seen=0 WHERE msgto=$userId AND messageid=$messageId";
         Database::query($sql);
-        DataCache::invalidatedatacache("mail-$userId");
+        DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
     /**
@@ -309,7 +309,7 @@ class Mail
         $sql = 'UPDATE ' . Database::prefix('mail')
             . " SET seen=1 WHERE msgto='$userId' AND messageid='$messageId'";
         Database::query($sql);
-        DataCache::invalidatedatacache("mail-$userId");
+        DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
     /**

@@ -152,11 +152,11 @@ class ErrorHandler
         }
 
         $howoften = (int) $settings->getSetting('notify_every', 30);
-        $data = DataCache::datacache('error_notify', 86400);
+        $data = DataCache::getInstance()->datacache('error_notify', 86400);
         if (!is_array($data)) {
             $data = ['firstrun' => false, 'errors' => []];
             if ($settings->getSetting('usedatacache', 0)
-                && !DataCache::updatedatacache('error_notify', $data)) {
+                && !DataCache::getInstance()->updatedatacache('error_notify', $data)) {
                 error_log('Unable to write datacache for error_notify');
             }
         } else {
@@ -202,7 +202,7 @@ class ErrorHandler
             }
         }
         if ($settings->getSetting('usedatacache', 0)
-            && ! DataCache::updatedatacache('error_notify', $data)) {
+            && ! DataCache::getInstance()->updatedatacache('error_notify', $data)) {
             error_log('Unable to write datacache for error_notify');
         }
         $output->debug($data, true);

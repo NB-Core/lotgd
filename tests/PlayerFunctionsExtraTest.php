@@ -76,6 +76,6 @@ final class PlayerFunctionsExtraTest extends TestCase
         $prop->setValue(null, ['exparraydk0' => [50.0, 100.0, 150.0]]);
         $exp = PlayerFunctions::expForNextLevel(2, 0);
         $this->assertSame(100.0, $exp);
-        $this->assertSame([50.0, 100.0, 150.0], DataCache::datacache('exparraydk0'));
+        $this->assertSame([50.0, 100.0, 150.0], DataCache::getInstance()->datacache('exparraydk0'));
     }
 }

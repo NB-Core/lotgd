@@ -25,19 +25,19 @@ if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
         $sql = "UPDATE " . Database::prefix("clans") . " SET clanname='$clanname',clanshort='$clanshort' WHERE clanid='$detail'";
         $output->output("Updating clan names`n");
         Database::query($sql);
-        DataCache::invalidatedatacache("clandata-$detail");
+        DataCache::getInstance()->invalidatedatacache("clandata-$detail");
     }
     if (Http::post('block') > "") {
         $blockdesc = Translator::translateInline("Description blocked for inappropriate usage.");
         $sql = "UPDATE " . Database::prefix("clans") . " SET descauthor=4294967295, clandesc='$blockdesc' where clanid='$detail'";
         $output->output("Blocking public description`n");
         Database::query($sql);
-        DataCache::invalidatedatacache("clandata-$detail");
+        DataCache::getInstance()->invalidatedatacache("clandata-$detail");
     } elseif (Http::post('unblock') > "") {
         $sql = "UPDATE " . Database::prefix("clans") . " SET descauthor=0, clandesc='' where clanid='$detail'";
         $output->output("UNblocking public description`n");
         Database::query($sql);
-        DataCache::invalidatedatacache("clandata-$detail");
+        DataCache::getInstance()->invalidatedatacache("clandata-$detail");
     }
 }
     $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanid='$detail'";

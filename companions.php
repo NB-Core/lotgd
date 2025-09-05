@@ -40,13 +40,13 @@ if ($op == "deactivate") {
     Database::query($sql);
     $op = "";
     Http::set("op", "");
-    DataCache::invalidatedatacache("companionsdata-$id");
+    DataCache::getInstance()->invalidatedatacache("companionsdata-$id");
 } elseif ($op == "activate") {
     $sql = "UPDATE " . Database::prefix("companions") . " SET companionactive=1 WHERE companionid='$id'";
     Database::query($sql);
     $op = "";
     Http::set("op", "");
-    DataCache::invalidatedatacache("companiondata-$id");
+    DataCache::getInstance()->invalidatedatacache("companiondata-$id");
 } elseif ($op == "del") {
     //drop the companion.
     $sql = "DELETE FROM " . Database::prefix("companions") . " WHERE companionid='$id'";
@@ -54,7 +54,7 @@ if ($op == "deactivate") {
     HookHandler::deleteObjPrefs('companions', $id);
     $op = "";
     Http::set("op", "");
-    DataCache::invalidatedatacache("companiondata-$id");
+    DataCache::getInstance()->invalidatedatacache("companiondata-$id");
 } elseif ($op == "take") {
     $sql = "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid='$id'";
     $result = Database::query($sql);
@@ -120,7 +120,7 @@ if ($op == "deactivate") {
                     " ($keys) VALUES ($vals)";
             }
             Database::query($sql);
-            DataCache::invalidatedatacache("companiondata-$id");
+            DataCache::getInstance()->invalidatedatacache("companiondata-$id");
             if (Database::affectedRows() > 0) {
                 $output->output("`^Companion saved!`0`n`n");
             } else {
