@@ -48,9 +48,11 @@ class Installer
 
     public static function uninstall(string $module): bool
     {
+        $output = Output::getInstance();
+
         if (Modules::inject($module, true)) {
             $fname = $module . '_uninstall';
-            output('Running module uninstall script`n');
+            $output->output('Running module uninstall script`n');
             Translator::getInstance()->setSchema("module-{$module}");
             $returnvalue = $fname();
             if (!$returnvalue) {
@@ -85,10 +87,11 @@ class Installer
     public static function forceUninstall(string $module): bool
     {
         global $mostrecentmodule;
+        $output = Output::getInstance();
 
         if (Modules::inject($module, true)) {
             $fname = $module . '_uninstall';
-            output('Running module uninstall script`n');
+            $output->output('Running module uninstall script`n');
             Translator::getInstance()->setSchema("module-{$module}");
             $returnvalue = $fname();
             if (!$returnvalue) {
@@ -121,11 +124,12 @@ class Installer
     public static function install(string $module, bool $force = true): bool
     {
         global $mostrecentmodule, $session;
+        $output = Output::getInstance();
 
         $name = $session['user']['name'] ?? '`@System`0';
 
         if (Sanitize::modulenameSanitize($module) != $module) {
-            output("Error, module file names can only contain alpha numeric characters and underscores before the trailing .php`n`nGood module names include 'testmodule.php', 'joesmodule2.php', while bad module names include, 'test.module.php' or 'joes module.php'`n");
+            $output->output("Error, module file names can only contain alpha numeric characters and underscores before the trailing .php`n`nGood module names include 'testmodule.php', 'joesmodule2.php', while bad module names include, 'test.module.php' or 'joes module.php'`n");
             return false;
         }
 
@@ -140,14 +144,14 @@ class Installer
             }
             $info = Modules::getModuleInfo($module);
             if (!Modules::checkRequirements($info['requires'])) {
-                output("`\$Module could not installed -- it did not meet its prerequisites.`n");
+                $output->output("`\$Module could not installed -- it did not meet its prerequisites.`n");
                 return false;
             }
             $keys = '|' . implode('|', array_keys($info)) . '|';
             $sql  = 'INSERT INTO ' . Database::prefix('modules') . " (modulename,formalname,moduleauthor,active,filename,installdate,installedby,category,infokeys,version,download,description) VALUES ('$mostrecentmodule','" . addslashes($info['name']) . "','" . addslashes($info['author']) . "',0,'{$mostrecentmodule}.php','" . date('Y-m-d H:i:s') . "','" . addslashes($name) . "','" . addslashes($info['category']) . "','$keys','" . addslashes($info['version']) . "','" . addslashes($info['download']) . "', '" . addslashes($info['description']) . "')";
             $result = Database::query($sql);
             if (!$result) {
-                output('`\$ERROR!`0 The module could not be injected into the database.');
+                $output->output('`\$ERROR!`0 The module could not be injected into the database.');
                 return false;
             }
             $fname        = $mostrecentmodule . '_install';
@@ -164,18 +168,18 @@ class Installer
                     }
                     if (isset($x[1])) {
                         HookHandler::setModuleSetting($key, $x[1]);
-                        Output::getInstance()->debug("Setting $key to default {$x[1]}");
+                        $output->debug("Setting $key to default {$x[1]}");
                     }
                 }
             }
-            output('`^Module installed.  It is not yet active.`n');
+            $output->output('`^Module installed.  It is not yet active.`n');
             DataCache::invalidatedatacache("inject-$mostrecentmodule");
             DataCache::massinvalidate('module_prepare');
             return true;
         }
-        output('`\$Module could not be injected.');
-        output('Module not installed.');
-        output('This is probably due to the module file having a parse error or not existing in the filesystem.`n');
+        $output->output('`\$Module could not be injected.');
+        $output->output('Module not installed.');
+        $output->output('This is probably due to the module file having a parse error or not existing in the filesystem.`n');
         return false;
     }
 

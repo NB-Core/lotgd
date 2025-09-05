@@ -1,12 +1,2 @@
 parameters:
-        ignoreErrors:
-
-
-                -
-                        message: "#^Function output not found\\.$#"
-                        count: 9
-                        path: src/Lotgd/Modules/Installer.php
-
-
-
-
+        ignoreErrors: []
