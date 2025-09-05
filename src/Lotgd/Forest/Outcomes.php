@@ -14,9 +14,10 @@ use Lotgd\DeathMessage;
 use Lotgd\PageParts;
 use Lotgd\Translator;
 use Lotgd\Settings;
-use Lotgd\Nav;
-use Lotgd\Modules\HookHandler;
+use Lotgd\Nav as Navigation;
 use Lotgd\Output;
+use Lotgd\Random;
+use Lotgd\Modules\HookHandler;
 
 class Outcomes
 {
@@ -30,25 +31,29 @@ class Outcomes
     {
         global $session, $options;
         $settings = Settings::getInstance();
+        $random = Random::getInstance();
+        $output = Output::getInstance();
+
         $diddamage = false;
         $creaturelevel = 0;
         $gold = 0;
         $exp = 0;
         $expbonus = 0;
         $count = 0;
+        $badguy = ['creaturelevel' => 0];
         foreach ($enemies as $badguy) {
             $dropMinGold = $settings->getSetting('dropmingold', 0);
             if ($dropMinGold) {
-                $badguy['creaturegold'] = r_rand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
+                $badguy['creaturegold'] = $random->r_rand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
             } else {
-                $badguy['creaturegold'] = r_rand(0, (int)$badguy['creaturegold']);
+                $badguy['creaturegold'] = $random->r_rand(0, (int)$badguy['creaturegold']);
             }
             $gold += $badguy['creaturegold'];
             if (isset($badguy['creaturelose'])) {
                 $msg = Translator::translateInline($badguy['creaturelose'], 'battle');
-                output_notl("`b`&%s`0`b`n", $msg);
+                $output->outputNotl("`b`&%s`0`b`n", $msg);
             }
-            output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
+            $output->output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
             $count++;
             if ($badguy['diddamage'] == 1) {
                 $diddamage = true;
@@ -63,19 +68,19 @@ class Outcomes
         $expbonus += (int)$session['user']['dragonkills'] * (int)$session['user']['level'] * $multibonus;
         $totalexp = array_sum($options['experience']);
         $exp = (int) round($totalexp / $count, 0);
-        $gold = (int) round(r_rand(round($gold / $count), round($gold)), 0);
+        $gold = (int) round($random->r_rand(round($gold / $count), round($gold)), 0);
         $expbonus = (int) round($expbonus / $count, 0);
 
         if ($gold) {
-            output("`#You receive `^%s`# gold!`n", $gold);
+            $output->output("`#You receive `^%s`# gold!`n", $gold);
             debuglog('received gold for slaying a monster.', false, false, 'forestwin', $gold);
         }
         $gemChance = $settings->getSetting('forestgemchance', 25);
         $args = HookHandler::hook('alter-gemchance', ['chance' => $gemChance]);
         $gemchances = (int)$args['chance'];
         $maxLevel = $settings->getSetting('maxlevel', 15);
-        if ($session['user']['level'] < $maxLevel && e_rand(1, $gemchances) == 1) {
-            output("`&You find A GEM!`n`#");
+        if ($session['user']['level'] < $maxLevel && $random->e_rand(1, $gemchances) == 1) {
+            $output->output("`&You find A GEM!`n`#");
             $session['user']['gems']++;
             debuglog('found gem when slaying a monster.', false, false, 'forestwingem', 1);
         }
@@ -90,12 +95,12 @@ class Outcomes
             if ($expbonus > 0) {
                 $addExp = $settings->getSetting('addexp', 5);
                 $expbonus = round($expbonus * pow(1 + ($addExp / 100), $count - 1), 0);
-                output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience! `n", $expbonus);
+                $output->output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience! `n", $expbonus);
             } elseif ($expbonus < 0) {
-                output("`#***Because of the simplistic nature of this fight, you are penalized `^%s`# experience! `n", abs($expbonus));
+                $output->output("`#***Because of the simplistic nature of this fight, you are penalized `^%s`# experience! `n", abs($expbonus));
             }
             if (count($enemies) > 1) {
-                output("During this fight you received `^%s`# total experience!`n`0", $exp + $expbonus);
+                $output->output("During this fight you received `^%s`# total experience!`n`0", $exp + $expbonus);
             }
             $session['user']['experience'] += (int) $expbonus;
         } else {
@@ -105,11 +110,11 @@ class Outcomes
             if ($expbonus > 0) {
                 $addExp = $settings->getSetting('addexp', 5);
                 $expbonus = round($expbonus * pow(1 + ($addExp / 100), $count - 1), 0);
-                output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience! `n(%s + %s = %s) ", $expbonus, $exp, abs($expbonus), $exp + $expbonus);
+                $output->output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience! `n(%s + %s = %s) ", $expbonus, $exp, abs($expbonus), $exp + $expbonus);
             } elseif ($expbonus < 0) {
-                output("`#***Because of the simplistic nature of this fight, you are penalized `^%s`# experience! `n(%s - %s = %s) ", abs($expbonus), $exp, abs($expbonus), $exp + $expbonus);
+                $output->output("`#***Because of the simplistic nature of this fight, you are penalized `^%s`# experience! `n(%s - %s = %s) ", abs($expbonus), $exp, abs($expbonus), $exp + $expbonus);
             }
-            output("You receive `^%s`# total experience!`n`0", $exp + $expbonus);
+            $output->output("You receive `^%s`# total experience!`n`0", $exp + $expbonus);
             $session['user']['experience'] += (int) ($exp + $expbonus);
         }
         $session['user']['gold'] += (int) $gold;
@@ -119,20 +124,20 @@ class Outcomes
             $creaturelevel += (0.5 * ($count - 1));
         }
         if (!$diddamage) {
-            output("`c`b`&~~ Flawless Fight! ~~`0`b`c");
+            $output->output("`c`b`&~~ Flawless Fight! ~~`0`b`c");
             if ($denyflawless) {
-                output("`c`\$%s`0`c", Translator::translateInline($denyflawless));
+                $output->output("`c`\$%s`0`c", Translator::translateInline($denyflawless));
             } elseif ($session['user']['level'] <= $creaturelevel) {
-                output("`c`b`\$You receive an extra turn!`0`b`c`n");
+                $output->output("`c`b`\$You receive an extra turn!`0`b`c`n");
                 $session['user']['turns']++;
             } else {
-                output("`c`\$A more difficult fight would have yielded an extra turn.`0`c`n");
+                $output->output("`c`\$A more difficult fight would have yielded an extra turn.`0`c`n");
             }
         }
         if ($session['user']['hitpoints'] <= 0) {
-            output("With your dying breath you spy a small stand of mushrooms off to the side.");
-            output("You recognize them as some of the ones that the healer had drying in the hut and taking a chance, cram a handful into your mouth.");
-            output("Even raw they have some restorative properties.`n");
+            $output->output("With your dying breath you spy a small stand of mushrooms off to the side.");
+            $output->output("You recognize them as some of the ones that the healer had drying in the hut and taking a chance, cram a handful into your mouth.");
+            $output->output("Even raw they have some restorative properties.`n");
             $session['user']['hitpoints'] = 1;
         }
     }
@@ -147,8 +152,9 @@ class Outcomes
     {
         global $session;
         $settings = Settings::getInstance();
+        $output = Output::getInstance();
         $percent = $settings->getSetting('forestexploss', 10);
-        Nav::add('Daily news', 'news.php');
+        Navigation::add('Daily news', 'news.php');
         $names = [];
         $killer = false;
         foreach ($enemies as $badguy) {
@@ -158,7 +164,7 @@ class Outcomes
             }
             if (isset($badguy['creaturewin']) && $badguy['creaturewin'] > '') {
                 $msg = Translator::translateInline($badguy['creaturewin'], 'battle');
-                output_notl("`b`&%s`0`b`n", $msg);
+                $output->outputNotl("`b`&%s`0`b`n", $msg);
             }
         }
         if (count($names) > 1) {
@@ -181,9 +187,9 @@ class Outcomes
         $session['user']['gold'] = 0;
         $session['user']['hitpoints'] = 0;
         $session['user']['experience'] = round($session['user']['experience'] * (1 - ($percent / 100)), 0);
-        output("`4All gold on hand has been lost!`n");
-        output("`4%s %% of experience has been lost!`b`n", $percent);
-        output('You may begin fighting again tomorrow.');
+        $output->output("`4All gold on hand has been lost!`n");
+        $output->output("`4%s %% of experience has been lost!`b`n", $percent);
+        $output->output('You may begin fighting again tomorrow.');
         page_footer();
     }
 
@@ -203,11 +209,12 @@ class Outcomes
             $add = ($session['user']['dragonkills'] / 100) * .10;
             $dk = round($dk * (.25 + $add));
         }
+        $random = Random::getInstance();
         $expflux = (int) round($badguy['creatureexp'] / 10, 0);
-        $expflux = (int) round(r_rand(-$expflux, $expflux), 0);
+        $expflux = (int) round($random->r_rand(-$expflux, $expflux), 0);
         $badguy['creatureexp'] += $expflux;
-        $atkflux = (int) round(r_rand(0, $dk), 0);
-        $defflux = (int) round(r_rand(0, ($dk - $atkflux)), 0);
+        $atkflux = (int) round($random->r_rand(0, $dk), 0);
+        $defflux = (int) round($random->r_rand(0, ($dk - $atkflux)), 0);
         $hpflux = ($dk - ($atkflux + $defflux)) * 5;
         $badguy['creatureattack'] += $atkflux;
         $badguy['creaturedefense'] += $defflux;

@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Substitute;
+use Lotgd\Random;
 
 class DeathMessage
 {
@@ -26,7 +27,7 @@ class DeathMessage
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
-        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . e_rand() . ') LIMIT 1';
+        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::getInstance()->e_rand() . ') LIMIT 1';
         $result = Database::query($sql);
         if ($result) {
             $row = Database::fetchAssoc($result);
@@ -53,7 +54,7 @@ class DeathMessage
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
-        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . e_rand() . ') LIMIT 1';
+        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::getInstance()->e_rand() . ') LIMIT 1';
         $result = Database::query($sql);
         if ($result) {
             $row = Database::fetchAssoc($result);
