@@ -10,10 +10,6 @@ function translate($indata, $namespace = false)
 {
     return Translator::translate($indata, $namespace);
 }
-function sprintf_translate()
-{
-    return Translator::sprintfTranslate(... func_get_args());
-}
 function translate_inline($in, $namespace = false)
 {
     return Translator::translateInline($in, $namespace);
@@ -41,10 +37,6 @@ function tlbutton_pop()
 function enable_translation($enable = true)
 {
     return Translator::enableTranslation($enable);
-}
-function tlschema($schema = false)
-{
-    return Translator::tlschema($schema);
 }
 function translator_check_collect_texts()
 {

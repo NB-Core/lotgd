@@ -10,9 +10,9 @@ namespace Lotgd;
 
 use Lotgd\Backtrace;
 use Lotgd\Sanitize;
-use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\DataCache;
+use Lotgd\Translator;
 
 class ErrorHandler
 {
@@ -84,9 +84,9 @@ class ErrorHandler
                 break;
             case E_WARNING:
             case E_USER_WARNING:
-                Translator::tlschema('errorhandler');
+                Translator::getInstance()->setSchema('errorhandler');
                 debug(sprintf('PHP Warning: "%s" in %s at %s.', $errstr, $errfile, $errline), true);
-                Translator::tlschema();
+                Translator::getInstance()->setSchema();
                 if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT) == SU_DEBUG_OUTPUT) {
                     $backtrace = Backtrace::show();
                     rawoutput($backtrace);

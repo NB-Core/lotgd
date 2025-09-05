@@ -10,11 +10,11 @@ namespace Lotgd;
 
 use Lotgd\HolidayText;
 use Lotgd\Output;
-use Lotgd\Translator;
 use Lotgd\Nav\NavigationItem;
 use Lotgd\Nav\NavigationSection;
 use Lotgd\Nav\NavigationSubSection;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 // Maintain state within the class instead of the global namespace
 
@@ -443,7 +443,7 @@ class Nav
                 $headerKey = $section->headline;
                 if ($key > '') {
                     if (isset($session['loggedin']) && $session['loggedin']) {
-                        tlschema(self::$navschema[$key]);
+                        Translator::getInstance()->setSchema(self::$navschema[$key]);
                     }
                     $header = $headerKey;
                     if ($section->colored) {
@@ -455,7 +455,7 @@ class Nav
                     }
                     $navbanner = self::privateAddNav($header);
                     if (isset($session['loggedin']) && $session['loggedin']) {
-                        tlschema();
+                        Translator::getInstance()->setSchema();
                     }
                 }
                 $style = 'default';
@@ -569,7 +569,7 @@ class Nav
                 }
                 if ($translate) {
                     if (isset(self::$navschema[$schema])) {
-                        tlschema(self::$navschema[$schema]);
+                        Translator::getInstance()->setSchema(self::$navschema[$schema]);
                     }
                     $unschema = 1;
                 }
@@ -585,7 +585,7 @@ class Nav
         } else {
             if ($text && isset($session['loggedin']) && $session['loggedin'] && $translate) {
                 if (isset(self::$navschema[$text])) {
-                    tlschema(self::$navschema[$text]);
+                    Translator::getInstance()->setSchema(self::$navschema[$text]);
                 }
                 $unschema = 1;
             }
@@ -744,7 +744,7 @@ class Nav
             }
         }
         if ($unschema) {
-            tlschema();
+            Translator::getInstance()->setSchema();
         }
         $nav .= $thisnav;
         return $thisnav;
@@ -768,7 +768,7 @@ class Nav
                 $schema = '!array!' . serialize($text);
                 if ($translate) {
                     if (isset(self::$navschema[$schema])) {
-                        tlschema(self::$navschema[$schema]);
+                        Translator::getInstance()->setSchema(self::$navschema[$schema]);
                     }
                     $unschema = 1;
                 }
@@ -780,7 +780,7 @@ class Nav
         } else {
             if ($text && isset($session['loggedin']) && $session['loggedin'] && $translate) {
                 if (isset(self::$navschema[$text])) {
-                    tlschema(self::$navschema[$text]);
+                    Translator::getInstance()->setSchema(self::$navschema[$text]);
                 }
                 $unschema = 1;
             }
@@ -791,7 +791,7 @@ class Nav
         $text = HolidayText::holidayize($text, 'nav');
         $thisnav .= Translator::tlbuttonPop() . Template::templateReplace('navheadsub', ['title' => $output->appoencode($text, $priv)]);
         if ($unschema) {
-            tlschema();
+            Translator::getInstance()->setSchema();
         }
         $nav .= $thisnav;
         return $thisnav;

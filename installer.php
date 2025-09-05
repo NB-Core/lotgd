@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Translator;
 //translator ready
 //addnews ready
 //mail ready
@@ -9,7 +10,6 @@ define("OVERRIDE_FORCED_NAV", true);
 define("IS_INSTALLER", true);
 
 use Lotgd\DataCache;
-use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\PageParts;
 use Lotgd\Page\Header;
@@ -75,7 +75,7 @@ Datacache::invalidatedatacache("gamesettings");
 $DB_USEDATACACHE = 0;
 //make sure we do not use the caching during this, else we might need to run  through the installer multiple times. AND we now need to reset the game settings, as these were due to faulty code not cached before.
 
-Translator::tlschema("installer");
+Translator::getInstance()->setSchema("installer");
 
 $stages = array(
     "1. Introduction",

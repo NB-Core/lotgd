@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 function lovers_chat_violet()
 {
     global $session;
@@ -33,7 +34,7 @@ function lovers_chat_violet()
             case 1:
             case 2:
             case 3:
-                    $msg = sprintf_translate("I've seen some lovely %s in my day, but I'm afraid you aren't one of them.", $sex);
+                    $msg = Translator::getInstance()->sprintfTranslate("I've seen some lovely %s in my day, but I'm afraid you aren't one of them.", $sex);
                 break;
             case 4:
             case 5:
@@ -58,10 +59,10 @@ function lovers_chat_violet()
             case 16:
             case 17:
             case 18:
-                    $msg = sprintf_translate("Few %s could count themselves to be in competition with you!", $sex);
+                    $msg = Translator::getInstance()->sprintfTranslate("Few %s could count themselves to be in competition with you!", $sex);
                 break;
             default:
-                $msg = sprintf_translate("I hate you, why, you are simply one of the most beautiful %s ever!", $sex);
+                $msg = Translator::getInstance()->sprintfTranslate("I hate you, why, you are simply one of the most beautiful %s ever!", $sex);
         }
         output("Finally she reaches a conclusion and states, \"%s`0\"", $msg);
     }

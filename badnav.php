@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 /**
  * \file badnav.php
  * This file handles the badnavs that occurr and displays either the last pagehit or an empty page where the user can petition.
@@ -16,7 +17,6 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
-use Lotgd\Translator;
 use Lotgd\Redirect;
 
 // addnews ready
@@ -24,7 +24,7 @@ use Lotgd\Redirect;
 define("OVERRIDE_FORCED_NAV", true);
 require_once("common.php");
 
-tlschema("badnav");
+Translator::getInstance()->setSchema("badnav");
 
 if ($session['user']['loggedin'] && $session['loggedin']) {
     if (isset($session['output']) && strpos($session['output'], "<!--CheckNewDay()-->")) {

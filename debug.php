@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -10,7 +11,7 @@ use Lotgd\Nav\SuperuserNav;
 require_once("common.php");
 require_once("lib/http.php");
 
-tlschema("debug");
+Translator::getInstance()->setSchema("debug");
 
 SuAccess::check(SU_EDIT_CONFIG);
 

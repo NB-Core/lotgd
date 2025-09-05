@@ -7,9 +7,11 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class SuAccess
 {
@@ -38,16 +40,16 @@ class SuAccess
             page_header('Oops.');
             $output->output("Looks like you're probably an admin with appropriate permissions to perform this action, but a module is preventing you from doing so.");
             $output->output('Sorry about that!');
-            tlschema('nav');
+            Translator::getInstance()->setSchema('nav');
             addnav('M?Return to the Mundane', 'village.php');
-            tlschema();
+            Translator::getInstance()->setSchema();
             page_footer();
         }
         clearnav();
         $session['output'] = '';
         page_header('INFIDEL!');
         $output->output('For attempting to defile the gods, you have been smitten down!`n`n');
-        $output->output("%s`\$, Overlord of Death`) appears before you in a vision, seizing your mind with his, and wordlessly telling you that he finds no favor with you.`n`n", getsetting('deathoverlord', '`$Ramius'));
+        $output->output("%s`\$, Overlord of Death`) appears before you in a vision, seizing your mind with his, and wordlessly telling you that he finds no favor with you.`n`n", Settings::getInstance()->getSetting('deathoverlord', '`$Ramius'));
         AddNews::add("`&%s was smitten down for attempting to defile the gods (they tried to hack superuser pages).", $session['user']['name']);
         debuglog("Lost {$session['user']['gold']} and " . ($session['user']['experience'] * 0.25) . " experience trying to hack superuser pages.");
         $session['user']['hitpoints'] = 0;

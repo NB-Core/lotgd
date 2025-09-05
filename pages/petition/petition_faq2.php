@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Lotgd\Translator;
 use Lotgd\Page\Header;
+use Lotgd\Translator;
 
-Translator::tlschema('faq');
+Translator::getInstance()->setSchema('faq');
 Header::popupHeader("General Questions with Spoilers");
 $c = Translator::translateInline("Return to Contents");
 $output->rawOutput("<a href='petition.php?op=faq'>$c</a><hr>");

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 namespace Lotgd\Page;
+use Lotgd\Settings;
 
 use Lotgd\PageParts;
-use Lotgd\Translator;
 use Lotgd\Template;
 use Lotgd\TwigTemplate;
 use Lotgd\Sanitize;
@@ -17,6 +17,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Translator;
 
 class Footer
 {
@@ -42,7 +43,7 @@ class Footer
         Buffs::restoreBuffFields();
         Buffs::calculateBuffFields();
 
-        Translator::tlschema('common');
+        Translator::getInstance()->setSchema('common');
 
         $statsOutput = PageParts::charStats();
 
@@ -172,7 +173,7 @@ class Footer
 
         list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, $replacements);
 
-        Translator::tlschema();
+        Translator::getInstance()->setSchema();
 
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, [
@@ -205,6 +206,7 @@ class Footer
     {
         global $header, $session, $y2, $z2, $copyright, $template;
 
+        $settings = Settings::getInstance();
         $headscript = '';
         if (TwigTemplate::isActive()) {
             $footer = '';
@@ -214,7 +216,7 @@ class Footer
         }
                 $pre_headscript   = PageParts::canonicalLink();
                 $maillink_add_after = '';
-        if (getsetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+        if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
             if (file_exists('async/setup.php')) {
                 require 'async/setup.php';
             }
@@ -225,7 +227,7 @@ class Footer
         $output = Output::getInstance();
 
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
-            if (getsetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+            if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('async/maillink.php')) {
                     require 'async/maillink.php';
                 }

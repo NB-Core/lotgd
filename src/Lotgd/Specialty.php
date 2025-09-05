@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class Specialty
 {
@@ -23,13 +24,13 @@ class Specialty
             $revertspec = $session['user']['specialty'];
             $session['user']['specialty'] = $spec;
         }
-        tlschema('skills');
+        Translator::getInstance()->setSchema('skills');
         if ($session['user']['specialty'] != '') {
             HookHandler::hook('incrementspecialty', ['color' => $colorcode]);
         } else {
             output("`7You have no direction in the world, you should rest and make some important decisions about your life.`0`n");
         }
-        tlschema();
+        Translator::getInstance()->setSchema();
         if ($spec !== false) {
             $session['user']['specialty'] = $revertspec;
         }

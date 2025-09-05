@@ -1,16 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 3
-			path: src/Lotgd/CheckBan.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/CheckBan.php
-
-		-
 			message: "#^Function appendcount not found\\.$#"
 			count: 1
 			path: src/Lotgd/Commentary.php
@@ -43,11 +33,6 @@ parameters:
 		-
 			message: "#^Function debug not found\\.$#"
 			count: 1
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 25
 			path: src/Lotgd/Commentary.php
 
 		-
@@ -86,16 +71,6 @@ parameters:
 			path: src/Lotgd/Commentary.php
 
 		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 1
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 10
-			path: src/Lotgd/Commentary.php
-
-		-
 			message: "#^Instantiated class Lotgd\\\\output_collector not found\\.$#"
 			count: 1
 			path: src/Lotgd/Commentary.php
@@ -111,19 +86,9 @@ parameters:
 			path: src/Lotgd/Commentary.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Config/configuration.php
-
-		-
 			message: "#^Variable \\$session might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Config/configuration.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Config/user_account.php
 
 		-
 			message: "#^Function translate_inline not found\\.$#"
@@ -149,11 +114,6 @@ parameters:
 			message: "#^Function e_rand not found\\.$#"
 			count: 2
 			path: src/Lotgd/DeathMessage.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/DumpItem.php
 
 		-
 			message: "#^Function debug not found\\.$#"
@@ -191,11 +151,6 @@ parameters:
 			path: src/Lotgd/Events.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/Events.php
-
-		-
 			message: "#^Undefined variable\\: \\$hookname$#"
 			count: 1
 			path: src/Lotgd/Events.php
@@ -206,28 +161,13 @@ parameters:
 			path: src/Lotgd/Events.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/ForcedNavigation.php
-
-		-
 			message: "#^Function redirect not found\\.$#"
 			count: 4
 			path: src/Lotgd/ForcedNavigation.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 3
-			path: src/Lotgd/Forest.php
-
-		-
 			message: "#^Function module_display_events not found\\.$#"
 			count: 1
-			path: src/Lotgd/Forest.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
 			path: src/Lotgd/Forest.php
 
 		-
@@ -286,11 +226,6 @@ parameters:
 			path: src/Lotgd/Forms.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 29
-			path: src/Lotgd/Forms.php
-
-		-
 			message: "#^Function httppost not found\\.$#"
 			count: 1
 			path: src/Lotgd/Forms.php
@@ -313,11 +248,6 @@ parameters:
 		-
 			message: "#^Function tlbutton_pop not found\\.$#"
 			count: 1
-			path: src/Lotgd/Forms.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 6
 			path: src/Lotgd/Forms.php
 
 		-
@@ -371,11 +301,6 @@ parameters:
 			path: src/Lotgd/Moderate.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 19
-			path: src/Lotgd/Moderate.php
-
-		-
 			message: "#^Function httpget not found\\.$#"
 			count: 2
 			path: src/Lotgd/Moderate.php
@@ -398,11 +323,6 @@ parameters:
 		-
 			message: "#^Function reltime not found\\.$#"
 			count: 1
-			path: src/Lotgd/Moderate.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
 			path: src/Lotgd/Moderate.php
 
 		-
@@ -491,11 +411,6 @@ parameters:
 			path: src/Lotgd/Modules.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Modules.php
-
-		-
 			message: "#^Function httpallget not found\\.$#"
 			count: 1
 			path: src/Lotgd/Modules.php
@@ -566,11 +481,6 @@ parameters:
 			path: src/Lotgd/Modules.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 1
-			path: src/Lotgd/Modules.php
-
-		-
 			message: "#^Static method Lotgd\\\\MySQL\\\\Database\\:\\:affectedRows\\(\\) invoked with 1 parameter, 0 required\\.$#"
 			count: 1
 			path: src/Lotgd/Modules.php
@@ -631,11 +541,6 @@ parameters:
 			path: src/Lotgd/Motd.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Motd.php
-
-		-
 			message: "#^Function httppost not found\\.$#"
 			count: 10
 			path: src/Lotgd/Motd.php
@@ -661,23 +566,8 @@ parameters:
 			path: src/Lotgd/Motd.php
 
 		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 2
-			path: src/Lotgd/MountName.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/MountName.php
-
-		-
 			message: "#^Function debug not found\\.$#"
 			count: 1
-			path: src/Lotgd/MySQL/Database.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
 			path: src/Lotgd/MySQL/Database.php
 
 		-
@@ -701,27 +591,12 @@ parameters:
 			path: src/Lotgd/Nav.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 8
-			path: src/Lotgd/Nav.php
-
-		-
 			message: "#^Function translate not found\\.$#"
 			count: 2
 			path: src/Lotgd/Nav.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/Nav/SuperuserNav.php
-
-		-
 			message: "#^Function addnav not found\\.$#"
-			count: 2
-			path: src/Lotgd/Nav/VillageNav.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
 			count: 2
 			path: src/Lotgd/Nav/VillageNav.php
 
@@ -811,16 +686,6 @@ parameters:
 			path: src/Lotgd/Page/CharStats.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Page/Footer.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 4
-			path: src/Lotgd/Page/Header.php
-
-		-
 			message: "#^Class Lotgd\\\\DataCache referenced with incorrect case\\: Lotgd\\\\Datacache\\.$#"
 			count: 2
 			path: src/Lotgd/PageParts.php
@@ -836,18 +701,8 @@ parameters:
 			path: src/Lotgd/PageParts.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 6
-			path: src/Lotgd/PageParts.php
-
-		-
 			message: "#^Function httpget not found\\.$#"
 			count: 1
-			path: src/Lotgd/PageParts.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
 			path: src/Lotgd/PageParts.php
 
 		-
@@ -866,11 +721,6 @@ parameters:
 			path: src/Lotgd/PageParts.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 6
-			path: src/Lotgd/Partner.php
-
-		-
 			message: "#^Function httpallget not found\\.$#"
 			count: 1
 			path: src/Lotgd/PhpGenericEnvironment.php
@@ -886,18 +736,8 @@ parameters:
 			path: src/Lotgd/PlayerFunctions.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 9
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
 			message: "#^Function module_delete_userprefs not found\\.$#"
 			count: 1
-			path: src/Lotgd/PlayerFunctions.php
-
-		-
-			message: "#^Function sprintf_translate not found\\.$#"
-			count: 2
 			path: src/Lotgd/PlayerFunctions.php
 
 		-
@@ -926,11 +766,6 @@ parameters:
 			path: src/Lotgd/Pvp.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 20
-			path: src/Lotgd/Pvp.php
-
-		-
 			message: "#^Function output not found\\.$#"
 			count: 24
 			path: src/Lotgd/Pvp.php
@@ -951,16 +786,6 @@ parameters:
 			path: src/Lotgd/Pvp.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/Pvp.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 5
-			path: src/Lotgd/Sanitize.php
-
-		-
 			message: "#^Variable \\$defaults on left side of \\?\\? is never defined\\.$#"
 			count: 1
 			path: src/Lotgd/Settings.php
@@ -969,16 +794,6 @@ parameters:
 			message: "#^Function output not found\\.$#"
 			count: 1
 			path: src/Lotgd/Specialty.php
-
-		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/Specialty.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Spell.php
 
 		-
 			message: "#^Function addnav not found\\.$#"
@@ -996,11 +811,6 @@ parameters:
 			path: src/Lotgd/SuAccess.php
 
 		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/SuAccess.php
-
-		-
 			message: "#^Function page_footer not found\\.$#"
 			count: 2
 			path: src/Lotgd/SuAccess.php
@@ -1011,24 +821,9 @@ parameters:
 			path: src/Lotgd/SuAccess.php
 
 		-
-			message: "#^Function tlschema not found\\.$#"
-			count: 2
-			path: src/Lotgd/SuAccess.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 1
-			path: src/Lotgd/Template.php
-
-		-
 			message: "#^Variable \\$template might not be defined\\.$#"
 			count: 1
 			path: src/Lotgd/Template.php
-
-		-
-			message: "#^Function getsetting not found\\.$#"
-			count: 2
-			path: src/Lotgd/Translator.php
 
 		-
 			message: "#^Function popup not found\\.$#"

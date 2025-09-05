@@ -1,10 +1,10 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\Motd;
 use Lotgd\Battle;
 use Lotgd\Output;
-use Lotgd\Translator;
 use Lotgd\Nav;
 
 // translator ready
@@ -15,10 +15,10 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
-tlschema("news");
+$translator = Translator::getInstance();
+$translator->setSchema("news");
 
 $output = Output::getInstance();
-$translator = Translator::getInstance();
 
 modulehook("news-intercept", array());
 
@@ -50,7 +50,7 @@ $date = date("D, M j, Y", $timestamp);
 
 $pagestr = "";
 if ($totaltoday > $newsperpage) {
-    $pagestr = sprintf_translate(
+    $pagestr = $translator->sprintfTranslate(
         "(Items %s - %s of %s)",
         $pageoffset + 1,
         min($pageoffset + $newsperpage, $totaltoday),
@@ -81,7 +81,7 @@ while ($row = Database::fetchAssoc($result)) {
         $output->rawOutput("[ <a href='superuser.php?op=newsdelete&newsid=" . $row['newsid'] . "&return=" . URLEncode($_SERVER['REQUEST_URI']) . "'>$del</a> ]&nbsp;");
         Nav::add("", "superuser.php?op=newsdelete&newsid={$row['newsid']}&return=" . URLEncode($_SERVER['REQUEST_URI']));
     }
-    tlschema($row['tlschema']);
+    $translator->setSchema($row['tlschema']);
     if ($row['arguments'] > "") {
         $arguments = array();
         $base_arguments = unserialize($row['arguments']);
@@ -89,12 +89,12 @@ while ($row = Database::fetchAssoc($result)) {
         foreach ($base_arguments as $val) {
             array_push($arguments, $val);
         }
-        $news = call_user_func_array("sprintf_translate", $arguments);
+        $news = $translator->sprintfTranslate(...$arguments);
         $output->rawOutput($translator->clearButton());
     } else {
         $news = translate_inline($row['newstext']);
     }
-    tlschema();
+    $translator->setSchema();
     $output->outputNotl("`c" . $news . "`c`n");
 }
 if (Database::numRows($result) == 0) {
@@ -107,7 +107,7 @@ if (!$session['user']['loggedin']) {
 } elseif ($session['user']['alive']) {
     villagenav();
 } else {
-    tlschema("nav");
+    $translator->setSchema("nav");
     Nav::add("Log Out");
     Nav::add("Log out", "login.php?op=logout");
 
@@ -119,7 +119,7 @@ if (!$session['user']['loggedin']) {
     Nav::add("S?Land of Shades", "shades.php");
     Nav::add("G?The Graveyard", "graveyard.php");
         Battle::suspendCompanions("allowinshades", true);
-    tlschema();
+    $translator->setSchema();
 }
 Nav::add("News");
 Nav::add("Previous News", "news.php?offset=" . ($offset + 1));
@@ -131,7 +131,7 @@ if ($session['user']['loggedin']) {
 }
 Nav::add("About this game", "about.php");
 
-tlschema("nav");
+$translator->setSchema("nav");
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     Nav::add("Superuser");
     Nav::add(",?Comment Moderation", "moderate.php");
@@ -144,7 +144,7 @@ if ($session['user']['superuser'] & SU_INFINITE_DAYS) {
     Nav::add("Superuser");
     Nav::add("/?New Day", "newday.php");
 }
-tlschema();
+$translator->setSchema();
 
 Nav::add("", "news.php");
 if ($totaltoday > $newsperpage) {

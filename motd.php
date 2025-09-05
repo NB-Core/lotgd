@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\Commentary;
 use Lotgd\Accounts;
@@ -17,7 +18,7 @@ require_once("common.php");
 require_once("lib/nltoappon.php");
 require_once("lib/http.php");
 
-tlschema("motd");
+Translator::getInstance()->setSchema("motd");
 
 $op = httpget('op');
 $id = httpget('id');

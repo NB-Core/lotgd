@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 use Lotgd\Stripslashes;
 use Lotgd\Cookies;
-use Lotgd\Translator;
 use Lotgd\Page\Header;
 use Lotgd\Http;
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Sanitize;
 use Lotgd\OutputArray;
+use Lotgd\Translator;
 
-Translator::tlschema('petition');
+Translator::getInstance()->setSchema('petition');
 Header::popupHeader("Petition for Help");
 $post = (array) Http::allPost();
 $problem = (string) (Http::post('problem') ?? '');

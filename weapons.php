@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -8,7 +9,9 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
-tlschema("weapon");
+$translator = Translator::getInstance();
+
+$translator->setSchema("weapon");
 
 checkday();
 $tradeinvalue = round(($session['user']['weaponvalue'] * .75), 0);
@@ -46,23 +49,23 @@ $basetext['schemas'] = $schemas;
 $texts = modulehook("weaponstext", $basetext);
 $schemas = $texts['schemas'];
 
-tlschema($schemas['title']);
+$translator->setSchema($schemas['title']);
 page_header($texts['title']);
 output("`c`b`&" . $texts['title'] . "`0`b`c");
-tlschema();
+$translator->setSchema();
 
 $op = httpget("op");
 
 if ($op == "") {
-    tlschema($schemas['desc']);
+    $translator->setSchema($schemas['desc']);
     if (is_array($texts['desc'])) {
         foreach ($texts['desc'] as $description) {
-            output_notl(sprintf_translate($description));
+            output_notl($translator->sprintfTranslate($description));
         }
     } else {
         output($texts['desc']);
     }
-    tlschema();
+    $translator->setSchema();
 
 
     $sql = "SELECT max(level) AS level FROM " .  Database::prefix("weapons") . " WHERE level<=" . (int)$session['user']['dragonkills'];
@@ -72,15 +75,15 @@ if ($op == "") {
     $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE level = " . (int)$row['level'] . " ORDER BY damage ASC";
     $result = Database::query($sql);
 
-    tlschema($schemas['tradein']);
+    $translator->setSchema($schemas['tradein']);
     if (is_array($texts['tradein'])) {
         foreach ($texts['tradein'] as $description) {
-            output_notl(sprintf_translate($description));
+            output_notl($translator->sprintfTranslate($description));
         }
     } else {
         output($texts['tradein']);
     }
-    tlschema();
+    $translator->setSchema();
 
     $wname = translate_inline("`bName`b");
     $wdam = translate_inline("`bDamage`b");
@@ -139,25 +142,25 @@ if ($op == "") {
     $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
     $result = Database::query($sql);
     if (Database::numRows($result) == 0) {
-        tlschema($schemas['nosuchweapon']);
+        $translator->setSchema($schemas['nosuchweapon']);
         output($texts['nosuchweapon']);
-        tlschema();
-        tlschema($schemas['tryagain']);
+        $translator->setSchema();
+        $translator->setSchema($schemas['tryagain']);
         addnav($texts['tryagain'], "weapons.php");
-        tlschema();
+        $translator->setSchema();
         villagenav();
     } else {
         $row = Database::fetchAssoc($result);
         $row = modulehook("modify-weapon", $row);
         if ($row['value'] > ($session['user']['gold'] + $tradeinvalue)) {
-            tlschema($schemas['notenoughgold']);
+            $translator->setSchema($schemas['notenoughgold']);
             output($texts['notenoughgold'], $row['weaponname']);
-            tlschema();
+            $translator->setSchema();
             villagenav();
         } else {
-            tlschema($schemas['payweapon']);
+            $translator->setSchema($schemas['payweapon']);
             output($texts['payweapon'], $session['user']['weapon'], $row['weaponname']);
-            tlschema();
+            $translator->setSchema();
             debuglog("spent " . ($row['value'] - $tradeinvalue) . " gold on the " . $row['weaponname'] . " weapon");
             $session['user']['gold'] -= $row['value'];
             $session['user']['weapon'] = $row['weaponname'];

@@ -10,13 +10,14 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\UserLookup;
+use Lotgd\Translator;
 
 //addnews ready
 // mail ready
 require_once("common.php");
 use Lotgd\Names;
 
-tlschema("bans");
+Translator::getInstance()->setSchema("bans");
 SuAccess::check(SU_EDIT_BANS);
 
 $op = Http::get('op');

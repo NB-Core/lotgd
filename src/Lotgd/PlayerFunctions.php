@@ -7,9 +7,11 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class PlayerFunctions
 {
@@ -115,7 +117,7 @@ class PlayerFunctions
         $weapondmg = (int)$user['weapondmg'];
         $levelbonus = (int)$user['level'] - 1;
         $miscbonus -= $weapondmg + $levelbonus;
-        $explained = sprintf_translate('%s STR + %s SPD + %s WIS+ %s INT + %s Weapon + %s Train + %s MISC ', $strbonus, $speedbonus, $wisdombonus, $intbonus, $weapondmg, $levelbonus, $miscbonus);
+        $explained = Translator::getInstance()->sprintfTranslate('%s STR + %s SPD + %s WIS+ %s INT + %s Weapon + %s Train + %s MISC ', $strbonus, $speedbonus, $wisdombonus, $intbonus, $weapondmg, $levelbonus, $miscbonus);
         return $explained;
     }
 
@@ -163,7 +165,7 @@ class PlayerFunctions
         $armordef = (int)$user['armordef'];
         $levelbonus = (int)$user['level'] - 1;
         $miscbonus -= $armordef + $levelbonus;
-        $explained = sprintf_translate('%s WIS + %s CON + %s SPD + %s Armor + %s Train + %s MISC ', $wisdombonus, $constbonus, $speedbonus, $armordef, $levelbonus, $miscbonus);
+        $explained = Translator::getInstance()->sprintfTranslate('%s WIS + %s CON + %s SPD + %s Armor + %s Train + %s MISC ', $wisdombonus, $constbonus, $speedbonus, $armordef, $levelbonus, $miscbonus);
         return $explained;
     }
 
@@ -206,6 +208,7 @@ class PlayerFunctions
     public static function isPlayerOnline(int|false $player = false): bool
     {
         static $checked_users = [];
+        $settings = Settings::getInstance();
         if ($player === false) {
             global $session;
             $user =& $session['user'];
@@ -223,7 +226,7 @@ class PlayerFunctions
             $user =& $row;
         }
         if (isset($user['laston']) && isset($user['loggedin'])) {
-            if (strtotime('-' . getsetting('LOGINTIMEOUT', 900) . ' seconds') > strtotime($user['laston']) && strtotime($user['laston']) > 0) {
+            if (strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds') > strtotime($user['laston']) && strtotime($user['laston']) > 0) {
                 return false;
             }
             if (!$user['loggedin']) {
@@ -237,6 +240,7 @@ class PlayerFunctions
     public static function massIsPlayerOnline(array|false $players = false): array
     {
         $users = [];
+        $settings = Settings::getInstance();
         if ($players === false || $players == [] || !is_array($players)) {
             return [];
         } else {
@@ -250,7 +254,7 @@ class PlayerFunctions
             foreach ($rows as $user) {
                 $users[$user['acctid']] = 1;
                 if (isset($user['laston']) && isset($user['loggedin'])) {
-                    if (strtotime('-' . getsetting('LOGINTIMEOUT', 900) . ' seconds') > strtotime($user['laston']) && $user['laston'] > '') {
+                    if (strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds') > strtotime($user['laston']) && $user['laston'] > '') {
                         $users[$user['acctid']] = 0;
                     }
                     if (!$user['loggedin']) {
@@ -301,21 +305,22 @@ class PlayerFunctions
         if ($stored !== false && is_array($stored)) {
             $exparray = $stored;
         } else {
-            $expstring = getsetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930');
+            $settings  = Settings::getInstance();
+            $expstring = $settings->getSetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930');
             if ($expstring == '') {
                 return 0;
             }
             $exparray = explode(',', $expstring);
-            if (count($exparray) < getsetting('maxlevel', 15)) {
-                for ($i = count($exparray) - 1; $i < getsetting('maxlevel', 15); $i++) {
+            if (count($exparray) < $settings->getSetting('maxlevel', 15)) {
+                for ($i = count($exparray) - 1; $i < $settings->getSetting('maxlevel', 15); $i++) {
                     $exparray[] = $exparray[count($exparray) - 1] * 1.3;
                 }
             }
             foreach ($exparray as $key => $val) {
                 $exparray[$key] = round($val + ($curdk / 4) * ($key + 1) * 100, 0);
             }
-            if (getsetting('maxlevel', 15) > count($exparray)) {
-                for ($i = count($exparray); $i < getsetting('maxlevel', 15); $i++) {
+            if ($settings->getSetting('maxlevel', 15) > count($exparray)) {
+                for ($i = count($exparray); $i < $settings->getSetting('maxlevel', 15); $i++) {
                     $exparray[$i] = round($exparray[$i - 1] * 1.2);
                 }
             }
@@ -364,8 +369,9 @@ class PlayerFunctions
         if ($color === false) {
             return ($v == 0 ? '' : $v);
         }
-        $point = getsetting('moneydecimalpoint', '.');
-        $sep   = getsetting('moneythousandssep', ',');
+        $settings = Settings::getInstance();
+        $point    = $settings->getSetting('moneydecimalpoint', '.');
+        $sep      = $settings->getSetting('moneythousandssep', ',');
 
         if ($v > 0) {
             return " `&(" . number_format($session['user'][$name] - $v, 1, $point, $sep)

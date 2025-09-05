@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -11,7 +12,7 @@ require_once("lib/http.php");
 require_once("lib/villagenav.php");
 use Lotgd\Names;
 
-tlschema("lodge");
+Translator::getInstance()->setSchema("lodge");
 
 Commentary::addCommentary();
 
@@ -68,7 +69,7 @@ if ($op == "") {
         "donator_point_messages",
         array(
             'messages' => array(
-                'default' => sprintf_translate("`7For each %s 1 donated, the account which makes the donation will receive %s contributor points in the game (Fractions don't count).", getsetting('paypalcurrency', 'USD'), getsetting('dpointspercurrencyunit', 'USD'))
+                'default' => Translator::getInstance()->sprintfTranslate("`7For each %s 1 donated, the account which makes the donation will receive %s contributor points in the game (Fractions don't count).", getsetting('paypalcurrency', 'USD'), getsetting('dpointspercurrencyunit', 'USD'))
             )
         )
     );

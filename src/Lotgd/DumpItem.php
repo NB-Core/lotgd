@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 /**
  * Helper functions for debugging output of arrays and values.
@@ -66,7 +67,7 @@ class DumpItem
             }
             $out .= "\n$indent)";
         } else {
-            $out .= "'" . htmlentities(addslashes((string) $temp), ENT_COMPAT, getsetting('charset', 'UTF-8')) . "'";
+            $out .= "'" . htmlentities(addslashes((string) $temp), ENT_COMPAT, Settings::getInstance()->getSetting('charset', 'UTF-8')) . "'";
         }
 
         return $out;

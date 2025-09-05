@@ -7,14 +7,15 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\HolidayText;
 use Lotgd\Commentary;
-use Lotgd\Translator;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 
 class Moderate
 {
@@ -160,6 +161,9 @@ class Moderate
     {
         global $session, $REQUEST_URI, $doublepost, $emptypost;
 
+        $settings = Settings::getInstance();
+        $charset = $settings->getSetting('charset', 'UTF-8');
+
         // Decide whether to limit to a specific section or view all
         if ($viewall === false) {
             rawoutput("<a name='$section'></a>");
@@ -173,7 +177,7 @@ class Moderate
         }
 
         // Some sections may be globally excluded from moderation output
-        $excludes = getsetting('moderateexcludes', '');
+        $excludes = $settings->getSetting('moderateexcludes', '');
         if ($excludes != '') {
             $array = explode(',', $excludes);
             foreach ($array as $entry) {
@@ -187,7 +191,7 @@ class Moderate
         if ($schema === null) {
             $schema = Translator::getNamespace();
         }
-        tlschema('commentary');
+        Translator::getInstance()->setSchema('commentary');
 
         $scriptname = ScriptName::current() . '.php';
 
@@ -294,18 +298,18 @@ class Moderate
                 $x = strpos($row['comment'], $ft);
                 if ($x !== false) {
                     if ($linkbios) {
-                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`n";
+                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
                     } else {
-                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`n";
+                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
                     }
-                    $rawc[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`n";
+                    $rawc[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
                 }
             }
 
             if ($ft == '/game' && !$row['name']) {
                 $x = strpos($row['comment'], $ft);
                 if ($x !== false) {
-                    $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`n";
+                    $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
                 }
             }
 
@@ -314,13 +318,13 @@ class Moderate
             }
             if (!array_key_exists($i, $op) || $op[$i] == '') {
                 if ($linkbios) {
-                    $op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`3\"`0`n";
+                    $op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, )) . "`3\"`0`n";
                 } elseif (substr($ft, 0, 5) == '/game' && !$row['name']) {
-                    $op[$i] = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'UTF-8')));
+                    $op[$i] = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, ));
                 } else {
-                    $op[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`3\"`0`n";
+                    $op[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, )) . "`3\"`0`n";
                 }
-                $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`3\"`0`n";
+                $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, )) . "`3\"`0`n";
             }
 
             $session['user']['prefs']['timeoffset'] = round((float)$session['user']['prefs']['timeoffset'], 1);
@@ -350,7 +354,7 @@ class Moderate
             $auth[$i] = $row['author'];
             if (isset($rawc[$i])) {
                 $rawc[$i] = full_sanitize($rawc[$i]);
-                $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES, getsetting('charset', 'UTF-8'));
+                $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES, );
             }
         }
         $i--;
@@ -405,11 +409,11 @@ class Moderate
         if ($moderating) {
             $scriptname = ScriptName::current() . '.php';
             addnav('', "$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']));
-            $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT, getsetting('charset', 'UTF-8'));
-            $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT, getsetting('charset', 'UTF-8'));
-            $mod_Del_confirm = addslashes(htmlentities(Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT, getsetting('charset', 'UTF-8')));
+            $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT, );
+            $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT, );
+            $mod_Del_confirm = addslashes(htmlentities(Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT, ));
             $mod_reason = Translator::translateInline('Reason:');
-            $mod_reason_desc = htmlentities(Translator::translateInline('Banned for comments you posted.'), ENT_COMPAT, getsetting('charset', 'UTF-8'));
+            $mod_reason_desc = htmlentities(Translator::translateInline('Banned for comments you posted.'), ENT_COMPAT, );
 
             output_notl("<form action='$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']) . "' method='POST'>", true);
             output_notl("<input type='submit' class='button' value=\"$mod_Del1\">", true);
@@ -463,7 +467,7 @@ class Moderate
             $args = HookHandler::hook('insertcomment', ['section' => $section]);
             if (array_key_exists('mute', $args) && $args['mute'] && !($session['user']['superuser'] & SU_EDIT_COMMENTS)) {
                 output_notl('%s', $args['mutemsg']);
-            } elseif ($counttoday < ($limit / 2) || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) || !getsetting('postinglimit', 1)) {
+            } elseif ($counttoday < ($limit / 2) || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) || !$settings->getSetting('postinglimit', 1)) {
                 if ($message != 'X') {
                     $message = "`n`@" . $message . '`n';
                     output($message);
@@ -480,7 +484,7 @@ class Moderate
 
         // Render pagination navigation for the comment block
         self::showNavLinks($section, $limit, $cid, $rowcount, $jump, $com, $REQUEST_URI, $newadded);
-        tlschema();
+        Translator::getInstance()->setSchema();
         if ($needclose) {
             HookHandler::hook('}collapse');
         }

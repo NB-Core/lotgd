@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\Translator;
 
 // addnews ready
 // translator ready
@@ -9,7 +10,7 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
-tlschema("gypsy");
+Translator::getInstance()->setSchema("gypsy");
 
 Commentary::addCommentary();
 

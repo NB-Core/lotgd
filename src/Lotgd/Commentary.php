@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 namespace Lotgd;
-
+use Lotgd\Settings;
 use Lotgd\MySQL\Database;
-use Lotgd\Translator;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Translator;
 use Lotgd\Output;
 use Lotgd\Nav;
 
@@ -21,15 +21,19 @@ class Commentary
     public static function commentaryLocs(): array
     {
         global $session;
+
+        $settings = Settings::getInstance();
+
         if (is_array(self::$comsecs) && count(self::$comsecs)) {
             return self::$comsecs;
         }
-        $vname = getsetting('villagename', LOCATION_FIELDS);
-        $iname = getsetting('innname', LOCATION_INN);
-        tlschema('commentary');
-        $output = Output::getInstance();
+        $vname = $settings->getSetting('villagename', LOCATION_FIELDS);
+        $iname = $settings->getSetting('innname', LOCATION_INN);
         $translator = Translator::getInstance();
-        self::$comsecs['village'] = sprintf_translate('%s Square', $vname);
+        $translator->setSchema('commentary');
+        $output = Output::getInstance();
+        self::$comsecs['village'] = $translator->sprintfTranslate('%s Square', $vname);
+
         if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
             self::$comsecs['superuser'] = Translator::translateInline('Grotto');
         }
@@ -41,10 +45,10 @@ class Commentary
         self::$comsecs['hunterlodge'] = Translator::translateInline("Hunter's Lodge");
         self::$comsecs['gardens'] = Translator::translateInline('Gardens');
         self::$comsecs['waiting'] = Translator::translateInline('Clan Hall Waiting Area');
-        if (getsetting('betaperplayer', 1) == 1 && @file_exists('pavilion.php')) {
+        if ($settings->getSetting('betaperplayer', 1) == 1 && @file_exists('pavilion.php')) {
             self::$comsecs['beta'] = Translator::translateInline('Pavilion');
         }
-        tlschema();
+        $translator->setSchema();
         self::$comsecs = HookHandler::hook('moderate', self::$comsecs);
         $output->rawOutput($translator->clearButton());
         return self::$comsecs;
@@ -199,7 +203,7 @@ SQL;
         }
 
         $comment = stripslashes($comment);
-        tlschema('commentary');
+        Translator::getInstance()->setSchema('commentary');
         $doublepost = 0;
 
         if ($comment === '') {
@@ -230,7 +234,7 @@ SQL;
             $doublepost = self::persistComment($result, $commentary, $authorId, $section);
         }
 
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 
     /**
@@ -248,7 +252,7 @@ SQL;
         for ($x = 0; $x < $length; $x++) {
             if (mb_substr($commentary, $x, 1) === '`') {
                 $colorcount++;
-                if ($colorcount >= getsetting('maxcolors', 10)) {
+                if ($colorcount >= Settings::getInstance()->getSetting('maxcolors', 10)) {
                     $commentary = mb_substr($commentary, 0, $x) . color_sanitize(mb_substr($commentary, $x));
                     break;
                 }
@@ -272,11 +276,11 @@ SQL;
         $commentary = $args['commentline'];
         $talkline = $args['commenttalk'];
 
-        tlschema($schema);
+        Translator::getInstance()->setSchema($schema);
         $talkline = Translator::translateInline($talkline);
-        tlschema();
+        Translator::getInstance()->setSchema();
 
-        if (getsetting('soap', 1)) {
+        if (Settings::getInstance()->getSetting('soap', 1)) {
             $commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'", '\\1 \\2', $commentary);
         }
 
@@ -519,7 +523,7 @@ SQL;
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
-        tlschema('commentary');
+        Translator::getInstance()->setSchema('commentary');
 
         $nobios = ['motd' => true];
         if (!array_key_exists($scriptname, $nobios)) {
@@ -707,7 +711,7 @@ SQL;
         } else {
             $output->outputNotl("$next $lastu", true);
         }
-        tlschema();
+        Translator::getInstance()->setSchema();
         if ($needclose) {
             HookHandler::hook('}collapse');
         }
@@ -826,15 +830,17 @@ SQL;
             $name = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank'] / 10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank'] / 10)]}&gt; `&" : '') . $name;
         }
 
-        if (getsetting('enable_chat_tags', 1) == 1) {
+        $settings = Settings::getInstance();
+
+        if ($settings->getSetting('enable_chat_tags', 1) == 1) {
             if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
-                $name = '`$' . getsetting('chat_tag_megauser', '[ADMIN]') . '`0' . $name;
+                $name = '`$' . $settings->getSetting('chat_tag_megauser', '[ADMIN]') . '`0' . $name;
             } else {
                 if (($row['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
-                    $name = '`$' . getsetting('chat_tag_gm', '[GM]') . '`0' . $name;
+                    $name = '`$' . $settings->getSetting('chat_tag_gm', '[GM]') . '`0' . $name;
                 }
                 if (($row['superuser'] & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
-                    $name = '`$' . getsetting('chat_tag_mod', '[MOD]') . '`0' . $name;
+                    $name = '`$' . $settings->getSetting('chat_tag_mod', '[MOD]') . '`0' . $name;
                 }
             }
         }
@@ -848,14 +854,16 @@ SQL;
     private static function buildCommentHtml(string $ft, array $row, string $link, bool $linkBios): string
     {
         $op = '';
+        $settings = Settings::getInstance();
+        $charset = $settings->getSetting('charset', 'UTF-8');
 
         if ($ft == '::' || $ft == '/me' || $ft == ':') {
             $x = strpos($row['comment'], $ft);
             if ($x !== false) {
                 if ($linkBios) {
-                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`n";
+                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, $charset)) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, $charset)) . "`0`n";
                 } else {
-                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`n";
+                    $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, $charset)) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, $charset)) . "`0`n";
                 }
             }
         }
@@ -863,17 +871,17 @@ SQL;
         if ($op == '' && $ft == '/game' && (!isset($row['name']) || $row['name'] === '')) {
             $x = strpos($row['comment'], $ft);
             if ($x !== false) {
-                $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`0`n";
+                $op = str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], 0, $x), ENT_COMPAT, $charset)) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(mb_substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, $charset)) . "`0`n";
             }
         }
 
         if ($op == '') {
             if ($linkBios) {
-                $op = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`3\"`0`n";
+                $op = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, $charset)) . "`3\"`0`n";
             } elseif (mb_substr($ft, 0, 5) == '/game' && ($row['name'] === '' || $row['name'] === null)) {
-                $op = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'UTF-8')));
+                $op = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, $charset));
             } else {
-                $op = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, getsetting('charset', 'UTF-8'))) . "`3\"`0`n";
+                $op = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, $charset)) . "`3\"`0`n";
             }
         }
 
@@ -898,7 +906,7 @@ SQL;
             $counttoday < ($limit / 2)
                         || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO)
                         || ($session['user']['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER
-                        || !getsetting('postinglimit', 1)
+                        || !Settings::getInstance()->getSetting('postinglimit', 1)
         ) {
             if ($message != "X") {
                     $message = "`n`@$message`n";
@@ -922,7 +930,9 @@ SQL;
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
-        tlschema("commentary");
+        Translator::getInstance()->setSchema("commentary");
+
+        $settings = Settings::getInstance();
 
         $jump = false;
         if (isset($session['user']['prefs']['nojump']) && $session['user']['prefs']['nojump'] == true) {
@@ -938,7 +948,7 @@ SQL;
                     $counttoday++;
                 }
             }
-            if (round($limit / 2, 0) - $counttoday <= 0 && getsetting('postinglimit', 1)) {
+            if (round($limit / 2, 0) - $counttoday <= 0 && $settings->getSetting('postinglimit', 1)) {
                 if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
                         $output->output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
                 } else {
@@ -961,18 +971,29 @@ SQL;
         }
         $req = str_replace("?&", "?", $req);
         if ($jump) {
-                $req .= "#$section";
+            $req .= "#$section";
         }
+
         Nav::add("", $req);
         $output->outputNotl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
-        Forms::previewfield("insertcommentary", $session['user']['name'], $talkline, true, array("size" => getsetting('chatlinelength', 40), "maxlength" => getsetting('maxchars', 200) - $tll));
+
+        Forms::previewfield(
+            "insertcommentary",
+            $session['user']['name'],
+            $talkline,
+            true,
+            [
+                "size" => $settings->getSetting('chatlinelength', 40),
+                "maxlength" => $settings->getSetting('maxchars', 200) - $tll,
+            ]
+        );
         $output->rawOutput("<input type='hidden' name='talkline' value='$talkline'>");
         $output->rawOutput("<input type='hidden' name='schema' value='$schema'>");
         $output->rawOutput("<input type='hidden' name='counter' value='{$session['counter']}'>");
         $session['commentcounter'] = $session['counter'];
         if ($section == "X") {
-                $vname = getsetting("villagename", LOCATION_FIELDS);
-                $iname = getsetting("innname", LOCATION_INN);
+                $vname = $settings->getSetting("villagename", LOCATION_FIELDS);
+                $iname = $settings->getSetting("innname", LOCATION_INN);
                 $sections = self::commentaryLocs();
                 reset($sections);
                 $output->outputNotl("<select name='section'>", true);
@@ -981,12 +1002,13 @@ SQL;
             }
                 $output->outputNotl("</select>", true);
         } else {
-                $output->outputNotl("<input type='hidden' name='section' value='$section'>", true);
+            $output->outputNotl("<input type='hidden' name='section' value='$section'>", true);
         }
-        if (round($limit / 2, 0) - $counttoday < 3 && getsetting('postinglimit', 1)) {
-                $output->output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
+
+        if (round($limit / 2, 0) - $counttoday < 3 && $settings->getSetting('postinglimit', 1)) {
+            $output->output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
         }
         $output->rawOutput("<div id='previewtext'></div></form>");
-        tlschema();
+        Translator::getInstance()->setSchema();
     }
 }

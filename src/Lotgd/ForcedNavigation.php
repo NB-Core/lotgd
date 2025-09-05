@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
@@ -46,7 +47,7 @@ class ForcedNavigation
                 } else {
                     $session['allowednavs'] = [];
                 }
-                if (!$session['user']['loggedin'] || ((date('U') - strtotime($session['user']['laston'])) > getsetting('LOGINTIMEOUT', 900))) {
+                if (!$session['user']['loggedin'] || ((date('U') - strtotime($session['user']['laston'])) > Settings::getInstance()->getSetting('LOGINTIMEOUT', 900))) {
                     $session = [];
                     if (defined('AJAX_MODE') && AJAX_MODE) {
                         $session['loggedin'] = false;

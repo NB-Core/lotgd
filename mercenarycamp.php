@@ -1,5 +1,6 @@
 <?php
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 use Lotgd\Buffs;
 
@@ -10,7 +11,9 @@ require_once("common.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
-tlschema("mercenarycamp");
+$translator = Translator::getInstance();
+
+$translator->setSchema("mercenarycamp");
 
 checkday();
 $name = stripslashes(rawurldecode(httpget('name')));
@@ -89,24 +92,24 @@ $basetext['schemas'] = $schemas;
 $texts = modulehook("mercenarycamptext", $basetext);
 $schemas = $texts['schemas'];
 
-tlschema($schemas['title']);
+$translator->setSchema($schemas['title']);
 page_header($texts['title']);
 output("`c`b`&" . $texts['title'] . "`0`b`c");
-tlschema();
+$translator->setSchema();
 
 $op = httpget("op");
 
 if ($op == "") {
     if (httpget('skip') != 1) {
-        tlschema($schemas['desc']);
+        $translator->setSchema($schemas['desc']);
         if (is_array($texts['desc'])) {
             foreach ($texts['desc'] as $description) {
-                output_notl(sprintf_translate($description));
+                output_notl($translator->sprintfTranslate($description));
             }
         } else {
             output($texts['desc']);
         }
-        tlschema();
+        $translator->setSchema();
     }
 
     $sql = "SELECT * FROM " .  Database::prefix("companions") . "
@@ -114,9 +117,9 @@ if ($op == "") {
 				AND (companionlocation = '{$session['user']['location']}' OR companionlocation = 'all')
 				AND companionactive = 1";
     $result = Database::query($sql);
-    tlschema($schemas['buynav']);
+    $translator->setSchema($schemas['buynav']);
     addnav($texts['buynav']);
-    tlschema();
+    $translator->setSchema();
     while ($row = Database::fetchAssoc($result)) {
         $row = modulehook("alter-companion", $row);
         if ($row['companioncostgold'] && $row['companioncostgems']) {
@@ -146,29 +149,29 @@ if ($op == "") {
 } elseif ($op == "heal") {
     $cost = httpget('cost');
     if ($cost == 'notenough') {
-        tlschema($schemas['healpaid']);
+        $translator->setSchema($schemas['healpaid']);
         if (is_array($texts['healnotenough'])) {
             foreach ($texts['healnotenough'] as $healnotenough) {
-                output_notl(sprintf_translate($healnotenough));
+                output_notl($translator->sprintfTranslate($healnotenough));
             }
         } else {
             output($texts['healnotenough']);
         }
-        tlschema();
+        $translator->setSchema();
     } else {
         $companions[$name]['hitpoints'] = $companions[$name]['maxhitpoints'];
         $session['user']['companions'] = serialize($companions);
         $session['user']['gold'] -= $cost;
         debuglog("spent $cost gold on healing a companion", false, false, "healcompanion", $cost);
-        tlschema($schemas['healpaid']);
+        $translator->setSchema($schemas['healpaid']);
         if (is_array($texts['healpaid'])) {
             foreach ($texts['healpaid'] as $healpaid) {
-                output_notl(sprintf_translate($healpaid));
+                output_notl($translator->sprintfTranslate($healpaid));
             }
         } else {
             output($texts['healpaid']);
         }
-        tlschema();
+        $translator->setSchema();
     }
     healnav($companions, $texts, $schemas);
     addnav("Navigation");
@@ -194,15 +197,15 @@ if ($op == "") {
             debuglog("has spent {$row['companioncostgold']} gold and {$row['companioncostgems']} gems on hiring a mercenary ({$row['name']}).");
         } else {
             // applying the companion failed. Most likely they already have more than enough companions...
-            tlschema($schemas['toomanycompanions']);
+            $translator->setSchema($schemas['toomanycompanions']);
             if (is_array($texts['toomanycompanions'])) {
                 foreach ($texts['toomanycompanions'] as $toomanycompanions) {
-                    output_notl(sprintf_translate($toomanycompanions));
+                    output_notl($translator->sprintfTranslate($toomanycompanions));
                 }
             } else {
                 output($texts['toomanycompanions']);
             }
-            tlschema();
+            $translator->setSchema();
         }
     }
     addnav("Navigation");
@@ -216,9 +219,9 @@ page_footer();
 function healnav($companions, $texts, $schemas)
 {
     global $session;
-    tlschema($schemas['healnav']);
+    $translator->setSchema($schemas['healnav']);
     addnav($texts['healnav']);
-    tlschema();
+    $translator->setSchema();
     $healable = false;
     foreach ($companions as $name => $companion) {
         if (isset($companion['cannotbehealed']) && $companion['cannotbehealed'] == true) {
@@ -236,14 +239,14 @@ function healnav($companions, $texts, $schemas)
         }
     }
     if ($healable == true) {
-        tlschema($schemas['healtext']);
+        $translator->setSchema($schemas['healtext']);
         if (is_array($texts['healtext'])) {
             foreach ($texts['healtext'] as $healtext) {
-                output_notl(sprintf_translate($healtext));
+                output_notl($translator->sprintfTranslate($healtext));
             }
         } else {
             output($texts['healtext']);
         }
-        tlschema();
+        $translator->setSchema();
     }
 }

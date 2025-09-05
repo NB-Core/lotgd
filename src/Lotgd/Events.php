@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\Http;
 use Lotgd\Util\ScriptName;
+use Lotgd\Translator;
 
 class Events
 {
@@ -36,7 +37,7 @@ class Events
         global $session, $playermount, $badguy, $output;
         $skipdesc = false;
 
-        tlschema("events");
+        Translator::getInstance()->setSchema("events");
         $allowinactive = false;
         $eventhandler = Http::get('eventhandler');
         if (($session['user']['superuser'] & SU_DEVELOPER) && $eventhandler != "") {
@@ -78,7 +79,7 @@ class Events
                 Http::set("op", "");
             }
         }
-        tlschema();
+        Translator::getInstance()->setSchema();
         return $skipdesc;
     }
 }

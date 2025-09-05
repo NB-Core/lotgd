@@ -8,13 +8,14 @@ use Lotgd\AddNews;
 use Lotgd\DeathMessage;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
+use Lotgd\Translator;
 
 final class DeathMessageNewsArgumentsTest extends TestCase
 {
     protected function setUp(): void
     {
         class_exists(Database::class);
-        \Lotgd\Translator::tlschema('ns');
+        Translator::getInstance()->setSchema('ns');
         Database::$lastSql = '';
         $GLOBALS['session'] = ['user' => [
             'acctid' => 3,
@@ -28,7 +29,7 @@ final class DeathMessageNewsArgumentsTest extends TestCase
 
     protected function tearDown(): void
     {
-        \Lotgd\Translator::tlschema(false);
+        Translator::getInstance()->setSchema(false);
         unset($GLOBALS['session'], $GLOBALS['badguy']);
     }
 

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // addnews ready
 // translator ready
@@ -20,7 +21,7 @@ use Lotgd\Translator;
 
 require_once("common.php");
 
-tlschema("list");
+Translator::getInstance()->setSchema("list");
 
 Header::pageHeader("List Warriors");
 $output = Output::getInstance();
@@ -118,9 +119,9 @@ if ($page == "" && $op == "") {
 } else {
     $remove_offline = false;
     if ($totalplayers > $playersperpage && $op != "search") {
-        $title = sprintf_translate("Warriors of the realm (Page %s: %s-%s of %s)", ($pageoffset / $playersperpage + 1), $from, $to, $totalplayers);
+        $title = Translator::getInstance()->sprintfTranslate("Warriors of the realm (Page %s: %s-%s of %s)", ($pageoffset / $playersperpage + 1), $from, $to, $totalplayers);
     } else {
-        $title = sprintf_translate("Warriors of the realm");
+        $title = Translator::getInstance()->sprintfTranslate("Warriors of the realm");
     }
     $output->rawOutput($translator->clearButton());
     $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
@@ -159,7 +160,7 @@ if ($page == "" && $op == "") {
             $loggedin++;
         }
     }
-    $title .= sprintf_translate(" (%s warriors online)", $loggedin);
+    $title .= Translator::getInstance()->sprintfTranslate(" (%s warriors online)", $loggedin);
 }
 $output->outputNotl("`c`b" . $title . "`b");
 
@@ -216,9 +217,9 @@ foreach ($rows as $i => $row) {
     if (!$row['race']) {
         $row['race'] = RACE_UNKNOWN;
     }
-    tlschema("race");
+    Translator::getInstance()->setSchema("race");
     $output->output($row['race']);
-    tlschema();
+    Translator::getInstance()->setSchema();
     $output->rawOutput("</td><td>");
     $sex = translate_inline($row['sex'] ? "`%Female`0" : "`!Male`0");
     $output->outputNotl("%s", $sex);

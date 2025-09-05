@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 // translator ready
 use Lotgd\Forms;
@@ -50,7 +51,7 @@ if (!isset($session['message'])) {
     $session['message'] = '';
 }
 
-tlschema("home");
+Translator::getInstance()->setSchema("home");
 
 $op = Http::get('op');
 

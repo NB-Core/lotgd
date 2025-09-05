@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
@@ -21,6 +22,11 @@ class Translator
     private static array $translation_namespace_stack = [];
     // Maintain translation state within the class
     private static string $translation_namespace = "";
+
+    public function setSchema(string|false|null $schema = false): void
+    {
+        self::tlschema($schema);
+    }
 // translator ready
 // addnews ready
 // mail ready
@@ -51,7 +57,7 @@ class Translator
         }
         if ($language == "") {
             $language = $settings instanceof Settings
-                ? $settings->getsetting("defaultlanguage", "en")
+                ? $settings->getSetting("defaultlanguage", "en")
                 : "en";
         }
 
@@ -124,14 +130,14 @@ class Translator
                     // This delete is horrible on very heavily translated games.
                     // It has been requested to be removed.
                     /*
-                    if (getsetting("collecttexts", false)) {
+                    if (Settings::getInstance()->getSetting("collecttexts", false)) {
         $sql = "DELETE FROM " . Database::prefix("untranslated") .
             " WHERE intext='" . addslashes($indata) .
             "' AND language='" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "'";
         Database::query($sql);
                     }
                     */
-                } elseif ($settings instanceof Settings && $settings->getsetting("collecttexts", false)) {
+                } elseif ($settings instanceof Settings && $settings->getSetting("collecttexts", false)) {
                     $sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "', " .  "'$namespace')";
                     Database::query($sql, false);
                 }
@@ -324,11 +330,12 @@ class Translator
         }
             //this is done by sprintfTranslate.
         //$in[0] = str_replace("`%","`%%",$in[0]);
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         if ($to > 0) {
             $result = Database::query("SELECT prefs FROM " . Database::prefix("accounts") . " WHERE acctid=$to");
             $language = Database::fetchAssoc($result);
             $language['prefs'] = unserialize($language['prefs']);
-            $session['tlanguage'] = (isset($language['prefs']['language']) && $language['prefs']['language'] != '') ? $language['prefs']['language'] : getsetting("defaultlanguage", "en");
+            $session['tlanguage'] = (isset($language['prefs']['language']) && $language['prefs']['language'] != '') ? $language['prefs']['language'] : ($settings instanceof Settings ? $settings->getSetting("defaultlanguage", "en") : "en");
         }
         reset($in);
         // translation offered within translation tool here is in language
@@ -399,7 +406,7 @@ class Translator
                         FROM " . Database::prefix("translations") . "
                         WHERE language='$language'
                                 AND $where";
-            /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")))); */
+            /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, Settings::getInstance()->getSetting("charset", "UTF-8")))); */
             if (isset($settings) && !$settings->getSetting("cachetranslations", 0)) {
                 $result = Database::query($sql);
             } else {
@@ -580,7 +587,7 @@ class Translator
 
         if ($settings->getSetting("permacollect", 0)) {
             $settings->saveSetting("collecttexts", 1);
-        } elseif ($tlmax && getsetting("OnlineCount", 0) <= $tlmax) {
+        } elseif ($tlmax && $settings->getSetting("OnlineCount", 0) <= $tlmax) {
             $settings->saveSetting("collecttexts", 1);
         } else {
             $settings->saveSetting("collecttexts", 0);

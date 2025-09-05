@@ -8,9 +8,9 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
-use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Cookies;
+use Lotgd\Translator;
 
 class CheckBan
 {
@@ -51,7 +51,7 @@ class CheckBan
         $result = Database::query($sql);
         if (Database::numRows($result) > 0) {
             $session = [];
-            tlschema('ban');
+            Translator::getInstance()->setSchema('ban');
             if (!isset($session['message'])) {
                 $session['message'] = '';
             }
@@ -66,16 +66,16 @@ class CheckBan
                     $tl_hours = ($hours != 1 ? 'hours' : 'hour');
                     $mins = round(($leftover - ($hours * 3600)) / 60, 2);
                     $tl_mins = ($mins != 1 ? 'minutes' : 'minute');
-                    $session['message'] .= sprintf_translate("`^This ban will be removed `\$after`^ %s.`n`0", date('M d, Y', strtotime($row['banexpire'])));
-                    $session['message'] .= sprintf_translate("`^(This means in %s %s and %s %s)`0", $hours, $tl_hours, $mins, $tl_mins);
+                    $session['message'] .= Translator::getInstance()->sprintfTranslate("`^This ban will be removed `\$after`^ %s.`n`0", date('M d, Y', strtotime($row['banexpire'])));
+                    $session['message'] .= Translator::getInstance()->sprintfTranslate("`^(This means in %s %s and %s %s)`0", $hours, $tl_hours, $mins, $tl_mins);
                 }
                 $sql = "UPDATE " . Database::prefix('bans') . " SET lasthit='" . date('Y-m-d H:i:s') . "' WHERE ipfilter='{$row['ipfilter']}' AND uniqueid='{$row['uniqueid']}'";
                 Database::query($sql);
                 $session['message'] .= "`n";
-                $session['message'] .= sprintf_translate("`n`4The ban was issued by %s`^.`n", $row['banner']);
+                $session['message'] .= Translator::getInstance()->sprintfTranslate("`n`4The ban was issued by %s`^.`n", $row['banner']);
             }
             $session['message'] .= Translator::translateInline("`4If you wish, you may appeal your ban with the petition link.");
-            tlschema();
+            Translator::getInstance()->setSchema();
             header('Location: index.php');
             exit();
         }

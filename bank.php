@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\Translator;
 
 /**
  * \file bank.php
@@ -27,7 +28,7 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 
-tlschema("bank");
+Translator::getInstance()->setSchema("bank");
 
 Header::pageHeader("Ye Olde Bank");
 output("`^`c`bYe Olde Bank`b`c");
