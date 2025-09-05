@@ -1,8 +1,13 @@
 <?php
 
 use Lotgd\Settings;
+use Lotgd\Translator;
+
+global $session;
 
 $settings = Settings::getInstance();
+$enum = '';
+$mounts = '';
 
 $userinfo = array(
     "Account info,title",
@@ -84,7 +89,7 @@ $userinfo = array(
         (($session['user']['superuser'] & SU_MEGAUSER) ? "int" : "viewonly"),
 
     "Clan Info,title",
-    "clanid" => "Clan,enumpretrans,0," . translate_inline("None"),
+    "clanid" => "Clan,enumpretrans,0," . Translator::translateInline("None"),
     "clanrank" => "Clan Rank,floatrange,0,31,1",
     "clanjoindate" => "Clan Join Date",
 

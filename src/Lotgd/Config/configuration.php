@@ -2,6 +2,10 @@
 
 use Lotgd\Settings;
 
+global $session;
+
+$settings = Settings::getInstance();
+
 
 $setup = array(
     "Game Setup,title",
@@ -14,7 +18,7 @@ $setup = array(
     "This is a comma separated list the petitionsender can choose one point from. Use as many as you like - without colors,note",
     "Enter languages here like this: `i(shortname 2 chars) comma (readable name of the language)`i and continue as long as you wish,note",
     "serverlanguages" => "Languages available on this server",
-    "defaultlanguage" => "Default Language,enum," . Settings::getInstance()->getSetting("serverlanguages", "en,English,fr,Français,dk,Danish,de,Deutsch,es,Español,it,Italian"),
+    "defaultlanguage" => "Default Language,enum," . $settings->getSetting("serverlanguages", "en,English,fr,Français,dk,Danish,de,Deutsch,es,Español,it,Italian"),
     "corenewspath" => "Path and file to fetch the Core News for +nb Editions",
     "edittitles" => "Should DK titles be editable in user editor,bool",
     "forcedmotdpopup" => "Force a MOTD popup if an unseen motd is there?,bool",
