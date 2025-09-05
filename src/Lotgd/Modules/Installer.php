@@ -173,7 +173,9 @@ class Installer
                 }
             }
             $output->output('`^Module installed.  It is not yet active.`n');
+
             DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+
             DataCache::getInstance()->massinvalidate('module_prepare');
             return true;
         }

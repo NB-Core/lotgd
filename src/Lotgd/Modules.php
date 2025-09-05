@@ -1048,7 +1048,9 @@ class Modules
         Database::query($sql);
         $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks') . " WHERE modulename='$module'";
         Database::query($sql);
+
         DataCache::getInstance()->invalidatedatacache('hook-' . $module);
+
         DataCache::getInstance()->invalidatedatacache('module_prepare');
     }
 

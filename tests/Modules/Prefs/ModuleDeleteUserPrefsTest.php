@@ -63,6 +63,7 @@ final class ModuleDeleteUserPrefsTest extends TestCase
         $prefs = ModuleManager::prefs();
         self::assertArrayNotHasKey($userId, $prefs);
         self::assertArrayHasKey(2, $prefs);
+
         // DataCache::getInstance()->massinvalidate is used; verifying cache invalidation via globals is no longer applicable.
         self::assertTrue(true);
     }
