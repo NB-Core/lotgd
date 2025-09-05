@@ -9,31 +9,6 @@ parameters:
 
 
 
-                -
-                        message: "#^Function debuglog not found\\.$#"
-                        count: 4
-                        path: src/Lotgd/Pvp.php
-
-                -
-                        message: "#^Function get_player_attack not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Pvp.php
-
-                -
-                        message: "#^Function get_player_defense not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Pvp.php
-
-                -
-                        message: "#^Function reltime not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Pvp.php
-
-                -
-                        message: "#^Function output not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Specialty.php
-
 
                 -
                         message: "#^Variable \\$template might not be defined\\.$#"

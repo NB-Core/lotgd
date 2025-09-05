@@ -6,6 +6,7 @@ namespace Lotgd;
 
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\Output;
 
 class Specialty
 {
@@ -28,7 +29,7 @@ class Specialty
         if ($session['user']['specialty'] != '') {
             HookHandler::hook('incrementspecialty', ['color' => $colorcode]);
         } else {
-            output("`7You have no direction in the world, you should rest and make some important decisions about your life.`0`n");
+            Output::getInstance()->output("`7You have no direction in the world, you should rest and make some important decisions about your life.`0`n");
         }
         Translator::getInstance()->setSchema();
         if ($spec !== false) {
