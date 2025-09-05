@@ -170,7 +170,7 @@ class Moderate
      */
     public static function viewmoderatedcommentary(string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', ?string $schema = null, bool $viewall = false): void
     {
-        global $session, $REQUEST_URI, $doublepost, $emptypost;
+        global $session, $REQUEST_URI;
 
         $output = Output::getInstance();
         $translator = Translator::getInstance();
@@ -220,10 +220,10 @@ class Moderate
         }
 
         // Inform the player about posting issues
-        if ($doublepost) {
+        if (Commentary::isDoublePost()) {
             $output->output("`$`bDouble post?`b`0`n");
         }
-        if ($emptypost) {
+        if (Commentary::isEmptyPost()) {
             // Player attempted to submit an empty line
             $output->output("`$`bWell, they say silence is a virtue.`b`0`n");
         }
