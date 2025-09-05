@@ -317,11 +317,6 @@ parameters:
                         path: src/Lotgd/Newday.php
 
                 -
-                        message: "#^Function rawoutput not found\\.$#"
-                        count: 22
-                        path: src/Lotgd/Newday.php
-
-                -
                         message: "#^Function savesetting not found\\.$#"
                         count: 1
                         path: src/Lotgd/Newday.php
@@ -394,11 +389,6 @@ parameters:
                 -
                         message: "#^Function get_player_defense not found\\.$#"
                         count: 1
-                        path: src/Lotgd/Pvp.php
-
-                -
-                        message: "#^Function rawoutput not found\\.$#"
-                        count: 14
                         path: src/Lotgd/Pvp.php
 
                 -

@@ -338,8 +338,8 @@ class Pvp
         $bio = Translator::translateInline('Bio');
         $att = Translator::translateInline('Attack');
 
-        rawoutput("<table border='0' cellpadding='3' cellspacing='0'>");
-        rawoutput("<tr class='trhead'><td>$n</td><td>$l</td><td>$loc</td><td>$ops</td></tr>");
+        $output->rawOutput("<table border='0' cellpadding='3' cellspacing='0'>");
+        $output->rawOutput("<tr class='trhead'><td>$n</td><td>$l</td><td>$loc</td><td>$ops</td></tr>");
         $j = 0;
         $num = count($pvp);
         for ($i = 0; $i < $num; $i++) {
@@ -350,8 +350,8 @@ class Pvp
             $j++;
             $biolink = "bio.php?char=" . $row['acctid'] . "&ret=" . urlencode($_SERVER['REQUEST_URI']);
             Navigation::add('', $biolink);
-            rawoutput("<tr class='" . ($j % 2 ? 'trlight' : 'trdark') . "'>");
-            rawoutput('<td>');
+            $output->rawOutput("<tr class='" . ($j % 2 ? 'trlight' : 'trdark') . "'>");
+            $output->rawOutput('<td>');
             if ($row['clanshort'] > '' && $row['clanrank'] > CLAN_APPLICANT) {
                 $output->outputNotl(
                     '%s&lt;`2%s%s&gt;`0 ',
@@ -362,14 +362,14 @@ class Pvp
                 );
             }
             $output->outputNotl('`@%s`0', $row['name']);
-            rawoutput('</td>');
-            rawoutput('<td>');
+            $output->rawOutput('</td>');
+            $output->rawOutput('<td>');
             $output->outputNotl('%s', $row['level']);
-            rawoutput('</td>');
-            rawoutput('<td>');
+            $output->rawOutput('</td>');
+            $output->rawOutput('<td>');
             $output->outputNotl('%s', $row['location']);
-            rawoutput('</td>');
-            rawoutput("<td>[ <a href='$biolink'>$bio</a> | ");
+            $output->rawOutput('</td>');
+            $output->rawOutput("<td>[ <a href='$biolink'>$bio</a> | ");
             if ($row['pvpflag'] > $pvptimeout) {
                 $output->output("`i(Attacked too recently)`i");
             } elseif ($location != $row['location'] && (!isset($row['anylocation']) || !$row['anylocation'])) {
@@ -380,11 +380,11 @@ class Pvp
                 }
                 $output->output('`i`4(%s`4)`i', $row['invalid']);
             } else {
-                rawoutput("<a href='$link$extra&name=" . $row['acctid'] . "'>$att</a>");
+                $output->rawOutput("<a href='$link$extra&name=" . $row['acctid'] . "'>$att</a>");
                 Navigation::add('', "$link$extra&name=" . $row['acctid']);
             }
-            rawoutput(' ]</td>');
-            rawoutput('</tr>');
+            $output->rawOutput(' ]</td>');
+            $output->rawOutput('</tr>');
         }
 
         $sql = "SELECT count(location) as counter, location FROM " . Database::prefix('accounts') .
@@ -401,7 +401,7 @@ class Pvp
             $noone = Translator::translateInline('`iThere are no available targets.`i');
             $output->outputNotl("<tr><td align='center' colspan='4'>$noone</td></tr>", true);
         }
-        rawoutput('</table>', true);
+        $output->rawOutput('</table>', true);
 
         if (Database::numRows($result) != 0) {
             $output->output('`n`n`&As you listen to different people around you talking, you glean the following additional information:`n');
