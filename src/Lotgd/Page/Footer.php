@@ -3,13 +3,11 @@
 declare(strict_types=1);
 
 namespace Lotgd\Page;
-use Lotgd\Settings;
 
+use Lotgd\Settings;
 use Lotgd\PageParts;
 use Lotgd\Template;
 use Lotgd\TwigTemplate;
-use Lotgd\Sanitize;
-use Lotgd\HolidayText;
 use Lotgd\Buffs;
 use Lotgd\Nav;
 use Lotgd\Accounts;
@@ -19,21 +17,23 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
+use Lotgd\Page as PageSingleton;
 
 class Footer
 {
     public static function pageFooter(bool $saveuser = true): void
     {
-        global $session,
-            $template, $y2, $z2, $logd_version, $copyright, $footer,
-            $settings;
+        $session   = &$GLOBALS['session'];
+        $page      = PageSingleton::getInstance();
+        $settings  = Settings::getInstance();
+        $template  = Template::getInstance()->getTemplate();
 
         $scriptName = PhpGenericEnvironment::getScriptName();
 
         $navInstance = Nav::getInstance();
         $header = $navInstance->getHeader();
 
-        $z = isset($y2, $z2) ? $y2 ^ $z2 : 'copyright';
+        $z = $page->getZ();
         if (TwigTemplate::isActive()) {
             $footer = '';
         } else {
@@ -73,7 +73,7 @@ class Footer
                 (!isset(PageParts::$noPopups[$scriptName]) || PageParts::$noPopups[$scriptName] != 1) &&
                 $session['user']['loggedin']
             ) {
-                if (isset($settings) && $settings->getSetting('forcedmotdpopup', 0)) {
+                if ($settings->getSetting('forcedmotdpopup', 0)) {
                     $headscript .= PageParts::popup('motd.php');
                 }
                 $session['needtoviewmotd'] = true;
@@ -83,7 +83,7 @@ class Footer
             $favicon = ['favicon-link' => $defaultFaviconLink];
             $favicon        = HookHandler::hook('pageparts-favicon', $favicon);
             $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
-            if (isset($settings) && $settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+            if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('async/setup.php')) {
                     require 'async/setup.php';
                 }
@@ -135,8 +135,8 @@ class Footer
                 $palreplace,
                 $header,
                 $footer,
-                $settings ?? null,
-                $logd_version
+                $settings,
+                $page->getLogdVersion()
             );
         }
 
@@ -168,9 +168,9 @@ class Footer
             'script'  => $script,
             'motd'    => $motd_link,
             'source'  => "<a href='$sourcelink' onclick=\"" . PageParts::popup($sourcelink) . ";return false;\" target='_blank'>" . Translator::translateInline('View PHP Source') . '</a>',
-            'version' => "Version: $logd_version",
+            'version' => 'Version: ' . $page->getLogdVersion(),
             'pagegen' => PageParts::computePageGenerationStats(PhpGenericEnvironment::getPageStartTime()),
-            $z       => $$z,
+            $z       => $page->getCopyright(),
         ];
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);
@@ -210,11 +210,13 @@ class Footer
 
     public static function popupFooter(): void
     {
-        global $session, $y2, $z2, $copyright, $template;
+        $session  = &$GLOBALS['session'];
+        $page     = PageSingleton::getInstance();
+        $template = Template::getInstance()->getTemplate();
         $navInstance = Nav::getInstance();
-        $header = $navInstance->getHeader();
+        $header      = $navInstance->getHeader();
 
-        $settings = Settings::getInstance();
+        $settings  = Settings::getInstance();
         $headscript = '';
         if (TwigTemplate::isActive()) {
             $footer = '';
@@ -244,13 +246,13 @@ class Footer
         }
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);
 
-        $z = isset($y2, $z2) ? $y2 ^ $z2 : 'copyright';
+        $z = $page->getZ();
         list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, [
             'script' => '',
             'mail'   => (strpos($header, '{mail}') !== false || strpos($footer, '{mail}') !== false)
-            ? PageParts::mailLink()
-            : '',
-            $z       => $$z,
+                ? PageParts::mailLink()
+                : '',
+            $z       => $page->getCopyright(),
         ]);
 
         if (TwigTemplate::isActive()) {

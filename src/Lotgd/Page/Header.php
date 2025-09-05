@@ -21,9 +21,9 @@ class Header
 {
     public static function pageHeader(...$args): void
     {
-        global $session, $template;
+        $session  = &$GLOBALS['session'];
         $settings = Settings::getInstance();
-        $nav = Nav::getInstance();
+        $nav      = Nav::getInstance();
 
         PageParts::$noPopups['login.php'] = true;
         PageParts::$noPopups['motd.php'] = true;
@@ -34,6 +34,7 @@ class Header
 
         Translator::translatorSetup();
         Template::prepareTemplate();
+        $template = Template::getInstance()->getTemplate();
         if (PhpGenericEnvironment::getScriptName() !== '') {
             $script = ScriptName::current();
             if ($script) {
@@ -82,11 +83,11 @@ class Header
 
     public static function popupHeader(...$args): void
     {
-        global $template;
         $nav = Nav::getInstance();
 
         Translator::translatorSetup();
         Template::prepareTemplate();
+        $template = Template::getInstance()->getTemplate();
 
         HookHandler::hook('header-popup');
 
