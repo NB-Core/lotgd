@@ -519,7 +519,10 @@ if (
     if (!isset($session['user']['hashorse'])) {
         $session['user']['hashorse'] = 0;
     }
-        $playermount = Mounts::getmount($session['user']['hashorse']);
+    Mounts::getInstance()->loadPlayerMount($session['user']['hashorse']);
+
+    global $playermount; // Legacy setting for modules
+    $playermount = Mounts::getInstance()->getPlayerMount();
     $temp_comp = @unserialize($session['user']['companions']);
     $companions = array();
     if (is_array($temp_comp)) {

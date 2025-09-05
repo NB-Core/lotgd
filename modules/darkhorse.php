@@ -10,6 +10,7 @@ use Lotgd\Commentary;
 use Lotgd\MountName;
 use Lotgd\MySQL\Database;
 use Lotgd\Output;
+use Lotgd\Mounts;
 
 // translator ready
 // addnews ready
@@ -37,9 +38,9 @@ function darkhorse_getmoduleinfo(): array
 
 function darkhorse_tavernmount()
 {
-    global $playermount;
-    if (isset($playermount) && is_array($playermount) && array_key_exists("mountid", $playermount)) {
-        $id = $playermount['mountid'];
+    $mount = Mounts::getInstance()->getPlayerMount();
+    if (isset($mount['mountid'])) {
+        $id = $mount['mountid'];
     } else {
         $id = 0;
     }

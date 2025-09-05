@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+use Lotgd\Mounts;
 /**
  * Core module handling multiple cities and travel events.
  */
@@ -103,10 +104,10 @@ function cities_dohook(string $hookname, array $args): array
             }
             break;
         case "count-travels":
-            global $playermount;
             $args['available'] += get_module_setting("allowance");
-            if ($playermount && isset($playermount['mountid'])) {
-                $id = $playermount['mountid'];
+            $mount = Mounts::getInstance()->getPlayerMount();
+            if ($mount && isset($mount['mountid'])) {
+                $id    = $mount['mountid'];
                 $extra = get_module_objpref("mounts", $id, "extratravel");
                 $args['available'] += $extra;
             }

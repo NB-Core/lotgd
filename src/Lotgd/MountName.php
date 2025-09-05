@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Translator;
+use Lotgd\Mounts;
 /**
  * Helper for retrieving the player mount names.
  */
@@ -17,18 +18,18 @@ class MountName
      */
     public static function getmountname(): array
     {
-        global $playermount;
+        $mount = Mounts::getInstance()->getPlayerMount();
         Translator::getInstance()->setSchema('mountname');
         $name = '';
         $lcname = '';
-        if (isset($playermount['mountname'])) {
-            $name = Translator::getInstance()->sprintfTranslate('Your %s', $playermount['mountname']);
-            $lcname = Translator::getInstance()->sprintfTranslate('your %s', $playermount['mountname']);
+        if (isset($mount['mountname'])) {
+            $name = Translator::getInstance()->sprintfTranslate('Your %s', $mount['mountname']);
+            $lcname = Translator::getInstance()->sprintfTranslate('your %s', $mount['mountname']);
         }
         Translator::getInstance()->setSchema();
-        if (isset($playermount['newname']) && $playermount['newname'] != '') {
-            $name = $playermount['newname'];
-            $lcname = $playermount['newname'];
+        if (isset($mount['newname']) && $mount['newname'] != '') {
+            $name = $mount['newname'];
+            $lcname = $mount['newname'];
         }
         return [$name, $lcname];
     }

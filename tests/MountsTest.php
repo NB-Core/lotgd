@@ -31,4 +31,11 @@ final class MountsTest extends TestCase
         $row = Mounts::getmount(2);
         $this->assertSame([], $row);
     }
+
+    public function testPlayerMountAccessors(): void
+    {
+        $mounts = Mounts::getInstance();
+        $mounts->setPlayerMount(['mountid' => 5]);
+        $this->assertSame(['mountid' => 5], $mounts->getPlayerMount());
+    }
 }
