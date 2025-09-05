@@ -8,6 +8,7 @@ use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
 use Lotgd\Nav as Navigation;
+use Lotgd\PhpGenericEnvironment;
 
 /**
  * Navigation helpers for superuser areas.
@@ -19,7 +20,7 @@ class SuperuserNav
      */
     public static function render(): void
     {
-        global $SCRIPT_NAME, $session;
+        $session = &PhpGenericEnvironment::getSession();
         Translator::getInstance()->setSchema('nav');
         Navigation::add('Navigation');
         if ($session['user']['superuser'] & ~ SU_DOESNT_GIVE_GROTTO) {
