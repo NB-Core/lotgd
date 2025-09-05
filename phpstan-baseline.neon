@@ -1,31 +1,6 @@
 parameters:
         ignoreErrors:
                 -
-                        message: "#^Variable \\$session might not be defined\\.$#"
-                        count: 1
-                        path: src/Lotgd/Config/configuration.php
-
-                -
-                        message: "#^Function translate_inline not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Config/user_account.php
-
-                -
-                        message: "#^Variable \\$enum might not be defined\\.$#"
-                        count: 1
-                        path: src/Lotgd/Config/user_account.php
-
-                -
-                        message: "#^Variable \\$mounts might not be defined\\.$#"
-                        count: 1
-                        path: src/Lotgd/Config/user_account.php
-
-                -
-                        message: "#^Variable \\$session might not be defined\\.$#"
-                        count: 4
-                        path: src/Lotgd/Config/user_account.php
-
-                -
                         message: "#^Function module_display_events not found\\.$#"
                         count: 1
                         path: src/Lotgd/Forest.php

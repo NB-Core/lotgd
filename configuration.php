@@ -166,7 +166,7 @@ switch ($type_setting) {
                         $post = modulehook("validatesettings", $post, true, $module);
                         if (isset($post['validation_error'])) {
                             $post['validation_error'] =
-                                translate_inline($post['validation_error']);
+                                Translator::translateInline($post['validation_error']);
                             output(
                                 "Unable to change settings:`\$%s`0",
                                 $post['validation_error']
@@ -223,14 +223,14 @@ switch ($type_setting) {
                             $msettings = modulehook("mod-dyn-settings", $msettings);
                             if (is_module_active($module)) {
                                 output("This module is currently active: ");
-                                $deactivate = translate_inline("Deactivate");
+                                $deactivate = Translator::translateInline("Deactivate");
                                 rawoutput("<a href='modules.php?op=deactivate&module={$module}&cat={$info['category']}'>");
                                 output_notl($deactivate);
                                 rawoutput("</a>");
                                 addnav("", "modules.php?op=deactivate&module={$module}&cat={$info['category']}");
                             } else {
                                 output("This module is currently deactivated: ");
-                                $deactivate = translate_inline("Activate");
+                                $deactivate = Translator::translateInline("Activate");
                                 rawoutput("<a href='modules.php?op=activate&module={$module}&cat={$info['category']}'>");
                                 output_notl($deactivate);
                                 rawoutput("</a>");
@@ -259,7 +259,7 @@ SuperuserNav::render();
 addnav("Module Manager", "modules.php");
 if ($module) {
     $cat = $info['category'];
-    addnav(array("Module Category - `^%s`0", translate_inline($cat)), "modules.php?cat=$cat");
+    addnav(array("Module Category - `^%s`0", Translator::translateInline($cat)), "modules.php?cat=$cat");
 }
 
 addnav("Game Settings");
