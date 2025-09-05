@@ -26,6 +26,10 @@ function translate_loadnamespace($namespace, $language = false)
 {
     return Translator::translateLoadNamespace($namespace, $language);
 }
+function tlschema($schema = false)
+{
+    return Translator::tlschema($schema);
+}
 function tlbutton_push($indata, $hot = false, $namespace = false)
 {
     return Translator::tlbuttonPush($indata, $hot, $namespace);
