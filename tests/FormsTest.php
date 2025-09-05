@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\Forms;
+use Lotgd\Output;
 use PHPUnit\Framework\TestCase;
 
 final class FormsTest extends TestCase
@@ -13,27 +14,29 @@ final class FormsTest extends TestCase
     {
         global $forms_output;
         $forms_output = '';
+        $ref = new \ReflectionClass(Output::class);
+        $prop = $ref->getProperty('instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
     }
 
     public function testCheckboxChecked(): void
     {
-        global $forms_output;
         Forms::showForm(['flag' => 'Flag,checkbox'], ['flag' => 1]);
-        $this->assertStringContainsString("type='checkbox' name='flag' value='1' checked", $forms_output);
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString("type='checkbox' name='flag' value='1' checked", $output);
     }
 
     public function testCheckboxUnchecked(): void
     {
-        global $forms_output;
         Forms::showForm(['flag' => 'Flag,checkbox'], ['flag' => 0]);
-        $this->assertStringContainsString("type='checkbox' name='flag' value='1'", $forms_output);
-        $this->assertStringNotContainsString('checked', $forms_output);
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString("type='checkbox' name='flag' value='1'", $output);
+        $this->assertStringNotContainsString('checked', $output);
     }
 
     public function testThemeFieldSkipsInvalidDirectories(): void
     {
-        global $forms_output;
-
         $base = dirname(__DIR__) . '/templates_twig';
         $tempDir = $base . '/test_no_config';
         $hiddenDir = $base . '/.git';
@@ -47,8 +50,8 @@ final class FormsTest extends TestCase
             rmdir($tempDir);
             rmdir($hiddenDir);
         }
-
-        $this->assertStringNotContainsString("value='twig:test_no_config'", $forms_output);
-        $this->assertStringNotContainsString("value='twig:.git'", $forms_output);
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringNotContainsString("value='twig:test_no_config'", $output);
+        $this->assertStringNotContainsString("value='twig:.git'", $output);
     }
 }

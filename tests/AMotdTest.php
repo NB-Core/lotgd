@@ -6,6 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\Motd;
 use Lotgd\Tests\Stubs\Database;
+use Lotgd\Output;
 use PHPUnit\Framework\TestCase;
 
 final class AMotdTest extends TestCase
@@ -15,6 +16,10 @@ final class AMotdTest extends TestCase
         global $forms_output, $session;
         $forms_output = '';
         $session = ['user' => ['acctid' => 1, 'loggedin' => true, 'superuser' => 0]];
+        $ref = new \ReflectionClass(Output::class);
+        $prop = $ref->getProperty('instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
         \Lotgd\MySQL\Database::$settings_table = [];
         \Lotgd\MySQL\Database::$onlineCounter = 0;
         \Lotgd\MySQL\Database::$affected_rows = 0;
@@ -30,24 +35,24 @@ final class AMotdTest extends TestCase
 
     public function testPollItemShowsRadioButtonsForLoggedInUser(): void
     {
-        global $forms_output;
         $data = ['body' => 'Question?', 'opt' => ['Yes', 'No']];
         $body = serialize($data);
 
         Motd::pollItem(1, 'Subject', $body, 'Author', '2024-01-01 00:00:00');
 
-        $this->assertStringContainsString("type='radio' name='choice'", $forms_output);
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString("type='radio' name='choice'", $output);
     }
 
     public function testPollItemUnserializesSlashedData(): void
     {
-        global $forms_output;
         $data = ['body' => 'Question?', 'opt' => ['Yes', 'No']];
         $body = addslashes(serialize($data));
 
         Motd::pollItem(1, 'Subject', $body, 'Author', '2024-01-01 00:00:00');
 
-        $this->assertStringContainsString("type='radio' name='choice'", $forms_output);
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString("type='radio' name='choice'", $output);
     }
 
     public function testSavePollSerializesData(): void
