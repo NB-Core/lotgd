@@ -46,3 +46,8 @@ function translator_check_collect_texts()
 {
     return Translator::translatorCheckCollectTexts();
 }
+
+function sprintf_translate(...$args)
+{
+    return Translator::sprintfTranslate(...$args);
+}
