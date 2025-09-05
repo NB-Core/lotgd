@@ -99,7 +99,7 @@ JS;
 JS;
         }
 
-        $switchscript = DataCache::datacache('switchscript_comm' . rawurlencode($name));
+        $switchscript = DataCache::getInstance()->datacache('switchscript_comm' . rawurlencode($name));
 
         if (!$switchscript) {
             $colors = $output->getColors();
@@ -136,7 +136,7 @@ JS;
 </script>
 JS;
 
-            DataCache::updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
+            DataCache::getInstance()->updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
         }
 
         $script .= $switchscript;

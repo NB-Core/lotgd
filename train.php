@@ -251,7 +251,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 }
             }
 
-            DataCache::invalidatedatacache("list.php-warsonline");
+            DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
 
             addnav("Navigation");
             villagenav();

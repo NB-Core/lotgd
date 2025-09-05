@@ -179,7 +179,7 @@ class Database
      */
     public static function queryCached(string $sql, string $name, int $duration = 900): array
     {
-        $data = DataCache::datacache($name, $duration);
+        $data = DataCache::getInstance()->datacache($name, $duration);
         if (is_array($data)) {
             reset($data);
             self::$dbinfo['affected_rows'] = -1;
@@ -190,7 +190,7 @@ class Database
         while ($row = self::fetchAssoc($result)) {
             $data[] = $row;
         }
-        DataCache::updatedatacache($name, $data);
+        DataCache::getInstance()->updatedatacache($name, $data);
         reset($data);
         return $data;
     }

@@ -23,7 +23,7 @@ final class TranslatorNamespaceTest extends TestCase
             'usedatacache'  => 1,
         ]);
         \Lotgd\MySQL\Database::$lastCacheName = '';
-        \Lotgd\DataCache::massinvalidate();
+        \Lotgd\DataCache::getInstance()->massinvalidate();
         $GLOBALS['session'] = [];
         if (!defined('LANGUAGE')) {
             define('LANGUAGE', 'en');
@@ -53,9 +53,9 @@ final class TranslatorNamespaceTest extends TestCase
             : $longNamespace;
         $expected = 'translations-' . $expectedNamespace . '-en';
         $this->assertSame($expected, $cacheName);
-        $cacheFile = DataCache::makecachetempname($cacheName);
+        $cacheFile = DataCache::getInstance()->makecachetempname($cacheName);
         $this->assertLessThan(255, strlen($cacheFile));
-        $this->assertTrue(DataCache::updatedatacache($cacheName, ['ok' => true]));
+        $this->assertTrue(DataCache::getInstance()->updatedatacache($cacheName, ['ok' => true]));
         $this->assertFileExists($cacheFile);
     }
 }

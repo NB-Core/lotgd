@@ -58,7 +58,7 @@ class Modules
                     if (Database::numRows($result) == 0) {
                         Translator::getInstance()->setSchema();
                         $output->debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n", $moduleName));
-                        DataCache::massinvalidate();
+                        DataCache::getInstance()->massinvalidate();
                         self::$injectedModules[$force][$moduleName] = false;
                         return false;
                     }
@@ -146,7 +146,7 @@ class Modules
                         self::wipeHooks();
                         $fname = $moduleName . '_install';
                         $fname();
-                        DataCache::invalidatedatacache("inject-$moduleName");
+                        DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
                     } else {
                         $sql = 'UNLOCK TABLES';
                         Database::query($sql);
@@ -587,7 +587,7 @@ class Modules
             Database::query($sql);
         }
 
-        DataCache::invalidatedatacache("modulesettings-$module");
+        DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
         $module_settings[$module][$name] = $value;
     }
 
@@ -617,7 +617,7 @@ class Modules
             Database::query($sql);
         }
 
-        DataCache::invalidatedatacache("modulesettings-$module");
+        DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
         $module_settings[$module][$name] = ($module_settings[$module][$name] ?? 0) + $value;
     }
 
@@ -634,7 +634,7 @@ class Modules
 
         if (isset($module_settings[$module])) {
             unset($module_settings[$module]);
-            DataCache::invalidatedatacache("modulesettings-$module");
+            DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
         }
     }
 
@@ -662,7 +662,7 @@ class Modules
     {
         $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE objtype='$objtype' AND objid='$objid'";
         Database::query($sql);
-        DataCache::massinvalidate("objpref-$objtype-$objid");
+        DataCache::getInstance()->massinvalidate("objpref-$objtype-$objid");
     }
 
     /**
@@ -715,7 +715,7 @@ class Modules
         $sql = 'REPLACE INTO ' . Database::prefix('module_objprefs')
             . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes((string)$value) . "')";
         Database::query($sql);
-        DataCache::invalidatedatacache("objpref-$objtype-$objid-$name-$module");
+        DataCache::getInstance()->invalidatedatacache("objpref-$objtype-$objid-$name-$module");
     }
 
     /**
@@ -741,7 +741,7 @@ class Modules
             Database::query($sql);
         }
 
-        DataCache::invalidatedatacache("objpref-$objtype-$objid-$name-$module");
+        DataCache::getInstance()->invalidatedatacache("objpref-$objtype-$objid-$name-$module");
     }
 
     /**
@@ -755,7 +755,7 @@ class Modules
         Database::query($sql);
 
         unset($module_prefs[$user]);
-        DataCache::massinvalidate("module_userprefs-$user");
+        DataCache::getInstance()->massinvalidate("module_userprefs-$user");
     }
 
     /**
@@ -1050,8 +1050,8 @@ class Modules
         Database::query($sql);
         $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks') . " WHERE modulename='$mostrecentmodule'";
         Database::query($sql);
-        DataCache::invalidatedatacache('hook-' . $mostrecentmodule);
-        DataCache::invalidatedatacache('module_prepare');
+        DataCache::getInstance()->invalidatedatacache('hook-' . $mostrecentmodule);
+        DataCache::getInstance()->invalidatedatacache('module_prepare');
     }
 
     /**
@@ -1070,8 +1070,8 @@ class Modules
         $sql = 'INSERT INTO ' . Database::prefix('module_event_hooks')
             . " (modulename, event_type, event_chance) VALUES ('" . $mostrecentmodule . "', '$type', '" . addslashes($chance) . "')";
         Database::query($sql);
-        DataCache::invalidatedatacache("event-$type-0");
-        DataCache::invalidatedatacache("event-$type-1");
+        DataCache::getInstance()->invalidatedatacache("event-$type-0");
+        DataCache::getInstance()->invalidatedatacache("event-$type-1");
     }
 
     /**
@@ -1087,8 +1087,8 @@ class Modules
         $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks')
             . " WHERE modulename='$mostrecentmodule' AND event_type='" . addslashes($type) . "'";
         Database::query($sql);
-        DataCache::invalidatedatacache("event-$type-0");
-        DataCache::invalidatedatacache("event-$type-1");
+        DataCache::getInstance()->invalidatedatacache("event-$type-0");
+        DataCache::getInstance()->invalidatedatacache("event-$type-1");
     }
 
     /**
@@ -1106,8 +1106,8 @@ class Modules
             . " WHERE modulename='$mostrecentmodule' AND location='" . addslashes($hookname)
             . "' AND hook_callback='" . addslashes($functioncall) . "'";
         Database::query($sql);
-        DataCache::invalidatedatacache("hook-$hookname");
-        DataCache::invalidatedatacache('module_prepare');
+        DataCache::getInstance()->invalidatedatacache("hook-$hookname");
+        DataCache::getInstance()->invalidatedatacache('module_prepare');
     }
 
     /**
@@ -1138,8 +1138,8 @@ class Modules
             . " (modulename,location,hook_callback,whenactive,priority) VALUES ('$mostrecentmodule','" . addslashes($hookname)
             . "','" . addslashes($functioncall) . "','" . addslashes($whenactive) . "','" . $priority . "')";
         Database::query($sql);
-        DataCache::invalidatedatacache("hook-$hookname");
-        DataCache::invalidatedatacache('module_prepare');
+        DataCache::getInstance()->invalidatedatacache("hook-$hookname");
+        DataCache::getInstance()->invalidatedatacache('module_prepare');
     }
 
     /**

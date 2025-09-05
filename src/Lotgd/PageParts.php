@@ -409,7 +409,7 @@ class PageParts
             $cacheMinutes = $mode === 2 ? $minutesSetting : (int) ceil($loginTimeout / 60);
             $cacheKey = "charlisthomepage-$mode-$cacheMinutes";
             $minutes = 0;
-            if ($ret = DataCache::datacache($cacheKey)) {
+            if ($ret = DataCache::getInstance()->datacache($cacheKey)) {
             } else {
                 $onlinecount = 0;
                 $list = HookHandler::hook("onlinecharlist", array("count" => 0, "list" => ""));
@@ -450,7 +450,7 @@ class PageParts
                 $settings->saveSetting("OnlineCount", $onlinecount);
                 $settings->saveSetting("OnlineCountLast", strtotime("now"));
             }
-                DataCache::updatedatacache($cacheKey, $ret);
+                DataCache::getInstance()->updatedatacache($cacheKey, $ret);
             }
             return $ret;
         }

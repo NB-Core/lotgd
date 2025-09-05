@@ -41,8 +41,8 @@ final class ErrorHandlerFirstRunTest extends TestCase
         ]);
 
         $this->initialData = ['firstrun' => true, 'errors' => []];
-        DataCache::updatedatacache('error_notify', $this->initialData);
-        $this->cacheFile = DataCache::makecachetempname('error_notify');
+        DataCache::getInstance()->updatedatacache('error_notify', $this->initialData);
+        $this->cacheFile = DataCache::getInstance()->makecachetempname('error_notify');
 
         new PHPMailer();
 

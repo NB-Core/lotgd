@@ -22,8 +22,8 @@ class Installer
         }
         $sql = 'UPDATE ' . Database::prefix('modules') . " SET active=1 WHERE modulename='$module'";
         Database::query($sql);
-        DataCache::invalidatedatacache("inject-$module");
-        DataCache::massinvalidate('module_prepare');
+        DataCache::getInstance()->invalidatedatacache("inject-$module");
+        DataCache::getInstance()->massinvalidate('module_prepare');
         return Database::affectedRows() > 0;
     }
 
@@ -37,9 +37,9 @@ class Installer
         }
         $sql    = 'UPDATE ' . Database::prefix('modules') . " SET active=0 WHERE modulename='$module'";
         $return = Database::query($sql);
-        DataCache::invalidatedatacache("inject-$module");
-        DataCache::massinvalidate('module_prepare');
-        DataCache::massinvalidate('hook');
+        DataCache::getInstance()->invalidatedatacache("inject-$module");
+        DataCache::getInstance()->massinvalidate('module_prepare');
+        DataCache::getInstance()->massinvalidate('hook');
         if (Database::affectedRows() <= 0 || !$return) {
             return false;
         }
@@ -67,15 +67,15 @@ class Installer
 
             $sql = 'DELETE FROM ' . Database::prefix('module_settings') . " WHERE modulename='$module'";
             Database::query($sql);
-            DataCache::invalidatedatacache("modulesettings-$module");
+            DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
 
             $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module'";
             Database::query($sql);
 
             $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module'";
             Database::query($sql);
-            DataCache::invalidatedatacache("inject-$module");
-            DataCache::massinvalidate('module_prepare');
+            DataCache::getInstance()->invalidatedatacache("inject-$module");
+            DataCache::getInstance()->massinvalidate('module_prepare');
             return true;
         }
         return false;
@@ -109,15 +109,15 @@ class Installer
 
         $sql = 'DELETE FROM ' . Database::prefix('module_settings') . " WHERE modulename='$module'";
         Database::query($sql);
-        DataCache::invalidatedatacache("modulesettings-$module");
+        DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
 
         $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module'";
         Database::query($sql);
 
         $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module'";
         Database::query($sql);
-        DataCache::invalidatedatacache("inject-$module");
-        DataCache::massinvalidate('module_prepare');
+        DataCache::getInstance()->invalidatedatacache("inject-$module");
+        DataCache::getInstance()->massinvalidate('module_prepare');
         return true;
     }
 
@@ -173,8 +173,8 @@ class Installer
                 }
             }
             $output->output('`^Module installed.  It is not yet active.`n');
-            DataCache::invalidatedatacache("inject-$mostrecentmodule");
-            DataCache::massinvalidate('module_prepare');
+            DataCache::getInstance()->invalidatedatacache("inject-$mostrecentmodule");
+            DataCache::getInstance()->massinvalidate('module_prepare');
             return true;
         }
         $output->output('`\$Module could not be injected.');
