@@ -7,7 +7,14 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
+
 use Lotgd\Settings;
+use Lotgd\Nav as Navigation;
+use Lotgd\Output;
+use Lotgd\Translator;
+use Lotgd\Sanitize;
+use Lotgd\Http;
+use Lotgd\DateTime;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
@@ -15,7 +22,6 @@ use Lotgd\HolidayText;
 use Lotgd\Commentary;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
-use Lotgd\Translator;
 
 class Moderate
 {
@@ -24,9 +30,12 @@ class Moderate
      */
     public static function commentmoderate(string $intro, string $section, string $message, int $limit = 10, string $talkline = 'says', ?string $schema = null, bool $viewall = false): void
     {
+        $output = Output::getInstance();
+
         if ($intro) {
-            output($intro);
+            $output->output($intro);
         }
+
         self::viewmoderatedcommentary($section, $message, $limit, $talkline, $schema, $viewall);
     }
 
@@ -84,6 +93,8 @@ class Moderate
     {
         global $session;
 
+        $output = Output::getInstance();
+
         $firstu = Translator::translateInline('&lt;&lt; First Unseen');
         $prev = Translator::translateInline('&lt; Previous');
         $ref = Translator::translateInline('Refresh');
@@ -97,7 +108,7 @@ class Moderate
             Database::freeResult($r);
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
-                $first = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . $val;
+                $first = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . $val;
                 $first = str_replace('?&', '?', $first);
                 if (!strpos($first, '?')) {
                     $first = str_replace('&', '?', $first);
@@ -106,13 +117,13 @@ class Moderate
                 if ($jump) {
                     $first .= "#$section";
                 }
-                output_notl("<a href=\"$first\">$firstu</a>", true);
-                addnav('', $first);
+                $output->outputNotl("<a href=\"$first\">$firstu</a>", true);
+                Navigation::add('', $first);
             } else {
-                output_notl($firstu, true);
+                $output->outputNotl($firstu, true);
             }
 
-            $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
+            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -121,23 +132,23 @@ class Moderate
             if ($jump) {
                 $req .= "#$section";
             }
-            output_notl("<a href=\"$req\">$prev</a>", true);
-            addnav('', $req);
+            $output->outputNotl("<a href=\"$req\">$prev</a>", true);
+            Navigation::add('', $req);
         } else {
-            output_notl("$firstu $prev", true);
+            $output->outputNotl("$firstu $prev", true);
         }
 
-        $last = appendlink(comscroll_sanitize($REQUEST_URI), 'refresh=1');
-        $last = appendcount($last);
+        $last = Navigation::appendLink(Sanitize::comscrollSanitize($REQUEST_URI), 'refresh=1');
+        $last = Navigation::appendCount($last);
         $last = str_replace('?&', '?', $last);
         if ($jump) {
             $last .= "#$section";
         }
-        output_notl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
-        addnav('', $last);
+        $output->outputNotl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
+        Navigation::add('', $last);
 
         if ($com > 0 || ($cid > 0 && $newadded > $limit)) {
-            $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
+            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -146,11 +157,11 @@ class Moderate
             if ($jump) {
                 $req .= "#$section";
             }
-            output_notl(" <a href=\"$req\">$next</a>", true);
-            addnav('', $req);
-            output_notl(" <a href=\"$last\">$lastu</a>", true);
+            $output->outputNotl(" <a href=\"$req\">$next</a>", true);
+            Navigation::add('', $req);
+            $output->outputNotl(" <a href=\"$last\">$lastu</a>", true);
         } else {
-            output_notl("$next $lastu", true);
+            $output->outputNotl("$next $lastu", true);
         }
     }
 
@@ -161,12 +172,15 @@ class Moderate
     {
         global $session, $REQUEST_URI, $doublepost, $emptypost;
 
+        $output = Output::getInstance();
+        $translator = Translator::getInstance();
+
         $settings = Settings::getInstance();
         $charset = $settings->getSetting('charset', 'UTF-8');
 
         // Decide whether to limit to a specific section or view all
         if ($viewall === false) {
-            rawoutput("<a name='$section'></a>");
+            $output->rawOutput("<a name='$section'></a>");
             $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
             if (isset($args['block']) && ($args['block'] == 'yes')) {
                 return;
@@ -185,13 +199,13 @@ class Moderate
             }
         }
 
-        debug('Select: ' . $sectselect);
+        $output->debug('Select: ' . $sectselect);
 
         // Determine which translation schema to use for output
         if ($schema === null) {
             $schema = Translator::getNamespace();
         }
-        Translator::getInstance()->setSchema('commentary');
+        $translator->setSchema('commentary');
 
         $scriptname = ScriptName::current() . '.php';
 
@@ -207,21 +221,21 @@ class Moderate
 
         // Inform the player about posting issues
         if ($doublepost) {
-            output("`$`bDouble post?`b`0`n");
+            $output->output("`$`bDouble post?`b`0`n");
         }
         if ($emptypost) {
             // Player attempted to submit an empty line
-            output("`$`bWell, they say silence is a virtue.`b`0`n");
+            $output->output("`$`bWell, they say silence is a virtue.`b`0`n");
         }
 
         $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
 
-        $com = (int)httpget('comscroll');
+        $com = (int)Http::get('comscroll');
         if ($com < 0) {
             $com = 0;
         }
         // If the user has scrolled, load comments after the last seen id
-        if (httpget('comscroll') !== false && isset($session['lastcom']) && (int)$session['lastcom'] == $com + 1) {
+        if (Http::get('comscroll') !== false && isset($session['lastcom']) && (int)$session['lastcom'] == $com + 1) {
             $cid = (int)$session['lastcommentid'];
         } else {
             $cid = 0;
@@ -254,10 +268,15 @@ class Moderate
             $session['lastcommentid'] = $commentbuffer[0]['commentid'];
         }
 
+        $commentids = [];
+        $auth = [];
+        $op = [];
+        $rawc = [];
+
         $counttoday = 0;
         for ($i = 0; $i < $rowcount; $i++) {
             $row = $commentbuffer[$i];
-            $row['comment'] = comment_sanitize($row['comment']);
+            $row['comment'] = Sanitize::commentSanitize($row['comment']);
             $commentids[$i] = $row['commentid'];
             if (date('Y-m-d', strtotime($row['postdate'])) == date('Y-m-d')) {
                 if ($row['name'] == $session['user']['name']) {
@@ -313,9 +332,6 @@ class Moderate
                 }
             }
 
-            if (!isset($op) || !is_array($op)) {
-                $op = [];
-            }
             if (!array_key_exists($i, $op) || $op[$i] == '') {
                 if ($linkbios) {
                     $op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, )) . "`3\"`0`n";
@@ -341,7 +357,7 @@ class Moderate
                 $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', $time);
                 $op[$i] = $s . $op[$i];
             } elseif ($session['user']['prefs']['timestamp'] == 2) {
-                $s = reltime(strtotime($row['postdate']));
+                $s = DateTime::relTime(strtotime($row['postdate']));
                 $op[$i] = "`7($s)`0 " . $op[$i];
             }
             if ($message == 'X') {
@@ -350,10 +366,10 @@ class Moderate
             if ($row['postdate'] >= $session['user']['recentcomments']) {
                 $op[$i] = "<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> " . $op[$i];
             }
-            addnav('', $link);
+            Navigation::add('', $link);
             $auth[$i] = $row['author'];
             if (isset($rawc[$i])) {
-                $rawc[$i] = full_sanitize($rawc[$i]);
+                $rawc[$i] = Sanitize::fullSanitize($rawc[$i]);
                 $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES, );
             }
         }
@@ -377,7 +393,7 @@ class Moderate
             if ($moderating) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS) {
                     $out .= "`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> | <a href='user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode($rawc[$i]) . "'>Ban</a> ]&nbsp;";
-                    addnav('', "user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode($rawc[$i]));
+                    Navigation::add('', "user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode($rawc[$i]));
                 } else {
                     $out .= "`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> ]&nbsp;";
                 }
@@ -396,7 +412,7 @@ class Moderate
             } else {
                 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
                     $out .= "`2[<a href='" . $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return) . "'>$del</a>`2]`0&nbsp;";
-                    addnav('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
+                    Navigation::add('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
                 }
                 $out .= $op[$i];
                 if (!array_key_exists($sect, $outputcomments) || !is_array($outputcomments[$sect])) {
@@ -408,17 +424,17 @@ class Moderate
 
         if ($moderating) {
             $scriptname = ScriptName::current() . '.php';
-            addnav('', "$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']));
+            Navigation::add('', "$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']));
             $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT, );
             $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT, );
             $mod_Del_confirm = addslashes(htmlentities(Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT, ));
             $mod_reason = Translator::translateInline('Reason:');
             $mod_reason_desc = htmlentities(Translator::translateInline('Banned for comments you posted.'), ENT_COMPAT, );
 
-            output_notl("<form action='$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']) . "' method='POST'>", true);
-            output_notl("<input type='submit' class='button' value=\"$mod_Del1\">", true);
-            output_notl("<input type='submit' class='button' name='delnban' value=\"$mod_Del2\" onClick=\"return confirm('$mod_Del_confirm');\">", true);
-            output_notl("`n$mod_reason <input name='reason0' size='40' value=\"$mod_reason_desc\" onChange=\"document.getElementById('reason').value=this.value;\">", true);
+            $output->outputNotl("<form action='$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']) . "' method='POST'>", true);
+            $output->outputNotl("<input type='submit' class='button' value=\"$mod_Del1\">", true);
+            $output->outputNotl("<input type='submit' class='button' name='delnban' value=\"$mod_Del2\" onClick=\"return confirm('$mod_Del_confirm');\">", true);
+            $output->outputNotl("`n$mod_reason <input name='reason0' size='40' value=\"$mod_reason_desc\" onChange=\"document.getElementById('reason').value=this.value;\">", true);
         }
 
         ksort($outputcomments);
@@ -431,8 +447,8 @@ class Moderate
                 if ($needclose) {
                     HookHandler::hook('}collapse');
                 }
-                output_notl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
-                addnav('', "moderate.php?area=$sec");
+                $output->outputNotl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
+                Navigation::add('', "moderate.php?area=$sec");
                 HookHandler::hook('collapse{', ['name' => 'com-' . $sec]);
                 $needclose = 1;
             } else {
@@ -444,7 +460,7 @@ class Moderate
                 $args = ['commentline' => $val];
                 $args = HookHandler::hook('viewcommentary', $args);
                 $val = $args['commentline'];
-                output_notl($val, true);
+                $output->outputNotl($val, true);
             }
         }
 
@@ -454,29 +470,29 @@ class Moderate
         }
 
         if ($moderating) {
-            output_notl("`n");
-            rawoutput("<input type='submit' class='button' value=\"$mod_Del1\">");
-            rawoutput("<input type='submit' class='button' name='delnban' value=\"$mod_Del2\" onClick=\"return confirm('$mod_Del_confirm');\">");
-            output_notl("`n%s ", $mod_reason);
-            rawoutput("<input name='reason' size='40' id='reason' value=\"$mod_reason_desc\">");
-            rawoutput("</form>");
-            output_notl("`n");
+            $output->outputNotl("`n");
+            $output->rawOutput("<input type='submit' class='button' value=\"$mod_Del1\">");
+            $output->rawOutput("<input type='submit' class='button' name='delnban' value=\"$mod_Del2\" onClick=\"return confirm('$mod_Del_confirm');\">");
+            $output->outputNotl("`n%s ", $mod_reason);
+            $output->rawOutput("<input name='reason' size='40' id='reason' value=\"$mod_reason_desc\">");
+            $output->rawOutput("</form>");
+            $output->outputNotl("`n");
         }
 
         if ($session['user']['loggedin']) {
             $args = HookHandler::hook('insertcomment', ['section' => $section]);
             if (array_key_exists('mute', $args) && $args['mute'] && !($session['user']['superuser'] & SU_EDIT_COMMENTS)) {
-                output_notl('%s', $args['mutemsg']);
+                $output->outputNotl('%s', $args['mutemsg']);
             } elseif ($counttoday < ($limit / 2) || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) || !$settings->getSetting('postinglimit', 1)) {
                 if ($message != 'X') {
                     $message = "`n`@" . $message . '`n';
-                    output($message);
+                    $output->output($message);
                     Commentary::talkForm($section, $talkline, $limit, $schema);
                 }
             } else {
                 $message = "`n`@" . $message . '`n';
-                output($message);
-                output("Sorry, you've exhausted your posts in this section for now.`0`n");
+                $output->output($message);
+                $output->output("Sorry, you've exhausted your posts in this section for now.`0`n");
             }
         }
 
@@ -484,7 +500,7 @@ class Moderate
 
         // Render pagination navigation for the comment block
         self::showNavLinks($section, $limit, $cid, $rowcount, $jump, $com, $REQUEST_URI, $newadded);
-        Translator::getInstance()->setSchema();
+        $translator->setSchema();
         if ($needclose) {
             HookHandler::hook('}collapse');
         }
