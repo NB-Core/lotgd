@@ -34,6 +34,7 @@ class Template
         }
 
         global $template;
+        $template = $template ?? [];
         if (!isset($template[$itemname])) {
             // If the template part is not found, it's usually not a bad thing. So comment in if you have issues with missing template parts.
             // output("`bWarning:`b The `i%s`i template part was not found!`n", $itemname);
@@ -256,6 +257,7 @@ class Template
         }
         $fulltemplate = file_get_contents("templates/$templatename");
         $fulltemplate = explode("<!--!", $fulltemplate);
+        $template = [];
         foreach ($fulltemplate as $val) {
             if ($val == "") {
                 continue; // Skip empty sections
