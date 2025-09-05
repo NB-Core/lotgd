@@ -5,6 +5,7 @@ use Lotgd\Translator;
 use Lotgd\Buffs;
 use Lotgd\Newday;
 use Lotgd\MountName;
+use Lotgd\Mounts;
 use Lotgd\Names;
 use Lotgd\Battle;
 use Lotgd\Substitute;
@@ -197,7 +198,8 @@ if ($dp < $dkills) {
         }
     }
     if ($session['user']['hashorse']) {
-        $buff = unserialize($playermount['mountbuff']);
+        $mount = Mounts::getInstance()->getPlayerMount();
+        $buff  = unserialize($mount['mountbuff']);
         if (!isset($buff['schema']) || $buff['schema'] == "") {
             $buff['schema'] = "mounts";
         }
@@ -295,12 +297,13 @@ if ($dp < $dkills) {
     $session['user']['recentcomments'] = $session['user']['lasthit'];
     $session['user']['lasthit'] = gmdate("Y-m-d H:i:s");
     if ($session['user']['hashorse']) {
-        $msg = $playermount['newday'];
-        $msg = Substitute::applyArray("`n`&" . $msg . "`0`n");
+        $mount = Mounts::getInstance()->getPlayerMount();
+        $msg   = $mount['newday'];
+        $msg   = Substitute::applyArray("`n`&" . $msg . "`0`n");
         output($msg);
                 list($name, $lcname) = MountName::getmountname();
 
-        $mff = (int)$playermount['mountforestfights'];
+        $mff = (int) $mount['mountforestfights'];
         $session['user']['turns'] += $mff;
         $turnstoday .= ", Mount: $mff";
         if ($mff > 0) {

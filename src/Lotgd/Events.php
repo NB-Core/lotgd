@@ -40,7 +40,7 @@ class Events
                 //debug("Base link was specified as $baseLink");
                 //debug(debug_backtrace());
         }
-        global $session, $playermount, $badguy;
+        global $session, $badguy;
         $output = Output::getInstance();
         $skipdesc = false;
 

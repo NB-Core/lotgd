@@ -1165,7 +1165,7 @@ class Modules
      */
     public static function collectEvents(string $type, bool $allowinactive = false): array
     {
-        global $session, $playermount;
+        global $session;
 
         $active = '';
         $events = [];

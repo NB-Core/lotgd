@@ -22,7 +22,7 @@ class Forest
      */
     public static function forest(bool $noshowmessage = false): void
     {
-        global $session, $playermount;
+        global $session;
 
         $settings = Settings::getInstance();
 

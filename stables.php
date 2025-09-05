@@ -4,6 +4,7 @@ use Lotgd\Translator;
 
 use Lotgd\Buffs;
 use Lotgd\MountName;
+use Lotgd\Mounts;
 
 // translator ready
 // addnews ready
@@ -80,21 +81,23 @@ modulehook("stables-nav");
 
 list($name, $lcname) = MountName::getmountname();
 
+$mounts      = Mounts::getInstance();
+$playerMount = $mounts->getPlayerMount();
+
 $repaygold = 0;
 $repaygems = 0;
 $grubprice = 0;
 
-if ($playermount) {
-    $repaygold = round($playermount['mountcostgold'] * 2 / 3, 0);
-    $repaygems = round($playermount['mountcostgems'] * 2 / 3, 0);
-    $grubprice = round($session['user']['level'] * $playermount['mountfeedcost'], 0);
+if ($playerMount) {
+    $repaygold = round($playerMount['mountcostgold'] * 2 / 3, 0);
+    $repaygems = round($playerMount['mountcostgems'] * 2 / 3, 0);
+    $grubprice = round($session['user']['level'] * $playerMount['mountfeedcost'], 0);
 }
 $confirm = 0;
 
 $op = httpget('op');
 $id = httpget('id');
 
-global $playermount;
 
 if ($op == "") {
     checkday();
@@ -173,8 +176,8 @@ if ($op == 'confirmbuy') {
                 output($texts['newmount'], $mount['mountname']);
                 $translator->setSchema();
             }
-            if (isset($playermount['mountname'])) {
-                $debugmount1 = $playermount['mountname'];
+            if (isset($playerMount['mountname'])) {
+                $debugmount1 = $playerMount['mountname'];
                 if ($debugmount1) {
                     $debugmount1 = "a " . $debugmount1;
                 }
@@ -194,14 +197,15 @@ if ($op == 'confirmbuy') {
             }
             Buffs::applyBuff('mount', $buff);
             // Recalculate so the selling stuff works right
-            $playermount = getmount($mount['mountid']);
-            $repaygold = round($playermount['mountcostgold'] * 2 / 3, 0);
-            $repaygems = round($playermount['mountcostgems'] * 2 / 3, 0);
+            $playerMount = Mounts::getmount($mount['mountid']);
+            $mounts->setPlayerMount($playerMount);
+            $repaygold = round($playerMount['mountcostgold'] * 2 / 3, 0);
+            $repaygems = round($playerMount['mountcostgems'] * 2 / 3, 0);
             // Recalculate the special name as well.
             modulehook("stable-mount", array());
             modulehook("boughtmount");
                         list($name, $lcname) = MountName::getmountname();
-            $grubprice = round($session['user']['level'] * $playermount['mountfeedcost'], 0);
+            $grubprice = round($session['user']['level'] * $playerMount['mountfeedcost'], 0);
         }
     }
 } elseif ($op == 'feed') {
@@ -213,7 +217,7 @@ if ($op == 'confirmbuy') {
         );
         $translator->setSchema();
     } elseif ($session['user']['gold'] >= $grubprice) {
-        $buff = unserialize($playermount['mountbuff']);
+        $buff = unserialize($playerMount['mountbuff']);
         if ($buff['schema'] == "") {
             $buff['schema'] = "mounts";
         }
@@ -241,8 +245,8 @@ if ($op == 'confirmbuy') {
             output(
                 $texts['mountfull'],
                 translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"]),
-                (isset($playermount['basename']) && $playermount['basename'] ?
-                 $playermount['basename'] : $playermount['mountname'])
+                (isset($playerMount['basename']) && $playerMount['basename'] ?
+                 $playerMount['basename'] : $playerMount['mountname'])
             );
             $translator->setSchema();
         }
@@ -265,7 +269,7 @@ if ($op == 'confirmbuy') {
 } elseif ($op == 'confirmsell') {
     $session['user']['gold'] += $repaygold;
     $session['user']['gems'] += $repaygems;
-    $debugmount = $playermount['mountname'];
+    $debugmount = $playerMount['mountname'];
     debuglog("gained $repaygold gold and $repaygems gems selling their mount, a $debugmount");
     Buffs::stripBuff('mount');
     $session['user']['hashorse'] = 0;
@@ -292,8 +296,8 @@ if ($op == 'confirmbuy') {
     $translator->setSchema($schemas['mountsold']);
     output(
         $texts['mountsold'],
-        (isset($playermount['newname']) ?
-               $playermount['newname'] : $playermount['mountname']),
+        (isset($playerMount['newname']) ?
+               $playerMount['newname'] : $playerMount['mountname']),
         $amtstr
     );
     $translator->setSchema();

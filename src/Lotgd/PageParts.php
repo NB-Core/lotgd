@@ -30,6 +30,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
 use Lotgd\DataCache;
 use Lotgd\Http;
+use Lotgd\Mounts;
 
 class PageParts
 {
@@ -213,7 +214,8 @@ class PageParts
  */
     public static function charStats(): string
     {
-        global $session, $playermount, $companions;
+        global $session, $companions;
+        $mount = Mounts::getInstance()->getPlayerMount();
         $output = Output::getInstance();
 
         $settings = Settings::getInstance();
@@ -389,8 +391,8 @@ class PageParts
             self::addCharStat("Equipment Info");
             self::addCharStat("Weapon", $u['weapon']);
             self::addCharStat("Armor", $u['armor']);
-            if ($u['hashorse'] && isset($playermount['mountname'])) {
-                self::addCharStat("Creature", $playermount['mountname'] . "`0");
+            if ($u['hashorse'] && isset($mount['mountname'])) {
+                self::addCharStat("Creature", $mount['mountname'] . "`0");
             }
 
             HookHandler::hook("charstats");
