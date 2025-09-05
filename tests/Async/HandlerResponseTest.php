@@ -33,6 +33,9 @@ final class HandlerResponseTest extends TestCase
         require_once __DIR__ . '/../bootstrap.php';
         Settings::setInstance(new MailDummySettings(['LOGINTIMEOUT' => 360]));
         Database::$mockResults = [];
+
+        Timeout::getInstance()->setStartTimeoutShowSeconds(300);
+        Timeout::getInstance()->setNeverTimeoutIfBrowserOpen(false);
     }
 
     public function testMailStatusReturnsResponse(): void
@@ -52,7 +55,7 @@ final class HandlerResponseTest extends TestCase
     public function testTimeoutStatusReturnsResponse(): void
     {
         Database::$mockResults = [];
-        $response = (new Timeout())->timeoutStatus(false);
+        $response = Timeout::getInstance()->timeoutStatus(false);
         $this->assertInstanceOf(Response::class, $response);
     }
 }

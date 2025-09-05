@@ -32,12 +32,17 @@ require_once __DIR__ . '/common/settings.php';
 $polling_script = "<script>";
 $polling_script .= "var lotgd_comment_section = " . json_encode($session['last_comment_section'] ?? '') . ";";
 $polling_script .= "var lotgd_lastCommentId = " . (int)($session['lastcommentid'] ?? 0) . ";";
-$polling_script .= "var lotgd_poll_interval_ms = " . ($check_mail_timeout_seconds * 1000) . ";";
+
+$timeout = \Lotgd\Async\Handler\Timeout::getInstance();
+$checkMailTimeoutSeconds = $timeout->getCheckMailTimeoutSeconds();
+$clearScriptExecutionSeconds = $timeout->getClearScriptExecutionSeconds();
+$start_timeout_show = max(1, $timeout->getStartTimeoutShowSeconds());
+
+$polling_script .= "var lotgd_poll_interval_ms = " . ($checkMailTimeoutSeconds * 1000) . ";";
 
 // Fix timeout calculations to prevent negative values
 $login_timeout = getsetting('LOGINTIMEOUT', 900);
-$start_timeout_show = max(1, $start_timeout_show_seconds ?? 300);
-$clear_script_execution = max($login_timeout, $clear_script_execution_seconds ?? -1);
+$clear_script_execution = max($login_timeout, $clearScriptExecutionSeconds);
 
 $polling_script .= "var lotgd_timeout_delay_ms = " . (($login_timeout - $start_timeout_show) * 1000) . ";";
 // Only set clear delay if it's positive and reasonable
