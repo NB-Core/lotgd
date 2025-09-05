@@ -11,21 +11,18 @@ class InstallerLogger
      */
     public static function getLogFilePath(): string
     {
-        $defaultDir = __DIR__ . '/../errors';
+        $customDir = getenv('LOTGD_DATA_DIR');
+        if ($customDir) {
+            return rtrim($customDir, '/') . '/install.log';
+        }
 
-        // Use the default install directory when it is writable
+        $defaultDir = __DIR__ . '/../errors';
         if ((is_dir($defaultDir) && is_writable($defaultDir))
             || (!is_dir($defaultDir) && is_writable(dirname($defaultDir)))) {
             return $defaultDir . '/install.log';
         }
 
-        // Fall back to a configurable data directory or the system temp dir
-        $fallback = getenv('LOTGD_DATA_DIR');
-        if (!$fallback) {
-            $fallback = sys_get_temp_dir() . '/lotgd_install';
-        }
-
-        return rtrim($fallback, '/') . '/install.log';
+        return sys_get_temp_dir() . '/lotgd_install/install.log';
     }
 
     /**
