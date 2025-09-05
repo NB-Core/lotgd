@@ -7,6 +7,7 @@ namespace Lotgd\Nav;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\Nav as Navigation;
 
 /**
  * Navigation helpers for superuser areas.
@@ -20,19 +21,19 @@ class SuperuserNav
     {
         global $SCRIPT_NAME, $session;
         Translator::getInstance()->setSchema('nav');
-        addnav('Navigation');
+        Navigation::add('Navigation');
         if ($session['user']['superuser'] & ~ SU_DOESNT_GIVE_GROTTO) {
             $script = ScriptName::current();
             if ($script != 'superuser') {
                 $args = HookHandler::hook('grottonav');
                 if (!array_key_exists('handled', $args) || !$args['handled']) {
-                    addnav('G?Return to the Grotto', 'superuser.php');
+                    Navigation::add('G?Return to the Grotto', 'superuser.php');
                 }
             }
         }
         $args = HookHandler::hook('mundanenav');
         if (!array_key_exists('handled', $args) || !$args['handled']) {
-            addnav('M?Return to the Mundane', 'village.php');
+            Navigation::add('M?Return to the Mundane', 'village.php');
         }
         Translator::getInstance()->setSchema();
     }
