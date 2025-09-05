@@ -15,6 +15,8 @@ use Lotgd\Mail;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\Output;
+use Lotgd\Nav as Navigation;
 
 class Pvp
 {
@@ -26,6 +28,7 @@ class Pvp
         global $session;
 
         $settings = Settings::getInstance();
+        $output = Output::getInstance();
 
         $days = $settings->getSetting('pvpimmunity', 5);
         $exp = $settings->getSetting('pvpminexp', 1500);
@@ -36,10 +39,10 @@ class Pvp
             $session['user']['experience'] <= $exp
         ) {
             if ($dokill) {
-                output("`\$Warning!`^ Since you were still under PvP immunity, but have chosen to attack another player, you have lost this immunity!!`n`n");
+                $output->output("`\$Warning!`^ Since you were still under PvP immunity, but have chosen to attack another player, you have lost this immunity!!`n`n");
                 $session['user']['pk'] = 1;
             } else {
-                output("`\$Warning!`^ Players are immune from Player vs Player (PvP) combat for their first %s days in the game or until they have earned %s experience, or until they attack another player.  If you choose to attack another player, you will lose this immunity!`n`n", $days, $exp);
+                $output->output("`\$Warning!`^ Players are immune from Player vs Player (PvP) combat for their first %s days in the game or until they have earned %s experience, or until they attack another player.  If you choose to attack another player, you will lose this immunity!`n`n", $days, $exp);
             }
         }
         HookHandler::hook('pvpwarning', ['dokill' => $dokill]);
@@ -56,6 +59,7 @@ class Pvp
         global $session;
 
         $settings = Settings::getInstance();
+        $output = Output::getInstance();
         $pvptime = $settings->getSetting('pvptimeout', 600);
         $pvptimeout = date('Y-m-d H:i:s', strtotime("-$pvptime seconds"));
 
@@ -77,12 +81,12 @@ class Pvp
                 $row['creatureattack'] = get_player_attack($row['acctid']) + round($diff / 2);
                 $row['creaturedefense'] = get_player_defense($row['acctid']) + round($diff / 2);
             }
-            output('As you both cannot use any special gimmicks, the more dragonkills your victim has the stronger he gets.`n');
+            $output->output('As you both cannot use any special gimmicks, the more dragonkills your victim has the stronger he gets.`n');
             if ($row['pvpflag'] > $pvptimeout) {
-                output("`\$Oops:`4 That user is currently engaged by someone else, you'll have to wait your turn!");
+                $output->output("`\$Oops:`4 That user is currently engaged by someone else, you'll have to wait your turn!");
                 return false;
             } elseif (strtotime($row['laston']) > strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' sec') && $row['loggedin']) {
-                output("`\$Error:`4 That user is now online, and cannot be attacked until they log off again.");
+                $output->output("`\$Error:`4 That user is now online, and cannot be attacked until they log off again.");
                 return false;
             } elseif ($session['user']['playerfights'] > 0) {
                 $sql = "UPDATE " . Database::prefix('accounts') . " SET pvpflag='" . date('Y-m-d H:i:s') . "' WHERE acctid={$row['acctid']}";
@@ -94,10 +98,10 @@ class Pvp
                 self::warn(true);
                 return $row;
             }
-            output('`4Judging by how tired you are, you think you had best not engage in battle against other players right now.');
+            $output->output('`4Judging by how tired you are, you think you had best not engage in battle against other players right now.');
             return false;
         }
-        output("`\$Error:`4 That user was not found!  It's likely that their account expired just now.");
+        $output->output("`\$Error:`4 That user was not found!  It's likely that their account expired just now.");
         return false;
     }
 
@@ -109,6 +113,7 @@ class Pvp
         global $session;
 
         $settings = Settings::getInstance();
+        $output = Output::getInstance();
 
         $sql = "SELECT gold FROM " . Database::prefix('accounts') . " WHERE acctid='" . (int) $badguy['acctid'] . "'";
         $result = Database::query($sql);
@@ -122,15 +127,15 @@ class Pvp
         $badguy['creaturegold'] = ((int) $row['gold'] > (int) $badguy['creaturegold'] ? (int) $badguy['creaturegold'] : (int) $row['gold']);
 
         if ($session['user']['level'] == 15) {
-            output('`#***At your level of fighting prowess, the mere reward of beating your foe is sufficient accolade.`n');
+            $output->output('`#***At your level of fighting prowess, the mere reward of beating your foe is sufficient accolade.`n');
         }
 
         $winamount = round(10 * $badguy['creaturelevel'] * log(max(1, $badguy['creaturegold'])), 0);
-        output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
+        $output->output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
         if ($session['user']['level'] == 15) {
             $winamount = 0;
         }
-        output("`#You receive `^%s`# gold!`n", $winamount);
+        $output->output("`#You receive `^%s`# gold!`n", $winamount);
         $session['user']['gold'] += $winamount;
 
         $exp = round($settings->getSetting('pvpattgain', 10) * $badguy['creatureexp'] / 100, 0);
@@ -145,12 +150,12 @@ class Pvp
         }
         $expbonus = round(($exp * (1 + .1 * ($badguy['creaturelevel'] - $session['user']['level']))) - $exp, 0);
         if ($expbonus > 0) {
-            output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience!`n", $expbonus);
+            $output->output("`#***Because of the difficult nature of this fight, you are awarded an additional `^%s`# experience!`n", $expbonus);
         } elseif ($expbonus < 0) {
-            output("`#***Because of the simplistic nature of this fight, you are penalized `^%s`# experience!`n", abs($expbonus));
+            $output->output("`#***Because of the simplistic nature of this fight, you are penalized `^%s`# experience!`n", abs($expbonus));
         }
         $wonexp = $exp + $expbonus;
-        output("You receive `^%s`# experience!`n`0", $wonexp);
+        $output->output("You receive `^%s`# experience!`n`0", $wonexp);
         $session['user']['experience'] += $wonexp;
 
         $lostexp = round($badguy['creatureexp'] * $settings->getSetting('pvpdeflose', 5) / 100, 0);
@@ -196,8 +201,9 @@ class Pvp
         global $session;
 
         $settings = Settings::getInstance();
+        $output = Output::getInstance();
 
-        addnav('Daily news', 'news.php');
+        Navigation::add('Daily news', 'news.php');
         $killedin = $badguy['location'];
         $badguy['acctid'] = (int) $badguy['acctid'];
         $badguy['creaturegold'] = (int) $badguy['creaturegold'];
@@ -229,7 +235,7 @@ class Pvp
 
         $msg = '`^%s`2 attacked you while you were in %s`2, but you were victorious!`n`n';
         if ($row['level'] < $badguy['creaturelevel']) {
-            output('`cThis player has leveled down!!!`c');
+            $output->output('`cThis player has leveled down!!!`c');
             $msg .= 'You would have received `^%s`2 experience and `^%s`2 gold, `$however it seems you lost it all when you got back to level 1...';
         } elseif ($badguy['creaturelevel'] == 15) {
             $msg .= 'At your level of fighting prowess, the mere reward of beating your foe is sufficient accolade.  You received `^%s`2 experience and `^%s`2 gold';
@@ -254,10 +260,10 @@ class Pvp
         $session['user']['gold'] = 0;
         $session['user']['hitpoints'] = 0;
         $session['user']['experience'] = round($session['user']['experience'] * (100 - $settings->getSetting('pvpattlose', 15)) / 100, 0);
-        output("`b`&You have been slain by `%%s`&!!!`n", $badguy['creaturename']);
-        output("`4All gold on hand has been lost!`n");
-        output("`4%s%% of experience has been lost!`n", $settings->getSetting('pvpattlose', 15));
-        output('You may begin fighting again tomorrow.');
+        $output->output("`b`&You have been slain by `%%s`&!!!`n", $badguy['creaturename']);
+        $output->output("`4All gold on hand has been lost!`n");
+        $output->output("`4%s%% of experience has been lost!`n", $settings->getSetting('pvpattlose', 15));
+        $output->output('You may begin fighting again tomorrow.');
         return $args['handled'];
     }
 
@@ -274,6 +280,7 @@ class Pvp
         global $session;
 
         $settings = Settings::getInstance();
+        $output = Output::getInstance();
         $pvptime = $settings->getSetting('pvptimeout', 600);
         $pvptimeout = date('Y-m-d H:i:s', strtotime("-$pvptime seconds"));
 
@@ -342,11 +349,11 @@ class Pvp
             }
             $j++;
             $biolink = "bio.php?char=" . $row['acctid'] . "&ret=" . urlencode($_SERVER['REQUEST_URI']);
-            addnav('', $biolink);
+            Navigation::add('', $biolink);
             rawoutput("<tr class='" . ($j % 2 ? 'trlight' : 'trdark') . "'>");
             rawoutput('<td>');
             if ($row['clanshort'] > '' && $row['clanrank'] > CLAN_APPLICANT) {
-                output_notl(
+                $output->outputNotl(
                     '%s&lt;`2%s%s&gt;`0 ',
                     $clanrankcolors[ceil($row['clanrank'] / 10)],
                     $row['clanshort'],
@@ -354,27 +361,27 @@ class Pvp
                     true
                 );
             }
-            output_notl('`@%s`0', $row['name']);
+            $output->outputNotl('`@%s`0', $row['name']);
             rawoutput('</td>');
             rawoutput('<td>');
-            output_notl('%s', $row['level']);
+            $output->outputNotl('%s', $row['level']);
             rawoutput('</td>');
             rawoutput('<td>');
-            output_notl('%s', $row['location']);
+            $output->outputNotl('%s', $row['location']);
             rawoutput('</td>');
             rawoutput("<td>[ <a href='$biolink'>$bio</a> | ");
             if ($row['pvpflag'] > $pvptimeout) {
-                output("`i(Attacked too recently)`i");
+                $output->output("`i(Attacked too recently)`i");
             } elseif ($location != $row['location'] && (!isset($row['anylocation']) || !$row['anylocation'])) {
-                output("`i(Can't reach them from here)`i");
+                $output->output("`i(Can't reach them from here)`i");
             } elseif (isset($row['invalid']) && $row['invalid'] != '') {
                 if ($row['invalid'] == 1) {
                     $row['invalid'] = 'Unable to attack';
                 }
-                output('`i`4(%s`4)`i', $row['invalid']);
+                $output->output('`i`4(%s`4)`i', $row['invalid']);
             } else {
                 rawoutput("<a href='$link$extra&name=" . $row['acctid'] . "'>$att</a>");
-                addnav('', "$link$extra&name=" . $row['acctid']);
+                Navigation::add('', "$link$extra&name=" . $row['acctid']);
             }
             rawoutput(' ]</td>');
             rawoutput('</tr>');
@@ -392,12 +399,12 @@ class Pvp
 
         if ($j == 0) {
             $noone = Translator::translateInline('`iThere are no available targets.`i');
-            output_notl("<tr><td align='center' colspan='4'>$noone</td></tr>", true);
+            $output->outputNotl("<tr><td align='center' colspan='4'>$noone</td></tr>", true);
         }
         rawoutput('</table>', true);
 
         if (Database::numRows($result) != 0) {
-            output('`n`n`&As you listen to different people around you talking, you glean the following additional information:`n');
+            $output->output('`n`n`&As you listen to different people around you talking, you glean the following additional information:`n');
             while ($row = Database::fetchAssoc($result)) {
                 $loc = $row['location'];
                 $count = $row['counter'];
@@ -406,9 +413,9 @@ class Pvp
                     continue;
                 }
                 if ($count == 1) {
-                    output('`&There is `^%s`& person sleeping in %s whom you might find interesting.`0`n', $count, $loc);
+                    $output->output('`&There is `^%s`& person sleeping in %s whom you might find interesting.`0`n', $count, $loc);
                 } else {
-                    output('`&There are `^%s`& people sleeping in %s whom you might find interesting.`0`n', $count, $loc);
+                    $output->output('`&There are `^%s`& people sleeping in %s whom you might find interesting.`0`n', $count, $loc);
                 }
             }
         }

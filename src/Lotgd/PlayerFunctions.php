@@ -13,6 +13,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
 use Lotgd\Output;
+use Lotgd\Random;
 
 class PlayerFunctions
 {
@@ -66,7 +67,7 @@ class PlayerFunctions
         }
 
         // Remove module user preferences
-        module_delete_userprefs($id);
+        HookHandler::deleteUserPrefs($id);
     }
 
     /**
@@ -461,7 +462,7 @@ class PlayerFunctions
             $useref = "AND ref='$ref'";
             $targetdk = $refdk;
         }
-        $sql = 'SELECT male,female FROM ' . Database::prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . e_rand() . ") LIMIT 1";
+        $sql = 'SELECT male,female FROM ' . Database::prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . Random::getInstance()->e_rand() . ") LIMIT 1";
         $res = Database::query($sql);
         $row = ['male' => 'God', 'female' => 'Goddess'];
         if (Database::numRows($res) != 0) {

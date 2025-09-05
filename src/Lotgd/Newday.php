@@ -10,6 +10,9 @@ use Lotgd\GameLog;
 use Lotgd\ExpireChars;
 use Lotgd\Modules\HookHandler;
 use Lotgd\DataCache;
+use Lotgd\Settings;
+use Lotgd\Output;
+use Lotgd\Nav as Navigation;
 
 class Newday
 {
@@ -190,7 +193,7 @@ class Newday
                 }
             }
         } else {
-            output("`\$Error: Please spend the correct total amount of dragon points.`n`n");
+            Output::getInstance()->output("`\$Error: Please spend the correct total amount of dragon points.`n`n");
         }
     }
 
@@ -199,11 +202,12 @@ class Newday
         global $session;
         if ($dkills - $dp > 1) {
             page_header('Dragon Points');
-            output("`@You earn one dragon point each time you slay the dragon.");
-            output('Advancements made by spending dragon points are permanent!');
-            output("`n`nYou have `^%s`@ unspent dragon points.", $dkills - $dp);
-            output('How do you wish to spend them?`n`n');
-            output('Be sure that your allocations add up to your total unspent dragon points.');
+            $output = Output::getInstance();
+            $output->output("`@You earn one dragon point each time you slay the dragon.");
+            $output->output('Advancements made by spending dragon points are permanent!');
+            $output->output("`n`nYou have `^%s`@ unspent dragon points.", $dkills - $dp);
+            $output->output('How do you wish to spend them?`n`n');
+            $output->output('Be sure that your allocations add up to your total unspent dragon points.');
             $text = "<script type='text/javascript' language='Javascript'>\n";
             $text .= "<!--\n";
             $text .= "function pointsLeft() {\n";
@@ -248,23 +252,23 @@ class Newday
             $text .= "// -->\n";
             $text .= "</script>\n";
             rawoutput($text);
-            addnav('Reset', "newday.php?pdk=0$resline");
+            Navigation::add('Reset', "newday.php?pdk=0$resline");
             $link = appendcount("newday.php?pdk=1$resline");
             rawoutput("<form id='dkForm' action='$link' method='POST'>");
-            addnav('', $link);
+            Navigation::add('', $link);
             rawoutput("<br><table cellpadding='0' cellspacing='0' border='0' width='200'>");
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
                 if (count($head) > 1) {
                     rawoutput("<tr><td colspan='2' nowrap>");
-                    output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
+                    $output->output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
                     rawoutput("</td></tr>");
                     continue;
                 }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
                     rawoutput("<tr><td nowrap>");
-                    output($label);
-                    output_notl(":");
+                    $output->output($label);
+                    $output->outputNotl(":");
                     rawoutput("</td><td>");
                     rawoutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$canbuy[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
                     rawoutput("</td></tr>");
@@ -296,18 +300,19 @@ class Newday
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
                 if (count($head) > 1) {
-                    addnav($head[0]);
+                    Navigation::add($head[0]);
                     continue;
                 }
                 $dist[$type] = 0;
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
-                    addnav($label, "newday.php?dk=$type$resline");
+                    Navigation::add($label, "newday.php?dk=$type$resline");
                 }
             }
-            output("`@You have `&1`@ unspent dragon point.");
-            output('How do you wish to spend it?`n`n');
-            output('You earn one dragon point each time you slay the dragon.');
-            output('Advancements made by spending dragon points are permanent!');
+            $output = Output::getInstance();
+            $output->output("`@You have `&1`@ unspent dragon point.");
+            $output->output('How do you wish to spend it?`n`n');
+            $output->output('You earn one dragon point each time you slay the dragon.');
+            $output->output('Advancements made by spending dragon points are permanent!');
             $player_dkpoints = count($session['user']['dragonpoints']);
             for ($i = 0; $i < $player_dkpoints; $i++) {
                 if (isset($dist[$session['user']['dragonpoints'][$i]])) {
@@ -316,7 +321,7 @@ class Newday
                     $dist['unknown']++;
                 }
             }
-            output("`n`nCurrently, the dragon points you have already spent are distributed in the following manner.");
+            $output->output("`n`nCurrently, the dragon points you have already spent are distributed in the following manner.");
             rawoutput('<blockquote><table>');
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
@@ -325,7 +330,7 @@ class Newday
                 }
                 if (count($head) > 1) {
                     rawoutput("<tr><td colspan='2' nowrap>");
-                    output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
+                    $output->output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
                     rawoutput('</td></tr>');
                     continue;
                 }
@@ -333,10 +338,10 @@ class Newday
                     continue;
                 }
                 rawoutput('<tr><td nowrap>');
-                output($label);
-                output_notl(':');
+                $output->output($label);
+                $output->outputNotl(':');
                 rawoutput('</td><td>&nbsp;&nbsp;</td><td>');
-                output_notl("`@%s", $dist[$type]);
+                $output->outputNotl("`@%s", $dist[$type]);
                 rawoutput('</td></tr>');
             }
             rawoutput('</table></blockquote>');
@@ -347,29 +352,30 @@ class Newday
     {
         global $session;
         $settings = Settings::getInstance();
+        $output = Output::getInstance();
         $setrace = httpget('setrace');
         if ($setrace != '') {
             $vname = $settings->getSetting('villagename', LOCATION_FIELDS);
             $session['user']['race'] = $setrace;
             $session['user']['location'] = $vname;
             HookHandler::hook('setrace');
-            addnav('Continue', "newday.php?continue=1$resline");
+            Navigation::add('Continue', "newday.php?continue=1$resline");
         } else {
-            output('Where do you recall growing up?`n`n');
+            $output->output('Where do you recall growing up?`n`n');
             HookHandler::hook('chooserace');
         }
         if (navcount() == 0) {
             clearoutput();
             page_header('No Races Installed');
-            output("No races were installed in this game.");
-            output("So we'll call you a 'human' and get on with it.");
+            $output->output("No races were installed in this game.");
+            $output->output("So we'll call you a 'human' and get on with it.");
             if ($session['user']['superuser'] & (SU_MEGAUSER | SU_MANAGE_MODULES)) {
-                output('You should go into the module manager off of the super user grotto, install and activate some races.');
+                $output->output('You should go into the module manager off of the super user grotto, install and activate some races.');
             } else {
-                output("You might want to ask your admin to install some races, they're really quite fun.");
+                $output->output("You might want to ask your admin to install some races, they're really quite fun.");
             }
             $session['user']['race'] = 'Human';
-            addnav('Continue', "newday.php?continue=1$resline");
+            Navigation::add('Continue', "newday.php?continue=1$resline");
             page_footer();
         } else {
             page_header('A little history about yourself');
@@ -380,27 +386,28 @@ class Newday
     public static function setSpecialty(string $resline): void
     {
         global $session;
+        $output = Output::getInstance();
         $setspecialty = httpget('setspecialty');
         if ($setspecialty != '') {
             $session['user']['specialty'] = $setspecialty;
             HookHandler::hook('set-specialty');
-            addnav('Continue', "newday.php?continue=1$resline");
+            Navigation::add('Continue', "newday.php?continue=1$resline");
         } else {
             page_header('A little history about yourself');
-            output('What do you recall doing as a child?`n`n');
+            $output->output('What do you recall doing as a child?`n`n');
             HookHandler::hook('choose-specialty');
         }
         if (navcount() == 0) {
             clearoutput();
             page_header('No Specialties Installed');
-            output("Since there are no suitable specialties available, we'll make you a student of the mystical powers and get on with it.");
+            $output->output("Since there are no suitable specialties available, we'll make you a student of the mystical powers and get on with it.");
             if ($session['user']['superuser'] & (SU_MEGAUSER | SU_MANAGE_MODULES)) {
-                output('You should go into the module manager off of the super user grotto, install and activate some specialties.');
+                $output->output('You should go into the module manager off of the super user grotto, install and activate some specialties.');
             } else {
-                output('You might want to ask your admin to install some specialties, as they are quite fun (and helpful).');
+                $output->output('You might want to ask your admin to install some specialties, as they are quite fun (and helpful).');
             }
             $session['user']['specialty'] = 'MP';
-            addnav('Continue', "newday.php?continue=1$resline");
+            Navigation::add('Continue', "newday.php?continue=1$resline");
             page_footer();
         } else {
             page_footer();
