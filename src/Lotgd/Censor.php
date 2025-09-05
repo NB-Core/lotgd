@@ -9,6 +9,7 @@ use Lotgd\Sanitize;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\DataCache;
+use Lotgd\Output;
 use const \SU_EDIT_COMMENTS;
 
 class Censor
@@ -24,7 +25,8 @@ class Censor
      */
     public static function soap(string $input, bool $debug = false, bool $skiphook = false): string
     {
-        global $session, $output;
+        global $session;
+        $output = Output::getInstance();
         $final_output = $input;
         $sanitized = Sanitize::fullSanitize($input);
         $mix_mask = str_pad('', strlen($sanitized), 'X');
