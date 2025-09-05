@@ -24,6 +24,48 @@ class Commentary
     public static array $comsecs = [];
 
     /**
+     * Flag indicating a double post attempt occurred.
+     */
+    private static bool $doublepost = false;
+
+    /**
+     * Flag indicating an empty post was submitted.
+     */
+    private static bool $emptypost = false;
+
+    /**
+     * Determine whether the last action was a double post.
+     */
+    public static function isDoublePost(): bool
+    {
+        return self::$doublepost;
+    }
+
+    /**
+     * Set the double post flag.
+     */
+    public static function setDoublePost(bool $flag): void
+    {
+        self::$doublepost = $flag;
+    }
+
+    /**
+     * Determine whether the last action attempted an empty post.
+     */
+    public static function isEmptyPost(): bool
+    {
+        return self::$emptypost;
+    }
+
+    /**
+     * Set the empty post flag.
+     */
+    public static function setEmptyPost(bool $flag): void
+    {
+        self::$emptypost = $flag;
+    }
+
+    /**
      * Retrieve all sections that accept commentary posts.
      */
     public static function commentaryLocs(): array
@@ -67,8 +109,9 @@ class Commentary
      */
     public static function addCommentary(): void
     {
-        global $session, $emptypost;
+        global $session;
 
+        self::setEmptyPost(false);
         $output = Output::getInstance();
 
         // Gather request parameters
@@ -97,7 +140,7 @@ class Commentary
 
                 // Ignore empty or trivial posts
                 if ($tcom == '' || $tcom == ':' || $tcom == '::' || $tcom == '/me') {
-                    $emptypost = 1;
+                    self::setEmptyPost(true);
                 } else {
                     // Check that the form section matches the URL section
                     if ($rawSectionFromUrl != $section) {
@@ -204,7 +247,7 @@ SQL;
      */
     public static function injectCommentary(string $section, string $talkline, string $comment, $schema = false): void
     {
-        global $session, $doublepost;
+        global $session;
 
         $translator = Translator::getInstance();
 
@@ -215,7 +258,7 @@ SQL;
 
         $comment = stripslashes($comment);
         $translator->setSchema('commentary');
-        $doublepost = 0;
+        self::setDoublePost(false);
 
         if ($comment === '') {
             return;
@@ -242,7 +285,7 @@ SQL;
             $result = Database::query($commentarySql);
             $authorId = (int) $session['user']['acctid'];
 
-            $doublepost = self::persistComment($result, $commentary, $authorId, $section);
+            self::setDoublePost((bool) self::persistComment($result, $commentary, $authorId, $section));
         }
 
         $translator->setSchema();
@@ -492,7 +535,7 @@ SQL;
         bool $returnastext = false,
         $scriptname_pre = false
     ): ?string {
-        global $session, $REQUEST_URI, $doublepost, $emptypost;
+        global $session, $REQUEST_URI;
         
         $output = Output::getInstance();
         $translator = Translator::getInstance();
@@ -550,10 +593,10 @@ SQL;
             $linkbios = true;
         }
 
-        if ($doublepost) {
+        if (self::isDoublePost()) {
             $output->output("`$`bDouble post?`b`0`n");
         }
-        if ($emptypost) {
+        if (self::isEmptyPost()) {
             $output->output("`$`bWell, they say silence is a virtue.`b`0`n");
         }
 
