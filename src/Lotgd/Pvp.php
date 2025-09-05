@@ -17,6 +17,8 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
 use Lotgd\Output;
 use Lotgd\Nav as Navigation;
+use Lotgd\DebugLog;
+use Lotgd\PlayerFunctions;
 
 class Pvp
 {
@@ -78,8 +80,8 @@ class Pvp
             $row = Database::fetchAssoc($result);
             if ($session['user']['dragonkills'] < $row['dragonkills']) {
                 $diff = $row['dragonkills'] - $session['user']['dragonkills'];
-                $row['creatureattack'] = get_player_attack($row['acctid']) + round($diff / 2);
-                $row['creaturedefense'] = get_player_defense($row['acctid']) + round($diff / 2);
+                $row['creatureattack'] = PlayerFunctions::getPlayerAttack($row['acctid']) + round($diff / 2);
+                $row['creaturedefense'] = PlayerFunctions::getPlayerDefense($row['acctid']) + round($diff / 2);
             }
             $output->output('As you both cannot use any special gimmicks, the more dragonkills your victim has the stronger he gets.`n');
             if ($row['pvpflag'] > $pvptimeout) {
@@ -160,7 +162,7 @@ class Pvp
 
         $lostexp = round($badguy['creatureexp'] * $settings->getSetting('pvpdeflose', 5) / 100, 0);
 
-        debuglog("gained $winamount ({$badguy['creaturegold']} base) gold and $wonexp exp (loser lost $lostexp) for killing ", $badguy['acctid']);
+        DebugLog::add("gained $winamount ({$badguy['creaturegold']} base) gold and $wonexp exp (loser lost $lostexp) for killing ", $badguy['acctid']);
 
         $args = ['pvpmessageadd' => '', 'handled' => false, 'badguy' => $badguy, 'options' => $options];
         $args = HookHandler::hook('pvpwin', $args);
@@ -178,7 +180,7 @@ class Pvp
             $lostexp, $badguy['creaturegold'], $args['pvpmessageadd'],
             $killedloc, $killedloc,
             date('D, M d h:i a', (int) $badguy['fightstartdate']),
-            reltime((int) $badguy['fightstartdate'])
+            DateTime::relTime((int) $badguy['fightstartdate'])
         ];
 
         Mail::systemMail(
@@ -188,7 +190,7 @@ class Pvp
         );
 
         $sql = "UPDATE " . Database::prefix('accounts') . " SET alive=0, goldinbank=(goldinbank+IF(gold<{$badguy['creaturegold']},gold-{$badguy['creaturegold']},0)),gold=IF(gold<{$badguy['creaturegold']},0,gold-{$badguy['creaturegold']}), experience=IF(experience>=$lostexp,experience-$lostexp,0) WHERE acctid=" . (int) $badguy['acctid'];
-        debuglog($sql, (int) $badguy['acctid'], $session['user']['acctid']);
+        DebugLog::add($sql, (int) $badguy['acctid'], $session['user']['acctid']);
         Database::query($sql);
         return $args['handled'];
     }
@@ -251,12 +253,12 @@ class Pvp
 
         if ($row['level'] >= $badguy['creaturelevel']) {
             $sql = "UPDATE " . Database::prefix('accounts') . " SET gold=gold+" . $winamount . ", experience=experience+" . $wonexp . " WHERE acctid=" . (int) $badguy['acctid'];
-            debuglog($sql);
+            DebugLog::add($sql);
             Database::query($sql);
         }
 
         $session['user']['alive'] = 0;
-        debuglog("lost {$session['user']['gold']} ($winamount to winner) gold and $lostexp exp ($wonexp to winner) being slain by ", $badguy['acctid']);
+        DebugLog::add("lost {$session['user']['gold']} ($winamount to winner) gold and $lostexp exp ($wonexp to winner) being slain by ", $badguy['acctid']);
         $session['user']['gold'] = 0;
         $session['user']['hitpoints'] = 0;
         $session['user']['experience'] = round($session['user']['experience'] * (100 - $settings->getSetting('pvpattlose', 15)) / 100, 0);
