@@ -26,7 +26,8 @@ class Forest
 
         $settings = Settings::getInstance();
 
-        Translator::getInstance()->setSchema('forest');
+        $translator = Translator::getInstance();
+        $translator->setSchema('forest');
 
         $output = Output::getInstance();
 
@@ -68,7 +69,7 @@ class Forest
             HookHandler::hook('forest-desc');
         }
         HookHandler::hook('forest', []);
-        module_display_events('forest', 'forest.php');
-        Translator::getInstance()->setSchema();
+        HookHandler::displayEvents('forest', 'forest.php');
+        $translator->setSchema();
     }
 }

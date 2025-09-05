@@ -11,13 +11,16 @@ namespace Lotgd\Forest;
 use Lotgd\AddNews;
 use Lotgd\Battle;
 use Lotgd\DeathMessage;
-use Lotgd\PageParts;
-use Lotgd\Translator;
-use Lotgd\Settings;
+use Lotgd\DebugLog;
+use Lotgd\Page\Footer;
+use Lotgd\Modules\HookHandler;
 use Lotgd\Nav as Navigation;
 use Lotgd\Output;
+use Lotgd\PageParts;
+use Lotgd\PlayerFunctions;
 use Lotgd\Random;
-use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
+use Lotgd\Translator;
 
 class Outcomes
 {
@@ -73,7 +76,7 @@ class Outcomes
 
         if ($gold) {
             $output->output("`#You receive `^%s`# gold!`n", $gold);
-            debuglog('received gold for slaying a monster.', false, false, 'forestwin', $gold);
+            DebugLog::add('received gold for slaying a monster.', false, false, 'forestwin', $gold);
         }
         $gemChance = $settings->getSetting('forestgemchance', 25);
         $args = HookHandler::hook('alter-gemchance', ['chance' => $gemChance]);
@@ -82,7 +85,7 @@ class Outcomes
         if ($session['user']['level'] < $maxLevel && $random->e_rand(1, $gemchances) == 1) {
             $output->output("`&You find A GEM!`n`#");
             $session['user']['gems']++;
-            debuglog('found gem when slaying a monster.', false, false, 'forestwingem', 1);
+            DebugLog::add('found gem when slaying a monster.', false, false, 'forestwingem', 1);
         }
         $instantExp = $settings->getSetting('instantexp', false);
         if ($instantExp == true) {
@@ -183,14 +186,14 @@ class Outcomes
             AddNews::add("%s", $deathmessage['deathmessage']);
         }
         $session['user']['alive'] = 0;
-        debuglog("lost gold when they were slain $where", false, false, 'forestlose', -$session['user']['gold']);
+        DebugLog::add("lost gold when they were slain $where", false, false, 'forestlose', -$session['user']['gold']);
         $session['user']['gold'] = 0;
         $session['user']['hitpoints'] = 0;
         $session['user']['experience'] = round($session['user']['experience'] * (1 - ($percent / 100)), 0);
         $output->output("`4All gold on hand has been lost!`n");
         $output->output("`4%s %% of experience has been lost!`b`n", $percent);
         $output->output('You may begin fighting again tomorrow.');
-        page_footer();
+        Footer::pageFooter();
     }
 
     /**
@@ -205,7 +208,7 @@ class Outcomes
         $settings = Settings::getInstance();
         static $dk = false;
         if ($dk === false) {
-            $dk = get_player_dragonkillmod(true);
+            $dk = PlayerFunctions::getPlayerDragonKillMod(true);
             $add = ($session['user']['dragonkills'] / 100) * .10;
             $dk = round($dk * (.25 + $add));
         }
