@@ -66,25 +66,6 @@ parameters:
                         count: 2
                         path: src/Lotgd/Modules.php
 
-                -
-                        message: "#^Function httpallget not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Modules.php
-
-                -
-                        message: "#^Function httpallpost not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Modules.php
-
-                -
-                        message: "#^Function httpget not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Modules.php
-
-                -
-                        message: "#^Function httpset not found\\.$#"
-                        count: 2
-                        path: src/Lotgd/Modules.php
 
                 -
                         message: "#^Function module_compare_versions not found\\.$#"
@@ -274,11 +255,6 @@ parameters:
                         path: src/Lotgd/PageParts.php
 
                 -
-                        message: "#^Function httpallget not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/PhpGenericEnvironment.php
-
-                -
                         message: "#^Function debuglog not found\\.$#"
                         count: 4
                         path: src/Lotgd/Pvp.php
@@ -297,11 +273,6 @@ parameters:
                         message: "#^Function reltime not found\\.$#"
                         count: 1
                         path: src/Lotgd/Pvp.php
-
-                -
-                        message: "#^Variable \\$defaults on left side of \\?\\? is never defined\\.$#"
-                        count: 1
-                        path: src/Lotgd/Settings.php
 
                 -
                         message: "#^Function output not found\\.$#"

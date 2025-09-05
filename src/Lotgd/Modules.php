@@ -7,8 +7,8 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
-use Lotgd\Settings;
 
+use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\Backtrace;
 use Lotgd\Forms;
@@ -19,6 +19,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
 use Lotgd\DataCache;
 use Lotgd\Output;
+use Lotgd\Http;
 
 class Modules
 {
@@ -1234,10 +1235,10 @@ class Modules
                     Translator::getInstance()->setSchema('events');
                     output('`^`c`bSomething Special!`c`b`0');
                     Translator::getInstance()->setSchema();
-                    $op = httpget('op');
-                    httpset('op', '');
+                    $op = Http::get('op');
+                    Http::set('op', '');
                     self::doEvent($eventtype, $event['modulename'], false, $baseLink);
-                    httpset('op', $op);
+                    Http::set('op', $op);
                     return 1;
                 }
                 $sum += $event['normchance'];
@@ -1270,7 +1271,7 @@ class Modules
             $fname = $module . '_runevent';
             $fname($type, $baseLink);
             Translator::getInstance()->setSchema();
-            HookHandler::hook("runevent_$module", ['type' => $type, 'baselink' => $baseLink, 'get' => httpallget(), 'post' => httpallpost()]);
+            HookHandler::hook("runevent_$module", ['type' => $type, 'baselink' => $baseLink, 'get' => Http::allGet(), 'post' => Http::allPost()]);
             $navsection = $oldnavsection;
         }
 
