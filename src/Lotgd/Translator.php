@@ -22,15 +22,33 @@ class Translator
     private static array $translation_namespace_stack = [];
     // Maintain translation state within the class
     private static string $translation_namespace = "";
+    private static string $language = '';
+    private static string $schema = '';
 
     public static function getInstance(): self
     {
         return new self();
     }
 
+    public function getLanguage(): string
+    {
+        return self::$language;
+    }
+
+    public function setLanguage(string $language): void
+    {
+        self::$language = $language;
+    }
+
+    public function getSchema(): string
+    {
+        return self::$schema;
+    }
+
     public function setSchema(string|false|null $schema = false): void
     {
         self::tlschema($schema);
+        self::$schema = self::$translation_namespace;
     }
 // translator ready
 // addnews ready
@@ -50,23 +68,25 @@ class Translator
         }
         define("TRANSLATOR_IS_SET_UP", true);
 
-        global $language, $session;
-        $language = "";
+        global $session;
+        $language = '';
         if (isset($session['user']['prefs']['language'])) {
             $language = $session['user']['prefs']['language'];
         } else {
-                $cookieLanguage = Cookies::get('language');
+            $cookieLanguage = Cookies::get('language');
             if (null !== $cookieLanguage) {
-                    $language = $cookieLanguage;
+                $language = $cookieLanguage;
             }
         }
-        if ($language == "") {
+        if ($language == '') {
             $language = $settings instanceof Settings
-                ? $settings->getSetting("defaultlanguage", "en")
-                : "en";
+                ? $settings->getSetting('defaultlanguage', 'en')
+                : 'en';
         }
 
-                define("LANGUAGE", preg_replace("/[^a-z]/i", "", $language));
+        self::getInstance()->setLanguage($language);
+
+        define('LANGUAGE', preg_replace('/[^a-z]/i', '', $language));
     }
 
     /**
@@ -390,13 +410,14 @@ class Translator
             return [];
         }
 
-        global $language, $session;
-        if (defined('LANGUAGE')) {
-            if ($language === false) {
+        global $session;
+        if ($language === false) {
+            if (defined('LANGUAGE')) {
                 $language = constant('LANGUAGE');
+            } else {
+                self::translatorSetup();
+                $language = self::getInstance()->getLanguage();
             }
-        } else {
-            self::translatorSetup();
         }
         $page = Sanitize::translatorPage($namespace);
         $uri = Sanitize::translatorUri($namespace);
@@ -445,7 +466,8 @@ class Translator
     */
     public static function tlbuttonPush(string $indata, bool $hot = false, string|false $namespace = false)
     {
-        global $session,$language;
+        global $session;
+        $language = self::getInstance()->getLanguage();
         if (!self::$translation_is_enabled) {
             return;
         }
@@ -564,6 +586,8 @@ class Translator
             array_push($stack, self::$translation_namespace);
             self::$translation_namespace = (string)$schema;
         }
+
+        self::$schema = self::$translation_namespace;
     }
 
     /**
