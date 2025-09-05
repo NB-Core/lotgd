@@ -85,7 +85,9 @@ class Motd
     {
         global $session;
 
-        $sql = 'SELECT count(resultid) AS c, MAX(choice) AS choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' AND account='{$session['user']['acctid']}'";
+        $acctid = isset($session['user']['acctid']) ? (int)$session['user']['acctid'] : 0;
+
+        $sql = 'SELECT count(resultid) AS c, MAX(choice) AS choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' AND account='$acctid'";
         $result = Database::query($sql);
         $row = Database::numRows($result) > 0 ? Database::fetchAssoc($result) : [];
         $choice = $row['choice'] ?? null;
