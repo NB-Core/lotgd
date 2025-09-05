@@ -251,35 +251,35 @@ class Newday
             $text .= "}\n";
             $text .= "// -->\n";
             $text .= "</script>\n";
-            rawoutput($text);
+            $output->rawOutput($text);
             Navigation::add('Reset', "newday.php?pdk=0$resline");
             $link = appendcount("newday.php?pdk=1$resline");
-            rawoutput("<form id='dkForm' action='$link' method='POST'>");
+            $output->rawOutput("<form id='dkForm' action='$link' method='POST'>");
             Navigation::add('', $link);
-            rawoutput("<br><table cellpadding='0' cellspacing='0' border='0' width='200'>");
+            $output->rawOutput("<br><table cellpadding='0' cellspacing='0' border='0' width='200'>");
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
                 if (count($head) > 1) {
-                    rawoutput("<tr><td colspan='2' nowrap>");
+                    $output->rawOutput("<tr><td colspan='2' nowrap>");
                     $output->output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
-                    rawoutput("</td></tr>");
+                    $output->rawOutput("</td></tr>");
                     continue;
                 }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
-                    rawoutput("<tr><td nowrap>");
+                    $output->rawOutput("<tr><td nowrap>");
                     $output->output($label);
                     $output->outputNotl(":");
-                    rawoutput("</td><td>");
-                    rawoutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$canbuy[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
-                    rawoutput("</td></tr>");
+                    $output->rawOutput("</td><td>");
+                    $output->rawOutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$canbuy[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
+                    $output->rawOutput("</td></tr>");
                 }
             }
-            rawoutput("<tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
+            $output->rawOutput("<tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
             $click = Translator::translateInline('Spend');
-            rawoutput("<input id='dksub' type='submit' class='button' value='$click'>");
-            rawoutput("</td></tr><tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
-            rawoutput('<div id="amtLeft"></div>');
-            rawoutput('</td></tr></table></form>');
+            $output->rawOutput("<input id='dksub' type='submit' class='button' value='$click'>");
+            $output->rawOutput("</td></tr><tr><td colspan='2'>&nbsp;</td></tr><tr><td colspan='2' align='center'>");
+            $output->rawOutput('<div id="amtLeft"></div>');
+            $output->rawOutput('</td></tr></table></form>');
             $count = 0;
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
@@ -290,7 +290,7 @@ class Newday
                     break;
                 }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
-                    rawoutput("<script language='JavaScript'>document.getElementById('$type').focus();</script>");
+                    $output->rawOutput("<script language='JavaScript'>document.getElementById('$type').focus();</script>");
                     $count++;
                 }
             }
@@ -322,29 +322,29 @@ class Newday
                 }
             }
             $output->output("`n`nCurrently, the dragon points you have already spent are distributed in the following manner.");
-            rawoutput('<blockquote><table>');
+            $output->rawOutput('<blockquote><table>');
             foreach ($labels as $type => $label) {
                 $head = explode(',', $label);
                 if (isset($type) && $type > 0 && (!isset($dist[$type]) || $dist[$type] == 0)) {
                     continue;
                 }
                 if (count($head) > 1) {
-                    rawoutput("<tr><td colspan='2' nowrap>");
+                    $output->rawOutput("<tr><td colspan='2' nowrap>");
                     $output->output("`b`4%s`0`b`n", Translator::translateInline($head[0]));
-                    rawoutput('</td></tr>');
+                    $output->rawOutput('</td></tr>');
                     continue;
                 }
                 if ($type == 'unknown' && $dist[$type] == 0) {
                     continue;
                 }
-                rawoutput('<tr><td nowrap>');
+                $output->rawOutput('<tr><td nowrap>');
                 $output->output($label);
                 $output->outputNotl(':');
-                rawoutput('</td><td>&nbsp;&nbsp;</td><td>');
+                $output->rawOutput('</td><td>&nbsp;&nbsp;</td><td>');
                 $output->outputNotl("`@%s", $dist[$type]);
-                rawoutput('</td></tr>');
+                $output->rawOutput('</td></tr>');
             }
-            rawoutput('</table></blockquote>');
+            $output->rawOutput('</table></blockquote>');
         }
     }
 
