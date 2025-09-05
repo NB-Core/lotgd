@@ -104,9 +104,9 @@ class Stage9Test extends TestCase
     protected function setUp(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs,
-            $DB_USEDATACACHE, $settings, $REQUEST_URI;
+            $DB_USEDATACACHE, $settings;
 
-        $REQUEST_URI        = '/installer.php';
+        \Lotgd\PhpGenericEnvironment::setRequestUri('/installer.php');
         $session            = [
             'dbinfo'            => [
                 'DB_HOST'         => 'localhost',

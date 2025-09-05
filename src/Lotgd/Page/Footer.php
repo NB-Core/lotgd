@@ -18,14 +18,17 @@ use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Translator;
+use Lotgd\PhpGenericEnvironment;
 
 class Footer
 {
     public static function pageFooter(bool $saveuser = true): void
     {
-        global $session, $REMOTE_ADDR, $REQUEST_URI, $pagestarttime,
-            $template, $y2, $z2, $logd_version, $copyright, $SCRIPT_NAME, $footer,
+        global $session,
+            $template, $y2, $z2, $logd_version, $copyright, $footer,
             $settings;
+
+        $scriptName = PhpGenericEnvironment::getScriptName();
 
         $navInstance = Nav::getInstance();
         $header = $navInstance->getHeader();
@@ -67,7 +70,7 @@ class Footer
             if (
                 Database::numRows($result) > 0 && isset($session['user']['lastmotd']) &&
                 ($row['motddate'] > $session['user']['lastmotd']) &&
-                (!isset(PageParts::$noPopups[$SCRIPT_NAME]) || PageParts::$noPopups[$SCRIPT_NAME] != 1) &&
+                (!isset(PageParts::$noPopups[$scriptName]) || PageParts::$noPopups[$scriptName] != 1) &&
                 $session['user']['loggedin']
             ) {
                 if (isset($settings) && $settings->getSetting('forcedmotdpopup', 0)) {
@@ -156,7 +159,7 @@ class Footer
         list($header, $footer) = PageParts::assembleMailLink($header, $footer);
         list($header, $footer) = PageParts::assemblePetitionLink($header, $footer);
         list($header, $footer) = PageParts::assemblePetitionDisplay($header, $footer);
-        $sourcelink = 'source.php?url=' . preg_replace('/[?].*/', '', ($_SERVER['REQUEST_URI']));
+        $sourcelink = 'source.php?url=' . preg_replace('/[?].*/', '', (PhpGenericEnvironment::getRequestUri()));
 
         $output = Output::getInstance();
 
@@ -166,7 +169,7 @@ class Footer
             'motd'    => $motd_link,
             'source'  => "<a href='$sourcelink' onclick=\"" . PageParts::popup($sourcelink) . ";return false;\" target='_blank'>" . Translator::translateInline('View PHP Source') . '</a>',
             'version' => "Version: $logd_version",
-            'pagegen' => PageParts::computePageGenerationStats($pagestarttime),
+            'pagegen' => PageParts::computePageGenerationStats(PhpGenericEnvironment::getPageStartTime()),
             $z       => $$z,
         ];
         if (TwigTemplate::isActive()) {

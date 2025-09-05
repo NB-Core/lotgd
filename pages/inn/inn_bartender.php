@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\Http;
 use Lotgd\Nav;
 use Lotgd\Sanitize;
+use Lotgd\PhpGenericEnvironment;
 
 $act = Http::get('act');
 if ($act == "") {
@@ -101,7 +102,7 @@ if ($act == "") {
     $output->outputNotl("`n`1&#0096;1 `2&#0096;2 `3&#0096;3 `4&#0096;4 `5&#0096;5 `6&#0096;6 `7&#0096;7 ", true);
     $output->outputNotl("`n`!&#0096;! `@&#0096;@ `#&#0096;# `\$&#0096;\$ `%&#0096;% `^&#0096;^ `&&#0096;& `n", true);
     $output->output("`% Got it?`0\"  You can practice below:");
-    $output->rawOutput("<form action=\"$REQUEST_URI\" method='POST'>", true);
+    $output->rawOutput("<form action=\"" . PhpGenericEnvironment::getRequestUri() . "\" method='POST'>", true);
     $testtext = Http::post('testtext');
     $output->output("You entered %s`n", prevent_colors(HTMLEntities($testtext, ENT_COMPAT, getsetting("charset", "UTF-8"))), true);
     $output->output("It looks like %s`n", $testtext);
@@ -111,7 +112,7 @@ if ($act == "") {
     $output->rawOutput("</form>");
     $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>");
         $output->output("`0`n`nThese colors can be used in your name, and in any conversations you have.");
-    Nav::add("", $REQUEST_URI);
+    Nav::add("", PhpGenericEnvironment::getRequestUri());
 } elseif ($act == "specialty") {
     $specialty = Http::get('specialty');
     if ($specialty == "") {
@@ -123,7 +124,7 @@ if ($act == "") {
         $output->output("`0\"`3What new specialty did you have in mind?`0\"");
         $specialities = modulehook("specialtynames");
         foreach ($specialities as $key => $name) {
-            Nav::add($name, Sanitize::cmdSanitize($REQUEST_URI) . "&specialty=$key");
+            Nav::add($name, Sanitize::cmdSanitize(PhpGenericEnvironment::getRequestUri()) . "&specialty=$key");
         }
     } else {
         $output->output("\"`3Ok then,`0\" %s`0 says, \"`3You're all set.`0\"`n`n\"`2That's it?`0\" you ask him.`n`n", $barkeep);

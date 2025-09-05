@@ -603,7 +603,7 @@ class Nav
      */
     public static function privateAddNav($text, string|false|null $link = false, $priv = false, $pop = false, $popsize = '500x300')
     {
-        global $session, $REQUEST_URI;
+        global $session;
         $output = Output::getInstance();
         $instance = self::getInstance();
 

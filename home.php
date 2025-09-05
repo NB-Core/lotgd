@@ -22,10 +22,6 @@ if (! isset($_SERVER['REQUEST_URI'])) {
     $_SERVER['REQUEST_URI'] = '/home.php';
 }
 
-if (! isset($REQUEST_URI)) {
-    $REQUEST_URI = $_SERVER['REQUEST_URI'];
-}
-
 require_once("common.php");
 
 use Lotgd\Page\Header;

@@ -31,6 +31,7 @@ use Lotgd\Translator;
 use Lotgd\DataCache;
 use Lotgd\Http;
 use Lotgd\Mounts;
+use Lotgd\PhpGenericEnvironment;
 
 class PageParts
 {
@@ -839,14 +840,13 @@ class PageParts
      */
     public static function canonicalLink(): string
     {
-        global $REQUEST_URI, $SCRIPT_NAME;
         $settings = Settings::getInstance();
 
         $serverUrl = rtrim($settings->getSetting('serverurl', 'http://' . $_SERVER['HTTP_HOST']), '/');
 
-        $uri = $REQUEST_URI ?? '';
+        $uri = PhpGenericEnvironment::getRequestUri();
         if ($uri === '') {
-            $uri = $SCRIPT_NAME ?? '';
+            $uri = PhpGenericEnvironment::getScriptName();
         }
 
         // Remove the session "c" parameter while keeping the rest intact
@@ -942,7 +942,7 @@ class PageParts
      */
     public static function computePageGenerationStats(float $pagestarttime): string
     {
-        global $session, $SCRIPT_NAME;
+        global $session;
         $settings = Settings::getInstance();
 
         $gentime = DateTime::getMicroTime() - $pagestarttime;
@@ -955,9 +955,9 @@ class PageParts
         }
         $session['user']['gentimecount']++;
         if ($settings->getSetting('debug', 0)) {
-            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime','$SCRIPT_NAME','" . ($gentime) . "');";
+            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime','" . PhpGenericEnvironment::getScriptName() . "','" . ($gentime) . "');";
             Database::query($sql);
-            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','" . (round(Database::getInfo('querytime', 0), 3)) . "');";
+            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','" . PhpGenericEnvironment::getScriptName() . "','" . (round(Database::getInfo('querytime', 0), 3)) . "');";
             Database::query($sql);
         }
         $queryCount = Database::getQueryCount();

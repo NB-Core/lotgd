@@ -9,6 +9,7 @@ use Lotgd\Output;
 use Lotgd\Redirect;
 use Lotgd\Settings;
 use Lotgd\Translator;
+use Lotgd\PhpGenericEnvironment;
 
 use const \DATETIME_DATEMIN;
 use const \DATETIME_TODAY;
@@ -99,12 +100,13 @@ class DateTime
 
     public static function checkDay(): void
     {
-        global $session, $revertsession, $REQUEST_URI;
+        global $session, $revertsession;
+        $requestUri = PhpGenericEnvironment::getRequestUri();
         if ($session['user']['loggedin']) {
             Output::getInstance()->outputNotl('<!--CheckNewDay()-->', true);
             if (self::isNewDay()) {
                 $session = $revertsession;
-                $session['user']['restorepage'] = $REQUEST_URI;
+                $session['user']['restorepage'] = $requestUri;
                 $session['allowednavs'] = [];
                 Nav::add('', 'newday.php');
                 Redirect::redirect('newday.php');

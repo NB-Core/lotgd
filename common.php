@@ -112,6 +112,7 @@ if (isset($gz_handler_on) && $gz_handler_on) {
 }
 
 $pagestarttime = DateTime::getMicroTime();
+PhpGenericEnvironment::setPageStartTime($pagestarttime);
 
 // Set some constant defaults in case they weren't set before the inclusion of
 // common.php
@@ -373,12 +374,13 @@ if (!isset($session['counter'])) {
     $session['counter'] = 0;
 }
 $session['counter']++;
-$nokeeprestore = array("newday.php" => 1,"badnav.php" => 1,"motd.php" => 1,"mail.php" => 1,"petition.php" => 1);
+$nokeeprestore = ["newday.php" => 1, "badnav.php" => 1, "motd.php" => 1, "mail.php" => 1, "petition.php" => 1];
+$scriptNameEnv = PhpGenericEnvironment::getScriptName();
 if (OVERRIDE_FORCED_NAV) {
-    $nokeeprestore[$SCRIPT_NAME] = 1;
+    $nokeeprestore[$scriptNameEnv] = 1;
 }
-if (!isset($nokeeprestore[$SCRIPT_NAME]) || !$nokeeprestore[$SCRIPT_NAME]) {
-    $session['user']['restorepage'] = $REQUEST_URI;
+if (!isset($nokeeprestore[$scriptNameEnv]) || !$nokeeprestore[$scriptNameEnv]) {
+    $session['user']['restorepage'] = PhpGenericEnvironment::getRequestUri();
 } else {
 }
 
@@ -422,8 +424,9 @@ if (isset($session['user']['bufflist'])) {
 if (!is_array($session['bufflist'])) {
     $session['bufflist'] = array();
 }
-if (isset($REMOTE_ADDR)) {
-    $session['user']['lastip'] = $REMOTE_ADDR;   //cron i.e. doesn't have an $REMOTE_ADDR
+$remoteAddr = PhpGenericEnvironment::getRemoteAddr();
+if ($remoteAddr !== '') {
+    $session['user']['lastip'] = $remoteAddr;   //cron i.e. doesn't have an $REMOTE_ADDR
 }
 $cookieId = Cookies::getLgi();
 if ($cookieId === null) {
@@ -473,9 +476,9 @@ if (
                 $row = Database::fetchAssoc($result);
                 Database::freeResult($result);
         if (isset($row['refererid']) && $row['refererid'] > "") {
-                $sql = "UPDATE " . Database::prefix("referers") . " SET count=count+1,last='" . date("Y-m-d H:i:s") . "',site='" . addslashes($site) . "',dest='" . addslashes($host) . "/" . addslashes($REQUEST_URI) . "',ip='{$_SERVER['REMOTE_ADDR']}' WHERE refererid='{$row['refererid']}'";
+                $sql = "UPDATE " . Database::prefix("referers") . " SET count=count+1,last='" . date("Y-m-d H:i:s") . "',site='" . addslashes($site) . "',dest='" . addslashes($host) . "/" . addslashes(PhpGenericEnvironment::getRequestUri()) . "',ip='{$_SERVER['REMOTE_ADDR']}' WHERE refererid='{$row['refererid']}'";
         } else {
-                $sql = "INSERT INTO " . Database::prefix("referers") . " (uri,count,last,site,dest,ip) VALUES ('{$_SERVER['HTTP_REFERER']}',1,'" . date("Y-m-d H:i:s") . "','" . addslashes($site) . "','" . addslashes($host) . "/" . addslashes($REQUEST_URI) . "','{$_SERVER['REMOTE_ADDR']}')";
+                $sql = "INSERT INTO " . Database::prefix("referers") . " (uri,count,last,site,dest,ip) VALUES ('{$_SERVER['HTTP_REFERER']}',1,'" . date("Y-m-d H:i:s") . "','" . addslashes($site) . "','" . addslashes($host) . "/" . addslashes(PhpGenericEnvironment::getRequestUri()) . "','{$_SERVER['REMOTE_ADDR']}')";
         }
                 Database::query($sql);
     }

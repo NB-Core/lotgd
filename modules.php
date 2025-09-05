@@ -3,6 +3,7 @@
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Translator;
+use Lotgd\PhpGenericEnvironment;
 
 // addnews ready
 // translator ready
@@ -19,7 +20,7 @@ page_header("Module Manager");
 SuperuserNav::render();
 
 
-addnav("", $REQUEST_URI);
+addnav("", PhpGenericEnvironment::getRequestUri());
 $op = httpget('op');
 $module = httpget('module');
 

@@ -5,6 +5,7 @@ use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Commentary;
+use Lotgd\PhpGenericEnvironment;
 
 // translator ready
 // addnews ready
@@ -24,8 +25,7 @@ $op = httpget('op');
 if ($op == "keepalive") {
     $sql = "UPDATE " . Database::prefix("accounts") . " SET laston='" . date("Y-m-d H:i:s") . "' WHERE acctid='{$session['user']['acctid']}'";
     Database::query($sql);
-    global $REQUEST_URI;
-    echo '<html><meta http-equiv="Refresh" content="30;url=' . $REQUEST_URI . '"></html><body>' . date("Y-m-d H:i:s") . "</body></html>";
+    echo '<html><meta http-equiv="Refresh" content="30;url=' . PhpGenericEnvironment::getRequestUri() . '"></html><body>' . date("Y-m-d H:i:s") . "</body></html>";
     exit();
 } elseif ($op == "newsdelete") {
     $sql = "DELETE FROM " . Database::prefix("news") . " WHERE newsid='" . httpget('newsid') . "'";
