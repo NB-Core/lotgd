@@ -958,10 +958,10 @@ class PageParts
             $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','$SCRIPT_NAME','" . (round(Database::getInfo('querytime', 0), 3)) . "');";
             Database::query($sql);
         }
-        $queriesthishit = Database::getInfo('queriesthishit', 0);
+        $queryCount = Database::getQueryCount();
         $querytime = Database::getInfo('querytime', 0);
 
-        return "Page gen: " . round($gentime, 3) . "s / " . $queriesthishit . " queries (" . round($querytime, 3) . "s), Ave: " . round($session['user']['gentime'] / $session['user']['gentimecount'], 3) . "s - " . round($session['user']['gentime'], 3) . "/" . round($session['user']['gentimecount'], 3);
+        return "Page gen: " . round($gentime, 3) . "s / " . $queryCount . " queries (" . round($querytime, 3) . "s), Ave: " . round($session['user']['gentime'] / $session['user']['gentimecount'], 3) . "s - " . round($session['user']['gentime'], 3) . "/" . round($session['user']['gentimecount'], 3);
     }
 
 

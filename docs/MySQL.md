@@ -22,7 +22,7 @@ Important methods include:
 - `affectedRows()` – number of rows changed by the last query.
 - `prefix()` – prepend the configured table prefix.
 
-The wrapper also stores various counters in the static `$dbinfo` property, such as `queriesthishit` and the total query time.
+The wrapper also stores various counters in the static `$dbinfo` property, such as the total query time. The number of executed queries for the current request can be retrieved via `Database::getQueryCount()`.
 
 ## DbMysqli
 
