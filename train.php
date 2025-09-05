@@ -7,11 +7,13 @@ use Lotgd\Nav\SuperuserNav;
 use Lotgd\Substitute;
 use Lotgd\Battle;
 use Lotgd\Mail;
+use Lotgd\Output;
 
 //addnews ready
 // mail ready
 // translator ready
 require_once("common.php");
+$output = Output::getInstance();
 require_once("lib/increment_specialty.php");
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
@@ -107,10 +109,10 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 $defflux = min($defflux, round($dk * .25));
 
                 $hpflux = ($dk - ($atkflux + $defflux)) * 5;
-                debug("DEBUG: $dk modification points total.`n");
-                debug("DEBUG: +$atkflux allocated to attack.`n");
-                debug("DEBUG: +$defflux allocated to defense.`n");
-                debug("DEBUG: +" . ($hpflux / 5) . "*5 to hitpoints`n");
+                $output->debug("DEBUG: $dk modification points total.`n");
+                $output->debug("DEBUG: +$atkflux allocated to attack.`n");
+                $output->debug("DEBUG: +$defflux allocated to defense.`n");
+                $output->debug("DEBUG: +" . ($hpflux / 5) . "*5 to hitpoints`n");
                 calculate_buff_fields();
 
                 $master['creatureattack'] += $atkflux;

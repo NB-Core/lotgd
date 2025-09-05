@@ -8,6 +8,7 @@ use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Cookies;
+use Lotgd\Output;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 
 
@@ -300,8 +301,8 @@ class Translator
             return $in;
         }
         $out = self::translate($in, $namespace);
-        if (function_exists('rawoutput')) {
-            \rawoutput(self::tlbuttonClear());
+        if (class_exists(Output::class)) {
+            Output::getInstance()->rawOutput(self::clearButton());
         }
         return $out;
     }
@@ -365,7 +366,7 @@ class Translator
             return $in;
         }
         $out = self::translate($in);
-        return self::tlbuttonClear() . $out;
+        return self::clearButton() . $out;
     }
 
     /**
@@ -500,19 +501,26 @@ class Translator
 
     /**
      * Clear and return all queued translator buttons.
-     *
-     * @return string Buttons HTML
      */
-    public static function tlbuttonClear(): string
+    public static function clearButton(): string
     {
         global $session;
         if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_IS_TRANSLATOR)) {
                 $return = self::tlbuttonPop() . join("", self::$translatorbuttons);
-                self::$translatorbuttons = array();
+                self::$translatorbuttons = [];
+
                 return $return;
-        } else {
-                return "";
         }
+
+        return "";
+    }
+
+    /**
+     * @deprecated Use clearButton() instead.
+     */
+    public static function tlbuttonClear(): string
+    {
+        return self::clearButton();
     }
 
 

@@ -4,12 +4,14 @@ use Lotgd\Translator;
 
 use Lotgd\Motd;
 use Lotgd\Battle;
+use Lotgd\Output;
 
 // translator ready
 // addnews ready
 // mail ready
 define("ALLOW_ANONYMOUS", true);
 require_once("common.php");
+$output = Output::getInstance();
 require_once("lib/http.php");
 require_once("lib/villagenav.php");
 
@@ -68,14 +70,14 @@ while ($row = Database::fetchAssoc($result2)) {
             Motd::pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'], $row['motdauthorname'], $row['motddate'], false);
     }
 }
-output_notl("`n");
-output("`c`b`!News for %s %s`0`b`c", $date, $pagestr);
+ $output->outputNotl("`n");
+$output->output("`c`b`!News for %s %s`0`b`c", $date, $pagestr);
 
 while ($row = Database::fetchAssoc($result)) {
-    output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+    $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
     if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
         $del = translate_inline("Del");
-        rawoutput("[ <a href='superuser.php?op=newsdelete&newsid=" . $row['newsid'] . "&return=" . URLEncode($_SERVER['REQUEST_URI']) . "'>$del</a> ]&nbsp;");
+        $output->rawOutput("[ <a href='superuser.php?op=newsdelete&newsid=" . $row['newsid'] . "&return=" . URLEncode($_SERVER['REQUEST_URI']) . "'>$del</a> ]&nbsp;");
         addnav("", "superuser.php?op=newsdelete&newsid={$row['newsid']}&return=" . URLEncode($_SERVER['REQUEST_URI']));
     }
     $translator->setSchema($row['tlschema']);
@@ -87,18 +89,18 @@ while ($row = Database::fetchAssoc($result)) {
             array_push($arguments, $val);
         }
         $news = $translator->sprintfTranslate(...$arguments);
-        rawoutput(tlbutton_clear());
+        $output->rawOutput(Translator::clearButton());
     } else {
         $news = translate_inline($row['newstext']);
     }
     $translator->setSchema();
-    output_notl("`c" . $news . "`c`n");
+    $output->outputNotl("`c" . $news . "`c`n");
 }
 if (Database::numRows($result) == 0) {
-    output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
-    output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
+    $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+    $output->output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
 }
-output_notl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+ $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
 if (!$session['user']['loggedin']) {
     addnav("Login Screen", "index.php");
 } elseif ($session['user']['alive']) {

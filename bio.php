@@ -22,8 +22,10 @@ use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\DateTime;
 use Lotgd\Nltoappon;
+use Lotgd\Output;
 
 require_once("common.php");
+$output = Output::getInstance();
 
 $translator = Translator::getInstance();
 
@@ -156,10 +158,10 @@ if ($target = Database::fetchAssoc($result)) {
                 array_push($arguments, $val);
             }
             $news = $translator->sprintfTranslate(...$arguments);
-            $output->rawOutput(tlbutton_clear());
+            $output->rawOutput(Translator::clearButton());
         } else {
             $news = translate_inline($row['newstext']);
-            $output->rawOutput(tlbutton_clear());
+            $output->rawOutput(Translator::clearButton());
         }
         $translator->setSchema();
         if ($odate != $row['newsdate']) {
