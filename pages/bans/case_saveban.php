@@ -51,8 +51,8 @@ if ($type == "ip") {
 }
 if ($sql != "") {
     $result = Database::query($sql);
-    $output->output("%s ban rows entered.`n`n", Database::affectedRows($result));
-    $output->outputNotl(Database::error($result));
+    $output->output("%s ban rows entered.`n`n", Database::affectedRows());
+    $output->outputNotl(Database::error());
     debuglog('entered a ban: ' . ($type == 'ip' ? 'IP: ' . Http::post('ip') : 'ID: ' . Http::post('id')) . " Ends after: $duration  Reason: \"" . Http::post('reason') . '\"');
     /* log out affected players */
     $sql = "SELECT acctid FROM " . Database::prefix('accounts') . " WHERE $key='$key_value'";
@@ -65,7 +65,7 @@ if ($sql != "") {
         $sql = ' UPDATE ' . Database::prefix('accounts') . ' SET loggedin=0 WHERE acctid IN (' . implode(',', $acctids) . ')';
         $result = Database::query($sql);
         if ($result) {
-            $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows($result));
+            $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows());
         } else {
             $output->output("`\$Nobody was logged out. Acctids (%s) did not return rows!`n`n`0", implode(',', $acctids));
         }

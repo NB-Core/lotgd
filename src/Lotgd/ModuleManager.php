@@ -6,6 +6,8 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\Installer;
+use Lotgd\DataCache;
+use Lotgd\Modules;
 
 class ModuleManager
 {
@@ -42,7 +44,11 @@ class ModuleManager
      */
     public static function listUninstalled(): array
     {
-        $status = get_module_install_status();
+        if (function_exists('get_module_install_status')) {
+            $status = get_module_install_status(false);
+        } else {
+            $status = Installer::getInstallStatus(false);
+        }
         return $status['uninstalledmodules'] ?? [];
     }
 
@@ -53,7 +59,11 @@ class ModuleManager
      */
     public static function getInstalledCategories(): array
     {
-        $status = get_module_install_status();
+        if (function_exists('get_module_install_status')) {
+            $status = get_module_install_status(false);
+        } else {
+            $status = Installer::getInstallStatus(false);
+        }
         return $status['installedcategories'] ?? [];
     }
 
@@ -64,9 +74,9 @@ class ModuleManager
      */
     public static function install(string $module): bool
     {
-        if (install_module($module)) {
-            massinvalidate('hook');
-            massinvalidate('module-prepare');
+        if (Installer::install($module)) {
+            DataCache::massinvalidate('hook');
+            DataCache::massinvalidate('module-prepare');
             return true;
         }
         return false;
@@ -79,10 +89,10 @@ class ModuleManager
      */
     public static function uninstall(string $module): bool
     {
-        if (uninstall_module($module)) {
-            massinvalidate('hook');
-            massinvalidate('module-prepare');
-            invalidatedatacache("inject-$module");
+        if (Installer::uninstall($module)) {
+            DataCache::massinvalidate('hook');
+            DataCache::massinvalidate('module-prepare');
+            DataCache::invalidatedatacache("inject-$module");
             return true;
         }
         return false;
@@ -93,11 +103,11 @@ class ModuleManager
      */
     public static function activate(string $module): bool
     {
-        $res = activate_module($module);
-        invalidatedatacache("inject-$module");
-        massinvalidate('hook');
-        massinvalidate('module-prepare');
-        injectmodule($module, true);
+        $res = Installer::activate($module);
+        DataCache::invalidatedatacache("inject-$module");
+        DataCache::massinvalidate('hook');
+        DataCache::massinvalidate('module-prepare');
+        Modules::inject($module, true);
         return $res;
     }
 
@@ -106,9 +116,9 @@ class ModuleManager
      */
     public static function deactivate(string $module): bool
     {
-        $res = deactivate_module($module);
-        invalidatedatacache("inject-$module");
-        massinvalidate('module-prepare');
+        $res = Installer::deactivate($module);
+        DataCache::invalidatedatacache("inject-$module");
+        DataCache::massinvalidate('module-prepare');
         return $res;
     }
 
@@ -119,10 +129,10 @@ class ModuleManager
     {
         $sql = 'UPDATE ' . Database::prefix('modules') . " SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='" . $module . "'";
         Database::query($sql);
-        invalidatedatacache("inject-$module");
-        massinvalidate('hook');
-        massinvalidate('module-prepare');
-        injectmodule($module, true);
+        DataCache::invalidatedatacache("inject-$module");
+        DataCache::massinvalidate('hook');
+        DataCache::massinvalidate('module-prepare');
+        Modules::inject($module, true);
         return true;
     }
 
@@ -132,9 +142,9 @@ class ModuleManager
     public static function forceUninstall(string $module): bool
     {
         if (Installer::forceUninstall($module)) {
-            massinvalidate('hook');
-            massinvalidate('module-prepare');
-            invalidatedatacache("inject-$module");
+            DataCache::massinvalidate('hook');
+            DataCache::massinvalidate('module-prepare');
+            DataCache::invalidatedatacache("inject-$module");
             return true;
         }
 

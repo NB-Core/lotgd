@@ -9,6 +9,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
 use Lotgd\ExpireChars;
 use Lotgd\Modules\HookHandler;
+use Lotgd\DataCache;
 
 class Newday
 {
@@ -62,7 +63,7 @@ class Newday
         $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE sent<'$timestamp'";
         Database::query($sql);
         GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('mails') . " older than $timestamp.", 'maintenance');
-        massinvalidate('mail');
+        DataCache::massinvalidate('mail');
 
         if ((int) $settings->getSetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');

@@ -17,6 +17,8 @@ use Lotgd\Modules\Installer;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\DataCache;
+use Lotgd\Output;
 
 class Modules
 {
@@ -34,6 +36,7 @@ class Modules
     {
         global $mostrecentmodule;
         $force = $force ? 1 : 0;
+        $output = Output::getInstance();
 
         if (isset(self::$injectedModules[$force][$moduleName])) {
             $mostrecentmodule = $moduleName;
@@ -50,15 +53,15 @@ class Modules
                 if (! $force) {
                     if (Database::numRows($result) == 0) {
                         Translator::getInstance()->setSchema();
-                        debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n", $moduleName));
-                        massinvalidate();
+                        $output->debug(sprintf("`n`3Module `#%s`3 is not installed, but was attempted to be injected.`n", $moduleName));
+                        DataCache::massinvalidate();
                         self::$injectedModules[$force][$moduleName] = false;
                         return false;
                     }
                     $row = Database::fetchAssoc($result);
                     if (! $row['active']) {
                         Translator::getInstance()->setSchema();
-                        debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n", $moduleName));
+                        $output->debug(sprintf("`n`3Module `#%s`3 is not active, but was attempted to be injected.`n", $moduleName));
                         self::$injectedModules[$force][$moduleName] = false;
                         return false;
                     }
@@ -110,7 +113,7 @@ class Modules
                     $result = Database::query($sql);
                     $row    = Database::fetchAssoc($result);
                     if ($row['filemoddate'] != $filemoddate || ! isset($row['infokeys']) || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
-                        debug("The module $moduleName was found to have updated, upgrading the module now.");
+                        $output->debug("The module $moduleName was found to have updated, upgrading the module now.");
                         if (! is_array($info)) {
                             $fname = $moduleName . '_getmoduleinfo';
                             $info  = $fname();
@@ -133,13 +136,13 @@ class Modules
                             "', filemoddate='$filemoddate', infokeys='$keys',version='" . addslashes((string) ($info['version'] ?? '')) .
                             "',download='" . addslashes((string) ($info['download'] ?? '')) . "' WHERE modulename='$moduleName'";
                         Database::query($sql);
-                        debug($sql);
+                        $output->debug($sql);
                         $sql = 'UNLOCK TABLES';
                         Database::query($sql);
                         module_wipehooks();
                         $fname = $moduleName . '_install';
                         $fname();
-                        invalidatedatacache("inject-$moduleName");
+                        DataCache::invalidatedatacache("inject-$moduleName");
                     } else {
                         $sql = 'UNLOCK TABLES';
                         Database::query($sql);
@@ -378,6 +381,7 @@ class Modules
         global $navsection, $mostrecentmodule;
         global $session, $currenthook;
         $settings = Settings::getInstance();
+        $output   = Output::getInstance();
 
         if (defined('IS_INSTALLER') && IS_INSTALLER) {
             return $args;
@@ -397,7 +401,7 @@ class Modules
 
         if (!is_array($args)) {
             $where = $mostrecentmodule ?: ScriptName::current();
-            debug("Args parameter to modulehook $hookName from $where is not an array.");
+            $output->debug("Args parameter to modulehook $hookName from $where is not an array.");
         }
 
         if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT) && !isset($hookcomment[$hookName])) {
@@ -480,7 +484,7 @@ class Modules
                     }
                     $endtime = getmicrotime();
                     if (($endtime - $starttime >= 1.00 && isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
-                        debug('Slow Hook (' . round($endtime - $starttime, 2) . 's): ' . $hookName . ' - ' . $row['modulename'] . '`n');
+                        $output->debug('Slow Hook (' . round($endtime - $starttime, 2) . 's): ' . $hookName . ' - ' . $row['modulename'] . '`n');
                     }
                     if ($settings->getSetting('debug', 0)) {
                         $sql = 'INSERT INTO ' . Database::prefix('debug') . " VALUES (0,'hooktime','" . $hookName . "','" . $row['modulename'] . "','" . ($endtime - $starttime) . "');";
@@ -577,7 +581,7 @@ class Modules
             Database::query($sql);
         }
 
-        invalidatedatacache("modulesettings-$module");
+        DataCache::invalidatedatacache("modulesettings-$module");
         $module_settings[$module][$name] = $value;
     }
 
@@ -607,7 +611,7 @@ class Modules
             Database::query($sql);
         }
 
-        invalidatedatacache("modulesettings-$module");
+        DataCache::invalidatedatacache("modulesettings-$module");
         $module_settings[$module][$name] = ($module_settings[$module][$name] ?? 0) + $value;
     }
 
@@ -624,7 +628,7 @@ class Modules
 
         if (isset($module_settings[$module])) {
             unset($module_settings[$module]);
-            invalidatedatacache("modulesettings-$module");
+            DataCache::invalidatedatacache("modulesettings-$module");
         }
     }
 
@@ -652,7 +656,7 @@ class Modules
     {
         $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE objtype='$objtype' AND objid='$objid'";
         Database::query($sql);
-        massinvalidate("objpref-$objtype-$objid");
+        DataCache::massinvalidate("objpref-$objtype-$objid");
     }
 
     /**
@@ -705,7 +709,7 @@ class Modules
         $sql = 'REPLACE INTO ' . Database::prefix('module_objprefs')
             . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes((string)$value) . "')";
         Database::query($sql);
-        invalidatedatacache("objpref-$objtype-$objid-$name-$module");
+        DataCache::invalidatedatacache("objpref-$objtype-$objid-$name-$module");
     }
 
     /**
@@ -725,13 +729,13 @@ class Modules
             . " SET value=value+$value WHERE modulename='$module' AND setting='" . addslashes($name)
             . "' AND objtype='" . addslashes($objtype) . "' AND objid=$objid;";
         $result = Database::query($sql);
-        if (Database::affectedRows($result) == 0) {
+        if (Database::affectedRows() == 0) {
             $sql = 'INSERT INTO ' . Database::prefix('module_objprefs')
                 . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes((string)$value) . "')";
             Database::query($sql);
         }
 
-        invalidatedatacache("objpref-$objtype-$objid-$name-$module");
+        DataCache::invalidatedatacache("objpref-$objtype-$objid-$name-$module");
     }
 
     /**
@@ -745,7 +749,7 @@ class Modules
         Database::query($sql);
 
         unset($module_prefs[$user]);
-        massinvalidate("module_userprefs-$user");
+        DataCache::massinvalidate("module_userprefs-$user");
     }
 
     /**
@@ -1042,8 +1046,8 @@ class Modules
         Database::query($sql);
         $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks') . " WHERE modulename='$mostrecentmodule'";
         Database::query($sql);
-        invalidatedatacache('hook-' . $mostrecentmodule);
-        invalidatedatacache('module_prepare');
+        DataCache::invalidatedatacache('hook-' . $mostrecentmodule);
+        DataCache::invalidatedatacache('module_prepare');
     }
 
     /**
@@ -1062,8 +1066,8 @@ class Modules
         $sql = 'INSERT INTO ' . Database::prefix('module_event_hooks')
             . " (modulename, event_type, event_chance) VALUES ('" . $mostrecentmodule . "', '$type', '" . addslashes($chance) . "')";
         Database::query($sql);
-        invalidatedatacache("event-$type-0");
-        invalidatedatacache("event-$type-1");
+        DataCache::invalidatedatacache("event-$type-0");
+        DataCache::invalidatedatacache("event-$type-1");
     }
 
     /**
@@ -1079,8 +1083,8 @@ class Modules
         $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks')
             . " WHERE modulename='$mostrecentmodule' AND event_type='" . addslashes($type) . "'";
         Database::query($sql);
-        invalidatedatacache("event-$type-0");
-        invalidatedatacache("event-$type-1");
+        DataCache::invalidatedatacache("event-$type-0");
+        DataCache::invalidatedatacache("event-$type-1");
     }
 
     /**
@@ -1098,8 +1102,8 @@ class Modules
             . " WHERE modulename='$mostrecentmodule' AND location='" . addslashes($hookname)
             . "' AND hook_callback='" . addslashes($functioncall) . "'";
         Database::query($sql);
-        invalidatedatacache("hook-$hookname");
-        invalidatedatacache('module_prepare');
+        DataCache::invalidatedatacache("hook-$hookname");
+        DataCache::invalidatedatacache('module_prepare');
     }
 
     /**
@@ -1130,8 +1134,8 @@ class Modules
             . " (modulename,location,hook_callback,whenactive,priority) VALUES ('$mostrecentmodule','" . addslashes($hookname)
             . "','" . addslashes($functioncall) . "','" . addslashes($whenactive) . "','" . $priority . "')";
         Database::query($sql);
-        invalidatedatacache("hook-$hookname");
-        invalidatedatacache('module_prepare');
+        DataCache::invalidatedatacache("hook-$hookname");
+        DataCache::invalidatedatacache('module_prepare');
     }
 
     /**
@@ -1175,7 +1179,7 @@ class Modules
             $err    = ob_get_contents();
             ob_end_clean();
             if ($err > '') {
-                debug(['error' => $err, 'Eval code' => $row['event_chance']]);
+                Output::getInstance()->debug(['error' => $err, 'Eval code' => $row['event_chance']]);
             }
             if ($chance < 0) {
                 $chance = 0;

@@ -35,7 +35,7 @@ function db_num_rows($result)
 }
 function db_affected_rows($link = false)
 {
-    return Database::affectedRows($link);
+    return Database::affectedRows();
 }
 function db_pconnect($host, $user, $pass)
 {

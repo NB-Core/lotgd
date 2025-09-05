@@ -385,7 +385,7 @@ JS;
                     if (is_array($row[$key])) {
                         $checked = $row[$key][$optval] ? true : false;
                     } else {
-                        debug('You must pass an array as the value when using a checklist.');
+                        Output::getInstance()->debug('You must pass an array as the value when using a checklist.');
                         $checked = false;
                     }
                     $id = HTMLEntities("{$fieldId}-{$optval}", ENT_QUOTES, $charset);

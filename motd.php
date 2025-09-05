@@ -5,6 +5,7 @@ use Lotgd\Translator;
 use Lotgd\Commentary;
 use Lotgd\Accounts;
 use Lotgd\Output;
+use Lotgd\DataCache;
 
 // addnews ready
 // translator ready
@@ -38,7 +39,7 @@ if ($op == "vote") {
     Database::query($sql);
     $sql = "INSERT INTO " . Database::prefix("pollresults") . " (choice,account,motditem) VALUES ('$choice','{$session['user']['acctid']}','$motditem')";
     Database::query($sql);
-    invalidatedatacache("poll-$motditem");
+    DataCache::invalidatedatacache("poll-$motditem");
     header("Location: motd.php");
     exit();
 }

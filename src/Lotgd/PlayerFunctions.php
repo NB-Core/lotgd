@@ -12,6 +12,7 @@ use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\Output;
 
 class PlayerFunctions
 {
@@ -337,6 +338,7 @@ class PlayerFunctions
     public static function applyTempStat(string $name, int|float $value, string $type = 'add'): bool
     {
         global $session, $temp_user_stats;
+        $output = Output::getInstance();
         if ($type == 'add') {
             if (!isset($temp_user_stats['add'])) {
                 $temp_user_stats['add'] = [];
@@ -351,14 +353,14 @@ class PlayerFunctions
                 if (isset($session['user'][$name])) {
                     $session['user'][$name] += $value;
                 } else {
-                    debug("Temp stat $name is not supported to $type.");
+                    $output->debug("Temp stat $name is not supported to $type.");
                     unset($temp[$name]);
                     return false;
                 }
             }
             return true;
         }
-        debug("Temp stat type $type is not supported.");
+        $output->debug("Temp stat type $type is not supported.");
         return false;
     }
 

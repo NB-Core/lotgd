@@ -8,6 +8,7 @@ use Lotgd\Substitute;
 use Lotgd\Battle;
 use Lotgd\Mail;
 use Lotgd\Output;
+use Lotgd\DataCache;
 
 //addnews ready
 // mail ready
@@ -250,7 +251,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 }
             }
 
-            invalidatedatacache("list.php-warsonline");
+            DataCache::invalidatedatacache("list.php-warsonline");
 
             addnav("Navigation");
             villagenav();

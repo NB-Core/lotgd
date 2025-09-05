@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Settings;
+use Lotgd\Output;
 
 class PullUrl
 {
@@ -31,7 +32,7 @@ class PullUrl
         curl_setopt($ch, CURLOPT_TIMEOUT, $val);
         $ret = curl_exec($ch);
         if ($ret === false) {
-            debug(curl_error($ch));
+            Output::getInstance()->debug(curl_error($ch));
             curl_close($ch);
             return false;
         }
@@ -87,7 +88,7 @@ class PullUrl
         $info = stream_get_meta_data($f);
         fclose($f);
         if ($info['timed_out']) {
-            debug("Call to $url timed out!");
+            Output::getInstance()->debug("Call to $url timed out!");
             $done = false;
         }
         return $done;
@@ -107,20 +108,18 @@ class PullUrl
         if ($data !== false) {
             return $data;
         }
-
-        debug("file() failed for $url, trying curl()");
+        $output = Output::getInstance();
+        $output->debug("file() failed for $url, trying curl()");
         $data = self::curl($url);
         if ($data !== false) {
             return $data;
         }
-
-        debug("curl() failed for $url, trying socket connection");
+        $output->debug("curl() failed for $url, trying socket connection");
         $data = self::sock($url);
         if ($data !== false) {
             return $data;
         }
-
-        debug("Unable to fetch $url using available methods");
+        $output->debug("Unable to fetch $url using available methods");
         return false;
     }
 }
