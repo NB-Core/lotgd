@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Lotgd;
 use Lotgd\Settings;
-
 use Lotgd\DumpItem;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Translator;
+use Lotgd\Http;
+use Lotgd\DataCache;
 
 class Forms
 {
@@ -98,7 +99,7 @@ JS;
 JS;
         }
 
-        $switchscript = datacache('switchscript_comm' . rawurlencode($name));
+        $switchscript = DataCache::datacache('switchscript_comm' . rawurlencode($name));
 
         if (!$switchscript) {
             $colors = $output->getColors();
@@ -135,7 +136,7 @@ JS;
 </script>
 JS;
 
-            updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
+            DataCache::updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
         }
 
         $script .= $switchscript;
@@ -169,7 +170,7 @@ JS;
         $script .= "<div id='previewtext{$name}'></div>";
 
         if ($scriptOutput) {
-            rawoutput($script);
+            $output->rawOutput($script);
         }
 
         return $returnscript;
@@ -188,11 +189,12 @@ JS;
         $formSections = [];
         $returnvalues = [];
         $extensions = HookHandler::hook('showformextensions', []);
+        $output = Output::getInstance();
 
-        rawoutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
-        rawoutput("<div id='showFormSection$showform_id'></div>");
-        rawoutput("</td></tr><tr><td>&nbsp;</td></tr><tr><td>");
-        rawoutput("<table cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
+        $output->rawOutput("<div id='showFormSection$showform_id'></div>");
+        $output->rawOutput("</td></tr><tr><td>&nbsp;</td></tr><tr><td>");
+        $output->rawOutput("<table cellpadding='2' cellspacing='0'>");
 
         $i = 0;
         foreach ($layout as $key => $val) {
@@ -209,10 +211,10 @@ JS;
             );
         }
 
-        rawoutput("</table><br>", true);
+        $output->rawOutput("</table><br>");
 
         if ($showform_id == 1) {
-            $startIndex = (int) httppost('showFormTabIndex');
+            $startIndex = (int) Http::post('showFormTabIndex');
             if ($startIndex == 0) {
                 $startIndex = 1;
             }
@@ -224,12 +226,12 @@ JS;
             $session['user']['prefs']['tabconfig'] == 0;
         self::setupTabs($showform_id, $formSections, $startIndex, $tabDisabled);
 
-        rawoutput("</td></tr></table>");
+        $output->rawOutput("</td></tr></table>");
         Translator::getInstance()->setSchema('showform');
         $save = Translator::translateInline('Save');
         Translator::getInstance()->setSchema();
         if (!$nosave) {
-            rawoutput("<input type='submit' class='button' value='$save'>");
+            $output->rawOutput("<input type='submit' class='button' value='$save'>");
         }
 
         return $returnvalues;
@@ -263,28 +265,30 @@ JS;
         if (is_array($info[0])) {
             $info[0] = Translator::sprintfTranslate(...$info[0]);
         } else {
-            $info[0] = translate($info[0]);
+            $info[0] = Translator::translate($info[0]);
         }
 
         $info[1] = isset($info[1]) ? trim((string) $info[1]) : '';
 
+        $output = Output::getInstance();
+
         if ($info[1] == 'title') {
             $titleId++;
-            rawoutput('</table>');
+            $output->rawOutput('</table>');
             $formSections[$titleId] = $info[0];
-            rawoutput("<table id='showFormTable$titleId' cellpadding='2' cellspacing='0'>");
-            rawoutput("<tr><td colspan='2' class='trhead'>", true);
-            output_notl("`b%s`b", $info[0], true);
-            rawoutput('</td></tr>', true);
+            $output->rawOutput("<table id='showFormTable$titleId' cellpadding='2' cellspacing='0'>");
+            $output->rawOutput("<tr><td colspan='2' class='trhead'>");
+            $output->outputNotl("`b%s`b", $info[0], true);
+            $output->rawOutput('</td></tr>');
             $rowIndex = 0;
             return;
         }
 
         if ($info[1] == 'note') {
-            rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td colspan='2'>");
-            output_notl("`i%s`i", $info[0], true);
+            $output->rawOutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td colspan='2'>");
+            $output->outputNotl("`i%s`i", $info[0], true);
             $rowIndex++;
-            rawoutput('</td></tr>', true);
+            $output->rawOutput('</td></tr>');
             return;
         }
 
@@ -298,15 +302,15 @@ JS;
 
         $entityFieldId = HTMLEntities($fieldId, ENT_QUOTES, $charset);
 
-        rawoutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
-        rawoutput("<label for='$entityFieldId'>");
-        output_notl('%s', $info[0], true);
-        rawoutput("</label></td><td class='formfield-value' valign='top'>");
+        $output->rawOutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
+        $output->rawOutput("<label for='$entityFieldId'>");
+        $output->outputNotl('%s', $info[0], true);
+        $output->rawOutput("</label></td><td class='formfield-value' valign='top'>");
         $rowIndex++;
 
         self::renderField($keyout, $key, $info, $row, $returnvalues, $extensions, $fieldId, $entityFieldId);
 
-        rawoutput('</td></tr>', true);
+        $output->rawOutput('</td></tr>');
     }
 
     /**
@@ -319,35 +323,36 @@ JS;
         array $row,
         array &$returnvalues,
         array $extensions,
-        string $fieldId
+        string $fieldId,
+        string $entityId
     ): void {
         $pretrans = 0;
         $settings = Settings::getInstance();
         $charset  = $settings->getSetting('charset', 'UTF-8');
-        $entityId = HTMLEntities($fieldId, ENT_QUOTES, $charset);
+        $output   = Output::getInstance();
         switch ($info[1]) {
             case 'theme':
                 $skins = Template::getAvailableTemplates();
 
                 if (count($skins) == 0) {
-                    output('None available');
+                    $output->output('None available');
                     break;
                 }
 
                 asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
                 $current = Template::addTypePrefix($row[$key]);
 
-                rawoutput("<select id='$entityId' name='" . htmlentities($keyout, ENT_QUOTES, $charset) . "'>");
+                $output->rawOutput("<select id='$entityId' name='" . htmlentities($keyout, ENT_QUOTES, $charset) . "'>");
                 foreach ($skins as $skin => $display) {
                     $display = htmlentities($display, ENT_COMPAT, $charset);
                     $skinEsc = htmlentities($skin, ENT_QUOTES, $charset);
                     if ($skin == $current) {
-                        rawoutput("<option value='$skinEsc' selected>$display</option>");
+                        $output->rawOutput("<option value='$skinEsc' selected>$display</option>");
                     } else {
-                        rawoutput("<option value='$skinEsc'>$display</option>");
+                        $output->rawOutput("<option value='$skinEsc'>$display</option>");
                     }
                 }
-                rawoutput('</select>');
+                $output->rawOutput('</select>');
                 break;
 
             case 'location':
@@ -358,15 +363,15 @@ JS;
                 $vloc = HookHandler::hook('validlocation', $vloc);
                 unset($vloc['all']);
                 reset($vloc);
-                rawoutput("<select id='$entityId' name='$keyout'>");
+                $output->rawOutput("<select id='$entityId' name='$keyout'>");
                 foreach ($vloc as $loc => $val) {
                     if ($loc == $row[$key]) {
-                        rawoutput("<option value='$loc' selected>" . htmlentities($loc, ENT_COMPAT, $charset) . '</option>');
+                        $output->rawOutput("<option value='$loc' selected>" . htmlentities($loc, ENT_COMPAT, $charset) . '</option>');
                     } else {
-                        rawoutput("<option value='$loc'>" . htmlentities($loc, ENT_COMPAT, $charset) . '</option>');
+                        $output->rawOutput("<option value='$loc'>" . htmlentities($loc, ENT_COMPAT, $charset) . '</option>');
                     }
                 }
-                rawoutput('</select>');
+                $output->rawOutput('</select>');
                 break;
 
             case 'checkpretrans':
@@ -391,7 +396,7 @@ JS;
                     $id = HTMLEntities("{$fieldId}-{$optval}", ENT_QUOTES, $charset);
                     $select .= "<input id='$id' type='checkbox' name='{$keyout}[{$optval}]' value='1'" . ($checked ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
                 }
-                rawoutput($select);
+                $output->rawOutput($select);
                 break;
 
             case 'radiopretrans':
@@ -410,7 +415,7 @@ JS;
                     $id = HTMLEntities("{$fieldId}-{$optval}", ENT_QUOTES, $charset);
                     $select .= "<input id='$id' type='radio' name='$keyout' value='$optval'" . ($row[$key] == $optval ? ' checked' : '') . ">&nbsp;" . ($optdis) . '<br>';
                 }
-                rawoutput($select);
+                $output->rawOutput($select);
                 break;
 
             case 'dayrange':
@@ -418,18 +423,18 @@ JS;
                 $end = strtotime($info[2]);
                 $step = $info[3];
                 $cur = $row[$key];
-                rawoutput("<select id='$entityId' name='$keyout'>");
+                $output->rawOutput("<select id='$entityId' name='$keyout'>");
                 if ($cur && $cur < date('Y-m-d H:i:s', $start)) {
-                    rawoutput("<option value='$cur' selected>" . htmlentities($cur, ENT_COMPAT, $charset) . '</option>');
+                    $output->rawOutput("<option value='$cur' selected>" . htmlentities($cur, ENT_COMPAT, $charset) . '</option>');
                 }
                 for ($j = $start; $j < $end; $j = strtotime($step, $j)) {
                     $d = date('Y-m-d H:i:s', $j);
-                    rawoutput("<option value='$d'" . ($cur == $d ? ' selected' : '') . '>' . HTMLEntities("$d", ENT_COMPAT, $charset) . '</option>');
+                    $output->rawOutput("<option value='$d'" . ($cur == $d ? ' selected' : '') . '>' . HTMLEntities("$d", ENT_COMPAT, $charset) . '</option>');
                 }
                 if ($cur && $cur > date('Y-m-d H:i:s', $end)) {
-                    rawoutput("<option value='$cur' selected>" . htmlentities($cur, ENT_COMPAT, $charset) . '</option>');
+                    $output->rawOutput("<option value='$cur' selected>" . htmlentities($cur, ENT_COMPAT, $charset) . '</option>');
                 }
-                rawoutput('</select>');
+                $output->rawOutput('</select>');
                 break;
 
             case 'range':
@@ -439,14 +444,14 @@ JS;
                 if ($step == 0) {
                     $step = 1;
                 }
-                rawoutput("<select id='$entityId' name='$keyout'>");
+                $output->rawOutput("<select id='$entityId' name='$keyout'>");
                 if ($min < $max && ($max - $min) / $step > 300) {
                     $step = max(1, (int) (($max - $min) / 300));
                 }
                 for ($j = $min; $j <= $max; $j += $step) {
-                    rawoutput("<option value='$j'" . ((isset($row[$key]) ? $row[$key] : '') == $j ? ' selected' : '') . '>' . HTMLEntities("$j", ENT_COMPAT, $charset) . '</option>');
+                    $output->rawOutput("<option value='$j'" . ((isset($row[$key]) ? $row[$key] : '') == $j ? ' selected' : '') . '>' . HTMLEntities("$j", ENT_COMPAT, $charset) . '</option>');
                 }
-                rawoutput('</select>');
+                $output->rawOutput('</select>');
                 break;
 
             case 'floatrange':
@@ -456,12 +461,12 @@ JS;
                 if ($step == 0) {
                     $step = 1;
                 }
-                rawoutput("<select id='$entityId' name='$keyout'>", true);
+                $output->rawOutput("<select id='$entityId' name='$keyout'>");
                 $val = round((float) $row[$key], 2);
                 for ($j = $min; $j <= $max; $j = round($j + $step, 2)) {
-                    rawoutput("<option value='$j'" . ($val == $j ? ' selected' : '') . '>' . HTMLEntities("$j", ENT_COMPAT, $charset) . '</option>', true);
+                    $output->rawOutput("<option value='$j'" . ($val == $j ? ' selected' : '') . '>' . HTMLEntities("$j", ENT_COMPAT, $charset) . '</option>');
                 }
-                rawoutput('</select>', true);
+                $output->rawOutput('</select>');
                 break;
 
             case 'bitfieldpretrans':
@@ -472,10 +477,10 @@ JS;
                 array_shift($inf_list);
                 array_shift($inf_list);
                 $disablemask = array_shift($inf_list);
-                rawoutput("<input type='hidden' name='$keyout" . "[0]' value='1'>", true);
+                $output->rawOutput("<input type='hidden' name='$keyout" . "[0]' value='1'>");
                 while ($v = array_shift($inf_list)) {
                     $id = HTMLEntities("{$fieldId}-{$v}", ENT_QUOTES, $charset);
-                    rawoutput("<input id='$id' type='checkbox' name='$keyout" . "[$v]'" .
+                    $output->rawOutput("<input id='$id' type='checkbox' name='$keyout" . "[$v]'" .
                         ((int) $row[$key] & (int) $v ? ' checked' : '') .
                         ($disablemask & (int) $v ? '' : ' disabled') .
                         " value='1'> ");
@@ -483,7 +488,7 @@ JS;
                     if (!$pretrans) {
                         $v = Translator::translateInline($v);
                     }
-                    output_notl('%s`n', $v, true);
+                    $output->outputNotl('%s`n', $v, true);
                 }
                 break;
 
@@ -501,15 +506,15 @@ JS;
                 ];
                 Translator::getInstance()->setSchema('showform');
                 foreach ($vals as $k => $v) {
-                    $vals[$k] = translate($v);
-                    rawoutput(tlbutton_pop());
+                    $vals[$k] = Translator::translate($v);
+                    $output->rawOutput(Translator::tlbuttonPop());
                 }
                 Translator::getInstance()->setSchema();
-                rawoutput("<select id='$entityId' name='$keyout'>");
+                $output->rawOutput("<select id='$entityId' name='$keyout'>");
                 foreach ($vals as $k => $v) {
-                    rawoutput("<option value=\"" . htmlentities($v, ENT_COMPAT, $charset) . "\"" . ($row[$key] == $v ? ' selected' : '') . '>' . htmlentities($v, ENT_COMPAT, $charset) . '</option>');
+                    $output->rawOutput("<option value=\"" . htmlentities($v, ENT_COMPAT, $charset) . "\"" . ($row[$key] == $v ? ' selected' : '') . '>' . htmlentities($v, ENT_COMPAT, $charset) . '</option>');
                 }
-                rawoutput('</select>');
+                $output->rawOutput('</select>');
                 break;
 
             case 'enumpretrans':
@@ -535,12 +540,12 @@ JS;
                     $optval = '';
                 }
                 $select .= '</select>';
-                rawoutput($select);
+                $output->rawOutput($select);
                 break;
 
             case 'password':
                 $out = array_key_exists($key, $row) ? $row[$key] : '';
-                rawoutput("<input id='$entityId' type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, $charset) . "'>");
+                $output->rawOutput("<input id='$entityId' type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, $charset) . "'>");
                 break;
 
             case 'bool':
@@ -549,33 +554,33 @@ JS;
                 $no = Translator::translateInline('No');
                 $boolval = isset($row[$key]) ? $row[$key] : 0;
                 Translator::getInstance()->setSchema();
-                rawoutput("<select id='$entityId' name='$keyout'>");
-                rawoutput("<option value='0'" . ($boolval == 0 ? ' selected' : '') . ">$no</option>");
-                rawoutput("<option value='1'" . ($boolval == 1 ? ' selected' : '') . ">$yes</option>");
-                rawoutput('</select>', true);
+                $output->rawOutput("<select id='$entityId' name='$keyout'>");
+                $output->rawOutput("<option value='0'" . ($boolval == 0 ? ' selected' : '') . ">$no</option>");
+                $output->rawOutput("<option value='1'" . ($boolval == 1 ? ' selected' : '') . ">$yes</option>");
+                $output->rawOutput('</select>');
                 break;
 
             case 'checkbox':
                 $checked = !empty($row[$key]);
-                rawoutput("<input id='$entityId' type='checkbox' name='$keyout' value='1'" . ($checked ? ' checked' : '') . '>');
+                $output->rawOutput("<input id='$entityId' type='checkbox' name='$keyout' value='1'" . ($checked ? ' checked' : '') . '>');
                 break;
 
             case 'hidden':
-                rawoutput("<input id='$entityId' type='hidden' name='$keyout' value=\"" . HTMLEntities($row[$key], ENT_COMPAT, $charset) . "\">" . HTMLEntities($row[$key], ENT_COMPAT, $charset));
+                $output->rawOutput("<input id='$entityId' type='hidden' name='$keyout' value=\"" . HTMLEntities($row[$key], ENT_COMPAT, $charset) . "\">" . HTMLEntities($row[$key], ENT_COMPAT, $charset));
                 break;
 
             case 'viewonly':
                 unset($returnvalues[$key]);
                 if (isset($row[$key])) {
-                    output_notl(DumpItem::dump($row[$key]), true);
+                    $output->outputNotl(DumpItem::dump($row[$key]), true);
                 }
                 break;
 
             case 'viewhiddenonly':
                 if (isset($row[$key])) {
                     $row[$key] = (string) $row[$key];
-                    output_notl(DumpItem::dump($row[$key]), true);
-                    rawoutput("<input id='$entityId' type='hidden' name='" . addslashes($key) . "' value='" . addslashes($row[$key]) . "'>");
+                    $output->outputNotl(DumpItem::dump($row[$key]), true);
+                    $output->rawOutput("<input id='$entityId' type='hidden' name='" . addslashes($key) . "' value='" . addslashes($row[$key]) . "'>");
                 }
                 break;
 
@@ -595,23 +600,23 @@ JS;
                     $text = str_replace('`n', "\n", $text);
                 }
                 if (isset($resize) && $resize) {
-                    rawoutput("<script type=\"text/javascript\">function increase(target, value){  if (target.rows + value > 3 && target.rows + value < 50) target.rows = target.rows + value;}</script>");
-                    rawoutput("<script type=\"text/javascript\">function cincrease(target, value){  if (target.cols + value > 3 && target.cols + value < 150) target.cols = target.cols + value;}</script>");
-                    rawoutput("<input type='button' onClick=\"increase(document.getElementById('$entityId'),1);\" value='+' accesskey='+'><input type='button' onClick=\"increase(document.getElementById('$entityId'),-1);\" value='-' accesskey='-'>");
-                    rawoutput("<input type='button' onClick=\"cincrease(document.getElementById('$entityId'),-1);\" value='<-'><input type='button' onClick=\"cincrease(document.getElementById('$entityId'),1);\" value='->' accesskey='-'><br>");
-                rawoutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, $charset) . '</textarea>');
+                    $output->rawOutput("<script type=\"text/javascript\">function increase(target, value){  if (target.rows + value > 3 && target.rows + value < 50) target.rows = target.rows + value;}</script>");
+                    $output->rawOutput("<script type=\"text/javascript\">function cincrease(target, value){  if (target.cols + value > 3 && target.cols + value < 150) target.cols = target.cols + value;}</script>");
+                    $output->rawOutput("<input type='button' onClick=\"increase(document.getElementById('$entityId'),1);\" value='+' accesskey='+'><input type='button' onClick=\"increase(document.getElementById('$entityId'),-1);\" value='-' accesskey='-'>");
+                    $output->rawOutput("<input type='button' onClick=\"cincrease(document.getElementById('$entityId'),-1);\" value='<-'><input type='button' onClick=\"cincrease(document.getElementById('$entityId'),1);\" value='->' accesskey='-'><br>");
+                $output->rawOutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, $charset) . '</textarea>');
                 } else {
-                    rawoutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, $charset) . '</textarea>');
+                    $output->rawOutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, $charset) . '</textarea>');
                 }
                 break;
 
             case 'int':
                 $out = (string) (array_key_exists($key, $row) ? $row[$key] : 0);
-                rawoutput("<input id='$entityId' name='$keyout' value=\"" . HTMLEntities($out, ENT_COMPAT, $charset) . "\" size='5'>");
+                $output->rawOutput("<input id='$entityId' name='$keyout' value=\"" . HTMLEntities($out, ENT_COMPAT, $charset) . "\" size='5'>");
                 break;
 
             case 'float':
-                rawoutput("<input id='$entityId' name='$keyout' value=\"" . htmlentities($row[$key], ENT_COMPAT, $charset) . "\" size='8'>");
+                $output->rawOutput("<input id='$entityId' name='$keyout' value=\"" . htmlentities($row[$key], ENT_COMPAT, $charset) . "\" size='8'>");
                 break;
 
             case 'string':
@@ -627,7 +632,7 @@ JS;
                     $minlen = 70;
                 }
                 $val = array_key_exists($key, $row) ? $row[$key] : '';
-                rawoutput("<input id='$entityId' size='$minlen' maxlength='$len' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, $charset) . "\">");
+                $output->rawOutput("<input id='$entityId' size='$minlen' maxlength='$len' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, $charset) . "\">");
                 break;
 
             default:
@@ -640,7 +645,7 @@ JS;
                     if (!is_string($val)) {
                         $val = (string) $val;
                     }
-                    rawoutput("<input id='$entityId' size='50' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, $charset) . "\">");
+                    $output->rawOutput("<input id='$entityId' size='50' name='$keyout' value=\"" . HTMLEntities($val, ENT_COMPAT, $charset) . "\">");
                 }
         }
     }
@@ -654,8 +659,10 @@ JS;
             return;
         }
 
+        $output = Output::getInstance();
+
         if ($formId == 1) {
-            rawoutput(
+            $output->rawOutput(
                 "<script language='JavaScript'>
                 function prepare_form(id){
                     var theTable;
@@ -704,9 +711,9 @@ JS;
             );
         }
 
-        rawoutput("<script language='JavaScript'>");
+        $output->rawOutput("<script language='JavaScript'>");
         $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        rawoutput("formSections[$formId] = JSON.parse('$encodedSections');");
-        rawoutput("prepare_form($formId);</script>");
+        $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
+        $output->rawOutput("prepare_form($formId);</script>");
     }
 }

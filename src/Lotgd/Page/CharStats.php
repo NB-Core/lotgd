@@ -10,7 +10,6 @@ use Lotgd\Translator;
 use Lotgd\PlayerFunctions;
 use Lotgd\Buffs;
 use Lotgd\DateTime;
-use Lotgd\Datacache;
 
 class CharStats
 {

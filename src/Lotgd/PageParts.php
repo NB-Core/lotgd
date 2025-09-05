@@ -25,10 +25,11 @@ use Lotgd\Sanitize;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Settings;
-
 use Lotgd\Output;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\DataCache;
+use Lotgd\Http;
 
 class PageParts
 {
@@ -407,7 +408,7 @@ class PageParts
             $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
             $cacheMinutes = $mode === 2 ? $minutesSetting : (int) ceil($loginTimeout / 60);
             $cacheKey = "charlisthomepage-$mode-$cacheMinutes";
-            if ($ret = Datacache::datacache($cacheKey)) {
+            if ($ret = DataCache::datacache($cacheKey)) {
             } else {
                 $onlinecount = 0;
                 $list = HookHandler::hook("onlinecharlist", array("count" => 0, "list" => ""));
@@ -448,7 +449,7 @@ class PageParts
                 $settings->saveSetting("OnlineCount", $onlinecount);
                 $settings->saveSetting("OnlineCountLast", strtotime("now"));
             }
-                Datacache::updatedatacache($cacheKey, $ret);
+                DataCache::updatedatacache($cacheKey, $ret);
             }
             return $ret;
         }
@@ -728,14 +729,14 @@ class PageParts
             $admin_array = array();
             if ($session['user']['superuser'] & SU_EDIT_USERS) {
                 $admin_array[] = "<a href='user.php'>$ued</a>";
-                addnav('', 'user.php');
+                Nav::add('', 'user.php');
             }
             if ($session['user']['superuser'] & SU_MANAGE_MODULES) {
                 $admin_array[] = "<a href='modules.php'>$mod</a>";
-                addnav('', 'modules.php');
+                Nav::add('', 'modules.php');
             }
             $admin_array[] = "<a href='viewpetition.php'>$pet</a>";
-            addnav('', 'viewpetition.php');
+            Nav::add('', 'viewpetition.php');
             $p = implode('|', $admin_array);
             $pcolors = array('`$','`^','`6','`!','`#','`%','`v');
             $pets = '`n';
@@ -780,7 +781,7 @@ class PageParts
     {
         // Gather module hook results for footer replacements
         $replacementbits = HookHandler::hook("footer-$script", []);
-        if ($script == 'runmodule' && (($module = httpget('module'))) > '') {
+        if ($script == 'runmodule' && (($module = Http::get('module'))) > '') {
             $replacementbits = HookHandler::hook("footer-$module", $replacementbits);
         }
         $replacementbits['__scriptfile__'] = $script;
