@@ -3,13 +3,21 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+
 use Lotgd\Settings;
+use Lotgd\Nav as Navigation;
+use Lotgd\Output;
+use Lotgd\Translator;
+use Lotgd\Sanitize;
+use Lotgd\Http;
+use Lotgd\DataCache;
+use Lotgd\DateTime;
+use Lotgd\Censor;
+use Lotgd\Redirect;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
-use Lotgd\Translator;
-use Lotgd\Output;
 
 class Commentary
 {
@@ -61,15 +69,17 @@ class Commentary
     {
         global $session, $emptypost;
 
+        $output = Output::getInstance();
+
         // Gather request parameters
-        $section = (string)httppost('section');
-        $talkline = (string)httppost('talkline');
-        $schema = (string)httppost('schema');
-        $comment = trim((string) httppost('insertcommentary'));
-        $counter = (int)httppost('counter');
-        $removeId = (int) URLDecode((string) httpget('removecomment'));
-        $returnPath = (string)httpget('returnpath');
-        $sectionFromUrl = (string)httpget('section');
+        $section = (string)Http::post('section');
+        $talkline = (string)Http::post('talkline');
+        $schema = (string)Http::post('schema');
+        $comment = trim((string) Http::post('insertcommentary'));
+        $counter = (int)Http::post('counter');
+        $removeId = (int) URLDecode((string) Http::get('removecomment'));
+        $returnPath = (string)Http::get('returnpath');
+        $sectionFromUrl = (string)Http::get('section');
         $rawSectionFromUrl = rawurldecode($sectionFromUrl);
 
         // Handle comment removal request
@@ -83,7 +93,7 @@ class Commentary
         if (array_key_exists('commentcounter', $session) && $session['commentcounter'] == $counter) {
             // Ensure there is data to process
             if ($section || $talkline || $comment) {
-                $tcom = color_sanitize($comment);
+                $tcom = Sanitize::colorSanitize($comment);
 
                 // Ignore empty or trivial posts
                 if ($tcom == '' || $tcom == ':' || $tcom == '::' || $tcom == '/me') {
@@ -91,8 +101,8 @@ class Commentary
                 } else {
                     // Check that the form section matches the URL section
                     if ($rawSectionFromUrl != $section) {
-                        output('`$Please post in the section you should!');
-                        debug($rawSectionFromUrl . "-" . $section);
+                        $output->output('`$Please post in the section you should!');
+                        $output->debug($rawSectionFromUrl . "-" . $section);
                     } else {
                         // Valid comment, inject into the database
                         self::injectCommentary($section, $talkline, $comment, $schema);
@@ -148,17 +158,17 @@ WHERE commentid = {$removeId}             -- by comment identifier
 SQL;
         Database::query($sql);
 
-        invalidatedatacache("comments-$section");
-        invalidatedatacache('comments-or11');
+        DataCache::invalidatedatacache("comments-$section");
+        DataCache::invalidatedatacache('comments-or11');
         $session['user']['specialinc'] == '';
 
-        $returnPath = cmd_sanitize($returnPath);
+        $returnPath = Sanitize::cmdSanitize($returnPath);
         $returnPath = basename($returnPath);
         if (strpos($returnPath, '?') === false && strpos($returnPath, '&') !== false) {
             $x = strpos($returnPath, '&');
             $returnPath = mb_substr($returnPath, 0, $x - 1) . '?' . mb_substr($returnPath, $x + 1);
         }
-        redirect($returnPath);
+        Redirect::redirect($returnPath);
     }
 
 
@@ -180,8 +190,8 @@ SQL;
     {
         $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'" . Database::escape($comment) . "')";
         Database::query($sql);
-        invalidatedatacache("comments-{$section}");
-        invalidatedatacache('comments-or11');
+        DataCache::invalidatedatacache("comments-{$section}");
+        DataCache::invalidatedatacache('comments-or11');
     }
 
     /**
@@ -196,13 +206,15 @@ SQL;
     {
         global $session, $doublepost;
 
+        $translator = Translator::getInstance();
+
         // Use the current translation namespace when no schema is provided
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
 
         $comment = stripslashes($comment);
-        Translator::getInstance()->setSchema('commentary');
+        $translator->setSchema('commentary');
         $doublepost = 0;
 
         if ($comment === '') {
@@ -233,7 +245,7 @@ SQL;
             $doublepost = self::persistComment($result, $commentary, $authorId, $section);
         }
 
-        Translator::getInstance()->setSchema();
+        $translator->setSchema();
     }
 
     /**
@@ -244,7 +256,7 @@ SQL;
      */
     private static function sanitizeComment(string $comment): string
     {
-        $commentary = str_replace('`n', '', soap($comment));
+        $commentary = str_replace('`n', '', Censor::soap($comment));
         $colorcount = 0;
         $length = strlen($commentary);
 
@@ -252,7 +264,7 @@ SQL;
             if (mb_substr($commentary, $x, 1) === '`') {
                 $colorcount++;
                 if ($colorcount >= Settings::getInstance()->getSetting('maxcolors', 10)) {
-                    $commentary = mb_substr($commentary, 0, $x) . color_sanitize(mb_substr($commentary, $x));
+                    $commentary = mb_substr($commentary, 0, $x) . Sanitize::colorSanitize(mb_substr($commentary, $x));
                     break;
                 }
 
@@ -270,14 +282,15 @@ SQL;
      */
     private static function applyHooks(string $section, string $commentary, string $talkline, $schema): array
     {
+        $translator = Translator::getInstance();
         $args = ['section' => $section, 'commentline' => $commentary, 'commenttalk' => $talkline];
         $args = HookHandler::hook('commentary', $args);
         $commentary = $args['commentline'];
         $talkline = $args['commenttalk'];
 
-        Translator::getInstance()->setSchema($schema);
+        $translator->setSchema($schema);
         $talkline = Translator::translateInline($talkline);
-        Translator::getInstance()->setSchema();
+        $translator->setSchema();
 
         if (Settings::getInstance()->getSetting('soap', 1)) {
             $commentary = mb_ereg_replace("'([^[:space:]]{45,45})([^[:space:]])'", '\\1 \\2', $commentary);
@@ -454,12 +467,14 @@ SQL;
      */
     public static function commentDisplay(string $intro, string $section, string $message = 'Interject your own commentary?', int $limit = 10, string $talkline = 'says', $schema = false): void
     {
+        $output = Output::getInstance();
+
         $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
         if (isset($args['block']) && ($args['block'] == 'yes')) {
             return;
         }
         if ($intro) {
-            output($intro);
+            $output->output($intro);
         }
         self::viewCommentary($section, $message, $limit, $talkline, $schema);
     }
@@ -478,6 +493,9 @@ SQL;
         $scriptname_pre = false
     ): ?string {
         global $session, $REQUEST_URI, $doublepost, $emptypost;
+        
+        $output = Output::getInstance();
+        $translator = Translator::getInstance();
 
         // The guard for null is removed as $section is declared as string and cannot be null.
 
@@ -498,19 +516,19 @@ SQL;
         $session['last_comment_scriptname'] = $scriptname;
 
         // Capture pagination request parameter
-        $comscroll = httpget('comscroll');
+        $comscroll = Http::get('comscroll');
 
-        rawoutput("<div id='$section-comment'>");
+        $output->rawOutput("<div id='$section-comment'>");
         if ($returnastext !== false) {
             $oldoutput = Output::getInstance();
             $ref = new \ReflectionClass(Output::class);
             $prop = $ref->getProperty('instance');
             $prop->setAccessible(true);
-            $prop->setValue(null, new output_collector());
+            $prop->setValue(null, new Output());
             $collector = Output::getInstance();
         }
 
-        rawoutput("<a name='$section'></a>");
+        $output->rawOutput("<a name='$section'></a>");
 
         $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
         if (isset($args['block']) && ($args['block'] == 'yes')) {
@@ -520,7 +538,7 @@ SQL;
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
-        Translator::getInstance()->setSchema('commentary');
+        $translator->setSchema('commentary');
 
         $nobios = ['motd' => true];
         if (!array_key_exists($scriptname, $nobios)) {
@@ -533,10 +551,10 @@ SQL;
         }
 
         if ($doublepost) {
-            output("`$`bDouble post?`b`0`n");
+            $output->output("`$`bDouble post?`b`0`n");
         }
         if ($emptypost) {
-            output("`$`bWell, they say silence is a virtue.`b`0`n");
+            $output->output("`$`bWell, they say silence is a virtue.`b`0`n");
         }
 
         // Determine pagination data and fetch comments
@@ -550,6 +568,10 @@ SQL;
 
         $is_gm = ($session['user']['superuser'] & SU_IS_GAMEMASTER ? 1 : 0);
         $gm_array = [];
+
+        $commentids = [];
+        $auth = [];
+        $op = [];
 
         $counttoday = 0;
         for ($i = 0; $i < $rowcount; $i++) {
@@ -586,7 +608,7 @@ SQL;
             $out = '';
             if ($editrights || in_array($i, $gm_array)) {
                 $out .= "`2[<a href='" . $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return) . "'>$del</a>`2]`0&nbsp;";
-                addnav('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
+                Navigation::add('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
             }
             $out .= $op[$i];
             if (!array_key_exists($sect, $outputcomments) || !is_array($outputcomments[$sect])) {
@@ -605,8 +627,8 @@ SQL;
                 if ($needclose) {
                     HookHandler::hook('}collapse');
                 }
-                output_notl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
-                addnav('', "moderate.php?area=$sec");
+                $output->outputNotl("`n<hr><a href='moderate.php?area=%s'>`b`^%s`0`b</a>`n", $sec, isset($sections[$sec]) ? $sections[$sec] : "($sec)", true);
+                Navigation::add('', "moderate.php?area=$sec");
                 HookHandler::hook('collapse{', ['name' => 'com-' . $sec]);
                 $needclose = 1;
             } else {
@@ -618,7 +640,7 @@ SQL;
                 $args = ['commentline' => $val];
                 $args = HookHandler::hook('viewcommentary', $args);
                 $val = $args['commentline'];
-                output_notl($val, true);
+                $output->outputNotl($val, true);
             }
         }
 
@@ -627,13 +649,13 @@ SQL;
             $prop->setValue(null, $oldoutput);
             return $collected;
         }
-        rawoutput('</div>');
-        rawoutput("<div id='$section-talkline'>");
+        $output->rawOutput('</div>');
+        $output->rawOutput("<div id='$section-talkline'>");
 
         if ($session['user']['loggedin'] && !$viewonly) {
             self::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
         }
-        rawoutput("</div><div id='$section-nav'>");
+        $output->rawOutput("</div><div id='$section-nav'>");
         $jump = false;
         if (!isset($session['user']['prefs']['nojump']) || $session['user']['prefs']['nojump'] == false) {
             $jump = true;
@@ -654,7 +676,7 @@ SQL;
             $val = Database::fetchAssoc($r);
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
-                $first = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($val);
+                $first = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($val);
                 $first = str_replace('?&', '?', $first);
                 if (!strpos($first, '?')) {
                     $first = str_replace('&', '?', $first);
@@ -663,12 +685,12 @@ SQL;
                 if ($jump) {
                     $first .= "#$section";
                 }
-                output_notl("<a href=\"$first\">$firstu</a>", true);
-                addnav('', $first);
+                $output->outputNotl("<a href=\"$first\">$firstu</a>", true);
+                Navigation::add('', $first);
             } else {
-                output_notl($firstu, true);
+                $output->outputNotl($firstu, true);
             }
-            $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
+            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com + 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -677,23 +699,23 @@ SQL;
             if ($jump) {
                 $req .= "#$section";
             }
-            output_notl("<a href=\"$req\">$prev</a>", true);
-            addnav('', $req);
+            $output->outputNotl("<a href=\"$req\">$prev</a>", true);
+            Navigation::add('', $req);
         } else {
-            output_notl("$firstu $prev", true);
+            $output->outputNotl("$firstu $prev", true);
         }
-        $last = appendlink(comscroll_sanitize($REQUEST_URI), 'refresh=1');
+        $last = Navigation::appendLink(Sanitize::comscrollSanitize($REQUEST_URI), 'refresh=1');
 
-        $last = appendcount($last);
+        $last = Navigation::appendCount($last);
 
         $last = str_replace('?&', '?', $last);
         if ($jump) {
             $last .= "#$section";
         }
-        output_notl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
-        addnav('', $last);
+        $output->outputNotl("&nbsp;<a href=\"$last\">$ref</a>&nbsp;", true);
+        Navigation::add('', $last);
         if ($com > 0 || ($cid > 0 && $newadded > $limit)) {
-            $req = comscroll_sanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
+            $req = Sanitize::comscrollSanitize($REQUEST_URI) . '&comscroll=' . ($com - 1);
             $req = str_replace('?&', '?', $req);
             if (!strpos($req, '?')) {
                 $req = str_replace('&', '?', $req);
@@ -702,17 +724,17 @@ SQL;
             if ($jump) {
                 $req .= "#$section";
             }
-            output_notl(" <a href=\"$req\">$next</a>", true);
-            addnav('', $req);
-            output_notl(" <a href=\"$last\">$lastu</a>", true);
+            $output->outputNotl(" <a href=\"$req\">$next</a>", true);
+            Navigation::add('', $req);
+            $output->outputNotl(" <a href=\"$last\">$lastu</a>", true);
         } else {
-            output_notl("$next $lastu", true);
+            $output->outputNotl("$next $lastu", true);
         }
-        Translator::getInstance()->setSchema();
+        $translator->setSchema();
         if ($needclose) {
             HookHandler::hook('}collapse');
         }
-        rawoutput('</div>');
+        $output->rawOutput('</div>');
         return null;
     }
 
@@ -730,7 +752,7 @@ SQL;
         global $session;
 
         $realRequestUri = self::determineReturnUrl();
-        $row['comment'] = sanitize_mb(comment_sanitize($row['comment']));
+        $row['comment'] = Sanitize::sanitizeMb(Sanitize::commentSanitize($row['comment']));
         $ft = self::parseCommandPrefix($row['comment']);
         $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($realRequestUri);
 
@@ -751,7 +773,7 @@ SQL;
             $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', (int) $time);
             $op = $s . $op;
         } elseif ($session['user']['prefs']['timestamp'] == 2) {
-            $s = reltime(strtotime($row['postdate']));
+            $s = DateTime::relTime(strtotime($row['postdate']));
             $op = "`7($s)`0 " . $op;
         }
 
@@ -759,7 +781,7 @@ SQL;
             $op = "<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> " . $op;
         }
 
-        addnav('', $link);
+        Navigation::add('', $link);
 
         return $op;
     }
@@ -891,12 +913,14 @@ SQL;
     {
         global $session;
 
+        $output = Output::getInstance();
+
         $args = HookHandler::hook("insertcomment", array("section" => $section));
         if (
             array_key_exists("mute", $args) && $args['mute'] &&
                         !($session['user']['superuser'] & SU_EDIT_COMMENTS)
         ) {
-                output_notl("%s", $args['mutemsg']);
+                $output->outputNotl("%s", $args['mutemsg']);
         } elseif (
             $counttoday < ($limit / 2)
                         || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO)
@@ -905,13 +929,13 @@ SQL;
         ) {
             if ($message != "X") {
                     $message = "`n`@$message`n";
-                    output($message);
+                    $output->output($message);
                     self::talkForm($section, $talkline, $limit, $schema);
             }
         } else {
                 $message = "`n`@$message`n";
-                output($message);
-                output("Sorry, you've exhausted your posts in this section for now.`0`n");
+                $output->output($message);
+                $output->output("Sorry, you've exhausted your posts in this section for now.`0`n");
         }
     }
 
@@ -920,11 +944,15 @@ SQL;
      */
     public static function talkForm(string $section, string $talkline, int $limit = 10, $schema = false)
     {
-        global $REQUEST_URI,$session;
+        global $REQUEST_URI, $session;
+
+        $output = Output::getInstance();
+        $translator = Translator::getInstance();
+
         if ($schema === false) {
             $schema = Translator::getNamespace();
         }
-        Translator::getInstance()->setSchema("commentary");
+        $translator->setSchema("commentary");
 
         $settings = Settings::getInstance();
 
@@ -944,9 +972,9 @@ SQL;
             }
             if (round($limit / 2, 0) - $counttoday <= 0 && $settings->getSetting('postinglimit', 1)) {
                 if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
-                        output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
+                        $output->output("`n`)(You'd be out of posts if you weren't a superuser or moderator.)`n");
                 } else {
-                        output("`n`)(You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.)`n");
+                        $output->output("`n`)(You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.)`n");
                         return false;
                 }
             }
@@ -956,7 +984,7 @@ SQL;
         } else {
             $tll = 0;
         }
-        $req = comscroll_sanitize($REQUEST_URI) . "&comment=1";
+        $req = Sanitize::comscrollSanitize($REQUEST_URI) . "&comment=1";
         if (strpos($req, "?") === false) {
             $req = str_replace("&", "?", $req);
         }
@@ -967,8 +995,8 @@ SQL;
         if ($jump) {
                 $req .= "#$section";
         }
-        addnav("", $req);
-        output_notl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
+        Navigation::add("", $req);
+        $output->outputNotl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
 
         Forms::previewfield(
             "insertcommentary",
@@ -980,27 +1008,27 @@ SQL;
                 "maxlength" => $settings->getSetting('maxchars', 200) - $tll,
             ]
         );
-        rawoutput("<input type='hidden' name='talkline' value='$talkline'>");
-        rawoutput("<input type='hidden' name='schema' value='$schema'>");
-        rawoutput("<input type='hidden' name='counter' value='{$session['counter']}'>");
+        $output->rawOutput("<input type='hidden' name='talkline' value='$talkline'>");
+        $output->rawOutput("<input type='hidden' name='schema' value='$schema'>");
+        $output->rawOutput("<input type='hidden' name='counter' value='{$session['counter']}'>");
         $session['commentcounter'] = $session['counter'];
         if ($section == "X") {
                 $vname = $settings->getSetting("villagename", LOCATION_FIELDS);
                 $iname = $settings->getSetting("innname", LOCATION_INN);
                 $sections = self::commentaryLocs();
                 reset($sections);
-                output_notl("<select name='section'>", true);
+                $output->outputNotl("<select name='section'>", true);
             foreach ($sections as $key => $val) {
-                    output_notl("<option value='$key'>$val</option>", true);
+                    $output->outputNotl("<option value='$key'>$val</option>", true);
             }
-                output_notl("</select>", true);
+                $output->outputNotl("</select>", true);
         } else {
-                output_notl("<input type='hidden' name='section' value='$section'>", true);
+                $output->outputNotl("<input type='hidden' name='section' value='$section'>", true);
         }
         if (round($limit / 2, 0) - $counttoday < 3 && $settings->getSetting('postinglimit', 1)) {
-                output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
+                $output->output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
         }
-        rawoutput("<div id='previewtext'></div></form>");
-        Translator::getInstance()->setSchema();
+        $output->rawOutput("<div id='previewtext'></div></form>");
+        $translator->setSchema();
     }
 }
