@@ -16,6 +16,96 @@ use Lotgd\Modules\HookHandler;
 class Template
 {
     /**
+     * Singleton instance.
+     */
+    private static ?self $instance = null;
+
+    /**
+     * Parsed template sections.
+     *
+     * @var array<string,string>
+     */
+    private array $template = [];
+
+    /**
+     * Currently active template name.
+     */
+    private string $templateName = '';
+
+    /**
+     * Message related to the template (currently unused).
+     */
+    private string $templateMessage = '';
+
+    private function __construct()
+    {
+    }
+
+    /**
+     * Retrieve the singleton instance.
+     */
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+
+        return self::$instance;
+    }
+
+    /**
+     * Get parsed template sections.
+     *
+     * @return array<string,string>
+     */
+    public function getTemplate(): array
+    {
+        return $this->template;
+    }
+
+    /**
+     * Set parsed template sections.
+     *
+     * @param array<string,string> $template
+     */
+    public function setTemplate(array $template): void
+    {
+        $this->template = $template;
+    }
+
+    /**
+     * Get the current template name.
+     */
+    public function getTemplateName(): string
+    {
+        return $this->templateName;
+    }
+
+    /**
+     * Set the current template name.
+     */
+    public function setTemplateName(string $name): void
+    {
+        $this->templateName = $name;
+    }
+
+    /**
+     * Get template message.
+     */
+    public function getTemplateMessage(): string
+    {
+        return $this->templateMessage;
+    }
+
+    /**
+     * Set template message.
+     */
+    public function setTemplateMessage(string $message): void
+    {
+        $this->templateMessage = $message;
+    }
+
+    /**
      * Replace placeholders within a template section.
      *
      * @param string      $itemname Template section name
@@ -33,8 +123,7 @@ class Template
             }
         }
 
-        global $template;
-        $template = $template ?? [];
+        $template = self::getInstance()->getTemplate();
         if (!isset($template[$itemname])) {
             // If the template part is not found, it's usually not a bad thing. So comment in if you have issues with missing template parts.
             // output("`bWarning:`b The `i%s`i template part was not found!`n", $itemname);
@@ -76,7 +165,6 @@ class Template
             define('TEMPLATE_IS_PREPARED', true);
         }
 
-        global $templatename, $templatemessage, $template, $session, $y, $z, $y2, $z2, $copyright, $lc, $x, $templatetags;
         $templatename = '';
         $templateType = '';
         $templatemessage = '';
@@ -104,17 +192,21 @@ class Template
             }
         }
 
+        $instance = self::getInstance();
+        $instance->setTemplateName($templatename);
+        $instance->setTemplateMessage($templatemessage);
+
         if ($templateType === 'twig' || is_dir("templates_twig/$templatename")) {
             // Initialize Twig environment for Twig templates
             $cachePath = $settings instanceof Settings
                 ? $settings->getSetting('datacachepath', '/tmp')
                 : '/tmp';
             TwigTemplate::init($templatename, $cachePath);
-            $template = [];
+            $instance->setTemplate([]);
         } else {
             // Load legacy template
             TwigTemplate::deactivate();
-            $template = self::loadTemplate($templatename);
+            $instance->setTemplate(self::loadTemplate($templatename));
         }
     }
 
