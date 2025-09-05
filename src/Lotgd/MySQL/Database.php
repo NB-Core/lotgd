@@ -141,12 +141,15 @@ class Database
             $affected = self::getInstance()->affectedRows();
         }
 
-        $settings = Settings::getInstance();
-        $charset  = $settings->getSetting('charset', 'UTF-8');
+        $charset  = 'UTF-8';
+        $settings = null;
+
         if (!$r && $die === true) {
             if (defined('IS_INSTALLER') && IS_INSTALLER) {
                 return [];
             }
+            $settings ??= Settings::getInstance();
+            $charset = $settings->getSetting('charset', 'UTF-8');
             if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEVELOPER)) {
                 die("<pre>" . HTMLEntities($sql, ENT_COMPAT, $charset) . '</pre>' . self::error() . Backtrace::show());
             }
@@ -158,6 +161,8 @@ class Database
             if (strlen($s) > 800) {
                 $s = substr($s, 0, 400) . ' ... ' . substr($s, strlen($s) - 400);
             }
+            $settings ??= Settings::getInstance();
+            $charset = $settings->getSetting('charset', 'UTF-8');
             Output::getInstance()->debug('Slow Query (' . round($endtime - $starttime, 2) . 's): ' . HTMLEntities($s, ENT_COMPAT, $charset) . '`n');
         }
         unset(self::$dbinfo['affected_rows']);
