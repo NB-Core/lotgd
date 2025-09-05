@@ -9,6 +9,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\Output;
 
 class Commentary
 {
@@ -49,7 +50,7 @@ class Commentary
         }
         $translator->setSchema();
         self::$comsecs = HookHandler::hook('moderate', self::$comsecs);
-        rawoutput(tlbutton_clear());
+        Output::getInstance()->rawOutput(Translator::clearButton());
         return self::$comsecs;
     }
 

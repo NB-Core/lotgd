@@ -15,8 +15,10 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
+use Lotgd\Output;
 
 require_once("common.php");
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema("list");
 
@@ -118,7 +120,7 @@ if ($page == "" && $op == "") {
     } else {
         $title = Translator::getInstance()->sprintfTranslate("Warriors of the realm");
     }
-    $output->rawOutput(tlbutton_clear());
+    $output->rawOutput(Translator::clearButton());
     $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
     $result = Database::query($sql);
 }

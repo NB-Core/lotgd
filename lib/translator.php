@@ -34,10 +34,6 @@ function tlbutton_pop()
 {
     return Translator::tlbuttonPop();
 }
-function tlbutton_clear()
-{
-    return Translator::tlbuttonClear();
-}
 function enable_translation($enable = true)
 {
     return Translator::enableTranslation($enable);

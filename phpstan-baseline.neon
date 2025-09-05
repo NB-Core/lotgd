@@ -67,7 +67,7 @@ parameters:
 
 		-
 			message: "#^Function rawoutput not found\\.$#"
-			count: 11
+			count: 10
 			path: src/Lotgd/Commentary.php
 
 		-
@@ -87,11 +87,6 @@ parameters:
 
 		-
 			message: "#^Function soap not found\\.$#"
-			count: 1
-			path: src/Lotgd/Commentary.php
-
-		-
-			message: "#^Function tlbutton_clear not found\\.$#"
 			count: 1
 			path: src/Lotgd/Commentary.php
 

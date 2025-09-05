@@ -15,8 +15,10 @@ use Lotgd\Modules;
 use Lotgd\Nav\VillageNav;
 use Lotgd\ForcedNavigation;
 use Lotgd\DateTime;
+use Lotgd\Output;
 
 require_once("common.php");
+$output = Output::getInstance();
 
 // Legacy Wrappers for Modules
 require_once("lib/http.php");
@@ -52,7 +54,7 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
         $endtime = DateTime::getMicroTime();
     if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
         //On a side note, you won't ever see this text. A normal module calls page_footer(), which ends execution here....
-        debug("Slow Module (" . round($endtime - $starttime, 2) . "s): $mostrecentmodule`n");
+        $output->debug("Slow Module (" . round($endtime - $starttime, 2) . "s): $mostrecentmodule`n");
         $stats = array (
             "modulename" => $mostrecentmodule,
             "date" => date("Y-m-d H:i:s"),
@@ -74,6 +76,6 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
     } else {
         addnav("L?Return to the Login", "index.php");
     }
-    output("You are attempting to use a module which is no longer active, or has been uninstalled.");
+    $output->output("You are attempting to use a module which is no longer active, or has been uninstalled.");
         page_footer();
 }
