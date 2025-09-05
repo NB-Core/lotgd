@@ -13,20 +13,21 @@ final class NavColoredHeadlineTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $session, $nav, $template, $output;
+        global $session, $nav, $output;
         $session = ['user' => ['prefs' => []], 'allowednavs' => [], 'loggedin' => false];
         $nav = '';
         $output = new Output();
-        $template = [
+        Template::getInstance()->setTemplate([
             'navhead' => '<span class="navhead">{title}</span>',
             'navitem' => '<a href="{link}">{text}</a>'
-        ];
+        ]);
     }
 
     protected function tearDown(): void
     {
-        global $session, $nav, $template, $output;
-        unset($session, $nav, $template, $output);
+        global $session, $nav, $output;
+        unset($session, $nav, $output);
+        Template::getInstance()->setTemplate([]);
     }
 
     public function testRegularHeadlineUncolored(): void

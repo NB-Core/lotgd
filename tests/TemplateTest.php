@@ -16,7 +16,7 @@ final class TemplateTest extends TestCase
     protected function setUp(): void
     {
         // Simple template fixture
-        $GLOBALS['template'] = ['greet' => 'Hello {name}!'];
+        Template::getInstance()->setTemplate(['greet' => 'Hello {name}!']);
     }
 
     public function testTemplateReplace(): void
