@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Http;
+
 /**
  * Provide functions for setting up PHP globals when running under various web servers.
  */
@@ -21,7 +23,7 @@ class PhpGenericEnvironment
         }
         if ($REQUEST_URI == '') {
             // necessary for some IIS installations
-            $get = httpallget();
+            $get = Http::allGet();
             if (count($get) > 0) {
                 $REQUEST_URI = $SCRIPT_NAME . '?';
                 $i = 0;

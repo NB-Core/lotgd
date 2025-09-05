@@ -143,6 +143,7 @@ class Settings
     public function getSetting(string|int $settingname, mixed $default = false): mixed
     {
         global $config;
+        $defaults = [];
         if (!is_array($config)) {
             $root = dirname(__DIR__, 2);
             $path = realpath($root . '/dbconnect.php');
