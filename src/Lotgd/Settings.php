@@ -75,17 +75,14 @@ class Settings
         }
 
         $this->loadSettings();
-        if (!isset($this->settings[$settingname]) && $value) {
-            $settingValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-            $settingName = is_string($settingname) ? '"' . addslashes($settingname) . '"' : $settingname;
-            $sql = "INSERT INTO " . $this->tablename . " (setting,value) VALUES ($settingName,$settingValue)";
-        } elseif (isset($this->settings[$settingname])) {
-            $settingValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-            $settingName = is_string($settingname) ? '"' . addslashes($settingname) . '"' : $settingname;
-            $sql = "UPDATE " . $this->tablename . " SET value=$settingValue WHERE setting=$settingName";
-        } else {
-            return false;
-        }
+
+        $settingValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
+        $settingName = is_string($settingname) ? '"' . addslashes($settingname) . '"' : $settingname;
+
+        $sql = "INSERT INTO " . $this->tablename .
+            " (setting,value) VALUES ($settingName,$settingValue) " .
+            "ON DUPLICATE KEY UPDATE value=VALUES(value)";
+
         Database::query($sql);
         $this->settings[$settingname] = $value;
         DataCache::invalidatedatacache('game' . $this->tablename);
@@ -160,9 +157,7 @@ class Settings
             $this->loadSettings();
             if (!isset($this->settings[$settingname])) {
                 if ($settingname === 'charset') {
-                    if (Database::tableExists($this->tablename)) {
-                        $this->saveSetting('charset', 'UTF-8');
-                    }
+                    $this->saveSetting('charset', 'UTF-8');
 
                     return 'UTF-8';
                 }
@@ -174,9 +169,7 @@ class Settings
                 } else {
                     $value = $default;
                 }
-                if (Database::tableExists($this->tablename)) {
-                    $this->saveSetting($settingname, $value);
-                }
+                $this->saveSetting($settingname, $value);
             } else {
                 $value = $this->settings[$settingname];
             }
@@ -185,9 +178,7 @@ class Settings
         }
 
         if ($settingname === 'charset' && $value !== 'UTF-8') {
-            if (Database::tableExists($this->tablename)) {
-                $this->saveSetting('charset', 'UTF-8');
-            }
+            $this->saveSetting('charset', 'UTF-8');
 
             return 'UTF-8';
         }

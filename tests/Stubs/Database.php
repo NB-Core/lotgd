@@ -277,14 +277,25 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             }
 
             if (strpos($sql, 'INSERT INTO settings') === 0) {
-                if (preg_match('/VALUES\((.+),(.+)\)/', $sql, $m)) {
-                    $name = trim($m[1], "'\"");
-                    $value = trim($m[2], "'\"");
+                if (preg_match('/VALUES\s*\(([^,]+),([^\)]+)\)/i', $sql, $m)) {
+                    $name  = trim($m[1], "'\" ");
+                    $value = trim($m[2], "'\" ");
                 } else {
                     $name = $value = '';
                 }
+
+                $exists   = array_key_exists($name, self::$settings_table);
+                $oldValue = self::$settings_table[$name] ?? null;
                 self::$settings_table[$name] = $value;
-                self::$affected_rows = 1;
+
+                if (!$exists) {
+                    self::$affected_rows = 1;
+                } elseif ($oldValue !== $value) {
+                    self::$affected_rows = 2;
+                } else {
+                    self::$affected_rows = 0;
+                }
+
                 $last_query_result = true;
                 return true;
             }
