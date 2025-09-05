@@ -14,6 +14,8 @@ use Lotgd\Nav\NavigationItem;
 use Lotgd\Nav\NavigationSection;
 use Lotgd\Nav\NavigationSubSection;
 use Lotgd\Modules\HookHandler;
+use Lotgd\PageParts;
+use Lotgd\Sanitize;
 use Lotgd\Translator;
 
 // Maintain state within the class instead of the global namespace
@@ -576,7 +578,7 @@ class Nav
             }
             if ($link != '!!!addraw!!!') {
                 if ($translate) {
-                    $text[0] = translate($text[0]);
+                    $text[0] = Translator::translate($text[0]);
                 }
                 $text = call_user_func_array('sprintf', $text);
             } else {
@@ -715,7 +717,7 @@ class Nav
                         if ($popsize == '') {
                             self::$quickkeys[$key] = "window.open('$link')";
                         } else {
-                            self::$quickkeys[$key] = popup($link, $popsize);
+                            self::$quickkeys[$key] = PageParts::popup($link, $popsize);
                         }
                     } else {
                         self::$quickkeys[$key] = "window.location='$link$extra'";
@@ -728,7 +730,7 @@ class Nav
                     'text' => $output->appoencode($text, $priv),
                     'link' => $link . ($pop != true ? $extra : ''),
                     'accesskey' => $keyrep,
-                    'popup' => ($pop == true ? "target='_blank'" . ($popsize > '' ? " onClick=\"" . popup($link, $popsize) . "; return false;\"" : '') : ''),
+                    'popup' => ($pop == true ? "target='_blank'" . ($popsize > '' ? " onClick=\"" . PageParts::popup($link, $popsize) . "; return false;\"" : '') : ''),
                 ]);
                 $n = str_replace('<a ', Translator::tlbuttonPop() . '<a ', $n);
                 $thisnav .= $n;
@@ -774,7 +776,7 @@ class Nav
                 }
             }
             if ($translate) {
-                $text[0] = translate($text[0]);
+                $text[0] = Translator::translate($text[0]);
             }
             $text = call_user_func_array('sprintf', $text);
         } else {
@@ -886,8 +888,8 @@ class Nav
         if (is_array($b)) {
             $b = call_user_func_array('sprintf', $b);
         }
-        $a = sanitize($a);
-        $b = sanitize($b);
+        $a = Sanitize::sanitize($a);
+        $b = Sanitize::sanitize($b);
         $pos = strpos(substr($a, 0, 2), '?');
         $pos2 = strpos(substr($b, 0, 2), '?');
         if ($pos === false) {
@@ -911,8 +913,8 @@ class Nav
         if (is_array($tb)) {
             $tb = call_user_func_array('sprintf', $tb);
         }
-        $ta = sanitize($ta);
-        $tb = sanitize($tb);
+        $ta = Sanitize::sanitize($ta);
+        $tb = Sanitize::sanitize($tb);
         $posA = strpos(substr($ta, 0, 2), '?');
         $posB = strpos(substr($tb, 0, 2), '?');
         if ($posA === false) {
@@ -936,8 +938,8 @@ class Nav
         if (is_array($tb)) {
             $tb = call_user_func_array('sprintf', $tb);
         }
-        $ta = sanitize($ta);
-        $tb = sanitize($tb);
+        $ta = Sanitize::sanitize($ta);
+        $tb = Sanitize::sanitize($tb);
         $posA = strpos(substr($ta, 0, 2), '?');
         $posB = strpos(substr($tb, 0, 2), '?');
         if ($posA === false) {
@@ -961,8 +963,8 @@ class Nav
         if (is_array($tb)) {
             $tb = call_user_func_array('sprintf', $tb);
         }
-        $ta = sanitize($ta);
-        $tb = sanitize($tb);
+        $ta = Sanitize::sanitize($ta);
+        $tb = Sanitize::sanitize($tb);
         $posA = strpos(substr($ta, 0, 2), '?');
         $posB = strpos(substr($tb, 0, 2), '?');
         if ($posA === false) {
