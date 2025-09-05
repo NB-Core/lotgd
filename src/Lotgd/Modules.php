@@ -20,6 +20,8 @@ use Lotgd\Translator;
 use Lotgd\DataCache;
 use Lotgd\Output;
 use Lotgd\Http;
+use Lotgd\Nav as Navigation;
+use Lotgd\Random;
 
 class Modules
 {
@@ -38,6 +40,7 @@ class Modules
         global $mostrecentmodule;
         $force = $force ? 1 : 0;
         $output = Output::getInstance();
+        $result = null;
 
         if (isset(self::$injectedModules[$force][$moduleName])) {
             $mostrecentmodule = $moduleName;
@@ -98,7 +101,7 @@ class Modules
                 if (! self::checkRequirements($info['requires'])) {
                     self::$injectedModules[$force][$moduleName] = false;
                     Translator::getInstance()->setSchema();
-                    output_notl("`n`3Module `#%s`3 does not meet its prerequisites.`n", $moduleName);
+                    $output->outputNotl("`n`3Module `#%s`3 does not meet its prerequisites.`n", $moduleName);
                     return false;
                 }
             }
@@ -140,7 +143,7 @@ class Modules
                         $output->debug($sql);
                         $sql = 'UNLOCK TABLES';
                         Database::query($sql);
-                        module_wipehooks();
+                        self::wipeHooks();
                         $fname = $moduleName . '_install';
                         $fname();
                         DataCache::invalidatedatacache("inject-$moduleName");
@@ -155,8 +158,8 @@ class Modules
             return true;
         }
 
-        output("`n`\$Module '`^%s`\$' (%s) was not found in the modules directory.`0`n", $moduleName, $modulefilename);
-        output_notl(Backtrace::show(), true);
+        $output->output("`n`\$Module '`^%s`\$' (%s) was not found in the modules directory.`0`n", $moduleName, $modulefilename);
+        $output->outputNotl(Backtrace::show(), true);
         self::$injectedModules[$force][$moduleName] = false;
         return false;
     }
@@ -174,7 +177,7 @@ class Modules
     {
 
 
-        $moduleName     = modulename_sanitize($moduleName);
+        $moduleName     = Sanitize::modulenameSanitize($moduleName);
         $modulefilename = "modules/$moduleName.php";
         $status         = MODULE_NO_INFO;
         if (file_exists($modulefilename)) {
@@ -199,7 +202,7 @@ class Modules
                 if ($version === false) {
                     $status |= MODULE_VERSION_OK;
                 } else {
-                    if (module_compare_versions($row['version'], $version) < 0) {
+                    if (self::compareVersions($row['version'], $version) < 0) {
                         $status |= MODULE_VERSION_TOO_LOW;
                     } else {
                         $status |= MODULE_VERSION_OK;
@@ -406,10 +409,10 @@ class Modules
         }
 
         if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT) && !isset($hookcomment[$hookName])) {
-            rawoutput("<!--Module Hook: $hookName; allow inactive: " . ($allowInactive ? 'true' : 'false') . '; only this module: ' . ($only !== false ? $only : 'any module'));
+            $output->rawOutput("<!--Module Hook: $hookName; allow inactive: " . ($allowInactive ? 'true' : 'false') . '; only this module: ' . ($only !== false ? $only : 'any module'));
             if (!is_array($args)) {
                 $arg = $args . ' (NOT AN ARRAY!)';
-                rawoutput('  arg: ' . $arg);
+                $output->rawOutput('  arg: ' . $arg);
             } else {
                 foreach ($args as $key => $val) {
                     $arg = $key . ' = ';
@@ -420,13 +423,14 @@ class Modules
                     } else {
                         $arg .= htmlentities(substr((string) $val, 0, 25), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
                     }
-                    rawoutput('  arg: ' . $arg);
+                    $output->rawOutput('  arg: ' . $arg);
                 }
             }
-            rawoutput('  -->');
+            $output->rawOutput('  -->');
             $hookcomment[$hookName] = true;
         }
 
+        $result = null;
         if (isset(self::$modulehookQueries[$hookName]) && $allowInactive == false) {
             $result = self::$modulehookQueries[$hookName];
         } else {
@@ -473,17 +477,18 @@ class Modules
                     $row['whenactive'] = '';
                 }
                 $cond = trim($row['whenactive']);
-                if ($cond == '' || module_condition($cond) == true) {
-                    $starttime = getmicrotime();
+                if ($cond == '' || self::condition($cond) === true) {
+                    $starttime = microtime(true);
+                    $res = $args;
                     if (function_exists($row['hook_callback'])) {
                         if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT)) {
-                            rawoutput('<!-- Hook: ' . $hookName . ' on module ' . $row['hook_callback'] . ' called... -->');
+                            $output->rawOutput('<!-- Hook: ' . $hookName . ' on module ' . $row['hook_callback'] . ' called... -->');
                         }
                         $res = $row['hook_callback']($hookName, $args);
                     } else {
                         trigger_error('Unknown function ' . $row['hook_callback'] . ' for hookname ' . $hookName . ' in module ' . $row['modulename'] . '.', E_USER_WARNING);
                     }
-                    $endtime = getmicrotime();
+                    $endtime = microtime(true);
                     if (($endtime - $starttime >= 1.00 && isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
                         $output->debug('Slow Hook (' . round($endtime - $starttime, 2) . 's): ' . $hookName . ' - ' . $row['modulename'] . '`n');
                     }
@@ -990,9 +995,7 @@ class Modules
                 Translator::getInstance()->setSchema("module-$shortname");
                 $moduleinfo = $fname();
                 Translator::getInstance()->setSchema();
-                if (!isset($moduleinfo['name']) || !isset($moduleinfo['category']) || !isset($moduleinfo['author']) || !isset($moduleinfo['version'])) {
-                    $ns = Translator::translateInline('Not specified', 'common');
-                }
+                $ns = Translator::translateInline('Not specified', 'common');
                 if (!isset($moduleinfo['name'])) {
                     $moduleinfo['name'] = "$ns ($shortname)";
                 }
@@ -1172,7 +1175,7 @@ class Modules
 
         $sql = 'SELECT ' . Database::prefix('module_event_hooks') . '.* FROM ' . Database::prefix('module_event_hooks')
             . ' INNER JOIN ' . Database::prefix('modules') . ' ON ' . Database::prefix('modules') . '.modulename = ' . Database::prefix('module_event_hooks') . '.modulename'
-            . " WHERE $active event_type='$type' ORDER BY RAND(" . e_rand() . ')';
+            . " WHERE $active event_type='$type' ORDER BY RAND(" . Random::e_rand() . ')';
         $result = Database::queryCached($sql, 'event-' . $type . '-' . ((int) $allowinactive));
         while ($row = Database::fetchAssoc($result)) {
             ob_start();
@@ -1221,9 +1224,10 @@ class Modules
             $baseLink = ScriptName::current() . '.php?';
         }
 
-        if (e_rand(1, 100) <= $basechance) {
+        $output = Output::getInstance();
+        if (Random::e_rand(1, 100) <= $basechance) {
             $events = self::collectEvents($eventtype, false);
-            $chance = r_rand(1, 100);
+            $chance = Random::r_rand(1, 100);
             // debug("C:" . $chance); return 0; // debugging line from original
             $sum = 0;
             foreach ($events as $event) {
@@ -1233,7 +1237,7 @@ class Modules
                 if ($chance > $sum && $chance <= $sum + $event['normchance']) {
                     $_POST['i_am_a_hack'] = 'true';
                     Translator::getInstance()->setSchema('events');
-                    output('`^`c`bSomething Special!`c`b`0');
+                    $output->output('`^`c`bSomething Special!`c`b`0');
                     Translator::getInstance()->setSchema();
                     $op = Http::get('op');
                     Http::set('op', '');
@@ -1308,22 +1312,26 @@ class Modules
 
         usort($events, [self::class, 'eventSort']);
 
+        $output = Output::getInstance();
         Translator::getInstance()->setSchema('events');
-        output("`n`nSpecial event triggers:`n");
+        $output->output("`n`nSpecial event triggers:`n");
         $name    = Translator::translateInline('Name');
         $rchance = Translator::translateInline('Raw Chance');
         $nchance = Translator::translateInline('Normalized Chance');
-        rawoutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
-        rawoutput("<tr class='trhead'>");
-        rawoutput("<td>$name</td><td>$rchance</td><td>$nchance</td><td>Filename</td><td>exists</td>");
-        rawoutput('</tr>');
+        $output->rawOutput("<table cellspacing='1' cellpadding='2' border='0' bgcolor='#999999'>");
+        $output->rawOutput("<tr class='trhead'>");
+        $output->rawOutput("<td>$name</td><td>$rchance</td><td>$nchance</td><td>Filename</td><td>exists</td>");
+        $output->rawOutput('</tr>');
         $i = 0;
         foreach ($events as $event) {
-            rawoutput("<tr class='" . ($i % 2 == 0 ? 'trdark' : 'trlight') . "'>");
+            $output->rawOutput("<tr class='" . ($i % 2 == 0 ? 'trdark' : 'trlight') . "'>");
             $i++;
+            $link = '';
+            $filename = '';
+            $exists = 0;
+            $name = $event['modulename'];
             if ($event['modulename']) {
                 $link     = 'module-' . $event['modulename'];
-                $name     = $event['modulename'];
                 $filename = $event['modulename'] . '.php';
                 $fullpath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'modules' . DIRECTORY_SEPARATOR . $filename;
                 $exists   = (int) file_exists($fullpath);
@@ -1335,15 +1343,15 @@ class Modules
             $rl2   = substr($rlink, $first + 1);
             $rl2   = str_replace('?', '&', $rl2);
             $rlink = $rl1 . $rl2;
-            rawoutput("<td><a href='$rlink'>$name</a></td>");
-            addnav('', $rlink);
-            rawoutput("<td>{$event['rawchance']}</td>");
-            rawoutput("<td>{$event['normchance']}</td>");
-            rawoutput("<td>{$filename}</td>");
-            rawoutput("<td>{$exists}</td>");
-            rawoutput('</tr>');
+            $output->rawOutput("<td><a href='$rlink'>$name</a></td>");
+            Navigation::add('', $rlink);
+            $output->rawOutput("<td>{$event['rawchance']}</td>");
+            $output->rawOutput("<td>{$event['normchance']}</td>");
+            $output->rawOutput("<td>{$filename}</td>");
+            $output->rawOutput("<td>{$exists}</td>");
+            $output->rawOutput('</tr>');
         }
-        rawoutput('</table>');
+        $output->rawOutput('</table>');
     }
 
     /**
@@ -1357,13 +1365,13 @@ class Modules
         while ($row = Database::fetchAssoc($result)) {
             if ($curcat != $row['category']) {
                 $curcat = $row['category'];
-                addnav(["%s Modules", $curcat]);
+                Navigation::add(["%s Modules", $curcat]);
             }
             // Prefix inactive modules with a valid colour code so the name
             // does not start with an unescaped backtick. Without a colour
             // letter the first character of the name would be parsed as one,
             // causing unbalanced HTML tags like `<em>`.
-            addnav_notl(($row['active'] ? '' : '`&') . $row['formalname'] . '`0', $linkprefix . $row['modulename']);
+            Navigation::addNotl(($row['active'] ? '' : '`&') . $row['formalname'] . '`0', $linkprefix . $row['modulename']);
         }
     }
 
