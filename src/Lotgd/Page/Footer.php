@@ -23,14 +23,16 @@ class Footer
 {
     public static function pageFooter(bool $saveuser = true): void
     {
-        global $header, $nav, $session, $REMOTE_ADDR, $REQUEST_URI, $pagestarttime,
+        global $session, $REMOTE_ADDR, $REQUEST_URI, $pagestarttime,
             $template, $y2, $z2, $logd_version, $copyright, $SCRIPT_NAME, $footer,
             $settings;
+
+        $navInstance = Nav::getInstance();
+        $header = $navInstance->getHeader();
 
         $z = isset($y2, $z2) ? $y2 ^ $z2 : 'copyright';
         if (TwigTemplate::isActive()) {
             $footer = '';
-            $header = $header ?? '';
         } else {
             $footer = $template['footer'];
         }
@@ -188,6 +190,7 @@ class Footer
             $header = PageParts::stripAdPlaceholders($header);
             $browser_output = $header . ($output->getOutput()) . $footer;
         }
+        $navInstance->setHeader($header);
         if (!isset($session['user']['gensize'])) {
             $session['user']['gensize'] = 0;
         }
@@ -204,18 +207,19 @@ class Footer
 
     public static function popupFooter(): void
     {
-        global $header, $session, $y2, $z2, $copyright, $template;
+        global $session, $y2, $z2, $copyright, $template;
+        $navInstance = Nav::getInstance();
+        $header = $navInstance->getHeader();
 
         $settings = Settings::getInstance();
         $headscript = '';
         if (TwigTemplate::isActive()) {
             $footer = '';
-            $header = $header ?? '';
         } else {
             $footer = $template['popupfoot'];
         }
-                $pre_headscript   = PageParts::canonicalLink();
-                $maillink_add_after = '';
+        $pre_headscript   = PageParts::canonicalLink();
+        $maillink_add_after = '';
         if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
             if (file_exists('async/setup.php')) {
                 require 'async/setup.php';
@@ -254,6 +258,7 @@ class Footer
                 'template_path' => TwigTemplate::getPath(),
             ]);
             $browser_output = TwigTemplate::render('popup.twig', PageParts::$twigVars);
+            $navInstance->setHeader($header);
             Accounts::saveUser();
             session_write_close();
             echo $browser_output;
@@ -264,6 +269,7 @@ class Footer
         $header = PageParts::stripAdPlaceholders($header);
 
         $browser_output = $header . $maillink_add_after . ($output->getOutput()) . $footer;
+        $navInstance->setHeader($header);
         Accounts::saveUser();
         session_write_close();
         echo $browser_output;

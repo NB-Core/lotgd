@@ -17,6 +17,7 @@ final class NavColoredHeadlineTest extends TestCase
         $session = ['user' => ['prefs' => []], 'allowednavs' => [], 'loggedin' => false];
         $nav = '';
         $output = new Output();
+        Nav::clearNav();
         Template::getInstance()->setTemplate([
             'navhead' => '<span class="navhead">{title}</span>',
             'navitem' => '<a href="{link}">{text}</a>'

@@ -17,6 +17,7 @@ final class NavSortTest extends TestCase
         $session = ['user' => ['prefs' => []], 'allowednavs' => [], 'loggedin' => false];
         $nav = '';
         $output = new Output();
+        Nav::clearNav();
         Template::getInstance()->setTemplate([
             'navhead' => '<span class="navhead">{title}</span>',
             'navheadsub' => '<span class="navheadsub">{title}</span>',

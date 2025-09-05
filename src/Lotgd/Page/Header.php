@@ -14,13 +14,15 @@ use Lotgd\Buffs;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Lotgd\Nav;
 
 class Header
 {
     public static function pageHeader(...$args): void
     {
-        global $header, $SCRIPT_NAME, $session, $template;
+        global $SCRIPT_NAME, $session, $template;
         $settings = Settings::getInstance();
+        $nav = Nav::getInstance();
 
         PageParts::$noPopups['login.php'] = true;
         PageParts::$noPopups['motd.php'] = true;
@@ -69,8 +71,9 @@ class Header
             $header = str_replace('{title}', $title, $header);
             $header = str_replace('{lang}', $lang, $header);
             $header = str_replace('{meta_description}', $metaDesc, $header);
+            $nav->setHeader($header);
         }
-        $header .= Translator::tlbuttonPop();
+        $nav->setHeader($nav->getHeader() . Translator::tlbuttonPop());
         if ($settings->getSetting('debug', 0)) {
             $session['debugstart'] = microtime();
         }
@@ -78,7 +81,8 @@ class Header
 
     public static function popupHeader(...$args): void
     {
-        global $header, $template;
+        global $template;
+        $nav = Nav::getInstance();
 
         Translator::translatorSetup();
         Template::prepareTemplate();
@@ -107,5 +111,6 @@ class Header
         $header = str_replace('{title}', $title, $header);
         $header = str_replace('{lang}', $lang, $header);
         $header = str_replace('{meta_description}', $metaDesc, $header);
+        $nav->setHeader($header);
     }
 }
