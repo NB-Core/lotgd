@@ -16,6 +16,7 @@ namespace Lotgd\Tests\Modules\Prefs {
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use PHPUnit\Framework\TestCase;
+use Lotgd\Modules\ModuleManager;
 
 /**
  * @group prefs
@@ -30,9 +31,9 @@ final class ModuleDeleteUserPrefsTest extends TestCase
         Database::$doctrineConnection = $conn;
         \Lotgd\Doctrine\Bootstrap::$conn = $conn;
 
-        global $session, $module_prefs, $massinvalidates;
+        global $session, $massinvalidates;
         $session = ['user' => ['acctid' => 1, 'loggedin' => true]];
-        $module_prefs = [];
+        ModuleManager::setPrefs([]);
         $massinvalidates = [];
     }
 
@@ -44,10 +45,10 @@ final class ModuleDeleteUserPrefsTest extends TestCase
 
     public function testDeleteUserPrefsClearsGlobalCache(): void
     {
-        global $module_prefs, $massinvalidates;
+        global $massinvalidates;
 
         $userId = 1;
-        $module_prefs = [
+        ModuleManager::setPrefs([
             $userId => [
                 'modA' => ['prefA' => 'value'],
                 'modB' => ['prefB' => 'value'],
@@ -55,25 +56,25 @@ final class ModuleDeleteUserPrefsTest extends TestCase
             2 => [
                 'modC' => ['prefC' => 'value'],
             ],
-        ];
+        ]);
 
         module_delete_userprefs($userId);
 
-        self::assertArrayNotHasKey($userId, $module_prefs);
-        self::assertArrayHasKey(2, $module_prefs);
+        $prefs = ModuleManager::prefs();
+        self::assertArrayNotHasKey($userId, $prefs);
+        self::assertArrayHasKey(2, $prefs);
+
         // DataCache::getInstance()->massinvalidate is used; verifying cache invalidation via globals is no longer applicable.
         self::assertTrue(true);
     }
 
     public function testDeletingWithEmptyPrefsDoesNothing(): void
     {
-        global $module_prefs;
-
         $userId = 1;
 
         module_delete_userprefs($userId);
 
-        self::assertSame([], $module_prefs);
+        self::assertSame([], ModuleManager::prefs());
     }
 }
 

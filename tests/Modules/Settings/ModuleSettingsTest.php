@@ -39,6 +39,7 @@ namespace Lotgd\Tests\Modules\Settings {
 
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
+use Lotgd\Modules\ModuleManager;
 
 /**
  * @group settings
@@ -50,15 +51,13 @@ final class ModuleSettingsTest extends TestCase
         class_exists(Database::class);
         \Lotgd\MySQL\Database::$queryCacheResults = [];
         \Lotgd\MySQL\Database::$lastSql = '';
-        global $module_settings, $mostrecentmodule;
-        $module_settings = [];
-        $mostrecentmodule = '';
+        ModuleManager::setSettings([]);
+        ModuleManager::setMostRecentModule('');
     }
 
     public function testModuleSettingLifecycle(): void
     {
-        global $mostrecentmodule;
-        $mostrecentmodule = 'mymodule';
+        ModuleManager::setMostRecentModule('mymodule');
 
         set_module_setting('key', 'value');
         $this->assertSame('value', get_module_setting('key'));
@@ -90,8 +89,7 @@ final class ModuleSettingsTest extends TestCase
 
     public function testGetAllModuleSettings(): void
     {
-        global $mostrecentmodule;
-        $mostrecentmodule = 'mymodule';
+        ModuleManager::setMostRecentModule('mymodule');
 
         set_module_setting('key', 'value');
         set_module_setting('counter', '0');
@@ -108,8 +106,7 @@ final class ModuleSettingsTest extends TestCase
 
     public function testIncrementModuleSettingWithNegativeAndFractionalValues(): void
     {
-        global $mostrecentmodule;
-        $mostrecentmodule = 'mymodule';
+        ModuleManager::setMostRecentModule('mymodule');
 
         foreach ([-1.0, 1.5] as $increment) {
             set_module_setting('counter', '0');

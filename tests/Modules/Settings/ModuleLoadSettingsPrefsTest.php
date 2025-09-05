@@ -42,6 +42,7 @@ use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Tests\Stubs\DoctrineResult;
 use PHPUnit\Framework\TestCase;
+use Lotgd\Modules\ModuleManager;
 
 /**
  * @group settings
@@ -63,9 +64,8 @@ final class ModuleLoadSettingsPrefsTest extends TestCase
         Database::$queryCacheResults = [];
         Database::$lastSql           = '';
         Database::$doctrineConnection = null;
-        global $module_settings, $module_prefs;
-        $module_settings = [];
-        $module_prefs    = [];
+        ModuleManager::setSettings([]);
+        ModuleManager::setPrefs([]);
     }
 
     public function testLoadModuleSettingsAndPrefs(): void
@@ -94,7 +94,8 @@ final class ModuleLoadSettingsPrefsTest extends TestCase
         load_module_settings($module);
         load_module_prefs($module, $userId);
 
-        global $module_settings, $module_prefs;
+        $module_settings = ModuleManager::settings();
+        $module_prefs    = ModuleManager::prefs();
         self::assertSame(['skey' => 'sval'], $module_settings[$module]);
         self::assertSame(['pkey' => 'pval'], $module_prefs[$userId][$module]);
     }
@@ -129,7 +130,7 @@ final class ModuleLoadSettingsPrefsTest extends TestCase
         load_module_prefs($module);
 
         self::assertNull(HookHandler::$lastUser);
-        global $module_prefs;
+        $module_prefs = ModuleManager::prefs();
         self::assertSame(['pkey' => 'pval'], $module_prefs[$userId][$module]);
     }
 }

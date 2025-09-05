@@ -9,6 +9,7 @@ use Lotgd\Settings;
 use Lotgd\Forms;
 use Lotgd\Output;
 use Lotgd\DataCache;
+use Lotgd\Modules\ModuleManager;
 
 // translator ready
 // addnews ready
@@ -161,6 +162,7 @@ switch ($type_setting) {
                     $save = httpget('save');
                     if ($save != "") {
                         load_module_settings($module);
+                        $module_settings = ModuleManager::settings();
                         $old = $module_settings[$module];
                         $post = httpallpost();
                         $post = modulehook("validatesettings", $post, true, $module);
@@ -201,7 +203,8 @@ switch ($type_setting) {
                     if ($save == "") {
                         $info = get_module_info($module);
                         if (count($info['settings']) > 0) {
-                            load_module_settings($mostrecentmodule);
+                            load_module_settings(ModuleManager::getMostRecentModule());
+                            $module_settings = ModuleManager::settings();
                             $msettings = array();
                             foreach ($info['settings'] as $key => $val) {
                                 if (is_array($val)) {
@@ -214,10 +217,10 @@ switch ($type_setting) {
                                 }
                                 $msettings[$key] = $x[0];
                                 if (
-                                    !isset($module_settings[$mostrecentmodule][$key]) &&
+                                    !isset($module_settings[ModuleManager::getMostRecentModule()][$key]) &&
                                         isset($x[1])
                                 ) {
-                                    $module_settings[$mostrecentmodule][$key] = $x[1];
+                                    $module_settings[ModuleManager::getMostRecentModule()][$key] = $x[1];
                                 }
                             }
                             $msettings = modulehook("mod-dyn-settings", $msettings);
@@ -239,7 +242,7 @@ switch ($type_setting) {
                             rawoutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);
                             addnav("", "configuration.php?op=modulesettings&module=$module&save=1");
                             Translator::getInstance()->setSchema("module-$module");
-                            Forms::showForm($msettings, $module_settings[$mostrecentmodule]);
+                            Forms::showForm($msettings, $module_settings[ModuleManager::getMostRecentModule()]);
                             Translator::getInstance()->setSchema();
                             rawoutput("</form>", true);
                         } else {

@@ -13,6 +13,7 @@ use Lotgd\DumpItem;
 use Lotgd\HolidayText;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
+use Lotgd\Modules\ModuleManager;
 
 class Output
 {
@@ -205,7 +206,7 @@ class Output
      */
     public function debug($text, $force = false)
     {
-        global $session, $mostrecentmodule;
+        global $session;
 
         $temp = $this->getBlockNewOutput();
         $this->setBlockNewOutput(false);
@@ -215,7 +216,7 @@ class Output
                 $text = $this->appoencode(DumpItem::dump($text), true);
             }
 
-            $origin = $mostrecentmodule ?? '';
+            $origin = ModuleManager::getMostRecentModule() ?? '';
 
             if ('' === $origin) {
                 $trace  = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
