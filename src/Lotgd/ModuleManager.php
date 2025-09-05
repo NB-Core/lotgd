@@ -75,8 +75,8 @@ class ModuleManager
     public static function install(string $module): bool
     {
         if (Installer::install($module)) {
-            DataCache::massinvalidate('hook');
-            DataCache::massinvalidate('module-prepare');
+            DataCache::getInstance()->massinvalidate('hook');
+            DataCache::getInstance()->massinvalidate('module-prepare');
             return true;
         }
         return false;
@@ -90,9 +90,9 @@ class ModuleManager
     public static function uninstall(string $module): bool
     {
         if (Installer::uninstall($module)) {
-            DataCache::massinvalidate('hook');
-            DataCache::massinvalidate('module-prepare');
-            DataCache::invalidatedatacache("inject-$module");
+            DataCache::getInstance()->massinvalidate('hook');
+            DataCache::getInstance()->massinvalidate('module-prepare');
+            DataCache::getInstance()->invalidatedatacache("inject-$module");
             return true;
         }
         return false;
@@ -104,9 +104,9 @@ class ModuleManager
     public static function activate(string $module): bool
     {
         $res = Installer::activate($module);
-        DataCache::invalidatedatacache("inject-$module");
-        DataCache::massinvalidate('hook');
-        DataCache::massinvalidate('module-prepare');
+        DataCache::getInstance()->invalidatedatacache("inject-$module");
+        DataCache::getInstance()->massinvalidate('hook');
+        DataCache::getInstance()->massinvalidate('module-prepare');
         Modules::inject($module, true);
         return $res;
     }
@@ -117,8 +117,8 @@ class ModuleManager
     public static function deactivate(string $module): bool
     {
         $res = Installer::deactivate($module);
-        DataCache::invalidatedatacache("inject-$module");
-        DataCache::massinvalidate('module-prepare');
+        DataCache::getInstance()->invalidatedatacache("inject-$module");
+        DataCache::getInstance()->massinvalidate('module-prepare');
         return $res;
     }
 
@@ -129,9 +129,9 @@ class ModuleManager
     {
         $sql = 'UPDATE ' . Database::prefix('modules') . " SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='" . $module . "'";
         Database::query($sql);
-        DataCache::invalidatedatacache("inject-$module");
-        DataCache::massinvalidate('hook');
-        DataCache::massinvalidate('module-prepare');
+        DataCache::getInstance()->invalidatedatacache("inject-$module");
+        DataCache::getInstance()->massinvalidate('hook');
+        DataCache::getInstance()->massinvalidate('module-prepare');
         Modules::inject($module, true);
         return true;
     }
@@ -142,9 +142,9 @@ class ModuleManager
     public static function forceUninstall(string $module): bool
     {
         if (Installer::forceUninstall($module)) {
-            DataCache::massinvalidate('hook');
-            DataCache::massinvalidate('module-prepare');
-            DataCache::invalidatedatacache("inject-$module");
+            DataCache::getInstance()->massinvalidate('hook');
+            DataCache::getInstance()->massinvalidate('module-prepare');
+            DataCache::getInstance()->invalidatedatacache("inject-$module");
             return true;
         }
 

@@ -303,7 +303,7 @@ class PlayerFunctions
      */
     public static function expForNextLevel(int $curlevel, int $curdk): float
     {
-        $stored = DataCache::datacache('exparraydk' . $curdk);
+        $stored = DataCache::getInstance()->datacache('exparraydk' . $curdk);
         if ($stored !== false && is_array($stored)) {
             $exparray = $stored;
         } else {
@@ -326,7 +326,7 @@ class PlayerFunctions
                     $exparray[$i] = round($exparray[$i - 1] * 1.2);
                 }
             }
-            DataCache::updatedatacache('exparraydk' . $curdk, $exparray);
+            DataCache::getInstance()->updatedatacache('exparraydk' . $curdk, $exparray);
         }
         if (count($exparray) > $curlevel) {
             $exprequired = $exparray[max(0, $curlevel - 1)];

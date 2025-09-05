@@ -85,7 +85,7 @@ class Settings
 
         Database::query($sql);
         $this->settings[$settingname] = $value;
-        DataCache::invalidatedatacache('game' . $this->tablename);
+        DataCache::getInstance()->invalidatedatacache('game' . $this->tablename);
         return Database::affectedRows() > 0;
     }
 
@@ -97,7 +97,7 @@ class Settings
     public function loadSettings(): void
     {
         if (!is_array($this->settings)) {
-            $this->settings = DataCache::datacache('game' . $this->tablename);
+            $this->settings = DataCache::getInstance()->datacache('game' . $this->tablename);
             if (!is_array($this->settings)) {
                 $this->settings = [];
 
@@ -116,7 +116,7 @@ class Settings
                     return;
                 }
 
-                DataCache::updatedatacache('game' . $this->tablename, $this->settings);
+                DataCache::getInstance()->updatedatacache('game' . $this->tablename, $this->settings);
             }
         }
     }
@@ -128,7 +128,7 @@ class Settings
      */
     public function clearSettings(): void
     {
-        DataCache::invalidatedatacache('game' . $this->tablename);
+        DataCache::getInstance()->invalidatedatacache('game' . $this->tablename);
         $this->settings = null;
     }
 

@@ -21,7 +21,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     ) {
         $sql = "UPDATE " . Database::prefix("clans") . " SET clanmotd='" . addslashes($clanmotd) . "',motdauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);
-        DataCache::invalidatedatacache("clandata-{$claninfo['clanid']}");
+        DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $claninfo['clanmotd'] = stripslashes($clanmotd);
         $output->output("Updating MoTD`n");
         $claninfo['motdauthor'] = $session['user']['acctid'];
@@ -34,7 +34,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     ) {
         $sql = "UPDATE " . Database::prefix("clans") . " SET clandesc='" . addslashes(mb_substr(stripslashes($clandesc), 0, 4096, getsetting('charset', 'UTF-8'))) . "',descauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);
-        DataCache::invalidatedatacache("clandata-{$claninfo['clanid']}");
+        DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $output->output("Updating description`n");
         $claninfo['clandesc'] = stripslashes($clandesc);
         $claninfo['descauthor'] = $session['user']['acctid'];
@@ -43,7 +43,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     if (Http::postIsset('customsay') && $customsay != $claninfo['customsay'] && $session['user']['clanrank'] >= CLAN_LEADER) {
         $sql = "UPDATE " . Database::prefix("clans") . " SET customsay='$customsay' WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);
-        DataCache::invalidatedatacache("clandata-{$claninfo['clanid']}");
+        DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $output->output("Updating custom say line`n");
         $claninfo['customsay'] = stripslashes($customsay);
     }

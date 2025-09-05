@@ -116,10 +116,10 @@ switch ($type_setting) {
                     }
                 }
                 if (stripslashes(httppost("motditems")) != getsetting('motditems', 5)) {
-                    DataCache::invalidatedatacache("motd");
+                    DataCache::getInstance()->invalidatedatacache("motd");
                 }
                 if (stripslashes(httppost('exp-array')) != getsetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
-                    DataCache::massinvalidate("exp_array_dk");
+                    DataCache::getInstance()->massinvalidate("exp_array_dk");
                 }
                 $post = httpallpost();
 

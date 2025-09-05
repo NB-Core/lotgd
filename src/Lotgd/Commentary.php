@@ -158,8 +158,8 @@ WHERE commentid = {$removeId}             -- by comment identifier
 SQL;
         Database::query($sql);
 
-        DataCache::invalidatedatacache("comments-$section");
-        DataCache::invalidatedatacache('comments-or11');
+        DataCache::getInstance()->invalidatedatacache("comments-$section");
+        DataCache::getInstance()->invalidatedatacache('comments-or11');
         $session['user']['specialinc'] == '';
 
         $returnPath = Sanitize::cmdSanitize($returnPath);
@@ -190,8 +190,8 @@ SQL;
     {
         $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'" . Database::escape($comment) . "')";
         Database::query($sql);
-        DataCache::invalidatedatacache("comments-{$section}");
-        DataCache::invalidatedatacache('comments-or11');
+        DataCache::getInstance()->invalidatedatacache("comments-{$section}");
+        DataCache::getInstance()->invalidatedatacache('comments-or11');
     }
 
     /**

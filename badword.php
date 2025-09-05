@@ -112,7 +112,7 @@ if ($op == "addgood" || $op == "removegood") {
     Database::query($sql);
     $sql = "INSERT INTO " . Database::prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','good')";
     Database::query($sql);
-    DataCache::invalidatedatacache("goodwordlist");
+    DataCache::getInstance()->invalidatedatacache("goodwordlist");
 }
 
 $output->outputNotl("`0`n`n");
@@ -173,7 +173,7 @@ if ($op == "add" || $op == "remove") {
     Database::query($sql);
     $sql = "INSERT INTO " . Database::prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','nasty')";
     Database::query($sql);
-    DataCache::invalidatedatacache("nastywordlist");
+    DataCache::getInstance()->invalidatedatacache("nastywordlist");
 }
 Footer::pageFooter();
 

@@ -127,7 +127,7 @@ if ($dp < $dkills) {
         $session['user']['resurrections']++;
         output("`@You are resurrected!  This is resurrection number %s.`0`n", $session['user']['resurrections']);
         $session['user']['alive'] = true;
-        DataCache::invalidatedatacache("list.php-warsonline");
+        DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
     }
     $session['user']['age']++;
     $session['user']['seenmaster'] = 0;
