@@ -1,25 +1,5 @@
 parameters:
         ignoreErrors:
-                -
-                        message: "#^Function module_display_events not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forest.php
-
-                -
-                        message: "#^Function debuglog not found\\.$#"
-                        count: 3
-                        path: src/Lotgd/Forest/Outcomes.php
-
-                -
-                        message: "#^Function get_player_dragonkillmod not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forest/Outcomes.php
-
-                -
-                        message: "#^Function page_footer not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forest/Outcomes.php
-
 
                 -
                         message: "#^Function addnav not found\\.$#"
