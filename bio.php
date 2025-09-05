@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Translator;
 // addnews ready
 // translator ready
 // mail ready
@@ -22,17 +23,16 @@ use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\DateTime;
 use Lotgd\Nltoappon;
-use Lotgd\Translator;
 
 require_once("common.php");
 
-
 $translator = Translator::getInstance();
+
 $translator->setSchema("bio");
 
 DateTime::checkDay();
-
 $output = Output::getInstance();
+
 
 $ret = Http::get('ret');
 if ($ret == "") {
@@ -152,17 +152,17 @@ if ($target = Database::fetchAssoc($result)) {
     while ($row = Database::fetchAssoc($result)) {
         $translator->setSchema($row['tlschema']);
         if ($row['arguments'] > "") {
-            $arguments = [];
+            $arguments = array();
             $base_arguments = unserialize($row['arguments']);
             array_push($arguments, $row['newstext']);
             foreach ($base_arguments as $val) {
                 array_push($arguments, $val);
             }
             $news = $translator->sprintfTranslate(...$arguments);
-            $output->rawOutput($translator->clearButton());
+              $output->rawOutput($translator->clearButton());
         } else {
             $news = translate_inline($row['newstext']);
-            $output->rawOutput($translator->clearButton());
+              $output->rawOutput($translator->clearButton());
         }
         $translator->setSchema();
         if ($odate != $row['newsdate']) {
