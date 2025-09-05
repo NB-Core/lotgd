@@ -42,31 +42,33 @@ final class PhpGenericEnvironmentTest extends TestCase
 
     public function testSanitizeUriWithDirectorySeparator(): void
     {
-        global $PATH_INFO, $SCRIPT_NAME, $REQUEST_URI;
-        $PATH_INFO = '';
-        $SCRIPT_NAME = '/dir/index.php';
-        $REQUEST_URI = '/dir/index.php?foo=bar';
-        $_SERVER['REQUEST_URI'] = $REQUEST_URI;
+        $_SERVER['PATH_INFO'] = '';
+        $_SERVER['SCRIPT_NAME'] = '/dir/index.php';
+        $_SERVER['REQUEST_URI'] = '/dir/index.php?foo=bar';
 
-        PhpGenericEnvironment::sanitizeUri();
+        $session = [];
+        PhpGenericEnvironment::setup($session);
 
-        $this->assertSame('index.php', $SCRIPT_NAME);
-        $this->assertSame('index.php?foo=bar', $REQUEST_URI);
-        $this->assertSame('index.php?foo=bar', $_SERVER['REQUEST_URI']);
+        $this->assertSame('index.php', PhpGenericEnvironment::getScriptName());
+        $this->assertSame('index.php?foo=bar', PhpGenericEnvironment::getRequestUri());
+        $this->assertSame('index.php?foo=bar', PhpGenericEnvironment::getServer('REQUEST_URI'));
+        $this->assertSame('index.php', $GLOBALS['SCRIPT_NAME']);
+        $this->assertSame('index.php?foo=bar', $GLOBALS['REQUEST_URI']);
     }
 
     public function testSanitizeUriWithoutDirectorySeparator(): void
     {
-        global $PATH_INFO, $SCRIPT_NAME, $REQUEST_URI;
-        $PATH_INFO = '';
-        $SCRIPT_NAME = 'index.php';
-        $REQUEST_URI = 'index.php?foo=bar';
-        $_SERVER['REQUEST_URI'] = $REQUEST_URI;
+        $_SERVER['PATH_INFO'] = '';
+        $_SERVER['SCRIPT_NAME'] = 'index.php';
+        $_SERVER['REQUEST_URI'] = 'index.php?foo=bar';
 
-        PhpGenericEnvironment::sanitizeUri();
+        $session = [];
+        PhpGenericEnvironment::setup($session);
 
-        $this->assertSame('index.php', $SCRIPT_NAME);
-        $this->assertSame('index.php?foo=bar', $REQUEST_URI);
-        $this->assertSame('index.php?foo=bar', $_SERVER['REQUEST_URI']);
+        $this->assertSame('index.php', PhpGenericEnvironment::getScriptName());
+        $this->assertSame('index.php?foo=bar', PhpGenericEnvironment::getRequestUri());
+        $this->assertSame('index.php?foo=bar', PhpGenericEnvironment::getServer('REQUEST_URI'));
+        $this->assertSame('index.php', $GLOBALS['SCRIPT_NAME']);
+        $this->assertSame('index.php?foo=bar', $GLOBALS['REQUEST_URI']);
     }
 }

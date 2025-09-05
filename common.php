@@ -342,7 +342,7 @@ $session['lasthit'] = strtotime("now");
 $cp = $copyright;
 $l = $license;
 
-PhpGenericEnvironment::setup();
+PhpGenericEnvironment::setup($session);
 if (!AJAX_MODE) {
     ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS, OVERRIDE_FORCED_NAV);
 }

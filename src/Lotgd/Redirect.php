@@ -8,6 +8,7 @@ use Lotgd\Accounts;
 use Lotgd\Output;
 use Lotgd\Nav;
 use Lotgd\Translator;
+use Lotgd\PhpGenericEnvironment;
 
 class Redirect
 {
@@ -21,7 +22,8 @@ class Redirect
      */
     public static function redirect(string $location, string|bool $reason = false): void
     {
-        global $session, $REQUEST_URI;
+        $session = &PhpGenericEnvironment::getSession();
+        $requestUri = PhpGenericEnvironment::getRequestUri();
         $settings = Settings::getInstance();
         if (strpos($location, 'badnav.php') === false) {
             $session['allowednavs'] = [];
@@ -41,13 +43,13 @@ class Redirect
         }
 
         Accounts::saveUser();
-        $host = $_SERVER['HTTP_HOST'];
-        $http = $_SERVER['SERVER_PORT'] == 443 ? 'https' : 'http';
-        $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+        $host = PhpGenericEnvironment::getServer('HTTP_HOST');
+        $http = PhpGenericEnvironment::getServer('SERVER_PORT') == 443 ? 'https' : 'http';
+        $uri = rtrim(dirname(PhpGenericEnvironment::getServer('PHP_SELF')), '/\\');
         header("Location: $http://$host$uri/$location");
 
     //fall through if this does not work!
-        $session['debug'] .= "Redirected on '$host' with protocol '$http' to uri '$uri' to location '$location' from location '$REQUEST_URI'.<br/><br/>Reasion if given:<br/>  $reason<br>";
+        $session['debug'] .= "Redirected on '$host' with protocol '$http' to uri '$uri' to location '$location' from location '$requestUri'.<br/><br/>Reasion if given:<br/>  $reason<br>";
         $text = Translator::translateInline('Whoops. There has been an error concering redirecting your to your new page. Please inform the admins about this. More Information for your petition down below:<br/><br/>');
         echo "<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000; color: #fff;'>$text</body></html>";
         echo $session['debug'];
