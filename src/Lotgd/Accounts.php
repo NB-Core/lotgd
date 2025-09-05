@@ -68,7 +68,7 @@ class Accounts
      */
     public static function saveUser(): void
     {
-        global $session, $dbqueriesthishit, $baseaccount, $companions;
+        global $session, $baseaccount, $companions;
 
         if (defined('NO_SAVE_USER')) {
             return;

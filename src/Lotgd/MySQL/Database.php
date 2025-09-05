@@ -26,17 +26,20 @@ class Database
     /**
      * Runtime statistics collected during query execution.
      *
-     *  - 'queriesthishit'   Number of queries executed for the current request.
      *  - 'querytime'        Cumulative time spent running SQL queries.
      *  - 'DB_DATACACHEPATH' Optional path for datacache files.
      *
      * @var array<string,int|string>
      */
     protected static array $dbinfo = [
-        'queriesthishit'   => 0,
         'querytime'        => 0,
         'DB_DATACACHEPATH' => '',
     ];
+
+    /**
+     * Number of queries executed for the current request.
+     */
+    private static int $queryCount = 0;
 
     /**
      * Default table prefix for prefixed database tables.
@@ -57,6 +60,14 @@ class Database
     public static function getInfo(string $key, mixed $default = null): mixed
     {
         return self::$dbinfo[$key] ?? $default;
+    }
+
+    /**
+     * Get the number of queries executed during the current request.
+     */
+    public static function getQueryCount(): int
+    {
+        return self::$queryCount;
     }
 
     /**
@@ -110,10 +121,7 @@ class Database
             return [];
         }
         global $session;
-        if (!isset(self::$dbinfo['queriesthishit'])) {
-            self::$dbinfo['queriesthishit'] = 0;
-        }
-        self::$dbinfo['queriesthishit']++;
+        self::$queryCount++;
         $starttime = DateTime::getMicroTime();
         static $configExists = null;
         if ($configExists === null) {
