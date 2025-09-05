@@ -7,14 +7,17 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
-use Lotgd\Settings;
 
+use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\Nltoappon;
 use Lotgd\Modules\HookHandler;
 use Lotgd\DataCache;
+use Lotgd\Output;
+use Lotgd\Http;
+use Lotgd\Nav;
 
 class Motd
 {
@@ -60,18 +63,19 @@ class Motd
      */
     public static function motdItem(string $subject, string $body, string $author, string $date, int $id): void
     {
+        $output = Output::getInstance();
         $anchor = 'motd' . date('YmdHis', strtotime($date));
-        rawoutput("<a name='$anchor'>");
-        rawoutput('<div class="motditem" style="margin-bottom: 15px;">');
-        output_notl('<h4>%s</h4>', $subject, true);
+        $output->rawOutput("<a name='$anchor'>");
+        $output->rawOutput('<div class="motditem" style="margin-bottom: 15px;">');
+        $output->outputNotl('<h4>%s</h4>', $subject, true);
         HookHandler::hook('motd-item-intercept', ['id' => $id]);
         $body = Nltoappon::convert($body);
-        output_notl('<div>%s</div>', $body, true);
-        output_notl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
+        $output->outputNotl('<div>%s</div>', $body, true);
+        $output->outputNotl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
         self::motdAdminLinks($id, false);
-        rawoutput('</div>');
-        rawoutput('<hr>');
-        rawoutput('</a>');
+        $output->rawOutput('</div>');
+        $output->rawOutput('<hr>');
+        $output->rawOutput('</a>');
     }
 
     /**
@@ -91,11 +95,12 @@ class Motd
             $bodyData = ['body' => $body, 'opt' => []];
         }
 
-        rawoutput('<div class="pollitem">');
-        output_notl('<h4>%s</h4>', $subject, true);
+        $output = Output::getInstance();
+        $output->rawOutput('<div class="pollitem">');
+        $output->outputNotl('<h4>%s</h4>', $subject, true);
         $bodyText = Nltoappon::convert(stripslashes((string)$bodyData['body']));
-        output_notl('<div>%s</div>', $bodyText, true);
-        output_notl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
+        $output->outputNotl('<div>%s</div>', $bodyText, true);
+        $output->outputNotl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
 
         $sql = 'SELECT count(resultid) AS c, choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' GROUP BY choice ORDER BY choice";
         $results = Database::queryCached($sql, "poll-$id");
@@ -111,8 +116,8 @@ class Motd
         }
 
         if ($session['user']['loggedin'] && $showpoll) {
-            rawoutput("<form action='motd.php?op=vote' method='POST'>");
-            rawoutput("<input type='hidden' name='motditem' value='$id'>", true);
+            $output->rawOutput("<form action='motd.php?op=vote' method='POST'>");
+            $output->rawOutput("<input type='hidden' name='motditem' value='$id'>");
         }
 
         foreach ($bodyData['opt'] as $key => $val) {
@@ -123,28 +128,28 @@ class Motd
                 $percent = isset($choices[$key]) ? round($choices[$key] / $totalanswers * 100, 1) : 0;
 
                 if ($session['user']['loggedin'] && $showpoll) {
-                    rawoutput("<input type='radio' name='choice' value='$key'" . ($choice == $key ? ' checked' : '') . '>');
+                    $output->rawOutput("<input type='radio' name='choice' value='$key'" . ($choice == $key ? ' checked' : '') . '>');
                 }
 
-                output_notl('%s (%s - %s%%)`n', stripslashes((string)$val), $choices[$key] ?? 0, $percent);
+                $output->outputNotl('%s (%s - %s%%)`n', stripslashes((string)$val), $choices[$key] ?? 0, $percent);
 
                 $width = ($maxitem == 0 || !isset($choices[$key])) ? 1 : (int)round($choices[$key] / $maxitem * 400, 0);
                 $width = max($width, 1);
-                rawoutput("<img src='images/rule.gif' width='$width' height='2' alt='$percent'><br>");
+                $output->rawOutput("<img src='images/rule.gif' width='$width' height='2' alt='$percent'><br>");
             }
         }
 
         if ($session['user']['loggedin'] && $showpoll) {
             $vote = Translator::translateInline('Vote');
-            rawoutput("<input type='submit' class='button' value='$vote'></form>");
+            $output->rawOutput("<input type='submit' class='button' value='$vote'></form>");
         }
 
         if ($showpoll) {
-            rawoutput('<div>' . Translator::translateInline('Poll ID') . ': ' . $id . '</div>');
+            $output->rawOutput('<div>' . Translator::translateInline('Poll ID') . ': ' . $id . '</div>');
         }
         self::motdAdminLinks($id, true);
-        rawoutput('</div>');
-        rawoutput('<hr>');
+        $output->rawOutput('</div>');
+        $output->rawOutput('<hr>');
     }
 
     /**
@@ -174,7 +179,8 @@ class Motd
             $form['changeauthor'] = 'Change Author,checkbox';
             $form['changedate'] = 'Change Date (force popup),checkbox';
         }
-        output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
+        $output = Output::getInstance();
+        $output->output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
         $defaults = [
             'motdtitle'    => $title,
             'motdbody'     => $body,
@@ -186,10 +192,10 @@ class Motd
         // The third parameter 'true' enables form preview mode.
         Forms::showForm($form, $data, true);
         $preview = Translator::translateInline('Preview');
-        $save = Translator::translateInline('Save');
-        rawoutput("<input type='submit' name='preview' class='button' value='$preview'>");
-        rawoutput("<input type='submit' class='button' value='$save'>");
-        rawoutput('</form>');
+        $save    = Translator::translateInline('Save');
+        $output->rawOutput("<input type='submit' name='preview' class='button' value='$preview'>");
+        $output->rawOutput("<input type='submit' class='button' value='$save'>");
+        $output->rawOutput('</form>');
     }
 
     /**
@@ -197,29 +203,29 @@ class Motd
      */
     public static function motdPollForm(): void
     {
-        $title = httppost('motdtitle');
-        $body  = httppost('motdbody');
+        $output   = Output::getInstance();
+        $title    = Http::post('motdtitle');
+        $body     = Http::post('motdbody');
         $settings = Settings::getInstance();
         $charset  = $settings->getSetting('charset', 'UTF-8');
-
-        output('`$NOTE:`^ Polls cannot be edited after creation.`0`n`n');
-        rawoutput("<form action='motd.php?op=savenew' method='post'>");
-        output('Subject: ');
-        rawoutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, $charset) . "\"><br/>");
-        output('Body:`n');
-        rawoutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, $charset) . "</textarea><br/>");
+        $output->output('`$NOTE:`^ Polls cannot be edited after creation.`0`n`n');
+        $output->rawOutput("<form action='motd.php?op=savenew' method='post'>");
+        $output->output('Subject: ');
+        $output->rawOutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, $charset) . "\"><br/>");
+        $output->output('Body:`n');
+        $output->rawOutput("<textarea class='input' name='motdbody' cols='37' rows='5'>" . HTMLEntities(stripslashes((string)$body), ENT_COMPAT, $charset) . "</textarea><br/>");
         $option = Translator::translateInline('Option');
-        output('Choices:`n');
+        $output->output('Choices:`n');
         $pollitem = "$option <input name='opt[]'><br/>";
         for ($i = 0; $i < 5; $i++) {
-            rawoutput($pollitem);
+            $output->rawOutput($pollitem);
         }
-        rawoutput("<div id='hidepolls'></div>");
-        rawoutput("<script language='JavaScript'>document.getElementById('hidepolls').innerHTML = '';</script>", true);
+        $output->rawOutput("<div id='hidepolls'></div>");
+        $output->rawOutput("<script language='JavaScript'>document.getElementById('hidepolls').innerHTML = '';</script>");
         $addi = Translator::translateInline('Add Poll Item');
-        $add = Translator::translateInline('Add');
-        rawoutput("<a href=\"#\" onClick=\"javascript:document.getElementById('hidepolls').innerHTML += '" . addslashes($pollitem) . "'; return false;\">$addi</a><br>");
-        rawoutput("<input type='submit' class='button' value='$add'></form>");
+        $add  = Translator::translateInline('Add');
+        $output->rawOutput("<a href=\"#\" onClick=\"javascript:document.getElementById('hidepolls').innerHTML += '" . addslashes($pollitem) . "'; return false;\">$addi</a><br>");
+        $output->rawOutput("<input type='submit' class='button' value='$add'></form>");
     }
 
     /**
@@ -228,11 +234,11 @@ class Motd
     public static function saveMotd(int $id): void
     {
         global $session;
-        $title = httppost('motdtitle');
-        $body = httppost('motdbody');
-        $type = (int) httppost('motdtype');
-        $changeauthor = (bool) httppost('changeauthor');
-        $changedate = (bool) httppost('changedate');
+        $title        = Http::post('motdtitle');
+        $body         = Http::post('motdbody');
+        $type         = (int) Http::post('motdtype');
+        $changeauthor = (bool) Http::post('changeauthor');
+        $changedate   = (bool) Http::post('changedate');
 
         $author = $session['user']['acctid'];
         $date = date('Y-m-d H:i:s');
@@ -264,9 +270,9 @@ class Motd
     public static function savePoll(): void
     {
         global $session;
-        $title = httppost('motdtitle');
-        $text  = httppost('motdbody');
-        $choices = httppost('opt');
+        $title   = Http::post('motdtitle');
+        $text    = Http::post('motdbody');
+        $choices = Http::post('opt');
         if (!is_array($choices)) {
             $choices = [];
         }
@@ -298,13 +304,14 @@ class Motd
     {
         global $session;
         if ($session['user']['superuser'] & SU_POST_MOTD) {
-            $edit = Translator::translateInline('Edit');
-            $del = Translator::translateInline('Del');
-            $conf = Translator::translateInline('Are you sure you wish to delete this entry?');
+            $output = Output::getInstance();
+            $edit   = Translator::translateInline('Edit');
+            $del    = Translator::translateInline('Del');
+            $conf   = Translator::translateInline('Are you sure you wish to delete this entry?');
             $editop = $poll ? 'addpoll' : 'add';
-            rawoutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | <a href='motd.php?op=del&id=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
-            addnav('', "motd.php?op=$editop&id=$id");
-            addnav('', "motd.php?op=del&id=$id");
+            $output->rawOutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | <a href='motd.php?op=del&id=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
+            Nav::add('', "motd.php?op=$editop&id=$id");
+            Nav::add('', "motd.php?op=del&id=$id");
         }
     }
 }

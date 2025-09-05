@@ -26,16 +26,6 @@ parameters:
                         path: src/Lotgd/Config/user_account.php
 
                 -
-                        message: "#^Function rawoutput not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/ErrorHandler.php
-
-                -
-                        message: "#^Function redirect not found\\.$#"
-                        count: 4
-                        path: src/Lotgd/ForcedNavigation.php
-
-                -
                         message: "#^Function module_display_events not found\\.$#"
                         count: 1
                         path: src/Lotgd/Forest.php
@@ -54,51 +44,6 @@ parameters:
                         message: "#^Function page_footer not found\\.$#"
                         count: 1
                         path: src/Lotgd/Forest/Outcomes.php
-
-                -
-                        message: "#^Function datacache not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Function httppost not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Function output not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Function output_notl not found\\.$#"
-                        count: 6
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Function rawoutput not found\\.$#"
-                        count: 68
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Function tlbutton_pop not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Function translate not found\\.$#"
-                        count: 2
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Function updatedatacache not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forms.php
-
-                -
-                        message: "#^Static method Lotgd\\\\Forms\\:\\:renderField\\(\\) invoked with 8 parameters, 7 required\\.$#"
-                        count: 1
-                        path: src/Lotgd/Forms.php
 
 
                 -
@@ -216,30 +161,6 @@ parameters:
                         count: 9
                         path: src/Lotgd/Modules/Installer.php
 
-                -
-                        message: "#^Function addnav not found\\.$#"
-                        count: 2
-                        path: src/Lotgd/Motd.php
-
-                -
-                        message: "#^Function httppost not found\\.$#"
-                        count: 10
-                        path: src/Lotgd/Motd.php
-
-                -
-                        message: "#^Function output not found\\.$#"
-                        count: 5
-                        path: src/Lotgd/Motd.php
-
-                -
-                        message: "#^Function output_notl not found\\.$#"
-                        count: 7
-                        path: src/Lotgd/Motd.php
-
-                -
-                        message: "#^Function rawoutput not found\\.$#"
-                        count: 26
-                        path: src/Lotgd/Motd.php
 
                 -
                         message: "#^Variable \\$affected on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -332,29 +253,10 @@ parameters:
                         path: src/Lotgd/Output.php
 
                 -
-                        message: "#^Class Lotgd\\\\DataCache referenced with incorrect case\\: Lotgd\\\\Datacache\\.$#"
-                        count: 1
-                        path: src/Lotgd/Page/CharStats.php
-
-                -
-                        message: "#^Class Lotgd\\\\DataCache referenced with incorrect case\\: Lotgd\\\\Datacache\\.$#"
-                        count: 2
-                        path: src/Lotgd/PageParts.php
-
-                -
-                        message: "#^Function addnav not found\\.$#"
-                        count: 3
-                        path: src/Lotgd/PageParts.php
-
-                -
                         message: "#^Function check_temp_stat not found\\.$#"
                         count: 19
                         path: src/Lotgd/PageParts.php
 
-                -
-                        message: "#^Function httpget not found\\.$#"
-                        count: 1
-                        path: src/Lotgd/PageParts.php
 
                 -
                         message: "#^Variable \\$maillink_add_after on left side of \\?\\? always exists and is not nullable\\.$#"

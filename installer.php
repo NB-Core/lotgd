@@ -71,7 +71,7 @@ if (!defined('DB_NODB') || !DB_NODB) {
 
 $noinstallnavs = false;
 
-Datacache::invalidatedatacache("gamesettings");
+DataCache::invalidatedatacache("gamesettings");
 $DB_USEDATACACHE = 0;
 //make sure we do not use the caching during this, else we might need to run  through the installer multiple times. AND we now need to reset the game settings, as these were due to faulty code not cached before.
 

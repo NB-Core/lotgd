@@ -9,6 +9,7 @@ use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Serialization;
 use Lotgd\Output;
+use Lotgd\Redirect;
 
 class ForcedNavigation
 {
@@ -53,19 +54,19 @@ class ForcedNavigation
                         $session['loggedin'] = false;
                         return;
                     }
-                    redirect('index.php?op=timeout', 'Account not logged in but session thinks they are.');
+                    Redirect::redirect('index.php?op=timeout', 'Account not logged in but session thinks they are.');
                 }
             } else {
                 $session = [];
                 $session['message'] = Translator::translateInline("`4Error, your login was incorrect`0", "login");
-                redirect('index.php', 'Account Disappeared!');
+                Redirect::redirect('index.php', 'Account Disappeared!');
             }
             Database::freeResult($result);
             if (isset($session['allowednavs'][$REQUEST_URI]) && $session['allowednavs'][$REQUEST_URI] && $overrideforced !== true) {
                 $session['allowednavs'] = [];
             } else {
                 if ($overrideforced !== true) {
-                    redirect('badnav.php', 'Navigation not allowed to ' . $REQUEST_URI);
+                    Redirect::redirect('badnav.php', 'Navigation not allowed to ' . $REQUEST_URI);
                 }
             }
         } else {
@@ -75,7 +76,7 @@ class ForcedNavigation
                     $session = [];
                     return;
                 }
-                redirect('index.php?op=timeout', 'Not logged in: ' . $REQUEST_URI);
+                Redirect::redirect('index.php?op=timeout', 'Not logged in: ' . $REQUEST_URI);
             }
         }
     }

@@ -87,7 +87,7 @@ class ErrorHandler
                 Translator::getInstance()->setSchema();
                 if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT) == SU_DEBUG_OUTPUT) {
                     $backtrace = Backtrace::show();
-                    rawoutput($backtrace);
+                    $output->rawOutput($backtrace);
                 } else {
                     $backtrace = '';
                 }
