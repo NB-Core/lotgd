@@ -92,7 +92,7 @@ class Page
      */
     public function antiCheatProtection(): void
     {
-        $session = &$GLOBALS['session'];
+        global $session;
         $cp      = $GLOBALS['copyright'] ?? '';
         $l       = $GLOBALS['license'] ?? '';
 

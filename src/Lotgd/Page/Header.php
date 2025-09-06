@@ -21,7 +21,7 @@ class Header
 {
     public static function pageHeader(...$args): void
     {
-        $session  = &$GLOBALS['session'];
+        global $session;
         $settings = Settings::getInstance();
         $nav      = Nav::getInstance();
 

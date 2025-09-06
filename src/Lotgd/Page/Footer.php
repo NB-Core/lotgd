@@ -23,7 +23,7 @@ class Footer
 {
     public static function pageFooter(bool $saveuser = true): void
     {
-        $session   = &$GLOBALS['session'];
+        global $session;
         $page      = PageSingleton::getInstance();
         $settings  = Settings::getInstance();
         $template  = Template::getInstance()->getTemplate();
@@ -210,7 +210,7 @@ class Footer
 
     public static function popupFooter(): void
     {
-        $session  = &$GLOBALS['session'];
+        global $session;
         $page     = PageSingleton::getInstance();
         $template = Template::getInstance()->getTemplate();
         $navInstance = Nav::getInstance();
