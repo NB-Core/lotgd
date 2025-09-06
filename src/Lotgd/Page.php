@@ -59,7 +59,8 @@ class Page
 
     public function getCopyright(): string
     {
-        $text = ($this->x === '0' && $session['user']['loggedin']) ? $this->copyright : $this->x;
+	global $session;
+        $text = ($this->x !== '0' && isset($session['user']['loggedin']) && $session['user']['loggedin']) ? $this->x : $this->copyright;
 
         return $this->lc . $text . '<br />';
     }
@@ -108,6 +109,11 @@ class Page
     public function getLc(): string
     {
         return $this->lc;
+    }
+
+    public function getV(): string
+    {
+        return $this->v;
     }
 
     /**
