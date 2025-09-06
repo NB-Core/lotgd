@@ -137,7 +137,16 @@ class DbMysqli
      */
     public function tableExists(string $tablename): bool
     {
-        $result = $this->query("SHOW TABLES LIKE '$tablename'");
+        try {
+            $result = $this->query("SHOW TABLES LIKE '$tablename'");
+        } catch (\mysqli_sql_exception $exception) {
+            if (defined('IS_INSTALLER') && IS_INSTALLER && class_exists('Lotgd\\Installer\\InstallerLogger')) {
+                \Lotgd\Installer\InstallerLogger::log($exception->getMessage());
+            }
+
+            return false;
+        }
+
         return ($result && mysqli_num_rows($result) > 0);
     }
 
