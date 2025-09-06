@@ -18,6 +18,8 @@ class Settings
     private string $tablename;
     /** @var array|null */
     private $settings = null;
+    /** Flag to prevent concurrent loading */
+    private bool $loading = false;
 
     /**
      * Initialize the settings handler.
@@ -100,28 +102,37 @@ class Settings
      */
     public function loadSettings(): void
     {
-        if (!is_array($this->settings)) {
-            $this->settings = DataCache::getInstance()->datacache('game' . $this->tablename);
-            if (!is_array($this->settings)) {
-                $this->settings = [];
+        if ($this->loading) {
+            return;
+        }
+        $this->loading = true;
 
+        try {
+            if (!is_array($this->settings)) {
                 if (!Database::tableExists($this->tablename)) {
                     return;
                 }
 
-                try {
-                    $sql = 'SELECT * FROM ' . $this->tablename;
-                    $result = Database::query($sql);
-                    while ($row = Database::fetchAssoc($result)) {
-                        $this->settings[$row['setting']] = $row['value'];
-                    }
-                    Database::freeResult($result);
-                } catch (TableNotFoundException $e) {
-                    return;
-                }
+                $this->settings = DataCache::getInstance()->datacache('game' . $this->tablename);
+                if (!is_array($this->settings)) {
+                    $this->settings = [];
 
-                DataCache::getInstance()->updatedatacache('game' . $this->tablename, $this->settings);
+                    try {
+                        $sql = 'SELECT * FROM ' . $this->tablename;
+                        $result = Database::query($sql);
+                        while ($row = Database::fetchAssoc($result)) {
+                            $this->settings[$row['setting']] = $row['value'];
+                        }
+                        Database::freeResult($result);
+                    } catch (TableNotFoundException $e) {
+                        return;
+                    }
+
+                    DataCache::getInstance()->updatedatacache('game' . $this->tablename, $this->settings);
+                }
             }
+        } finally {
+            $this->loading = false;
         }
     }
 
