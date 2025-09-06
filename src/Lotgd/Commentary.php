@@ -883,6 +883,7 @@ SQL;
     private static function formatName(array $row): string
     {
         $name = $row['name'] ?? '';
+        $superuser = (int) ($row['superuser'] ?? 0);
 
         if ($name !== '') {
             $name = HolidayText::holidayize($name, 'comment');
@@ -896,13 +897,13 @@ SQL;
         $settings = Settings::getInstance();
 
         if ($settings->getSetting('enable_chat_tags', 1) == 1) {
-            if (($row['superuser'] & SU_MEGAUSER) == SU_MEGAUSER) {
+            if (($superuser & SU_MEGAUSER) == SU_MEGAUSER) {
                 $name = '`$' . $settings->getSetting('chat_tag_megauser', '[ADMIN]') . '`0' . $name;
             } else {
-                if (($row['superuser'] & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
+                if (($superuser & SU_IS_GAMEMASTER) == SU_IS_GAMEMASTER) {
                     $name = '`$' . $settings->getSetting('chat_tag_gm', '[GM]') . '`0' . $name;
                 }
-                if (($row['superuser'] & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
+                if (($superuser & SU_EDIT_COMMENTS) == SU_EDIT_COMMENTS) {
                     $name = '`$' . $settings->getSetting('chat_tag_mod', '[MOD]') . '`0' . $name;
                 }
             }
