@@ -36,7 +36,7 @@ It should run on any modern PHP environment. Open an issue on [GitHub](https://g
 
 Chat with other adventurers and get quick support on our Discord server!
 
-[![Discord](https://img.shields.io/discord/123456789012345678?label=Discord&logo=discord)](https://discord.gg/lotgd)
+[![Discord](https://img.shields.io/discord/1413914672683417639?label=Discord&logo=discord)](https://discord.gg/dWEDQMaTcn)
 
 ## Demo
 
