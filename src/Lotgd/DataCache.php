@@ -37,6 +37,10 @@ class DataCache
      */
     public function datacache(string $name, int $duration = 60): mixed
     {
+        if (defined('DB_NODB') && DB_NODB) {
+            return false;
+        }
+
         if (! Settings::hasInstance()) {
             return false;
         }
@@ -67,6 +71,10 @@ class DataCache
      */
     public function updatedatacache(string $name, mixed $data): bool
     {
+        if (defined('DB_NODB') && DB_NODB) {
+            return false;
+        }
+
         if (! Settings::hasInstance()) {
             return false;
         }
@@ -114,6 +122,10 @@ class DataCache
      */
     public function invalidatedatacache(string $name, bool $withpath = true): void
     {
+        if (defined('DB_NODB') && DB_NODB) {
+            return;
+        }
+
         if (! Settings::hasInstance()) {
             return;
         }
@@ -134,6 +146,10 @@ class DataCache
      */
     public function massinvalidate(string $name = ''): void
     {
+        if (defined('DB_NODB') && DB_NODB) {
+            return;
+        }
+
         if (! Settings::hasInstance()) {
             return;
         }
@@ -160,6 +176,10 @@ class DataCache
      */
     public function makecachetempname(string $name): string
     {
+        if (defined('DB_NODB') && DB_NODB) {
+            return '';
+        }
+
         if (! Settings::hasInstance()) {
             return '';
         }
