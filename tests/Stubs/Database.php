@@ -80,7 +80,14 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
                 return $last_query_result;
             }
 
-            if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && (self::$doctrineConnection || \Lotgd\Doctrine\Bootstrap::$conn)) {
+            if (
+                class_exists('Lotgd\\Doctrine\\Bootstrap', false) &&
+                (self::$doctrineConnection || \Lotgd\Doctrine\Bootstrap::$conn) &&
+                (
+                    !self::$instance ||
+                    get_class(self::$instance) === \Lotgd\MySQL\DbMysqli::class
+                )
+            ) {
                 $conn = self::getDoctrineConnection();
                 $trim = ltrim($sql);
                 while ($trim !== '' && $trim[0] === '(') {
@@ -332,7 +339,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
      * of {@link \mysqli_result::fetch_assoc()} so that repeated calls continue
      * to return subsequent rows.
      */
-        public static function fetchAssoc(array|object &$result): mixed
+        public static function fetchAssoc(mixed &$result): mixed
         {
             if (is_array($result)) {
                 return array_shift($result);
@@ -358,7 +365,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             return true;
         }
 
-        public static function numRows(array|object $result): int
+        public static function numRows(mixed $result): int
         {
             if (is_object($result) && method_exists($result, 'rowCount')) {
                 return $result->rowCount();

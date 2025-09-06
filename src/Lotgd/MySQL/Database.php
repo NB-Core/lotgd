@@ -37,6 +37,12 @@ class Database
     ];
 
     /**
+     * Last cache key used by {@see queryCached} or other database helpers.
+     * Primarily exposed for testing translation caching behavior.
+     */
+    public static string $lastCacheName = '';
+
+    /**
      * Number of queries executed for the current request.
      */
     private static int $queryCount = 0;

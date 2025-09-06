@@ -6,6 +6,7 @@ namespace Lotgd;
 use Lotgd\Settings;
 
 use Lotgd\MySQL\Database;
+use Lotgd\DataCache;
 use Lotgd\Sanitize;
 use Lotgd\Cookies;
 use Lotgd\Output;
@@ -411,7 +412,6 @@ class Translator
             return [];
         }
 
-        global $session;
         if ($language === false) {
             if (defined('LANGUAGE')) {
                 $language = constant('LANGUAGE');
@@ -422,36 +422,43 @@ class Translator
         }
         $page = Sanitize::translatorPage($namespace);
         $uri = Sanitize::translatorUri($namespace);
-        if ($page == $uri) {
-            $where = "uri = '$page'";
-        } else {
-            $where = "(uri='$page' OR uri='$uri')";
-        }
+
+        $conn = Database::getDoctrineConnection();
+        $sql = 'SELECT intext, outtext FROM ' . Database::prefix('translations')
+            . ' WHERE language = :language AND (uri = :page OR uri = :uri)';
+        $params = [
+            'language' => $language,
+            'page'     => $page,
+            'uri'      => $uri,
+        ];
+
         try {
-            $sql = "
-                        SELECT intext,outtext
-                        FROM " . Database::prefix("translations") . "
-                        WHERE language='$language'
-                                AND $where";
-            /*  debug(nl2br(htmlentities($sql, ENT_COMPAT, Settings::getInstance()->getSetting("charset", "UTF-8")))); */
-            if ($settings instanceof Settings && !$settings->getSetting("cachetranslations", 1)) {
-                $result = Database::query($sql);
-            } else {
+            if ($settings instanceof Settings && $settings->getSetting('cachetranslations', 1)) {
                 $cacheNamespace = $namespace;
                 if (strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH) {
                     $cacheNamespace = sha1($cacheNamespace);
                 }
-                $result = Database::queryCached($sql, "translations-" . $cacheNamespace . "-" . $language, 600);
-                //store it for 10 Minutes, normally you don't need to refresh this often
+                $cacheKey = 'translations-' . $cacheNamespace . '-' . $language;
+                \Lotgd\MySQL\Database::$lastCacheName = $cacheKey;
+                $cache = DataCache::getInstance();
+                $data  = $cache->datacache($cacheKey, 600);
+                if ($data === false) {
+                    $data = $conn->fetchAllAssociative($sql, $params);
+                    $cache->updatedatacache($cacheKey, $data);
+                }
+            } else {
+                $data = $conn->fetchAllAssociative($sql, $params);
             }
         } catch (TableNotFoundException $e) {
             self::$translation_is_enabled = false;
             return [];
         }
-        $out = array();
-        while ($row = Database::fetchAssoc($result)) {
+
+        $out = [];
+        foreach ($data as $row) {
             $out[$row['intext']] = $row['outtext'];
         }
+
         return $out;
     }
 

@@ -39,6 +39,12 @@ class DoctrineConnection
         return new DoctrineResult([["ok" => true]]);
     }
 
+    public function fetchAllAssociative(string $sql, array $params = []): array
+    {
+        $this->queries[] = $sql;
+        return [];
+    }
+
     public function executeStatement(string $sql, array $params = []): int
     {
         $this->queries[] = $sql;
