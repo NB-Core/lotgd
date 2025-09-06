@@ -159,6 +159,10 @@ class Settings
     {
         global $config;
         $defaults = [];
+
+        if (defined('DB_NODB') && DB_NODB) {
+            return $default === false ? ($defaults[$settingname] ?? '') : $default;
+        }
         if (!is_array($config)) {
             $root = dirname(__DIR__, 2);
             $path = realpath($root . '/dbconnect.php');
