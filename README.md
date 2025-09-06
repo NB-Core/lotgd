@@ -32,12 +32,19 @@ Features of this fork include:
 
 It should run on any modern PHP environment. Open an issue on [GitHub](https://github.com/NB-Core/lotgd/issues) with questions.
 
+## Join the Community
+
+Chat with other adventurers and get quick support on our Discord server!
+
+[![Discord](https://img.shields.io/discord/123456789012345678?label=Discord&logo=discord)](https://discord.gg/lotgd)
+
 ## Demo
 
 ![Game screenshot](images/screenshot.png)
 There is no official demo server. You can explore the original at [LotGD.net](https://lotgd.net) or the current version at [Shinobi Legends](https://shinobilegends.com). You can create an account to explore, but you will only have standard user rights.
 
 ## Table of Contents
+- [Join the Community](#join-the-community)
 - [Read Me First](#read-me-first)
 - [System Requirements](#system-requirements)
 - [Quick Install](#quick-install)
