@@ -58,6 +58,11 @@ Thank you for downloading the modified version of Legend Of the Green Dragon.
 See `CHANGELOG.txt` for a list of changes up until version 1.3.2.
 👉 See [CHANGELOG.md](CHANGELOG.md) for a detailed history after that up until now.
 
+If you need **modules**, [go there](https://github.com/NB-Core/modules) and fetch the ones you like.
+There may be more out there, in the original dragonprime resources or other people's work.
+
+If you need more legacy **templates** / skins for the game, [go there](https://github.com/NB-Core/lotgd-templates).
+
 ## System Requirements
 
 To run Legend of the Green Dragon on a typical web host you will need:
