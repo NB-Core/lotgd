@@ -63,7 +63,7 @@ table.nav {
 
 .navhead {
 	text-decoration: none;
-	width: 180px;
+	width: 100%;
 	height: auto;
 	padding: 1px;
 	float: left;
@@ -142,7 +142,7 @@ a {
 a.nav {
 	color: #30d5c8;
 	text-decoration: none;
-	width: 181px;
+	width: 100%;
 	height: auto;
 	float: left;
 	padding: 1px;
@@ -152,7 +152,7 @@ a.nav {
 
 .navhelp {
 	text-decoration: none;
-	width: 181px;
+	width: 100%;
 	height: auto;
 	padding: 1px;
 	float: left;
