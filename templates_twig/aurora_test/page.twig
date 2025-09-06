@@ -6,7 +6,7 @@
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ '/templates_twig/common/bootstrap.min.css'|ver }}">
-    <link rel="stylesheet" href="{{ (template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
@@ -59,8 +59,10 @@
         </aside>
     </div>
     <div class="bootstrap-footer row">
-        <div class="col-xs-12">
-            {{ copyright|raw }}<br />
+        <div class="col-12 col-sm-6">
+            {{ copyright|raw }}
+        </div>
+        <div class="col-12 col-sm-6 text-end">
             {{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})
         </div>
     </div>
