@@ -54,4 +54,11 @@ final class FormsTest extends TestCase
         $this->assertStringNotContainsString("value='twig:test_no_config'", $output);
         $this->assertStringNotContainsString("value='twig:.git'", $output);
     }
+
+    public function testThemeFieldHandlesNullValue(): void
+    {
+        Forms::showForm(['skin' => 'Skin,theme'], ['skin' => null]);
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString("<option value='' selected>---</option>", $output);
+    }
 }

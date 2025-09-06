@@ -340,9 +340,10 @@ JS;
                 }
 
                 asort($skins, SORT_NATURAL | SORT_FLAG_CASE);
-                $current = Template::addTypePrefix($row[$key]);
+                $current = isset($row[$key]) ? Template::addTypePrefix($row[$key]) : '';
 
                 $output->rawOutput("<select id='$entityId' name='" . htmlentities($keyout, ENT_QUOTES, $charset) . "'>");
+                $output->rawOutput("<option value=''" . ($current === '' ? ' selected' : '') . '>---</option>');
                 foreach ($skins as $skin => $display) {
                     $display = htmlentities($display, ENT_COMPAT, $charset);
                     $skinEsc = htmlentities($skin, ENT_QUOTES, $charset);
