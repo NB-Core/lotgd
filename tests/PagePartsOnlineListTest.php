@@ -76,10 +76,18 @@ final class PagePartsOnlineListTest extends TestCase
         global $settings;
         $settings->saveSetting('homeonline_mode', 2);
         $settings->saveSetting('homeonline_minutes', 30);
-        $expectedDate = date('Y-m-d H:i:s', strtotime('-30 minutes'));
         $outputString = PageParts::charStats();
         $this->assertStringNotContainsString('loggedin=1', Database::$lastSql);
-        $this->assertStringContainsString($expectedDate, Database::$lastSql);
+
+        $this->assertMatchesRegularExpression(
+            "/laston>'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'/",
+            Database::$lastSql
+        );
+        preg_match("/laston>'([^']+)'/", Database::$lastSql, $matches);
+        $actual = strtotime($matches[1]);
+        $expected = strtotime('-30 minutes');
+        $this->assertEqualsWithDelta($expected, $actual, 1);
+
         $this->assertStringContainsString('Online Characters last 30 minutes:', $outputString);
     }
 }
