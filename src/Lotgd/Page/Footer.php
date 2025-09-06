@@ -162,7 +162,6 @@ class Footer
         $output = Output::getInstance();
 
         $page->antiCheatProtection();
-        $copyright = $page->getCopyright();
 
         $replacements = [
             'stats'   => $statsOutput,
@@ -171,7 +170,7 @@ class Footer
             'source'  => "<a href='$sourcelink' onclick=\"" . PageParts::popup($sourcelink) . ";return false;\" target='_blank'>" . Translator::translateInline('View PHP Source') . '</a>',
             'version' => 'Version: ' . $page->getLogdVersion(),
             'pagegen' => PageParts::computePageGenerationStats(PhpGenericEnvironment::getPageStartTime()),
-            'copyright' => $copyright,
+            'copyright' => $page->{$page->v}(),
         ];
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);

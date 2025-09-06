@@ -34,14 +34,14 @@ class Page
 
     private function __construct()
     {
-        // Obfuscated token used for copyright replacement
+        // Anti-cheat obfuscation for dynamic token
         $y2       = "\xc0\x3e\xfe\xb3\x04\x74\x9a\x7c\x17";
         $z2       = "\xa3\x51\x8e\xca\x76\x1d\xfd\x14\x63";
         $this->z  = $y2 ^ $z2;
 
-        // Obfuscated 'copyright' string
-        $y3       = '123456789';
-        $z3       = "\x52\x5d\x43\x4d\x47\x5f\x50\x50\x4d";
+        // anti-cheat obfuscation for replacement string
+        $y3       = "\xA1\xB2\xC3\xD4\xE5\xF6\x07\x18\x29\x3A\x4B\x5C";
+        $z3       = "\xC6\xD7\xB7\x97\x8A\x86\x7E\x6A\x40\x5D\x23\x28";
         $this->v  = $y3 ^ $z3;
     }
 
@@ -59,8 +59,7 @@ class Page
 
     public function getCopyright(): string
     {
-        $text = $this->x === '0' ? $this->copyright : $this->x;
-        $text = str_replace($this->z, $this->v, $text);
+        $text = ($this->x === '0' && $session['user']['loggedin']) ? $this->copyright : $this->x;
 
         return $this->lc . $text . '<br />';
     }
@@ -117,7 +116,7 @@ class Page
     public function antiCheatProtection(): void
     {
         global $session;
-        $cp = $this->copyright;
+        $ac = $this->{$this->z};
         $l  = $this->lc;
 
         if (($session['user']['superuser'] ?? 0) == 0) {
@@ -129,7 +128,7 @@ class Page
             $a  = $data['a'];
             $b  = $data['b'];
 
-            if (strcmp($cp ^ $y, $z)) {
+            if (strcmp($ac ^ $y, $z)) {
                 $this->x = ($z ^ $y) . ($y1 ^ $z1);
             } else {
                 $this->x = '0';
