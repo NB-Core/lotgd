@@ -46,8 +46,8 @@ class Names
             $name = $session['user']['name'];
             $pname = $session['user']['playername'];
         } else {
-            $name = $old['name'];
-            $pname = $old['playername'];
+            $name = $old['name'] ?? '';
+            $pname = $old['playername'] ?? '';
         }
         if ($pname != '') {
             return str_replace('`0', '', $pname);
