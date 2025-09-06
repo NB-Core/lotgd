@@ -424,17 +424,13 @@ class Translator
         $uri = Sanitize::translatorUri($namespace);
 
         $conn = Database::getDoctrineConnection();
-
-        $qb = $conn->createQueryBuilder();
-        $qb->select('intext', 'outtext')
-            ->from(Database::prefix('translations'))
-            ->where('language = :language')
-            ->andWhere('(uri = :page OR uri = :uri)')
-            ->setParameters([
-                'language' => $language,
-                'page'     => $page,
-                'uri'      => $uri,
-            ]);
+        $sql = 'SELECT intext, outtext FROM ' . Database::prefix('translations')
+            . ' WHERE language = :language AND (uri = :page OR uri = :uri)';
+        $params = [
+            'language' => $language,
+            'page'     => $page,
+            'uri'      => $uri,
+        ];
 
         try {
             if ($settings instanceof Settings && $settings->getSetting('cachetranslations', 1)) {
@@ -443,13 +439,15 @@ class Translator
                     $cacheNamespace = sha1($cacheNamespace);
                 }
                 $cacheKey = 'translations-' . $cacheNamespace . '-' . $language;
-                $data = DataCache::getInstance()->datacache($cacheKey, 600);
+                \Lotgd\MySQL\Database::$lastCacheName = $cacheKey;
+                $cache = DataCache::getInstance();
+                $data  = $cache->datacache($cacheKey, 600);
                 if ($data === false) {
-                    $data = $qb->fetchAllAssociative();
-                    DataCache::getInstance()->updatedatacache($cacheKey, $data);
+                    $data = $conn->fetchAllAssociative($sql, $params);
+                    $cache->updatedatacache($cacheKey, $data);
                 }
             } else {
-                $data = $qb->fetchAllAssociative();
+                $data = $conn->fetchAllAssociative($sql, $params);
             }
         } catch (TableNotFoundException $e) {
             self::$translation_is_enabled = false;
