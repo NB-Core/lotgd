@@ -32,8 +32,6 @@ class Footer
 
         $navInstance = Nav::getInstance();
         $header = $navInstance->getHeader();
-
-        $z = $page->getZ();
         if (TwigTemplate::isActive()) {
             $footer = '';
         } else {
@@ -163,6 +161,9 @@ class Footer
 
         $output = Output::getInstance();
 
+        $page->antiCheatProtection();
+        $copyright = $page->getCopyright();
+
         $replacements = [
             'stats'   => $statsOutput,
             'script'  => $script,
@@ -170,7 +171,7 @@ class Footer
             'source'  => "<a href='$sourcelink' onclick=\"" . PageParts::popup($sourcelink) . ";return false;\" target='_blank'>" . Translator::translateInline('View PHP Source') . '</a>',
             'version' => 'Version: ' . $page->getLogdVersion(),
             'pagegen' => PageParts::computePageGenerationStats(PhpGenericEnvironment::getPageStartTime()),
-            $z       => $page->getCopyright(),
+            'copyright' => $copyright,
         ];
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);
@@ -246,13 +247,14 @@ class Footer
         }
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);
 
-        $z = $page->getZ();
+        $page->antiCheatProtection();
+        $copyright = $page->getCopyright();
         list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, [
             'script' => '',
             'mail'   => (strpos($header, '{mail}') !== false || strpos($footer, '{mail}') !== false)
                 ? PageParts::mailLink()
                 : '',
-            $z       => $page->getCopyright(),
+            'copyright' => $copyright,
         ]);
 
         if (TwigTemplate::isActive()) {
