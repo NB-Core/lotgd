@@ -6,7 +6,7 @@
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ '/templates_twig/common/bootstrap.min.css'|ver }}">
-    <link rel="stylesheet" href="{{ (template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
@@ -26,10 +26,10 @@
             </div>
         </div>
         <div class="col-sm-4 pageheader-center text-center">
-            <img src="{{ template_path }}/assets/title-logo.png" alt="{{ title }}">
+            <img src="{{ '/' ~ template_path }}/assets/title-logo.png" alt="{{ title }}">
         </div>
         <div class="col-sm-4 pageheader-right text-end">
-            <img src="{{ template_path }}/assets/mail.png" alt="Mail">
+            <img src="{{ '/' ~ template_path }}/assets/mail.png" alt="Mail">
             <strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
             {{ petitiondisplay|raw }}
         </div>
@@ -49,9 +49,9 @@
     <div class="row">
         <nav class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
             <div class="navad-wrapper">{{ navad|raw }}</div>
-            <img src="{{ template_path }}/assets/nav-top.png" alt="" class="nav-top">
+            <img src="{{ '/' ~ template_path }}/assets/nav-top.png" alt="" class="nav-top">
             <div class="nav-container" role="navigation">{{ nav|raw }}</div>
-            <img src="{{ template_path }}/assets/nav-bottom.png" alt="" class="nav-bottom">
+            <img src="{{ '/' ~ template_path }}/assets/nav-bottom.png" alt="" class="nav-bottom">
         </nav>
         <main class="col flex-grow-1 main-content">
             {{ content|raw }}
@@ -61,8 +61,10 @@
         </aside>
     </div>
     <div class="bootstrap-footer row">
-        <div class="col-xs-12">
-            {{ copyright|raw }}<br />
+        <div class="col-12 col-sm-6">
+            {{ copyright|raw }}
+        </div>
+        <div class="col-12 col-sm-6 text-end">
             {{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})
         </div>
     </div>
