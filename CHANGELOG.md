@@ -12,6 +12,22 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 - Placeholder for upcoming 2.0.0 stable.
 
+## [2.0.0-rc12] – 2025-09-06
+
+### Dev / Tooling Enhancements
+- Integrated **PHPStan** static analysis into the development workflow. Pulling in `phpstan/phpstan`, including configuration for Doctrine and PHPUnit extensions to ensure cleaner, more maintainable code.
+- Added **Psalm** alongside PHPStan for additional static type coverage and complementary error detection.
+- Enhanced CI pipeline with linting, PHPStan, Psalm, and PHPUnit; enabling pre-commit and GitHub Actions support for rapid feedback and code quality enforcement.
+- Configured IDE integration (e.g., PhpStorm) to run Psalm/PHPStan on the fly, enabling real-time editor warnings and fixes. :contentReference[oaicite:0]{index=0}
+
+### Bug Fixes & Minor Improvements
+- Addressed minor issues discovered via static analyzers — cleaned up undefined variable notices, type-stability warnings, and optimized function signatures.
+- Fixed legacy annotation compatibility in comments (`@psalm-` and `@phpstan-`) to avoid tool conflicts. :contentReference[oaicite:1]{index=1}
+
+### Summary
+These enhancements significantly improve code quality, developer trust, and long-term maintainability—while preserving the legacy engine compatibility.
+
+
 ---
 
 ## [2.0.0-rc11] – 2025-08-29
