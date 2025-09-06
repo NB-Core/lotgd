@@ -101,10 +101,10 @@ class Backtrace
      */
     public static function getType(mixed $in): string
     {
-        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
-        $charset = $settings instanceof Settings
-            ? $settings->getSetting('charset', 'UTF-8')
-            : 'UTF-8';
+        $charset = 'UTF-8';
+        if (! (defined('DB_NODB') && DB_NODB) && Settings::hasInstance()) {
+            $charset = Settings::getInstance()->getSetting('charset', 'UTF-8');
+        }
         $return = '';
         if (is_string($in)) {
             $return .= "<span class='string'>\"";
