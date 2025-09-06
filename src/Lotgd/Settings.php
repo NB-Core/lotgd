@@ -32,6 +32,10 @@ class Settings
         self::$instance = $this;
         $GLOBALS['settings'] = $this;
 
+        if (defined('DB_NODB') && DB_NODB) {
+            return;
+        }
+
         $this->loadSettings();
     }
 
