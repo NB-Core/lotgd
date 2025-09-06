@@ -17,17 +17,25 @@ final class Version20250724000019 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        $sm    = $this->connection->createSchemaManager();
         $table = Database::prefix('module_hooks');
-        $this->addSql("ALTER TABLE $table DROP PRIMARY KEY");
-        $this->addSql("ALTER TABLE $table CHANGE COLUMN `function` hook_callback VARCHAR(50) NOT NULL");
-        $this->addSql("ALTER TABLE $table ADD PRIMARY KEY (modulename, location, hook_callback)");
+        $cols  = $sm->listTableColumns($table);
+        if (isset($cols['function'])) {
+            $this->addSql("ALTER TABLE $table DROP PRIMARY KEY");
+            $this->addSql("ALTER TABLE $table CHANGE COLUMN `function` hook_callback VARCHAR(50) NOT NULL");
+            $this->addSql("ALTER TABLE $table ADD PRIMARY KEY (modulename, location, hook_callback)");
+        }
     }
 
     public function down(Schema $schema): void
     {
+        $sm    = $this->connection->createSchemaManager();
         $table = Database::prefix('module_hooks');
-        $this->addSql("ALTER TABLE $table DROP PRIMARY KEY");
-        $this->addSql("ALTER TABLE $table CHANGE COLUMN hook_callback `function` VARCHAR(50) NOT NULL");
-        $this->addSql("ALTER TABLE $table ADD PRIMARY KEY (modulename, location, `function`)");
+        $cols  = $sm->listTableColumns($table);
+        if (isset($cols['hook_callback'])) {
+            $this->addSql("ALTER TABLE $table DROP PRIMARY KEY");
+            $this->addSql("ALTER TABLE $table CHANGE COLUMN hook_callback `function` VARCHAR(50) NOT NULL");
+            $this->addSql("ALTER TABLE $table ADD PRIMARY KEY (modulename, location, `function`)");
+        }
     }
 }
