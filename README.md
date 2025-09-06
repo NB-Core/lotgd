@@ -1,6 +1,6 @@
 # Legend of the Green Dragon Fork
 
-![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue)
+![PHP Version](https://img.shields.io/badge/PHP-8.4%2B-blue)
 ![License](https://img.shields.io/badge/license-CC%20BY--SA-lightgrey)
 [![CI](https://github.com/NB-Core/lotgd/actions/workflows/ci.yml/badge.svg)](https://github.com/NB-Core/lotgd/actions/workflows/ci.yml)
 This is a fork of the original Legend of the Green Dragon game by Eric "MightyE" Stevens (http://www.mightye.org) and JT "Kendaer" Traub (http://www.dragoncat.net)
