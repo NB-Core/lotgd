@@ -29,12 +29,20 @@ class Page
     /** @var string */
     private string $lc = '';
 
+    /** @var string */
+    private string $v = '';
+
     private function __construct()
     {
         // Obfuscated token used for copyright replacement
         $y2       = "\xc0\x3e\xfe\xb3\x04\x74\x9a\x7c\x17";
         $z2       = "\xa3\x51\x8e\xca\x76\x1d\xfd\x14\x63";
         $this->z  = $y2 ^ $z2;
+
+        // Obfuscated 'copyright' string
+        $y3       = '123456789';
+        $z3       = "\x52\x5d\x43\x4d\x47\x5f\x50\x50\x4d";
+        $this->v  = $y3 ^ $z3;
     }
 
     /**
@@ -51,12 +59,28 @@ class Page
 
     public function getCopyright(): string
     {
-        return $this->copyright;
+        $text = $this->x === '0' ? $this->copyright : $this->x;
+        $text = str_replace($this->z, $this->v, $text);
+
+        return $this->lc . $text . '<br />';
     }
 
     public function setCopyright(string $copyright): void
     {
         $this->copyright = $copyright;
+
+        if ($this->lc !== '') {
+            $this->antiCheatProtection();
+        }
+    }
+
+    public function setLicense(string $license): void
+    {
+        $this->lc = $license;
+
+        if ($this->copyright !== '') {
+            $this->antiCheatProtection();
+        }
     }
 
     public function getLogdVersion(): string
@@ -93,8 +117,8 @@ class Page
     public function antiCheatProtection(): void
     {
         global $session;
-        $cp      = $GLOBALS['copyright'] ?? '';
-        $l       = $GLOBALS['license'] ?? '';
+        $cp = $this->copyright;
+        $l  = $this->lc;
 
         if (($session['user']['superuser'] ?? 0) == 0) {
             $data = require __DIR__ . '/Page/AntiCheatData.php';
