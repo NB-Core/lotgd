@@ -162,6 +162,7 @@ class Sanitize
     {
         $uri = self::comscrollSanitize($in);
         $uri = self::cmdSanitize($uri);
+        $uri = str_replace(["'", '"', '`', ';'], '', $uri);
         if (substr($uri, -1) == '?') {
             $uri = substr($uri, 0, -1);
         }
@@ -184,6 +185,7 @@ class Sanitize
         if (strpos($page, '?') !== false) {
             $page = substr($page, 0, strpos($page, '?'));
         }
+        $page = str_replace(["'", '"', '`', ';'], '', $page);
         return $page;
     }
 

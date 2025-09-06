@@ -62,6 +62,28 @@ final class SanitizeExtraTest extends TestCase
         $this->assertLessThanOrEqual(Sanitize::URI_MAX_LENGTH, strlen($clean));
     }
 
+    public function testTranslatorUriStripsMaliciousCharacters(): void
+    {
+        $uri = "pa'ge.php\"`;;?op=f'o;o\"`;";
+        $clean = Sanitize::translatorUri($uri);
+        $this->assertSame('page.php?op=foo', $clean);
+        $this->assertStringNotContainsString("'", $clean);
+        $this->assertStringNotContainsString('"', $clean);
+        $this->assertStringNotContainsString('`', $clean);
+        $this->assertStringNotContainsString(';', $clean);
+    }
+
+    public function testTranslatorPageStripsMaliciousCharacters(): void
+    {
+        $uri = "pa'ge.php\"`;;?op=f'o;o\"`;";
+        $page = Sanitize::translatorPage($uri);
+        $this->assertSame('page.php', $page);
+        $this->assertStringNotContainsString("'", $page);
+        $this->assertStringNotContainsString('"', $page);
+        $this->assertStringNotContainsString('`', $page);
+        $this->assertStringNotContainsString(';', $page);
+    }
+
     public function testModulenameSanitize(): void
     {
         $this->assertSame('ModuleName', Sanitize::modulenameSanitize('Module!Name'));
