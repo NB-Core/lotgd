@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Modules\HookHandler;
 /**
  * Base setup for AJAX requests, including the Jaxon library and
  * initial JavaScript dependencies. This file prepares the page for
@@ -28,6 +29,19 @@ $pre_headscript .= "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js'
 // Add polling variables directly here
 // Load the async settings
 require_once __DIR__ . '/common/settings.php';
+
+// Determine favicon for notifications
+$default = "<link rel=\"shortcut icon\" HREF=\"/images/favicon/favicon.ico\" TYPE=\"image/x-icon\"/>"
+    . "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/images/favicon/apple-touch-icon.png\">"
+    . "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/images/favicon/favicon-32x32.png\">"
+    . "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/images/favicon/favicon-16x16.png\">"
+    . "<link rel=\"manifest\" href=\"/images/favicon/site.webmanifest\">";
+$favData = HookHandler::hook('pageparts-favicon', ['favicon-link' => $default]);
+if (preg_match('/<link[^>]*rel=\"icon\"[^>]*sizes=\"32x32\"[^>]*href=\"([^\"]+)\"/i', $favData['favicon-link'], $matches)) {
+    $favicon32 = $matches[1];
+} else {
+    $favicon32 = '/images/favicon/favicon-32x32.png';
+}
 
 $polling_script = "<script>";
 $polling_script .= "var lotgd_comment_section = " . json_encode($session['last_comment_section'] ?? '') . ";";
@@ -65,11 +79,11 @@ function lotgdShowNotification(title, message) {
         return;
     }
     if (Notification.permission === 'granted') {
-        new Notification(title, {body: message, icon: '/favicon.ico'});
+        new Notification(title, {body: message, icon: '{$favicon32}'});
     } else if (Notification.permission !== 'denied') {
         Notification.requestPermission().then(function (permission) {
             if (permission === 'granted') {
-                new Notification(title, {body: message, icon: '/favicon.ico'});
+                new Notification(title, {body: message, icon: '{$favicon32}'});
             }
         });
     }
