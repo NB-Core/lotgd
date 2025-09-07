@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         LotGD Jaxon Integration
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/NB-Core/
 // @version      1.0
 // @description  Integrate Jaxon AJAX library with LotGD
-// @author       Your Name
+// @author       NB-Core
 // @match        *://yourlotgdwebsite.com/*
 // @grant        none
 // ==/UserScript==
