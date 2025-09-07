@@ -11,7 +11,9 @@ use Lotgd\Forest\Outcomes;
 use Lotgd\MySQL\Database;
 
         $op = httpget("op");
-    $city = urldecode(httpget("city"));
+    $cityParam = httpget('city');
+    // Default to an empty string when the parameter is missing
+    $city      = urldecode($cityParam === false ? '' : $cityParam);
     $continue = httpget("continue");
     $danger = httpget("d");
     $su = httpget("su");
