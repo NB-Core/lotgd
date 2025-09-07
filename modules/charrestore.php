@@ -279,19 +279,29 @@ function charrestore_run(): void
         addnav("", "runmodule.php?module=charrestore&op=list" . $retnav);
         rawoutput("<table><tr><td>");
         output("Character Login: ");
-        rawoutput("<input name='login' value=\"" . htmlentities(stripslashes(httppost("login")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
+        $login = httppost('login');
+        $login = is_string($login) ? stripslashes($login) : '';
+        rawoutput("<input name='login' value=\"" . htmlentities($login, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
         rawoutput("</td><td>");
         output("Character Email: ");
-        rawoutput("<input name='email' value=\"" . htmlentities(stripslashes(httppost("email")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
+        $email = httppost('email');
+        $email = is_string($email) ? stripslashes($email) : '';
+        rawoutput("<input name='email' value=\"" . htmlentities($email, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
         rawoutput("</td><td>");
         output("Display hash value for which email: ");
-        rawoutput("<input name='email_hashcheck' placeholder='for information only' value=\"" . htmlentities(stripslashes(httppost("email_hashcheck")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
+        $emailHashCheck = httppost('email_hashcheck');
+        $emailHashCheck = is_string($emailHashCheck) ? stripslashes($emailHashCheck) : '';
+        rawoutput("<input name='email_hashcheck' placeholder='for information only' value=\"" . htmlentities($emailHashCheck, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
         rawoutput("</td></tr><tr><td>");
         output("After date: ");
-        rawoutput("<input name='start' placeholder='YYYY-MM-DD format' value=\"" . htmlentities(stripslashes(httppost("start")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
+        $startDate = httppost('start');
+        $startDate = is_string($startDate) ? stripslashes($startDate) : '';
+        rawoutput("<input name='start' placeholder='YYYY-MM-DD format' value=\"" . htmlentities($startDate, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
         rawoutput("</td><td>");
         output("Before date: ");
-        rawoutput("<input name='end' placeholder='YYYY-MM-DD format' value=\"" . htmlentities(stripslashes(httppost("end")), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"><br>");
+        $endDate = httppost('end');
+        $endDate = is_string($endDate) ? stripslashes($endDate) : '';
+        rawoutput("<input name='end' placeholder='YYYY-MM-DD format' value=\"" . htmlentities($endDate, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
         rawoutput("</td></tr></table>");
         $submit = translate_inline("Submit");
         rawoutput("<input type='submit' value='$submit' class='button'>");
@@ -397,12 +407,14 @@ function charrestore_run(): void
         rawoutput("</form>");
         output("Hashed String: `\$%s", charrestore_gethash(httppost('teststring')));
     } elseif (httpget("op") == "beginrestore") {
-        $user = unserialize(join("", file(charrestore_getstorepath() . httpget("file"))));
+        $file = httpget('file');
+        $file = is_string($file) ? stripslashes($file) : '';
+        $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
         $sql = "SELECT count(acctid) AS c FROM " . Database::prefix("accounts") . " WHERE login='{$user['account']['login']}'";
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
-        rawoutput("<form action='runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode(stripslashes(httpget("file"))) . $retnav . "' method='POST'>");
-        addnav("", "runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode(stripslashes(httpget("file"))) . $retnav);
+        rawoutput("<form action='runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode($file) . $retnav . "' method='POST'>");
+        addnav("", "runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode($file) . $retnav);
         if ($row['c'] > 0) {
             output("`\$The user's login conflicts with an existing login in the system.");
             output("You will have to provide a new one, and you should probably think about giving them a new name after the restore.`n");
@@ -438,9 +450,11 @@ function charrestore_run(): void
         rawoutput("<input type='submit' value='$yes' class='button'>");
         rawoutput("</form>");
     } elseif (httpget("op") == "finishrestore") {
-        $user = unserialize(join("", file(charrestore_getstorepath() . httpget("file"))));
+        $file = httpget('file');
+        $file = is_string($file) ? stripslashes($file) : '';
+        $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
         $newlogin = (httppost('newlogin') > '' ? httppost('newlogin') : $user['account']['login']);
-        $user = unserialize(join("", file(charrestore_getstorepath() . httpget("file"))));
+        $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
         $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$newlogin'";
         $result = Database::query($sql);
         $count = Database::numRows($result);
@@ -449,7 +463,7 @@ function charrestore_run(): void
             while ($row = Database::fetchAssoc($result)) {
                 $ids[] = $row['acctid'];
             }
-            $link = "runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode(stripslashes(httpget("file")));
+            $link = "runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode($file);
             output("Hm. Login '%s' seems to exist already as Account-ID %s. If you want to go on, you need to give out a new login <a href='$link'>here</a>", $newlogin, implode(",", $ids), true);
         } else {
             if (httppost("newlogin") > "") {
