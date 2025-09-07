@@ -247,7 +247,7 @@ class Installer
                     $pass = md5(md5(stripslashes(Http::post("pass1"))));
                     $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE login='$name'";
                     Database::query($sql);
-                    $sql = "INSERT INTO " . Database::prefix("accounts") . " (login,password,superuser,name,playername,ctitle,title,regdate,badguy,companions, allowednavs, bufflist, dragonpoints, prefs, donationconfig,specialinc,specialmisc,emailaddress,replaceemail,emailvalidation,hauntedby,bio) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin `&$name`0','`%Admin','', NOW(),'','','','','','','','','','','','','','')";
+                    $sql = "INSERT INTO " . Database::prefix("accounts") . " (login,password,superuser,name,playername,ctitle,title,regdate,badguy,companions, allowednavs, restorepage, bufflist, dragonpoints, prefs, donationconfig,specialinc,specialmisc,emailaddress,replaceemail,emailvalidation,hauntedby,bio) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin `&$name`0','`%Admin','', NOW(),'','','','village.php','','','','','','','','','')";
                     $result = Database::query($sql);
                     if (Database::affectedRows($result) == 0) {
                         print_r($sql);
