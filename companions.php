@@ -14,6 +14,7 @@ use Lotgd\DataCache;
 use Lotgd\Settings;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
+use Lotgd\Output;
 
 // addnews ready
 // mail ready
@@ -237,6 +238,7 @@ if ($op == "") {
 
 function companionform($companion)
 {
+    $output = Output::getInstance();
     // Let's sanitize the data
     if (!isset($companion['companionactive'])) {
         $companion['companionactive'] = "";
