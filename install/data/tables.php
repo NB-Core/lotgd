@@ -166,7 +166,7 @@ function get_all_tables()
             'name' => 'locked', 'type' => 'tinyint(4) unsigned', 'default' => '0'
             ),
         'restorepage' => array(
-            'name' => 'restorepage', 'type' => 'varchar(255)', 'null' => '1'
+            'name' => 'restorepage', 'type' => 'varchar(255)', 'default' => 'village.php', 'null' => '1'
             ),
         'hashorse' => array(
             'name' => 'hashorse', 'type' => 'tinyint(4) unsigned', 'default' => '0'
