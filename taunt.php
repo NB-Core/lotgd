@@ -35,7 +35,11 @@ if ($op == "edit") {
         $sql = "SELECT * FROM " . Database::prefix("taunts") . " WHERE tauntid=\"$tauntid\"";
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
-        $badguy = array('creaturename' => 'Baron Munchausen', 'creatureweapon' => 'Bad Puns');
+        $badguy = array(
+            'creaturename' => 'Baron Munchausen',
+            'creatureweapon' => 'Bad Puns',
+            'diddamage' => 0,
+        );
         $taunt = Substitute::applyArray($row['taunt']);
         $taunt = Translator::sprintfTranslate(...$taunt);
         $output->output("Preview: %s`0`n`n", $taunt);

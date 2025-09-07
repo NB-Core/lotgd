@@ -262,7 +262,10 @@ if ($op == "") {
     $regname = Names::getPlayerBasename();
     //get the dragons name
     $badguys = @unserialize($badguys);
-    $badguy = array("creaturename" => translate_inline("`@The Green Dragon`0"));
+    $badguy = array(
+        "creaturename" => translate_inline("`@The Green Dragon`0"),
+        "diddamage" => 0,
+    );
     foreach ($badguys['enemies'] as $opponent) {
         if ($opponent['type'] == 'dragon') {
             //hit

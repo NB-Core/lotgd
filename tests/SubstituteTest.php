@@ -21,6 +21,7 @@ final class SubstituteTest extends TestCase
         $badguy = [
             'creaturename'  => 'Goblin',
             'creatureweapon' => 'Club',
+            'diddamage' => 0,
         ];
     }
 

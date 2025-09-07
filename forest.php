@@ -184,7 +184,7 @@ if ($op == "search") {
             if (Database::numRows($result) == 0) {
                 // There is nothing in the database to challenge you, let's
                 // give you a doppleganger.
-                $badguy = array();
+                $badguy = ['diddamage' => 0];
                 $badguy['creaturename'] =
                     "An evil doppleganger of " . $session['user']['name'];
                 $badguy['creatureweapon'] = $session['user']['weapon'];
