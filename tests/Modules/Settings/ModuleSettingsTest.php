@@ -115,6 +115,15 @@ final class ModuleSettingsTest extends TestCase
             $this->assertSame($increment, get_module_setting('counter'), "increment {$increment}");
         }
     }
+
+    public function testSetModuleSettingAcceptsInteger(): void
+    {
+        ModuleManager::setMostRecentModule('mymodule');
+
+        set_module_setting('number', 42);
+
+        $this->assertSame(42, get_module_setting('number'));
+    }
 }
 
 }

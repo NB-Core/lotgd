@@ -583,7 +583,7 @@ class Modules
         } else {
             $sql = 'INSERT INTO ' . Database::prefix('module_settings')
                 . " (modulename,setting,value) VALUES ('$module','" . addslashes($name)
-                . "','" . addslashes($value) . "')";
+                . "','" . addslashes((string) $value) . "')";
             Database::query($sql);
         }
 
