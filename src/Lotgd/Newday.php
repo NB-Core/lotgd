@@ -67,7 +67,7 @@ class Newday
         $timestamp = self::calculateExpirationTimestamp($settings->getSetting('oldmail', 14) . ' days');
         $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE sent<'$timestamp'";
         Database::query($sql);
-        GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('mails') . " older than $timestamp.", 'maintenance');
+        GameLog::log('Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('mail') . " older than $timestamp.", 'maintenance');
         DataCache::getInstance()->massinvalidate('mail');
 
         if ((int) $settings->getSetting('expirecontent', 180) > 0) {
