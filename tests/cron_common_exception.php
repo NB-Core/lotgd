@@ -14,7 +14,7 @@ if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') !== __FILE__) {
 use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Tests\Stubs\PHPMailer;
 
-global $settings, $GAME_DIR, $argv, $mail_sent_count, $output;
+global $settings, $argv, $mail_sent_count, $output;
 
 $cacheDir = sys_get_temp_dir();
 $settings = new DummySettings([
@@ -25,26 +25,16 @@ $settings = new DummySettings([
     'datacachepath'   => $cacheDir,
 ]);
 
-$GAME_DIR = sys_get_temp_dir() . '/cron-test-' . uniqid();
-$argv     = [];
-
-if (!is_dir($GAME_DIR)) {
-    mkdir($GAME_DIR, 0777, true);
-}
-copy(__DIR__ . '/fixtures/cron_exception/common.php', $GAME_DIR . '/common.php');
+$argv = [];
 
 if (!is_dir($cacheDir)) {
     mkdir($cacheDir, 0777, true);
 }
 
-$settingsFile     = __DIR__ . '/../settings.php';
-$originalSettings = file_get_contents($settingsFile);
-$updatedSettings  = str_replace(
-    "\$GAME_DIR = '/PATH/TO/GAME';",
-    "\$GAME_DIR = '{$GAME_DIR}';",
-    $originalSettings
-);
-file_put_contents($settingsFile, $updatedSettings);
+$commonFile = __DIR__ . '/../common.php';
+$backupFile = $commonFile . '.bak';
+rename($commonFile, $backupFile);
+copy(__DIR__ . '/fixtures/cron_exception/common.php', $commonFile);
 
 $mail_sent_count = 0;
 new PHPMailer();
@@ -56,15 +46,12 @@ $output = new class {
     }
 };
 
-register_shutdown_function(function () use ($GAME_DIR, $settingsFile, $originalSettings): void {
-    file_put_contents($settingsFile, $originalSettings);
-
-    $file = $GAME_DIR . '/common.php';
-    if (is_file($file)) {
-        unlink($file);
+register_shutdown_function(function () use ($commonFile, $backupFile): void {
+    if (is_file($commonFile)) {
+        unlink($commonFile);
     }
-    if (is_dir($GAME_DIR)) {
-        rmdir($GAME_DIR);
+    if (is_file($backupFile)) {
+        rename($backupFile, $commonFile);
     }
 });
 

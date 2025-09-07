@@ -14,7 +14,6 @@ define('CRON_COMMENTCLEANUP', 4);
 define('CRON_CHARCLEANUP', 8);
 
 define("ALLOW_ANONYMOUS", true);
-require __DIR__ . '/settings.php';
 
 if (!($settings instanceof Settings)) {
     $settings = new Settings('settings');
@@ -22,7 +21,7 @@ if (!($settings instanceof Settings)) {
 
 BootstrapErrorHandler::register();
 
-$result = ($GAME_DIR !== '' && is_dir($GAME_DIR)) ? chdir($GAME_DIR) : false;
+$result = chdir(__DIR__);
 if (!defined('CRON_TEST')) {
     try {
         require_once 'common.php';
@@ -63,7 +62,7 @@ if (is_array($cron_args) && count($cron_args) < 1) {
     $executionstyle = (int)$cron_args[0];
 }
 
-if (!$result || $GAME_DIR == '') {
+if (!$result) {
     //ERROR, could not change the directory or directory empty
     $email = $settings->getSetting('gameadminemail', '');
     if ($email === '') {
@@ -84,7 +83,7 @@ if (!$result || $GAME_DIR == '') {
 }
 
 /* Prevent execution if no value has been entered... if it is a wrong value, it will still break!*/
-if ($GAME_DIR != '') {
+if ($result) {
     $settings->saveSetting('newdaySemaphore', gmdate('Y-m-d H:i:s'));
     if ($executionstyle & CRON_NEWDAY) {
         Newday::runOnce();
