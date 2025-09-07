@@ -28,11 +28,6 @@ function getsetting($settingname, $default)
     return Settings::getInstance()->getSetting($settingname, $default);
 }
 
-function get_gz_handler_setting()
-{
-    return (bool) getsetting('gziphandler', (bool) ini_get('zlib.output_compression'));
-}
-
 function get_admin_email($default = 'postmaster@localhost')
 {
     return (string) Settings::getInstance()->getSetting('gameadminemail', $default);

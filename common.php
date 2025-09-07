@@ -107,13 +107,13 @@ require_once("lib/fightnav.php");
 
 ErrorHandler::register();
 
-//start the gzip compression
-$gz_handler_on = get_gz_handler_setting();
-if ($gz_handler_on) {
-    ob_start('ob_gzhandler');
-} else {
-    ob_start();
+// Enable zlib output compression when available.
+if (function_exists('ini_set') && extension_loaded('zlib')) {
+    ini_set('zlib.output_compression', '1');
 }
+
+// Start output buffering (compression occurs automatically when enabled).
+ob_start();
 
 $pagestarttime = DateTime::getMicroTime();
 PhpGenericEnvironment::setPageStartTime($pagestarttime);

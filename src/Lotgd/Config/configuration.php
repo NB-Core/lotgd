@@ -274,7 +274,6 @@ $setup = array(
     "usedatacache" => "Use Data Caching,viewonly",
     "datacachepath" => "Path to store data cache information`n`iNote`i when using in an environment where Safe Mode is enabled; this needs to be a path that has the same UID as the web server runs.,viewonly",
     "This is in settings.php,note",
-    "gziphandler" => "Is the GzHandler turned on,viewonly",
     "databasetype" => "Type of database,viewonly",
 
 
