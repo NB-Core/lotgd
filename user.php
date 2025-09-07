@@ -8,9 +8,9 @@ use Lotgd\DateTime;
 
 //addnews ready
 // mail ready
-require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/sanitize.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/sanitize.php";
 use Lotgd\Names;
 
 Translator::getInstance()->setSchema("user");
@@ -49,7 +49,7 @@ if (!$query && $sort) {
 }
 
 if ($op == "search" || $op == "") {
-    require_once("lib/lookup_user.php");
+    require_once __DIR__ . "/lib/lookup_user.php";
     list($searchresult, $err) = lookup_user($query, $order);
     $op = "";
     if ($err) {
@@ -139,7 +139,7 @@ if ($op == 'edit' || $op == 'save') {
     $racesenum = substr($racesenum, 0, strlen($racesenum) - 1);
     //later on: enumpretrans, because races are already translated in a way...
 }
-require("src/Lotgd/Config/user_account.php");
+require __DIR__ . "/src/Lotgd/Config/user_account.php";
 $sql = "SELECT clanid,clanname,clanshort FROM " . Database::prefix("clans") . " ORDER BY clanshort";
 $result = Database::query($sql);
 while ($row = Database::fetchAssoc($result)) {
@@ -149,46 +149,46 @@ while ($row = Database::fetchAssoc($result)) {
 
 switch ($op) {
     case "lasthit":
-            require("pages/user/user_lasthit.php");
+            require __DIR__ . "/pages/user/user_lasthit.php";
         break;
     case "savemodule":
-            require("pages/user/user_savemodule.php");
+            require __DIR__ . "/pages/user/user_savemodule.php";
         break;
     case "special":
-            require("pages/user/user_special.php");
+            require __DIR__ . "/pages/user/user_special.php";
         break;
     case "save":
-            require("pages/user/user_save.php");
+            require __DIR__ . "/pages/user/user_save.php";
         break;
 }
 
 switch ($op) {
     case "edit":
-            require("pages/user/user_edit.php");
+            require __DIR__ . "/pages/user/user_edit.php";
         break;
     case "setupban":
-            require("pages/user/user_setupban.php");
+            require __DIR__ . "/pages/user/user_setupban.php";
         break;
     case "del":
-            require("pages/user/user_del.php");
+            require __DIR__ . "/pages/user/user_del.php";
         break;
     case "saveban":
-            require("pages/user/user_saveban.php");
+            require __DIR__ . "/pages/user/user_saveban.php";
         break;
     case "delban":
-            require("pages/user/user_delban.php");
+            require __DIR__ . "/pages/user/user_delban.php";
         break;
     case "removeban":
-            require("pages/user/user_removeban.php");
+            require __DIR__ . "/pages/user/user_removeban.php";
         break;
     case "searchban":
-            require("pages/user/user_searchban.php");
+            require __DIR__ . "/pages/user/user_searchban.php";
         break;
     case "debuglog":
-            require("pages/user/user_debuglog.php");
+            require __DIR__ . "/pages/user/user_debuglog.php";
         break;
     case "":
-            require("pages/user/user_.php");
+            require __DIR__ . "/pages/user/user_.php";
         break;
 }
 page_footer();

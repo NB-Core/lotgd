@@ -13,7 +13,7 @@ use Lotgd\Translator;
 // addnews ready
 // translator ready
 // mail ready
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 use Lotgd\Pvp;
 
 Translator::getInstance()->setSchema("inn");
@@ -46,7 +46,7 @@ $subop = Http::get('subop');
 $com = Http::get('comscroll');
 $comment = Http::post('insertcommentary');
 
-require_once("lib/partner.php");
+require_once __DIR__ . "/lib/partner.php";
 $partner = get_partner();
 addnav("Other");
 VillageNav::render();
@@ -56,17 +56,17 @@ switch ($op) {
     case "":
     case "strolldown":
     case "fleedragon":
-            require("pages/inn/inn_default.php");
+            require __DIR__ . "/pages/inn/inn_default.php";
             blocknav("inn.php");
         break;
     case "converse":
             Commentary::commentDisplay("You stroll over to a table, place your foot up on the bench and listen in on the conversation:`n", "inn", "Add to the conversation?", 20);
         break;
     case "bartender":
-            require("pages/inn/inn_bartender.php");
+            require __DIR__ . "/pages/inn/inn_bartender.php";
         break;
     case "room":
-            require("pages/inn/inn_room.php");
+            require __DIR__ . "/pages/inn/inn_room.php";
         break;
 }
 

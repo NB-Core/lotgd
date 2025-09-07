@@ -12,8 +12,8 @@ use Lotgd\Cookies;
 use Lotgd\DataCache;
 
 define("ALLOW_ANONYMOUS", true);
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 // This must be after common.php for now
 use Lotgd\ServerFunctions;
 

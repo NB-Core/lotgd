@@ -6,10 +6,10 @@ use Lotgd\Translator;
 // addnews ready
 // translator ready
 // mail ready
-require_once("common.php");
-require_once("lib/villagenav.php");
-require_once("lib/events.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/villagenav.php";
+require_once __DIR__ . "/lib/events.php";
+require_once __DIR__ . "/lib/http.php";
 
 Translator::getInstance()->setSchema("gardens");
 

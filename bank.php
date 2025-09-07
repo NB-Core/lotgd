@@ -18,7 +18,7 @@ use Lotgd\Nav\SuperuserNav;
 // mail ready
 use Lotgd\Mail;
 
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 use Lotgd\Sanitize;
 use Lotgd\Http;

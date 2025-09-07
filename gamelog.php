@@ -11,8 +11,8 @@ use Lotgd\Nav\SuperuserNav;
 
 // Written by Christian Rutsch
 
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 
 SuAccess::check(SU_EDIT_CONFIG);
 

@@ -15,11 +15,11 @@ use Lotgd\Commentary;
 // translator ready
 // addnews ready
 // mail ready
-require_once("common.php");
-require_once("lib/nltoappon.php");
-require_once("lib/sanitize.php");
-require_once("lib/http.php");
-require_once("lib/villagenav.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/nltoappon.php";
+require_once __DIR__ . "/lib/sanitize.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/villagenav.php";
 
 Translator::getInstance()->setSchema("clans");
 
@@ -42,15 +42,15 @@ $op = httpget('op');
 
 $detail = httpget('detail');
 if ($detail > 0) {
-        require_once("pages/clan/detail.php");
+        require_once __DIR__ . "/pages/clan/detail.php";
 } elseif ($op == "list") {
-        require_once("pages/clan/list.php");
+        require_once __DIR__ . "/pages/clan/list.php";
 } elseif ($op == "waiting") {
-        require_once("pages/clan/waiting.php");
+        require_once __DIR__ . "/pages/clan/waiting.php";
 } elseif ($session['user']['clanrank'] == CLAN_APPLICANT) {
-        require_once("pages/clan/applicant.php");
+        require_once __DIR__ . "/pages/clan/applicant.php";
 } else {
-        require_once("pages/clan/clan_start.php");
+        require_once __DIR__ . "/pages/clan/clan_start.php";
 }
 
 

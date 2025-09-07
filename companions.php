@@ -20,7 +20,7 @@ use Lotgd\Translator;
 // translator ready
 
 // hilarious copy of mounts.php
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 SuAccess::check(SU_EDIT_MOUNTS);
 

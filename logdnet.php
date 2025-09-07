@@ -21,8 +21,8 @@ use Lotgd\Nav;
 use Lotgd\ErrorHandler;
 use Lotgd\Backtrace;
 
-require_once("common.php");
-require_once("lib/sanitize.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/sanitize.php";
 
 Translator::getInstance()->setSchema("logdnet");
 
@@ -246,7 +246,7 @@ if ($op == "") {
     rawoutput("</td><td>");
     output("Version");
     rawoutput("</td>");
-    require_once("lib/pullurl.php");
+    require_once __DIR__ . "/lib/pullurl.php";
     $servers = array();
     $u = getsetting("logdnetserver", "http://logdnet.logd.com/");
     $logdnet = getsetting('logdnet', 0);

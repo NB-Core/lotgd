@@ -8,7 +8,7 @@ use Lotgd\Http;
 // addnews ready
 // mail ready
 define("ALLOW_ANONYMOUS", true);
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 global $session;
 
@@ -21,7 +21,7 @@ if ($session['user']['loggedin']) {
     if (file_exists("lodge.php")) {
         addnav("L?Return to the Lodge", "lodge.php");
     } else {
-        require_once("lib/villagenav.php");
+        require_once __DIR__ . "/lib/villagenav.php";
         villagenav();
     }
     output("You will automatically receive %s points for each person that you refer to this website who makes it to level %s.`n`n", $settings->getSetting("refereraward", 25), $settings->getSetting("referminlevel", 4));

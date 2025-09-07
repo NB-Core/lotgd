@@ -17,7 +17,7 @@ use Lotgd\PhpGenericEnvironment;
 // mail ready
 
 
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
 // legacy wrapper removed, instantiate settings directly
 $settings_extended = new Settings('settings_extended');
@@ -272,8 +272,8 @@ addnav("Extended settings", "configuration.php?settings=extended");
 addnav("", PhpGenericEnvironment::getRequestUri());
 
 //get arrays
-require("src/Lotgd/Config/configuration.php");
-require("src/Lotgd/Config/configuration_extended.php");
+require __DIR__ . "/src/Lotgd/Config/configuration.php";
+require __DIR__ . "/src/Lotgd/Config/configuration_extended.php";
 
 
 module_editor_navs('settings', 'configuration.php?op=modulesettings&module=');

@@ -54,9 +54,9 @@ if (!file_exists("dbconnect.php")) {
 }
 chdir(__DIR__);
 
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 if (file_exists("dbconnect.php")) {
-    require_once("dbconnect.php");
+    require_once __DIR__ . "/dbconnect.php";
 }
 
 // Load settings only when a database connection is available

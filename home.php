@@ -22,7 +22,7 @@ if (! isset($_SERVER['REQUEST_URI'])) {
     $_SERVER['REQUEST_URI'] = '/home.php';
 }
 
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;

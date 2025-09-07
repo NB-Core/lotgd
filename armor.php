@@ -14,7 +14,7 @@ use Lotgd\Translator;
 * @see village.php
 * @see armoreditor.php
 */
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 use Lotgd\Http;
 use Lotgd\Page\Header;

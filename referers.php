@@ -9,8 +9,8 @@ use Lotgd\Nav\SuperuserNav;
 // mail ready
 use Lotgd\Dhms;
 
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 
 Translator::getInstance()->setSchema("referers");
 

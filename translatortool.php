@@ -9,7 +9,7 @@ use Lotgd\Nav\SuperuserNav;
 // translator ready
 // mail ready
 define("OVERRIDE_FORCED_NAV", true);
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 Translator::getInstance()->setSchema("translatortool");
 
 SuAccess::check(SU_IS_TRANSLATOR);

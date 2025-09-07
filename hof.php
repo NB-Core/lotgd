@@ -19,7 +19,7 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 Translator::getInstance()->setSchema("hof");
 

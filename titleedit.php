@@ -9,8 +9,8 @@ use Lotgd\Forms;
 
 //Author: Lonny Luberts - 3/18/2005
 //Heavily modified by JT Traub
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 
 SuAccess::check(SU_EDIT_USERS);
 
@@ -68,7 +68,7 @@ switch ($op) {
 
 switch ($op) {
     case "reset":
-                require_once("lib/titles.php");
+                require_once __DIR__ . "/lib/titles.php";
 
         output("`^Rebuilding all titles for all players.`0`n`n");
         $sql = "SELECT name,title,dragonkills,acctid,sex,ctitle FROM " . Database::prefix("accounts");

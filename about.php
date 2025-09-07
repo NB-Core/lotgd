@@ -17,7 +17,7 @@ use Lotgd\Translator;
 */
 
 define("ALLOW_ANONYMOUS", true);
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 use Lotgd\Http;
 use Lotgd\Page\Header;
@@ -37,10 +37,10 @@ switch ($op) {
     case "setup":
     case "listmodules":
     case "license":
-            require("pages/about/about_$op.php");
+            require __DIR__ . "/pages/about/about_$op.php";
         break;
     default:
-            require("pages/about/about_default.php");
+            require __DIR__ . "/pages/about/about_default.php";
         break;
 }
 if ($session['user']['loggedin']) {
