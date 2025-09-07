@@ -17,6 +17,9 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Guard against missing city and theme parameters and ensure `diddamage` defaults to zero.
 - Use safe array access for player name lookup and tighten module migration checks.
 
+### Refactor
+- Standardize top-level scripts to use `__DIR__` in `require` statements for safer path resolution.
+
 ### Docs
 - Clarify newday cron configuration and cron job setup instructions.
 - Add module hook reference documentation.
