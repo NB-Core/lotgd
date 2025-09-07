@@ -71,39 +71,39 @@ $logd_version = "2.0.0-rc +nb Edition";
 Page::getInstance()->setLogdVersion($logd_version);
 
 // Include some commonly needed and useful routines
-require_once("lib/output.php");
+require_once __DIR__ . "/lib/output.php";
 LocalConfig::apply();
-require_once("src/Lotgd/Config/constants.php");
+require_once __DIR__ . "/src/Lotgd/Config/constants.php";
 
 // Legacy, because modules may rely on that, but those files are already migrated to namespace structure
-require_once("lib/dbwrapper.php");
-require_once("lib/modules.php");
-require_once("lib/translator.php");
-require_once("lib/sanitize.php");
-require_once("lib/holiday_texts.php");
-require_once("lib/nav.php");
-require_once("lib/http.php");
-require_once("lib/e_rand.php");
-require_once("lib/pageparts.php");
-require_once("lib/tempstat.php");
-require_once("lib/su_access.php");
-require_once("lib/datetime.php");
-require_once("lib/translator.php");
-require_once("lib/playerfunctions.php");
-require_once("lib/serialization.php");
-require_once("lib/settings.php");
-require_once("lib/buffs.php");
-require_once("lib/addnews.php");
-require_once("lib/template.php");
-require_once("lib/redirect.php");
-require_once("lib/censor.php");
-require_once("lib/saveuser.php");
-require_once("lib/arrayutil.php");
-require_once("lib/sql.php");
-require_once("lib/mounts.php");
-require_once("lib/debuglog.php");
-require_once("lib/datacache.php");
-require_once("lib/fightnav.php");
+require_once __DIR__ . "/lib/dbwrapper.php";
+require_once __DIR__ . "/lib/modules.php";
+require_once __DIR__ . "/lib/translator.php";
+require_once __DIR__ . "/lib/sanitize.php";
+require_once __DIR__ . "/lib/holiday_texts.php";
+require_once __DIR__ . "/lib/nav.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/e_rand.php";
+require_once __DIR__ . "/lib/pageparts.php";
+require_once __DIR__ . "/lib/tempstat.php";
+require_once __DIR__ . "/lib/su_access.php";
+require_once __DIR__ . "/lib/datetime.php";
+require_once __DIR__ . "/lib/translator.php";
+require_once __DIR__ . "/lib/playerfunctions.php";
+require_once __DIR__ . "/lib/serialization.php";
+require_once __DIR__ . "/lib/settings.php";
+require_once __DIR__ . "/lib/buffs.php";
+require_once __DIR__ . "/lib/addnews.php";
+require_once __DIR__ . "/lib/template.php";
+require_once __DIR__ . "/lib/redirect.php";
+require_once __DIR__ . "/lib/censor.php";
+require_once __DIR__ . "/lib/saveuser.php";
+require_once __DIR__ . "/lib/arrayutil.php";
+require_once __DIR__ . "/lib/sql.php";
+require_once __DIR__ . "/lib/mounts.php";
+require_once __DIR__ . "/lib/debuglog.php";
+require_once __DIR__ . "/lib/datacache.php";
+require_once __DIR__ . "/lib/fightnav.php";
 
 ErrorHandler::register();
 
@@ -243,7 +243,7 @@ if ($link === false) {
                 $notified = false;
         if (file_exists("lib/smsnotify.php")) {
                 $smsmessage = "No DB Server: " . Database::error();
-                require_once("lib/smsnotify.php");
+                require_once __DIR__ . "/lib/smsnotify.php";
                 $notified = true;
         }
                 // And tell the user it died.  No translation here, we need the DB for
@@ -282,7 +282,7 @@ if (!defined("DB_NODB")) {
             // Ignore this bit.  It's only really for Eric's server or people that want to trigger something when the database is jerky
             if (file_exists("lib/smsnotify.php")) {
                                 $smsmessage = "Cant Attach to DB: " . Database::error();
-                require_once("lib/smsnotify.php");
+                require_once __DIR__ . "/lib/smsnotify.php";
                 $notified = true;
             }
             // And tell the user it died.  No translation here, we need the DB for

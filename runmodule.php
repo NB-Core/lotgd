@@ -18,13 +18,13 @@ use Lotgd\ForcedNavigation;
 use Lotgd\DateTime;
 use Lotgd\Output;
 
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
 
 // Legacy Wrappers for Modules
-require_once("lib/http.php");
-require_once("lib/modules.php");
-require_once("lib/villagenav.php");
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/modules.php";
+require_once __DIR__ . "/lib/villagenav.php";
 
 DateTime::getMicroTime();
 

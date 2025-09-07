@@ -13,12 +13,12 @@ use Lotgd\DataCache;
 //addnews ready
 // mail ready
 // translator ready
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
-require_once("lib/increment_specialty.php");
-require_once("lib/http.php");
-require_once("lib/villagenav.php");
-require_once("lib/experience.php");
+require_once __DIR__ . "/lib/increment_specialty.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/villagenav.php";
+require_once __DIR__ . "/lib/experience.php";
 
 Translator::getInstance()->setSchema("train");
 
@@ -182,7 +182,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
         Battle::suspendBuffs('allowintrain', "`&Your pride prevents you from using extra abilities during the fight!`0`n");
         Battle::suspendCompanions("allowintrain");
         if (!$victory) {
-            require_once("battle.php");
+            require_once __DIR__ . "/battle.php";
         }
         if ($victory) {
             if (httpget('sugain') == 1) {

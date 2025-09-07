@@ -5,7 +5,7 @@ use Lotgd\Translator;
 // addnews ready
 // mail ready
 define("OVERRIDE_FORCED_NAV", true);
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 use Lotgd\Mail;
 
 Translator::getInstance()->setSchema("mail");
@@ -72,17 +72,17 @@ switch (httpget('even')) {
 
 if ($op == "send") {
         //needs to be handled first.
-        require("pages/mail/case_send.php");
+        require __DIR__ . "/pages/mail/case_send.php";
 }
 
 switch ($op) {
     case "read":
     case "address":
     case "write":
-        require("pages/mail/case_" . $op . ".php");
+        require __DIR__ . "/pages/mail/case_" . $op . ".php";
         break;
     default:
-        require("pages/mail/case_default.php");
+        require __DIR__ . "/pages/mail/case_default.php";
         break;
 }
 popup_footer();

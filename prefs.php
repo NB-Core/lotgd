@@ -9,8 +9,8 @@ use Lotgd\Template;
 // mail ready
 // translator ready
 
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 
 $skin = httppost('template');
 if ($skin !== '' && Template::isValidTemplate($skin)) {
@@ -18,12 +18,12 @@ if ($skin !== '' && Template::isValidTemplate($skin)) {
         Template::prepareTemplate(true);
 }
 
-require_once("lib/villagenav.php");
+require_once __DIR__ . "/lib/villagenav.php";
 
 Translator::getInstance()->setSchema("prefs");
 
-require_once("lib/is_email.php");
-require_once("lib/sanitize.php");
+require_once __DIR__ . "/lib/is_email.php";
+require_once __DIR__ . "/lib/sanitize.php";
 
 page_header("Preferences");
 
@@ -32,7 +32,7 @@ $op = httpget('op');
 addnav("Navigation");
 if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
        $userid = (int)httpget('userid');
-    require_once("lib/charcleanup.php");
+    require_once __DIR__ . "/lib/charcleanup.php";
     char_cleanup($userid, CHAR_DELETE_SUICIDE);
        $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
     Database::query($sql);

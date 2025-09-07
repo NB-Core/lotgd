@@ -15,7 +15,7 @@ use Lotgd\Translator;
 // addnews ready
 // mail ready
 // translator ready
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 Translator::getInstance()->setSchema("deathmessage");
 

@@ -12,10 +12,10 @@ use Lotgd\DataCache;
 // mail ready
 define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
-require_once("lib/nltoappon.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/lib/nltoappon.php";
+require_once __DIR__ . "/lib/http.php";
 use Lotgd\Motd;
 
 Translator::getInstance()->setSchema("motd");

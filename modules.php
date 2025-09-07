@@ -8,9 +8,9 @@ use Lotgd\PhpGenericEnvironment;
 // addnews ready
 // translator ready
 // mail ready
-require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/sanitize.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/sanitize.php";
 use Lotgd\ModuleManager;
 SuAccess::check(SU_MANAGE_MODULES);
 Translator::getInstance()->setSchema("modulemanage");
@@ -203,7 +203,7 @@ if ($op == "") {
 
             rawoutput(" ]</td><td valign='top'>");
             output_notl($row['active'] ? $active : $inactive);
-            require_once("lib/sanitize.php");
+            require_once __DIR__ . "/lib/sanitize.php";
             rawoutput("</td><td nowrap valign='top'><span title=\"" .
             (isset($row['description']) && $row['description'] ?
              $row['description'] : sanitize($row['formalname'])) . "\">");

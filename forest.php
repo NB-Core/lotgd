@@ -5,12 +5,12 @@ use Lotgd\Translator;
 // addnews ready
 // translator ready
 // mail ready
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 use Lotgd\Forest;
 use Lotgd\Buffs;
 use Lotgd\Forest\Outcomes;
-require_once("lib/http.php");
-require_once("lib/events.php");
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/events.php";
 use Lotgd\Battle;
 
 Translator::getInstance()->setSchema("forest");
@@ -40,7 +40,7 @@ if ($op == "run") {
 }
 
 if ($op == "dragon") {
-    require_once("lib/partner.php");
+    require_once __DIR__ . "/lib/partner.php";
     addnav("Enter the cave", "dragon.php");
     addnav("Run away like a baby", "inn.php?op=fleedragon");
     output("`\$You approach the blackened entrance of a cave deep in the forest, though the trees are scorched to stumps for a hundred yards all around.");
@@ -306,7 +306,7 @@ if ($op == "fight" || $op == "run" || $op == "newtarget") {
 }
 
 if ($battle) {
-        require_once("battle.php");
+        require_once __DIR__ . "/battle.php";
 
     if ($victory) {
             $op = "";

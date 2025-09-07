@@ -18,9 +18,9 @@ use Lotgd\Substitute;
 // translator ready
 // addnews ready
 // mail ready
-require_once("lib/bell_rand.php");
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/lib/bell_rand.php";
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 
 
 //just in case we're called from within a function.Yuck is this ugly.

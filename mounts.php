@@ -8,8 +8,8 @@ use Lotgd\Nav\SuperuserNav;
 // addnews ready
 // mail ready
 // translator ready
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 
 $op = httpget('op');
 $id = httpget('id');

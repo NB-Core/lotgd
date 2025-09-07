@@ -15,9 +15,9 @@ use Lotgd\DataCache;
 // translator ready
 // addnews ready
 // mail ready
-require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/sanitize.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/sanitize.php";
 
 Translator::getInstance()->setSchema("newday");
 //mass_module_prepare(array("newday-intercept", "newday"));

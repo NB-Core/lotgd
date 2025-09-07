@@ -14,7 +14,7 @@ use Lotgd\Translator;
 
 //addnews ready
 // mail ready
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 use Lotgd\Names;
 
 Translator::getInstance()->setSchema("bans");
@@ -77,22 +77,22 @@ Nav::add("Search for banned user", "bans.php?op=searchban");
 
 switch ($op) {
     case "setupban":
-            require("pages/bans/case_setupban.php");
+            require __DIR__ . "/pages/bans/case_setupban.php";
         break;
     case "saveban":
-            require("pages/bans/case_saveban.php");
+            require __DIR__ . "/pages/bans/case_saveban.php";
         break;
     case "delban":
-            require("pages/bans/case_delban.php");
+            require __DIR__ . "/pages/bans/case_delban.php";
         break;
     case "removeban":
-            require("pages/bans/case_removeban.php");
+            require __DIR__ . "/pages/bans/case_removeban.php";
         break;
     case "searchban":
-            require("pages/bans/case_searchban.php");
+            require __DIR__ . "/pages/bans/case_searchban.php";
         break;
     default:
             output("From here, you can issue bans for players from being able to play.`n`nBased on the ID = cookie on the machine AND/OR on the IP they accessed the char last the ban takes effect.`n`nNote: Locked chars stay locked, even after they delete their cookie / change their IP.`n`nHowever, they can make new chars and login in that case. You cannot control this.");
-            require("pages/bans/case_.php");
+            require __DIR__ . "/pages/bans/case_.php";
 }
 Footer::pageFooter();

@@ -15,8 +15,8 @@ use Lotgd\Settings;
 use Lotgd\Sanitize;
 use Lotgd\DebugLog;
 use Lotgd\Cookies;
-require_once("common.php");
-require_once("lib/is_email.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/is_email.php";
 // legacy wrapper removed, instantiate settings directly
 $settings_extended = new Settings('settings_extended');
 use Lotgd\ServerFunctions;
@@ -280,7 +280,7 @@ if (getsetting("allowcreation", 1) == 0) {
                     if ($sex <> SEX_MALE) {
                         $sex = SEX_FEMALE;
                     }
-                    require_once("lib/titles.php");
+                    require_once __DIR__ . "/lib/titles.php";
                     $title = get_dk_title(0, $sex);
                     if (getsetting("requirevalidemail", 0)) {
                         $emailverification = md5(date("Y-m-d H:i:s") . $email);

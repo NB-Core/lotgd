@@ -21,7 +21,7 @@ define("OVERRIDE_FORCED_NAV", true);
 // Translate Untranslated Strings
 // Originally Written by Christian Rutsch
 // Slightly modified by JT Traub
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 
 SuAccess::check(SU_IS_TRANSLATOR);
 

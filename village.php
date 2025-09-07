@@ -7,10 +7,10 @@ use Lotgd\Commentary;
 // translator ready
 // addnews ready
 // mail ready
-require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/events.php");
-require_once("lib/experience.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/events.php";
+require_once __DIR__ . "/lib/experience.php";
 
 $translator = Translator::getInstance();
 

@@ -8,8 +8,8 @@ use Lotgd\Nav\SuperuserNav;
 // Initially written as a module by Chris Vorndran.
 // Moved into core by JT Traub
 
-require_once("common.php");
-require_once("lib/http.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
 
 SuAccess::check(SU_EDIT_CREATURES);
 

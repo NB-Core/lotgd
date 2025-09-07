@@ -6,7 +6,7 @@ use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 use Lotgd\FightNav;
 use Lotgd\Pvp;
 use Lotgd\Battle;
@@ -85,7 +85,7 @@ if ($op == "fight" || $op == "run") {
     $battle = true;
 }
 if ($battle) {
-    require_once("battle.php");
+    require_once __DIR__ . "/battle.php";
     if ($victory) {
         $killedin = $badguy['location'];
                 $handled = Pvp::victory($badguy, $killedin, $options);

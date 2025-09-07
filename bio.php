@@ -24,7 +24,7 @@ use Lotgd\DateTime;
 use Lotgd\Nltoappon;
 use Lotgd\Output;
 
-require_once("common.php");
+require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
 
 $translator = Translator::getInstance();

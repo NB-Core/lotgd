@@ -9,9 +9,9 @@ use Lotgd\Translator;
 // addnews ready.
 // translator ready
 // mail ready
-require_once("common.php");
-require_once("lib/http.php");
-require_once("lib/events.php");
+require_once __DIR__ . "/common.php";
+require_once __DIR__ . "/lib/http.php";
+require_once __DIR__ . "/lib/events.php";
 
 Translator::getInstance()->setSchema("graveyard");
 
@@ -35,7 +35,7 @@ $favortoheal = (int)$favortoheal['favor'];
 $op = httpget('op');
 switch ($op) {
     case "search":
-            require_once("pages/graveyard/case_battle_search.php");
+            require_once __DIR__ . "/pages/graveyard/case_battle_search.php";
 
         break;
     case "run":
@@ -73,7 +73,7 @@ if ($battle) {
 //  $session['user']['defense'] =
 //      10 + round(($session['user']['level'] - 1) * 1.5);
 
-    require_once("battle.php");
+    require_once __DIR__ . "/battle.php";
 
     //reverse those adjustments, battle calculations are over.
     $session['user']['attack'] = $originalattack;
@@ -122,28 +122,28 @@ switch ($op) {
     case "fight":
         break;
     case "enter":
-            require_once("pages/graveyard/case_enter.php");
+            require_once __DIR__ . "/pages/graveyard/case_enter.php";
         break;
     case "restore":
-            require_once("pages/graveyard/case_restore.php");
+            require_once __DIR__ . "/pages/graveyard/case_restore.php";
         break;
     case "resurrection":
-            require_once("pages/graveyard/case_resurrection.php");
+            require_once __DIR__ . "/pages/graveyard/case_resurrection.php";
         break;
     case "question":
-            require_once("pages/graveyard/case_question.php");
+            require_once __DIR__ . "/pages/graveyard/case_question.php";
         break;
     case "haunt":
-            require_once("pages/graveyard/case_haunt.php");
+            require_once __DIR__ . "/pages/graveyard/case_haunt.php";
         break;
     case "haunt2":
-            require_once("pages/graveyard/case_haunt2.php");
+            require_once __DIR__ . "/pages/graveyard/case_haunt2.php";
         break;
     case "haunt3":
-            require_once("pages/graveyard/case_haunt3.php");
+            require_once __DIR__ . "/pages/graveyard/case_haunt3.php";
         break;
     default:
-            require_once("pages/graveyard/case_default.php");
+            require_once __DIR__ . "/pages/graveyard/case_default.php";
         break;
 }
 
