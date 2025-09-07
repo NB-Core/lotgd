@@ -160,29 +160,35 @@ if ($dp < $dkills) {
     }
 
     //clear all standard buffs
-    $tempbuf = unserialize($session['user']['bufflist']);
+    $tempbuf = unserialize($session['user']['bufflist'], ['allowed_classes' => false]);
+    if ($tempbuf === false) {
+        trigger_error('Failed to unserialize bufflist.', E_USER_WARNING);
+        $tempbuf = [];
+    }
     $session['user']['bufflist'] = "";
     Buffs::stripAllBuffs();
     Translator::getInstance()->setSchema("buffs");
-    foreach ($tempbuf as $key => $val) {
-        if (
-            array_key_exists('survivenewday', $val) &&
-                $val['survivenewday'] == 1
-        ) {
-            //$session['bufflist'][$key]=$val;
-            if (array_key_exists('schema', $val) && $val['schema']) {
-                Translator::getInstance()->setSchema($val['schema']);
-            }
-            Buffs::applyBuff($key, $val);
+    if (is_array($tempbuf)) {
+        foreach ($tempbuf as $key => $val) {
             if (
-                array_key_exists('newdaymessage', $val) &&
-                    $val['newdaymessage']
+                array_key_exists('survivenewday', $val) &&
+                    $val['survivenewday'] == 1
             ) {
-                output($val['newdaymessage']);
-                output_notl("`n");
-            }
-            if (array_key_exists('schema', $val) && $val['schema']) {
-                Translator::getInstance()->setSchema();
+                //$session['bufflist'][$key]=$val;
+                if (array_key_exists('schema', $val) && $val['schema']) {
+                    Translator::getInstance()->setSchema($val['schema']);
+                }
+                Buffs::applyBuff($key, $val);
+                if (
+                    array_key_exists('newdaymessage', $val) &&
+                        $val['newdaymessage']
+                ) {
+                    output($val['newdaymessage']);
+                    output_notl("`n");
+                }
+                if (array_key_exists('schema', $val) && $val['schema']) {
+                    Translator::getInstance()->setSchema();
+                }
             }
         }
     }
@@ -190,11 +196,13 @@ if ($dp < $dkills) {
 
     output("`2Hitpoints have been restored to `^%s`2.`n", $session['user']['maxhitpoints']);
 
-    reset($session['user']['dragonpoints']);
     $dkff = 0;
-    foreach ($session['user']['dragonpoints'] as $val) {
-        if ($val == "ff") {
-            $dkff++;
+    if (is_array($session['user']['dragonpoints'])) {
+        reset($session['user']['dragonpoints']);
+        foreach ($session['user']['dragonpoints'] as $val) {
+            if ($val == "ff") {
+                $dkff++;
+            }
         }
     }
     if ($session['user']['hashorse']) {
