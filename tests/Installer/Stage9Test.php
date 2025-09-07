@@ -95,6 +95,7 @@ namespace Lotgd\Tests\Installer {
 use Lotgd\Installer\Installer;
 use Lotgd\Output;
 use Lotgd\Tests\Stubs\DummySettings;
+use Lotgd\Tests\Stubs\DoctrineBootstrap;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
@@ -165,7 +166,70 @@ class Stage9Test extends TestCase
         );
         $this->assertContains($latest, $migrated, 'Latest migration was not applied');
 
+        $queries = DoctrineBootstrap::$conn->queries;
+        require __DIR__ . '/../../install/data/installer_sqlstatements.php';
+        $expected = [];
+        foreach ($sql_upgrade_statements as $statements) {
+            foreach ($statements as $sql) {
+                $expected[] = $sql;
+            }
+        }
+        $expectedCount = array_count_values($expected);
+        $executedCount = array_count_values($queries);
+        foreach ($expectedCount as $sql => $count) {
+            $this->assertGreaterThanOrEqual(
+                $count,
+                $executedCount[$sql] ?? 0,
+                'Installer SQL statement was not executed: ' . $sql
+            );
+        }
+
         $this->assertStringContainsString('superuser account', $outputText);
+    }
+
+    public function testStage9RunsOnlyNewerInstallerStatementsOnUpgrade(): void
+    {
+        global $session;
+
+        $session['dbinfo']['upgrade'] = true;
+        $session['fromversion']       = '0.9.6';
+
+        $conn = new \Lotgd\Tests\Stubs\DoctrineConnection();
+        DoctrineBootstrap::$conn = $conn;
+        \Lotgd\MySQL\Database::$doctrineConnection = $conn;
+
+        $installer = new Installer();
+        $installer->runStage(9);
+
+        $queries = DoctrineBootstrap::$conn->queries;
+        require __DIR__ . '/../../install/data/installer_sqlstatements.php';
+        $expected   = [];
+        $notExpected = [];
+        foreach ($sql_upgrade_statements as $version => $statements) {
+            foreach ($statements as $sql) {
+                if (version_compare($version, '0.9.6', '>')) {
+                    $expected[] = $sql;
+                } else {
+                    $notExpected[] = $sql;
+                }
+            }
+        }
+        $expectedCount = array_count_values($expected);
+        $executedCount = array_count_values($queries);
+        foreach ($expectedCount as $sql => $count) {
+            $this->assertGreaterThanOrEqual(
+                $count,
+                $executedCount[$sql] ?? 0,
+                'Upgrade SQL statement was not executed: ' . $sql
+            );
+        }
+        foreach ($notExpected as $sql) {
+            $this->assertArrayNotHasKey(
+                $sql,
+                $executedCount,
+                'Unexpected SQL statement executed during upgrade: ' . $sql
+            );
+        }
     }
 }
 

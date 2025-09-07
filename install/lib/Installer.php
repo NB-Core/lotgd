@@ -954,9 +954,7 @@ class Installer
     public function stage7(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        if ($session['dbinfo']['upgrade'] ?? false) {
-            require __DIR__ . '/../data/installer_sqlstatements.php';
-        }
+        require __DIR__ . '/../data/installer_sqlstatements.php';
         if (Http::post("type") > "") {
             if (Http::post("type") == "install") {
                 $session['fromversion'] = "-1";
@@ -1269,6 +1267,17 @@ class Installer
         } catch (\Throwable $e) {
             $this->output->output("`\$Migration error:`n" . $e->getMessage());
             return;
+        }
+
+        require __DIR__ . '/../data/installer_sqlstatements.php';
+        $fromVersion = $session['fromversion'] ?? '-1';
+        foreach ($sql_upgrade_statements as $version => $statements) {
+            $version = (string) $version;
+            if (!($session['dbinfo']['upgrade'] ?? false) || version_compare($version, $fromVersion, '>')) {
+                foreach ($statements as $sql) {
+                    Database::query($sql);
+                }
+            }
         }
         /*
            $this->output->output("`n`2Now I'll install the recommended modules.");
