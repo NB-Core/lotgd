@@ -159,8 +159,9 @@ as the `tests/` directory.
 
 ## Cron Job Setup
 
-`cron.php` handles automated tasks such as new day resets. It runs from the command line and reads `settings.php` to determine the game directory.
-Edit `$GAME_DIR` in `settings.php` to the absolute path of your installation before creating the cron job.  Modules like namecolor/namechange no longer work; set `playername` instead.
+`cron.php` handles automated tasks such as daily resets. Run it from the command line with `php cron.php` and schedule it in your system's crontab. The script automatically determines its installation directory, so no manual configuration or `$GAME_DIR` value is required.
+
+Enable the `newdaycron` flag in the admin settings (or set `newdaycron` to `1` in the `settings` table) to process new days exclusively through the cron job instead of when the first player logs in.
 
 ## SMTP Mail Setup
 
