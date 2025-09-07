@@ -35,7 +35,11 @@ switch ($op) {
             $sql = "SELECT * FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid=\"$deathmessageid\"";
             $result = Database::query($sql);
             $row = Database::fetchAssoc($result);
-            $badguy = array('creaturename' => '`2The Nasty Rabbit', 'creatureweapon' => 'Rabbit Ears');
+            $badguy = array(
+                'creaturename' => '`2The Nasty Rabbit',
+                'creatureweapon' => 'Rabbit Ears',
+                'diddamage' => 0,
+            );
             $deathmessage = Substitute::applyArray($row['deathmessage'], array("{where}"), array("in the fields"));
             $deathmessage = Translator::sprintfTranslate(...$deathmessage);
             $output->output("Preview: %s`0`n`n", $deathmessage);

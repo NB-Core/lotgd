@@ -77,7 +77,11 @@ class Substitute
         $string = str_replace($search, $replace, $string);
         $search = ['{goodguyweapon}', '{badguyweapon}', '{goodguyarmor}', '{badguyname}', '{goodguyname}', '{badguy}', '{goodguy}', '{weapon}', '{armor}', '{creatureweapon}'];
         if (!isset($badguy)) {
-            $badguy = ['creatureweapon' => '', 'creaturename' => ''];
+            $badguy = [
+                'creatureweapon' => '',
+                'creaturename' => '',
+                'diddamage' => 0,
+            ];
         }
         $replace = [
             $session['user']['weapon'],

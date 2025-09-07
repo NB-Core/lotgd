@@ -42,7 +42,10 @@ class Outcomes
         $exp = 0;
         $expbonus = 0;
         $count = 0;
-        $badguy = ['creaturelevel' => 0];
+        $badguy = [
+            'creaturelevel' => 0,
+            'diddamage' => 0,
+        ];
         foreach ($enemies as $badguy) {
             $dropMinGold = $settings->getSetting('dropmingold', 0);
             if ($dropMinGold) {
@@ -57,7 +60,7 @@ class Outcomes
             }
             $output->output("`b`\$You have slain %s!`0`b`n", $badguy['creaturename']);
             $count++;
-            if ($badguy['diddamage'] == 1) {
+            if (($badguy['diddamage'] ?? 0) == 1) {
                 $diddamage = true;
             }
             $creaturelevel = max($creaturelevel, (int)$badguy['creaturelevel']);
