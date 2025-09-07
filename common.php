@@ -108,7 +108,8 @@ require_once("lib/fightnav.php");
 ErrorHandler::register();
 
 //start the gzip compression
-if (isset($gz_handler_on) && $gz_handler_on) {
+$gz_handler_on = get_gz_handler_setting();
+if ($gz_handler_on) {
     ob_start('ob_gzhandler');
 } else {
     ob_start();

@@ -323,6 +323,7 @@ switch ($type_setting) {
                 $output->rawOutput(Translator::clearButton());
 
                 $secstonewday = secondstonextgameday($details);
+                $gz_handler_on = get_gz_handler_setting();
                 $useful_vals = array(
                     "datacachepath" => $DB_DATACACHEPATH,
                     "usedatacache" => $DB_USEDATACACHE,
