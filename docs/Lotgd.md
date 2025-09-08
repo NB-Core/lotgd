@@ -38,7 +38,7 @@ The `MySQL` sub-namespace (see `MySQL.md`) implements the actual database wrappe
 
 ## Miscellaneous Utilities
 
-Many other files provide focused helpers: `AddNews` writes stories to the news feed, `Http` performs simple HTTP requests, `Mail` implements the in-game mail system and `Substitute` offers a very small template engine used by buffs.  The complete list is available in [Namespaces.md](Namespaces.md). For translation tools and conventions see [TRANSLATIONS.md](TRANSLATIONS.md).
+Many other files provide focused helpers: `AddNews` writes stories to the news feed, `Http` performs simple HTTP requests, `Mail` implements the in-game mail system and `Substitute` offers a very small template engine used by buffs.  The complete list is available in [Namespaces.md](Namespaces.md). For translation tools and conventions see [TranslationsGuide.md](TranslationsGuide.md).
 
 ### Usage Example
 
