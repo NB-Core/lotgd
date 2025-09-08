@@ -38,8 +38,6 @@ function charrestore_getmoduleinfo(): array
                 "Users get a mail upon expiration with a token - put here your sender data in,note",
                 "adminname" => "Name of the Sender of the email,text|Noname",
                 "adminmail" => "Emailaddress of the Sender,text|noreply@noreply.com",
-                "Access,title",
-                "blocked_acctids" => "Comma-separated acctids without access to charrestore,text|",
                 ),
             "prefs" => array(
                     "hasaccess" => "Has Access to the restorer,bool|0",
@@ -100,9 +98,6 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "superuser":
             global $session;
-            if (charrestore_is_blocked()) {
-                break;
-            }
             $hasaccess = (int) get_module_pref("hasaccess");
             if (($session['user']['superuser'] & SU_EDIT_USERS) || $hasaccess) {
                 addnav("Character Restore");
@@ -114,9 +109,6 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "petition-status":
             global $session;
-            if (charrestore_is_blocked()) {
-                break;
-            }
             $hasaccess = (int) get_module_pref("hasaccess");
             $retid = (int) httpget('id');
             if ((($session['user']['superuser'] & SU_EDIT_USERS) && $retid > 0) || $hasaccess) {
@@ -536,8 +528,21 @@ function charrestore_run(): void
                     continue;
                 }
 
-                if ($val < DATETIME_DATEMIN) {
-                    $val = DATETIME_DATEMIN; // fix old time stamps
+                if ($key === 'sex') {
+                    $accountData[$key] = (int) $val;
+                    if (! in_array($accountData[$key], [SEX_MALE, SEX_FEMALE], true)) {
+                        $accountData[$key] = SEX_MALE;
+                    }
+                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
+                    continue;
+                }
+
+                if (str_contains($column_types[$key], 'date') || str_contains($column_types[$key], 'time')) {
+                    if ($val < DATETIME_DATEMIN) {
+                        $val = DATETIME_DATEMIN; // fix old time stamps
+                    }
+                    $accountData[$key] = $val;
+                    continue;
                 }
 
                 if (str_contains($column_types[$key], 'int')) {
