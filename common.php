@@ -340,7 +340,10 @@ if (isset($session['lasthit']) && isset($session['loggedin']) && strtotime("-" .
     // ignore it.
     // 1.1.1 now should be a good time to get it on with it, added tl-inline
     Translator::translatorSetup();
-        $session['message'] .= Translator::translateInline("`nYour session has expired!`n", "common");
+    if (!isset($session['message'])) {
+        $session['message'] = '';
+    }
+    $session['message'] .= Translator::translateInline("`nYour session has expired!`n", "common");
 }
 $session['lasthit'] = strtotime("now");
 
