@@ -174,6 +174,12 @@ $session['needtoviewmotd'] = false;
 $sql = "SELECT motddate FROM " . Database::prefix("motd") . " ORDER BY motditem DESC LIMIT 1";
 $result = Database::queryCached($sql, "motddate");
 $row = Database::fetchAssoc($result);
-$session['user']['lastmotd'] = $row['motddate'];
+
+if ($row && isset($row['motddate'])) {
+    $session['user']['lastmotd'] = $row['motddate'];
+} else {
+    // Fallback for empty `motd` tables during first-time installations.
+    $session['user']['lastmotd'] = '1970-01-01 00:00:00';
+}
 
 popup_footer();
