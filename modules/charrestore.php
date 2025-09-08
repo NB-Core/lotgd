@@ -477,7 +477,13 @@ function charrestore_run(): void
                 $ids[] = $row['acctid'];
             }
             $link = "runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode($file);
-            output("Hm. Login '%s' seems to exist already as Account-ID %s. If you want to go on, you need to give out a new login <a href='$link'>here</a>", $newlogin, implode(",", $ids), true);
+            output(
+                "Hm. Login '%s' seems to exist already as Account-ID %s. If you want to go on, you need to give out a new login <a href='%s'>here</a>",
+                $newlogin,
+                implode(',', $ids),
+                $link,
+                true
+            );
         } else {
             if (httppost("newlogin") > "") {
                 $user['account']['login'] = httppost('newlogin');
