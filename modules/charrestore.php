@@ -248,9 +248,23 @@ function charrestore_getstorepath()
     return $path;
 }
 
+function charrestore_is_blocked(): bool
+{
+    global $session;
+    $list = (string) get_module_setting('blocked_acctids');
+    $blocked = array_map('intval', array_filter(array_map('trim', explode(',', $list))));
+    return in_array((int) $session['user']['acctid'], $blocked, true);
+}
+
 function charrestore_run(): void
 {
     global $session;
+    if (charrestore_is_blocked()) {
+        page_header("Character Restore");
+        output("`n`4You do not have access to the Character Restorer.`0");
+        page_footer();
+        return;
+    }
     SuAccess::check(SU_EDIT_USERS);
     $retid = (int)httpget('returnpetition');
  //allow backlink to petition
