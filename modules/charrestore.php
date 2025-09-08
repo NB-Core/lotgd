@@ -38,7 +38,8 @@ function charrestore_getmoduleinfo(): array
                 "Users get a mail upon expiration with a token - put here your sender data in,note",
                 "adminname" => "Name of the Sender of the email,text|Noname",
                 "adminmail" => "Emailaddress of the Sender,text|noreply@noreply.com",
-
+                "Access,title",
+                "blocked_acctids" => "Comma-separated acctids without access to charrestore,text|",
                 ),
             "prefs" => array(
                     "hasaccess" => "Has Access to the restorer,bool|0",
@@ -99,7 +100,10 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "superuser":
             global $session;
-            $hasaccess = (int)get_module_pref("hasaccess");
+            if (charrestore_is_blocked()) {
+                break;
+            }
+            $hasaccess = (int) get_module_pref("hasaccess");
             if (($session['user']['superuser'] & SU_EDIT_USERS) || $hasaccess) {
                 addnav("Character Restore");
                 addnav(
@@ -110,8 +114,11 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "petition-status":
             global $session;
-            $hasaccess = (int)get_module_pref("hasaccess");
-            $retid = (int)httpget('id');
+            if (charrestore_is_blocked()) {
+                break;
+            }
+            $hasaccess = (int) get_module_pref("hasaccess");
+            $retid = (int) httpget('id');
             if ((($session['user']['superuser'] & SU_EDIT_USERS) && $retid > 0) || $hasaccess) {
                 addnav("Character Restore");
                 addnav(
@@ -249,9 +256,23 @@ function charrestore_getstorepath()
     return $path;
 }
 
+function charrestore_is_blocked(): bool
+{
+    global $session;
+    $list = (string) get_module_setting('blocked_acctids');
+    $blocked = array_map('intval', array_filter(array_map('trim', explode(',', $list))));
+    return in_array((int) $session['user']['acctid'], $blocked, true);
+}
+
 function charrestore_run(): void
 {
     global $session;
+    if (charrestore_is_blocked()) {
+        page_header("Character Restore");
+        output("`n`4You do not have access to the Character Restorer.`0");
+        page_footer();
+        return;
+    }
     SuAccess::check(SU_EDIT_USERS);
     $retid = (int)httpget('returnpetition');
  //allow backlink to petition
@@ -472,8 +493,10 @@ function charrestore_run(): void
             $sql = "DESCRIBE " . Database::prefix("accounts");
             $result = Database::query($sql);
             $known_columns = array();
+            $column_types = array();
             while ($row = Database::fetchAssoc($result)) {
                 $known_columns[$row['Field']] = true;
+                $column_types[$row['Field']] = $row['Type'];
             }
 
             //sanity fill ups due to empty values and no default values set
@@ -489,25 +512,44 @@ function charrestore_run(): void
                 }
             }
             //end
-            $keys = array();
-            $vals = array();
+            $accountData = [];
+            $types = [];
 
             foreach ($user['account'] as $key => $val) {
-                if ($key == "laston") {
-                    array_push($keys, $key);
-                    array_push($vals, "'" . date("Y-m-d H:i:s", strtotime("-1 day")) . "'");
-                } elseif (! isset($known_columns[$key])) {
+                if (! isset($known_columns[$key])) {
                     output("`2Dropping the column `^%s`n", $key);
-                } else {
-                    if ($val < DATETIME_DATEMIN) {
-                        $val = DATETIME_DATEMIN; // fix old time stamps
+                    continue;
+                }
+
+                if ($key === 'laston') {
+                    $accountData[$key] = date('Y-m-d H:i:s', strtotime('-1 day'));
+                    continue;
+                }
+
+                if ($key === 'acctid') {
+                    if (! ctype_digit((string) $val)) {
+                        output("`$Cannot restore account: invalid account ID `%s`n", $val);
+                        return;
                     }
-                    array_push($keys, $key);
-                    array_push($vals, "'" . addslashes($val) . "'");
+                    $accountData[$key] = (int) $val;
+                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
+                    continue;
+                }
+
+                if ($val < DATETIME_DATEMIN) {
+                    $val = DATETIME_DATEMIN; // fix old time stamps
+                }
+
+                if (str_contains($column_types[$key], 'int')) {
+                    $accountData[$key] = (int) $val;
+                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
+                } else {
+                    $accountData[$key] = $val;
                 }
             }
-            $sql = "INSERT INTO " . Database::prefix("accounts") . " (\n" . join("\t,\n", $keys) . ") VALUES (\n" . join("\t,\n", $vals) . ")";
-            Database::query($sql);
+
+            $conn = Database::getDoctrineConnection();
+            $conn->insert(Database::prefix('accounts'), $accountData, $types);
             $id = Database::insertId();
             if ($id > 0) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) {
@@ -557,8 +599,6 @@ function charrestore_run(): void
             } else {
                 output("`\$Something funky has happened, preventing this account from correctly being created.");
                 output("I'm sorry, you may have to recreate this account by hand.");
-                output("The SQL I tried was:`n");
-                rawoutput("<pre>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</pre>");
             }
         }
     } elseif (httpget('op') == "hashconvert") {
