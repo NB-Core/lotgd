@@ -33,6 +33,12 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static array $mockResults = [];
         public static string $last_error = '';
         public static bool $alterFail = false;
+        /**
+         * Log of executed SQL queries.
+         *
+         * @var array<int,string>
+         */
+        public static array $queries = [];
 
         public static function connect(string $host, string $user, string $pass): bool
         {
@@ -74,6 +80,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         {
             global $accounts_table, $mail_table, $last_query_result;
             self::$lastSql = $sql;
+            self::$queries[] = $sql;
 
             if (self::$mockResults) {
                 $last_query_result = array_shift(self::$mockResults);

@@ -2,27 +2,35 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests;
+namespace Lotgd\Modules {
+    class Installer {
+        public static array $statusReturn = [];
+        public static function getInstallStatus(bool $withDb = true): array { return self::$statusReturn; }
+        public static function install(string $module): bool { return false; }
+        public static function uninstall(string $module): bool { return false; }
+        public static function activate(string $module): bool { return false; }
+        public static function deactivate(string $module): bool { return false; }
+        public static function forceUninstall(string $module): bool { return true; }
+    }
+}
+
+namespace Lotgd\Tests {
 
 use Lotgd\ModuleManager;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
+ */
 final class ModuleManagerTest extends TestCase
 {
     protected function setUp(): void
     {
         class_exists(Database::class);
+        \Lotgd\DataCache::getInstance();
         \Lotgd\MySQL\Database::$lastSql = '';
-        $GLOBALS['install_called'] = $GLOBALS['uninstall_called'] = [];
-        $GLOBALS['activate_called'] = $GLOBALS['deactivate_called'] = [];
-        $GLOBALS['inject_called'] = $GLOBALS['invalidates'] = $GLOBALS['massinvalidates'] = [];
-        $GLOBALS['module_status'] = [];
-    }
-
-    protected function tearDown(): void
-    {
-        unset($GLOBALS['install_called'], $GLOBALS['uninstall_called'], $GLOBALS['activate_called'], $GLOBALS['deactivate_called'], $GLOBALS['inject_called'], $GLOBALS['invalidates'], $GLOBALS['massinvalidates'], $GLOBALS['module_status']);
     }
 
     public function testListInstalledBuildsSql(): void
@@ -33,13 +41,13 @@ final class ModuleManagerTest extends TestCase
 
     public function testListUninstalledReturnsStatus(): void
     {
-        $GLOBALS['module_status'] = ['uninstalledmodules' => ['x']];
+        \Lotgd\Modules\Installer::$statusReturn = ['uninstalledmodules' => ['x']];
         $this->assertSame(['x'], ModuleManager::listUninstalled());
     }
 
     public function testGetInstalledCategoriesUsesStatus(): void
     {
-        $GLOBALS['module_status'] = ['installedcategories' => ['core' => 1]];
+        \Lotgd\Modules\Installer::$statusReturn = ['installedcategories' => ['core' => 1]];
         $this->assertSame(['core' => 1], ModuleManager::getInstalledCategories());
     }
 
@@ -66,7 +74,8 @@ final class ModuleManagerTest extends TestCase
     public function testReinstallUpdatesDate(): void
     {
         ModuleManager::reinstall('mod');
-        $this->assertStringContainsString("SET filemoddate='" . DATETIME_DATEMIN . "'", \Lotgd\MySQL\Database::$lastSql);
+        $expected = "UPDATE modules SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='mod'";
+        $this->assertContains($expected, \Lotgd\MySQL\Database::$queries);
     }
 
     public function testForceUninstallReturnsTrue(): void
@@ -74,3 +83,6 @@ final class ModuleManagerTest extends TestCase
         $this->assertTrue(ModuleManager::forceUninstall('mod'));
     }
 }
+
+}
+

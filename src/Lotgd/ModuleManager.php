@@ -44,11 +44,7 @@ class ModuleManager
      */
     public static function listUninstalled(): array
     {
-        if (function_exists('get_module_install_status')) {
-            $status = get_module_install_status(false);
-        } else {
-            $status = Installer::getInstallStatus(false);
-        }
+        $status = Installer::getInstallStatus(true);
         return $status['uninstalledmodules'] ?? [];
     }
 
@@ -59,11 +55,7 @@ class ModuleManager
      */
     public static function getInstalledCategories(): array
     {
-        if (function_exists('get_module_install_status')) {
-            $status = get_module_install_status(false);
-        } else {
-            $status = Installer::getInstallStatus(false);
-        }
+        $status = Installer::getInstallStatus(true);
         return $status['installedcategories'] ?? [];
     }
 
