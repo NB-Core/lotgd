@@ -38,7 +38,8 @@ function charrestore_getmoduleinfo(): array
                 "Users get a mail upon expiration with a token - put here your sender data in,note",
                 "adminname" => "Name of the Sender of the email,text|Noname",
                 "adminmail" => "Emailaddress of the Sender,text|noreply@noreply.com",
-
+                "Access,title",
+                "blocked_acctids" => "Comma-separated acctids without access to charrestore,text|",
                 ),
             "prefs" => array(
                     "hasaccess" => "Has Access to the restorer,bool|0",
@@ -99,7 +100,10 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "superuser":
             global $session;
-            $hasaccess = (int)get_module_pref("hasaccess");
+            if (charrestore_is_blocked()) {
+                break;
+            }
+            $hasaccess = (int) get_module_pref("hasaccess");
             if (($session['user']['superuser'] & SU_EDIT_USERS) || $hasaccess) {
                 addnav("Character Restore");
                 addnav(
@@ -110,8 +114,11 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "petition-status":
             global $session;
-            $hasaccess = (int)get_module_pref("hasaccess");
-            $retid = (int)httpget('id');
+            if (charrestore_is_blocked()) {
+                break;
+            }
+            $hasaccess = (int) get_module_pref("hasaccess");
+            $retid = (int) httpget('id');
             if ((($session['user']['superuser'] & SU_EDIT_USERS) && $retid > 0) || $hasaccess) {
                 addnav("Character Restore");
                 addnav(
@@ -249,9 +256,23 @@ function charrestore_getstorepath()
     return $path;
 }
 
+function charrestore_is_blocked(): bool
+{
+    global $session;
+    $list = (string) get_module_setting('blocked_acctids');
+    $blocked = array_map('intval', array_filter(array_map('trim', explode(',', $list))));
+    return in_array((int) $session['user']['acctid'], $blocked, true);
+}
+
 function charrestore_run(): void
 {
     global $session;
+    if (charrestore_is_blocked()) {
+        page_header("Character Restore");
+        output("`n`4You do not have access to the Character Restorer.`0");
+        page_footer();
+        return;
+    }
     SuAccess::check(SU_EDIT_USERS);
     $retid = (int)httpget('returnpetition');
  //allow backlink to petition
