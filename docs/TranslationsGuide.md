@@ -67,6 +67,12 @@ Administrators control global translation behaviour and manage translators.
 - When restoring from backup ensure the character set matches the game configuration
   (UTF‑8 is recommended).
 
+### Optional Bulk Tools
+- Administrators can install the `translationwizard` module for mass updates.
+  It adds search+edit and search+replace utilities and surfaces untranslated
+  entries without needing a raw SQL dump. See
+  [Translation Wizard Module](#translation-wizard-module) for details.
+
 ## Developer Guide
 
 Developers integrate the translation engine directly in PHP code.
@@ -105,14 +111,22 @@ tlschema();
 
 ## Translation Wizard Module
 
-The optional `translationwizard` module streamlines large translation efforts and is useful
-when bootstrapping a new language.
+The optional `translationwizard` module is an admin-only helper for mass
+translation. It is ideal when translators want an in-game interface instead of
+working with SQL dumps.
 
+### Features
+- **Search + edit** existing translations across namespaces.
+- **Search + replace** to update terminology in bulk.
+- Review unresolved entries from the `untranslated` table and other
+  housekeeping tools.
+
+### Workflow
 1. **Install** – copy `translationwizard.php` into the `modules/` directory.
 2. **Activate** – enable it from the superuser module editor.
-3. **Run the wizard** – the module scans modules and pages for namespaces and walks through
-   each phrase, offering quick links into `translatortool.php`.
-4. **Cleanup** – deactivate or remove the module once all strings are translated.
+3. **Use the wizard** – choose a language and perform search/replace,
+   edit strings, or step through untranslated phrases.
+4. **Cleanup** – deactivate or remove the module after completing the batch.
 
 ## Database Reference
 
