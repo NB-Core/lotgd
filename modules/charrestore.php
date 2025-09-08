@@ -555,7 +555,7 @@ function charrestore_run(): void
 
             $conn = Database::getDoctrineConnection();
             $conn->insert(Database::prefix('accounts'), $accountData, $types);
-            $id = Database::insertId();
+            $id = (int) Database::insertId();
             if ($id > 0) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) {
                     addnav("Edit the restored user", "user.php?op=edit&userid=$id" . $retnav);
