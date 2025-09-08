@@ -110,6 +110,7 @@ For details on key components:
 
 - [docs/Nav.md](docs/Nav.md)
 - [docs/Doctrine.md](docs/Doctrine.md)
+- [docs/TranslationGuide.md](docs/TranslationGuide.md)
 
 ## Twig Templates
 
