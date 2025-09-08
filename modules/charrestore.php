@@ -472,8 +472,10 @@ function charrestore_run(): void
             $sql = "DESCRIBE " . Database::prefix("accounts");
             $result = Database::query($sql);
             $known_columns = array();
+            $column_types = array();
             while ($row = Database::fetchAssoc($result)) {
                 $known_columns[$row['Field']] = true;
+                $column_types[$row['Field']] = $row['Type'];
             }
 
             //sanity fill ups due to empty values and no default values set
@@ -489,25 +491,44 @@ function charrestore_run(): void
                 }
             }
             //end
-            $keys = array();
-            $vals = array();
+            $accountData = [];
+            $types = [];
 
             foreach ($user['account'] as $key => $val) {
-                if ($key == "laston") {
-                    array_push($keys, $key);
-                    array_push($vals, "'" . date("Y-m-d H:i:s", strtotime("-1 day")) . "'");
-                } elseif (! isset($known_columns[$key])) {
+                if (! isset($known_columns[$key])) {
                     output("`2Dropping the column `^%s`n", $key);
-                } else {
-                    if ($val < DATETIME_DATEMIN) {
-                        $val = DATETIME_DATEMIN; // fix old time stamps
+                    continue;
+                }
+
+                if ($key === 'laston') {
+                    $accountData[$key] = date('Y-m-d H:i:s', strtotime('-1 day'));
+                    continue;
+                }
+
+                if ($key === 'acctid') {
+                    if (! ctype_digit((string) $val)) {
+                        output("`$Cannot restore account: invalid account ID `%s`n", $val);
+                        return;
                     }
-                    array_push($keys, $key);
-                    array_push($vals, "'" . addslashes($val) . "'");
+                    $accountData[$key] = (int) $val;
+                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
+                    continue;
+                }
+
+                if ($val < DATETIME_DATEMIN) {
+                    $val = DATETIME_DATEMIN; // fix old time stamps
+                }
+
+                if (str_contains($column_types[$key], 'int')) {
+                    $accountData[$key] = (int) $val;
+                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
+                } else {
+                    $accountData[$key] = $val;
                 }
             }
-            $sql = "INSERT INTO " . Database::prefix("accounts") . " (\n" . join("\t,\n", $keys) . ") VALUES (\n" . join("\t,\n", $vals) . ")";
-            Database::query($sql);
+
+            $conn = Database::getDoctrineConnection();
+            $conn->insert(Database::prefix('accounts'), $accountData, $types);
             $id = Database::insertId();
             if ($id > 0) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) {
@@ -557,8 +578,6 @@ function charrestore_run(): void
             } else {
                 output("`\$Something funky has happened, preventing this account from correctly being created.");
                 output("I'm sorry, you may have to recreate this account by hand.");
-                output("The SQL I tried was:`n");
-                rawoutput("<pre>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</pre>");
             }
         }
     } elseif (httpget('op') == "hashconvert") {
