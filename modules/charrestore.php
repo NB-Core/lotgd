@@ -571,6 +571,8 @@ function charrestore_run(): void
             $em->flush();
 
             $id = (int) Database::insertId();
+            $idReassigned = false;
+            $originalId   = (int) $desiredId;
             if (is_numeric($desiredId) && (int) $desiredId !== $id) {
                 $conn = Database::getDoctrineConnection();
                 try {
@@ -578,6 +580,9 @@ function charrestore_run(): void
                     $id = (int) $desiredId;
                 } catch (UniqueConstraintViolationException $e) {
                     // old ID already taken; keep $id
+                }
+                if ((int) $desiredId !== $id) {
+                    $idReassigned = true;
                 }
             }
 
@@ -598,6 +603,11 @@ function charrestore_run(): void
                     }
                 }
                 output("`#The preferences were restored.`n");
+                if ($idReassigned) {
+                    output("`#The original account ID `^%s`# could not be used.`n", $originalId);
+                    output("`#A new account ID `^%s`# has been assigned.`n", $id);
+                    output("`#Preferences have been applied to the new ID.`n");
+                }
                 // sadly not possible anymore. we do not know the emailaddress (data privacy regulation)
                 /*                  $targetid=$user['account']['acctid'];
                                     $targetmail=$user['account']['emailaddress'];
