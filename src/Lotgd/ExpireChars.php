@@ -68,8 +68,9 @@ class ExpireChars
 
         $acctIds = [];
         foreach ($rows as $row) {
-            PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO);
-            $acctIds[] = $row['acctid'];
+            if (PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO)) {
+                $acctIds[] = $row['acctid'];
+            }
         }
 
         self::logExpiredAccountStats($rows);

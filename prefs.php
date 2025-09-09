@@ -33,18 +33,19 @@ addnav("Navigation");
 if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
        $userid = (int)httpget('userid');
     require_once __DIR__ . "/lib/charcleanup.php";
-    char_cleanup($userid, CHAR_DELETE_SUICIDE);
+    if (char_cleanup($userid, CHAR_DELETE_SUICIDE)) {
        $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
-    Database::query($sql);
-    output("Your character has been deleted!");
-    AddNews::add("`#%s quietly passed from this world.", $session['user']['name']);
-    addnav("Login Page", "index.php");
-    $session = array();
-    $session['user'] = array();
-    $session['loggedin'] = false;
-    $session['user']['loggedin'] = false;
-    massinvalidate('charlisthomepage');
-    invalidatedatacache("list.php-warsonline");
+        Database::query($sql);
+        output("Your character has been deleted!");
+        AddNews::add("`#%s quietly passed from this world.", $session['user']['name']);
+        addnav("Login Page", "index.php");
+        $session = array();
+        $session['user'] = array();
+        $session['loggedin'] = false;
+        $session['user']['loggedin'] = false;
+        massinvalidate('charlisthomepage');
+        invalidatedatacache("list.php-warsonline");
+    }
 } elseif ($op == "forcechangeemail") {
     checkday();
     if ($session['user']['alive']) {
