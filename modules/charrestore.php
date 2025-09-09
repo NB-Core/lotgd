@@ -255,9 +255,9 @@ function charrestore_create_snapshot(int $acctid): bool
     $body = str_replace("`n", "</br>", $body);
     $result = charrestore_sendmail($targetmail, $body, $subject, get_module_setting('adminmail', 'charrestore'), get_module_setting('adminname', 'charrestore'));
     if ($result) {
-        output("`\\$The notification message has been sent!`n");
+        output("`\$The notification message has been sent!`n");
     } else {
-        output("`\\$There has been an error! The notification message was NOT sent!`n");
+        output("`\$There has been an error! The notification message was NOT sent!`n");
     }
 
     return true;
