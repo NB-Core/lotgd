@@ -15,17 +15,21 @@ $oldvalues = html_entity_decode(
     ENT_COMPAT,
     getsetting('charset', 'UTF-8')
 );
+/** @var array|string $oldvalues */
 $oldvalues = unserialize($oldvalues);
+if (!\is_array($oldvalues)) {
+    $oldvalues = [];
+}
 // Handle recombining the old name
-$otitle = $oldvalues['title'];
-if ($oldvalues['ctitle']) {
+$otitle = $oldvalues['title'] ?? '';
+if (isset($oldvalues['ctitle']) && $oldvalues['ctitle']) {
     $otitle = $oldvalues['ctitle'];
 }
 // now the $ctitle is the real title
 //$oldvalues['name'] = $otitle . ' ' . $oldvalues['name'];
 if (!isset($oldvalues['playername']) || $oldvalues['playername'] == '') {
     //you need a name, this is normal after an update from <1.1.1+nb
-    if ($post['playername'] == '') {
+    if (!isset($post['playername']) || $post['playername'] == '') {
         $post['playername'] = Names::getPlayerBasename($oldvalues);
     }
 }
@@ -52,14 +56,15 @@ foreach ($post as $key => $val) {
             }
                 //strip off an attempt to set privs that the user doesn't
             //have authority to set.
-            $stripfield = ((int)$oldvalues['superuser'] | $session['user']['superuser'] | SU_ANYONE_CAN_SET | ($session['user']['superuser'] & SU_MEGAUSER ? 0xFFFFFFFF : 0));
+            $oldsup = (int)($oldvalues['superuser'] ?? 0);
+            $stripfield = ($oldsup | $session['user']['superuser'] | SU_ANYONE_CAN_SET | ($session['user']['superuser'] & SU_MEGAUSER ? 0xFFFFFFFF : 0));
             $value = $value & $stripfield;
                 //put back on privs that the user used to have but the
             //current user can't set.
             $unremovable = ~ ((int)$session['user']['superuser'] | SU_ANYONE_CAN_SET | ($session['user']['superuser'] & SU_MEGAUSER ? 0xFFFFFFFF : 0));
-            $filteredunremovable = (int)$oldvalues['superuser'] & $unremovable;
+            $filteredunremovable = $oldsup & $unremovable;
             $value = $value | $filteredunremovable;
-            if ((int)$value != (int)$oldvalues['superuser']) {
+            if ((int)$value != $oldsup) {
                 $sql .= "$key = \"$value\",";
                 $updates++;
                 $output->output("`\$Superuser values have changed.`0`n");
@@ -69,7 +74,7 @@ foreach ($post as $key => $val) {
                 debuglog($session['user']['name'] . "`0 changed superuser to " . show_bitfield($value), $userid) . "`n";
                 debug("superuser has changed to $value");
             }
-        } elseif ($key == "name33" && stripslashes($val) != $oldvalues[$key]) {
+        } elseif ($key == "name33" && isset($oldvalues[$key]) && stripslashes($val) != $oldvalues[$key]) {
             $updates++;
             $tmp = sanitize_colorname(
                 getsetting("spaceinname", 0),
@@ -94,7 +99,7 @@ foreach ($post as $key => $val) {
             if ($session['user']['acctid'] == $userid) {
                 $session['user']['name'] = $newname;
             }
-        } elseif ($key == "title" && stripslashes($val) != $oldvalues[$key]) {
+        } elseif ($key == "title" && isset($oldvalues[$key]) && stripslashes($val) != $oldvalues[$key]) {
             $updates++;
             $tmp = sanitize_colorname(true, stripslashes($val), true);
             $tmp = preg_replace("/[`][cHw]/", "", $tmp);
@@ -107,9 +112,9 @@ foreach ($post as $key => $val) {
             }
                 $newname = Names::changePlayerTitle($tmp, $oldvalues);
             $sql .= "$key = \"$val\",";
-            $output->output("Changed player title from %s`0 to %s`0`n", $oldvalues['title'], $tmp);
+            $output->output("Changed player title from %s`0 to %s`0`n", $oldvalues['title'] ?? '', $tmp);
             $oldvalues[$key] = $tmp;
-            if ($newname != $oldvalues['name']) {
+            if (isset($oldvalues['name']) && $newname != $oldvalues['name']) {
                 $sql .= "name = \"" . addslashes($newname) . "\",";
                 $output->output("`2Changed player name to %s`2 due to changed dragonkill title`n", $newname);
                 debuglog($session['user']['name'] . "`0 changed player name to $newname`0 due to changed dragonkill title", $userid);
@@ -121,7 +126,7 @@ foreach ($post as $key => $val) {
             if ($session['user']['acctid'] == $userid) {
                 $session['user']['title'] = $tmp;
             }
-        } elseif ($key == "ctitle" && stripslashes($val) != $oldvalues[$key]) {
+        } elseif ($key == "ctitle" && isset($oldvalues[$key]) && stripslashes($val) != $oldvalues[$key]) {
             $updates++;
             $tmp = sanitize_colorname(true, stripslashes($val), true);
             $tmp = preg_replace("/[`][cHw]/", "", $tmp);
@@ -134,11 +139,11 @@ foreach ($post as $key => $val) {
             }
             $newname = Names::changePlayerCtitle($tmp, $oldvalues);
             $sql .= "$key = \"$val\",";
-            $output->output("`2Changed player ctitle from `\$%s`2 to `\$%s`2`n", $oldvalues['ctitle'], $tmp);
+            $output->output("`2Changed player ctitle from `\$%s`2 to `\$%s`2`n", $oldvalues['ctitle'] ?? '', $tmp);
             $oldvalues[$key] = $tmp;
-            if ($newname != $oldvalues['name']) {
+            if (isset($oldvalues['name']) && $newname != $oldvalues['name']) {
                 $sql .= "name = \"" . addslashes($newname) . "\",";
-                if ($oldvalues['playername'] == '' && !isset($post['playername'])) {
+                if ((!isset($oldvalues['playername']) || $oldvalues['playername'] == '') && !isset($post['playername'])) {
                     //no valid title currently, add update
                     $post['playername'] = Names::getPlayerBasename($tmp);
                 }
@@ -152,7 +157,7 @@ foreach ($post as $key => $val) {
             if ($session['user']['acctid'] == $userid) {
                 $session['user']['ctitle'] = $tmp;
             }
-        } elseif (($key == "playername") && stripslashes($val) != $oldvalues[$key]) {
+        } elseif (($key == "playername") && isset($oldvalues[$key]) && stripslashes($val) != $oldvalues[$key]) {
             $updates++;
             $tmp = sanitize_colorname(true, stripslashes($val), true);
             $tmp = preg_replace("/[`][cHw]/", "", $tmp);
@@ -167,9 +172,9 @@ foreach ($post as $key => $val) {
             $newname = Names::changePlayerName($tmp, $oldvalues);
             debug($newname);
             $sql .= "$key = \"$val\",";
-            $output->output("`2Changed player name from `\$%s`2 to `\$%s`2`n", $oldvalues['playername'], $tmp);
+            $output->output("`2Changed player name from `\$%s`2 to `\$%s`2`n", $oldvalues['playername'] ?? '', $tmp);
             $oldvalues[$key] = $tmp;
-            if ($newname != $oldvalues['name']) {
+            if (isset($oldvalues['name']) && $newname != $oldvalues['name']) {
                 $sql .= "name = \"" . addslashes($newname) . "\",";
                 debuglog($session['user']['name'] . "`0 changed player name to $newname`0 due to changed custom title", $userid);
                 $oldvalues['name'] = $newname;
@@ -182,7 +187,7 @@ foreach ($post as $key => $val) {
             }
         } elseif ($key == "oldvalues") {
             //donothing.
-        } elseif ($oldvalues[$key] != stripslashes($val) && isset($oldvalues[$key])) {
+        } elseif (isset($oldvalues[$key]) && $oldvalues[$key] != stripslashes($val)) {
             if ($key == 'name') {
                 continue; //well, name is composed now
             }
