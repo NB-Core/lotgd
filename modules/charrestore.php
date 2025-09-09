@@ -592,8 +592,21 @@ function charrestore_run(): void
                 }
                 output("`#The account was restored.`n");
                 output("`#Now working on module preferences.`n");
-                foreach ($user['prefs'] as $modulename => $values) {
+                foreach ($user['prefs'] as $moduleKey => $values) {
+                    if (is_object($moduleKey)) {
+                        if (property_exists($moduleKey, 'modulename') && is_string($moduleKey->modulename)) {
+                            $modulename = $moduleKey->modulename;
+                        } else {
+                            continue;
+                        }
+                    } elseif (is_string($moduleKey)) {
+                        $modulename = $moduleKey;
+                    } else {
+                        continue;
+                    }
+
                     output("`3Module: `2%s`3...`n", $modulename);
+
                     if (is_module_installed($modulename)) {
                         foreach ($values as $prefname => $value) {
                             set_module_pref($prefname, $value, $modulename, $id);
