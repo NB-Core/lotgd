@@ -510,8 +510,9 @@ function charrestore_run(): void
                 }
             }
             //end
-            $accountData = [];
-            $types = [];
+            $em       = \Lotgd\Doctrine\Bootstrap::getEntityManager();
+            $account  = new \Lotgd\Entity\Account();
+            $metadata = $em->getClassMetadata(\Lotgd\Entity\Account::class);
 
             foreach ($user['account'] as $key => $val) {
                 if (! isset($known_columns[$key])) {
@@ -519,27 +520,28 @@ function charrestore_run(): void
                     continue;
                 }
 
-                if ($key === 'laston') {
-                    $accountData[$key] = date('Y-m-d H:i:s', strtotime('-1 day'));
+                if (! $metadata->hasField($key)) {
                     continue;
                 }
 
                 if ($key === 'acctid') {
-                    if (! ctype_digit((string) $val)) {
-                        output("`$Cannot restore account: invalid account ID `%s`n", $val);
-                        return;
+                    if (ctype_digit((string) $val)) {
+                        $metadata->setFieldValue($account, $key, (int) $val);
                     }
-                    $accountData[$key] = (int) $val;
-                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
+                    continue;
+                }
+
+                if ($key === 'laston') {
+                    $metadata->setFieldValue($account, $key, new \DateTimeImmutable('-1 day'));
                     continue;
                 }
 
                 if ($key === 'sex') {
-                    $accountData[$key] = (int) $val;
-                    if (! in_array($accountData[$key], [SEX_MALE, SEX_FEMALE], true)) {
-                        $accountData[$key] = SEX_MALE;
+                    $val = (int) $val;
+                    if (! in_array($val, [SEX_MALE, SEX_FEMALE], true)) {
+                        $val = SEX_MALE;
                     }
-                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
+                    $metadata->setFieldValue($account, $key, $val);
                     continue;
                 }
 
@@ -547,21 +549,22 @@ function charrestore_run(): void
                     if ($val < DATETIME_DATEMIN) {
                         $val = DATETIME_DATEMIN; // fix old time stamps
                     }
-                    $accountData[$key] = $val;
+                    $metadata->setFieldValue($account, $key, new \DateTimeImmutable($val));
                     continue;
                 }
 
                 if (str_contains($column_types[$key], 'int')) {
-                    $accountData[$key] = (int) $val;
-                    $types[$key] = \Doctrine\DBAL\ParameterType::INTEGER;
-                } else {
-                    $accountData[$key] = $val;
+                    $metadata->setFieldValue($account, $key, (int) $val);
+                    continue;
                 }
+
+                $metadata->setFieldValue($account, $key, $val);
             }
 
-            $conn = Database::getDoctrineConnection();
-            $conn->insert(Database::prefix('accounts'), $accountData, $types);
-            $id = (int) Database::insertId();
+            $em->persist($account);
+            $em->flush();
+
+            $id = (int) $account->getAcctid();
             if ($id > 0) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) {
                     addnav("Edit the restored user", "user.php?op=edit&userid=$id" . $retnav);
