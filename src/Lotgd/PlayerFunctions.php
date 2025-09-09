@@ -22,11 +22,18 @@ class PlayerFunctions
      *
      * @param int $id   Account id of the player to clean up
      * @param int $type Type of deletion (see constants)
+     *
+     * @return bool True if cleanup was performed, false if prevented
      */
-    public static function charCleanup(int $id, int $type): void
+    public static function charCleanup(int $id, int $type): bool
     {
         // Run module hooks for character deletion
-        HookHandler::hook('delete_character', ['acctid' => $id, 'deltype' => $type]);
+        $args = HookHandler::hook('delete_character', ['acctid' => $id, 'deltype' => $type]);
+
+        // Allow modules to prevent cleanup
+        if ($args['prevent_cleanup'] ?? false) {
+            return false;
+        }
 
         // Remove output cache records for this player
         Database::query('DELETE FROM ' . Database::prefix('accounts_output') . " WHERE acctid=$id;");
@@ -68,6 +75,8 @@ class PlayerFunctions
 
         // Remove module user preferences
         HookHandler::deleteUserPrefs($id);
+
+        return true;
     }
 
     /**
