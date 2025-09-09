@@ -110,6 +110,7 @@ For details on key components:
 
 - [docs/Nav.md](docs/Nav.md)
 - [docs/Doctrine.md](docs/Doctrine.md)
+- [docs/TranslationsGuide.md](docs/TranslationsGuide.md)
 
 ## Twig Templates
 
@@ -127,8 +128,11 @@ and only enables caching when it is writable. If the path cannot be created
 or written to, templates are rendered without caching.
 
 `dbconnect.php` is created by the installer and stores database and cache
-settings in plain PHP.  After installation you can edit this file to point the
-`datacachepath` setting at a writable directory:
+settings in plain PHP. It is the only core file not overwritten during updates
+and remains the primary place for these settings. Site-specific overrides can
+be placed in the `config/` directory (e.g., `config/configuration.php`) to keep
+them separate from the core. After installation you can edit `dbconnect.php` to
+point the `datacachepath` setting at a writable directory:
 
 ```php
 $DB_USEDATACACHE  = 1;

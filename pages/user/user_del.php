@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\PlayerFunctions;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
+use Lotgd\AddNews;
 
 $sql = "SELECT name,superuser from " . Database::prefix("accounts") . " WHERE acctid='$userid'";
 $res = Database::query($sql);

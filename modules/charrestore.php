@@ -11,6 +11,7 @@ use Lotgd\Nav\SuperuserNav;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\ErrorHandler;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 function charrestore_getmoduleinfo(): array
 {
@@ -38,7 +39,6 @@ function charrestore_getmoduleinfo(): array
                 "Users get a mail upon expiration with a token - put here your sender data in,note",
                 "adminname" => "Name of the Sender of the email,text|Noname",
                 "adminmail" => "Emailaddress of the Sender,text|noreply@noreply.com",
-
                 ),
             "prefs" => array(
                     "hasaccess" => "Has Access to the restorer,bool|0",
@@ -99,7 +99,7 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "superuser":
             global $session;
-            $hasaccess = (int)get_module_pref("hasaccess");
+            $hasaccess = (int) get_module_pref("hasaccess");
             if (($session['user']['superuser'] & SU_EDIT_USERS) || $hasaccess) {
                 addnav("Character Restore");
                 addnav(
@@ -110,8 +110,8 @@ function charrestore_dohook(string $hookname, array $args): array
             break;
         case "petition-status":
             global $session;
-            $hasaccess = (int)get_module_pref("hasaccess");
-            $retid = (int)httpget('id');
+            $hasaccess = (int) get_module_pref("hasaccess");
+            $retid = (int) httpget('id');
             if ((($session['user']['superuser'] & SU_EDIT_USERS) && $retid > 0) || $hasaccess) {
                 addnav("Character Restore");
                 addnav(
@@ -249,10 +249,31 @@ function charrestore_getstorepath()
     return $path;
 }
 
+function charrestore_is_blocked(): bool
+{
+    global $session;
+    $list = (string) get_module_setting('blocked_acctids');
+    $blocked = array_map('intval', array_filter(array_map('trim', explode(',', $list))));
+    return in_array((int) $session['user']['acctid'], $blocked, true);
+}
+
 function charrestore_run(): void
 {
     global $session;
-    SuAccess::check(SU_EDIT_USERS);
+
+    $hasaccess = (bool) get_module_pref('hasaccess');
+
+    if (charrestore_is_blocked()) {
+        page_header("Character Restore");
+        output("`n`4You do not have access to the Character Restorer.`0");
+        page_footer();
+        return;
+    }
+
+    if (! $hasaccess) {
+        SuAccess::check(SU_EDIT_USERS);
+    }
+
     $retid = (int)httpget('returnpetition');
  //allow backlink to petition
     page_header("Character Restore");
@@ -464,7 +485,13 @@ function charrestore_run(): void
                 $ids[] = $row['acctid'];
             }
             $link = "runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode($file);
-            output("Hm. Login '%s' seems to exist already as Account-ID %s. If you want to go on, you need to give out a new login <a href='$link'>here</a>", $newlogin, implode(",", $ids), true);
+            output(
+                "Hm. Login '%s' seems to exist already as Account-ID %s. If you want to go on, you need to give out a new login <a href='%s'>here</a>",
+                $newlogin,
+                implode(',', $ids),
+                $link,
+                true
+            );
         } else {
             if (httppost("newlogin") > "") {
                 $user['account']['login'] = httppost('newlogin');
@@ -472,8 +499,10 @@ function charrestore_run(): void
             $sql = "DESCRIBE " . Database::prefix("accounts");
             $result = Database::query($sql);
             $known_columns = array();
+            $column_types = array();
             while ($row = Database::fetchAssoc($result)) {
                 $known_columns[$row['Field']] = true;
+                $column_types[$row['Field']] = $row['Type'];
             }
 
             //sanity fill ups due to empty values and no default values set
@@ -489,41 +518,104 @@ function charrestore_run(): void
                 }
             }
             //end
-            $keys = array();
-            $vals = array();
+            $em       = \Lotgd\Doctrine\Bootstrap::getEntityManager();
+            $account  = new \Lotgd\Entity\Account();
+            $metadata = $em->getClassMetadata(\Lotgd\Entity\Account::class);
+            $desiredId = $user['account']['acctid'] ?? null;
 
             foreach ($user['account'] as $key => $val) {
-                if ($key == "laston") {
-                    array_push($keys, $key);
-                    array_push($vals, "'" . date("Y-m-d H:i:s", strtotime("-1 day")) . "'");
-                } elseif (! isset($known_columns[$key])) {
+                if (! isset($known_columns[$key])) {
                     output("`2Dropping the column `^%s`n", $key);
-                } else {
+                    continue;
+                }
+
+                if (! $metadata->hasField($key)) {
+                    continue;
+                }
+
+                if ($key === 'acctid') {
+                    continue;
+                }
+
+                if ($key === 'laston') {
+                    $metadata->setFieldValue($account, $key, new \DateTimeImmutable('-1 day'));
+                    continue;
+                }
+
+                if ($key === 'sex') {
+                    $val = (int) $val;
+                    if (! in_array($val, [SEX_MALE, SEX_FEMALE], true)) {
+                        $val = SEX_MALE;
+                    }
+                    $metadata->setFieldValue($account, $key, $val);
+                    continue;
+                }
+
+                if (str_contains($column_types[$key], 'date') || str_contains($column_types[$key], 'time')) {
                     if ($val < DATETIME_DATEMIN) {
                         $val = DATETIME_DATEMIN; // fix old time stamps
                     }
-                    array_push($keys, $key);
-                    array_push($vals, "'" . addslashes($val) . "'");
+                    $metadata->setFieldValue($account, $key, new \DateTimeImmutable($val));
+                    continue;
+                }
+
+                if (str_contains($column_types[$key], 'int')) {
+                    $metadata->setFieldValue($account, $key, (int) $val);
+                    continue;
+                }
+
+                $metadata->setFieldValue($account, $key, $val);
+            }
+
+            $em->persist($account);
+            $em->flush();
+
+            $id = (int) $account->getAcctid();
+            $idReassigned = false;
+            $originalId   = (int) $desiredId;
+            if (is_numeric($desiredId) && (int) $desiredId !== $id) {
+                $conn = Database::getDoctrineConnection();
+                try {
+                    $rows = $conn->update(
+                        Database::prefix('accounts'),
+                        ['acctid' => (int) $desiredId],
+                        ['acctid' => $id]
+                    );
+                    if ($rows > 0) {
+                        $id = (int) $desiredId;
+                    } else {
+                        $idReassigned = true;
+                    }
+                } catch (UniqueConstraintViolationException $e) {
+                    // old ID already taken; keep $id
+                    $idReassigned = true;
+                }
+                if ((int) $desiredId !== $id) {
+                    $idReassigned = true;
                 }
             }
-            $sql = "INSERT INTO " . Database::prefix("accounts") . " (\n" . join("\t,\n", $keys) . ") VALUES (\n" . join("\t,\n", $vals) . ")";
-            Database::query($sql);
-            $id = Database::insertId();
+
             if ($id > 0) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) {
                     addnav("Edit the restored user", "user.php?op=edit&userid=$id" . $retnav);
                 }
-                if ($id != $user['account']['acctid']) {
-                    output("`^The account was restored, though the account ID was not preserved; things such as news, mail, comments, debuglog, and other items associated with this account that were not stored as part of the snapshot have lost their association.");
-                    output("The original ID was `&%s`^, and the new ID is `&%s`^.", $user['account']['acctid'], $id);
-                    output("The most common cause of this problem is another account already present with the same ID.");
-                    output("Did you do a restore of an already existing account?  If so, the existing account was not overwritten.`n");
-                } else {
-                    output("`#The account was restored.`n");
-                }
+                output("`#The account was restored.`n");
                 output("`#Now working on module preferences.`n");
-                foreach ($user['prefs'] as $modulename => $values) {
+                foreach ($user['prefs'] as $moduleKey => $values) {
+                    if (is_object($moduleKey)) {
+                        if (property_exists($moduleKey, 'modulename') && is_string($moduleKey->modulename)) {
+                            $modulename = $moduleKey->modulename;
+                        } else {
+                            continue;
+                        }
+                    } elseif (is_string($moduleKey)) {
+                        $modulename = $moduleKey;
+                    } else {
+                        continue;
+                    }
+
                     output("`3Module: `2%s`3...`n", $modulename);
+
                     if (is_module_installed($modulename)) {
                         foreach ($values as $prefname => $value) {
                             set_module_pref($prefname, $value, $modulename, $id);
@@ -533,6 +625,11 @@ function charrestore_run(): void
                     }
                 }
                 output("`#The preferences were restored.`n");
+                if ($idReassigned) {
+                    output("`#The original account ID `^%s`# could not be used.`n", $originalId);
+                    output("`#A new account ID `^%s`# has been assigned.`n", $id);
+                    output("`#Preferences have been applied to the new ID.`n");
+                }
                 // sadly not possible anymore. we do not know the emailaddress (data privacy regulation)
                 /*                  $targetid=$user['account']['acctid'];
                                     $targetmail=$user['account']['emailaddress'];
@@ -557,8 +654,6 @@ function charrestore_run(): void
             } else {
                 output("`\$Something funky has happened, preventing this account from correctly being created.");
                 output("I'm sorry, you may have to recreate this account by hand.");
-                output("The SQL I tried was:`n");
-                rawoutput("<pre>" . htmlentities($sql, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</pre>");
             }
         }
     } elseif (httpget('op') == "hashconvert") {

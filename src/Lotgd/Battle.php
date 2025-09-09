@@ -1119,9 +1119,18 @@ class Battle
  */
     public static function executeAiScript($script)
     {
-        global $unsetme;
+        global $unsetme, $badguy;
+
         if (!empty($script)) {
-            eval($script);
+            try {
+                eval($script);
+            } catch (\Throwable $e) {
+                \Lotgd\GameLog::log('AI script error: ' . $e->getMessage(), 'battle');
+
+                if (isset($badguy)) {
+                    $badguy['creatureaiscript'] = '';
+                }
+            }
         }
     }
 }
