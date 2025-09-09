@@ -11,6 +11,7 @@ use Lotgd\Nav\SuperuserNav;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\ErrorHandler;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 function charrestore_getmoduleinfo(): array
 {
@@ -513,6 +514,7 @@ function charrestore_run(): void
             $em       = \Lotgd\Doctrine\Bootstrap::getEntityManager();
             $account  = new \Lotgd\Entity\Account();
             $metadata = $em->getClassMetadata(\Lotgd\Entity\Account::class);
+            $desiredId = $user['account']['acctid'] ?? null;
 
             foreach ($user['account'] as $key => $val) {
                 if (! isset($known_columns[$key])) {
@@ -525,12 +527,6 @@ function charrestore_run(): void
                 }
 
                 if ($key === 'acctid') {
-                    if (ctype_digit((string) $val)) {
-                        $metadata->setFieldValue($account, $key, (int) $val);
-                    } else {
-                        output("`4Error: Invalid acctid value '`^%s`4' encountered. Aborting account restoration.`n", $val);
-                        return;
-                    }
                     continue;
                 }
 
@@ -567,19 +563,22 @@ function charrestore_run(): void
             $em->persist($account);
             $em->flush();
 
-            $id = (int) $account->getAcctid();
+            $id = (int) Database::insertId();
+            if (is_numeric($desiredId) && (int) $desiredId !== $id) {
+                $conn = Database::getDoctrineConnection();
+                try {
+                    $conn->update(Database::prefix('accounts'), ['acctid' => (int) $desiredId], ['acctid' => $id]);
+                    $id = (int) $desiredId;
+                } catch (UniqueConstraintViolationException $e) {
+                    // old ID already taken; keep $id
+                }
+            }
+
             if ($id > 0) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) {
                     addnav("Edit the restored user", "user.php?op=edit&userid=$id" . $retnav);
                 }
-                if ($id != $user['account']['acctid']) {
-                    output("`^The account was restored, though the account ID was not preserved; things such as news, mail, comments, debuglog, and other items associated with this account that were not stored as part of the snapshot have lost their association.");
-                    output("The original ID was `&%s`^, and the new ID is `&%s`^.", $user['account']['acctid'], $id);
-                    output("The most common cause of this problem is another account already present with the same ID.");
-                    output("Did you do a restore of an already existing account?  If so, the existing account was not overwritten.`n");
-                } else {
-                    output("`#The account was restored.`n");
-                }
+                output("`#The account was restored.`n");
                 output("`#Now working on module preferences.`n");
                 foreach ($user['prefs'] as $modulename => $values) {
                     output("`3Module: `2%s`3...`n", $modulename);
