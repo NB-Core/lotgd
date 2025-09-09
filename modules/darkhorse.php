@@ -151,6 +151,7 @@ function darkhorse_bartender($from)
         rawoutput("</td></tr>");
         $i = 0;
         foreach ($colors as $code) {
+            $code = (string) $code;
             if ($i == 0) {
                 rawoutput("<tr>");
             }
