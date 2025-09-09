@@ -260,13 +260,20 @@ function charrestore_is_blocked(): bool
 function charrestore_run(): void
 {
     global $session;
+
+    $hasaccess = (bool) get_module_pref('hasaccess');
+
     if (charrestore_is_blocked()) {
         page_header("Character Restore");
         output("`n`4You do not have access to the Character Restorer.`0");
         page_footer();
         return;
     }
-    SuAccess::check(SU_EDIT_USERS);
+
+    if (! $hasaccess) {
+        SuAccess::check(SU_EDIT_USERS);
+    }
+
     $retid = (int)httpget('returnpetition');
  //allow backlink to petition
     page_header("Character Restore");
