@@ -123,122 +123,133 @@ function charrestore_dohook(string $hookname, array $args): array
         case "delete_character":
             if (
                 $args['deltype'] == CHAR_DELETE_AUTO &&
-                !get_module_setting("auto_snapshot")
+                ! get_module_setting("auto_snapshot")
             ) {
                 return $args;
             }
             if (
                 $args['deltype'] == CHAR_DELETE_MANUAL &&
-                !get_module_setting("manual_snapshot")
+                ! get_module_setting("manual_snapshot")
             ) {
                 return $args;
             }
             if (
                 $args['deltype'] == CHAR_DELETE_SUICIDE &&
-                !get_module_setting("suicide_snapshot")
+                ! get_module_setting("suicide_snapshot")
             ) {
                 return $args;
             }
             if (
                 $args['deltype'] == CHAR_DELETE_PERMADEATH &&
-                !get_module_setting("permadeath_snapshot")
+                ! get_module_setting("permadeath_snapshot")
             ) {
                 return $args;
             }
-            //time to create a snapshot.
-            $sql = "SELECT * FROM " . Database::prefix("accounts") . " WHERE acctid='{$args['acctid']}'";
-            $result = Database::query($sql);
-            if (Database::numRows($result) > 0) {
-                $row = Database::fetchAssoc($result);
 
-                //test if the user is below the snapshot threshold
-                if ($args['deltype'] == CHAR_DELETE_AUTO) {
+            if ($args['deltype'] == CHAR_DELETE_AUTO) {
+                $sql = "SELECT dragonkills, level FROM " . Database::prefix("accounts") . " WHERE acctid='{$args['acctid']}'";
+                $result = Database::query($sql);
+                if (Database::numRows($result) > 0) {
+                    $row = Database::fetchAssoc($result);
                     if (
                         $row['dragonkills'] < get_module_setting("dk_threshold") ||
+                        (
                             $row['dragonkills'] == get_module_setting("dk_threshold") &&
                             $row['level'] < get_module_setting("lvl_threshold")
+                        )
                     ) {
                         return $args;
                     }
                 }
-
-                $user = array("account" => array(),"prefs" => array());
-
-                //set up the user's account table fields
-                //reduces storage footprint.
-                //id and ip are not necessary and also related to identify persons (stripped)
-                $nosavefields = array("output" => true,"allowednavs" => true,"lastip" => true,"uniqueid" => true);
-                foreach ($row as $key => $val) {
-                    if (!isset($nosavefields[$key])) {
-                        $user['account'][$key] = $val;
-                    }
-                }
-                //time to remove personal data so we can store a copy indefinitely
-                $user_email = $user['account']['emailaddress'];
-                $user['account']['emailaddress'] = charrestore_gethash($user['account']['emailaddress']);
-                $user['account']['replaceemail'] = charrestore_gethash($user['account']['replaceemail']);
-
-                //set up the user's module preferences
-                //add a hook for module to not include themselves (data privacy issue)
-                $nosavemodules = modulehook('charrestore_nosavemodules', array()); // "output"=>true,"allowednavs"=>true,"ipaddress","id");
-                $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE userid='{$args['acctid']}'";
-                $prefs = Database::query($sql);
-                while ($row = Database::fetchAssoc($prefs)) {
-                    if (!isset($user['prefs'][$row['modulename']])) {
-                        $user['prefs'][$row['modulename']] = array();
-                    }
-                    if (!isset($nosavemodules[$row['modulename']])) {
-                        $user['prefs'][$row['modulename']][$row['setting']] = $row['value'];
-                    }
-                }
-
-                //write the file
-                $path = charrestore_getstorepath();
-                $fp = @fopen($path . str_replace(" ", "_", $user['account']['login']) . "|" . $user['account']['acctid'] . "|" . date("Ymd"), "w+");
-                $failure = true;
-                if ($fp) {
-                    if (
-                        fwrite(
-                            $fp,
-                            serialize($user)
-                        ) !== false
-                    ) {
-                        $failure = false;
-                    } else {
-                        $failure = true;
-                    }
-                    fclose($fp);
-                }
-                if ($failure === true) {
-                    $errstr = ("Path not openable or error writing: " . $path . str_replace(" ", "_", $user['account']['login']) . "|" . $user['account']['acctid'] . "|" . date("Ymd"));
-                    $errno = E_USER_ERROR;
-                    $errfile = "charrestore.php";
-                    $errline = 169;
-                    ErrorHandler::Register($errno, $errstr, $errfile, $errline);
-                    // Prevent cleanup if the snapshot could not be written
-                    $args['prevent_cleanup'] = true;
-
-                    return $args;
-                }
-                $targetid = $user['account']['acctid'];
-                $targetmail = $user_email;
-                $subject = translate_mail(array("Your character %s",sanitize($user['account']['login'])), $targetid);
-                $body = translate_mail(
-                    array(
-                            "Your character %s has been deleted by you or has expired on the game. `nIf you choose to reactivate this account in the future, note that it will be archived but without personal data. `n`nThis means, your email address and other personal data will be removed from the copy. If you want it restored, you need to recall your email adress or your password, only this will work!`n`nRegards,\nStaff of %s",
-                            sanitize($user['account']['login']),get_module_setting('adminname', 'charrestore')),
-                    $targetid
-                );
-                $body = str_replace("`n", "</br>", $body);
-                $result = charrestore_sendmail($targetmail, $body, $subject, get_module_setting('adminmail', 'charrestore'), get_module_setting('adminname', 'charrestore'));
-                if ($result) {
-                    output("`\$The notification message has been sent!`n");
-                } else {
-                    output("`\$There has been an error! The notification message was NOT sent!`n");
-                }
             }
-    }
+
+            $snapshot = charrestore_create_snapshot((int) $args['acctid']);
+            if (! $snapshot) {
+                $args['prevent_cleanup'] = true;
+            }
+
             return $args;
+        }
+
+    return $args;
+}
+
+function charrestore_create_snapshot(int $acctid): bool
+{
+    $sql = "SELECT * FROM " . Database::prefix("accounts") . " WHERE acctid='{$acctid}'";
+    $result = Database::query($sql);
+    if (Database::numRows($result) === 0) {
+        return false;
+    }
+    $row = Database::fetchAssoc($result);
+
+    $user = array("account" => array(), "prefs" => array());
+
+    //set up the user's account table fields
+    //reduces storage footprint.
+    //id and ip are not necessary and also related to identify persons (stripped)
+    $nosavefields = array("output" => true, "allowednavs" => true, "lastip" => true, "uniqueid" => true);
+    foreach ($row as $key => $val) {
+        if (! isset($nosavefields[$key])) {
+            $user['account'][$key] = $val;
+        }
+    }
+
+    //time to remove personal data so we can store a copy indefinitely
+    $user_email = $user['account']['emailaddress'];
+    $user['account']['emailaddress'] = charrestore_gethash($user['account']['emailaddress']);
+    $user['account']['replaceemail'] = charrestore_gethash($user['account']['replaceemail']);
+
+    //set up the user's module preferences
+    //add a hook for module to not include themselves (data privacy issue)
+    $nosavemodules = modulehook('charrestore_nosavemodules', array());
+    $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE userid='{$acctid}'";
+    $prefs = Database::query($sql);
+    while ($row = Database::fetchAssoc($prefs)) {
+        if (! isset($user['prefs'][$row['modulename']])) {
+            $user['prefs'][$row['modulename']] = array();
+        }
+        if (! isset($nosavemodules[$row['modulename']])) {
+            $user['prefs'][$row['modulename']][$row['setting']] = $row['value'];
+        }
+    }
+
+    //write the file
+    $path = charrestore_getstorepath();
+    $filename = $path . str_replace(" ", "_", $user['account']['login']) . "|" . $user['account']['acctid'] . "|" . date("Ymd");
+    $fp = @fopen($filename, "w+");
+    $failure = true;
+    if ($fp) {
+        if (fwrite($fp, serialize($user)) !== false) {
+            $failure = false;
+        }
+        fclose($fp);
+    }
+    if ($failure === true) {
+        $errstr = "Path not openable or error writing: " . $filename;
+        ErrorHandler::Register(E_USER_ERROR, $errstr, __FILE__, __LINE__);
+        return false;
+    }
+
+    $targetid = $user['account']['acctid'];
+    $targetmail = $user_email;
+    $subject = translate_mail(array("Your character %s", sanitize($user['account']['login'])), $targetid);
+    $body = translate_mail(
+        array(
+            "Your character %s has been deleted by you or has expired on the game. `nIf you choose to reactivate this account in the future, note that it will be archived but without personal data. `n`nThis means, your email address and other personal data will be removed from the copy. If you want it restored, you need to recall your email adress or your password,only this will work!`n`nRegards,\nStaff of %s",
+            sanitize($user['account']['login']), get_module_setting('adminname', 'charrestore')
+        ),
+        $targetid
+    );
+    $body = str_replace("`n", "</br>", $body);
+    $result = charrestore_sendmail($targetmail, $body, $subject, get_module_setting('adminmail', 'charrestore'), get_module_setting('adminname', 'charrestore'));
+    if ($result) {
+        output("`\\$The notification message has been sent!`n");
+    } else {
+        output("`\\$There has been an error! The notification message was NOT sent!`n");
+    }
+
+    return true;
 }
 
 function charrestore_getstorepath()
