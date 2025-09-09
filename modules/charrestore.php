@@ -527,6 +527,9 @@ function charrestore_run(): void
                 if ($key === 'acctid') {
                     if (ctype_digit((string) $val)) {
                         $metadata->setFieldValue($account, $key, (int) $val);
+                    } else {
+                        output("`4Error: Invalid acctid value '`^%s`4' encountered. Aborting account restoration.`n", $val);
+                        return;
                     }
                     continue;
                 }
