@@ -570,16 +570,25 @@ function charrestore_run(): void
             $em->persist($account);
             $em->flush();
 
-            $id = (int) Database::insertId();
+            $id = (int) $account->getAcctid();
             $idReassigned = false;
             $originalId   = (int) $desiredId;
             if (is_numeric($desiredId) && (int) $desiredId !== $id) {
                 $conn = Database::getDoctrineConnection();
                 try {
-                    $conn->update(Database::prefix('accounts'), ['acctid' => (int) $desiredId], ['acctid' => $id]);
-                    $id = (int) $desiredId;
+                    $rows = $conn->update(
+                        Database::prefix('accounts'),
+                        ['acctid' => (int) $desiredId],
+                        ['acctid' => $id]
+                    );
+                    if ($rows > 0) {
+                        $id = (int) $desiredId;
+                    } else {
+                        $idReassigned = true;
+                    }
                 } catch (UniqueConstraintViolationException $e) {
                     // old ID already taken; keep $id
+                    $idReassigned = true;
                 }
                 if ((int) $desiredId !== $id) {
                     $idReassigned = true;
