@@ -108,6 +108,17 @@ function charrestore_dohook(string $hookname, array $args): array
                 );
             }
             break;
+        case "modifyuserview":
+            global $session;
+            if (is_module_active('charrestore')) {
+                $hasaccess = (int) get_module_pref('hasaccess');
+                if (($session['user']['superuser'] & SU_EDIT_USERS) || $hasaccess) {
+                    $acctid = (int) ($args['user']['acctid'] ?? 0);
+                    addnav('Character Backup');
+                    addnav('Make a Backup', "runmodule.php?module=charrestore&op=backup&userid={$acctid}");
+                }
+            }
+            break;
         case "petition-status":
             global $session;
             $hasaccess = (int) get_module_pref("hasaccess");
@@ -440,6 +451,13 @@ function charrestore_run(): void
         rawoutput("<input type='submit' value='$submit' class='button'>");
         rawoutput("</form>");
         output("Hashed String: `\$%s", charrestore_gethash(httppost('teststring')));
+    } elseif (httpget('op') == 'backup') {
+        $acctid = (int) httpget('userid');
+        if ($acctid > 0 && charrestore_create_snapshot($acctid)) {
+            output('`^Character backup created successfully.`0');
+        } else {
+            output('`$Failed to create character backup.`0');
+        }
     } elseif (httpget("op") == "beginrestore") {
         $file = httpget('file');
         $file = is_string($file) ? stripslashes($file) : '';
