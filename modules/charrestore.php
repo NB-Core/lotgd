@@ -215,8 +215,10 @@ function charrestore_dohook(string $hookname, array $args): array
                     $errfile = "charrestore.php";
                     $errline = 169;
                     ErrorHandler::Register($errno, $errstr, $errfile, $errline);
-                    //quit now, which is should anyways, this is a precaution, so we don't delete the data of the char
-                    exit(0);
+                    // Prevent cleanup if the snapshot could not be written
+                    $args['prevent_cleanup'] = true;
+
+                    return $args;
                 }
                 $targetid = $user['account']['acctid'];
                 $targetmail = $user_email;
