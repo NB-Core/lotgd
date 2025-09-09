@@ -2,7 +2,7 @@
 
 use Lotgd\PlayerFunctions;
 
-function char_cleanup($id, $type)
+function char_cleanup($id, $type): bool
 {
-        PlayerFunctions::charCleanup((int)$id, (int)$type);
+        return PlayerFunctions::charCleanup((int)$id, (int)$type);
 }
