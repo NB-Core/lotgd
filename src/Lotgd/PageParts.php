@@ -601,7 +601,7 @@ class PageParts
             $e = rawurlencode($e);
             $v = rawurlencode($v);
             $u = rawurlencode($u);
-            $paypalstr .= "<script type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
+            $paypalstr .= "<script defer type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
         } else {
             $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">" .
                 "<input type='hidden' name='cmd' value='_xclick'>" .
