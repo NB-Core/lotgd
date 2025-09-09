@@ -5,6 +5,7 @@ use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
+use Lotgd\AddNews;
 
 //addnews ready
 // mail ready
