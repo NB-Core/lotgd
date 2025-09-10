@@ -1,6 +1,7 @@
 <?php
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+use Lotgd\AddNews;
 
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
