@@ -1,4 +1,8 @@
 <?php
+
+use Lotgd\Output;
+use Lotgd\Translator;
+
 // addnews ready
 // mail ready
 // translator ready
@@ -103,39 +107,43 @@ function tutor_dohook($hookname,$args){
 	return $args;
 }
 
-function tutor_talk() {
-	rawoutput("<style type='text/css'>
-		.tutor {
-			background-color: #444444;
-			border-color: #0099ff;
-			border-style: double;
-			border-width: medium;
-			color: #CCCCCC;
-		}
-		.tutor .colDkBlue	{ color: #0000B0; }
-		.tutor .colDkGreen   { color: #00B000; }
-		.tutor .colDkCyan	{ color: #00B0B0; }
-		.tutor .colDkRed	 { color: #B00000; }
-		.tutor .colDkMagenta { color: #B000CC; }
-		.tutor .colDkYellow  { color: #B0B000; }
-		.tutor .colDkWhite   { color: #B0B0B0; }
-		.tutor .colLtBlue	{ color: #0000FF; }
-		.tutor .colLtGreen   { color: #00FF00; }
-		.tutor .colLtCyan	{ color: #00FFFF; }
-		.tutor .colLtRed	 { color: #FF0000; }
-		.tutor .colLtMagenta { color: #FF00FF; }
-		.tutor .colLtYellow  { color: #FFFF00; }
-		.tutor .colLtWhite   { color: #FFFFFF; }
-		.tutor .colLtBlack   { color: #999999; }
-		.tutor .colDkOrange  { color: #994400; }
-		.tutor .colLtOrange  { color: #FF9900; }
-		</style>");
-	$args = func_get_args();
-	$args[0] = translate($args[0]);
-	$text = call_user_func_array("sprintf", $args);
-	rawoutput("<div class='tutor'>");
-	rawoutput(tlbutton_clear().appoencode($text));
-	rawoutput("</div>");
+function tutor_talk(): void
+{
+    $output = Output::getInstance();
+
+    $output->rawOutput("<style type='text/css'>
+                .tutor {
+                        background-color: #444444;
+                        border-color: #0099ff;
+                        border-style: double;
+                        border-width: medium;
+                        color: #CCCCCC;
+                }
+                .tutor .colDkBlue   { color: #0000B0; }
+                .tutor .colDkGreen   { color: #00B000; }
+                .tutor .colDkCyan   { color: #00B0B0; }
+                .tutor .colDkRed     { color: #B00000; }
+                .tutor .colDkMagenta { color: #B000CC; }
+                .tutor .colDkYellow  { color: #B0B000; }
+                .tutor .colDkWhite   { color: #B0B0B0; }
+                .tutor .colLtBlue   { color: #0000FF; }
+                .tutor .colLtGreen   { color: #00FF00; }
+                .tutor .colLtCyan   { color: #00FFFF; }
+                .tutor .colLtRed     { color: #FF0000; }
+                .tutor .colLtMagenta { color: #FF00FF; }
+                .tutor .colLtYellow  { color: #FFFF00; }
+                .tutor .colLtWhite   { color: #FFFFFF; }
+                .tutor .colLtBlack   { color: #999999; }
+                .tutor .colDkOrange  { color: #994400; }
+                .tutor .colLtOrange  { color: #FF9900; }
+                </style>");
+
+    $args = func_get_args();
+    $args[0] = translate($args[0]);
+    $text = call_user_func_array('sprintf', $args);
+    $output->rawOutput("<div class='tutor'>");
+    $output->rawOutput(Translator::clearButton() . $output->appoencode($text));
+    $output->rawOutput("</div>");
 }
 
 function tutor_runevent($type){
