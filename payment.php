@@ -9,7 +9,8 @@ use Lotgd\Translator;
 // addnews ready
 // translator ready
 ob_start();
-set_error_handler("payment_error");
+$payment_errors = '';
+set_error_handler('payment_error');
 define("ALLOW_ANONYMOUS", true);
 use Lotgd\Http;
 use Lotgd\Page\Footer;
