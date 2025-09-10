@@ -132,10 +132,10 @@ class DataCache
         $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
             $fullname = $withpath ? $this->makecachetempname($name) : $name;
-            if (file_exists($fullname)) {
-                unlink($fullname);
+            if (is_file($fullname) && ! @unlink($fullname)) {
+                GameLog::log('Failed to remove cache file ' . $fullname, 'cache');
             }
-            if (!$withpath) {
+            if (! $withpath) {
                 unset(self::$cache[$name]);
             }
         }
