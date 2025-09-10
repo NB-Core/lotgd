@@ -394,8 +394,9 @@ class Moderate
             $out = '';
             if ($moderating) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS) {
-                    $out .= "`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> | <a href='user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode($rawc[$i]) . "'>Ban</a> ]&nbsp;";
-                    Navigation::add('', "user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode($rawc[$i]));
+                    $reason = $rawc[$i] ?? '';
+                    $out .= "`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> | <a href='user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode((string) $reason) . "'>Ban</a> ]&nbsp;";
+                    Navigation::add('', "user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode((string) $reason));
                 } else {
                     $out .= "`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> ]&nbsp;";
                 }
