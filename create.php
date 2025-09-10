@@ -253,6 +253,9 @@ if (getsetting("allowcreation", 1) == 0) {
                 $blockaccount = true;
             }
             $args = modulehook("check-create", httpallpost());
+            $args['blockaccount'] = $args['blockaccount'] ?? false;
+            $args['msg'] = $args['msg'] ?? '';
+
             if ($args['blockaccount']) {
                 $msg .= $args['msg'];
                 $blockaccount = true;
