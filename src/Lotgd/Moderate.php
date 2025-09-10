@@ -57,11 +57,7 @@ class Moderate
                 . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN '
                 . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE '
                 . "$sectselect (" . Database::prefix('accounts') . ".locked=0 OR " . Database::prefix('accounts') . ".locked is null ) ORDER BY commentid DESC LIMIT " . ($com * $limit) . ",$limit";
-            if ($com == 0 && strstr($_SERVER['REQUEST_URI'], '/moderate.php') != $_SERVER['REQUEST_URI']) {
-                $result = Database::queryCached($sql, "comments-{$section}");
-            } else {
-                $result = Database::query($sql);
-            }
+            $result = Database::query($sql);
         } else {
             $sql = 'SELECT ' . Database::prefix('commentary') . '.*, '
                 . Database::prefix('accounts') . '.name, '
