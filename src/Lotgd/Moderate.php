@@ -195,9 +195,12 @@ class Moderate
             foreach ($array as $entry) {
                 $sectselect .= "section NOT LIKE '$entry' AND ";
             }
-        }
 
-        $output->debug('Select: ' . $sectselect);
+            $excludedList = implode(', ', $array);
+            if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
+                $output->output('Excluded sections: %s`n', $excludedList);
+            }
+        }
 
         // Determine which translation schema to use for output
         if ($schema === null) {
