@@ -218,7 +218,7 @@ page_footer();
 
 function healnav($companions, $texts, $schemas)
 {
-    global $session;
+    global $session, $translator;
     $translator->setSchema($schemas['healnav']);
     addnav($texts['healnav']);
     $translator->setSchema();
