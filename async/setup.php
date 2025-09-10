@@ -70,8 +70,9 @@ $polling_script .= "console.log('AJAX polling initialized:', {interval: lotgd_po
 
 // Add missing notification functions and clean AJAX polling implementation
 $polling_script .= "
-// Global mail counter for notifications
+// Global mail status for notifications
 var lotgd_lastUnreadMailId = 0;
+var lotgd_lastUnreadMailCount = 0;
 
 // Notification functions (previously in ajax_polling.js)
 function lotgdShowNotification(title, message) {
@@ -89,18 +90,19 @@ function lotgdShowNotification(title, message) {
     }
 }
 
-function lotgdMailNotify(count) {
+function lotgdMailNotify(lastId, count) {
     if (lotgd_lastUnreadMailId === 0) {
-        // First time we get the count, just store it
-        lotgd_lastUnreadMailId = count;
+        lotgd_lastUnreadMailId = lastId;
+        lotgd_lastUnreadMailCount = count;
         return;
     }
-    if (count > lotgd_lastUnreadMailId && !document.hasFocus()) {
+    if (lastId > lotgd_lastUnreadMailId && !document.hasFocus()) {
         var msg = count === 1 ? 'You have 1 unread message' :
             'You have ' + count + ' unread messages';
         lotgdShowNotification('Unread game messages', msg);
     }
-    lotgd_lastUnreadMailId = count;
+    lotgd_lastUnreadMailId = lastId;
+    lotgd_lastUnreadMailCount = count;
 }
 
 function lotgdCommentNotify(count) {

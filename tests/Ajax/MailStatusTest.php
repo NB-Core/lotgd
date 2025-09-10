@@ -32,7 +32,7 @@ namespace Lotgd\Tests\Ajax {
                 'mail-1' => [['seencount' => 0, 'notseen' => 1]],
             ];
             Database::$mockResults = [
-                [['lastid' => 7]],
+                [['lastid' => 7, 'unread' => 1]],
             ];
 
             $response = (new Mail())->mailStatus(true);
@@ -43,7 +43,7 @@ namespace Lotgd\Tests\Ajax {
             $this->assertStringContainsString('mail.php', $assign[0]['data']);
 
             $scripts = array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'js');
-            $notify = array_values(array_filter($scripts, fn($c) => str_contains($c['data'] ?? '', 'lotgdMailNotify(7)')));
+            $notify = array_values(array_filter($scripts, fn($c) => str_contains($c['data'] ?? '', 'lotgdMailNotify(7, 1)')));
             $this->assertNotEmpty($notify);
             $title = array_values(array_filter($scripts, fn($c) => str_contains($c['data'] ?? '', 'Legend of the Green Dragon - 1 new mail(s)')));
             $this->assertNotEmpty($title);
@@ -56,7 +56,7 @@ namespace Lotgd\Tests\Ajax {
                 'mail-1' => [['seencount' => 0, 'notseen' => 0]],
             ];
             Database::$mockResults = [
-                [['lastid' => 5]],
+                [['lastid' => 5, 'unread' => 0]],
             ];
 
             $response = (new Mail())->mailStatus(true);

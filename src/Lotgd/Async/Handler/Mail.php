@@ -32,16 +32,18 @@ class Mail
         $new = PageParts::mailLink();
         $tabtext = PageParts::mailLinkTabText();
 
-        // Get the highest message ID for the current user there is
-        $sql = 'SELECT MAX(messageid) AS lastid FROM ' . Database::prefix('mail')
+        // Get the highest message ID and unread mail count for the current user
+        $sql = 'SELECT MAX(messageid) AS lastid, SUM(seen=0) AS unread FROM '
+            . Database::prefix('mail')
             . ' WHERE msgto=\'' . $session['user']['acctid'] . '\'';
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
         if ($row === false) {
-            $row = ['lastid' => 0];
+            $row = ['lastid' => 0, 'unread' => 0];
         }
         Database::freeResult($result);
         $lastMailId = (int) ($row['lastid'] ?? 0);
+        $unreadCount = (int) ($row['unread'] ?? 0);
 
         $objResponse = jaxon()->newResponse();
         $objResponse->assign('maillink', 'innerHTML', $new);
@@ -54,7 +56,7 @@ class Mail
         $tabtext = Translator::translateInline('Legend of the Green Dragon', 'home')
             . ' - ' . $tabtext;
         $objResponse->script('document.title="' . $tabtext . '";');
-        $objResponse->script('lotgdMailNotify(' . $lastMailId . ');');
+        $objResponse->script('lotgdMailNotify(' . $lastMailId . ', ' . $unreadCount . ');');
 
         return $objResponse;
     }
