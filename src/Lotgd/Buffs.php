@@ -517,6 +517,10 @@ class Buffs
                 }
                 $min = (int) $min;
                 $max = (int) $max;
+                if ($min > $max) {
+                    error_log(sprintf('Buff "%s" has min damage (%d) greater than max damage (%d); swapping values.', $key, $min, $max));
+                    [$min, $max] = [$max, $min];
+                }
                 $minioncounter = 1;
                 while ($minioncounter <= ((int)$buff['minioncount']) && $who >= 0) {
                     $damage = random_int($min, $max);
