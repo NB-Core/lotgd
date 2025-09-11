@@ -102,6 +102,10 @@ Regular upkeep tasks:
 - Async/Ajax (Jaxon) UX improvements
 - PHP 8.4 baseline
  
+Performance defaults:
+- zlib output compression enabled when available.
+- Data cache and Twig cache use the `datacachepath` directory; the game warns admins if the path is missing or not writable.
+ 
 👉 See [UPGRADING.md](UPGRADING.md) if you’re moving from 1.3.x
 
 ## Further Reading
@@ -111,6 +115,8 @@ For details on key components:
 - [docs/Nav.md](docs/Nav.md)
 - [docs/Doctrine.md](docs/Doctrine.md)
 - [docs/TranslationsGuide.md](docs/TranslationsGuide.md)
+ - [UPGRADING.md](UPGRADING.md) — 1.3.x → 2.0 changes, performance defaults
+ - [docs/Deprecations.md](docs/Deprecations.md) — deprecations and migration timelines
 
 ## Twig Templates
 

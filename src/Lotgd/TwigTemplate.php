@@ -28,8 +28,10 @@ class TwigTemplate extends Template
         if ($datacachePath !== null && $datacachePath !== '') {
             self::$cacheDir = $datacachePath;
             $cacheDir = rtrim($datacachePath, '/\\') . '/' . self::CACHE_SUBDIR;
-            if ((is_dir($cacheDir) || mkdir($cacheDir, 0755, true)) && is_writable($cacheDir)) {
+            if ((is_dir($cacheDir) || @mkdir($cacheDir, 0755, true)) && is_writable($cacheDir)) {
                 $options['cache'] = $cacheDir;
+            } else {
+                // Leave cache disabled; optionally, could log in future
             }
         }
 

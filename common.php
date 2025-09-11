@@ -192,6 +192,18 @@ if (file_exists("dbconnect.php")) {
     Database::setPrefix($DB_PREFIX);
     $DB_USEDATACACHE = $config['DB_USEDATACACHE'] ?? 0;
     $DB_DATACACHEPATH = $config['DB_DATACACHEPATH'] ?? '';
+    // Validate cache path early and prepare an admin-facing warning if needed
+    $GLOBALS['__DATACACHE_WARNING__'] = '';
+    if (!empty($DB_USEDATACACHE)) {
+        $cachePath = (string) $DB_DATACACHEPATH;
+        $invalid = ($cachePath === '')
+            || (file_exists($cachePath) && !is_dir($cachePath))
+            || (!file_exists($cachePath) && !is_dir(dirname($cachePath)))
+            || (file_exists($cachePath) && !is_writable($cachePath));
+        if ($invalid) {
+            $GLOBALS['__DATACACHE_WARNING__'] = "Data cache is enabled but the configured path is missing or not writable. Set 'DB_DATACACHEPATH' to a writable directory or disable 'DB_USEDATACACHE'.";
+        }
+    }
 } else {
     if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
         if (!defined("DB_NODB")) {
@@ -329,6 +341,15 @@ if (isset($settings) && $logd_version == $settings->getSetting("installer_versio
 $charset = isset($settings) ? $settings->getSetting('charset', 'UTF-8') : 'UTF-8';
 
 header("Content-Type: text/html; charset=" . $charset);
+
+// Surface cache path issues to administrators (non-fatal).
+if (!AJAX_MODE && isset($settings) && ($GLOBALS['__DATACACHE_WARNING__'] ?? '') !== '') {
+    // Show only to admins with config rights
+    if ((($session['user']['superuser'] ?? 0) & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
+        Translator::translatorSetup();
+        output("`c`4Performance Warning:`0 %s`c`n", $GLOBALS['__DATACACHE_WARNING__'], true);
+    }
+}
 
 $loginTimeOut = isset($settings) ? $settings->getSetting("LOGINTIMEOUT", 900) : 900;
 
