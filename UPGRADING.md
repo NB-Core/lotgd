@@ -80,6 +80,11 @@ Once the legacy upgrade is complete:
   - Each skin requires a `config.json` and core files (`page.twig`, `popup.twig`).  
   - Old `.htm` templates still work but are deprecated.
 
+- **Performance Defaults**  
+  - Output compression via zlib is enabled by default when the `zlib` extension is present. Disable at the PHP level if undesired.  
+  - Data cache requires a writable directory: set `DB_USEDATACACHE=1` and `DB_DATACACHEPATH=/path/to/cache`. The app will warn admins if the path is missing or not writable.  
+  - Twig will cache compiled templates under `<datacachepath>/twig` when writable; otherwise it runs without caching.
+
 ---
 
 ## 7. Breaking Changes
