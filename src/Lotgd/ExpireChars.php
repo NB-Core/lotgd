@@ -76,7 +76,7 @@ class ExpireChars
                 $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $row['acctid'];
                 if (Database::affectedRows() !== 1) {
                     GameLog::log(
-                        sprintf('Failed to delete account %d: %s', (int) $acctId, Database::error()),
+                        sprintf('Failed to delete account %d: %s', (int) $row['acctid'], Database::error()),
                         'char deletion failure'
                     );
                 }              
