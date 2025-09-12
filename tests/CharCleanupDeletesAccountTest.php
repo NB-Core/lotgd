@@ -34,6 +34,7 @@ final class CharCleanupDeletesAccountTest extends TestCase
         Database::$mockResults = [
             [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
         ];
+        Database::$affected_rows = 1;
 
         $ref = new \ReflectionClass(\Lotgd\ExpireChars::class);
         $method = $ref->getMethod('cleanupExpiredAccounts');
