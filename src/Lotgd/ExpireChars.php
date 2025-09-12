@@ -71,19 +71,22 @@ class ExpireChars
         foreach ($rows as $row) {
             Database::query('START TRANSACTION');
             $error = null;
+            $cleanupPerformed = false;
             try {
-                if (! PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO)) {
-                    throw new \RuntimeException('charCleanup failed');
-                }
+                $cleanupPerformed = PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO);
 
-                $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $row['acctid'];
-                Database::query($sql);
-                if (Database::affectedRows() !== 1) {
-                    throw new \RuntimeException('deletion failed');
-                }
+                if ($cleanupPerformed) {
+                    $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $row['acctid'];
+                    Database::query($sql);
+                    if (Database::affectedRows() !== 1) {
+                        throw new \RuntimeException('deletion failed');
+                    }
 
-                Database::query('COMMIT');
-                $deletedAcctIds[] = (int) $row['acctid'];
+                    Database::query('COMMIT');
+                    $deletedAcctIds[] = (int) $row['acctid'];
+                } else {
+                    Database::query('ROLLBACK');
+                }
             } catch (\Throwable $e) {
                 Database::query('ROLLBACK');
                 $error = $e;
@@ -94,8 +97,13 @@ class ExpireChars
                     'Failed to delete account ' . $row['acctid'] . ': ' . $error->getMessage(),
                     'char deletion failure'
                 );
-            } else {
+            } elseif ($cleanupPerformed) {
                 GameLog::log('Deleted account ' . (int) $row['acctid'], 'char expiration');
+            } else {
+                GameLog::log(
+                    'Cleanup skipped for account ' . (int) $row['acctid'] . ' (prevented by hook)',
+                    'char expiration'
+                );
             }
         }
 
