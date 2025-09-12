@@ -145,8 +145,6 @@ if ($name != "") {
                     $link = "<a href='{$session['user']['restorepage']}'>{$session['user']['restorepage']}</a>";
                     $msg  = Translator::getInstance()->sprintfTranslate('Sending you to %s, have a safe journey', $link);
                     //$session['allowednavs'] = unserialize($session['user']['allowednavs']);
-                    // Ensure the restore page is allowed in the next request
-                    //\Lotgd\Nav::add('', $session['user']['restorepage']);
                     header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
                     echo $msg;
