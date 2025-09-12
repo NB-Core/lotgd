@@ -103,15 +103,16 @@ class ExpireChars
         if (empty($acctIds)) {
             return;
         }
-
-        $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . implode(',', $acctIds) . ')';
-        Database::query($sql);
-        if (Database::affectedRows() !== 1) {
-            GameLog::log(
-                sprintf('Failed to delete account %d: %s', (int) $row['acctid'], Database::error()),
-                'char deletion failure'
-            );
-        }             
+        foreach ($acctIds as $acctid) {
+            $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid = ' . $acctId ;
+            Database::query($sql);
+            if (Database::affectedRows() !== 1) {
+                GameLog::log(
+                    sprintf('Failed to delete account %d: %s', (int) $row['acctid'], Database::error()),
+                    'char deletion failure'
+                );
+            }
+        }
     }
     
 
