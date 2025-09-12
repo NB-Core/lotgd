@@ -87,3 +87,15 @@ These rules apply to all directories unless a more specific file overrides them.
 - Core: Prefer Doctrine DBAL/ORM for new features. Write schema changes as migrations.
 - Modules: Raw SQL and legacy helpers are allowed; ensure types are correct (watch for prefs like `increment_module_pref`).
 - Avoid coupling to specific MySQL quirks when DBAL/ORM can abstract them.
+
+### Navigation Ordering
+
+To keep menus consistent across core pages, modules, and events, follow this order when building navigation with `addnav()` (wrapper in `lib/addnav.php`; modern code may use `AddNav::add`):
+
+- **Top headline**: usually "Navigation"
+- **Back to Village/Forest/etc.**: include when applicable (`Lotgd\Nav\SuperuserNav::render()`, `Lotgd\Nav\VillageNav::render()` etc.)
+- **Primary navigation options**: all general links for the current context
+- **Top headline for actions**: usually "Actions"
+- **Everything else**: author/module discretion
+
+This convention preserves a predictable structure and improves usability across the game.
