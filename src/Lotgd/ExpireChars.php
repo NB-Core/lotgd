@@ -66,15 +66,26 @@ class ExpireChars
             return;
         }
 
-        $acctIds = [];
         foreach ($rows as $row) {
-            if (PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO)) {
-                $acctIds[] = $row['acctid'];
+            Database::query('START TRANSACTION');
+            try {
+                if (! PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO)) {
+                    throw new \RuntimeException('charCleanup failed');
+                }
+
+                $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $row['acctid'];
+                if (! Database::query($sql)) {
+                    throw new \RuntimeException('deletion failed');
+                }
+
+                Database::query('COMMIT');
+            } catch (\Throwable $e) {
+                Database::query('ROLLBACK');
+                GameLog::log('Failed to delete account ' . $row['acctid'] . ': ' . $e->getMessage(), 'char expiration');
             }
         }
 
         self::logExpiredAccountStats($rows);
-        self::deleteAccounts($acctIds);
     }
 
     /**
@@ -134,16 +145,6 @@ class ExpireChars
     /**
      * Delete the supplied account ids from the database.
      */
-    private static function deleteAccounts(array $acctIds): void
-    {
-        if (empty($acctIds)) {
-            return;
-        }
-
-        $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . implode(',', $acctIds) . ')';
-        Database::query($sql);
-    }
-
     /**
      * Send expiration warning emails to players nearing deletion.
      */
