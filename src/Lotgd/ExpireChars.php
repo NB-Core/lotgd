@@ -180,9 +180,11 @@ class ExpireChars
     {
         $settings = Settings::getInstance();
         $old = max(1, ((int) $settings->getSetting('expireoldacct', 45)) - ((int) $settings->getSetting('notifydaysbeforedeletion', 5)));
-        $sql = 'SELECT login,acctid,emailaddress FROM ' . Database::prefix('accounts') .
-            " WHERE 1=0 " . ($old > 0 ? "OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '') .
-            " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
+
+        $threshold = date('Y-m-d H:i:s', strtotime("-$old days"));
+        $sql = 'SELECT login,acctid,emailaddress FROM ' . Database::prefix('accounts')
+            . " WHERE (laston < '$threshold')"
+            . " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
         $result = Database::query($sql);
 
         $subject = Translator::translateInline(self::$settingsExtended->getSetting('expirationnoticesubject'));
