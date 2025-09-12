@@ -43,8 +43,17 @@ Chat with other adventurers and get quick support on our Discord server!
 ![Game screenshot](images/screenshot.png)
 There is no official demo server. You can explore the original at [LotGD.net](https://lotgd.net) or the current version at [Shinobi Legends](https://shinobilegends.com). You can create an account to explore, but you will only have standard user rights.
 
+## Contributing
+
+See [AGENTS.md](AGENTS.md) for full contributor guidelines. Highlights:
+
+- Follow the PSR-12 coding standard.
+- Run `composer test` and `composer static` before committing.
+- Check PHP syntax with `php -l` on changed PHP files.
+
 ## Table of Contents
 - [Join the Community](#join-the-community)
+- [Contributing](#contributing)
 - [Read Me First](#read-me-first)
 - [System Requirements](#system-requirements)
 - [Quick Install](#quick-install)
