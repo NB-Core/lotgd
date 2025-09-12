@@ -93,6 +93,27 @@ class ExpireChars
 
         self::logExpiredAccountStats($rows);
     }
+    /**
+     * Delete accounts
+     * @return void
+    **/
+
+    private static function deleteAccounts(array $acctIds): void
+    {
+        if (empty($acctIds)) {
+            return;
+        }
+
+        $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . implode(',', $acctIds) . ')';
+        Database::query($sql);
+        if (Database::affectedRows() !== 1) {
+            GameLog::log(
+                sprintf('Failed to delete account %d: %s', (int) $row['acctid'], Database::error()),
+                'char deletion failure'
+            );
+        }             
+    }
+    
 
     /**
      * Select accounts eligible for deletion.
