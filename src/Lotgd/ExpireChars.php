@@ -130,12 +130,23 @@ class ExpireChars
      */
     private static function fetchAccountsToExpire(int $old, int $new, int $trash): array
     {
+        $conditions = [];
+        if ($old > 0) {
+            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')";
+        }
+        if ($new > 0) {
+            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime("-$new days")) . "' AND level=1 AND dragonkills=0)";
+        }
+        if ($trash > 0) {
+            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime('-' . ($trash + 1) . ' days')) . "' AND level=1 AND experience < 10 AND dragonkills=0)";
+        }
+
+        if (empty($conditions)) {
+            return [];
+        }
+
         $sql = 'SELECT login,acctid,dragonkills,level FROM ' . Database::prefix('accounts') .
-            ' WHERE (superuser&' . NO_ACCOUNT_EXPIRATION . ')=0 AND (1=0'
-            . ($old > 0 ? " OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')" : '')
-            . ($new > 0 ? " OR (laston < '" . date('Y-m-d H:i:s', strtotime("-$new days")) . "' AND level=1 AND dragonkills=0)" : '')
-            . ($trash > 0 ? " OR (laston < '" . date('Y-m-d H:i:s', strtotime('-' . ($trash + 1) . ' days')) . "' AND level=1 AND experience < 10 AND dragonkills=0)" : '')
-            . ')';
+            ' WHERE (superuser&' . NO_ACCOUNT_EXPIRATION . ')=0 AND (' . implode(' OR ', $conditions) . ')';
 
         $result = Database::query($sql);
         $rows = [];
