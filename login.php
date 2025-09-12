@@ -91,7 +91,7 @@ if ($name != "") {
             } else {
                 $session['loggedin'] = true;
                 $session['laston'] = date("Y-m-d H:i:s");
-                $session['sentnotice'] = 0;
+                $session['user']['sentnotice'] = 0;
                 $session['user']['dragonpoints'] = \Lotgd\Serialization::safeUnserialize($session['user']['dragonpoints']);
                 $session['user']['prefs'] = \Lotgd\Serialization::safeUnserialize($session['user']['prefs']);
                 $session['bufflist'] = \Lotgd\Serialization::safeUnserialize($session['user']['bufflist']);
