@@ -140,8 +140,17 @@ class ExpireChars
             return;
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . implode(',', $acctIds) . ')';
-        Database::query($sql);
+        foreach ($acctIds as $acctId) {
+            $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $acctId;
+            Database::query($sql);
+
+            if (Database::affectedRows() !== 1) {
+                GameLog::log(
+                    sprintf('Failed to delete account %d: %s', (int) $acctId, Database::error()),
+                    'char deletion failure'
+                );
+            }
+        }
     }
 
     /**
