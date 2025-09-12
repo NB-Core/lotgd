@@ -43,6 +43,8 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
         foreach (Database::$queries as $query) {
             $this->assertStringNotContainsString('DELETE FROM accounts', $query);
         }
+        $this->assertContains('ROLLBACK', Database::$queries);
+        $this->assertNotContains('COMMIT', Database::$queries);
     }
 
     public function testUserDelAbortsOnCleanupFailure(): void
