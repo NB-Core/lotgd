@@ -66,6 +66,8 @@ class ExpireChars
             return;
         }
 
+        $deletedAcctIds = [];
+
         foreach ($rows as $row) {
             Database::query('START TRANSACTION');
             $error = null;
@@ -81,6 +83,7 @@ class ExpireChars
                 }
 
                 Database::query('COMMIT');
+                $deletedAcctIds[] = (int) $row['acctid'];
             } catch (\Throwable $e) {
                 Database::query('ROLLBACK');
                 $error = $e;
@@ -96,7 +99,12 @@ class ExpireChars
             }
         }
 
-        self::logExpiredAccountStats($rows);
+        $deletedRows = array_values(array_filter(
+            $rows,
+            static fn (array $row): bool => in_array((int) $row['acctid'], $deletedAcctIds, true)
+        ));
+
+        self::logExpiredAccountStats($deletedRows);
     }
     /**
      * Delete accounts.
@@ -147,17 +155,19 @@ class ExpireChars
 
     /**
      * Write summary information about deleted accounts to the gamelog.
+     *
+     * @param array<int,array{login:string,acctid:int,dragonkills:int,level:int}> $deletedRows
      */
-    private static function logExpiredAccountStats(array $rows): void
+    private static function logExpiredAccountStats(array $deletedRows): void
     {
-        $acctCount = count($rows);
+        $acctCount = count($deletedRows);
         if ($acctCount === 0) {
             return;
         }
 
         $dk0lvl = $dk0ct = $dk1lvl = $dk1ct = $dks = 0;
         $info = [];
-        foreach ($rows as $row) {
+        foreach ($deletedRows as $row) {
             $info[] = "{$row['login']}:dk{$row['dragonkills']}-lv{$row['level']}";
             if ($row['dragonkills'] == 0) {
                 $dk0lvl += $row['level'];
