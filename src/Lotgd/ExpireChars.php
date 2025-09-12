@@ -68,26 +68,31 @@ class ExpireChars
 
         foreach ($rows as $row) {
             Database::query('START TRANSACTION');
+            $error = null;
             try {
                 if (! PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO)) {
                     throw new \RuntimeException('charCleanup failed');
                 }
 
                 $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $row['acctid'];
+                Database::query($sql);
                 if (Database::affectedRows() !== 1) {
-                    GameLog::log(
-                        sprintf('Failed to delete account %d: %s', (int) $row['acctid'], Database::error()),
-                        'char deletion failure'
-                    );
-                }              
-                if (! Database::query($sql)) {
                     throw new \RuntimeException('deletion failed');
                 }
 
                 Database::query('COMMIT');
             } catch (\Throwable $e) {
                 Database::query('ROLLBACK');
-                GameLog::log('Failed to delete account ' . $row['acctid'] . ': ' . $e->getMessage(), 'char expiration');
+                $error = $e;
+            }
+
+            if ($error) {
+                GameLog::log(
+                    'Failed to delete account ' . $row['acctid'] . ': ' . $error->getMessage(),
+                    'char deletion failure'
+                );
+            } else {
+                GameLog::log('Deleted account ' . (int) $row['acctid'], 'char expiration');
             }
         }
 
