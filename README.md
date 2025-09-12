@@ -15,7 +15,7 @@ Features of this fork include:
 - additional hooks
 - a stat system with strength, dexterity, and other attributes
 - numerous other changes documented in `CHANGELOG.txt`
-- compatibility with PHP 8.3
+- compatibility with PHP 8.4
 - PHPMailer replacing the sendmail system
 - mail notifications that auto-refresh via Ajax (resources under `async/`)
 - incremental chat updates via `commentary_refresh` to load new messages without reloading the page
@@ -84,7 +84,7 @@ If you need more legacy **templates** / skins for the game, [go there](https://g
 To run Legend of the Green Dragon on a typical web host you will need:
 
 - **Web server:** Apache 2 (or another server capable of running PHP)
-- **PHP:** version 8.3 or newer
+- **PHP:** version 8.4 or newer
 - **Database:** MySQL 5.0 or later. MariaDB is a compatible alternative.
 - The database user must have the `LOCK TABLES` privilege.
 

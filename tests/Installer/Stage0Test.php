@@ -34,7 +34,7 @@ final class Stage0Test extends TestCase
     public function testInstallerOutputsDefaultFavicon(): void
     {
         $root   = dirname(__DIR__, 2);
-        $cmd    = sprintf('cd %s && php installer.php', escapeshellarg($root));
+        $cmd    = sprintf('cd %s && %s installer.php', escapeshellarg($root), escapeshellarg(PHP_BINARY));
         $output = shell_exec($cmd);
 
         $this->assertIsString($output);
