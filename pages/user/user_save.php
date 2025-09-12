@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\Names;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
+use Lotgd\GameLog;
 
 $sql = "";
 $updates = 0;
@@ -212,6 +213,10 @@ if ($updates > 0) {
     Database::query($sql);
     debug("Updated $updates fields in the user record with:\n$sql");
     $output->output("%s fields in the user's record were updated.", $updates);
+    GameLog::log(
+        'User ' . $session['user']['acctid'] . ' edited ' . $updates . ' fields for user ' . $userid,
+        'user management'
+    );
 } else {
     $output->output("No fields were changed in the user's record.");
 }
