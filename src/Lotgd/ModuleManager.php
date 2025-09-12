@@ -8,6 +8,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Modules\Installer;
 use Lotgd\DataCache;
 use Lotgd\Modules;
+use Lotgd\GameLog;
 
 class ModuleManager
 {
@@ -69,8 +70,11 @@ class ModuleManager
         if (Installer::install($module)) {
             DataCache::getInstance()->massinvalidate('hook');
             DataCache::getInstance()->massinvalidate('module-prepare');
+            GameLog::log("Module {$module} installed", 'modules');
+
             return true;
         }
+
         return false;
     }
 
@@ -85,8 +89,11 @@ class ModuleManager
             DataCache::getInstance()->massinvalidate('hook');
             DataCache::getInstance()->massinvalidate('module-prepare');
             DataCache::getInstance()->invalidatedatacache("inject-$module");
+            GameLog::log("Module {$module} uninstalled", 'modules');
+
             return true;
         }
+
         return false;
     }
 
@@ -100,6 +107,11 @@ class ModuleManager
         DataCache::getInstance()->massinvalidate('hook');
         DataCache::getInstance()->massinvalidate('module-prepare');
         Modules::inject($module, true);
+
+        if ($res) {
+            GameLog::log("Module {$module} activated", 'modules');
+        }
+
         return $res;
     }
 
@@ -111,6 +123,11 @@ class ModuleManager
         $res = Installer::deactivate($module);
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('module-prepare');
+
+        if ($res) {
+            GameLog::log("Module {$module} deactivated", 'modules');
+        }
+
         return $res;
     }
 
@@ -125,6 +142,8 @@ class ModuleManager
         DataCache::getInstance()->massinvalidate('hook');
         DataCache::getInstance()->massinvalidate('module-prepare');
         Modules::inject($module, true);
+        GameLog::log("Module {$module} reinstalled", 'modules');
+
         return true;
     }
 
@@ -137,6 +156,8 @@ class ModuleManager
             DataCache::getInstance()->massinvalidate('hook');
             DataCache::getInstance()->massinvalidate('module-prepare');
             DataCache::getInstance()->invalidatedatacache("inject-$module");
+            GameLog::log("Module {$module} force-uninstalled", 'modules');
+
             return true;
         }
 
