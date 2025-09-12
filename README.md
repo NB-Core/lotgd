@@ -99,7 +99,7 @@ To run Legend of the Green Dragon on a typical web host you will need:
 Regular upkeep tasks:
 
 - Run `composer update` to update dependencies.
-- Run `composer test` to execute the unit tests.
+- Run `composer test` to execute the unit tests and `composer static` to run PHPStan or other static analyzers; ensure both pass before committing.
 - Schedule `cron.php` via cron for automated jobs.
 - Configure SMTP settings in `config/configuration.php`.
 - If you change `DB_PREFIX`, clear the cache directory to avoid reusing metadata from the previous prefix.
