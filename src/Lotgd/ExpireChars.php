@@ -74,6 +74,12 @@ class ExpireChars
                 }
 
                 $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $row['acctid'];
+                if (Database::affectedRows() !== 1) {
+                    GameLog::log(
+                        sprintf('Failed to delete account %d: %s', (int) $acctId, Database::error()),
+                        'char deletion failure'
+                    );
+                }              
                 if (! Database::query($sql)) {
                     throw new \RuntimeException('deletion failed');
                 }
@@ -142,9 +148,7 @@ class ExpireChars
         GameLog::log('Deleted ' . $acctCount . " accounts:\n$msg", 'char expiration');
     }
 
-    /**
-     * Delete the supplied account ids from the database.
-     */
+
     /**
      * Send expiration warning emails to players nearing deletion.
      */
