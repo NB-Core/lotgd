@@ -106,4 +106,28 @@ final class DataCacheTest extends TestCase
         fclose($resource);
         $this->assertFileDoesNotExist(DataCache::getInstance()->makecachetempname('failjson'));
     }
+
+    public function testCachePersistsForSpecifiedMinutes(): void
+    {
+        $name = 'persisted';
+        $data = ['value' => 99];
+
+        $minutes = 2;
+        $seconds = $minutes * 60;
+
+        $this->assertTrue(DataCache::getInstance()->updatedatacache($name, $data));
+
+        $file = DataCache::getInstance()->makecachetempname($name);
+
+        touch($file, time() - $seconds + 1);
+        $this->assertSame($data, DataCache::getInstance()->datacache($name, $seconds));
+
+        $ref = new \ReflectionClass(DataCache::class);
+        $prop = $ref->getProperty('cache');
+        $prop->setAccessible(true);
+        $prop->setValue(null, []);
+
+        touch($file, time() - $seconds - 1);
+        $this->assertFalse(DataCache::getInstance()->datacache($name, $seconds));
+    }
 }

@@ -411,8 +411,9 @@ class PageParts
             $loginTimeout = $settings->getSetting("LOGINTIMEOUT", 900);
             $cacheMinutes = $mode === 2 ? $minutesSetting : (int) ceil($loginTimeout / 60);
             $cacheKey = "charlisthomepage-$mode-$cacheMinutes";
+            $ttl = $cacheMinutes * 60;
             $minutes = 0;
-            if ($ret = DataCache::getInstance()->datacache($cacheKey)) {
+            if ($ret = DataCache::getInstance()->datacache($cacheKey, $ttl)) {
             } else {
                 $onlinecount = 0;
                 $list = HookHandler::hook("onlinecharlist", array("count" => 0, "list" => ""));
