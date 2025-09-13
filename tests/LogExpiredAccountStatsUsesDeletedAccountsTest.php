@@ -29,7 +29,7 @@ final class LogExpiredAccountStatsUsesDeletedAccountsTest extends TestCase
         }
 
         if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { public static array $entries = []; public static function log(string $m, string $c): void { self::$entries[] = [$c, $m]; } }');
+            eval('namespace Lotgd; class GameLog { public static array $entries = []; public static function log(string $m, string $c, bool $f = false, ?int $a = null): void { self::$entries[] = [$c, $m]; } }');
         } else {
             \Lotgd\GameLog::$entries = [];
         }

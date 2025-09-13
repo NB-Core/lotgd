@@ -98,7 +98,12 @@ class ExpireChars
                     'char deletion failure'
                 );
             } elseif ($cleanupPerformed) {
-                GameLog::log('Deleted account ' . (int) $row['acctid'], 'char expiration');
+                GameLog::log(
+                    sprintf('Deleted account %d (%s)', $row['acctid'], $row['login']),
+                    'char expiration',
+                    false,
+                    0
+                );
             } else {
                 GameLog::log(
                     'Cleanup skipped for account ' . (int) $row['acctid'] . ' (prevented by hook)',
