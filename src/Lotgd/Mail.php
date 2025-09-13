@@ -103,9 +103,13 @@ class Mail
             $body = preg_replace("'[`]n'", "\n", $body);
             $body = Sanitize::fullSanitize($body);
             $subject = htmlentities(Sanitize::fullSanitize($subject), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
+            $original = Settings::getInstance();
             $settings_extended = new Settings('settings_extended');
             $subj = Translator::translateMail($settings_extended->getSetting('notificationmailsubject'), $to);
             $msg = Translator::translateMail($settings_extended->getSetting('notificationmailtext'), $to);
+            Settings::setInstance($original);
+            $GLOBALS['settings'] = $original;
+            $settings = $original;
             $replace = [
                 '{subject}' => stripslashes($subject),
                 '{sendername}' => $fromline,
