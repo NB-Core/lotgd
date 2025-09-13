@@ -29,7 +29,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         }
 
         if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { public static array $entries = []; public static function log(string $m, string $c, bool $f = false): void { self::$entries[] = [$c, $m]; } }');
+            eval('namespace Lotgd; class GameLog { public static array $entries = []; public static function log(string $m, string $c, bool $f = false, ?int $a = null): void { self::$entries[] = [$c, $m]; } }');
         } else {
             \Lotgd\GameLog::$entries = [];
         }
@@ -73,7 +73,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         $method->invoke(null);
 
         $this->assertSame('char expiration', \Lotgd\GameLog::$entries[0][0] ?? null);
-        $this->assertSame('Deleted account 1', \Lotgd\GameLog::$entries[0][1] ?? null);
+        $this->assertSame('Deleted account 1 (test)', \Lotgd\GameLog::$entries[0][1] ?? null);
         $this->assertCount(2, \Lotgd\GameLog::$entries);
 
         $this->assertStringContainsString('COMMIT', Database::$queries[3] ?? '');
