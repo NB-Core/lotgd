@@ -122,6 +122,8 @@ class DataCache
      */
     public function invalidatedatacache(string $name, bool $withpath = true): void
     {
+        global $session;
+
         if (defined('DB_NODB') && DB_NODB) {
             return;
         }
@@ -133,7 +135,12 @@ class DataCache
         if ($settings->getSetting('usedatacache', 0)) {
             $fullname = $withpath ? $this->makecachetempname($name) : $name;
             if (is_file($fullname) && ! @unlink($fullname)) {
-                GameLog::log('Failed to remove cache file ' . $fullname, 'cache');
+                GameLog::log(
+                    'Failed to remove cache file ' . $fullname,
+                    'cache',
+                    false,
+                    $session['user']['acctid'] ?? 0
+                );
             }
             if (! $withpath) {
                 unset(self::$cache[$name]);

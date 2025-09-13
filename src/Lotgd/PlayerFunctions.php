@@ -27,6 +27,7 @@ class PlayerFunctions
      */
     public static function charCleanup(int $id, int $type): bool
     {
+        global $session;
         // Run module hooks for character deletion
         $args = HookHandler::hook('delete_character', ['acctid' => $id, 'deltype' => $type]);
 
@@ -62,11 +63,21 @@ class PlayerFunctions
                         $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET clanrank=' . CLAN_LEADER . " WHERE acctid=$id1";
                         Database::query($sql);
                     }
-                    GameLog::log('Clan ' . $cid . ' has a new leader ' . $row['name'] . ' as there were no others left', 'clan');
+                    GameLog::log(
+                        'Clan ' . $cid . ' has a new leader ' . $row['name'] . ' as there were no others left',
+                        'clan',
+                        false,
+                        $session['user']['acctid'] ?? 0
+                    );
                 } else {
                     $sql = 'DELETE FROM ' . Database::prefix('clans') . " WHERE clanid=$cid";
                     Database::query($sql);
-                    GameLog::log('Clan ' . $cid . ' has been disbanded as the last member left', 'clan');
+                    GameLog::log(
+                        'Clan ' . $cid . ' has been disbanded as the last member left',
+                        'clan',
+                        false,
+                        $session['user']['acctid'] ?? 0
+                    );
                     $sql = 'UPDATE ' . Database::prefix('accounts') . " SET clanid=0,clanrank=0,clanjoindate='" . DATETIME_DATEMIN . "' WHERE clanid=$cid";
                     Database::query($sql);
                 }

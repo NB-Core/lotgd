@@ -67,10 +67,16 @@ class ModuleManager
      */
     public static function install(string $module): bool
     {
+        global $session;
         if (Installer::install($module)) {
             DataCache::getInstance()->massinvalidate('hook');
             DataCache::getInstance()->massinvalidate('module-prepare');
-            GameLog::log("Module {$module} installed", 'modules');
+            GameLog::log(
+                "Module {$module} installed",
+                'modules',
+                false,
+                $session['user']['acctid'] ?? 0
+            );
 
             return true;
         }
@@ -85,11 +91,17 @@ class ModuleManager
      */
     public static function uninstall(string $module): bool
     {
+        global $session;
         if (Installer::uninstall($module)) {
             DataCache::getInstance()->massinvalidate('hook');
             DataCache::getInstance()->massinvalidate('module-prepare');
             DataCache::getInstance()->invalidatedatacache("inject-$module");
-            GameLog::log("Module {$module} uninstalled", 'modules');
+            GameLog::log(
+                "Module {$module} uninstalled",
+                'modules',
+                false,
+                $session['user']['acctid'] ?? 0
+            );
 
             return true;
         }
@@ -102,6 +114,7 @@ class ModuleManager
      */
     public static function activate(string $module): bool
     {
+        global $session;
         $res = Installer::activate($module);
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('hook');
@@ -109,7 +122,12 @@ class ModuleManager
         Modules::inject($module, true);
 
         if ($res) {
-            GameLog::log("Module {$module} activated", 'modules');
+            GameLog::log(
+                "Module {$module} activated",
+                'modules',
+                false,
+                $session['user']['acctid'] ?? 0
+            );
         }
 
         return $res;
@@ -120,12 +138,18 @@ class ModuleManager
      */
     public static function deactivate(string $module): bool
     {
+        global $session;
         $res = Installer::deactivate($module);
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('module-prepare');
 
         if ($res) {
-            GameLog::log("Module {$module} deactivated", 'modules');
+            GameLog::log(
+                "Module {$module} deactivated",
+                'modules',
+                false,
+                $session['user']['acctid'] ?? 0
+            );
         }
 
         return $res;
@@ -136,13 +160,19 @@ class ModuleManager
      */
     public static function reinstall(string $module): bool
     {
+        global $session;
         $sql = 'UPDATE ' . Database::prefix('modules') . " SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='" . $module . "'";
         Database::query($sql);
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('hook');
         DataCache::getInstance()->massinvalidate('module-prepare');
         Modules::inject($module, true);
-        GameLog::log("Module {$module} reinstalled", 'modules');
+        GameLog::log(
+            "Module {$module} reinstalled",
+            'modules',
+            false,
+            $session['user']['acctid'] ?? 0
+        );
 
         return true;
     }
@@ -152,11 +182,17 @@ class ModuleManager
      */
     public static function forceUninstall(string $module): bool
     {
+        global $session;
         if (Installer::forceUninstall($module)) {
             DataCache::getInstance()->massinvalidate('hook');
             DataCache::getInstance()->massinvalidate('module-prepare');
             DataCache::getInstance()->invalidatedatacache("inject-$module");
-            GameLog::log("Module {$module} force-uninstalled", 'modules');
+            GameLog::log(
+                "Module {$module} force-uninstalled",
+                'modules',
+                false,
+                $session['user']['acctid'] ?? 0
+            );
 
             return true;
         }
