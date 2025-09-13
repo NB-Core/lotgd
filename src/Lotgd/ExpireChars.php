@@ -56,6 +56,7 @@ class ExpireChars
      */
     private static function cleanupExpiredAccounts(): void
     {
+        global $session;
         $settings = Settings::getInstance();
         $old = (int) $settings->getSetting('expireoldacct', 45);
         $new = (int) $settings->getSetting('expirenewacct', 10);
@@ -95,19 +96,23 @@ class ExpireChars
             if ($error) {
                 GameLog::log(
                     'Failed to delete account ' . $row['acctid'] . ': ' . $error->getMessage(),
-                    'char deletion failure'
+                    'char deletion failure',
+                    false,
+                    $session['user']['acctid'] ?? 0
                 );
             } elseif ($cleanupPerformed) {
                 GameLog::log(
                     sprintf('Deleted account %d (%s)', $row['acctid'], $row['login']),
                     'char expiration',
                     false,
-                    0
+                    $session['user']['acctid'] ?? 0
                 );
             } else {
                 GameLog::log(
                     'Cleanup skipped for account ' . (int) $row['acctid'] . ' (prevented by hook)',
-                    'char expiration'
+                    'char expiration',
+                    false,
+                    $session['user']['acctid'] ?? 0
                 );
             }
         }
@@ -160,6 +165,7 @@ class ExpireChars
      */
     private static function logExpiredAccountStats(array $deletedRows): void
     {
+        global $session;
         $acctCount = count($deletedRows);
         if ($acctCount === 0) {
             return;
@@ -184,7 +190,12 @@ class ExpireChars
         $msg .= 'Avg DK: [' . round($dks / max(1, $acctCount), 2) . "]\n";
         $msg .= 'Accounts: ' . implode(', ', $info);
 
-        GameLog::log('Deleted ' . $acctCount . " accounts:\n$msg", 'char expiration');
+        GameLog::log(
+            'Deleted ' . $acctCount . " accounts:\n$msg",
+            'char expiration',
+            false,
+            $session['user']['acctid'] ?? 0
+        );
     }
 
 
