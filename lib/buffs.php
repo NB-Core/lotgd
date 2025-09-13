@@ -4,6 +4,7 @@
 // translator ready
 // mail ready
 
+use Lotgd\Battle;
 use Lotgd\Buffs;
 
 $buffreplacements = [];
@@ -52,4 +53,24 @@ function strip_all_buffs(): void
 function has_buff($name): bool
 {
     return Buffs::hasBuff($name);
+}
+
+function unsuspend_buffs($susp = false, $msg = false)
+{
+    Battle::unsuspendBuffs($susp, $msg);
+}
+
+function suspend_buffs($susp = false, $msg = false)
+{
+    Battle::suspendBuffs($susp, $msg);
+}
+
+function suspend_buff_by_name($name, $msg = false)
+{
+    Battle::suspendBuffByName($name, $msg);
+}
+
+function unsuspend_buff_by_name($name, $msg = false)
+{
+    Battle::unsuspendBuffByName($name, $msg);
 }
