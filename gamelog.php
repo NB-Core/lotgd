@@ -1,7 +1,5 @@
 <?php
 use Lotgd\MySQL\Database;
-use Lotgd\Translator;
-
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 
@@ -11,12 +9,13 @@ use Lotgd\Nav\SuperuserNav;
 
 // Written by Christian Rutsch
 
-require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
+if (!defined('GAMELOG_TEST')) {
+    require_once __DIR__ . "/common.php";
+    require_once __DIR__ . "/lib/http.php";
+}
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-Translator::getInstance()->setSchema("gamelog");
 
 page_header("Game Log");
 addnav("Navigation");
@@ -75,10 +74,16 @@ while ($row = Database::fetchAssoc($result)) {
         $odate = $dom;
     }
     $time = date("H:i:s", strtotime($row['date'])) . " (" . reltime(strtotime($row['date'])) . ")";
-    if ($row['name'] != '') {
+    if ($row['name'] != '' && (int) ($row['who'] ?? 0) !== 0) {
         output_notl("`7(`\$%s`7) %s `7(`&%s`7) (`v%s`7)", $row['category'], $row['message'], $row['name'], $time);
     } else {
-        output_notl("`7(`\$%s`7) %s `7(`v%s`7)", $row['category'], $row['message'], $time);
+        output_notl(
+            "`7(`\$%s`7) %s: %s `7(`v%s`7)",
+            $row['category'],
+            'System',
+            $row['message'],
+            $time
+        );
     }
     if (!isset($categories[$row['category']]) && $category == "") {
         addnav("Operations");
