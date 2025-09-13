@@ -24,9 +24,13 @@ class ExpireChars
     /** Execute the full expiration routine. */
     public static function expire(): void
     {
-        self::$settingsExtended = new Settings('settings_extended');
+        $original = Settings::getInstance();
 
-        if (!self::needsExpiration()) {
+        self::$settingsExtended = new Settings('settings_extended');
+        Settings::setInstance($original);
+        $GLOBALS['settings'] = $original;
+
+        if (! self::needsExpiration()) {
             return;
         }
 
