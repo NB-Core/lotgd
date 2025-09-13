@@ -18,9 +18,12 @@ use Lotgd\PhpGenericEnvironment;
 
 
 require_once __DIR__ . "/common.php";
+$previous = Settings::getInstance();
 $output = Output::getInstance();
 // legacy wrapper removed, instantiate settings directly
 $settings_extended = new Settings('settings_extended');
+Settings::setInstance($previous);
+$GLOBALS['settings'] = $settings = $previous;
 
 SuAccess::check(SU_EDIT_CONFIG);
 
