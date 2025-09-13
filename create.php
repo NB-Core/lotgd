@@ -15,11 +15,15 @@ use Lotgd\Settings;
 use Lotgd\Sanitize;
 use Lotgd\DebugLog;
 use Lotgd\Cookies;
+use Lotgd\ServerFunctions;
+
 require_once __DIR__ . "/common.php";
 require_once __DIR__ . "/lib/is_email.php";
-// legacy wrapper removed, instantiate settings directly
+
+$original = Settings::getInstance();
 $settings_extended = new Settings('settings_extended');
-use Lotgd\ServerFunctions;
+Settings::setInstance($original);
+$GLOBALS['settings'] = $original;
 
 Translator::getInstance()->setSchema("create");
 
