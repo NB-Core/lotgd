@@ -47,7 +47,7 @@ details:
 // src/Lotgd/Config/migrations.php
 return [
     'migrations_paths' => [
-        'Lotgd\\Migrations' => dirname(__DIR__, 2) . '/migrations',
+        'Lotgd\\Migrations' => dirname(__DIR__, 3) . '/migrations',
     ],
 ];
 ```
@@ -72,8 +72,7 @@ If you need more than one connection, add a `connection` key in
 Run pending migrations:
 
 ```bash
-
-php vendor/bin/doctrine-migrations migrate
+php bin/doctrine migrations:migrate
 ```
 
 The command automatically reads `src/Lotgd/Config/migrations.php` and
@@ -81,15 +80,15 @@ The command automatically reads `src/Lotgd/Config/migrations.php` and
 explicitly:
 
 ```bash
-php vendor/bin/doctrine-migrations \
+php bin/doctrine \
     --configuration=src/Lotgd/Config/migrations.php \
-    --db-configuration=src/Lotgd/Config/migrations-db.php migrate
+    --db-configuration=src/Lotgd/Config/migrations-db.php migrations:migrate
 ```
 
 ### Upgrade Notes
 
 Earlier versions used a single `config/doctrine.php`. Replace it with the split
-configuration above and run `php vendor/bin/doctrine-migrations migrate` when
+configuration above and run `php bin/doctrine migrations:migrate` when
 upgrading.
 
 ## Persisting an Account

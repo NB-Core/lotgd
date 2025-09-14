@@ -153,15 +153,15 @@ The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects
 Execute pending migrations with the Doctrine command line tool:
 
 ```bash
-php vendor/bin/doctrine-migrations migrate
+php bin/doctrine migrations:migrate
 ```
 
 The command uses the default `src/Lotgd/Config/migrations.php` and `src/Lotgd/Config/migrations-db.php` files. If your configuration lives elsewhere, provide their paths explicitly:
 
 ```bash
-php vendor/bin/doctrine-migrations \
+php bin/doctrine \
     --configuration=src/Lotgd/Config/migrations.php \
-    --db-configuration=src/Lotgd/Config/migrations-db.php migrate
+    --db-configuration=src/Lotgd/Config/migrations-db.php migrations:migrate
 ```
 
 This will apply all new migrations to the configured database. During development you can generate additional migrations using `migrations:diff` or `migrations:generate`.
