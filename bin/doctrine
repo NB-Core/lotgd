@@ -29,6 +29,25 @@ if ($fromVersion !== null && $fromVersion !== '') {
     }
 }
 
+// Ensure default configuration paths are included unless already provided
+$hasConfiguration = false;
+$hasDbConfiguration = false;
+foreach ($filtered as $arg) {
+    if ($arg === '--configuration' || str_starts_with($arg, '--configuration=')) {
+        $hasConfiguration = true;
+    }
+    if ($arg === '--db-configuration' || str_starts_with($arg, '--db-configuration=')) {
+        $hasDbConfiguration = true;
+    }
+}
+
+if (! $hasConfiguration) {
+    $filtered[] = '--configuration=src/Lotgd/Config/migrations.php';
+}
+if (! $hasDbConfiguration) {
+    $filtered[] = '--db-configuration=src/Lotgd/Config/migrations-db.php';
+}
+
 $vendor = __DIR__ . '/../vendor/bin/doctrine-migrations';
 $command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($vendor);
 if ($filtered) {
