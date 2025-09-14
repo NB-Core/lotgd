@@ -2,7 +2,7 @@
 
 use Lotgd\MySQL\Database;
 
-$db = require dirname(__DIR__) . '/dbconnect.php';
+$db = require dirname(__DIR__, 2) . '/dbconnect.php';
 
 return [
     'driver' => $db['DB_DRIVER'] ?? 'pdo_mysql',
