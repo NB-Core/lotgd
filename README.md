@@ -263,9 +263,14 @@ Doctrine migrations.
 
 2. **Step 2**:
 
-   ```bash
-   php vendor/bin/doctrine-migrations migrate
-   ```
+    ```bash
+    php bin/doctrine migrations:migrate
+    ```
+
+    The command reads `src/Lotgd/Config/migrations.php` and
+    `src/Lotgd/Config/migrations-db.php` by default. If your configuration lives
+    elsewhere, pass `--configuration` and `--db-configuration` with the
+    appropriate paths.
 
 Omitting `--from-version` bypasses legacy SQL entirely.
 - [Installation](#installation)

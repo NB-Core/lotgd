@@ -54,11 +54,15 @@ If you are coming directly from **1.3.2** (or earlier 1.x):
 Once the legacy upgrade is complete:
 
 1. In your project root, run:
-   ```bash
-   vendor/bin/doctrine-migrations migrate
-   ```
-2. This will apply all new **2.x schema changes**.  
-3. Watch for any DB prefix issues — these are now supported and should migrate correctly.
+    ```bash
+    php bin/doctrine migrations:migrate
+    ```
+2. The command reads `src/Lotgd/Config/migrations.php` and
+   `src/Lotgd/Config/migrations-db.php` by default. If you use custom paths,
+   supply `--configuration` and `--db-configuration` flags with the appropriate
+   locations.
+3. This will apply all new **2.x schema changes**.
+4. Watch for any DB prefix issues — these are now supported and should migrate correctly.
 
 ---
 
