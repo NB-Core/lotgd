@@ -13,7 +13,7 @@ networks:
 
 ### .env File
 
-Create a `.env` file in the root directory with the following content:
+Copy `.env.example` to `.env` in the root directory and adjust values as needed. The default file contains:
 
 ```env
 MYSQL_DATABASE=lotgd
