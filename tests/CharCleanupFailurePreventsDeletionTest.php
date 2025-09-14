@@ -64,7 +64,10 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
         $userid = 1;
         $output = new class {
             public array $log = [];
-            public function output(string $m): void { $this->log[] = $m; }
+            public function output(string $m): void
+            {
+                $this->log[] = $m;
+            }
         };
 
         Database::$mockResults = [

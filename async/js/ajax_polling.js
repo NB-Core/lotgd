@@ -27,7 +27,7 @@ function lotgdShowNotification(title, message)
     if (!('Notification' in window)) {
         return;
     }
-    const icon = document.querySelector('link[rel="icon"][sizes="32x32"]')?.href || '/images/favicon/favicon-32x32.png';
+    const icon = document.querySelector('link[rel="icon"][sizes="32x32"]') ? .href || '/images/favicon/favicon-32x32.png';
     if (Notification.permission === 'granted') {
         new Notification(title, {body: message, icon: icon});
     } else if (Notification.permission !== 'denied') {
@@ -74,21 +74,22 @@ function lotgdCommentNotify(count)
  * Get the correct handler object - Clean implementation.
  * Uses the clean Lotgd.Async.Handler structure with JaxonLotgd fallback.
  */
-function getJaxonHandlers() {
+function getJaxonHandlers()
+{
     // Primary: Use the clean structure
-    if (typeof Lotgd !== 'undefined' 
+    if (typeof Lotgd !== 'undefined'
         && Lotgd.Async && Lotgd.Async.Handler) {
         console.log('DEBUG: Using Lotgd.Async.Handler');
         return Lotgd.Async.Handler;
     }
-    
+
     // Fallback: Legacy JaxonLotgd structure
-    if (typeof JaxonLotgd !== 'undefined' 
+    if (typeof JaxonLotgd !== 'undefined'
         && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
         console.log('DEBUG: Using JaxonLotgd.Async.Handler');
         return JaxonLotgd.Async.Handler;
     }
-    
+
     console.log('DEBUG: No handlers found');
     return null;
 }
@@ -192,7 +193,8 @@ function clear_ajax()
 /**
  * Initialize polling once Jaxon handlers are ready
  */
-function initializePolling() {
+function initializePolling()
+{
     console.log('DEBUG: initializePolling called');
     set_poll_ajax();
     if (typeof lotgd_clear_delay_ms !== 'undefined') {
@@ -204,7 +206,8 @@ function initializePolling() {
 /**
  * Start polling with clean handler detection
  */
-function startPolling() {
+function startPolling()
+{
     console.log('DEBUG: startPolling called');
     // Check if ready flag is set
     if (window.JaxonLotgdReady === true) {
@@ -212,14 +215,14 @@ function startPolling() {
         initializePolling();
         return;
     }
-    
+
     // Check if handlers are available
     if (getJaxonHandlers() !== null) {
         console.log('DEBUG: Handlers available, initializing polling');
         initializePolling();
         return;
     }
-    
+
     console.log('DEBUG: Not ready yet, will retry in 250ms');
     // Wait and retry
     setTimeout(startPolling, 250);
@@ -231,23 +234,23 @@ console.log('DEBUG: Setting up DOM ready listeners, typeof $ =', typeof $);
 // Try both jQuery and vanilla JS approaches
 if (typeof $ !== 'undefined') {
     console.log('DEBUG: Using jQuery for DOM ready');
-    $(function() {
+    $(function () {
         console.log('DEBUG: jQuery DOM ready fired');
         // Listen for the JaxonLotgdReady event if available
         if (typeof window.addEventListener === 'function') {
-            window.addEventListener('JaxonLotgdReady', function() {
+            window.addEventListener('JaxonLotgdReady', function () {
                 console.log('DEBUG: JaxonLotgdReady event received');
                 initializePolling();
             }, { once: true });
         }
-        
+
         // Also use the polling fallback method
         startPolling();
     });
 } else {
     console.log('DEBUG: jQuery not available, using vanilla JS DOM ready');
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             console.log('DEBUG: Vanilla DOM ready fired');
             startPolling();
         });

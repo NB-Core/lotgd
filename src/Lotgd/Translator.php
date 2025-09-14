@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 namespace Lotgd;
-use Lotgd\Settings;
 
+use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
 use Lotgd\Sanitize;
@@ -13,7 +13,6 @@ use Lotgd\Output;
 use Lotgd\PageParts;
 use Lotgd\PhpGenericEnvironment;
 use Doctrine\DBAL\Exception\TableNotFoundException;
-
 
 class Translator
 {
@@ -209,7 +208,7 @@ class Translator
 
             // Reset schema if we set it above
             if ($setschema) {
-            self::tlschema();
+                self::tlschema();
             }
         }
 

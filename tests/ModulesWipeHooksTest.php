@@ -25,4 +25,3 @@ final class ModulesWipeHooksTest extends TestCase
         $this->assertStringContainsString("modulename='mymodule'", \Lotgd\MySQL\Database::$lastSql);
     }
 }
-

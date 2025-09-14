@@ -47,52 +47,52 @@ namespace Lotgd\Tests\Modules {
 
 namespace Lotgd\Tests\Modules {
 
-use Lotgd\Tests\Modules\Stubs\HookHandler;
-use PHPUnit\Framework\TestCase;
+    use Lotgd\Tests\Modules\Stubs\HookHandler;
+    use PHPUnit\Framework\TestCase;
 
 /**
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  * @group hooks
  */
-final class ModuleHookRegistrationTest extends TestCase
-{
-    protected function setUp(): void
+    final class ModuleHookRegistrationTest extends TestCase
     {
-        if (!class_exists('Lotgd\\Modules\\HookHandler', false)) {
-            class_alias(HookHandler::class, 'Lotgd\\Modules\\HookHandler');
+        protected function setUp(): void
+        {
+            if (!class_exists('Lotgd\\Modules\\HookHandler', false)) {
+                class_alias(HookHandler::class, 'Lotgd\\Modules\\HookHandler');
+            }
+            HookHandler::reset();
         }
-        HookHandler::reset();
+
+        public function testModuleAddHookForwardsEmptyWhenactive(): void
+        {
+            module_addhook('hook', 'callback', '');
+
+            $this->assertSame(
+                [['method' => 'addHook', 'args' => ['hook', 'callback', '']]],
+                HookHandler::$calls
+            );
+        }
+
+        public function testModuleAddHookPriorityForwardsCustomPriority(): void
+        {
+            module_addhook_priority('hook', 75, 'callback', 'active');
+
+            $this->assertSame(
+                [['method' => 'addHookPriority', 'args' => ['hook', 75, 'callback', 'active']]],
+                HookHandler::$calls
+            );
+        }
+
+        public function testModuleDropHookNonExistentIsGraceful(): void
+        {
+            module_drophook('missing');
+
+            $this->assertSame(
+                [['method' => 'dropHook', 'args' => ['missing', false]]],
+                HookHandler::$calls
+            );
+        }
     }
-
-    public function testModuleAddHookForwardsEmptyWhenactive(): void
-    {
-        module_addhook('hook', 'callback', '');
-
-        $this->assertSame(
-            [['method' => 'addHook', 'args' => ['hook', 'callback', '']]],
-            HookHandler::$calls
-        );
-    }
-
-    public function testModuleAddHookPriorityForwardsCustomPriority(): void
-    {
-        module_addhook_priority('hook', 75, 'callback', 'active');
-
-        $this->assertSame(
-            [['method' => 'addHookPriority', 'args' => ['hook', 75, 'callback', 'active']]],
-            HookHandler::$calls
-        );
-    }
-
-    public function testModuleDropHookNonExistentIsGraceful(): void
-    {
-        module_drophook('missing');
-
-        $this->assertSame(
-            [['method' => 'dropHook', 'args' => ['missing', false]]],
-            HookHandler::$calls
-        );
-    }
-}
 }

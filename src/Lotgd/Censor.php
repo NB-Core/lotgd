@@ -10,7 +10,8 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\DataCache;
 use Lotgd\Output;
-use const \SU_EDIT_COMMENTS;
+
+use const SU_EDIT_COMMENTS;
 
 class Censor
 {

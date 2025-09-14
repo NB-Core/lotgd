@@ -457,10 +457,12 @@ final class TableDescriptorTest extends TestCase
             public function executeStatement(string $sql, array $params = []): int
             {
                 $this->queries[] = $sql;
-                if (preg_match(
-                    "/UPDATE dummy SET created = :DATETIME_DATEMIN WHERE created < :DATETIME_DATEMIN OR created = :zeroDate/",
-                    $sql
-                )) {
+                if (
+                    preg_match(
+                        "/UPDATE dummy SET created = :DATETIME_DATEMIN WHERE created < :DATETIME_DATEMIN OR created = :zeroDate/",
+                        $sql
+                    )
+                ) {
                     foreach ($this->table as &$row) {
                         if (
                             $row['created'] < ($params['DATETIME_DATEMIN'] ?? $row['created'])

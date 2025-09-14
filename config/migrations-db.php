@@ -13,4 +13,3 @@ return [
     'charset' => 'utf8mb4',
     Database::class . '::prefix' => $db['DB_PREFIX'] ?? '',
 ];
-

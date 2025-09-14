@@ -11,8 +11,8 @@ use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 
-use const \DATETIME_DATEMIN;
-use const \DATETIME_TODAY;
+use const DATETIME_DATEMIN;
+use const DATETIME_TODAY;
 
 class DateTime
 {

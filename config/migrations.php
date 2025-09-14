@@ -5,4 +5,3 @@ return [
         'Lotgd\\Migrations' => dirname(__DIR__) . '/migrations',
     ],
 ];
-

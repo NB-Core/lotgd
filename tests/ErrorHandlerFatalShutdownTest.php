@@ -40,4 +40,3 @@ PHP);
         $this->assertStringContainsString('fatal.php', $output);
     }
 }
-

@@ -41,4 +41,3 @@ $jaxon->setOption('core.debug.verbose', false);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Commentary::class);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Timeout::class);
-

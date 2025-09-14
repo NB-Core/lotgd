@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd\Tests\Installer;
+
 use PHPUnit\Framework\TestCase;
 
 final class FreshInstallTest extends TestCase

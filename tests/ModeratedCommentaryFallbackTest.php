@@ -84,4 +84,3 @@ final class ModeratedCommentaryFallbackTest extends TestCase
         $this->assertStringContainsString('user.php?op=setupban&userid=0', $output);
     }
 }
-

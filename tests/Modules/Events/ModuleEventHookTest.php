@@ -39,49 +39,49 @@ namespace {
 
 namespace Lotgd\Tests\Modules\Events {
 
-use Lotgd\Tests\Modules\Fixtures\HookHandlerMock;
-use PHPUnit\Framework\TestCase;
-use function module_addeventhook;
-use function module_dropeventhook;
+    use Lotgd\Tests\Modules\Fixtures\HookHandlerMock;
+    use PHPUnit\Framework\TestCase;
+    use function module_addeventhook;
+    use function module_dropeventhook;
 
 /**
  * @group events
  */
-final class ModuleEventHookTest extends TestCase
-{
-    protected function setUp(): void
+    final class ModuleEventHookTest extends TestCase
     {
-        HookHandlerMock::$added = [];
-        HookHandlerMock::$dropped = [];
-    }
+        protected function setUp(): void
+        {
+            HookHandlerMock::$added = [];
+            HookHandlerMock::$dropped = [];
+        }
 
-    public function testAddEventHookPassesTypeAndChance(): void
-    {
-        module_addeventhook('forest', '25%');
-        self::assertSame([
+        public function testAddEventHookPassesTypeAndChance(): void
+        {
+            module_addeventhook('forest', '25%');
+            self::assertSame([
             ['type' => 'forest', 'chance' => '25%'],
-        ], HookHandlerMock::$added);
-    }
+            ], HookHandlerMock::$added);
+        }
 
-    public function testDropEventHookPassesType(): void
-    {
-        module_dropeventhook('forest');
-        self::assertSame([
+        public function testDropEventHookPassesType(): void
+        {
+            module_dropeventhook('forest');
+            self::assertSame([
             ['type' => 'forest'],
-        ], HookHandlerMock::$dropped);
-    }
+            ], HookHandlerMock::$dropped);
+        }
 
-    public function testEmptyEventType(): void
-    {
-        module_addeventhook('', '10%');
-        module_dropeventhook('');
+        public function testEmptyEventType(): void
+        {
+            module_addeventhook('', '10%');
+            module_dropeventhook('');
 
-        self::assertSame([
+            self::assertSame([
             ['type' => '', 'chance' => '10%'],
-        ], HookHandlerMock::$added);
-        self::assertSame([
+            ], HookHandlerMock::$added);
+            self::assertSame([
             ['type' => ''],
-        ], HookHandlerMock::$dropped);
+            ], HookHandlerMock::$dropped);
+        }
     }
-}
 }

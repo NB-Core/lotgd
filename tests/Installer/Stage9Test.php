@@ -30,7 +30,9 @@ namespace Doctrine\Migrations {
         public function getMetadataStorage(): object
         {
             return new class {
-                public function ensureInitialized(): void {}
+                public function ensureInitialized(): void
+                {
+                }
                 public function getExecutedMigrations(): object
                 {
                     return new class {
@@ -40,7 +42,9 @@ namespace Doctrine\Migrations {
                         }
                     };
                 }
-                public function complete(ExecutionResult $result): void {}
+                public function complete(ExecutionResult $result): void
+                {
+                }
             };
         }
 
@@ -79,8 +83,10 @@ namespace Doctrine\Migrations {
 
         public function getMigrator(): object
         {
-            return new class($this) {
-                public function __construct(private DependencyFactory $factory) {}
+            return new class ($this) {
+                public function __construct(private DependencyFactory $factory)
+                {
+                }
                 public function migrate(array $plan, array $config): void
                 {
                     $this->factory->migrated = $plan;
@@ -92,23 +98,23 @@ namespace Doctrine\Migrations {
 
 namespace Lotgd\Tests\Installer {
 
-use Lotgd\Installer\Installer;
-use Lotgd\Output;
-use Lotgd\Tests\Stubs\DummySettings;
-use Lotgd\Tests\Stubs\DoctrineBootstrap;
-use PHPUnit\Framework\TestCase;
+    use Lotgd\Installer\Installer;
+    use Lotgd\Output;
+    use Lotgd\Tests\Stubs\DummySettings;
+    use Lotgd\Tests\Stubs\DoctrineBootstrap;
+    use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
+    require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
 
-class Stage9Test extends TestCase
-{
-    protected function setUp(): void
+    class Stage9Test extends TestCase
     {
-        global $session, $logd_version, $recommended_modules, $noinstallnavs,
+        protected function setUp(): void
+        {
+            global $session, $logd_version, $recommended_modules, $noinstallnavs,
             $DB_USEDATACACHE, $settings;
 
-        \Lotgd\PhpGenericEnvironment::setRequestUri('/installer.php');
-        $session            = [
+            \Lotgd\PhpGenericEnvironment::setRequestUri('/installer.php');
+            $session            = [
             'dbinfo'            => [
                 'DB_HOST'         => 'localhost',
                 'DB_USER'         => 'user',
@@ -116,122 +122,121 @@ class Stage9Test extends TestCase
                 'DB_NAME'         => 'lotgd',
                 'DB_PREFIX'       => '',
                 'DB_USEDATACACHE' => 0,
-                'DB_DATACACHEPATH'=> '',
+                'DB_DATACACHEPATH' => '',
             ],
             'moduleoperations' => [],
             'skipmodules'      => true,
             'fromversion'      => '-1',
-        ];
-        $logd_version       = '2.0.0-rc +nb Edition';
-        $recommended_modules = [];
-        $noinstallnavs      = false;
-        $DB_USEDATACACHE    = false;
-        $settings           = new DummySettings();
-        $ref = new \ReflectionClass(Output::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, new Output());
+            ];
+            $logd_version       = '2.0.0-rc +nb Edition';
+            $recommended_modules = [];
+            $noinstallnavs      = false;
+            $DB_USEDATACACHE    = false;
+            $settings           = new DummySettings();
+            $ref = new \ReflectionClass(Output::class);
+            $prop = $ref->getProperty('instance');
+            $prop->setAccessible(true);
+            $prop->setValue(null, new Output());
 
-        file_put_contents(
-            __DIR__ . '/../../dbconnect.php',
-            "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>''];"
-        );
-    }
-
-    protected function tearDown(): void
-    {
-        $config = __DIR__ . '/../../dbconnect.php';
-
-        if (file_exists($config)) {
-            unlink($config);
-        }
-    }
-
-    public function testStage9RunsMigrationsAndChecksForAdmin(): void
-    {
-        $installer = new Installer();
-
-        $installer->runStage(9);
-        $installer->runStage(10);
-        $outputText = Output::getInstance()->getRawOutput();
-
-        $files    = glob(__DIR__ . '/../../migrations/Version*.php');
-        $versions = array_map(fn($f) => substr(basename($f, '.php'), 7), $files);
-        rsort($versions);
-        $latest = $versions[0];
-
-        $migrated = array_map(
-            fn($v) => (string) $v,
-            \Doctrine\Migrations\DependencyFactory::$instance->migrated
-        );
-        $this->assertContains($latest, $migrated, 'Latest migration was not applied');
-
-        $queries = DoctrineBootstrap::$conn->queries;
-        require __DIR__ . '/../../install/data/installer_sqlstatements.php';
-        $expected = [];
-        foreach ($sql_upgrade_statements as $statements) {
-            foreach ($statements as $sql) {
-                $expected[] = $sql;
-            }
-        }
-        $expectedCount = array_count_values($expected);
-        $executedCount = array_count_values($queries);
-        foreach ($expectedCount as $sql => $count) {
-            $this->assertGreaterThanOrEqual(
-                $count,
-                $executedCount[$sql] ?? 0,
-                'Installer SQL statement was not executed: ' . $sql
+            file_put_contents(
+                __DIR__ . '/../../dbconnect.php',
+                "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>''];"
             );
         }
 
-        $this->assertStringContainsString('superuser account', $outputText);
-    }
+        protected function tearDown(): void
+        {
+            $config = __DIR__ . '/../../dbconnect.php';
 
-    public function testStage9RunsOnlyNewerInstallerStatementsOnUpgrade(): void
-    {
-        global $session;
+            if (file_exists($config)) {
+                unlink($config);
+            }
+        }
 
-        $session['dbinfo']['upgrade'] = true;
-        $session['fromversion']       = '0.9.6';
+        public function testStage9RunsMigrationsAndChecksForAdmin(): void
+        {
+            $installer = new Installer();
 
-        $conn = new \Lotgd\Tests\Stubs\DoctrineConnection();
-        DoctrineBootstrap::$conn = $conn;
-        \Lotgd\MySQL\Database::$doctrineConnection = $conn;
+            $installer->runStage(9);
+            $installer->runStage(10);
+            $outputText = Output::getInstance()->getRawOutput();
 
-        $installer = new Installer();
-        $installer->runStage(9);
+            $files    = glob(__DIR__ . '/../../migrations/Version*.php');
+            $versions = array_map(fn($f) => substr(basename($f, '.php'), 7), $files);
+            rsort($versions);
+            $latest = $versions[0];
 
-        $queries = DoctrineBootstrap::$conn->queries;
-        require __DIR__ . '/../../install/data/installer_sqlstatements.php';
-        $expected   = [];
-        $notExpected = [];
-        foreach ($sql_upgrade_statements as $version => $statements) {
-            foreach ($statements as $sql) {
-                if (version_compare($version, '0.9.6', '>')) {
+            $migrated = array_map(
+                fn($v) => (string) $v,
+                \Doctrine\Migrations\DependencyFactory::$instance->migrated
+            );
+            $this->assertContains($latest, $migrated, 'Latest migration was not applied');
+
+            $queries = DoctrineBootstrap::$conn->queries;
+            require __DIR__ . '/../../install/data/installer_sqlstatements.php';
+            $expected = [];
+            foreach ($sql_upgrade_statements as $statements) {
+                foreach ($statements as $sql) {
                     $expected[] = $sql;
-                } else {
-                    $notExpected[] = $sql;
                 }
             }
+            $expectedCount = array_count_values($expected);
+            $executedCount = array_count_values($queries);
+            foreach ($expectedCount as $sql => $count) {
+                $this->assertGreaterThanOrEqual(
+                    $count,
+                    $executedCount[$sql] ?? 0,
+                    'Installer SQL statement was not executed: ' . $sql
+                );
+            }
+
+            $this->assertStringContainsString('superuser account', $outputText);
         }
-        $expectedCount = array_count_values($expected);
-        $executedCount = array_count_values($queries);
-        foreach ($expectedCount as $sql => $count) {
-            $this->assertGreaterThanOrEqual(
-                $count,
-                $executedCount[$sql] ?? 0,
-                'Upgrade SQL statement was not executed: ' . $sql
-            );
-        }
-        foreach ($notExpected as $sql) {
-            $this->assertArrayNotHasKey(
-                $sql,
-                $executedCount,
-                'Unexpected SQL statement executed during upgrade: ' . $sql
-            );
+
+        public function testStage9RunsOnlyNewerInstallerStatementsOnUpgrade(): void
+        {
+            global $session;
+
+            $session['dbinfo']['upgrade'] = true;
+            $session['fromversion']       = '0.9.6';
+
+            $conn = new \Lotgd\Tests\Stubs\DoctrineConnection();
+            DoctrineBootstrap::$conn = $conn;
+            \Lotgd\MySQL\Database::$doctrineConnection = $conn;
+
+            $installer = new Installer();
+            $installer->runStage(9);
+
+            $queries = DoctrineBootstrap::$conn->queries;
+            require __DIR__ . '/../../install/data/installer_sqlstatements.php';
+            $expected   = [];
+            $notExpected = [];
+            foreach ($sql_upgrade_statements as $version => $statements) {
+                foreach ($statements as $sql) {
+                    if (version_compare($version, '0.9.6', '>')) {
+                        $expected[] = $sql;
+                    } else {
+                        $notExpected[] = $sql;
+                    }
+                }
+            }
+            $expectedCount = array_count_values($expected);
+            $executedCount = array_count_values($queries);
+            foreach ($expectedCount as $sql => $count) {
+                $this->assertGreaterThanOrEqual(
+                    $count,
+                    $executedCount[$sql] ?? 0,
+                    'Upgrade SQL statement was not executed: ' . $sql
+                );
+            }
+            foreach ($notExpected as $sql) {
+                $this->assertArrayNotHasKey(
+                    $sql,
+                    $executedCount,
+                    'Unexpected SQL statement executed during upgrade: ' . $sql
+                );
+            }
         }
     }
-}
 
 }
-

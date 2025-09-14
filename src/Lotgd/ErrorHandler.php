@@ -155,8 +155,10 @@ class ErrorHandler
         $data = DataCache::getInstance()->datacache('error_notify', 86400);
         if (!is_array($data)) {
             $data = ['firstrun' => false, 'errors' => []];
-            if ($settings->getSetting('usedatacache', 0)
-                && !DataCache::getInstance()->updatedatacache('error_notify', $data)) {
+            if (
+                $settings->getSetting('usedatacache', 0)
+                && !DataCache::getInstance()->updatedatacache('error_notify', $data)
+            ) {
                 error_log('Unable to write datacache for error_notify');
             }
         } else {
@@ -201,8 +203,10 @@ class ErrorHandler
                 $output->debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$msg]) / 60, 2) . ' minutes.', true);
             }
         }
-        if ($settings->getSetting('usedatacache', 0)
-            && ! DataCache::getInstance()->updatedatacache('error_notify', $data)) {
+        if (
+            $settings->getSetting('usedatacache', 0)
+            && ! DataCache::getInstance()->updatedatacache('error_notify', $data)
+        ) {
             error_log('Unable to write datacache for error_notify');
         }
         $output->debug($data, true);

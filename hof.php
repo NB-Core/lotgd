@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-
 // translator ready
 // addnews ready
 // mail ready

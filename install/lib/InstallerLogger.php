@@ -17,8 +17,10 @@ class InstallerLogger
         }
 
         $defaultDir = __DIR__ . '/../errors';
-        if ((is_dir($defaultDir) && is_writable($defaultDir))
-            || (!is_dir($defaultDir) && is_writable(dirname($defaultDir)))) {
+        if (
+            (is_dir($defaultDir) && is_writable($defaultDir))
+            || (!is_dir($defaultDir) && is_writable(dirname($defaultDir)))
+        ) {
             return $defaultDir . '/install.log';
         }
 

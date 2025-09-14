@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+
 // translator ready
 // addnews ready
 // mail ready

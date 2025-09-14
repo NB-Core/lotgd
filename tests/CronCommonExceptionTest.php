@@ -25,4 +25,3 @@ final class CronCommonExceptionTest extends TestCase
         unlink($logFile);
     }
 }
-

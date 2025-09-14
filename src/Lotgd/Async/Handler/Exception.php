@@ -10,4 +10,3 @@ namespace Lotgd\Async\Handler;
 class Exception extends \Exception
 {
 }
-

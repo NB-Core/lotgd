@@ -63,4 +63,3 @@ final class GameLogSystemLabelTest extends TestCase
         $this->assertStringContainsString('System: Something happened', $forms_output);
     }
 }
-

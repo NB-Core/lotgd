@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 

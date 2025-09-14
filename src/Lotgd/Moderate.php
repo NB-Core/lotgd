@@ -16,7 +16,6 @@ use Lotgd\Sanitize;
 use Lotgd\Http;
 use Lotgd\DateTime;
 use Lotgd\PhpGenericEnvironment;
-
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\HolidayText;
@@ -318,30 +317,30 @@ class Moderate
                 $x = strpos($row['comment'], $ft);
                 if ($x !== false) {
                     if ($linkbios) {
-                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
+                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT,)) . "`0<a href='$link' style='text-decoration: none'>\n`&{$row['name']}`0</a>\n`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT,)) . "`0`n";
                     } else {
-                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
+                        $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT,)) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT,)) . "`0`n";
                     }
-                    $rawc[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
+                    $rawc[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT,)) . "`0`&{$row['name']}`0`& " . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT,)) . "`0`n";
                 }
             }
 
             if ($ft == '/game' && !$row['name']) {
                 $x = strpos($row['comment'], $ft);
                 if ($x !== false) {
-                    $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT, )) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT, )) . "`0`n";
+                    $op[$i] = str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], 0, $x), ENT_COMPAT,)) . "`0`&" . str_replace('&amp;', '&', HTMLEntities(substr($row['comment'], $x + strlen($ft)), ENT_COMPAT,)) . "`0`n";
                 }
             }
 
             if (!array_key_exists($i, $op) || $op[$i] == '') {
                 if ($linkbios) {
-                    $op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, )) . "`3\"`0`n";
+                    $op[$i] = "`0<a href='$link' style='text-decoration: none'>`&{$row['name']}`0</a>`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT,)) . "`3\"`0`n";
                 } elseif (substr($ft, 0, 5) == '/game' && !$row['name']) {
-                    $op[$i] = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, ));
+                    $op[$i] = str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT,));
                 } else {
-                    $op[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, )) . "`3\"`0`n";
+                    $op[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT,)) . "`3\"`0`n";
                 }
-                $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT, )) . "`3\"`0`n";
+                $rawc[$i] = "`&{$row['name']}`3 says, \"`#" . str_replace('&amp;', '&', HTMLEntities($row['comment'], ENT_COMPAT,)) . "`3\"`0`n";
             }
 
             $session['user']['prefs']['timeoffset'] = round((float)$session['user']['prefs']['timeoffset'], 1);
@@ -371,7 +370,7 @@ class Moderate
             $auth[$i] = $row['author'];
             if (isset($rawc[$i])) {
                 $rawc[$i] = Sanitize::fullSanitize($rawc[$i]);
-                $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES, );
+                $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES,);
             }
         }
         $i--;
@@ -427,11 +426,11 @@ class Moderate
         if ($moderating) {
             $scriptname = ScriptName::current() . '.php';
             Navigation::add('', "$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']));
-            $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT, );
-            $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT, );
-            $mod_Del_confirm = addslashes(htmlentities(Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT, ));
+            $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT,);
+            $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT,);
+            $mod_Del_confirm = addslashes(htmlentities(Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT,));
             $mod_reason = Translator::translateInline('Reason:');
-            $mod_reason_desc = htmlentities(Translator::translateInline('Banned for comments you posted.'), ENT_COMPAT, );
+            $mod_reason_desc = htmlentities(Translator::translateInline('Banned for comments you posted.'), ENT_COMPAT,);
 
             $output->outputNotl("<form action='$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']) . "' method='POST'>", true);
             $output->outputNotl("<input type='submit' class='button' value=\"$mod_Del1\">", true);

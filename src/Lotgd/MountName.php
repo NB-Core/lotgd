@@ -6,6 +6,7 @@ namespace Lotgd;
 
 use Lotgd\Translator;
 use Lotgd\Mounts;
+
 /**
  * Helper for retrieving the player mount names.
  */

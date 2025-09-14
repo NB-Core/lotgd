@@ -11,7 +11,6 @@ declare(strict_types=1);
 namespace Lotgd\Installer;
 
 use Lotgd\MySQL\Database;
-
 use Lotgd\Output;
 use Lotgd\Http;
 use Lotgd\Nav;

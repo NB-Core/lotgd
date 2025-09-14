@@ -7,8 +7,8 @@ declare(strict_types=1);
  */
 
 namespace Lotgd\MySQL;
-use Lotgd\Settings;
 
+use Lotgd\Settings;
 use Lotgd\Backtrace;
 use Lotgd\DataCache;
 use Lotgd\DateTime;

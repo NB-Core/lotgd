@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+
 /**
  * FAQ page for the multiple cities module.
  */

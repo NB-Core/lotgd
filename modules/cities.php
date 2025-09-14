@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\Translator;
 use Lotgd\Mounts;
+
 /**
  * Core module handling multiple cities and travel events.
  */

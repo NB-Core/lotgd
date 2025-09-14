@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Lotgd;
+
 use Lotgd\Settings;
 use Lotgd\DumpItem;
 use Lotgd\Modules\HookHandler;
@@ -605,7 +606,7 @@ JS;
                     $output->rawOutput("<script type=\"text/javascript\">function cincrease(target, value){  if (target.cols + value > 3 && target.cols + value < 150) target.cols = target.cols + value;}</script>");
                     $output->rawOutput("<input type='button' onClick=\"increase(document.getElementById('$entityId'),1);\" value='+' accesskey='+'><input type='button' onClick=\"increase(document.getElementById('$entityId'),-1);\" value='-' accesskey='-'>");
                     $output->rawOutput("<input type='button' onClick=\"cincrease(document.getElementById('$entityId'),-1);\" value='<-'><input type='button' onClick=\"cincrease(document.getElementById('$entityId'),1);\" value='->' accesskey='-'><br>");
-                $output->rawOutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, $charset) . '</textarea>');
+                    $output->rawOutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, $charset) . '</textarea>');
                 } else {
                     $output->rawOutput("<textarea id='$entityId' class='input' name='$keyout' cols='$cols' rows='5'>" . htmlentities($text, ENT_COMPAT, $charset) . '</textarea>');
                 }

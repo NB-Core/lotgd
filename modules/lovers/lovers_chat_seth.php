@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+
 function lovers_chat_seth()
 {
     global $session;

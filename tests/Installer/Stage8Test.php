@@ -53,4 +53,3 @@ final class Stage8Test extends TestCase
         $this->assertTrue(true); // No warnings were raised
     }
 }
-

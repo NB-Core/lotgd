@@ -450,10 +450,10 @@ class PageParts
                         $ret .= $output->appoencode(Translator::translateInline("`iNone`i"));
                     }
                 }
-            if (Settings::hasInstance()) {
-                $settings->saveSetting("OnlineCount", $onlinecount);
-                $settings->saveSetting("OnlineCountLast", strtotime("now"));
-            }
+                if (Settings::hasInstance()) {
+                    $settings->saveSetting("OnlineCount", $onlinecount);
+                    $settings->saveSetting("OnlineCountLast", strtotime("now"));
+                }
                 DataCache::getInstance()->updatedatacache($cacheKey, $ret);
             }
             return $ret;

@@ -1,7 +1,7 @@
 <?php
+
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-
 use Lotgd\Commentary;
 use Lotgd\Accounts;
 use Lotgd\Output;

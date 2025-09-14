@@ -7,8 +7,8 @@ declare(strict_types=1);
  */
 
 namespace Lotgd;
-use Lotgd\Settings;
 
+use Lotgd\Settings;
 use Lotgd\ServerFunctions;
 use Lotgd\Cookies;
 use Lotgd\Modules\HookHandler;

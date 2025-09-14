@@ -13,7 +13,7 @@ use Lotgd\Buffs;
 use Lotgd\Doctrine\Bootstrap;
 use Lotgd\Entity\Account;
 
-use const \DATETIME_DATEMIN;
+use const DATETIME_DATEMIN;
 
 class Accounts
 {

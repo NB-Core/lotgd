@@ -118,4 +118,3 @@ final class RollbackTest extends TestCase
         $this->assertStringContainsString('Access denied for user', $output);
     }
 }
-

@@ -74,4 +74,3 @@ final class FetchAccountsToExpireQueryTest extends TestCase
         yield 'none' => [0, 0, 0];
     }
 }
-

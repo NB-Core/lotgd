@@ -92,8 +92,12 @@ namespace Lotgd\Tests {
                 $userid = 1;
                 $userinfo = [];
                 $output = new class {
-                    public function outputNotl(string $format, mixed ...$args): void {}
-                    public function output(string $format, mixed ...$args): void {}
+                    public function outputNotl(string $format, mixed ...$args): void
+                    {
+                    }
+                    public function output(string $format, mixed ...$args): void
+                    {
+                    }
                 };
                 require __DIR__ . '/../pages/user/user_save.php';
             };
@@ -105,4 +109,3 @@ namespace Lotgd\Tests {
         }
     }
 }
-

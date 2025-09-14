@@ -62,7 +62,6 @@ namespace Lotgd\Tests\Ajax {
             };
 
             require_once __DIR__ . '/../bootstrap.php';
-
         }
 
         public function testTimeoutWarningIsReturned(): void

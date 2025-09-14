@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Translator;
+
 /**
  * \file clan.php
  * This file contains the base for the clans. This feature can be deactivated in the grotto.

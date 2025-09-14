@@ -37,93 +37,93 @@ namespace {
 
 namespace Lotgd\Tests\Modules\Settings {
 
-use Lotgd\Tests\Stubs\Database;
-use PHPUnit\Framework\TestCase;
-use Lotgd\Modules\ModuleManager;
+    use Lotgd\Tests\Stubs\Database;
+    use PHPUnit\Framework\TestCase;
+    use Lotgd\Modules\ModuleManager;
 
 /**
  * @group settings
  */
-final class ModuleSettingsTest extends TestCase
-{
-    protected function setUp(): void
+    final class ModuleSettingsTest extends TestCase
     {
-        class_exists(Database::class);
-        \Lotgd\MySQL\Database::$queryCacheResults = [];
-        \Lotgd\MySQL\Database::$lastSql = '';
-        ModuleManager::setSettings([]);
-        ModuleManager::setMostRecentModule('');
-    }
+        protected function setUp(): void
+        {
+            class_exists(Database::class);
+            \Lotgd\MySQL\Database::$queryCacheResults = [];
+            \Lotgd\MySQL\Database::$lastSql = '';
+            ModuleManager::setSettings([]);
+            ModuleManager::setMostRecentModule('');
+        }
 
-    public function testModuleSettingLifecycle(): void
-    {
-        ModuleManager::setMostRecentModule('mymodule');
+        public function testModuleSettingLifecycle(): void
+        {
+            ModuleManager::setMostRecentModule('mymodule');
 
-        set_module_setting('key', 'value');
-        $this->assertSame('value', get_module_setting('key'));
+            set_module_setting('key', 'value');
+            $this->assertSame('value', get_module_setting('key'));
 
-        set_module_setting('counter', '0');
-        increment_module_setting('counter');
-        increment_module_setting('counter');
-        $this->assertSame(2.0, get_module_setting('counter'));
+            set_module_setting('counter', '0');
+            increment_module_setting('counter');
+            increment_module_setting('counter');
+            $this->assertSame(2.0, get_module_setting('counter'));
 
-        clear_module_settings();
-        $this->assertNull(get_module_setting('key'));
-        $this->assertNull(get_module_setting('counter'));
-    }
+            clear_module_settings();
+            $this->assertNull(get_module_setting('key'));
+            $this->assertNull(get_module_setting('counter'));
+        }
 
-    public function testModuleSettingLifecycleWithEmptyModule(): void
-    {
-        set_module_setting('key', 'value', '');
-        $this->assertSame('value', get_module_setting('key', ''));
+        public function testModuleSettingLifecycleWithEmptyModule(): void
+        {
+            set_module_setting('key', 'value', '');
+            $this->assertSame('value', get_module_setting('key', ''));
 
-        set_module_setting('counter', '0', '');
-        increment_module_setting('counter', 1, '');
-        increment_module_setting('counter', 1, '');
-        $this->assertSame(2.0, get_module_setting('counter', ''));
+            set_module_setting('counter', '0', '');
+            increment_module_setting('counter', 1, '');
+            increment_module_setting('counter', 1, '');
+            $this->assertSame(2.0, get_module_setting('counter', ''));
 
-        clear_module_settings('');
-        $this->assertNull(get_module_setting('key', ''));
-        $this->assertNull(get_module_setting('counter', ''));
-    }
+            clear_module_settings('');
+            $this->assertNull(get_module_setting('key', ''));
+            $this->assertNull(get_module_setting('counter', ''));
+        }
 
-    public function testGetAllModuleSettings(): void
-    {
-        ModuleManager::setMostRecentModule('mymodule');
+        public function testGetAllModuleSettings(): void
+        {
+            ModuleManager::setMostRecentModule('mymodule');
 
-        set_module_setting('key', 'value');
-        set_module_setting('counter', '0');
-        increment_module_setting('counter');
-        increment_module_setting('counter');
+            set_module_setting('key', 'value');
+            set_module_setting('counter', '0');
+            increment_module_setting('counter');
+            increment_module_setting('counter');
 
-        $settings = get_all_module_settings('mymodule');
+            $settings = get_all_module_settings('mymodule');
 
-        $this->assertSame([
+            $this->assertSame([
             'key' => 'value',
             'counter' => 2.0,
-        ], $settings);
-    }
+            ], $settings);
+        }
 
-    public function testIncrementModuleSettingWithNegativeAndFractionalValues(): void
-    {
-        ModuleManager::setMostRecentModule('mymodule');
+        public function testIncrementModuleSettingWithNegativeAndFractionalValues(): void
+        {
+            ModuleManager::setMostRecentModule('mymodule');
 
-        foreach ([-1.0, 1.5] as $increment) {
-            set_module_setting('counter', '0');
-            increment_module_setting('counter', $increment);
+            foreach ([-1.0, 1.5] as $increment) {
+                set_module_setting('counter', '0');
+                increment_module_setting('counter', $increment);
 
-            $this->assertSame($increment, get_module_setting('counter'), "increment {$increment}");
+                $this->assertSame($increment, get_module_setting('counter'), "increment {$increment}");
+            }
+        }
+
+        public function testSetModuleSettingAcceptsInteger(): void
+        {
+            ModuleManager::setMostRecentModule('mymodule');
+
+            set_module_setting('number', 42);
+
+            $this->assertSame(42, get_module_setting('number'));
         }
     }
-
-    public function testSetModuleSettingAcceptsInteger(): void
-    {
-        ModuleManager::setMostRecentModule('mymodule');
-
-        set_module_setting('number', 42);
-
-        $this->assertSame(42, get_module_setting('number'));
-    }
-}
 
 }

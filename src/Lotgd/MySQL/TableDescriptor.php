@@ -6,7 +6,6 @@ namespace Lotgd\MySQL;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Output;
-
 use RuntimeException;
 
 use const DATETIME_DATEMIN;
@@ -260,8 +259,10 @@ class TableDescriptor
                     );
                 }
                 $newsql = self::descriptorCreateSql($val);
-                if (isset($existing[$key]) && isset($columnsNeedConversion[$existing[$key]['name']])
-                    && $columnsNeedConversion[$existing[$key]['name']]['newsql'] === null) {
+                if (
+                    isset($existing[$key]) && isset($columnsNeedConversion[$existing[$key]['name']])
+                    && $columnsNeedConversion[$existing[$key]['name']]['newsql'] === null
+                ) {
                     $columnsNeedConversion[$existing[$key]['name']]['newsql'] = $newsql;
                 }
                 $needsPostConvert = ($hasExplicitCharset && $colCharset !== $tableCharset)

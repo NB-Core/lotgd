@@ -56,4 +56,3 @@ register_shutdown_function(function () use ($commonFile, $backupFile): void {
 });
 
 require __DIR__ . '/../cron.php';
-

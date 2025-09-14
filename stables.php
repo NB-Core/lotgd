@@ -1,7 +1,7 @@
 <?php
+
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-
 use Lotgd\Buffs;
 use Lotgd\MountName;
 use Lotgd\Mounts;

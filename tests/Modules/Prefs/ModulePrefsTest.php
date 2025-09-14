@@ -37,51 +37,51 @@ namespace {
 
 namespace Lotgd\Tests\Modules\Prefs {
 
-use Lotgd\Modules;
-use Lotgd\Modules\ModuleManager;
-use Lotgd\Tests\Stubs\Database;
-use Lotgd\Tests\Stubs\DoctrineConnection;
-use Lotgd\Tests\Stubs\DoctrineResult;
-use PHPUnit\Framework\TestCase;
-use ReflectionClass;
+    use Lotgd\Modules;
+    use Lotgd\Modules\ModuleManager;
+    use Lotgd\Tests\Stubs\Database;
+    use Lotgd\Tests\Stubs\DoctrineConnection;
+    use Lotgd\Tests\Stubs\DoctrineResult;
+    use PHPUnit\Framework\TestCase;
+    use ReflectionClass;
 
 /**
  * @group prefs
  */
-final class ModulePrefsTest extends TestCase
-{
-    private string $moduleFile;
-
-    protected function setUp(): void
+    final class ModulePrefsTest extends TestCase
     {
-        class_exists(Database::class);
-        Database::$queryCacheResults = [];
-        Database::$lastSql           = '';
-        $conn                        = new class extends DoctrineConnection {
-            public function executeQuery(string $sql): DoctrineResult
-            {
-                $this->queries[] = $sql;
-                return new DoctrineResult([]);
-            }
-        };
-        Database::$doctrineConnection        = $conn;
-        \Lotgd\Doctrine\Bootstrap::$conn = $conn;
+        private string $moduleFile;
 
-        global $session;
-        $session         = ['user' => ['acctid' => 1, 'loggedin' => true]];
-        ModuleManager::setPrefs([]);
-        ModuleManager::setMostRecentModule('');
+        protected function setUp(): void
+        {
+            class_exists(Database::class);
+            Database::$queryCacheResults = [];
+            Database::$lastSql           = '';
+            $conn                        = new class extends DoctrineConnection {
+                public function executeQuery(string $sql): DoctrineResult
+                {
+                    $this->queries[] = $sql;
+                    return new DoctrineResult([]);
+                }
+            };
+            Database::$doctrineConnection        = $conn;
+            \Lotgd\Doctrine\Bootstrap::$conn = $conn;
 
-        $ref  = new ReflectionClass(Modules::class);
-        $prop = $ref->getProperty('injectedModules');
-        $prop->setAccessible(true);
-        $prop->setValue(null, [1 => [], 0 => []]);
-        $prop = $ref->getProperty('modulehookQueries');
-        $prop->setAccessible(true);
-        $prop->setValue(null, []);
+            global $session;
+            $session         = ['user' => ['acctid' => 1, 'loggedin' => true]];
+            ModuleManager::setPrefs([]);
+            ModuleManager::setMostRecentModule('');
 
-        $this->moduleFile = dirname(__DIR__, 3) . '/modules/modA.php';
-        file_put_contents($this->moduleFile, <<<'MODULE'
+            $ref  = new ReflectionClass(Modules::class);
+            $prop = $ref->getProperty('injectedModules');
+            $prop->setAccessible(true);
+            $prop->setValue(null, [1 => [], 0 => []]);
+            $prop = $ref->getProperty('modulehookQueries');
+            $prop->setAccessible(true);
+            $prop->setValue(null, []);
+
+            $this->moduleFile = dirname(__DIR__, 3) . '/modules/modA.php';
+            file_put_contents($this->moduleFile, <<<'MODULE'
 <?php
 
 declare(strict_types=1);
@@ -113,122 +113,118 @@ function modA_uninstall(): bool
     return true;
 }
 MODULE
-        );
+            );
 
-        $filemoddate = date('Y-m-d H:i:s', filemtime($this->moduleFile));
-        Database::$queryCacheResults['inject-modA'] = [
+            $filemoddate = date('Y-m-d H:i:s', filemtime($this->moduleFile));
+            Database::$queryCacheResults['inject-modA'] = [
             [
                 'active'     => 1,
                 'filemoddate' => $filemoddate,
                 'infokeys'   => '|name|version|author|category|description|download|requires|prefs|',
                 'version'    => '1.0',
             ],
-        ];
-
-    }
-
-    protected function tearDown(): void
-    {
-        unlink($this->moduleFile);
-        unset(Database::$queryCacheResults['inject-modA']);
-        Database::$doctrineConnection = null;
-        \Lotgd\Doctrine\Bootstrap::$conn = null;
-    }
-
-    /**
-     * @param callable    $set
-     * @param callable    $get
-     * @param callable    $inc
-     * @param callable    $clear
-     * @param string|null $module
-     * @param int|null    $user
-     * @param mixed       $expected
-     */
-    private function runLifecycle(callable $set, callable $get, callable $inc, callable $clear, ?string $module, false|int|null $user, $expected): void
-    {
-        if ($user === false) {
-            $user = null;
+            ];
         }
 
-        $set('flag', 'on', $module, $user);
-        $set('count', 0, $module, $user);
-        self::assertSame('on', $get('flag', $module, $user));
+        protected function tearDown(): void
+        {
+            unlink($this->moduleFile);
+            unset(Database::$queryCacheResults['inject-modA']);
+            Database::$doctrineConnection = null;
+            \Lotgd\Doctrine\Bootstrap::$conn = null;
+        }
 
-        $inc('count', 1, $module, $user);
-        $inc('count', 1, $module, $user);
-        $inc('count', 1, $module, $user);
-        self::assertSame(3.0, $get('count', $module, $user));
+        /**
+         * @param callable    $set
+         * @param callable    $get
+         * @param callable    $inc
+         * @param callable    $clear
+         * @param string|null $module
+         * @param int|null    $user
+         * @param mixed       $expected
+         */
+        private function runLifecycle(callable $set, callable $get, callable $inc, callable $clear, ?string $module, false|int|null $user, $expected): void
+        {
+            if ($user === false) {
+                $user = null;
+            }
 
-        $clear('flag', $module, $user);
-        self::assertSame($expected, $get('flag', $module, $user));
-    }
+            $set('flag', 'on', $module, $user);
+            $set('count', 0, $module, $user);
+            self::assertSame('on', $get('flag', $module, $user));
 
-    public function testWrapperExplicitUserAndModule(): void
-    {
-        $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', 'modA', 1, 'off');
-    }
+            $inc('count', 1, $module, $user);
+            $inc('count', 1, $module, $user);
+            $inc('count', 1, $module, $user);
+            self::assertSame(3.0, $get('count', $module, $user));
 
-    public function testWrapperFallbackUser(): void
-    {
-        $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', 'modA', null, 'off');
-    }
+            $clear('flag', $module, $user);
+            self::assertSame($expected, $get('flag', $module, $user));
+        }
 
-    public function testWrapperEmptyModule(): void
-    {
-        $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', '', 1, null);
-    }
+        public function testWrapperExplicitUserAndModule(): void
+        {
+            $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', 'modA', 1, 'off');
+        }
 
-    public function testWrapperFalseUser(): void
-    {
-        $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', 'modA', false, 'off');
-    }
+        public function testWrapperFallbackUser(): void
+        {
+            $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', 'modA', null, 'off');
+        }
 
-    public function testClassExplicitUserAndModule(): void
-    {
-        $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', 1, 'off');
-    }
+        public function testWrapperEmptyModule(): void
+        {
+            $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', '', 1, null);
+        }
 
-    public function testClassFallbackUser(): void
-    {
-        $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', null, 'off');
-    }
+        public function testWrapperFalseUser(): void
+        {
+            $this->runLifecycle('set_module_pref', 'get_module_pref', 'increment_module_pref', 'clear_module_pref', 'modA', false, 'off');
+        }
 
-    public function testClassEmptyModule(): void
-    {
-        $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], '', 1, null);
-    }
+        public function testClassExplicitUserAndModule(): void
+        {
+            $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', 1, 'off');
+        }
 
-    public function testGetAllModulePrefs(): void
-    {
-        set_module_pref('flag', 'on', 'modA', 1);
-        set_module_pref('count', 0, 'modA', 1);
-        increment_module_pref('count', 1, 'modA', 1);
-        increment_module_pref('count', 1, 'modA', 1);
+        public function testClassFallbackUser(): void
+        {
+            $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', null, 'off');
+        }
 
-        $prefs = get_all_module_prefs('modA', 1);
+        public function testClassEmptyModule(): void
+        {
+            $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], '', 1, null);
+        }
 
-        self::assertSame([
+        public function testGetAllModulePrefs(): void
+        {
+            set_module_pref('flag', 'on', 'modA', 1);
+            set_module_pref('count', 0, 'modA', 1);
+            increment_module_pref('count', 1, 'modA', 1);
+            increment_module_pref('count', 1, 'modA', 1);
+
+            $prefs = get_all_module_prefs('modA', 1);
+
+            self::assertSame([
             'flag' => 'on',
             'count' => 2.0,
-        ], $prefs);
-    } // end testGetAllModulePrefs
+            ], $prefs);
+        } // end testGetAllModulePrefs
 
-    public function testIncrementModulePrefWithNegativeAndFractionalValues(): void
-    {
-        foreach ([-1.0, 1.5] as $increment) {
-            set_module_pref('count', 0, 'modA', 1);
-            increment_module_pref('count', $increment, 'modA', 1);
+        public function testIncrementModulePrefWithNegativeAndFractionalValues(): void
+        {
+            foreach ([-1.0, 1.5] as $increment) {
+                set_module_pref('count', 0, 'modA', 1);
+                increment_module_pref('count', $increment, 'modA', 1);
 
-            self::assertSame($increment, get_module_pref('count', 'modA', 1), "increment {$increment}");
+                self::assertSame($increment, get_module_pref('count', 'modA', 1), "increment {$increment}");
+            }
+        }
+
+        public function testClassFalseUser(): void
+        {
+            $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', false, 'off');
         }
     }
-
-    public function testClassFalseUser(): void
-    {
-        $this->runLifecycle([Modules::class, 'setModulePref'], [Modules::class, 'getModulePref'], [Modules::class, 'incrementModulePref'], [Modules::class, 'clearModulePref'], 'modA', false, 'off');
-    }
 }
-}
-
-
-

@@ -1,7 +1,7 @@
 <?php
+
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-
 use Lotgd\Motd;
 use Lotgd\Battle;
 use Lotgd\Output;

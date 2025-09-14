@@ -15,7 +15,6 @@ use Lotgd\DateTime;
 use Lotgd\Censor;
 use Lotgd\Redirect;
 use Lotgd\PhpGenericEnvironment;
-
 use Lotgd\MySQL\Database;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
@@ -78,14 +77,14 @@ class Commentary
         if (is_array(self::$comsecs) && count(self::$comsecs)) {
             return self::$comsecs;
         }
-      
+
         $vname = $settings->getSetting('villagename', LOCATION_FIELDS);
         $iname = $settings->getSetting('innname', LOCATION_INN);
         $translator = Translator::getInstance();
         $translator->setSchema('commentary');
         self::$comsecs['village'] = $translator->sprintfTranslate('%s Square', $vname);
 
-      if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
+        if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
             self::$comsecs['superuser'] = Translator::translateInline('Grotto');
         }
         self::$comsecs['shade'] = Translator::translateInline('Land of the Shades');
@@ -538,7 +537,7 @@ SQL;
     ): ?string {
         global $session;
         $requestUri = PhpGenericEnvironment::getRequestUri();
-        
+
         $output = Output::getInstance();
         $translator = Translator::getInstance();
 

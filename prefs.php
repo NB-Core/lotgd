@@ -1,7 +1,7 @@
 <?php
+
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-
 // addnews ready
 use Lotgd\Forms;
 use Lotgd\Template;
@@ -34,7 +34,7 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
        $userid = (int)httpget('userid');
     require_once __DIR__ . "/lib/charcleanup.php";
     if (char_cleanup($userid, CHAR_DELETE_SUICIDE)) {
-       $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
+        $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
         Database::query($sql);
         output("Your character has been deleted!");
         AddNews::add("`#%s quietly passed from this world.", $session['user']['name']);

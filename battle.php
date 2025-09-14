@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+
 /**
  * \file battle.php
  * This file holds the generic battle code that gets normally require()'d and executes basic fight functions.

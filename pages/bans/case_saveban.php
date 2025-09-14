@@ -71,5 +71,5 @@ if ($sql != "") {
         }
     } else {
         $output->output("`\$No account-ids found for that IP/ID!`n`n`0");
-}
+    }
 }

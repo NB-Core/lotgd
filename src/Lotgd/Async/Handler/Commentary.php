@@ -10,6 +10,7 @@ use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Util\ScriptName;
 use Lotgd\Output;
 use Lotgd\Async\Handler\Exception;
+
 use function Jaxon\jaxon;
 
 /**
@@ -112,13 +113,13 @@ class Commentary
         if ($lastId === null) {
             $lastId = 0; // fallback
         }
-        
+
         // Ensure proper types
         $section = (string) $section;
         $lastId = (int) $lastId;
-        
+
         $response = jaxon()->newResponse();
-        
+
         try {
             $response->appendResponse((new Mail())->mailStatus(true));
         } catch (\Throwable $e) {
@@ -136,7 +137,7 @@ class Commentary
         } catch (\Throwable $e) {
             throw new Exception('AJAX polling: Commentary handler error', 0, $e);
         }
-        
+
         return $response;
     }
 }

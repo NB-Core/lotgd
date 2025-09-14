@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Translator;
+
 // translator ready
 // addnews ready
 // mail ready

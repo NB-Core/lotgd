@@ -180,7 +180,7 @@ function charrestore_dohook(string $hookname, array $args): array
             }
 
             return $args;
-        }
+    }
 
     return $args;
 }

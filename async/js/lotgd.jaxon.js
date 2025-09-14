@@ -8,16 +8,16 @@
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     // Ensure jaxon config exists
     if (typeof jaxon !== 'undefined') {
         try {
-            if(typeof jaxon.config == undefined)
+            if (typeof jaxon.config == undefined) {
                 jaxon.config = {};
-        }
-        catch(e) {
+            }
+        } catch (e) {
             jaxon = jaxon || {};
             jaxon.config = {};
         }
@@ -35,7 +35,7 @@
 
         // Register command handlers when DOM is ready
         if (jaxon.dom && jaxon.dom.ready) {
-            jaxon.dom.ready(function() {
+            jaxon.dom.ready(function () {
                 if (jaxon.command && jaxon.command.handler) {
                     jaxon.command.handler.register("jquery", (args) => jaxon.cmd.script.execute(args));
 
@@ -66,44 +66,43 @@
     window.Lotgd = window.Lotgd || {};
     window.Lotgd.Async = window.Lotgd.Async || {};
     window.Lotgd.Async.Handler = window.Lotgd.Async.Handler || {};
-    
+
     // Create empty handler objects - PHP will add the methods
     window.Lotgd.Async.Handler.Mail = window.Lotgd.Async.Handler.Mail || {};
     window.Lotgd.Async.Handler.Timeout = window.Lotgd.Async.Handler.Timeout || {};
     window.Lotgd.Async.Handler.Commentary = window.Lotgd.Async.Handler.Commentary || {};
-    
+
     // Create the JaxonLotgd alias for backward compatibility
     window.JaxonLotgd = {
         Async: {
             Handler: window.Lotgd.Async.Handler
         }
     };
-    
+
     // Mark as ready
     window.JaxonLotgdReady = true;
-    
+
     // Dispatch ready event
     if (typeof window.CustomEvent === 'function') {
         window.dispatchEvent(new CustomEvent('JaxonLotgdReady'));
     }
-    
+
     console.log('Clean Jaxon namespace created: Lotgd.Async.Handler');
-    
+
     // DEBUGGING: Start polling immediately without waiting for jQuery
     // This should tell us if the problem is jQuery dependency
     console.log('DEBUG: Starting immediate polling test...');
-    setTimeout(function() {
+    setTimeout(function () {
         console.log('DEBUG: Checking polling readiness...');
         console.log('DEBUG: typeof Lotgd =', typeof window.Lotgd);
         console.log('DEBUG: JaxonLotgdReady =', window.JaxonLotgdReady);
         console.log('DEBUG: lotgd_poll_interval_ms =', typeof window.lotgd_poll_interval_ms !== 'undefined' ? window.lotgd_poll_interval_ms : 'undefined');
-        
-        if (typeof window.Lotgd !== 'undefined' 
+
+        if (typeof window.Lotgd !== 'undefined'
             && window.Lotgd.Async && window.Lotgd.Async.Handler
             && window.Lotgd.Async.Handler.Commentary
             && typeof window.Lotgd.Async.Handler.Commentary.pollUpdates === 'function'
             && typeof window.lotgd_poll_interval_ms !== 'undefined') {
-            
             console.log('DEBUG: All polling requirements met, testing manual call...');
             try {
                 window.Lotgd.Async.Handler.Commentary.pollUpdates(window.lotgd_comment_section || '', window.lotgd_lastCommentId || 0);
@@ -114,10 +113,10 @@
         } else {
             console.error('DEBUG: Polling requirements not met:', {
                 Lotgd: typeof window.Lotgd,
-                pollUpdates: typeof window.Lotgd?.Async?.Handler?.Commentary?.pollUpdates,
+                pollUpdates: typeof window.Lotgd ? .Async ? .Handler ? .Commentary ? .pollUpdates,
                 pollInterval: typeof window.lotgd_poll_interval_ms
             });
         }
     }, 2000);
-    
+
 })();

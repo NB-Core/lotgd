@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
-
 use Lotgd\Mail;
 use Lotgd\Sanitize;
 use Lotgd\Translator;

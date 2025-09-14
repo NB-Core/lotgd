@@ -38,4 +38,3 @@ namespace Lotgd\Tests\Modules\Installer {
         }
     }
 }
-

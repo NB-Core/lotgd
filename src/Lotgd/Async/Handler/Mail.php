@@ -9,6 +9,7 @@ use Lotgd\PageParts;
 use Lotgd\Settings;
 use Lotgd\Translator;
 use Jaxon\Response\Response;
+
 use function Jaxon\jaxon;
 
 /**

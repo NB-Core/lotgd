@@ -96,8 +96,12 @@ namespace Lotgd\Tests {
             ];
             $_SERVER['REMOTE_ADDR'] = '1.2.3.4';
             $GLOBALS['output'] = new class {
-                public function output(string $format, ...$args): void {}
-                public function outputNotl(string $format, ...$args): void {}
+                public function output(string $format, ...$args): void
+                {
+                }
+                public function outputNotl(string $format, ...$args): void
+                {
+                }
             };
         }
 
@@ -130,9 +134,15 @@ namespace Lotgd\Tests {
             $_GET = [];
             $_POST = [];
             $GLOBALS['output'] = new class {
-                public function rawOutput(string $text): void {}
-                public function output(string $format, ...$args): void {}
-                public function outputNotl(string $format, ...$args): void {}
+                public function rawOutput(string $text): void
+                {
+                }
+                public function output(string $format, ...$args): void
+                {
+                }
+                public function outputNotl(string $format, ...$args): void
+                {
+                }
             };
         }
 
@@ -150,4 +160,3 @@ namespace Lotgd\Tests {
         }
     }
 }
-

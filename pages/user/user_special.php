@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 
-
 if (httppost("newday") != "") {
 #   $offset = "-".(24 / (int)getsetting("daysperday",4))." hours";
 #   $newdate = date("Y-m-d H:i:s",strtotime($offset));

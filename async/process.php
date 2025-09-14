@@ -32,7 +32,7 @@ if ($jaxon->canProcessRequest()) {
     }
 
     $_SESSION['lastrequest'] = $now;
-    
+
     try {
         $jaxon->processRequest();
     } catch (Exception $e) {

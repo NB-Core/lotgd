@@ -41,4 +41,3 @@ function nasty_word_list(): array
 {
     return Censor::nastyWordList();
 }
-

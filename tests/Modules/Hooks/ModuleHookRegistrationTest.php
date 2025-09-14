@@ -68,72 +68,72 @@ namespace Lotgd\Tests\Modules\Hooks {
 
 namespace Lotgd\Tests\Modules\Hooks {
 
-use Lotgd\Tests\Stubs\HookHandler;
-use PHPUnit\Framework\TestCase;
+    use Lotgd\Tests\Stubs\HookHandler;
+    use PHPUnit\Framework\TestCase;
 
 /**
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  * @group hooks
  */
-final class ModuleHookRegistrationTest extends TestCase
-{
-    protected function setUp(): void
+    final class ModuleHookRegistrationTest extends TestCase
     {
-        if (!class_exists('Lotgd\\Modules\\HookHandler', false)) {
-            class_alias(HookHandler::class, 'Lotgd\\Modules\\HookHandler');
+        protected function setUp(): void
+        {
+            if (!class_exists('Lotgd\\Modules\\HookHandler', false)) {
+                class_alias(HookHandler::class, 'Lotgd\\Modules\\HookHandler');
+            }
+            HookHandler::reset();
         }
-        HookHandler::reset();
+
+        public function testModuleAddEventHookForwardsParameters(): void
+        {
+            \Lotgd\Tests\Modules\Hooks\module_addeventhook('event', '50');
+
+            $this->assertSame(
+                [['method' => 'addEventHook', 'args' => ['event', '50']]],
+                HookHandler::$calls
+            );
+        }
+
+        public function testModuleDropEventHookForwardsParameters(): void
+        {
+            \Lotgd\Tests\Modules\Hooks\module_dropeventhook('event');
+
+            $this->assertSame(
+                [['method' => 'dropEventHook', 'args' => ['event']]],
+                HookHandler::$calls
+            );
+        }
+
+        public function testModuleAddHookForwardsEmptyWhenactive(): void
+        {
+            \Lotgd\Tests\Modules\Hooks\module_addhook('hook', 'callback', '');
+
+            $this->assertSame(
+                [['method' => 'addHook', 'args' => ['hook', 'callback', '']]],
+                HookHandler::$calls
+            );
+        }
+
+        public function testModuleAddHookPriorityForwardsCustomPriority(): void
+        {
+            \Lotgd\Tests\Modules\Hooks\module_addhook_priority('hook', 75, 'callback', 'active');
+
+            $this->assertSame(
+                [['method' => 'addHookPriority', 'args' => ['hook', 75, 'callback', 'active']]],
+                HookHandler::$calls
+            );
+        }
+
+        public function testModuleDropHookNonExistentIsGraceful(): void
+        {
+            \Lotgd\Tests\Modules\Hooks\module_drophook('missing');
+
+            $this->assertSame(
+                [['method' => 'dropHook', 'args' => ['missing', false]]],
+                HookHandler::$calls
+            );
+        }
     }
-
-    public function testModuleAddEventHookForwardsParameters(): void
-    {
-        \Lotgd\Tests\Modules\Hooks\module_addeventhook('event', '50');
-
-        $this->assertSame(
-            [['method' => 'addEventHook', 'args' => ['event', '50']]],
-            HookHandler::$calls
-        );
-    }
-
-    public function testModuleDropEventHookForwardsParameters(): void
-    {
-        \Lotgd\Tests\Modules\Hooks\module_dropeventhook('event');
-
-        $this->assertSame(
-            [['method' => 'dropEventHook', 'args' => ['event']]],
-            HookHandler::$calls
-        );
-    }
-
-    public function testModuleAddHookForwardsEmptyWhenactive(): void
-    {
-        \Lotgd\Tests\Modules\Hooks\module_addhook('hook', 'callback', '');
-
-        $this->assertSame(
-            [['method' => 'addHook', 'args' => ['hook', 'callback', '']]],
-            HookHandler::$calls
-        );
-    }
-
-    public function testModuleAddHookPriorityForwardsCustomPriority(): void
-    {
-        \Lotgd\Tests\Modules\Hooks\module_addhook_priority('hook', 75, 'callback', 'active');
-
-        $this->assertSame(
-            [['method' => 'addHookPriority', 'args' => ['hook', 75, 'callback', 'active']]],
-            HookHandler::$calls
-        );
-    }
-
-    public function testModuleDropHookNonExistentIsGraceful(): void
-    {
-        \Lotgd\Tests\Modules\Hooks\module_drophook('missing');
-
-        $this->assertSame(
-            [['method' => 'dropHook', 'args' => ['missing', false]]],
-            HookHandler::$calls
-        );
-    }
-}
 }

@@ -28,31 +28,31 @@ namespace Lotgd\Tests\Modules\Hooks {
 
 namespace Lotgd\Tests\Modules\Hooks {
 
-use Lotgd\Tests\Modules\ModuleWipeHooks\Stubs\HookHandler;
-use PHPUnit\Framework\TestCase;
+    use Lotgd\Tests\Modules\ModuleWipeHooks\Stubs\HookHandler;
+    use PHPUnit\Framework\TestCase;
 
 /**
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  * @group hooks
  */
-final class ModuleWipeHooksTest extends TestCase
-{
-    protected function setUp(): void
+    final class ModuleWipeHooksTest extends TestCase
     {
-        if (! class_exists('Lotgd\\Modules\\HookHandler', false)) {
-            class_alias(HookHandler::class, 'Lotgd\\Modules\\HookHandler');
+        protected function setUp(): void
+        {
+            if (! class_exists('Lotgd\\Modules\\HookHandler', false)) {
+                class_alias(HookHandler::class, 'Lotgd\\Modules\\HookHandler');
+            }
+
+            HookHandler::reset();
         }
 
-        HookHandler::reset();
-    }
+        public function testModuleWipeHooksCallsHookHandler(): void
+        {
+            \Lotgd\Tests\Modules\Hooks\module_wipehooks();
 
-    public function testModuleWipeHooksCallsHookHandler(): void
-    {
-        \Lotgd\Tests\Modules\Hooks\module_wipehooks();
-
-        $this->assertTrue(HookHandler::$wiped);
+            $this->assertTrue(HookHandler::$wiped);
+        }
     }
-}
 
 }

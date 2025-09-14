@@ -26,4 +26,3 @@ final class AccountRestorepageTest extends TestCase
         $this->assertMatchesRegularExpression("/'restorepage' => array\\(.*'default' => 'village.php'/s", $content);
     }
 }
-

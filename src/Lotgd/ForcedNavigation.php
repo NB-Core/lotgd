@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 namespace Lotgd;
-use Lotgd\Settings;
 
+use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Serialization;

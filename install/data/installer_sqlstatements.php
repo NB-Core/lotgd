@@ -1,4 +1,5 @@
 <?php
+
 use Lotgd\MySQL\Database;
 
 $creaturefields = "(creatureid,creaturename,creaturelevel,creatureweapon,creaturelose,creaturewin,creaturegold,creatureexp,creaturehealth,creatureattack,creaturedefense,creatureaiscript,createdby,forest,graveyard,oldcreatureexp)";

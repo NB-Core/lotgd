@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Modules\HookHandler;
+
 /**
  * Base setup for AJAX requests, including the Jaxon library and
  * initial JavaScript dependencies. This file prepares the page for
@@ -216,4 +217,3 @@ $pre_headscript .= $polling_script;
 $pre_headscript .= "<script src='/async/js/jquery.min.js'></script>";
 
 addnav("", "async/process.php");
-

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+
 /**
  * \file badnav.php
  * This file handles the badnavs that occurr and displays either the last pagehit or an empty page where the user can petition.
