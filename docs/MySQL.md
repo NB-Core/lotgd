@@ -144,9 +144,9 @@ try {
 
 ## Database Migrations
 
-The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory and are configured through `config/migrations.php` and `config/migrations-db.php`.
+The project uses [Doctrine Migrations](https://www.doctrine-project.org/projects/migrations.html) to manage schema changes. The migration classes live in the `migrations/` directory and are configured through `src/Lotgd/Config/migrations.php` and `src/Lotgd/Config/migrations-db.php`.
 
-`config/migrations.php` defines the migration paths. With a single database connection it contains only `migrations_paths` and all connection parameters reside in `config/migrations-db.php`. If multiple connections are required, add a `connection` key in `config/migrations.php` and return an array of credentials keyed by name from `config/migrations-db.php`.
+`src/Lotgd/Config/migrations.php` defines the migration paths. With a single database connection it contains only `migrations_paths` and all connection parameters reside in `src/Lotgd/Config/migrations-db.php`. If multiple connections are required, add a `connection` key in `src/Lotgd/Config/migrations.php` and return an array of credentials keyed by name from `src/Lotgd/Config/migrations-db.php`.
 
 ### Running Migrations
 
@@ -156,12 +156,12 @@ Execute pending migrations with the Doctrine command line tool:
 php vendor/bin/doctrine-migrations migrate
 ```
 
-The command uses the default `config/migrations.php` and `config/migrations-db.php` files. If your configuration lives elsewhere, provide their paths explicitly:
+The command uses the default `src/Lotgd/Config/migrations.php` and `src/Lotgd/Config/migrations-db.php` files. If your configuration lives elsewhere, provide their paths explicitly:
 
 ```bash
 php vendor/bin/doctrine-migrations \
-    --configuration=config/migrations.php \
-    --db-configuration=config/migrations-db.php migrate
+    --configuration=src/Lotgd/Config/migrations.php \
+    --db-configuration=src/Lotgd/Config/migrations-db.php migrate
 ```
 
 This will apply all new migrations to the configured database. During development you can generate additional migrations using `migrations:diff` or `migrations:generate`.

@@ -29,32 +29,32 @@ $repo = $entityManager->getRepository(Lotgd\Entity\Account::class);
 ## Running Migrations
 
 Schema migrations reside in the `migrations/` directory and are configured
-through two files stored in `config/`:
+through two files stored in `src/Lotgd/Config/`:
 
-* `config/migrations.php` – defines migration paths. When using a single
+* `src/Lotgd/Config/migrations.php` – defines migration paths. When using a single
   connection no additional options are required. For multiple connections you
   may specify a `connection` key to select which database configuration to use.
-* `config/migrations-db.php` – provides the database credentials. With one
+* `src/Lotgd/Config/migrations-db.php` – provides the database credentials. With one
   connection it returns the parameters directly. To support multiple connections
   return an array keyed by connection name.
 
-In a single connection setup `config/migrations.php` only lists
-`migrations_paths` and `config/migrations-db.php` contains the connection
+In a single connection setup `src/Lotgd/Config/migrations.php` only lists
+`migrations_paths` and `src/Lotgd/Config/migrations-db.php` contains the connection
 details:
 
 ```php
 <?php
-// config/migrations.php
+// src/Lotgd/Config/migrations.php
 return [
     'migrations_paths' => [
-        'Lotgd\\Migrations' => dirname(__DIR__) . '/migrations',
+        'Lotgd\\Migrations' => dirname(__DIR__, 2) . '/migrations',
     ],
 ];
 ```
 
 ```php
 <?php
-// config/migrations-db.php
+// src/Lotgd/Config/migrations-db.php
 return [
     'driver' => 'pdo_mysql',
     'host' => 'localhost',
@@ -66,8 +66,8 @@ return [
 ```
 
 If you need more than one connection, add a `connection` key in
-`config/migrations.php` and return an array of credentials keyed by name from
-`config/migrations-db.php`.
+`src/Lotgd/Config/migrations.php` and return an array of credentials keyed by name from
+`src/Lotgd/Config/migrations-db.php`.
 
 Run pending migrations:
 
@@ -76,14 +76,14 @@ Run pending migrations:
 php vendor/bin/doctrine-migrations migrate
 ```
 
-The command automatically reads `config/migrations.php` and
-`config/migrations-db.php`. If you store them elsewhere, pass the paths
+The command automatically reads `src/Lotgd/Config/migrations.php` and
+`src/Lotgd/Config/migrations-db.php`. If you store them elsewhere, pass the paths
 explicitly:
 
 ```bash
 php vendor/bin/doctrine-migrations \
-    --configuration=config/migrations.php \
-    --db-configuration=config/migrations-db.php migrate
+    --configuration=src/Lotgd/Config/migrations.php \
+    --db-configuration=src/Lotgd/Config/migrations-db.php migrate
 ```
 
 ### Upgrade Notes

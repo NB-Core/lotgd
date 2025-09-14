@@ -1465,7 +1465,7 @@ class Installer
         $DB_PREFIX = $db['DB_PREFIX'] ?? '';
         InstallerLogger::log('DB_PREFIX set to ' . $DB_PREFIX);
 
-        $config = require dirname(__DIR__, 2) . '/config/migrations.php';
+        $config = require dirname(__DIR__, 2) . '/src/Lotgd/Config/migrations.php';
 
         $em = Bootstrap::getEntityManager();
 
