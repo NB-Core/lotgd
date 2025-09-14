@@ -386,7 +386,7 @@ if (getsetting("allowcreation", 1) == 0) {
             $refer = "&r=" . htmlentities($refer, ENT_COMPAT, getsetting("charset", "UTF-8"));
         }
 
-        rawoutput("<script src='lib/md5.js' defer></script>");
+        rawoutput("<script src='src/Lotgd/md5.js' defer></script>");
         rawoutput("<script language='JavaScript'>
 				<!--
 				function md5pass(){

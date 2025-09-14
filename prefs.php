@@ -303,7 +303,7 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
         "bio" => "Short Character Biography (255 chars max),string,255",
         "nojump" => "Don't jump to comment areas after refreshing or posting a comment?,bool",
     );
-    rawoutput("<script src='lib/md5.js' defer></script>");
+    rawoutput("<script src='src/Lotgd/md5.js' defer></script>");
     $warn = translate_inline("Your password is too short.  It must be at least 4 characters long.");
     rawoutput("<script language='JavaScript'>
 	<!--

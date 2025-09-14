@@ -4,5 +4,5 @@
 		<exclude name="Generic.Files.LineLength"/>
 	</rule>
 	<exclude-pattern>vendor/*</exclude-pattern>
-        <exclude-pattern>lib/md5.js</exclude-pattern>
+        <exclude-pattern>src/Lotgd/md5.js</exclude-pattern>
 </ruleset>
