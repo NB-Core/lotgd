@@ -49,7 +49,7 @@ if (
 
             ($subdir == "//" ? "/" : $subdir) . "lib/datatable.php" => "X", // hide completely
             ($subdir == "//" ? "/" : $subdir) . "lib/dbremote.php" => "X", //hide completely
-            ($subdir == "//" ? "/" : $subdir) . "lib/smsnotify.php" => "X", //hide completely
+            ($subdir == "//" ? "/" : $subdir) . "config/smsnotify.php" => "X", //hide completely
             ($subdir == "//" ? "/" : $subdir) . "modules/battlearena.php" => "X", // not for dist
             ($subdir == "//" ? "/" : $subdir) . "modules/blog.php" => "X", // not for dist
             ($subdir == "//" ? "/" : $subdir) . "modules/clues.php" => "X", // hidden

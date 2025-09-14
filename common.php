@@ -254,9 +254,9 @@ if ($link === false) {
                 //I won't, because all people can use it //Oliver
                 //Yet made a bit more interesting text than just the naughty normal "Unable to connect to database - sorry it didn't work out" stuff
                 $notified = false;
-        if (file_exists("lib/smsnotify.php")) {
+        if (file_exists("config/smsnotify.php")) {
                 $smsmessage = "No DB Server: " . Database::error();
-                require_once __DIR__ . "/lib/smsnotify.php";
+                require_once __DIR__ . "/config/smsnotify.php";
                 $notified = true;
         }
                 // And tell the user it died.  No translation here, we need the DB for
@@ -293,9 +293,9 @@ if (!defined("DB_NODB")) {
     if (!DB_CONNECTED || !@Database::selectDb($config['DB_NAME'])) {
         if ((!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) && DB_CONNECTED) {
             // Ignore this bit.  It's only really for Eric's server or people that want to trigger something when the database is jerky
-            if (file_exists("lib/smsnotify.php")) {
+            if (file_exists("config/smsnotify.php")) {
                                 $smsmessage = "Cant Attach to DB: " . Database::error();
-                require_once __DIR__ . "/lib/smsnotify.php";
+                require_once __DIR__ . "/config/smsnotify.php";
                 $notified = true;
             }
             // And tell the user it died.  No translation here, we need the DB for
