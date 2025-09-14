@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Translator;
+use Lotgd\ErrorHandling;
 
 // translator ready
 // addnews ready
@@ -8,7 +9,7 @@ use Lotgd\Translator;
 define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/errorhandling.php";
+ErrorHandling::configure();
 require_once __DIR__ . "/lib/http.php";
 
 Translator::getInstance()->setSchema("source");
