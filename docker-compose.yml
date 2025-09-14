@@ -1,3 +1,4 @@
+# Copy `.env.example` to `.env` before running `docker-compose`
 services:
   web:
     build: .

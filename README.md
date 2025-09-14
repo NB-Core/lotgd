@@ -313,7 +313,7 @@ This repository already includes the essential Docker and configuration files. R
 
 1. **Dockerfile**
 2. **docker-compose.yml**
-3. **.env**
+3. **.env** – copy `\.env.example` to `.env` and update values as needed
 4. **.htaccess**
 
 The details of each file are covered in the [Configuration Files](#configuration-files) section.
