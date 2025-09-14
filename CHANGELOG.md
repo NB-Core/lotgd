@@ -12,17 +12,29 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 ### Features
 - Enable zlib compression by default.
 - Remove legacy settings stub and streamline cron handling.
+- Expanded logging: game log entries can include account IDs, user management and module lifecycle actions, and anonymous entries show a system label.
+- Account cleanup now runs inside a database transaction for safer deletions.
+
 
 ### Bug Fixes
 - Guard against missing city and theme parameters and ensure `diddamage` defaults to zero.
 - Use safe array access for player name lookup and tighten module migration checks.
+- Preserve the `Settings` singleton when loading extended settings or templates.
+- Roll back character cleanup when skipped and log deletions only after commit.
+- Add unsuspend buff wrappers and seed default navigation for new characters.
+- Normalize withdraw log category to lowercase.
+- Show system label for anonymous gamelog entries and record account IDs in maintenance logs.
+
 
 ### Refactor
 - Standardize top-level scripts to use `__DIR__` in `require` statements for safer path resolution.
+- Remove redundant battle buff wrappers.
+
 
 ### Docs
 - Clarify newday cron configuration and cron job setup instructions.
 - Add module hook reference documentation.
+- Document contributor guidelines and static analysis in maintenance docs.
 
 ## [2.0.0-rc12] – 2025-09-06
 
