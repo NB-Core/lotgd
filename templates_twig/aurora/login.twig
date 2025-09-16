@@ -1,4 +1,7 @@
 <div class="login-hero"></div>
+{% if message %}
+<div class="login-message">{{ message|raw }}</div>
+{% endif %}
 <form action="/login" method="post">
     <table class="login-table">
         <tr>
@@ -13,9 +16,6 @@
                             <input name='name' id='name' autocomplete='username' accesskey='u' size='10'></input>
                         </td>
                         <td>
-                            {% if message %}
-                                <div class="login-message">{{ message|raw }}</div>
-                            {% endif %}
                             <input name='password' autocomplete='current-password' id='password' accesskey='p' type='password' size='10'></input>
                         </td>
                     </tr>
