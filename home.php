@@ -148,7 +148,7 @@ if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0
             "username" => $uname,
             "password" => $pass,
             "button" => $butt,
-            "message" => $session['message']
+            "message" => appoencode($session['message'])
         ];
     if (TwigTemplate::isActive()) {
         $templateVars['template_path'] = TwigTemplate::getPath();
