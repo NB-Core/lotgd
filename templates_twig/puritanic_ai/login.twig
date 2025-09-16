@@ -5,6 +5,9 @@
     </div>
     <div class="col-12 col-sm">
     <label for="password" class="visually-hidden">{{ password|raw }}</label>
+    {% if message %}
+    <div class="login-message">{{ message|raw }}</div>
+    {% endif %}
     <input name="password" id="password" accesskey="p" type="password" size="10" class="form-control" placeholder="{{ password|striptags }}" autocomplete="password" />
     </div>
     <div class="col-12 text-center">

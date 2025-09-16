@@ -148,6 +148,15 @@ font-family: verdana,arial,helvetica,sans-serif;
      border-right: 1px solid #403225;
      border-bottom: 1px solid #403225;
 }
+
+.login-message {
+    border: 2px solid #F8DB83;
+    background-color: rgba(107, 86, 63, 0.35);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.1em;
+    border-radius: 4px;
+}
 .input {
     background-color: #433828;
     border: 1px solid #806B4D;
