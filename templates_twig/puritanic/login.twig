@@ -8,7 +8,12 @@
                 </tr>
                 <tr>
                     <td><input name='name' id='name' accesskey='u' size='10' autocomplete='username'></td>
-                    <td><input name='password' id='password' accesskey='p' type='password' size='10' autocomplete='current-password'></td>
+                    <td>
+                        {% if message %}
+                            <div class="login-message">{{ message|raw }}</div>
+                        {% endif %}
+                        <input name='password' id='password' accesskey='p' type='password' size='10' autocomplete='current-password'>
+                    </td>
                 </tr>
                 <tr>
                     <td colspan='2' class="login-submit"><input type='submit' value='{{ button|raw }}' class='button'></td>

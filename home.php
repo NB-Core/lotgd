@@ -126,7 +126,7 @@ if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0
             $session['message'] .= translate_inline("It appears that you may be blocking cookies from this site.  At least session cookies must be enabled in order to use this site.`n");
             $session['message'] .= translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
     }
-    if (isset($session['message']) && $session['message'] > "") {
+    if (!TwigTemplate::isActive() && $session['message'] > '') {
         output_notl("`b`\$%s`b`n", $session['message'], true);
     }
     rawoutput("<script src='src/Lotgd/md5.js' defer></script>");
@@ -144,7 +144,12 @@ if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0
     $uname = translate_inline("<u>U</u>sername");
     $pass = translate_inline("<u>P</u>assword");
     $butt = translate_inline("Log in");
-        $templateVars = ["username" => $uname, "password" => $pass, "button" => $butt];
+        $templateVars = [
+            "username" => $uname,
+            "password" => $pass,
+            "button" => $butt,
+            "message" => $session['message']
+        ];
     if (TwigTemplate::isActive()) {
         $templateVars['template_path'] = TwigTemplate::getPath();
     }

@@ -269,6 +269,15 @@ td[class*="page-bottom"] {
     text-align: center;
 }
 
+.login-message {
+    border: 2px solid #ff7043;
+    background-color: rgba(255, 112, 67, 0.15);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.1em;
+    border-radius: 4px;
+}
+
 /* Other Styles */
 .select {
     background-color: #000000;
