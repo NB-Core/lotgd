@@ -144,11 +144,15 @@ if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0
     $uname = translate_inline("<u>U</u>sername");
     $pass = translate_inline("<u>P</u>assword");
     $butt = translate_inline("Log in");
+        $message = (string) ($session['message'] ?? '');
+        $message = preg_replace('/(?:\A(?:`n|\s)+|(?:`n|\s)+\z)/', '', $message) ?? '';
+        $message = trim($message);
+
         $templateVars = [
             "username" => $uname,
             "password" => $pass,
             "button" => $butt,
-            "message" => appoencode($session['message'])
+            "message" => appoencode($message)
         ];
     if (TwigTemplate::isActive()) {
         $templateVars['template_path'] = TwigTemplate::getPath();
