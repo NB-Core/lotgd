@@ -15,6 +15,7 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Expanded logging: game log entries can include account IDs, user management and module lifecycle actions, and anonymous entries show a system label.
 - Account cleanup now runs inside a database transaction for safer deletions.
 - Mail delivery helpers expose PHPMailer error details so admin tools can surface actionable diagnostics.
+- Add "Test SMTP settings" action to `configuration.php` to send a diagnostics email.
 
 
 ### Bug Fixes
