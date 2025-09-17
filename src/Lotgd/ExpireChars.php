@@ -227,7 +227,18 @@ class ExpireChars
         while ($row = Database::fetchAssoc($result)) {
             $to = [$row['emailaddress'] => $row['emailaddress']];
             $body = str_replace('{charname}', $row['login'], $message);
-            Mail::send($to, $body, $subject, $from, $cc, 'text/html');
+            $mailResult = Mail::send($to, $body, $subject, $from, $cc, 'text/html', true);
+
+            if (is_array($mailResult) && ! $mailResult['success']) {
+                error_log(sprintf('Failed to send expiration notice to %s: %s', $row['emailaddress'], $mailResult['error']));
+                continue;
+            }
+
+            if ($mailResult === false) {
+                error_log(sprintf('Failed to send expiration notice to %s.', $row['emailaddress']));
+                continue;
+            }
+
             $collector[] = $row['acctid'];
         }
 

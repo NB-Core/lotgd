@@ -14,6 +14,7 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Remove legacy settings stub and streamline cron handling.
 - Expanded logging: game log entries can include account IDs, user management and module lifecycle actions, and anonymous entries show a system label.
 - Account cleanup now runs inside a database transaction for safer deletions.
+- Mail delivery helpers expose PHPMailer error details so admin tools can surface actionable diagnostics.
 
 
 ### Bug Fixes
