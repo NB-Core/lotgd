@@ -224,12 +224,15 @@ function darkhorse_bartender($from)
             }
         } else {
             if ($session['user']['gold'] >= 100) {
-                $sql = "SELECT name,acctid,alive,location,maxhitpoints,gold,sex,level,weapon,armor,attack,race,defense,charm,strength,dexterity,wisdom,intelligence,constitution FROM " . Database::prefix("accounts") . " WHERE login='$who'";
-                $result = Database::query($sql);
+                $conn = Database::getDoctrineConnection();
+                $sql = 'SELECT name,acctid,alive,location,maxhitpoints,gold,sex,level,weapon,armor,attack,race,defense,charm,strength,dexterity,wisdom,intelligence,constitution FROM ' . Database::prefix('accounts') . ' WHERE login = :login';
+                $stmt = $conn->prepare($sql);
+                $stmt->bindValue('login', $who);
+                $result = $stmt->executeQuery();
                 require_once("lib/playerfunctions.php");
 
                 if (Database::numRows($result) > 0) {
-                    $row = Database::fetchAssoc($result);
+                    $row = $result->fetchAssociative();
                     $row = modulehook("adjuststats", $row);
                     $name = str_replace("s", "sh", $row['name']);
                     $name = str_replace("S", "Sh", $name);
