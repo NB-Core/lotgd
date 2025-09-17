@@ -11,6 +11,7 @@ use Lotgd\Output;
 use Lotgd\DataCache;
 use Lotgd\Modules\ModuleManager;
 use Lotgd\PhpGenericEnvironment;
+use Lotgd\Mail;
 
 // translator ready
 // addnews ready
@@ -160,6 +161,69 @@ switch ($type_setting) {
                 httpset($op, "");
                 break;
 
+            case "testsmtp":
+                addnav('', 'configuration.php?op=testsmtp');
+
+                $adminEmail = trim($settings->getSetting('gameadminemail', ''));
+
+                if ($adminEmail === '') {
+                    output(Translator::translate('`$No admin email is configured. Update the Game Settings first.`0'));
+                    addnav(Translator::translate('Back to settings list'), 'configuration.php');
+                    addnav('', 'configuration.php');
+                    break;
+                }
+
+                $charset = $settings->getSetting('charset', 'UTF-8');
+
+                if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+                    output(
+                        Translator::translate('`$The configured admin email %s is not a valid address.`0'),
+                        htmlentities($adminEmail, ENT_COMPAT, $charset)
+                    );
+                    addnav(Translator::translate('Back to settings list'), 'configuration.php');
+                    addnav('', 'configuration.php');
+                    break;
+                }
+
+                $gameName = $settings->getSetting('servername', 'Legend of the Green Dragon');
+                $subjectTemplate = Translator::translate('SMTP diagnostics for %s');
+                $subject = sprintf($subjectTemplate, $gameName);
+                $bodyTemplate = Translator::translate(
+                    'This diagnostics email was generated from the Game Settings page for %s. Receiving it confirms the SMTP configuration is working.'
+                );
+                $body = sprintf($bodyTemplate, $gameName);
+                $serverUrl = $settings->getSetting('serverurl', '');
+
+                if ($serverUrl !== '') {
+                    $body .= "\n" . sprintf(Translator::translate('Game URL: %s'), $serverUrl);
+                }
+
+                $body .= "\n" . sprintf(Translator::translate('Request time: %s'), date('c'));
+
+                $sent = Mail::send(
+                    [$adminEmail => $gameName],
+                    $body,
+                    $subject,
+                    [$adminEmail => $gameName],
+                    false,
+                    'text/plain'
+                );
+
+                if ($sent) {
+                    output(
+                        Translator::translate('`@A diagnostics email was sent to %s.`0'),
+                        htmlentities($adminEmail, ENT_COMPAT, $charset)
+                    );
+                } else {
+                    output(
+                        Translator::translate('`$The diagnostics email could not be sent. Please review the SMTP configuration.`0')
+                    );
+                }
+
+                addnav(Translator::translate('Back to settings list'), 'configuration.php');
+                addnav('', 'configuration.php');
+                break;
+
             case "modulesettings":
                 include_once("lib/gamelog.php");
                 if (injectmodule($module, true)) {
@@ -272,6 +336,8 @@ if ($module) {
 addnav("Game Settings");
 addnav("Standard settings", "configuration.php");
 addnav("Extended settings", "configuration.php?settings=extended");
+addnav(Translator::translate("Test SMTP settings"), "configuration.php?op=testsmtp");
+addnav('', 'configuration.php?op=testsmtp');
 addnav("", PhpGenericEnvironment::getRequestUri());
 
 //get arrays
