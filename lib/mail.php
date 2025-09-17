@@ -32,9 +32,9 @@ function mail_is_inbox_full(int $userId, bool $onlyUnread = false): bool
     return Mail::isInboxFull($userId, $onlyUnread);
 }
 
-function send_email(array $to, string $body, string $subject, array $from, $cc = false, string $contenttype = 'text/plain')
+function send_email(array $to, string $body, string $subject, array $from, $cc = false, string $contenttype = 'text/plain', bool $withErrorInfo = false)
 {
-    return Mail::send($to, $body, $subject, $from, $cc, $contenttype);
+    return Mail::send($to, $body, $subject, $from, $cc, $contenttype, $withErrorInfo);
 }
 
 function systemmail(int $to, string $subject, string $body, int $from = 0, bool $noemail = false)

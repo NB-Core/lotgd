@@ -196,7 +196,13 @@ class ErrorHandler
                     $output->debug("Notifying $email of this error.", true);
                     $admin = $settings->getSetting('gameadminemail', 'postmaster@localhost');
                     $from = [$admin => $admin];
-                    \Lotgd\Mail::send([$email => $email], $body, $subject, $from, false, 'text/html');
+                    $mailResult = \Lotgd\Mail::send([$email => $email], $body, $subject, $from, false, 'text/html', true);
+
+                    if (is_array($mailResult) && ! $mailResult['success']) {
+                        $output->debug('Mail notification failed: ' . $mailResult['error'], true);
+                    } elseif ($mailResult === false) {
+                        $output->debug('Mail notification failed: delivery returned false.', true);
+                    }
                 }
                 $data['errors'][$msg] = strtotime('now');
             } else {

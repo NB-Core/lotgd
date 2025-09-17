@@ -32,6 +32,8 @@ class Mail
 
     /**
      * Send a system generated mail to a user.
+     *
+     * @return bool|array{success:bool,error:string}
      */
     public static function systemMail(int $to, string|array $subject, string|array $body, int $from = 0, bool $noemail = false): void
     {
@@ -131,14 +133,23 @@ class Mail
     /**
      * Send an email using PHPMailer with the game settings.
      *
-     * @param array       $to          Address => name list for recipients
-     * @param string      $body        Email body text
-     * @param string      $subject     Subject line
-     * @param array       $from        Address => name of sender
-     * @param array|false $cc          Optional CC list
-     * @param string      $contenttype MIME type of the body
+     * @param array       $to            Address => name list for recipients
+     * @param string      $body          Email body text
+     * @param string      $subject       Subject line
+     * @param array       $from          Address => name of sender
+     * @param array|false $cc            Optional CC list
+     * @param string      $contenttype   MIME type of the body
+     * @param bool        $withErrorInfo When true, return an array with success/error information
      */
-    public static function send(array $to, string $body, string $subject, array $from, $cc = false, string $contenttype = 'text/plain'): bool
+    public static function send(
+        array $to,
+        string $body,
+        string $subject,
+        array $from,
+        $cc = false,
+        string $contenttype = 'text/plain',
+        bool $withErrorInfo = false
+    ): bool|array
     {
         $settings = self::getSettings();
         $host = $settings->getSetting('gamemailhost', 'localhost');
@@ -147,6 +158,8 @@ class Mail
         $smtpauth = $settings->getSetting('gamemailsmtpauth', false);
         $smtpsecure = $settings->getSetting('gamemailsmtpsecure', 'tls');
         $port = $settings->getSetting('gamemailsmtpport', '587');
+
+        $mail = null;
 
         try {
             $mail = new PHPMailer(true);
@@ -192,9 +205,31 @@ class Mail
                 $mail->IsHTML(true);
             }
             $mail->Send();
+            if ($withErrorInfo) {
+                return ['success' => true, 'error' => ''];
+            }
+
             return true;
         } catch (Exception $e) {
-            error_log($mail->ErrorInfo);
+            $errorMessage = '';
+            if ($mail instanceof PHPMailer && $mail->ErrorInfo !== '') {
+                $errorMessage = $mail->ErrorInfo;
+            }
+
+            if ($errorMessage === '') {
+                $errorMessage = $e->getMessage();
+            }
+
+            if ($errorMessage === '') {
+                $errorMessage = 'Unable to send email via PHPMailer.';
+            }
+
+            error_log($errorMessage);
+
+            if ($withErrorInfo) {
+                return ['success' => false, 'error' => $errorMessage];
+            }
+
             return false;
         }
     }

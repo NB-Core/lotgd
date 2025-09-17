@@ -43,7 +43,13 @@ if (!defined('CRON_TEST')) {
                 $settings->getSetting('serverurl', ''),
                 $e->getMessage()
             );
-            Mail::send([$email => $email], $body, 'Cronjob Error', [$email => $email]);
+            $mailResult = Mail::send([$email => $email], $body, 'Cronjob Error', [$email => $email], false, 'text/plain', true);
+
+            if (is_array($mailResult) && ! $mailResult['success']) {
+                error_log('Cron notification mail failed: ' . $mailResult['error']);
+            } elseif ($mailResult === false) {
+                error_log('Cron notification mail failed to send.');
+            }
         }
 
         exit(1);
@@ -75,7 +81,13 @@ if (!$result) {
         "Sorry, but the gamedir is not set for your cronjob setup at your game at %s.\n\nPlease correct the error or you will have *NO* server newdays.",
         $settings->getSetting('serverurl', '')
     );
-    Mail::send([$email => $email], $body, 'Cronjob Setup Screwed', [$email => $email]);
+    $mailResult = Mail::send([$email => $email], $body, 'Cronjob Setup Screwed', [$email => $email], false, 'text/plain', true);
+
+    if (is_array($mailResult) && ! $mailResult['success']) {
+        error_log('Cron setup warning mail failed: ' . $mailResult['error']);
+    } elseif ($mailResult === false) {
+        error_log('Cron setup warning mail failed to send.');
+    }
     if (!defined('CRON_TEST')) {
         exit(0); //that's it.
     }

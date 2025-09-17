@@ -41,6 +41,8 @@ final class MailTest extends TestCase
         $prop = $ref->getProperty('settings');
         $prop->setAccessible(true);
         $prop->setValue(null, null);
+
+        unset($GLOBALS['mail_force_error'], $GLOBALS['mail_force_error_message']);
     }
 
     public function testSystemMailStoresMessageAndSkipsInvalidEmail(): void
@@ -70,5 +72,56 @@ final class MailTest extends TestCase
         $this->assertSame(3, Mail::inboxCount(1));
         $this->assertSame(2, Mail::inboxCount(1, true));
         $this->assertTrue(Mail::isInboxFull(1));
+    }
+
+    public function testSendDetailedSuccessReturnsStructuredResult(): void
+    {
+        $result = Mail::send(
+            ['player@example.com' => 'Player'],
+            'Body',
+            'Subject',
+            ['admin@example.com' => 'Admin'],
+            false,
+            'text/plain',
+            true
+        );
+
+        $this->assertIsArray($result);
+        $this->assertTrue($result['success']);
+        $this->assertSame('', $result['error']);
+        $this->assertSame(1, $GLOBALS['mail_sent_count']);
+    }
+
+    public function testSendDetailedFailureIncludesErrorInfo(): void
+    {
+        $GLOBALS['mail_force_error'] = true;
+        $GLOBALS['mail_force_error_message'] = 'Simulated failure';
+
+        $result = Mail::send(
+            ['player@example.com' => 'Player'],
+            'Body',
+            'Subject',
+            ['admin@example.com' => 'Admin'],
+            false,
+            'text/plain',
+            true
+        );
+
+        $this->assertIsArray($result);
+        $this->assertFalse($result['success']);
+        $this->assertSame('Simulated failure', $result['error']);
+        $this->assertSame(0, $GLOBALS['mail_sent_count']);
+
+        $GLOBALS['mail_force_error'] = true;
+        $GLOBALS['mail_force_error_message'] = 'Simulated failure';
+
+        $boolResult = Mail::send(
+            ['player@example.com' => 'Player'],
+            'Body',
+            'Subject',
+            ['admin@example.com' => 'Admin']
+        );
+
+        $this->assertFalse($boolResult);
     }
 }

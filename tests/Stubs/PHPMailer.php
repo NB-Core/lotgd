@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Stubs;
 
+class PHPMailerException extends \Exception
+{
+}
+
 #[\AllowDynamicProperties]
 class PHPMailer
 {
@@ -62,9 +66,18 @@ class PHPMailer
 
     public function Send()
     {
+        if (!empty($GLOBALS['mail_force_error'])) {
+            $message = $GLOBALS['mail_force_error_message'] ?? 'Forced mail failure.';
+            $this->ErrorInfo = $message;
+            $GLOBALS['mail_force_error'] = false;
+
+            throw new PHPMailerException($message);
+        }
+
         $GLOBALS['mail_sent_count'] = ($GLOBALS['mail_sent_count'] ?? 0) + 1;
         $GLOBALS['last_subject'] = $this->Subject;
     }
 }
 
 class_alias(PHPMailer::class, 'PHPMailer\\PHPMailer\\PHPMailer');
+class_alias(PHPMailerException::class, 'PHPMailer\\PHPMailer\\Exception');

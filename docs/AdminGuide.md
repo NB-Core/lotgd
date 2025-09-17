@@ -39,7 +39,8 @@ email. Run `cron.php` regularly via your system's scheduler:
 
 Configure SMTP credentials in `config/configuration.php` or your environment to send reliable
 email. Use authenticated TLS connections and monitor logs for delivery failures. Avoid running an
-open relay.
+open relay. The SMTP test in the configuration panel now surfaces the underlying PHPMailer error
+message whenever delivery fails, making troubleshooting significantly easier.
 
 For translation details, consult the [Translations guide](TranslationsGuide.md).
 
