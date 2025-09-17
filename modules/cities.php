@@ -70,14 +70,26 @@ function cities_install(): bool
 
 function cities_uninstall(): bool
 {
+    global $session;
+
     // This is semi-unsafe -- If a player is in the process of a page
     // load it could get the location, uninstall the cities and then
     // save their location from their session back into the database
     // I think I have a patch however :)
     $city = getsetting("villagename", LOCATION_FIELDS);
     $inn = getsetting("innname", LOCATION_INN);
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" . addslashes($city) . "' WHERE location!='" . addslashes($inn) . "'";
-    Database::query($sql);
+
+    $conn = Database::getDoctrineConnection();
+    $accounts = Database::prefix("accounts");
+
+    $conn->executeStatement(
+        "UPDATE {$accounts} SET location = :city WHERE location <> :inn",
+        [
+            'city' => $city,
+            'inn' => $inn,
+        ]
+    );
+
     $session['user']['location'] = $city;
     return true;
 }
