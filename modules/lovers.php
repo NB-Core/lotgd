@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Inn encounters with Violet and Seth.
  */
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Buffs;
 use Lotgd\MySQL\Database;
 
@@ -37,6 +38,8 @@ function lovers_install(): bool
     module_addhook("newday");
     module_addhook("inn");
 
+    $conn = Database::getDoctrineConnection();
+
     $sql = "DESCRIBE " . Database::prefix("accounts");
     $result = Database::query($sql);
     while ($row = Database::fetchAssoc($result)) {
@@ -44,9 +47,16 @@ function lovers_install(): bool
             $sql = "SELECT seenlover,acctid FROM " . Database::prefix("accounts") . " WHERE seenlover>0";
             $result1 = Database::query($sql);
             debug("Migrating seenlover.`n");
+            $stmt = $conn->prepare(
+                "INSERT INTO " . Database::prefix("module_userprefs") .
+                " (modulename,setting,userid,value) VALUES (:module, :setting, :user, :value)"
+            );
+            $stmt->bindValue('module', 'lovers');
+            $stmt->bindValue('setting', 'seenlover');
             while ($row1 = Database::fetchAssoc($result1)) {
-                $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) VALUES ('lovers','seenlover',{$row1['acctid']},{$row1['seenlover']})";
-                Database::query($sql);
+                $stmt->bindValue('user', (int) $row1['acctid'], ParameterType::INTEGER);
+                $stmt->bindValue('value', (int) $row1['seenlover'], ParameterType::INTEGER);
+                $stmt->executeStatement();
             }//end while
             debug("Dropping seenlover column from the user table.`n");
             $sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP seenlover";
