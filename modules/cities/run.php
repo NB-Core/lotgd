@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Handles travel events between cities.
  */
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\FightNav;
 use Lotgd\Forest\Outcomes;
 use Lotgd\MySQL\Database;
@@ -118,10 +119,17 @@ if ($op == "travel") {
             $args = array("soberval" => 0.9,
                     "sobermsg" => "`&Facing your bloodthirsty opponent, the adrenaline rush helps to sober you up slightly.", "schema" => "module-cities");
                             modulehook("soberup", $args);
-            $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE creaturelevel = '{$session['user']['level']}' AND forest = 1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
-            $result = Database::query($sql);
+            $conn = Database::getDoctrineConnection();
+            $table = Database::prefix('creatures');
+            $sql = "SELECT * FROM {$table} WHERE creaturelevel = :level AND forest = 1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
+            $result = $conn->executeQuery(
+                $sql,
+                ['level' => (int) $session['user']['level']],
+                ['level' => ParameterType::INTEGER]
+            );
             restore_buff_fields();
-            if (Database::numRows($result) == 0) {
+            $creature = $result->fetchAssociative();
+            if (! $creature) {
                 // There is nothing in the database to challenge you,
                 // let's give you a doppleganger.
                 $badguy = ['diddamage' => 0];
@@ -136,7 +144,7 @@ if ($op == "travel") {
                 $badguy['creatureattack'] = $session['user']['attack'];
                 $badguy['creaturedefense'] = $session['user']['defense'];
             } else {
-                $badguy = Database::fetchAssoc($result);
+                $badguy = $creature;
                 $aiscriptfile = "scripts/" . $badguy['creatureaiscript'] . ".php";
                 if (file_exists($aiscriptfile)) {
                     //file there, get content and put it into the ai script field.
