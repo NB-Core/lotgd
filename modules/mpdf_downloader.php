@@ -6,6 +6,7 @@ declare(strict_types=1);
 // as PDF or plain text files. Requires the MPDF library to be installed
 // via Composer.
 
+use Doctrine\DBAL\Connection;
 use Lotgd\MySQL\Database;
 use Mpdf\Mpdf;
 use Lotgd\Commentary;
@@ -78,14 +79,26 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
                     $table = ($hookname === 'header-mail') ? 'mail' : 'mailarchive';
                     $acct = Database::prefix('accounts');
                     $mailtbl = Database::prefix($table);
-                    $sql = "SELECT $mailtbl.*, a1.name AS sender, a2.name AS receiver FROM $mailtbl LEFT JOIN $acct AS a1 ON a1.acctid=$mailtbl.msgfrom LEFT JOIN $acct AS a2 ON a2.acctid=$mailtbl.msgto WHERE $mailtbl.messageid IN (" . implode(',', $ids) . ") ORDER BY $mailtbl.messageid";
-                    $result = Database::query($sql);
+                    $conn = Database::getDoctrineConnection();
+                    $qb = $conn->createQueryBuilder();
+                    $rows = $qb
+                        ->select('m.*')
+                        ->addSelect('sender.name AS sender')
+                        ->addSelect('receiver.name AS receiver')
+                        ->from($mailtbl, 'm')
+                        ->leftJoin('m', $acct, 'sender', 'sender.acctid = m.msgfrom')
+                        ->leftJoin('m', $acct, 'receiver', 'receiver.acctid = m.msgto')
+                        ->where($qb->expr()->in('m.messageid', ':ids'))
+                        ->orderBy('m.messageid', 'ASC')
+                        ->setParameter('ids', $ids, Connection::PARAM_INT_ARRAY)
+                        ->executeQuery()
+                        ->fetchAllAssociative();
 
                     $header = get_module_setting('header_image');
                     $url = get_module_setting('site_url');
                     $mpdf = mpdf_downloader_setup($header, $url);
                     $first = true;
-                    while ($row = Database::fetchAssoc($result)) {
+                    foreach ($rows as $row) {
                         if (!$first) {
                             $mpdf->AddPage();
                         }
@@ -117,24 +130,24 @@ function mpdf_downloader_run(): void
         $lines = (int) httppost('lines');
         $format = httppost('format');
 
-        $section = Database::escape($section);
         $lines = $lines > 0 ? $lines : 100;
 
-        $sql = "SELECT " . Database::prefix('commentary') . ".*, "
-            . Database::prefix('accounts') . ".name, "
-            . Database::prefix('accounts') . ".acctid, "
-            . Database::prefix('accounts') . ".superuser, "
-            . Database::prefix('accounts') . ".clanrank, "
-            . Database::prefix('clans') . ".clanshort FROM " . Database::prefix('commentary') . " LEFT JOIN "
-            . Database::prefix('accounts') . " ON " . Database::prefix('accounts') . ".acctid = " . Database::prefix('commentary') . ".author LEFT JOIN "
-            . Database::prefix('clans') . " ON " . Database::prefix('clans') . ".clanid=" . Database::prefix('accounts') . ".clanid WHERE section='$section' ORDER BY commentid DESC LIMIT $lines";
+        $conn = Database::getDoctrineConnection();
+        $commentary = Database::prefix('commentary');
+        $accounts = Database::prefix('accounts');
+        $clans = Database::prefix('clans');
 
-        $result = Database::query($sql);
-        $rows = [];
-        while ($row = Database::fetchAssoc($result)) {
-            $rows[] = $row;
-        }
-        Database::freeResult($result);
+        $qb = $conn->createQueryBuilder();
+        $qb->select('c.*', 'a.name', 'a.acctid', 'a.superuser', 'a.clanrank', 'cl.clanshort')
+            ->from($commentary, 'c')
+            ->leftJoin('c', $accounts, 'a', 'a.acctid = c.author')
+            ->leftJoin('a', $clans, 'cl', 'cl.clanid = a.clanid')
+            ->where('c.section = :section')
+            ->orderBy('c.commentid', 'DESC')
+            ->setMaxResults($lines)
+            ->setParameter('section', $section);
+
+        $rows = $qb->executeQuery()->fetchAllAssociative();
         $rows = array_reverse($rows);
 
         if ($format === 'text') {
