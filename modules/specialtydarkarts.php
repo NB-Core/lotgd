@@ -25,30 +25,32 @@ function specialtydarkarts_getmoduleinfo()
 
 function specialtydarkarts_install()
 {
+    $conn = Database::getDoctrineConnection();
+
     $sql = "DESCRIBE " . Database::prefix("accounts");
-    $result = Database::query($sql);
+    $result = $conn->executeQuery($sql);
     $specialty = "DA";
-    while ($row = Database::fetchAssoc($result)) {
+    while ($row = $result->fetchAssociative()) {
         // Convert the user over
         if ($row['Field'] == "darkarts") {
             debug("Migrating darkarts field");
-            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtydarkarts', 'skill', acctid, darkarts FROM " . Database::prefix("accounts");
-            Database::query($sql);
+            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT ?, ?, acctid, darkarts FROM " . Database::prefix("accounts");
+            $conn->executeStatement($sql, ['specialtydarkarts', 'skill']);
             debug("Dropping darkarts field from accounts table");
             $sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP darkarts";
-            Database::query($sql);
+            $conn->executeStatement($sql);
         } elseif ($row['Field'] == "darkartuses") {
             debug("Migrating darkarts uses field");
-            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtydarkarts', 'uses', acctid, darkartuses FROM " . Database::prefix("accounts");
-            Database::query($sql);
+            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT ?, ?, acctid, darkartuses FROM " . Database::prefix("accounts");
+            $conn->executeStatement($sql, ['specialtydarkarts', 'uses']);
             debug("Dropping darkartuses field from accounts table");
             $sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP darkartuses";
-            Database::query($sql);
+            $conn->executeStatement($sql);
         }
     }
     debug("Migrating Darkarts Specialty");
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='$specialty' WHERE specialty='1'";
-    Database::query($sql);
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty=? WHERE specialty=?";
+    $conn->executeStatement($sql, [$specialty, '1']);
 
     module_addhook("choose-specialty");
     module_addhook("set-specialty");
@@ -67,8 +69,9 @@ function specialtydarkarts_uninstall()
 {
     // Reset the specialty of anyone who had this specialty so they get to
     // rechoose at new day
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='' WHERE specialty='DA'";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty=? WHERE specialty=?";
+    $conn->executeStatement($sql, ['', 'DA']);
     return true;
 }
 

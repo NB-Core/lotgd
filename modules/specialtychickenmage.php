@@ -68,8 +68,9 @@ function specialtychickenmage_install()
 function specialtychickenmage_uninstall()
 {
     // reset
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='' WHERE specialty='CM'";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty=? WHERE specialty=?";
+    $conn->executeStatement($sql, ['', 'CM']);
     return true;
 }
 
