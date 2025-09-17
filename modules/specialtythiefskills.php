@@ -25,30 +25,32 @@ function specialtythiefskills_getmoduleinfo()
 
 function specialtythiefskills_install()
 {
+    $conn = Database::getDoctrineConnection();
+
     $sql = "DESCRIBE " . Database::prefix("accounts");
-    $result = Database::query($sql);
+    $result = $conn->executeQuery($sql);
     $specialty = "TS";
-    while ($row = Database::fetchAssoc($result)) {
+    while ($row = $result->fetchAssociative()) {
         // Convert the user over
         if ($row['Field'] == "thievery") {
             debug("Migrating thieving skills field");
-            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtythiefskills', 'skill', acctid, thievery FROM " . Database::prefix("accounts");
-            Database::query($sql);
+            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT ?, ?, acctid, thievery FROM " . Database::prefix("accounts");
+            $conn->executeStatement($sql, ['specialtythiefskills', 'skill']);
             debug("Dropping thievery field from accounts table");
             $sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP thievery";
-            Database::query($sql);
+            $conn->executeStatement($sql);
         } elseif ($row['Field'] == "thieveryuses") {
             debug("Migrating thieving skills uses field");
-            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT 'specialtythiefskills', 'uses', acctid, thieveryuses FROM " . Database::prefix("accounts");
-            Database::query($sql);
+            $sql = "INSERT INTO " . Database::prefix("module_userprefs") . " (modulename,setting,userid,value) SELECT ?, ?, acctid, thieveryuses FROM " . Database::prefix("accounts");
+            $conn->executeStatement($sql, ['specialtythiefskills', 'uses']);
             debug("Dropping thieveryuses field from accounts table");
             $sql = "ALTER TABLE " . Database::prefix("accounts") . " DROP thieveryuses";
-            Database::query($sql);
+            $conn->executeStatement($sql);
         }
     }
     debug("Migrating Thieving Skills Specialty");
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='$specialty' WHERE specialty='3'";
-    Database::query($sql);
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty=? WHERE specialty=?";
+    $conn->executeStatement($sql, [$specialty, '3']);
 
     module_addhook("choose-specialty");
     module_addhook("set-specialty");
@@ -67,8 +69,9 @@ function specialtythiefskills_uninstall()
 {
     // Reset the specialty of anyone who had this specialty so they get to
     // rechoose at new day
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty='' WHERE specialty='TS'";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET specialty=? WHERE specialty=?";
+    $conn->executeStatement($sql, ['', 'TS']);
     return true;
 }
 
