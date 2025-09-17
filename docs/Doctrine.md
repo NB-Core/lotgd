@@ -26,6 +26,44 @@ repositories from the entity manager.
 $repo = $entityManager->getRepository(Lotgd\Entity\Account::class);
 ```
 
+## Prepared Statements
+
+The legacy `Lotgd\MySQL\Database::query()` helper manually escaped values with
+`addslashes`. Replace those calls with Doctrine DBAL prepared statements using
+`Lotgd\MySQL\Database::getDoctrineConnection()`, which returns the shared
+`Doctrine\DBAL\Connection` instance. Prepared statements automatically escape and
+quote parameters once they are bound, so additional manual escaping is no longer
+required.
+
+```php
+use Lotgd\MySQL\Database;
+
+$conn = Database::getDoctrineConnection();
+
+$sql = 'SELECT acctid, name FROM accounts WHERE login = :login';
+$stmt = $conn->prepare($sql);
+$stmt->bindValue('login', $login);
+$result = $stmt->executeQuery();
+```
+
+`executeQuery()` is designed for `SELECT` statements and returns a `Doctrine\DBAL\Result`
+that you can iterate or fetch from. For write operations, call
+`executeStatement()` with the same placeholder syntax to receive the affected row
+count:
+
+```php
+$updated = $conn->executeStatement(
+    'UPDATE accounts SET dragonkills = dragonkills + 1 WHERE acctid = :acctid',
+    ['acctid' => $acctId]
+);
+```
+
+Both workflows support positional or named placeholders. Doctrine will cast
+values based on the parameter type if you supply a third argument to
+`bindValue()` or pass a types array to `executeQuery()` / `executeStatement()`.
+See the official [Doctrine DBAL prepared statements documentation](https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/data-retrieval-and-manipulation.html#prepared-statements)
+for more background.
+
 ## Running Migrations
 
 Schema migrations reside in the `migrations/` directory and are configured

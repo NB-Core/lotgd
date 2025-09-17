@@ -99,6 +99,38 @@ Once the legacy upgrade is complete:
 - **PHP 8.4**: Old PHP 7.x-style code (e.g., deprecated array/string operations) will break.
 - **Async**: All Ajax endpoints rewritten to use Jaxon.
 
+### Refactoring Legacy SQL to Prepared Statements
+
+Legacy database calls often used `Lotgd\MySQL\Database::query()` together with manual escaping via `addslashes`. When upgrading, migrate those calls to Doctrine DBAL prepared statements obtained through `Lotgd\MySQL\Database::getDoctrineConnection()`. The following example shows how to convert a legacy lookup:
+
+```php
+// Before: manual escaping and direct query execution.
+$db = Lotgd\MySQL\Database::getInstance();
+$login = addslashes($login);
+$sql = "SELECT acctid, name FROM accounts WHERE login='{$login}'";
+$result = $db->query($sql);
+```
+
+Replace the manual escaping and `query()` call with a prepared statement that binds parameters. Doctrine handles quoting and typing, so `addslashes` (or similar functions) become unnecessary once the parameter is bound:
+
+```php
+$db = Lotgd\MySQL\Database::getInstance();
+$conn = $db->getDoctrineConnection();
+
+$sql = 'SELECT acctid, name FROM accounts WHERE login = :login';
+$stmt = $conn->prepare($sql);
+$stmt->bindValue('login', $login);
+$result = $stmt->executeQuery();
+```
+
+You can also execute inline without calling `prepare()` explicitly when no cursor reuse is required:
+
+```php
+$result = $conn->executeQuery($sql, ['login' => $login]);
+```
+
+`executeQuery()` returns a `Result` object for `SELECT` statements, while `executeStatement()` returns the affected row count for `INSERT`, `UPDATE`, or `DELETE` queries. See [docs/Doctrine.md#prepared-statements](docs/Doctrine.md#prepared-statements) and the official [Doctrine DBAL prepared statement guide](https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/data-retrieval-and-manipulation.html#prepared-statements) for more details.
+
 ---
 
 ## 8. After Upgrade
