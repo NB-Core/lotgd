@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\DataCache;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 
@@ -48,14 +49,26 @@ function racehuman_uninstall()
     global $session;
     $vname = getsetting("villagename", LOCATION_FIELDS);
     $gname = get_module_setting("villagename");
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET location='$vname' WHERE location = '$gname'";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $accounts = Database::prefix("accounts");
+    $conn->executeStatement(
+        "UPDATE {$accounts} SET location = :newCity WHERE location = :oldCity",
+        [
+            'newCity' => $vname,
+            'oldCity' => $gname,
+        ]
+    );
     if ($session['user']['location'] == $gname) {
         $session['user']['location'] = $vname;
     }
     // Force anyone who was a Human to rechoose race
-    $sql = "UPDATE  " . Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Human'";
-    Database::query($sql);
+    $conn->executeStatement(
+        "UPDATE {$accounts} SET race = :unknown WHERE race = :race",
+        [
+            'unknown' => RACE_UNKNOWN,
+            'race' => 'Human',
+        ]
+    );
     if ($session['user']['race'] == 'Human') {
         $session['user']['race'] = RACE_UNKNOWN;
     }
@@ -85,16 +98,26 @@ function racehuman_dohook($hookname, $args)
                 if ($session['user']['location'] == $args['old']) {
                     $session['user']['location'] = $args['new'];
                 }
-                $sql = "UPDATE " . Database::prefix("accounts") .
-                " SET location='" . addslashes($args['new']) .
-                "' WHERE location='" . addslashes($args['old']) . "'";
-                Database::query($sql);
+                $conn = Database::getDoctrineConnection();
+                $accounts = Database::prefix("accounts");
+                $conn->executeStatement(
+                    "UPDATE {$accounts} SET location = :newCity WHERE location = :oldCity",
+                    [
+                        'newCity' => $args['new'],
+                        'oldCity' => $args['old'],
+                    ]
+                );
                 if (is_module_active("cities")) {
-                    $sql = "UPDATE " . Database::prefix("module_userprefs") .
-                    " SET value='" . addslashes($args['new']) .
-                    "' WHERE modulename='cities' AND setting='homecity'" .
-                    "AND value='" . addslashes($args['old']) . "'";
-                    Database::query($sql);
+                    $userPrefs = Database::prefix("module_userprefs");
+                    $conn->executeStatement(
+                        "UPDATE {$userPrefs} SET value = :newCity"
+                        . " WHERE modulename = 'cities' AND setting = 'homecity'"
+                        . " AND value = :oldCity",
+                        [
+                            'newCity' => $args['new'],
+                            'oldCity' => $args['old'],
+                        ]
+                    );
                 }
             }
             break;
@@ -188,12 +211,27 @@ function racehuman_dohook($hookname, $args)
                 $args['schemas']['talk'] = "module-racehuman";
                 $new = get_module_setting("newest-$city", "cities");
                 if ($new != 0) {
-                    $sql =  "SELECT name FROM " . Database::prefix("accounts") .
-                    " WHERE acctid='$new'";
-                    $result = Database::queryCached($sql, "newest-$city");
-                    $row = Database::fetchAssoc($result);
-                    $args['newestplayer'] = $row['name'];
-                    $args['newestid'] = $new;
+                    $cacheKey = "newest-$city";
+                    $dataCache = DataCache::getInstance();
+                    $row = $dataCache->datacache($cacheKey, 900);
+                    if (! is_array($row)) {
+                        $conn = Database::getDoctrineConnection();
+                        $accounts = Database::prefix("accounts");
+                        $row = $conn->fetchAssociative(
+                            "SELECT name FROM {$accounts} WHERE acctid = :acctid",
+                            [
+                                'acctid' => $new,
+                            ]
+                        ) ?: [];
+                        $dataCache->updatedatacache($cacheKey, $row);
+                    }
+                    if ($row !== []) {
+                        $args['newestplayer'] = $row['name'];
+                        $args['newestid'] = $new;
+                    } else {
+                        $args['newestplayer'] = $new;
+                        $args['newestid'] = "";
+                    }
                 } else {
                     $args['newestplayer'] = $new;
                     $args['newestid'] = "";

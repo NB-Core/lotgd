@@ -56,8 +56,15 @@ function racecat_uninstall()
 {
     global $session;
     // Force anyone who was a Felyne to rechoose race
-    $sql = "UPDATE  " . Database::prefix("accounts") . " SET race='" . RACE_UNKNOWN . "' WHERE race='Felyne'";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $accounts = Database::prefix("accounts");
+    $conn->executeStatement(
+        "UPDATE {$accounts} SET race = :unknown WHERE race = :race",
+        [
+            'unknown' => RACE_UNKNOWN,
+            'race' => 'Felyne',
+        ]
+    );
     if ($session['user']['race'] == 'Felyne') {
         $session['user']['race'] = RACE_UNKNOWN;
     }
