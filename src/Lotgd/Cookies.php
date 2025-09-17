@@ -92,7 +92,7 @@ class Cookies
             return;
         }
 
-        $expires = strtotime('+45 days');
+        $expires = strtotime('+1 year');
         self::set('template', $template, $expires, ServerFunctions::isSecureConnection());
     }
 
