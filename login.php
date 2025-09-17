@@ -10,6 +10,7 @@ use Lotgd\Mail;
 use Lotgd\Serialization;
 use Lotgd\Cookies;
 use Lotgd\DataCache;
+use Lotgd\Template;
 
 define("ALLOW_ANONYMOUS", true);
 require_once __DIR__ . "/common.php";
@@ -112,6 +113,11 @@ if ($name != "") {
                 // like the stafflist which need to invalidate the cache
                 // when someone logs in or off can do so.
                 modulehook("player-login");
+
+                $cookieTemplate = Template::getTemplateCookie();
+                if ($cookieTemplate !== '') {
+                    Template::setTemplateCookie($cookieTemplate);
+                }
 
                 if ($session['user']['loggedin']) {
                     $link = "<a href='" . $session['user']['restorepage'] . "'>" . $session['user']['restorepage'] . "</a>";
