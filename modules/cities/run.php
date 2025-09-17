@@ -96,7 +96,9 @@ if ($op == "travel") {
         if (e_rand(0, 100) < $dlevel && $su != '1') {
             //they've been waylaid.
 
-            if (module_events("travel", get_module_setting("travelspecialchance"), "runmodule.php?module=cities&city=" . urlencode($city) . "&d=$danger&continue=1&") != 0) {
+            $chance = (int) get_module_setting('travelspecialchance');
+
+            if (module_events("travel", $chance, "runmodule.php?module=cities&city=" . urlencode($city) . "&d=$danger&continue=1&") != 0) {
                 page_header("Something Special!");
                 if (checknavs()) {
                     page_footer();
