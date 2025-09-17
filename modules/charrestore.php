@@ -11,6 +11,7 @@ use Lotgd\Nav\SuperuserNav;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\ErrorHandler;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 function charrestore_getmoduleinfo(): array
@@ -158,15 +159,21 @@ function charrestore_dohook(string $hookname, array $args): array
             }
 
             if ($args['deltype'] == CHAR_DELETE_AUTO) {
-                $sql = "SELECT dragonkills, level FROM " . Database::prefix("accounts") . " WHERE acctid='{$args['acctid']}'";
-                $result = Database::query($sql);
-                if (Database::numRows($result) > 0) {
-                    $row = Database::fetchAssoc($result);
+                $conn = Database::getDoctrineConnection();
+                $table = Database::prefix('accounts');
+                $row = $conn->fetchAssociative(
+                    "SELECT dragonkills, level FROM {$table} WHERE acctid = :acctid",
+                    ['acctid' => (int) $args['acctid']],
+                    ['acctid' => ParameterType::INTEGER]
+                );
+                if ($row) {
+                    $dragonkills = (int) $row['dragonkills'];
+                    $level       = (int) $row['level'];
                     if (
-                        $row['dragonkills'] < get_module_setting("dk_threshold") ||
+                        $dragonkills < (int) get_module_setting('dk_threshold') ||
                         (
-                            $row['dragonkills'] == get_module_setting("dk_threshold") &&
-                            $row['level'] < get_module_setting("lvl_threshold")
+                            $dragonkills === (int) get_module_setting('dk_threshold') &&
+                            $level < (int) get_module_setting('lvl_threshold')
                         )
                     ) {
                         return $args;
@@ -187,12 +194,16 @@ function charrestore_dohook(string $hookname, array $args): array
 
 function charrestore_create_snapshot(int $acctid): bool
 {
-    $sql = "SELECT * FROM " . Database::prefix("accounts") . " WHERE acctid='{$acctid}'";
-    $result = Database::query($sql);
-    if (Database::numRows($result) === 0) {
+    $conn    = Database::getDoctrineConnection();
+    $table   = Database::prefix('accounts');
+    $account = $conn->fetchAssociative(
+        "SELECT * FROM {$table} WHERE acctid = :acctid",
+        ['acctid' => $acctid],
+        ['acctid' => ParameterType::INTEGER]
+    );
+    if (! $account) {
         return false;
     }
-    $row = Database::fetchAssoc($result);
 
     $user = array("account" => array(), "prefs" => array());
 
@@ -200,7 +211,7 @@ function charrestore_create_snapshot(int $acctid): bool
     //reduces storage footprint.
     //id and ip are not necessary and also related to identify persons (stripped)
     $nosavefields = array("output" => true, "allowednavs" => true, "lastip" => true, "uniqueid" => true);
-    foreach ($row as $key => $val) {
+    foreach ($account as $key => $val) {
         if (! isset($nosavefields[$key])) {
             $user['account'][$key] = $val;
         }
@@ -214,14 +225,18 @@ function charrestore_create_snapshot(int $acctid): bool
     //set up the user's module preferences
     //add a hook for module to not include themselves (data privacy issue)
     $nosavemodules = modulehook('charrestore_nosavemodules', array());
-    $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE userid='{$acctid}'";
-    $prefs = Database::query($sql);
-    while ($row = Database::fetchAssoc($prefs)) {
-        if (! isset($user['prefs'][$row['modulename']])) {
-            $user['prefs'][$row['modulename']] = array();
+    $prefsTable = Database::prefix('module_userprefs');
+    $prefs = $conn->fetchAllAssociative(
+        "SELECT * FROM {$prefsTable} WHERE userid = :acctid",
+        ['acctid' => $acctid],
+        ['acctid' => ParameterType::INTEGER]
+    );
+    foreach ($prefs as $pref) {
+        if (! isset($user['prefs'][$pref['modulename']])) {
+            $user['prefs'][$pref['modulename']] = array();
         }
-        if (! isset($nosavemodules[$row['modulename']])) {
-            $user['prefs'][$row['modulename']][$row['setting']] = $row['value'];
+        if (! isset($nosavemodules[$pref['modulename']])) {
+            $user['prefs'][$pref['modulename']][$pref['setting']] = $pref['value'];
         }
     }
 
@@ -462,22 +477,29 @@ function charrestore_run(): void
         $file = httpget('file');
         $file = is_string($file) ? stripslashes($file) : '';
         $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
-        $sql = "SELECT count(acctid) AS c FROM " . Database::prefix("accounts") . " WHERE login='{$user['account']['login']}'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+        $conn = Database::getDoctrineConnection();
+        $table = Database::prefix('accounts');
+        $row = $conn->fetchAssociative(
+            "SELECT COUNT(acctid) AS c FROM {$table} WHERE login = :login",
+            ['login' => (string) ($user['account']['login'] ?? '')],
+            ['login' => ParameterType::STRING]
+        );
+        $countExistingLogin = (int) ($row['c'] ?? 0);
         rawoutput("<form action='runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode($file) . $retnav . "' method='POST'>");
         addnav("", "runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode($file) . $retnav);
-        if ($row['c'] > 0) {
+        if ($countExistingLogin > 0) {
             output("`\$The user's login conflicts with an existing login in the system.");
             output("You will have to provide a new one, and you should probably think about giving them a new name after the restore.`n");
             output("`^New Login: ");
             rawoutput("<input name='newlogin'><br>");
         }
 
-        $sql = "SELECT count(acctid) as c FROM " . Database::prefix('accounts') . " WHERE acctid=" . $user['account']['acctid'];
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
-        if ($row['c'] > 0) {
+        $row = $conn->fetchAssociative(
+            "SELECT COUNT(acctid) AS c FROM {$table} WHERE acctid = :acctid",
+            ['acctid' => (int) ($user['account']['acctid'] ?? 0)],
+            ['acctid' => ParameterType::INTEGER]
+        );
+        if ((int) ($row['c'] ?? 0) > 0) {
             output("`\$The user has already a char here ... you want to maybe restore an older version of it.`n`nYou have to DELETE it first in order to restore this one.");
             page_footer();
         }
@@ -507,12 +529,17 @@ function charrestore_run(): void
         $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
         $newlogin = (httppost('newlogin') > '' ? httppost('newlogin') : $user['account']['login']);
         $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
-        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$newlogin'";
-        $result = Database::query($sql);
-        $count = Database::numRows($result);
+        $conn = Database::getDoctrineConnection();
+        $table = Database::prefix('accounts');
+        $rows = $conn->fetchAllAssociative(
+            "SELECT acctid FROM {$table} WHERE login = :login",
+            ['login' => (string) $newlogin],
+            ['login' => ParameterType::STRING]
+        );
+        $count = count($rows);
         if ($count > 0) {
             $ids = array();
-            while ($row = Database::fetchAssoc($result)) {
+            foreach ($rows as $row) {
                 $ids[] = $row['acctid'];
             }
             $link = "runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode($file);
@@ -527,11 +554,10 @@ function charrestore_run(): void
             if (httppost("newlogin") > "") {
                 $user['account']['login'] = httppost('newlogin');
             }
-            $sql = "DESCRIBE " . Database::prefix("accounts");
-            $result = Database::query($sql);
+            $result = $conn->executeQuery('DESCRIBE ' . $table);
             $known_columns = array();
             $column_types = array();
-            while ($row = Database::fetchAssoc($result)) {
+            while ($row = $result->fetchAssociative()) {
                 $known_columns[$row['Field']] = true;
                 $column_types[$row['Field']] = $row['Type'];
             }
