@@ -73,14 +73,18 @@ if ($op == "travel") {
     } else {
         if ($continue != "1" && $su != "1" && !get_module_pref("paidcost")) {
             set_module_pref("paidcost", 1);
-            $httpcost = httpget('cost');
-            $cost = modulehook("travel-cost", array("from" => $session['user']['location'],"to" => $city,"cost" => 0));
-            $cost = max(1, $cost['cost'], $httpcost);
+            $httpCost = (int) httpget('cost');
+            $hookResult = modulehook(
+                "travel-cost",
+                array("from" => $session['user']['location'], "to" => $city, "cost" => 0)
+            );
+            $hookCost = (int) ($hookResult['cost'] ?? 0);
+            $cost = (int) max(1, $hookCost, $httpCost);
             $reallyfree = $free - $cost;
             if ($reallyfree > 0) {
                 // Only increment travel used if they are still within
                 // their allowance.
-                increment_module_pref("traveltoday", $cost);
+                increment_module_pref("traveltoday", (int) $cost);
                 //do nothing, they're within their travel allowance.
             } elseif ($session['user']['turns'] + $free > 0) {
                 $over = abs($reallyfree);
