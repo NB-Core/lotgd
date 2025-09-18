@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
+use DateTimeImmutable;
 use Lotgd\ExpireChars;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
@@ -30,15 +31,16 @@ final class FetchAccountsToExpireQueryTest extends TestCase
             Database::$mockResults = [];
         }
 
+        $now = new DateTimeImmutable('now');
         $conditions = [];
         if ($old > 0) {
-            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')";
+            $conditions[] = "(laston < '" . $now->modify("-$old days")->format('Y-m-d H:i:s') . "')";
         }
         if ($new > 0) {
-            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime("-$new days")) . "' AND level=1 AND dragonkills=0)";
+            $conditions[] = "(laston < '" . $now->modify("-$new days")->format('Y-m-d H:i:s') . "' AND level=1 AND dragonkills=0)";
         }
         if ($trash > 0) {
-            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime('-' . ($trash + 1) . ' days')) . "' AND level=1 AND experience < 10 AND dragonkills=0)";
+            $conditions[] = "(laston < '" . $now->modify('-' . ($trash + 1) . ' days')->format('Y-m-d H:i:s') . "' AND level=1 AND experience < 10 AND dragonkills=0)";
         }
 
         $expected = null;
@@ -50,7 +52,7 @@ final class FetchAccountsToExpireQueryTest extends TestCase
         $ref = new \ReflectionClass(ExpireChars::class);
         $method = $ref->getMethod('fetchAccountsToExpire');
         $method->setAccessible(true);
-        $method->invoke(null, $old, $new, $trash);
+        $method->invoke(null, $old, $new, $trash, $now);
 
         if ($expected === null) {
             $this->assertSame([], Database::$queries);
