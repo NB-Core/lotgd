@@ -27,6 +27,7 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Normalize withdraw log category to lowercase.
 - Show system label for anonymous gamelog entries and record account IDs in maintenance logs.
 - Extend the template preference cookie to one year to prevent theme resets.
+- Cast equipment editor and hidden field values to strings to avoid PHP type errors on listings.
 
 
 ### Refactor
