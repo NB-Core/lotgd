@@ -26,8 +26,9 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Add unsuspend buff wrappers and seed default navigation for new characters.
 - Normalize withdraw log category to lowercase.
 - Show system label for anonymous gamelog entries and record account IDs in maintenance logs.
+- Show "Deleted User" placeholder when reading mail from deleted accounts instead of erroring.
 - Extend the template preference cookie to one year to prevent theme resets.
-- Refresh the template preference cookie at login so the selected skin persists.
+- Cast equipment editor and hidden field values to strings to avoid PHP type errors on listings.
 
 
 ### Refactor
