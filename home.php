@@ -2,15 +2,21 @@
 
 declare(strict_types=1);
 
+use Lotgd\Cookies;
+use Lotgd\Forms;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler as HookManager;
 use Lotgd\MySQL\Database;
+use Lotgd\Nav;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\Redirect;
+use Lotgd\Settings;
+use Lotgd\Template;
 use Lotgd\Translator;
 // translator ready
-use Lotgd\Forms;
-use Lotgd\Nav;
-use Lotgd\Http;
-use Lotgd\Template;
 use Lotgd\TwigTemplate;
-use Lotgd\Cookies;
 
 // addnews ready
 // mail ready
@@ -21,56 +27,54 @@ if (! isset($_SERVER['REQUEST_URI'])) {
     $_SERVER['REQUEST_URI'] = '/home.php';
 }
 
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
 
-use Lotgd\Page\Header;
-use Lotgd\Page\Footer;
-
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 if (isset($_POST['template'])) {
-        $skin = $_POST['template'];
+    $skin = $_POST['template'];
     if ($skin !== '' && Template::isValidTemplate($skin)) {
-            Template::setTemplateCookie($skin);
-            Template::prepareTemplate(true); // set anew
+        Template::setTemplateCookie($skin);
+        Template::prepareTemplate(true); // set anew
     }
 }
 
-
-if (!isset($session['loggedin'])) {
+if (! isset($session['loggedin'])) {
     $session['loggedin'] = false;
 }
 if ($session['loggedin']) {
-    redirect("badnav.php");
+    Redirect::redirect('badnav.php');
 }
-if (!isset($session['message'])) {
+if (! isset($session['message'])) {
     $session['message'] = '';
 }
 
-Translator::getInstance()->setSchema("home");
+Translator::getInstance()->setSchema('home');
 
 $op = Http::get('op');
 
 Header::pageHeader();
-output("`cWelcome to Legend of the Green Dragon, a browser based role playing game, based on Seth Able's Legend of the Red Dragon.`n");
+$output->output("`cWelcome to Legend of the Green Dragon, a browser based role playing game, based on Seth Able's Legend of the Red Dragon.`n");
 
-if (getsetting("homecurtime", 1)) {
-    output("`@The current time in %s is `%%s`@.`0`n", getsetting("villagename", LOCATION_FIELDS), getgametime());
+if ($settings->getSetting('homecurtime', 1)) {
+    $output->output("`@The current time in %s is `%%s`@.`0`n", $settings->getSetting('villagename', LOCATION_FIELDS), getgametime());
 }
 
-if (getsetting("homenewdaytime", 1)) {
+if ($settings->getSetting('homenewdaytime', 1)) {
     $secstonewday = secondstonextgameday();
-    output(
+    $output->output(
         "`@Next new game day in: `\$%s (real time)`0`n`n",
         date(
-            "G\\" . translate_inline("h", "datetime") . ", i\\" . translate_inline("m", "datetime") . ", s\\" . translate_inline("s", "datetime"),
+            "G\\" . Translator::translateInline('h', 'datetime') . ", i\\" . Translator::translateInline('m', 'datetime') . ", s\\" . Translator::translateInline('s', 'datetime'),
             $secstonewday
         )
     );
 }
 
-if (getsetting("homenewestplayer", 1)) {
+if ($settings->getSetting('homenewestplayer', 1)) {
     $name = "";
-    $newplayer = getsetting("newestplayer", "");
+    $newplayer = $settings->getSetting('newestplayer', '');
     if ($newplayer != 0) {
         $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid='$newplayer'";
         $result = Database::queryCached($sql, "newest");
@@ -82,11 +86,11 @@ if (getsetting("homenewestplayer", 1)) {
         $name = $newplayer;
     }
     if ($name != "") {
-        output("`QThe newest resident of the realm is: `&%s`0`n`n", $name);
+        $output->output("`QThe newest resident of the realm is: `&%s`0`n`n", $name);
     }
 }
 
-clearnav();
+Nav::clearNav();
 Nav::add("New to LoGD?");
 Nav::add("Create a character", "create.php");
 Nav::add("Game Functions");
@@ -98,111 +102,125 @@ Nav::add("About LoGD", "about.php");
 Nav::add("Game Setup Info", "about.php?op=setup");
 Nav::add("LoGD Net", "logdnet.php?op=list");
 Nav::add("Legal");
-if (getsetting('impressum', '') != '') {
+if ($settings->getSetting('impressum', '') != '') {
     Nav::add("Imprint", "about.php");
 }
 
-modulehook("index", array());
+HookManager::hook('index', []);
 
-if (abs(getsetting("OnlineCountLast", 0) - strtotime("now")) > 60) {
-    $sql = "SELECT count(acctid) as onlinecount FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "'";
+$lastOnlineCountUpdate = (int) $settings->getSetting('OnlineCountLast', 0);
+if (abs($lastOnlineCountUpdate - strtotime('now')) > 60) {
+    $sql = "SELECT count(acctid) as onlinecount FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')) . "'";
     $result = Database::query($sql);
     $onlinecount = Database::fetchAssoc($result);
-    $onlinecount = $onlinecount ['onlinecount'];
-    savesetting("OnlineCount", $onlinecount);
-    savesetting("OnlineCountLast", strtotime("now"));
+    $onlinecount = (int) ($onlinecount['onlinecount'] ?? 0);
+    $settings->saveSetting('OnlineCount', $onlinecount);
+    $settings->saveSetting('OnlineCountLast', strtotime('now'));
 } else {
-    $onlinecount = getsetting("OnlineCount", 0);
+    $onlinecount = (int) $settings->getSetting('OnlineCount', 0);
 }
-if ($onlinecount < getsetting("maxonline", 0) || getsetting("maxonline", 0) == 0) {
-    output("Enter your name and password to enter the realm.`n");
-    if ($op == "timeout") {
-        if (!isset($session['message'])) {
+
+$maxOnline = (int) $settings->getSetting('maxonline', 0);
+if ($onlinecount < $maxOnline || $maxOnline === 0) {
+    $output->output("Enter your name and password to enter the realm.`n");
+    if ($op === 'timeout') {
+        if (! isset($session['message'])) {
             $session['message'] = '';
         }
-        $session['message'] .= translate_inline(" Your session has timed out, you must log in again.`n");
+        $session['message'] .= Translator::translateInline(" Your session has timed out, you must log in again.`n");
     }
-    if (Cookies::getLgi() === null) {
-            $session['message'] .= translate_inline("It appears that you may be blocking cookies from this site.  At least session cookies must be enabled in order to use this site.`n");
-            $session['message'] .= translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
-    }
-    if (!TwigTemplate::isActive() && $session['message'] > '') {
-        output_notl("`b`\$%s`b`n", $session['message'], true);
-    }
-    rawoutput("<script src='src/Lotgd/md5.js' defer></script>");
-    rawoutput("<script language='JavaScript'>
-	<!--
-	function md5pass(){
-		//encode passwords before submission to protect them even from network sniffing attacks.
-		var passbox = document.getElementById('password');
-		if (passbox.value.substring(0, 5) != '!md5!') {
-			passbox.value = '!md5!' + hex_md5(passbox.value);
-		}
-	}
-	//-->
-	</script>");
-    $uname = translate_inline("<u>U</u>sername");
-    $pass = translate_inline("<u>P</u>assword");
-    $butt = translate_inline("Log in");
-        $message = (string) ($session['message'] ?? '');
-        $message = preg_replace('/(?:\A(?:`n|\s)+|(?:`n|\s)+\z)/', '', $message) ?? '';
-        $message = trim($message);
 
-        $templateVars = [
-            "username" => $uname,
-            "password" => $pass,
-            "button" => $butt,
-            "message" => appoencode($message)
-        ];
+    if (Cookies::getLgi() === null) {
+        $session['message'] .= Translator::translateInline("It appears that you may be blocking cookies from this site.  At least session cookies must be enabled in order to use this site.`n");
+        $session['message'] .= Translator::translateInline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
+    }
+
+    if (! TwigTemplate::isActive() && $session['message'] > '') {
+        $output->outputNotl("`b`\$%s`b`n", $session['message'], true);
+    }
+
+    $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
+    $output->rawOutput("<script language='JavaScript'>
+        <!--
+        function md5pass(){
+                //encode passwords before submission to protect them even from network sniffing attacks.
+                var passbox = document.getElementById('password');
+                if (passbox.value.substring(0, 5) != '!md5!') {
+                        passbox.value = '!md5!' + hex_md5(passbox.value);
+                }
+        }
+        //-->
+        </script>");
+
+    $usernameLabel = Translator::translateInline("<u>U</u>sername");
+    $passwordLabel = Translator::translateInline("<u>P</u>assword");
+    $loginLabel = Translator::translateInline('Log in');
+
+    $message = (string) ($session['message'] ?? '');
+    $message = preg_replace('/(?:\A(?:`n|\s)+|(?:`n|\s)+\z)/', '', $message) ?? '';
+    $message = trim($message);
+
+    $templateVars = [
+        'username' => $usernameLabel,
+        'password' => $passwordLabel,
+        'button' => $loginLabel,
+        'message' => $output->appoencode($message),
+    ];
+
     if (TwigTemplate::isActive()) {
         $templateVars['template_path'] = TwigTemplate::getPath();
     }
-        rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">" . templatereplace("login", $templateVars) . "</form>");
-        output("Did you forget your password? Visit the <a href='create.php?op=forgot'>password reset page</a> to retrieve a new one!`n", true);
-    output_notl("`c");
-    Nav::add("", "login.php");
-    modulehook("index-login", array());
+
+    $output->rawOutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">" . templatereplace('login', $templateVars) . "</form>");
+    $output->output("Did you forget your password? Visit the <a href='create.php?op=forgot'>password reset page</a> to retrieve a new one!`n", true);
+    $output->outputNotl('`c');
+    Nav::add('', 'login.php');
+    HookManager::hook('index-login', []);
 } else {
-    output("`\$`bServer full!`b`n`^Please wait until some users have logged out.`n`n`0");
-    if ($op == "timeout") {
-        $session['message'] .= translate_inline(" Your session has timed out, you must log in again.`n");
+    $output->output("`\$`bServer full!`b`n`^Please wait until some users have logged out.`n`n`0");
+    if ($op === 'timeout') {
+        $session['message'] .= Translator::translateInline(" Your session has timed out, you must log in again.`n");
     }
+
     if (Cookies::getLgi() === null) {
-            $session['message'] .= translate_inline("It appears that you may be blocking cookies from this site. At least session cookies must be enabled in order to use this site.`n");
-            $session['message'] .= translate_inline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
+        $session['message'] .= Translator::translateInline("It appears that you may be blocking cookies from this site. At least session cookies must be enabled in order to use this site.`n");
+        $session['message'] .= Translator::translateInline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
     }
-    if ($session['message'] > "") {
-        output("`b`\$%s`b`n", $session['message'], true);
+
+    if ($session['message'] > '') {
+        $output->output("`b`\$%s`b`n", $session['message'], true);
     }
-        $templateVars = [];
+
+    $templateVars = [];
     if (TwigTemplate::isActive()) {
         $templateVars['template_path'] = TwigTemplate::getPath();
     }
-        rawoutput(templatereplace("loginfull", $templateVars));
-    output_notl("`c");
+
+    $output->rawOutput(templatereplace('loginfull', $templateVars));
+    $output->outputNotl('`c');
 }
 
-$msg = getsetting("loginbanner", "*BETA* This is a BETA of this website, things are likely to change now and again, as it is under active development *BETA*");
-output_notl("`n`c`b`&%s`0`b`c`n", $msg);
+$msg = $settings->getSetting('loginbanner', "*BETA* This is a BETA of this website, things are likely to change now and again, as it is under active development *BETA*");
+$output->outputNotl("`n`c`b`&%s`0`b`c`n", $msg);
 $session['message'] = "";
-output("`c`2Game server running version: `@%s`0`c", $logd_version);
+$output->output("`c`2Game server running version: `@%s`0`c", $logd_version);
 
-if (getsetting("homeskinselect", 1)) {
-    rawoutput("<form action='home.php' method='POST'>");
-    rawoutput("<table align='center'><tr><td>");
-        $form = array("template" => "Choose a different display skin:,theme");
-        $cookieTemplate = Template::getTemplateCookie();
+if ($settings->getSetting('homeskinselect', 1)) {
+    $output->rawOutput("<form action='home.php' method='POST'>");
+    $output->rawOutput("<table align='center'><tr><td>");
+    $form = ['template' => 'Choose a different display skin:,theme'];
+    $cookieTemplate = Template::getTemplateCookie();
     if ($cookieTemplate !== '') {
-            $prefs['template'] = Template::addTypePrefix($cookieTemplate);
+        $prefs['template'] = Template::addTypePrefix($cookieTemplate);
     } else {
-            $prefs['template'] = Template::addTypePrefix(getsetting("defaultskin", DEFAULT_TEMPLATE));
+        $prefs['template'] = Template::addTypePrefix($settings->getSetting('defaultskin', DEFAULT_TEMPLATE));
     }
-        Forms::showForm($form, $prefs, true);
-    $submit = translate_inline("Choose");
-    rawoutput("</td><td><br>&nbsp;<input type='submit' class='button login-button' value='$submit'></td>");
-    rawoutput("</tr></table></form>");
+    Forms::showForm($form, $prefs, true);
+    $submit = Translator::translateInline('Choose');
+    $output->rawOutput("</td><td><br>&nbsp;<input type='submit' class='button login-button' value='$submit'></td>");
+    $output->rawOutput("</tr></table></form>");
 }
-modulehook("index_bottom", array());
+HookManager::hook('index_bottom', []);
 
 Footer::pageFooter();
 if ($op == "timeout") {
