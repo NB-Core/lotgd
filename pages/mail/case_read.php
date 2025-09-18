@@ -61,6 +61,8 @@ function mailRead(): void
 
     // Determine sender status
     $statusImage = '';
+    $senderId = $message['acctid'] ?? null;
+
     if ((int) $message['msgfrom'] === 0) {
         $message['name'] = Translator::translateInline('`i`^System`0`i');
 
@@ -79,12 +81,16 @@ function mailRead(): void
         } else {
             $message['body'] = $message['body'];
         }
-    } elseif ($message['name'] === '') {
-        $message['name'] = Translator::translateInline('`^Deleted User');
     } else {
-        $online = (int) PlayerFunctions::isPlayerOnline($message['acctid']);
-        $status = $online ? 'online' : 'offline';
-        $statusImage = "<img src='images/$status.gif' alt='$status'>";
+        $hasSenderRecord = is_numeric($senderId) && (int) $senderId > 0 && ! empty($message['name']);
+
+        if (! $hasSenderRecord) {
+            $message['name'] = Translator::translateInline('`^Deleted User');
+        } else {
+            $online = (int) PlayerFunctions::isPlayerOnline((int) $senderId);
+            $status = $online ? 'online' : 'offline';
+            $statusImage = "<img src='images/$status.gif' alt='$status'>";
+        }
     }
 
     // Show NEW marker if message is unread
