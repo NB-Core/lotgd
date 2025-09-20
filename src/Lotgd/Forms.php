@@ -567,8 +567,13 @@ JS;
                 $output->rawOutput("<input id='$entityId' type='checkbox' name='$keyout' value='1'" . ($checked ? ' checked' : '') . '>');
                 break;
 
-            case 'hidden':
-                $output->rawOutput("<input id='$entityId' type='hidden' name='$keyout' value=\"" . HTMLEntities($row[$key], ENT_COMPAT, $charset) . "\">" . HTMLEntities($row[$key], ENT_COMPAT, $charset));
+             case 'hidden':
+                  $output->rawOutput(
+                        "<input id='$entityId' type='hidden' name='$keyout' value=\"" 
+                        . htmlentities((string)($row[$key] ?? ''), ENT_COMPAT, $charset)
+                        . "\">" 
+                        . htmlentities((string)($row[$key] ?? ''), ENT_COMPAT, $charset)
+                    );
                 break;
 
             case 'viewonly':

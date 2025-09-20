@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 use Doctrine\DBAL\ParameterType;
-use Lotgd\FightNav;
+use Lotgd\Battle;
 use Lotgd\Forest\Outcomes;
 use Lotgd\MySQL\Database;
 
@@ -219,7 +219,7 @@ if ($battle) {
         require_once 'lib/forestoutcomes.php';
         forestdefeat($newenemies, ['travelling to %s', $city]);
     } else {
-        FightNav::fightnav(true, true, "runmodule.php?module=cities&city=" . urlencode($city) . "&d=$danger");
+        Battle::fightnav(true, true, "runmodule.php?module=cities&city=" . urlencode($city) . "&d=$danger");
     }
     page_footer();
 }

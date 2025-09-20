@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use DateTimeImmutable;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
@@ -134,17 +135,18 @@ class ExpireChars
      *
      * @return array<int,array{acctid:int,login:string,dragonkills:int,level:int}>
      */
-    private static function fetchAccountsToExpire(int $old, int $new, int $trash): array
+    private static function fetchAccountsToExpire(int $old, int $new, int $trash, ?DateTimeImmutable $now = null): array
     {
+        $base = $now ?? new DateTimeImmutable('now');
         $conditions = [];
         if ($old > 0) {
-            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime("-$old days")) . "')";
+            $conditions[] = "(laston < '" . $base->modify("-$old days")->format('Y-m-d H:i:s') . "')";
         }
         if ($new > 0) {
-            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime("-$new days")) . "' AND level=1 AND dragonkills=0)";
+            $conditions[] = "(laston < '" . $base->modify("-$new days")->format('Y-m-d H:i:s') . "' AND level=1 AND dragonkills=0)";
         }
         if ($trash > 0) {
-            $conditions[] = "(laston < '" . date('Y-m-d H:i:s', strtotime('-' . ($trash + 1) . ' days')) . "' AND level=1 AND experience < 10 AND dragonkills=0)";
+            $conditions[] = "(laston < '" . $base->modify('-' . ($trash + 1) . ' days')->format('Y-m-d H:i:s') . "' AND level=1 AND experience < 10 AND dragonkills=0)";
         }
 
         if (empty($conditions)) {

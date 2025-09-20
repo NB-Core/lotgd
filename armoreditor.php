@@ -114,11 +114,11 @@ if ($op == "") {
         rawoutput("<td>");
         output_notl($row['armorname']);
         rawoutput("</td><td>");
-        output_notl($row['value']);
+        output_notl((string)$row['value']);
         rawoutput("</td><td>");
-        output_notl($row['defense']);
+        output_notl((string)$row['defense']);
         rawoutput("</td><td>");
-        output_notl($row['level']);
+        output_notl((string)$row['level']);
         rawoutput("</td>");
         rawoutput("</tr>");
     }
