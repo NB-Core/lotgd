@@ -61,7 +61,14 @@ function mailRead(): void
 
     // Determine sender status
     $statusImage = '';
-    $senderId = $message['acctid'] ?? null;
+    $senderIdRaw = $message['acctid'] ?? null;
+    $senderId = null;
+
+    if (is_int($senderIdRaw)) {
+        $senderId = $senderIdRaw;
+    } elseif (is_string($senderIdRaw) && ctype_digit($senderIdRaw)) {
+        $senderId = (int) $senderIdRaw;
+    }
 
     if ((int) $message['msgfrom'] === 0) {
         $message['name'] = Translator::translateInline('`i`^System`0`i');
@@ -82,12 +89,12 @@ function mailRead(): void
             $message['body'] = $message['body'];
         }
     } else {
-        $hasSenderRecord = is_numeric($senderId) && (int) $senderId > 0 && ! empty($message['name']);
+        $hasSenderRecord = $senderId !== null && $senderId > 0 && ! empty($message['name']);
 
         if (! $hasSenderRecord) {
             $message['name'] = Translator::translateInline('`^Deleted User');
         } else {
-            $online = (int) PlayerFunctions::isPlayerOnline((int) $senderId);
+            $online = PlayerFunctions::isPlayerOnline($senderId);
             $status = $online ? 'online' : 'offline';
             $statusImage = "<img src='images/$status.gif' alt='$status'>";
         }
