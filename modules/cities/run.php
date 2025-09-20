@@ -31,7 +31,7 @@ if ($session['user']['specialinc'] != "" || httpget("eventhandler")) {
     $in_event = handle_event(
         "travel",
         "runmodule.php?module=cities&city=" . urlencode($city) . "&d=$danger&continue=1&",
-        "Travel"
+        true
     );
     if ($in_event) {
         addnav("Continue", "runmodule.php?module=cities&op=travel&city=" . urlencode($city) . "&d=$danger&continue=1");
