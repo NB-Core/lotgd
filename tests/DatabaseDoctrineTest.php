@@ -39,6 +39,15 @@ final class DatabaseDoctrineTest extends TestCase
         $this->assertSame(['ok' => true], $row);
     }
 
+    public function testFetchAssocWrapsCachedAssociativeRow(): void
+    {
+        $cachedRow = ['id' => 1, 'name' => 'Shadowfax'];
+
+        $row = Database::fetchAssoc($cachedRow);
+
+        $this->assertSame(['id' => 1, 'name' => 'Shadowfax'], $row);
+    }
+
     public function testInsertIdUsesDoctrine(): void
     {
         $id = Database::insertId();
