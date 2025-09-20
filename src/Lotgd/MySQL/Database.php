@@ -231,6 +231,9 @@ class Database
     public static function fetchAssoc(array|\mysqli_result|DoctrineResult &$result): array|false|null
     {
         if (is_array($result)) {
+            if (!array_is_list($result)) {
+                $result = [$result];
+            }
             $val = current($result);
             next($result);
             return $val;

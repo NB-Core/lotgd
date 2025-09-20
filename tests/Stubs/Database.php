@@ -350,6 +350,10 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static function fetchAssoc(mixed &$result): mixed
         {
             if (is_array($result)) {
+                if (!array_is_list($result)) {
+                    $result = [$result];
+                }
+
                 return array_shift($result);
             }
 
