@@ -53,7 +53,10 @@ final class Stage6Test extends TestCase
             rename($this->dbconnectPath, $this->dbconnectBackup);
         }
 
-        $this->settings = new DummySettings(['charset' => 'UTF-8']);
+        $this->settings = new DummySettings([
+            'charset' => 'UTF-8',
+            'installer_version' => '1.0.0',
+        ]);
         Settings::setInstance($this->settings);
         $GLOBALS['settings'] = $this->settings;
 
@@ -155,5 +158,52 @@ final class Stage6Test extends TestCase
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('You will have to create this file yourself', $output);
         $this->assertStringContainsString('The contents of this file should be as follows', $output);
+    }
+
+    public function testStage6MigratesLegacyDbconnectFile(): void
+    {
+        global $session;
+        $session['dbinfo'] = [
+            'DB_HOST' => 'legacy',
+            'DB_USER' => 'upgrader',
+            'DB_PASS' => 'oldpass',
+            'DB_NAME' => 'classic',
+            'DB_PREFIX' => 'legacy_',
+            'DB_USEDATACACHE' => true,
+            'DB_DATACACHEPATH' => '/legacy/cache',
+        ];
+
+        $legacy = <<<'PHP'
+<?php
+$DB_HOST = 'legacy';
+$DB_USER = 'upgrader';
+$DB_PASS = 'oldpass';
+$DB_NAME = 'classic';
+$DB_PREFIX = 'legacy_';
+$DB_USEDATACACHE = 1;
+$DB_DATACACHEPATH = '/legacy/cache';
+PHP;
+        file_put_contents($this->dbconnectPath, $legacy);
+
+        $installer = new Installer();
+        $installer->stage6();
+
+        $this->assertFileExists($this->dbconnectPath);
+
+        $contents = file_get_contents($this->dbconnectPath);
+        $this->assertStringContainsString("return [", $contents);
+        $this->assertStringContainsString("'DB_HOST' => 'legacy'", $contents);
+        $this->assertStringContainsString("'DB_USER' => 'upgrader'", $contents);
+        $this->assertStringContainsString("'DB_PASS' => 'oldpass'", $contents);
+        $this->assertStringContainsString("'DB_NAME' => 'classic'", $contents);
+        $this->assertStringContainsString("'DB_PREFIX' => 'legacy_'", $contents);
+        $this->assertStringContainsString("'DB_USEDATACACHE' => 1", $contents);
+        $this->assertStringContainsString("'DB_DATACACHEPATH' => '/legacy/cache'", $contents);
+
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString('Success', $output);
+        $this->assertStringContainsString('You are ready for the next step', $output);
+
+        $this->assertNotSame(5, $session['stagecompleted'] ?? null);
     }
 }
