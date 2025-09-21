@@ -6,6 +6,7 @@ namespace Lotgd\Tests\Installer;
 
 use Lotgd\Installer\Installer;
 use Lotgd\MySQL\Database;
+use Lotgd\Output;
 use Lotgd\Tests\Stubs\DbMysqli;
 use PHPUnit\Framework\TestCase;
 
@@ -99,5 +100,68 @@ final class Stage4Test extends TestCase
         $instance = Database::getInstance();
         $this->assertInstanceOf(DbMysqli::class, $instance);
         $this->assertNull(Database::$doctrineConnection);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testStage4ReportsConnectionFailure(): void
+    {
+        global $session;
+        $session = [
+            'dbinfo' => [
+                'DB_HOST' => 'localhost',
+                'DB_USER' => 'user',
+                'DB_PASS' => 'pass',
+                'DB_NAME' => 'lotgd',
+                'DB_USEDATACACHE' => false,
+                'DB_DATACACHEPATH' => '',
+            ],
+            'stagecompleted' => 3,
+        ];
+
+        $output = Output::getInstance();
+        $outputRef = new \ReflectionClass(Output::class);
+        $outputProp = $outputRef->getProperty('instance');
+        $outputProp->setAccessible(true);
+        $outputProp->setValue(null, $output);
+
+        $errorMessage = 'Access denied';
+        $failingDb = new class($errorMessage) extends DbMysqli {
+            public function __construct(private string $errorMessage)
+            {
+            }
+
+            public function connect(string $h, string $u, string $p): bool
+            {
+                echo $this->errorMessage;
+                return false;
+            }
+
+            public function error(): string
+            {
+                return $this->errorMessage;
+            }
+        };
+
+        $dbRef = new \ReflectionClass(Database::class);
+        $instanceProp = $dbRef->getProperty('instance');
+        $instanceProp->setAccessible(true);
+        $instanceProp->setValue(null, $failingDb);
+
+        require_once dirname(__DIR__, 2) . '/install/lib/Installer.php';
+
+        ob_start();
+        $installer = new Installer();
+        $installer->runStage(4);
+        ob_end_clean();
+
+        $this->assertFalse(defined('DB_INSTALLER_STAGE4'));
+        $this->assertSame(3, $session['stagecompleted']);
+
+        $rawOutput = $output->getRawOutput();
+        $this->assertStringContainsString("Blast!  I wasn't able to connect", $rawOutput);
+        $this->assertStringContainsString($errorMessage, $rawOutput);
     }
 }
