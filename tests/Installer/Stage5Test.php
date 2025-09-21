@@ -133,4 +133,24 @@ final class Stage5Test extends TestCase
 
         $this->assertStringNotContainsString('installer.php?stage=5&op=confirm_overwrite', $output);
     }
+
+    public function testStage5UpgradePath(): void
+    {
+        global $session;
+
+        $session['stagecompleted'] = 5;
+        Database::$mockResults = [];
+        $_GET['type'] = 'upgrade';
+
+        $installer = new Installer();
+        $installer->stage5();
+
+        $this->assertTrue($session['dbinfo']['upgrade']);
+        $this->assertSame(5, $session['stagecompleted']);
+
+        $output = Output::getInstance()->getRawOutput();
+
+        $this->assertStringContainsString('This looks like a game upgrade', $output);
+        $this->assertStringNotContainsString('installer.php?stage=5&op=confirm_overwrite', $output);
+    }
 }
