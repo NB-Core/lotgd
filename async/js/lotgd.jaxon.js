@@ -113,7 +113,7 @@
         } else {
             console.error('DEBUG: Polling requirements not met:', {
                 Lotgd: typeof window.Lotgd,
-                pollUpdates: typeof window.Lotgd ? .Async ? .Handler ? .Commentary ? .pollUpdates,
+                pollUpdates: typeof window.Lotgd?.Async?.Handler?.Commentary?.pollUpdates,
                 pollInterval: typeof window.lotgd_poll_interval_ms
             });
         }
