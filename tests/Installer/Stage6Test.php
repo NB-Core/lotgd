@@ -148,6 +148,10 @@ final class Stage6Test extends TestCase
             self::$simulateWriteFailure = false;
         }
 
+        global $session;
+
+        $this->assertSame(5, $session['stagecompleted'] ?? null);
+
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('You will have to create this file yourself', $output);
         $this->assertStringContainsString('The contents of this file should be as follows', $output);
