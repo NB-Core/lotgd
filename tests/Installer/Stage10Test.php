@@ -108,4 +108,24 @@ final class Stage10Test extends TestCase
             $this->assertStringNotContainsString('INSERT INTO accounts', $query);
         }
     }
+
+    public function testStage10SkipsCreationWhenSuperuserAlreadyExists(): void
+    {
+        Database::$mockResults = [
+            [
+                ['login' => 'Admin', 'password' => 'hash'],
+            ],
+        ];
+
+        $_POST = [];
+
+        $installer = new Installer();
+        $installer->stage10();
+
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString('You already have a superuser account', $output);
+
+        $this->assertCount(1, Database::$queries);
+        $this->assertStringContainsString('SELECT login, password FROM accounts', Database::$queries[0]);
+    }
 }
