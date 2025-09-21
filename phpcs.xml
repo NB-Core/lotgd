@@ -3,6 +3,7 @@
 	<rule ref="PSR12">
 		<exclude name="Generic.Files.LineLength"/>
 	</rule>
-	<exclude-pattern>vendor/*</exclude-pattern>
+        <exclude-pattern>vendor/*</exclude-pattern>
         <exclude-pattern>src/Lotgd/md5.js</exclude-pattern>
+        <exclude-pattern>async/js/*</exclude-pattern>
 </ruleset>
