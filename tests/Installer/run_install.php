@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace {
+    require __DIR__ . '/../Stubs/DoctrineBootstrap.php';
     require __DIR__ . '/../../autoload.php';
     require __DIR__ . '/../../src/Lotgd/Config/constants.php';
     require __DIR__ . '/../Stubs/Functions.php';
@@ -20,6 +21,8 @@ namespace Lotgd\Installer {
 
 namespace {
     use Lotgd\Installer\Installer;
+    use Lotgd\MySQL\Database;
+    use Lotgd\Tests\Stubs\DoctrineBootstrap;
 
     [$script, $host, $user, $pass, $db] = $argv;
 
@@ -35,6 +38,9 @@ namespace {
     ], 'user' => ['loggedin' => false, 'superuser' => 0, 'acctid' => 0, 'restorepage' => '']];
     $DB_USEDATACACHE = 0;
     $DB_PREFIX = '';
+
+    $connection = DoctrineBootstrap::getEntityManager()->getConnection();
+    Database::setDoctrineConnection($connection);
 
     $installer = new Installer();
 
