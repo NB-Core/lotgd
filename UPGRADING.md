@@ -7,7 +7,7 @@ The 2.0 line introduces major architectural changes (Composer, PSR-4, Doctrine, 
 
 ## 1. Requirements
 
-- **PHP 8.4** (minimum)  
+- **PHP 8.3** (minimum)
   Earlier PHP versions are not supported.
 - Database: MySQL 8.x or MariaDB 10.6+ recommended.  
 - Composer installed (`composer --version`).
@@ -96,7 +96,7 @@ Once the legacy upgrade is complete:
 - **Namespaces**: Core code moved to `Lotgd\...`. Custom modules calling internal functions may need refactoring.
 - **Twig**: Default rendering pipeline. Legacy template hooks may not work without updates.
 - **Doctrine**: Direct SQL hacks should be migrated to repositories or services.
-- **PHP 8.4**: Old PHP 7.x-style code (e.g., deprecated array/string operations) will break.
+- **PHP 8.3**: Old PHP 7.x-style code (e.g., deprecated array/string operations) will break.
 - **Async**: All Ajax endpoints rewritten to use Jaxon.
 
 ### Refactoring Legacy SQL to Prepared Statements
@@ -173,7 +173,7 @@ $result = $conn->executeQuery($sql, ['login' => $login]);
 
 - Backup → Update → Legacy Upgrade → Doctrine Migrate → Config Check → Test.  
 - Expect to update **templates, modules, and custom code** for Twig, Composer/PSR-4, and Doctrine.  
-- Once migrated, you’ll benefit from a modern stack: Composer dependencies, PHP 8.4 support, Twig theming, async UX, and Doctrine-managed DB schema.
+- Once migrated, you’ll benefit from a modern stack: Composer dependencies, PHP 8.3 support, Twig theming, async UX, and Doctrine-managed DB schema.
 
 ---
 

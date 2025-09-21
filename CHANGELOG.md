@@ -108,7 +108,7 @@ These enhancements significantly improve code quality, developer trust, and long
 - **Doctrine ORM + Migrations** integration.
 - **Doctrine DBAL** used across core.
 - Added `migrations/` tree with upgrade paths.
-- PHP **8.4 baseline** documented.
+- PHP **8.3 baseline** documented.
 
 ### Refactor
 - Broad PSR-4 namespacing (`Lotgd\...`).
@@ -155,7 +155,7 @@ These enhancements significantly improve code quality, developer trust, and long
 ### Refactor / Architecture
 - Composer-first, PSR-4 namespaces (`Lotgd\...`).
 - Doctrine DBAL + ORM + migrations.
-- PHP 8.4 baseline.
+- PHP 8.3 baseline.
 - New config structure (`src/Lotgd/Config`).
 - Async code moved to dedicated directories.
 
@@ -183,7 +183,7 @@ These enhancements significantly improve code quality, developer trust, and long
 - Namespacing and strict typing throughout.
 - Doctrine migrations required; legacy upgrade first.
 - Async endpoints rewritten for Jaxon.
-- PHP 8.4 minimum version.
+- PHP 8.3 minimum version.
 
 ---
 
