@@ -11,6 +11,16 @@ namespace {
     }
 }
 
+namespace Lotgd\Installer {
+
+    if (! function_exists(__NAMESPACE__ . '\\header')) {
+        function header(string $header, bool $replace = true, int $http_response_code = 0): void
+        {
+            $GLOBALS['installer_headers'][] = $header;
+        }
+    }
+}
+
 namespace Lotgd\Tests\Installer {
 
     use Lotgd\Installer\Installer;
@@ -37,6 +47,10 @@ namespace Lotgd\Tests\Installer {
 
             $_POST = [];
             $_SERVER['SCRIPT_NAME'] = 'test.php';
+
+            header_remove();
+
+            $GLOBALS['installer_headers'] = [];
 
             global $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
 
@@ -78,6 +92,17 @@ namespace Lotgd\Tests\Installer {
 
             $this->assertStringNotContainsString('Confirmation', $output);
             $this->assertStringNotContainsString('Perform a clean install.', $output);
+            $this->assertContains('Location: installer.php?stage=8', $this->getRedirectHeaders());
+        }
+
+        /**
+         * @return list<string>
+         */
+        private function getRedirectHeaders(): array
+        {
+            $headers = $GLOBALS['installer_headers'] ?? [];
+
+            return array_values(array_filter($headers, static fn (string $header): bool => str_starts_with($header, 'Location:')));
         }
     }
 }
