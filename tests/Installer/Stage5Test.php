@@ -91,6 +91,7 @@ final class Stage5Test extends TestCase
         global $session;
         $this->assertSame('lotgd_', $session['dbinfo']['DB_PREFIX']);
         $this->assertFalse($session['dbinfo']['upgrade']);
+        $this->assertSame(4, $session['stagecompleted']);
 
         $output = Output::getInstance()->getRawOutput();
 
