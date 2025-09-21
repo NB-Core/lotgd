@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Installer;
 
+use Lotgd\Http;
 use Lotgd\Installer\Installer;
 use Lotgd\Output;
 use Lotgd\Settings;
@@ -101,5 +102,35 @@ final class Stage5Test extends TestCase
 
         $this->assertNotEmpty(Database::$queries);
         $this->assertSame('SHOW TABLES', Database::$queries[0]);
+    }
+
+    public function testStage5ConfirmOverwriteSkipsPrompt(): void
+    {
+        Database::$mockResults = [
+            [
+                ['Tables_in_lotgd' => 'lotgd_accounts'],
+                ['Tables_in_lotgd' => 'custom_table'],
+            ],
+            [
+                ['Grants for user@localhost' => 'GRANT ALL PRIVILEGES'],
+            ],
+        ];
+
+        global $session;
+        $session['stagecompleted'] = 5;
+        $_GET['op'] = 'confirm_overwrite';
+        $_POST['DB_PREFIX'] = 'lotgd';
+
+        $this->assertSame('confirm_overwrite', Http::get('op'));
+
+        $installer = new Installer();
+        $installer->stage5();
+
+        $this->assertTrue($session['sure i want to overwrite the tables']);
+        $this->assertSame(5, $session['stagecompleted']);
+
+        $output = Output::getInstance()->getRawOutput();
+
+        $this->assertStringNotContainsString('installer.php?stage=5&op=confirm_overwrite', $output);
     }
 }
