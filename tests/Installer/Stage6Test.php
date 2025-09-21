@@ -144,8 +144,6 @@ final class Stage6Test extends TestCase
         try {
             $installer = new Installer();
             $installer->stage6();
-        } catch (\Throwable $error) {
-            $this->assertStringContainsString('Undefined variable $success', $error->getMessage());
         } finally {
             self::$simulateWriteFailure = false;
         }

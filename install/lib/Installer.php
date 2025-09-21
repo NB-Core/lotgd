@@ -800,6 +800,7 @@ class Installer
     public function stage6(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        $success = false;
         if (file_exists("dbconnect.php")) {
             $success = true;
             $initial = false;
@@ -862,7 +863,8 @@ class Installer
                 $this->output->output("`2Create a new file, past the entire contents from above into it (everything from and including `3<?php`2 up to and including `3?>`2 ).");
                 $this->output->output("When you have that done, save the file as 'dbconnect.php' and upload this to the location you have LoGD at.");
                 $this->output->output("You can refresh this page to see if you were successful.");
-            } else {
+            }
+            if (! $failure) {
                 $success = true;
             }
         }
