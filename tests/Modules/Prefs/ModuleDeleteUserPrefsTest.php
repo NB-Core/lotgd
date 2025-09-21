@@ -13,18 +13,38 @@ namespace {
 
 namespace Lotgd\Tests\Modules\Prefs {
 
+    use Lotgd\DataCache;
+    use Lotgd\Modules\ModuleManager;
     use Lotgd\Tests\Stubs\Database;
     use Lotgd\Tests\Stubs\DoctrineConnection;
+    use Lotgd\Tests\Stubs\DummySettings;
     use PHPUnit\Framework\TestCase;
-    use Lotgd\Modules\ModuleManager;
 
 /**
  * @group prefs
  */
     final class ModuleDeleteUserPrefsTest extends TestCase
     {
+        private string $tempDir;
+
         protected function setUp(): void
         {
+            parent::setUp();
+
+            $this->resetDataCacheState();
+
+            $this->tempDir = sys_get_temp_dir() . '/lotgd-module-delete-user-prefs-' . uniqid('', true);
+            if (!mkdir($this->tempDir) && !is_dir($this->tempDir)) {
+                self::fail(sprintf('Unable to create temporary data cache directory: %s', $this->tempDir));
+            }
+
+            \Lotgd\Settings::setInstance(null);
+            $GLOBALS['settings'] = new DummySettings([
+                'usedatacache' => 1,
+                'datacachepath' => $this->tempDir,
+            ]);
+            \Lotgd\Settings::setInstance($GLOBALS['settings']);
+
             class_exists(Database::class);
 
             $conn = new DoctrineConnection();
@@ -39,8 +59,15 @@ namespace Lotgd\Tests\Modules\Prefs {
 
         protected function tearDown(): void
         {
+            $this->removeTempDir();
+            $this->resetDataCacheState();
+            unset($GLOBALS['settings']);
+            \Lotgd\Settings::setInstance(null);
+
             Database::$doctrineConnection = null;
             \Lotgd\Doctrine\Bootstrap::$conn = null;
+
+            parent::tearDown();
         }
 
         public function testDeleteUserPrefsClearsGlobalCache(): void
@@ -58,14 +85,16 @@ namespace Lotgd\Tests\Modules\Prefs {
             ],
             ]);
 
+            $cacheFile = $this->tempDir . '/' . sprintf('%smodule_userprefs-%d-test', \DATACACHE_FILENAME_PREFIX, $userId);
+            file_put_contents($cacheFile, 'dummy');
+            self::assertFileExists($cacheFile);
+
             module_delete_userprefs($userId);
 
             $prefs = ModuleManager::prefs();
             self::assertArrayNotHasKey($userId, $prefs);
             self::assertArrayHasKey(2, $prefs);
-
-            // DataCache::getInstance()->massinvalidate is used; verifying cache invalidation via globals is no longer applicable.
-            self::assertTrue(true);
+            self::assertFileDoesNotExist($cacheFile);
         }
 
         public function testDeletingWithEmptyPrefsDoesNothing(): void
@@ -75,6 +104,41 @@ namespace Lotgd\Tests\Modules\Prefs {
             module_delete_userprefs($userId);
 
             self::assertSame([], ModuleManager::prefs());
+        }
+
+        private function resetDataCacheState(): void
+        {
+            $reflection = new \ReflectionClass(DataCache::class);
+
+            foreach ([
+                'instance' => null,
+                'cache' => [],
+                'path' => '',
+                'checkedOld' => false,
+            ] as $property => $value) {
+                $propertyRef = $reflection->getProperty($property);
+                $propertyRef->setAccessible(true);
+                $propertyRef->setValue(null, $value);
+            }
+        }
+
+        private function removeTempDir(): void
+        {
+            if (!isset($this->tempDir) || $this->tempDir === '' || !is_dir($this->tempDir)) {
+                return;
+            }
+
+            $files = glob($this->tempDir . '/*');
+            if ($files !== false) {
+                foreach ($files as $file) {
+                    if (is_file($file)) {
+                        @unlink($file);
+                    }
+                }
+            }
+
+            @rmdir($this->tempDir);
+            $this->tempDir = '';
         }
     }
 
