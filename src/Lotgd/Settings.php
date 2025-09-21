@@ -121,7 +121,9 @@ class Settings
                         $sql = 'SELECT * FROM ' . $this->tablename;
                         $result = Database::query($sql);
                         while ($row = Database::fetchAssoc($result)) {
-                            $this->settings[$row['setting']] = $row['value'];
+                            if (is_array($row) && array_key_exists('setting', $row) && array_key_exists('value', $row)) {
+                                $this->settings[$row['setting']] = $row['value'];
+                            }
                         }
                         Database::freeResult($result);
                     } catch (TableNotFoundException $e) {
