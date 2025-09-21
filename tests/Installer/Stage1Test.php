@@ -98,4 +98,34 @@ final class Stage1Test extends TestCase
         $this->assertSame(1, $stage);
         $this->assertSame(0, $session['stagecompleted']);
     }
+
+    public function testStage1RejectsModifiedLicense(): void
+    {
+        $this->assertFileExists($this->licensePath);
+        $this->assertTrue(rename($this->licensePath, $this->licenseBackup));
+        $this->assertNotFalse(file_put_contents($this->licensePath, 'Fake license contents'));
+
+        try {
+            global $session, $stage;
+            $session['stagecompleted'] = 0;
+            $stage                     = 1;
+
+            $installer = new Installer();
+            $installer->stage1();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertStringContainsString('has been modified', $output);
+            $this->assertSame(-1, $stage);
+            $this->assertSame(-1, $session['stagecompleted']);
+        } finally {
+            if (file_exists($this->licensePath)) {
+                unlink($this->licensePath);
+            }
+
+            if (file_exists($this->licenseBackup)) {
+                rename($this->licenseBackup, $this->licensePath);
+            }
+        }
+    }
 }
