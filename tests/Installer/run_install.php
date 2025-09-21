@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 namespace {
+    require __DIR__ . '/../Stubs/DoctrineBootstrap.php';
     require __DIR__ . '/../../autoload.php';
     require __DIR__ . '/../../src/Lotgd/Config/constants.php';
     require __DIR__ . '/../Stubs/Functions.php';
-    require __DIR__ . '/../Stubs/DoctrineBootstrap.php';
 
     ini_set('mysqli.default_socket', '/tmp/lotgd_mysqld.sock');
     define('IS_INSTALLER', true);
