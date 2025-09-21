@@ -32,7 +32,7 @@ This project aims to preserve legacy compatibility while moving to a modern stac
 ### Upgrade Guidance (1.3.x → 2.0)
 
 See `UPGRADING.md` for the full process. Key points:
-- Require PHP 8.4+, install via Composer, run legacy upgrade then Doctrine migrations.
+- Require PHP 8.3+, install via Composer, run legacy upgrade then Doctrine migrations.
 - Enable data cache with a writable `DB_DATACACHEPATH`; Twig caches to `<path>/twig` when writable.
 - zlib output compression defaults on when the extension is present.
 

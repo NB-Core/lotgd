@@ -17,7 +17,7 @@ foreach ($order as $current_rank) {
             $output->output("`nBy Oliver Brendel (<a href='http://nb-core.org'>NB Core</a>) `n`n", true);
             $output->output("This version is a forked version of the pre-1.1.1 DP Edition core shortly after I stopped developing for this specific version.`n`nThe reasons were mainly that the path the leading people there wanted to go was not my path at all. Hence this version reflects mostly what *I* wanted to see different *without* having to rewrite the core using modules... and still be stuck with the old structures. Also I don't have to ask for changes with the high probability of getting no answer or a negative one.`n`n");
             $output->output("If you use this core, you need to be aware of the goals of my optimizations:`n`n<ul>", true);
-               $output->output("<li>PHP 8.4 or newer is required</li>", true);
+               $output->output("<li>PHP 8.3 or newer is required</li>", true);
                $output->output("<li>MySQL 5.0 or later (MariaDB compatible) is required</li>", true);
             $output->output("<li>Features should be done focussed on avoiding high-load and focussing on many (MMORG) users</li>", true);
             $output->output("<li>Roleplay like in D&D should be possible</li>", true);

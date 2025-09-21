@@ -18,13 +18,13 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Settings;
 
-//PHP 8.4 or higher is required for this version
+//PHP 8.3 or higher is required for this version
 //MySQL 5.0.3 and the mysqli extension are required for this version
 $requirements_met = true;
 $php_met = true;
 $mysql_met = true;
 
-if (version_compare(PHP_VERSION, '8.4.0') < 0) {
+if (version_compare(PHP_VERSION, '8.3.0') < 0) {
         $requirements_met = false;
         $php_met = false;
 } elseif (!extension_loaded('mysqli')) {
@@ -39,7 +39,7 @@ if (!$requirements_met) {
     //we have NO output object possibly :( hence no nice formatting
     echo "<h1>Requirements not sufficient<br/><br/>";
     if (!$php_met) {
-        echo sprintf("You need PHP 8.4 or higher to install this version. Please upgrade from your existing PHP version %s.<br/>", PHP_VERSION);
+        echo sprintf("You need PHP 8.3 or higher to install this version. Please upgrade from your existing PHP version %s.<br/>", PHP_VERSION);
     }
     if (!$mysql_met && extension_loaded('mysqli') === false) {
         echo "The mysqli extension is missing. You need to enable the mysqli extension to install this version.<br/>";

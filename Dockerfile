@@ -15,7 +15,7 @@ RUN composer install --no-dev --no-interaction --prefer-dist
 # ---------------------------------------------
 # Application stage - PHP with Apache
 # ---------------------------------------------
-FROM php:8.4-apache
+FROM php:8.3-apache
 
 # Install system packages and PHP extensions required by the game
 RUN apt-get update && apt-get install -y --no-install-recommends \
