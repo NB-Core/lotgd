@@ -248,7 +248,7 @@ class Installer
                     Database::query($sql);
                     $sql = "INSERT INTO " . Database::prefix("accounts") . " (login,password,superuser,name,playername,ctitle,title,regdate,badguy,companions, allowednavs, restorepage, bufflist, dragonpoints, prefs, donationconfig,specialinc,specialmisc,emailaddress,replaceemail,emailvalidation,hauntedby,bio) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin `&$name`0','`%Admin','', NOW(),'','','','village.php','','','','','','','','','')";
                     $result = Database::query($sql);
-                    if (Database::affectedRows($result) == 0) {
+                    if (Database::affectedRows() == 0) {
                         print_r($sql);
                         die("Failed to create Admin account. Your first check should be to make sure that MYSQL (if that is your type) is not in strict mode.");
                     }
