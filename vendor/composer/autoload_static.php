@@ -163,8 +163,8 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         ),
         'Psr\\Http\\Server\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
-            1 => __DIR__ . '/..' . '/psr/http-server-handler/src',
+            0 => __DIR__ . '/..' . '/psr/http-server-handler/src',
+            1 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
         ),
         'Psr\\Http\\Message\\' => 
         array (
@@ -934,7 +934,7 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'TheSeer\\Tokenizer\\XMLSerializer' => __DIR__ . '/..' . '/theseer/tokenizer/src/XMLSerializer.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
         'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
-        '' => __DIR__ . '/..' . '/symfony/cache/Traits/ValueWrapper.php',
+        '©' => __DIR__ . '/..' . '/symfony/cache/Traits/ValueWrapper.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
