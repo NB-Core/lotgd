@@ -21,10 +21,33 @@ namespace Doctrine\Migrations {
         public static ?self $instance = null;
         /** @var Version[] */
         public array $migrated = [];
+        public mixed $configuration = null;
+        /** @var array<string,mixed> */
+        public array $configurationData = [];
+        public ?string $metadataTable = null;
 
         public static function fromEntityManager(mixed $config, mixed $em): self
         {
-            return self::$instance = new self();
+            $instance = new self();
+            $instance->configuration = $config;
+
+            if (is_array($config)) {
+                $instance->configurationData = $config;
+                $instance->metadataTable    = $config['table_storage']['table_name'] ?? null;
+            } elseif (is_object($config)) {
+                $ref = new \ReflectionClass($config);
+                if ($ref->hasProperty('configurations')) {
+                    $prop = $ref->getProperty('configurations');
+                    $prop->setAccessible(true);
+                    $data = $prop->getValue($config);
+                    if (is_array($data)) {
+                        $instance->configurationData = $data;
+                        $instance->metadataTable    = $data['table_storage']['table_name'] ?? null;
+                    }
+                }
+            }
+
+            return self::$instance = $instance;
         }
 
         public function getMetadataStorage(): object
@@ -115,6 +138,7 @@ namespace Lotgd\Tests\Installer {
             $DB_USEDATACACHE, $settings;
 
             \Lotgd\PhpGenericEnvironment::setRequestUri('/installer.php');
+            \Doctrine\Migrations\DependencyFactory::$instance = null;
             $session            = [
             'dbinfo'            => [
                 'DB_HOST'         => 'localhost',
@@ -214,6 +238,38 @@ namespace Lotgd\Tests\Installer {
             self::assertSame('test_', $GLOBALS['DB_PREFIX'] ?? null);
             $this->assertSame('test_creatures', Database::prefix('creatures'));
         }
+
+        public function testStage9HonorsPrefixedMetadataTable(): void
+        {
+            global $session;
+
+            file_put_contents(
+                __DIR__ . '/../../dbconnect.php',
+                "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'lotgd_'];"
+            );
+            clearstatcache();
+            if (function_exists('opcache_invalidate')) {
+                opcache_invalidate(__DIR__ . '/../../dbconnect.php', true);
+            }
+
+            $session['dbinfo']['DB_PREFIX'] = 'lotgd_';
+
+            $config = require __DIR__ . '/../../src/Lotgd/Config/migrations.php';
+            $this->assertSame('lotgd_doctrine_migration_versions', $config['table_storage']['table_name']);
+
+            $installer = new Installer();
+
+            $installer->runStage(9);
+
+            $configData = \Doctrine\Migrations\DependencyFactory::$instance->configurationData ?? [];
+
+            $this->assertSame(
+                'lotgd_doctrine_migration_versions',
+                $configData['table_storage']['table_name'] ?? null,
+                'Installer did not request prefixed metadata table'
+            );
+        }
+
 
         public function testStage9RunsOnlyNewerInstallerStatementsOnUpgrade(): void
         {

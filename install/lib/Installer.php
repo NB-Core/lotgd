@@ -1477,7 +1477,7 @@ class Installer
         $em = Bootstrap::getEntityManager();
 
         $dependencyFactory = DependencyFactory::fromEntityManager(
-            new ConfigurationArray(['migrations_paths' => $config['migrations_paths']]),
+            new ConfigurationArray($config),
             new ExistingEntityManager($em)
         );
 
