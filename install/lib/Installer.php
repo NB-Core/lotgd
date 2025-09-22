@@ -876,8 +876,7 @@ class Installer
                         $assignments = [];
                         $fp = fopen('dbconnect.php', 'r+');
                 if ($fp) {
-                    while (!feof($fp)) {
-                        $buffer = fgets($fp, 4096);
+                    while (($buffer = fgets($fp, 4096)) !== false) {
                         if (strpos($buffer, '$DB') !== false && preg_match('/\$(DB_[A-Z_]+)\s*=\s*([^;]*);/', $buffer, $matches)) {
                             $assignments[$matches[1]] = trim($matches[2], " \t\"'");
                         }
