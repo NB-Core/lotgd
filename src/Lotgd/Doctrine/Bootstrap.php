@@ -22,6 +22,8 @@ class Bootstrap
         // The project root is three directories up from this file
         // src/Lotgd/Doctrine/Bootstrap.php -> src/Lotgd -> src -> project root
         $rootDir = dirname(__DIR__, 3);
+        global $DB_HOST, $DB_USER, $DB_PASS, $DB_NAME, $DB_PREFIX, $DB_USEDATACACHE, $DB_DATACACHEPATH;
+
         $dbConfig = realpath($rootDir . '/dbconnect.php');
         if ($dbConfig && strpos($dbConfig, $rootDir) === 0) {
             $settings = require $dbConfig;
@@ -40,8 +42,6 @@ class Bootstrap
                 'DB_DATACACHEPATH' => $DB_DATACACHEPATH ?? '',
             ];
         }
-
-        global $DB_HOST, $DB_USER, $DB_PASS, $DB_NAME, $DB_PREFIX, $DB_USEDATACACHE, $DB_DATACACHEPATH;
 
         $DB_HOST = $settings['DB_HOST'] ?? '';
         $DB_USER = $settings['DB_USER'] ?? '';
