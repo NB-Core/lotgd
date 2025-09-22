@@ -178,6 +178,15 @@ namespace Lotgd\Tests\Installer {
             }
 
             Database::setPrefix('');
+            Database::$doctrineConnection = null;
+            DoctrineBootstrap::$conn = null;
+
+            $ref = new \ReflectionClass(Database::class);
+            if ($ref->hasProperty('doctrine')) {
+                $prop = $ref->getProperty('doctrine');
+                $prop->setAccessible(true);
+                $prop->setValue(null, null);
+            }
         }
 
         public function testStage9RunsMigrationsAndChecksForAdmin(): void
@@ -271,7 +280,7 @@ namespace Lotgd\Tests\Installer {
         }
 
 
-        public function testStage9RunsOnlyNewerInstallerStatementsOnUpgrade(): void
+        public function testStage9SkipsLegacyInstallerStatementsWhenDataExists(): void
         {
             global $session;
 
@@ -279,39 +288,60 @@ namespace Lotgd\Tests\Installer {
             $session['fromversion']       = '0.9.6';
 
             $conn = new \Lotgd\Tests\Stubs\DoctrineConnection();
+            $conn->countResults = [1];
             DoctrineBootstrap::$conn = $conn;
-            \Lotgd\MySQL\Database::$doctrineConnection = $conn;
+            Database::$doctrineConnection = $conn;
 
             $installer = new Installer();
             $installer->runStage(9);
 
             $queries = DoctrineBootstrap::$conn->queries;
             require __DIR__ . '/../../install/data/installer_sqlstatements.php';
-            $expected   = [];
-            $notExpected = [];
-            foreach ($sql_upgrade_statements as $version => $statements) {
+            $seedStatements = [];
+            foreach ($sql_upgrade_statements as $statements) {
                 foreach ($statements as $sql) {
-                    if (version_compare($version, '0.9.6', '>')) {
-                        $expected[] = $sql;
-                    } else {
-                        $notExpected[] = $sql;
-                    }
+                    $seedStatements[$sql] = true;
                 }
             }
-            $expectedCount = array_count_values($expected);
-            $executedCount = array_count_values($queries);
-            foreach ($expectedCount as $sql => $count) {
-                $this->assertGreaterThanOrEqual(
-                    $count,
-                    $executedCount[$sql] ?? 0,
-                    'Upgrade SQL statement was not executed: ' . $sql
-                );
-            }
-            foreach ($notExpected as $sql) {
+
+            foreach ($queries as $sql) {
                 $this->assertArrayNotHasKey(
                     $sql,
-                    $executedCount,
-                    'Unexpected SQL statement executed during upgrade: ' . $sql
+                    $seedStatements,
+                    'Legacy installer SQL should not run when data already exists: ' . $sql
+                );
+            }
+        }
+
+        public function testStage9CanBeRerunWithoutReapplyingLegacySeeds(): void
+        {
+            $conn = new \Lotgd\Tests\Stubs\DoctrineConnection();
+            $conn->countResults = [0, 1];
+            DoctrineBootstrap::$conn = $conn;
+            Database::$doctrineConnection = $conn;
+
+            $installer = new Installer();
+            $installer->runStage(9);
+
+            $firstRunCount = count(DoctrineBootstrap::$conn->queries);
+
+            $installer->runStage(9);
+
+            $newQueries = array_slice(DoctrineBootstrap::$conn->queries, $firstRunCount);
+
+            require __DIR__ . '/../../install/data/installer_sqlstatements.php';
+            $seedStatements = [];
+            foreach ($sql_upgrade_statements as $statements) {
+                foreach ($statements as $sql) {
+                    $seedStatements[$sql] = true;
+                }
+            }
+
+            foreach ($newQueries as $sql) {
+                $this->assertArrayNotHasKey(
+                    $sql,
+                    $seedStatements,
+                    'Legacy installer SQL should not run on subsequent stage9 invocation: ' . $sql
                 );
             }
         }

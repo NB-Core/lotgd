@@ -1297,11 +1297,38 @@ class Installer
 
         require __DIR__ . '/../data/installer_sqlstatements.php';
         $fromVersion = $session['fromversion'] ?? '-1';
-        foreach ($sql_upgrade_statements as $version => $statements) {
-            $version = (string) $version;
-            if (!($session['dbinfo']['upgrade'] ?? false) || version_compare($version, $fromVersion, '>')) {
-                foreach ($statements as $sql) {
-                    Database::query($sql);
+
+        $creaturesTable = Database::prefix('creatures');
+        $shouldExecuteLegacySql = true;
+
+        try {
+            $countResult = Database::query("SELECT COUNT(*) AS total_count FROM {$creaturesTable}");
+            $row = [];
+
+            if (is_array($countResult)) {
+                $row = $countResult;
+            } elseif ($countResult) {
+                $fetched = Database::fetchAssoc($countResult);
+                if (is_array($fetched)) {
+                    $row = $fetched;
+                }
+            }
+
+            if ($row) {
+                $totalCount = (int) ($row['total_count'] ?? $row['count'] ?? $row['c'] ?? 0);
+                $shouldExecuteLegacySql = ($totalCount === 0);
+            }
+        } catch (\Throwable $exception) {
+            $shouldExecuteLegacySql = true;
+        }
+
+        if ($shouldExecuteLegacySql) {
+            foreach ($sql_upgrade_statements as $version => $statements) {
+                $version = (string) $version;
+                if (!($session['dbinfo']['upgrade'] ?? false) || version_compare($version, $fromVersion, '>')) {
+                    foreach ($statements as $sql) {
+                        Database::query($sql);
+                    }
                 }
             }
         }
