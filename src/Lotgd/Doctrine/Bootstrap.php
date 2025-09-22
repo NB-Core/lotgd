@@ -29,8 +29,28 @@ class Bootstrap
             throw new \RuntimeException('dbconnect.php not found');
         }
 
-        global $DB_PREFIX;
+        if (! is_array($settings)) {
+            $settings = [
+                'DB_HOST'         => $DB_HOST ?? '',
+                'DB_USER'         => $DB_USER ?? '',
+                'DB_PASS'         => $DB_PASS ?? '',
+                'DB_NAME'         => $DB_NAME ?? '',
+                'DB_PREFIX'       => $DB_PREFIX ?? '',
+                'DB_USEDATACACHE' => $DB_USEDATACACHE ?? 0,
+                'DB_DATACACHEPATH' => $DB_DATACACHEPATH ?? '',
+            ];
+        }
+
+        global $DB_HOST, $DB_USER, $DB_PASS, $DB_NAME, $DB_PREFIX, $DB_USEDATACACHE, $DB_DATACACHEPATH;
+
+        $DB_HOST = $settings['DB_HOST'] ?? '';
+        $DB_USER = $settings['DB_USER'] ?? '';
+        $DB_PASS = $settings['DB_PASS'] ?? '';
+        $DB_NAME = $settings['DB_NAME'] ?? '';
         $DB_PREFIX = $settings['DB_PREFIX'] ?? '';
+        $DB_USEDATACACHE = $settings['DB_USEDATACACHE'] ?? 0;
+        $DB_DATACACHEPATH = $settings['DB_DATACACHEPATH'] ?? '';
+
         Database::setPrefix($DB_PREFIX);
 
         $connection = [
