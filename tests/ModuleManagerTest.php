@@ -194,9 +194,14 @@ namespace Lotgd\Tests {
             $this->assertContains($expected, \Lotgd\MySQL\Database::$queries);
         }
 
-        public function testForceUninstallReturnsTrue(): void
+        public function testForceUninstallClearsCachesAndLogs(): void
         {
+            $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
+
             $this->assertTrue(ModuleManager::forceUninstall('mod'));
+
+            $this->assertCachesRemoved($paths);
+            $this->assertGamelogEntryContains('Module mod force-uninstalled');
         }
 
         /**
