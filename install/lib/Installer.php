@@ -262,7 +262,7 @@ class Installer
                         'regdate'         => $regdate,
                         'badguy'          => '',
                         'companions'      => '',
-                        'allowednavs'     => '',
+                        'allowednavs'     => serialize(['village.php' => true]),
                         'restorepage'     => 'village.php',
                         'bufflist'        => '',
                         'dragonpoints'    => '',

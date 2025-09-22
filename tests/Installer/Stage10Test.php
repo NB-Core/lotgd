@@ -119,6 +119,7 @@ final class Stage10Test extends TestCase
         $this->assertSame('`%Admin `&Admin`0', $connection->lastInsert['data']['name']);
         $this->assertSame('`%Admin `&Admin`0', $connection->lastInsert['data']['playername']);
         $this->assertSame('`%Admin', $connection->lastInsert['data']['ctitle']);
+        $this->assertSame(serialize(['village.php' => true]), $connection->lastInsert['data']['allowednavs']);
         $this->assertSame('village.php', $connection->lastInsert['data']['restorepage']);
         $this->assertSame('', $connection->lastInsert['data']['bio']);
         $this->assertMatchesRegularExpression(
