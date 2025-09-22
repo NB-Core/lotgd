@@ -270,6 +270,7 @@ namespace Lotgd\Tests\Installer {
             );
         }
 
+
         public function testStage9RunsOnlyNewerInstallerStatementsOnUpgrade(): void
         {
             global $session;
