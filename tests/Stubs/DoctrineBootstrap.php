@@ -32,10 +32,21 @@ class DoctrineConnection
 {
     public array $queries = [];
     public array $params = ['charset' => 'utf8mb4'];
+    /** @var array<int,int> */
+    public array $countResults = [];
 
     public function executeQuery(string $sql): DoctrineResult
     {
         $this->queries[] = $sql;
+        if (stripos($sql, 'count(') !== false) {
+            $value = array_shift($this->countResults);
+            if ($value === null) {
+                $value = 0;
+            }
+
+            return new DoctrineResult([["total_count" => $value]]);
+        }
+
         return new DoctrineResult([["ok" => true]]);
     }
 
