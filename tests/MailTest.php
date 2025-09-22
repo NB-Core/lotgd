@@ -33,6 +33,10 @@ final class MailTest extends TestCase
             'notificationmailsubject' => '{subject}',
             'notificationmailtext' => '{body}',
         ];
+        \Lotgd\MySQL\Database::$settings_extended_table = [
+            'notificationmailsubject' => '{subject}',
+            'notificationmailtext' => '{body}',
+        ];
         $settings = new MailDummySettings($GLOBALS['settings_array']);
         Settings::setInstance($settings);
         $GLOBALS['settings'] = $settings;
@@ -56,6 +60,34 @@ final class MailTest extends TestCase
         $this->assertCount(1, $GLOBALS['mail_table']);
         $this->assertSame('Subject', $GLOBALS['mail_table'][0]['subject']);
         $this->assertSame(0, $GLOBALS['mail_sent_count']);
+    }
+
+    public function testSystemMailSendsNotificationWhenEmailAllowed(): void
+    {
+        $GLOBALS['accounts_table'][1] = [
+            'prefs' => serialize(['emailonmail' => true]),
+            'emailaddress' => 'sender@example.com',
+            'name' => 'Sender'
+        ];
+        $GLOBALS['accounts_table'][2] = [
+            'prefs' => serialize(['emailonmail' => true]),
+            'emailaddress' => 'player@example.com',
+            'name' => 'Recipient'
+        ];
+
+        $GLOBALS['settings_array']['soap'] = 0;
+        Settings::getInstance()->saveSetting('soap', 0);
+
+        Mail::systemMail(2, 'Subject', 'Body', 1);
+
+        $this->assertSame(1, $GLOBALS['mail_sent_count']);
+        $this->assertCount(1, $GLOBALS['mail_table']);
+
+        $mailRecord = $GLOBALS['mail_table'][0];
+        $this->assertSame(1, $mailRecord['msgfrom']);
+        $this->assertSame(2, $mailRecord['msgto']);
+        $this->assertSame('Subject', $mailRecord['subject']);
+        $this->assertSame('Body', $mailRecord['body']);
     }
 
     public function testInboxCountAndFull(): void
