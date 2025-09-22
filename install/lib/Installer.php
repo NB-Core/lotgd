@@ -873,37 +873,72 @@ class Installer
             $sub = substr($version, 0, 5);
             $sub = (int)str_replace(".", "", $sub);
             if ($sub < 110) {
-                        $assignments = [];
-                        $fp = fopen('dbconnect.php', 'r+');
-                if ($fp) {
-                    while (($buffer = fgets($fp, 4096)) !== false) {
-                        if (strpos($buffer, '$DB') !== false && preg_match('/\$(DB_[A-Z_]+)\s*=\s*([^;]*);/', $buffer, $matches)) {
-                            $assignments[$matches[1]] = trim($matches[2], " \t\"'");
-                        }
+                $dbconnectFile = 'dbconnect.php';
+                $assignments = [];
+                $legacyAssignmentsFound = false;
+                $config = null;
+
+                if (file_exists($dbconnectFile)) {
+                    try {
+                        /** @psalm-suppress UnresolvableInclude */
+                        $config = require $dbconnectFile;
+                    } catch (\Throwable) {
+                        $config = null;
                     }
-                    fclose($fp);
+
+                    if (is_array($config)) {
+                        $assignments = $config;
+                    }
                 }
-                $dbconnect =
-                    "<?php\n"
-                    . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
-                    . "return [\n"
-                    . "    'DB_HOST' => '" . ($assignments['DB_HOST'] ?? '') . "',\n"
-                    . "    'DB_USER' => '" . ($assignments['DB_USER'] ?? '') . "',\n"
-                    . "    'DB_PASS' => '" . ($assignments['DB_PASS'] ?? '') . "',\n"
-                    . "    'DB_NAME' => '" . ($assignments['DB_NAME'] ?? '') . "',\n"
-                    . "    'DB_PREFIX' => '" . ($assignments['DB_PREFIX'] ?? '') . "',\n"
-                    . "    'DB_USEDATACACHE' => " . ((int)($assignments['DB_USEDATACACHE'] ?? 0)) . ",\n"
-                    . "    'DB_DATACACHEPATH' => " . var_export($assignments['DB_DATACACHEPATH'] ?? '', true) . ",\n"
-                    . "];\n";
-                // Check if the file is writeable for us. If yes, we will change the file and notice the admin
-                // if not, they have to change the file themselves...
-                        $failure = false;
-                        $dir = dirname('dbconnect.php');
-                if (is_writable($dir)) {
-                        $fp = fopen('dbconnect.php', 'w+');
+
+                if (! is_array($config)) {
+                    $fp = fopen($dbconnectFile, 'r');
                     if ($fp) {
-                        if (fwrite($fp, $dbconnect) !== false) {
-                            $this->output->output("`n`@Success!`2  I was able to write your dbconnect.php file.");
+                        while (($buffer = fgets($fp, 4096)) !== false) {
+                            if (strpos($buffer, '$DB') !== false && preg_match('/\$(DB_[A-Z_]+)\s*=\s*([^;]*);/', $buffer, $matches)) {
+                                $legacyAssignmentsFound = true;
+                                $assignments[$matches[1]] = trim($matches[2], " \t\"'");
+                            }
+                        }
+                        fclose($fp);
+                    }
+                }
+
+                if (is_array($config) || ! $legacyAssignmentsFound) {
+                    $this->output->output("`n`^You are ready for the next step.");
+                } else {
+                    $dbconnect =
+                        "<?php\n" .
+                        "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n" .
+                        "return [\n" .
+                        "    'DB_HOST' => '" . ($assignments['DB_HOST'] ?? '') . "',\n" .
+                        "    'DB_USER' => '" . ($assignments['DB_USER'] ?? '') . "',\n" .
+                        "    'DB_PASS' => '" . ($assignments['DB_PASS'] ?? '') . "',\n" .
+                        "    'DB_NAME' => '" . ($assignments['DB_NAME'] ?? '') . "',\n" .
+                        "    'DB_PREFIX' => '" . ($assignments['DB_PREFIX'] ?? '') . "',\n" .
+                        "    'DB_USEDATACACHE' => " . ((int)($assignments['DB_USEDATACACHE'] ?? 0)) . ",\n" .
+                        "    'DB_DATACACHEPATH' => " . var_export($assignments['DB_DATACACHEPATH'] ?? '', true) . ",\n" .
+                        "];\n";
+                    // Check if the file is writeable for us. If yes, we will change the file and notice the admin
+                    // if not, they have to change the file themselves...
+                    $failure = false;
+                    $dir = dirname($dbconnectFile);
+                    if (is_writable($dir)) {
+                        $fp = fopen($dbconnectFile, 'w+');
+                        if ($fp) {
+                            if (fwrite($fp, $dbconnect) !== false) {
+                                $this->output->output("`n`@Success!`2  I was able to write your dbconnect.php file.");
+                            } else {
+                                $failure = true;
+                                $err = error_get_last();
+                                if ($err) {
+                                    if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
+                                        $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+                                    }
+                                    $this->output->output("`n`\$Failed to write to dbconnect.php:`2 %s", $err['message']);
+                                }
+                            }
+                            fclose($fp);
                         } else {
                             $failure = true;
                             $err = error_get_last();
@@ -911,33 +946,24 @@ class Installer
                                 if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
                                     $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
                                 }
-                                    $this->output->output("`n`\$Failed to write to dbconnect.php:`2 %s", $err['message']);
+                                $this->output->output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
                             }
                         }
-                                fclose($fp);
                     } else {
-                            $failure = true;
-                            $err = error_get_last();
-                        if ($err) {
-                            if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
-                                $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
-                            }
-                                    $this->output->output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
-                        }
-                    }
-                } else {
                         $failure = true;
                         $this->output->output("`n`\$Directory not writable:`2 %s", $dir);
-                }
-                if ($failure) {
-                    $this->output->output("`2With this new version the settings for datacaching had to be moved to `idbconnect.php`i.");
-                    $this->output->output("Due to your system settings and privleges for this file, I was not able to perform the changes by myself.");
-                    $this->output->output("This part involves you: We have to ask you to replace the content of your existing `idbconnect.php`i with the following code:`n`n`&");
-                    $this->output->rawOutput("<blockquote><pre>" . htmlentities($dbconnect, ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "</pre></blockquote>");
-                    $this->output->output("`2This will let you use your existing datacaching settings.`n`n");
-                    $this->output->output("If you have done this, you are ready for the next step.");
-                } else {
-                    $this->output->output("`n`^You are ready for the next step.");
+                    }
+
+                    if ($failure) {
+                        $this->output->output("`2With this new version the settings for datacaching had to be moved to `idbconnect.php`i.");
+                        $this->output->output("Due to your system settings and privleges for this file, I was not able to perform the changes by myself.");
+                        $this->output->output("This part involves you: We have to ask you to replace the content of your existing `idbconnect.php`i with the following code:`n`n`&");
+                        $this->output->rawOutput("<blockquote><pre>" . htmlentities($dbconnect, ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "</pre></blockquote>");
+                        $this->output->output("`2This will let you use your existing datacaching settings.`n`n");
+                        $this->output->output("If you have done this, you are ready for the next step.");
+                    } else {
+                        $this->output->output("`n`^You are ready for the next step.");
+                    }
                 }
             } else {
                 $this->output->output("`n`^You are ready for the next step.");

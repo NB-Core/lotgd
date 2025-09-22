@@ -206,4 +206,40 @@ PHP;
 
         $this->assertNotSame(5, $session['stagecompleted'] ?? null);
     }
+
+    public function testStage6SkipsConversionForModernDbconnectFileWhenInstallerVersionMissing(): void
+    {
+        global $session;
+
+        $session['dbinfo'] = [
+            'DB_HOST' => 'modern-host',
+            'DB_USER' => 'modern-user',
+            'DB_PASS' => 'modern-pass',
+            'DB_NAME' => 'modern-name',
+            'DB_PREFIX' => 'modern_',
+            'DB_USEDATACACHE' => true,
+            'DB_DATACACHEPATH' => '/modern/cache',
+        ];
+
+        $installer = new Installer();
+        $installer->stage6();
+
+        $this->assertFileExists($this->dbconnectPath);
+
+        $originalContents = file_get_contents($this->dbconnectPath);
+        $originalConfig   = require $this->dbconnectPath;
+
+        $this->settings = new DummySettings([
+            'charset' => 'UTF-8',
+        ]);
+        Settings::setInstance($this->settings);
+        $GLOBALS['settings'] = $this->settings;
+
+        $reinstaller = new Installer();
+        $reinstaller->stage6();
+
+        $this->assertFileExists($this->dbconnectPath);
+        $this->assertSame($originalContents, file_get_contents($this->dbconnectPath));
+        $this->assertSame($originalConfig, require $this->dbconnectPath);
+    }
 }
