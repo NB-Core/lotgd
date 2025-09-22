@@ -1465,6 +1465,7 @@ class Installer
 
         $db        = require dirname(__DIR__, 2) . '/dbconnect.php';
         $DB_PREFIX = $db['DB_PREFIX'] ?? '';
+        Database::setPrefix($DB_PREFIX);
         InstallerLogger::log('DB_PREFIX set to ' . $DB_PREFIX);
 
         $config = require dirname(__DIR__, 2) . '/src/Lotgd/Config/migrations.php';
