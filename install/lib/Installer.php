@@ -1073,7 +1073,7 @@ class Installer
         $this->output->output("For the most part, modules are independant of each other, meaning that one module can be installed, uninstalled, activated, and deactivated without negative impact on the rest of the game.");
         $this->output->output("Not all modules are ideal for all sites, for example, there's a module called 'Multiple Cities,' which is intended only for large sites with many users online at the same time.");
         $this->output->output("`n`n`^If you are not familiar with Legend of the Green Dragon, and how the game is played, it is probably wisest to choose the default set of modules to be installed.");
-        $this->output->output("`n`n`@There is an extensive community of users who write modules for LoGD at <a href='http://dragonprime.net/'>http://dragonprime.net/</a>.", true);
+        $this->output->output("`n`n`@An extensive community of users who write modules for LoGD can be found at <a href='https://dragonprime-reborn.ca/'>https://dragonprime-reborn.ca/</a>.", true);
         $phpram = ini_get("memory_limit");
         if ($this->returnBytes($phpram) < 62582912 && $phpram != -1 && !$session['overridememorylimit'] && !$session['dbinfo']['upgrade']) {// 62 MBytes
                                                                         // enter this ONLY if it's not an upgrade and if the limit is really too low
