@@ -189,9 +189,13 @@ namespace Lotgd\Tests {
 
         public function testReinstallUpdatesDate(): void
         {
+            $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
+
             ModuleManager::reinstall('mod');
             $expected = "UPDATE modules SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='mod'";
             $this->assertContains($expected, \Lotgd\MySQL\Database::$queries);
+            $this->assertCachesRemoved($paths);
+            $this->assertGamelogEntryContains('Module mod reinstalled');
         }
 
         public function testForceUninstallReturnsTrue(): void
