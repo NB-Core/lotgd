@@ -1463,9 +1463,14 @@ class Installer
     {
         global $session, $DB_PREFIX;
 
-        $db        = require dirname(__DIR__, 2) . '/dbconnect.php';
-        $DB_PREFIX = $db['DB_PREFIX'] ?? '';
-        Database::setPrefix($DB_PREFIX);
+        $db           = require dirname(__DIR__, 2) . '/dbconnect.php';
+        $initialPrefix = $DB_PREFIX ?? '';
+        Database::setPrefix($initialPrefix);
+
+        $DB_PREFIX = $db['DB_PREFIX'] ?? $initialPrefix;
+        if ($DB_PREFIX !== $initialPrefix) {
+            Database::setPrefix($DB_PREFIX);
+        }
         InstallerLogger::log('DB_PREFIX set to ' . $DB_PREFIX);
 
         $config = require dirname(__DIR__, 2) . '/src/Lotgd/Config/migrations.php';

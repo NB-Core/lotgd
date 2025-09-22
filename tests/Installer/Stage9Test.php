@@ -99,6 +99,7 @@ namespace Doctrine\Migrations {
 namespace Lotgd\Tests\Installer {
 
     use Lotgd\Installer\Installer;
+    use Lotgd\MySQL\Database;
     use Lotgd\Output;
     use Lotgd\Tests\Stubs\DummySettings;
     use Lotgd\Tests\Stubs\DoctrineBootstrap;
@@ -151,6 +152,8 @@ namespace Lotgd\Tests\Installer {
             if (file_exists($config)) {
                 unlink($config);
             }
+
+            Database::setPrefix('');
         }
 
         public function testStage9RunsMigrationsAndChecksForAdmin(): void
@@ -191,6 +194,25 @@ namespace Lotgd\Tests\Installer {
             }
 
             $this->assertStringContainsString('superuser account', $outputText);
+        }
+
+        public function testStage9AppliesConfiguredPrefix(): void
+        {
+            global $session;
+
+            file_put_contents(
+                __DIR__ . '/../../dbconnect.php',
+                "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'test_'];"
+            );
+            clearstatcache();
+
+            $session['dbinfo']['DB_PREFIX'] = 'test_';
+
+            $installer = new Installer();
+            $installer->runStage(9);
+
+            self::assertSame('test_', $GLOBALS['DB_PREFIX'] ?? null);
+            $this->assertSame('test_creatures', Database::prefix('creatures'));
         }
 
         public function testStage9RunsOnlyNewerInstallerStatementsOnUpgrade(): void
