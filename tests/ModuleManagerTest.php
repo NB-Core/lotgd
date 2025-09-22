@@ -10,6 +10,7 @@ namespace Lotgd\Modules {
         public static bool $uninstallShouldSucceed = false;
         public static bool $activateShouldSucceed = false;
         public static bool $deactivateShouldSucceed = false;
+        public static bool $forceUninstallShouldSucceed = false;
         public static function getInstallStatus(bool $withDb = true): array
         {
             return self::$statusReturn;
@@ -32,7 +33,7 @@ namespace Lotgd\Modules {
         }
         public static function forceUninstall(string $module): bool
         {
-            return true;
+            return self::$forceUninstallShouldSucceed;
         }
         public static function reset(): void
         {
@@ -41,6 +42,7 @@ namespace Lotgd\Modules {
             self::$uninstallShouldSucceed = false;
             self::$activateShouldSucceed = false;
             self::$deactivateShouldSucceed = false;
+            self::$forceUninstallShouldSucceed = false;
         }
     }
 }
@@ -198,9 +200,34 @@ namespace Lotgd\Tests {
             $this->assertGamelogEntryContains('Module mod reinstalled');
         }
 
+        public function testForceUninstallReturnsFalseWhenInstallerFails(): void
+        {
+            $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
+
+            $this->assertFalse(ModuleManager::forceUninstall('mod'));
+
+            foreach ($paths as $path) {
+                $this->assertFileExists($path);
+            }
+
+            $expectedPaths = array_values($paths);
+            sort($expectedPaths);
+
+            $this->assertSame($expectedPaths, $this->listCacheFiles());
+
+            $needle = "INSERT INTO gamelog (message,category,filed,date,who) VALUES ('Module mod force-uninstalled','modules','0'";
+            $matches = array_filter(
+                \Lotgd\MySQL\Database::$queries,
+                static fn (string $query): bool => str_contains($query, $needle)
+            );
+
+            $this->assertEmpty($matches, 'Unexpected gamelog entry was written.');
+        }
+
         public function testForceUninstallClearsCachesAndLogs(): void
         {
             $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
+            \Lotgd\Modules\Installer::$forceUninstallShouldSucceed = true;
 
             $this->assertTrue(ModuleManager::forceUninstall('mod'));
 
