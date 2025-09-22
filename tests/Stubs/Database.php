@@ -26,6 +26,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static ?object $doctrineConnection = null;
         public static ?object $instance = null;
         public static array $queryCacheResults = [];
+        public static string $tablePrefix = '';
         /**
          * Queue of mock results returned by {@see query} for unit tests.
          * Each call to {@see query} will shift the next entry.
@@ -52,14 +53,18 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             return self::getInstance()->selectDb($dbname);
         }
 
-        public static function prefix(string $name, bool $force = false): string
+        public static function prefix(string $name, string|false|null $force = null): string
         {
-            return $name;
+            if ($force !== null && $force !== false) {
+                return $force . $name;
+            }
+
+            return self::$tablePrefix . $name;
         }
 
         public static function setPrefix(string $prefix): void
         {
-            // Intentionally left blank for tests.
+            self::$tablePrefix = $prefix;
         }
 
         public static function error(): string
@@ -67,17 +72,17 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             return self::$instance && method_exists(self::$instance, 'error') ? self::$instance->error() : self::$last_error;
         }
 
-    /**
-     * Executes a database query and returns the result.
-     *
-     * @param string $sql The SQL query to execute.
-     * @param bool   $die Whether to terminate execution on error (default: true).
-     *
-     * @return array|null Returns an array of results for SELECT queries.
-     *                    Returns null if no results are found or for non-SELECT queries.
-     *                    Returns a boolean (true/false) for certain operations (e.g., success/failure).
-     *                    Returns a string in specific cases (e.g., error messages or debug information).
-     */
+        /**
+         * Executes a database query and returns the result.
+         *
+         * @param string $sql The SQL query to execute.
+         * @param bool   $die Whether to terminate execution on error (default: true).
+         *
+         * @return array|null Returns an array of results for SELECT queries.
+         *                    Returns null if no results are found or for non-SELECT queries.
+         *                    Returns a boolean (true/false) for certain operations (e.g., success/failure).
+         *                    Returns a string in specific cases (e.g., error messages or debug information).
+         */
         public static function query(string $sql, bool $die = true): array|bool|object|string|null
         {
             global $accounts_table, $mail_table, $last_query_result;
