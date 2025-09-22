@@ -244,13 +244,41 @@ class Installer
                     SU_VIEW_SOURCE | SU_NEVER_EXPIRE;
                     $name = Http::post("name");
                     $pass = md5(md5(stripslashes(Http::post("pass1"))));
-                    $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE login='$name'";
-                    Database::query($sql);
-                    $sql = "INSERT INTO " . Database::prefix("accounts") . " (login,password,superuser,name,playername,ctitle,title,regdate,badguy,companions, allowednavs, restorepage, bufflist, dragonpoints, prefs, donationconfig,specialinc,specialmisc,emailaddress,replaceemail,emailvalidation,hauntedby,bio) VALUES('$name','$pass',$su,'`%Admin `&$name`0','`%Admin `&$name`0','`%Admin','', NOW(),'','','','village.php','','','','','','','','','')";
-                    $result = Database::query($sql);
-                    if (Database::affectedRows() == 0) {
-                        print_r($sql);
-                        die("Failed to create Admin account. Your first check should be to make sure that MYSQL (if that is your type) is not in strict mode.");
+                    $connection = Database::getDoctrineConnection();
+                    $table = Database::prefix("accounts");
+                    $connection->delete($table, ['login' => $name]);
+
+                    $displayName = '`%Admin `&' . $name . '`0';
+                    $regdate = date('Y-m-d H:i:s');
+
+                    $inserted = $connection->insert($table, [
+                        'login'           => $name,
+                        'password'        => $pass,
+                        'superuser'       => $su,
+                        'name'            => $displayName,
+                        'playername'      => $displayName,
+                        'ctitle'          => '`%Admin',
+                        'title'           => '',
+                        'regdate'         => $regdate,
+                        'badguy'          => '',
+                        'companions'      => '',
+                        'allowednavs'     => '',
+                        'restorepage'     => 'village.php',
+                        'bufflist'        => '',
+                        'dragonpoints'    => '',
+                        'prefs'           => '',
+                        'donationconfig'  => '',
+                        'specialinc'      => '',
+                        'specialmisc'     => '',
+                        'emailaddress'    => '',
+                        'replaceemail'    => '',
+                        'emailvalidation' => '',
+                        'hauntedby'       => '',
+                        'bio'             => '',
+                    ]);
+
+                    if ($inserted <= 0) {
+                        throw new \RuntimeException("Failed to create Admin account. Your first check should be to make sure that MYSQL (if that is your type) is not in strict mode.");
                     }
                     $this->output->output("`^Your superuser account has been created as `%Admin `&$name`^!");
                     $this->saveSetting("installer_version", $logd_version);
