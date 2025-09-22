@@ -198,9 +198,14 @@ namespace Lotgd\Tests {
             $this->assertGamelogEntryContains('Module mod reinstalled');
         }
 
-        public function testForceUninstallReturnsTrue(): void
+        public function testForceUninstallClearsCachesAndLogs(): void
         {
+            $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
+
             $this->assertTrue(ModuleManager::forceUninstall('mod'));
+
+            $this->assertCachesRemoved($paths);
+            $this->assertGamelogEntryContains('Module mod force-uninstalled');
         }
 
         /**
