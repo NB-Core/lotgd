@@ -84,7 +84,7 @@ switch ($op) {
             $otitle = $row['title'];
             $dk = (int)($row['dragonkills']);
             if (!PlayerFunctions::validDkTitle($otitle, $dk, $row['sex'])) {
-                $sex = translate_inline($row['sex'] ? "female" : "male");
+                $sex = Translator::translate($row['sex'] ? "female" : "male");
                 $newtitle = PlayerFunctions::getDkTitle($dk, (int)$row['sex']);
                 $newname = Names::changePlayerTitle($newtitle, $row);
                 $id = $row['acctid'];
@@ -159,15 +159,15 @@ switch ($op) {
             $row = Database::fetchAssoc($result);
         }
         $output->output("`@`c`b-=Title Editor=-`b`c");
-        $ops = translate_inline("Ops");
-        $dks = translate_inline("Dragon Kills");
+        $ops = Translator::translate("Ops");
+        $dks = Translator::translate("Dragon Kills");
         // $ref is currently unused
-        // $reftag = translate_inline("Reference Tag");
-        $mtit = translate_inline("Male Title");
-        $ftit = translate_inline("Female Title");
-        $edit = translate_inline("Edit");
-        $del = translate_inline("Delete");
-        $delconfirm = translate_inline("Are you sure you wish to delete this title?");
+        // $reftag = Translator::translate("Reference Tag");
+        $mtit = Translator::translate("Male Title");
+        $ftit = Translator::translate("Female Title");
+        $edit = Translator::translate("Edit");
+        $del = Translator::translate("Delete");
+        $delconfirm = Translator::translate("Are you sure you wish to delete this title?");
         $output->rawOutput("<table border=0 cellspacing=0 cellpadding=2 width='100%' align='center'>");
         // reference tag is currently unused
         // $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$reftag</td><td>$mtit</td><td>$ftit</td></tr>");

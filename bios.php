@@ -46,7 +46,7 @@ if ($op == "unblock") {
 $sql = "SELECT name,acctid,bio,biotime FROM " . Database::prefix("accounts") . " WHERE biotime<'9999-12-31' AND bio>'' ORDER BY biotime DESC LIMIT 100";
 $result = Database::query($sql);
 Header::pageHeader("User Bios");
-$block = translate_inline("Block");
+$block = Translator::translate("Block");
 output("`b`&Player Bios:`0`b`n");
 while ($row = Database::fetchAssoc($result)) {
     if ($row['biotime'] > $session['user']['recentcomments']) {
@@ -69,7 +69,7 @@ Nav::add("Refresh", "bios.php");
 $sql = "SELECT name,acctid,bio,biotime FROM " . Database::prefix("accounts") . " WHERE biotime>'9000-01-01' AND bio>'' ORDER BY biotime DESC LIMIT 100";
 $result = Database::query($sql);
 output("`n`n`b`&Blocked Bios:`0`b`n");
-$unblock = translate_inline("Unblock");
+$unblock = Translator::translate("Unblock");
 $number = Database::numRows($result);
 for ($i = 0; $i < $number; $i++) {
     $row = Database::fetchAssoc($result);

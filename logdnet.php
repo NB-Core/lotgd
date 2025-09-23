@@ -332,7 +332,7 @@ if ($op == "") {
 
                 // Correct for old logdnet servers
                 if ($row['version'] == "") {
-                    $row['version'] = translate_inline("Unknown");
+                    $row['version'] = Translator::translate("Unknown");
                 }
 
                 // Output the information we have.

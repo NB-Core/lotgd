@@ -54,12 +54,12 @@ if ($sort != "") {
     $order = $sort;
 }
 $sql = "SELECT SUM(count) AS count, MAX(last) AS last,site FROM " . Database::prefix("referers") . " GROUP BY site ORDER BY $order LIMIT 100";
-$count = translate_inline("Count");
-$last = translate_inline("Last");
-$dest = translate_inline("Destination");
-$none = translate_inline("`iNone`i");
-$notset = translate_inline("`iNot set`i");
-$skipped = translate_inline("`i%s records skipped (over a week old)`i");
+$count = Translator::translate("Count");
+$last = Translator::translate("Last");
+$dest = Translator::translate("Destination");
+$none = Translator::translate("`iNone`i");
+$notset = Translator::translate("`iNot set`i");
+$skipped = Translator::translate("`i%s records skipped (over a week old)`i");
 $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1><tr class='trhead'><td>$count</td><td>$last</td><td>URL</td><td>$dest</td><td>IP</td></tr>");
 $result = Database::query($sql);
 while ($row = Database::fetchAssoc($result)) {

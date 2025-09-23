@@ -168,7 +168,7 @@ if ($op == "" || $op == "search") {
     $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE $where ORDER BY creaturelevel,creaturename";
     $result = Database::query($sql);
     // Search form
-    $search = translate_inline("Search");
+    $search = Translator::translate("Search");
     $output->rawOutput("<form action='creatures.php?op=search' method='POST'>");
     $output->output("Search by field: ");
     $output->rawOutput("<input name='q' id='q'>");
@@ -188,23 +188,23 @@ if ($op == "" || $op == "search") {
     }
     Nav::add("Edit");
     Nav::add("Add a creature", "creatures.php?op=add&level=$level");
-    $opshead = translate_inline("Ops");
-    $idhead = translate_inline("ID");
-    $name = translate_inline("Name");
-    $lev = translate_inline("Level");
-    $weapon = translate_inline("Weapon");
-    $winmsg = translate_inline("Win");
-    $diemsg = translate_inline("Die");
-    $cat = translate_inline("Category");
-    $script = translate_inline("Script?");
-    $forest_text = translate_inline("Forest?");
-    $graveyard_text = translate_inline("Graveyard?");
-    $author = translate_inline("Author");
-    $edit = translate_inline("Edit");
-    $yes = translate_inline("Yes");
-    $no = translate_inline("No");
-    $confirm = translate_inline("Are you sure you wish to delete this creature?");
-    $del = translate_inline("Del");
+    $opshead = Translator::translate("Ops");
+    $idhead = Translator::translate("ID");
+    $name = Translator::translate("Name");
+    $lev = Translator::translate("Level");
+    $weapon = Translator::translate("Weapon");
+    $winmsg = Translator::translate("Win");
+    $diemsg = Translator::translate("Die");
+    $cat = Translator::translate("Category");
+    $script = Translator::translate("Script?");
+    $forest_text = Translator::translate("Forest?");
+    $graveyard_text = Translator::translate("Graveyard?");
+    $author = Translator::translate("Author");
+    $edit = Translator::translate("Edit");
+    $yes = Translator::translate("Yes");
+    $no = Translator::translate("No");
+    $confirm = Translator::translate("Are you sure you wish to delete this creature?");
+    $del = Translator::translate("Del");
 
     $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'>");
@@ -340,7 +340,7 @@ if ($op == "" || $op == "search") {
             );
             $output->rawOutput("<form action='creatures.php?op=save' method='POST'>");
             Forms::showForm($form, $row);
-            $refresh = translate_inline("Refresh");
+            $refresh = Translator::translate("Refresh");
             $output->rawOutput("<input type='submit' class='button' name='refresh' value='$refresh'>");
             $output->rawOutput("</form>");
             Nav::add("", "creatures.php?op=save");

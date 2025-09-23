@@ -92,9 +92,9 @@ if ($op == "") {
     }
     $translator->setSchema();
 
-    $aname = translate_inline("`bName`b");
-    $adef = translate_inline("`bDefense`b");
-    $acost = translate_inline("`bCost`b");
+    $aname = Translator::translate("`bName`b");
+    $adef = Translator::translate("`bDefense`b");
+    $acost = Translator::translate("`bCost`b");
     rawoutput("<table border='0' cellpadding='0'>");
     rawoutput("<tr class='trhead'><td>");
     output_notl($aname);

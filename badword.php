@@ -38,7 +38,7 @@ Nav::add("Bad Word Editor");
 Nav::add("Refresh the list", "badword.php");
 $output->output("`7Here you can edit the words that the game filters.  Using * at the start or end of a word will be a wildcard matching anything else attached to the word.  These words are only filtered if bad word filtering is turned on in the game settings page.`n`n`0");
 
-$test = translate_inline("Test");
+$test = Translator::translate("Test");
 $output->rawOutput("<form action='badword.php?op=test' method='POST'>");
 Nav::add("", "badword.php?op=test");
 $output->output("`7Test a word:`0");
@@ -58,8 +58,8 @@ $output->output("`7`bGood Words`b`0");
 $output->rawOutput("</font>");
 $output->output("`7 (bad word exceptions)`0`n");
 
-$add = translate_inline("Add");
-$remove = translate_inline("Remove");
+$add = Translator::translate("Add");
+$remove = Translator::translate("Remove");
 $output->rawOutput("<form action='badword.php?op=addgood' method='POST'>");
 Nav::add("", "badword.php?op=addgood");
 $output->output("`7Add a word:`0");

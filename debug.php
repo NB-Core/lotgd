@@ -65,11 +65,11 @@ switch ($debug) {
 					$order $ascdesc
 				LIMIT 30;
 				";
-        $category = translate_inline("Setting");
-        $subcategory = translate_inline("Module Name");
-        $sum_desc = translate_inline("Total Seconds");
-        $med_desc = translate_inline("Average per Hit");
-        $hits = translate_inline("Hits");
+        $category = Translator::translate("Setting");
+        $subcategory = Translator::translate("Module Name");
+        $sum_desc = Translator::translate("Total Seconds");
+        $med_desc = Translator::translate("Average per Hit");
+        $hits = Translator::translate("Hits");
         break;
 
     case "pageruntime":
@@ -87,14 +87,14 @@ switch ($debug) {
 			ORDER BY $order $ascdesc
 			LIMIT 30";
 
-        $category = translate_inline("Setting");
-        $subcategory = translate_inline("Module Name");
-        $sum_desc = translate_inline("Total Seconds");
-        $med_desc = translate_inline("Average per Hit");
-        $hits = translate_inline("Hits");
+        $category = Translator::translate("Setting");
+        $subcategory = Translator::translate("Module Name");
+        $sum_desc = Translator::translate("Total Seconds");
+        $med_desc = Translator::translate("Average per Hit");
+        $hits = Translator::translate("Hits");
 }
-$none = translate_inline("`iNone`i");
-$notset = translate_inline("`iNot set`i");
+$none = Translator::translate("`iNone`i");
+$notset = Translator::translate("`iNot set`i");
 $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1><tr class='trhead'><td>$category</td><td>$subcategory</td><td>$sum_desc</td><td>$med_desc</td><td>$hits</td></tr>");
 debug($sql);
 $result = Database::query($sql);
