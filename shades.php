@@ -5,6 +5,7 @@ use Lotgd\Translator;
 use Lotgd\Output;
 use Lotgd\Nav;
 use Lotgd\Redirect;
+use Lotgd\Modules\HookHandler;
 
 // translator ready
 // addnews ready
@@ -35,7 +36,7 @@ Nav::add("The Graveyard", "graveyard.php");
 
 Nav::add("Return to the news", "news.php");
 
-modulehook("shades", array()); // if this is too low, you can use footer-shades...
+HookHandler::hook("shades", array()); // if this is too low, you can use footer-shades...
 
 Commentary::commentDisplay("`n`QNearby, some lost souls lament:`n", "shade", "Despair", 25, "despairs");
 

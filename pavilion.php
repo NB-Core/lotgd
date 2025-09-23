@@ -2,9 +2,9 @@
 
 use Lotgd\Commentary;
 use Lotgd\Translator;
+use Lotgd\Nav\VillageNav;
 
 require_once 'common.php';
-require_once 'lib/villagenav.php';
 
 // translator ready
 // addnews ready
@@ -19,7 +19,7 @@ page_header('Eye-catching Pavilion');
 output("`b`cThe Pavilion`c`b`n");
 output("This page is a placeholder for beta features. Customize it to showcase experimental content.`n");
 
-villagenav();
+VillageNav::render();
 Commentary::commentDisplay('', 'beta', 'Talk with other testers:', 25);
 
 page_footer();

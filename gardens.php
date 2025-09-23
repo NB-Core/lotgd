@@ -8,6 +8,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\Settings;
 use Lotgd\Translator;
+use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Events;
 
@@ -34,7 +35,7 @@ $comment = Http::post('insertcommentary');
 // the commentary (or talking) or dealing with any of the hooks in the village.
 if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
     if (HookHandler::moduleEvents("gardens", $settings->getSetting("gardenchance", 0)) != 0) {
-        if (checknavs()) {
+        if (Nav::checkNavs()) {
             Footer::pageFooter();
         } else {
             // Reset the special for good.

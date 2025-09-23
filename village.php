@@ -160,7 +160,7 @@ $comment = Http::post('insertcommentary');
 if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
     // The '1' should really be sysadmin customizable.
     if (HookHandler::moduleEvents("village", (int)getsetting("villagechance", 0)) != 0) {
-        if (checknavs()) {
+        if (Nav::checkNavs()) {
             Footer::pageFooter();
         } else {
             // Reset the special for good.

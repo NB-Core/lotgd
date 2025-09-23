@@ -28,6 +28,7 @@ use Lotgd\DateTime;
 use Lotgd\Cookies;
 use Lotgd\ErrorHandler;
 use Lotgd\Page;
+use Lotgd\Modules\HookHandler;
 
 BootstrapErrorHandler::register();
 // translator ready
@@ -587,13 +588,13 @@ if (
 
 // After setup, allow modification of colors and nested tags
 $output = \Lotgd\Output::getInstance();
-$colors = modulehook("core-colors", $output->getColors());
+$colors = HookHandler::hook("core-colors", $output->getColors());
 $output->setColors($colors);
 // and nested tag handling
-$nestedtags = modulehook("core-nestedtags", $output->getNestedTags());
+$nestedtags = HookHandler::hook("core-nestedtags", $output->getNestedTags());
 $output->setNestedTags($nestedtags);
 // and nested tag eval
-$nestedeval = modulehook("core-nestedtags-eval", $output->getNestedTagEval());
+$nestedeval = HookHandler::hook("core-nestedtags-eval", $output->getNestedTagEval());
 $output->setNestedTagEval($nestedeval);
 
 
@@ -605,5 +606,5 @@ $output->setNestedTagEval($nestedeval);
 // You should do as LITTLE as possible here and consider if you can hook on
 // a page header instead.
 if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
-    modulehook('everyhit');
+    HookHandler::hook('everyhit');
 }

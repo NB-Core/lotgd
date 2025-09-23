@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-
-// addnews ready
-// translator ready
-// mail ready
-define("ALLOW_ANONYMOUS", true);
 use Lotgd\Http;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
@@ -16,6 +11,12 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Output;
+use Lotgd\Modules\HookHandler;
+
+// addnews ready
+// translator ready
+// mail ready
+define("ALLOW_ANONYMOUS", true);
 
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
@@ -147,7 +148,7 @@ while ($row = Database::fetchAssoc($result)) {
 $rows = array_slice($rows, 0, $max);
 
 // let modules modify the data before we display it
-$rows = modulehook("warriorlist", $rows);
+$rows = HookHandler::hook("warriorlist", $rows);
 
 if ($page == "" && $op == "") {
     // Count how many warriors are online by the loggedin field in the $rows array

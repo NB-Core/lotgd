@@ -16,6 +16,7 @@ use Lotgd\Buffs;
 use Lotgd\Battle;
 use Lotgd\Substitute;
 use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 // translator ready
 // addnews ready
@@ -118,7 +119,7 @@ foreach ($enemies as $index => $enemy) {
 
 if ($enemycounter > 0) {
     output("`\$`c`b~ ~ ~ Fight ~ ~ ~`b`c`0");
-    modulehook("battle", $enemies);
+    HookHandler::hook("battle", $enemies);
     foreach ($enemies as $index => $badguy) {
         if ($badguy['creaturehealth'] > 0 && $session['user']['hitpoints'] > 0) {
             output("`@You have encountered `^%s`@ which lunges at you with `%%s`@!`0`n", $badguy['creaturename'], $badguy['creatureweapon']);
@@ -427,7 +428,7 @@ if ($op != "newtarget") {
                     if (getsetting("instantexp", false) == true && $session['user']['alive'] && $options['type'] != "pvp" && $options['type'] != "train") {
                         if (!isset($badguy['expgained']) || $badguy['expgained'] == false) {
                             $cr_xp_gain = round($badguy['creatureexp'] / count($newenemies));
-                            $args = modulehook("forest-victory-xp", $args = array('experience' => $cr_xp_gain));
+                            $args = HookHandler::hook("forest-victory-xp", $args = array('experience' => $cr_xp_gain));
                             $cr_xp_gain = $args['experience'];
                             $session['user']['experience'] += $cr_xp_gain;
                             if (isset($badguy['creatureexp'])) {
@@ -568,10 +569,10 @@ if ($victory || $defeat) {
             $badguy['type'] = $options['type'];
 
             if ($victory) {
-                $badguy = modulehook("battle-victory", $badguy);
+                $badguy = HookHandler::hook("battle-victory", $badguy);
             }
             if ($defeat) {
-                $badguy = modulehook("battle-defeat", $badguy);
+                $badguy = HookHandler::hook("battle-defeat", $badguy);
             }
 //          unset($badguy['fightoutput']);
         }

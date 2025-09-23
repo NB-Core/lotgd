@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-// translator ready
-// addnews ready
-// mail ready
-
-// New Hall of Fame features by anpera
-// http://www.anpera.net/forum/viewforum.php?f=27
-
 use Lotgd\Http;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
+use Lotgd\Modules\HookHandler;
+// translator ready
+// addnews ready
+// mail ready
+
+// New Hall of Fame features by anpera
+// http://www.anpera.net/forum/viewforum.php?f=27
 
 require_once __DIR__ . "/common.php";
 
@@ -79,7 +79,7 @@ Nav::add("Sorting");
 Nav::add("Best", "hof.php?op=$op&subop=most&page=$page");
 Nav::add("Worst", "hof.php?op=$op&subop=least&page=$page");
 Nav::add("Other Stats");
-modulehook("hof-add", array());
+HookHandler::hook("hof-add", array());
 if ($totalplayers > $playersperpage) {
     Nav::add("Pages");
     for ($i = 0; $i < $totalplayers; $i += $playersperpage) {

@@ -10,6 +10,7 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 // mail ready
 // addnews ready
@@ -37,7 +38,7 @@ SuAccess::check(SU_EDIT_PAYLOG);
 */
 Header::pageHeader('Payment Log');
 SuperuserNav::render();
-modulehook("paylog", array());
+HookHandler::hook("paylog", array());
 
 $op = (string) Http::get('op');
 if ($op == "") {
