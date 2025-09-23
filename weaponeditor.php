@@ -93,14 +93,14 @@ if ($op == "") {
     }
     $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE level=$weaponlevel ORDER BY damage";
     $result = Database::query($sql);
-    $ops = translate_inline("Ops");
-    $name = translate_inline("Name");
-    $cost = translate_inline("Cost");
-    $damage = translate_inline("Damage");
-    $level = translate_inline("Level");
-    $edit = translate_inline("Edit");
-    $del = translate_inline("Del");
-    $delconfirm = translate_inline("Are you sure you wish to delete this weapon?");
+    $ops = Translator::translate("Ops");
+    $name = Translator::translate("Name");
+    $cost = Translator::translate("Cost");
+    $damage = Translator::translate("Damage");
+    $level = Translator::translate("Level");
+    $edit = Translator::translate("Edit");
+    $del = Translator::translate("Del");
+    $delconfirm = Translator::translate("Are you sure you wish to delete this weapon?");
 
     $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$damage</td><td>$level</td></tr>");

@@ -87,7 +87,7 @@ if ($battle) {
     $session['user']['hitpoints'] = $originalhitpoints;
     if ($victory) {
         Translator::getInstance()->setSchema("battle");
-        $msg = translate_inline($badguy['creaturelose']);
+        $msg = Translator::translate($badguy['creaturelose']);
         Translator::getInstance()->setSchema();
         $output->outputNotl("`b`&%s`0`b`n", $msg);
         $output->output("`b`\$You have tormented %s!`0`b`n", $badguy['creaturename']);
@@ -99,7 +99,7 @@ if ($battle) {
     } else {
         if ($defeat) {
                 $taunt = Battle::selectTauntArray();
-            $where = translate_inline("in the graveyard");
+            $where = Translator::translate("in the graveyard");
             $deathmessage = DeathMessage::selectArray(false, array("{where}"), array($where));
             if ($deathmessage['taunt'] == 1) {
                 AddNews::add("%s`n%s", $deathmessage['deathmessage'], $taunt);

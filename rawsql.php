@@ -68,7 +68,7 @@ if ($op == "" || $op == "sql") {
     }
 
     $output->output("Type your query");
-    $execute = translate_inline("Execute");
+    $execute = Translator::translate("Execute");
     $ret = HookHandler::hook("rawsql-modsql", array("sql" => $sql));
     $sql = $ret['sql'];
     $output->rawOutput("<form action='rawsql.php' method='post'>");
@@ -78,8 +78,8 @@ if ($op == "" || $op == "sql") {
     Nav::add('', 'rawsql.php');
 } else {
     $php = stripslashes((string) Http::post('php'));
-    $source = translate_inline("Source:");
-    $execute = translate_inline("Execute");
+    $source = Translator::translate("Source:");
+    $execute = Translator::translate("Execute");
     if ($php > "") {
         $output->rawOutput("<div style='background-color: #FFFFFF; color: #000000; width: 100%'><b>$source</b><br>");
         $output->rawOutput(highlight_string("<?php\n$php\n?>", true));

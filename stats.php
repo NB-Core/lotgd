@@ -45,8 +45,8 @@ if ($op == "stats" || $op == "") {
 } elseif ($op == "referers") {
     $output->output("`n`%`bTop Referers:`b`0`n");
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
-    $name = translate_inline("Name");
-    $refs = translate_inline("Referrals");
+    $name = Translator::translate("Name");
+    $refs = Translator::translate("Referrals");
     $output->rawOutput("<tr class='trhead'><td><b>$name</b></td><td><b>$refs</b></td></tr>");
     $sql = "SELECT count(*) AS c, acct.acctid,acct.name AS referer FROM " . Database::prefix("accounts") . " INNER JOIN " . Database::prefix("accounts") . " AS acct ON acct.acctid = " . Database::prefix("accounts") . ".referer WHERE " . Database::prefix("accounts") . ".referer>0 GROUP BY " . Database::prefix("accounts") . ".referer DESC ORDER BY c DESC";
     $result = Database::query($sql);

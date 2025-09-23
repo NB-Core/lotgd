@@ -73,18 +73,18 @@ if ($op == "list") {
         rawoutput("<option value=\"" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"" . ((htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) == $namespace) ? "selected" : "") . ">" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>");
     }
     $output->rawOutput("</select>");
-    $output->rawOutput("<input type='submit' class='button' value='" . translate_inline("Show") . "'>");
+    $output->rawOutput("<input type='submit' class='button' value='" . Translator::translate("Show") . "'>");
     $output->rawOutput("<br>");
 
     if ($mode == "edit") {
-        rawoutput(translate_inline("Text:") . "<br>");
+        rawoutput(Translator::translate("Text:") . "<br>");
         rawoutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(Http::get('intext')), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
-        rawoutput(translate_inline("Translation:") . "<br>");
+        rawoutput(Translator::translate("Translation:") . "<br>");
         rawoutput("<textarea name='outtext' cols='60' rows='5'></textarea><br/>");
-        rawoutput("<input type='submit' value='" . translate_inline("Save") . "' class='button'>");
+        rawoutput("<input type='submit' value='" . Translator::translate("Save") . "' class='button'>");
     } else {
         rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-        rawoutput("<tr class='trhead'><td>" . translate_inline("Ops") . "</td><td>" . translate_inline("Text") . "</td></tr>");
+        rawoutput("<tr class='trhead'><td>" . Translator::translate("Ops") . "</td><td>" . Translator::translate("Text") . "</td></tr>");
         $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' AND namespace='" . $namespace . "'";
         $result = Database::query($sql);
         if (Database::numRows($result) > 0) {
@@ -92,14 +92,14 @@ if ($op == "list") {
             while ($row = Database::fetchAssoc($result)) {
                 $i++;
                 rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
-                rawoutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . translate_inline("Edit") . "</a>");
+                rawoutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . Translator::translate("Edit") . "</a>");
                 Nav::add("", "untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']));
                 rawoutput("</td><td>");
                 $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
                 $output->rawOutput("</td></tr>");
             }
         } else {
-            $output->rawOutput("<tr><td colspan='2'>" . translate_inline("No rows found") . "</td></tr>");
+            $output->rawOutput("<tr><td colspan='2'>" . Translator::translate("No rows found") . "</td></tr>");
         }
         $output->rawOutput("</table>");
     }
@@ -129,8 +129,8 @@ if ($op == "list") {
         if (Database::numRows($result) == 1) {
             $row = Database::fetchAssoc($result);
             $row['intext'] = stripslashes($row['intext']);
-            $submit = translate_inline("Save Translation");
-            $skip = translate_inline("Skip Translation");
+            $submit = Translator::translate("Save Translation");
+            $skip = Translator::translate("Skip Translation");
             $output->rawOutput("<form action='untranslated.php?op=step2' method='post'>");
             $output->output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
             $output->rawOutput("<table width='80%'>");

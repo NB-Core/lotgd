@@ -302,7 +302,7 @@ if (!$skipvillagedesc) {
         $translator->setSchema();
         $id = $texts['newestid'];
         if ($session['user']['superuser'] & SU_EDIT_USERS && $id) {
-            $edit = translate_inline("Edit");
+            $edit = Translator::translate("Edit");
             $output->rawOutput(" [<a href='user.php?op=edit&userid=$id'>$edit</a>]");
             Nav::add("", "user.php?op=edit&userid=$id");
         }
