@@ -12,11 +12,12 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Sanitize;
+use Lotgd\UserLookup;
 
 //addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/sanitize.php";
 
 
 Translator::getInstance()->setSchema("user");
@@ -55,8 +56,7 @@ if (!$query && $sort) {
 }
 
 if ($op == "search" || $op == "") {
-    require_once __DIR__ . "/lib/lookup_user.php";
-    list($searchresult, $err) = lookup_user($query, $order);
+    [$searchresult, $err] = UserLookup::lookup($query, $order);
     $op = "";
     if ($err) {
         $output->output($err);
@@ -98,7 +98,7 @@ $mounts = "0," . translate_inline("None");
 $sql = "SELECT mountid,mountname,mountcategory FROM " . Database::prefix("mounts") .  " ORDER BY mountcategory";
 $result = Database::query($sql);
 while ($row = Database::fetchAssoc($result)) {
-    $mounts .= ",{$row['mountid']},{$row['mountcategory']}: " . color_sanitize($row['mountname']);
+    $mounts .= ",{$row['mountid']},{$row['mountcategory']}: " . Sanitize::colorSanitize($row['mountname']);
 }
 
 $specialties = array("Undecided" => translate_inline("Undecided"));
@@ -120,7 +120,7 @@ foreach ($ranks as $rankid => $rankname) {
     if ($rankstring != "") {
         $rankstring .= ",";
     }
-    $rankstring .= $rankid . "," . sanitize($rankname);
+    $rankstring .= $rankid . "," . Sanitize::sanitize($rankname);
 }
 $races = HookHandler::hook("racenames");
 //all races here expect such ones no module covers, so we add the users race first.

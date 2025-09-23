@@ -14,7 +14,6 @@ use Lotgd\Modules\HookHandler;
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/sanitize.php";
 
 
 Translator::getInstance()->setSchema("lodge");

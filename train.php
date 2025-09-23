@@ -16,14 +16,14 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Specialty;
+use Lotgd\PlayerFunctions;
 
 //addnews ready
 // mail ready
 // translator ready
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
-require_once __DIR__ . "/lib/increment_specialty.php";
-require_once __DIR__ . "/lib/experience.php";
 
 Translator::getInstance()->setSchema("train");
 
@@ -68,7 +68,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
     //end of old piece
     $level = $session['user']['level'];
     $dks = $session['user']['dragonkills'];
-    $exprequired = exp_for_next_level($level, $dks);
+    $exprequired = PlayerFunctions::expForNextLevel($level, $dks);
 
     $op = Http::get('op');
     if ($op == "") {
@@ -232,7 +232,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 $body = array("`&%s`# has advanced to level `^%s`#, and so you have earned `^%s`# points!", $session['user']['name'], $session['user']['level'], getsetting("refereraward", 25));
                 Mail::systemMail($session['user']['referer'], $subj, $body);
             }
-            increment_specialty("`^");
+            Specialty::increment("`^");
 
             // Level-Up companions
             // We only get one level per pageload. So we just add the per-level-values.

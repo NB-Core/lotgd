@@ -16,6 +16,8 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\EmailValidator;
+use Lotgd\PlayerFunctions;
 
 // translator ready
 // addnews ready
@@ -24,7 +26,6 @@ define("ALLOW_ANONYMOUS", true);
 
 
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/is_email.php";
 
 $original = Settings::getInstance();
 $settings_extended = new Settings('settings_extended');
@@ -257,12 +258,12 @@ if (getsetting("allowcreation", 1) == 0) {
                 $msg .= translate_inline("Your character's name cannot exceed 25 characters.`n");
                 $blockaccount = true;
             }
-            if (getsetting("requireemail", 0) == 1 && is_email($email) || getsetting("requireemail", 0) == 0) {
+            if (getsetting("requireemail", 0) == 1 && EmailValidator::isValid($email) || getsetting("requireemail", 0) == 0) {
             } else {
                 $msg .= translate_inline("You must enter a valid email address.`n");
                 $blockaccount = true;
             }
-            $args = HookHandler::hook("check-create", httpallpost());
+            $args = HookHandler::hook("check-create", Http::allPost());
             $args['blockaccount'] = $args['blockaccount'] ?? false;
             $args['msg'] = $args['msg'] ?? '';
 
@@ -293,8 +294,7 @@ if (getsetting("allowcreation", 1) == 0) {
                     if ($sex <> SEX_MALE) {
                         $sex = SEX_FEMALE;
                     }
-                    require_once __DIR__ . "/lib/titles.php";
-                    $title = get_dk_title(0, $sex);
+                    $title = PlayerFunctions::getDkTitle(0, $sex);
                     if (getsetting("requirevalidemail", 0)) {
                         $emailverification = md5(date("Y-m-d H:i:s") . $email);
                     }
@@ -331,7 +331,7 @@ if (getsetting("allowcreation", 1) == 0) {
                         $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";
                         $result = Database::query($sql);
                         $row = Database::fetchAssoc($result);
-                        $args = httpallpost();
+                        $args = Http::allPost();
                         $args['acctid'] = $row['acctid'];
                         //insert output
                         $sql_output = "INSERT INTO " . Database::prefix("accounts_output") . " VALUES ({$row['acctid']},'');";

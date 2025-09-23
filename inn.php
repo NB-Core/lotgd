@@ -13,6 +13,7 @@ use Lotgd\Pvp;
 use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
+use Lotgd\Partner;
 
 // addnews ready
 // translator ready
@@ -50,8 +51,7 @@ $subop = Http::get('subop');
 $com = Http::get('comscroll');
 $comment = Http::post('insertcommentary');
 
-require_once __DIR__ . "/lib/partner.php";
-$partner = get_partner();
+$partner = Partner::getPartner();
 Nav::add("Other");
 VillageNav::render();
 Nav::add("I?Return to the Inn", "inn.php");

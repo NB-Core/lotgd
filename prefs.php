@@ -17,6 +17,8 @@ use Lotgd\DataCache;
 use Lotgd\DebugLog;
 use Lotgd\EmailValidator;
 use Lotgd\DateTime;
+use Lotgd\AddNews;
+use Lotgd\PlayerFunctions;
 
 // addnews ready
 
@@ -46,8 +48,7 @@ $op = Http::get('op');
 Nav::add("Navigation");
 if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
        $userid = (int)Http::get('userid');
-    require_once __DIR__ . "/lib/charcleanup.php";
-    if (char_cleanup($userid, CHAR_DELETE_SUICIDE)) {
+    if (PlayerFunctions::charCleanup($userid, CHAR_DELETE_SUICIDE)) {
         $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
         Database::query($sql);
         $output->output("Your character has been deleted!");
