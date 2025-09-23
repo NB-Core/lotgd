@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\Commentary;
 use Lotgd\Buffs;
+use Lotgd\DateTime;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Sanitize;
 use Lotgd\Http;
@@ -39,7 +40,7 @@ Header::pageHeader(["%s", Sanitize::sanitize($iname)]);
 $skipinndesc = Events::handleEvent("inn");
 
 if (!$skipinndesc) {
-    checkday();
+    DateTime::checkDay();
     $output->rawOutput("<span style='color: #9900FF'>");
     $output->outputNotl("`c`b");
     $output->output($iname);

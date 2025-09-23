@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Buffs;
+use Lotgd\DateTime;
 use Lotgd\DeathMessage;
 use Lotgd\Battle;
 use Lotgd\AddNews;
@@ -27,7 +28,7 @@ if (!$skipgraveyardtext) {
         redirect("village.php");
     }
 
-    checkday();
+    DateTime::checkDay();
 }
 $battle = false;
 Buffs::stripAllBuffs();

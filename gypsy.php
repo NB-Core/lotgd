@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\DateTime;
 use Lotgd\Translator;
 use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
@@ -38,7 +39,7 @@ if ($op == "pay") {
     Commentary::commentDisplay("`5While in a deep trance, you are able to talk with the dead:`n", "shade", "Project", 25, "projects");
     Nav::add("Snap out of your trance", "gypsy.php");
 } else {
-    checkday();
+    DateTime::checkDay();
     Header::pageHeader("Gypsy Seer's tent");
     $output->output("`5You duck into a gypsy tent like many you have seen throughout the realm.");
     $output->output("All of them promise to let you talk with the deceased, and most of them surprisingly seem to work.");
