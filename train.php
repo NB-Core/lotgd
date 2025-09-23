@@ -17,6 +17,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 use Lotgd\Specialty;
 use Lotgd\PlayerFunctions;
 
@@ -24,6 +25,7 @@ use Lotgd\PlayerFunctions;
 // mail ready
 // translator ready
 require_once __DIR__ . "/common.php";
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 Translator::getInstance()->setSchema("train");
@@ -33,8 +35,8 @@ Header::pageHeader("Bluspring's Warrior Training");
 $battle = false;
 $victory = false;
 $defeat = false;
-$point = getsetting('moneydecimalpoint', ".");
-$sep = getsetting('moneythousandssep', ",");
+$point = $settings->getSetting('moneydecimalpoint', '.');
+$sep = $settings->getSetting('moneythousandssep', ',');
 
 $output->output("`b`cBluspring's Warrior Training`c`b");
 
@@ -51,7 +53,7 @@ if ($mid) {
 }
 
 $result = Database::query($sql);
-if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('maxlevel', 15)) {
+if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $settings->getSetting('maxlevel', 15)) {
     $master = Database::fetchAssoc($result);
     $mid = $master['creatureid'];
     $master['creaturename'] = stripslashes($master['creaturename']);
@@ -171,7 +173,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             $session['user']['hitpoints'] = $session['user']['maxhitpoints'];
         }
         HookHandler::hook("master-autochallenge");
-        if (getsetting('displaymasternews', 1)) {
+        if ((int) $settings->getSetting('displaymasternews', 1)) {
             AddNews::add("`3%s`3 was hunted down by their master, `^%s`3, for being truant.", $session['user']['name'], $master['creaturename']);
         }
     }
@@ -212,7 +214,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             $session['user']['attack']++;
             $session['user']['defense']++;
             // Fix the multimaster bug
-            if (getsetting("multimaster", 1) == 1) {
+            if ((int) $settings->getSetting('multimaster', 1) === 1) {
                 $session['user']['seenmaster'] = 0;
                 debuglog("Defeated master, setting seenmaster to 0");
             }
@@ -225,12 +227,12 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             } else {
                 $output->output("None in the land are mightier than you!`n");
             }
-            if ($session['user']['referer'] > 0 && ($session['user']['level'] >= getsetting("referminlevel", 4) || $session['user']['dragonkills'] > 0) && $session['user']['refererawarded'] < 1) {
-                $sql = "UPDATE " . Database::prefix("accounts") . " SET donation=donation+" . getsetting("refereraward", 25) . " WHERE acctid={$session['user']['referer']}";
+            if ($session['user']['referer'] > 0 && ($session['user']['level'] >= (int) $settings->getSetting('referminlevel', 4) || $session['user']['dragonkills'] > 0) && $session['user']['refererawarded'] < 1) {
+                $sql = "UPDATE " . Database::prefix("accounts") . " SET donation=donation+" . (int) $settings->getSetting('refereraward', 25) . " WHERE acctid={$session['user']['referer']}";
                 Database::query($sql);
                 $session['user']['refererawarded'] = 1;
                 $subj = array("`%One of your referrals advanced!`0");
-                $body = array("`&%s`# has advanced to level `^%s`#, and so you have earned `^%s`# points!", $session['user']['name'], $session['user']['level'], getsetting("refereraward", 25));
+                $body = array("`&%s`# has advanced to level `^%s`#, and so you have earned `^%s`# points!", $session['user']['name'], $session['user']['level'], $settings->getSetting('refereraward', 25));
                 Mail::systemMail($session['user']['referer'], $subj, $body);
             }
             Specialty::increment("`^");
@@ -238,7 +240,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             // Level-Up companions
             // We only get one level per pageload. So we just add the per-level-values.
             // No need to multiply and/or substract anything.
-            if (getsetting("companionslevelup", 1) == true) {
+            if ((bool) $settings->getSetting('companionslevelup', 1)) {
                 $newcompanions = $companions;
                 foreach ($companions as $name => $companion) {
                     if (isset($companion['attack'])) {
@@ -268,11 +270,11 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 Nav::add("Superuser Gain level", "train.php?op=challenge&victory=1&master=" . ((string)((int)$mid + 1)) . "&sugain=1");
             }
             if ($session['user']['age'] == 1) {
-                if (getsetting('displaymasternews', 1)) {
+                if ((int) $settings->getSetting('displaymasternews', 1)) {
                     AddNews::add("`%%s`3 has defeated " . ($session['user']['sex'] ? "her" : "his") . " master, `%%s`3 to advance to level `^%s`3 after `^1`3 day!!", $session['user']['name'], $badguy['creaturename'], $session['user']['level']);
                 }
             } else {
-                if (getsetting('displaymasternews', 1)) {
+                if ((int) $settings->getSetting('displaymasternews', 1)) {
                     AddNews::add("`%%s`3 has defeated " . ($session['user']['sex'] ? "her" : "his") . " master, `%%s`3 to advance to level `^%s`3 after `^%s`3 days!!", $session['user']['name'], $badguy['creaturename'], $session['user']['level'], $session['user']['age']);
                 }
             }
@@ -283,7 +285,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
         } elseif ($defeat) {
             $taunt = Battle::selectTauntArray();
 
-            if (getsetting('displaymasternews', 1)) {
+            if ((int) $settings->getSetting('displaymasternews', 1)) {
                 AddNews::add("`%%s`5 has challenged their master, %s and lost!`n%s", $session['user']['name'], $badguy['creaturename'], $taunt);
             }
             $session['user']['hitpoints'] = $session['user']['maxhitpoints'];

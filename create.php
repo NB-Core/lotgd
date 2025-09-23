@@ -27,16 +27,19 @@ define("ALLOW_ANONYMOUS", true);
 
 require_once __DIR__ . "/common.php";
 
+// Keep this variable named $original: loading the extended settings table may
+// temporarily overwrite the singleton/global $settings instance.
 $original = Settings::getInstance();
 $settings_extended = new Settings('settings_extended');
 Settings::setInstance($original);
 $GLOBALS['settings'] = $original;
+$settings = $original;
 
 Translator::getInstance()->setSchema("create");
 
-$trash = getsetting("expiretrashacct", 1);
-$new = getsetting("expirenewacct", 10);
-$old = getsetting("expireoldacct", 45);
+$trash = (int) $settings->getSetting('expiretrashacct', 1);
+$new = (int) $settings->getSetting('expirenewacct', 10);
+$old = (int) $settings->getSetting('expireoldacct', 45);
 
 $msg = '';
 
@@ -176,7 +179,7 @@ if ($op == "forgot") {
                         "{acctid}" => $row['acctid'],
                         "{emailaddress}" => $row['emailaddress'],
                         "{requester_ip}" => $_SERVER['REMOTE_ADDR'],
-                        "{gameurl}" => getsetting("serverurl", "https://lotgd.com") . "/create.php",
+                        "{gameurl}" => $settings->getSetting('serverurl', 'https://lotgd.com') . "/create.php",
                         "{forgottenid}" => $row['forgottenpassword'],
                           );
 
@@ -186,7 +189,7 @@ if ($op == "forgot") {
                 $msg = str_replace("`n", "\n", $msg);
 
                                 $to_array = array($row['emailaddress'] => $row['login']);
-                                $from_array = array(getsetting("gameadminemail", "postmaster@localhost") => getsetting("gameadminemail", "postmaster@localhost"));
+                                $from_array = array($settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost'));
                                 \Lotgd\Mail::send($to_array, $msg, $subj, $from_array, false, "text/plain");
                 $output->output("`#Sent a new validation email to the address on file for that account.");
                 $output->output("You may use the validation email to log in and change your password.");
@@ -210,13 +213,13 @@ if ($op == "forgot") {
     }
 }
 Header::pageHeader("Create A Character");
-if (getsetting("allowcreation", 1) == 0) {
+if ((int) $settings->getSetting('allowcreation', 1) === 0) {
     $output->output("`\$Creation of new accounts is disabled on this server.");
     $output->output("You may try it again another day or contact an administrator.");
 } else {
     if ($op == "create") {
         $emailverification = "";
-                $shortname = Sanitize::sanitizeName(getsetting("spaceinname", 0), Http::post('name'));
+        $shortname = Sanitize::sanitizeName((int) $settings->getSetting('spaceinname', 0), Http::post('name'));
 
         if (soap($shortname) != $shortname) {
             $output->output("`\$Error`^: Bad language was found in your name, please consider revising it.`n");
@@ -226,7 +229,7 @@ if (getsetting("allowcreation", 1) == 0) {
             $email = Http::post('email');
             $pass1 = Http::post('pass1');
             $pass2 = Http::post('pass2');
-            if (getsetting("blockdupeemail", 0) == 1 && getsetting("requireemail", 0) == 1) {
+            if ((int) $settings->getSetting('blockdupeemail', 0) === 1 && (int) $settings->getSetting('requireemail', 0) === 1) {
                 $sql = "SELECT login FROM " . Database::prefix("accounts") . " WHERE emailaddress='" . Database::escape($email) . "'";
                 $result = Database::query($sql);
                 if (Database::numRows($result) > 0) {
@@ -258,7 +261,8 @@ if (getsetting("allowcreation", 1) == 0) {
                 $msg .= translate_inline("Your character's name cannot exceed 25 characters.`n");
                 $blockaccount = true;
             }
-            if (getsetting("requireemail", 0) == 1 && EmailValidator::isValid($email) || getsetting("requireemail", 0) == 0) {
+            $requireEmail = (int) $settings->getSetting('requireemail', 0);
+            if (($requireEmail === 1 && EmailValidator::isValid($email)) || $requireEmail === 0) {
             } else {
                 $msg .= translate_inline("You must enter a valid email address.`n");
                 $blockaccount = true;
@@ -295,7 +299,7 @@ if (getsetting("allowcreation", 1) == 0) {
                         $sex = SEX_FEMALE;
                     }
                     $title = PlayerFunctions::getDkTitle(0, $sex);
-                    if (getsetting("requirevalidemail", 0)) {
+                    if ((int) $settings->getSetting('requirevalidemail', 0)) {
                         $emailverification = md5(date("Y-m-d H:i:s") . $email);
                     }
                     $refer = Http::get('r');
@@ -323,7 +327,7 @@ if (getsetting("allowcreation", 1) == 0) {
                     $sql = "INSERT INTO " . Database::prefix("accounts") . "
                                                 (playername,name, superuser, title, password, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate,badguy,allowednavs,restorepage,specialinc,specialmisc,bufflist,dragonpoints,replaceemail,forgottenpassword,prefs,hauntedby,donationconfig,bio,ctitle,companions)
                                                 VALUES
-                                                ('$shortname','$title $shortname', '" . getsetting("defaultsuperuser", 0) . "', '$title', '$dbpass', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . getsetting("newplayerstartgold", 50) . ", '" . addslashes(getsetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','" . $allowednavs . "', 'village.php','','','',0,'','','','','','','','')";
+                                                ('$shortname','$title $shortname', '" . (int) $settings->getSetting('defaultsuperuser', 0) . "', '$title', '$dbpass', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . (int) $settings->getSetting('newplayerstartgold', 50) . ", '" . addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','" . $allowednavs . "', 'village.php','','','',0,'','','','','','','','')";
                     Database::query($sql);
                     if (Database::affectedRows() <= 0) {
                         $output->output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
@@ -345,7 +349,7 @@ if (getsetting("allowcreation", 1) == 0) {
                                     "{login}" => $shortname,
                                     "{acctid}" => $row['acctid'],
                                     "{emailaddress}" => $email,
-                                    "{gameurl}" => getsetting("serverurl", "https://lotgd.com") . "/create.php",
+                                    "{gameurl}" => $settings->getSetting('serverurl', 'https://lotgd.com') . "/create.php",
                                     "{validationid}" => $emailverification,
                                       );
 
@@ -354,7 +358,7 @@ if (getsetting("allowcreation", 1) == 0) {
                             $msg = str_replace($keys, $values, $msg);
                             $msg = str_replace("`n", "\n", $msg);
                                                         $to_array = array($email => $shortname);
-                                                        $from_array = array(getsetting("gameadminemail", "postmaster@localhost") => getsetting("gameadminemail", "postmaster@localhost"));
+                                                        $from_array = array($settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost'));
                                                         \Lotgd\Mail::send($to_array, $msg, $subj, $from_array, false, "text/plain");
                             $output->output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
                         } else {
@@ -389,7 +393,7 @@ if (getsetting("allowcreation", 1) == 0) {
         $output->output("`&`c`bCreate a Character`b`c`0");
         $refer = Http::get('r');
         if ($refer) {
-            $refer = "&r=" . htmlentities($refer, ENT_COMPAT, getsetting("charset", "UTF-8"));
+            $refer = "&r=" . htmlentities($refer, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
         }
 
         $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
@@ -427,9 +431,9 @@ if (getsetting("allowcreation", 1) == 0) {
                 $r1 = translate_inline("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
                 $r2 = translate_inline("`\$(required)`0");
                 $r3 = translate_inline("`\$(required, an email will be sent to this address to verify it before you can log in)`0");
-        if (getsetting("requireemail", 0) == 0) {
+        if ((int) $settings->getSetting('requireemail', 0) === 0) {
             $req = $r1;
-        } elseif (getsetting("requirevalidemail", 0) == 0) {
+        } elseif ((int) $settings->getSetting('requirevalidemail', 0) === 0) {
             $req = $r2;
         } else {
             $req = $r3;

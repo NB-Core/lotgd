@@ -11,11 +11,14 @@ use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Events;
 use Lotgd\PlayerFunctions;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
+
+$settings = Settings::getInstance();
 
 $translator = Translator::getInstance();
 
@@ -24,8 +27,8 @@ $translator->setSchema('village');
 // See if the user is in a valid location and if not, put them back to
 // a place which is valid
 $valid_loc = array();
-$vname = getsetting("villagename", LOCATION_FIELDS);
-$iname = getsetting("innname", LOCATION_INN);
+$vname = $settings->getSetting('villagename', LOCATION_FIELDS);
+$iname = $settings->getSetting('innname', LOCATION_INN);
 $valid_loc[$vname] = "village";
 $valid_loc = HookHandler::hook("validlocation", $valid_loc);
 if (!isset($valid_loc[$session['user']['location']])) {
@@ -33,7 +36,7 @@ if (!isset($valid_loc[$session['user']['location']])) {
 }
 
 $newestname = "";
-$newestplayer = getsetting("newestplayer", "");
+$newestplayer = $settings->getSetting('newestplayer', '');
 if ($newestplayer == $session['user']['acctid']) {
     $newtext = "`nYou're the newest member of the village.  As such, you wander around, gaping at the sights, and generally looking lost.";
     $newestname = $session['user']['name'];
@@ -138,14 +141,14 @@ if ($session['user']['alive']) {
     redirect("shades.php");
 }
 
-if (getsetting("automaster", 1) && $session['user']['seenmaster'] != 1) {
+if ((int) $settings->getSetting('automaster', 1) && $session['user']['seenmaster'] != 1) {
     //masters hunt down truant students
     $level = $session['user']['level'] + 1;
     $dks = $session['user']['dragonkills'];
     $expreqd = PlayerFunctions::expForNextLevel($level, $dks);
     if (
         $session['user']['experience'] > $expreqd &&
-            $session['user']['level'] < (int)getsetting('maxlevel', 15)
+            $session['user']['level'] < (int) $settings->getSetting('maxlevel', 15)
     ) {
         redirect("train.php?op=autochallenge");
     }
@@ -160,7 +163,7 @@ $comment = Http::post('insertcommentary');
 // the commentary (or talking) or dealing with any of the hooks in the village.
 if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
     // The '1' should really be sysadmin customizable.
-    if (HookHandler::moduleEvents("village", (int)getsetting("villagechance", 0)) != 0) {
+    if (HookHandler::moduleEvents("village", (int) $settings->getSetting('villagechance', 0)) != 0) {
         if (Nav::checkNavs()) {
             Footer::pageFooter();
         } else {
@@ -184,10 +187,10 @@ Nav::add($texts['gatenav']);
 $translator->setSchema();
 
 Nav::add("F?Forest", "forest.php");
-if (getsetting("pvp", 1)) {
+if ((int) $settings->getSetting('pvp', 1)) {
     Nav::add("S?Slay Other Players", "pvp.php");
 }
-if (getsetting("enablecompanions", true)) {
+if ((bool) $settings->getSetting('enablecompanions', true)) {
     $translator->setSchema($schemas['mercenarycamp']);
     Nav::add($texts['mercenarycamp'], "mercenarycamp.php");
     $translator->setSchema();
@@ -212,7 +215,7 @@ Nav::add("A?" . $texts['armorshop'], "armor.php");
 $translator->setSchema();
 Nav::add("B?Ye Olde Bank", "bank.php");
 Nav::add("Z?Ze Gypsy Tent", "gypsy.php");
-if (getsetting("betaperplayer", 1) == 1 && @file_exists("pavilion.php")) {
+if ((int) $settings->getSetting('betaperplayer', 1) === 1 && @file_exists("pavilion.php")) {
     Nav::add("E?Eye-catching Pavilion", "pavilion.php");
 }
 
@@ -228,7 +231,7 @@ $translator->setSchema();
 
 Nav::add("G?The Gardens", "gardens.php");
 Nav::add("R?Curious Looking Rock", "rock.php");
-if (getsetting("allowclans", 1)) {
+if ((int) $settings->getSetting('allowclans', 1)) {
     Nav::add("C?Clan Halls", "clan.php");
 }
 

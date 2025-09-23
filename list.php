@@ -12,6 +12,7 @@ use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Output;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // addnews ready
 // translator ready
@@ -19,6 +20,7 @@ use Lotgd\Modules\HookHandler;
 define("ALLOW_ANONYMOUS", true);
 
 require_once __DIR__ . "/common.php";
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 Translator::getInstance()->setSchema("list");
@@ -55,6 +57,8 @@ $page = Http::get('page');
 $search = '';
 $limit = '';
 
+$loginTimeout = (int) $settings->getSetting('LOGINTIMEOUT', 900);
+
 if ($op == "search") {
     $rawName = Http::post('name');
     $n = '';
@@ -85,7 +89,8 @@ if ($op !== "search") {
 
     $limit = " LIMIT $pageoffset,$playersperpage ";
 }
-if (getsetting('listonlyonline', 1) == 0 || (getsetting('listonlyonline', 1) == 1 && $session['user']['loggedin'])) {
+$listOnlyOnline = (int) $settings->getSetting('listonlyonline', 1);
+if ($listOnlyOnline === 0 || ($listOnlyOnline === 1 && $session['user']['loggedin'])) {
     Nav::add("Pages");
     for ($i = 0; $i < $totalplayers; $i += $playersperpage) {
         $pnum = $i / $playersperpage + 1;
@@ -102,7 +107,7 @@ if (getsetting('listonlyonline', 1) == 0 || (getsetting('listonlyonline', 1) == 
 $remove_offline = true;
 if ($page == "" && $op == "") {
     $title = translate_inline("Warriors Currently Online");
-    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' ORDER BY level DESC, dragonkills DESC, login ASC";
+    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $loginTimeout . " seconds")) . "' ORDER BY level DESC, dragonkills DESC, login ASC";
     $result = Database::queryCached($sql, "list.php-warsonline");
 } elseif ($op == 'clan') {
     if (empty($session['user']['clanid'])) {
@@ -112,7 +117,7 @@ if ($page == "" && $op == "") {
     $clanId = (int) $session['user']['clanid'];
 
     $title = translate_inline("Clan Members Online");
-    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds")) . "' AND clanid='{$clanId}' ORDER BY level DESC, dragonkills DESC, login ASC";
+    $sql = "SELECT acctid,name,login,alive,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $loginTimeout . " seconds")) . "' AND clanid='{$clanId}' ORDER BY level DESC, dragonkills DESC, login ASC";
     $result = Database::query($sql);
 } else {
     $remove_offline = false;
@@ -134,9 +139,10 @@ if ($session['user']['loggedin']) {
 }
 
 $max = Database::numRows($result);
-if ($max > getsetting("maxlistsize", 100)) {
-    $output->output("`\$Too many names match that search.  Showing only the first %s.`0`n", getsetting("maxlistsize", 100));
-    $max = getsetting("maxlistsize", 100);
+$maxListSize = (int) $settings->getSetting('maxlistsize', 100);
+if ($max > $maxListSize) {
+    $output->output("`\$Too many names match that search.  Showing only the first %s.`0`n", $maxListSize);
+    $max = $maxListSize;
 }
 
 // prepare for hook
@@ -205,7 +211,7 @@ foreach ($rows as $i => $row) {
         $output->rawOutput("</a>");
     }
     $output->rawOutput("</td><td>");
-    $loggedin = (date("U") - strtotime($row['laston']) < getsetting("LOGINTIMEOUT", 900) && $row['loggedin']);
+    $loggedin = (date("U") - strtotime($row['laston']) < $loginTimeout && $row['loggedin']);
     $output->outputNotl("`&%s`0", $row['location']);
     if ($loggedin) {
         $online = translate_inline("`#(Online)");
