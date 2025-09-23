@@ -105,6 +105,7 @@ require_once __DIR__ . "/lib/mounts.php";
 require_once __DIR__ . "/lib/debuglog.php";
 require_once __DIR__ . "/lib/datacache.php";
 require_once __DIR__ . "/lib/fightnav.php";
+require_once __DIR__ . "/lib/villagenav.php";
 
 ErrorHandler::register();
 
