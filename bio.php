@@ -16,16 +16,19 @@ use Lotgd\Http;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
-use Lotgd\Modules;
 use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\DateTime;
 use Lotgd\Nltoappon;
 use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\PageParts;
+use Lotgd\Censor;
 
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
+$settings = Settings::getInstance();
 
 $translator = Translator::getInstance();
 
@@ -70,18 +73,18 @@ if ($target = Database::fetchAssoc($result)) {
     HookHandler::hook("biotop", $target);
 
     $output->output("`^Biography for %s`^.", $target['name']);
-    $write = translate_inline("Write Mail");
+    $write = Translator::translateInline("Write Mail");
     if ($session['user']['loggedin']) {
-        $output->rawOutput("<a href=\"mail.php?op=write&to={$target['login']}\" target=\"_blank\" onClick=\"" . popup("mail.php?op=write&to={$target['login']}") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
+        $output->rawOutput("<a href=\"mail.php?op=write&to={$target['login']}\" target=\"_blank\" onClick=\"" . PageParts::popup("mail.php?op=write&to={$target['login']}") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
     }
     $output->outputNotl("`n`n");
 
-    if ($target['clanname'] > "" && getsetting("allowclans", false)) {
+    if ($target['clanname'] > "" && $settings->getSetting("allowclans", false)) {
         $ranks = array(CLAN_APPLICANT => "`!Applicant`0",CLAN_MEMBER => "`#Member`0",CLAN_OFFICER => "`^Officer`0",CLAN_LEADER => "`&Leader`0", CLAN_FOUNDER => "`\$Founder");
         $ranks = HookHandler::hook("clanranks", array("ranks" => $ranks, "clanid" => $target['clanid']));
         $translator->setSchema("clans"); //just to be in the right schema
         array_push($ranks['ranks'], "`\$Founder");
-        $ranks = translate_inline($ranks['ranks']);
+        $ranks = Translator::translateInline($ranks['ranks']);
         $translator->setSchema();
         $output->output("`@%s`2 is a %s`2 to `%%s`2`n", $target['name'], str_replace(array("`c","`i"), "", $ranks[$target['clanrank']]), str_replace(array("`c","`i"), "", $target['clanname']));
     }
@@ -92,11 +95,11 @@ if ($target = Database::fetchAssoc($result)) {
     if (
         $target['loggedin'] &&
           (date("U") - strtotime($target['laston']) <
-            getsetting("LOGINTIMEOUT", 900))
+            $settings->getSetting("LOGINTIMEOUT", 900))
     ) {
         $loggedin = true;
     }
-    $status = translate_inline($loggedin ? "`#Online`0" : "`\$Offline`0");
+    $status = Translator::translateInline($loggedin ? "`#Online`0" : "`\$Offline`0");
     $output->output("`^Status: %s`n", $status);
 
     $output->output("`^Resurrections: `@%s`n", $target['resurrections']);
@@ -105,16 +108,16 @@ if ($target = Database::fetchAssoc($result)) {
     if (!$race) {
         $race = RACE_UNKNOWN;
     }
-    $race = translate_inline($race, "race", "race");
+    $race = Translator::translateInline($race, "race");
     $output->output("`^Race: `@%s`n", $race);
 
     $genders = array("Male","Female");
-    $genders = translate_inline($genders);
+    $genders = Translator::translateInline($genders);
     $output->output("`^Gender: `@%s`n", $genders[$target['sex']]);
 
     $specialties = HookHandler::hook(
         "specialtynames",
-        array("" => translate_inline("Unspecified"))
+        array("" => Translator::translateInline("Unspecified"))
     );
     if (isset($specialties[$target['specialty']])) {
         $output->output("`^Specialty: `@%s`n", $specialties[$target['specialty']]);
@@ -125,7 +128,7 @@ if ($target = Database::fetchAssoc($result)) {
 
     $mount['acctid'] = $target['acctid'];
     $mount = HookHandler::hook("bio-mount", $mount);
-    $none = translate_inline("`iNone`i");
+    $none = Translator::translateInline("`iNone`i");
     if (!isset($mount['mountname']) || $mount['mountname'] == "") {
           $mount['mountname'] = $none;
     }
@@ -138,7 +141,7 @@ if ($target = Database::fetchAssoc($result)) {
     }
 
     if ($target['bio'] > "") {
-        $output->output("`^Bio: `@`n%s`n", Nltoappon::convert(soap($target['bio'])));
+        $output->output("`^Bio: `@`n%s`n", Nltoappon::convert(Censor::soap($target['bio'])));
     }
 
     HookHandler::hook("bioinfo", $target);
@@ -160,7 +163,7 @@ if ($target = Database::fetchAssoc($result)) {
             $news = $translator->sprintfTranslate(...$arguments);
             $output->rawOutput(Translator::clearButton());
         } else {
-            $news = translate_inline($row['newstext']);
+            $news = Translator::translateInline($row['newstext']);
             $output->rawOutput(Translator::clearButton());
         }
         $translator->setSchema();

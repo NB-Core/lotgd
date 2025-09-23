@@ -11,30 +11,38 @@ use Lotgd\Serialization;
 use Lotgd\Cookies;
 use Lotgd\DataCache;
 use Lotgd\Template;
+use Lotgd\Http;
+use Lotgd\Output;
+use Lotgd\Redirect;
+use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 define("ALLOW_ANONYMOUS", true);
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 // This must be after common.php for now
 use Lotgd\ServerFunctions;
 
+$output = Output::getInstance();
+$settings = Settings::getInstance();
+
 Translator::getInstance()->setSchema("login");
-translator_setup();
-$op = httpget('op');
-$name = httppost('name');
-$iname = getsetting("innname", LOCATION_INN);
-$vname = getsetting("villagename", LOCATION_FIELDS);
+Translator::translatorSetup();
+$op = Http::get('op');
+$name = Http::post('name');
+$name = $name !== false ? (string)$name : '';
+$iname = $settings->getSetting("innname", LOCATION_INN);
+$vname = $settings->getSetting("villagename", LOCATION_FIELDS);
 
 if ($name != "") {
     if (isset($session['loggedin']) && $session['loggedin']) {
-        redirect("badnav.php");
+        Redirect::redirect("badnav.php");
     } else {
-        $password = httppost('password');
-        $password = stripslashes($password);
+        $password = Http::post('password');
+        $password = $password !== false ? stripslashes((string)$password) : '';
+        $force = Http::post('force');
         if (substr($password, 0, 5) == "!md5!") {
             $password = md5(substr($password, 5));
         } elseif (substr($password, 0, 6) == "!md52!" && strlen($password) == 38) {
-            $force = httppost('force');
             if ($force) {
                 $password = substr($password, 6);
                 $password = preg_replace("/[^a-f0-9]/", "", $password);
@@ -76,18 +84,18 @@ if ($name != "") {
             // If the player isn't allowed on for some reason, anything on
             // this hook should automatically call page_footer and exit
             // itself.
-            modulehook("check-login");
-            if (ServerFunctions::isTheServerFull() == true && httppost('force') != 1) {
+            HookHandler::hook("check-login");
+            if (ServerFunctions::isTheServerFull() == true && $force !== '1') {
                 //sanity check if the server is / got full --> back to home
-                $session['message'] = translate_inline("`4Sorry, server full!");
+                $session['message'] = Translator::translateInline("`4Sorry, server full!");
                 $session['user'] = array();
-                redirect("home.php");
+                Redirect::redirect("home.php");
             }
 
             if ($session['user']['emailvalidation'] != "" && substr($session['user']['emailvalidation'], 0, 1) != "x") {
                 $session['user'] = array();
-                $session['message'] = translate_inline("`4Error, you must validate your email address before you can log in.");
-                echo appoencode($session['message']);
+                $session['message'] = Translator::translateInline("`4Error, you must validate your email address before you can log in.");
+                echo $output->appoencode($session['message']);
                 exit();
             } else {
                 $session['loggedin'] = true;
@@ -102,17 +110,17 @@ if ($name != "") {
                 if (!is_array($session['user']['dragonpoints'])) {
                     $session['user']['dragonpoints'] = array();
                 }
-                massinvalidate('charlisthomepage');
+                DataCache::getInstance()->massinvalidate('charlisthomepage');
                 DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
                 $session['user']['laston'] = date("Y-m-d H:i:s");
 
                 // Handle the change in number of users online
-                translator_check_collect_texts();
+                Translator::translatorCheckCollectTexts();
 
                 // Let's throw a login module hook in here so that modules
                 // like the stafflist which need to invalidate the cache
                 // when someone logs in or off can do so.
-                modulehook("player-login");
+                HookHandler::hook("player-login");
 
                 $cookieTemplate = Template::getTemplateCookie();
                 if ($cookieTemplate !== '') {
@@ -157,17 +165,17 @@ if ($name != "") {
                     exit();
                 } else {
                     if ($location == $iname) {
-                        redirect("inn.php?op=strolldown");
+                        Redirect::redirect("inn.php?op=strolldown");
                     } else {
-                        redirect("news.php");
+                        Redirect::redirect("news.php");
                     }
                 }
             }
         } else {
-            $session['message'] = translate_inline("`4Error, your login was incorrect`0");
+            $session['message'] = Translator::translateInline("`4Error, your login was incorrect`0");
             //now we'll log the failed attempt and begin to issue bans if
             //there are too many, plus notify the admins.
-            $sql = "DELETE FROM " . Database::prefix("faillog") . " WHERE date<'" . date("Y-m-d H:i:s", strtotime("-" . (getsetting("expirecontent", 180) / 4) . " days")) . "'";
+            $sql = "DELETE FROM " . Database::prefix("faillog") . " WHERE date<'" . date("Y-m-d H:i:s", strtotime("-" . ($settings->getSetting("expirecontent", 180) / 4) . " days")) . "'";
             CheckBan::check();
             //Database::query($sql);
             $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$name'";
@@ -176,7 +184,7 @@ if ($name != "") {
                 // just in case there manage to be multiple accounts on
                 // this name.
                 while ($row = Database::fetchAssoc($result)) {
-                    $post = httpallpost();
+                    $post = Http::allPost();
                                         $cookielgi = Cookies::getLgi() ?? 'no cookie set';
                     $sql = "INSERT INTO " . Database::prefix("faillog") . " VALUES (0,'" . date("Y-m-d H:i:s") . "','" . addslashes(serialize($post)) . "','{$_SERVER['REMOTE_ADDR']}','{$row['acctid']}','$cookielgi')";
                     Database::query($sql);
@@ -195,7 +203,7 @@ if ($name != "") {
                     }
                     if ($c >= 10) {
                         // 5 failed attempts for superuser, 10 for regular user
-                        $banmessage = translate_inline("Automatic System Ban: Too many failed login attempts.");
+                        $banmessage = Translator::translateInline("Automatic System Ban: Too many failed login attempts.");
                         $sql = "INSERT INTO " . Database::prefix("bans") . " VALUES ('{$_SERVER['REMOTE_ADDR']}','','" . date("Y-m-d H:i:s", strtotime("+15 minutes")) . "','$banmessage','System','" . DATETIME_DATEMIN . "')";
                         Database::query($sql);
                         if ($su) {
@@ -203,7 +211,7 @@ if ($name != "") {
                             // this failed attempt if it includes superusers.
                             $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE (superuser&" . SU_EDIT_USERS . ")";
                             $result2 = Database::query($sql);
-                            $subj = translate_mail(array("`#%s failed to log in too many times!",$_SERVER['REMOTE_ADDR']), 0);
+                            $subj = Translator::translateMail(array("`#%s failed to log in too many times!",$_SERVER['REMOTE_ADDR']), 0);
                             while ($row2 = Database::fetchAssoc($result2)) {
                                 //delete old messages that
                                 $sql = "DELETE FROM " . Database::prefix("mail") . " WHERE msgto={$row2['acctid']} AND msgfrom=0 AND subject = '" . serialize($subj) . "' AND seen=0";
@@ -213,30 +221,30 @@ if ($name != "") {
                                 } else {
                                     $noemail = false;
                                 }
-                                $msg = translate_mail(array("This message is generated as a result of one or more of the accounts having been a superuser account.  Log Follows:`n`n%s",$alert), 0);
+                                $msg = Translator::translateMail(array("This message is generated as a result of one or more of the accounts having been a superuser account.  Log Follows:`n`n%s",$alert), 0);
                                 Mail::systemMail($row2['acctid'], $subj, $msg, 0, $noemail);
                             }//end for
                         }//end if($su)
                     }//end if($c>=10)
                 }//end while
             }//end if (Database::numRows)
-            redirect("index.php");
+            Redirect::redirect("index.php");
         }
     }
 } elseif ($op == "logout") {
     if ($session['user']['loggedin']) {
         $sql = "UPDATE " . Database::prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
         Database::query($sql);
-        massinvalidate('charlisthomepage');
+        DataCache::getInstance()->massinvalidate('charlisthomepage');
         DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
 
         // Handle the change in number of users online
-        translator_check_collect_texts();
+        Translator::translatorCheckCollectTexts();
 
         // Let's throw a logout module hook in here so that modules
         // like the stafflist which need to invalidate the cache
         // when someone logs in or off can do so.
-        modulehook("player-logout");
+        HookHandler::hook("player-logout");
 
         // Get allowed navs that are saved, not the ones in the user array, because they are empty (redirect clears)
         $sql = "SELECT restorepage, allowednavs FROM " . Database::prefix('accounts') . " WHERE acctid=" . $session['user']['acctid'];
@@ -253,9 +261,9 @@ if ($name != "") {
         }
     }
     $session = array();
-    redirect("index.php");
+    Redirect::redirect("index.php");
 }
 // If you enter an empty username, don't just say oops.. do something useful.
 $session = array();
-$session['message'] = translate_inline("`4Error, your login was incorrect`0");
-redirect("index.php");
+$session['message'] = Translator::translateInline("`4Error, your login was incorrect`0");
+Redirect::redirect("index.php");

@@ -24,8 +24,6 @@ use Lotgd\Output;
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/nltoappon.php";
-require_once __DIR__ . "/lib/sanitize.php";
 
 $settings = Settings::getInstance();
 

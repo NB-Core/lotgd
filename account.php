@@ -9,11 +9,15 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Translator;
+use Lotgd\Output;
+use Lotgd\Modules\HookHandler;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 
 Translator::getInstance()->setSchema("account");
@@ -22,7 +26,7 @@ Header::pageHeader("Account Information");
 Commentary::addCommentary();
 DateTime::checkDay();
 
-output("`\$Some stats concerning your account. Note that this in the timezone of the server.`0`n`n");
+$output->output("`\$Some stats concerning your account. Note that this in the timezone of the server.`0`n`n");
 Nav::add("Navigation");
 VillageNav::render();
 Nav::add("Actions");
@@ -56,21 +60,21 @@ foreach ($dragonpointssummary as $key => $value) {
 $stats[] = array("title" => "Dragon Point Spending:","value" => $dksummary);
 //translate...
 foreach ($stats as $entry) {
-    $entry['title'] = translate_inline($entry['title']);
+    $entry['title'] = Translator::translateInline($entry['title']);
     $newstats[] = $entry;
 }
 $stats = $newstats;
 
-$stats = modulehook("accountstats", $stats);
-rawoutput("<table>");
+$stats = HookHandler::hook("accountstats", $stats);
+$output->rawOutput("<table>");
 foreach ($stats as $entry) {
-    rawoutput("<tr><td>");
-    output_notl("`q" . $entry['title']);
-    rawoutput("</td><td>");
-    output_notl("`\$" . $entry['value']);
-    rawoutput("</td></tr>");
+    $output->rawOutput("<tr><td>");
+    $output->outputNotl("`q" . $entry['title']);
+    $output->rawOutput("</td><td>");
+    $output->outputNotl("`\$" . $entry['value']);
+    $output->rawOutput("</td></tr>");
 }
-rawoutput("</table>");
+$output->rawOutput("</table>");
 
 
 Translator::getInstance()->setSchema();
