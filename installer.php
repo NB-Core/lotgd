@@ -1,6 +1,13 @@
 <?php
 
 use Lotgd\Translator;
+use Lotgd\DataCache;
+use Lotgd\Http;
+use Lotgd\PageParts;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Nav;
+use Lotgd\Settings;
 
 //translator ready
 //addnews ready
@@ -9,14 +16,6 @@ use Lotgd\Translator;
 define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 define("IS_INSTALLER", true);
-
-use Lotgd\DataCache;
-use Lotgd\Http;
-use Lotgd\PageParts;
-use Lotgd\Page\Header;
-use Lotgd\Page\Footer;
-use Lotgd\Nav;
-use Lotgd\Settings;
 
 //PHP 8.3 or higher is required for this version
 //MySQL 5.0.3 and the mysqli extension are required for this version
@@ -120,8 +119,8 @@ if (
     $stage == 5
     )
 ) {
-        output("`%This stage was completed during a previous installation.");
-        output("`2If you wish to perform stages 4 through 6 again, please delete the file named \"dbconnect.php\" from your site.`n`n");
+        $output->output("`%This stage was completed during a previous installation.");
+        $output->output("`2If you wish to perform stages 4 through 6 again, please delete the file named \"dbconnect.php\" from your site.`n`n");
         $stage = 6;
 }
 if ($stage > $session['stagecompleted']) {
@@ -135,7 +134,7 @@ $installer->runStage($stage);
 
 if (!$noinstallnavs) {
     if ($session['user']['loggedin']) {
-        addnav("Back to the game", $session['user']['restorepage']);
+        Nav::add("Back to the game", $session['user']['restorepage']);
     }
     Nav::add("Install Stages");
 

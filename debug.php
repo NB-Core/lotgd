@@ -4,44 +4,47 @@ use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 
 Translator::getInstance()->setSchema("debug");
 
 SuAccess::check(SU_EDIT_CONFIG);
 
 SuperuserNav::render();
-addnav("Debug Options");
-addnav("", $_SERVER['REQUEST_URI']);
-$sort = httpget('sort');
-addnav("Get Pageruntimes", "debug.php?debug=pageruntime&sort=" . URLEncode($sort));
-addnav("Get Modulehooktimes", "debug.php?debug=hooksort&sort=" . URLEncode($sort));
+Nav::add("Debug Options");
+Nav::add("", $_SERVER['REQUEST_URI']);
+$sort = Http::get('sort');
+Nav::add("Get Pageruntimes", "debug.php?debug=pageruntime&sort=" . URLEncode($sort));
+Nav::add("Get Modulehooktimes", "debug.php?debug=hooksort&sort=" . URLEncode($sort));
 
 
-page_header("Debug Analysis");
+Header::pageHeader("Debug Analysis");
 $order = "sum";
 if ($sort != "") {
     $order = $sort;
 }
-$debug = httpget('debug');
+$debug = Http::get('debug');
 if ($debug == '') {
     $debug = 'pageruntime';
 }
-$ascdesc_raw = (int)httpget('direction');
+$ascdesc_raw = (int)Http::get('direction');
 if ($ascdesc_raw) {
     $ascdesc = "ASC";
 } else {
     $ascdesc = "DESC";
 }
-addnav("Sorting");
-addnav("By Total", "debug.php?debug=" . $debug . "&sort=sum&direction=" . $ascdesc_raw);
-addnav("By Average", "debug.php?debug=" . $debug . "&sort=medium&direction=" . $ascdesc_raw);
-addnav("Switch ASC/DESC", "debug.php?debug=" . $debug . "&sort=" . URLEncode($sort) . "&direction=" . (!$ascdesc_raw));
+Nav::add("Sorting");
+Nav::add("By Total", "debug.php?debug=" . $debug . "&sort=sum&direction=" . $ascdesc_raw);
+Nav::add("By Average", "debug.php?debug=" . $debug . "&sort=medium&direction=" . $ascdesc_raw);
+Nav::add("Switch ASC/DESC", "debug.php?debug=" . $debug . "&sort=" . URLEncode($sort) . "&direction=" . (!$ascdesc_raw));
 
 
 switch ($debug) {
@@ -92,23 +95,23 @@ switch ($debug) {
 }
 $none = translate_inline("`iNone`i");
 $notset = translate_inline("`iNot set`i");
-rawoutput("<table border=0 cellpadding=2 cellspacing=1><tr class='trhead'><td>$category</td><td>$subcategory</td><td>$sum_desc</td><td>$med_desc</td><td>$hits</td></tr>");
+$output->rawOutput("<table border=0 cellpadding=2 cellspacing=1><tr class='trhead'><td>$category</td><td>$subcategory</td><td>$sum_desc</td><td>$med_desc</td><td>$hits</td></tr>");
 debug($sql);
 $result = Database::query($sql);
 $i = true;
 while ($row = Database::fetchAssoc($result)) {
     $i = !$i;
-    rawoutput("<tr class='" . ($i ? 'trdark' : 'trlight') . "'><td valign='top'>");
-    output_notl("`b" . $row['category'] . "`b");
-    rawoutput("</td><td valign='top'>");
-    output_notl("`b" . $row['subcategory'] . "`b");
-    rawoutput("</td><td valign='top'>");
-    output_notl($row['sum']);
-    rawoutput("</td><td valign='top'>");
-    output_notl($row['medium']);
-    rawoutput("</td><td valign='top'>");
-    output_notl($row['counter']);
-    rawoutput("</td></tr>");
+    $output->rawOutput("<tr class='" . ($i ? 'trdark' : 'trlight') . "'><td valign='top'>");
+    $output->outputNotl("`b" . $row['category'] . "`b");
+    $output->rawOutput("</td><td valign='top'>");
+    $output->outputNotl("`b" . $row['subcategory'] . "`b");
+    $output->rawOutput("</td><td valign='top'>");
+    $output->outputNotl($row['sum']);
+    $output->rawOutput("</td><td valign='top'>");
+    $output->outputNotl($row['medium']);
+    $output->rawOutput("</td><td valign='top'>");
+    $output->outputNotl($row['counter']);
+    $output->rawOutput("</td></tr>");
 }
-rawoutput("</table>");
-page_footer();
+$output->rawOutput("</table>");
+Footer::pageFooter();

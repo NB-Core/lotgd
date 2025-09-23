@@ -75,7 +75,7 @@ if ($op == "deactivate") {
     $op = "";
     Http::set("op", "");
 } elseif ($op == "save") {
-    $subop = httpget("subop");
+    $subop = Http::get("subop");
     if ($subop == "") {
         $companion = Http::post('companion');
         if ($companion) {
@@ -328,7 +328,7 @@ function companionform($companion)
 
     $output->rawOutput("<form action='companions.php?op=save&id={$companion['companionid']}' method='POST'>");
     $output->rawOutput("<input type='hidden' name='companion[companionactive]' value=\"" . $companion['companionactive'] . "\">");
-    addnav("", "companions.php?op=save&id={$companion['companionid']}");
+    Nav::add("", "companions.php?op=save&id={$companion['companionid']}");
     $output->rawOutput("<table width='100%'>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Name:");

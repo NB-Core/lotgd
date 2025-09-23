@@ -2,43 +2,49 @@
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
-// addnews ready
 use Lotgd\Forms;
 use Lotgd\Template;
+use Lotgd\Nav;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
+
+// addnews ready
+
 
 // mail ready
 // translator ready
 
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 
-$skin = httppost('template');
+$skin = Http::post('template');
 if ($skin !== '' && Template::isValidTemplate($skin)) {
         Template::setTemplateCookie($skin);
         Template::prepareTemplate(true);
 }
 
-require_once __DIR__ . "/lib/villagenav.php";
 
 Translator::getInstance()->setSchema("prefs");
 
 require_once __DIR__ . "/lib/is_email.php";
 require_once __DIR__ . "/lib/sanitize.php";
 
-page_header("Preferences");
+Header::pageHeader("Preferences");
 
-$op = httpget('op');
+$op = Http::get('op');
 
-addnav("Navigation");
+Nav::add("Navigation");
 if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
-       $userid = (int)httpget('userid');
+       $userid = (int)Http::get('userid');
     require_once __DIR__ . "/lib/charcleanup.php";
     if (char_cleanup($userid, CHAR_DELETE_SUICIDE)) {
         $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
         Database::query($sql);
-        output("Your character has been deleted!");
+        $output->output("Your character has been deleted!");
         AddNews::add("`#%s quietly passed from this world.", $session['user']['name']);
-        addnav("Login Page", "index.php");
+        Nav::add("Login Page", "index.php");
         $session = array();
         $session['user'] = array();
         $session['loggedin'] = false;
@@ -49,14 +55,14 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
 } elseif ($op == "forcechangeemail") {
     checkday();
     if ($session['user']['alive']) {
-        villagenav();
+        VillageNav::render();
     } else {
-        addnav("Return to the news", "news.php");
+        Nav::add("Return to the news", "news.php");
     }
-    addnav("Return to the Prefs", "prefs.php");
+    Nav::add("Return to the Prefs", "prefs.php");
     $replacearray = explode("|", $session['user']['replaceemail']);
     $email = $replacearray[0];
-    output("`\$The email change request to the address `q\"%s`\$\" has been forced. Links sent will not work anymore.`n`n", $email);
+    $output->output("`\$The email change request to the address `q\"%s`\$\" has been forced. Links sent will not work anymore.`n`n", $email);
     $session['user']['emailaddress'] = $replacearray[0];
     $session['user']['replaceemail'] = '';
     $session['user']['emailvalidation'] = '';
@@ -64,27 +70,27 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
 } elseif ($op == "cancelemail") {
     checkday();
     if ($session['user']['alive']) {
-        villagenav();
+        VillageNav::render();
     } else {
-        addnav("Return to the news", "news.php");
+        Nav::add("Return to the news", "news.php");
     }
-    addnav("Return to the Prefs", "prefs.php");
+    Nav::add("Return to the Prefs", "prefs.php");
     $replacearray = explode("|", $session['user']['replaceemail']);
     $email = $replacearray[0];
-    output("`\$The email change request to the address `q\"%s`\$\" has been cancelled. Links sent will not work anymore.`n`n", $email);
+    $output->output("`\$The email change request to the address `q\"%s`\$\" has been cancelled. Links sent will not work anymore.`n`n", $email);
     $session['user']['replaceemail'] = '';
     $session['user']['emailvalidation'] = '';
     debuglog("Email Change Request from " . $session['user']['emailaddress'] . " to " . $email . " has been cancelled", $session['user']['acctid'], $session['user']['acctid'], "Email");
 } else {
     checkday();
     if ($session['user']['alive']) {
-        villagenav();
+        VillageNav::render();
     } else {
-        addnav("Return to the news", "news.php");
+        Nav::add("Return to the news", "news.php");
     }
 
 
-    $oldvalues = httppost('oldvalues');
+    $oldvalues = Http::post('oldvalues');
     $oldvalues = html_entity_decode(
         (string) $oldvalues,
         ENT_COMPAT,
@@ -99,10 +105,10 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
 
     if (count($post) == 0) {
     } else {
-        $pass1 = httppost('pass1');
-        $pass2 = httppost('pass2');
+        $pass1 = Http::post('pass1');
+        $pass2 = Http::post('pass2');
         if ($pass1 != $pass2) {
-            output("`#Your passwords do not match.`n");
+            $output->output("`#Your passwords do not match.`n");
         } else {
             if ($pass1 != "") {
                 if (strlen($pass1) > 3) {
@@ -112,10 +118,10 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
                         $pass1 = md5(substr($pass1, 5));
                     }
                     $session['user']['password'] = $pass1;
-                    output("`#Your password has been changed.`n");
+                    $output->output("`#Your password has been changed.`n");
                 } else {
-                    output("`#Your password is too short.");
-                    output("It must be at least 4 characters.`n");
+                    $output->output("`#Your password is too short.");
+                    $output->output("It must be at least 4 characters.`n");
                 }
             }
         }
@@ -141,11 +147,11 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
             // If this is a module userpref handle and skip
             debug("Setting $key to $val");
             if (strstr($key, "___")) {
-                $val = httppost($key);
+                $val = Http::post($key);
                 $x = explode("___", $key);
                 $module = $x[0];
                 $key = $x[1];
-                modulehook(
+                HookHandler::hook(
                     "notifyuserprefchange",
                     array("name" => $key,
                             "old" => (isset($oldvalues[$module . "___" . $key]) ? $oldvalues[$module . "___" . $key] : ''),
@@ -154,20 +160,20 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
                 set_module_pref($key, $val, $module);
                 continue;
             }
-            $session['user']['prefs'][$key] = httppost($key);
+            $session['user']['prefs'][$key] = Http::post($key);
         }
-        $bio = stripslashes(httppost('bio'));
+        $bio = stripslashes(Http::post('bio'));
         $bio = comment_sanitize($bio);
         if ($bio != comment_sanitize($session['user']['bio'])) {
             if ($session['user']['biotime'] > "9000-01-01") {
-                output("`\$You cannot modify your bio.");
-                output("It has been blocked by the administrators!`0`n");
+                $output->output("`\$You cannot modify your bio.");
+                $output->output("It has been blocked by the administrators!`0`n");
             } else {
                 $session['user']['bio'] = $bio;
                 $session['user']['biotime'] = date("Y-m-d H:i:s");
             }
         }
-        $email = httppost('email');
+        $email = Http::post('email');
         if ($email != $session['user']['emailaddress']) {
             if (getsetting('playerchangeemail', 0)) {
                 if (is_email($email)) {
@@ -217,37 +223,37 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
                         $session['user']['replaceemail'] = $email . "|" . date("Y-m-d H:i:s");
                         $session['user']['emailvalidation'] = $emailverification;
                         debuglog("Email Change requested from " . $session['user']['emailaddress'] . " to " . $email, $session['user']['acctid'], $session['user']['acctid'], "Email");
-                        output("`4An email was sent to `\$%s`4 to validate your change. Click the link (`bwhile being logged out!`b) in the email to activate the change. If nothing is done, your email will stay as it is.`0`n`n", translate_inline((getsetting("validationtarget", 0) ? "your new email address" : "your old email address")));
+                        $output->output("`4An email was sent to `\$%s`4 to validate your change. Click the link (`bwhile being logged out!`b) in the email to activate the change. If nothing is done, your email will stay as it is.`0`n`n", translate_inline((getsetting("validationtarget", 0) ? "your new email address" : "your old email address")));
                         if (getsetting('playerchangeemailauto', 0)) {
-                            output("`qNote that if there is no response from this email address the request will automatically be accepted in about %s days.`n`n`\$This request can be cancelled anytime here.`4`n`n", getsetting('playerchangeemaildays', 3));
+                            $output->output("`qNote that if there is no response from this email address the request will automatically be accepted in about %s days.`n`n`\$This request can be cancelled anytime here.`4`n`n", getsetting('playerchangeemaildays', 3));
                             if (getsetting("validationtarget", 0) == 0) {
-                                output("`\$If you have trouble, please petition. Depending on the policy, we may act to avoid potential abuse.`n`n");
+                                $output->output("`\$If you have trouble, please petition. Depending on the policy, we may act to avoid potential abuse.`n`n");
                             }
                         } else {
                             if (getsetting("validationtarget", 0) == 0) {
-                                output("`\$If your old account does not exist anymore or you have trouble, please petition. Depending on the policy, we may act to avoid potential abuse.`n`n");
+                                $output->output("`\$If your old account does not exist anymore or you have trouble, please petition. Depending on the policy, we may act to avoid potential abuse.`n`n");
                             }
                         }
                     } else {
-                        output("`#Your email address has been changed.`n");
+                        $output->output("`#Your email address has been changed.`n");
                         debuglog("Email changed from " . $email . " to " . $email, $session['user']['acctid'], $session['user']['acctid'], "Email");
                         $session['user']['emailaddress'] = $email;
                     }
                 } else {
                     if (getsetting("requireemail", 0) == 1) {
-                        output("`#That is not a valid email address.`n");
+                        $output->output("`#That is not a valid email address.`n");
                     } else {
-                        output("`#Your email address has been changed.`n");
+                        $output->output("`#Your email address has been changed.`n");
                         debuglog("Email changed from " . $email . " to " . $email, $session['user']['acctid'], $session['user']['acctid'], "Email");
                         $session['user']['emailaddress'] = $email;
                     }
                 }
             } else {
-                output("`#Your email cannot be changed, system settings prohibit it.`n");
-                output("Use the Petition link to ask the  server administrator to change your email address if this one is no longer valid.`n");
+                $output->output("`#Your email cannot be changed, system settings prohibit it.`n");
+                $output->output("Use the Petition link to ask the  server administrator to change your email address if this one is no longer valid.`n");
             }
         }
-        output("`\$Settings saved!`n`n");
+        $output->output("`\$Settings saved!`n`n");
     }
 
     if (!isset($session['user']['prefs']['timeformat'])) {
@@ -303,9 +309,9 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
         "bio" => "Short Character Biography (255 chars max),string,255",
         "nojump" => "Don't jump to comment areas after refreshing or posting a comment?,bool",
     );
-    rawoutput("<script src='src/Lotgd/md5.js' defer></script>");
+    $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
     $warn = translate_inline("Your password is too short.  It must be at least 4 characters long.");
-    rawoutput("<script language='JavaScript'>
+    $output->rawOutput("<script language='JavaScript'>
 	<!--
 	function md5pass(){
 		//encode passwords before submission to protect them even from network sniffing attacks.
@@ -414,7 +420,7 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
             // If this is a check preference, we need to call the modulehook
             // checkuserpref  (requested by cortalUX)
             if ($ischeck) {
-                $args = modulehook(
+                $args = HookHandler::hook(
                     "checkuserpref",
                     array("name" => $key, "pref" => $x[0], "default" => $x[1]),
                     false,
@@ -463,49 +469,49 @@ if ($op == "suicide" && getsetting("selfdelete", 0) != 0) {
             //something awry going on, we have max 1 element there
             $replacearray = array($replacearray[0],'(raw data)');
         }
-        output("`\$There is an email change request pending to the email address `q\"%s`\$\" that was given at the timestamp %s (Server Time Zone).`n", $replacearray[0], $replacearray[1]);
+        $output->output("`\$There is an email change request pending to the email address `q\"%s`\$\" that was given at the timestamp %s (Server Time Zone).`n", $replacearray[0], $replacearray[1]);
         $expirationdate = strtotime("+ " . getsetting('playerchangeemaildays', 3) . " days", strtotime($replacearray[1]));
         $left = $expirationdate - strtotime("now");
         $hoursleft = round($left / (60 * 60), 1);
         $autoaccept = getsetting('playerchangeemailauto', 0);
         if ($autoaccept) {
             if ($hoursleft > 0) {
-                output("`n`qIf not cancelled, the option to automatically accept the new email address without verification will be due in approximately %s hours and can be done on this page.`n`n", $hoursleft);
+                $output->output("`n`qIf not cancelled, the option to automatically accept the new email address without verification will be due in approximately %s hours and can be done on this page.`n`n", $hoursleft);
             } else {
                 // display the direct link to change it.
                 $changeemail = translate_inline("Force your email address NOW");
-                output("`n`qTime is up, you can now accept the change via this button:`n`n");
-                rawoutput("<form action='prefs.php?op=forcechangeemail' method='POST'><input type='submit' class='button' value='$changeemail'></form><br>");
-                addnav("", "prefs.php?op=forcechangeemail");
+                $output->output("`n`qTime is up, you can now accept the change via this button:`n`n");
+                $output->rawOutput("<form action='prefs.php?op=forcechangeemail' method='POST'><input type='submit' class='button' value='$changeemail'></form><br>");
+                Nav::add("", "prefs.php?op=forcechangeemail");
             }
         } else {
-            output("`\$If you have trouble with this, please petition.`n`n");
+            $output->output("`\$If you have trouble with this, please petition.`n`n");
         }
         $cancelemail = translate_inline("Cancel email change request");
-        output("`\$Cancel the request with the following button:`n`n");
-        rawoutput("<form action='prefs.php?op=cancelemail' method='POST'><input type='submit' class='button' value='$cancelemail'></form><br>");
-        addnav("", "prefs.php?op=cancelemail");
+        $output->output("`\$Cancel the request with the following button:`n`n");
+        $output->rawOutput("<form action='prefs.php?op=cancelemail' method='POST'><input type='submit' class='button' value='$cancelemail'></form><br>");
+        Nav::add("", "prefs.php?op=cancelemail");
     }
 
-    rawoutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
+    $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
     $info = Forms::showForm($form, $prefs);
-    rawoutput("<input type='hidden' value=\"" .
+    $output->rawOutput("<input type='hidden' value=\"" .
             htmlentities(serialize($info), ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\" name='oldvalues'>");
 
-    rawoutput("</form><br>");
-    addnav("", "prefs.php?op=save");
+    $output->rawOutput("</form><br>");
+    Nav::add("", "prefs.php?op=save");
 
     // Stop clueless lusers from deleting their character just because a
     // monster killed them.
     if ($session['user']['alive'] && getsetting("selfdelete", 0) != 0) {
-        rawoutput("<form action='prefs.php?op=suicide&userid={$session['user']['acctid']}' method='POST'>");
+        $output->rawOutput("<form action='prefs.php?op=suicide&userid={$session['user']['acctid']}' method='POST'>");
         $deltext = translate_inline('Delete Character');
         $conf = translate_inline("Are you sure you wish to PERMANENTLY delete your character?");
-        rawoutput("<table class='noborder' width='100%'><tr><td width='100%'></td><td style='background-color:#FF00FF' align='right'>");
-        rawoutput("<input type='submit' class='button' value='$deltext' onClick='return confirm(\"$conf\");'>");
-        rawoutput("</td></tr></table>");
-        rawoutput("</form><br>");
-        addnav("", "prefs.php?op=suicide&userid={$session['user']['acctid']}");
+        $output->rawOutput("<table class='noborder' width='100%'><tr><td width='100%'></td><td style='background-color:#FF00FF' align='right'>");
+        $output->rawOutput("<input type='submit' class='button' value='$deltext' onClick='return confirm(\"$conf\");'>");
+        $output->rawOutput("</td></tr></table>");
+        $output->rawOutput("</form><br>");
+        Nav::add("", "prefs.php?op=suicide&userid={$session['user']['acctid']}");
     }
 }
-page_footer();
+Footer::pageFooter();

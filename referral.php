@@ -4,6 +4,10 @@ use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\Http;
+use Lotgd\Nav;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
 
 // translator ready
 // addnews ready
@@ -18,14 +22,13 @@ $translator = Translator::getInstance();
 $translator->setSchema("referral");
 
 if ($session['user']['loggedin']) {
-    page_header("Referral Page");
+    Header::pageHeader("Referral Page");
     if (file_exists("lodge.php")) {
-        addnav("L?Return to the Lodge", "lodge.php");
+        Nav::add("L?Return to the Lodge", "lodge.php");
     } else {
-        require_once __DIR__ . "/lib/villagenav.php";
-        villagenav();
+        VillageNav::render();
     }
-    output("You will automatically receive %s points for each person that you refer to this website who makes it to level %s.`n`n", $settings->getSetting("refereraward", 25), $settings->getSetting("referminlevel", 4));
+    $output->output("You will automatically receive %s points for each person that you refer to this website who makes it to level %s.`n`n", $settings->getSetting("refereraward", 25), $settings->getSetting("referminlevel", 4));
 
     $url = $settings->getSetting(
         "serverurl",
@@ -38,11 +41,11 @@ if ($session['user']['loggedin']) {
         $settings->saveSetting("serverurl", $url);
     }
 
-    output("How does the site know that I referred a person?`n");
-    output("Easy!  When you tell your friends about this site, give out the following link:`n`n");
-    output_notl("%sreferral.php?r=%s`n`n", $url, rawurlencode($session['user']['login']));
-    output("If you do, the site will know that you were the one who sent them here.");
-    output("When they reach level %s for the first time, you'll get your points!", $settings->getSetting("referminlevel", 4));
+    $output->output("How does the site know that I referred a person?`n");
+    $output->output("Easy!  When you tell your friends about this site, give out the following link:`n`n");
+    $output->outputNotl("%sreferral.php?r=%s`n`n", $url, rawurlencode($session['user']['login']));
+    $output->output("If you do, the site will know that you were the one who sent them here.");
+    $output->output("When they reach level %s for the first time, you'll get your points!", $settings->getSetting("referminlevel", 4));
 
     $sql = "SELECT name,level,refererawarded FROM " . Database::prefix("accounts") . " WHERE referer={$session['user']['acctid']} ORDER BY dragonkills,level";
     $result = Database::query($sql);
@@ -52,31 +55,31 @@ if ($session['user']['loggedin']) {
     $yes = $translator->translateInline("`@Yes!`0");
     $no = $translator->translateInline("`\$No!`0");
     $none = $translator->translateInline("`iNone`i");
-    output("`n`nAccounts which you referred:`n");
-    rawoutput("<table border='0' cellpadding='3' cellspacing='0'><tr><td>$name</td><td>$level</td><td>$awarded</td></tr>");
+    $output->output("`n`nAccounts which you referred:`n");
+    $output->rawOutput("<table border='0' cellpadding='3' cellspacing='0'><tr><td>$name</td><td>$level</td><td>$awarded</td></tr>");
     $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
         $row = Database::fetchAssoc($result);
-        rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
-        output_notl($row['name']);
-        rawoutput("</td><td>");
-        output_notl($row['level']);
-        rawoutput("</td><td>");
-        output_notl($row['refererawarded'] ? $yes : $no);
-        rawoutput("</td></tr>");
+        $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
+        $output->outputNotl($row['name']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl($row['level']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl($row['refererawarded'] ? $yes : $no);
+        $output->rawOutput("</td></tr>");
     }
     if (Database::numRows($result) == 0) {
-        rawoutput("<tr><td colspan='3' align='center'>");
-        output_notl($none);
-        rawoutput("</td></tr>");
+        $output->rawOutput("<tr><td colspan='3' align='center'>");
+        $output->outputNotl($none);
+        $output->rawOutput("</td></tr>");
     }
-    rawoutput("</table>", true);
-    page_footer();
+    $output->rawOutput("</table>", true);
+    Footer::pageFooter();
 } else {
-    page_header("Welcome to Legend of the Green Dragon");
-    output("`@Legend of the Green Dragon is a remake of the classic BBS Door Game Legend of the Red Dragon.");
-    output("Adventure into the classic realm that was one of the world's very first multiplayer roleplaying games!");
-    addnav("Create a character", "create.php?r=" . HTMLEntities(Http::get('r'), ENT_COMPAT, $settings->getSetting("charset", "UTF-8")));
-    addnav("Login Page", "index.php");
-    page_footer();
+    Header::pageHeader("Welcome to Legend of the Green Dragon");
+    $output->output("`@Legend of the Green Dragon is a remake of the classic BBS Door Game Legend of the Red Dragon.");
+    $output->output("Adventure into the classic realm that was one of the world's very first multiplayer roleplaying games!");
+    Nav::add("Create a character", "create.php?r=" . HTMLEntities(Http::get('r'), ENT_COMPAT, $settings->getSetting("charset", "UTF-8")));
+    Nav::add("Login Page", "index.php");
+    Footer::pageFooter();
 }

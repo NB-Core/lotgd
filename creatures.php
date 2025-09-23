@@ -4,13 +4,18 @@ use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
-// translator ready
 use Lotgd\Forms;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+
+// translator ready
+
 
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 
 SuAccess::check(SU_EDIT_CREATURES);
 
@@ -42,14 +47,14 @@ for ($i = 1; $i <= (getsetting('maxlevel', 15) + 4); $i++) {
         );
 }
 
-page_header("Creature Editor");
+Header::pageHeader("Creature Editor");
 
 SuperuserNav::render();
 
-$op = httpget("op");
-$subop = httpget("subop");
-if (httppost('refresh')) {
-    httpset('op', 'add');
+$op = Http::get("op");
+$subop = Http::get("subop");
+if (Http::post('refresh')) {
+    Http::set('op', 'add');
     $op = "add";
     $subop = '';
     $refresh = 1; //let them know this is a refresh
@@ -58,15 +63,15 @@ if (httppost('refresh')) {
     ($refresh = 0);
 }
 if ($op == "save") {
-    $forest = (int)(httppost('forest'));
-    $grave = (int)(httppost('graveyard'));
-    $id = httppost('creatureid');
+    $forest = (int)(Http::post('forest'));
+    $grave = (int)(Http::post('graveyard'));
+    $id = Http::post('creatureid');
     if (!$id) {
-        $id = httpget("creatureid");
+        $id = Http::get("creatureid");
     }
     if ($subop == "") {
         $post = httpallpost();
-        $lev = (int)httppost('creaturelevel');
+        $lev = (int)Http::post('creaturelevel');
         if ($id) {
             $sql = "";
             foreach ($post as $key => $val) {
@@ -86,7 +91,7 @@ if ($op == "save") {
             $sql .= " graveyard='$grave', ";
             $sql .= " createdby='" . $session['user']['login'] . "' ";
             $sql = "UPDATE " . Database::prefix("creatures") . " SET " . $sql . " WHERE creatureid='$id'";
-            $result = Database::query($sql) or output("`\$" . Database::error(LINK) . "`0`n`#$sql`0`n");
+            $result = Database::query($sql) or $output->output("`\$" . Database::error(LINK) . "`0`n`#$sql`0`n");
         } else {
             $cols = array();
             $vals = array();
@@ -116,45 +121,45 @@ if ($op == "save") {
             $id = Database::insertId();
         }
         if ($result) {
-            output("`^Creature saved!`0`n");
+            $output->output("`^Creature saved!`0`n");
         } else {
-            output("`^Creature `\$not`^ saved!`0`n");
+            $output->output("`^Creature `\$not`^ saved!`0`n");
         }
     } elseif ($subop == "module") {
         // Save module settings
-        $module = httpget("module");
+        $module = Http::get("module");
         $post = httpallpost();
         foreach ($post as $key => $val) {
             set_module_objpref("creatures", $id, $key, $val, $module);
         }
-        output("`^Saved!`0`n");
+        $output->output("`^Saved!`0`n");
     }
     // Set the httpget id so that we can do the editor once we save
-    httpset("creatureid", $id, true);
+    Http::set("creatureid", $id, true);
     // Set the httpget op so we drop back into the editor
-    httpset("op", "edit");
+    Http::set("op", "edit");
 }
 
-$op = httpget('op');
-$id = httpget('creatureid');
+$op = Http::get('op');
+$id = Http::get('creatureid');
 if ($op == "del") {
     $sql = "DELETE FROM " . Database::prefix("creatures") . " WHERE creatureid = '$id'";
     Database::query($sql);
     if (Database::affectedRows() > 0) {
-        output("Creature deleted`n`n");
+        $output->output("Creature deleted`n`n");
         module_delete_objprefs('creatures', $id);
     } else {
-        output("Creature not deleted: %s", Database::error(LINK));
+        $output->output("Creature not deleted: %s", Database::error(LINK));
     }
     $op = "";
-    httpset('op', "");
+    Http::set('op', "");
 }
 if ($op == "" || $op == "search") {
-    $level = (int)httpget("level");
+    $level = (int)Http::get("level");
     if (!$level) {
         $level = 1;
     }
-    $q = httppost("q");
+    $q = Http::post("q");
     if ($q) {
         $where = "creaturename LIKE '%$q%' OR creaturecategory LIKE '%$q%' OR creatureweapon LIKE '%$q%' OR creaturelose LIKE '%$q%' OR createdby LIKE '%$q%'";
     } else {
@@ -164,25 +169,25 @@ if ($op == "" || $op == "search") {
     $result = Database::query($sql);
     // Search form
     $search = translate_inline("Search");
-    rawoutput("<form action='creatures.php?op=search' method='POST'>");
-    output("Search by field: ");
-    rawoutput("<input name='q' id='q'>");
-    rawoutput("<input type='submit' class='button' value='$search'>");
-    rawoutput("</form>");
-    rawoutput("<script language='JavaScript'>document.getElementById('q').focus();</script>", true);
-    addnav("", "creatures.php?op=search");
+    $output->rawOutput("<form action='creatures.php?op=search' method='POST'>");
+    $output->output("Search by field: ");
+    $output->rawOutput("<input name='q' id='q'>");
+    $output->rawOutput("<input type='submit' class='button' value='$search'>");
+    $output->rawOutput("</form>");
+    $output->rawOutput("<script language='JavaScript'>document.getElementById('q').focus();</script>", true);
+    Nav::add("", "creatures.php?op=search");
 
-    addnav("Levels");
+    Nav::add("Levels");
     $sql1 = "SELECT count(creatureid) AS n,creaturelevel FROM " . Database::prefix("creatures") . " group by creaturelevel order by creaturelevel";
     $result1 = Database::query($sql1);
     while ($row = Database::fetchAssoc($result1)) {
-        addnav(
+        Nav::add(
             array("Level %s: (%s creatures)", $row['creaturelevel'], $row['n']),
             "creatures.php?level={$row['creaturelevel']}"
         );
     }
-    addnav("Edit");
-    addnav("Add a creature", "creatures.php?op=add&level=$level");
+    Nav::add("Edit");
+    Nav::add("Add a creature", "creatures.php?op=add&level=$level");
     $opshead = translate_inline("Ops");
     $idhead = translate_inline("ID");
     $name = translate_inline("Name");
@@ -201,75 +206,75 @@ if ($op == "" || $op == "search") {
     $confirm = translate_inline("Are you sure you wish to delete this creature?");
     $del = translate_inline("Del");
 
-    rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
-    rawoutput("<tr class='trhead'>");
-    rawoutput("<td>$opshead</td><td>$idhead</td><td>$name</td><td>$cat</td><td>$lev</td><td>$weapon</td><td>$script</td><td>$winmsg</td><td>$diemsg</td><td>$forest_text</td><td>$graveyard_text</td><td>$author</td></tr>");
-    addnav("", "creatures.php");
+    $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
+    $output->rawOutput("<tr class='trhead'>");
+    $output->rawOutput("<td>$opshead</td><td>$idhead</td><td>$name</td><td>$cat</td><td>$lev</td><td>$weapon</td><td>$script</td><td>$winmsg</td><td>$diemsg</td><td>$forest_text</td><td>$graveyard_text</td><td>$author</td></tr>");
+    Nav::add("", "creatures.php");
     $i = true;
     while ($row = Database::fetchAssoc($result)) {
         $i = !$i;
-        rawoutput("<tr class='" . ($i ? "trdark" : "trlight") . "'>", true);
-        rawoutput("<td>[ <a href='creatures.php?op=edit&creatureid={$row['creatureid']}'>");
-        output_notl("%s", $edit);
-        rawoutput("</a> | <a href='creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}' onClick='return confirm(\"$confirm\");'>");
-        output_notl("%s", $del);
-        rawoutput("</a> ]</td><td>");
-        addnav("", "creatures.php?op=edit&creatureid={$row['creatureid']}");
-        addnav("", "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}");
-        output_notl("%s", $row['creatureid']);
-        rawoutput("</td><td>");
-        output_notl("%s", $row['creaturename']);
-        rawoutput("</td><td>");
-        output_notl("%s", $row['creaturecategory']);
-        rawoutput("</td><td>");
-        output_notl("%s", $row['creaturelevel']);
-        rawoutput("</td><td>");
-        output_notl("%s", $row['creatureweapon']);
-        rawoutput("</td><td>");
+        $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'>", true);
+        $output->rawOutput("<td>[ <a href='creatures.php?op=edit&creatureid={$row['creatureid']}'>");
+        $output->outputNotl("%s", $edit);
+        $output->rawOutput("</a> | <a href='creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}' onClick='return confirm(\"$confirm\");'>");
+        $output->outputNotl("%s", $del);
+        $output->rawOutput("</a> ]</td><td>");
+        Nav::add("", "creatures.php?op=edit&creatureid={$row['creatureid']}");
+        Nav::add("", "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}");
+        $output->outputNotl("%s", $row['creatureid']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['creaturename']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['creaturecategory']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['creaturelevel']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['creatureweapon']);
+        $output->rawOutput("</td><td>");
         if ($row['creatureaiscript'] != '') {
-            output_notl($yes);
+            $output->outputNotl($yes);
         } else {
-            output_notl($no);
+            $output->outputNotl($no);
         }
-        rawoutput("</td><td>");
-        output_notl("%s", $row['creaturewin']);
-        rawoutput("</td><td>");
-        output_notl("%s", $row['creaturelose']);
-        rawoutput("</td><td>");
-        output_notl("%s", ($row['forest'] ? "Yes" : "No"));
-        rawoutput("</td><td>");
-        output_notl("%s", ($row['graveyard'] ? "Yes" : "No"));
-        rawoutput("</td><td>");
-        output_notl("%s", $row['createdby']);
-        rawoutput("</td></tr>");
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['creaturewin']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['creaturelose']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", ($row['forest'] ? "Yes" : "No"));
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", ($row['graveyard'] ? "Yes" : "No"));
+        $output->rawOutput("</td><td>");
+        $output->outputNotl("%s", $row['createdby']);
+        $output->rawOutput("</td></tr>");
     }
-    rawoutput("</table>");
+    $output->rawOutput("</table>");
 } else {
-    $level = (int)httpget('level');
+    $level = (int)Http::get('level');
     if (!$level) {
-        $level = (int)httppost('level');
+        $level = (int)Http::post('level');
     }
     if (!$level) {
         $level = 1;
     }
     if ($op == "edit" || $op == "add") {
-        addnav("Edit");
-        addnav("Creature properties", "creatures.php?op=edit&creatureid=$id");
-        addnav("Add");
-        addnav("Add Another Creature", "creatures.php?op=add&level=$level");
+        Nav::add("Edit");
+        Nav::add("Creature properties", "creatures.php?op=edit&creatureid=$id");
+        Nav::add("Add");
+        Nav::add("Add Another Creature", "creatures.php?op=add&level=$level");
         module_editor_navs("prefs-creatures", "creatures.php?op=edit&subop=module&creatureid=$id&module=");
         if ($subop == "module") {
-            $module = httpget("module");
-            rawoutput("<form action='creatures.php?op=save&subop=module&creatureid=$id&module=$module' method='POST'>");
+            $module = Http::get("module");
+            $output->rawOutput("<form action='creatures.php?op=save&subop=module&creatureid=$id&module=$module' method='POST'>");
             module_objpref_edit("creatures", $module, $id);
-            rawoutput("</form>");
-            addnav("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
+            $output->rawOutput("</form>");
+            Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
         } else {
             if ($op == "edit" && $id != "") {
                 $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE creatureid=$id";
                 $result = Database::query($sql);
                 if (Database::numRows($result) <> 1) {
-                    output("`4Error`0, that creature was not found!");
+                    $output->output("`4Error`0, that creature was not found!");
                 } else {
                     $row = Database::fetchAssoc($result);
                 }
@@ -277,12 +282,12 @@ if ($op == "" || $op == "search") {
             } else {
                 //check what was posted if this is a refresh, always fill in the base values
                 if ($refresh) {
-                    $level = (int)httppost('creaturelevel');
+                    $level = (int)Http::post('creaturelevel');
                 }
                 $row = $creaturestats[$level];
                 $posted = array('level','category','weapon','name','win','lose','aiscript','id');
                 foreach ($posted as $field) {
-                    $row['creature' . $field] = stripslashes(httppost('creature' . $field));
+                    $row['creature' . $field] = stripslashes(Http::post('creature' . $field));
                 }
                 if (!$row['creatureid']) {
                     $row['creatureid'] = 0;
@@ -290,8 +295,8 @@ if ($op == "" || $op == "search") {
                 if ($row['creaturelevel'] == "") {
                     $row['creaturelevel'] = $level;
                 }
-                $row['forest'] = (int)httppost('forest');
-                $row['graveyard'] = (int)httppost('graveyard');
+                $row['forest'] = (int)Http::post('forest');
+                $row['graveyard'] = (int)Http::post('graveyard');
             }
             //get available scripts
             //(uncached, won't hit there very often
@@ -333,28 +338,28 @@ if ($op == "" || $op == "search") {
                 "graveyard" => "Creature is in graveyard?,bool",
                 "creatureaiscript" => "Creature's A.I.,enum" . $scriptenum,
             );
-            rawoutput("<form action='creatures.php?op=save' method='POST'>");
+            $output->rawOutput("<form action='creatures.php?op=save' method='POST'>");
             Forms::showForm($form, $row);
             $refresh = translate_inline("Refresh");
-            rawoutput("<input type='submit' class='button' name='refresh' value='$refresh'>");
-            rawoutput("</form>");
-            addnav("", "creatures.php?op=save");
+            $output->rawOutput("<input type='submit' class='button' name='refresh' value='$refresh'>");
+            $output->rawOutput("</form>");
+            Nav::add("", "creatures.php?op=save");
             if ($row['creatureaiscript'] != '') {
                 $scriptfile = "scripts/" . $row['creatureaiscript'] . ".php";
                 if (file_exists($scriptfile)) {
-                    output("Current Script File Content:`n`n");
-                    output_notl(implode("`n", str_replace(array("`n"), array("``n"), color_sanitize(file($scriptfile)))));
+                    $output->output("Current Script File Content:`n`n");
+                    $output->outputNotl(implode("`n", str_replace(array("`n"), array("``n"), color_sanitize(file($scriptfile)))));
                 }
             }
         }
     } else {
-        $module = httpget("module");
-        rawoutput("<form action='mounts.php?op=save&subop=module&creatureid=$id&module=$module' method='POST'>");
+        $module = Http::get("module");
+        $output->rawOutput("<form action='mounts.php?op=save&subop=module&creatureid=$id&module=$module' method='POST'>");
         module_objpref_edit("creatures", $module, $id);
-        rawoutput("</form>");
-        addnav("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
+        $output->rawOutput("</form>");
+        Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
     }
-    addnav("Navigation");
-    addnav("Return to the creature editor", "creatures.php?level=$level");
+    Nav::add("Navigation");
+    Nav::add("Return to the creature editor", "creatures.php?level=$level");
 }
-page_footer();
+Footer::pageFooter();

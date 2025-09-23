@@ -3,26 +3,31 @@
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Buffs;
-
-// addnews ready
-// translator ready
-// mail ready
-require_once __DIR__ . "/common.php";
 use Lotgd\FightNav;
 use Lotgd\PlayerFunctions;
 use Lotgd\Http;
 use Lotgd\Battle;
 use Lotgd\Names;
 use Lotgd\AddNews;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Modules\HookHandler;
+
+// addnews ready
+// translator ready
+// mail ready
+require_once __DIR__ . "/common.php";
+
 
 Translator::getInstance()->setSchema("dragon");
 $battle = false;
-page_header("The Green Dragon!");
+Header::pageHeader("The Green Dragon!");
 $op = Http::get('op');
 if ($op == "") {
     if (!Http::get('nointro')) {
-        output("`\$Fighting down every urge to flee, you cautiously enter the cave entrance, intent on catching the great green dragon sleeping, so that you might slay it with a minimum of pain.");
-        output("Sadly, this is not to be the case, for as you round a corner within the cave you discover the great beast sitting on its haunches on a huge pile of gold, picking its teeth with a rib.");
+        $output->output("`\$Fighting down every urge to flee, you cautiously enter the cave entrance, intent on catching the great green dragon sleeping, so that you might slay it with a minimum of pain.");
+        $output->output("Sadly, this is not to be the case, for as you round a corner within the cave you discover the great beast sitting on its haunches on a huge pile of gold, picking its teeth with a rib.");
     }
     $badguy = array(
         "creaturename" => translate_inline("`@The Green Dragon`0"),
@@ -54,39 +59,39 @@ if ($op == "") {
     $badguy['creaturedefense'] += $defflux;
     $badguy['creaturehealth'] += $hpflux;
 
-    $badguy = modulehook("buffdragon", $badguy);
+    $badguy = HookHandler::hook("buffdragon", $badguy);
 
     $session['user']['badguy'] = createstring($badguy);
     $battle = true;
 } elseif ($op == "prologue1") {
-    output("`@Victory!`n`n");
+    $output->output("`@Victory!`n`n");
         $flawless = (int)(Http::get('flawless'));
     if ($flawless) {
-        output("`b`c`&~~ Flawless Fight ~~`0`c`b`n`n");
+        $output->output("`b`c`&~~ Flawless Fight ~~`0`c`b`n`n");
     }
-    output("`2Before you, the great dragon lies immobile, its heavy breathing like acid to your lungs.");
-    output("You are covered, head to toe, with the foul creature's thick black blood.");
-    output("The great beast begins to move its mouth.  You spring back, angry at yourself for having been fooled by its ploy of death, and watch for its huge tail to come sweeping your way.");
-    output("But it does not.");
-    output("Instead the dragon begins to speak.`n`n");
-    output("\"`^Why have you come here mortal?  What have I done to you?`2\" it says with obvious effort.");
-    output("\"`^Always my kind are sought out to be destroyed.  Why?  Because of stories from distant lands that tell of dragons preying on the weak?  I tell you that these stories come only from misunderstanding of us, and not because we devour your children.`2\"");
-    output("The beast pauses, breathing heavily before continuing, \"`^I will tell you a secret.  Behind me now are my eggs.  They will hatch, and the young will battle each other.  Only one will survive, but she will be the strongest.  She will quickly grow, and be as powerful as me.`2\"");
-    output("Breath comes shorter and shallower for the great beast.`n`n");
-    output("\"`#Why do you tell me this?  Don't you know that I will destroy your eggs?`2\" you ask.`n`n");
-    output("\"`^No, you will not, for I know of one more secret that you do not.`2\"`n`n");
-    output("\"`#Pray tell oh mighty beast!`2\"`n`n");
-    output("The great beast pauses, gathering the last of its energy.  \"`^Your kind cannot tolerate the blood of my kind.  Even if you survive, you will be a feeble creature, barely able to hold a weapon, your mind blank of all that you have learned.  No, you are no threat to my children, for you are already dead!`2\"`n`n");
-    output("Realizing that already the edges of your vision are a little dim, you flee from the cave, bound to reach the healer's hut before it is too late.");
-    output("Somewhere along the way you lose your weapon, and finally you trip on a stone in a shallow stream, sight now limited to only a small circle that seems to float around your head.");
-    output("As you lay, staring up through the trees, you think that nearby you can hear the sounds of the village.");
-    output("Your final thought is that although you defeated the dragon, you reflect on the irony that it defeated you.`n`n");
-    output("As your vision winks out, far away in the dragon's lair, an egg shuffles to its side, and a small crack appears in its thick leathery skin.");
+    $output->output("`2Before you, the great dragon lies immobile, its heavy breathing like acid to your lungs.");
+    $output->output("You are covered, head to toe, with the foul creature's thick black blood.");
+    $output->output("The great beast begins to move its mouth.  You spring back, angry at yourself for having been fooled by its ploy of death, and watch for its huge tail to come sweeping your way.");
+    $output->output("But it does not.");
+    $output->output("Instead the dragon begins to speak.`n`n");
+    $output->output("\"`^Why have you come here mortal?  What have I done to you?`2\" it says with obvious effort.");
+    $output->output("\"`^Always my kind are sought out to be destroyed.  Why?  Because of stories from distant lands that tell of dragons preying on the weak?  I tell you that these stories come only from misunderstanding of us, and not because we devour your children.`2\"");
+    $output->output("The beast pauses, breathing heavily before continuing, \"`^I will tell you a secret.  Behind me now are my eggs.  They will hatch, and the young will battle each other.  Only one will survive, but she will be the strongest.  She will quickly grow, and be as powerful as me.`2\"");
+    $output->output("Breath comes shorter and shallower for the great beast.`n`n");
+    $output->output("\"`#Why do you tell me this?  Don't you know that I will destroy your eggs?`2\" you ask.`n`n");
+    $output->output("\"`^No, you will not, for I know of one more secret that you do not.`2\"`n`n");
+    $output->output("\"`#Pray tell oh mighty beast!`2\"`n`n");
+    $output->output("The great beast pauses, gathering the last of its energy.  \"`^Your kind cannot tolerate the blood of my kind.  Even if you survive, you will be a feeble creature, barely able to hold a weapon, your mind blank of all that you have learned.  No, you are no threat to my children, for you are already dead!`2\"`n`n");
+    $output->output("Realizing that already the edges of your vision are a little dim, you flee from the cave, bound to reach the healer's hut before it is too late.");
+    $output->output("Somewhere along the way you lose your weapon, and finally you trip on a stone in a shallow stream, sight now limited to only a small circle that seems to float around your head.");
+    $output->output("As you lay, staring up through the trees, you think that nearby you can hear the sounds of the village.");
+    $output->output("Your final thought is that although you defeated the dragon, you reflect on the irony that it defeated you.`n`n");
+    $output->output("As your vision winks out, far away in the dragon's lair, an egg shuffles to its side, and a small crack appears in its thick leathery skin.");
 
     if ($flawless) {
-        output("`n`nYou fall forward, and remember at the last moment that you at least managed to grab some of the dragon's treasure, so maybe it wasn't all a total loss.");
+        $output->output("`n`nYou fall forward, and remember at the last moment that you at least managed to grab some of the dragon's treasure, so maybe it wasn't all a total loss.");
     }
-    addnav("It is a new day", "news.php");
+    Nav::add("It is a new day", "news.php");
     Buffs::stripAllBuffs();
     $sql = "DESCRIBE " . Database::prefix("accounts");
     $result = Database::query($sql);
@@ -106,7 +111,7 @@ if ($op == "") {
                     ($session['user']['level'] * 10),
             'base' => $dkpoints + ($session['user']['level'] * 10),
             );
-    $hpgain = modulehook("hprecalc", $hpgain);
+    $hpgain = HookHandler::hook("hprecalc", $hpgain);
     calculate_buff_fields();
 
     $nochange = array("acctid" => 1
@@ -159,7 +164,7 @@ if ($op == "") {
                    ,"forgottenpassword" => 1
                    );
 
-    $nochange = modulehook("dk-preserve", $nochange);
+    $nochange = HookHandler::hook("dk-preserve", $nochange);
 
     $badguys = $session['user']['badguy']; //needed for the dragons name later
 
@@ -253,11 +258,11 @@ if ($op == "") {
     $companions = array();
     $session['user']['companions'] = array();
 
-    output("`n`nYou wake up in the midst of some trees.  Nearby you hear the sounds of a village.");
-    output("Dimly you remember that you are a new warrior, and something of a dangerous Green Dragon that is plaguing the area.  You decide you would like to earn a name for yourself by perhaps some day confronting this vile creature.");
+    $output->output("`n`nYou wake up in the midst of some trees.  Nearby you hear the sounds of a village.");
+    $output->output("Dimly you remember that you are a new warrior, and something of a dangerous Green Dragon that is plaguing the area.  You decide you would like to earn a name for yourself by perhaps some day confronting this vile creature.");
 
     // allow explanative text as well.
-    modulehook("dragonkilltext");
+    HookHandler::hook("dragonkilltext");
 
     $regname = Names::getPlayerBasename();
     //get the dragons name
@@ -278,19 +283,19 @@ if ($op == "") {
 
     $howoften = ($session['user']['dragonkills'] > 1 ? "times" : "time"); // no translation, we never know who is viewing...
     AddNews::add("`#%s`# has earned the title `&%s`# for having slain `@%s`& `^%s`# %s!", $regname, $session['user']['title'], $badguy['creaturename'], $session['user']['dragonkills'], $howoften);
-    output("`n`n`^You are now known as `&%s`^!!", $session['user']['name']);
-    output("`n`n`&Because you have slain %s`& %s %s, you start with some extras.  You also keep additional permanent hitpoints you've earned.`n", $badguy['creaturename'], $session['user']['dragonkills'], $howoften);
+    $output->output("`n`n`^You are now known as `&%s`^!!", $session['user']['name']);
+    $output->output("`n`n`&Because you have slain %s`& %s %s, you start with some extras.  You also keep additional permanent hitpoints you've earned.`n", $badguy['creaturename'], $session['user']['dragonkills'], $howoften);
     $session['user']['charm'] += 5;
-    output("`^You gain FIVE charm points for having defeated the dragon!`n");
+    $output->output("`^You gain FIVE charm points for having defeated the dragon!`n");
     debuglog("slew the dragon and starts with {$session['user']['gold']} gold and {$session['user']['gems']} gems");
 
     // Moved this hear to make some things easier.
-    modulehook("dragonkill", array());
+    HookHandler::hook("dragonkill", array());
     invalidatedatacache("list.php-warsonline");
 }
 
 if ($op == "run") {
-    output("The creature's tail blocks the only exit to its lair!");
+    $output->output("The creature's tail blocks the only exit to its lair!");
     $op = "fight";
         Http::set('op', 'fight');
 }
@@ -306,15 +311,15 @@ if ($battle) {
             $flawless = 1;
         }
         $session['user']['dragonkills']++;
-        output("`&With a mighty final blow, `@%s`& lets out a tremendous bellow and falls at your feet, dead at last.", $badguy['creaturename']);
+        $output->output("`&With a mighty final blow, `@%s`& lets out a tremendous bellow and falls at your feet, dead at last.", $badguy['creaturename']);
         AddNews::add("`&%s has slain the hideous creature known as `@%s`&.  All across the land, people rejoice!", $session['user']['name'], $badguy['creaturename']);
         Translator::getInstance()->setSchema("nav");
-        addnav("Continue", "dragon.php?op=prologue1&flawless=$flawless");
+        Nav::add("Continue", "dragon.php?op=prologue1&flawless=$flawless");
         Translator::getInstance()->setSchema();
     } else {
         if ($defeat) {
             Translator::getInstance()->setSchema("nav");
-            addnav("Daily news", "news.php");
+            Nav::add("Daily news", "news.php");
             Translator::getInstance()->setSchema();
                         $taunt = Battle::selectTauntArray();
             if ($session['user']['sex']) {
@@ -326,18 +331,18 @@ if ($battle) {
             debuglog("lost {$session['user']['gold']} gold when they were slain");
             $session['user']['gold'] = 0;
             $session['user']['hitpoints'] = 0;
-            output("`b`&You have been slain by `@%s`&!!!`n", $badguy['creaturename']);
-            output("`4All gold on hand has been lost!`n");
+            $output->output("`b`&You have been slain by `@%s`&!!!`n", $badguy['creaturename']);
+            $output->output("`4All gold on hand has been lost!`n");
             //grant modules a chance to exclusively hook in here and do worse things to the user =)
-            output_notl("`n");
-            modulehook("dragondeath", array());
-            output_notl("`n");
-            output("You may begin fighting again tomorrow.");
+            $output->outputNotl("`n");
+            HookHandler::hook("dragondeath", array());
+            $output->outputNotl("`n");
+            $output->output("You may begin fighting again tomorrow.");
 
-            page_footer();
+            Footer::pageFooter();
         } else {
                   Battle::fightnav(true, false);
         }
     }
 }
-page_footer();
+Footer::pageFooter();

@@ -2,33 +2,38 @@
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+use Lotgd\Forest;
+use Lotgd\Buffs;
+use Lotgd\Forest\Outcomes;
+use Lotgd\Battle;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 // addnews ready
 // translator ready
 // mail ready
 require_once __DIR__ . "/common.php";
-use Lotgd\Forest;
-use Lotgd\Buffs;
-use Lotgd\Forest\Outcomes;
-require_once __DIR__ . "/lib/http.php";
 require_once __DIR__ . "/lib/events.php";
-use Lotgd\Battle;
+
 
 Translator::getInstance()->setSchema("forest");
 
 $fight = false;
-page_header("The Forest");
+Header::pageHeader("The Forest");
 $dontdisplayforestmessage = handle_event("forest");
 
-$op = httpget("op");
+$op = Http::get("op");
 
 $battle = false;
 
 if ($op == "run") {
     if (e_rand() % 3 == 0) {
-        output("`c`b`&You have successfully fled your opponent!`0`b`c`n");
+        $output->output("`c`b`&You have successfully fled your opponent!`0`b`c`n");
         $op = "";
-        httpset('op', "");
+        Http::set('op', "");
                 Battle::unsuspendBuffs();
         foreach ($companions as $index => $companion) {
             if (isset($companion['expireafterfight']) && $companion['expireafterfight']) {
@@ -36,39 +41,39 @@ if ($op == "run") {
             }
         }
     } else {
-        output("`c`b`\$You failed to flee your opponent!`0`b`c");
+        $output->output("`c`b`\$You failed to flee your opponent!`0`b`c");
     }
 }
 
 if ($op == "dragon") {
     require_once __DIR__ . "/lib/partner.php";
-    addnav("Enter the cave", "dragon.php");
-    addnav("Run away like a baby", "inn.php?op=fleedragon");
-    output("`\$You approach the blackened entrance of a cave deep in the forest, though the trees are scorched to stumps for a hundred yards all around.");
-    output("A thin tendril of smoke escapes the roof of the cave's entrance, and is whisked away by a suddenly cold and brisk wind.");
-    output("The mouth of the cave lies up a dozen feet from the forest floor, set in the side of a cliff, with debris making a conical ramp to the opening.");
-    output("Stalactites and stalagmites near the entrance trigger your imagination to inspire thoughts that the opening is really the mouth of a great leech.`n`n");
-    output("You cautiously approach the entrance of the cave, and as you do, you hear, or perhaps feel a deep rumble that lasts thirty seconds or so, before silencing to a breeze of sulfur-air which wafts out of the cave.");
-    output("The sound starts again, and stops again in a regular rhythm.`n`n");
-    output("You clamber up the debris pile leading to the mouth of the cave, your feet crunching on the apparent remains of previous heroes, or perhaps hors d'oeuvres.`n`n");
-    output("Every instinct in your body wants to run, and run quickly, back to the warm inn, and the even warmer %s`\$.", get_partner());
-    output("What do you do?`0");
+    Nav::add("Enter the cave", "dragon.php");
+    Nav::add("Run away like a baby", "inn.php?op=fleedragon");
+    $output->output("`\$You approach the blackened entrance of a cave deep in the forest, though the trees are scorched to stumps for a hundred yards all around.");
+    $output->output("A thin tendril of smoke escapes the roof of the cave's entrance, and is whisked away by a suddenly cold and brisk wind.");
+    $output->output("The mouth of the cave lies up a dozen feet from the forest floor, set in the side of a cliff, with debris making a conical ramp to the opening.");
+    $output->output("Stalactites and stalagmites near the entrance trigger your imagination to inspire thoughts that the opening is really the mouth of a great leech.`n`n");
+    $output->output("You cautiously approach the entrance of the cave, and as you do, you hear, or perhaps feel a deep rumble that lasts thirty seconds or so, before silencing to a breeze of sulfur-air which wafts out of the cave.");
+    $output->output("The sound starts again, and stops again in a regular rhythm.`n`n");
+    $output->output("You clamber up the debris pile leading to the mouth of the cave, your feet crunching on the apparent remains of previous heroes, or perhaps hors d'oeuvres.`n`n");
+    $output->output("Every instinct in your body wants to run, and run quickly, back to the warm inn, and the even warmer %s`\$.", get_partner());
+    $output->output("What do you do?`0");
     $session['user']['seendragon'] = 1;
 }
 
 if ($op == "search") {
     checkday();
     if ($session['user']['turns'] <= 0) {
-        output("`\$`bYou are too tired to search the forest any longer today.  Perhaps tomorrow you will have more energy.`b`0");
+        $output->output("`\$`bYou are too tired to search the forest any longer today.  Perhaps tomorrow you will have more energy.`b`0");
         $op = "";
-        httpset('op', "");
+        Http::set('op', "");
     } else {
-        modulehook("forestsearch", array());
+        HookHandler::hook("forestsearch", array());
         $args = array(
             'soberval' => 0.9,
             'sobermsg' => "`&Faced with the prospect of death, you sober up a little.`n",
             'schema' => 'forest');
-        modulehook("soberup", $args);
+        HookHandler::hook("soberup", $args);
         if (module_events("forest", getsetting("forestchance", 15)) != 0) {
             if (!checknavs()) {
                 // If we're showing the forest, make sure to reset the special
@@ -77,12 +82,12 @@ if ($op == "search") {
                 $session['user']['specialmisc'] = "";
                 $dontdisplayforestmessage = true;
                 $op = "";
-                httpset("op", "");
+                Http::set("op", "");
             } else {
-                page_footer();
+                Footer::pageFooter();
             }
         } else {
-            modulehook("forestsearch_noevent", array());
+            HookHandler::hook("forestsearch_noevent", array());
             $session['user']['turns']--;
             $battle = true;
             if (e_rand(0, 2) == 1) {
@@ -92,14 +97,14 @@ if ($op == "search") {
                 $plev = 0;
                 $nlev = 0;
             }
-            $type = httpget('type');
+            $type = Http::get('type');
             if ($type == "slum") {
                 $nlev++;
-                output("`\$You head for the section of forest you know to contain foes that you're a bit more comfortable with.`0`n");
+                $output->output("`\$You head for the section of forest you know to contain foes that you're a bit more comfortable with.`0`n");
             }
             if ($type == "thrill") {
                 $plev++;
-                output("`\$You head for the section of forest which contains creatures of your nightmares, hoping to find one of them injured.`0`n");
+                $output->output("`\$You head for the section of forest which contains creatures of your nightmares, hoping to find one of them injured.`0`n");
             }
             $extrabuff = 0;
             if ($type == "suicide") {
@@ -113,7 +118,7 @@ if ($op == "search") {
                     $plev++;
                     $extrabuff = .4;
                 }
-                output("`\$You head for the section of forest which contains creatures of your nightmares, looking for the biggest and baddest ones there.`0`n");
+                $output->output("`\$You head for the section of forest which contains creatures of your nightmares, looking for the biggest and baddest ones there.`0`n");
             }
             $multi = 1;
             $targetlevel = ($session['user']['level'] + $plev - $nlev );
@@ -235,7 +240,7 @@ if ($op == "search") {
                         $stack[$i] = $badguy;
                     }
                     if ($multi > 1) {
-                        output("`2You encounter a group of `^%i`2 %s`2.`n`n", $multi, $badguy['creaturename']);
+                        $output->output("`2You encounter a group of `^%i`2 %s`2.`n`n", $multi, $badguy['creaturename']);
                     }
                 } else {
                     while ($badguy = Database::fetchAssoc($result)) {
@@ -289,13 +294,13 @@ if ($op == "search") {
                     "type" => "forest"
                 )
             );
-            $attackstack = modulehook("forestfight-start", $attackstack);
+            $attackstack = HookHandler::hook("forestfight-start", $attackstack);
             $session['user']['badguy'] = createstring($attackstack);
             // If someone for any reason wanted to add a nav where the user cannot choose the number of rounds anymore
             // because they are already set in the nav itself, we need this here.
             // It will not break anything else. I hope.
-            if (httpget('auto') != "") {
-                httpset('op', 'fight');
+            if (Http::get('auto') != "") {
+                Http::set('op', 'fight');
                 $op = 'fight';
             }
         }
@@ -311,7 +316,7 @@ if ($battle) {
 
     if ($victory) {
             $op = "";
-            httpset('op', "");
+            Http::set('op', "");
             Outcomes::victory($newenemies, isset($options['denyflawless']) ? $options['denyflawless'] : false);
             $dontdisplayforestmessage = true;
     } elseif ($defeat) {
@@ -324,7 +329,7 @@ if ($battle) {
 if ($op == "") {
     // Need to pass the variable here so that we show the forest message
     // sometimes, but not others.
-    modulehook("forest_enter", array());
+    HookHandler::hook("forest_enter", array());
         Forest::forest($dontdisplayforestmessage);
 }
-page_footer();
+Footer::pageFooter();

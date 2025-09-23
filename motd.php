@@ -6,6 +6,9 @@ use Lotgd\Commentary;
 use Lotgd\Accounts;
 use Lotgd\Output;
 use Lotgd\DataCache;
+use Lotgd\Motd;
+use Lotgd\Nav;
+use Lotgd\Http;
 
 // addnews ready
 // translator ready
@@ -15,13 +18,12 @@ define("OVERRIDE_FORCED_NAV", true);
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
 require_once __DIR__ . "/lib/nltoappon.php";
-require_once __DIR__ . "/lib/http.php";
-use Lotgd\Motd;
+
 
 Translator::getInstance()->setSchema("motd");
 
-$op = httpget('op');
-$id = httpget('id');
+$op = Http::get('op');
+$id = Http::get('id');
 
 Commentary::addCommentary();
 popup_header("LoGD Message of the Day (MoTD)");
@@ -33,8 +35,8 @@ if ($session['user']['superuser'] & SU_POST_MOTD) {
 }
 
 if ($op == "vote") {
-    $motditem = httppost('motditem');
-    $choice = (string)httppost('choice');
+    $motditem = Http::post('motditem');
+    $choice = (string)Http::post('choice');
     $sql = "DELETE FROM " . Database::prefix("pollresults") . " WHERE motditem='$motditem' AND account='{$session['user']['acctid']}'";
     Database::query($sql);
     $sql = "INSERT INTO " . Database::prefix("pollresults") . " (choice,account,motditem) VALUES ('$choice','{$session['user']['acctid']}','$motditem')";
@@ -44,9 +46,9 @@ if ($op == "vote") {
     exit();
 }
 if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_POST_MOTD)) {
-    if (httppost('preview')) {
-        $title = httppost('motdtitle');
-        $body = nltoappon((string) httppost('motdbody'));
+    if (Http::post('preview')) {
+        $title = Http::post('motdtitle');
+        $body = nltoappon((string) Http::post('motdbody'));
         Motd::motdItem($title, $body, $session['user']['name'], date('Y-m-d H:i:s'), (int) $id);
         Motd::motdForm((int) $id, $_POST);
     } else {
@@ -70,7 +72,7 @@ if ($op == "add" || $op == "addpoll" || $op == "del") {
             $output->output("`^Entry deleted.`0`n");
             $return = translate_inline("Return to MoTD");
             $output->rawOutput("<a href='motd.php'>$return</a>");
-            addnav('', 'motd.php');
+            Nav::add('', 'motd.php');
         }
     } else {
         if ($session['user']['loggedin']) {
@@ -86,14 +88,14 @@ if ($op == "add" || $op == "addpoll" || $op == "del") {
 }
 if ($op == "") {
     $count = getsetting("motditems", 5);
-    $newcount = (int)httppost("newcount");
-    if ($newcount == 0 || httppost('proceed') == '') {
+    $newcount = (int)Http::post("newcount");
+    if ($newcount == 0 || Http::post('proceed') == '') {
         $newcount = 0;
     }
         /*
         Motd::motditem("Beta!","Please see the beta message below.","","", "");
         */
-    $month_post = httppost("month");
+    $month_post = Http::post("month");
     //SQL Injection attack possible -> kill it off after 7 letters as format is i.e. "2000-05"
     $month_post = substr($month_post, 0, 7);
     if (preg_match("/[0-9][0-9][0-9][0-9]-[0-9][0-9]/", $month_post) !== 1) {

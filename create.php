@@ -4,11 +4,6 @@ use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
-
-// translator ready
-// addnews ready
-// mail ready
-define("ALLOW_ANONYMOUS", true);
 use Lotgd\Mail;
 use Lotgd\CheckBan;
 use Lotgd\Settings;
@@ -16,6 +11,17 @@ use Lotgd\Sanitize;
 use Lotgd\DebugLog;
 use Lotgd\Cookies;
 use Lotgd\ServerFunctions;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
+
+// translator ready
+// addnews ready
+// mail ready
+define("ALLOW_ANONYMOUS", true);
+
 
 require_once __DIR__ . "/common.php";
 require_once __DIR__ . "/lib/is_email.php";
@@ -34,42 +40,42 @@ $old = getsetting("expireoldacct", 45);
 $msg = '';
 
 CheckBan::check();
-$op = httpget('op');
+$op = Http::get('op');
 if ($op == 'val' || $op == 'forgotval') {
     if (ServerFunctions::isTheServerFull() == true) {
         //server is full, your "cheat" does not work here buddy ;) you can't bypass this!
-        page_header("Account Validation");
-        output("Sorry, there are too many people online. Click at the link you used to get here later on. Thank you.");
-        addnav("Login", "index.php");
+        Header::pageHeader("Account Validation");
+        $output->output("Sorry, there are too many people online. Click at the link you used to get here later on. Thank you.");
+        Nav::add("Login", "index.php");
 
-        page_footer();
+        Footer::pageFooter();
     }
 }
 
 if ($op == "forgotval") {
-    $id = httpget('id');
+    $id = Http::get('id');
     $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation FROM " . Database::prefix("accounts") . " WHERE forgottenpassword='" . Database::escape($id) . "' AND forgottenpassword!=''";
     $result = Database::query($sql);
     if (Database::numRows($result) > 0) {
         $row = Database::fetchAssoc($result);
         $sql = "UPDATE " . Database::prefix("accounts") . " SET forgottenpassword='' WHERE forgottenpassword='$id';";
         Database::query($sql);
-        output("`#`cYour login request has been validated.  You may now log in.`c`0");
-        rawoutput("<form action='login.php' method='POST'>");
-        rawoutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
-        rawoutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
-        rawoutput("<input name='force' value='1' type='hidden'>");
+        $output->output("`#`cYour login request has been validated.  You may now log in.`c`0");
+        $output->rawOutput("<form action='login.php' method='POST'>");
+        $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
+        $output->rawOutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
+        $output->rawOutput("<input name='force' value='1' type='hidden'>");
         $click = translate_inline("Click here to log in");
-        rawoutput("<input type='submit' class='button' value='$click'></form>");
-        output_notl("`n");
+        $output->rawOutput("<input type='submit' class='button' value='$click'></form>");
+        $output->outputNotl("`n");
         if ($trash > 0) {
-            output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
+            $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
         }
         if ($new > 0) {
-            output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
+            $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
         }
         if ($old > 0) {
-            output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+            $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
         }
         //rare case: we have somebody who deleted his first validation email and then requests a forgotten PW...
         if ($row['emailvalidation'] != "" && substr($row['emailvalidation'], 0, 1) != "x") {
@@ -77,12 +83,12 @@ if ($op == "forgotval") {
             Database::query($sql);
         }
     } else {
-        output("`#Your request could not be verified.`n`n");
-        output("This may be because the link you used is invalid.");
-        output("Try to log in, and if that doesn't help, use the 'Forgotten Password' option to retrieve a new mail.`n`nIn case of all hope lost, use the petition link at the bottom of the page and provide ALL details with what you did and what info you got.`n`n");
+        $output->output("`#Your request could not be verified.`n`n");
+        $output->output("This may be because the link you used is invalid.");
+        $output->output("Try to log in, and if that doesn't help, use the 'Forgotten Password' option to retrieve a new mail.`n`nIn case of all hope lost, use the petition link at the bottom of the page and provide ALL details with what you did and what info you got.`n`n");
     }
 } elseif ($op == "val") {
-    $id = httpget('id');
+    $id = Http::get('id');
     $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress FROM " . Database::prefix("accounts") . " WHERE emailvalidation='" . Database::escape($id) . "' AND emailvalidation!=''";
     $result = Database::query($sql);
     if (Database::numRows($result) > 0) {
@@ -93,7 +99,7 @@ if ($op == "forgotval") {
             //note: remove any forgotten password request!
             $sql = "UPDATE " . Database::prefix("accounts") . " SET emailaddress='" . $replaceemail . "', replaceemail='',forgottenpassword='' WHERE emailvalidation='$id';";
             Database::query($sql);
-            output("`#`c Email changed successfully!`c`0`n");
+            $output->output("`#`c Email changed successfully!`c`0`n");
                         DebugLog::add("Email change request validated by link from " . $row['emailaddress'] . " to " . $replaceemail, $row['acctid'], $row['acctid'], "Email");
             //If a superuser changes email, we want to know about it... at least those who can ee it anyway, the user editors...
             if ($row['superuser'] > 0) {
@@ -116,40 +122,40 @@ if ($op == "forgotval") {
         }
         $sql = "UPDATE " . Database::prefix("accounts") . " SET emailvalidation='' WHERE emailvalidation='$id';";
         Database::query($sql);
-        output("`#`cYour email has been validated.  You may now log in.`c`0");
-        output(
+        $output->output("`#`cYour email has been validated.  You may now log in.`c`0");
+        $output->output(
             "Your email has been validated, your login name is `^%s`0.`n`n",
             $row['login']
         );
         if ($row['replaceemail'] == '') {
             //no auto-login for email changers
-            rawoutput("<form action='login.php' method='POST'>");
-            rawoutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
-            rawoutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
-            rawoutput("<input name='force' value='1' type='hidden'>");
+            $output->rawOutput("<form action='login.php' method='POST'>");
+            $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
+            $output->rawOutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
+            $output->rawOutput("<input name='force' value='1' type='hidden'>");
             $click = translate_inline("Click here to log in");
-            rawoutput("<input type='submit' class='button' value='$click'></form>");
+            $output->rawOutput("<input type='submit' class='button' value='$click'></form>");
         }
-        output_notl("`n");
+        $output->outputNotl("`n");
         if ($trash > 0) {
-            output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
+            $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
         }
         if ($new > 0) {
-            output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
+            $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
         }
         if ($old > 0) {
-            output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+            $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
         }
         savesetting("newestplayer", $row['acctid']);
     } else {
-        output("`#Your email could not be verified.`n`n");
-        output("This may be because you already validated your email.");
-        output("Try to log in, and if that doesn't help, use the 'Forgotten Password' option to retrieve a new mail.`n`nIn case of all hope lost, use the petition link at the bottom of the page and provide ALL details with what you did and what info you got.`n`n");
+        $output->output("`#Your email could not be verified.`n`n");
+        $output->output("This may be because you already validated your email.");
+        $output->output("Try to log in, and if that doesn't help, use the 'Forgotten Password' option to retrieve a new mail.`n`nIn case of all hope lost, use the petition link at the bottom of the page and provide ALL details with what you did and what info you got.`n`n");
     }
 }
 
 if ($op == "forgot") {
-    $charname = httppost('charname');
+    $charname = Http::post('charname');
     if ($charname != "") {
         $sql = "SELECT acctid,login,emailaddress,forgottenpassword,password FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape($charname) . "'";
         $result = Database::query($sql);
@@ -181,44 +187,44 @@ if ($op == "forgot") {
                                 $to_array = array($row['emailaddress'] => $row['login']);
                                 $from_array = array(getsetting("gameadminemail", "postmaster@localhost") => getsetting("gameadminemail", "postmaster@localhost"));
                                 \Lotgd\Mail::send($to_array, $msg, $subj, $from_array, false, "text/plain");
-                output("`#Sent a new validation email to the address on file for that account.");
-                output("You may use the validation email to log in and change your password.");
+                $output->output("`#Sent a new validation email to the address on file for that account.");
+                $output->output("You may use the validation email to log in and change your password.");
             } else {
-                output("`#We're sorry, but that account does not have an email address associated with it, and so we cannot help you with your forgotten password.");
-                output("Use the Petition for Help link at the bottom of the page to request help with resolving your problem.");
+                $output->output("`#We're sorry, but that account does not have an email address associated with it, and so we cannot help you with your forgotten password.");
+                $output->output("Use the Petition for Help link at the bottom of the page to request help with resolving your problem.");
             }
         } else {
-            output("`#Could not locate a character with that name.");
-            output("Look at the List Warriors page off the login page to make sure that the character hasn't expired and been deleted.");
+            $output->output("`#Could not locate a character with that name.");
+            $output->output("Look at the List Warriors page off the login page to make sure that the character hasn't expired and been deleted.");
         }
     } else {
-        rawoutput("<form action='create.php?op=forgot' method='POST'>");
-        output("`bForgotten Passwords:`b`n`n");
-        output("Enter your character's name: ");
-        rawoutput("<input name='charname'>");
-        output_notl("`n");
+        $output->rawOutput("<form action='create.php?op=forgot' method='POST'>");
+        $output->output("`bForgotten Passwords:`b`n`n");
+        $output->output("Enter your character's name: ");
+        $output->rawOutput("<input name='charname'>");
+        $output->outputNotl("`n");
         $send = translate_inline("Email me my password");
-        rawoutput("<input type='submit' class='button' value='$send'>");
-        rawoutput("</form>");
+        $output->rawOutput("<input type='submit' class='button' value='$send'>");
+        $output->rawOutput("</form>");
     }
 }
-page_header("Create A Character");
+Header::pageHeader("Create A Character");
 if (getsetting("allowcreation", 1) == 0) {
-    output("`\$Creation of new accounts is disabled on this server.");
-    output("You may try it again another day or contact an administrator.");
+    $output->output("`\$Creation of new accounts is disabled on this server.");
+    $output->output("You may try it again another day or contact an administrator.");
 } else {
     if ($op == "create") {
         $emailverification = "";
-                $shortname = Sanitize::sanitizeName(getsetting("spaceinname", 0), httppost('name'));
+                $shortname = Sanitize::sanitizeName(getsetting("spaceinname", 0), Http::post('name'));
 
         if (soap($shortname) != $shortname) {
-            output("`\$Error`^: Bad language was found in your name, please consider revising it.`n");
+            $output->output("`\$Error`^: Bad language was found in your name, please consider revising it.`n");
             $op = "";
         } else {
             $blockaccount = false;
-            $email = httppost('email');
-            $pass1 = httppost('pass1');
-            $pass2 = httppost('pass2');
+            $email = Http::post('email');
+            $pass1 = Http::post('pass1');
+            $pass2 = Http::post('pass2');
             if (getsetting("blockdupeemail", 0) == 1 && getsetting("requireemail", 0) == 1) {
                 $sql = "SELECT login FROM " . Database::prefix("accounts") . " WHERE emailaddress='" . Database::escape($email) . "'";
                 $result = Database::query($sql);
@@ -228,7 +234,7 @@ if (getsetting("allowcreation", 1) == 0) {
                 }
             }
 
-            $passlen = (int)httppost("passlen");
+            $passlen = (int)Http::post("passlen");
             if (
                 substr($pass1, 0, 5) != "!md5!" &&
                     substr($pass1, 0, 6) != "!md52!"
@@ -256,7 +262,7 @@ if (getsetting("allowcreation", 1) == 0) {
                 $msg .= translate_inline("You must enter a valid email address.`n");
                 $blockaccount = true;
             }
-            $args = modulehook("check-create", httpallpost());
+            $args = HookHandler::hook("check-create", httpallpost());
             $args['blockaccount'] = $args['blockaccount'] ?? false;
             $args['msg'] = $args['msg'] ?? '';
 
@@ -278,10 +284,10 @@ if (getsetting("allowcreation", 1) == 0) {
                     }
                 }
                 if ($count > 0) {
-                    output("`\$Error`^: Someone is already known by that name in this realm, please try again.");
+                    $output->output("`\$Error`^: Someone is already known by that name in this realm, please try again.");
                     $op = "";
                 } else {
-                    $sex = (int)httppost('sex');
+                    $sex = (int)Http::post('sex');
                     // Inserted the following line to prevent hacking
                     // Reported by Eliwood
                     if ($sex <> SEX_MALE) {
@@ -292,7 +298,7 @@ if (getsetting("allowcreation", 1) == 0) {
                     if (getsetting("requirevalidemail", 0)) {
                         $emailverification = md5(date("Y-m-d H:i:s") . $email);
                     }
-                    $refer = httpget('r');
+                    $refer = Http::get('r');
                     if ($refer > "") {
                         $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape($refer) . "'";
                         $result = Database::query($sql);
@@ -301,7 +307,7 @@ if (getsetting("allowcreation", 1) == 0) {
                             $referer = $ref['acctid'];
                         } else {
                             //expired, deleted...
-                            output("`\$The referral code you used is not active anymore - please get in touch with the provider, if you want the referral to count. Thank you!`n`nThen either create a new char or let us now in a timely manner who referred you!`n`n");
+                            $output->output("`\$The referral code you used is not active anymore - please get in touch with the provider, if you want the referral to count. Thank you!`n`nThen either create a new char or let us now in a timely manner who referred you!`n`n");
                             $referer = 0;
                         }
                     } else {
@@ -320,7 +326,7 @@ if (getsetting("allowcreation", 1) == 0) {
                                                 ('$shortname','$title $shortname', '" . getsetting("defaultsuperuser", 0) . "', '$title', '$dbpass', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . getsetting("newplayerstartgold", 50) . ", '" . addslashes(getsetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','" . $allowednavs . "', 'village.php','','','',0,'','','','','','','','')";
                     Database::query($sql);
                     if (Database::affectedRows() <= 0) {
-                        output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
+                        $output->output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
                     } else {
                         $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";
                         $result = Database::query($sql);
@@ -331,7 +337,7 @@ if (getsetting("allowcreation", 1) == 0) {
                         $sql_output = "INSERT INTO " . Database::prefix("accounts_output") . " VALUES ({$row['acctid']},'');";
                         Database::query($sql_output);
                         //end
-                        modulehook("process-create", $args);
+                        HookHandler::hook("process-create", $args);
                         if ($emailverification != "") {
                             $subj = translate_mail($settings_extended->getSetting('verificationmailsubject'), 0);
                             $msg = translate_mail($settings_extended->getSetting('verificationmailtext'), 0);
@@ -350,44 +356,44 @@ if (getsetting("allowcreation", 1) == 0) {
                                                         $to_array = array($email => $shortname);
                                                         $from_array = array(getsetting("gameadminemail", "postmaster@localhost") => getsetting("gameadminemail", "postmaster@localhost"));
                                                         \Lotgd\Mail::send($to_array, $msg, $subj, $from_array, false, "text/plain");
-                            output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
+                            $output->output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
                         } else {
-                            rawoutput("<form action='login.php' method='POST'>");
-                            rawoutput("<input name='name' value=\"$shortname\" type='hidden'>");
-                            rawoutput("<input name='password' value=\"$pass1\" type='hidden'>");
+                            $output->rawOutput("<form action='login.php' method='POST'>");
+                            $output->rawOutput("<input name='name' value=\"$shortname\" type='hidden'>");
+                            $output->rawOutput("<input name='password' value=\"$pass1\" type='hidden'>");
                             $click = translate_inline("Click here to log in");
-                            rawoutput("<input type='submit' class='button' value='$click'>");
-                            rawoutput("</form>");
-                            output_notl("`n");
+                            $output->rawOutput("<input type='submit' class='button' value='$click'>");
+                            $output->rawOutput("</form>");
+                            $output->outputNotl("`n");
                             savesetting("newestplayer", $row['acctid']);
                         }
-                        output("`\$Your account was created, your login name is `^%s`\$.`n`n", $shortname);
+                        $output->output("`\$Your account was created, your login name is `^%s`\$.`n`n", $shortname);
                         if ($trash > 0) {
-                            output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
+                            $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
                         }
                         if ($new > 0) {
-                            output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
+                            $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
                         }
                         if ($old > 0) {
-                            output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+                            $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
                         }
                     }
                 }
             } else {
-                output("`\$Error`^:`n%s", $msg);
+                $output->output("`\$Error`^:`n%s", $msg);
                 $op = "";
             }
         }
     }
     if ($op == "") {
-        output("`&`c`bCreate a Character`b`c`0");
-        $refer = httpget('r');
+        $output->output("`&`c`bCreate a Character`b`c`0");
+        $refer = Http::get('r');
         if ($refer) {
             $refer = "&r=" . htmlentities($refer, ENT_COMPAT, getsetting("charset", "UTF-8"));
         }
 
-        rawoutput("<script src='src/Lotgd/md5.js' defer></script>");
-        rawoutput("<script language='JavaScript'>
+        $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
+        $output->rawOutput("<script language='JavaScript'>
 				<!--
 				function md5pass(){
 				// encode passwords
@@ -406,18 +412,18 @@ if (getsetting("allowcreation", 1) == 0) {
 				}
 				//-->
 				</script>");
-                rawoutput("<form action=\"create.php?op=create$refer\" method='POST' onSubmit=\"md5pass();\">");
+                $output->rawOutput("<form action=\"create.php?op=create$refer\" method='POST' onSubmit=\"md5pass();\">");
                 // this is the first thing a new player will se, so let's make it look
                 // better
-                rawoutput("<input type='hidden' name='passlen' id='passlen' value='0'>");
-                rawoutput("<table><tr valign='top'><td>");
-                output("How will you be known to this world? ");
-                rawoutput("</td><td><input name='name'></td></tr><tr valign='top'><td>");
-                output("Enter a password: ");
-                rawoutput("</td><td><input type='password' name='pass1' id='pass1'></td></tr><tr valign='top'><td>");
-                output("Re-enter it for confirmation: ");
-                rawoutput("</td><td><input type='password' name='pass2' id='pass2'></td></tr><tr valign='top'><td>");
-                output("Enter your email address: ");
+                $output->rawOutput("<input type='hidden' name='passlen' id='passlen' value='0'>");
+                $output->rawOutput("<table><tr valign='top'><td>");
+                $output->output("How will you be known to this world? ");
+                $output->rawOutput("</td><td><input name='name'></td></tr><tr valign='top'><td>");
+                $output->output("Enter a password: ");
+                $output->rawOutput("</td><td><input type='password' name='pass1' id='pass1'></td></tr><tr valign='top'><td>");
+                $output->output("Re-enter it for confirmation: ");
+                $output->rawOutput("</td><td><input type='password' name='pass2' id='pass2'></td></tr><tr valign='top'><td>");
+                $output->output("Enter your email address: ");
                 $r1 = translate_inline("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
                 $r2 = translate_inline("`\$(required)`0");
                 $r3 = translate_inline("`\$(required, an email will be sent to this address to verify it before you can log in)`0");
@@ -428,30 +434,30 @@ if (getsetting("allowcreation", 1) == 0) {
         } else {
             $req = $r3;
         }
-                rawoutput("</td><td><input name='email'>");
-                output_notl("%s", $req);
-                rawoutput("</td></tr></table>");
-                output(
+                $output->rawOutput("</td><td><input name='email'>");
+                $output->outputNotl("%s", $req);
+                $output->rawOutput("</td></tr></table>");
+                $output->output(
                     "`nAnd are you a %s Female or a %s Male?`n",
                     "<input type='radio' name='sex' value='1'>",
                     "<input type='radio' name='sex' value='0' checked>",
                     true
                 );
-                modulehook("create-form");
+                HookHandler::hook("create-form");
                 $createbutton = translate_inline("Create your character");
-                rawoutput("<input type='submit' class='button' value='$createbutton'>");
-                output_notl("`n`n");
+                $output->rawOutput("<input type='submit' class='button' value='$createbutton'>");
+                $output->outputNotl("`n`n");
         if ($trash > 0) {
-            output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
+            $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
         }
         if ($new > 0) {
-            output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
+            $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
         }
         if ($old > 0) {
-            output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+            $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
         }
-                rawoutput("</form>");
+                $output->rawOutput("</form>");
     }
 }
-addnav("Login", "index.php");
-page_footer();
+Nav::add("Login", "index.php");
+Footer::pageFooter();

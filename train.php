@@ -10,6 +10,12 @@ use Lotgd\Battle;
 use Lotgd\Mail;
 use Lotgd\Output;
 use Lotgd\DataCache;
+use Lotgd\Nav;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 //addnews ready
 // mail ready
@@ -17,13 +23,11 @@ use Lotgd\DataCache;
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
 require_once __DIR__ . "/lib/increment_specialty.php";
-require_once __DIR__ . "/lib/http.php";
-require_once __DIR__ . "/lib/villagenav.php";
 require_once __DIR__ . "/lib/experience.php";
 
 Translator::getInstance()->setSchema("train");
 
-page_header("Bluspring's Warrior Training");
+Header::pageHeader("Bluspring's Warrior Training");
 
 $battle = false;
 $victory = false;
@@ -31,9 +35,9 @@ $defeat = false;
 $point = getsetting('moneydecimalpoint', ".");
 $sep = getsetting('moneythousandssep', ",");
 
-output("`b`cBluspring's Warrior Training`c`b");
+$output->output("`b`cBluspring's Warrior Training`c`b");
 
-$mid = httpget("master");
+$mid = Http::get("master");
 if ($mid) {
     $sql = "SELECT * FROM " . Database::prefix("masters") . " WHERE creatureid=$mid";
 } else {
@@ -66,24 +70,24 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
     $dks = $session['user']['dragonkills'];
     $exprequired = exp_for_next_level($level, $dks);
 
-    $op = httpget('op');
+    $op = Http::get('op');
     if ($op == "") {
         checkday();
-        output("The sound of conflict surrounds you.  The clang of weapons in grisly battle inspires your warrior heart. ");
-        output(
+        $output->output("The sound of conflict surrounds you.  The clang of weapons in grisly battle inspires your warrior heart. ");
+        $output->output(
             "`n`n`^%s stands ready to evaluate you.`0",
             $master['creaturename']
         );
-        addnav("Navigation");
-        villagenav();
-        addnav("Actions");
-        addnav("Question Master", "train.php?op=question&master=$mid");
-        addnav("M?Challenge Master", "train.php?op=challenge&master=$mid");
+        Nav::add("Navigation");
+        VillageNav::render();
+        Nav::add("Actions");
+        Nav::add("Question Master", "train.php?op=question&master=$mid");
+        Nav::add("M?Challenge Master", "train.php?op=challenge&master=$mid");
         if ($session['user']['superuser'] & SU_DEVELOPER) {
-            addnav("Superuser Gain level", "train.php?op=challenge&victory=1&master=$mid&sugain=1");
+            Nav::add("Superuser Gain level", "train.php?op=challenge&victory=1&master=$mid&sugain=1");
         }
     } elseif ($op == "challenge") {
-        if (httpget('victory')) {
+        if (Http::get('victory')) {
             $victory = true;
             $defeat = false;
             if ($session['user']['experience'] < $exprequired) {
@@ -92,10 +96,10 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             $session['user']['seenmaster'] = 0;
         }
         if ($session['user']['seenmaster']) {
-            output("You think that, perhaps, you've seen enough of your master for today, the lessons you learned earlier prevent you from so willingly subjecting yourself to that sort of humiliation again.");
-            addnav("Navigation");
-            villagenav();
-            addnav("Actions");
+            $output->output("You think that, perhaps, you've seen enough of your master for today, the lessons you learned earlier prevent you from so willingly subjecting yourself to that sort of humiliation again.");
+            Nav::add("Navigation");
+            VillageNav::render();
+            Nav::add("Actions");
         } else {
             /* OK, let's fix the multimaster thing */
             $session['user']['seenmaster'] = 1;
@@ -127,45 +131,45 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 $battle = true;
                 if ($victory) {
                     $badguy = unserialize($session['user']['badguy']);
-                    output("With a flurry of blows you dispatch your master.`n");
+                    $output->output("With a flurry of blows you dispatch your master.`n");
                 }
             } else {
-                output("You ready your %s`0 and %s`0 and approach `^%s`0.`n`n", $session['user']['weapon'], $session['user']['armor'], $master['creaturename']);
-                output("A small crowd of onlookers has gathered, and you briefly notice the smiles on their faces, but you feel confident. ");
-                output("You bow before `^%s`0, and execute a perfect spin-attack, only to realize that you are holding NOTHING!", $master['creaturename']);
-                output("`^%s`0 stands before you holding your weapon.", $master['creaturename']);
-                output("Meekly you retrieve your %s, and slink out of the training grounds to the sound of boisterous guffaws.", $session['user']['weapon']);
-                addnav("Navigation");
-                villagenav();
-                addnav("Actions");
+                $output->output("You ready your %s`0 and %s`0 and approach `^%s`0.`n`n", $session['user']['weapon'], $session['user']['armor'], $master['creaturename']);
+                $output->output("A small crowd of onlookers has gathered, and you briefly notice the smiles on their faces, but you feel confident. ");
+                $output->output("You bow before `^%s`0, and execute a perfect spin-attack, only to realize that you are holding NOTHING!", $master['creaturename']);
+                $output->output("`^%s`0 stands before you holding your weapon.", $master['creaturename']);
+                $output->output("Meekly you retrieve your %s, and slink out of the training grounds to the sound of boisterous guffaws.", $session['user']['weapon']);
+                Nav::add("Navigation");
+                VillageNav::render();
+                Nav::add("Actions");
             }
         }
     } elseif ($op == "question") {
         checkday();
-        addnav("Navigation");
-        villagenav();
-        addnav("Actions");
-        output("You approach `^%s`0 timidly and inquire as to your standing in the class.", $master['creaturename']);
+        Nav::add("Navigation");
+        VillageNav::render();
+        Nav::add("Actions");
+        $output->output("You approach `^%s`0 timidly and inquire as to your standing in the class.", $master['creaturename']);
         if ($session['user']['experience'] >= $exprequired) {
-            output("`n`n`^%s`0 says, \"Gee, your muscles are getting bigger than mine...\"", $master['creaturename']);
+            $output->output("`n`n`^%s`0 says, \"Gee, your muscles are getting bigger than mine...\"", $master['creaturename']);
         } else {
-            output("`n`n`^%s`0 states that you will need `%%s`0 more experience before you are ready to challenge him in battle.", $master['creaturename'], number_format($exprequired - $session['user']['experience'], 0, $point, $sep));
+            $output->output("`n`n`^%s`0 states that you will need `%%s`0 more experience before you are ready to challenge him in battle.", $master['creaturename'], number_format($exprequired - $session['user']['experience'], 0, $point, $sep));
         }
-        addnav("Question Master", "train.php?op=question&master=$mid");
-        addnav("M?Challenge Master", "train.php?op=challenge&master=$mid");
+        Nav::add("Question Master", "train.php?op=question&master=$mid");
+        Nav::add("M?Challenge Master", "train.php?op=challenge&master=$mid");
         if ($session['user']['superuser'] & SU_DEVELOPER) {
-            addnav("Superuser Gain level", "train.php?op=challenge&victory=1&master=$mid&sugain=1");
+            Nav::add("Superuser Gain level", "train.php?op=challenge&victory=1&master=$mid&sugain=1");
         }
     } elseif ($op == "autochallenge") {
-        addnav("Fight Your Master", "train.php?op=challenge&master=$mid");
-        output("`^%s`0 has heard of your prowess as a warrior, and heard of rumors that you think you are so much more powerful than he that you don't even need to fight him to prove anything. ", $master['creaturename']);
-        output("His ego is understandably bruised, and so he has come to find you.");
-        output("`^%s`0 demands an immediate battle from you, and your own pride prevents you from refusing the demand.", $master['creaturename']);
+        Nav::add("Fight Your Master", "train.php?op=challenge&master=$mid");
+        $output->output("`^%s`0 has heard of your prowess as a warrior, and heard of rumors that you think you are so much more powerful than he that you don't even need to fight him to prove anything. ", $master['creaturename']);
+        $output->output("His ego is understandably bruised, and so he has come to find you.");
+        $output->output("`^%s`0 demands an immediate battle from you, and your own pride prevents you from refusing the demand.", $master['creaturename']);
         if ($session['user']['hitpoints'] < $session['user']['maxhitpoints']) {
-            output("`n`nBeing a fair person, your master gives you a healing potion before the fight begins.");
+            $output->output("`n`nBeing a fair person, your master gives you a healing potion before the fight begins.");
             $session['user']['hitpoints'] = $session['user']['maxhitpoints'];
         }
-        modulehook("master-autochallenge");
+        HookHandler::hook("master-autochallenge");
         if (getsetting('displaymasternews', 1)) {
             AddNews::add("`3%s`3 was hunted down by their master, `^%s`3, for being truant.", $session['user']['name'], $master['creaturename']);
         }
@@ -174,7 +178,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
         $battle = true;
     }
     if ($op == "run") {
-        output("`\$Your pride prevents you from running from this conflict!`0");
+        $output->output("`\$Your pride prevents you from running from this conflict!`0");
         $op = "fight";
         $battle = true;
     }
@@ -186,7 +190,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             require_once __DIR__ . "/battle.php";
         }
         if ($victory) {
-            if (httpget('sugain') == 1) {
+            if (Http::get('sugain') == 1) {
                 //Set badguy to defeat
                 $badguy = $attackstack['enemies'][0];
             }
@@ -196,10 +200,10 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 $badguy['creaturelose'] = "";
             }
             $badguy['creaturelose'] = Substitute::applyArray($badguy['creaturelose']);
-            output_notl("`b`&");
-            output($badguy['creaturelose']);
-            output_notl("`0`b`n");
-            output("`b`\$You have defeated %s!`0`b`n", $badguy['creaturename']);
+            $output->outputNotl("`b`&");
+            $output->output($badguy['creaturelose']);
+            $output->outputNotl("`0`b`n");
+            $output->output("`b`\$You have defeated %s!`0`b`n", $badguy['creaturename']);
 
             $session['user']['level']++;
             $session['user']['maxhitpoints'] += 10;
@@ -211,14 +215,14 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 $session['user']['seenmaster'] = 0;
                 debuglog("Defeated master, setting seenmaster to 0");
             }
-            output("`#You advance to level `^%s`#!`n", $session['user']['level']);
-            output("Your maximum hitpoints are now `^%s`#!`n", $session['user']['maxhitpoints']);
-            output("You gain an attack point!`n");
-            output("You gain a defense point!`n");
+            $output->output("`#You advance to level `^%s`#!`n", $session['user']['level']);
+            $output->output("Your maximum hitpoints are now `^%s`#!`n", $session['user']['maxhitpoints']);
+            $output->output("You gain an attack point!`n");
+            $output->output("You gain a defense point!`n");
             if ($session['user']['level'] < 15) {
-                output("You have a new master.`n");
+                $output->output("You have a new master.`n");
             } else {
-                output("None in the land are mightier than you!`n");
+                $output->output("None in the land are mightier than you!`n");
             }
             if ($session['user']['referer'] > 0 && ($session['user']['level'] >= getsetting("referminlevel", 4) || $session['user']['dragonkills'] > 0) && $session['user']['refererawarded'] < 1) {
                 $sql = "UPDATE " . Database::prefix("accounts") . " SET donation=donation+" . getsetting("refereraward", 25) . " WHERE acctid={$session['user']['referer']}";
@@ -254,13 +258,13 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
 
             DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
 
-            addnav("Navigation");
-            villagenav();
-            addnav("Actions");
-            addnav("Question Master", "train.php?op=question");
-            addnav("M?Challenge Master", "train.php?op=challenge");
+            Nav::add("Navigation");
+            VillageNav::render();
+            Nav::add("Actions");
+            Nav::add("Question Master", "train.php?op=question");
+            Nav::add("M?Challenge Master", "train.php?op=challenge");
             if ($session['user']['superuser'] & SU_DEVELOPER) {
-                addnav("Superuser Gain level", "train.php?op=challenge&victory=1&master=" . ((string)((int)$mid + 1)) . "&sugain=1");
+                Nav::add("Superuser Gain level", "train.php?op=challenge&victory=1&master=" . ((string)((int)$mid + 1)) . "&sugain=1");
             }
             if ($session['user']['age'] == 1) {
                 if (getsetting('displaymasternews', 1)) {
@@ -274,7 +278,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             if ($session['user']['hitpoints'] < $session['user']['maxhitpoints']) {
                 $session['user']['hitpoints'] = $session['user']['maxhitpoints'];
             }
-            modulehook("training-victory", $badguy);
+            HookHandler::hook("training-victory", $badguy);
         } elseif ($defeat) {
             $taunt = Battle::selectTauntArray();
 
@@ -282,21 +286,21 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
                 AddNews::add("`%%s`5 has challenged their master, %s and lost!`n%s", $session['user']['name'], $badguy['creaturename'], $taunt);
             }
             $session['user']['hitpoints'] = $session['user']['maxhitpoints'];
-            output("`&`bYou have been defeated by `%%s`&!`b`n", $badguy['creaturename']);
-            output("`%%s`\$ halts just before delivering the final blow, and instead extends a hand to help you to your feet, and hands you a complementary healing potion.`n", $badguy['creaturename']);
+            $output->output("`&`bYou have been defeated by `%%s`&!`b`n", $badguy['creaturename']);
+            $output->output("`%%s`\$ halts just before delivering the final blow, and instead extends a hand to help you to your feet, and hands you a complementary healing potion.`n", $badguy['creaturename']);
             $badguy['creaturewin'] = Substitute::applyArray($badguy['creaturewin']);
-            output_notl("`^`b");
-            output($badguy['creaturewin']);
-            output_notl("`b`0`n");
-            addnav("Navigation");
-            villagenav();
-            addnav("Actions");
-            addnav("Question Master", "train.php?op=question&master=$mid");
-            addnav("M?Challenge Master", "train.php?op=challenge&master=$mid");
+            $output->outputNotl("`^`b");
+            $output->output($badguy['creaturewin']);
+            $output->outputNotl("`b`0`n");
+            Nav::add("Navigation");
+            VillageNav::render();
+            Nav::add("Actions");
+            Nav::add("Question Master", "train.php?op=question&master=$mid");
+            Nav::add("M?Challenge Master", "train.php?op=challenge&master=$mid");
             if ($session['user']['superuser'] & SU_DEVELOPER) {
-                addnav("Superuser Gain level", "train.php?op=challenge&victory=1&master=$mid");
+                Nav::add("Superuser Gain level", "train.php?op=challenge&victory=1&master=$mid");
             }
-            modulehook("training-defeat", $badguy);
+            HookHandler::hook("training-defeat", $badguy);
         } else {
             battle::fightnav(false, false, "train.php?master=$mid");
         }
@@ -307,14 +311,14 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
     }
 } else {
     checkday();
-    output("You stroll into the battle grounds.");
-    output("Younger warriors huddle together and point as you pass by.");
-    output("You know this place well.");
-    output("Bluspring hails you, and you grasp her hand firmly.");
-    output("There is nothing left for you here but memories.");
-    output("You remain a moment longer, and look at the warriors in training before you turn to return to the village.");
-    addnav("Navigation");
-    villagenav();
-    addnav("Actions");
+    $output->output("You stroll into the battle grounds.");
+    $output->output("Younger warriors huddle together and point as you pass by.");
+    $output->output("You know this place well.");
+    $output->output("Bluspring hails you, and you grasp her hand firmly.");
+    $output->output("There is nothing left for you here but memories.");
+    $output->output("You remain a moment longer, and look at the warriors in training before you turn to return to the village.");
+    Nav::add("Navigation");
+    VillageNav::render();
+    Nav::add("Actions");
 }
-page_footer();
+Footer::pageFooter();
