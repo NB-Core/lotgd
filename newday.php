@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\MySQL\Database;
+use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\Buffs;
 use Lotgd\Newday;
@@ -16,12 +17,16 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
 require_once __DIR__ . "/lib/sanitize.php";
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 Translator::getInstance()->setSchema("newday");
 //mass_module_prepare(array("newday-intercept", "newday"));
@@ -30,10 +35,10 @@ HookHandler::hook("newday-intercept", array());
 /***************
  **  SETTINGS **
  ***************/
-$turnsperday = getsetting("turns", 10);
-$maxinterest = ((float)getsetting("maxinterest", 10) / 100); //0.1;
-$mininterest = ((float)getsetting("mininterest", 1) / 100); //0.1;
-$dailypvpfights = getsetting("pvpday", 3);
+$turnsperday = $settings->getSetting('turns', 10);
+$maxinterest = ((float)$settings->getSetting('maxinterest', 10) / 100); //0.1;
+$mininterest = ((float)$settings->getSetting('mininterest', 1) / 100); //0.1;
+$dailypvpfights = $settings->getSetting('pvpday', 3);
 
 $resline = (Http::get('resurrection') == "true") ? "&resurrection=true" : "" ;
 /******************
@@ -148,12 +153,12 @@ if ($dp < $dkills) {
     $turnstoday = $args['turnstoday'];
 
     $interestrate = e_rand($mininterest * 100, $maxinterest * 100) / (float)100;
-    if ($session['user']['turns'] > getsetting("fightsforinterest", 4) && $session['user']['goldinbank'] >= 0) {
+    if ($session['user']['turns'] > $settings->getSetting('fightsforinterest', 4) && $session['user']['goldinbank'] >= 0) {
         $interestrate = 0;
         $output->output("`2Today's interest rate: `^0% (Bankers in this village only give interest to those who work for it)`2.`n");
-    } elseif (getsetting("maxgoldforinterest", 100000) && $session['user']['goldinbank'] >= getsetting("maxgoldforinterest", 100000)) {
+    } elseif ($settings->getSetting('maxgoldforinterest', 100000) && $session['user']['goldinbank'] >= $settings->getSetting('maxgoldforinterest', 100000)) {
         $interestrate = 0;
-        $output->output("`2Today's interest rate: `^0%% (The bank will not pay interest on accounts equal or greater than %s to retain solvency)`2.`n", getsetting("maxgoldforinterest", 100000));
+        $output->output("`2Today's interest rate: `^0%% (The bank will not pay interest on accounts equal or greater than %s to retain solvency)`2.`n", $settings->getSetting('maxgoldforinterest', 100000));
     } else {
         $output->output("`2Today's interest rate: `^%s%% `n", ($interestrate) * 100);
         if ($session['user']['goldinbank'] >= 0) {
@@ -221,7 +226,7 @@ if ($dp < $dkills) {
         $output->output(
             "`n`2You gain `^%s`2 forest %s from spent dragon points!",
             $dkff,
-            translate_inline($dkff == 1 ? "fight" : "fights")
+            Translator::translateInline($dkff == 1 ? 'fight' : 'fights')
         );
     }
     $r1 = e_rand(-1, 1);
@@ -229,9 +234,9 @@ if ($dp < $dkills) {
     $spirits = $r1 + $r2;
     $resurrectionturns = $spirits;
     if ($resurrection == "true") {
-        AddNews::add("`&%s`& has been resurrected by %s`&.", $session['user']['name'], getsetting('deathoverlord', '`$Ramius'));
+        AddNews::add("`&%s`& has been resurrected by %s`&.", $session['user']['name'], $settings->getSetting('deathoverlord', '`$Ramius'));
         $spirits = -6;
-        $resurrectionturns = getsetting('resurrectionturns', -6);
+        $resurrectionturns = $settings->getSetting('resurrectionturns', -6);
         if (strstr($resurrectionturns, '%')) {
             $resurrectionturns = strtok($resurrectionturns, '%');
             $resurrectionturns = (int)$resurrectionturns;
@@ -244,26 +249,26 @@ if ($dp < $dkills) {
                 $resurrectionturns = -($turnsperday + $dkff);
             }
         }
-        $session['user']['deathpower'] -= getsetting('resurrectioncost', 100);
+        $session['user']['deathpower'] -= $settings->getSetting('resurrectioncost', 100);
         $session['user']['restorepage'] = "village.php?c=1";
     }
 
     $sp = array((-6) => "Resurrected", (-2) => "Very Low", (-1) => "Low",
             (0) => "Normal", 1 => "High", 2 => "Very High");
-    $sp = translate_inline($sp);
+    $sp = Translator::translateInline($sp);
     $output->output("`n`2You are in `^%s`2 spirits today!`n", $sp[$spirits]);
     if (abs($spirits) > 0) {
         if ($resurrectionturns > 0) {
-            $gain = translate_inline("gain");
+            $gain = Translator::translateInline('gain');
         } else {
-            $gain = translate_inline("lose");
+            $gain = Translator::translateInline('lose');
         }
         $sff = abs($resurrectionturns);
         $output->output(
             "`2As a result, you `^%s %s forest %s`2 for today!`n",
             $gain,
             $sff,
-            translate_inline($sff == 1 ? "fight" : "fights")
+            Translator::translateInline($sff == 1 ? 'fight' : 'fights')
         );
     }
     $rp = rtrim(cmd_sanitize($session['user']['restorepage']), '&?');
@@ -275,7 +280,7 @@ if ($dp < $dkills) {
 
     $session['user']['laston'] = date("Y-m-d H:i:s");
     $interest_amount = (int) round($session['user']['goldinbank'] * $interestrate, 0);
-    $debtfloor = getsetting("debtfloor", -50000);
+    $debtfloor = $settings->getSetting('debtfloor', -50000);
     if ($session['user']['goldinbank'] + $interest_amount < $debtfloor) {
         //debtfloor reached set to floor
         $session['user']['goldinbank'] = $debtfloor;
@@ -303,7 +308,7 @@ if ($dp < $dkills) {
     $session['user']['fedmount'] = 0;
     if ($resurrection != "true") {
         $session['user']['soulpoints'] = 50 + 10 * $session['user']['level'] + $session['user']['dragonkills'] * 2;
-        $session['user']['gravefights'] = getsetting("gravefightsperday", 10);
+        $session['user']['gravefights'] = $settings->getSetting('gravefightsperday', 10);
     }
     $session['user']['boughtroomtoday'] = 0;
     $session['user']['recentcomments'] = $session['user']['lasthit'];
@@ -319,15 +324,15 @@ if ($dp < $dkills) {
         $session['user']['turns'] += $mff;
         $turnstoday .= ", Mount: $mff";
         if ($mff > 0) {
-            $state = translate_inline("gain");
+            $state = Translator::translateInline('gain');
             $color = "`^";
         } elseif ($mff < 0) {
-            $state = translate_inline("lose");
+            $state = Translator::translateInline('lose');
             $color = "`$";
         }
         $mff = abs($mff);
         if ($mff != 0) {
-            $output->output("`n`&Because of %s`&, you %s%s %s`& forest %s for today!`n`0", $lcname, $color, $state, $mff, translate_inline($mff == 1 ? 'fight' : 'fights'));
+            $output->output("`n`&Because of %s`&, you %s%s %s`& forest %s for today!`n`0", $lcname, $color, $state, $mff, Translator::translateInline($mff == 1 ? 'fight' : 'fights'));
         }
     } else {
         $output->output("`n`&You strap your `%%s`& to your back and head out for some adventure.`0", $session['user']['weapon']);
@@ -335,21 +340,21 @@ if ($dp < $dkills) {
 
         Battle::unsuspendCompanions("allowinshades");
 
-    if (!getsetting("newdaycron", 0)) {
+    if (!$settings->getSetting('newdaycron', 0)) {
         //check last time we did this vs now to see if it was a different game day.
-        $lastnewdaysemaphore = convertgametime(strtotime(getsetting("newdaySemaphore", DATETIME_DATEMIN) . " +0000"));
+        $lastnewdaysemaphore = convertgametime(strtotime($settings->getSetting('newdaySemaphore', DATETIME_DATEMIN) . " +0000"));
         $gametoday = gametime();
         if (gmdate("Ymd", $gametoday) != gmdate("Ymd", $lastnewdaysemaphore)) {
                 // it appears to be a different game day, acquire semaphore and
                 // check again.
             $sql = "LOCK TABLES " . Database::prefix("settings") . " WRITE";
             Database::query($sql);
-            clearsettings();
-            $lastnewdaysemaphore = convertgametime(strtotime(getsetting("newdaySemaphore", DATETIME_DATEMIN) . " +0000"));
+            $settings->clearSettings();
+            $lastnewdaysemaphore = convertgametime(strtotime($settings->getSetting('newdaySemaphore', DATETIME_DATEMIN) . " +0000"));
                 $gametoday = gametime();
             if (gmdate("Ymd", $gametoday) != gmdate("Ymd", $lastnewdaysemaphore)) {
                 //we need to run the hook, update the setting, and unlock.
-                savesetting("newdaySemaphore", gmdate("Y-m-d H:i:s"));
+                $settings->saveSetting('newdaySemaphore', gmdate("Y-m-d H:i:s"));
                 $sql = "UNLOCK TABLES";
                 Database::query($sql);
                 Newday::runOnce();

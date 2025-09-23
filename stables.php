@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\MySQL\Database;
+use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\Buffs;
 use Lotgd\MountName;
@@ -11,12 +12,18 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
+use Lotgd\Sanitize;
+use Lotgd\DebugLog;
+use Lotgd\DateTime;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/sanitize.php";
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 $translator = Translator::getInstance();
 
@@ -27,7 +34,7 @@ $basetext = array(
     "desc" => array(
         "`7Behind the inn, and a little to the left of Ye Olde Bank, is as fine a stable as one might expect to find in any village. ",
         "In it, Merick, a burly looking dwarf tends to various beasts.`n`n",
-        array("You approach, and he whirls around, pointing a pitchfork in your general direction, \"`&Ach, sorry m'%s, I dinnae hear ya' comin' up on me, an' I thoht fer sure ye were %s`&; he what been tryin' to improve on his dwarf tossin' skills. ",translate_inline($session['user']['sex'] ? 'lass' : 'lad'),getsetting('barkeep', '`tCedrik')),
+        array("You approach, and he whirls around, pointing a pitchfork in your general direction, \"`&Ach, sorry m'%s, I dinnae hear ya' comin' up on me, an' I thoht fer sure ye were %s`&; he what been tryin' to improve on his dwarf tossin' skills. ", Translator::translateInline($session['user']['sex'] ? 'lass' : 'lad'), $settings->getSetting('barkeep', '`tCedrik')),
         "Naahw, wha' can oye do fer ya?`7\" he asks.",
     ),
     "nosuchbeast" => "`7\"`&Ach, thar dinnae be any such beestie here!`7\" shouts the dwarf!",
@@ -104,7 +111,7 @@ $id = Http::get('id');
 
 
 if ($op == "") {
-    checkday();
+    DateTime::checkDay();
     $translator->setSchema($schemas['desc']);
     if (is_array($texts['desc'])) {
         foreach ($texts['desc'] as $description) {
@@ -141,7 +148,7 @@ if ($op == "") {
         $translator->setSchema($schemas['confirmsale']);
         $output->output(
             $texts['confirmsale'],
-            translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"])
+            Translator::translateInline($session['user']['sex'] ? $texts['lass'] : $texts['lad'])
         );
         $translator->setSchema();
         Nav::add("Confirm trade");
@@ -194,7 +201,7 @@ if ($op == 'confirmbuy') {
             $session['user']['gold'] += $goldcost;
             $gemcost = $repaygems - $mount['mountcostgems'];
             $session['user']['gems'] += $gemcost;
-            debuglog(($goldcost <= 0 ? "spent " : "gained ") . abs($goldcost) . " gold and " . ($gemcost <= 0 ? "spent " : "gained ") . abs($gemcost) . " gems trading $debugmount1 for a new mount, a $debugmount2");
+            DebugLog::add(($goldcost <= 0 ? 'spent ' : 'gained ') . abs($goldcost) . ' gold and ' . ($gemcost <= 0 ? 'spent ' : 'gained ') . abs($gemcost) . " gems trading $debugmount1 for a new mount, a $debugmount2");
             $buff = unserialize($mount['mountbuff']);
             if ($buff['schema'] == "") {
                 $buff['schema'] = "mounts";
@@ -213,11 +220,11 @@ if ($op == 'confirmbuy') {
         }
     }
 } elseif ($op == 'feed') {
-    if (getsetting("allowfeed", 0) == 0) {
+    if ($settings->getSetting('allowfeed', 0) == 0) {
         $translator->setSchema($schemas['nofeed']);
         $output->output(
             $texts['nofeed'],
-            translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"])
+            Translator::translateInline($session['user']['sex'] ? $texts['lass'] : $texts['lad'])
         );
         $translator->setSchema();
     } elseif ($session['user']['gold'] >= $grubprice) {
@@ -242,13 +249,13 @@ if ($op == 'confirmbuy') {
                 $output->output($texts['hungry'], $name, $name, $grubprice);
                 $translator->setSchema();
             }
-            debuglog("spent $grubprice feeding their mount");
+            DebugLog::add("spent $grubprice feeding their mount");
             Buffs::applyBuff('mount', $buff);
             $session['user']['fedmount'] = 1;
             $translator->setSchema($schemas['mountfull']);
             $output->output(
                 $texts['mountfull'],
-                translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"]),
+                Translator::translateInline($session['user']['sex'] ? $texts['lass'] : $texts['lad']),
                 (isset($playerMount['basename']) && $playerMount['basename'] ?
                  $playerMount['basename'] : $playerMount['mountname'])
             );
@@ -263,7 +270,7 @@ if ($op == 'confirmbuy') {
     $translator->setSchema($schemas['confirmsale']);
     $output->output(
         $texts['confirmsale'],
-        translate_inline($session['user']['sex'] ? $texts["lass"] : $texts["lad"])
+        Translator::translateInline($session['user']['sex'] ? $texts['lass'] : $texts['lad'])
     );
     $translator->setSchema();
     Nav::add("Confirm sale");
@@ -274,7 +281,7 @@ if ($op == 'confirmbuy') {
     $session['user']['gold'] += $repaygold;
     $session['user']['gems'] += $repaygems;
     $debugmount = $playerMount['mountname'];
-    debuglog("gained $repaygold gold and $repaygems gems selling their mount, a $debugmount");
+    DebugLog::add("gained $repaygold gold and $repaygems gems selling their mount, a $debugmount");
     Buffs::stripBuff('mount');
     $session['user']['hashorse'] = 0;
     HookHandler::hook("soldmount");
@@ -309,12 +316,12 @@ if ($op == 'confirmbuy') {
 
 if ($confirm == 0) {
     if ($session['user']['hashorse'] > 0) {
-        Nav::add(array("%s", color_sanitize($name)));
+        Nav::add(array("%s", Sanitize::colorSanitize($name)));
         $translator->setSchema($schemas['offer']);
         $output->output($texts['offer'], $repaygold, $repaygems, $lcname);
         $translator->setSchema();
         Nav::add(array("Sell %s`0", $lcname), "stables.php?op=sellmount");
-        if (getsetting("allowfeed", 0) && $session['user']['fedmount'] == 0) {
+        if ($settings->getSetting('allowfeed', 0) && $session['user']['fedmount'] == 0) {
             Nav::add(
                 array("Feed %s`0 (`^%s`0 gold)", $lcname, $grubprice),
                 "stables.php?op=feed"

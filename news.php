@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\MySQL\Database;
+use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\Motd;
 use Lotgd\Battle;
@@ -11,6 +12,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\DateTime;
 
 // translator ready
 // addnews ready
@@ -18,6 +20,7 @@ use Lotgd\Modules\HookHandler;
 define("ALLOW_ANONYMOUS", true);
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
+$settings = Settings::getInstance();
 
 $translator = Translator::getInstance();
 
@@ -27,9 +30,9 @@ HookHandler::hook("news-intercept", array());
 
 
 if ($session['user']['loggedin']) {
-    checkday();
+    DateTime::checkDay();
 }
-$newsperpage = 50;
+$newsperpage = (int) $settings->getSetting('newsperpage', 50);
 
 $offset = (int)Http::get('offset');
 $timestamp = strtotime((0 - $offset) . " days");
@@ -66,7 +69,7 @@ $result2 = Database::queryCached($sql2, "lastmotd");
 while ($row = Database::fetchAssoc($result2)) {
         require_once __DIR__ . "/lib/nltoappon.php";
     if ($row['motdauthorname'] == "") {
-        $row['motdauthorname'] = translate_inline("`@Green Dragon Staff`0");
+        $row['motdauthorname'] = Translator::translateInline('`@Green Dragon Staff`0');
     }
     if ($row['motdtype'] == 0) {
             Motd::motditem($row['motdtitle'], $row['motdbody'], $output->appoencode($row['motdauthorname']), $row['motddate'], 0);
@@ -80,7 +83,7 @@ $output->output("`c`b`!News for %s %s`0`b`c", $date, $pagestr);
 while ($row = Database::fetchAssoc($result)) {
     $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
     if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
-        $del = translate_inline("Del");
+        $del = Translator::translateInline('Del');
         $output->rawOutput("[ <a href='superuser.php?op=newsdelete&newsid=" . $row['newsid'] . "&return=" . URLEncode($_SERVER['REQUEST_URI']) . "'>$del</a> ]&nbsp;");
         Nav::add("", "superuser.php?op=newsdelete&newsid={$row['newsid']}&return=" . URLEncode($_SERVER['REQUEST_URI']));
     }
@@ -95,7 +98,7 @@ while ($row = Database::fetchAssoc($result)) {
         $news = $translator->sprintfTranslate(...$arguments);
         $output->rawOutput(Translator::clearButton());
     } else {
-        $news = translate_inline($row['newstext']);
+        $news = Translator::translateInline($row['newstext']);
     }
     $translator->setSchema();
     $output->outputNotl("`c" . $news . "`c`n");
