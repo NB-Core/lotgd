@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\DateTime;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
@@ -48,7 +49,7 @@ if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
     }
 }
 if (!$skipgardendesc) {
-    checkday();
+    DateTime::checkDay();
 
     $output->output("`b`c`2The Gardens`0`c`b");
 

@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\DateTime;
 use Lotgd\Translator;
 use Lotgd\Nav\VillageNav;
 
@@ -12,7 +13,7 @@ require_once 'common.php';
 
 Translator::getInstance()->setSchema('pavilion');
 Commentary::addCommentary();
-checkday();
+DateTime::checkDay();
 
 page_header('Eye-catching Pavilion');
 

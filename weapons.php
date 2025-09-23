@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Nav;
@@ -18,7 +19,7 @@ $translator = Translator::getInstance();
 
 $translator->setSchema("weapon");
 
-checkday();
+DateTime::checkDay();
 $tradeinvalue = round(($session['user']['weaponvalue'] * .75), 0);
 $basetext = array(
     "title"         =>  "MightyE's Weapons",

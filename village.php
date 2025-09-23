@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Commentary;
@@ -125,7 +126,7 @@ $translator->setSchema();
 
 Commentary::addCommentary();
 $skipvillagedesc = Events::handleEvent("village");
-checkday();
+DateTime::checkDay();
 
 if ($session['user']['slaydragon'] == 1) {
     $session['user']['slaydragon'] = 0;

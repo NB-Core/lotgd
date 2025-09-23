@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\DateTime;
 use Lotgd\Translator;
 use Lotgd\Output;
 use Lotgd\Nav;
@@ -17,7 +18,7 @@ Translator::getInstance()->setSchema("shades");
 
 page_header("Land of the Shades");
 Commentary::addCommentary();
-checkday();
+DateTime::checkDay();
 
 if ($session['user']['alive']) {
     Redirect::redirect("village.php");

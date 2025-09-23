@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Buffs;
@@ -19,7 +20,7 @@ $translator = Translator::getInstance();
 
 $translator->setSchema("mercenarycamp");
 
-checkday();
+DateTime::checkDay();
 $name = stripslashes(rawurldecode(Http::get('name')));
 if (isset($companions[$name])) {
     $displayname = $companions[$name]['name'];

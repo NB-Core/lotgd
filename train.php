@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\AddNews;
@@ -72,7 +73,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
 
     $op = Http::get('op');
     if ($op == "") {
-        checkday();
+        DateTime::checkDay();
         $output->output("The sound of conflict surrounds you.  The clang of weapons in grisly battle inspires your warrior heart. ");
         $output->output(
             "`n`n`^%s stands ready to evaluate you.`0",
@@ -145,7 +146,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
             }
         }
     } elseif ($op == "question") {
-        checkday();
+        DateTime::checkDay();
         Nav::add("Navigation");
         VillageNav::render();
         Nav::add("Actions");
@@ -310,7 +311,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < getsetting('ma
         }
     }
 } else {
-    checkday();
+    DateTime::checkDay();
     $output->output("You stroll into the battle grounds.");
     $output->output("Younger warriors huddle together and point as you pass by.");
     $output->output("You know this place well.");
