@@ -1,7 +1,12 @@
 <?php
 
-use Lotgd\Translator;
 use Lotgd\ErrorHandling;
+use Lotgd\Http;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\Settings;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -10,15 +15,16 @@ define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 require_once __DIR__ . "/common.php";
 ErrorHandling::configure();
-require_once __DIR__ . "/lib/http.php";
 
 Translator::getInstance()->setSchema("source");
+$output   = Output::getInstance();
+$settings = Settings::getInstance();
 
-$url = httpget('url');
+$url = Http::get('url');
 if ($url) {
-    popup_header("Source code for %s", $url);
+    Header::popupHeader("Source code for %s", $url);
 } else {
-    popup_header("Source code");
+    Header::popupHeader("Source code");
 }
 
 if (
@@ -62,13 +68,13 @@ if (
     );
     $legal_files = array();
 
-    rawoutput("<h1>");
-    output("View Source: ");
-    output_notl("%s", htmlentities($url, ENT_COMPAT, getsetting("charset", "UTF-8")));
-    rawoutput("</h1>");
-    output("<a href='#source'>Click here for the source,</a> OR`n", true);
-    output("`bOther files that you may wish to view the source of:`b");
-    rawoutput("<ul>");
+    $output->rawOutput("<h1>");
+    $output->output("View Source: ");
+    $output->outputNotl("%s", htmlentities($url, ENT_COMPAT, $settings->getSetting("charset", "UTF-8")));
+    $output->rawOutput("</h1>");
+    $output->output("<a href='#source'>Click here for the source,</a> OR`n", true);
+    $output->output("`bOther files that you may wish to view the source of:`b");
+    $output->rawOutput("<ul>");
     // Gather all the legal dirs
     $legal_dirs = array();
     foreach ($legal_start_dirs as $dir => $value) {
@@ -145,59 +151,59 @@ if (
                 if ($illegal_files["$key2$entry"] == "X") {
                     //we're hiding the file completely.
                 } else {
-                    rawoutput("<li>$key1$entry");
-                    $reason = translate_inline($illegal_files[$key2 . $entry]);
-                    output("&#151; This file cannot be viewed: %s", $reason, true);
-                    rawoutput("</li>\n");
+                    $output->rawOutput("<li>$key1$entry");
+                    $reason = Translator::translateInline($illegal_files[$key2 . $entry]);
+                    $output->output("&#151; This file cannot be viewed: %s", $reason, true);
+                    $output->rawOutput("</li>\n");
                 }
             } else {
-                rawoutput("<li><a href='source.php?url=$subdir$key1$entry'>$key1$entry</a> &#151; " . date("Y-m-d H:i:s", filemtime($key . "/" . $entry)) . "</li>\n");
+                $output->rawOutput("<li><a href='source.php?url=$subdir$key1$entry'>$key1$entry</a> &#151; " . date("Y-m-d H:i:s", filemtime($key . "/" . $entry)) . "</li>\n");
                 $legal_files["$subdir$key1$entry"] = true;
             }
         }
     }
-    rawoutput("</ul>");
+    $output->rawOutput("</ul>");
 
-    rawoutput("<h1><a name='source'>");
-    output("Source of: %s", htmlentities($url, ENT_COMPAT, getsetting("charset", "UTF-8")));
-    rawoutput("</a></h1>");
+    $output->rawOutput("<h1><a name='source'>");
+    $output->output("Source of: %s", htmlentities($url, ENT_COMPAT, $settings->getSetting("charset", "UTF-8")));
+    $output->rawOutput("</a></h1>");
 
     $page_name = substr($url, strlen($subdir) - 1);
     if (substr($page_name, 0, 1) == "/") {
         $page_name = substr($page_name, 1);
     }
     if ($legal_files[$url]) {
-        rawoutput("<table bgcolor=#cccccc>");
-        rawoutput("<tr><td>");
-        rawoutput("<font size=-1>");
+        $output->rawOutput("<table bgcolor=#cccccc>");
+        $output->rawOutput("<tr><td>");
+        $output->rawOutput("<font size=-1>");
         ob_start();
         show_source($page_name);
         $t = ob_get_contents();
         ob_end_clean();
-        rawoutput($t);
-        rawoutput("</font>", true);
-        rawoutput("</td></tr></table>", true);
+        $output->rawOutput($t);
+        $output->rawOutput("</font>", true);
+        $output->rawOutput("</td></tr></table>", true);
     } elseif ($illegal_files[$url] != "" && $illegal_files[$url] != "X") {
-        $reason = translate_inline($illegal_files[$url]);
-        output("`nCannot view this file: %s`n", $reason);
+        $reason = Translator::translateInline($illegal_files[$url]);
+        $output->output("`nCannot view this file: %s`n", $reason);
     } else {
-        output("`nCannot view this file.`n");
+        $output->output("`nCannot view this file.`n");
         ;
     }
 } else {
-       output("Due to the behaviour of people in the past, access to the source code online has been restricted.");
-       output("You may download the entirety of the latest publicly released stable version from <a href='http://www.dragonprime.net' target='_blank'>DragonPrime</a>.", true);
-       output("For the +NB version of Legend of the Green Dragon, visit our <a href='https://github.com/NB-Core/lotgd' target='_blank'>GitHub repository</a> where you can download releases or clone the project.", true);
-       output("You may then work with that code within the restrictions of its license.");
-    output("`n`nHopefully this will help put an end to actions like the following:");
-    rawoutput("<ul><li>");
-    output("Releasing code which they do not own without permission.");
-    rawoutput("</li><li>");
-    output("Removing valid copyright information from code and replacing it.");
-    rawoutput("</li><li>");
-    output("Removing portions of the code required to be kept intact by licensing.");
-    rawoutput("</li><li>");
-    output("Claiming copyright of items which they did not create.");
-    rawoutput("</li></ul>");
+       $output->output("Due to the behaviour of people in the past, access to the source code online has been restricted.");
+       $output->output("You may download the entirety of the latest publicly released stable version from <a href='http://www.dragonprime.net' target='_blank'>DragonPrime</a>.", true);
+       $output->output("For the +NB version of Legend of the Green Dragon, visit our <a href='https://github.com/NB-Core/lotgd' target='_blank'>GitHub repository</a> where you can download releases or clone the project.", true);
+       $output->output("You may then work with that code within the restrictions of its license.");
+    $output->output("`n`nHopefully this will help put an end to actions like the following:");
+    $output->rawOutput("<ul><li>");
+    $output->output("Releasing code which they do not own without permission.");
+    $output->rawOutput("</li><li>");
+    $output->output("Removing valid copyright information from code and replacing it.");
+    $output->rawOutput("</li><li>");
+    $output->output("Removing portions of the code required to be kept intact by licensing.");
+    $output->rawOutput("</li><li>");
+    $output->output("Claiming copyright of items which they did not create.");
+    $output->rawOutput("</li></ul>");
 }
-popup_footer();
+Footer::popupFooter();
