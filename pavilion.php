@@ -2,10 +2,15 @@
 
 use Lotgd\Commentary;
 use Lotgd\DateTime;
-use Lotgd\Translator;
 use Lotgd\Nav\VillageNav;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\Translator;
 
-require_once 'common.php';
+require_once __DIR__ . '/common.php';
+
+$output = Output::getInstance();
 
 // translator ready
 // addnews ready
@@ -15,12 +20,12 @@ Translator::getInstance()->setSchema('pavilion');
 Commentary::addCommentary();
 DateTime::checkDay();
 
-page_header('Eye-catching Pavilion');
+Header::pageHeader('Eye-catching Pavilion');
 
-output("`b`cThe Pavilion`c`b`n");
-output("This page is a placeholder for beta features. Customize it to showcase experimental content.`n");
+$output->output("`b`cThe Pavilion`c`b`n");
+$output->output("This page is a placeholder for beta features. Customize it to showcase experimental content.`n");
 
 VillageNav::render();
 Commentary::commentDisplay('', 'beta', 'Talk with other testers:', 25);
 
-page_footer();
+Footer::pageFooter();

@@ -2,20 +2,23 @@
 
 declare(strict_types=1);
 
-use Lotgd\SuAccess;
-use Lotgd\Nav\SuperuserNav;
-use Lotgd\DateTime;
 use Lotgd\Http;
-use Lotgd\Page\Header;
-use Lotgd\Page\Footer;
 use Lotgd\Nav;
-use Lotgd\UserLookup;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\Settings;
+use Lotgd\SuAccess;
 use Lotgd\Translator;
+use Lotgd\UserLookup;
 
 //addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-use Lotgd\Names;
+
+$output   = Output::getInstance();
+$settings = Settings::getInstance();
 
 Translator::getInstance()->setSchema("bans");
 SuAccess::check(SU_EDIT_BANS);
@@ -47,7 +50,7 @@ if ($op == "search" || $op == "") {
     list($searchresult, $err) = UserLookup::lookup($query, $order);
     $op = "";
     if ($err) {
-        output($err);
+        $output->output($err);
     } else {
         if ($searchresult) {
             $display = 1;
@@ -55,15 +58,15 @@ if ($op == "search" || $op == "") {
     }
 }
 
-output("`\$`cWelcome to the Ban Editor`c`0`n`n");
+$output->output("`\$`cWelcome to the Ban Editor`c`0`n`n");
 
-rawoutput("<form action='bans.php?op=search' method='POST'>");
-output("Search users by any field: ");
-rawoutput("<input name='q' id='q'>");
-$se = translate_inline("Search");
-rawoutput("<input type='submit' class='button' value='$se'>");
-rawoutput("</form>");
-rawoutput("<script language='JavaScript'>document.getElementById('q').focus();</script>");
+$output->rawOutput("<form action='bans.php?op=search' method='POST'>");
+$output->output("Search users by any field: ");
+$output->rawOutput("<input name='q' id='q'>");
+$se = Translator::translateInline("Search");
+$output->rawOutput("<input type='submit' class='button' value='$se'>");
+$output->rawOutput("</form>");
+$output->rawOutput("<script language='JavaScript'>document.getElementById('q').focus();</script>");
 Nav::add("", "bans.php?op=search");
 
 
@@ -92,7 +95,7 @@ switch ($op) {
             require __DIR__ . "/pages/bans/case_searchban.php";
         break;
     default:
-            output("From here, you can issue bans for players from being able to play.`n`nBased on the ID = cookie on the machine AND/OR on the IP they accessed the char last the ban takes effect.`n`nNote: Locked chars stay locked, even after they delete their cookie / change their IP.`n`nHowever, they can make new chars and login in that case. You cannot control this.");
+            $output->output("From here, you can issue bans for players from being able to play.`n`nBased on the ID = cookie on the machine AND/OR on the IP they accessed the char last the ban takes effect.`n`nNote: Locked chars stay locked, even after they delete their cookie / change their IP.`n`nHowever, they can make new chars and login in that case. You cannot control this.");
             require __DIR__ . "/pages/bans/case_.php";
 }
 Footer::pageFooter();
