@@ -24,6 +24,21 @@ final class GameLogSystemLabelTest extends TestCase
         if (!class_exists('\\Lotgd\\Nav\\SuperuserNav', false)) {
             eval('namespace Lotgd\\Nav; class SuperuserNav { public static function render(): void {} }');
         }
+        if (!class_exists('\\Lotgd\\Output', false)) {
+            eval('namespace Lotgd; class Output { public static function getInstance() { return new class { public function outputNotl(string $format, ...$args): void { global $forms_output; $forms_output .= vsprintf($format, $args); } }; } }');
+        }
+        if (!class_exists('\\Lotgd\\Page\\Header', false)) {
+            eval('namespace Lotgd\\Page; class Header { public static function pageHeader(...$args): void {} }');
+        }
+        if (!class_exists('\\Lotgd\\Page\\Footer', false)) {
+            eval('namespace Lotgd\\Page; class Footer { public static function pageFooter(...$args): void {} }');
+        }
+        if (!class_exists('\\Lotgd\\Nav', false)) {
+            eval('namespace Lotgd; class Nav { public static function add(...$args): void {} }');
+        }
+        if (!class_exists('\\Lotgd\\Http', false)) {
+            eval('namespace Lotgd; class Http { public static function get(string $name) { return $_GET[$name] ?? false; } }');
+        }
         if (!function_exists('page_header')) {
             eval('function page_header($title): void {}');
         }

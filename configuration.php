@@ -12,6 +12,11 @@ use Lotgd\DataCache;
 use Lotgd\Modules\ModuleManager;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Mail;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 // translator ready
 // addnews ready
@@ -30,9 +35,9 @@ SuAccess::check(SU_EDIT_CONFIG);
 
 Translator::getInstance()->setSchema("configuration");
 
-$op = httpget('op');
-$module = httpget('module');
-$type_setting = httpget('settings');
+$op = Http::get('op');
+$module = Http::get('module');
+$type_setting = Http::get('settings');
 
 //standardsettings
 switch ($type_setting) {
@@ -52,10 +57,10 @@ switch ($type_setting) {
                             $old[$key] = "";
                         }
                         $hasSaved = $settings_extended->saveSetting($key, stripslashes($val));
-                        output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved);
+                        $output->output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved);
                         gamelog("`@Changed core setting (extended)`^$key`@ from `#" . substr($old[$key], 25) . "...`@ to `&" . substr($val, 25) . "...`0", "settings");
                         // Notify every module
-                        modulehook(
+                        HookHandler::hook(
                             "changesetting",
                             array("module" => "core", "setting" => $key,
                                     "old" => $old[$key],
@@ -64,9 +69,9 @@ switch ($type_setting) {
                         );
                     }
                 }
-                output("`^Extended Settings saved.`0");
+                $output->output("`^Extended Settings saved.`0");
                 $op = "";
-                httpset($op, "");
+                Http::set($op, "");
                 break;
         }
         break;
@@ -75,20 +80,20 @@ switch ($type_setting) {
             case "save":
                 include_once("lib/gamelog.php");
                 if (
-                    (int)httppost('blockdupemail') == 1 &&
-                        (int)httppost('requirevalidemail') != 1
+                    (int)Http::post('blockdupemail') == 1 &&
+                        (int)Http::post('requirevalidemail') != 1
                 ) {
                     httppostset('requirevalidemail', "1");
-                    output("`brequirevalidemail has been set since blockdupemail was set.`b`n");
+                    $output->output("`brequirevalidemail has been set since blockdupemail was set.`b`n");
                 }
                 if (
-                    (int)httppost('requirevalidemail') == 1 &&
-                        (int)httppost('requireemail') != 1
+                    (int)Http::post('requirevalidemail') == 1 &&
+                        (int)Http::post('requireemail') != 1
                 ) {
                     httppostset('requireemail', "1");
-                    output("`brequireemail has been set since requirevalidemail was set.`b`n");
+                    $output->output("`brequireemail has been set since requirevalidemail was set.`b`n");
                 }
-                $defsup = httppost("defaultsuperuser");
+                $defsup = Http::post("defaultsuperuser");
                 if ($defsup != "") {
                     $value = 0;
                     foreach ($defsup as $k => $v) {
@@ -98,33 +103,33 @@ switch ($type_setting) {
                     }
                     httppostset('defaultsuperuser', $value);
                 }
-                $tmp = stripslashes(httppost("villagename"));
+                $tmp = stripslashes(Http::post("villagename"));
                 if ($tmp && $tmp != getsetting('villagename', LOCATION_FIELDS)) {
                     $output->debug("Updating village name -- moving players");
                     $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
-                        httppost("villagename") . "' WHERE location='" .
+                        Http::post("villagename") . "' WHERE location='" .
                         addslashes(getsetting('villagename', LOCATION_FIELDS)) . "'";
                     Database::query($sql);
                     if ($session['user']['location'] == getsetting('villagename', LOCATION_FIELDS)) {
                         $session['user']['location'] =
-                            stripslashes(httppost('villagename'));
+                            stripslashes(Http::post('villagename'));
                     }
                 }
-                $tmp = stripslashes(httppost("innname"));
+                $tmp = stripslashes(Http::post("innname"));
                 if ($tmp && $tmp != getsetting('innname', LOCATION_INN)) {
                     $output->debug("Updating inn name -- moving players");
                     $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
-                        httppost("innname") . "' WHERE location='" .
+                        Http::post("innname") . "' WHERE location='" .
                         addslashes(getsetting('innname', LOCATION_INN)) . "'";
                     Database::query($sql);
                     if ($session['user']['location'] == getsetting('innname', LOCATION_INN)) {
-                        $session['user']['location'] = stripslashes(httppost('innname'));
+                        $session['user']['location'] = stripslashes(Http::post('innname'));
                     }
                 }
-                if (stripslashes(httppost("motditems")) != getsetting('motditems', 5)) {
+                if (stripslashes(Http::post("motditems")) != getsetting('motditems', 5)) {
                     DataCache::getInstance()->invalidatedatacache("motd");
                 }
-                if (stripslashes(httppost('exp-array')) != getsetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
+                if (stripslashes(Http::post('exp-array')) != getsetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
                     DataCache::getInstance()->massinvalidate("exp_array_dk");
                 }
                 $post = httpallpost();
@@ -144,10 +149,10 @@ switch ($type_setting) {
                             continue;
                         }
                         $hasSaved = $settings->saveSetting($key, stripslashes($val));
-                        output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved ? "`2Yes`0" : "`\$No`0");
+                        $output->output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved ? "`2Yes`0" : "`\$No`0");
                         gamelog("`@Changed core setting `^$key`@ from `#{$old[$key]}`@ to `&$val`0", "settings");
                         // Notify every module
-                        modulehook(
+                        HookHandler::hook(
                             "changesetting",
                             array("module" => "core", "setting" => $key,
                                     "old" => $old[$key],
@@ -156,32 +161,32 @@ switch ($type_setting) {
                         );
                     }
                 }
-                output("`^Settings saved.`0");
+                $output->output("`^Settings saved.`0");
                 $op = "";
-                httpset($op, "");
+                Http::set($op, "");
                 break;
 
             case "testsmtp":
-                addnav('', 'configuration.php?op=testsmtp');
+                Nav::add('', 'configuration.php?op=testsmtp');
 
                 $adminEmail = trim($settings->getSetting('gameadminemail', ''));
 
                 if ($adminEmail === '') {
-                    output(Translator::translate('`$No admin email is configured. Update the Game Settings first.`0'));
-                    addnav(Translator::translate('Back to settings list'), 'configuration.php');
-                    addnav('', 'configuration.php');
+                    $output->output(Translator::translate('`$No admin email is configured. Update the Game Settings first.`0'));
+                    Nav::add(Translator::translate('Back to settings list'), 'configuration.php');
+                    Nav::add('', 'configuration.php');
                     break;
                 }
 
                 $charset = $settings->getSetting('charset', 'UTF-8');
 
                 if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
-                    output(
+                    $output->output(
                         Translator::translate('`$The configured admin email %s is not a valid address.`0'),
                         htmlentities($adminEmail, ENT_COMPAT, $charset)
                     );
-                    addnav(Translator::translate('Back to settings list'), 'configuration.php');
-                    addnav('', 'configuration.php');
+                    Nav::add(Translator::translate('Back to settings list'), 'configuration.php');
+                    Nav::add('', 'configuration.php');
                     break;
                 }
 
@@ -210,34 +215,34 @@ switch ($type_setting) {
                 );
 
                 if ($sent) {
-                    output(
+                    $output->output(
                         Translator::translate('`@A diagnostics email was sent to %s.`0'),
                         htmlentities($adminEmail, ENT_COMPAT, $charset)
                     );
                 } else {
-                    output(
+                    $output->output(
                         Translator::translate('`$The diagnostics email could not be sent. Please review the SMTP configuration.`0')
                     );
                 }
 
-                addnav(Translator::translate('Back to settings list'), 'configuration.php');
-                addnav('', 'configuration.php');
+                Nav::add(Translator::translate('Back to settings list'), 'configuration.php');
+                Nav::add('', 'configuration.php');
                 break;
 
             case "modulesettings":
                 include_once("lib/gamelog.php");
                 if (injectmodule($module, true)) {
-                    $save = httpget('save');
+                    $save = Http::get('save');
                     if ($save != "") {
                         load_module_settings($module);
                         $module_settings = ModuleManager::settings();
                         $old = $module_settings[$module];
                         $post = httpallpost();
-                        $post = modulehook("validatesettings", $post, true, $module);
+                        $post = HookHandler::hook("validatesettings", $post, true, $module);
                         if (isset($post['validation_error'])) {
                             $post['validation_error'] =
                                 Translator::translateInline($post['validation_error']);
-                            output(
+                            $output->output(
                                 "Unable to change settings:`\$%s`0",
                                 $post['validation_error']
                             );
@@ -247,14 +252,14 @@ switch ($type_setting) {
                                 $val = stripslashes($val);
                                 set_module_setting($key, $val);
                                 if (!isset($old[$key]) || $old[$key] != $val) {
-                                    output("Setting %s to %s`n", $key, $val);
+                                    $output->output("Setting %s to %s`n", $key, $val);
                                     // Notify modules
                                     $oldval = "";
                                     if (isset($old[$key])) {
                                         $oldval = $old[$key];
                                     }
                                     gamelog("`@Changed module(`5$module`@) setting `^$key`@ from `#$oldval`@ to `&$val`0", "settings");
-                                    modulehook(
+                                    HookHandler::hook(
                                         "changesetting",
                                         array("module" => $module, "setting" => $key,
                                                 "old" => $oldval,
@@ -263,10 +268,10 @@ switch ($type_setting) {
                                     );
                                 }
                             }
-                            output("`^Module %s settings saved.`0`n", $module);
+                            $output->output("`^Module %s settings saved.`0`n", $module);
                         }
                         $save = "";
-                        httpset('save', "");
+                        Http::set('save', "");
                     }
                     if ($save == "") {
                         $info = get_module_info($module);
@@ -291,54 +296,54 @@ switch ($type_setting) {
                                     $module_settings[ModuleManager::getMostRecentModule()][$key] = $x[1];
                                 }
                             }
-                            $msettings = modulehook("mod-dyn-settings", $msettings);
+                            $msettings = HookHandler::hook("mod-dyn-settings", $msettings);
                             if (is_module_active($module)) {
-                                output("This module is currently active: ");
+                                $output->output("This module is currently active: ");
                                 $deactivate = Translator::translateInline("Deactivate");
-                                rawoutput("<a href='modules.php?op=deactivate&module={$module}&cat={$info['category']}'>");
-                                output_notl($deactivate);
-                                rawoutput("</a>");
-                                addnav("", "modules.php?op=deactivate&module={$module}&cat={$info['category']}");
+                                $output->rawOutput("<a href='modules.php?op=deactivate&module={$module}&cat={$info['category']}'>");
+                                $output->outputNotl($deactivate);
+                                $output->rawOutput("</a>");
+                                Nav::add("", "modules.php?op=deactivate&module={$module}&cat={$info['category']}");
                             } else {
-                                output("This module is currently deactivated: ");
+                                $output->output("This module is currently deactivated: ");
                                 $deactivate = Translator::translateInline("Activate");
-                                rawoutput("<a href='modules.php?op=activate&module={$module}&cat={$info['category']}'>");
-                                output_notl($deactivate);
-                                rawoutput("</a>");
-                                addnav("", "modules.php?op=activate&module={$module}&cat={$info['category']}");
+                                $output->rawOutput("<a href='modules.php?op=activate&module={$module}&cat={$info['category']}'>");
+                                $output->outputNotl($deactivate);
+                                $output->rawOutput("</a>");
+                                Nav::add("", "modules.php?op=activate&module={$module}&cat={$info['category']}");
                             }
-                            rawoutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);
-                            addnav("", "configuration.php?op=modulesettings&module=$module&save=1");
+                            $output->rawOutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);
+                            Nav::add("", "configuration.php?op=modulesettings&module=$module&save=1");
                             Translator::getInstance()->setSchema("module-$module");
                             Forms::showForm($msettings, $module_settings[ModuleManager::getMostRecentModule()]);
                             Translator::getInstance()->setSchema();
-                            rawoutput("</form>", true);
+                            $output->rawOutput("</form>", true);
                         } else {
-                            output("The %s module does not appear to define any module settings.", $module);
+                            $output->output("The %s module does not appear to define any module settings.", $module);
                         }
                     }
                 } else {
-                    output("I was not able to inject the module %s. Sorry it didn't work out.", htmlentities($module, ENT_COMPAT, getsetting("charset", "UTF-8")));
+                    $output->output("I was not able to inject the module %s. Sorry it didn't work out.", htmlentities($module, ENT_COMPAT, getsetting("charset", "UTF-8")));
                 }
                 break;
         }
 }
 
 
-page_header("Game Settings");
+Header::pageHeader("Game Settings");
 SuperuserNav::render();
-addnav("Module Manager", "modules.php");
+Nav::add("Module Manager", "modules.php");
 if ($module) {
     $cat = $info['category'];
-    addnav(array("Module Category - `^%s`0", Translator::translateInline($cat)), "modules.php?cat=$cat");
+    Nav::add(array("Module Category - `^%s`0", Translator::translateInline($cat)), "modules.php?cat=$cat");
 }
 
-addnav("Game Settings");
-addnav("Standard settings", "configuration.php");
-addnav("Extended settings", "configuration.php?settings=extended");
-addnav(Translator::translate("Test SMTP settings"), "configuration.php?op=testsmtp");
-addnav('', 'configuration.php?op=testsmtp');
-addnav("", PhpGenericEnvironment::getRequestUri());
+Nav::add("Game Settings");
+Nav::add("Standard settings", "configuration.php");
+Nav::add("Extended settings", "configuration.php?settings=extended");
+Nav::add(Translator::translate("Test SMTP settings"), "configuration.php?op=testsmtp");
+Nav::add('', 'configuration.php?op=testsmtp');
+Nav::add("", PhpGenericEnvironment::getRequestUri());
 
 //get arrays
 require __DIR__ . "/src/Lotgd/Config/configuration.php";
@@ -362,10 +367,10 @@ switch ($type_setting) {
 
                 $vals = $settings_extended->getArray() + $useful_vals;
 
-                rawoutput("<form action='configuration.php?settings=extended&op=save' method='POST'>");
-                addnav("", "configuration.php?settings=extended&op=save");
+                $output->rawOutput("<form action='configuration.php?settings=extended&op=save' method='POST'>");
+                Nav::add("", "configuration.php?settings=extended&op=save");
                 Forms::showForm($setup_extended, $vals);
-                rawoutput("</form>");
+                $output->rawOutput("</form>");
                 break;
         }
         break;
@@ -420,12 +425,12 @@ switch ($type_setting) {
 
                 $vals = $settings->getArray() + $useful_vals;
 
-                rawoutput("<form action='configuration.php?op=save' method='POST'>");
-                addnav("", "configuration.php?op=save");
+                $output->rawOutput("<form action='configuration.php?op=save' method='POST'>");
+                Nav::add("", "configuration.php?op=save");
                 Forms::showForm($setup, $vals);
-                rawoutput("</form>");
+                $output->rawOutput("</form>");
                 break;
         }
         break;
 }
-page_footer();
+Footer::pageFooter();

@@ -6,19 +6,23 @@ use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Names;
 use Lotgd\Forms;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 //Author: Lonny Luberts - 3/18/2005
 //Heavily modified by JT Traub
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 
 SuAccess::check(SU_EDIT_USERS);
 
 Translator::getInstance()->setSchema("retitle");
 
-page_header("Title Editor");
-$op = httpget('op');
-$id = httpget('id');
+Header::pageHeader("Title Editor");
+$op = Http::get('op');
+$id = Http::get('id');
 $editarray = array(
     "Titles,title",
     //"titleid"=>"Title Id,hidden",
@@ -27,17 +31,17 @@ $editarray = array(
     "male" => "Male Title,text|",
     "female" => "Female Title,text|",
 );
-addnav("Other");
+Nav::add("Other");
 SuperuserNav::render();
-addnav("Functions");
+Nav::add("Functions");
 
 switch ($op) {
     case "save":
-        $male = httppost('male');
-        $female = httppost('female');
-        $dk = httppost('dk');
+        $male = Http::post('male');
+        $female = Http::post('female');
+        $dk = Http::post('dk');
         // Ref is currently unused
-        // $ref = httppost('ref');
+        // $ref = Http::post('ref');
         $ref = '';
 
         if ((int)$id == 0) {
@@ -51,17 +55,17 @@ switch ($op) {
         }
         Database::query($sql);
         if (Database::affectedRows() == 0) {
-            output($errnote);
-            rawoutput(Database::error());
+            $output->output($errnote);
+            $output->rawOutput(Database::error());
         } else {
-            output($note);
+            $output->output($note);
         }
         $op = "";
         break;
     case "delete":
         $sql = "DELETE FROM " . Database::prefix("titles") . " WHERE titleid='$id'";
         Database::query($sql);
-        output("`^Title deleted.`0");
+        $output->output("`^Title deleted.`0");
         $op = "";
         break;
 }
@@ -70,7 +74,7 @@ switch ($op) {
     case "reset":
                 require_once __DIR__ . "/lib/titles.php";
 
-        output("`^Rebuilding all titles for all players.`0`n`n");
+        $output->output("`^Rebuilding all titles for all players.`0`n`n");
         $sql = "SELECT name,title,dragonkills,acctid,sex,ctitle FROM " . Database::prefix("accounts");
         $result = Database::query($sql);
         $number = Database::numRows($result);
@@ -86,7 +90,7 @@ switch ($op) {
                 $newname = Names::changePlayerTitle($newtitle, $row);
                 $id = $row['acctid'];
                 if ($oname != $newname) {
-                    output(
+                    $output->output(
                         "`@Changing `^%s`@ to `^%s `@(%s`@ [%s,%s])`n",
                         $oname,
                         $newname,
@@ -104,7 +108,7 @@ switch ($op) {
                         Database::query($sql);
                     }
                 } elseif ($otitle != $newtitle) {
-                    output(
+                    $output->output(
                         "`@Changing only the title (not the name) of `^%s`@ `@(%s`@ [%s,%s])`n",
                         $oname,
                         $newtitle,
@@ -122,28 +126,28 @@ switch ($op) {
                 }
             }
         }
-        output("`n`n`^Done.`0");
-        addnav("Main Title Editor", "titleedit.php");
+        $output->output("`n`n`^Done.`0");
+        Nav::add("Main Title Editor", "titleedit.php");
         break;
 
     case "edit":
     case "add":
         if ($op == "edit") {
-            output("`\$Editing an existing title`n`n");
+            $output->output("`\$Editing an existing title`n`n");
             $sql = "SELECT * FROM " . Database::prefix("titles") . " WHERE titleid='$id'";
             $result = Database::query($sql);
             $row = Database::fetchAssoc($result);
         } elseif ($op == "add") {
-            output("`\$Adding a new title`n`n");
+            $output->output("`\$Adding a new title`n`n");
             $row = array('titleid' => 0, 'male' => '', 'female' => '', 'dk' => 0);
             $id = 0;
         }
-        rawoutput("<form action='titleedit.php?op=save&id=$id' method='POST'>");
-        addnav("", "titleedit.php?op=save&id=$id");
+        $output->rawOutput("<form action='titleedit.php?op=save&id=$id' method='POST'>");
+        Nav::add("", "titleedit.php?op=save&id=$id");
         Forms::showForm($editarray, $row);
-        rawoutput("</form>");
-        addnav("Functions");
-        addnav("Main Title Editor", "titleedit.php");
+        $output->rawOutput("</form>");
+        Nav::add("Functions");
+        Nav::add("Main Title Editor", "titleedit.php");
         title_help();
         //fallthrough
 
@@ -151,11 +155,11 @@ switch ($op) {
         $sql = "SELECT * FROM " . Database::prefix("titles") . " ORDER BY dk, titleid";
         $result = Database::query($sql);
         if (Database::numRows($result) < 1) {
-            output("");
+            $output->output("");
         } else {
             $row = Database::fetchAssoc($result);
         }
-        output("`@`c`b-=Title Editor=-`b`c");
+        $output->output("`@`c`b-=Title Editor=-`b`c");
         $ops = translate_inline("Ops");
         $dks = translate_inline("Dragon Kills");
         // $ref is currently unused
@@ -165,46 +169,46 @@ switch ($op) {
         $edit = translate_inline("Edit");
         $del = translate_inline("Delete");
         $delconfirm = translate_inline("Are you sure you wish to delete this title?");
-        rawoutput("<table border=0 cellspacing=0 cellpadding=2 width='100%' align='center'>");
+        $output->rawOutput("<table border=0 cellspacing=0 cellpadding=2 width='100%' align='center'>");
         // reference tag is currently unused
-        // rawoutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$reftag</td><td>$mtit</td><td>$ftit</td></tr>");
-        rawoutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$mtit</td><td>$ftit</td></tr>");
+        // $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$reftag</td><td>$mtit</td><td>$ftit</td></tr>");
+        $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$mtit</td><td>$ftit</td></tr>");
         $result = Database::query($sql);
         $i = 0;
         while ($row = Database::fetchAssoc($result)) {
             $id = $row['titleid'];
-            rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-            rawoutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|<a href='titleedit.php?op=delete&id=$id' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
-            addnav("", "titleedit.php?op=edit&id=$id");
-            addnav("", "titleedit.php?op=delete&id=$id");
-            rawoutput("<td>");
-            output_notl("`&%s`0", $row['dk']);
-            rawoutput("</td><td>");
+            $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
+            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|<a href='titleedit.php?op=delete&id=$id' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
+            Nav::add("", "titleedit.php?op=edit&id=$id");
+            Nav::add("", "titleedit.php?op=delete&id=$id");
+            $output->rawOutput("<td>");
+            $output->outputNotl("`&%s`0", $row['dk']);
+            $output->rawOutput("</td><td>");
             // reftag is currently unused
-            // output("`^%s`0", $row['ref']);
-            // output("</td><td>");
-            output_notl("`2%s`0", $row['male']);
-            rawoutput("</td><td>");
-            output_notl("`6%s`0", $row['female']);
-            rawoutput("</td></tr>");
+            // $output->output("`^%s`0", $row['ref']);
+            // $output->output("</td><td>");
+            $output->outputNotl("`2%s`0", $row['male']);
+            $output->rawOutput("</td><td>");
+            $output->outputNotl("`6%s`0", $row['female']);
+            $output->rawOutput("</td></tr>");
             $i++;
         }
-        rawoutput("</table>");
-        //modulehook("titleedit", array());
-        addnav("Functions");
-        addnav("Add a Title", "titleedit.php?op=add");
-        addnav("Refresh List", "titleedit.php");
-        addnav("Reset Users Titles", "titleedit.php?op=reset");
+        $output->rawOutput("</table>");
+        //HookHandler::hook("titleedit", array());
+        Nav::add("Functions");
+        Nav::add("Add a Title", "titleedit.php?op=add");
+        Nav::add("Refresh List", "titleedit.php");
+        Nav::add("Reset Users Titles", "titleedit.php?op=reset");
         title_help();
         break;
 }
 
 function title_help()
 {
-    output("`#You can have multiple titles for a given dragon kill rank.");
-    output("If you do, one of those titles will be chosen at random to give to the player when a title is assigned.`n`n");
-    output("You can have gaps in the title order.");
-    output("If you have a gap, the title given will be for the DK rank less than or equal to the players current number of DKs.`n");
+    $output->output("`#You can have multiple titles for a given dragon kill rank.");
+    $output->output("If you do, one of those titles will be chosen at random to give to the player when a title is assigned.`n`n");
+    $output->output("You can have gaps in the title order.");
+    $output->output("If you have a gap, the title given will be for the DK rank less than or equal to the players current number of DKs.`n");
 }
 
-page_footer();
+Footer::pageFooter();

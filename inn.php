@@ -9,12 +9,16 @@ use Lotgd\Sanitize;
 use Lotgd\Http;
 use Lotgd\Events;
 use Lotgd\Translator;
+use Lotgd\Pvp;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
 
 // addnews ready
 // translator ready
 // mail ready
 require_once __DIR__ . "/common.php";
-use Lotgd\Pvp;
+
 
 Translator::getInstance()->setSchema("inn");
 
@@ -30,7 +34,7 @@ if ($op == "fleedragon") {
     $session['user']['location'] = $vname;
 }
 
-page_header(["%s", Sanitize::sanitize($iname)]);
+Header::pageHeader(["%s", Sanitize::sanitize($iname)]);
 $skipinndesc = Events::handleEvent("inn");
 
 if (!$skipinndesc) {
@@ -48,9 +52,9 @@ $comment = Http::post('insertcommentary');
 
 require_once __DIR__ . "/lib/partner.php";
 $partner = get_partner();
-addnav("Other");
+Nav::add("Other");
 VillageNav::render();
-addnav("I?Return to the Inn", "inn.php");
+Nav::add("I?Return to the Inn", "inn.php");
 
 switch ($op) {
     case "":
@@ -74,4 +78,4 @@ if (!$skipinndesc) {
     $output->rawOutput("</span>");
 }
 
-page_footer();
+Footer::pageFooter();

@@ -5,17 +5,21 @@ use Lotgd\DeathMessage;
 use Lotgd\Battle;
 use Lotgd\AddNews;
 use Lotgd\Translator;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 // addnews ready.
 // translator ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 require_once __DIR__ . "/lib/events.php";
 
 Translator::getInstance()->setSchema("graveyard");
 
-page_header("The Graveyard");
+Header::pageHeader("The Graveyard");
 $skipgraveyardtext = handle_event("graveyard");
 $deathoverlord = getsetting('deathoverlord', '`$Ramius');
 if (!$skipgraveyardtext) {
@@ -28,11 +32,11 @@ if (!$skipgraveyardtext) {
 $battle = false;
 Buffs::stripAllBuffs();
 $max = $session['user']['level'] * 10 + $session['user']['dragonkills'] * 2 + 50;
-$favortoheal = modulehook("favortoheal", array("favor" => round(10 * ($max - $session['user']['soulpoints']) / $max)));
+$favortoheal = HookHandler::hook("favortoheal", array("favor" => round(10 * ($max - $session['user']['soulpoints']) / $max)));
 
 $favortoheal = (int)$favortoheal['favor'];
 
-$op = httpget('op');
+$op = Http::get('op');
 switch ($op) {
     case "search":
             require_once __DIR__ . "/pages/graveyard/case_battle_search.php";
@@ -40,20 +44,20 @@ switch ($op) {
         break;
     case "run":
         if (e_rand(0, 2) == 1) {
-            output("`\$%s`) curses you for your cowardice.`n`n", $deathoverlord);
+            $output->output("`\$%s`) curses you for your cowardice.`n`n", $deathoverlord);
             $favor = 5 + e_rand(0, $session['user']['level']);
             if ($favor > $session['user']['deathpower']) {
                 $favor = $session['user']['deathpower'];
             }
             if ($favor > 0) {
-                output("`)You have `\$LOST `^%s`) favor with `\$%s`).", $favor, $deathoverlord);
+                $output->output("`)You have `\$LOST `^%s`) favor with `\$%s`).", $favor, $deathoverlord);
                 $session['user']['deathpower'] -= $favor;
             }
             Translator::getInstance()->setSchema("nav");
-            addnav("G?Return to the Graveyard", "graveyard.php");
+            Nav::add("G?Return to the Graveyard", "graveyard.php");
             Translator::getInstance()->setSchema();
         } else {
-            output("`)As you try to flee, you are summoned back to the fight!`n`n");
+            $output->output("`)As you try to flee, you are summoned back to the fight!`n`n");
             $battle = true;
         }
         break;
@@ -84,12 +88,12 @@ if ($battle) {
         Translator::getInstance()->setSchema("battle");
         $msg = translate_inline($badguy['creaturelose']);
         Translator::getInstance()->setSchema();
-        output_notl("`b`&%s`0`b`n", $msg);
-        output("`b`\$You have tormented %s!`0`b`n", $badguy['creaturename']);
-        output("`#You receive `^%s`# favor with `\$%s`#!`n`0", $badguy['creatureexp'], $deathoverlord);
+        $output->outputNotl("`b`&%s`0`b`n", $msg);
+        $output->output("`b`\$You have tormented %s!`0`b`n", $badguy['creaturename']);
+        $output->output("`#You receive `^%s`# favor with `\$%s`#!`n`0", $badguy['creatureexp'], $deathoverlord);
         $session['user']['deathpower'] += $badguy['creatureexp'];
         $op = "";
-        httpset('op', "");
+        Http::set('op', "");
         $skipgraveyardtext = true;
     } else {
         if ($defeat) {
@@ -102,11 +106,11 @@ if ($battle) {
                 AddNews::add("%s", $deathmessage['deathmessage']);
             }
 //          AddNews::add("`)%s`) has been defeated in the graveyard by %s.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
-            output("`b`&You have been defeated by `%%s`&!!!`n", $badguy['creaturename']);
-            output("You may not torment any more souls today.");
+            $output->output("`b`&You have been defeated by `%%s`&!!!`n", $badguy['creaturename']);
+            $output->output("You may not torment any more souls today.");
             $session['user']['gravefights'] = 0;
             Translator::getInstance()->setSchema("nav");
-            addnav("G?Return to the Graveyard", "graveyard.php");
+            Nav::add("G?Return to the Graveyard", "graveyard.php");
             Translator::getInstance()->setSchema();
         } else {
                 Battle::fightnav(false, true, "graveyard.php");
@@ -114,7 +118,7 @@ if ($battle) {
     }
 }
 
-modulehook("deathoverlord", array());
+HookHandler::hook("deathoverlord", array());
 
 switch ($op) {
     case "search":
@@ -147,4 +151,4 @@ switch ($op) {
         break;
 }
 
-page_footer();
+Footer::pageFooter();

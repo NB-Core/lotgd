@@ -3,12 +3,16 @@
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Commentary;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 require_once __DIR__ . "/lib/events.php";
 require_once __DIR__ . "/lib/experience.php";
 
@@ -22,7 +26,7 @@ $valid_loc = array();
 $vname = getsetting("villagename", LOCATION_FIELDS);
 $iname = getsetting("innname", LOCATION_INN);
 $valid_loc[$vname] = "village";
-$valid_loc = modulehook("validlocation", $valid_loc);
+$valid_loc = HookHandler::hook("validlocation", $valid_loc);
 if (!isset($valid_loc[$session['user']['location']])) {
     $session['user']['location'] = $vname;
 }
@@ -110,13 +114,13 @@ $origtexts['schemas'] = $schemas;
 // instead.
 // This hook is specifically to allow modules that do other villages to create
 // ambience.
-$texts = modulehook("villagetext", $origtexts);
+$texts = HookHandler::hook("villagetext", $origtexts);
 //and now a special hook for the village
-$texts = modulehook("villagetext-{$session['user']['location']}", $texts);
+$texts = HookHandler::hook("villagetext-{$session['user']['location']}", $texts);
 $schemas = $texts['schemas'];
 
 $translator->setSchema($schemas['title']);
-page_header($texts['title']);
+Header::pageHeader($texts['title']);
 $translator->setSchema();
 
 Commentary::addCommentary();
@@ -146,177 +150,177 @@ if (getsetting("automaster", 1) && $session['user']['seenmaster'] != 1) {
     }
 }
 
-$op = httpget('op');
-$com = httpget('comscroll');
-$refresh = httpget("refresh");
-$commenting = httpget("commenting");
-$comment = httppost('insertcommentary');
+$op = Http::get('op');
+$com = Http::get('comscroll');
+$refresh = Http::get("refresh");
+$commenting = Http::get("commenting");
+$comment = Http::post('insertcommentary');
 // Don't give people a chance at a special event if they are just browsing
 // the commentary (or talking) or dealing with any of the hooks in the village.
 if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
     // The '1' should really be sysadmin customizable.
     if (module_events("village", (int)getsetting("villagechance", 0)) != 0) {
         if (checknavs()) {
-            page_footer();
+            Footer::pageFooter();
         } else {
             // Reset the special for good.
             $session['user']['specialinc'] = "";
             $session['user']['specialmisc'] = "";
             $skipvillagedesc = true;
             $op = "";
-            httpset("op", "");
+            Http::set("op", "");
         }
     }
 }
 
 $translator->setSchema($schemas['fields']);
-addnav($texts['fields']);
-addnav("Q?`%Quit`0 to the fields", "login.php?op=logout", true);
+Nav::add($texts['fields']);
+Nav::add("Q?`%Quit`0 to the fields", "login.php?op=logout", true);
 $translator->setSchema();
 
 $translator->setSchema($schemas['gatenav']);
-addnav($texts['gatenav']);
+Nav::add($texts['gatenav']);
 $translator->setSchema();
 
-addnav("F?Forest", "forest.php");
+Nav::add("F?Forest", "forest.php");
 if (getsetting("pvp", 1)) {
-    addnav("S?Slay Other Players", "pvp.php");
+    Nav::add("S?Slay Other Players", "pvp.php");
 }
 if (getsetting("enablecompanions", true)) {
     $translator->setSchema($schemas['mercenarycamp']);
-    addnav($texts['mercenarycamp'], "mercenarycamp.php");
+    Nav::add($texts['mercenarycamp'], "mercenarycamp.php");
     $translator->setSchema();
 }
 
 $translator->setSchema($schemas['fightnav']);
-addnav($texts['fightnav']);
+Nav::add($texts['fightnav']);
 $translator->setSchema();
-addnav("u?Bluspring's Warrior Training", "train.php");
+Nav::add("u?Bluspring's Warrior Training", "train.php");
 if (@file_exists("lodge.php")) {
-    addnav("J?JCP's Hunter Lodge", "lodge.php");
+    Nav::add("J?JCP's Hunter Lodge", "lodge.php");
 }
 
 $translator->setSchema($schemas['marketnav']);
-addnav($texts['marketnav']);
+Nav::add($texts['marketnav']);
 $translator->setSchema();
 $translator->setSchema($schemas['weaponshop']);
-addnav("W?" . $texts['weaponshop'], "weapons.php");
+Nav::add("W?" . $texts['weaponshop'], "weapons.php");
 $translator->setSchema();
 $translator->setSchema($schemas['armorshop']);
-addnav("A?" . $texts['armorshop'], "armor.php");
+Nav::add("A?" . $texts['armorshop'], "armor.php");
 $translator->setSchema();
-addnav("B?Ye Olde Bank", "bank.php");
-addnav("Z?Ze Gypsy Tent", "gypsy.php");
+Nav::add("B?Ye Olde Bank", "bank.php");
+Nav::add("Z?Ze Gypsy Tent", "gypsy.php");
 if (getsetting("betaperplayer", 1) == 1 && @file_exists("pavilion.php")) {
-    addnav("E?Eye-catching Pavilion", "pavilion.php");
+    Nav::add("E?Eye-catching Pavilion", "pavilion.php");
 }
 
 $translator->setSchema($schemas['tavernnav']);
-addnav($texts['tavernnav']);
+Nav::add($texts['tavernnav']);
 $translator->setSchema();
 $translator->setSchema($schemas['innname']);
-addnav("I?" . $texts['innname'] . "`0", "inn.php", true);
+Nav::add("I?" . $texts['innname'] . "`0", "inn.php", true);
 $translator->setSchema();
 $translator->setSchema($schemas['stablename']);
-addnav("M?" . $texts['stablename'] . "`0", "stables.php");
+Nav::add("M?" . $texts['stablename'] . "`0", "stables.php");
 $translator->setSchema();
 
-addnav("G?The Gardens", "gardens.php");
-addnav("R?Curious Looking Rock", "rock.php");
+Nav::add("G?The Gardens", "gardens.php");
+Nav::add("R?Curious Looking Rock", "rock.php");
 if (getsetting("allowclans", 1)) {
-    addnav("C?Clan Halls", "clan.php");
+    Nav::add("C?Clan Halls", "clan.php");
 }
 
 $translator->setSchema($schemas['infonav']);
-addnav($texts['infonav']);
+Nav::add($texts['infonav']);
 $translator->setSchema();
-addnav("??F.A.Q. (newbies start here)", "petition.php?op=faq", false, true);
-addnav("N?Daily News", "news.php");
-addnav("L?List Warriors", "list.php");
-addnav("o?Hall o' Fame", "hof.php");
+Nav::add("??F.A.Q. (newbies start here)", "petition.php?op=faq", false, true);
+Nav::add("N?Daily News", "news.php");
+Nav::add("L?List Warriors", "list.php");
+Nav::add("o?Hall o' Fame", "hof.php");
 
 $translator->setSchema($schemas['othernav']);
-addnav($texts['othernav']);
+Nav::add($texts['othernav']);
 $translator->setSchema();
-addnav("A?Account Info", "account.php");
-addnav("P?Preferences", "prefs.php");
+Nav::add("A?Account Info", "account.php");
+Nav::add("P?Preferences", "prefs.php");
 if (!file_exists("lodge.php")) {
-    addnav("Refer a Friend", "referral.php");
+    Nav::add("Refer a Friend", "referral.php");
 }
 
 $translator->setSchema('nav');
-addnav("Superuser");
+Nav::add("Superuser");
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
-    addnav(",?Comment Moderation", "moderate.php");
+    Nav::add(",?Comment Moderation", "moderate.php");
 }
 if ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) {
-    addnav("X?`bSuperuser Grotto`b", "superuser.php");
+    Nav::add("X?`bSuperuser Grotto`b", "superuser.php");
 }
 if ($session['user']['superuser'] & SU_INFINITE_DAYS) {
-    addnav("/?New Day", "newday.php");
+    Nav::add("/?New Day", "newday.php");
 }
 $translator->setSchema();
 //let users try to cheat, we protect against this and will know if they try.
-addnav("", "superuser.php");
-addnav("", "user.php");
-addnav("", "taunt.php");
-addnav("", "creatures.php");
-addnav("", "configuration.php");
-addnav("", "badword.php");
-addnav("", "armoreditor.php");
-addnav("", "bios.php");
-addnav("", "badword.php");
-addnav("", "donators.php");
-addnav("", "referers.php");
-addnav("", "retitle.php");
-addnav("", "stats.php");
-addnav("", "viewpetition.php");
-addnav("", "weaponeditor.php");
+Nav::add("", "superuser.php");
+Nav::add("", "user.php");
+Nav::add("", "taunt.php");
+Nav::add("", "creatures.php");
+Nav::add("", "configuration.php");
+Nav::add("", "badword.php");
+Nav::add("", "armoreditor.php");
+Nav::add("", "bios.php");
+Nav::add("", "badword.php");
+Nav::add("", "donators.php");
+Nav::add("", "referers.php");
+Nav::add("", "retitle.php");
+Nav::add("", "stats.php");
+Nav::add("", "viewpetition.php");
+Nav::add("", "weaponeditor.php");
 
 if (!$skipvillagedesc) {
-    modulehook("collapse{", array("name" => "villagedesc-" . $session['user']['location']));
+    HookHandler::hook("collapse{", array("name" => "villagedesc-" . $session['user']['location']));
     $translator->setSchema($schemas['text']);
-    output($texts['text']);
+    $output->output($texts['text']);
     $translator->setSchema();
-    modulehook("}collapse");
-    modulehook("collapse{", array("name" => "villageclock-" . $session['user']['location']));
+    HookHandler::hook("}collapse");
+    HookHandler::hook("collapse{", array("name" => "villageclock-" . $session['user']['location']));
     $translator->setSchema($schemas['clock']);
-    output($texts['clock'], getgametime());
+    $output->output($texts['clock'], getgametime());
     $translator->setSchema();
-    modulehook("}collapse");
-    modulehook("village-desc", $texts);
+    HookHandler::hook("}collapse");
+    HookHandler::hook("village-desc", $texts);
     //support for a special village-only hook
-    modulehook("village-desc-{$session['user']['location']}", $texts);
+    HookHandler::hook("village-desc-{$session['user']['location']}", $texts);
     if ($texts['newestplayer'] > "" && $texts['newest']) {
-        modulehook("collapse{", array("name" => "villagenewest-" . $session['user']['location']));
+        HookHandler::hook("collapse{", array("name" => "villagenewest-" . $session['user']['location']));
         $translator->setSchema($schemas['newest']);
-        output($texts['newest'], $texts['newestplayer']);
+        $output->output($texts['newest'], $texts['newestplayer']);
         $translator->setSchema();
         $id = $texts['newestid'];
         if ($session['user']['superuser'] & SU_EDIT_USERS && $id) {
             $edit = translate_inline("Edit");
-            rawoutput(" [<a href='user.php?op=edit&userid=$id'>$edit</a>]");
-            addnav("", "user.php?op=edit&userid=$id");
+            $output->rawOutput(" [<a href='user.php?op=edit&userid=$id'>$edit</a>]");
+            Nav::add("", "user.php?op=edit&userid=$id");
         }
-        output_notl("`n");
-        modulehook("}collapse");
+        $output->outputNotl("`n");
+        HookHandler::hook("}collapse");
     }
 }
-$texts = modulehook("village", $texts);
+$texts = HookHandler::hook("village", $texts);
 //special hook for all villages... saves queries...
-$texts = modulehook("village-{$session['user']['location']}", $texts);
+$texts = HookHandler::hook("village-{$session['user']['location']}", $texts);
 
 if ($skipvillagedesc) {
-    output("`n");
+    $output->output("`n");
 }
 
-$args = modulehook("blockcommentarea", array("section" => $texts['section']));
+$args = HookHandler::hook("blockcommentarea", array("section" => $texts['section']));
 if (!isset($args['block']) || $args['block'] != 'yes') {
         $translator->setSchema($schemas['talk']);
-        output($texts['talk']);
+        $output->output($texts['talk']);
         $translator->setSchema();
             Commentary::commentDisplay("", $texts['section'], "Speak", 25, $texts['sayline'], $schemas['sayline']);
 }
 
 module_display_events("village", "village.php");
-page_footer();
+Footer::pageFooter();

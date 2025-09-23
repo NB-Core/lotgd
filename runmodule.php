@@ -3,6 +3,16 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+use Lotgd\Http;
+use Lotgd\Modules;
+use Lotgd\Modules\ModuleManager;
+use Lotgd\Nav\VillageNav;
+use Lotgd\ForcedNavigation;
+use Lotgd\DateTime;
+use Lotgd\Output;
+use Lotgd\Nav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
 
 // translator ready
 // addnews ready
@@ -11,21 +21,12 @@ use Lotgd\Translator;
 define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 
-use Lotgd\Http;
-use Lotgd\Modules;
-use Lotgd\Modules\ModuleManager;
-use Lotgd\Nav\VillageNav;
-use Lotgd\ForcedNavigation;
-use Lotgd\DateTime;
-use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
 
 // Legacy Wrappers for Modules
-require_once __DIR__ . "/lib/http.php";
 require_once __DIR__ . "/lib/modules.php";
-require_once __DIR__ . "/lib/villagenav.php";
 
 DateTime::getMicroTime();
 
@@ -56,7 +57,7 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
     $fname();
         $endtime = DateTime::getMicroTime();
     if (($endtime - $starttime >= 1.00 && ($session['user']['superuser'] & SU_DEBUG_OUTPUT))) {
-        //On a side note, you won't ever see this text. A normal module calls page_footer(), which ends execution here....
+        //On a side note, you won't ever see this text. A normal module calls Footer::pageFooter(), which ends execution here....
         $output->debug("Slow Module (" . round($endtime - $starttime, 2) . "s): $moduleName`n");
         $stats = array (
             "modulename" => $moduleName,
@@ -73,12 +74,12 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
 
         Translator::getInstance()->setSchema("badnav");
 
-        page_header("Error");
+        Header::pageHeader("Error");
     if ($session['user']['loggedin']) {
             VillageNav::render();
     } else {
-        addnav("L?Return to the Login", "index.php");
+        Nav::add("L?Return to the Login", "index.php");
     }
     $output->output("You are attempting to use a module which is no longer active, or has been uninstalled.");
-        page_footer();
+        Footer::pageFooter();
 }

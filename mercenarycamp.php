@@ -3,20 +3,24 @@
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Buffs;
+use Lotgd\Nav;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+use Lotgd\Http;
+use Lotgd\Modules\HookHandler;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
-require_once __DIR__ . "/lib/villagenav.php";
 
 $translator = Translator::getInstance();
 
 $translator->setSchema("mercenarycamp");
 
 checkday();
-$name = stripslashes(rawurldecode(httpget('name')));
+$name = stripslashes(rawurldecode(Http::get('name')));
 if (isset($companions[$name])) {
     $displayname = $companions[$name]['name'];
 } else {
@@ -89,25 +93,25 @@ $schemas = array(
 );
 
 $basetext['schemas'] = $schemas;
-$texts = modulehook("mercenarycamptext", $basetext);
+$texts = HookHandler::hook("mercenarycamptext", $basetext);
 $schemas = $texts['schemas'];
 
 $translator->setSchema($schemas['title']);
-page_header($texts['title']);
-output("`c`b`&" . $texts['title'] . "`0`b`c");
+Header::pageHeader($texts['title']);
+$output->output("`c`b`&" . $texts['title'] . "`0`b`c");
 $translator->setSchema();
 
-$op = httpget("op");
+$op = Http::get("op");
 
 if ($op == "") {
-    if (httpget('skip') != 1) {
+    if (Http::get('skip') != 1) {
         $translator->setSchema($schemas['desc']);
         if (is_array($texts['desc'])) {
             foreach ($texts['desc'] as $description) {
-                output_notl($translator->sprintfTranslate($description));
+                $output->outputNotl($translator->sprintfTranslate($description));
             }
         } else {
-            output($texts['desc']);
+            $output->output($texts['desc']);
         }
         $translator->setSchema();
     }
@@ -118,44 +122,44 @@ if ($op == "") {
 				AND companionactive = 1";
     $result = Database::query($sql);
     $translator->setSchema($schemas['buynav']);
-    addnav($texts['buynav']);
+    Nav::add($texts['buynav']);
     $translator->setSchema();
     while ($row = Database::fetchAssoc($result)) {
-        $row = modulehook("alter-companion", $row);
+        $row = HookHandler::hook("alter-companion", $row);
         if ($row['companioncostgold'] && $row['companioncostgems']) {
             if ($session['user']['gold'] >= $row['companioncostgold'] && $session['user']['gems'] >= $row['companioncostgems'] && !isset($companions[$row['name']])) {
-                addnav(array("%s`n`^%s Gold, `%%%s Gems`0",$row['name'], $row['companioncostgold'], $row['companioncostgems']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
+                Nav::add(array("%s`n`^%s Gold, `%%%s Gems`0",$row['name'], $row['companioncostgold'], $row['companioncostgems']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
             } else {
-                addnav(array("%s`n`^%s Gold, `%%%s Gems`0",$row['name'], $row['companioncostgold'], $row['companioncostgems']), "");
+                Nav::add(array("%s`n`^%s Gold, `%%%s Gems`0",$row['name'], $row['companioncostgold'], $row['companioncostgems']), "");
             }
         } elseif ($row['companioncostgold']) {
             if ($session['user']['gold'] >= $row['companioncostgold'] && !isset($companions[$row['name']])) {
-                addnav(array("%s`n`^%s Gold`0",$row['name'], $row['companioncostgold']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
+                Nav::add(array("%s`n`^%s Gold`0",$row['name'], $row['companioncostgold']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
             } else {
-                addnav(array("%s`n`^%s Gold`0",$row['name'], $row['companioncostgold']), "");
+                Nav::add(array("%s`n`^%s Gold`0",$row['name'], $row['companioncostgold']), "");
             }
         } elseif ($row['companioncostgems']) {
             if ($session['user']['gems'] >= $row['companioncostgems'] && !isset($companions[$row['name']])) {
-                addnav(array("%s`n`%%%s Gems`0",$row['name'], $row['companioncostgems']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
+                Nav::add(array("%s`n`%%%s Gems`0",$row['name'], $row['companioncostgems']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
             } else {
-                addnav(array("%s`n`%%%s Gems`0",$row['name'], $row['companioncostgems']), "");
+                Nav::add(array("%s`n`%%%s Gems`0",$row['name'], $row['companioncostgems']), "");
             }
         } elseif (!isset($companions[$row['name']])) {
-            addnav(array("%s",$row['name']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
+            Nav::add(array("%s",$row['name']), "mercenarycamp.php?op=buy&id={$row['companionid']}");
         }
-        output("`#%s`n`7%s`n`n", $row['name'], $row['description']);
+        $output->output("`#%s`n`7%s`n`n", $row['name'], $row['description']);
     }
     healnav($companions, $texts, $schemas);
 } elseif ($op == "heal") {
-    $cost = httpget('cost');
+    $cost = Http::get('cost');
     if ($cost == 'notenough') {
         $translator->setSchema($schemas['healpaid']);
         if (is_array($texts['healnotenough'])) {
             foreach ($texts['healnotenough'] as $healnotenough) {
-                output_notl($translator->sprintfTranslate($healnotenough));
+                $output->outputNotl($translator->sprintfTranslate($healnotenough));
             }
         } else {
-            output($texts['healnotenough']);
+            $output->output($texts['healnotenough']);
         }
         $translator->setSchema();
     } else {
@@ -166,18 +170,18 @@ if ($op == "") {
         $translator->setSchema($schemas['healpaid']);
         if (is_array($texts['healpaid'])) {
             foreach ($texts['healpaid'] as $healpaid) {
-                output_notl($translator->sprintfTranslate($healpaid));
+                $output->outputNotl($translator->sprintfTranslate($healpaid));
             }
         } else {
-            output($texts['healpaid']);
+            $output->output($texts['healpaid']);
         }
         $translator->setSchema();
     }
     healnav($companions, $texts, $schemas);
-    addnav("Navigation");
-    addnav("Return to the camp", "mercenarycamp.php?skip=1");
+    Nav::add("Navigation");
+    Nav::add("Return to the camp", "mercenarycamp.php?skip=1");
 } elseif ($op == "buy") {
-    $id = httpget('id');
+    $id = Http::get('id');
     $sql = "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid = $id";
     $result = Database::query($sql);
     if ($row = Database::fetchAssoc($result)) {
@@ -185,12 +189,12 @@ if ($op == "") {
         $row['defense'] = $row['defense'] + $row['defenseperlevel'] * $session['user']['level'];
         $row['maxhitpoints'] = $row['maxhitpoints'] + $row['maxhitpointsperlevel'] * $session['user']['level'];
         $row['hitpoints'] = $row['maxhitpoints'];
-        $row = modulehook("alter-companion", $row);
+        $row = HookHandler::hook("alter-companion", $row);
         $row['abilities'] = @unserialize($row['abilities']);
         if (Buffs::applyCompanion($row['name'], $row)) {
-            output("`QYou hand over `^%s gold`Q and `%%s %s`Q.`n`n", (int)$row['companioncostgold'], (int)$row['companioncostgems'], translate_inline($row['companioncostgems'] == 1 ? "gem" : "gems"));
+            $output->output("`QYou hand over `^%s gold`Q and `%%s %s`Q.`n`n", (int)$row['companioncostgold'], (int)$row['companioncostgems'], translate_inline($row['companioncostgems'] == 1 ? "gem" : "gems"));
             if (isset($row['jointext']) && $row['jointext'] > "") {
-                output($row['jointext']);
+                $output->output($row['jointext']);
             }
             $session['user']['gold'] -= $row['companioncostgold'];
             $session['user']['gems'] -= $row['companioncostgems'];
@@ -200,27 +204,27 @@ if ($op == "") {
             $translator->setSchema($schemas['toomanycompanions']);
             if (is_array($texts['toomanycompanions'])) {
                 foreach ($texts['toomanycompanions'] as $toomanycompanions) {
-                    output_notl($translator->sprintfTranslate($toomanycompanions));
+                    $output->outputNotl($translator->sprintfTranslate($toomanycompanions));
                 }
             } else {
-                output($texts['toomanycompanions']);
+                $output->output($texts['toomanycompanions']);
             }
             $translator->setSchema();
         }
     }
-    addnav("Navigation");
-    addnav("Return to the camp", "mercenarycamp.php?skip=1");
+    Nav::add("Navigation");
+    Nav::add("Return to the camp", "mercenarycamp.php?skip=1");
 }
-addnav("Navigation");
-villagenav();
-page_footer();
+Nav::add("Navigation");
+VillageNav::render();
+Footer::pageFooter();
 
 
 function healnav($companions, $texts, $schemas)
 {
     global $session, $translator;
     $translator->setSchema($schemas['healnav']);
-    addnav($texts['healnav']);
+    Nav::add($texts['healnav']);
     $translator->setSchema();
     $healable = false;
     foreach ($companions as $name => $companion) {
@@ -231,9 +235,9 @@ function healnav($companions, $texts, $schemas)
                 $healable = true;
                 $costtoheal = round(log($session['user']['level'] + 1) * ($pointstoheal + 10) * 1.33);
                 if ($session['user']['gold'] >= $costtoheal) {
-                    addnav(array("%s`0 (`^%s Gold`0)", $companion['name'], $costtoheal), "mercenarycamp.php?op=heal&name=" . rawurlencode($name) . "&cost=$costtoheal");
+                    Nav::add(array("%s`0 (`^%s Gold`0)", $companion['name'], $costtoheal), "mercenarycamp.php?op=heal&name=" . rawurlencode($name) . "&cost=$costtoheal");
                 } else {
-                    addnav(array("%s`0 (`\$Not enough gold`0)", $companion['name']), "mercenarycamp.php?op=heal&name=" . rawurlencode($name) . "&cost=notenough");
+                    Nav::add(array("%s`0 (`\$Not enough gold`0)", $companion['name']), "mercenarycamp.php?op=heal&name=" . rawurlencode($name) . "&cost=notenough");
                 }
             }
         }
@@ -242,10 +246,10 @@ function healnav($companions, $texts, $schemas)
         $translator->setSchema($schemas['healtext']);
         if (is_array($texts['healtext'])) {
             foreach ($texts['healtext'] as $healtext) {
-                output_notl($translator->sprintfTranslate($healtext));
+                $output->outputNotl($translator->sprintfTranslate($healtext));
             }
         } else {
-            output($texts['healtext']);
+            $output->output($texts['healtext']);
         }
         $translator->setSchema();
     }
