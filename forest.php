@@ -132,17 +132,17 @@ if ($op == "search") {
             $targetlevel = ($session['user']['level'] + $plev - $nlev );
             $mintargetlevel = $targetlevel;
             if ($settings->getSetting("multifightdk", 10) <= $session['user']['dragonkills']) {
-                if (Random::eRand(1, 100) <= $settings->getSetting("multichance", 25)) {
-                    $multi = Random::eRand($settings->getSetting('multibasemin', 2), $settings->getSetting('multibasemax', 3));
+                if (Random::eRand(1, 100) <= (int)$settings->getSetting("multichance", 25)) {
+                    $multi = Random::eRand((int)$settings->getSetting('multibasemin', 2), (int)$settings->getSetting('multibasemax', 3));
                     if ($type == "slum") {
-                        $multi -= Random::eRand($settings->getSetting("multislummin", 0), $settings->getSetting("multibasemax", 1));
+                        $multi -= Random::eRand((int)$settings->getSetting("multislummin", 0), (int)$settings->getSetting("multibasemax", 1));
                         if (Random::eRand(0, 1)) {
                             $mintargetlevel = $targetlevel - 1;
                         } else {
                             $mintargetlevel = $targetlevel - 2;
                         }
                     } elseif ($type == "thrill") {
-                        $multi += Random::eRand($settings->getSetting("multithrillmin", 1), $settings->getSetting("multithrillmax", 2));
+                        $multi += Random::eRand((int)$settings->getSetting("multithrillmin", 1), (int)$settings->getSetting("multithrillmax", 2));
                         if (Random::eRand(0, 1)) {
                             $targetlevel++;
                             $mintargetlevel = $targetlevel - 1;
@@ -150,7 +150,7 @@ if ($op == "search") {
                             $mintargetlevel = $targetlevel - 1;
                         }
                     } elseif ($type == "suicide") {
-                        $multi += Random::eRand($settings->getSetting("multisuimin", 2), $settings->getSetting("multisuimax", 4));
+                        $multi += Random::eRand((int)$settings->getSetting("multisuimin", 2), (int)$settings->getSetting("multisuimax", 4));
                         if (Random::eRand(0, 1)) {
                             $mintargetlevel = $targetlevel - 1;
                         } else {
