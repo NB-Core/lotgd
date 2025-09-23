@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\AddNews;
 use Lotgd\Battle;
+use Lotgd\DateTime;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Nav;
@@ -32,7 +33,7 @@ $op = Http::get('op');
 $act = Http::get('act');
 
 if ($op == "" && $act != "attack") {
-    checkday();
+    DateTime::checkDay();
         Pvp::warn();
     $args = array(
         'atkmsg' => '`4You head out to the fields, where you know some unwitting warriors are sleeping.`n`nYou have `^%s`4 PvP fights left for today.`n`n',

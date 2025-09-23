@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Commentary;
+use Lotgd\DateTime;
 use Lotgd\Translator;
 use Lotgd\Names;
 use Lotgd\Nav;
@@ -22,7 +23,7 @@ Commentary::addCommentary();
 
 $op = Http::get('op');
 if ($op == "") {
-    checkday();
+    DateTime::checkDay();
 }
 
 $pointsavailable =

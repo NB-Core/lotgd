@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\Translator;
+use Lotgd\DateTime;
 use Lotgd\Forest;
 use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
@@ -36,7 +37,7 @@ Translator::getInstance()->setSchema();
 
 $op = Http::get('op');
 if ($op == "") {
-    checkday();
+    DateTime::checkDay();
     $output->output("`3You duck into the small smoke-filled grass hut.");
     $output->output("The pungent aroma makes you cough, attracting the attention of a grizzled old person that does a remarkable job of reminding you of a rock, which probably explains why you didn't notice them until now.");
     $output->output("Couldn't be your failure as a warrior.");
