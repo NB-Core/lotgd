@@ -45,6 +45,11 @@ class Random
             : random_int($max, $min);
     }
 
+    public static function eRand($min = null, $max = null)
+    {
+        return self::e_rand($min, $max);
+    }
+
     /**
      * Random float helper with three decimal precision.
      *
@@ -76,5 +81,10 @@ class Random
         return ($min < $max)
             ? random_int((int) $min, (int) $max) / 1000
             : random_int((int) $max, (int) $min) / 1000;
+    }
+
+    public static function rRand($min = null, $max = null)
+    {
+        return self::r_rand($min, $max);
     }
 }
