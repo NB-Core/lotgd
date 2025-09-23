@@ -8,13 +8,13 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Events;
+use Lotgd\PlayerFunctions;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/events.php";
-require_once __DIR__ . "/lib/experience.php";
 
 $translator = Translator::getInstance();
 
@@ -124,7 +124,7 @@ Header::pageHeader($texts['title']);
 $translator->setSchema();
 
 Commentary::addCommentary();
-$skipvillagedesc = handle_event("village");
+$skipvillagedesc = Events::handleEvent("village");
 checkday();
 
 if ($session['user']['slaydragon'] == 1) {
@@ -141,7 +141,7 @@ if (getsetting("automaster", 1) && $session['user']['seenmaster'] != 1) {
     //masters hunt down truant students
     $level = $session['user']['level'] + 1;
     $dks = $session['user']['dragonkills'];
-    $expreqd = exp_for_next_level($level, $dks);
+    $expreqd = PlayerFunctions::expForNextLevel($level, $dks);
     if (
         $session['user']['experience'] > $expreqd &&
             $session['user']['level'] < (int)getsetting('maxlevel', 15)
@@ -159,7 +159,7 @@ $comment = Http::post('insertcommentary');
 // the commentary (or talking) or dealing with any of the hooks in the village.
 if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
     // The '1' should really be sysadmin customizable.
-    if (module_events("village", (int)getsetting("villagechance", 0)) != 0) {
+    if (HookHandler::moduleEvents("village", (int)getsetting("villagechance", 0)) != 0) {
         if (checknavs()) {
             Footer::pageFooter();
         } else {

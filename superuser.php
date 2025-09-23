@@ -11,12 +11,12 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Sanitize;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/sanitize.php";
 
 SuAccess::check(0xFFFFFFFF & ~ SU_DOESNT_GIVE_GROTTO);
 Commentary::addCommentary();
@@ -35,7 +35,7 @@ if ($op == "keepalive") {
     $sql = "DELETE FROM " . Database::prefix("news") . " WHERE newsid='" . Http::get('newsid') . "'";
     Database::query($sql);
     $return = Http::get('return');
-    $return = cmd_sanitize($return);
+    $return = Sanitize::cmdSanitize($return);
     $return = basename($return);
     redirect($return);
 }

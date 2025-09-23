@@ -18,12 +18,12 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Sanitize;
 
 // translator ready
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/sanitize.php";
 
 $output = Output::getInstance();
 $settings = Settings::getInstance();
@@ -271,7 +271,7 @@ if ($dp < $dkills) {
             Translator::translateInline($sff == 1 ? 'fight' : 'fights')
         );
     }
-    $rp = rtrim(cmd_sanitize($session['user']['restorepage']), '&?');
+    $rp = rtrim(Sanitize::cmdSanitize($session['user']['restorepage']), '&?');
     if (substr($rp, 0, 10) == "badnav.php") {
         Nav::add("Continue", "news.php");
     } else {

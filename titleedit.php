@@ -11,6 +11,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\PlayerFunctions;
 
 //Author: Lonny Luberts - 3/18/2005
 //Heavily modified by JT Traub
@@ -72,8 +73,6 @@ switch ($op) {
 
 switch ($op) {
     case "reset":
-                require_once __DIR__ . "/lib/titles.php";
-
         $output->output("`^Rebuilding all titles for all players.`0`n`n");
         $sql = "SELECT name,title,dragonkills,acctid,sex,ctitle FROM " . Database::prefix("accounts");
         $result = Database::query($sql);
@@ -84,9 +83,9 @@ switch ($op) {
             $dk = $row['dragonkills'];
             $otitle = $row['title'];
             $dk = (int)($row['dragonkills']);
-            if (!valid_dk_title($otitle, $dk, $row['sex'])) {
+            if (!PlayerFunctions::validDkTitle($otitle, $dk, $row['sex'])) {
                 $sex = translate_inline($row['sex'] ? "female" : "male");
-                $newtitle = get_dk_title($dk, (int)$row['sex']);
+                $newtitle = PlayerFunctions::getDkTitle($dk, (int)$row['sex']);
                 $newname = Names::changePlayerTitle($newtitle, $row);
                 $id = $row['acctid'];
                 if ($oname != $newname) {

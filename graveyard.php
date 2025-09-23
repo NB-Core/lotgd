@@ -10,17 +10,17 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Events;
 
 // addnews ready.
 // translator ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/events.php";
 
 Translator::getInstance()->setSchema("graveyard");
 
 Header::pageHeader("The Graveyard");
-$skipgraveyardtext = handle_event("graveyard");
+$skipgraveyardtext = Events::handleEvent("graveyard");
 $deathoverlord = getsetting('deathoverlord', '`$Ramius');
 if (!$skipgraveyardtext) {
     if ($session['user']['alive']) {

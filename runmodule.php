@@ -25,9 +25,6 @@ define("OVERRIDE_FORCED_NAV", true);
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
 
-// Legacy Wrappers for Modules
-require_once __DIR__ . "/lib/modules.php";
-
 DateTime::getMicroTime();
 
 // Determine which module should be executed

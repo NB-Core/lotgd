@@ -15,13 +15,12 @@ use Lotgd\Translator;
 use Lotgd\Buffs;
 use Lotgd\Battle;
 use Lotgd\Substitute;
+use Lotgd\Http;
 
 // translator ready
 // addnews ready
 // mail ready
-require_once __DIR__ . "/lib/bell_rand.php";
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/http.php";
 
 
 //just in case we're called from within a function.Yuck is this ugly.
@@ -61,7 +60,7 @@ $roundcounter = 0;
 $adjustment = 1;
 
 $count = 1;
-$auto = httpget('auto');
+$auto = Http::get('auto');
 if ($auto == 'full') {
     $count = -1;
 } elseif ($auto == 'five') {
@@ -72,10 +71,10 @@ if ($auto == 'full') {
 $enemycounter = count($enemies);
 $enemies = Battle::autoSetTarget($enemies);
 
-$op = httpget("op");
-$skill = httpget("skill");
-$l = httpget("l");
-$newtarget = httpget('newtarget');
+$op = Http::get("op");
+$skill = Http::get("skill");
+$l = Http::get("l");
+$newtarget = Http::get('newtarget');
 if ($newtarget != "") {
     $op = "newtarget";
 }
@@ -137,7 +136,7 @@ Battle::suspendBuffs((($options['type'] == 'pvp') ? "allowinpvp" : false));
 Battle::suspendCompanions((($options['type'] == 'pvp') ? "allowinpvp" : false));
 
 // Now that the bufflist is sane, see if we should add in the bodyguard.
-$inn = (int)httpget('inn');
+$inn = (int)Http::get('inn');
 if ($options['type'] == 'pvp' && $inn == 1) {
     Battle::applyBodyguard($badguy['bodyguardlevel']);
 }
@@ -154,7 +153,7 @@ if ($op != "run" && $op != "fight" && $op != "newtarget") {
             // By default, surprise is 50/50
             $surprised = e_rand(0, 1) ? true : false;
             // Now, adjust for slum/thrill
-            $type = httpget('type');
+            $type = Http::get('type');
             if ($type == 'slum' || $type == 'thrill') {
                 $num = e_rand(0, 2);
                 $surprised = true;

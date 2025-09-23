@@ -67,7 +67,6 @@ if ($totaltoday > $newsperpage) {
 $sql2 = "SELECT " . Database::prefix("motd") . ".*,name AS motdauthorname FROM " . Database::prefix("motd") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid = " . Database::prefix("motd") . ".motdauthor ORDER BY motddate DESC LIMIT 1";
 $result2 = Database::queryCached($sql2, "lastmotd");
 while ($row = Database::fetchAssoc($result2)) {
-        require_once __DIR__ . "/lib/nltoappon.php";
     if ($row['motdauthorname'] == "") {
         $row['motdauthorname'] = Translator::translateInline('`@Green Dragon Staff`0');
     }

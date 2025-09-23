@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\Settings;
 use Lotgd\Translator;
+use Lotgd\Nltoappon;
 
 // addnews ready
 // translator ready
@@ -21,7 +22,6 @@ define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
-require_once __DIR__ . "/lib/nltoappon.php";
 
 
 Translator::getInstance()->setSchema("motd");
@@ -53,7 +53,7 @@ if ($op == "vote") {
 if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_POST_MOTD)) {
     if (Http::post('preview')) {
         $title = Http::post('motdtitle');
-        $body = nltoappon((string) Http::post('motdbody'));
+        $body = Nltoappon::convert((string) Http::post('motdbody'));
         Motd::motdItem($title, $body, $session['user']['name'], date('Y-m-d H:i:s'), (int) $id);
         Motd::motdForm((int) $id, $_POST);
     } else {

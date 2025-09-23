@@ -21,7 +21,6 @@ use Lotgd\Redirect;
 // addnews ready
 // mail ready
 require_once __DIR__ . "/common.php";
-require_once __DIR__ . "/lib/sanitize.php";
 
 
 $output = Output::getInstance();
