@@ -1,5 +1,6 @@
 <?php
 
+use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -9,6 +10,7 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
 
 /**
  * \file clan.php
@@ -25,6 +27,8 @@ require_once __DIR__ . "/common.php";
 require_once __DIR__ . "/lib/nltoappon.php";
 require_once __DIR__ . "/lib/sanitize.php";
 
+$settings = Settings::getInstance();
+
 Translator::getInstance()->setSchema("clans");
 
 
@@ -33,11 +37,11 @@ VillageNav::render();
 Nav::add("Clan Options");
 Nav::add("C?List Clans", "clan.php?op=list");
 Commentary::addCommentary();
-$gold = getsetting("goldtostartclan", 10000);
-$gems = getsetting("gemstostartclan", 15);
+$gold = $settings->getSetting('goldtostartclan', 10000);
+$gems = $settings->getSetting('gemstostartclan', 15);
 $ranks = array(CLAN_APPLICANT => "`!Applicant`0",CLAN_MEMBER => "`#Member`0",CLAN_OFFICER => "`^Officer`0",CLAN_ADMINISTRATIVE => "`\$Administrative`0",CLAN_LEADER => "`&Leader`0", CLAN_FOUNDER => "`\$Founder");
 $args = HookHandler::hook("clanranks", array("ranks" => $ranks, "clanid" => $session['user']['clanid']));
-$ranks = translate_inline($args['ranks']);
+$ranks = Translator::translateInline($args['ranks']);
 
 $apply_short = "`@Clan App: `&%s`0";
 $apply_subj = array($apply_short, $session['user']['name']);
@@ -62,15 +66,18 @@ Footer::pageFooter();
 
 function clanform()
 {
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+
     $output->rawOutput("<form action='clan.php?op=new&apply=1' method='POST'>");
     Nav::add("", "clan.php?op=new&apply=1");
     $output->output("`b`cNew Clan Application Form`c`b");
     $output->output("Clan Name: ");
-    $output->rawOutput("<input name='clanname' maxlength='50' value=\"" . htmlentities(stripslashes(Http::post('clanname')), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+    $output->rawOutput("<input name='clanname' maxlength='50' value=\"" . htmlentities(stripslashes(Http::post('clanname')), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">");
     $output->output("`nShort Name: ");
-    $output->rawOutput("<input name='clanshort' maxlength='5' size='5' value=\"" . htmlentities(stripslashes(Http::post('clanshort')), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+    $output->rawOutput("<input name='clanshort' maxlength='5' size='5' value=\"" . htmlentities(stripslashes(Http::post('clanshort')), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">");
     $output->output("`nNote, color codes are permitted in neither clan names nor short names.");
     $output->output("The clan name is shown on player bios and on clan overview pages while the short name is displayed next to players' names in comment areas and such.`n");
-    $apply = translate_inline("Apply");
+    $apply = Translator::translateInline("Apply");
     $output->rawOutput("<input type='submit' class='button' value='$apply'></form>");
 }
