@@ -19,11 +19,11 @@ $output->output("`qWe recommended ID as this bans all users who are sitting on T
 $output->output("If you ban via IP and if you have several different users behind a NAT(sharing IPs, many big providers do this currently), you will ban much more users. However, you can ban multichars from different PCs too.`n`0");
 $output->rawOutput("<input type='radio' value='ip' id='ipradio' name='type'>");
 $output->output("IP: ");
-$output->rawOutput("<input name='ip' id='ip' value=\"" . HTMLEntities($row['lastip'] ?? "", ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+$output->rawOutput("<input name='ip' id='ip' value=\"" . HTMLEntities($row['lastip'] ?? "", ENT_COMPAT, $settings->getSetting("charset", "UTF-8")) . "\">");
 $output->outputNotl("`n");
 $output->rawOutput("<input type='radio' value='id' name='type' checked>");
 $output->output("ID: ");
-$output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'] ?? "", ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+$output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'] ?? "", ENT_COMPAT, $settings->getSetting("charset", "UTF-8")) . "\">");
 $output->output("`nDuration: ");
 $output->rawOutput("<input name='duration' id='duration' size='3' value='14'>");
 $output->output("Days (0 for permanent)`n");

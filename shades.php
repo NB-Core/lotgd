@@ -1,11 +1,13 @@
 <?php
 
 use Lotgd\Commentary;
-use Lotgd\Translator;
-use Lotgd\Output;
-use Lotgd\Nav;
-use Lotgd\Redirect;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Nav;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\Redirect;
+use Lotgd\Translator;
 
 // translator ready
 // addnews ready
@@ -15,7 +17,7 @@ $output = Output::getInstance();
 
 Translator::getInstance()->setSchema("shades");
 
-page_header("Land of the Shades");
+Header::pageHeader("Land of the Shades");
 Commentary::addCommentary();
 checkday();
 
@@ -65,4 +67,4 @@ if ($session['user']['superuser'] & SU_INFINITE_DAYS) {
 
 Translator::getInstance()->setSchema();
 
-page_footer();
+Footer::pageFooter();
