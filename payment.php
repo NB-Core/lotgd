@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+use Lotgd\Http;
+use Lotgd\Page\Footer;
+use Lotgd\Modules\HookHandler;
 
 // mail ready
 // addnews ready
@@ -12,8 +15,6 @@ ob_start();
 $payment_errors = '';
 set_error_handler('payment_error');
 define("ALLOW_ANONYMOUS", true);
-use Lotgd\Http;
-use Lotgd\Page\Footer;
 
 require_once __DIR__ . "/common.php";
 
@@ -95,7 +96,7 @@ if (!$fp) {
                 }
                 writelog($response);
             } else {
-                modulehook("donation-error", $post);
+                HookHandler::hook("donation-error", $post);
                 payment_error(E_ERROR, "Payment Status isn't 'Completed' it's '$payment_status'", __FILE__, __LINE__);
             }
         } elseif (strcmp(trim($res), "INVALID") == 0) {
@@ -129,7 +130,7 @@ function writelog($response)
                 $donation -= $payment_fee;
             }
 
-            $hookresult = modulehook("donation_adjustments", array("points" => $donation * getsetting('dpointspercurrencyunit', 100),"amount" => $donation,"acctid" => $acctid,"messages" => array()));
+            $hookresult = HookHandler::hook("donation_adjustments", array("points" => $donation * getsetting('dpointspercurrencyunit', 100),"amount" => $donation,"acctid" => $acctid,"messages" => array()));
             //updated to make a setting here for each Dollar, Euro, Shekel
             $hookresult['points'] = round($hookresult['points']);
 
@@ -151,7 +152,7 @@ function writelog($response)
         $match[1] = "";
     }
     if ($match[1] > "" && $acctid > 0) {
-        modulehook("donation", array("id" => $acctid, "amt" => $donation * getsetting('dpointspercurrencyunit', 100), "manual" => false));
+        HookHandler::hook("donation", array("id" => $acctid, "amt" => $donation * getsetting('dpointspercurrencyunit', 100), "manual" => false));
     }
     $sql = "
                 INSERT INTO " . Database::prefix("paylog") . " (
@@ -181,7 +182,7 @@ function writelog($response)
         debuglog($sql, false, $acctid, "donation", 0, false);
     }
     $result = Database::query($sql);
-    modulehook("donation-processed", $post);
+    HookHandler::hook("donation-processed", $post);
     $err = Database::error();
     if ($err) {
         payment_error(E_ERROR, "SQL: $sql\nERR: $err", __FILE__, __LINE__);

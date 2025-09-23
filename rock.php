@@ -9,6 +9,7 @@ use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
 use Lotgd\DateTime;
 use Lotgd\Translator;
+use Lotgd\Modules\HookHandler;
 
 // translator ready
 // addnews ready
@@ -43,7 +44,7 @@ if (
     $output->output("It somehow reminds you of the head of one of the great serpents from legend.`n`n");
     $output->output("You have discovered The Veteran's Club.`n`n");
 
-    modulehook("rock");
+    HookHandler::hook("rock");
 
     Commentary::commentDisplay("", "veterans", "Boast here", 30, "boasts");
 } else {
