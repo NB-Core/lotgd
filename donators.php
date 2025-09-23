@@ -32,7 +32,7 @@ Translator::getInstance()->setSchema("nav");
 Nav::add("Return whence you came", $return);
 Translator::getInstance()->setSchema();
 
-$add = translate_inline("Add Donation");
+$add = Translator::translate("Add Donation");
 $output->rawOutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>");
 Nav::add("", "donators.php?op=add1&ret=" . rawurlencode($ret) . "");
 $name = Http::post("name");
@@ -52,7 +52,7 @@ if ($txnid == "") {
     $txnid = Http::get("txnid");
 }
 if ($reason == "") {
-    $reason = translate_inline("manual donation entry");
+    $reason = Translator::translate("manual donation entry");
 }
 
 
@@ -130,9 +130,9 @@ if ($op == "") {
     $sql = "SELECT name,donation,donationspent FROM " . Database::prefix("accounts") . " WHERE donation>0 ORDER BY donation DESC LIMIT 25";
     $result = Database::query($sql);
 
-    $name = translate_inline("Name");
-    $points = translate_inline("Points");
-    $spent = translate_inline("Spent");
+    $name = Translator::translate("Name");
+    $points = Translator::translate("Points");
+    $spent = Translator::translate("Spent");
 
     $output->rawOutput("<table border='0' cellpadding='3' cellspacing='1' bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>$name</td><td>$points</td><td>$spent</td></tr>");

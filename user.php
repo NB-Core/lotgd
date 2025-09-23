@@ -75,7 +75,7 @@ if ($m) {
 $output->rawOutput("<form action='user.php?op=search$m' method='POST'>");
 $output->output("Search by any field below: ");
 $output->rawOutput("<input name='q' id='q'>");
-$se = translate_inline("Search");
+$se = Translator::translate("Search");
 $output->rawOutput("<input type='submit' class='button' value='$se'>");
 $output->rawOutput("</form>");
 $output->rawOutput("<script language='JavaScript'>document.getElementById('q').focus();</script>");
@@ -94,14 +94,14 @@ Nav::add("Search for banned user", "bans.php?op=searchban");
 //}
 
 // Collect a list of the mounts
-$mounts = "0," . translate_inline("None");
+$mounts = "0," . Translator::translate("None");
 $sql = "SELECT mountid,mountname,mountcategory FROM " . Database::prefix("mounts") .  " ORDER BY mountcategory";
 $result = Database::query($sql);
 while ($row = Database::fetchAssoc($result)) {
     $mounts .= ",{$row['mountid']},{$row['mountcategory']}: " . Sanitize::colorSanitize($row['mountname']);
 }
 
-$specialties = array("Undecided" => translate_inline("Undecided"));
+$specialties = array("Undecided" => Translator::translate("Undecided"));
 $specialties = HookHandler::hook("specialtynames", $specialties);
 $enum = "";
 foreach ($specialties as $key => $name) {
@@ -130,14 +130,14 @@ if ($op == 'edit' || $op == 'save') {
     $result = Database::query($sql);
     $row = Database::fetchAssoc($result);
     // Unknown race, else it will scramble the array
-    $racesenum = RACE_UNKNOWN . "," . translate_inline("Undecided", "race") . ",";
+    $racesenum = RACE_UNKNOWN . "," . Translator::translate("Undecided", "race") . ",";
     foreach ($races as $race) {
         $racesenum .= $race . "," . $race . ",";
     }
     if (!in_array($row['race'], $races)) {
     /*  if ($row['race']=='') {
             //ok, we have a resetted race here
-            $racesenum.=$row['race'].",".translate_inline("Undecided","race").",";
+            $racesenum.=$row['race'].",".Translator::translate("Undecided","race").",";
         } else {*/
             $racesenum .= $row['race'] . "," . $row['race'] . ",";
 //      }

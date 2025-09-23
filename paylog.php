@@ -64,13 +64,13 @@ if ($op == "") {
     $sql = "SELECT " . Database::prefix("paylog") . ".*," . Database::prefix("accounts") . ".name," . Database::prefix("accounts") . ".donation," . Database::prefix("accounts") . ".donationspent FROM " . Database::prefix("paylog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("paylog") . ".acctid = " . Database::prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
     $result = Database::query($sql);
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
-    $type = translate_inline("Type");
-    $gross = translate_inline("Gross");
-    $fee = translate_inline("Fee");
-    $net = translate_inline("Net");
-    $processed = translate_inline("Processed");
-    $id = translate_inline("Transaction ID");
-    $who = translate_inline("Who");
+    $type = Translator::translate("Type");
+    $gross = Translator::translate("Gross");
+    $fee = Translator::translate("Fee");
+    $net = Translator::translate("Net");
+    $processed = Translator::translate("Processed");
+    $id = Translator::translate("Transaction ID");
+    $who = Translator::translate("Who");
     $output->rawOutput("<tr class='trhead'><td>Date</td><td>$id</td><td>$type</td><td>$gross</td><td>$fee</td><td>$net</td><td>$processed</td><td>$who</td></tr>");
     $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
@@ -89,7 +89,7 @@ if ($op == "") {
         $output->rawOutput("</td><td>");
         $output->outputNotl("%.2f", (float)$info['mc_gross'] - (float)$info['mc_fee']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("%s", translate_inline($row['processed'] ? "`@Yes`0" : "`\$No`0"));
+        $output->outputNotl("%s", Translator::translate($row['processed'] ? "`@Yes`0" : "`\$No`0"));
         $output->rawOutput("</td><td nowrap>");
         if ($row['name'] > "") {
             $output->rawOutput("<a href='user.php?op=edit&userid={$row['acctid']}'>");

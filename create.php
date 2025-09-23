@@ -69,7 +69,7 @@ if ($op == "forgotval") {
         $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
         $output->rawOutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
         $output->rawOutput("<input name='force' value='1' type='hidden'>");
-        $click = translate_inline("Click here to log in");
+        $click = Translator::translate("Click here to log in");
         $output->rawOutput("<input type='submit' class='button' value='$click'></form>");
         $output->outputNotl("`n");
         if ($trash > 0) {
@@ -137,7 +137,7 @@ if ($op == "forgotval") {
             $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
             $output->rawOutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
             $output->rawOutput("<input name='force' value='1' type='hidden'>");
-            $click = translate_inline("Click here to log in");
+            $click = Translator::translate("Click here to log in");
             $output->rawOutput("<input type='submit' class='button' value='$click'></form>");
         }
         $output->outputNotl("`n");
@@ -207,7 +207,7 @@ if ($op == "forgot") {
         $output->output("Enter your character's name: ");
         $output->rawOutput("<input name='charname'>");
         $output->outputNotl("`n");
-        $send = translate_inline("Email me my password");
+        $send = Translator::translate("Email me my password");
         $output->rawOutput("<input type='submit' class='button' value='$send'>");
         $output->rawOutput("</form>");
     }
@@ -234,7 +234,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 $result = Database::query($sql);
                 if (Database::numRows($result) > 0) {
                     $blockaccount = true;
-                    $msg .= translate_inline("You may have only one account.`n");
+                    $msg .= Translator::translate("You may have only one account.`n");
                 }
             }
 
@@ -246,25 +246,25 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 $passlen = strlen($pass1);
             }
             if ($passlen <= 3) {
-                $msg .= translate_inline("Your password must be at least 4 characters long.`n");
+                $msg .= Translator::translate("Your password must be at least 4 characters long.`n");
                 $blockaccount = true;
             }
             if ($pass1 != $pass2) {
-                $msg .= translate_inline("Your passwords do not match.`n");
+                $msg .= Translator::translate("Your passwords do not match.`n");
                 $blockaccount = true;
             }
             if (strlen($shortname) < 3) {
-                $msg .= translate_inline("Your name must be at least 3 characters long.`n");
+                $msg .= Translator::translate("Your name must be at least 3 characters long.`n");
                 $blockaccount = true;
             }
             if (strlen($shortname) > 25) {
-                $msg .= translate_inline("Your character's name cannot exceed 25 characters.`n");
+                $msg .= Translator::translate("Your character's name cannot exceed 25 characters.`n");
                 $blockaccount = true;
             }
             $requireEmail = (int) $settings->getSetting('requireemail', 0);
             if (($requireEmail === 1 && EmailValidator::isValid($email)) || $requireEmail === 0) {
             } else {
-                $msg .= translate_inline("You must enter a valid email address.`n");
+                $msg .= Translator::translate("You must enter a valid email address.`n");
                 $blockaccount = true;
             }
             $args = HookHandler::hook("check-create", Http::allPost());
@@ -365,7 +365,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                             $output->rawOutput("<form action='login.php' method='POST'>");
                             $output->rawOutput("<input name='name' value=\"$shortname\" type='hidden'>");
                             $output->rawOutput("<input name='password' value=\"$pass1\" type='hidden'>");
-                            $click = translate_inline("Click here to log in");
+                            $click = Translator::translate("Click here to log in");
                             $output->rawOutput("<input type='submit' class='button' value='$click'>");
                             $output->rawOutput("</form>");
                             $output->outputNotl("`n");
@@ -428,9 +428,9 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 $output->output("Re-enter it for confirmation: ");
                 $output->rawOutput("</td><td><input type='password' name='pass2' id='pass2'></td></tr><tr valign='top'><td>");
                 $output->output("Enter your email address: ");
-                $r1 = translate_inline("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
-                $r2 = translate_inline("`\$(required)`0");
-                $r3 = translate_inline("`\$(required, an email will be sent to this address to verify it before you can log in)`0");
+                $r1 = Translator::translate("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
+                $r2 = Translator::translate("`\$(required)`0");
+                $r3 = Translator::translate("`\$(required, an email will be sent to this address to verify it before you can log in)`0");
         if ((int) $settings->getSetting('requireemail', 0) === 0) {
             $req = $r1;
         } elseif ((int) $settings->getSetting('requirevalidemail', 0) === 0) {
@@ -448,7 +448,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                     true
                 );
                 HookHandler::hook("create-form");
-                $createbutton = translate_inline("Create your character");
+                $createbutton = Translator::translate("Create your character");
                 $output->rawOutput("<input type='submit' class='button' value='$createbutton'>");
                 $output->outputNotl("`n`n");
         if ($trash > 0) {

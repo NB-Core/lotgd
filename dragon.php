@@ -30,9 +30,9 @@ if ($op == "") {
         $output->output("Sadly, this is not to be the case, for as you round a corner within the cave you discover the great beast sitting on its haunches on a huge pile of gold, picking its teeth with a rib.");
     }
     $badguy = array(
-        "creaturename" => translate_inline("`@The Green Dragon`0"),
+        "creaturename" => Translator::translate("`@The Green Dragon`0"),
         "creaturelevel" => getsetting('maxlevel', 15) + 2,
-        "creatureweapon" => translate_inline("Great Flaming Maw"),
+        "creatureweapon" => Translator::translate("Great Flaming Maw"),
                 "creatureattack" => 30 + getsetting('maxlevel', 15),
                 "creaturedefense" => 10 + getsetting('maxlevel', 15),
                 "creaturehealth" => 150 + getsetting('maxlevel', 15) * 10,
@@ -268,7 +268,7 @@ if ($op == "") {
     //get the dragons name
     $badguys = @unserialize($badguys);
     $badguy = array(
-        "creaturename" => translate_inline("`@The Green Dragon`0"),
+        "creaturename" => Translator::translate("`@The Green Dragon`0"),
         "diddamage" => 0,
     );
     foreach ($badguys['enemies'] as $opponent) {

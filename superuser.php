@@ -46,7 +46,7 @@ $lines = HookHandler::hook("superuser-headlines", array());
 $output->outputNotl("`c");
 foreach ($lines as $line) {
     //output it like an announcement, if any argument is given, automatically(!) centered
-    //ATTENTION! pre-translate your stuff in your own schema with translate_inline or Translator::getInstance()->sprintfTranslate()!
+    //ATTENTION! pre-translate your stuff in your own schema with Translator::translate or Translator::getInstance()->sprintfTranslate()!
     if (is_array($line)) {
         call_user_func_array([$output, 'outputNotl'], $line);
     } else {

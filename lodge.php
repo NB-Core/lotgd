@@ -52,7 +52,7 @@ if ($op == "") {
 
     if ($entry) {
         HookHandler::hook("lodge-desc");
-        $output->output("Upon showing it to him, he says, `3\"Very good %s, welcome to the J. C. Petersen Hunting Lodge.", translate_inline($session['user']['sex'] ? "ma'am" : "sir"));
+        $output->output("Upon showing it to him, he says, `3\"Very good %s, welcome to the J. C. Petersen Hunting Lodge.", Translator::translate($session['user']['sex'] ? "ma'am" : "sir"));
         $output->output("You have earned `^%s`3 points and have `^%s`3 points available to spend,\"`7 and admits you in.`n`n", $session['user']['donation'], $pointsavailable);
         $output->output("You enter a room dominated by a large fireplace at the far end.");
         $output->output("The wood-panelled walls are covered with weapons, shields, and mounted hunting trophies, including the heads of several dragons that seem to move in the flickering light.`n`n");
