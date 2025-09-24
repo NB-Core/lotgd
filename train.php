@@ -116,9 +116,9 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
                 $dk  = (int)round(get_player_dragonkillmod(true) * 0.33, 0);
 
                 $atkflux = Random::eRand(0, $dk);
-                $atkflux = min($atkflux, round($dk * .25));
+                $atkflux = min($atkflux, (int)round($dk * .25));
                 $defflux = Random::eRand(0, $dk - $atkflux);
-                $defflux = min($defflux, round($dk * .25));
+                $defflux = min($defflux, (int)round($dk * .25));
 
                 $hpflux = ($dk - ($atkflux + $defflux)) * 5;
                 $output->debug("DEBUG: $dk modification points total.`n");
