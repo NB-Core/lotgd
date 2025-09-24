@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\Commentary;
 use Lotgd\Modules;
 use Lotgd\Nav;
+use Lotgd\Nltoappon;
 use Lotgd\Repository\ClanRepository;
 use Lotgd\Translator;
 
@@ -29,7 +30,7 @@ function renderClanDefault(): void
     if (isset($claninfo['clanmotd']) && $claninfo['clanmotd'] !== null && $claninfo['clanmotd'] !== '') {
         $output->rawOutput("<div style='margin-left: 15px; padding-left: 15px;'>");
         $output->output("`&`bCurrent MoTD:`b `#by %s`2`n", $motdAuthorName);
-        $output->outputNotl(nltoappon($claninfo['clanmotd']) . "`n");
+        $output->outputNotl(Nltoappon::convert($claninfo['clanmotd']) . "`n");
         $output->rawOutput('</div>');
         $output->outputNotl("`n");
     }
@@ -47,7 +48,7 @@ function renderClanDefault(): void
     if (isset($claninfo['clandesc']) && $claninfo['clandesc'] !== null && $claninfo['clandesc'] !== '') {
         Modules::hook('collapse{', ['name' => 'collapsedesc']);
         $output->output("`n`n`&`bCurrent Description:`b `#by %s`2`n", $descAuthorName);
-        $output->outputNotl(nltoappon($claninfo['clandesc']));
+        $output->outputNotl(Nltoappon::convert($claninfo['clandesc']));
         Modules::hook('}collapse');
     }
 
