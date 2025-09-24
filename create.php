@@ -356,20 +356,20 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                             $subj = translate_mail($settings_extended->getSetting('verificationmailsubject'), 0);
                             $msg = translate_mail($settings_extended->getSetting('verificationmailtext'), 0);
                             $replace = array(
-                                    "{login}" => $shortname,
-                                    "{acctid}" => $row['acctid'],
-                                    "{emailaddress}" => $email,
-                                    "{gameurl}" => $settings->getSetting('serverurl', 'https://lotgd.com') . "/create.php",
-                                    "{validationid}" => $emailverification,
-                                      );
+                                "{login}" => $shortname,
+                                "{acctid}" => $row['acctid'],
+                                "{emailaddress}" => $email,
+                                "{gameurl}" => $settings->getSetting('serverurl', 'https://lotgd.com') . "/create.php",
+                                "{validationid}" => $emailverification,
+                            );
 
                             $keys = array_keys($replace);
                             $values = array_values($replace);
                             $msg = str_replace($keys, $values, $msg);
                             $msg = str_replace("`n", "\n", $msg);
-                                                        $to_array = array($email => $shortname);
-                                                        $from_array = array($settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost'));
-                                                        \Lotgd\Mail::send($to_array, $msg, $subj, $from_array, false, "text/plain");
+                            $to_array = array($email => $shortname);
+                            $from_array = array($settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost'));
+                            \Lotgd\Mail::send($to_array, $msg, $subj, $from_array, false, "text/plain");
                             $output->output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
                         } else {
                             $output->rawOutput("<form action='login.php' method='POST'>");
@@ -441,13 +441,13 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 $r1 = Translator::translate("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
                 $r2 = Translator::translate("`\$(required)`0");
                 $r3 = Translator::translate("`\$(required, an email will be sent to this address to verify it before you can log in)`0");
-        if ((int) $settings->getSetting('requireemail', 0) === 0) {
-            $req = $r1;
-        } elseif ((int) $settings->getSetting('requirevalidemail', 0) === 0) {
-            $req = $r2;
-        } else {
-            $req = $r3;
-        }
+                if ((int) $settings->getSetting('requireemail', 0) === 0) {
+                    $req = $r1;
+                } elseif ((int) $settings->getSetting('requirevalidemail', 0) === 0) {
+                    $req = $r2;
+                } else {
+                    $req = $r3;
+                }
                 $output->rawOutput("</td><td><input name='email'>");
                 $output->outputNotl("%s", $req);
                 $output->rawOutput("</td></tr></table>");
@@ -461,15 +461,15 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 $createbutton = Translator::translate("Create your character");
                 $output->rawOutput("<input type='submit' class='button' value='$createbutton'>");
                 $output->outputNotl("`n`n");
-        if ($trash > 0) {
-            $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
-        }
-        if ($new > 0) {
-            $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
-        }
-        if ($old > 0) {
-            $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
-        }
+                if ($trash > 0) {
+                    $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
+                }
+                if ($new > 0) {
+                    $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
+                }
+                if ($old > 0) {
+                    $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+                }
                 $output->rawOutput("</form>");
     }
 }

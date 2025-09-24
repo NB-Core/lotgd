@@ -53,7 +53,7 @@ if (is_numeric($char)) {
 $sql = "SELECT login, name, level, sex, title, specialty, hashorse, acctid, resurrections, bio, dragonkills, race, clanname, clanshort, clanrank, " . Database::prefix("accounts") . ".clanid, laston, loggedin FROM " . Database::prefix("accounts") . " LEFT JOIN " . Database::prefix("clans") . " ON " . Database::prefix("accounts") . ".clanid = " . Database::prefix("clans") . ".clanid WHERE $where";
 $result = Database::query($sql);
 if ($target = Database::fetchAssoc($result)) {
-  // Let a module get the values if necessary
+    // Let a module get the values if necessary
     $target = HookHandler::hook("biotarget", $target);
     $target['login'] = rawurlencode($target['login']);
     $id = $target['acctid'];

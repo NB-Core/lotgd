@@ -140,12 +140,12 @@ if ($op == "") {
     $output->rawOutput("</form>");
     Nav::add("", "$link");
     if ($area == "") {
-               Commentary::talkForm("X", "says");
+        Commentary::talkForm("X", "says");
         //commentdisplay("", "' or '1'='1","X",100); //sure, encourage hacking...
         Moderate::commentmoderate('', '', 'X', 100, 'says', false, true);
     } else {
         Moderate::commentmoderate("", $area, "X", 100);
-               Commentary::talkForm($area, "says");
+        Commentary::talkForm($area, "says");
     }
 } elseif ($op == "audit") {
     $subop = Http::get("subop");

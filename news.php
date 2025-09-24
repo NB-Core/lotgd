@@ -78,7 +78,7 @@ while ($row = Database::fetchAssoc($result2)) {
             Motd::pollitem($row['motditem'], $row['motdtitle'], $row['motdbody'], $row['motdauthorname'], $row['motddate'], false);
     }
 }
- $output->outputNotl("`n");
+$output->outputNotl("`n");
 $output->output("`c`b`!News for %s %s`0`b`c", $date, $pagestr);
 
 while ($row = Database::fetchAssoc($result)) {
@@ -108,7 +108,7 @@ if (Database::numRows($result) == 0) {
     $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
     $output->output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
 }
- $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+$output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
 if (!$session['user']['loggedin']) {
     Nav::add("Login Screen", "index.php");
 } elseif ($session['user']['alive']) {

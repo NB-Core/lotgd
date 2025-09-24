@@ -259,8 +259,10 @@ if ($op == 'confirmbuy') {
             $output->output(
                 $texts['mountfull'],
                 Translator::translateInline($session['user']['sex'] ? $texts['lass'] : $texts['lad']),
-                (isset($playerMount['basename']) && $playerMount['basename'] ?
-                 $playerMount['basename'] : $playerMount['mountname'])
+                (isset($playerMount['basename']) && $playerMount['basename']
+                    ? $playerMount['basename']
+                    : $playerMount['mountname']
+                )
             );
             $translator->setSchema();
         }

@@ -20,11 +20,11 @@ if (isset($post['validation_error']) && $post['validation_error']) {
     $output->outputNotl("`n");
     foreach ($post as $key => $val) {
         $output->output("`\$Setting '`2%s`\$' to '`2%s`\$'`n", $key, htmlspecialchars($val, ENT_QUOTES, 'UTF-8'));
-               $sql = "REPLACE INTO " . Database::prefix("module_userprefs") .
-                       " (modulename,userid,setting,value) VALUES ('" .
-                       Database::escape($module) . "',$userid,'" .
-                       Database::escape($key) . "','" .
-                       Database::escape($val) . "')";
+        $sql = "REPLACE INTO " . Database::prefix("module_userprefs") .
+            " (modulename,userid,setting,value) VALUES ('" .
+            Database::escape($module) . "',$userid,'" .
+            Database::escape($key) . "','" .
+            Database::escape($val) . "')";
         Database::query($sql);
     }
     $output->output("`^Preferences for module %s saved.`n", $module);

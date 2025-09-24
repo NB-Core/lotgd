@@ -96,7 +96,7 @@ if ($op == "") {
     $output->output("Donating even one %s will gain you a membership card to the Hunter's Lodge, an area reserved exclusively for contributors.", $settings->getSetting('paypalcurrency', 'USD'));
     $output->output("Donations are accepted in whole %s increments only.`n`n", $settings->getSetting('paypalcurrency', 'USD'));
     $output->output("\"`&But I don't have access to a PayPal account, or I otherwise can't donate to your very wonderful project!`7\"`n");
-           // yes, "referer" is misspelt here, but the game setting was also misspelt
+    // yes, "referer" is misspelt here, but the game setting was also misspelt
     if ($settings->getSetting('refereraward', 25)) {
         $output->output("Well, there is another way that you can obtain points: by referring other people to our site!");
         $output->output("You'll get %s points for each person whom you've referred who makes it to level %s.", $settings->getSetting('refereraward', 25), $settings->getSetting('referminlevel', 4));

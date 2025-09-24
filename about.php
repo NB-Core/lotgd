@@ -38,10 +38,10 @@ switch ($op) {
     case "setup":
     case "listmodules":
     case "license":
-            require __DIR__ . "/pages/about/about_$op.php";
+        require __DIR__ . "/pages/about/about_$op.php";
         break;
     default:
-            require __DIR__ . "/pages/about/about_default.php";
+        require __DIR__ . "/pages/about/about_default.php";
         break;
 }
 if ($session['user']['loggedin']) {

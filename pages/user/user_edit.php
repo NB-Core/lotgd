@@ -103,7 +103,7 @@ if (httpget("subop") == "") {
                 $data[$key] = $x[1];
             }
         }
-               $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE modulename='" . Database::escape($module) . "' AND userid=" . (int)$userid;
+            $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE modulename='" . Database::escape($module) . "' AND userid=" . (int)$userid;
         $result = Database::query($sql);
         while ($row = Database::fetchAssoc($result)) {
             $data[$row['setting']] = $row['value'];

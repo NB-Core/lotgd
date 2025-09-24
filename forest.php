@@ -218,7 +218,7 @@ if ($op == "search") {
                     $prefixs = array("Elite","Dangerous","Lethal","Savage","Deadly","Malevolent","Malignant");
                     for ($i = 0; $i < $multi; $i++) {
                         $initialbadguy['creaturelevel'] = Random::eRand($mintargetlevel, $targetlevel);
-                                               $badguy = Outcomes::buffBadguy($initialbadguy);
+                        $badguy = Outcomes::buffBadguy($initialbadguy);
                         if ($type == "thrill") {
                             // 10% more experience
                             $badguy['creatureexp'] = round($badguy['creatureexp'] * 1.1, 0);
@@ -261,7 +261,7 @@ if ($op == "search") {
                             $badguy['creatureaiscript'] = "require('" . $aiscriptfile . "');";
                         }
                         //AI setup
-                                               $badguy = Outcomes::buffBadguy($badguy);
+                        $badguy = Outcomes::buffBadguy($badguy);
                         // Okay, they are thrillseeking, let's give them a bit extra
                         // exp and gold.
                         if ($type == "thrill") {
