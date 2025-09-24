@@ -27,7 +27,7 @@ class DeathMessage
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
-        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::e_rand() . ') LIMIT 1';
+        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::eRand() . ') LIMIT 1';
         $result = Database::query($sql);
         if ($result) {
             $row = Database::fetchAssoc($result);
@@ -54,7 +54,7 @@ class DeathMessage
     {
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
-        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::e_rand() . ') LIMIT 1';
+        $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::eRand() . ') LIMIT 1';
         $result = Database::query($sql);
         if ($result) {
             $row = Database::fetchAssoc($result);

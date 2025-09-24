@@ -49,9 +49,9 @@ class Outcomes
         foreach ($enemies as $badguy) {
             $dropMinGold = $settings->getSetting('dropmingold', 0);
             if ($dropMinGold) {
-                $badguy['creaturegold'] = Random::r_rand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
+                $badguy['creaturegold'] = Random::rRand(round((int)$badguy['creaturegold'] / 4), round(3 * (int)$badguy['creaturegold'] / 4));
             } else {
-                $badguy['creaturegold'] = Random::r_rand(0, (int)$badguy['creaturegold']);
+                $badguy['creaturegold'] = Random::rRand(0, (int)$badguy['creaturegold']);
             }
             $gold += $badguy['creaturegold'];
             if (isset($badguy['creaturelose'])) {
@@ -73,7 +73,7 @@ class Outcomes
         $expbonus += (int)$session['user']['dragonkills'] * (int)$session['user']['level'] * $multibonus;
         $totalexp = array_sum($options['experience']);
         $exp = (int) round($totalexp / $count, 0);
-        $gold = (int) round(Random::r_rand(round($gold / $count), round($gold)), 0);
+        $gold = (int) round(Random::rRand(round($gold / $count), round($gold)), 0);
         $expbonus = (int) round($expbonus / $count, 0);
 
         if ($gold) {
@@ -84,7 +84,7 @@ class Outcomes
         $args = HookHandler::hook('alter-gemchance', ['chance' => $gemChance]);
         $gemchances = (int)$args['chance'];
         $maxLevel = $settings->getSetting('maxlevel', 15);
-        if ($session['user']['level'] < $maxLevel && Random::e_rand(1, $gemchances) == 1) {
+        if ($session['user']['level'] < $maxLevel && Random::eRand(1, $gemchances) == 1) {
             $output->output("`&You find A GEM!`n`#");
             $session['user']['gems']++;
             DebugLog::add('found gem when slaying a monster.', false, false, 'forestwingem', 1);
@@ -215,10 +215,10 @@ class Outcomes
             $dk = round($dk * (.25 + $add));
         }
         $expflux = (int) round($badguy['creatureexp'] / 10, 0);
-        $expflux = (int) round(Random::r_rand(-$expflux, $expflux), 0);
+        $expflux = (int) round(Random::rRand(-$expflux, $expflux), 0);
         $badguy['creatureexp'] += $expflux;
-        $atkflux = (int) round(Random::r_rand(0, $dk), 0);
-        $defflux = (int) round(Random::r_rand(0, ($dk - $atkflux)), 0);
+        $atkflux = (int) round(Random::rRand(0, $dk), 0);
+        $defflux = (int) round(Random::rRand(0, ($dk - $atkflux)), 0);
         $hpflux = ($dk - ($atkflux + $defflux)) * 5;
         $badguy['creatureattack'] += $atkflux;
         $badguy['creaturedefense'] += $defflux;

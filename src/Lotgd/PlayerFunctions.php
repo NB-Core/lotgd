@@ -482,7 +482,7 @@ class PlayerFunctions
             $useref = "AND ref='$ref'";
             $targetdk = $refdk;
         }
-        $sql = 'SELECT male,female FROM ' . Database::prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . Random::e_rand() . ") LIMIT 1";
+        $sql = 'SELECT male,female FROM ' . Database::prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . Random::eRand() . ") LIMIT 1";
         $res = Database::query($sql);
         $row = ['male' => 'God', 'female' => 'Goddess'];
         if (Database::numRows($res) != 0) {
