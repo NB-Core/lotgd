@@ -234,7 +234,7 @@ if ($op != "newtarget") {
                                 $newcompanions = array();
                                 foreach ($companions as $name => $companion) {
                                     if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
-                                                                       $buffer = Battle::reportCompanionMove($badguy, $companion, "heal");
+                                        $buffer = Battle::reportCompanionMove($badguy, $companion, "heal");
                                         if ($buffer !== false) {
                                             $newcompanions[$name] = $buffer;
                                             unset($buffer);
@@ -254,19 +254,19 @@ if ($op != "newtarget") {
 
                         if ($op == "fight" || $op == "run" || $surprised) {
                             // Grab an initial roll.
-                                                    $roll = Battle::rollDamage($badguy);
+                            $roll = Battle::rollDamage($badguy);
                             if ($op == "fight" && !$surprised) {
                                 $ggchancetodouble = $session['user']['dragonkills'];
                                 $bgchancetodouble = $session['user']['dragonkills'];
 
                                 if ($badguy['creaturehealth'] > 0 && $session['user']['hitpoints'] > 0) {
-                                                                   $buffset = Buffs::activateBuffs("offense");
+                                    $buffset = Buffs::activateBuffs("offense");
                                     if ($badguy['creaturehealth'] > 0 && $session['user']['hitpoints'] > 0 && $badguy['istarget']) {
                                         if (is_array($companions)) {
                                             $newcompanions = array();
                                             foreach ($companions as $name => $companion) {
                                                 if (isset($companion['hitpoits']) && $companion['hitpoints'] > 0) {
-                                                                       $buffer = Battle::reportCompanionMove($badguy, $companion, "magic");
+                                                    $buffer = Battle::reportCompanionMove($badguy, $companion, "magic");
                                                     if ($buffer !== false) {
                                                         $newcompanions[$name] = $buffer;
                                                         unset($buffer);
@@ -310,7 +310,7 @@ if ($op != "newtarget") {
                                             if ($r < $ggchancetodouble && $badguy['creaturehealth'] > 0 && $session['user']['hitpoints'] > 0 && !$needtostopfighting) {
                                                 $additionalattack = true;
                                                 $ggchancetodouble -= ($r + 5);
-                                                                           $roll = Battle::rollDamage($badguy);
+                                                $roll = Battle::rollDamage($badguy);
                                             } else {
                                                 $additionalattack = false;
                                             }
@@ -345,7 +345,7 @@ if ($op != "newtarget") {
                                     if ($r < $bgchancetodouble && $badguy['creaturehealth'] > 0 && $session['user']['hitpoints'] > 0 && !$needtostopfighting) {
                                         $additionalattack = true;
                                         $bgchancetodouble -= ($r + 5);
-                                                                           $roll = Battle::rollDamage($badguy);
+                                        $roll = Battle::rollDamage($badguy);
                                     } else {
                                         $additionalattack = false;
                                     }
@@ -356,7 +356,7 @@ if ($op != "newtarget") {
                                 if (is_array($companions)) {
                                     foreach ($companions as $name => $companion) {
                                         if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
-                                                                       $buffer = Battle::reportCompanionMove($badguy, $companion, "fight");
+                                            $buffer = Battle::reportCompanionMove($badguy, $companion, "fight");
                                             if ($buffer !== false) {
                                                 $newcompanions[$name] = $buffer;
                                                 unset($buffer);
@@ -661,7 +661,7 @@ function battle_badguy_attacks(&$badguy)
             if (is_array($companions)) {
                 foreach ($companions as $name => $companion) {
                     if (isset($companion['hitpoints']) && $companion['hitpoints'] > 0) {
-                                        $buffer = Battle::reportCompanionMove($badguy, $companion, "defend");
+                        $buffer = Battle::reportCompanionMove($badguy, $companion, "defend");
                         if ($buffer !== false) {
                             $newcompanions[$name] = $buffer;
                             unset($buffer);

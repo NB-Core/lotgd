@@ -49,7 +49,7 @@ $op = Http::get('op');
 
 Nav::add("Navigation");
 if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
-       $userid = (int)Http::get('userid');
+    $userid = (int)Http::get('userid');
     if (PlayerFunctions::charCleanup($userid, CHAR_DELETE_SUICIDE)) {
         $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
         Database::query($sql);

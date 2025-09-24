@@ -193,10 +193,10 @@ if (
         ;
     }
 } else {
-       $output->output("Due to the behaviour of people in the past, access to the source code online has been restricted.");
-       $output->output("You may download the entirety of the latest publicly released stable version from <a href='http://www.dragonprime.net' target='_blank'>DragonPrime</a>.", true);
-       $output->output("For the +NB version of Legend of the Green Dragon, visit our <a href='https://github.com/NB-Core/lotgd' target='_blank'>GitHub repository</a> where you can download releases or clone the project.", true);
-       $output->output("You may then work with that code within the restrictions of its license.");
+    $output->output("Due to the behaviour of people in the past, access to the source code online has been restricted.");
+    $output->output("You may download the entirety of the latest publicly released stable version from <a href='http://www.dragonprime.net' target='_blank'>DragonPrime</a>.", true);
+    $output->output("For the +NB version of Legend of the Green Dragon, visit our <a href='https://github.com/NB-Core/lotgd' target='_blank'>GitHub repository</a> where you can download releases or clone the project.", true);
+    $output->output("You may then work with that code within the restrictions of its license.");
     $output->output("`n`nHopefully this will help put an end to actions like the following:");
     $output->rawOutput("<ul><li>");
     $output->output("Releasing code which they do not own without permission.");

@@ -100,12 +100,12 @@ function lotgdsort($a, $b)
 
 $op = Http::get('op');
 if ($op == "") {
-       $addy  = Http::get('addy');
-       $desc  = Http::get('desc');
-       $vers  = Http::get('version');
-       $admin = Http::get('admin');
-       $count = (int)Http::get('c');
-       $lang  = Http::get('l');
+    $addy  = Http::get('addy');
+    $desc  = Http::get('desc');
+    $vers  = Http::get('version');
+    $admin = Http::get('admin');
+    $count = (int)Http::get('c');
+    $lang  = Http::get('l');
 
     if ($vers == "") {
         $vers = "Unknown";

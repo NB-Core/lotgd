@@ -213,8 +213,10 @@ if ($op == "") {
             $output->rawOutput(" ]</td><td valign='top'>");
             $output->outputNotl($row['active'] ? $active : $inactive);
             $output->rawOutput("</td><td nowrap valign='top'><span title=\"" .
-            (isset($row['description']) && $row['description'] ?
-             $row['description'] : Sanitize::sanitize($row['formalname'])) . "\">");
+                (isset($row['description']) && $row['description']
+                    ? $row['description']
+                    : Sanitize::sanitize($row['formalname'])
+                ) . "\">");
             $output->outputNotl("%s", $row['formalname']);
             $output->rawOutput("<br>");
             $output->outputNotl("(%s) V%s", $row['modulename'], $row['version']);

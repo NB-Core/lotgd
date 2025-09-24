@@ -54,7 +54,7 @@ if (!$requirements_met) {
 }
 
 if (!file_exists("dbconnect.php")) {
-       define("DB_NODB", true);
+    define("DB_NODB", true);
 }
 chdir(__DIR__);
 

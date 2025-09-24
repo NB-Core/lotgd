@@ -116,64 +116,64 @@ $badguy = array(
 
     restore_buff_fields();
     $hpgain = array(
-            'total' => $session['user']['maxhitpoints'],
-            'dkpoints' => $dkpoints,
-            'extra' => $session['user']['maxhitpoints'] - $dkpoints -
-                    ($session['user']['level'] * 10),
-            'base' => $dkpoints + ($session['user']['level'] * 10),
-            );
+        'total' => $session['user']['maxhitpoints'],
+        'dkpoints' => $dkpoints,
+        'extra' => $session['user']['maxhitpoints'] - $dkpoints - ($session['user']['level'] * 10),
+        'base' => $dkpoints + ($session['user']['level'] * 10),
+    );
     $hpgain = HookHandler::hook("hprecalc", $hpgain);
     calculate_buff_fields();
 
-    $nochange = array("acctid" => 1
-                   ,"name" => 1
-                   ,"sex" => 1
-                   ,"playername" => 1
-                   ,"strength" => 1
-                   ,"dexterity" => 1
-                   ,"intelligence" => 1
-                   ,"constitution" => 1
-                   ,"wisdom" => 1
-                   ,"password" => 1
-                   ,"marriedto" => 1
-                   ,"title" => 1
-                   ,"login" => 1
-                   ,"dragonkills" => 1
-                   ,"locked" => 1
-                   ,"loggedin" => 1
-                   ,"superuser" => 1
-                   ,"gems" => 1
-                   ,"hashorse" => 1
-                   ,"gentime" => 1
-                   ,"gentimecount" => 1
-                   ,"lastip" => 1
-                   ,"uniqueid" => 1
-                   ,"dragonpoints" => 1
-                   ,"laston" => 1
-                   ,"prefs" => 1
-                   ,"lastmotd" => 1
-                   ,"emailaddress" => 1
-                   ,"emailvalidation" => 1
-                   ,"gensize" => 1
-                   ,"bestdragonage" => 1
-                   ,"dragonage" => 1
-                   ,"donation" => 1
-                   ,"donationspent" => 1
-                   ,"donationconfig" => 1
-                   ,"bio" => 1
-                   ,"charm" => 1
-                   ,"banoverride" => 1
-                   ,"referer" => 1
-                   ,"refererawarded" => 1
-                   ,"ctitle" => 1
-                   ,"beta" => 1
-                   ,"clanid" => 1
-                   ,"clanrank" => 1
-                   ,"clanjoindate" => 1
-                   ,"translatorlanguages" => 1
-                   ,"replaceemail" => 1
-                   ,"forgottenpassword" => 1
-                   );
+    $nochange = array(
+        "acctid" => 1,
+        "name" => 1,
+        "sex" => 1,
+        "playername" => 1,
+        "strength" => 1,
+        "dexterity" => 1,
+        "intelligence" => 1,
+        "constitution" => 1,
+        "wisdom" => 1,
+        "password" => 1,
+        "marriedto" => 1,
+        "title" => 1,
+        "login" => 1,
+        "dragonkills" => 1,
+        "locked" => 1,
+        "loggedin" => 1,
+        "superuser" => 1,
+        "gems" => 1,
+        "hashorse" => 1,
+        "gentime" => 1,
+        "gentimecount" => 1,
+        "lastip" => 1,
+        "uniqueid" => 1,
+        "dragonpoints" => 1,
+        "laston" => 1,
+        "prefs" => 1,
+        "lastmotd" => 1,
+        "emailaddress" => 1,
+        "emailvalidation" => 1,
+        "gensize" => 1,
+        "bestdragonage" => 1,
+        "dragonage" => 1,
+        "donation" => 1,
+        "donationspent" => 1,
+        "donationconfig" => 1,
+        "bio" => 1,
+        "charm" => 1,
+        "banoverride" => 1,
+        "referer" => 1,
+        "refererawarded" => 1,
+        "ctitle" => 1,
+        "beta" => 1,
+        "clanid" => 1,
+        "clanrank" => 1,
+        "clanjoindate" => 1,
+        "translatorlanguages" => 1,
+        "replaceemail" => 1,
+        "forgottenpassword" => 1,
+    );
 
     $nochange = HookHandler::hook("dk-preserve", $nochange);
 

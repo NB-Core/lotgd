@@ -34,14 +34,14 @@ SuAccess::check(SU_EDIT_COMMENTS);
 $op = Http::get('op');
 $userid = (int)Http::get('userid');
 if ($op == "block") {
-       $sql = "UPDATE " . Database::prefix("accounts") . " SET bio='`iBlocked for inappropriate usage`i',biotime='9999-12-31 23:59:59' WHERE acctid=$userid";
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET bio='`iBlocked for inappropriate usage`i',biotime='9999-12-31 23:59:59' WHERE acctid=$userid";
     $subj = array("Your bio has been blocked");
     $msg = array("The system administrators have decided that your bio entry is inappropriate, so it has been blocked.`n`nIf you wish to appeal this decision, you may do so with the petition link.");
     Mail::systemMail($userid, $subj, $msg);
     Database::query($sql);
 }
 if ($op == "unblock") {
-       $sql = "UPDATE " . Database::prefix("accounts") . " SET bio='',biotime='" . DATETIME_DATEMIN . "' WHERE acctid=$userid";
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET bio='',biotime='" . DATETIME_DATEMIN . "' WHERE acctid=$userid";
     $subj = array("Your bio has been unblocked");
     $msg = array("The system administrators have decided to unblock your bio.  You can once again enter a bio entry.");
     Mail::systemMail($userid, $subj, $msg);
