@@ -441,7 +441,7 @@ class PlayerFunctions
         return false;
     }
 
-    public static function validDkTitle(string $title, int $dks, bool $gender): bool
+    public static function validDkTitle(string $title, int $dks, int $gender): bool
     {
         $sql = 'SELECT dk,male,female FROM ' . Database::prefix('titles') . " WHERE dk <= $dks ORDER by dk DESC";
         $res = Database::query($sql);
@@ -463,7 +463,7 @@ class PlayerFunctions
         return false;
     }
 
-    public static function getDkTitle(int $dks, bool $gender, string|false $ref = false): string
+    public static function getDkTitle(int $dks, int $gender, string|false $ref = false): string
     {
         $refdk = -1;
         if ($ref !== false) {
