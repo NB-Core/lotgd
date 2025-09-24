@@ -22,6 +22,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\Specialty;
 use Lotgd\PlayerFunctions;
+use Lotgd\Random;
 
 //addnews ready
 // mail ready
@@ -51,7 +52,7 @@ if ($mid) {
     $row = Database::fetchAssoc($res);
     $l = (int)$row['level'];
 
-    $sql = "SELECT * FROM " . Database::prefix("masters") . " WHERE creaturelevel=$l ORDER BY RAND(" . e_rand() . ") LIMIT 1";
+    $sql = "SELECT * FROM " . Database::prefix("masters") . " WHERE creaturelevel=$l ORDER BY RAND(" . Random::eRand() . ") LIMIT 1";
 }
 
 $result = Database::query($sql);
@@ -114,9 +115,9 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
                 restore_buff_fields();
                 $dk  = round(get_player_dragonkillmod(true) * 0.33, 0);
 
-                $atkflux = e_rand(0, $dk);
+                $atkflux = Random::eRand(0, $dk);
                 $atkflux = min($atkflux, round($dk * .25));
-                $defflux = e_rand(0, ($dk - $atkflux));
+                $defflux = Random::eRand(0, $dk - $atkflux);
                 $defflux = min($defflux, round($dk * .25));
 
                 $hpflux = ($dk - ($atkflux + $defflux)) * 5;

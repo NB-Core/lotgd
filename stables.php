@@ -18,6 +18,7 @@ use Lotgd\Output;
 use Lotgd\Sanitize;
 use Lotgd\DebugLog;
 use Lotgd\DateTime;
+use Lotgd\Random;
 
 // translator ready
 // addnews ready
@@ -133,7 +134,7 @@ if ($op == "") {
         $translator->setSchema();
     } else {
         // Idea taken from Robert of dragonprime.cawsquad.net
-        $t = e_rand(0, count($texts['finebeast']) - 1);
+        $t = Random::eRand(0, count($texts['finebeast']) - 1);
         $translator->setSchema($schemas['finebeast']);
         $output->output($texts['finebeast'][$t]);
         $translator->setSchema();

@@ -21,6 +21,7 @@ use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Sanitize;
+use Lotgd\Random;
 
 // translator ready
 // addnews ready
@@ -154,7 +155,7 @@ if ($dp < $dkills) {
     );
     $turnstoday = $args['turnstoday'];
 
-    $interestrate = e_rand($mininterest * 100, $maxinterest * 100) / (float)100;
+    $interestrate = Random::eRand((int) round($mininterest * 100), (int) round($maxinterest * 100)) / 100.0;
     if ($session['user']['turns'] > $settings->getSetting('fightsforinterest', 4) && $session['user']['goldinbank'] >= 0) {
         $interestrate = 0;
         $output->output("`2Today's interest rate: `^0% (Bankers in this village only give interest to those who work for it)`2.`n");
@@ -231,8 +232,8 @@ if ($dp < $dkills) {
             Translator::translateInline($dkff == 1 ? 'fight' : 'fights')
         );
     }
-    $r1 = e_rand(-1, 1);
-    $r2 = e_rand(-1, 1);
+    $r1 = Random::eRand(-1, 1);
+    $r2 = Random::eRand(-1, 1);
     $spirits = $r1 + $r2;
     $resurrectionturns = $spirits;
     if ($resurrection == "true") {

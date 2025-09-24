@@ -1,6 +1,7 @@
 <?php
 
 use Lotgd\MySQL\Database;
+use Lotgd\Random;
 
 // translator ready
 // addnews ready
@@ -155,7 +156,7 @@ function racecat_dohook($hookname, $args)
             }
             if (
                 $session['user']['level'] < 15 &&
-                e_rand(1, 100) <= get_module_setting("gemchance")
+                Random::eRand(1, 100) <= get_module_setting("gemchance")
             ) {
                 output(get_module_setting("gemmessage") . "`n`0");
                 $session['user']['gems']++;

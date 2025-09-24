@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\Random;
+
 // mail ready
 // addnews ready
 // translator ready
@@ -77,7 +79,7 @@ function fairy_runevent(string $type): void
             output("You discover that ...`n`n`^");
             $session['user']['gems']--;
             debuglog("gave 1 gem to a fairy");
-            switch (e_rand(1, 7)) {
+            switch (Random::eRand(1, 7)) {
                 case 1:
                     $extra = get_module_setting("fftoaward");
                     if ($extra == 1) {

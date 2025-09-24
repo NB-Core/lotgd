@@ -13,7 +13,7 @@ if (!isset($badguy['maxhealth'])) {
 
 if ($badguy['creaturehealth'] < $badguy['maxhealth'] * 0.60 && $badguy['healpoints'] > 0) {
   //heal randomly up to 33% of his maxhp
-    $heal = min($badguy['healpoints'], e_rand(1, $badguy['maxhealth'] / 3));
+    $heal = min($badguy['healpoints'], \Lotgd\Random::eRand(1, (int) round($badguy['maxhealth'] / 3)));
     $badguy['healpoints'] -= $heal;
     $badguy['creaturehealth'] += $heal;
     output("`!%s`# heals for `$%s hitpoints`#.`n", $heal);

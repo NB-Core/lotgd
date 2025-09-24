@@ -15,6 +15,7 @@ use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Events;
 use Lotgd\Settings;
+use Lotgd\Random;
 
 // addnews ready.
 // translator ready
@@ -52,9 +53,9 @@ switch ($op) {
 
         break;
     case "run":
-        if (e_rand(0, 2) == 1) {
+        if (Random::eRand(0, 2) == 1) {
             $output->output("`\$%s`) curses you for your cowardice.`n`n", $deathoverlord);
-            $favor = 5 + e_rand(0, $session['user']['level']);
+            $favor = 5 + Random::eRand(0, $session['user']['level']);
             if ($favor > $session['user']['deathpower']) {
                 $favor = $session['user']['deathpower'];
             }

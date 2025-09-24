@@ -16,6 +16,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Lotgd\Random;
 
 // addnews ready
 // translator ready
@@ -54,10 +55,10 @@ $badguy = array(
     // used on attack and defense.
     // Coded by JT, based on collaboration with MightyE
     restore_buff_fields();
-    $points  = round(get_player_dragonkillmod(true) * 0.75, 0);
+    $points  = (int) round(get_player_dragonkillmod(true) * 0.75, 0);
 
-    $atkflux = e_rand(0, $points);
-    $defflux = e_rand(0, $points - $atkflux);
+    $atkflux = Random::eRand(0, $points);
+    $defflux = Random::eRand(0, $points - $atkflux);
 
     $hpflux = ($points - ($atkflux + $defflux)) * 5;
     debug("DEBUG: $points modification points total.`0`n");

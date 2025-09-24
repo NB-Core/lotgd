@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\Random;
+
 // addnews ready
 // translator ready
 // mail ready
@@ -9,70 +11,25 @@ declare(strict_types=1);
 /**
  * Legacy random number helper.
  *
- * This function emulates the old behaviour of `e_rand()` but uses
- * `random_int()` for better randomness and adds strict typing.
+ * Wrapper for {@see Random::eRand()} that preserves historical behaviour.
  */
-function e_rand(?int $min = null, ?int $max = null): int
+function e_rand($min = null, $max = null): int
 {
-    if ($min === null) {
-            return random_int(0, mt_getrandmax());
-    }
+    $min = ($min === null) ? null : (int) round((float) $min);
+    $max = ($max === null) ? null : (int) round((float) $max);
 
-        $min = (int) round($min);
-
-    if ($max === null) {
-            return random_int(0, $min);
-    }
-
-        $max = (int) round($max);
-
-    if ($min === $max) {
-            return $min;
-    }
-
-        // Do NOT ask me why the following line can be executed, it makes no sense,
-        // but it *does* get executed.
-    if ($min == 0 && $max == 0) {
-            return 0;
-    }
-
-    if ($min < $max) {
-            return random_int($min, $max);
-    }
-
-        return random_int($max, $min);
+    return Random::eRand($min, $max);
 }
 
 /**
  * Random float helper with three decimal precision.
+ *
+ * Wrapper for {@see Random::rRand()} that casts arguments appropriately.
  */
-function r_rand(?float $min = null, ?float $max = null): float
+function r_rand($min = null, $max = null): float
 {
-    if ($min === null) {
-            return random_int(0, mt_getrandmax());
-    }
+    $min = ($min === null) ? null : (float) $min;
+    $max = ($max === null) ? null : (float) $max;
 
-        $min *= 1000;
-
-    if ($max === null) {
-            return random_int(0, (int) $min) / 1000;
-    }
-
-        $max *= 1000;
-
-    if ($min == $max) {
-            return $min / 1000;
-    }
-
-        // Do NOT ask me why the following line can be executed, it makes no sense,
-        // but it *does* get executed.
-    if ($min == 0 && $max == 0) {
-            return 0;
-    }
-
-    if ($min < $max) {
-            return random_int((int) $min, (int) $max) / 1000;
-    }
-
-        return random_int((int) $max, (int) $min) / 1000;
+    return Random::rRand($min, $max);
 }

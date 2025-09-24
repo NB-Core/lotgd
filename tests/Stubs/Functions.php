@@ -149,9 +149,12 @@ namespace {
     }
 
     if (!function_exists('e_rand')) {
-        function e_rand(int $min = 0, int $max = PHP_INT_MAX): int
+        function e_rand($min = 0, $max = PHP_INT_MAX): int
         {
-            return mt_rand($min, $max);
+            $min = ($min === null) ? null : (int) $min;
+            $max = ($max === null) ? null : (int) $max;
+
+            return \Lotgd\Random::eRand($min, $max);
         }
     }
 
