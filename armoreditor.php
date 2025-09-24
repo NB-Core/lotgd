@@ -2,7 +2,15 @@
 
 declare(strict_types=1);
 
+use Lotgd\Forms;
+use Lotgd\Http;
 use Lotgd\MySQL\Database;
+use Lotgd\Nav;
+use Lotgd\Nav\SuperuserNav;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\SuAccess;
 use Lotgd\Translator;
 
 /**
@@ -11,23 +19,14 @@ use Lotgd\Translator;
  * @see armor.php
  */
 
-use Lotgd\SuAccess;
-use Lotgd\Nav\SuperuserNav;
 // translator ready
-use Lotgd\Forms;
 
 // addnews ready
 // mail ready
-use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
 $output = Output::getInstance();
-
-use Lotgd\Http;
-use Lotgd\Page\Header;
-use Lotgd\Page\Footer;
-use Lotgd\Nav;
 
 SuAccess::check(SU_EDIT_EQUIPMENT);
 

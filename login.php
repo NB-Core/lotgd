@@ -19,8 +19,7 @@ use Lotgd\Settings;
 
 define("ALLOW_ANONYMOUS", true);
 require_once __DIR__ . "/common.php";
-// This must be after common.php for now
-use Lotgd\ServerFunctions;
+// Lotgd\ServerFunctions relies on the bootstrap inside common.php.
 
 $output = Output::getInstance();
 $settings = Settings::getInstance();
@@ -85,7 +84,7 @@ if ($name != "") {
             // this hook should automatically call page_footer and exit
             // itself.
             HookHandler::hook("check-login");
-            if (ServerFunctions::isTheServerFull() == true && $force !== '1') {
+            if (\Lotgd\ServerFunctions::isTheServerFull() === true && $force !== '1') {
                 //sanity check if the server is / got full --> back to home
                 $session['message'] = Translator::translateInline("`4Sorry, server full!");
                 $session['user'] = array();

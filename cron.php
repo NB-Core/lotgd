@@ -24,7 +24,7 @@ BootstrapErrorHandler::register();
 $result = chdir(__DIR__);
 if (!defined('CRON_TEST')) {
     try {
-        require_once 'common.php';
+        require_once __DIR__ . '/common.php';
     } catch (\Throwable $e) {
         $message = sprintf(
             '[%s] Cron common.php failure: %s in %s on line %d%s',
