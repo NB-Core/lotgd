@@ -6,15 +6,20 @@ use Lotgd\Names;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Http;
 
 $sql = "";
 $updates = 0;
-$post = httpallpost();
-$oldvalues = httppost('oldvalues');
+$output = Output::getInstance();
+$settings = Settings::getInstance();
+$post = Http::allPost();
+$oldvalues = Http::post('oldvalues');
 $oldvalues = html_entity_decode(
     (string) $oldvalues,
     ENT_COMPAT,
-    getsetting('charset', 'UTF-8')
+    $settings->getSetting('charset', 'UTF-8')
 );
 /** @var array|string $oldvalues */
 $oldvalues = unserialize($oldvalues);
@@ -78,7 +83,7 @@ foreach ($post as $key => $val) {
         } elseif ($key == "name33" && stripslashes($val) != ($oldvalues[$key] ?? '')) {
             $updates++;
             $tmp = sanitize_colorname(
-                getsetting("spaceinname", 0),
+                $settings->getSetting('spaceinname', 0),
                 stripslashes($val),
                 true
             );

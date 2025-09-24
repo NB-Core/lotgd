@@ -6,9 +6,13 @@ use Lotgd\Page\Header;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Modules;
+use Lotgd\Output;
+use Lotgd\Settings;
 
     Header::pageHeader("Clan Halls");
-    $registrar = getsetting('clanregistrar', '`%Karissa');
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $registrar = $settings->getSetting('clanregistrar', '`%Karissa');
     Nav::add("Clan Options");
     $output->output("`b`c`&Clan Halls`c`b");
 if ($op == "apply") {

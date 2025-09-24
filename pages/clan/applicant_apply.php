@@ -10,8 +10,13 @@ use Lotgd\Nltoappon;
 use Lotgd\Translator;
 use Lotgd\Modules;
 use Lotgd\Sanitize;
+use Lotgd\Output;
+use Lotgd\Settings;
 
         $to = (int)Http::get('to');
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $charset = $settings->getSetting('charset', 'UTF-8');
 if ($to > 0) {
     $output->output("`%%s`7 accepts your application, files it in her out box, and folds her hands on the desk, staring at you.", $registrar);
     $output->output("You stand there staring blankly back at her for a few minutes before she suggests that perhaps you'd like to take a seat in the waiting area.");
@@ -78,7 +83,7 @@ if ($row['c'] == 1) {
                 $output->outputNotl(
                     "&#149; <a href='clan.php?op=apply&to=%s'>%s</a> %s`n",
                     $row['clanid'],
-                    Sanitize::fullSanitize(htmlentities($row['clanname'], ENT_COMPAT, getsetting("charset", "UTF-8"))),
+                    Sanitize::fullSanitize(htmlentities($row['clanname'], ENT_COMPAT, $charset)),
                     $memb,
                     true
                 );

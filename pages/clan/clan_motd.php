@@ -10,11 +10,17 @@ use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
 use Lotgd\Translator;
 use Lotgd\Nltoappon;
+use Lotgd\Output;
+use Lotgd\Settings;
 
         Header::pageHeader("Update Clan Description / MoTD");
         Nav::add("Clan Options");
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $charset = $settings->getSetting('charset', 'UTF-8');
+    $charsetIso = $settings->getSetting('charset', 'ISO-8859-1');
 if ($session['user']['clanrank'] >= CLAN_OFFICER) {
-    $clanmotd = Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, getsetting('charset', 'ISO-8859-1')));
+    $clanmotd = Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, $charsetIso));
     if (
         Http::postIsset('clanmotd') &&
             stripslashes($clanmotd) != $claninfo['clanmotd']
@@ -33,7 +39,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
             stripslashes($clandesc) != $claninfo['clandesc'] &&
             $claninfo['descauthor'] != 4294967295
     ) {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET clandesc='" . addslashes(mb_substr(stripslashes($clandesc), 0, 4096, getsetting('charset', 'UTF-8'))) . "',descauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
+        $sql = "UPDATE " . Database::prefix("clans") . " SET clandesc='" . addslashes(mb_substr(stripslashes($clandesc), 0, 4096, $charset)) . "',descauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);
         DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $output->output("Updating description`n");
@@ -75,17 +81,17 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     $output->rawOutput("<form action='clan.php?op=motd' method='POST'>");
     Nav::add("", "clan.php?op=motd");
     $output->output("`&`bMoTD:`b `7(4096 chars)`n");
-    $output->rawOutput("<textarea name='clanmotd' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clanmotd'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br>");
+    $output->rawOutput("<textarea name='clanmotd' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clanmotd'], ENT_COMPAT, $charset) . "</textarea><br>");
     $output->output("`n`&`bDescription:`b `7(4096 chars)`n");
     $blocked = Translator::translateInline("Your clan has been blocked from posting a description.`n");
     if ($claninfo['descauthor'] == INT_MAX) {
         $output->outputNotl($blocked);
     } else {
-        $output->rawOutput("<textarea name='clandesc' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clandesc'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br>");
+        $output->rawOutput("<textarea name='clandesc' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clandesc'], ENT_COMPAT, $charset) . "</textarea><br>");
     }
     if ($session['user']['clanrank'] >= CLAN_LEADER) {
         $output->output("`n`&`bCustom Talk Line`b `7(blank means \"says\" -- 15 chars max)`n");
-        $output->rawOutput("<input name='customsay' value=\"" . htmlentities($claninfo['customsay'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" class='input' maxlength=\"15\"><br/>");
+        $output->rawOutput("<input name='customsay' value=\"" . htmlentities($claninfo['customsay'], ENT_COMPAT, $charset) . "\" class='input' maxlength=\"15\"><br/>");
     }
     $save = Translator::translateInline("Save");
     $output->rawOutput("<input type='submit' class='button' value='$save'>");

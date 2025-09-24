@@ -112,6 +112,8 @@ require_once __DIR__ . "/lib/villagenav.php";
 
 ErrorHandler::register();
 
+$output = Output::getInstance();
+
 // Enable zlib output compression when available.
 if (function_exists('ini_set') && extension_loaded('zlib')) {
     ini_set('zlib.output_compression', '1');
@@ -216,11 +218,11 @@ if (file_exists("dbconnect.php")) {
         }
         if (!AJAX_MODE) {
                 Header::pageHeader("The game has not yet been installed");
-                output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
-            output("You must run the game's installer, and follow its instructions in order to set up LoGD.  You can go to the installer <a href='installer.php'>here</a>.", true);
-                output("`n`nIf you're not sure why you're seeing this message, it's because this game is not properly configured right now. ");
-                output("If you've previously been running the game here, chances are that you lost a file called '`%dbconnect.php`#' from your site.");
-                output("If that's the case, no worries, we can get you back up and running in no time, and the installer can help!");
+                $output->output("`#Welcome to `@Legend of the Green Dragon`#, a game by Eric Stevens & JT Traub.`n`n");
+            $output->output("You must run the game's installer, and follow its instructions in order to set up LoGD.  You can go to the installer <a href='installer.php'>here</a>.", true);
+                $output->output("`n`nIf you're not sure why you're seeing this message, it's because this game is not properly configured right now. ");
+                $output->output("If you've previously been running the game here, chances are that you lost a file called '`%dbconnect.php`#' from your site.");
+                $output->output("If that's the case, no worries, we can get you back up and running in no time, and the installer can help!");
             Nav::add("Game Installer", "installer.php");
                 Footer::pageFooter();
         }
@@ -270,20 +272,20 @@ if ($link === false) {
         }
         if (!AJAX_MODE) {
                 Header::pageHeader("Database Connection Error");
-                output("`c`\$Database Connection Error`0`c`n`n");
-                output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
+                $output->output("`c`\$Database Connection Error`0`c`n`n");
+                $output->output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
             if (!$notified) {
                         //the admin did not want to notify him with a script
-                            output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
+                            $output->output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
                             //add the message as it was not enclosed and posted to the smsnotify file
-                            output("Please give them the following error message:`n");
-                            output("`i`1%s`0`i`n`n", $smsmessage, true);
+                            $output->output("Please give them the following error message:`n");
+                            $output->output("`i`1%s`0`i`n`n", $smsmessage, true);
             } else {
                             //in any other case
-                            output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
+                            $output->output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
             }
-                            output("Sorry for the inconvenience,`n");
-                            output("Staff of %s", $_SERVER['SERVER_NAME']);
+                            $output->output("Sorry for the inconvenience,`n");
+                            $output->output("Staff of %s", $_SERVER['SERVER_NAME']);
                             Nav::add("Home", "index.php");
                             Footer::pageFooter();
         }
@@ -309,20 +311,20 @@ if (!defined("DB_NODB")) {
             }
             if (!AJAX_MODE) {
                         Header::pageHeader("Database Connection Error");
-                        output("`c`\$Database Connection Error`0`c`n`n");
-                        output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
+                        $output->output("`c`\$Database Connection Error`0`c`n`n");
+                        $output->output("`xDue to technical problems the game is unable to connect to the database server.`n`n");
                 if (!$notified) {
                     //the admin did not want to notify him with a script
-                    output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
+                    $output->output("Please notify the head admin or any other staff member you know via email or any other means you have at hand to care about this.`n`n");
                     //add the message as it was not enclosed and posted to the smsnotify file
-                    output("Please give them the following error message:`n");
-                    output("`i`1%s`0`i`n`n", $smsmessage, true);
+                    $output->output("Please give them the following error message:`n");
+                    $output->output("`i`1%s`0`i`n`n", $smsmessage, true);
                 } else {
                     //in any other case
-                    output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
+                    $output->output("The admins have been notified of this. As soon as possible they will fix this up.`n`n");
                 }
-                        output("Sorry for the inconvenience,`n");
-                        output("Staff of %s", $_SERVER['SERVER_NAME']);
+                        $output->output("Sorry for the inconvenience,`n");
+                        $output->output("Staff of %s", $_SERVER['SERVER_NAME']);
                         Nav::add("Home", "index.php");
                         Footer::pageFooter();
             }
@@ -352,7 +354,7 @@ if (!AJAX_MODE && isset($settings) && ($GLOBALS['__DATACACHE_WARNING__'] ?? '') 
     // Show only to admins with config rights
     if ((($session['user']['superuser'] ?? 0) & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
         Translator::translatorSetup();
-        output("`c`4Performance Warning:`0 %s`c`n", $GLOBALS['__DATACACHE_WARNING__'], true);
+        $output->output("`c`4Performance Warning:`0 %s`c`n", $GLOBALS['__DATACACHE_WARNING__'], true);
     }
 }
 
@@ -419,11 +421,11 @@ if (!isset($nokeeprestore[$scriptNameEnv]) || !$nokeeprestore[$scriptNameEnv]) {
 if (isset($settings) && $logd_version != $settings->getSetting('installer_version', '-1') && (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER))) {
     if (!AJAX_MODE) {
             Header::pageHeader("Upgrade Needed");
-            output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
-            output("In order to perform the upgrade, an admin will have to run through the installer.");
-        output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n", true);
-            output("`@If you don't know what this all means, just sit tight, we're doing an upgrade and will be done soon, you will be automatically returned to the game when the upgrade is complete.");
-            rawoutput("<meta http-equiv='refresh' content='30; url={$session['user']['restorepage']}'>");
+            $output->output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
+            $output->output("In order to perform the upgrade, an admin will have to run through the installer.");
+        $output->output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n", true);
+            $output->output("`@If you don't know what this all means, just sit tight, we're doing an upgrade and will be done soon, you will be automatically returned to the game when the upgrade is complete.");
+            $output->rawOutput("<meta http-equiv='refresh' content='30; url={$session['user']['restorepage']}'>");
         Nav::add("Installer (Admins only!)", "installer.php");
             Footer::pageFooter();
     }
@@ -432,7 +434,7 @@ if (isset($settings) && $logd_version != $settings->getSetting('installer_versio
         // here we have a nasty situation. The installer file exists (ready to be used to get out of any bad situation like being defeated etc and it is no upgrade or new installation. It MUST be deleted
     if (!AJAX_MODE) {
             Header::pageHeader("Major Security Risk");
-        output("`\$Remove the file named 'installer.php' from your main game directory! You need to comply in order to get the game up and running.");
+        $output->output("`\$Remove the file named 'installer.php' from your main game directory! You need to comply in order to get the game up and running.");
             Nav::add("Home", "index.php");
             Footer::pageFooter();
     }
@@ -583,13 +585,12 @@ if (
     //Server runs in Debug mode, tell the superuser about it
     if (($session['user']['superuser'] & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
         Translator::getInstance()->setSchema("debug");
-        output("<center>`\$<h2>SERVER RUNNING IN DEBUG MODE</h2></center>`n`n", true);
+        $output->output("<center>`\$<h2>SERVER RUNNING IN DEBUG MODE</h2></center>`n`n", true);
         Translator::getInstance()->setSchema();
     }
 }
 
 // After setup, allow modification of colors and nested tags
-$output = \Lotgd\Output::getInstance();
 $colors = HookHandler::hook("core-colors", $output->getColors());
 $output->setColors($colors);
 // and nested tag handling

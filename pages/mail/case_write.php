@@ -6,6 +6,10 @@ use Lotgd\MySQL\Database;
 use Lotgd\Mail;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
+use Lotgd\Http;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Modules;
 
 /**
  * Display the mail compose form.
@@ -14,14 +18,25 @@ function mailWrite(): void
 {
     global $session;
 
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+
     // Capture request values
-    $subject    = (string) httppost('subject');
-    $subjectGet = (string) httpget('subject');
-    $replyTo    = (int) httpget('replyto');
-    $forwardTo  = (int) httppost('forwardto');
-    $toGet      = (string) httpget('to');
-    $toPost     = (string) httppost('to');
-    $bodyGet    = (string) httpget('body'); // Prefilled request value for body text
+    $subject    = (string) Http::post('subject');
+    $subjectGet = (string) Http::get('subject');
+    $replyTo    = (int) Http::get('replyto');
+    $forwardTo  = (int) Http::post('forwardto');
+    $toGet      = (string) Http::get('to');
+    $toPost     = (string) Http::post('to');
+    $bodyGet    = (string) Http::get('body'); // Prefilled request value for body text
+
+    $charset = $settings->getSetting('charset', 'UTF-8');
+    $charsetIso = $settings->getSetting('charset', 'ISO-8859-1');
+    $mailSizeLimit = (int) $settings->getSetting('mailsizelimit', 1024);
+    $superuserMessage = $settings->getSetting(
+        'superuseryommessage',
+        "Asking an admin for gems, gold, weapons, armor, or anything else which you have not earned will not be honored. If you are experiencing problems with the game, please use the 'Petition for Help' link instead of contacting an admin directly."
+    );
 
     $body  = ''; // Loaded message body when replying or forwarding
     $row   = [];
@@ -40,7 +55,7 @@ function mailWrite(): void
 
         if ($row) {
             if ((!isset($row['login']) || $row['login'] === '') && $forwardTo == 0) {
-                output("You cannot reply to a system message.`n`nPress the \"Back\" button in your browser to get back.");
+                $output->output("You cannot reply to a system message.`n`nPress the \"Back\" button in your browser to get back.");
                 $row = [];
                 popup_footer();
             }
@@ -53,7 +68,7 @@ function mailWrite(): void
                 $row['superuser'] = getSuperuserFlag($row['login']);
             }
         } else {
-            output("Eek, no such message was found!`n");
+            $output->output("Eek, no such message was found!`n");
         }
     }
 
@@ -61,7 +76,7 @@ function mailWrite(): void
         $temp = getAccountByLogin($toGet);
 
         if ($temp === null) {
-            output("Could not find that person.`n");
+            $output->output("Could not find that person.`n");
         } else {
             $row = $temp;
         }
@@ -100,20 +115,20 @@ function mailWrite(): void
         }
     }
 
-    rawoutput("<form action='mail.php?op=send' method='post'>");
-    rawoutput("<input type='hidden' name='returnto' value=\"$msgId\">");
+    $output->rawOutput("<form action='mail.php?op=send' method='post'>");
+    $output->rawOutput("<input type='hidden' name='returnto' value=\"$msgId\">");
 
     $superusers = [];
     $acctidTo   = 0; // recipient account ID for hooks
 
     if (isset($row['login']) && $row['login'] !== '' && $forwardTo == 0) {
-        output_notl(
+        $output->outputNotl(
             "<input type='hidden' name='to' id='to' value=\"" .
-            htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) .
+            htmlentities($row['login'], ENT_COMPAT, $charset) .
             "\">",
             true
         );
-        output('`2To: `^%s`n', $row['name']);
+        $output->output('`2To: `^%s`n', $row['name']);
         if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
             $superusers[] = $row['login'];
         }
@@ -123,22 +138,22 @@ function mailWrite(): void
 
     renderSuperuserScript($superusers);
 
-    output('`2Subject:');
-    rawoutput(
+    $output->output('`2Subject:');
+    $output->rawOutput(
         "<input name='subject' value=\"" .
-        htmlentities($subject, ENT_COMPAT, getsetting('charset', 'UTF-8')) .
-        htmlentities(stripslashes($subjectGet), ENT_COMPAT, getsetting('charset', 'UTF-8')) .
+        htmlentities($subject, ENT_COMPAT, $charset) .
+        htmlentities(stripslashes($subjectGet), ENT_COMPAT, $charset) .
         "\"><br>"
     );
 
-    rawoutput("<div id='warning' style='visibility: hidden; display: none;'>");
+    $output->rawOutput("<div id='warning' style='visibility: hidden; display: none;'>");
     // superuser messages do not get translated.
-    output("`2Notice: `^%s`n", getsetting('superuseryommessage', 'Asking an admin for gems, gold, weapons, armor, or anything else which you have not earned will not be honored. If you are experiencing problems with the game, please use the \'Petition for Help\' link instead of contacting an admin directly.'));
+    $output->output("`2Notice: `^%s`n", $superuserMessage);
     // Give modules a chance to put info in here to this user
-    modulehook('mail-write-notify', ['acctid_to' => $acctidTo]);
-    rawoutput('</div>');
+    Modules::hook('mail-write-notify', ['acctid_to' => $acctidTo]);
+    $output->rawOutput('</div>');
 
-    output('`2Body:`n');
+    $output->output('`2Body:`n');
     renderResizeScripts();
 
     $prefs = &$session['user']['prefs'];
@@ -152,7 +167,7 @@ function mailWrite(): void
     $cols = max(10, $prefs['mailwidth']);
     $rows = max(10, $prefs['mailheight']);
 
-    rawoutput(
+    $output->rawOutput(
         "<table style='border:0;cellspacing:10'><tr><td><input type='button' onClick=\"increase(textarea1,1);\" value='+' accesskey='+'></td><td><input type='button' onClick=\"increase(textarea1,-1);\" value='-' accesskey='-'></td><td><input type='button' onClick=\"cincrease(textarea1,-1);\" value='<-'></td><td><input type='button' onClick=\"cincrease(textarea1,1);\" value='->' accesskey='-'></td></tr></table>"
     );
 
@@ -165,33 +180,37 @@ function mailWrite(): void
                 mb_substr(
                     $body,
                     0,
-                    (int) getsetting('mailsizelimit', 1024),
-                    getsetting('charset', 'ISO-8859-1')
+                    $mailSizeLimit,
+                    $charsetIso
                 )
             )
         ),
         ENT_COMPAT,
-        getsetting('charset', 'UTF-8')
+        $charset
     );
     $textBody .= htmlentities(
         Sanitize::sanitizeMb(stripslashes($bodyGet)),
         ENT_COMPAT,
-        getsetting('charset', 'UTF-8')
+        $charset
     );
 
-    rawoutput(
+    $output->rawOutput(
         "<textarea id='textarea1' class='input' onKeyUp='sizeCount(this);' name='body' cols='$cols' rows='$rows'>$textBody</textarea>"
     );
 
     $send     = Translator::translateInline('Send');
     $sendClose = Translator::translateInline('Send and Close');
     $sendBack  = Translator::translateInline('Send and back to main Mailbox');
-    rawoutput(
+    $output->rawOutput(
         "<table border='0' cellpadding='0' cellspacing='0' width='100%'><tr><td><input type='submit' class='button' value='$send'></td><td style='width:20px;'></td><td><input type='submit' class='button' value='$sendClose' name='sendclose'></td><td><input type='submit' class='button' value='$sendBack' name='sendback'></td><td align='right'><div id='sizemsg'></div></td></tr></table>"
     );
-    rawoutput('</form>');
+    $output->rawOutput('</form>');
 
     renderSizeCountScript();
+
+    if (isset($GLOBALS['forms_output'])) {
+        $GLOBALS['forms_output'] = $output->getRawOutput();
+    }
 }
 
 /**
@@ -223,9 +242,13 @@ function getAccountByLogin(string $login): ?array
  */
 function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo, array &$row): void
 {
-    rawoutput("<label for='to'>");
-    output('`2To: ');
-    rawoutput('</label>');
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $charset = $settings->getSetting('charset', 'UTF-8');
+
+    $output->rawOutput("<label for='to'>");
+    $output->output('`2To: ');
+    $output->rawOutput('</label>');
 
     $sql   = 'SELECT acctid,login,name,superuser FROM ' . Database::prefix('accounts') .
         " WHERE login = '" . addslashes($to) . "' AND locked = 0";
@@ -246,39 +269,39 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
 
     if ($dbNumRows == 1) {
         $row = Database::fetchAssoc($result); // fetch login, name, superuser, and acctid
-        output_notl(
+        $output->outputNotl(
             "<input type='hidden' id='to' name='to' value=\"" .
-            htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) .
+            htmlentities($row['login'], ENT_COMPAT, $charset) .
             "\">",
             true
         );
-        output_notl("`^{$row['name']}`n");
+        $output->outputNotl("`^{$row['name']}`n");
         if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
             $superusers[] = $row['login'];
         }
         $acctidTo = $row['acctid'];
     } elseif ($dbNumRows == 0) {
-        output("`\$No one was found who matches \"%s\".`n", stripslashes($to));
-        output('`@Please try again.`n');
-        httpset('prepop', $to, true);
-        rawoutput('</form>');
+        $output->output("`\$No one was found who matches \"%s\".`n", stripslashes($to));
+        $output->output('`@Please try again.`n');
+        Http::set('prepop', $to, true);
+        $output->rawOutput('</form>');
         require 'pages/mail/case_address.php';
         popup_footer();
     } else {
-        output_notl("<select name='to' id='to' onchange='check_su_warning();'>", true);
+        $output->outputNotl("<select name='to' id='to' onchange='check_su_warning();'>", true);
         $superusers = [];
 
         while ($row = Database::fetchAssoc($result)) {
-            output_notl(
-                "<option value=\"" . htmlentities($row['login'], ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\">",
+            $output->outputNotl(
+                "<option value=\"" . htmlentities($row['login'], ENT_COMPAT, $charset) . "\">",
                 true
             );
-            output_notl('%s', Sanitize::fullSanitize($row['name']));
+            $output->outputNotl('%s', Sanitize::fullSanitize($row['name']));
             if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
                 $superusers[] = $row['login'];
             }
         }
-        output_notl('</select>`n', true);
+        $output->outputNotl('</select>`n', true);
     }
 }
 
@@ -287,11 +310,13 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
  */
 function renderSuperuserScript(array $superusers): void
 {
-    rawoutput("<script type='text/javascript'>var superusers = new Array();");
+    $output = Output::getInstance();
+
+    $output->rawOutput("<script type='text/javascript'>var superusers = new Array();");
     foreach ($superusers as $val) {
-        rawoutput(" superusers['" . addslashes($val) . "'] = true;");
+        $output->rawOutput(" superusers['" . addslashes($val) . "'] = true;");
     }
-    rawoutput('</script>');
+    $output->rawOutput('</script>');
 }
 
 /**
@@ -299,10 +324,12 @@ function renderSuperuserScript(array $superusers): void
  */
 function renderResizeScripts(): void
 {
-    rawoutput(
+    $output = Output::getInstance();
+
+    $output->rawOutput(
         "<script type=\"text/javascript\">function increase(target, value){  if (target.rows + value > 3 && target.rows + value < 50) target.rows = target.rows + value;}</script>"
     );
-    rawoutput(
+    $output->rawOutput(
         "<script type=\"text/javascript\">function cincrease(target, value){  if (target.cols + value > 3 && target.cols + value < 150) target.cols = target.cols + value;}</script>"
     );
 }
@@ -312,13 +339,17 @@ function renderResizeScripts(): void
  */
 function renderSizeCountScript(): void
 {
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $mailSizeLimit = (int) $settings->getSetting('mailsizelimit', 1024);
+
     $sizeMsg = '`#Max message size is `@%s`#, you have `^XX`# characters left.';
     $sizeMsg = Translator::translateInline($sizeMsg);
-    $sizeMsg = sprintf($sizeMsg, getsetting('mailsizelimit', 1024));
+    $sizeMsg = sprintf($sizeMsg, $mailSizeLimit);
 
     $sizeMsgOver = '`$Max message size is `@%s`$, you are over by `^XX`$ characters!';
     $sizeMsgOver = Translator::translateInline($sizeMsgOver);
-    $sizeMsgOver = sprintf($sizeMsgOver, getsetting('mailsizelimit', 1024));
+    $sizeMsgOver = sprintf($sizeMsgOver, $mailSizeLimit);
 
     $sizeMsg    = explode('XX', $sizeMsg);
     $sizeMsgOver = explode('XX', $sizeMsgOver);
@@ -327,16 +358,16 @@ function renderSizeCountScript(): void
     $usize2 = addslashes('<span>' . appoencode($sizeMsg[1]) . '</span>');
     $osize1 = addslashes('<span>' . appoencode($sizeMsgOver[0]) . '</span>');
     $osize2 = addslashes('<span>' . appoencode($sizeMsgOver[1]) . '</span>');
-    $maxlen = getsetting('mailsizelimit', 1024);
+    $maxlen = $mailSizeLimit;
 
-    rawoutput("<script type='text/javascript'>");
-    rawoutput(
+    $output->rawOutput("<script type='text/javascript'>");
+    $output->rawOutput(
         "var maxlen = $maxlen;" .
         "function sizeCount(box){if(box==null) return;var len = box.value.length;var msg='';if(len <= maxlen){msg='$usize1'+(maxlen-len)+'$usize2';}else{msg='$osize1'+(len-maxlen)+'$osize2';}document.getElementById('sizemsg').innerHTML = msg;}" .
         "function check_su_warning(){var to = document.getElementById('to');var warning = document.getElementById('warning');if(superusers[to.value]){warning.style.visibility='visible';warning.style.display='inline';}else{warning.style.visibility='hidden';warning.style.display='none';}}" .
         'check_su_warning();'
     );
-    rawoutput('</script>');
+    $output->rawOutput('</script>');
 }
 
 mailWrite();
