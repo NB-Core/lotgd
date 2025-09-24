@@ -18,7 +18,11 @@ use Lotgd\Forms;
 
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 use Lotgd\Http;
 use Lotgd\Page\Header;
@@ -37,7 +41,7 @@ Nav::add("Armor Editor Home", "armoreditor.php?level=$armorlevel");
 
 Nav::add("Add armor", "armoreditor.php?op=add&level=$armorlevel");
 $values = array(1 => 48,225,585,990,1575,2250,2790,3420,4230,5040,5850,6840,8010,9000,10350);
-output("`&<h3>Armor for %s Dragon Kills</h3>`0", $armorlevel, true);
+$output->output("`&<h3>Armor for %s Dragon Kills</h3>`0", $armorlevel, true);
 
 $armorarray = array(
     "Armor,title",
@@ -56,14 +60,14 @@ if ($op == "edit" || $op == "add") {
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
     }
-    rawoutput("<form action='armoreditor.php?op=save&level=$armorlevel' method='POST'>");
+    $output->rawOutput("<form action='armoreditor.php?op=save&level=$armorlevel' method='POST'>");
     Nav::add("", "armoreditor.php?op=save&level=$armorlevel");
     Forms::showForm($armorarray, $row);
-    rawoutput("</form>");
+    $output->rawOutput("</form>");
 } elseif ($op == "del") {
     $sql = "DELETE FROM " . Database::prefix("armor") . " WHERE armorid='$id'";
     Database::query($sql);
-    //output($sql);
+    //$output->output($sql);
     $op = "";
     Http::set('op', $op);
 } elseif ($op == "save") {
@@ -102,26 +106,26 @@ if ($op == "") {
     $del = Translator::translate("Del");
     $delconfirm = Translator::translate("Are you sure you wish to delete this armor?");
 
-    rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
-    rawoutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$defense</td><td>$level</td></tr>");
+    $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
+    $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$defense</td><td>$level</td></tr>");
     $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
         $row = Database::fetchAssoc($result);
-        rawoutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'>");
-        rawoutput("<td>[<a href='armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel'>$edit</a>|<a href='armoreditor.php?op=del&id={$row['armorid']}&level=$armorlevel' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
+        $output->rawOutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'>");
+        $output->rawOutput("<td>[<a href='armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel'>$edit</a>|<a href='armoreditor.php?op=del&id={$row['armorid']}&level=$armorlevel' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
         Nav::add("", "armoreditor.php?op=edit&id={$row['armorid']}&level=$armorlevel");
         Nav::add("", "armoreditor.php?op=del&id={$row['armorid']}&level=$armorlevel");
-        rawoutput("<td>");
-        output_notl($row['armorname']);
-        rawoutput("</td><td>");
-        output_notl((string)$row['value']);
-        rawoutput("</td><td>");
-        output_notl((string)$row['defense']);
-        rawoutput("</td><td>");
-        output_notl((string)$row['level']);
-        rawoutput("</td>");
-        rawoutput("</tr>");
+        $output->rawOutput("<td>");
+        $output->outputNotl($row['armorname']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl((string)$row['value']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl((string)$row['defense']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl((string)$row['level']);
+        $output->rawOutput("</td>");
+        $output->rawOutput("</tr>");
     }
-    rawoutput("</table>");
+    $output->rawOutput("</table>");
 }
 Footer::pageFooter();

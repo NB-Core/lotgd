@@ -15,7 +15,11 @@ use Lotgd\PlayerFunctions;
 
 //Author: Lonny Luberts - 3/18/2005
 //Heavily modified by JT Traub
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 SuAccess::check(SU_EDIT_USERS);
 

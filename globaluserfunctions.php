@@ -11,7 +11,11 @@ use Lotgd\ServerFunctions;
 use Lotgd\Http;
 use Lotgd\Translator;
 
+use Lotgd\Output;
+
 require_once 'common.php';
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema('globaluserfunctions');
 

@@ -22,10 +22,13 @@ use Lotgd\PlayerFunctions;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 define("ALLOW_ANONYMOUS", true);
 
-
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 // Keep this variable named $original: loading the extended settings table may
 // temporarily overwrite the singleton/global $settings instance.

@@ -12,8 +12,13 @@ use Lotgd\Page\Footer;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 define("ALLOW_ANONYMOUS", true);
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 global $session;
 

@@ -14,7 +14,11 @@ use Lotgd\Modules\HookHandler;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 
 Translator::getInstance()->setSchema("lodge");

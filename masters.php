@@ -12,7 +12,11 @@ use Lotgd\Http;
 // Initially written as a module by Chris Vorndran.
 // Moved into core by JT Traub
 
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 SuAccess::check(SU_EDIT_CREATURES);
 

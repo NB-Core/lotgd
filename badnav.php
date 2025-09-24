@@ -22,8 +22,13 @@ use Lotgd\Redirect;
 
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 define("OVERRIDE_FORCED_NAV", true);
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema("badnav");
 

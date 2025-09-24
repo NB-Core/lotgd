@@ -16,7 +16,11 @@ use Lotgd\Settings;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 $settings = Settings::getInstance();
 

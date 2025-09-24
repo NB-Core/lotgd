@@ -15,7 +15,11 @@ use Lotgd\Http;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once 'common.php';
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema('stats');
 

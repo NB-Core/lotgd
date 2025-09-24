@@ -15,7 +15,11 @@ use Lotgd\Http;
 
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 SuAccess::check(SU_EDIT_CREATURES);
 

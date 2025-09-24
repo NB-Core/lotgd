@@ -18,7 +18,11 @@ use Lotgd\Modules\HookHandler;
 // New Hall of Fame features by anpera
 // http://www.anpera.net/forum/viewforum.php?f=27
 
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema("hof");
 

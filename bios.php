@@ -22,7 +22,11 @@ use Lotgd\Nav;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema("bio");
 SuAccess::check(SU_EDIT_COMMENTS);
@@ -47,14 +51,14 @@ $sql = "SELECT name,acctid,bio,biotime FROM " . Database::prefix("accounts") . "
 $result = Database::query($sql);
 Header::pageHeader("User Bios");
 $block = Translator::translate("Block");
-output("`b`&Player Bios:`0`b`n");
+$output->output("`b`&Player Bios:`0`b`n");
 while ($row = Database::fetchAssoc($result)) {
     if ($row['biotime'] > $session['user']['recentcomments']) {
-        rawoutput("<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> ");
+        $output->rawOutput("<img src='images/new.gif' alt='&gt;' width='3' height='5' align='absmiddle'> ");
     }
-    output_notl("`![<a href='bios.php?op=block&userid={$row['acctid']}'>$block</a>]", true);
+    $output->outputNotl("`![<a href='bios.php?op=block&userid={$row['acctid']}'>$block</a>]", true);
     Nav::add("", "bios.php?op=block&userid={$row['acctid']}");
-    output_notl("`&%s`0: `^%s`0`n", $row['name'], soap($row['bio']));
+    $output->outputNotl("`&%s`0: `^%s`0`n", $row['name'], soap($row['bio']));
 }
 Database::freeResult($result);
 SuperuserNav::render();
@@ -68,15 +72,15 @@ if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
 Nav::add("Refresh", "bios.php");
 $sql = "SELECT name,acctid,bio,biotime FROM " . Database::prefix("accounts") . " WHERE biotime>'9000-01-01' AND bio>'' ORDER BY biotime DESC LIMIT 100";
 $result = Database::query($sql);
-output("`n`n`b`&Blocked Bios:`0`b`n");
+$output->output("`n`n`b`&Blocked Bios:`0`b`n");
 $unblock = Translator::translate("Unblock");
 $number = Database::numRows($result);
 for ($i = 0; $i < $number; $i++) {
     $row = Database::fetchAssoc($result);
 
-    output_notl("`![<a href='bios.php?op=unblock&userid={$row['acctid']}'>$unblock</a>]", true);
+    $output->outputNotl("`![<a href='bios.php?op=unblock&userid={$row['acctid']}'>$unblock</a>]", true);
     Nav::add("", "bios.php?op=unblock&userid={$row['acctid']}");
-    output_notl("`&%s`0: `^%s`0`n", $row['name'], soap($row['bio']));
+    $output->outputNotl("`&%s`0: `^%s`0`n", $row['name'], soap($row['bio']));
 }
 Database::freeResult($result);
 Footer::pageFooter();
