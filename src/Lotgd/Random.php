@@ -17,7 +17,7 @@ class Random
      *
      * Mirrors the behaviour of legacy e_rand().
      */
-    public static function e_rand(?int $min = null, ?int $max = null): int
+    public static function eRand(?int $min = null, ?int $max = null): int
     {
         if ($min === null) {
             return random_int(0, mt_getrandmax());
@@ -45,17 +45,12 @@ class Random
             : random_int($max, $min);
     }
 
-    public static function eRand($min = null, $max = null)
-    {
-        return self::e_rand($min, $max);
-    }
-
     /**
      * Random float helper with three decimal precision.
      *
      * Mirrors the behaviour of legacy r_rand().
      */
-    public static function r_rand(?float $min = null, ?float $max = null): float
+    public static function rRand(?float $min = null, ?float $max = null): float
     {
         if ($min === null) {
             return random_int(0, mt_getrandmax());
@@ -83,8 +78,4 @@ class Random
             : random_int((int) $max, (int) $min) / 1000;
     }
 
-    public static function rRand($min = null, $max = null)
-    {
-        return self::r_rand($min, $max);
-    }
 }
