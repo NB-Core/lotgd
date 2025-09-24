@@ -25,8 +25,8 @@ function mailSend(): void
     $to = (string) Http::post('to');
     $subject = (string) Http::post('subject');
     $body = (string) Http::post('body');
-    $sendClose = Http::post('sendclose') !== '';
-    $sendBack = Http::post('sendback') !== '';
+    $sendClose = Http::postIsset('sendclose');
+    $sendBack = Http::postIsset('sendback');
     $return = (int) Http::post('returnto');
 
     if ($to === '' || $body === '') {
