@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $autoloadPath = __DIR__ . '/vendor/autoload.php';
 if (!file_exists($autoloadPath)) {
     throw new RuntimeException("The vendor autoload file was not found at: {$autoloadPath}");

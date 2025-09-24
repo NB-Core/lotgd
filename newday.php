@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Translator;

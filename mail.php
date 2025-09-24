@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Http;
 use Lotgd\Mail;
 use Lotgd\Modules\HookHandler;

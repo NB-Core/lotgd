@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Accounts;
 use Lotgd\AddNews;
 use Lotgd\Commentary;
