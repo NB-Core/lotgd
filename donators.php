@@ -10,6 +10,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
@@ -18,6 +19,7 @@ use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 
@@ -62,12 +64,12 @@ if ($reason == "") {
 
 $output->output("`bAdd Donation Points:`b`n");
 $output->output("Character: ");
-$output->rawOutput("<input name='name' value=\"" . htmlentities($name, ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+$output->rawOutput("<input name='name' value=\"" . htmlentities($name, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">");
 $output->output("`nPoints: ");
-$output->rawOutput("<input name='amt' size='3' value=\"" . htmlentities($amt, ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+$output->rawOutput("<input name='amt' size='3' value=\"" . htmlentities($amt, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">");
 $output->output("`nReason: ");
-$output->rawOutput("<input name='reason' size='30' value=\"" . htmlentities($reason, ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
-$output->rawOutput("<input type='hidden' name='txnid' value=\"" . htmlentities($txnid, ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+$output->rawOutput("<input name='reason' size='30' value=\"" . htmlentities($reason, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">");
+$output->rawOutput("<input type='hidden' name='txnid' value=\"" . htmlentities($txnid, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">");
 $output->outputNotl("`n");
 if ($txnid > "") {
     $output->output("For transaction: %s`n", $txnid);
@@ -99,7 +101,7 @@ if ($op == "add2") {
         $session['user']['donation'] += $amt;
     }
     if ($txnid > "") {
-        $result = HookHandler::hook("donation_adjustments", array("points" => $amt,"amount" => $amt / getsetting('dpointspercurrencyunit', 100),"acctid" => $id,"messages" => array()));
+        $result = HookHandler::hook("donation_adjustments", array("points" => $amt,"amount" => $amt / $settings->getSetting('dpointspercurrencyunit', 100),"acctid" => $id,"messages" => array()));
         $points = $result['points'];
         if (!is_array($result['messages'])) {
             $result['messages'] = array($result['messages']);

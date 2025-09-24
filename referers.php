@@ -9,6 +9,7 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
@@ -19,13 +20,14 @@ use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 Translator::getInstance()->setSchema("referers");
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-$sql = "DELETE FROM " . Database::prefix("referers") . " WHERE last<'" . date("Y-m-d H:i:s", strtotime("-" . getsetting("expirecontent", 180) . " days")) . "'";
+$sql = "DELETE FROM " . Database::prefix("referers") . " WHERE last<'" . date("Y-m-d H:i:s", strtotime("-" . $settings->getSetting('expirecontent', 180) . " days")) . "'";
 Database::query($sql);
 $op = Http::get('op');
 
@@ -93,7 +95,7 @@ while ($row = Database::fetchAssoc($result)) {
             $output->outputNotl(Dhms::format($diffsecs));
             $output->rawOutput("</td><td valign='top'>");
             if ($row1['uri'] > "") {
-                $output->rawOutput("<a href='" . HTMLEntities($row1['uri'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "' target='_blank'>" . HTMLEntities(substr($row1['uri'], 0, 100)) . "</a>");
+                $output->rawOutput("<a href='" . HTMLEntities($row1['uri'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "' target='_blank'>" . HTMLEntities(substr($row1['uri'], 0, 100)) . "</a>");
             } else {
                 $output->outputNotl($none);
             }

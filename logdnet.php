@@ -12,6 +12,7 @@ use Lotgd\ErrorHandler;
 use Lotgd\Backtrace;
 use Lotgd\Sanitize;
 use Lotgd\PullUrl;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
@@ -28,6 +29,7 @@ if (!isset($_GET['op']) || $_GET['op'] != 'list') {
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 Translator::getInstance()->setSchema("logdnet");
@@ -189,7 +191,7 @@ if ($op == "") {
     //Now, if we're using version 2 of LoGDnet, we'll return the appropriate code.
     $v = Http::get("v");
     if ((int)$v >= 2) {
-        $currency = getsetting("paypalcurrency", "USD");
+        $currency = $settings->getSetting('paypalcurrency', 'USD');
         $info = array();
         $info[''] = '<!--data from ' . $_SERVER['HTTP_HOST'] . '-->
 <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
@@ -253,8 +255,8 @@ if ($op == "") {
     $output->output("Version");
     $output->rawOutput("</td>");
     $servers = array();
-    $u = getsetting("logdnetserver", "http://logdnet.logd.com/");
-    $logdnet = getsetting('logdnet', 0);
+    $u = $settings->getSetting('logdnetserver', 'http://logdnet.logd.com/');
+    $logdnet = $settings->getSetting('logdnet', 0);
     if (!preg_match("/\/$/", $u)) {
         $u = $u . "/";
         savesetting("logdnetserver", $u);
@@ -291,7 +293,7 @@ if ($op == "") {
                     if (!in_array($errorString, $reported, true)) {
                         $reported[] = $errorString;
 
-                        if (getsetting('logdnet_error_notify', 1)) {
+                        if ($settings->getSetting('logdnet_error_notify', 1)) {
                             ErrorHandler::errorNotify(E_WARNING, $errorString, __FILE__, __LINE__, Backtrace::show());
                         }
                     } else {
@@ -332,7 +334,7 @@ if ($op == "") {
                 $row['version'] = sanitize_mb($row['version']);
 
 
-                $row['description'] = htmlentities(stripslashes($row['description']), ENT_COMPAT, getsetting("charset", "UTF-8"));
+                $row['description'] = htmlentities(stripslashes($row['description']), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
                 $row['description'] = str_replace("`&amp;", "`&", $row['description']);
 
                 // Correct for old logdnet servers
@@ -342,7 +344,7 @@ if ($op == "") {
 
                 // Output the information we have.
                 $output->rawOutput("<tr class='" . ($i % 2 == 0 ? "trlight" : "trdark") . "'>");
-                $output->rawOutput("<td><a href=\"" . HTMLEntities($row['address'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" target='_blank'>");
+                $output->rawOutput("<td><a href=\"" . HTMLEntities($row['address'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" target='_blank'>");
                 $output->outputNotl("`&%s`0", $row['description'], true);
                 $output->rawOutput("</a></td><td>");
                 $output->outputNotl("`^%s`0", $row['version']); // so we are able to translate "`^Unknown`0"
@@ -350,7 +352,7 @@ if ($op == "") {
                 $i++;
             }
         } catch (\Throwable $e) {
-            if (getsetting('logdnet_error_notify', 1)) {
+            if ($settings->getSetting('logdnet_error_notify', 1)) {
                 ErrorHandler::errorNotify(
                     E_WARNING,
                     $e->getMessage(),

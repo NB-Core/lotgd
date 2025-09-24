@@ -9,6 +9,7 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
+use Lotgd\Settings;
 
 // translator ready
 
@@ -19,6 +20,7 @@ use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 SuAccess::check(SU_EDIT_CREATURES);
@@ -30,7 +32,8 @@ $creaturetats = array();
 $creatureexp = 14;
 $creaturegold = 36;
 $creaturedefense = 0;
-for ($i = 1; $i <= (getsetting('maxlevel', 15) + 4); $i++) {
+$maxLevel = (int) $settings->getSetting('maxlevel', 15);
+for ($i = 1; $i <= ($maxLevel + 4); $i++) {
     //apply algorithmic creature generation.
     $level = $i;
     $creaturehealth = ($i * 10) + ($i - 1) - round(sqrt($i - 1));
@@ -323,7 +326,7 @@ if ($op == "" || $op == "search") {
             $form = array(
                 "Creature Properties,title",
                 "creatureid" => "Creature id,hidden",
-                "creaturelevel" => "Level,range,1," . (getsetting('maxlevel', 15) + 4) . ",1",
+                "creaturelevel" => "Level,range,1," . ($maxLevel + 4) . ",1",
                 "Note: After changing the level causes please refresh the form to put the new preset stats for that level in,note",
                 "creaturecategory" => "Creature Category",
                 "creaturename" => "Creature Name",

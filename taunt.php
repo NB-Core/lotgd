@@ -20,6 +20,7 @@ use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 Translator::getInstance()->setSchema("taunt");
@@ -51,7 +52,7 @@ if ($op == "edit") {
         $row = array('tauntid' => 0, 'taunt' => "");
     }
     $output->output("Taunt: ");
-    $output->rawOutput("<input name='taunt' value=\"" . HTMLEntities($row['taunt'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\" size='70'><br>");
+    $output->rawOutput("<input name='taunt' value=\"" . HTMLEntities($row['taunt'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" size='70'><br>");
     $output->output("The following codes are supported (case matters):`n");
     $output->output("{goodguyname}	= The player's name (also can be specified as {goodguy}`n");
     $output->output("{goodguyweapon}	= The player's weapon (also can be specified as {weapon}`n");

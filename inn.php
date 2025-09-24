@@ -15,6 +15,7 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Partner;
+use Lotgd\Settings;
 
 // addnews ready
 // translator ready
@@ -23,15 +24,16 @@ use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 
 Translator::getInstance()->setSchema("inn");
 
 Commentary::addCommentary();
-$iname = getsetting("innname", LOCATION_INN);
-$vname = getsetting("villagename", LOCATION_FIELDS);
-$barkeep = getsetting('barkeep', '`tCedrik');
+$iname = $settings->getSetting('innname', LOCATION_INN);
+$vname = $settings->getSetting('villagename', LOCATION_FIELDS);
+$barkeep = $settings->getSetting('barkeep', '`tCedrik');
 
 $op = Http::get('op');
 // Correctly reset the location if they fleeing the dragon

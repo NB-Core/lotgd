@@ -17,6 +17,7 @@ use Lotgd\Battle;
 use Lotgd\Substitute;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
@@ -25,6 +26,7 @@ use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 
@@ -429,7 +431,7 @@ if ($op != "newtarget") {
                     if (!isset($badguy['creatureexp'])) {
                         $badguy['creatureexp'] = 0; //if this was not set, make it
                     }
-                    if (getsetting("instantexp", false) == true && $session['user']['alive'] && $options['type'] != "pvp" && $options['type'] != "train") {
+                    if ($settings->getSetting('instantexp', false) == true && $session['user']['alive'] && $options['type'] != "pvp" && $options['type'] != "train") {
                         if (!isset($badguy['expgained']) || $badguy['expgained'] == false) {
                             $cr_xp_gain = round($badguy['creatureexp'] / count($newenemies));
                             $args = HookHandler::hook("forest-victory-xp", $args = array('experience' => $cr_xp_gain));
@@ -469,7 +471,7 @@ if ($op != "newtarget") {
                 $enemiesflown = true;
                 $needtostopfighting = true;
             }
-            if (getsetting("instantexp", false) == true && isset($verynewenemies)) {
+            if ($settings->getSetting('instantexp', false) == true && isset($verynewenemies)) {
                 $newenemies = $verynewenemies;
             }
         }
