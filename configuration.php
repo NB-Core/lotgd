@@ -37,9 +37,12 @@ SuAccess::check(SU_EDIT_CONFIG);
 
 Translator::getInstance()->setSchema("configuration");
 
-$op = Http::get('op');
-$module = Http::get('module');
-$type_setting = Http::get('settings');
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
+$moduleRequest = Http::get('module');
+$module = is_string($moduleRequest) ? $moduleRequest : '';
+$typeSettingRequest = Http::get('settings');
+$type_setting = is_string($typeSettingRequest) ? $typeSettingRequest : '';
 
 //standardsettings
 switch ($type_setting) {
@@ -51,22 +54,27 @@ switch ($type_setting) {
                 $old = $settings_extended->getArray();
                 $current = $settings_extended->getArray();
                 foreach ($post as $key => $val) {
-                    if ('charset' === $key) {
+                    if (!is_string($key) || 'charset' === $key) {
                         continue;
                     }
-                    if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
+                    if (is_array($val)) {
+                        continue;
+                    }
+                    $value = is_string($val) ? stripslashes($val) : (string) $val;
+
+                    if (!array_key_exists($key, $current) || ($value != $current[$key])) {
                         if (!isset($old[$key])) {
                             $old[$key] = "";
                         }
-                        $hasSaved = $settings_extended->saveSetting($key, stripslashes($val));
-                        $output->output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved);
-                        gamelog("`@Changed core setting (extended)`^$key`@ from `#" . substr($old[$key], 25) . "...`@ to `&" . substr($val, 25) . "...`0", "settings");
+                        $hasSaved = $settings_extended->saveSetting($key, $value);
+                        $output->output("Setting %s to %s (Saved: %s)`n", $key, $value, $hasSaved);
+                        gamelog("`@Changed core setting (extended)`^$key`@ from `#" . substr($old[$key], 25) . "...`@ to `&" . substr($value, 25) . "...`0", "settings");
                         // Notify every module
                         HookHandler::hook(
                             "changesetting",
                             array("module" => "core", "setting" => $key,
                                     "old" => $old[$key],
-                            "new" => $val),
+                            "new" => $value),
                             true
                         );
                     }
@@ -81,22 +89,26 @@ switch ($type_setting) {
         switch ($op) {
             case "save":
                 include_once("lib/gamelog.php");
+                $blockDupEmail = Http::post('blockdupemail');
+                $requireValidEmail = Http::post('requirevalidemail');
+                $requireEmail = Http::post('requireemail');
+
                 if (
-                    (int)Http::post('blockdupemail') == 1 &&
-                        (int)Http::post('requirevalidemail') != 1
+                    (int) $blockDupEmail === 1 &&
+                        (int) $requireValidEmail !== 1
                 ) {
                     httppostset('requirevalidemail', "1");
                     $output->output("`brequirevalidemail has been set since blockdupemail was set.`b`n");
                 }
                 if (
-                    (int)Http::post('requirevalidemail') == 1 &&
-                        (int)Http::post('requireemail') != 1
+                    (int) $requireValidEmail === 1 &&
+                        (int) $requireEmail !== 1
                 ) {
                     httppostset('requireemail', "1");
                     $output->output("`brequireemail has been set since requirevalidemail was set.`b`n");
                 }
                 $defsup = Http::post("defaultsuperuser");
-                if ($defsup != "") {
+                if (is_array($defsup) && $defsup !== []) {
                     $value = 0;
                     foreach ($defsup as $k => $v) {
                         if ($v) {
@@ -105,33 +117,38 @@ switch ($type_setting) {
                     }
                     httppostset('defaultsuperuser', $value);
                 }
-                $tmp = stripslashes(Http::post("villagename"));
-                if ($tmp && $tmp != $settings->getSetting('villagename', LOCATION_FIELDS)) {
+                $rawVillageName = Http::post("villagename");
+                $villageName = is_string($rawVillageName) ? stripslashes($rawVillageName) : '';
+                if ($villageName !== '' && $villageName != $settings->getSetting('villagename', LOCATION_FIELDS)) {
                     $output->debug("Updating village name -- moving players");
                     $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
-                        Http::post("villagename") . "' WHERE location='" .
+                        addslashes($villageName) . "' WHERE location='" .
                         addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "'";
                     Database::query($sql);
                     if ($session['user']['location'] == $settings->getSetting('villagename', LOCATION_FIELDS)) {
-                        $session['user']['location'] =
-                            stripslashes(Http::post('villagename'));
+                        $session['user']['location'] = $villageName;
                     }
                 }
-                $tmp = stripslashes(Http::post("innname"));
-                if ($tmp && $tmp != $settings->getSetting('innname', LOCATION_INN)) {
+                $rawInnName = Http::post("innname");
+                $innName = is_string($rawInnName) ? stripslashes($rawInnName) : '';
+                if ($innName !== '' && $innName != $settings->getSetting('innname', LOCATION_INN)) {
                     $output->debug("Updating inn name -- moving players");
                     $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
-                        Http::post("innname") . "' WHERE location='" .
+                        addslashes($innName) . "' WHERE location='" .
                         addslashes($settings->getSetting('innname', LOCATION_INN)) . "'";
                     Database::query($sql);
                     if ($session['user']['location'] == $settings->getSetting('innname', LOCATION_INN)) {
-                        $session['user']['location'] = stripslashes(Http::post('innname'));
+                        $session['user']['location'] = $innName;
                     }
                 }
-                if (stripslashes(Http::post("motditems")) != $settings->getSetting('motditems', 5)) {
+                $motdItemsPost = Http::post("motditems");
+                $motdItems = is_string($motdItemsPost) ? stripslashes($motdItemsPost) : null;
+                if ($motdItems !== null && $motdItems != $settings->getSetting('motditems', 5)) {
                     DataCache::getInstance()->invalidatedatacache("motd");
                 }
-                if (stripslashes(Http::post('exp-array')) != $settings->getSetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
+                $expArrayPost = Http::post('exp-array');
+                $expArray = is_string($expArrayPost) ? stripslashes($expArrayPost) : null;
+                if ($expArray !== null && $expArray != $settings->getSetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
                     DataCache::getInstance()->massinvalidate("exp_array_dk");
                 }
                 $post = httpallpost();
@@ -139,26 +156,32 @@ switch ($type_setting) {
                 $old = $settings->getArray();
                 $current = $settings->getArray();
                 foreach ($post as $key => $val) {
-                    if ('charset' === $key) {
+                    if (!is_string($key) || 'charset' === $key) {
                         continue;
                     }
-                    if (!isset($current[$key]) || (stripslashes($val) != $current[$key])) {
+                    if (is_array($val)) {
+                        continue;
+                    }
+
+                    $value = is_string($val) ? stripslashes($val) : (string) $val;
+
+                    if (!array_key_exists($key, $current) || ($value != $current[$key])) {
                         if (!isset($old[$key])) {
                             $old[$key] = "";
                         }
                         // If key and old key have empty content, don't save it
-                        if (empty($val) && empty($old[$key])) {
+                        if ($value === '' && $old[$key] === '') {
                             continue;
                         }
-                        $hasSaved = $settings->saveSetting($key, stripslashes($val));
-                        $output->output("Setting %s to %s (Saved: %s)`n", $key, stripslashes($val), $hasSaved ? "`2Yes`0" : "`\$No`0");
-                        gamelog("`@Changed core setting `^$key`@ from `#{$old[$key]}`@ to `&$val`0", "settings");
+                        $hasSaved = $settings->saveSetting($key, $value);
+                        $output->output("Setting %s to %s (Saved: %s)`n", $key, $value, $hasSaved ? "`2Yes`0" : "`$No`0");
+                        gamelog("`@Changed core setting `^$key`@ from `#{$old[$key]}`@ to `&$value`0", "settings");
                         // Notify every module
                         HookHandler::hook(
                             "changesetting",
                             array("module" => "core", "setting" => $key,
                                     "old" => $old[$key],
-                            "new" => $val),
+                            "new" => $value),
                             true
                         );
                     }
@@ -234,7 +257,8 @@ switch ($type_setting) {
             case "modulesettings":
                 include_once("lib/gamelog.php");
                 if (injectmodule($module, true)) {
-                    $save = Http::get('save');
+                    $saveRequest = Http::get('save');
+                    $save = is_string($saveRequest) ? $saveRequest : '';
                     if ($save != "") {
                         load_module_settings($module);
                         $module_settings = ModuleManager::settings();
@@ -250,8 +274,14 @@ switch ($type_setting) {
                             );
                         } else {
                             foreach ($post as $key => $val) {
+                                if (!is_string($key)) {
+                                    continue;
+                                }
                                 $key = stripslashes($key);
-                                $val = stripslashes($val);
+                                if (is_array($val)) {
+                                    continue;
+                                }
+                                $val = is_string($val) ? stripslashes($val) : (string) $val;
                                 set_module_setting($key, $val);
                                 if (!isset($old[$key]) || $old[$key] != $val) {
                                     $output->output("Setting %s to %s`n", $key, $val);
