@@ -27,7 +27,12 @@ $translator = Translator::getInstance();
 $translator->setSchema("mercenarycamp");
 
 DateTime::checkDay();
-$name = stripslashes(rawurldecode(Http::get('name')));
+$nameParam = Http::get('name');
+if ($nameParam !== false) {
+    $name = stripslashes(rawurldecode($nameParam));
+} else {
+    $name = '';
+}
 if (isset($companions[$name])) {
     $displayname = $companions[$name]['name'];
 } else {
