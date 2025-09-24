@@ -113,7 +113,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
 
             if ($session['user']['experience'] >= $exprequired) {
                 restore_buff_fields();
-                $dk  = round(get_player_dragonkillmod(true) * 0.33, 0);
+                $dk  = (int)round(get_player_dragonkillmod(true) * 0.33, 0);
 
                 $atkflux = Random::eRand(0, $dk);
                 $atkflux = min($atkflux, round($dk * .25));
