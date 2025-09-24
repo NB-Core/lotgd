@@ -118,20 +118,40 @@ class Output
         if ($this->block_new_output) {
             return;
         }
-        $args   = func_get_args();
-        $length = count($args);
-        $last   = $args[$length - 1];
-        if ($last !== true) {
-            $priv = false;
-        } else {
-            unset($args[$length - 1]);
+
+        $args = func_get_args();
+
+        if (! $args) {
+            return;
+        }
+
+        $priv = false;
+        if (end($args) === true) {
+            array_pop($args);
             $priv = true;
         }
-        $out =& $args[0];
+
+        $args = array_values($args);
+        $out  =& $args[0];
+
         if (count($args) > 1) {
-            $out = str_replace("`%", "`%%", $out);
-            $out = call_user_func_array('sprintf', $args);
+            $out    = str_replace("`%", "`%%", $out);
+            $values = [];
+
+            foreach (array_slice($args, 1) as $param) {
+                if (is_array($param) && array_is_list($param) && $param !== [] && isset($param[0]) && is_string($param[0])) {
+                    $format      = str_replace("`%", "`%%", $param[0]);
+                    $replacements = array_slice($param, 1);
+
+                    $values[] = vsprintf($format, $replacements);
+                } else {
+                    $values[] = $param;
+                }
+            }
+
+            $out = vsprintf($out, $values);
         }
+
         if ($priv == false) {
             $out = HolidayText::holidayize($out, 'output');
         }
