@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\Http;
 use Lotgd\Nav;
+use Lotgd\Random;
 
 if ($com == "" && !$comment && $op != "fleedragon") {
     if (module_events("inn", (int)getsetting("innchance", 0)) != 0) {
@@ -62,7 +63,7 @@ if (!$skipinndesc) {
         $partner,
     );
     $chats = modulehook("innchatter", $chats);
-    $talk = $chats[e_rand(0, count($chats) - 1)];
+    $talk = $chats[Random::eRand(0, count($chats) - 1)];
     $output->output("You can't quite make out what he is saying, but it's something about %s`0.`n`n", $talk);
     $output->output("The clock on the mantle reads `6%s`0.`n", getgametime());
     modulehook("inn-desc", array());

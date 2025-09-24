@@ -11,6 +11,7 @@ use Lotgd\MountName;
 use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use Lotgd\Mounts;
+use Lotgd\Random;
 
 // translator ready
 // addnews ready
@@ -335,7 +336,7 @@ function darkhorse_bartender($from)
 function darkhorse_stat($value)
 {
     $value = (int) $value;
-    $value = $value * e_rand(90, 110) / 100;
+    $value = $value * Random::eRand(90, 110) / 100;
     return (int) $value;
 }
 

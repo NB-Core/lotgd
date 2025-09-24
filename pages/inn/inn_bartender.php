@@ -6,6 +6,7 @@ use Lotgd\Http;
 use Lotgd\Nav;
 use Lotgd\Sanitize;
 use Lotgd\PhpGenericEnvironment;
+use Lotgd\Random;
 
 $act = Http::get('act');
 if ($act == "") {
@@ -59,7 +60,7 @@ if ($act == "") {
             }
         }
         if ($try) {
-            if (e_rand(0, 100) < $chance) {
+            if (Random::eRand(0, 100) < $chance) {
                 $output->output("%s`0 leans over the counter toward you.  \"`%What can I do for you, kid?`0\" he asks.", $barkeep);
                 Nav::add("What do you want?");
                 modulehook("bartenderbribe", array());

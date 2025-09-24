@@ -10,6 +10,7 @@ use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Page\Footer;
 use Lotgd\MySQL\Database;
+use Lotgd\Random;
 
 if ($session['user']['gravefights'] <= 0) {
     $output->output("`\$`bYour soul can bear no more torment in this afterlife.`b`0");
@@ -32,7 +33,7 @@ if ($session['user']['gravefights'] <= 0) {
     } else {
         $session['user']['gravefights']--;
             $battle = true;
-            $sql = "SELECT * FROM " . Database::prefix('creatures') . " WHERE graveyard=1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
+            $sql = "SELECT * FROM " . Database::prefix('creatures') . " WHERE graveyard=1 ORDER BY rand(" . Random::eRand() . ") LIMIT 1";
         $result = Database::query($sql);
         $badguy = Database::fetchAssoc($result);
         $level = $session['user']['level'];
@@ -60,7 +61,7 @@ if ($session['user']['gravefights'] <= 0) {
         $badguy['creatureattack'] = max(2, $atk - BellRand::generate(2, ceil($level / $modificator) + $modificator * sqrt($session['user']['dragonkills'])));
         $badguy['creaturedefense'] = max(2, $def - BellRand::generate(2, ceil($level / $modificator) + $modificator * sqrt($session['user']['dragonkills'])));
         $badguy['creaturehealth'] = $level * 5 + 50 + round($session['user']['dragonkills'] * 2);
-        $badguy['creatureexp'] = e_rand(10, 15) + round($level / 3);
+        $badguy['creatureexp'] = Random::eRand(10, 15) + round($level / 3);
         $badguy['creaturelevel'] = $level;
         $attackstack['enemies'][0] = $badguy;
         $attackstack['options']['type'] = 'graveyard';

@@ -11,6 +11,7 @@ use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Mail;
 use Lotgd\MySQL\Database;
+use Lotgd\Random;
 
 function graveyard_haunt_getmoduleinfo(): array
 {
@@ -151,8 +152,8 @@ function graveyard_haunt_run(): void
                     output("That person has already been haunted, please select another target");
                 } else {
                     $session['user']['deathpower'] -= get_module_pref('hauntcost');
-                    $roll1 = e_rand(0, $row['level']);
-                    $roll2 = e_rand(0, $session['user']['level']);
+                    $roll1 = Random::eRand(0, (int) $row['level']);
+                    $roll2 = Random::eRand(0, $session['user']['level']);
                     if ($roll2 > $roll1) {
                         output("You have successfully haunted `7%s`)!", $row['name']);
                         set_module_pref('hauntedby', $session['user']['acctid'], 'graveyard_haunt');
@@ -162,7 +163,7 @@ function graveyard_haunt_run(): void
                         Mail::systemMail($row['acctid'], $subj, $body);
                     } else {
                         AddNews::add("`7%s`) unsuccessfully haunted `7%s`)!", $session['user']['name'], $row['name']);
-                        switch (e_rand(0, 5)) {
+                        switch (Random::eRand(0, 5)) {
                             case 0:
                                 $msg = "Just as you were about to haunt `7%s`) good, they sneezed, and missed it completely.";
                                 break;

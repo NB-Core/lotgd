@@ -10,6 +10,7 @@ use Doctrine\DBAL\ParameterType;
 use Lotgd\Battle;
 use Lotgd\Forest\Outcomes;
 use Lotgd\MySQL\Database;
+use Lotgd\Random;
 
         $op = httpget("op");
     $cityParam = httpget('city');
@@ -97,7 +98,7 @@ if ($op == "travel") {
         }
         // Let's give the lower DK people a slightly better chance.
         $dlevel = cities_dangerscale($danger);
-        if (e_rand(0, 100) < $dlevel && $su != '1') {
+        if (Random::eRand(0, 100) < $dlevel && $su != '1') {
             //they've been waylaid.
 
             $chance = (int) get_module_setting('travelspecialchance');
@@ -127,7 +128,7 @@ if ($op == "travel") {
                             modulehook("soberup", $args);
             $conn = Database::getDoctrineConnection();
             $table = Database::prefix('creatures');
-            $sql = "SELECT * FROM {$table} WHERE creaturelevel = :level AND forest = 1 ORDER BY rand(" . e_rand() . ") LIMIT 1";
+            $sql = "SELECT * FROM {$table} WHERE creaturelevel = :level AND forest = 1 ORDER BY rand(" . Random::eRand() . ") LIMIT 1";
             $result = $conn->executeQuery(
                 $sql,
                 ['level' => (int) $session['user']['level']],

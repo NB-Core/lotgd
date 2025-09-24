@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+use Lotgd\Random;
 
 function lovers_chat_violet()
 {
@@ -19,7 +20,7 @@ function lovers_chat_violet()
         output("You accept, knowing that it's in her nature to do so as a former pickle wench.");
         output("After a few minutes, %s`0 begins to cast burning looks your way, and you decide you had best let %s`0 get back to work.", getsetting('barkeep', '`tCedrik'), getsetting("barmaid", "`%Violet"));
     } elseif (httpget('act') == "fat") {
-        $charm = $session['user']['charm'] + e_rand(-1, 1);
+        $charm = $session['user']['charm'] + Random::eRand(-1, 1);
         output("%s`0 looks you up and down very seriously.", getsetting("barmaid", "`%Violet"));
         output("Only a friend can be truly honest, and that is why you asked her.");
         $sex = translate_inline($session['user']['sex'] != SEX_MALE ? "women" : "men");

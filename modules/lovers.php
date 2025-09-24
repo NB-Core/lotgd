@@ -9,6 +9,7 @@ declare(strict_types=1);
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Buffs;
 use Lotgd\MySQL\Database;
+use Lotgd\Random;
 
 //addnews ready
 // translator ready
@@ -86,8 +87,8 @@ function lovers_dohook(string $hookname, array $args): array
 
                 // 0.7 seemed to be a perfect balance of no loss of charm.
                 // 1.0 was too much.
-                $dk = max(1, round(.85 * sqrt($dk), 0));
-                $charmloss = e_rand(1, $dk);
+                $dk = max(1, (int) round(.85 * sqrt($dk), 0));
+                $charmloss = Random::eRand(1, $dk);
                 $session['user']['charm'] -= $charmloss;
                 output("`n`%You're  married,  so there's no reason to keep up that perfect image, and you let yourself go a little today ( You lose `\$%s charmpoint(s)`%).`n", $charmloss);
                 if ($session['user']['charm'] <= 0) {

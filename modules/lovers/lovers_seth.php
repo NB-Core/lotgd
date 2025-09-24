@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\Random;
+
 function lovers_seth()
 {
     global $session;
@@ -13,8 +15,8 @@ function lovers_seth()
         if ($session['user']['marriedto'] == INT_MAX) {
             //married
             $seenlover = 1;
-            if (e_rand(1, 4) == 1) {
-                switch (e_rand(1, 4)) {
+            if (Random::eRand(1, 4) == 1) {
+                switch (Random::eRand(1, 4)) {
                     case 1:
                         $msg = translate_inline("being too busy tuning his lute,");
                         break;
@@ -58,7 +60,7 @@ function lovers_seth()
                 $seenlover = 1;
                 switch (httpget('flirt')) {
                     case 1:
-                        if (e_rand($c, 2) >= 2) {
+                        if (Random::eRand($c, 2) >= 2) {
                             output("%s`0 grins a big toothy grin.", $partner);
                             output("My, isn't the dimple in his chin cute??");
                             if ($c < 4) {
@@ -69,7 +71,7 @@ function lovers_seth()
                         }
                         break;
                     case 2:
-                        if (e_rand($c, 4) >= 4) {
+                        if (Random::eRand($c, 4) >= 4) {
                             output("%s`0 smiles at you and says, \"`^My, what pretty eyes you have.`0\"", $partner);
                             if ($c < 7) {
                                 $c++;
@@ -79,7 +81,7 @@ function lovers_seth()
                         }
                         break;
                     case 3:
-                        if (e_rand($c, 7) >= 7) {
+                        if (Random::eRand($c, 7) >= 7) {
                             output("%s`0 bends over and retrieves your hanky, while you admire his firm posterior.", $partner);
                             if ($c < 11) {
                                 $c++;
@@ -89,7 +91,7 @@ function lovers_seth()
                         }
                         break;
                     case 4:
-                        if (e_rand($c, 11) >= 11) {
+                        if (Random::eRand($c, 11) >= 11) {
                             output("%s`0 places his arm around your waist, and escorts you to the bar where he buys you one of the Inn's fine swills.", $partner);
                             if ($c < 14) {
                                 $c++;
@@ -102,7 +104,7 @@ function lovers_seth()
                         }
                         break;
                     case 5:
-                        if (e_rand($c, 14) >= 14) {
+                        if (Random::eRand($c, 14) >= 14) {
                             output("You walk up to %s`0, grab him by the shirt, pull him to his feet, and plant a firm, long kiss right on his handsome lips.", $partner);
                             output("He collapses after, hair a bit disheveled, and short on breath.");
                             if ($c < 18) {
@@ -116,7 +118,7 @@ function lovers_seth()
                         }
                         break;
                     case 6:
-                        if (e_rand($c, 18) >= 18) {
+                        if (Random::eRand($c, 18) >= 18) {
                             output("Standing at the base of the stairs, you make a come-hither gesture at %s`0.", $partner);
                             output("He follows you like a puppydog.");
                             if ($session['user']['turns'] > 0) {

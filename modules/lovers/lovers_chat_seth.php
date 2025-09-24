@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Translator;
+use Lotgd\Random;
 
 function lovers_chat_seth()
 {
@@ -16,7 +17,7 @@ function lovers_chat_seth()
         output("You and %s`0 spend some time talking about the recent dwarf tossing competition.", getsetting("bard", "`^Seth"));
         output("Not wanting to linger around another man for too long, so no one \"wonders\", you decide you should find something else to do.");
     } else {
-        $charm = $session['user']['charm'] + e_rand(-1, 1);
+        $charm = $session['user']['charm'] + Random::eRand(-1, 1);
         output("%s`0 looks you up and down very seriously.", getsetting("bard", "`^Seth"));
         output("Only a friend can be truly honest, and that is why you asked him.");
         $attractedto = translate_inline($session['user']['sex'] != SEX_MALE ? "women" : "men");

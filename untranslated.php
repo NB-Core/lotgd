@@ -11,6 +11,7 @@ use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Settings;
+use Lotgd\Random;
 
 // translator ready
 // addnews ready
@@ -131,7 +132,7 @@ if ($op == "list") {
     $sql = "SELECT count(intext) AS count FROM " . Database::prefix("untranslated");
     $count = Database::fetchAssoc(Database::query($sql));
     if ($count['count'] > 0) {
-        $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language = '" . $session['user']['prefs']['language'] . "' ORDER BY rand(" . e_rand() . ") LIMIT 1";
+        $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language = '" . $session['user']['prefs']['language'] . "' ORDER BY rand(" . Random::eRand() . ") LIMIT 1";
         $result = Database::query($sql);
         if (Database::numRows($result) == 1) {
             $row = Database::fetchAssoc($result);
