@@ -23,6 +23,7 @@ use Lotgd\Output;
 // hilarious copy of mounts.php
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 SuAccess::check(SU_EDIT_MOUNTS);
 
 Translator::getInstance()->setSchema("companions");
@@ -332,26 +333,26 @@ function companionform($companion)
     $output->rawOutput("<table width='100%'>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Name:");
-    $output->rawOutput("</td><td><input name='companion[name]' value=\"" . htmlentities($companion['name'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\" maxlength='50'></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[name]' value=\"" . htmlentities($companion['name'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" maxlength='50'></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Dyingtext:");
-    $output->rawOutput("</td><td><input name='companion[dyingtext]' value=\"" . htmlentities($companion['dyingtext'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[dyingtext]' value=\"" . htmlentities($companion['dyingtext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Description:");
-    $output->rawOutput("</td><td><textarea cols='25' rows='5' name='companion[description]'>" . htmlentities($companion['description'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "</textarea></td></tr>");
+    $output->rawOutput("</td><td><textarea cols='25' rows='5' name='companion[description]'>" . htmlentities($companion['description'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion join text:");
-    $output->rawOutput("</td><td><textarea cols='25' rows='5' name='companion[jointext]'>" . htmlentities($companion['jointext'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "</textarea></td></tr>");
+    $output->rawOutput("</td><td><textarea cols='25' rows='5' name='companion[jointext]'>" . htmlentities($companion['jointext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Category:");
-    $output->rawOutput("</td><td><input name='companion[category]' value=\"" . htmlentities($companion['category'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\" maxlength='50'></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[category]' value=\"" . htmlentities($companion['category'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" maxlength='50'></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Availability:");
     $output->rawOutput("</td><td nowrap>");
     // Run a modulehook to find out where camps are located.  By default
     // they are located in 'Degolburg' (ie, getgamesetting('villagename'));
     // Some later module can remove them however.
-    $vname = Settings::getsetting('villagename', LOCATION_FIELDS);
+    $vname = $settings->getSetting('villagename', LOCATION_FIELDS);
     $locs = array($vname => Translator::sprintfTranslate("The Village of %s", $vname));
     $locs = HookHandler::hook("camplocs", $locs);
     $locs['all'] = Translator::translateInline("Everywhere");
@@ -364,13 +365,13 @@ function companionform($companion)
 
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Maxhitpoints / Bonus per level:");
-    $output->rawOutput("</td><td><input name='companion[maxhitpoints]' value=\"" . htmlentities($companion['maxhitpoints'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"> / <input name='companion[maxhitpointsperlevel]' value=\"" . htmlentities($companion['maxhitpointsperlevel'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[maxhitpoints]' value=\"" . htmlentities($companion['maxhitpoints'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"> / <input name='companion[maxhitpointsperlevel]' value=\"" . htmlentities($companion['maxhitpointsperlevel'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Attack / Bonus per level:");
-    $output->rawOutput("</td><td><input name='companion[attack]' value=\"" . htmlentities($companion['attack'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"> / <input name='companion[attackperlevel]' value=\"" . htmlentities($companion['attackperlevel'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[attack]' value=\"" . htmlentities($companion['attack'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"> / <input name='companion[attackperlevel]' value=\"" . htmlentities($companion['attackperlevel'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Defense / Bonus per level:");
-    $output->rawOutput("</td><td><input name='companion[defense]' value=\"" . htmlentities($companion['defense'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"> / <input name='companion[defenseperlevel]' value=\"" . htmlentities($companion['defenseperlevel'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[defense]' value=\"" . htmlentities($companion['defense'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"> / <input name='companion[defenseperlevel]' value=\"" . htmlentities($companion['defenseperlevel'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
 
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Fighter?:");
@@ -408,13 +409,13 @@ function companionform($companion)
     $output->rawOutput("<tr><td nowrap>");
 
     $output->output("Companion Cost (DKs):");
-    $output->rawOutput("</td><td><input name='companion[companioncostdks]' value=\"" . htmlentities((int)$companion['companioncostdks'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[companioncostdks]' value=\"" . htmlentities((int)$companion['companioncostdks'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Cost (Gems):");
-    $output->rawOutput("</td><td><input name='companion[companioncostgems]' value=\"" . htmlentities((int)$companion['companioncostgems'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[companioncostgems]' value=\"" . htmlentities((int)$companion['companioncostgems'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Cost (Gold):");
-    $output->rawOutput("</td><td><input name='companion[companioncostgold]' value=\"" . htmlentities((int)$companion['companioncostgold'], ENT_COMPAT, Settings::getsetting("charset", "UTF-8")) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[companioncostgold]' value=\"" . htmlentities((int)$companion['companioncostgold'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Allow in shades:");
     $output->rawOutput("</td><td><input type='checkbox' name='companion[allowinshades]' value='1'" . ($companion['allowinshades'] == true ? " checked" : "") . "></td></tr>");

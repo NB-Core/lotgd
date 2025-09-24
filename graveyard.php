@@ -12,6 +12,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Events;
+use Lotgd\Settings;
 
 // addnews ready.
 // translator ready
@@ -20,13 +21,14 @@ use Lotgd\Output;
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 
 Translator::getInstance()->setSchema("graveyard");
 
 Header::pageHeader("The Graveyard");
 $skipgraveyardtext = Events::handleEvent("graveyard");
-$deathoverlord = getsetting('deathoverlord', '`$Ramius');
+$deathoverlord = $settings->getSetting('deathoverlord', '`$Ramius');
 if (!$skipgraveyardtext) {
     if ($session['user']['alive']) {
         redirect("village.php");

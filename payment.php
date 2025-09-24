@@ -7,6 +7,7 @@ use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\Page\Footer;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // mail ready
 // addnews ready
@@ -17,6 +18,9 @@ set_error_handler('payment_error');
 define("ALLOW_ANONYMOUS", true);
 
 require_once __DIR__ . "/common.php";
+
+/** @var Settings $settings */
+$settings = Settings::getInstance();
 
 Translator::getInstance()->setSchema("payment");
 
@@ -89,9 +93,9 @@ if (!$fp) {
                 }
                 if (
                     ($receiver_email != "logd@mightye.org") &&
-                    ($receiver_email != getsetting("paypalemail", ""))
+                    ($receiver_email != $settings->getSetting('paypalemail', ''))
                 ) {
-                    $emsg = "This payment isn't to me(" . getsetting("paypalemail", "") . ")!  It's to $receiver_email.\n";
+                    $emsg = "This payment isn't to me(" . $settings->getSetting('paypalemail', '') . ")!  It's to $receiver_email.\n";
                     payment_error(E_WARNING, $emsg, __FILE__, __LINE__);
                 }
                 writelog($response);
@@ -109,6 +113,7 @@ if (!$fp) {
 
 function writelog($response)
 {
+    global $settings;
     global $post;
     global $item_name, $item_number, $payment_status, $payment_amount;
     global $payment_currency, $txn_id, $receiver_email, $payer_email;
@@ -130,7 +135,7 @@ function writelog($response)
                 $donation -= $payment_fee;
             }
 
-            $hookresult = HookHandler::hook("donation_adjustments", array("points" => $donation * getsetting('dpointspercurrencyunit', 100),"amount" => $donation,"acctid" => $acctid,"messages" => array()));
+            $hookresult = HookHandler::hook("donation_adjustments", array("points" => $donation * $settings->getSetting('dpointspercurrencyunit', 100),"amount" => $donation,"acctid" => $acctid,"messages" => array()));
             //updated to make a setting here for each Dollar, Euro, Shekel
             $hookresult['points'] = round($hookresult['points']);
 
@@ -152,7 +157,7 @@ function writelog($response)
         $match[1] = "";
     }
     if ($match[1] > "" && $acctid > 0) {
-        HookHandler::hook("donation", array("id" => $acctid, "amt" => $donation * getsetting('dpointspercurrencyunit', 100), "manual" => false));
+        HookHandler::hook("donation", array("id" => $acctid, "amt" => $donation * $settings->getSetting('dpointspercurrencyunit', 100), "manual" => false));
     }
     $sql = "
                 INSERT INTO " . Database::prefix("paylog") . " (
@@ -197,13 +202,13 @@ function payment_error($errno, $errstr, $errfile, $errline)
     }
 }
 
-$adminEmail = getsetting("gameadminemail", "postmaster@localhost.com");
+$adminEmail = $settings->getSetting('gameadminemail', 'postmaster@localhost.com');
 if ($payment_errors > "") {
     $subj = translate_mail("Payment Error", 0);
     // $payment_errors not translated
         $sanitizedInfo = sprintf("Txn ID: %s\nStatus: %s\nAmount: %0.2f %s\nPayer: %s\nReceiver: %s", $txn_id, $payment_status, (float)$payment_amount, $payment_currency, $payer_email, $receiver_email);
         error_log($payment_errors . "\n" . $sanitizedInfo);
-        mail($adminEmail, $subj, $payment_errors . "\n" . $sanitizedInfo, "From: " . getsetting("gameadminemail", "postmaster@localhost.com"));
+        mail($adminEmail, $subj, $payment_errors . "\n" . $sanitizedInfo, "From: " . $settings->getSetting('gameadminemail', 'postmaster@localhost.com'));
 }
 $output = ob_get_contents();
 if (!empty($output)) {
@@ -224,7 +229,7 @@ if (!empty($output)) {
                 $adminEmail,
                 "Serious LoGD Payment Problems on {$_SERVER['HTTP_HOST']}",
                 $sanitizedInfo,
-                "From: " . getsetting("gameadminemail", "postmaster@localhost.com")
+                "From: " . $settings->getSetting('gameadminemail', 'postmaster@localhost.com')
             );
     }
 }

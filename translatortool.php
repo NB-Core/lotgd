@@ -5,6 +5,7 @@ use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Http;
+use Lotgd\Settings;
 
 // addnews ready
 // translator ready
@@ -15,6 +16,7 @@ define("OVERRIDE_FORCED_NAV", true);
 
 require_once __DIR__ . "/common.php";
 
+$settings = Settings::getInstance();
 $output = Output::getInstance();
 Translator::getInstance()->setSchema("translatortool");
 
@@ -33,14 +35,14 @@ if ($op == "") {
     $namespace = Translator::translate("Namespace:");
     $texta = Translator::translate("Text:");
     $translation = Translator::translate("Translation:");
-    $saveclose = htmlentities(Translator::translate("Save & Close"), ENT_COMPAT, getsetting("charset", "UTF-8"));
-    $savenotclose = htmlentities(Translator::translate("Save No Close"), ENT_COMPAT, getsetting("charset", "UTF-8"));
+    $saveclose = htmlentities(Translator::translate("Save & Close"), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
+    $savenotclose = htmlentities(Translator::translate("Save No Close"), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     $output->rawOutput("<form action='translatortool.php?op=save' method='POST'>");
-    $output->rawOutput("$namespace <input name='uri' value=\"" . htmlentities(stripslashes($uri), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" readonly><br/>");
+    $output->rawOutput("$namespace <input name='uri' value=\"" . htmlentities(stripslashes($uri), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" readonly><br/>");
     $output->rawOutput("$texta<br>");
-    $output->rawOutput("<textarea name='text' cols='60' rows='5' readonly>" . htmlentities($text, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+    $output->rawOutput("<textarea name='text' cols='60' rows='5' readonly>" . htmlentities($text, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
     $output->rawOutput("$translation<br>");
-    $output->rawOutput("<textarea name='trans' cols='60' rows='5'>" . htmlentities(stripslashes($trans), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+    $output->rawOutput("<textarea name='trans' cols='60' rows='5'>" . htmlentities(stripslashes($trans), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
     $output->rawOutput("<input type='submit' value=\"$saveclose\" class='button'>");
     $output->rawOutput("<input type='submit' value=\"$savenotclose\" class='button' name='savenotclose'>");
     $output->rawOutput("</form>");
@@ -116,7 +118,7 @@ if ($op == "") {
         $output->outputNotl("</label>", true);
         $output->outputNotl("<select name='u' id='u'>", true);
     while ($row = Database::fetchAssoc($result)) {
-        $output->outputNotl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>", true);
+        $output->outputNotl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . " ({$row['c']})</option>", true);
     }
     $output->outputNotl("</select>", true);
     $show = Translator::translate("Show");
@@ -140,9 +142,9 @@ if ($op == "") {
             $edit = Translator::translate("Edit");
             $output->outputNotl("<a href='translatortool.php?u=" . rawurlencode($row['uri']) . "&t=" . rawurlencode($row['intext']) . "'>$edit</a>", true);
             $output->outputNotl("</td><td>", true);
-            $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
+            $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
             $output->outputNotl("</td><td>", true);
-            $output->rawOutput(htmlentities($row['outtext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
+            $output->rawOutput(htmlentities($row['outtext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
             $output->outputNotl("</td><td>", true);
             $output->outputNotl($row['version']);
             $output->outputNotl("</td><td>", true);
