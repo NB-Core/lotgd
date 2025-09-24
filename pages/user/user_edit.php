@@ -8,10 +8,16 @@ use Lotgd\Nav;
 use Lotgd\Modules;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Http;
 
 $result = Database::query("SELECT * FROM " . Database::prefix("accounts") . " WHERE acctid=" . (int)$userid);
 $row = Database::fetchAssoc($result);
-$petition = httpget("returnpetition");
+$output = Output::getInstance();
+$settings = Settings::getInstance();
+$charset = $settings->getSetting('charset', 'UTF-8');
+$petition = Http::get('returnpetition');
 if ($petition != "") {
     $returnpetition = "&returnpetition=$petition";
 }
@@ -29,7 +35,7 @@ if ($session['user']['superuser'] & SU_EDIT_DONATIONS) {
     Nav::add("", "user.php?op=edit&userid=$userid$returnpetition");
 Nav::add("Bans");
 Nav::add("Set up ban", "bans.php?op=setupban&userid={$row['acctid']}");
-if (httpget("subop") == "") {
+if (Http::get('subop') == "") {
     $output->rawOutput("<form action='user.php?op=special&userid=$userid$returnpetition' method='POST'>");
     Nav::add("", "user.php?op=special&userid=$userid$returnpetition");
     $grant = Translator::translateInline("Grant New Day");
@@ -44,7 +50,7 @@ if (httpget("subop") == "") {
     Nav::add("", "user.php?op=save&userid=$userid$returnpetition");
     $save = Translator::translateInline("Save");
     $output->rawOutput("<input type='submit' class='button' value='$save'>");
-    if ($row['loggedin'] == 1 && $row['laston'] > date("Y-m-d H:i:s", strtotime("-" . getsetting("LOGINTIMEOUT", 900) . " seconds"))) {
+    if ($row['loggedin'] == 1 && $row['laston'] > date("Y-m-d H:i:s", strtotime("-" . $settings->getSetting('LOGINTIMEOUT', 900) . " seconds"))) {
         $output->outputNotl("`\$");
         $output->rawOutput("<span style='font-size: 20px'>");
         $output->output("`\$Warning:`0");
@@ -71,18 +77,18 @@ if (httpget("subop") == "") {
     */
     $showformargs = modulehook("modifyuserview", array("userinfo" => $userinfo, "user" => $row));
     $info = Forms::showForm($showformargs['userinfo'], $showformargs['user']);
-    $output->rawOutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" name='oldvalues'>");
+    $output->rawOutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, $charset) . "\" name='oldvalues'>");
     $output->rawOutput("</form>");
         $output->output("`n`nLast Page Viewed:`n");
     $output->rawOutput("<iframe src='user.php?op=lasthit&userid=$userid' width='100%' height='400'>");
     $output->output("You need iframes to view the user's last hit here.");
     $output->output("Use the link in the nav instead.");
     $output->rawOutput("</iframe>");
-} elseif (httpget("subop") == "module") {
+} elseif (Http::get('subop') == "module") {
     //Show a user's prefs for a given module.
     Nav::add("Operations");
     Nav::add("Edit user", "user.php?op=edit&userid=$userid$returnpetition");
-    $module = httpget('module');
+    $module = Http::get('module');
     $info = get_module_info($module);
     if (count($info['prefs']) > 0) {
         $data = array();

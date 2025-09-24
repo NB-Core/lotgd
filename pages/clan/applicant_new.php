@@ -9,20 +9,26 @@ use Lotgd\Translator;
 use Lotgd\Modules;
 use Lotgd\Sanitize;
 use Lotgd\DebugLog;
+use Lotgd\Output;
+use Lotgd\Settings;
 
         $apply = Http::get('apply');
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $charset = $settings->getSetting('charset', 'UTF-8');
+    $clanShortNameLength = (int) $settings->getSetting('clanshortnamelength', 5);
 if ($apply == 1) {
     $ocn = Http::post('clanname');
     $ocs = Http::post('clanshort');
     $clanname = stripslashes($ocn);
     $clanname = Sanitize::fullSanitize($clanname);
-    if (getsetting('clannamesanitize', 0)) {
+    if ($settings->getSetting('clannamesanitize', 0)) {
         $clanname = preg_replace("'[^[:alpha:] \\'-]'", "", $clanname);
     }
     $clanname = addslashes($clanname);
     Http::postSet('clanname', $clanname);
     $clanshort = Sanitize::fullSanitize($ocs);
-    if (getsetting('clanshortnamesanitize', 0)) {
+    if ($settings->getSetting('clanshortnamesanitize', 0)) {
         $clanshort = preg_replace("'[^[:alpha:]]'", "", $clanshort);
     }
     Http::postSet('clanshort', $clanshort);
@@ -46,8 +52,8 @@ if ($apply == 1) {
         $output->outputNotl($e[1], $registrar);
         clanform();
         Nav::add("Return to the Lobby", "clan.php");
-    } elseif (strlen($clanshort) < 2 || strlen($clanshort) > getsetting('clanshortnamelength', 5)) {
-        $output->outputNotl($e[2], $registrar, getsetting('clanshortnamelength', 5));
+    } elseif (strlen($clanshort) < 2 || strlen($clanshort) > $clanShortNameLength) {
+        $output->outputNotl($e[2], $registrar, $clanShortNameLength);
         clanform();
         Nav::add("Return to the Lobby", "clan.php");
     } elseif (Database::numRows($result) > 0) {

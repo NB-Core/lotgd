@@ -5,8 +5,13 @@ declare(strict_types=1);
 use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
+use Lotgd\Output;
+use Lotgd\Settings;
 
 if ($display == 1) {
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $loginTimeout = (int) $settings->getSetting('LOGINTIMEOUT', 900);
     $q = "";
     if ($query) {
         $q = "&q=$query";
@@ -42,7 +47,7 @@ if ($display == 1) {
         $laston = relativedate($row['laston']);
         $loggedin =
             (date("U") - strtotime($row['laston']) <
-                getsetting("LOGINTIMEOUT", 900) && $row['loggedin']);
+                $loginTimeout && $row['loggedin']);
         if ($loggedin) {
             $laston = Translator::translateInline("`#Online`0");
         }

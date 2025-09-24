@@ -11,6 +11,12 @@ use Lotgd\Nav;
 use Lotgd\Modules;
 use Lotgd\Nltoappon;
 use Lotgd\Page\Header;
+use Lotgd\Output;
+use Lotgd\Settings;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
+$charset = $settings->getSetting('charset', 'UTF-8');
 
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     $clanname = Http::post('clanname');
@@ -49,14 +55,14 @@ if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     Nav::add("", "clan.php?detail=$detail");
     $output->output("Superuser / Moderator renaming:`n");
     $output->output("Long Name: ");
-    $output->rawOutput("<input name='clanname' value=\"" . htmlentities($row1['clanname'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" maxlength=50 size=50>");
+    $output->rawOutput("<input name='clanname' value=\"" . htmlentities($row1['clanname'], ENT_COMPAT, $charset) . "\" maxlength=50 size=50>");
     $output->output("`nShort Name: ");
-    $output->rawOutput("<input name='clanshort' value=\"" . htmlentities($row1['clanshort'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" maxlength=5 size=5>");
+    $output->rawOutput("<input name='clanshort' value=\"" . htmlentities($row1['clanshort'], ENT_COMPAT, $charset) . "\" maxlength=5 size=5>");
     $output->outputNotl("`n");
     $save = Translator::translateInline("Save");
     $output->rawOutput("<input type='submit' class='button' value=\"$save\">");
-    $snu = htmlentities(Translator::translateInline("Save & UNblock public description"), ENT_COMPAT, getsetting("charset", "UTF-8"));
-    $snb = htmlentities(Translator::translateInline("Save & Block public description"), ENT_COMPAT, getsetting("charset", "UTF-8"));
+    $snu = htmlentities(Translator::translateInline("Save & UNblock public description"), ENT_COMPAT, $charset);
+    $snb = htmlentities(Translator::translateInline("Save & Block public description"), ENT_COMPAT, $charset);
     if ($row1['descauthor'] == "4294967295") {
         $output->rawOutput("<input type='submit' name='unblock' value=\"$snu\" class='button'>");
     } else {

@@ -5,10 +5,16 @@ declare(strict_types=1);
 use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Http;
 
 $sql = "SELECT name,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE acctid=\"$userid\"";
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
+$output = Output::getInstance();
+$settings = Settings::getInstance();
+$charset = $settings->getSetting('charset', 'UTF-8');
 if ($row['name'] != "") {
     $output->output("Setting up ban information based on `\$%s`0", $row['name']);
 }
@@ -16,15 +22,15 @@ $output->rawOutput("<form action='user.php?op=saveban' method='POST'>");
 $output->output("Set up a new ban by IP or by ID (recommended IP, though if you have several different users behind a NAT, you can try ID which is easily defeated)`n");
 $output->rawOutput("<input type='radio' value='ip' id='ipradio' name='type' checked>");
 $output->output("IP: ");
-$output->rawOutput("<input name='ip' id='ip' value=\"" . HTMLEntities($row['lastip'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+$output->rawOutput("<input name='ip' id='ip' value=\"" . HTMLEntities($row['lastip'], ENT_COMPAT, $charset) . "\">");
 $output->outputNotl("`n");
 $output->rawOutput("<input type='radio' value='id' name='type'>");
 $output->output("ID: ");
-$output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">");
+$output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'], ENT_COMPAT, $charset) . "\">");
 $output->output("`nDuration: ");
 $output->rawOutput("<input name='duration' id='duration' size='3' value='14'>");
 $output->output("Days (0 for permanent)`n");
-$reason = httpget("reason");
+$reason = Http::get('reason');
 if ($reason == "") {
     $reason = Translator::translateInline("Don't mess with me.");
 }

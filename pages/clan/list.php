@@ -9,9 +9,14 @@ use Lotgd\MySQL\Database;
 use Lotgd\Http;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
+use Lotgd\Output;
+use Lotgd\Settings;
 
     Header::pageHeader("Clan Listing");
-    $registrar = getsetting('clanregistrar', '`%Karissa');
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $registrar = $settings->getSetting('clanregistrar', '`%Karissa');
+    $charset = $settings->getSetting('charset', 'UTF-8');
     Nav::add("Clan Options");
     $order = (int)Http::get('order');
 switch ($order) {
@@ -48,7 +53,7 @@ if (Database::numRows($result) > 0) {
                 "&#149; &#60;%s&#62; <a href='clan.php?detail=%s'>%s</a> %s`n",
                 $row['clanshort'],
                 $row['clanid'],
-                htmlentities(Sanitize::fullSanitize($row['clanname']), ENT_COMPAT, getsetting("charset", "UTF-8")),
+                htmlentities(Sanitize::fullSanitize($row['clanname']), ENT_COMPAT, $charset),
                 $memb,
                 true
             );
