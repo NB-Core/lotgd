@@ -26,7 +26,8 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
         $output->output("Updating MoTD`n");
         $claninfo['motdauthor'] = $session['user']['acctid'];
     }
-    $clandesc = Http::post('clandesc');
+    $clanDescPost = Http::post('clandesc');
+    $clandesc = is_string($clanDescPost) ? $clanDescPost : '';
     if (
         Http::postIsset('clandesc') &&
             stripslashes($clandesc) != $claninfo['clandesc'] &&
@@ -39,7 +40,8 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
         $claninfo['clandesc'] = stripslashes($clandesc);
         $claninfo['descauthor'] = $session['user']['acctid'];
     }
-    $customsay = Http::post('customsay');
+    $customSayPost = Http::post('customsay');
+    $customsay = is_string($customSayPost) ? $customSayPost : '';
     if (Http::postIsset('customsay') && $customsay != $claninfo['customsay'] && $session['user']['clanrank'] >= CLAN_LEADER) {
         $sql = "UPDATE " . Database::prefix("clans") . " SET customsay='$customsay' WHERE clanid={$claninfo['clanid']}";
         Database::query($sql);

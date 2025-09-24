@@ -32,7 +32,8 @@ SuAccess::check(SU_EDIT_COMMENTS);
 
 Translator::getInstance()->setSchema("badword");
 
-$op = Http::get('op');
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
 //yuck, this page is a mess, but it gets the job done.
 Header::pageHeader("Bad word editor");
 
@@ -48,7 +49,8 @@ Nav::add("", "badword.php?op=test");
 $output->output("`7Test a word:`0");
 $output->rawOutput("<input name='word'><input type='submit' class='button' value='$test'></form>");
 if ($op == "test") {
-    $word = Http::post("word");
+    $wordPost = Http::post('word');
+    $word = is_string($wordPost) ? $wordPost : '';
     $return = soap($word, true);
     if ($return == $word) {
         $output->output("`7\"%s\" does not trip any filters.`0`n`n", $word);
@@ -79,7 +81,8 @@ $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
 $words = explode(" ", $row['words']);
 if ($op == "addgood") {
-    $newregexp = stripslashes(Http::post('word'));
+    $newRegexpPost = Http::post('word');
+    $newregexp = is_string($newRegexpPost) ? stripslashes($newRegexpPost) : '';
 
     // not sure if the line below should appear, as the strings in the good
     // word list have different behaviour than those in the nasty word list,
@@ -102,7 +105,9 @@ if ($op == "addgood") {
 }
 if ($op == "removegood") {
     // false if not found
-    $removekey = array_search(stripslashes(Http::post('word')), $words);
+    $removeWordPost = Http::post('word');
+    $removeWord = is_string($removeWordPost) ? stripslashes($removeWordPost) : '';
+    $removekey = array_search($removeWord, $words);
     // $removekey can be 0
     if ($removekey !== false) {
         unset($words[$removekey]);
@@ -143,7 +148,8 @@ $words = explode(" ", $row['words']);
 reset($words);
 
 if ($op == "add") {
-    $newregexp = stripslashes(Http::post('word'));
+    $newRegexpPost = Http::post('word');
+    $newregexp = is_string($newRegexpPost) ? stripslashes($newRegexpPost) : '';
 
     // automagically escapes all unescaped single quote characters
     $newregexp = preg_replace('/(?<!\\\\)\'/', '\\\'', $newregexp);
@@ -162,7 +168,9 @@ if ($op == "add") {
 }
 if ($op == "remove") {
     // false if not found
-    $removekey = array_search(stripslashes(Http::post('word')), $words);
+    $removeWordPost = Http::post('word');
+    $removeWord = is_string($removeWordPost) ? stripslashes($removeWordPost) : '';
+    $removekey = array_search($removeWord, $words);
     // $removekey can be 0
     if ($removekey !== false) {
         unset($words[$removekey]);

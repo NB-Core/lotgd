@@ -90,7 +90,8 @@ if ($op == "") {
         $output->output("You recall that the creature had asked for `b`\$%s`3`b gold.", $newcost);
     }
 } elseif ($op == "companion") {
-    $compcost = Http::get('compcost');
+    $compCostRequest = Http::get('compcost');
+    $compcost = is_numeric($compCostRequest) ? (int)$compCostRequest : 0;
 
     if ($session['user']['gold'] < $compcost) {
         $output->output("`3The old creature pierces you with a gaze hard and cruel.`n");
@@ -98,7 +99,8 @@ if ($op == "") {
         $output->output("Perhaps you should get some more money before you attempt to engage in local commerce.`n`n");
         $output->output("You recall that the creature had asked for `b`\$%s`3`b gold.", $compcost);
     } else {
-        $name = stripslashes(rawurldecode(Http::get('name')));
+        $nameRequest = Http::get('name');
+        $name = is_string($nameRequest) ? stripslashes(rawurldecode($nameRequest)) : '';
         $session['user']['gold'] -= $compcost;
         $companions[$name]['hitpoints'] = $companions[$name]['maxhitpoints'];
         $session['user']['companions'] = serialize($companions);

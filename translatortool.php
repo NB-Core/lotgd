@@ -23,11 +23,14 @@ $output = Output::getInstance();
 Translator::getInstance()->setSchema("translatortool");
 
 SuAccess::check(SU_IS_TRANSLATOR);
-$op = (string) Http::get('op');
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
 if ($op == "") {
     popup_header("Translator Tool");
-    $uri = rawurldecode((string) Http::get('u'));
-    $text = stripslashes(rawurldecode((string) Http::get('t')));
+    $uriRequest = Http::get('u');
+    $uri = is_string($uriRequest) ? rawurldecode($uriRequest) : '';
+    $textRequest = Http::get('t');
+    $text = is_string($textRequest) ? stripslashes(rawurldecode($textRequest)) : '';
     $translation = translate_loadnamespace($uri);
     if (isset($translation[$text])) {
         $trans = $translation[$text];
@@ -50,9 +53,12 @@ if ($op == "") {
     $output->rawOutput("</form>");
     popup_footer();
 } elseif ($op == 'save') {
-    $uri = (string) Http::post('uri');
-    $text = (string) Http::post('text');
-    $trans = (string) Http::post('trans');
+    $uriPost = Http::post('uri');
+    $uri = is_string($uriPost) ? $uriPost : '';
+    $textPost = Http::post('text');
+    $text = is_string($textPost) ? $textPost : '';
+    $transPost = Http::post('trans');
+    $trans = is_string($transPost) ? $transPost : '';
 
     $page = $uri;
     if (strpos($page, "?") !== false) {
@@ -101,7 +107,8 @@ if ($op == "") {
         }
     }
     Database::query($sql);
-    if ((string) Http::post('savenotclose') > "") {
+    $saveNotClosePost = Http::post('savenotclose');
+    if (is_string($saveNotClosePost) && $saveNotClosePost > "") {
         header("Location: translatortool.php?op=list&u=$page");
         exit();
     } else {

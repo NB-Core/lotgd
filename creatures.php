@@ -296,7 +296,8 @@ if ($op == "" || $op == "search") {
                 $row = $creaturestats[$level];
                 $posted = array('level','category','weapon','name','win','lose','aiscript','id');
                 foreach ($posted as $field) {
-                    $row['creature' . $field] = stripslashes(Http::post('creature' . $field));
+                    $creatureFieldPost = Http::post('creature' . $field);
+                    $row['creature' . $field] = is_string($creatureFieldPost) ? stripslashes($creatureFieldPost) : '';
                 }
                 if (!$row['creatureid']) {
                     $row['creatureid'] = 0;

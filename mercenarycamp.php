@@ -28,11 +28,7 @@ $translator->setSchema("mercenarycamp");
 
 DateTime::checkDay();
 $nameParam = Http::get('name');
-if ($nameParam !== false) {
-    $name = stripslashes(rawurldecode($nameParam));
-} else {
-    $name = '';
-}
+$name = is_string($nameParam) ? stripslashes(rawurldecode($nameParam)) : '';
 if (isset($companions[$name])) {
     $displayname = $companions[$name]['name'];
 } else {
@@ -113,7 +109,8 @@ Header::pageHeader($texts['title']);
 $output->output("`c`b`&" . $texts['title'] . "`0`b`c");
 $translator->setSchema();
 
-$op = Http::get("op");
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
 
 if ($op == "") {
     if (Http::get('skip') != 1) {
