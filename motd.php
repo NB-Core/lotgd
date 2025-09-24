@@ -103,6 +103,9 @@ if ($op == "") {
         Motd::motditem("Beta!","Please see the beta message below.","","", "");
         */
     $month_post = Http::post("month");
+    if (!is_string($month_post)) {
+        $month_post = '';
+    }
     //SQL Injection attack possible -> kill it off after 7 letters as format is i.e. "2000-05"
     $month_post = substr($month_post, 0, 7);
     if (preg_match("/[0-9][0-9][0-9][0-9]-[0-9][0-9]/", $month_post) !== 1) {
