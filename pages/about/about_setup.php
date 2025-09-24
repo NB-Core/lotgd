@@ -6,6 +6,11 @@ use Lotgd\Forms;
 use Lotgd\Nav;
 use Lotgd\Modules\HookHandler;
 use Lotgd\DateTime;
+use Lotgd\Output;
+use Lotgd\Settings;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 Nav::add("About LoGD");
 Nav::add("About LoGD", "about.php");

@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 use Lotgd\Nav;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Translator;
+use Lotgd\Sanitize;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 Nav::add('G?Return to the Graveyard', 'graveyard.php');
 Nav::add('Places');
@@ -14,15 +21,15 @@ if ($favortoheal > 0) {
 }
 
 
-$hauntcost = getsetting('hauntcost', 25);
-$resurrectioncost = getsetting('resurrectioncost', 100);
+$hauntcost = $settings->getSetting('hauntcost', 25);
+$resurrectioncost = $settings->getSetting('resurrectioncost', 100);
 
 $default_actions = array();
 $default_actions[] = array(
     "link" => "graveyard.php?op=resurrection",
     "linktext" => "Resurrection",
     "linkhardcoded" => 1,
-    "favor" => getsetting('resurrectioncost', 100),
+    "favor" => $resurrectioncost,
     "text" => "",
     "titletext" => "`\${deathoverlord}`) speaks, \"`7You have impressed me indeed.  I shall grant you the ability to visit your foes in the mortal world.`)\""
     );
@@ -60,7 +67,7 @@ if ($length > 0) {
     array_multisort($favorcostlist, SORT_ASC, $linklist, $textlist, $overlord, $linktext);
 }
 
-$highest = translate_inline("`\${deathoverlord}`) speaks, \"`7I am not yet impressed with your efforts.  Continue my work, and we may speak further.`)");
+$highest = Translator::translateInline("`\${deathoverlord}`) speaks, \"`7I am not yet impressed with your efforts.  Continue my work, and we may speak further.`)");
 
 if ($length > 0) {
     $reverse = array_reverse($overlord);
@@ -76,7 +83,7 @@ $highest = str_replace("{deathoverlord}", $deathoverlord, $highest);
 $output->outputNotl($highest . "`n`n");
 
 
-Nav::add(["%s Favors", sanitize($deathoverlord)]);
+Nav::add(["%s Favors", Sanitize::sanitize($deathoverlord)]);
 for ($i = 0; $i < $length; $i++) {
     $linktext[$i] = str_replace("{deathoverlord}", $deathoverlord, $linktext[$i]);
     Nav::add(["%s`) (%s favors)", $linktext[$i], $favorcostlist[$i]], $linklist[$i]);

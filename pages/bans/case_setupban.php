@@ -6,6 +6,12 @@ use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Nav;
 use Lotgd\Http;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\DateTime;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 $sql = 'SELECT name,lastip,uniqueid FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $userid;
 $result = Database::query($sql);
@@ -54,7 +60,7 @@ if (isset($row['name']) && !empty($row['name'])) {
             $row['lastip'],
             $row['name'],
             $row['gentimecount'],
-            reltime(strtotime($row['laston']))
+            DateTime::relTime(strtotime($row['laston']))
         );
     }
     $output->outputNotl("`n");
@@ -83,7 +89,7 @@ if (isset($row['name']) && !empty($row['name'])) {
                     $row['uniqueid'],
                     $row['name'],
                     $row['gentimecount'],
-                    reltime(strtotime($row['laston']))
+                    DateTime::relTime(strtotime($row['laston']))
                 );
             }
             $output->outputNotl("`n");

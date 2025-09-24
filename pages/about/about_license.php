@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Lotgd\Nav;
+use Lotgd\Output;
+
+$output = Output::getInstance();
 
 Nav::add("About LoGD");
 Nav::add("About LoGD", "about.php");

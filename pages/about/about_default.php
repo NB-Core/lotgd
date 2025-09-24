@@ -5,6 +5,13 @@ declare(strict_types=1);
 use Lotgd\Nav;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Nltoappon;
+use Lotgd\Output;
+use Lotgd\Settings;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
+
+global $logd_version;
 
 $order = array("2","3","1"); //arbitrary, this order the following hooks and whatnot
 

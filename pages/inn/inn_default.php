@@ -5,11 +5,21 @@ declare(strict_types=1);
 use Lotgd\Http;
 use Lotgd\Nav;
 use Lotgd\Random;
+use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Translator;
+use Lotgd\DateTime;
+use Lotgd\Page\Footer;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 if ($com == "" && !$comment && $op != "fleedragon") {
-    if (module_events("inn", (int)getsetting("innchance", 0)) != 0) {
-        if (checknavs()) {
-            page_footer();
+    $innChance = (int) $settings->getSetting('innchance', 0);
+    if (HookHandler::moduleEvents('inn', $innChance) != 0) {
+        if (Nav::checkNavs()) {
+            Footer::pageFooter();
         } else {
             $skipinndesc = true;
             $session['user']['specialinc'] = "";
@@ -21,11 +31,11 @@ if ($com == "" && !$comment && $op != "fleedragon") {
 }
 
 Nav::add("Things to do");
-$args = modulehook("blockcommentarea", array("section" => "inn"));
+$args = HookHandler::hook('blockcommentarea', array('section' => 'inn'));
 if (!isset($args['block']) || $args['block'] != 'yes') {
     Nav::add("Converse with patrons", "inn.php?op=converse");
 }
-Nav::add(array("B?Talk to %s`0 the Barkeep",$barkeep), "inn.php?op=bartender");
+Nav::add(["B?Talk to %s`0 the Barkeep", $barkeep], "inn.php?op=bartender");
 
 Nav::add("Other");
 Nav::add("Get a room (log out)", "inn.php?op=room");
@@ -55,18 +65,18 @@ if (!$skipinndesc) {
     $output->output("%s`0 the innkeep stands behind his counter, chatting with someone.", $barkeep);
 
     $chats = array(
-        translate_inline("dragons"),
-        translate_inline(getsetting("bard", "`^Seth")),
-        translate_inline(getsetting("barmaid", "`%Violet")),
-        translate_inline("`#MightyE"),
-        translate_inline("fine drinks"),
+        Translator::translateInline("dragons"),
+        Translator::translateInline($settings->getSetting('bard', '`^Seth')),
+        Translator::translateInline($settings->getSetting('barmaid', '`%Violet')),
+        Translator::translateInline("`#MightyE"),
+        Translator::translateInline("fine drinks"),
         $partner,
     );
-    $chats = modulehook("innchatter", $chats);
+    $chats = HookHandler::hook('innchatter', $chats);
     $talk = $chats[Random::eRand(0, count($chats) - 1)];
     $output->output("You can't quite make out what he is saying, but it's something about %s`0.`n`n", $talk);
-    $output->output("The clock on the mantle reads `6%s`0.`n", getgametime());
-    modulehook("inn-desc", array());
+    $output->output("The clock on the mantle reads `6%s`0.`n", DateTime::getGameTime());
+    HookHandler::hook('inn-desc', array());
 }
-modulehook("inn", array());
-module_display_events("inn", "inn.php");
+HookHandler::hook('inn', array());
+HookHandler::displayEvents('inn', 'inn.php');

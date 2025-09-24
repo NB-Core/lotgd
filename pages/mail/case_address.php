@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\Output;
+use Lotgd\Settings;
 
 $id = (int) Http::get('id');
 $preop = (string) Http::get('preop');
@@ -18,12 +19,14 @@ $preop = (string) Http::get('preop');
 function mailAddress(int $id, string $preop): void
 {
     $output = Output::getInstance();
+    $settings = Settings::getInstance();
+    $charset = $settings->getSetting('charset', 'UTF-8');
 
     $output->outputNotl("<form action='mail.php?op=write' method='post'>", true);
     $output->output("`b`2Address:`b`n");
     $to = Translator::translateInline("To: ");
     $forwardto = Translator::translateInline("Forward To: ");
-    $search = htmlentities(Translator::translateInline("Search"), ENT_COMPAT, getsetting("charset", "UTF-8"));
+    $search = htmlentities(Translator::translateInline("Search"), ENT_COMPAT, $charset);
     $forwardlink = '';
 
     if ($id > 0) {
@@ -33,7 +36,7 @@ function mailAddress(int $id, string $preop): void
 
     $output->outputNotl(
         "`2$to <input name='to' id='to' value=\""
-        . htmlentities($preop, ENT_COMPAT, getsetting("charset", "UTF-8"))
+        . htmlentities($preop, ENT_COMPAT, $charset)
         . "\">",
         true
     );

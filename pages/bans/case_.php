@@ -5,6 +5,12 @@ declare(strict_types=1);
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Nav;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\DateTime;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 if ($display == 1) {
     $q = "";
@@ -34,7 +40,7 @@ if ($display == 1) {
     $rn = 0;
     $oorder = "";
     while ($row = Database::fetchAssoc($searchresult)) {
-        $laston = relativedate($row['laston']);
+        $laston = DateTime::relativeDate($row['laston']);
         $loggedin =
             (date("U") - strtotime($row['laston']) <
              $settings->getSetting("LOGINTIMEOUT", 900) && $row['loggedin']);

@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Lotgd\Nav;
+use Lotgd\Output;
+
+$output = Output::getInstance();
 
 $output->output('`)`b`cThe Mausoleum`c`b');
 if ($session['user']['soulpoints'] < $max) {
