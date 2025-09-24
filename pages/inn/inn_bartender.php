@@ -7,6 +7,14 @@ use Lotgd\Nav;
 use Lotgd\Sanitize;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Random;
+use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Translator;
+use Lotgd\DebugLog;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 $act = Http::get('act');
 if ($act == "") {
@@ -18,7 +26,7 @@ if ($act == "") {
     Nav::addNotl(Sanitize::sanitize($barkeep));
     Nav::add("Bribe", "inn.php?op=bartender&act=bribe");
     Nav::add("Drinks");
-    modulehook("ale", array());
+    HookHandler::hook('ale', array());
 } elseif ($act == "bribe") {
     $g1 = $session['user']['level'] * 10;
     $g2 = $session['user']['level'] * 50;
@@ -31,9 +39,9 @@ if ($act == "") {
         Nav::add("1 gem", "inn.php?op=bartender&act=bribe&type=gem&amt=1");
         Nav::add("2 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=2");
         Nav::add("3 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=3");
-        Nav::add(array("%s gold", $g1), "inn.php?op=bartender&act=bribe&type=gold&amt=$g1");
-        Nav::add(array("%s gold", $g2), "inn.php?op=bartender&act=bribe&type=gold&amt=$g2");
-        Nav::add(array("%s gold", $g3), "inn.php?op=bartender&act=bribe&type=gold&amt=$g3");
+        Nav::add(["%s gold", $g1], "inn.php?op=bartender&act=bribe&type=gold&amt=$g1");
+        Nav::add(["%s gold", $g2], "inn.php?op=bartender&act=bribe&type=gold&amt=$g2");
+        Nav::add(["%s gold", $g3], "inn.php?op=bartender&act=bribe&type=gold&amt=$g3");
     } else {
         $amt = Http::get('amt');
         if ($type == "gem") {
@@ -43,7 +51,7 @@ if ($act == "") {
             } else {
                 $chance = $amt * 30;
                 $session['user']['gems'] -= $amt;
-                debuglog("spent $amt gems on bribing $barkeep");
+                DebugLog::add("spent $amt gems on bribing $barkeep");
                 $try = true;
             }
         } else {
@@ -55,20 +63,20 @@ if ($act == "") {
                 $sfactor = 50 / 90;
                 $fact = $amt / $session['user']['level'];
                 $chance = ($fact - 10) * $sfactor + 25;
-                    $session['user']['gold'] -= $amt;
-                debuglog("spent $amt gold bribing $barkeep");
+                $session['user']['gold'] -= $amt;
+                DebugLog::add("spent $amt gold bribing $barkeep");
             }
         }
         if ($try) {
             if (Random::eRand(0, 100) < $chance) {
                 $output->output("%s`0 leans over the counter toward you.  \"`%What can I do for you, kid?`0\" he asks.", $barkeep);
                 Nav::add("What do you want?");
-                modulehook("bartenderbribe", array());
-                if (getsetting("pvp", 1)) {
+                HookHandler::hook('bartenderbribe', array());
+                if ($settings->getSetting('pvp', 1)) {
                     Nav::add("Who's upstairs?", "inn.php?op=bartender&act=listupstairs");
                 }
                 Nav::add("Tell me about colors", "inn.php?op=bartender&act=colors");
-                if (getsetting("allowspecialswitch", true)) {
+                if ($settings->getSetting('allowspecialswitch', true)) {
                     Nav::add("Switch specialty", "inn.php?op=bartender&act=specialty");
                 }
             } else {
@@ -83,11 +91,11 @@ if ($act == "") {
                     $output->output("When he's finished, your gold is gone.");
                 }
                 $output->output("You inquire about the loss, and he stares blankly back at you.");
-                Nav::add(array("B?Talk to %s`0 again",$barkeep), "inn.php?op=bartender");
+                Nav::add(["B?Talk to %s`0 again", $barkeep], "inn.php?op=bartender");
             }
         } else {
             $output->output("`n`n%s`0 stands there staring at you blankly.", $barkeep);
-            Nav::add(array("B?Talk to %s`0 the Barkeep",$barkeep), "inn.php?op=bartender");
+            Nav::add(["B?Talk to %s`0 the Barkeep", $barkeep], "inn.php?op=bartender");
         }
     }
 } elseif ($act == "listupstairs") {
@@ -105,9 +113,9 @@ if ($act == "") {
     $output->output("`% Got it?`0\"  You can practice below:");
     $output->rawOutput("<form action=\"" . PhpGenericEnvironment::getRequestUri() . "\" method='POST'>", true);
     $testtext = Http::post('testtext');
-    $output->output("You entered %s`n", prevent_colors(HTMLEntities($testtext, ENT_COMPAT, getsetting("charset", "UTF-8"))), true);
+    $output->output("You entered %s`n", Sanitize::preventColors(HTMLEntities($testtext, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'))), true);
     $output->output("It looks like %s`n", $testtext);
-    $try = translate_inline("Try");
+    $try = Translator::translateInline("Try");
     $output->rawOutput("<input name='testtext' id='input'>");
     $output->rawOutput("<input type='submit' class='button' value='$try'>");
     $output->rawOutput("</form>");
@@ -123,7 +131,7 @@ if ($act == "") {
         $output->output("You look around for the secret door that you know must be opening nearby when %s`0 rotates the tap back, and lifts up a freshly filled foamy mug of what is apparently his fine swill, blue-green tint and all.`n`n", $barkeep);
         $output->output("\"`3What?  Were you expecting a secret room?`0\" he asks.  \"`3Now then, you must be more careful about how loudly you say that you want to change your specialty, not everyone looks favorably on that sort of thing.`n`n");
         $output->output("`0\"`3What new specialty did you have in mind?`0\"");
-        $specialities = modulehook("specialtynames");
+        $specialities = HookHandler::hook('specialtynames');
         foreach ($specialities as $key => $name) {
             Nav::add($name, Sanitize::cmdSanitize(PhpGenericEnvironment::getRequestUri()) . "&specialty=$key");
         }

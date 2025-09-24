@@ -6,6 +6,10 @@ use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Translator;
+use Lotgd\Output;
+use Lotgd\DateTime;
+
+$output = Output::getInstance();
 
 $subop = Http::get('subop');
 $none = Translator::translateInline('NONE');
@@ -164,7 +168,7 @@ while ($row = Database::fetchAssoc($result)) {
     $output->rawOutput("</a></div>");
     Nav::add("", $file);
     $output->rawOutput("</td><td>");
-    $output->outputNotl("%s", relativedate($row['lasthit']));
+    $output->outputNotl("%s", DateTime::relativeDate($row['lasthit']));
     $output->rawOutput("</td></tr>");
     $i++;
 }

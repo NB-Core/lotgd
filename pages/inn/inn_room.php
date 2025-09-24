@@ -6,6 +6,14 @@ use Lotgd\Http;
 use Lotgd\Nav;
 use Lotgd\Serialization;
 use Lotgd\Accounts;
+use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\DebugLog;
+use Lotgd\Redirect;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 $config = Serialization::safeUnserialize($session['user']['donationconfig']);
 $expense = round(($session['user']['level'] * (10 + log($session['user']['level']))), 0);
@@ -18,7 +26,7 @@ if ($pay) {
         if ($session['user']['loggedin']) {
             if (!$session['user']['boughtroomtoday']) {
                 if ($pay == 2) {
-                    $fee = getsetting("innfee", "5%");
+                    $fee = $settings->getSetting('innfee', '5%');
                     if (strpos($fee, "%")) {
                         $expense += round($expense * $fee / 100, 0);
                     } else {
@@ -29,7 +37,7 @@ if ($pay) {
                     $session['user']['gold'] -= $expense;
                 }
                 $session['user']['boughtroomtoday'] = 1;
-                debuglog("spent $expense gold on an inn room");
+                DebugLog::add("spent $expense gold on an inn room");
             }
             $session['user']['location'] = $iname;
             $session['user']['loggedin'] = 0;
@@ -37,7 +45,7 @@ if ($pay) {
             Accounts::saveUser();
         }
         $session = array();
-        redirect("index.php");
+        Redirect::redirect('index.php');
     } else {
         $output->output("\"Aah, so that's how it is,\" %s`0 says as he puts the key he had retrieved back on to its hook behind his counter.", $barkeep);
         $output->output("Perhaps you'd like to get sufficient funds before you attempt to engage in local commerce.");
@@ -47,10 +55,10 @@ if ($pay) {
         $output->output("You already paid for a room for the day.");
         Nav::add("Go to room", "inn.php?op=room&pay=1");
     } else {
-        modulehook("innrooms");
+        HookHandler::hook('innrooms');
         $output->output("You stroll over to the bartender and request a room.");
         $output->output("He eyes you up and says, \"It will cost `\$%s`0 gold for the night in a standard room.", $expense);
-        $fee = getsetting("innfee", "5%");
+        $fee = $settings->getSetting('innfee', '5%');
         if (strpos($fee, "%")) {
             $bankexpense = $expense + round($expense * $fee / 100, 0);
         } else {
@@ -78,9 +86,9 @@ if ($pay) {
         $output->output("It is far harder for vagabonds to get you in your room while you sleep.");
         $output->output("Also, those bodyguards sound pretty safe to you.");
         //$output->output("`n`bNote, bodyguard levels not yet implemented`b`n");
-        Nav::add(array("Give him %s gold", $expense), "inn.php?op=room&pay=1");
+        Nav::add(["Give him %s gold", $expense], "inn.php?op=room&pay=1");
         if ($session['user']['goldinbank'] >= $bankexpense) {
-            Nav::add(array("Pay %s gold from bank", $bankexpense), "inn.php?op=room&pay=2");
+            Nav::add(["Pay %s gold from bank", $bankexpense], "inn.php?op=room&pay=2");
         }
     }
 }

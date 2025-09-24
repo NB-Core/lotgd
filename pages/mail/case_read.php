@@ -6,13 +6,17 @@ use Lotgd\Mail;
 use Lotgd\PlayerFunctions;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
+use Lotgd\Http;
+use Lotgd\Output;
+use Lotgd\Settings;
 
 /**
  * Build a navigation link for adjacent messages.
  */
 function buildNavigationLink(int $id, string $label): string
 {
-    $charset = getsetting('charset', 'UTF-8');
+    $settings = Settings::getInstance();
+    $charset = $settings->getSetting('charset', 'UTF-8');
     $encodedLabel = htmlentities($label, ENT_COMPAT, $charset);
 
     if ($id > 0) {
@@ -29,10 +33,13 @@ function mailRead(): void
 {
     global $session;
 
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+
     // Get message id from request
-    $idParam = httpget('id');
+    $idParam = Http::get('id');
     if (!isset($idParam) || !is_numeric($idParam) || (int)$idParam <= 0) {
-        output('Invalid message ID: ' . $idParam);
+        $output->output('Invalid message ID: %s', (string) $idParam);
         return;
     }
     $messageId = (int) $idParam;
@@ -41,7 +48,7 @@ function mailRead(): void
     $message = Mail::getMessage($session['user']['acctid'], $messageId);
 
     if (! $message) {
-        output('The requested message could not be found.');
+        $output->output('The requested message could not be found.');
 
         return;
     }
@@ -102,9 +109,9 @@ function mailRead(): void
 
     // Show NEW marker if message is unread
     if (! $message['seen']) {
-        output('`b`#NEW`b`n');
+        $output->output('`b`#NEW`b`n');
     } else {
-        output('`n');
+        $output->output('`n');
     }
 
     // IDs for adjacent messages
@@ -113,43 +120,43 @@ function mailRead(): void
     $nextId = $adjacentIds['next'];
 
     // Message headers
-    output('`b`2From:`b `^%s', $message['name']);
-    output_notl('%s', ($statusImage ?? '') . '`n', true);
-    output('`b`2Subject:`b `^%s`n', $message['subject']);
-    output('`b`2Sent:`b `^%s`n', $message['sent']);
+    $output->output('`b`2From:`b `^%s', $message['name']);
+    $output->outputNotl('%s', ($statusImage ?? '') . '`n', true);
+    $output->output('`b`2Subject:`b `^%s`n', $message['subject']);
+    $output->output('`b`2Sent:`b `^%s`n', $message['sent']);
 
     // Top controls with navigation
-    rawoutput('<table style="width:50%;border:0;cellspacing:10;"><tr>');
-    rawoutput("<td><a href='mail.php?op=write&replyto={$message['messageid']}' class='motd'>$replyLabel</a></td>");
-    rawoutput("<td><a href='mail.php?op=address&id={$message['messageid']}' class='motd'>$forwardLabel</a></td>");
-    rawoutput('<td>' . buildNavigationLink($previousId, $previousLabel) . '</td>');
-    rawoutput('<td nowrap="true">' . buildNavigationLink($nextId, $nextLabel) . '</td>');
-    rawoutput('</tr></table><br/>');
+    $output->rawOutput('<table style="width:50%;border:0;cellspacing:10;"><tr>');
+    $output->rawOutput("<td><a href='mail.php?op=write&replyto={$message['messageid']}' class='motd'>$replyLabel</a></td>");
+    $output->rawOutput("<td><a href='mail.php?op=address&id={$message['messageid']}' class='motd'>$forwardLabel</a></td>");
+    $output->rawOutput('<td>' . buildNavigationLink($previousId, $previousLabel) . '</td>');
+    $output->rawOutput('<td nowrap="true">' . buildNavigationLink($nextId, $nextLabel) . '</td>');
+    $output->rawOutput('</tr></table><br/>');
 
     // Message body
-    output_notl('%s', Sanitize::sanitizeMb(str_replace("\n", '`n', $message['body'])));
+    $output->outputNotl('%s', Sanitize::sanitizeMb(str_replace("\n", '`n', $message['body'])));
 
     // Mark as read
     Mail::markRead($session['user']['acctid'], $messageId);
 
     // Bottom action links and navigation
-    rawoutput("<table width='50%' border='0' cellpadding='0' cellspacing='5'><tr>");
-    rawoutput("<td><a href='mail.php?op=write&replyto={$message['messageid']}' class='motd'>$replyLabel</a></td>");
-    rawoutput("<td><a href='mail.php?op=del&id={$message['messageid']}' class='motd'>$deleteLabel</a></td>");
-    rawoutput('</tr><tr>');
-    rawoutput("<td><a href='mail.php?op=unread&id={$message['messageid']}' class='motd'>$unreadLabel</a></td>");
+    $output->rawOutput("<table width='50%' border='0' cellpadding='0' cellspacing='5'><tr>");
+    $output->rawOutput("<td><a href='mail.php?op=write&replyto={$message['messageid']}' class='motd'>$replyLabel</a></td>");
+    $output->rawOutput("<td><a href='mail.php?op=del&id={$message['messageid']}' class='motd'>$deleteLabel</a></td>");
+    $output->rawOutput('</tr><tr>');
+    $output->rawOutput("<td><a href='mail.php?op=unread&id={$message['messageid']}' class='motd'>$unreadLabel</a></td>");
 
     if ((int) $message['msgfrom'] !== 0) {
-        $escapedProblem = htmlentities($reportMessage, ENT_COMPAT, getsetting('charset', 'UTF-8'));
-        rawoutput("<td><form action=\"petition.php\" method='post'><input type='hidden' name='problem' value=\"$escapedProblem\"/><input type='hidden' name='abuse' value=\"yes\"/><input type='hidden' name='abuseplayer' value=\"$reportPlayer\"/><input type='submit' class='motd' value='$reportLabel'/></form></td>");
+        $escapedProblem = htmlentities($reportMessage, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
+        $output->rawOutput("<td><form action=\"petition.php\" method='post'><input type='hidden' name='problem' value=\"$escapedProblem\"/><input type='hidden' name='abuse' value=\"yes\"/><input type='hidden' name='abuseplayer' value=\"$reportPlayer\"/><input type='submit' class='motd' value='$reportLabel'/></form></td>");
     } else {
-        rawoutput('<td>&nbsp;</td>');
+        $output->rawOutput('<td>&nbsp;</td>');
     }
 
-    rawoutput('</tr><tr>');
-    rawoutput('<td nowrap="true">' . buildNavigationLink($previousId, $previousLabel) . '</td>');
-    rawoutput('<td nowrap="true">' . buildNavigationLink($nextId, $nextLabel) . '</td>');
-    rawoutput('</tr></table>');
+    $output->rawOutput('</tr><tr>');
+    $output->rawOutput('<td nowrap="true">' . buildNavigationLink($previousId, $previousLabel) . '</td>');
+    $output->rawOutput('<td nowrap="true">' . buildNavigationLink($nextId, $nextLabel) . '</td>');
+    $output->rawOutput('</tr></table>');
 }
 
 mailRead();

@@ -11,6 +11,11 @@ use Lotgd\Http;
 use Lotgd\Page\Footer;
 use Lotgd\MySQL\Database;
 use Lotgd\Random;
+use Lotgd\Output;
+use Lotgd\Settings;
+
+$output = Output::getInstance();
+$settings = Settings::getInstance();
 
 if ($session['user']['gravefights'] <= 0) {
     $output->output("`\$`bYour soul can bear no more torment in this afterlife.`b`0");
@@ -18,7 +23,8 @@ if ($session['user']['gravefights'] <= 0) {
     Http::set('op', '');
 } else {
     Battle::suspendCompanions('allowinshades', true);
-    if (HookHandler::moduleEvents('graveyard', (int) getsetting('gravechance', 0)) != 0) {
+    $graveChance = (int) $settings->getSetting('gravechance', 0);
+    if (HookHandler::moduleEvents('graveyard', $graveChance) != 0) {
         if (! Nav::checkNavs()) {
             // If we're going back to the graveyard, make sure to reset
             // the special and the specialmisc

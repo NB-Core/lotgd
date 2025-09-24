@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 use Lotgd\Mail;
+use Lotgd\Http;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\DataCache;
 
 /**
  * Handle sending of in-game mail.
@@ -14,16 +18,19 @@ function mailSend(): void
 {
     global $session, $op, $id;
 
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+
     // Capture and validate input values once
-    $to = (string) httppost('to');
-    $subject = (string) httppost('subject');
-    $body = (string) httppost('body');
-    $sendClose = (bool) httppost('sendclose');
-    $sendBack = (bool) httppost('sendback');
-    $return = (int) httppost('returnto');
+    $to = (string) Http::post('to');
+    $subject = (string) Http::post('subject');
+    $body = (string) Http::post('body');
+    $sendClose = Http::post('sendclose') !== '';
+    $sendBack = Http::post('sendback') !== '';
+    $return = (int) Http::post('returnto');
 
     if ($to === '' || $body === '') {
-        output('Missing required fields.`n');
+        $output->output('Missing required fields.`n');
         return;
     }
 
@@ -31,16 +38,16 @@ function mailSend(): void
     $result = Database::query($sql);
 
     if (Database::numRows($result) <= 0) {
-        output('Could not find the recipient, please try again.`n');
+        $output->output('Could not find the recipient, please try again.`n');
 
         return;
     }
 
     $row = Database::fetchAssoc($result);
-    $checkUnread = (bool) getsetting('onlyunreadmails', true);
+    $checkUnread = (bool) $settings->getSetting('onlyunreadmails', true);
 
     if (Mail::isInboxFull($row['acctid'], $checkUnread)) {
-        output('`$You cannot send that person mail, their mailbox is full!`0`n`n');
+        $output->output('`$You cannot send that person mail, their mailbox is full!`0`n`n');
 
         return;
     }
@@ -49,11 +56,11 @@ function mailSend(): void
     $body = sanitizeBody($body);
 
     Mail::systemMail($row['acctid'], $subject, $body, (int) $session['user']['acctid']);
-    invalidatedatacache("mail-{$row['acctid']}");
-    output('Your message was sent!`n');
+    DataCache::getInstance()->invalidatedatacache("mail-{$row['acctid']}");
+    $output->output('Your message was sent!`n');
 
     if ($sendClose) {
-        rawoutput("<script language='javascript'>window.close();</script>");
+        $output->rawOutput("<script language='javascript'>window.close();</script>");
     }
 
     if ($sendBack) {
@@ -62,12 +69,12 @@ function mailSend(): void
 
     if ($return > 0) {
         $op = 'read';
-        httpset('op', 'read');
+        Http::set('op', 'read');
         $id = $return;
-        httpset('id', (string)$id, true);
+        Http::set('id', (string) $id, true);
     } else {
         $op = '';
-        httpset('op', '');
+        Http::set('op', '');
     }
 }
 
@@ -117,9 +124,10 @@ function normalizeLineEndings(string $body): string
  */
 function escapeAndTruncateBody(string $body): string
 {
-    $limit = (int) getsetting('mailsizelimit', 1024);
+    $settings = Settings::getInstance();
+    $limit = (int) $settings->getSetting('mailsizelimit', 1024);
 
-    return addslashes(mb_substr(stripslashes($body), 0, $limit, getsetting('charset', 'UTF-8')));
+    return addslashes(mb_substr(stripslashes($body), 0, $limit, $settings->getSetting('charset', 'UTF-8')));
 }
 
 mailSend();

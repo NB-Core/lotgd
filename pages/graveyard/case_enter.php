@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Lotgd\Nav;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Output;
+
+$output = Output::getInstance();
 
 $output->output('`)`b`cThe Mausoleum`c`b');
 

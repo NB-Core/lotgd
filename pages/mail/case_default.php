@@ -6,6 +6,10 @@ use Lotgd\Mail;
 use Lotgd\PlayerFunctions;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
+use Lotgd\Http;
+use Lotgd\Output;
+use Lotgd\Settings;
+use Lotgd\Modules\HookHandler;
 
 /**
  * Default mail case handler.
@@ -14,15 +18,20 @@ function mailDefault(): void
 {
     global $session;
 
-    output('`b`iMail Box`i`b');
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+
+    $output->output('`b`iMail Box`i`b');
     if (isset($session['message'])) {
-        output('%s', $session['message']);
+        $output->output('%s', $session['message']);
     }
     $session['message'] = '';
 
-    $sortOrder = httpget('sortorder');
-    if ($sortOrder === false || $sortOrder === '') {
+    $sortOrderRequest = Http::get('sortorder');
+    if (!is_string($sortOrderRequest) || $sortOrderRequest === '') {
         $sortOrder = 'date';
+    } else {
+        $sortOrder = $sortOrderRequest;
     }
     $order = match ($sortOrder) {
         'subject' => 'subject',
@@ -30,7 +39,7 @@ function mailDefault(): void
         default   => 'sent',
     };
 
-    $sortingDirection = (int) httpget('direction');
+    $sortingDirection = (int) Http::get('direction');
     $direction = $sortingDirection === 0 ? 'DESC' : 'ASC';
     $newDirection = (int) ! $sortingDirection;
 
@@ -59,10 +68,15 @@ function mailDefault(): void
 
         renderMailFooter($fromList);
     } else {
-        output('`i`4Aww, you have no mail, how sad.`i');
+        $output->output('`i`4Aww, you have no mail, how sad.`i');
     }
 
-    output('`n`n`i`lYou currently have %s messages in your inbox.`nYou will no longer be able to receive messages from players if you have more than %s unread messages in your inbox.  `nMessages are automatically deleted (read or unread) after %s days.', $dbNumRows, getsetting('inboxlimit', 50), getsetting('oldmail', 14));
+    $output->output(
+        '`n`n`i`lYou currently have %s messages in your inbox.`nYou will no longer be able to receive messages from players if you have more than %s unread messages in your inbox.  `nMessages are automatically deleted (read or unread) after %s days.',
+        $dbNumRows,
+        $settings->getSetting('inboxlimit', 50),
+        $settings->getSetting('oldmail', 14)
+    );
 }
 
 mailDefault();
@@ -72,12 +86,14 @@ mailDefault();
  */
 function renderMailTableHeader(string $sortOrder, int $sortingDirection, int $newDirection, string $subject, string $from, string $date, string $arrow): void
 {
-    rawoutput("<form action='mail.php?op=process' onsubmit=\"return confirm('Do you really want to delete/move/process those entries?');\" method='post'><table>");
-    rawoutput("<tr class='trhead'><td></td>");
-    rawoutput("<td>" . ($sortOrder === 'subject' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=subject&direction=" . ($sortOrder === 'subject' ? $newDirection : $sortingDirection) . "'>$subject</a></td>");
-    rawoutput("<td>" . ($sortOrder === 'name' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=name&direction=" . ($sortOrder === 'name' ? $newDirection : $sortingDirection) . "'>$from</a></td>");
-    rawoutput("<td>" . ($sortOrder === 'date' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=date&direction=" . ($sortOrder === 'date' ? $newDirection : $sortingDirection) . "'>$date</a></td>");
-    rawoutput('</tr>');
+    $output = Output::getInstance();
+
+    $output->rawOutput("<form action='mail.php?op=process' onsubmit=\"return confirm('Do you really want to delete/move/process those entries?');\" method='post'><table>");
+    $output->rawOutput("<tr class='trhead'><td></td>");
+    $output->rawOutput("<td>" . ($sortOrder === 'subject' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=subject&direction=" . ($sortOrder === 'subject' ? $newDirection : $sortingDirection) . "'>$subject</a></td>");
+    $output->rawOutput("<td>" . ($sortOrder === 'name' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=name&direction=" . ($sortOrder === 'name' ? $newDirection : $sortingDirection) . "'>$from</a></td>");
+    $output->rawOutput("<td>" . ($sortOrder === 'date' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=date&direction=" . ($sortOrder === 'date' ? $newDirection : $sortingDirection) . "'>$date</a></td>");
+    $output->rawOutput('</tr>');
 }
 
 /**
@@ -85,13 +101,14 @@ function renderMailTableHeader(string $sortOrder, int $sortingDirection, int $ne
  */
 function renderMailRows(array $rows, array $userStatusList, string $noSubject): array
 {
+    $output = Output::getInstance();
     $fromList = [];
 
     foreach ($rows as $row) {
-        rawoutput('<tr>');
-        rawoutput("<td nowrap><input type='checkbox' id='" . $row['messageid'] . "' name='msg[]' value='{$row['messageid']}'>");
-        rawoutput("<img src='images/" . ($row['seen'] ? 'old' : 'new') . "scroll.GIF' width='16px' height='16px' alt='" . ($row['seen'] ? 'Old' : 'New') . "'></td>");
-        rawoutput('<td>');
+        $output->rawOutput('<tr>');
+        $output->rawOutput("<td nowrap><input type='checkbox' id='" . $row['messageid'] . "' name='msg[]' value='{$row['messageid']}'>");
+        $output->rawOutput("<img src='images/" . ($row['seen'] ? 'old' : 'new') . "scroll.GIF' width='16px' height='16px' alt='" . ($row['seen'] ? 'Old' : 'New') . "'></td>");
+        $output->rawOutput('<td>');
 
         $statusImage = '';
         if ((int) $row['msgfrom'] === 0) {
@@ -121,16 +138,16 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
             $fromList[$sname] .= ", '" . $row['messageid'] . "'";
         }
 
-        rawoutput("<a href='mail.php?op=read&id={$row['messageid']}'>");
-        output_notl('%s', trim($row['subject']) ? $row['subject'] : $noSubject);
-        rawoutput('</a>');
-        rawoutput("</td><td><a href='mail.php?op=read&id={$row['messageid']}'>");
-        output_notl('%s', $row['name']);
-        rawoutput("</a>$statusImage</td><td><a href='mail.php?op=read&id={$row['messageid']}'>" . date('M d, h:i a', strtotime($row['sent'])) . '</a></td>');
-        rawoutput('</tr>');
+        $output->rawOutput("<a href='mail.php?op=read&id={$row['messageid']}'>");
+        $output->outputNotl('%s', trim($row['subject']) ? $row['subject'] : $noSubject);
+        $output->rawOutput('</a>');
+        $output->rawOutput("</td><td><a href='mail.php?op=read&id={$row['messageid']}'>");
+        $output->outputNotl('%s', $row['name']);
+        $output->rawOutput("</a>$statusImage</td><td><a href='mail.php?op=read&id={$row['messageid']}'>" . date('M d, h:i a', strtotime($row['sent'])) . '</a></td>');
+        $output->rawOutput('</tr>');
     }
 
-    rawoutput('</table>');
+    $output->rawOutput('</table>');
 
     return $fromList;
 }
@@ -140,6 +157,7 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
  */
 function renderMailFooter(array $fromList): void
 {
+    $output = Output::getInstance();
     $script = "<script type='text/javascript'>
                                         function check_all() {
                                                 var elements = document.getElementsByName(\"msg[]\");
@@ -192,13 +210,13 @@ function renderMailFooter(array $fromList): void
                         document.getElementById('button_check').value=unchecktext;
                 }
                                         </script>";
-    rawoutput($script);
-    $checkall = appoencode(Translator::translateInline('Check All'));
-    $delchecked = appoencode(Translator::translateInline('Delete Checked'));
-    $checknames = appoencode(Translator::translateInline('`vCheck by Name`0'));
-    output_notl("<label for='check_name_select'>" . $checknames . "</label> <select onchange='check_name()' id='check_name_select'>" . $option . "</select><br>", true);
-    rawoutput("<input type='button' id='button_check' value=\"$checkall\" class='button' onClick='check_all()'>");
-    rawoutput("<input type='submit' class='button' value=\"$delchecked\">");
-    modulehook('mailform', []);
-    rawoutput('</form>');
+    $output->rawOutput($script);
+    $checkall = $output->appoencode(Translator::translateInline('Check All'));
+    $delchecked = $output->appoencode(Translator::translateInline('Delete Checked'));
+    $checknames = $output->appoencode(Translator::translateInline('`vCheck by Name`0'));
+    $output->outputNotl("<label for='check_name_select'>" . $checknames . "</label> <select onchange='check_name()' id='check_name_select'>" . $option . "</select><br>", true);
+    $output->rawOutput("<input type='button' id='button_check' value=\"$checkall\" class='button' onClick='check_all()'>");
+    $output->rawOutput("<input type='submit' class='button' value=\"$delchecked\">");
+    HookHandler::hook('mailform', []);
+    $output->rawOutput('</form>');
 }
