@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\ErrorHandling;
 use Lotgd\Http;
 use Lotgd\Output;

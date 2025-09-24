@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Commentary;
 use Lotgd\Modules\HookHandler;
 use Lotgd\DateTime;

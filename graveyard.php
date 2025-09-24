@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Buffs;
 use Lotgd\DateTime;
 use Lotgd\DeathMessage;

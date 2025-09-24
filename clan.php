@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
