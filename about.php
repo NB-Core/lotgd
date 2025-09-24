@@ -31,7 +31,8 @@ Header::pageHeader("About Legend of the Green Dragon Core Engine");
 $details = gametimedetails();
 
 DateTime::checkDay();
-$op = Http::get('op');
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
 
 switch ($op) {
     case "setup":

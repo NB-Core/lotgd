@@ -173,7 +173,8 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
             }
             $session['user']['prefs'][$key] = Http::post($key);
         }
-        $bio = stripslashes(Http::post('bio'));
+        $bioPost = Http::post('bio');
+        $bio = is_string($bioPost) ? stripslashes($bioPost) : '';
         $bio = Sanitize::commentSanitize($bio);
         if ($bio != Sanitize::commentSanitize($session['user']['bio'])) {
             if ($session['user']['biotime'] > "9000-01-01") {
@@ -184,7 +185,8 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
                 $session['user']['biotime'] = date("Y-m-d H:i:s");
             }
         }
-        $email = Http::post('email');
+        $emailPost = Http::post('email');
+        $email = is_string($emailPost) ? $emailPost : '';
         if ($email != $session['user']['emailaddress']) {
             if ($settings->getSetting('playerchangeemail', 0)) {
                 if (EmailValidator::isValid($email)) {

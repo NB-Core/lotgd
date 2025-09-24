@@ -67,7 +67,8 @@ $translator->setSchema($schemas['title']);
 Header::pageHeader($texts['title']);
 $output->output("`c`b`%" . $texts['title'] . "`0`b`c");
 $translator->setSchema();
-$op = Http::get('op');
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
 if ($op == "") {
     $translator->setSchema($schemas['desc']);
     if (is_array($texts['desc'])) {
@@ -150,7 +151,8 @@ if ($op == "") {
     $output->rawOutput("</table>", true);
     VillageNav::render();
 } elseif ($op == "buy") {
-    $id = Http::get('id');
+    $idRequest = Http::get('id');
+    $id = is_string($idRequest) ? $idRequest : '';
     $sql = "SELECT * FROM " . Database::prefix("armor") . " WHERE armorid='$id'";
     $result = Database::query($sql);
     if (Database::numRows($result) == 0) {

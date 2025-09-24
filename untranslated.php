@@ -86,7 +86,9 @@ if ($op == "list") {
 
     if ($mode == "edit") {
         $output->rawOutput(Translator::translate("Text:") . "<br>");
-        $output->rawOutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(Http::get('intext')), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
+        $intextRequest = Http::get('intext');
+        $intext = is_string($intextRequest) ? stripslashes($intextRequest) : '';
+        $output->rawOutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities($intext, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
         $output->rawOutput(Translator::translate("Translation:") . "<br>");
         $output->rawOutput("<textarea name='outtext' cols='60' rows='5'></textarea><br/>");
         $output->rawOutput("<input type='submit' value='" . Translator::translate("Save") . "' class='button'>");

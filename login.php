@@ -28,9 +28,10 @@ $settings = Settings::getInstance();
 
 Translator::getInstance()->setSchema("login");
 Translator::translatorSetup();
-$op = Http::get('op');
-$name = Http::post('name');
-$name = $name !== false ? (string)$name : '';
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
+$nameRequest = Http::post('name');
+$name = is_string($nameRequest) ? $nameRequest : '';
 $iname = $settings->getSetting("innname", LOCATION_INN);
 $vname = $settings->getSetting("villagename", LOCATION_FIELDS);
 
@@ -38,9 +39,10 @@ if ($name != "") {
     if (isset($session['loggedin']) && $session['loggedin']) {
         Redirect::redirect("badnav.php");
     } else {
-        $password = Http::post('password');
-        $password = $password !== false ? stripslashes((string)$password) : '';
-        $force = Http::post('force');
+        $passwordRequest = Http::post('password');
+        $password = is_string($passwordRequest) ? stripslashes($passwordRequest) : '';
+        $forceRequest = Http::post('force');
+        $force = is_string($forceRequest) ? $forceRequest : '';
         if (substr($password, 0, 5) == "!md5!") {
             $password = md5(substr($password, 5));
         } elseif (substr($password, 0, 6) == "!md52!" && strlen($password) == 38) {

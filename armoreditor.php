@@ -33,7 +33,8 @@ SuAccess::check(SU_EDIT_EQUIPMENT);
 Translator::getInstance()->setSchema("armor");
 
 Header::pageHeader("Armor Editor");
-$armorlevel = (int)Http::get('level');
+$armorLevelRequest = Http::get('level');
+$armorlevel = is_numeric($armorLevelRequest) ? (int)$armorLevelRequest : 0;
 SuperuserNav::render();
 Nav::add("Armor Editor");
 Nav::add("Armor Editor Home", "armoreditor.php?level=$armorlevel");
@@ -47,8 +48,10 @@ $armorarray = array(
     "armorid" => "Armor ID,hidden",
     "armorname" => "Armor Name",
     "defense" => "Defense,range,1,15,1");
-$op = Http::get('op');
-$id = Http::get('id');
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
+$idRequest = Http::get('id');
+$id = is_string($idRequest) ? $idRequest : '';
 if ($op == "edit" || $op == "add") {
     if ($op == "edit") {
         $sql = "SELECT * FROM " . Database::prefix("armor") . " WHERE armorid='$id'";
@@ -70,9 +73,12 @@ if ($op == "edit" || $op == "add") {
     $op = "";
     Http::set('op', $op);
 } elseif ($op == "save") {
-    $armorid = Http::post('armorid');
-    $armorname = Http::post('armorname');
-    $defense = Http::post('defense');
+    $armorIdRequest = Http::post('armorid');
+    $armorid = is_numeric($armorIdRequest) ? (int)$armorIdRequest : 0;
+    $armorNameRequest = Http::post('armorname');
+    $armorname = is_string($armorNameRequest) ? $armorNameRequest : '';
+    $defenseRequest = Http::post('defense');
+    $defense = is_numeric($defenseRequest) ? (int)$defenseRequest : 0;
     if ($armorid > 0) {
         $sql = "UPDATE " . Database::prefix("armor") . " SET armorname=\"$armorname\",defense=\"$defense\",value=" . $values[$defense] . " WHERE armorid='$armorid'";
     } else {

@@ -28,7 +28,8 @@ Translator::getInstance()->setSchema("bank");
 
 Header::pageHeader("Ye Olde Bank");
 $output->output("`^`c`bYe Olde Bank`b`c");
-$op = Http::get('op');
+$opRequest = Http::get('op');
+$op = is_string($opRequest) ? $opRequest : '';
 $point = $settings->getSetting('moneydecimalpoint', ".");
 $sep = $settings->getSetting('moneythousandssep', ",");
 if ($op == "") {
@@ -74,13 +75,15 @@ if ($op == "") {
 } elseif ($op == "transfer2") {
     $output->output("`6`bConfirm Transfer`b:`n");
     $string = "%";
-    $to = Http::post('to');
+    $toPost = Http::post('to');
+    $to = is_string($toPost) ? $toPost : '';
     for ($x = 0; $x < strlen($to); $x++) {
         $string .= substr($to, $x, 1) . "%";
     }
     $sql = "SELECT name,login FROM " . Database::prefix("accounts") . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
     $result = Database::query($sql);
-    $amt = abs((int)Http::post('amount'));
+    $amountPost = Http::post('amount');
+    $amt = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
     if (Database::numRows($result) == 1) {
         $row = Database::fetchAssoc($result);
         $msg = Translator::translateInline("Complete Transfer");
@@ -116,8 +119,10 @@ if ($op == "") {
         $output->output("`@Elessa`6 blinks at you from behind her spectacles, \"`@I'm sorry, but I can find no one matching that name who does business with our bank!  Please try again.`6\"");
     }
 } elseif ($op == "transfer3") {
-    $amt = abs((int)Http::post('amount'));
-    $to = Http::post('to');
+    $amountPost = Http::post('amount');
+    $amt = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
+    $toPost = Http::post('to');
+    $to = is_string($toPost) ? $toPost : '';
     $output->output("`6`bTransfer Completion`b`n");
     if ($session['user']['gold'] + $session['user']['goldinbank'] < $amt) {
         $output->output("`@Elessa`6 stands up to her full, but still diminutive height and glares at you, \"`@How can you transfer `^%s`@ gold when you only possess `^%s`@?`6\"", number_format($amt, 0, $point, $sep), number_format($session['user']['gold'] + $session['user']['goldinbank'], 0, $point, $sep));
@@ -175,7 +180,8 @@ if ($op == "") {
     $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>", true);
     Nav::add("", "bank.php?op=depositfinish");
 } elseif ($op == "depositfinish") {
-    $amount = abs((int)Http::post('amount'));
+    $amountPost = Http::post('amount');
+    $amount = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
     if ($amount == 0) {
         $amount = $session['user']['gold'];
     }
@@ -216,11 +222,14 @@ if ($op == "") {
     $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>");
     Nav::add("", "bank.php?op=withdrawfinish");
 } elseif ($op == "withdrawfinish") {
-    $amount = abs((int)Http::post('amount'));
+    $amountPost = Http::post('amount');
+    $amount = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
     if ($amount == 0) {
         $amount = abs($session['user']['goldinbank']);
     }
-    if ($amount > $session['user']['goldinbank'] && Http::post('borrow') == "") {
+    $borrowPost = Http::post('borrow');
+    $borrow = is_string($borrowPost) ? $borrowPost : '';
+    if ($amount > $session['user']['goldinbank'] && $borrow === "") {
         $output->output("`\$ERROR: Not enough gold in the bank to withdraw.`^`n`n");
         $output->output("`6Having been informed that you have `^%s`6 gold in your account, you declare that you would like to withdraw all `^%s`6 of it.`n`n", number_format($session['user']['goldinbank'], 0, $point, $sep), number_format($amount, 0, $point, $sep));
         $output->output("`@Elessa`6 looks at you for a few moments without blinking, then advises you to take basic arithmetic.  You realize your folly and think you should try again.");
