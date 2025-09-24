@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use Lotgd\DateTime;
+use Lotgd\Http;
+use Lotgd\Nav;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
 use Lotgd\Translator;
 
 // translator ready
@@ -19,12 +24,6 @@ use Lotgd\Translator;
 
 define("ALLOW_ANONYMOUS", true);
 require_once __DIR__ . "/common.php";
-
-use Lotgd\Http;
-use Lotgd\Page\Header;
-use Lotgd\Page\Footer;
-use Lotgd\Nav;
-use Lotgd\DateTime;
 
 Translator::getInstance()->setSchema("about");
 
