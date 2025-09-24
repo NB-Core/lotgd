@@ -222,7 +222,7 @@ foreach ($rows as $i => $row) {
         $row['race'] = RACE_UNKNOWN;
     }
     Translator::getInstance()->setSchema("race");
-    $output->output($row['race']);
+    $output->output('%s', $row['race']);
     Translator::getInstance()->setSchema();
     $output->rawOutput("</td><td>");
     $sex = Translator::translate($row['sex'] ? "`%Female`0" : "`!Male`0");

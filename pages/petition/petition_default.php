@@ -73,7 +73,7 @@ if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
             $output->output("`\$There was a problem with your petition!`n");
             $output->output("`@Please read the information below carefully; there was a problem with your petition, and it was not submitted.\n");
             $output->rawOutput("<blockquote>");
-            $output->output($post['cancelreason']);
+            $output->output('%s', $post['cancelreason']);
             $output->rawOutput("</blockquote>");
         }
     } else {

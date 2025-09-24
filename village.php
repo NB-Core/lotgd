@@ -290,7 +290,7 @@ Nav::add("", "weaponeditor.php");
 if (!$skipvillagedesc) {
     HookHandler::hook("collapse{", array("name" => "villagedesc-" . $session['user']['location']));
     $translator->setSchema($schemas['text']);
-    $output->output($texts['text']);
+    $output->output('%s', $texts['text']);
     $translator->setSchema();
     HookHandler::hook("}collapse");
     HookHandler::hook("collapse{", array("name" => "villageclock-" . $session['user']['location']));
@@ -327,7 +327,7 @@ if ($skipvillagedesc) {
 $args = HookHandler::hook("blockcommentarea", array("section" => $texts['section']));
 if (!isset($args['block']) || $args['block'] != 'yes') {
         $translator->setSchema($schemas['talk']);
-        $output->output($texts['talk']);
+        $output->output('%s', $texts['talk']);
         $translator->setSchema();
             Commentary::commentDisplay("", $texts['section'], "Speak", 25, $texts['sayline'], $schemas['sayline']);
 }

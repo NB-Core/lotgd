@@ -16,7 +16,7 @@ function mailDefault(): void
 
     output('`b`iMail Box`i`b');
     if (isset($session['message'])) {
-        output($session['message']);
+        output('%s', $session['message']);
     }
     $session['message'] = '';
 
@@ -122,10 +122,10 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
         }
 
         rawoutput("<a href='mail.php?op=read&id={$row['messageid']}'>");
-        output_notl((trim($row['subject']) ? $row['subject'] : $noSubject));
+        output_notl('%s', trim($row['subject']) ? $row['subject'] : $noSubject);
         rawoutput('</a>');
         rawoutput("</td><td><a href='mail.php?op=read&id={$row['messageid']}'>");
-        output_notl($row['name']);
+        output_notl('%s', $row['name']);
         rawoutput("</a>$statusImage</td><td><a href='mail.php?op=read&id={$row['messageid']}'>" . date('M d, h:i a', strtotime($row['sent'])) . '</a></td>');
         rawoutput('</tr>');
     }

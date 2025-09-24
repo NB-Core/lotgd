@@ -132,20 +132,20 @@ function cities_dohook(string $hookname, array $args): array
             if ($info['used'] < $info['available']) {
                 set_module_pref("traveltoday", get_module_pref("traveltoday") + 1);
                 if (isset($args['traveltext'])) {
-                    output($args['traveltext']);
+                    output('%s', $args['traveltext']);
                 }
                 $args['success'] = true;
                 $args['type'] = 'travel';
             } elseif ($session['user']['turns'] > 0) {
                 $session['user']['turns']--;
                 if (isset($args['foresttext'])) {
-                    output($args['foresttext']);
+                    output('%s', $args['foresttext']);
                 }
                 $args['success'] = true;
                 $args['type'] = 'forest';
             } else {
                 if (isset($args['nonetext'])) {
-                    output($args['nonetext']);
+                    output('%s', $args['nonetext']);
                 }
                 $args['success'] = false;
                 $args['type'] = 'none';

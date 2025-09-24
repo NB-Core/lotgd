@@ -62,10 +62,10 @@ switch ($op) {
         }
         Database::query($sql);
         if (Database::affectedRows() == 0) {
-            $output->output($errnote);
+            $output->output('%s', $errnote);
             $output->rawOutput(Database::error());
         } else {
-            $output->output($note);
+            $output->output('%s', $note);
         }
         $op = "";
         break;

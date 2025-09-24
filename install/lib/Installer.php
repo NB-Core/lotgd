@@ -1271,7 +1271,7 @@ class Installer
                     if (isset($moduleinfo['invalid']) && $moduleinfo['invalid'] == true) {
                         $this->output->rawOutput($moduleinfo['formalname']);
                     } else {
-                        $this->output->output($moduleinfo['formalname']);
+                    $this->output->output('%s', $moduleinfo['formalname']);
                     }
                     $this->output->outputNotl(" [`%$modulename`@]`0");
                     $this->output->rawOutput("</span></td><td>");

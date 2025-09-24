@@ -114,7 +114,7 @@ function mailRead(): void
 
     // Message headers
     output('`b`2From:`b `^%s', $message['name']);
-    output_notl($statusImage . '`n', true);
+    output_notl('%s', ($statusImage ?? '') . '`n', true);
     output('`b`2Subject:`b `^%s`n', $message['subject']);
     output('`b`2Sent:`b `^%s`n', $message['sent']);
 
@@ -127,7 +127,7 @@ function mailRead(): void
     rawoutput('</tr></table><br/>');
 
     // Message body
-    output_notl(Sanitize::sanitizeMb(str_replace("\n", '`n', $message['body'])));
+    output_notl('%s', Sanitize::sanitizeMb(str_replace("\n", '`n', $message['body'])));
 
     // Mark as read
     Mail::markRead($session['user']['acctid'], $messageId);
