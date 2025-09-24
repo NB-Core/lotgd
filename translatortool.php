@@ -5,12 +5,15 @@ use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Http;
+use Lotgd\Settings;
 
 // addnews ready
 // translator ready
 // mail ready
 define("OVERRIDE_FORCED_NAV", true);
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
+
+$settings = Settings::getInstance();
 Translator::getInstance()->setSchema("translatortool");
 
 SuAccess::check(SU_IS_TRANSLATOR);
@@ -28,14 +31,14 @@ if ($op == "") {
     $namespace = Translator::translate("Namespace:");
     $texta = Translator::translate("Text:");
     $translation = Translator::translate("Translation:");
-    $saveclose = htmlentities(Translator::translate("Save & Close"), ENT_COMPAT, getsetting("charset", "UTF-8"));
-    $savenotclose = htmlentities(Translator::translate("Save No Close"), ENT_COMPAT, getsetting("charset", "UTF-8"));
+    $saveclose = htmlentities(Translator::translate("Save & Close"), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
+    $savenotclose = htmlentities(Translator::translate("Save No Close"), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     rawoutput("<form action='translatortool.php?op=save' method='POST'>");
-    rawoutput("$namespace <input name='uri' value=\"" . htmlentities(stripslashes($uri), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" readonly><br/>");
+    rawoutput("$namespace <input name='uri' value=\"" . htmlentities(stripslashes($uri), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" readonly><br/>");
     rawoutput("$texta<br>");
-    rawoutput("<textarea name='text' cols='60' rows='5' readonly>" . htmlentities($text, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+    rawoutput("<textarea name='text' cols='60' rows='5' readonly>" . htmlentities($text, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
     rawoutput("$translation<br>");
-    rawoutput("<textarea name='trans' cols='60' rows='5'>" . htmlentities(stripslashes($trans), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+    rawoutput("<textarea name='trans' cols='60' rows='5'>" . htmlentities(stripslashes($trans), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
     rawoutput("<input type='submit' value=\"$saveclose\" class='button'>");
     rawoutput("<input type='submit' value=\"$savenotclose\" class='button' name='savenotclose'>");
     rawoutput("</form>");
@@ -111,7 +114,7 @@ if ($op == "") {
         output_notl("</label>", true);
         output_notl("<select name='u' id='u'>", true);
     while ($row = Database::fetchAssoc($result)) {
-        output_notl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>", true);
+        output_notl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . " ({$row['c']})</option>", true);
     }
     output_notl("</select>", true);
     $show = Translator::translate("Show");
@@ -135,9 +138,9 @@ if ($op == "") {
             $edit = Translator::translate("Edit");
             output_notl("<a href='translatortool.php?u=" . rawurlencode($row['uri']) . "&t=" . rawurlencode($row['intext']) . "'>$edit</a>", true);
             output_notl("</td><td>", true);
-            rawoutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
+            rawoutput(htmlentities($row['intext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
             output_notl("</td><td>", true);
-            rawoutput(htmlentities($row['outtext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
+            rawoutput(htmlentities($row['outtext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
             output_notl("</td><td>", true);
             output_notl($row['version']);
             output_notl("</td><td>", true);

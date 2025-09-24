@@ -10,11 +10,14 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
 // mail ready
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
+
+$settings = Settings::getInstance();
 
 
 Translator::getInstance()->setSchema("lodge");
@@ -64,8 +67,8 @@ if ($op == "") {
         Nav::add("Use Points");
         HookHandler::hook("lodge");
     } else {
-        $iname = getsetting("innname", LOCATION_INN);
-        $output->output("You pull out your Frequent Boozer Card from %s, with 9 out of the 10 slots punched out with a small profile of %s`7's Head.`n`n", $iname, getsetting('barkeep', '`tCedrik'));
+        $iname = $settings->getSetting('innname', LOCATION_INN);
+        $output->output("You pull out your Frequent Boozer Card from %s, with 9 out of the 10 slots punched out with a small profile of %s`7's Head.`n`n", $iname, $settings->getSetting('barkeep', '`tCedrik'));
         $output->output("The guard glances at it, advises you not to drink so much, and directs you down the path.");
     }
 } elseif ($op == "points") {
@@ -74,7 +77,7 @@ if ($op == "") {
         "donator_point_messages",
         array(
             'messages' => array(
-                'default' => Translator::getInstance()->sprintfTranslate("`7For each %s 1 donated, the account which makes the donation will receive %s contributor points in the game (Fractions don't count).", getsetting('paypalcurrency', 'USD'), getsetting('dpointspercurrencyunit', 'USD'))
+                'default' => Translator::getInstance()->sprintfTranslate("`7For each %s 1 donated, the account which makes the donation will receive %s contributor points in the game (Fractions don't count).", $settings->getSetting('paypalcurrency', 'USD'), $settings->getSetting('dpointspercurrencyunit', 'USD'))
             )
         )
     );
@@ -85,14 +88,14 @@ if ($op == "") {
     $output->output("Points can be redeemed for various advantages in the game.");
     $output->output("You'll find access to these advantages in the Hunter's Lodge.");
     $output->output("As time goes on, more advantages will likely be added, which can be purchased when they are made available.`n`n");
-    $output->output("Donating even one %s will gain you a membership card to the Hunter's Lodge, an area reserved exclusively for contributors.", getsetting('paypalcurrency', 'USD'));
-    $output->output("Donations are accepted in whole %s increments only.`n`n", getsetting('paypalcurrency', 'USD'));
+    $output->output("Donating even one %s will gain you a membership card to the Hunter's Lodge, an area reserved exclusively for contributors.", $settings->getSetting('paypalcurrency', 'USD'));
+    $output->output("Donations are accepted in whole %s increments only.`n`n", $settings->getSetting('paypalcurrency', 'USD'));
     $output->output("\"`&But I don't have access to a PayPal account, or I otherwise can't donate to your very wonderful project!`7\"`n");
            // yes, "referer" is misspelt here, but the game setting was also misspelt
-    if (getsetting("refereraward", 25)) {
+    if ($settings->getSetting('refereraward', 25)) {
         $output->output("Well, there is another way that you can obtain points: by referring other people to our site!");
-        $output->output("You'll get %s points for each person whom you've referred who makes it to level %s.", getsetting("refereraward", 25), getsetting("referminlevel", 4));
-        $output->output("Even one person making it to level %s will gain you access to the Hunter's Lodge.`n`n", getsetting("referminlevel", 4));
+        $output->output("You'll get %s points for each person whom you've referred who makes it to level %s.", $settings->getSetting('refereraward', 25), $settings->getSetting('referminlevel', 4));
+        $output->output("Even one person making it to level %s will gain you access to the Hunter's Lodge.`n`n", $settings->getSetting('referminlevel', 4));
     }
     $output->output("You can also gain contributor points for contributing in other ways that the administration may specify.");
     $output->output("So, don't despair if you cannot send cash, there will always be non-cash ways of gaining contributor points.`n`n");

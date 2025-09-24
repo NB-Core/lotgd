@@ -11,11 +11,14 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // mail ready
 // addnews ready
 // translator ready
-require_once 'common.php';
+require_once __DIR__ . '/common.php';
+
+$settings = Settings::getInstance();
 
 Translator::getInstance()->setSchema("paylog");
 
@@ -53,7 +56,7 @@ if ($op == "") {
     $result = Database::query($sql);
     Nav::add('Months');
     while ($row = Database::fetchAssoc($result)) {
-        Nav::add(array("%s %s %s", date("M Y", strtotime($row['month'] . '-01')), getsetting('paypalcurrency', 'USD'), $row['profit']), "paylog.php?month={$row['month']}");
+        Nav::add(array("%s %s %s", date("M Y", strtotime($row['month'] . '-01')), $settings->getSetting('paypalcurrency', 'USD'), $row['profit']), "paylog.php?month={$row['month']}");
     }
     $month = (string) Http::get('month');
     if ($month == "") {
@@ -108,7 +111,7 @@ if ($op == "") {
                 $memo = $info['memo'];
             }
             $link = "donators.php?op=add1&name=" . rawurlencode($memo) . "&amt=$amt&txnid={$row['txnid']}";
-            $output->rawOutput("-=( <a href='$link' title=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" alt=\"" . htmlentities($info['item_number'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\">[" . htmlentities($memo, ENT_COMPAT, getsetting("charset", "UTF-8")) . "]</a> )=-");
+            $output->rawOutput("-=( <a href='$link' title=\"" . htmlentities($info['item_number'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" alt=\"" . htmlentities($info['item_number'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">[" . htmlentities($memo, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "]</a> )=-");
             Nav::add('', $link);
         }
         $output->rawOutput("</td></tr>");

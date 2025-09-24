@@ -104,32 +104,32 @@ switch ($type_setting) {
                     httppostset('defaultsuperuser', $value);
                 }
                 $tmp = stripslashes(Http::post("villagename"));
-                if ($tmp && $tmp != getsetting('villagename', LOCATION_FIELDS)) {
+                if ($tmp && $tmp != $settings->getSetting('villagename', LOCATION_FIELDS)) {
                     $output->debug("Updating village name -- moving players");
                     $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
                         Http::post("villagename") . "' WHERE location='" .
-                        addslashes(getsetting('villagename', LOCATION_FIELDS)) . "'";
+                        addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "'";
                     Database::query($sql);
-                    if ($session['user']['location'] == getsetting('villagename', LOCATION_FIELDS)) {
+                    if ($session['user']['location'] == $settings->getSetting('villagename', LOCATION_FIELDS)) {
                         $session['user']['location'] =
                             stripslashes(Http::post('villagename'));
                     }
                 }
                 $tmp = stripslashes(Http::post("innname"));
-                if ($tmp && $tmp != getsetting('innname', LOCATION_INN)) {
+                if ($tmp && $tmp != $settings->getSetting('innname', LOCATION_INN)) {
                     $output->debug("Updating inn name -- moving players");
                     $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
                         Http::post("innname") . "' WHERE location='" .
-                        addslashes(getsetting('innname', LOCATION_INN)) . "'";
+                        addslashes($settings->getSetting('innname', LOCATION_INN)) . "'";
                     Database::query($sql);
-                    if ($session['user']['location'] == getsetting('innname', LOCATION_INN)) {
+                    if ($session['user']['location'] == $settings->getSetting('innname', LOCATION_INN)) {
                         $session['user']['location'] = stripslashes(Http::post('innname'));
                     }
                 }
-                if (stripslashes(Http::post("motditems")) != getsetting('motditems', 5)) {
+                if (stripslashes(Http::post('motditems')) != $settings->getSetting('motditems', 5)) {
                     DataCache::getInstance()->invalidatedatacache("motd");
                 }
-                if (stripslashes(Http::post('exp-array')) != getsetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
+                if (stripslashes(Http::post('exp-array')) != $settings->getSetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
                     DataCache::getInstance()->massinvalidate("exp_array_dk");
                 }
                 $post = httpallpost();
@@ -323,7 +323,7 @@ switch ($type_setting) {
                         }
                     }
                 } else {
-                    $output->output("I was not able to inject the module %s. Sorry it didn't work out.", htmlentities($module, ENT_COMPAT, getsetting("charset", "UTF-8")));
+                    $output->output("I was not able to inject the module %s. Sorry it didn't work out.", htmlentities($module, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
                 }
                 break;
         }
@@ -379,8 +379,8 @@ switch ($type_setting) {
             case "":
                 $enum = "enumpretrans";
                 $details = gametimedetails();
-                $offset = getsetting("gameoffsetseconds", 0);
-                for ($i = 0; $i <= 86400 / getsetting("daysperday", 4); $i += 300) {
+                $offset = $settings->getSetting('gameoffsetseconds', 0);
+                for ($i = 0; $i <= 86400 / $settings->getSetting('daysperday', 4); $i += 300) {
                     $off = ($details['realsecstotomorrow'] - ($offset - $i));
                     if ($off < 0) {
                         $off += 86400;
@@ -400,8 +400,8 @@ switch ($type_setting) {
                 $useful_vals = array(
                     "datacachepath" => $DB_DATACACHEPATH,
                     "usedatacache" => $DB_USEDATACACHE,
-                    "charset" => getsetting('charset', 'UTF-8'),
-                    "defaultsuperuser" => getsetting('defaultsuperuser', 0), // this needs to be there as the showform loads from the database; so a value has to be present if it's not set, and this is a technical field
+                    "charset" => $settings->getSetting('charset', 'UTF-8'),
+                    "defaultsuperuser" => $settings->getSetting('defaultsuperuser', 0), // this needs to be there as the showform loads from the database; so a value has to be present if it's not set, and this is a technical field
                     "dayduration" => round(($details['dayduration'] / 60 / 60), 0) . " hours",
                     "databasetype" => "MySQLi",
                     "curgametime" => getgametime(),
@@ -417,7 +417,7 @@ switch ($type_setting) {
                 );
 
                 //this is just a way to check and insert a setting I deem necessary without going through the installer
-                if (getsetting('dpointspercurrencyunit', 100)) {
+                if ($settings->getSetting('dpointspercurrencyunit', 100)) {
                 }
 
                 //

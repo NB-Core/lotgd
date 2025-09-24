@@ -8,11 +8,14 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
+use Lotgd\Settings;
 
 // Initially written as a module by Chris Vorndran.
 // Moved into core by JT Traub
 
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
+
+$settings = Settings::getInstance();
 
 SuAccess::check(SU_EDIT_CREATURES);
 
@@ -78,7 +81,7 @@ if ($op == "del") {
         $output->output("`^Master's level:`n");
         $output->rawOutput("</label>");
         $output->rawOutput("<select name='level' id='level'>");
-    $maxlevel = getsetting('maxlevel');
+    $maxlevel = $settings->getSetting('maxlevel');
     for ($i = 0; $i < $maxlevel; $i++) {
         $selected = ($i == $row['creaturelevel'] ? ' selected' : '');
         $output->rawOutput("<option$selected>$i</option>");
@@ -86,16 +89,16 @@ if ($op == "del") {
     $output->rawOutput("</select>");
     $output->outputNotl("`n");
     $output->output("`^Master's name:`n");
-    $output->rawOutput("<input id='input' name='name' value='" . htmlentities($row['creaturename'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "'>");
+    $output->rawOutput("<input id='input' name='name' value='" . htmlentities($row['creaturename'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "'>");
     $output->outputNotl("`n");
     $output->output("`^Master's weapon:`n");
-    $output->rawOutput("<input id='input' name='weapon' value='" . htmlentities($row['creatureweapon'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "'>");
+    $output->rawOutput("<input id='input' name='weapon' value='" . htmlentities($row['creatureweapon'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "'>");
     $output->outputNotl("`n");
     $output->output("`^Master's speech when player wins:`n");
-    $output->rawOutput("<textarea name='lose' rows='5' cols='30' class='input'>" . htmlentities($row['creaturelose'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea>");
+    $output->rawOutput("<textarea name='lose' rows='5' cols='30' class='input'>" . htmlentities($row['creaturelose'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea>");
     $output->outputNotl("`n");
     $output->output("`^Master's speech when player loses:`n");
-    $output->rawOutput("<textarea name='win' rows='5' cols='30' class='input'>" . htmlentities($row['creaturewin'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea>");
+    $output->rawOutput("<textarea name='win' rows='5' cols='30' class='input'>" . htmlentities($row['creaturewin'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea>");
     $output->outputNotl("`n");
     $submit = Translator::translate("Submit");
     $output->rawOutput("<input type='submit' class='button' value='$submit'>");

@@ -13,11 +13,15 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // addnews ready
 // translator ready
 // mail ready
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
+
+$settings = Settings::getInstance();
+$maxLevelSetting = (int) $settings->getSetting('maxlevel', 15);
 
 
 Translator::getInstance()->setSchema("dragon");
@@ -31,11 +35,11 @@ if ($op == "") {
     }
     $badguy = array(
         "creaturename" => Translator::translate("`@The Green Dragon`0"),
-        "creaturelevel" => getsetting('maxlevel', 15) + 2,
+        "creaturelevel" => $maxLevelSetting + 2,
         "creatureweapon" => Translator::translate("Great Flaming Maw"),
-                "creatureattack" => 30 + getsetting('maxlevel', 15),
-                "creaturedefense" => 10 + getsetting('maxlevel', 15),
-                "creaturehealth" => 150 + getsetting('maxlevel', 15) * 10,
+                "creatureattack" => 30 + $maxLevelSetting,
+                "creaturedefense" => 10 + $maxLevelSetting,
+                "creaturehealth" => 150 + $maxLevelSetting * 10,
         "diddamage" => 0,
         "type" => "dragon");
 
@@ -197,30 +201,30 @@ if ($op == "") {
 
         $session['user'][$row['Field']] = $value;
     }
-    $session['user']['gold'] = getsetting("newplayerstartgold", 50);
-    $session['user']['location'] = getsetting('villagename', LOCATION_FIELDS);
-    $session['user']['armor'] = getsetting('startarmor', 'T-Shirt');
-    $session['user']['weapon'] = getsetting('startweapon', 'Fists');
+    $session['user']['gold'] = $settings->getSetting('newplayerstartgold', 50);
+    $session['user']['location'] = $settings->getSetting('villagename', LOCATION_FIELDS);
+    $session['user']['armor'] = $settings->getSetting('startarmor', 'T-Shirt');
+    $session['user']['weapon'] = $settings->getSetting('startweapon', 'Fists');
 
         $newtitle = PlayerFunctions::getDkTitle($session['user']['dragonkills'], $session['user']['sex']);
 
     $restartgold = $session['user']['gold'] +
-        getsetting("newplayerstartgold", 50) * $session['user']['dragonkills'];
+        $settings->getSetting('newplayerstartgold', 50) * $session['user']['dragonkills'];
     $restartgems = 0;
-    if ($restartgold > getsetting("maxrestartgold", 300)) {
-        $restartgold = getsetting("maxrestartgold", 300);
+    if ($restartgold > $settings->getSetting('maxrestartgold', 300)) {
+        $restartgold = $settings->getSetting('maxrestartgold', 300);
         $restartgems = max(0, ($session['user']['dragonkills'] -
-                (getsetting("maxrestartgold", 300) /
-                 getsetting("newplayerstartgold", 50)) - 1));
-        if ($restartgems > getsetting("maxrestartgems", 10)) {
-            $restartgems = getsetting("maxrestartgems", 10);
+                ($settings->getSetting('maxrestartgold', 300) /
+                 $settings->getSetting('newplayerstartgold', 50)) - 1));
+        if ($restartgems > $settings->getSetting('maxrestartgems', 10)) {
+            $restartgems = $settings->getSetting('maxrestartgems', 10);
         }
     }
     $session['user']['gold'] = $restartgold;
     $session['user']['gems'] += $restartgems;
 
     if ($flawless) {
-        $session['user']['gold'] += 3 * getsetting("newplayerstartgold", 50);
+        $session['user']['gold'] += 3 * $settings->getSetting('newplayerstartgold', 50);
         $session['user']['gems'] += 1;
     }
 
@@ -252,7 +256,7 @@ if ($op == "") {
         }
     }
     $session['user']['laston'] = date("Y-m-d H:i:s", strtotime("-1 day"));
-    if (!getsetting('pvpdragonoptout', 0)) {
+    if (!$settings->getSetting('pvpdragonoptout', 0)) {
         $session['user']['slaydragon'] = 1;
     }
     $companions = array();

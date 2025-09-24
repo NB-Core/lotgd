@@ -10,6 +10,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
@@ -21,7 +22,9 @@ define("OVERRIDE_FORCED_NAV", true);
 // Translate Untranslated Strings
 // Originally Written by Christian Rutsch
 // Slightly modified by JT Traub
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
+
+$settings = Settings::getInstance();
 
 SuAccess::check(SU_IS_TRANSLATOR);
 
@@ -70,7 +73,7 @@ if ($op == "list") {
         $output->rawOutput("</label>");
         $output->rawOutput("<select name='ns' id='ns'>");
     while ($row = Database::fetchAssoc($result)) {
-        rawoutput("<option value=\"" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"" . ((htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) == $namespace) ? "selected" : "") . ">" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>");
+        rawoutput("<option value=\"" . htmlentities($row['namespace'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"" . ((htmlentities($row['namespace'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) == $namespace) ? "selected" : "") . ">" . htmlentities($row['namespace'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . " ({$row['c']})</option>");
     }
     $output->rawOutput("</select>");
     $output->rawOutput("<input type='submit' class='button' value='" . Translator::translate("Show") . "'>");
@@ -78,7 +81,7 @@ if ($op == "list") {
 
     if ($mode == "edit") {
         rawoutput(Translator::translate("Text:") . "<br>");
-        rawoutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(Http::get('intext')), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+        rawoutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(Http::get('intext')), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
         rawoutput(Translator::translate("Translation:") . "<br>");
         rawoutput("<textarea name='outtext' cols='60' rows='5'></textarea><br/>");
         rawoutput("<input type='submit' value='" . Translator::translate("Save") . "' class='button'>");
@@ -95,7 +98,7 @@ if ($op == "list") {
                 rawoutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . Translator::translate("Edit") . "</a>");
                 Nav::add("", "untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']));
                 rawoutput("</td><td>");
-                $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
+                $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
                 $output->rawOutput("</td></tr>");
             }
         } else {

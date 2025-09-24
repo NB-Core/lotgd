@@ -12,12 +12,15 @@ use Lotgd\Page\Footer;
 use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Settings;
 
 // translator ready
 // addnews ready
 // mail ready
 
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
+
+$settings = Settings::getInstance();
 
 Translator::getInstance()->setSchema('petition');
 
@@ -342,7 +345,7 @@ if ($op == "") {
     }
     $output->output("`@Body:`^`n");
     $output->output("`\$[ipaddress] `^= `#%s`^`n", $row['ip']);
-    $body = htmlentities(stripslashes($row['body']), ENT_COMPAT, getsetting("charset", "UTF-8"));
+    $body = htmlentities(stripslashes($row['body']), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     $body = preg_replace("'([[:alnum:]_.-]+[@][[:alnum:]_.-]{2,}([.][[:alnum:]_.-]{2,})+)'i", "<a href='mailto:\\1?subject=RE: $peti&body=" . str_replace("+", " ", URLEncode("\n\n----- $yourpeti -----\n" . stripslashes($row['body']))) . "'>\\1</a>", $body);
     $body = preg_replace("'([\\[][[:alnum:]_.-]+[\\]])'i", "<span class='colLtRed'>\\1</span>", $body);
     $output->rawOutput("<span style='font-family: fixed-width'>" . nl2br($body) . "</span>");
@@ -362,7 +365,7 @@ if ($op == "") {
     if ($viewpageinfo) {
         $output->output("`n`n`@Page Info:`&`n");
         $row['pageinfo'] = stripslashes($row['pageinfo']);
-        $body = HTMLEntities($row['pageinfo'], ENT_COMPAT, getsetting("charset", "UTF-8"));
+        $body = HTMLEntities($row['pageinfo'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
         $body = preg_replace("'([[:alnum:]_.-]+[@][[:alnum:]_.-]{2,}([.][[:alnum:]_.-]{2,})+)'i", "<a href='mailto:\\1?subject=RE: $peti&body=" . str_replace("+", " ", URLEncode("\n\n----- $yourpeti -----\n" . $row['body'])) . "'>\\1</a>", $body);
         $body = preg_replace("'([\\[][[:alnum:]_.-]+[\\]])'i", "<span class='colLtRed'>\\1</span>", $body);
         $output->rawOutput("<span style='font-family: fixed-width'>" . nl2br($body) . "</span>");
