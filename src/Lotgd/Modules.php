@@ -1175,7 +1175,7 @@ class Modules
 
         $sql = 'SELECT ' . Database::prefix('module_event_hooks') . '.* FROM ' . Database::prefix('module_event_hooks')
             . ' INNER JOIN ' . Database::prefix('modules') . ' ON ' . Database::prefix('modules') . '.modulename = ' . Database::prefix('module_event_hooks') . '.modulename'
-            . " WHERE $active event_type='$type' ORDER BY RAND(" . Random::e_rand() . ')';
+            . " WHERE $active event_type='$type' ORDER BY RAND(" . Random::eRand() . ')';
         $result = Database::queryCached($sql, 'event-' . $type . '-' . ((int) $allowinactive));
         while ($row = Database::fetchAssoc($result)) {
             ob_start();
@@ -1225,9 +1225,9 @@ class Modules
         }
 
         $output = Output::getInstance();
-        if (Random::e_rand(1, 100) <= $basechance) {
+        if (Random::eRand(1, 100) <= $basechance) {
             $events = self::collectEvents($eventtype, false);
-            $chance = Random::r_rand(1, 100);
+            $chance = Random::rRand(1, 100);
             // debug("C:" . $chance); return 0; // debugging line from original
             $sum = 0;
             foreach ($events as $event) {
