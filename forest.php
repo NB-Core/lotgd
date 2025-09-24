@@ -84,7 +84,7 @@ if ($op == "search") {
             'sobermsg' => "`&Faced with the prospect of death, you sober up a little.`n",
             'schema' => 'forest');
         HookHandler::hook("soberup", $args);
-        if (HookHandler::moduleEvents("forest", $settings->getSetting("forestchance", 15)) != 0) {
+        if (HookHandler::moduleEvents('forest', (int) $settings->getSetting('forestchance', 15)) != 0) {
             if (!Nav::checkNavs()) {
                 // If we're showing the forest, make sure to reset the special
                 // and the specialmisc
