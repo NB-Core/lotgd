@@ -224,7 +224,12 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
 } else {
     if ($op == "create") {
         $emailverification = "";
-        $shortname = Sanitize::sanitizeName((int) $settings->getSetting('spaceinname', 0), Http::post('name'));
+        $name = Http::post('name');
+        if ($name === false || is_array($name)) {
+            $name = '';
+        }
+        $allowSpacesInName = (bool) $settings->getSetting('spaceinname', 0);
+        $shortname = Sanitize::sanitizeName($allowSpacesInName, (string) $name);
 
         if (soap($shortname) != $shortname) {
             $output->output("`\$Error`^: Bad language was found in your name, please consider revising it.`n");

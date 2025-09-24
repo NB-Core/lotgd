@@ -37,7 +37,7 @@ $comment = Http::post('insertcommentary');
 // Don't give people a chance at a special event if they are just browsing
 // the commentary (or talking) or dealing with any of the hooks in the village.
 if (!$op && $com == "" && !$comment && !$refresh && !$commenting) {
-    if (HookHandler::moduleEvents("gardens", $settings->getSetting("gardenchance", 0)) != 0) {
+    if (HookHandler::moduleEvents('gardens', (int) $settings->getSetting('gardenchance', 0)) != 0) {
         if (Nav::checkNavs()) {
             Footer::pageFooter();
         } else {
