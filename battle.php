@@ -593,6 +593,7 @@ function battle_player_attacks(&$badguy)
     global $creaturedefmod,$adjustment,$defmod,$atkmod,$compatkmod,$compdefmod,$buffset,$atk,$def,$options;
     global $companions,$companion,$newcompanions,$roll,$count,$needtostopfighting;
 
+    $output = Output::getInstance();
     $break = false;
     $creaturedmg = $roll['creaturedmg'];
     if ($options['type'] != "pvp") {
@@ -634,6 +635,8 @@ function battle_badguy_attacks(&$badguy)
     global $enemies,$newenemies,$session,$creatureattack,$creatureatkmod, $beta;
     global $creaturedefmod,$adjustment,$defmod,$atkmod,$compatkmod,$compdefmod,$buffset,$atk,$def,$options;
     global $companions,$companion,$newcompanions,$roll,$count,$index,$defended,$needtostopfighting;
+    
+    $output = Output::getInstance();
 
     $break = false;
     $selfdmg = $roll['selfdmg'];
