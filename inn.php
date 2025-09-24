@@ -49,7 +49,7 @@ if (!$skipinndesc) {
     DateTime::checkDay();
     $output->rawOutput("<span style='color: #9900FF'>");
     $output->outputNotl("`c`b");
-    $output->output($iname);
+    $output->output('%s', $iname);
     $output->outputNotl("`b`c");
 }
 

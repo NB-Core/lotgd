@@ -29,7 +29,7 @@ while ($row = Database::fetchAssoc($result)) {
     $i++;
     if ($cat != $row['category']) {
         $output->rawOutput("<tr class='trhead'><td colspan='4' align='left'>");
-        $output->output($row['category']);
+        $output->output('%s', $row['category']);
         $output->rawOutput(":</td></tr>");
         $cat = $row['category'];
     }

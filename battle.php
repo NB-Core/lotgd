@@ -105,7 +105,7 @@ if ($op == "fight") {
                         $msg = $badguy['cannotbetarget'];
                     }
                     $msg = Substitute::applyArray("`5" . $msg . "`0`n");
-                    $output->output($msg);
+                    $output->output('%s', $msg);
                 }
             }
         } else {
@@ -501,7 +501,7 @@ if ($op != "newtarget") {
                             $msg = $badguy['fleesifalone'];
                         }
                         $msg = Substitute::applyArray("`5" . $msg . "`0`n");
-                        $output->output($msg);
+                        $output->output('%s', $msg);
                     }
                 } else {
                     $newenemies[$index] = $badguy;
@@ -519,7 +519,7 @@ if ($op != "newtarget") {
                     $msg = $badguy['essentialleader'];
                 }
                 $msg = Substitute::applyArray("`5" . $msg . "`0`n");
-                $output->output($msg);
+                $output->output('%s', $msg);
             }
         }
         if (is_array($newenemies)) {
@@ -561,7 +561,7 @@ if ($victory || $defeat) {
     foreach ($companions as $index => $companion) {
         if (isset($companion['expireafterfight']) && $companion['expireafterfight']) {
             if (isset($companion['dyingtext'])) {
-                $output->output($companion['dyingtext']);
+                $output->output('%s', $companion['dyingtext']);
             }
             unset($companions[$index]);
         }

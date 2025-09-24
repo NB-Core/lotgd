@@ -207,7 +207,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
             }
             $badguy['creaturelose'] = Substitute::applyArray($badguy['creaturelose']);
             $output->outputNotl("`b`&");
-            $output->output($badguy['creaturelose']);
+            $output->output('%s', $badguy['creaturelose']);
             $output->outputNotl("`0`b`n");
             $output->output("`b`\$You have defeated %s!`0`b`n", $badguy['creaturename']);
 
@@ -296,7 +296,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
             $output->output("`%%s`\$ halts just before delivering the final blow, and instead extends a hand to help you to your feet, and hands you a complementary healing potion.`n", $badguy['creaturename']);
             $badguy['creaturewin'] = Substitute::applyArray($badguy['creaturewin']);
             $output->outputNotl("`^`b");
-            $output->output($badguy['creaturewin']);
+            $output->output('%s', $badguy['creaturewin']);
             $output->outputNotl("`b`0`n");
             Nav::add("Navigation");
             VillageNav::render();

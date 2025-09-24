@@ -332,7 +332,7 @@ class Buffs
                     $output->outputNotl($msg);
                 } else {
                     $msg = Substitute::applyArray("`5" . $buff['startmsg'] . "`0`n");
-                    $output->output($msg);
+                    $output->output('%s', $msg);
                 }
 
                 unset($session['bufflist'][$key]['startmsg']);
@@ -396,7 +396,7 @@ class Buffs
                         $output->outputNotl($msg);
                     } else {
                         $msg = Substitute::applyArray("`5" . $buff['roundmsg'] . "`0`n");
-                        $output->output($msg);
+                        $output->output('%s', $msg);
                     }
                 }
             }
@@ -461,7 +461,7 @@ class Buffs
                     $output->outputNotl($msg);
                 } elseif ($msg != '') {
                     $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
-                    $output->output($msg);
+                    $output->output('%s', $msg);
                 }
                 if (isset($buff['aura']) && $buff['aura'] == true) {
                     global $companions;
@@ -476,11 +476,11 @@ class Buffs
                                 $hptoregen = min($auraeffect, $companion['maxhitpoints'] - $companion['hitpoints']);
                                 $companions[$name]['hitpoints'] += $hptoregen;
                                 $msg = Substitute::applyArray('`)' . $buff['auramsg'] . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
-                                $output->output($msg);
+                                $output->output('%s', $msg);
                                 if ($hptoregen < 0 && $companion['hitpoints'] <= 0) {
                                     if (isset($companion['dyingtext'])) {
                                         Translator::getInstance()->setSchema('battle');
-                                        $output->output($companion['dyingtext']);
+                                        $output->output('%s', $companion['dyingtext']);
                                         Translator::getInstance()->setSchema();
                                     }
                                     if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
@@ -554,7 +554,7 @@ class Buffs
                         $output->outputNotl($msg);
                     } elseif ($msg > '') {
                         $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
-                        $output->output($msg);
+                        $output->output('%s', $msg);
                     }
                     if ($badguy['dead'] == true) {
                         break;
@@ -612,7 +612,7 @@ class Buffs
                 $output->outputNotl($msg);
             } elseif ($msg > '') {
                 $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
-                $output->output($msg);
+                $output->output('%s', $msg);
             }
             if ($buff['schema']) {
                 Translator::getInstance()->setSchema();
@@ -663,7 +663,7 @@ class Buffs
                 $output->outputNotl($msg);
             } elseif ($msg > '') {
                 $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
-                $output->output($msg);
+                $output->output('%s', $msg);
             }
             if ($buff['schema']) {
                 Translator::getInstance()->setSchema();
@@ -698,7 +698,7 @@ class Buffs
                             $output->outputNotl($msg);
                         } else {
                             $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
-                            $output->output($msg);
+                            $output->output('%s', $msg);
                         }
                     }
                     self::stripBuff($key);
@@ -734,7 +734,7 @@ class Buffs
                             $output->outputNotl($msg);
                         } else {
                             $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
-                            $output->output($msg);
+                            $output->output('%s', $msg);
                         }
                     }
                     self::stripBuff($key);

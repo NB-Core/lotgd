@@ -61,14 +61,14 @@ if (!$query && $sort) {
     $query = "%";
 }
 
-if ($op == "search" || $op == "") {
-    [$searchresult, $err] = UserLookup::lookup($query, $order);
-    $op = "";
-    if ($err) {
-        $output->output($err);
-    } else {
-        if ($searchresult) {
-            $display = 1;
+    if ($op == "search" || $op == "") {
+        [$searchresult, $err] = UserLookup::lookup($query, $order);
+        $op = "";
+        if ($err) {
+            $output->output('%s', $err);
+        } else {
+            if ($searchresult) {
+                $display = 1;
         }
     }
 }

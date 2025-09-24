@@ -121,7 +121,7 @@ if ($op == "") {
             $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        $output->output($texts['desc']);
+        $output->output('%s', $texts['desc']);
     }
     $translator->setSchema();
     HookHandler::hook("stables-desc");
@@ -130,13 +130,13 @@ if ($op == "") {
     $result = Database::queryCached($sql, "mountdata-$id", 3600);
     if (Database::numRows($result) <= 0) {
         $translator->setSchema($schemas['nosuchbeast']);
-        $output->output($texts['nosuchbeast']);
+        $output->output('%s', $texts['nosuchbeast']);
         $translator->setSchema();
     } else {
         // Idea taken from Robert of dragonprime.cawsquad.net
         $t = Random::eRand(0, count($texts['finebeast']) - 1);
         $translator->setSchema($schemas['finebeast']);
-        $output->output($texts['finebeast'][$t]);
+        $output->output('%s', $texts['finebeast'][$t]);
         $translator->setSchema();
         $mount = Database::fetchAssoc($result);
         $mount = HookHandler::hook("mount-modifycosts", $mount);
@@ -168,7 +168,7 @@ if ($op == 'confirmbuy') {
     $result = Database::queryCached($sql, "mountdata-$id", 3600);
     if (Database::numRows($result) <= 0) {
         $translator->setSchema($schemas['nosuchbeast']);
-        $output->output($texts['nosuchbeast']);
+        $output->output('%s', $texts['nosuchbeast']);
         $translator->setSchema();
     } else {
         $mount = Database::fetchAssoc($result);

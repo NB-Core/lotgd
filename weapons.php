@@ -75,7 +75,7 @@ if ($op == "") {
             $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        $output->output($texts['desc']);
+        $output->output('%s', $texts['desc']);
     }
     $translator->setSchema();
 
@@ -93,7 +93,7 @@ if ($op == "") {
             $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        $output->output($texts['tradein']);
+        $output->output('%s', $texts['tradein']);
     }
     $translator->setSchema();
 
@@ -155,7 +155,7 @@ if ($op == "") {
     $result = Database::query($sql);
     if (Database::numRows($result) == 0) {
         $translator->setSchema($schemas['nosuchweapon']);
-        $output->output($texts['nosuchweapon']);
+        $output->output('%s', $texts['nosuchweapon']);
         $translator->setSchema();
         $translator->setSchema($schemas['tryagain']);
         Nav::add($texts['tryagain'], "weapons.php");

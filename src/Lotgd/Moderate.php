@@ -33,7 +33,7 @@ class Moderate
         $output = Output::getInstance();
 
         if ($intro) {
-            $output->output($intro);
+            $output->output('%s', $intro);
         }
 
         self::viewmoderatedcommentary($section, $message, $limit, $talkline, $schema, $viewall);
@@ -487,12 +487,12 @@ class Moderate
             } elseif ($counttoday < ($limit / 2) || ($session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO) || !$settings->getSetting('postinglimit', 1)) {
                 if ($message != 'X') {
                     $message = "`n`@" . $message . '`n';
-                    $output->output($message);
+                    $output->output('%s', $message);
                     Commentary::talkForm($section, $talkline, $limit, $schema);
                 }
             } else {
                 $message = "`n`@" . $message . '`n';
-                $output->output($message);
+                $output->output('%s', $message);
                 $output->output("Sorry, you've exhausted your posts in this section for now.`0`n");
             }
         }

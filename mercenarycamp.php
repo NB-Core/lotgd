@@ -123,7 +123,7 @@ if ($op == "") {
                 $output->outputNotl($translator->sprintfTranslate($description));
             }
         } else {
-            $output->output($texts['desc']);
+            $output->output('%s', $texts['desc']);
         }
         $translator->setSchema();
     }
@@ -171,7 +171,7 @@ if ($op == "") {
                 $output->outputNotl($translator->sprintfTranslate($healnotenough));
             }
         } else {
-            $output->output($texts['healnotenough']);
+            $output->output('%s', $texts['healnotenough']);
         }
         $translator->setSchema();
     } else {
@@ -185,7 +185,7 @@ if ($op == "") {
                 $output->outputNotl($translator->sprintfTranslate($healpaid));
             }
         } else {
-            $output->output($texts['healpaid']);
+            $output->output('%s', $texts['healpaid']);
         }
         $translator->setSchema();
     }
@@ -206,7 +206,7 @@ if ($op == "") {
         if (Buffs::applyCompanion($row['name'], $row)) {
             $output->output("`QYou hand over `^%s gold`Q and `%%s %s`Q.`n`n", (int)$row['companioncostgold'], (int)$row['companioncostgems'], Translator::translate($row['companioncostgems'] == 1 ? "gem" : "gems"));
             if (isset($row['jointext']) && $row['jointext'] > "") {
-                $output->output($row['jointext']);
+                $output->output('%s', $row['jointext']);
             }
             $session['user']['gold'] -= $row['companioncostgold'];
             $session['user']['gems'] -= $row['companioncostgems'];
@@ -219,7 +219,7 @@ if ($op == "") {
                     $output->outputNotl($translator->sprintfTranslate($toomanycompanions));
                 }
             } else {
-                $output->output($texts['toomanycompanions']);
+                $output->output('%s', $texts['toomanycompanions']);
             }
             $translator->setSchema();
         }
@@ -261,7 +261,7 @@ function healnav($companions, $texts, $schemas)
                 $output->outputNotl($translator->sprintfTranslate($healtext));
             }
         } else {
-            $output->output($texts['healtext']);
+            $output->output('%s', $texts['healtext']);
         }
         $translator->setSchema();
     }

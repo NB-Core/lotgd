@@ -323,7 +323,7 @@ class Newday
                 }
                 if (isset($canbuy[$type]) && $canbuy[$type]) {
                     $output->rawOutput("<tr><td nowrap>");
-                    $output->output($label);
+                    $output->output('%s', $label);
                     $output->outputNotl(":");
                     $output->rawOutput("</td><td>");
                     $output->rawOutput("<input id='$type' name='$type' size='4' maxlength='4' value='{$canbuy[$type]}' onKeyUp='pointsLeft();' onBlur='pointsLeft();' onFocus='pointsLeft();'>");
@@ -394,7 +394,7 @@ class Newday
                     continue;
                 }
                 $output->rawOutput('<tr><td nowrap>');
-                $output->output($label);
+                $output->output('%s', $label);
                 $output->outputNotl(':');
                 $output->rawOutput('</td><td>&nbsp;&nbsp;</td><td>');
                 $output->outputNotl("`@%s", $dist[$type]);
