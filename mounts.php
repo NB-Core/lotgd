@@ -13,7 +13,11 @@ use Lotgd\Modules\HookHandler;
 // addnews ready
 // mail ready
 // translator ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 $op = Http::get('op');
 $id = Http::get('id');

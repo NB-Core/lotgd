@@ -21,7 +21,11 @@ use Lotgd\Modules\HookHandler;
 * @see village.php
 * @see armoreditor.php
 */
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 $translator = Translator::getInstance();
 
@@ -61,17 +65,17 @@ $schemas = $texts['schemas'];
 
 $translator->setSchema($schemas['title']);
 Header::pageHeader($texts['title']);
-output("`c`b`%" . $texts['title'] . "`0`b`c");
+$output->output("`c`b`%" . $texts['title'] . "`0`b`c");
 $translator->setSchema();
 $op = Http::get('op');
 if ($op == "") {
     $translator->setSchema($schemas['desc']);
     if (is_array($texts['desc'])) {
         foreach ($texts['desc'] as $description) {
-            output_notl($translator->sprintfTranslate($description));
+            $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        output($basetext['desc']);
+        $output->output($basetext['desc']);
     }
     $translator->setSchema();
 
@@ -85,24 +89,24 @@ if ($op == "") {
     $translator->setSchema($schemas['tradein']);
     if (is_array($texts['tradein'])) {
         foreach ($texts['tradein'] as $description) {
-            output_notl($translator->sprintfTranslate($description));
+            $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        output($texts['tradein']);
+        $output->output($texts['tradein']);
     }
     $translator->setSchema();
 
     $aname = Translator::translate("`bName`b");
     $adef = Translator::translate("`bDefense`b");
     $acost = Translator::translate("`bCost`b");
-    rawoutput("<table border='0' cellpadding='0'>");
-    rawoutput("<tr class='trhead'><td>");
-    output_notl($aname);
-    rawoutput("</td><td align='center'>");
-    output_notl($adef);
-    rawoutput("</td><td align='right'>");
-    output_notl($acost);
-    rawoutput("</td></tr>");
+    $output->rawOutput("<table border='0' cellpadding='0'>");
+    $output->rawOutput("<tr class='trhead'><td>");
+    $output->outputNotl($aname);
+    $output->rawOutput("</td><td align='center'>");
+    $output->outputNotl($adef);
+    $output->rawOutput("</td><td align='right'>");
+    $output->outputNotl($acost);
+    $output->rawOutput("</td></tr>");
     $i = 0;
     while ($row = Database::fetchAssoc($result)) {
         $link = true;
@@ -113,37 +117,37 @@ if ($op == "") {
         if (isset($row['unavailable']) && $row['unavailable'] == true) {
             $link = false;
         }
-        rawoutput("<tr class='" . ($i % 2 == 1 ? "trlight" : "trdark") . "'>");
-        rawoutput("<td>");
+        $output->rawOutput("<tr class='" . ($i % 2 == 1 ? "trlight" : "trdark") . "'>");
+        $output->rawOutput("<td>");
         $color = "`)";
         if ($row['value'] <= ($session['user']['gold'] + $tradeinvalue)) {
             if ($link) {
                 $color = "`&";
-                rawoutput("<a href='armor.php?op=buy&id={$row['armorid']}'>");
+                $output->rawOutput("<a href='armor.php?op=buy&id={$row['armorid']}'>");
             } else {
                 $color = "`7";
             }
-            output_notl("%s%s`0", $color, $row['armorname']);
+            $output->outputNotl("%s%s`0", $color, $row['armorname']);
             if ($link) {
-                rawoutput("</a>");
+                $output->rawOutput("</a>");
             }
             Nav::add("", "armor.php?op=buy&id={$row['armorid']}");
         } else {
-            output_notl("%s%s`0", $color, $row['armorname']);
+            $output->outputNotl("%s%s`0", $color, $row['armorname']);
             Nav::add("", "armor.php?op=buy&id={$row['armorid']}");
         }
-        rawoutput("</td><td align='center'>");
-        output_notl("%s%s`0", $color, $row['defense']);
-        rawoutput("</td><td align='right'>");
+        $output->rawOutput("</td><td align='center'>");
+        $output->outputNotl("%s%s`0", $color, $row['defense']);
+        $output->rawOutput("</td><td align='right'>");
         if (isset($row['alternatetext']) && $row['alternatetext'] > "") {
-            output("%s%s`0", $color, $row['alternatetext']);
+            $output->output("%s%s`0", $color, $row['alternatetext']);
         } else {
-            output_notl("%s%s`0", $color, $row['value']);
+            $output->outputNotl("%s%s`0", $color, $row['value']);
         }
-        rawoutput("</td></tr>");
+        $output->rawOutput("</td></tr>");
         ++$i;
     }
-    rawoutput("</table>", true);
+    $output->rawOutput("</table>", true);
     VillageNav::render();
 } elseif ($op == "buy") {
     $id = Http::get('id');
@@ -151,7 +155,7 @@ if ($op == "") {
     $result = Database::query($sql);
     if (Database::numRows($result) == 0) {
         $translator->setSchema($schemas['nosuchweapon']);
-        output($texts['nosuchweapon']);
+        $output->output($texts['nosuchweapon']);
         $translator->setSchema();
         $translator->setSchema($schemas['tryagain']);
         Nav::add($texts['tryagain'], "armor.php");
@@ -162,12 +166,12 @@ if ($op == "") {
         $row = HookHandler::hook("modify-armor", $row);
         if ($row['value'] > ($session['user']['gold'] + $tradeinvalue)) {
             $translator->setSchema($schemas['notenoughgold']);
-            output($texts['notenoughgold'], $row['armorname']);
+            $output->output($texts['notenoughgold'], $row['armorname']);
             $translator->setSchema();
             VillageNav::render();
         } else {
             $translator->setSchema($schemas['payarmor']);
-            output($texts['payarmor'], $session['user']['armor'], $row['armorname'], $row['armorname']);
+            $output->output($texts['payarmor'], $session['user']['armor'], $row['armorname'], $row['armorname']);
             $translator->setSchema();
             debuglog("spent " . ($row['value'] - $tradeinvalue) . " gold on the " . $row['armorname'] . " armor");
             $session['user']['gold'] -= $row['value'];

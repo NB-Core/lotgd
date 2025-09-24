@@ -9,8 +9,13 @@ use Lotgd\Http;
 // addnews ready
 // translator ready
 // mail ready
+use Lotgd\Output;
+
 define("OVERRIDE_FORCED_NAV", true);
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 Translator::getInstance()->setSchema("translatortool");
 
 SuAccess::check(SU_IS_TRANSLATOR);
@@ -30,15 +35,15 @@ if ($op == "") {
     $translation = Translator::translate("Translation:");
     $saveclose = htmlentities(Translator::translate("Save & Close"), ENT_COMPAT, getsetting("charset", "UTF-8"));
     $savenotclose = htmlentities(Translator::translate("Save No Close"), ENT_COMPAT, getsetting("charset", "UTF-8"));
-    rawoutput("<form action='translatortool.php?op=save' method='POST'>");
-    rawoutput("$namespace <input name='uri' value=\"" . htmlentities(stripslashes($uri), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" readonly><br/>");
-    rawoutput("$texta<br>");
-    rawoutput("<textarea name='text' cols='60' rows='5' readonly>" . htmlentities($text, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
-    rawoutput("$translation<br>");
-    rawoutput("<textarea name='trans' cols='60' rows='5'>" . htmlentities(stripslashes($trans), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
-    rawoutput("<input type='submit' value=\"$saveclose\" class='button'>");
-    rawoutput("<input type='submit' value=\"$savenotclose\" class='button' name='savenotclose'>");
-    rawoutput("</form>");
+    $output->rawOutput("<form action='translatortool.php?op=save' method='POST'>");
+    $output->rawOutput("$namespace <input name='uri' value=\"" . htmlentities(stripslashes($uri), ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" readonly><br/>");
+    $output->rawOutput("$texta<br>");
+    $output->rawOutput("<textarea name='text' cols='60' rows='5' readonly>" . htmlentities($text, ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+    $output->rawOutput("$translation<br>");
+    $output->rawOutput("<textarea name='trans' cols='60' rows='5'>" . htmlentities(stripslashes($trans), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+    $output->rawOutput("<input type='submit' value=\"$saveclose\" class='button'>");
+    $output->rawOutput("<input type='submit' value=\"$savenotclose\" class='button' name='savenotclose'>");
+    $output->rawOutput("</form>");
     popup_footer();
 } elseif ($op == 'save') {
     $uri = (string) Http::post('uri');
@@ -97,56 +102,56 @@ if ($op == "") {
         exit();
     } else {
         popup_header("Updated");
-        rawoutput("<script language='javascript'>window.close();</script>");
+        $output->rawOutput("<script language='javascript'>window.close();</script>");
         popup_footer();
     }
 } elseif ($op == "list") {
     popup_header("Translation List");
     $sql = "SELECT uri,count(*) AS c FROM " . Database::prefix("translations") . " WHERE language='" . LANGUAGE . "' GROUP BY uri ORDER BY uri ASC";
     $result = Database::query($sql);
-    output_notl("<form action='translatortool.php' method='GET'>", true);
-    output_notl("<input type='hidden' name='op' value='list'>", true);
-        output_notl("<label for='u'>", true);
-        output("Known Namespaces:");
-        output_notl("</label>", true);
-        output_notl("<select name='u' id='u'>", true);
+    $output->outputNotl("<form action='translatortool.php' method='GET'>", true);
+    $output->outputNotl("<input type='hidden' name='op' value='list'>", true);
+        $output->outputNotl("<label for='u'>", true);
+        $output->output("Known Namespaces:");
+        $output->outputNotl("</label>", true);
+        $output->outputNotl("<select name='u' id='u'>", true);
     while ($row = Database::fetchAssoc($result)) {
-        output_notl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>", true);
+        $output->outputNotl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>", true);
     }
-    output_notl("</select>", true);
+    $output->outputNotl("</select>", true);
     $show = Translator::translate("Show");
-    output_notl("<input type='submit' class='button' value=\"$show\">", true);
-    output_notl("</form>", true);
+    $output->outputNotl("<input type='submit' class='button' value=\"$show\">", true);
+    $output->outputNotl("</form>", true);
     $ops = Translator::translate("Ops");
     $from = Translator::translate("From");
     $to = Translator::translate("To");
     $version = Translator::translate("Version");
     $author = Translator::translate("Author");
     $norows = Translator::translate("No rows found");
-    output_notl("<table border='0' cellpadding='2' cellspacing='0'>", true);
-    output_notl("<tr class='trhead'><td>$ops</td><td>$from</td><td>$to</td><td>$version</td><td>$author</td></tr>", true);
+    $output->outputNotl("<table border='0' cellpadding='2' cellspacing='0'>", true);
+    $output->outputNotl("<tr class='trhead'><td>$ops</td><td>$from</td><td>$to</td><td>$version</td><td>$author</td></tr>", true);
     $sql = "SELECT * FROM " . Database::prefix("translations") . " WHERE language='" . LANGUAGE . "' AND uri='" . (string) Http::get('u') . "'";
     $result = Database::query($sql);
     if (Database::numRows($result) > 0) {
         $i = 0;
         while ($row = Database::fetchAssoc($result)) {
             $i++;
-            output_notl("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>", true);
+            $output->outputNotl("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>", true);
             $edit = Translator::translate("Edit");
-            output_notl("<a href='translatortool.php?u=" . rawurlencode($row['uri']) . "&t=" . rawurlencode($row['intext']) . "'>$edit</a>", true);
-            output_notl("</td><td>", true);
-            rawoutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
-            output_notl("</td><td>", true);
-            rawoutput(htmlentities($row['outtext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
-            output_notl("</td><td>", true);
-            output_notl($row['version']);
-            output_notl("</td><td>", true);
-            output_notl($row['author']);
-            output_notl("</td></tr>", true);
+            $output->outputNotl("<a href='translatortool.php?u=" . rawurlencode($row['uri']) . "&t=" . rawurlencode($row['intext']) . "'>$edit</a>", true);
+            $output->outputNotl("</td><td>", true);
+            $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
+            $output->outputNotl("</td><td>", true);
+            $output->rawOutput(htmlentities($row['outtext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
+            $output->outputNotl("</td><td>", true);
+            $output->outputNotl($row['version']);
+            $output->outputNotl("</td><td>", true);
+            $output->outputNotl($row['author']);
+            $output->outputNotl("</td></tr>", true);
         }
     } else {
-        output_notl("<tr><td colspan='5'>$norows</td></tr>", true);
+        $output->outputNotl("<tr><td colspan='5'>$norows</td></tr>", true);
     }
-    output_notl("</table>", true);
+    $output->outputNotl("</table>", true);
     popup_footer();
 }

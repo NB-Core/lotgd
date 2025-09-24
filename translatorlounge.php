@@ -14,7 +14,11 @@ use Lotgd\Translator;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 SuAccess::check(SU_IS_TRANSLATOR);
 Commentary::addCommentary();

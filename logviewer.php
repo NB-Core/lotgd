@@ -11,7 +11,11 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 
 
+use Lotgd\Output;
+
 require_once 'common.php';
+
+$output = Output::getInstance();
 
 SuAccess::check(SU_EDIT_CONFIG);
 

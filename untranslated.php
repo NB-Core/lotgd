@@ -16,12 +16,17 @@ use Lotgd\Translator;
 // mail ready
 
 // Okay, someone wants to use this outside of normal game flow.. no real harm
+use Lotgd\Output;
+
 define("OVERRIDE_FORCED_NAV", true);
 
 // Translate Untranslated Strings
 // Originally Written by Christian Rutsch
 // Slightly modified by JT Traub
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 SuAccess::check(SU_IS_TRANSLATOR);
 
@@ -70,31 +75,31 @@ if ($op == "list") {
         $output->rawOutput("</label>");
         $output->rawOutput("<select name='ns' id='ns'>");
     while ($row = Database::fetchAssoc($result)) {
-        rawoutput("<option value=\"" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"" . ((htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) == $namespace) ? "selected" : "") . ">" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>");
+        $output->rawOutput("<option value=\"" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\"" . ((htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) == $namespace) ? "selected" : "") . ">" . htmlentities($row['namespace'], ENT_COMPAT, getsetting("charset", "UTF-8")) . " ({$row['c']})</option>");
     }
     $output->rawOutput("</select>");
     $output->rawOutput("<input type='submit' class='button' value='" . Translator::translate("Show") . "'>");
     $output->rawOutput("<br>");
 
     if ($mode == "edit") {
-        rawoutput(Translator::translate("Text:") . "<br>");
-        rawoutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(Http::get('intext')), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
-        rawoutput(Translator::translate("Translation:") . "<br>");
-        rawoutput("<textarea name='outtext' cols='60' rows='5'></textarea><br/>");
-        rawoutput("<input type='submit' value='" . Translator::translate("Save") . "' class='button'>");
+        $output->rawOutput(Translator::translate("Text:") . "<br>");
+        $output->rawOutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities(stripslashes(Http::get('intext')), ENT_COMPAT, getsetting("charset", "UTF-8")) . "</textarea><br/>");
+        $output->rawOutput(Translator::translate("Translation:") . "<br>");
+        $output->rawOutput("<textarea name='outtext' cols='60' rows='5'></textarea><br/>");
+        $output->rawOutput("<input type='submit' value='" . Translator::translate("Save") . "' class='button'>");
     } else {
-        rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-        rawoutput("<tr class='trhead'><td>" . Translator::translate("Ops") . "</td><td>" . Translator::translate("Text") . "</td></tr>");
+        $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<tr class='trhead'><td>" . Translator::translate("Ops") . "</td><td>" . Translator::translate("Text") . "</td></tr>");
         $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' AND namespace='" . $namespace . "'";
         $result = Database::query($sql);
         if (Database::numRows($result) > 0) {
             $i = 0;
             while ($row = Database::fetchAssoc($result)) {
                 $i++;
-                rawoutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
-                rawoutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . Translator::translate("Edit") . "</a>");
+                $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
+                $output->rawOutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . Translator::translate("Edit") . "</a>");
                 Nav::add("", "untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']));
-                rawoutput("</td><td>");
+                $output->rawOutput("</td><td>");
                 $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, getsetting("charset", "UTF-8")));
                 $output->rawOutput("</td></tr>");
             }

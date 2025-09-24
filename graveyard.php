@@ -16,7 +16,11 @@ use Lotgd\Events;
 // addnews ready.
 // translator ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema("graveyard");
 

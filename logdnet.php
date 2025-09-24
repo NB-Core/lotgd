@@ -17,13 +17,18 @@ use Lotgd\PullUrl;
 // addnews ready
 // mail ready
 
+use Lotgd\Output;
+
 define("ALLOW_ANONYMOUS", true);
 if (!isset($_GET['op']) || $_GET['op'] != 'list') {
     //don't want people to be able to visit the list while logged in -- breaks their navs.
     define("OVERRIDE_FORCED_NAV", true);
 }
 
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema("logdnet");
 
@@ -228,25 +233,25 @@ if ($op == "") {
 } else {
     Header::pageHeader("LoGD Net");
     Nav::add("Login page", "index.php");
-    output("`@Below are a list of other LoGD servers that have registered with the LoGD Net.`n");
-    output("`2It should be noted that this list is subject to editing and culling by the administrators of logdnet.logd.com. ");
-    output("Normally this list is a comprehensive list of all servers that have elected to register with LoGDnet, but I'm making changes to that. ");
-    output("Because this list is a free service provided by logdnet.logd.com, we reserve the right to remove those who we don't want in the list.`n");
-    output("Reasons we might remove a server:`n");
-    output("&#149; Altering our copyright statement outside of the provisions we have provided within the code,`n", true);
-    output("&#149; Removing our PayPal link,`n", true);
-    output("&#149; Providing deceptive, inappropriate, or false information in the server listing,`n", true);
-    output("&#149; Not linking back to LoGDnet`n", true);
-    output("Or really, any other reason that we want.`n");
-    output("If you've been banned already, chances are you know why, and chances are we've got no interest in removing the ban.");
-    output("We provide this free of charge, at the expense of considerable bandwidth and server load, so if you've had the gall to abuse our charity, don't expect it to be won back very easily.`n`n");
-    output("If you are well behaved, we don't have an interest in blocking you from this listing. `0`n");
-    rawoutput("<table border='0' cellpadding='1' cellspacing='0'>");
-    rawoutput("<tr class='trhead'><td>");
-    output("Server");
-    rawoutput("</td><td>");
-    output("Version");
-    rawoutput("</td>");
+    $output->output("`@Below are a list of other LoGD servers that have registered with the LoGD Net.`n");
+    $output->output("`2It should be noted that this list is subject to editing and culling by the administrators of logdnet.logd.com. ");
+    $output->output("Normally this list is a comprehensive list of all servers that have elected to register with LoGDnet, but I'm making changes to that. ");
+    $output->output("Because this list is a free service provided by logdnet.logd.com, we reserve the right to remove those who we don't want in the list.`n");
+    $output->output("Reasons we might remove a server:`n");
+    $output->output("&#149; Altering our copyright statement outside of the provisions we have provided within the code,`n", true);
+    $output->output("&#149; Removing our PayPal link,`n", true);
+    $output->output("&#149; Providing deceptive, inappropriate, or false information in the server listing,`n", true);
+    $output->output("&#149; Not linking back to LoGDnet`n", true);
+    $output->output("Or really, any other reason that we want.`n");
+    $output->output("If you've been banned already, chances are you know why, and chances are we've got no interest in removing the ban.");
+    $output->output("We provide this free of charge, at the expense of considerable bandwidth and server load, so if you've had the gall to abuse our charity, don't expect it to be won back very easily.`n`n");
+    $output->output("If you are well behaved, we don't have an interest in blocking you from this listing. `0`n");
+    $output->rawOutput("<table border='0' cellpadding='1' cellspacing='0'>");
+    $output->rawOutput("<tr class='trhead'><td>");
+    $output->output("Server");
+    $output->rawOutput("</td><td>");
+    $output->output("Version");
+    $output->rawOutput("</td>");
     $servers = array();
     $u = getsetting("logdnetserver", "http://logdnet.logd.com/");
     $logdnet = getsetting('logdnet', 0);
@@ -336,12 +341,12 @@ if ($op == "") {
                 }
 
                 // Output the information we have.
-                rawoutput("<tr class='" . ($i % 2 == 0 ? "trlight" : "trdark") . "'>");
-                rawoutput("<td><a href=\"" . HTMLEntities($row['address'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" target='_blank'>");
-                output_notl("`&%s`0", $row['description'], true);
-                rawoutput("</a></td><td>");
-                output_notl("`^%s`0", $row['version']); // so we are able to translate "`^Unknown`0"
-                rawoutput("</td></tr>");
+                $output->rawOutput("<tr class='" . ($i % 2 == 0 ? "trlight" : "trdark") . "'>");
+                $output->rawOutput("<td><a href=\"" . HTMLEntities($row['address'], ENT_COMPAT, getsetting("charset", "UTF-8")) . "\" target='_blank'>");
+                $output->outputNotl("`&%s`0", $row['description'], true);
+                $output->rawOutput("</a></td><td>");
+                $output->outputNotl("`^%s`0", $row['version']); // so we are able to translate "`^Unknown`0"
+                $output->rawOutput("</td></tr>");
                 $i++;
             }
         } catch (\Throwable $e) {
@@ -356,15 +361,15 @@ if ($op == "") {
             }
         }
     } elseif (!$logdnet) {
-        rawoutput("<tr><td colspan='2'>");
-        output("LoGDnet server listings are currently disabled.");
-        rawoutput("</td></tr>");
+        $output->rawOutput("<tr><td colspan='2'>");
+        $output->output("LoGDnet server listings are currently disabled.");
+        $output->rawOutput("</td></tr>");
     } else {
-        rawoutput("<tr><td colspan='2'>");
-        output("Sorry, no logdnet host server was defined in the game settings");
-        rawoutput("</td></tr>");
+        $output->rawOutput("<tr><td colspan='2'>");
+        $output->output("Sorry, no logdnet host server was defined in the game settings");
+        $output->rawOutput("</td></tr>");
     }
-    rawoutput("</table>");
+    $output->rawOutput("</table>");
     Footer::pageFooter();
 }
 

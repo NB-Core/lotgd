@@ -16,7 +16,11 @@ use Lotgd\Sanitize;
 // translator ready
 // addnews ready
 // mail ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 SuAccess::check(0xFFFFFFFF & ~ SU_DOESNT_GIVE_GROTTO);
 Commentary::addCommentary();

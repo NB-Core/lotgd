@@ -16,7 +16,11 @@ use Lotgd\Translator;
 // addnews ready
 // mail ready
 // translator ready
+use Lotgd\Output;
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 
 Translator::getInstance()->setSchema("taunt");
 

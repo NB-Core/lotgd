@@ -13,6 +13,8 @@ use Lotgd\Settings;
 //addnews ready
 //mail ready
 
+use Lotgd\Output;
+
 define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 define("IS_INSTALLER", true);
@@ -54,7 +56,10 @@ if (!file_exists("dbconnect.php")) {
 }
 chdir(__DIR__);
 
+
 require_once __DIR__ . "/common.php";
+
+$output = Output::getInstance();
 if (file_exists("dbconnect.php")) {
     require_once __DIR__ . "/dbconnect.php";
 }
