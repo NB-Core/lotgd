@@ -237,6 +237,9 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
         } else {
             $blockaccount = false;
             $email = Http::post('email');
+            if ($email === false || is_array($email)) {
+                $email = '';
+            }
             $pass1 = Http::post('pass1');
             if ($pass1 === false || is_array($pass1)) {
                 $pass1 = '';
