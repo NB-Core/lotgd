@@ -459,19 +459,29 @@ $remoteAddr = PhpGenericEnvironment::getRemoteAddr();
 if ($remoteAddr !== '') {
     $session['user']['lastip'] = $remoteAddr;   //cron i.e. doesn't have an $REMOTE_ADDR
 }
+
+if (!isset($session['flags']) || !is_array($session['flags'])) {
+    $session['flags'] = [];
+}
+
+$flags =& $session['flags'];
 $cookieId = Cookies::getLgi();
+$previousSeen = $flags['lgi_seen'] ?? null;
+$flags['lgi_seen'] = $cookieId !== null;
+
 if ($cookieId === null) {
+    $flags['lgi_failed'] = ($previousSeen === false);
+
     if (!isset($session['user']['uniqueid']) || strlen($session['user']['uniqueid']) < 32) {
-            $u = md5(microtime());
-            Cookies::setLgi($u);
-            $session['user']['uniqueid'] = $u;
-    } else {
-        if (isset($session['user']['uniqueid'])) {
-                Cookies::setLgi($session['user']['uniqueid']);
-        }
+        $u = md5(microtime());
+        Cookies::setLgi($u);
+        $session['user']['uniqueid'] = $u;
+    } elseif (isset($session['user']['uniqueid'])) {
+        Cookies::setLgi($session['user']['uniqueid']);
     }
 } else {
-        $session['user']['uniqueid'] = $cookieId;
+    $flags['lgi_failed'] = false;
+    $session['user']['uniqueid'] = $cookieId;
 }
 if (isset($_SERVER['SERVER_NAME'])) {
     $url = "http://" . $_SERVER['SERVER_NAME'] . dirname($_SERVER['REQUEST_URI']);
