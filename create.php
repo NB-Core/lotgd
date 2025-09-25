@@ -238,7 +238,14 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
             $blockaccount = false;
             $email = Http::post('email');
             $pass1 = Http::post('pass1');
+            if ($pass1 === false || is_array($pass1)) {
+                $pass1 = '';
+            }
+
             $pass2 = Http::post('pass2');
+            if ($pass2 === false || is_array($pass2)) {
+                $pass2 = '';
+            }
             if ((int) $settings->getSetting('blockdupeemail', 0) === 1 && (int) $settings->getSetting('requireemail', 0) === 1) {
                 $sql = "SELECT login FROM " . Database::prefix("accounts") . " WHERE emailaddress='" . Database::escape($email) . "'";
                 $result = Database::query($sql);
