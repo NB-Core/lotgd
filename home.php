@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Lotgd\Cookies;
 use Lotgd\Forms;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler as HookManager;
@@ -130,7 +129,7 @@ if ($onlinecount < $maxOnline || $maxOnline === 0) {
         $session['message'] .= Translator::translateInline(" Your session has timed out, you must log in again.`n");
     }
 
-    if (Cookies::getLgi() === null) {
+    if (! empty($session['flags']['lgi_failed'])) {
         $session['message'] .= Translator::translateInline("It appears that you may be blocking cookies from this site.  At least session cookies must be enabled in order to use this site.`n");
         $session['message'] .= Translator::translateInline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
     }
@@ -182,7 +181,7 @@ if ($onlinecount < $maxOnline || $maxOnline === 0) {
         $session['message'] .= Translator::translateInline(" Your session has timed out, you must log in again.`n");
     }
 
-    if (Cookies::getLgi() === null) {
+    if (! empty($session['flags']['lgi_failed'])) {
         $session['message'] .= Translator::translateInline("It appears that you may be blocking cookies from this site. At least session cookies must be enabled in order to use this site.`n");
         $session['message'] .= Translator::translateInline("`b`#If you are not sure what cookies are, please <a href='http://en.wikipedia.org/wiki/WWW_browser_cookie'>read this article</a> about them, and how to enable them.`b`n");
     }
