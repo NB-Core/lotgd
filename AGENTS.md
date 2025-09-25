@@ -30,10 +30,10 @@ Before opening a PR:
 1. Ensure all tests pass with `composer test`.
 2. Run `php -l <file>` on changed PHP files to check for syntax errors.
 3. Run `composer static` (PHPStan) and address findings where feasible.
-3. Update or add documentation when necessary.
-4. Provide a clear description of the change and reference related issues.
-5. Keep the diff minimal, focusing only on the feature or fix.
-6. If behavior changes, update `UPGRADING.md` and/or `docs/Deprecations.md` accordingly.
+4. Update or add documentation when necessary.
+5. Provide a clear description of the change and reference related issues.
+6. Keep the diff minimal, focusing only on the feature or fix.
+7. If behavior changes, update `UPGRADING.md` and/or `docs/Deprecations.md` accordingly.
 
 Recommended commit convention: follow Conventional Commits (`feat:`, `fix:`, `perf:`, `docs:`, `refactor:`, `chore:`) to improve release notes.
 
