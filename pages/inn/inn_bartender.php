@@ -9,6 +9,7 @@ use Lotgd\PhpGenericEnvironment;
 use Lotgd\Random;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Pvp;
 use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\DebugLog;
@@ -101,7 +102,7 @@ if ($act == "") {
 } elseif ($act == "listupstairs") {
     Nav::add("Refresh the list", "inn.php?op=bartender&act=listupstairs");
     $output->output("%s`0 lays out a set of keys on the counter top, and tells you which key opens whose room.  The choice is yours, you may sneak in and attack any one of them.", $barkeep);
-    pvplist($iname, "pvp.php", "?act=attack&inn=1");
+    Pvp::listTargets($iname, 'pvp.php', '?act=attack&inn=1');
 } elseif ($act == "colors") {
     $output->output("%s`0 leans on the bar.  \"`%So you want to know about colors, do you?`0\" he asks.", $barkeep);
     $output->output("You are about to answer when you realize the question was posed in the rhetoric.");
