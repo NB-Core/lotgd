@@ -78,6 +78,8 @@ If you need **modules**, [go there](https://github.com/NB-Core/modules) and fetc
 There may be more out there, in the original dragonprime resources or other people's work.
 Modern DragonPrime resources, templates, and community support now live at [DragonPrime Reborn](https://dragonprime-reborn.ca/), the successor to the legacy DragonPrime site.
 
+To follow the actively maintained spiritual successor of the main core this fork extends, visit [StephenKise's Legend of the Green Dragon](https://github.com/stephenKise/Legend-of-the-Green-Dragon), which carries forward ongoing development and releases.
+
 If you need more legacy **templates** / skins for the game, [go there](https://github.com/NB-Core/lotgd-templates).
 
 ## System Requirements
