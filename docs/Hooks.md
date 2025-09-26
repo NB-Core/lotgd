@@ -1,123 +1,184 @@
 # Module Hook Reference
 
-In general: there is always:
+Legend of the Green Dragon exposes hook points so modules can extend or override core behaviour without
+patching the engine. Each hook receives an array of arguments and should return the (potentially modified)
+array so downstream listeners see the latest values.
 
-- **every-footer (quite costly, use sparingly)
-- **footer-$modulename (where $modulename is any module that is currently run - a module 'jeweler', hook into 'footer-jeweler' if you want to i.e. display your own navs in it, or block navs)
+When a page renders, the footer is populated by three global hooks:
 
-| Category | Filename(s) | Hookname | Input Parameters | Description | Used_for |
-|---|---|---|---|---|---|
-| root | account.php | accountstats | $stats | Modules can hook into 'accountstats' events. | Extend or customize accountstats. |
-| modules | modules/darkhorse.php | adjuststats | $row | Modules can hook into 'adjuststats' events. | Extend or customize adjuststats. |
-| modules, pages | modules/racedwarf.php, pages/inn/inn_bartender.php | ale |  | Modules can hook into 'ale' events. | Extend or customize ale. |
-| root | mercenarycamp.php | alter-companion | $row | Modules can hook into 'alter-companion' events. | Extend or customize alter-companion. |
-| root | armor.php | armortext | $basetext | Modules can hook into 'armortext' events. | Extend or customize armortext. |
-| pages | pages/inn/inn_bartender.php | bartenderbribe |  | Modules can hook into 'bartenderbribe' events. | Extend or customize bartenderbribe. |
-| root | battle.php | battle | $enemies | Modules can hook into 'battle' events. | Extend or customize battle. |
-| root | battle.php | battle-defeat | $badguy | Modules can hook into 'battle-defeat' events. | Extend or customize battle-defeat. |
-| root | battle.php | battle-victory | $badguy | Modules can hook into 'battle-victory' events. | Extend or customize battle-victory. |
-| modules, pages, root | modules/darkhorse.php, pages/inn/inn_default.php, village.php | blockcommentarea | "section" => "inn"; "section" => "darkhorse" | Modules can hook into 'blockcommentarea' events. | Extend or customize blockcommentarea. |
-| root | stables.php | boughtmount |  | Modules can hook into 'boughtmount' events. | Extend or customize boughtmount. |
-| root | dragon.php | buffdragon | $badguy | Modules can hook into 'buffdragon' events. | Extend or customize buffdragon. |
-| modules | modules/charrestore.php | charrestore_nosavemodules |  | Modules can hook into 'charrestore_nosavemodules' events. | Extend or customize charrestore_nosavemodules. |
-| root | create.php | check-create | httpallpost( | Modules can hook into 'check-create' events. | Extend or customize check-create. |
-| root | login.php | check-login |  | Modules can hook into 'check-login' events. | Extend or customize check-login. |
-| root | clan.php, user.php | clanranks | "ranks" => $ranks, "clanid" => null, "userid" => $userid; "ranks" => $ranks, "clanid"=>$session'user''clanid' | Modules can hook into 'clanranks' events. | Extend or customize clanranks. |
-| modules, root | modules/cities/run.php, village.php | collapse{ | "name" => "traveldesc"; "name" => "villageclock-" . $session'user''location' | Modules can hook into 'collapse{' events. | Extend or customize collapse{. |
-| root | common.php | core-colors | $output->getColors( | Modules can hook into 'core-colors' events. | Extend or customize core-colors. |
-| root | common.php | core-nestedtags | $output->getNestedTags( | Modules can hook into 'core-nestedtags' events. | Extend or customize core-nestedtags. |
-| root | common.php | core-nestedtags-eval | $output->getNestedTagEval( | Modules can hook into 'core-nestedtags-eval' events. | Extend or customize core-nestedtags-eval. |
-| modules | modules/cities.php, modules/cities/run.php | count-travels | 'available' => 0,'used' => 0 | Modules can hook into 'count-travels' events. | Extend or customize count-travels. |
-| root | create.php | create-form |  | Modules can hook into 'create-form' events. | Extend or customize create-form. |
-| modules | modules/darkhorse.php | darkhorse-learning |  | Modules can hook into 'darkhorse-learning' events. | Extend or customize darkhorse-learning. |
-| modules | modules/darkhorse.php | darkhorsegame | "return" => $gameret | Modules can hook into 'darkhorsegame' events. | Extend or customize darkhorsegame. |
-| root | graveyard.php | deathoverlord |  | Modules can hook into 'deathoverlord' events. | Extend or customize deathoverlord. |
-| root | dragon.php | dk-preserve | $nochange | Modules can hook into 'dk-preserve' events. | Extend or customize dk-preserve. |
-| root | newday.php | dkpointlabels | 'desc' => $labels, 'buy' => $canbuy | Modules can hook into 'dkpointlabels' events. | Extend or customize dkpointlabels. |
-| root | donators.php, payment.php | donation | "id" => $id, "amt" => $points, "manual" => ($txnid > "" ? false : true; "id" => $acctid, "amt" => $donation * getsetting('dpointspercurrencyunit', 100 | Modules can hook into 'donation' events. | Extend or customize donation. |
-| root | payment.php | donation-error | $post | Modules can hook into 'donation-error' events. | Extend or customize donation-error. |
-| root | payment.php | donation-processed | $post | Modules can hook into 'donation-processed' events. | Extend or customize donation-processed. |
-| root | donators.php, payment.php | donation_adjustments | "points" => $donation * getsetting('dpointspercurrencyunit', 100; "points" => $amt,"amount" => $amt / getsetting('dpointspercurrencyunit', 100 | Modules can hook into 'donation_adjustments' events. | Extend or customize donation_adjustments. |
-| root | dragon.php | dragondeath |  | Modules can hook into 'dragondeath' events. | Extend or customize dragondeath. |
-| root | dragon.php | dragonkill |  | Modules can hook into 'dragonkill' events. | Extend or customize dragonkill. |
-| root | dragon.php | dragonkilltext |  | Modules can hook into 'dragonkilltext' events. | Extend or customize dragonkilltext. |
-| root | common.php | everyhit |  | Modules can hook into 'everyhit' events. | Extend or customize everyhit. |
-| root | graveyard.php | favortoheal | "favor" => round(10 * ($max - $session'user''soulpoints' | Modules can hook into 'favortoheal' events. | Extend or customize favortoheal. |
-| root | battle.php | forest-victory-xp | $args = 'experience' => $cr_xp_gain | Modules can hook into 'forest-victory-xp' events. | Extend or customize forest-victory-xp. |
-| root | forest.php | forest_enter |  | Modules can hook into 'forest_enter' events. | Extend or customize forest_enter. |
-| root | forest.php | forestfight-start | $attackstack | Modules can hook into 'forestfight-start' events. | Extend or customize forestfight-start. |
-| root | forest.php | forestsearch |  | Modules can hook into 'forestsearch' events. | Extend or customize forestsearch. |
-| root | forest.php | forestsearch_noevent |  | Modules can hook into 'forestsearch_noevent' events. | Extend or customize forestsearch_noevent. |
-| root | gardens.php | gardens |  | Modules can hook into 'gardens' events. | Extend or customize gardens. |
-| root | gypsy.php | gypsy |  | Modules can hook into 'gypsy' events. | Extend or customize gypsy. |
-| root | mail.php | header-mail | "done" => 0 | Modules can hook into 'header-mail' events. | Extend or customize header-mail. |
-| root | healer.php | healmultiply | "alterpct" => 1.0 | Modules can hook into 'healmultiply' events. | Extend or customize healmultiply. |
-| root | hof.php | hof-add |  | Modules can hook into 'hof-add' events. | Extend or customize hof-add. |
-| root | dragon.php | hprecalc | $hpgain | Modules can hook into 'hprecalc' events. | Extend or customize hprecalc. |
-| root | home.php | index |  | Modules can hook into 'index' events. | Extend or customize index. |
-| root | home.php | index-login |  | Modules can hook into 'index-login' events. | Extend or customize index-login. |
-| root | home.php | index_bottom |  | Modules can hook into 'index_bottom' events. | Extend or customize index_bottom. |
-| pages | pages/inn/inn_default.php | inn |  | Modules can hook into 'inn' events. | Extend or customize inn. |
-| pages | pages/inn/inn_default.php | inn-desc |  | Modules can hook into 'inn-desc' events. | Extend or customize inn-desc. |
-| pages | pages/inn/inn_default.php | innchatter | $chats | Modules can hook into 'innchatter' events. | Extend or customize innchatter. |
-| pages | pages/inn/inn_room.php | innrooms |  | Modules can hook into 'innrooms' events. | Extend or customize innrooms. |
-| root | lodge.php | lodge |  | Modules can hook into 'lodge' events. | Extend or customize lodge. |
-| root | lodge.php | lodge-desc |  | Modules can hook into 'lodge-desc' events. | Extend or customize lodge-desc. |
-| pages | pages/mail/case_write.php | mail-write-notify | 'acctid_to' => $acctidTo | Modules can hook into 'mail-write-notify' events. | Extend or customize mail-write-notify. |
-| pages | pages/mail/case_default.php | mailform |  | Modules can hook into 'mailform' events. | Extend or customize mailform. |
-| root | mail.php | mailfunctions | $args | Modules can hook into 'mailfunctions' events. | Extend or customize mailfunctions. |
-| root | train.php | master-autochallenge |  | Modules can hook into 'master-autochallenge' events. | Extend or customize master-autochallenge. |
-| root | mercenarycamp.php | mercenarycamptext | $basetext | Modules can hook into 'mercenarycamptext' events. | Extend or customize mercenarycamptext. |
-| root | configuration.php | mod-dyn-settings | $msettings | Modules can hook into 'mod-dyn-settings' events. | Extend or customize mod-dyn-settings. |
-| root | moderate.php | moderate | $mods | Modules can hook into 'moderate' events. | Extend or customize moderate. |
-| root | armor.php | modify-armor | $row | Modules can hook into 'modify-armor' events. | Extend or customize modify-armor. |
-| root | weapons.php | modify-weapon | $row | Modules can hook into 'modify-weapon' events. | Extend or customize modify-weapon. |
-| pages | pages/user/user_edit.php | modifyuserview | "userinfo" => $userinfo, "user" => $row | Modules can hook into 'modifyuserview' events. | Extend or customize modifyuserview. |
-| root | stables.php | mount-modifycosts | $mount | Modules can hook into 'mount-modifycosts' events. | Extend or customize mount-modifycosts. |
-| root | mounts.php | mountfeatures | $args | Modules can hook into 'mountfeatures' events. | Extend or customize mountfeatures. |
-| modules | modules/namecolor.php, modules/titlechange.php | namechange |  | Modules can hook into 'namechange' events. | Extend or customize namechange. |
-| root | newday.php | newday-intercept |  | Modules can hook into 'newday-intercept' events. | Extend or customize newday-intercept. |
-| root | news.php | news-intercept |  | Modules can hook into 'news-intercept' events. | Extend or customize news-intercept. |
-| root | paylog.php | paylog |  | Modules can hook into 'paylog' events. | Extend or customize paylog. |
-| root | login.php | player-login |  | Modules can hook into 'player-login' events. | Extend or customize player-login. |
-| root | login.php | player-logout |  | Modules can hook into 'player-logout' events. | Extend or customize player-logout. |
-| root | lodge.php | pointsdesc | "format" => "`#&#149;`7 %s`n", "count" => 0 | Modules can hook into 'pointsdesc' events. | Extend or customize pointsdesc. |
-| root | healer.php | potion |  | Modules can hook into 'potion' events. | Extend or customize potion. |
-| modules | modules/cities/run.php | pre-travel |  | Modules can hook into 'pre-travel' events. | Extend or customize pre-travel. |
-| root | create.php | process-create | $args | Modules can hook into 'process-create' events. | Extend or customize process-create. |
-| root | pvp.php | pvpstart | $args | Modules can hook into 'pvpstart' events. | Extend or customize pvpstart. |
-| root | user.php | racenames |  | Modules can hook into 'racenames' events. | Extend or customize racenames. |
-| root | rawsql.php | rawsql-execphp | "php" => $php | Modules can hook into 'rawsql-execphp' events. | Extend or customize rawsql-execphp. |
-| root | rawsql.php | rawsql-execsql | "sql" => $sql | Modules can hook into 'rawsql-execsql' events. | Extend or customize rawsql-execsql. |
-| root | rawsql.php | rawsql-modphp | "php" => $php | Modules can hook into 'rawsql-modphp' events. | Extend or customize rawsql-modphp. |
-| root | rawsql.php | rawsql-modsql | "sql" => $sql | Modules can hook into 'rawsql-modsql' events. | Extend or customize rawsql-modsql. |
-| root | rock.php | rock |  | Modules can hook into 'rock' events. | Extend or customize rock. |
-| root | shades.php | shades |  | Modules can hook into 'shades' events. | Extend or customize shades. |
-| modules, root | forest.php, modules/cities/run.php | soberup | $args | Modules can hook into 'soberup' events. | Extend or customize soberup. |
-| root | stables.php | soldmount |  | Modules can hook into 'soldmount' events. | Extend or customize soldmount. |
-| pages, root | pages/inn/inn_bartender.php, user.php | specialtynames | $specialties | Modules can hook into 'specialtynames' events. | Extend or customize specialtynames. |
-| root | stables.php | stable-mount |  | Modules can hook into 'stable-mount' events. | Extend or customize stable-mount. |
-| root | mounts.php | stablelocs | $locs | Modules can hook into 'stablelocs' events. | Extend or customize stablelocs. |
-| root | stables.php | stables-desc |  | Modules can hook into 'stables-desc' events. | Extend or customize stables-desc. |
-| root | stables.php | stables-nav |  | Modules can hook into 'stables-nav' events. | Extend or customize stables-nav. |
-| root | stables.php | stabletext | $basetext | Modules can hook into 'stabletext' events. | Extend or customize stabletext. |
-| root | superuser.php | superuser |  | Modules can hook into 'superuser' events. | Extend or customize superuser. |
-| root | superuser.php | superuser-headlines |  | Modules can hook into 'superuser-headlines' events. | Extend or customize superuser-headlines. |
-| root | superuser.php | superusertop | "section" => "superuser" | Modules can hook into 'superusertop' events. | Extend or customize superusertop. |
-| root | titleedit.php | titleedit |  | Modules can hook into 'titleedit' events. | Extend or customize titleedit. |
-| root | train.php | training-defeat | $badguy | Modules can hook into 'training-defeat' events. | Extend or customize training-defeat. |
-| root | train.php | training-victory | $badguy | Modules can hook into 'training-victory' events. | Extend or customize training-victory. |
-| modules | modules/cities/run.php | travel |  | Modules can hook into 'travel' events. | Extend or customize travel. |
-| modules | modules/cities/run.php | travel-cost | "from" => $session'user''location',"to" => $city,"cost" => 0 | Modules can hook into 'travel-cost' events. | Extend or customize travel-cost. |
-| pages | pages/user/user_savemodule.php | validateprefs | $post, true, $module | Modules can hook into 'validateprefs' events. | Extend or customize validateprefs. |
-| root | configuration.php | validatesettings | $post, true, $module | Modules can hook into 'validatesettings' events. | Extend or customize validatesettings. |
-| root | village.php | validlocation | $valid_loc | Modules can hook into 'validlocation' events. | Extend or customize validlocation. |
-| root | village.php | village | $texts | Modules can hook into 'village' events. | Extend or customize village. |
-| root | village.php | village-desc | $texts | Modules can hook into 'village-desc' events. | Extend or customize village-desc. |
-| root | village.php | village-desc-$location | $texts | Modules can hook into 'village-desc-$location' events. | Extend or customize text from village-desc-$location |
-| root | village.php | village-$location | $texts | Modules can hook into 'village-$location and execute code specific for this village | Extend or customize village-$location |
-| root | village.php | villagetext | $origtexts | Modules can hook into 'villagetext' events. | Extend or customize villagetext. |
-| root | village.php | villagetext-$location | $texts | Modules can hook into 'village-$location and customize all texts for that village | Extend or customize village-$location |
-| root | list.php | warriorlist | $rows | Modules can hook into 'warriorlist' events. | Extend or customize warriorlist. |
-| root | weapons.php | weaponstext | $basetext | Modules can hook into 'weaponstext' events. | Extend or customize weaponstext. |
-| modules, root | modules/cities/run.php, village.php | }collapse |  | Modules can hook into '}collapse' events. | Extend or customize }collapse. |
+- `footer-$script` fires first using the current script name (for example, `footer-village` or `footer-newday`).
+- If the request is handled by `runmodule.php`, the engine additionally calls `footer-$module` with the module's short name.
+- Finally, `everyfooter` runs for all standard footers and `footer-popup` runs for popup layouts.
+
+These hooks should return an associative array of token => output fragments. The engine concatenates the
+fragments and swaps them into the footer template, so always append to the array instead of overwriting it.
+
+## Table of Contents
+- [Core Pages](#core-pages)
+- [Combat and Progression](#combat-and-progression)
+- [Town Services and Shops](#town-services-and-shops)
+- [Locations and Travel](#locations-and-travel)
+- [Communication and Social Features](#communication-and-social-features)
+- [Administration and Tools](#administration-and-tools)
+- [Module Utilities](#module-utilities)
+- [Installer and Configuration](#installer-and-configuration)
+
+## Core Pages
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `accountstats` | `account.php` | List of `['title' => string, 'value' => string]` rows | Append statistics to the account summary page. |
+| `check-create` | `create.php` | Request data from `Http::allPost()` plus `blockaccount`/`msg` flags | Validate registration input or block character creation with a custom message. |
+| `create-form` | `create.php` | None | Inject additional form fields into the registration form. |
+| `process-create` | `create.php` | `Http::allPost()` plus the newly created `acctid` | Run follow-up tasks (starter gear, welcome mail, etc.) after account creation. |
+| `check-login` | `login.php` | None | Abort or redirect during authentication (e.g., to enforce maintenance windows). |
+| `player-login` | `login.php` | None | React when a player successfully logs in (cache invalidation, welcome messages). |
+| `player-logout` | `login.php` | None | Clean up state when a player signs out (purge caches, revoke tokens). |
+| `index` | `home.php` | None | Add navigation items or announcements above the login panel. |
+| `index-login` | `home.php` | None | Extend the login form (CAPTCHA, extra footnotes). |
+| `index_bottom` | `home.php` | None | Append information to the bottom of the public home page. |
+| `newday-intercept` | `newday.php` | None | Stop the standard new day reset to run custom logic first. |
+| `news-intercept` | `news.php` | None | Override the daily news feed. |
+| `header-popup` | `src/Lotgd/Page/Header.php` | None | Inject assets or metadata into popup windows before rendering. |
+| `everyheader` / `header-{script}` | `src/Lotgd/Page/Header.php` | `['script' => string]` for `everyheader`; none for `header-{script}` | Provide per-page header customisation or run setup code once per request. |
+
+## Combat and Progression
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `battle` | `battle.php` | Enemy stack array | Adjust creature stats or inject special effects at fight start. |
+| `battle-victory` | `battle.php` | Current `$badguy` data | Modify rewards or perform post-fight actions when the player wins. |
+| `battle-defeat` | `battle.php` | Current `$badguy` data | Handle player defeat (revivals, penalties). |
+| `forestsearch` / `forestsearch_noevent` | `forest.php` | None | Track forest exploration or provide fallback encounters. |
+| `forestfight-start` | `forest.php` | Attack stack array | Override the generated enemy list before combat begins. |
+| `forest_enter` | `forest.php` | None | Display narrative or gate entry to the forest. |
+| `forest-victory-xp` | `battle.php` | `['experience' => int]` | Change the amount of experience awarded for forest battles. |
+| `soberup` | `forest.php`, `modules/cities/run.php` | `['soberval' => float, 'sobermsg' => string, 'schema' => string]` | Alter how quickly intoxication fades. |
+| `pvpstart` | `pvp.php` | `['atkmsg' => string, 'schemas' => ['atkmsg' => string]]` | Customise PvP introduction text or schema. |
+| `master-autochallenge` | `train.php` | None | Automatically start special sparring encounters. |
+| `training-victory` / `training-defeat` | `train.php` | `$badguy` array | Adjust outcomes for training fights. |
+| `buffdragon` | `dragon.php` | `$badguy` array | Modify the final dragon encounter stats. |
+| `hprecalc` | `dragon.php` | Numeric HP gain | Adjust hit point growth on dragon kill. |
+| `dk-preserve` | `dragon.php` | Boolean flag | Decide whether prestige choices persist across dragon kills. |
+| `dragonkilltext` | `dragon.php` | None | Replace the victory narrative after slaying the dragon. |
+| `dragonkill` | `dragon.php` | None | Run extra rewards or resets after a dragon kill. |
+| `dragondeath` | `dragon.php` | None | Handle defeat in the dragon cave. |
+| `dkpointlabels` | `newday.php` | `['desc' => array, 'buy' => bool]` | Rename dragon point spending options. |
+| `favortoheal` | `graveyard.php` | `['favor' => int]` | Adjust the favour cost to return to life. |
+| `deathoverlord` | `graveyard.php` | None | Add encounters in the realm of the dead. |
+
+## Town Services and Shops
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `inn` / `inn-desc` | `pages/inn/inn_default.php` | None | Extend inn menus or descriptions. |
+| `innchatter` | `pages/inn/inn_default.php` | Chat transcript array | Inject NPC banter into the inn common room. |
+| `innrooms` | `pages/inn/inn_room.php` | None | Offer alternative lodging options upstairs. |
+| `bartenderbribe` | `pages/inn/inn_bartender.php` | None | React to bribes paid to the bartender. |
+| `ale` | `pages/inn/inn_bartender.php` | None | Provide alternate drink options. |
+| `gardens` | `gardens.php` | None | Add interactions within the gardens. |
+| `gypsy` | `gypsy.php` | None | Expand fortune-teller dialogue. |
+| `healmultiply` | `healer.php` | `['alterpct' => float]` | Discount or surcharge healing prices. |
+| `potion` | `healer.php` | None | Add extra healing items. |
+| `mercenarycamptext` | `mercenarycamp.php` | `$basetext` array | Customise mercenary camp copy. |
+| `alter-companion` | `mercenarycamp.php` | Companion row | Adjust companion stats or availability. |
+| `camplocs` | `companions.php` | Location list | Control where companions can be summoned. |
+| `armortext` / `modify-armor` | `armor.php` | `$basetext` array / armor row | Update blacksmith flavour or modify stock items. |
+| `weaponstext` / `modify-weapon` | `weapons.php` | `$basetext` array / weapon row | Update weapon shop descriptions or adjust items. |
+| `lodge` / `lodge-desc` | `lodge.php` | None | Add Hunter's Lodge services or flavour text. |
+| `pointsdesc` | `lodge.php` | `['format' => string, 'count' => int]` | Describe point purchases in the lodge. |
+| `mountfeatures` | `mounts.php` | Feature description array | Advertise mount abilities. |
+| `mount-modifycosts` | `stables.php` | Mount record | Adjust purchase prices or upkeep. |
+| `boughtmount` / `soldmount` | `stables.php` | None | React when a player acquires or sells a mount. |
+| `stable-mount` | `stables.php` | None | Gate mount adoption with extra conditions. |
+| `stables-nav` / `stables-desc` / `stabletext` | `stables.php` | None / None / `$basetext` array | Extend stable navigation, descriptions, and prompts. |
+| `stablelocs` | `mounts.php` | Location map | Control where individual mounts appear. |
+| `rock` | `rock.php` | None | Add secrets to the mysterious rock. |
+| `shades` | `shades.php` | None | Extend the Shades of Death experience. |
+
+## Locations and Travel
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `validlocation` | `village.php` | Array of valid location keys | Authorise custom villages or travel destinations. |
+| `villagetext` / `villagetext-{location}` | `village.php` | Base text array | Rewrite generic or location-specific village prose. |
+| `village` / `village-{location}` | `village.php` | Display text array | Add interactive features to the main village view. |
+| `village-desc` / `village-desc-{location}` | `village.php` | Display text array | Customise the sidebar description block. |
+| `collapse{` / `}collapse` | `village.php`, `modules/cities/run.php` | `['name' => string]` or none | Wrap custom content in collapsible sections. |
+| `blockcommentarea` | `village.php`, `pages/inn/inn_default.php` | `['section' => string]` | Disable or alter commentary sections. |
+| `count-travels` | `modules/cities.php`, `modules/cities/run.php` | `['available' => int, 'used' => int]` | Adjust how many travel actions remain today. |
+| `pre-travel` | `modules/cities/run.php` | None | Inject UI before showing travel options. |
+| `travel` | `modules/cities/run.php` | None | Add destinations or events to the travel list. |
+| `travel-cost` | `modules/cities/run.php` | `['from' => string, 'to' => string, 'cost' => int]` | Set gold/turn cost for travelling to a city. |
+| `forest_enter` | `forest.php` | None | Offer alternatives before players enter the forest. |
+
+## Communication and Social Features
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `header-mail` | `mail.php` | `['done' => int]` | Override mail actions (e.g., disable deletion). |
+| `mailfunctions` | `mail.php` | Array of `[page, label]` pairs | Add custom tabs to the mail client. |
+| `mailform` | `pages/mail/case_default.php` | None | Append content below the inbox list. |
+| `mail-write-notify` | `pages/mail/case_write.php` | `['acctid_to' => int]` | Warn players before messaging certain users. |
+| `addpetition` | `pages/petition/petition_default.php` | Form post array | Inspect or alter petitions before saving. |
+| `petitionform` | `pages/petition/petition_default.php` | None | Inject helper text into the petition form. |
+| `petition-status` | `viewpetition.php` | Status definition array | Add new petition workflow states. |
+| `petitions-descriptions` | `viewpetition.php` | None | Explain custom petition categories. |
+| `petition-abuse` | `viewpetition.php` | `['acctid' => int, 'abused' => string]` | Flag players who misuse petitions. |
+| `faq-pretoc` / `faq-toc` / `faq-posttoc` | `pages/petition/petition_faq.php` | None | Extend the petition FAQ table of contents. |
+| `about` | `pages/about/about_default.php` | None | Add project credits or server information. |
+| `showsettings` | `pages/about/about_setup.php` | Structured settings array | Publish extra configuration values. |
+| `biotarget` / `biotop` | `bio.php` | Target account array | Redirect bios or add summary headers. |
+| `biostat` | `bio.php` | Target account array | Append statistics to a player's biography. |
+| `bioinfo` | `bio.php` | Target account array | Output additional biography content. |
+| `bioend` | `bio.php` | Target account array | Close with footer content (links, credits). |
+| `bio-mount` | `bio.php` | Mount display array | Tweak how mounts appear in bios. |
+| `clanranks` | `bio.php`, `clan.php`, `user.php` | `['ranks' => array, 'clanid' => ?int, 'userid' => ?int]` | Define custom clan rank titles. |
+| `specialtynames` | `pages/inn/inn_bartender.php`, `user.php` | Optional map of `[specid => label]` | Register new combat specialties. |
+| `racenames` | `user.php` | None | Add playable races to selection lists. |
+| `warriorlist` | `list.php` | Player row array | Annotate the warrior listing with module data. |
+
+## Administration and Tools
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `superuser-headlines` | `superuser.php` | Array of pre-rendered lines | Display alerts in the Superuser Grotto header. |
+| `superusertop` | `superuser.php` | `['section' => string]` | Choose which commentary board appears in the grotto. |
+| `superuser` | `superuser.php` | None (allow inactive) | Add administrative panels. |
+| `moderate` | `moderate.php` | Commentary section list | Register extra moderation queues. |
+| `paylog` | `paylog.php` | None | Extend the payment log view. |
+| `donation` | `donators.php`, `payment.php` | `['id' => int, 'amt' => int, 'manual' => bool]` | React when donation points are granted. |
+| `donation_adjustments` | `donators.php`, `payment.php` | `['points' => int, 'amount' => float, 'acctid' => int, 'messages' => array]` | Modify point totals or add audit messages. |
+| `donation-error` | `payment.php` | Payment POST data | Handle gateway failures. |
+| `donation-processed` | `payment.php` | Payment POST data | Trigger webhooks after successful processing. |
+| `rawsql-execsql` / `rawsql-modsql` | `rawsql.php` | `['sql' => string]` | Vet SQL queries or capture audit logs. |
+| `rawsql-execphp` / `rawsql-modphp` | `rawsql.php` | `['php' => string]` | Inspect or block PHP snippets before execution. |
+
+## Module Utilities
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `everyhit` | `common.php` | None | Run lightweight tasks on every request (avoid heavy logic). |
+| `core-colors` | `common.php` | Color mapping array | Extend colour codes understood by the output engine. |
+| `core-nestedtags` | `common.php` | Nested tag definition array | Support custom markup tags. |
+| `core-nestedtags-eval` | `common.php` | Evaluation callback list | Control which tags can execute PHP code. |
+| `charstats` | `src/Lotgd/PageParts.php` | None | Add extra stat blocks to the left-hand sidebar. |
+| `loggedin` | `src/Lotgd/PageParts.php` | Array of online player rows | Modify the data used to render the online character list. |
+| `petitioncount` | `src/Lotgd/PageParts.php` | `['petitioncount' => string]` | Replace the superuser petition counter output. |
+| `onlinecharlist` | `src/Lotgd/PageParts.php` | `['count' => int, 'list' => string, 'handled' => bool]` | Rewrite the "who's online" snippet shown in footers. |
+| `template-{fieldname}` | `src/Lotgd/Template.php` | `['content' => string]` | Replace template fragments before they reach the browser. |
+| `adjuststats` | `modules/darkhorse.php` | Player stat array | Mask stats shown by the Dark Horse tavern. |
+| `darkhorse-learning` / `darkhorsegame` | `modules/darkhorse.php` | None / `['return' => string]` | Add content to the Dark Horse mini-games. |
+| `namechange` | `modules/titlechange.php`, `modules/namecolor.php` | None | React whenever a player changes their name. |
+| `charrestore_nosavemodules` | `modules/charrestore.php` | None | Block specific modules from being restored with a character. |
+
+## Installer and Configuration
+
+| Hook name | Context | Arguments | Typical uses |
+| --- | --- | --- | --- |
+| `showsettings` | `pages/about/about_setup.php` | Structured settings array | Publish installer-specific configuration data. |
+| `mod-dyn-settings` | `configuration.php` | Module settings definition array | Add dynamic module configuration fields. |
+| `validatesettings` | `configuration.php` | Posted module settings array | Prevent invalid values during module setup. |
+| `validateprefs` | `pages/user/user_savemodule.php` | Posted module preference array | Guard user preference updates from the module editor. |
+| `addpetition` | `pages/petition/petition_default.php` | Petition POST data | Extend the installer/contact workflow for support. |
+
