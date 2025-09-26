@@ -57,6 +57,10 @@ The root `.htaccess` file configures custom error pages, disables directory list
 - **Updates:** Keep your Docker images and dependencies up to date.
 - **Firewall:** Configure your firewall appropriately to prevent unauthorized access.
 
+### Base Image Version
+
+- The PHP base image version lives in the project [`Dockerfile`](../Dockerfile). If you upgrade the image there, update this document to match.
+
 ---
 
 ## Useful Commands
@@ -97,7 +101,7 @@ The root `.htaccess` file configures custom error pages, disables directory list
 
 - **Web Container Fails to Start:**
   - Check logs with `docker-compose logs web`.
-  - Ensure the base image is correct (`php:8.1-apache`).
+  - Ensure the base image is correct (`php:8.3-apache` as defined in the [`Dockerfile`](../Dockerfile)).
 
 - **Database Connection Fails:**
   - Verify that the environment variables in the `.env` file are correct.
