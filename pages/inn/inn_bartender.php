@@ -113,6 +113,9 @@ if ($act == "") {
     $output->output("`% Got it?`0\"  You can practice below:");
     $output->rawOutput("<form action=\"" . PhpGenericEnvironment::getRequestUri() . "\" method='POST'>", true);
     $testtext = Http::post('testtext');
+    if ($testtext === false) {
+        $testtext = '';
+    }
     $output->output("You entered %s`n", Sanitize::preventColors(HTMLEntities($testtext, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'))), true);
     $output->output("It looks like %s`n", $testtext);
     $try = Translator::translateInline("Try");
