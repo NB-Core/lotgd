@@ -76,7 +76,7 @@ See `CHANGELOG.txt` for a list of changes up until version 1.3.2.
 
 If you need **modules**, [go there](https://github.com/NB-Core/modules) and fetch the ones you like.
 There may be more out there, in the original dragonprime resources or other people's work.
-Modern DragonPrime resources, templates, and community support now live at [DragonPrime Reborn](https://dragonprime-reborn.ca/), the successor to the legacy DragonPrime site.
+Modern DragonPrime resources, templates, and community support now live at [DragonPrime Reborn](https://dragonprime-reborn.ca/), the successor to the legacy DragonPrime site, which also hosts a [snapshot archive of legacy modules](https://dragonprime-reborn.ca/files/modules/) that typically require refactoring for PHP 8+ compatibility.
 
 To follow the actively maintained spiritual successor of the main core this fork extends, visit [StephenKise's Legend of the Green Dragon](https://github.com/stephenKise/Legend-of-the-Green-Dragon), which carries forward ongoing development and releases.
 
