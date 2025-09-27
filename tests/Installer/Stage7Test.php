@@ -95,6 +95,26 @@ namespace Lotgd\Tests\Installer {
             $this->assertContains('Location: installer.php?stage=8', $this->getRedirectHeaders());
         }
 
+        public function testStage7SkipsLegacyDropdownWhenDoctrineMetadataExists(): void
+        {
+            $_SESSION['dbinfo'] = [
+                'has_migration_metadata' => true,
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('2.0.0', $_SESSION['fromversion']);
+            $this->assertSame(6, $_SESSION['stagecompleted']);
+            $this->assertStringContainsString('Doctrine migration metadata detected', $output);
+            $this->assertStringContainsString('Perform an upgrade using Doctrine migrations only.', $output);
+            $this->assertStringNotContainsString("<select name='version'>", $output);
+        }
+
         /**
          * @return list<string>
          */
