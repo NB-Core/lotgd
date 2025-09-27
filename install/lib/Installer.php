@@ -729,9 +729,16 @@ class Installer
         Database::selectDb($session['dbinfo']['DB_NAME']);
         $sql = "SHOW TABLES";
         $result = Database::query($sql);
+        $existingTables = [];
+        $session['dbinfo']['has_migration_metadata'] = false;
+        $migrationMetadataTable = ($session['dbinfo']['DB_PREFIX'] ?? '') . 'doctrine_migration_versions';
         //the conflicts seems not to work - we should check this.
         while ($row = Database::fetchAssoc($result)) {
             foreach ($row as $key => $val) {
+                $existingTables[] = $val;
+                if ($val === $migrationMetadataTable) {
+                    $session['dbinfo']['has_migration_metadata'] = true;
+                }
                 if (isset($descriptors[$val])) {
                     $game++;
                     array_push($conflict, $val);
@@ -740,6 +747,8 @@ class Installer
                 }
             }
         }
+
+        $session['dbinfo']['existing_tables'] = $existingTables;
 
 
         $missing = count($descriptors) - $game;
@@ -1008,73 +1017,99 @@ class Installer
     public function stage7(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        require __DIR__ . '/../data/installer_sqlstatements.php';
-        if (Http::post("type") > "") {
-            if (Http::post("type") == "install") {
-                $session['fromversion'] = "-1";
-                $session['dbinfo']['upgrade'] = false;
-            } else {
-                $session['fromversion'] = Http::post("version");
-                $session['dbinfo']['upgrade'] = true;
+        $hasMigrationMetadata = $session['dbinfo']['has_migration_metadata'] ?? false;
+        $installerVersion = $this->getSetting('installer_version', '-1');
+        $doctrineDefaultVersion = $installerVersion !== '-1' ? $installerVersion : '2.0.0';
+
+        if ($hasMigrationMetadata) {
+            $session['dbinfo']['upgrade'] = true;
+            if (! isset($session['fromversion']) || $session['fromversion'] === '' || $session['fromversion'] === '-1') {
+                $session['fromversion'] = $doctrineDefaultVersion;
             }
         }
 
-        if (!isset($session['fromversion']) || $session['fromversion'] == "") {
-                $this->output->output("`@`c`bConfirmation`b`c");
-                $this->output->output("`2Please confirm the following:`0`n");
-               $this->output->rawOutput("<form action='installer.php?stage=7' method='POST'>");
-                $this->output->rawOutput("<table border='0' cellpadding='0' cellspacing='0'><tr><td valign='top'>");
-                $this->output->output("`2I should:`0");
-                $this->output->rawOutput("</td><td>");
-                $version = $this->getSetting("installer_version", "-1");
-                // Determine if this is an upgrade based on db version and code version
-            if ($version != "-1" && $version != $logd_version) {
-                    $session['dbinfo']['upgrade'] = true;
+        if (Http::post('type') > '') {
+            if (Http::post('type') === 'install') {
+                $session['fromversion'] = '-1';
+                $session['dbinfo']['upgrade'] = false;
             } else {
-                    $session['dbinfo']['upgrade'] = false;
-            }
-            if ($version != "-1") {
-                    $this->output->output("`n`2Detected database version: `^%s`2.`n", $version);
-                if ($session['dbinfo']['upgrade']) {
-                        $this->output->output("`2Code version: `^%s`2. The installer will upgrade your database.`n", $logd_version);
+                $session['dbinfo']['upgrade'] = true;
+                if ($hasMigrationMetadata) {
+                    $session['fromversion'] = $doctrineDefaultVersion;
                 } else {
-                        $this->output->output("`2Code version matches the database version.`n");
-                }
-            } else {
-                if (file_exists('dbconnect.php') && (time() - filemtime('dbconnect.php') < 300)) {
-                        $this->output->output("`n`2A new dbconnect.php file was detected; assuming fresh installation.`n");
+                    $session['fromversion'] = Http::post('version');
                 }
             }
-            $this->output->rawOutput("<input type='radio' value='upgrade' name='type'" . ($session['dbinfo']['upgrade'] ? " checked" : "") . ">");
-            $this->output->output(" `2Perform an upgrade" . ($session['dbinfo']['upgrade'] ? " from" : "") . " ");
-            if ($version == "-1") {
-                $version = "0.9.7";
+
+            $session['stagecompleted'] = $stage;
+            // Header, because we do not want to save the user(!)
+            header('Location: installer.php?stage=' . ($stage + 1));
+            return;
+        }
+
+        $this->output->output("`@`c`bConfirmation`b`c");
+        $this->output->output("`2Please confirm the following:`0`n");
+        $this->output->rawOutput("<form action='installer.php?stage=7' method='POST'>");
+        $this->output->rawOutput("<table border='0' cellpadding='0' cellspacing='0'><tr><td valign='top'>");
+        $this->output->output("`2I should:`0");
+        $this->output->rawOutput("</td><td>");
+
+        $detectedDatabaseVersion = $installerVersion;
+        if ($hasMigrationMetadata) {
+            $session['dbinfo']['upgrade'] = true;
+            $detectedDatabaseVersion = $session['fromversion'] ?? $doctrineDefaultVersion;
+            $this->output->output("`n`2Doctrine migration metadata detected. The installer will run Doctrine migrations without executing the legacy SQL bundles.`n");
+        } else {
+            if ($detectedDatabaseVersion != '-1' && $detectedDatabaseVersion != $logd_version) {
+                $session['dbinfo']['upgrade'] = true;
+            } else {
+                $session['dbinfo']['upgrade'] = false;
+            }
+        }
+
+        if ($detectedDatabaseVersion != '-1') {
+            $this->output->output("`n`2Detected database version: `^%s`2.`n", $detectedDatabaseVersion);
+            if ($session['dbinfo']['upgrade']) {
+                $this->output->output("`2Code version: `^%s`2. The installer will upgrade your database.`n", $logd_version);
+            } else {
+                $this->output->output("`2Code version matches the database version.`n");
+            }
+        } else {
+            if (file_exists('dbconnect.php') && (time() - filemtime('dbconnect.php') < 300)) {
+                $this->output->output("`n`2A new dbconnect.php file was detected; assuming fresh installation.`n");
+            }
+        }
+
+        $this->output->rawOutput("<input type='radio' value='upgrade' name='type'" . ($session['dbinfo']['upgrade'] ? ' checked' : '') . ">");
+        if ($hasMigrationMetadata) {
+            $this->output->output(" `2Perform an upgrade using Doctrine migrations only.`n");
+            $this->output->output("`2Detected Doctrine schema version: `^%s`2.`n", $session['fromversion']);
+        } else {
+            $this->output->output(" `2Perform an upgrade" . ($session['dbinfo']['upgrade'] ? ' from' : '') . " ");
+            if ($detectedDatabaseVersion == '-1') {
+                $detectedDatabaseVersion = '0.9.7';
             }
             if ($session['dbinfo']['upgrade']) {
-                if (!isset($sql_upgrade_statements)) {
+                if (! isset($sql_upgrade_statements)) {
                     require __DIR__ . '/../data/installer_sqlstatements.php';
                 }
                 reset($sql_upgrade_statements);
                 $this->output->rawOutput("<select name='version'>");
                 foreach ($sql_upgrade_statements as $key => $val) {
-                    if ($key != "-1") {
-                        $this->output->rawOutput("<option value='$key'" . ($version == $key ? " selected" : "") . ">$key</option>");
+                    if ($key != '-1') {
+                        $this->output->rawOutput("<option value='$key'" . ($detectedDatabaseVersion == $key ? ' selected' : '') . ">$key</option>");
                     }
                 }
                 $this->output->rawOutput("</select>");
             }
-            $this->output->rawOutput("<br><input type='radio' value='install' name='type'" . ($session['dbinfo']['upgrade'] ? "" : " checked") . ">");
-            $this->output->output(" `2Perform a clean install.");
-            $this->output->rawOutput("</td></tr></table>");
-            $submit = Translator::translateInline("Submit");
-            $this->output->rawOutput("<input type='submit' value='$submit' class='button'>");
-            $this->output->rawOutput("</form>");
-            $session['stagecompleted'] = $stage - 1;
-        } else {
-            $session['stagecompleted'] = $stage;
-        // Header, because we do not want to save the user(!)
-            header("Location: installer.php?stage=" . ($stage + 1));
         }
+        $this->output->rawOutput("<br><input type='radio' value='install' name='type'" . ($session['dbinfo']['upgrade'] ? '' : ' checked') . ">");
+        $this->output->output(" `2Perform a clean install.");
+        $this->output->rawOutput("</td></tr></table>");
+        $submit = Translator::translateInline('Submit');
+        $this->output->rawOutput("<input type='submit' value='$submit' class='button'>");
+        $this->output->rawOutput("</form>");
+        $session['stagecompleted'] = $stage - 1;
     }
 
     /**
@@ -1323,39 +1358,43 @@ class Installer
             return;
         }
 
-        require __DIR__ . '/../data/installer_sqlstatements.php';
-        $fromVersion = $session['fromversion'] ?? '-1';
+        $hasMigrationMetadata = $session['dbinfo']['has_migration_metadata'] ?? false;
 
-        $creaturesTable = Database::prefix('creatures');
-        $shouldExecuteLegacySql = true;
+        if (! $hasMigrationMetadata) {
+            $fromVersion = $session['fromversion'] ?? '-1';
 
-        try {
-            $countResult = Database::query("SELECT COUNT(*) AS total_count FROM {$creaturesTable}");
-            $row = [];
-
-            if (is_array($countResult)) {
-                $row = $countResult;
-            } elseif ($countResult) {
-                $fetched = Database::fetchAssoc($countResult);
-                if (is_array($fetched)) {
-                    $row = $fetched;
-                }
-            }
-
-            if ($row) {
-                $totalCount = (int) ($row['total_count'] ?? $row['count'] ?? $row['c'] ?? 0);
-                $shouldExecuteLegacySql = ($totalCount === 0);
-            }
-        } catch (\Throwable $exception) {
+            $creaturesTable = Database::prefix('creatures');
             $shouldExecuteLegacySql = true;
-        }
 
-        if ($shouldExecuteLegacySql) {
-            foreach ($sql_upgrade_statements as $version => $statements) {
-                $version = (string) $version;
-                if (!($session['dbinfo']['upgrade'] ?? false) || version_compare($version, $fromVersion, '>')) {
-                    foreach ($statements as $sql) {
-                        Database::query($sql);
+            try {
+                $countResult = Database::query("SELECT COUNT(*) AS total_count FROM {$creaturesTable}");
+                $row = [];
+
+                if (is_array($countResult)) {
+                    $row = $countResult;
+                } elseif ($countResult) {
+                    $fetched = Database::fetchAssoc($countResult);
+                    if (is_array($fetched)) {
+                        $row = $fetched;
+                    }
+                }
+
+                if ($row) {
+                    $totalCount = (int) ($row['total_count'] ?? $row['count'] ?? $row['c'] ?? 0);
+                    $shouldExecuteLegacySql = ($totalCount === 0);
+                }
+            } catch (\Throwable $exception) {
+                $shouldExecuteLegacySql = true;
+            }
+
+            if ($shouldExecuteLegacySql) {
+                require __DIR__ . '/../data/installer_sqlstatements.php';
+                foreach ($sql_upgrade_statements as $version => $statements) {
+                    $version = (string) $version;
+                    if (!($session['dbinfo']['upgrade'] ?? false) || version_compare($version, $fromVersion, '>')) {
+                        foreach ($statements as $sql) {
+                            Database::query($sql);
+                        }
                     }
                 }
             }

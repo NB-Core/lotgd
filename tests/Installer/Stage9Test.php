@@ -345,6 +345,38 @@ namespace Lotgd\Tests\Installer {
                 );
             }
         }
+
+        public function testStage9SkipsLegacySqlWhenDoctrineMetadataIsPresent(): void
+        {
+            global $session;
+
+            $session['dbinfo']['has_migration_metadata'] = true;
+            $session['dbinfo']['upgrade'] = true;
+            $session['fromversion'] = '2.0.0';
+
+            $conn = new \Lotgd\Tests\Stubs\DoctrineConnection();
+            DoctrineBootstrap::$conn = $conn;
+            Database::$doctrineConnection = $conn;
+
+            $installer = new Installer();
+            $installer->runStage(9);
+
+            require __DIR__ . '/../../install/data/installer_sqlstatements.php';
+            $seedStatements = [];
+            foreach ($sql_upgrade_statements as $statements) {
+                foreach ($statements as $sql) {
+                    $seedStatements[$sql] = true;
+                }
+            }
+
+            foreach (DoctrineBootstrap::$conn->queries as $sql) {
+                $this->assertArrayNotHasKey(
+                    $sql,
+                    $seedStatements,
+                    'Legacy installer SQL should be skipped when Doctrine metadata exists: ' . $sql
+                );
+            }
+        }
     }
 
 }
