@@ -174,6 +174,27 @@ namespace Lotgd\Tests\Installer {
             $this->assertStringContainsString("<select name='version'>", $output);
         }
 
+        public function testStage7DefaultsToUpgradeWithPrefixedTables(): void
+        {
+            $_SESSION['dbinfo'] = [
+                'upgrade' => false,
+                'existing_tables' => ['lotgd_accounts'],
+                'existing_logd_tables' => ['lotgd_accounts'],
+                'has_migration_metadata' => false,
+                'DB_PREFIX' => 'lotgd_',
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
+            $this->assertStringContainsString("<select name='version'>", $output);
+        }
+
         public function testStage7KeepsCleanInstallDefaultWhenOnlyUnrelatedTablesDetected(): void
         {
             $_SESSION['dbinfo'] = [
