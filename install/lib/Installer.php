@@ -2082,6 +2082,15 @@ class Installer
         }
 
         $db = require $dbconnectFile;
+        $initialAssignments = is_array($db) ? $db : [];
+        $normalizedAssignments = $this->normalizeDbconnectAssignments($initialAssignments);
+        $sessionOverrides = $this->getSessionDbinfoOverrides($session['dbinfo'] ?? []);
+        $mergedAssignments = $normalizedAssignments;
+
+        if ($sessionOverrides !== []) {
+            $mergedAssignments = $this->normalizeDbconnectAssignments(array_merge($normalizedAssignments, $sessionOverrides));
+        }
+
         $initialPrefix = $DB_PREFIX ?? '';
         Database::setPrefix($initialPrefix);
 
@@ -2090,8 +2099,27 @@ class Installer
 
         if ($sessionHasPrefix) {
             $preferredPrefix = $this->normalizePrefixValue($session['dbinfo']['DB_PREFIX']);
-        } elseif (isset($db['DB_PREFIX'])) {
-            $preferredPrefix = $this->normalizePrefixValue($db['DB_PREFIX']);
+        } elseif (isset($normalizedAssignments['DB_PREFIX'])) {
+            $preferredPrefix = $this->normalizePrefixValue($normalizedAssignments['DB_PREFIX']);
+        }
+
+        $onDiskPrefix = $normalizedAssignments['DB_PREFIX'] ?? '';
+        if ($onDiskPrefix !== $preferredPrefix) {
+            $mergedAssignments['DB_PREFIX'] = $preferredPrefix;
+            $dbconnectContents = $this->buildDbconnectContents($mergedAssignments);
+            $resolvedPath = realpath($dbconnectFile) ?: $dbconnectFile;
+
+            if ($this->writeDbconnectContents($dbconnectFile, $dbconnectContents)) {
+                if (function_exists('opcache_invalidate')) {
+                    opcache_invalidate($resolvedPath, true);
+                }
+                clearstatcache(true, $dbconnectFile);
+                $normalizedAssignments = $mergedAssignments;
+                $db = $mergedAssignments;
+            } else {
+                $isWritable = is_writable($dbconnectFile);
+                $this->outputDbconnectManualInstructions($dbconnectContents, ! $isWritable);
+            }
         }
 
         $DB_PREFIX = $preferredPrefix;
