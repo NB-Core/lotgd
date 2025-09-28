@@ -1021,8 +1021,6 @@ class Installer
         } else {
             $hasLogdTables = ! empty($existingLogdTables);
         }
-        $shouldDefaultToUpgrade = $stage5MarkedUpgrade || $hasLogdTables;
-
         if ($hasMigrationMetadata) {
             $session['dbinfo']['upgrade'] = true;
             if (! isset($session['fromversion']) || $session['fromversion'] === '' || $session['fromversion'] === '-1') {
@@ -1042,6 +1040,9 @@ class Installer
                 $session['dbinfo']['upgrade'] = false;
             }
         }
+
+        $detectedVersionWithoutTables = $detectedDatabaseVersion !== '-1' && ! $hasLogdTables;
+        $shouldDefaultToUpgrade = $stage5MarkedUpgrade || $hasLogdTables || $detectedVersionWithoutTables;
 
         if ($shouldDefaultToUpgrade) {
             $session['dbinfo']['upgrade'] = true;
@@ -1063,6 +1064,11 @@ class Installer
             if ($renderVersionSelector) {
                 if ($hasLogdTables) {
                     $choiceExplanations[] = "`2Existing LoGD tables were detected; choose the version you are upgrading from so the correct legacy SQL bundle can run.`n";
+                } elseif ($detectedVersionWithoutTables) {
+                    $choiceExplanations[] = sprintf(
+                        "`2The installer loaded the previous LoGD version (`^%s`2) from settings, so upgrade tools remain available even though no LoGD tables were detected.`n",
+                        $detectedDatabaseVersion
+                    );
                 } elseif ($stage5MarkedUpgrade || $shouldDefaultToUpgrade) {
                     $choiceExplanations[] = "`2The installer was instructed to upgrade during the database check, so a legacy version selector is available in case you need to adjust it manually.`n";
                 }
@@ -1092,6 +1098,11 @@ class Installer
                 $choiceExplanations[] = "`2Because existing LoGD tables were found, the upgrade option is pre-selected so you can migrate that data.`n";
             } elseif ($stage5MarkedUpgrade) {
                 $choiceExplanations[] = "`2You requested an upgrade in the previous step, so the installer keeps the upgrade option selected.`n";
+            } elseif ($detectedVersionWithoutTables) {
+                $choiceExplanations[] = sprintf(
+                    "`2Settings reported a previous LoGD version (`^%s`2), so the upgrade option is pre-selected for you.`n",
+                    $detectedDatabaseVersion
+                );
             }
         }
 
@@ -1141,6 +1152,11 @@ class Installer
 
             if ($existingTableCount > 0) {
                 $choiceExplanations[] = "`2The database already contains tables, but none match the expected LoGD schema and no Doctrine metadata was found, so only a clean install is available.`n";
+            } elseif ($detectedVersionWithoutTables) {
+                $choiceExplanations[] = sprintf(
+                    "`2Installer settings indicate a previous LoGD version (`^%s`2), but no schema metadata or tables were found, so only a clean install is available.`n",
+                    $detectedDatabaseVersion
+                );
             } else {
                 $choiceExplanations[] = "`2No existing LoGD data or Doctrine migration metadata was detected, so the installer only offers a clean installation.`n";
             }
