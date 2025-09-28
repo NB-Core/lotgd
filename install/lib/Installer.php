@@ -1024,9 +1024,11 @@ class Installer
         $existingLogdTables = $session['dbinfo']['existing_logd_tables'] ?? [];
         $hasStage5UpgradeFlag = array_key_exists('upgrade', $session['dbinfo']);
         $stage5MarkedUpgrade = $hasStage5UpgradeFlag && $session['dbinfo']['upgrade'];
+        $detectedDatabaseVersion = $installerVersion;
         $metadataNotice = null;
-        $legacyDefaultVersion = null;
+        $legacyFallbackVersion = null;
         $choiceExplanations = [];
+        $selectedUpgradeVersion = $detectedDatabaseVersion;
         if (is_array($existingLogdTables)) {
             $hasLogdTables = count($existingLogdTables) > 0;
         } elseif (is_numeric($existingLogdTables)) {
@@ -1043,7 +1045,6 @@ class Installer
             }
         }
 
-        $detectedDatabaseVersion = $installerVersion;
         if ($hasMigrationMetadata) {
             $session['dbinfo']['upgrade'] = true;
             $detectedDatabaseVersion = $session['fromversion'] ?? $doctrineDefaultVersion;
@@ -1068,8 +1069,8 @@ class Installer
 
         if (! $hasMigrationMetadata) {
             if ($detectedDatabaseVersion == '-1') {
-                $legacyDefaultVersion = '0.9.7';
-                $detectedDatabaseVersion = $legacyDefaultVersion;
+                $legacyFallbackVersion = '0.9.7';
+                $selectedUpgradeVersion = $legacyFallbackVersion;
             }
 
             $renderVersionSelector = $session['dbinfo']['upgrade'] || $shouldDefaultToUpgrade || $stage5MarkedUpgrade || $hasLogdTables;
@@ -1087,9 +1088,13 @@ class Installer
                     require __DIR__ . '/../data/installer_sqlstatements.php';
                 }
 
+                $selectionSeedVersion = is_string($selectedUpgradeVersion)
+                    ? $selectedUpgradeVersion
+                    : $detectedDatabaseVersion;
+
                 $versionOptions = $this->getUpgradeVersionOptions(
                     $sql_upgrade_statements,
-                    $detectedDatabaseVersion
+                    $selectionSeedVersion
                 );
                 $versionLabels = $sql_upgrade_version_labels ?? [];
             }
@@ -1163,8 +1168,8 @@ class Installer
 
         if ($upgradeAvailable && ($session['dbinfo']['upgrade'] ?? false)) {
             if (! $hasValidFromVersion || $sessionFromVersion === false) {
-                $fallbackVersion = $detectedDatabaseVersion;
-                $hasLegacyDefault = $legacyDefaultVersion !== null && $fallbackVersion === $legacyDefaultVersion;
+                $fallbackVersion = $selectedUpgradeVersion;
+                $hasLegacyDefault = $legacyFallbackVersion !== null && $fallbackVersion === $legacyFallbackVersion;
                 if (! is_string($fallbackVersion) || $fallbackVersion === '' || $fallbackVersion === '-1' || $hasLegacyDefault) {
                     $fallbackVersion = $doctrineDefaultVersion;
                 }
@@ -1175,7 +1180,7 @@ class Installer
             }
 
             if ($hasValidFromVersion) {
-                $detectedDatabaseVersion = $sessionFromVersion;
+                $selectedUpgradeVersion = $sessionFromVersion;
             }
         }
 
@@ -1247,7 +1252,7 @@ class Installer
                     $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
                     $label = $versionLabels[$version] ?? $version;
                     $escapedLabel = htmlspecialchars($label, ENT_QUOTES, $charset);
-                    $isSelected = $detectedDatabaseVersion === $version ? ' selected' : '';
+                    $isSelected = $selectedUpgradeVersion === $version ? ' selected' : '';
                     $this->output->rawOutput(
                         sprintf(
                             '<option value="%1$s"%2$s>%3$s</option>',

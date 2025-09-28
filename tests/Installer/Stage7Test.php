@@ -112,6 +112,18 @@ namespace Lotgd\Tests\Installer {
             $this->assertStringContainsString('No existing LoGD data or Doctrine migration metadata was detected', $output);
         }
 
+        public function testCleanInstallDoesNotReportDetectedVersion(): void
+        {
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertStringNotContainsString('Detected database version', $output);
+            $this->assertStringContainsString('No existing LoGD data or Doctrine migration metadata was detected', $output);
+        }
+
         public function testStage7HandlesUpgradeSelectionFromPostData(): void
         {
             $_POST['type']    = 'upgrade';
@@ -155,6 +167,31 @@ namespace Lotgd\Tests\Installer {
             $this->assertSame('2.0.0', $_SESSION['fromversion']);
             $this->assertSame(7, $_SESSION['stagecompleted']);
             $this->assertContains('Location: installer.php?stage=8', $this->getRedirectHeaders());
+        }
+
+        public function testUpgradeScenarioDisplaysDetectedVersionMessage(): void
+        {
+            $settings = new DummySettings([
+                'charset' => 'UTF-8',
+                'installer_version' => '1.1.1',
+            ]);
+            Settings::setInstance($settings);
+            $GLOBALS['settings'] = $settings;
+
+            $_SESSION['dbinfo'] = [
+                'existing_tables' => ['logd_accounts'],
+                'existing_logd_tables' => ['logd_accounts'],
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertStringContainsString('Detected database version', $output);
+            $this->assertStringContainsString('1.1.1', $output);
+            $this->assertStringContainsString('The installer will upgrade your database.', $output);
         }
 
         public function testStage7SkipsLegacyDropdownWhenDoctrineMetadataExists(): void
