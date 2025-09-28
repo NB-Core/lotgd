@@ -833,8 +833,10 @@ class Installer
     public function stage6(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        $dbconnectPath = dirname(__DIR__, 2) . '/dbconnect.php';
         $success = false;
-        if (file_exists("dbconnect.php")) {
+
+        if (file_exists($dbconnectPath)) {
             $success = true;
             $initial = false;
         } else {
@@ -854,18 +856,19 @@ class Installer
                 . "    'DB_USEDATACACHE' => " . ((int)$session['dbinfo']['DB_USEDATACACHE']) . ",\n"
                 . "    'DB_DATACACHEPATH' => '{$session['dbinfo']['DB_DATACACHEPATH']}',\n"
                 . "];\n";
-                $failure = false;
-                $dir = dirname('dbconnect.php');
+            $failure = false;
+            $dir = dirname($dbconnectPath);
+
             if (is_writable($dir)) {
-                    error_clear_last();
-                    $fp = fopen('dbconnect.php', 'w+');
+                error_clear_last();
+                $fp = fopen($dbconnectPath, 'w+');
                 if ($fp) {
-                        error_clear_last();
+                    error_clear_last();
                     if (fwrite($fp, $dbconnect) !== false) {
                         $this->output->output("`n`@Success!`2  I was able to write your dbconnect.php file, you can continue on to the next step.");
                     } else {
-                            $failure = true;
-                            $err = error_get_last();
+                        $failure = true;
+                        $err = error_get_last();
                         if ($err) {
                             if (!\Lotgd\Installer\InstallerLogger::log(sprintf("Error: %s in %s on line %d", $err['message'], $err['file'], $err['line']))) {
                                 $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
@@ -873,113 +876,95 @@ class Installer
                             $this->output->output("`n`\$Failed to write to dbconnect.php:`2 %s in %s on line %d", $err['message'], $err['file'], $err['line']);
                         }
                     }
-                        fclose($fp);
+                    fclose($fp);
                 } else {
-                        $failure = true;
-                        $err = error_get_last();
+                    $failure = true;
+                    $err = error_get_last();
                     if ($err) {
                         if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
                             $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
                         }
-                            $this->output->output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
+                        $this->output->output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
                     }
                 }
             } else {
-                    $failure = true;
-                    $this->output->output("`n`\$Directory not writable:`2 %s", $dir);
+                $failure = true;
+                $this->output->output("`n`\$Directory not writable:`2 %s", $dir);
             }
+
             if ($failure) {
-                    $this->output->output("`n`\$Unfortunately, I was not able to write your dbconnect.php file.");
-                    $this->output->output("`2You will have to create this file yourself, and upload it to your web server.");
+                $this->output->output("`n`\$Unfortunately, I was not able to write your dbconnect.php file.");
+                $this->output->output("`2You will have to create this file yourself, and upload it to your web server.");
                 $this->output->output("The contents of this file should be as follows:`3");
                 $this->output->rawOutput("<blockquote><pre>" . htmlentities($dbconnect, ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "</pre></blockquote>");
                 $this->output->output("`2Create a new file, past the entire contents from above into it (everything from and including `3<?php`2 up to and including `3?>`2 ).");
                 $this->output->output("When you have that done, save the file as 'dbconnect.php' and upload this to the location you have LoGD at.");
                 $this->output->output("You can refresh this page to see if you were successful.");
-            }
-            if (! $failure) {
+                $session['stagecompleted'] = 5;
+            } else {
+                clearstatcache(true, $dbconnectPath);
                 $success = true;
             }
         }
-        if ($success && !$initial) {
+        if ($success && ! $initial) {
             $version = $this->getSetting("installer_version", "-1");
             $sub = substr($version, 0, 5);
             $sub = (int)str_replace(".", "", $sub);
+            $dbconnectFile = $dbconnectPath;
+            [$config, $assignments, $legacyAssignmentsFound] = $this->fetchDbconnectState($dbconnectFile);
+            $normalizedAssignments = $this->normalizeDbconnectAssignments($assignments);
+            $sessionOverrides = $this->getSessionDbinfoOverrides($session['dbinfo'] ?? []);
+            $mergedAssignments = $normalizedAssignments;
+            $manualUpdateRequired = false;
+
+            if ($sessionOverrides !== []) {
+                $mergedAssignments = $this->normalizeDbconnectAssignments(array_merge($normalizedAssignments, $sessionOverrides));
+            }
+
+            if ($mergedAssignments !== $normalizedAssignments) {
+                $dbconnectContents = $this->buildDbconnectContents($mergedAssignments);
+                $resolvedPath = realpath($dbconnectFile) ?: $dbconnectFile;
+
+                if ($this->writeDbconnectContents($dbconnectFile, $dbconnectContents)) {
+                    $this->output->output("`n`@Success!`2  I was able to update your dbconnect.php file with your latest database settings.");
+                    if (function_exists('opcache_invalidate')) {
+                        opcache_invalidate($resolvedPath, true);
+                    }
+                    clearstatcache(true, $dbconnectFile);
+                    $normalizedAssignments = $mergedAssignments;
+                    $assignments = $mergedAssignments;
+                    $config = $mergedAssignments;
+                    $legacyAssignmentsFound = false;
+                } else {
+                    $isWritable = is_writable($dbconnectFile);
+                    $this->outputDbconnectManualInstructions($dbconnectContents, ! $isWritable);
+                    $manualUpdateRequired = true;
+                }
+            } else {
+                $assignments = $normalizedAssignments;
+            }
+
+            if ($manualUpdateRequired) {
+                $session['stagecompleted'] = 5;
+            }
+
             if ($sub < 110) {
-                $dbconnectFile = 'dbconnect.php';
-                $assignments = [];
-                $legacyAssignmentsFound = false;
-                $config = null;
-
-                if (file_exists($dbconnectFile)) {
-                    try {
-                        /** @psalm-suppress UnresolvableInclude */
-                        $config = require $dbconnectFile;
-                    } catch (\Throwable) {
-                        $config = null;
-                    }
-
-                    if (is_array($config)) {
-                        $assignments = $config;
-                    }
-                }
-
-                if (! is_array($config)) {
-                    $fp = fopen($dbconnectFile, 'r');
-                    if ($fp) {
-                        while (($buffer = fgets($fp, 4096)) !== false) {
-                            if (strpos($buffer, '$DB') !== false && preg_match('/\$(DB_[A-Z_]+)\s*=\s*([^;]*);/', $buffer, $matches)) {
-                                $legacyAssignmentsFound = true;
-                                $assignments[$matches[1]] = trim($matches[2], " \t\"'");
-                            }
-                        }
-                        fclose($fp);
-                    }
-                }
-
-                if (is_array($config) || ! $legacyAssignmentsFound) {
+                if ($manualUpdateRequired) {
+                    // Manual update instructions were already displayed above.
+                } elseif (is_array($config) || ! $legacyAssignmentsFound) {
                     $this->output->output("`n`^You are ready for the next step.");
                 } else {
-                    $dbconnect =
-                        "<?php\n" .
-                        "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n" .
-                        "return [\n" .
-                        "    'DB_HOST' => '" . ($assignments['DB_HOST'] ?? '') . "',\n" .
-                        "    'DB_USER' => '" . ($assignments['DB_USER'] ?? '') . "',\n" .
-                        "    'DB_PASS' => '" . ($assignments['DB_PASS'] ?? '') . "',\n" .
-                        "    'DB_NAME' => '" . ($assignments['DB_NAME'] ?? '') . "',\n" .
-                        "    'DB_PREFIX' => '" . ($assignments['DB_PREFIX'] ?? '') . "',\n" .
-                        "    'DB_USEDATACACHE' => " . ((int)($assignments['DB_USEDATACACHE'] ?? 0)) . ",\n" .
-                        "    'DB_DATACACHEPATH' => " . var_export($assignments['DB_DATACACHEPATH'] ?? '', true) . ",\n" .
-                        "];\n";
-                    // Check if the file is writeable for us. If yes, we will change the file and notice the admin
-                    // if not, they have to change the file themselves...
+                    $dbconnect = $this->buildDbconnectContents($assignments);
                     $failure = false;
                     $dir = dirname($dbconnectFile);
+
                     if (is_writable($dir)) {
-                        $fp = fopen($dbconnectFile, 'w+');
-                        if ($fp) {
-                            if (fwrite($fp, $dbconnect) !== false) {
-                                $this->output->output("`n`@Success!`2  I was able to write your dbconnect.php file.");
-                            } else {
-                                $failure = true;
-                                $err = error_get_last();
-                                if ($err) {
-                                    if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
-                                        $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
-                                    }
-                                    $this->output->output("`n`\$Failed to write to dbconnect.php:`2 %s", $err['message']);
-                                }
-                            }
-                            fclose($fp);
-                        } else {
+                        if (! $this->writeDbconnectContents($dbconnectFile, $dbconnect)) {
                             $failure = true;
-                            $err = error_get_last();
-                            if ($err) {
-                                if (!\Lotgd\Installer\InstallerLogger::log($err['message'])) {
-                                    $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
-                                }
-                                $this->output->output("`n`\$Failed to create dbconnect.php:`2 %s", $err['message']);
+                        } else {
+                            $this->output->output("`n`@Success!`2  I was able to write your dbconnect.php file.");
+                            if (function_exists('opcache_invalidate')) {
+                                opcache_invalidate(realpath($dbconnectFile) ?: $dbconnectFile, true);
                             }
                         }
                     } else {
@@ -1001,8 +986,8 @@ class Installer
             } else {
                 $this->output->output("`n`^You are ready for the next step.");
             }
-        } elseif (!$success) {
-                $session['stagecompleted'] = 5;
+        } elseif (! $success) {
+            $session['stagecompleted'] = 5;
         }
         $this->checkDbconnectPermissions();
     }
@@ -1725,6 +1710,225 @@ class Installer
     }
 
     /**
+     * Normalize a stored prefix value, treating "0" or empty strings as no prefix.
+     */
+    private function normalizePrefixValue(mixed $prefix): string
+    {
+        if (! is_string($prefix)) {
+            return '';
+        }
+
+        $trimmed = trim($prefix);
+        if ($trimmed === '' || $trimmed === '0') {
+            return '';
+        }
+
+        return $this->normalizePrefix($trimmed);
+    }
+
+    /**
+     * Load dbconnect.php assignments supporting both array and legacy formats.
+     *
+     * @return array{0: mixed, 1: array<string, mixed>, 2: bool}
+     */
+    private function fetchDbconnectState(string $dbconnectFile): array
+    {
+        $assignments = [];
+        $legacyAssignmentsFound = false;
+        $config = null;
+
+        if (! file_exists($dbconnectFile)) {
+            return [$config, $assignments, $legacyAssignmentsFound];
+        }
+
+        try {
+            /** @psalm-suppress UnresolvableInclude */
+            $config = require $dbconnectFile;
+        } catch (\Throwable) {
+            $config = null;
+        }
+
+        if (is_array($config)) {
+            $assignments = $config;
+
+            return [$config, $assignments, $legacyAssignmentsFound];
+        }
+
+        $config = null;
+        $handle = fopen($dbconnectFile, 'r');
+        if ($handle) {
+            while (($buffer = fgets($handle, 4096)) !== false) {
+                if (strpos($buffer, '$DB') !== false && preg_match('/\$(DB_[A-Z_]+)\s*=\s*([^;]*);/', $buffer, $matches)) {
+                    $legacyAssignmentsFound = true;
+                    $assignments[$matches[1]] = trim($matches[2], " \t\"'");
+                }
+            }
+            fclose($handle);
+        }
+
+        return [$config, $assignments, $legacyAssignmentsFound];
+    }
+
+    /**
+     * Normalize dbconnect.php assignment values to expected types.
+     *
+     * @param array<string, mixed> $assignments
+     *
+     * @return array{DB_HOST: string, DB_USER: string, DB_PASS: string, DB_NAME: string, DB_PREFIX: string, DB_USEDATACACHE: int, DB_DATACACHEPATH: string}
+     */
+    private function normalizeDbconnectAssignments(array $assignments): array
+    {
+        $normalized = [
+            'DB_HOST' => '',
+            'DB_USER' => '',
+            'DB_PASS' => '',
+            'DB_NAME' => '',
+            'DB_PREFIX' => '',
+            'DB_USEDATACACHE' => 0,
+            'DB_DATACACHEPATH' => '',
+        ];
+
+        foreach ($normalized as $key => $default) {
+            if (! array_key_exists($key, $assignments)) {
+                continue;
+            }
+
+            $value = $assignments[$key];
+            switch ($key) {
+                case 'DB_USEDATACACHE':
+                    $normalized[$key] = (int) $value;
+                    break;
+                case 'DB_PREFIX':
+                    $normalized[$key] = $this->normalizePrefixValue($value);
+                    break;
+                default:
+                    $normalized[$key] = (string) $value;
+                    break;
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Extract installer session overrides for dbconnect.php assignments.
+     *
+     * @param array<string, mixed> $sessionDbinfo
+     *
+     * @return array<string, mixed>
+     */
+    private function getSessionDbinfoOverrides(array $sessionDbinfo): array
+    {
+        $overrides = [];
+        $keys = ['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME', 'DB_PREFIX', 'DB_USEDATACACHE', 'DB_DATACACHEPATH'];
+
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $sessionDbinfo)) {
+                continue;
+            }
+
+            $value = $sessionDbinfo[$key];
+            switch ($key) {
+                case 'DB_USEDATACACHE':
+                    $overrides[$key] = (int) $value;
+                    break;
+                case 'DB_PREFIX':
+                    $overrides[$key] = $this->normalizePrefixValue($value);
+                    break;
+                default:
+                    $overrides[$key] = (string) $value;
+            }
+        }
+
+        return $overrides;
+    }
+
+    /**
+     * Render the canonical dbconnect.php file contents for the provided assignments.
+     *
+     * @param array<string, mixed> $assignments
+     */
+    private function buildDbconnectContents(array $assignments): string
+    {
+        $data = $this->normalizeDbconnectAssignments($assignments);
+
+        $lines = [
+            "<?php",
+            '',
+            "//This file automatically created by installer.php on " . date("M d, Y h:i a"),
+            'return [',
+            "    'DB_HOST' => " . var_export($data['DB_HOST'], true) . ',',
+            "    'DB_USER' => " . var_export($data['DB_USER'], true) . ',',
+            "    'DB_PASS' => " . var_export($data['DB_PASS'], true) . ',',
+            "    'DB_NAME' => " . var_export($data['DB_NAME'], true) . ',',
+            "    'DB_PREFIX' => " . var_export($data['DB_PREFIX'], true) . ',',
+            "    'DB_USEDATACACHE' => " . (int) $data['DB_USEDATACACHE'] . ',',
+            "    'DB_DATACACHEPATH' => " . var_export($data['DB_DATACACHEPATH'], true) . ',',
+            '];',
+            '',
+        ];
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Attempt to write new dbconnect.php contents, returning true on success.
+     */
+    private function writeDbconnectContents(string $dbconnectFile, string $contents): bool
+    {
+        $dir = dirname($dbconnectFile);
+
+        if (! file_exists($dbconnectFile) && ! is_writable($dir)) {
+            return false;
+        }
+
+        error_clear_last();
+        $fp = fopen($dbconnectFile, 'w+');
+        if (! $fp) {
+            $err = error_get_last();
+            if ($err && !\Lotgd\Installer\InstallerLogger::log($err['message'])) {
+                $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+            }
+
+            return false;
+        }
+
+        error_clear_last();
+        $written = fwrite($fp, $contents);
+        if ($written === false) {
+            $err = error_get_last();
+            if ($err && !\Lotgd\Installer\InstallerLogger::log(sprintf("Error: %s in %s on line %d", $err['message'], $err['file'], $err['line']))) {
+                $this->output->output("`^Could not write install log (`2%s`^)`n", \Lotgd\Installer\InstallerLogger::getLogFilePath());
+            }
+        }
+        fclose($fp);
+
+        if ($written === false) {
+            return false;
+        }
+
+        clearstatcache(true, $dbconnectFile);
+
+        return true;
+    }
+
+    /**
+     * Output instructions for manually updating dbconnect.php when automation fails.
+     */
+    private function outputDbconnectManualInstructions(string $contents, bool $permissionsIssue = false): void
+    {
+        if ($permissionsIssue) {
+            $this->output->output("`n`\$dbconnect.php is not writable. Please update it manually.");
+        } else {
+            $this->output->output("`n`\$The installer could not automatically update dbconnect.php.");
+        }
+
+        $this->output->output("`2Replace its contents with the following configuration:`n`n`&");
+        $this->output->rawOutput("<blockquote><pre>" . htmlentities($contents, ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "</pre></blockquote>");
+        $this->output->output("`2After saving the file, rerun this step to continue.`n");
+    }
+
+    /**
      * Attempt to read the table prefix from dbconnect.php (array or legacy format).
      */
     private function detectPrefixFromDbconnect(): ?string
@@ -1872,17 +2076,34 @@ class Installer
     {
         global $session, $DB_PREFIX;
 
-        $db           = require dirname(__DIR__, 2) . '/dbconnect.php';
+        $dbconnectFile = dirname(__DIR__, 2) . '/dbconnect.php';
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($dbconnectFile, true);
+        }
+
+        $db = require $dbconnectFile;
         $initialPrefix = $DB_PREFIX ?? '';
         Database::setPrefix($initialPrefix);
 
-        $DB_PREFIX = $db['DB_PREFIX'] ?? $initialPrefix;
-        if ($DB_PREFIX !== $initialPrefix) {
-            Database::setPrefix($DB_PREFIX);
+        $preferredPrefix = $initialPrefix;
+        $sessionHasPrefix = isset($session['dbinfo']) && is_array($session['dbinfo']) && array_key_exists('DB_PREFIX', $session['dbinfo']);
+
+        if ($sessionHasPrefix) {
+            $preferredPrefix = $this->normalizePrefixValue($session['dbinfo']['DB_PREFIX']);
+        } elseif (isset($db['DB_PREFIX'])) {
+            $preferredPrefix = $this->normalizePrefixValue($db['DB_PREFIX']);
         }
+
+        $DB_PREFIX = $preferredPrefix;
+        Database::setPrefix($preferredPrefix);
         InstallerLogger::log('DB_PREFIX set to ' . $DB_PREFIX);
 
-        $config = require dirname(__DIR__, 2) . '/src/Lotgd/Config/migrations.php';
+        $configFile = dirname(__DIR__, 2) . '/src/Lotgd/Config/migrations.php';
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($configFile, true);
+        }
+
+        $config = require $configFile;
 
         $em = Bootstrap::getEntityManager();
 
