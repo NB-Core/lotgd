@@ -135,6 +135,7 @@ namespace Lotgd\Tests\Installer {
             $_SESSION['dbinfo'] = [
                 'upgrade' => true,
                 'existing_tables' => [],
+                'existing_logd_tables' => [],
             ];
 
             $installer = new Installer();
@@ -148,11 +149,12 @@ namespace Lotgd\Tests\Installer {
             $this->assertStringContainsString("<select name='version'>", $output);
         }
 
-        public function testStage7DefaultsToUpgradeWhenExistingTablesDetected(): void
+        public function testStage7DefaultsToUpgradeWhenLogdTablesDetected(): void
         {
             $_SESSION['dbinfo'] = [
                 'upgrade' => false,
                 'existing_tables' => ['logd_accounts'],
+                'existing_logd_tables' => ['logd_accounts'],
             ];
 
             $installer = new Installer();
@@ -164,6 +166,25 @@ namespace Lotgd\Tests\Installer {
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
+        }
+
+        public function testStage7KeepsCleanInstallDefaultWhenOnlyUnrelatedTablesDetected(): void
+        {
+            $_SESSION['dbinfo'] = [
+                'upgrade' => false,
+                'existing_tables' => ['something_else'],
+                'existing_logd_tables' => [],
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertFalse($_SESSION['dbinfo']['upgrade']);
+            $this->assertStringContainsString("value='install' name='type' checked", $output);
+            $this->assertStringNotContainsString("<select name='version'>", $output);
         }
 
         /**
