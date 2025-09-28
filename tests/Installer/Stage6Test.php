@@ -7,7 +7,10 @@ namespace Lotgd\Installer;
 if (! function_exists(__NAMESPACE__ . '\\fopen')) {
     function fopen(string $filename, string $mode)
     {
-        if (\Lotgd\Tests\Installer\Stage6Test::$simulateWriteFailure && $filename === 'dbconnect.php' && str_contains($mode, 'w')) {
+        if (\Lotgd\Tests\Installer\Stage6Test::$simulateWriteFailure
+            && basename($filename) === 'dbconnect.php'
+            && str_contains($mode, 'w')
+        ) {
             return false;
         }
 

@@ -900,6 +900,7 @@ class Installer
                 $this->output->output("`2Create a new file, past the entire contents from above into it (everything from and including `3<?php`2 up to and including `3?>`2 ).");
                 $this->output->output("When you have that done, save the file as 'dbconnect.php' and upload this to the location you have LoGD at.");
                 $this->output->output("You can refresh this page to see if you were successful.");
+                $session['stagecompleted'] = 5;
             } else {
                 clearstatcache(true, $dbconnectPath);
                 $success = true;
@@ -943,6 +944,10 @@ class Installer
                 }
             } else {
                 $assignments = $normalizedAssignments;
+            }
+
+            if ($manualUpdateRequired) {
+                $session['stagecompleted'] = 5;
             }
 
             if ($sub < 110) {
