@@ -1068,10 +1068,6 @@ class Installer
 
         $this->output->output("`@`c`bConfirmation`b`c");
         $this->output->output("`2Please confirm the following:`0`n");
-        $this->output->rawOutput("<form action='installer.php?stage=7' method='POST'>");
-        $this->output->rawOutput("<table border='0' cellpadding='0' cellspacing='0'><tr><td valign='top'>");
-        $this->output->output("`2I should:`0");
-        $this->output->rawOutput("</td><td>");
 
         $detectedDatabaseVersion = $installerVersion;
         if ($hasMigrationMetadata) {
@@ -1125,16 +1121,18 @@ class Installer
             }
         }
 
-        $this->output->rawOutput("<input type='radio' value='upgrade' name='type'" . ($session['dbinfo']['upgrade'] ? ' checked' : '') . ">");
-        if ($hasMigrationMetadata) {
-            $this->output->output(" `2Perform an upgrade using Doctrine migrations only.`n");
-            $this->output->output("`2Detected Doctrine schema version: `^%s`2.`n", $session['fromversion']);
-        } else {
-            $this->output->output(" `2Perform an upgrade" . ($session['dbinfo']['upgrade'] ? ' from' : '') . " ");
+        $renderVersionSelector = false;
+        $versionOptions = [];
+        $versionLabels = [];
+        $charset = (string) $this->getSetting('charset', 'UTF-8');
+
+        if (! $hasMigrationMetadata) {
             if ($detectedDatabaseVersion == '-1') {
                 $detectedDatabaseVersion = '0.9.7';
             }
+
             $renderVersionSelector = $session['dbinfo']['upgrade'] || $shouldDefaultToUpgrade || $stage5MarkedUpgrade || $hasLogdTables;
+
             if ($renderVersionSelector) {
                 if (! isset($sql_upgrade_statements)) {
                     require __DIR__ . '/../data/installer_sqlstatements.php';
@@ -1145,31 +1143,80 @@ class Installer
                     $detectedDatabaseVersion
                 );
                 $versionLabels = $sql_upgrade_version_labels ?? [];
-                $charset = (string) $this->getSetting('charset', 'UTF-8');
-
-                $this->output->rawOutput("<select name='version'>");
-                foreach ($versionOptions as $version) {
-                    $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
-                    $label = $versionLabels[$version] ?? $version;
-                    $escapedLabel = htmlspecialchars($label, ENT_QUOTES, $charset);
-                    $isSelected = $detectedDatabaseVersion === $version ? ' selected' : '';
-                    $this->output->rawOutput(
-                        sprintf(
-                            '<option value="%1$s"%2$s>%3$s</option>',
-                            $escapedVersion,
-                            $isSelected,
-                            $escapedLabel
-                        )
-                    );
-                }
-                $this->output->rawOutput("</select>");
             }
         }
-        $this->output->rawOutput("<br><input type='radio' value='install' name='type'" . ($session['dbinfo']['upgrade'] ? '' : ' checked') . ">");
-        $this->output->output(" `2Perform a clean install.");
-        $this->output->rawOutput("</td></tr></table>");
+
+        $this->output->output("`2I should:`0");
+
         $submit = Translator::translateInline('Submit');
+        $upgradeChecked = ($session['dbinfo']['upgrade'] ?? false) ? ' checked' : '';
+        $installChecked = ($session['dbinfo']['upgrade'] ?? false) ? '' : ' checked';
+
+        $this->output->rawOutput('<style>'
+            . '.installer-stage7{display:flex;flex-direction:column;gap:1rem;margin-top:1rem;}'
+            . '.installer-choice-grid{display:flex;flex-wrap:wrap;gap:1rem;align-items:stretch;}'
+            . '.installer-choice-card{flex:1 1 260px;padding:1rem;border:1px solid rgba(0,0,0,0.15);border-radius:6px;background:rgba(0,0,0,0.05);}'
+            . '.installer-choice-option{display:flex;gap:0.5rem;align-items:flex-start;}'
+            . '.installer-choice-option input[type="radio"]{margin-top:0.2rem;}'
+            . '.installer-choice-extra{margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;}'
+            . '.installer-choice-extra select{max-width:100%;width:100%;}'
+            . '.installer-choice-footer{display:flex;justify-content:flex-end;}'
+            . '</style>');
+
+        $this->output->rawOutput("<form action='installer.php?stage=7' method='POST'>");
+        $this->output->rawOutput("<div class='installer-stage7'>");
+        $this->output->rawOutput("<div class='installer-choice-grid'>");
+
+        $this->output->rawOutput("<div class='installer-choice-card'>");
+        $this->output->rawOutput("<label class='installer-choice-option'>");
+        $this->output->rawOutput("<input type='radio' value='upgrade' name='type'" . $upgradeChecked . ">");
+
+        if ($hasMigrationMetadata) {
+            $this->output->output("`2Perform an upgrade using Doctrine migrations only.`n");
+        } else {
+            $this->output->output("`2Perform an upgrade.`n");
+        }
+
+        $this->output->rawOutput("</label>");
+
+        if ($hasMigrationMetadata) {
+            $this->output->output("`2Detected Doctrine schema version: `^%s`2.`n", $session['fromversion']);
+        } elseif ($renderVersionSelector && $versionOptions !== []) {
+            $this->output->rawOutput("<div class='installer-choice-extra'>");
+            $this->output->output("`2Select the version you are upgrading from:`0");
+            $this->output->rawOutput("<select id='installer-upgrade-version' name='version'>");
+            foreach ($versionOptions as $version) {
+                $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
+                $label = $versionLabels[$version] ?? $version;
+                $escapedLabel = htmlspecialchars($label, ENT_QUOTES, $charset);
+                $isSelected = $detectedDatabaseVersion === $version ? ' selected' : '';
+                $this->output->rawOutput(
+                    sprintf(
+                        '<option value="%1$s"%2$s>%3$s</option>',
+                        $escapedVersion,
+                        $isSelected,
+                        $escapedLabel
+                    )
+                );
+            }
+            $this->output->rawOutput('</select>');
+            $this->output->rawOutput('</div>');
+        }
+
+        $this->output->rawOutput('</div>');
+
+        $this->output->rawOutput("<div class='installer-choice-card'>");
+        $this->output->rawOutput("<label class='installer-choice-option'>");
+        $this->output->rawOutput("<input type='radio' value='install' name='type'" . $installChecked . ">");
+        $this->output->output("`2Perform a clean install.`n");
+        $this->output->rawOutput("</label>");
+        $this->output->rawOutput("</div>");
+
+        $this->output->rawOutput("</div>");
+        $this->output->rawOutput("<div class='installer-choice-footer'>");
         $this->output->rawOutput("<input type='submit' value='$submit' class='button'>");
+        $this->output->rawOutput("</div>");
+        $this->output->rawOutput("</div>");
         $this->output->rawOutput("</form>");
         $session['stagecompleted'] = $stage - 1;
     }
