@@ -108,12 +108,19 @@ namespace Lotgd\Tests\Installer {
 
             $this->assertStringContainsString('Confirmation', $output);
             $this->assertStringContainsString('Perform a clean install.', $output);
+            $this->assertStringNotContainsString("value='upgrade'", $output);
+            $this->assertStringContainsString('No existing LoGD data or Doctrine migration metadata was detected', $output);
         }
 
         public function testStage7HandlesUpgradeSelectionFromPostData(): void
         {
             $_POST['type']    = 'upgrade';
             $_POST['version'] = '1.0.0';
+
+            $_SESSION['dbinfo'] = [
+                'existing_tables' => ['logd_accounts'],
+                'existing_logd_tables' => ['logd_accounts'],
+            ];
 
             $installer = new Installer();
 
@@ -134,6 +141,11 @@ namespace Lotgd\Tests\Installer {
         {
             $_POST['type']    = 'upgrade';
             $_POST['version'] = ['1.0.0'];
+
+            $_SESSION['dbinfo'] = [
+                'existing_tables' => ['logd_accounts'],
+                'existing_logd_tables' => ['logd_accounts'],
+            ];
 
             $installer = new Installer();
 
@@ -163,6 +175,7 @@ namespace Lotgd\Tests\Installer {
             $this->assertStringContainsString('Doctrine migration metadata detected', $output);
             $this->assertStringContainsString('Perform an upgrade using Doctrine migrations only.', $output);
             $this->assertStringNotContainsString("<select name='version'>", $output);
+            $this->assertStringContainsString('Doctrine already tracks your schema history', $output);
         }
 
         public function testStage7RespectsUpgradeFlagFromStage5(): void
@@ -183,6 +196,8 @@ namespace Lotgd\Tests\Installer {
             $this->assertSame('2.0.0', $_SESSION['fromversion']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
+            $this->assertStringContainsString('The installer was instructed to upgrade during the database check', $output);
+            $this->assertStringContainsString('You requested an upgrade in the previous step, so the installer keeps the upgrade option selected', $output);
             $this->assertStringContainsString('<option value="2.0.0" selected>2.0.0+ (automatic migrations)</option>', $output);
         }
 
@@ -204,6 +219,8 @@ namespace Lotgd\Tests\Installer {
             $this->assertSame('2.0.0', $_SESSION['fromversion']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
+            $this->assertStringContainsString('Existing LoGD tables were detected; choose the version you are upgrading from', $output);
+            $this->assertStringContainsString('Because existing LoGD tables were found, the upgrade option is pre-selected', $output);
         }
 
         public function testStage7DefaultsToUpgradeWithPrefixedTables(): void
@@ -245,6 +262,27 @@ namespace Lotgd\Tests\Installer {
             $this->assertFalse($_SESSION['dbinfo']['upgrade']);
             $this->assertStringContainsString("value='install' name='type' checked", $output);
             $this->assertStringNotContainsString("<select name='version'>", $output);
+            $this->assertStringNotContainsString("value='upgrade'", $output);
+            $this->assertStringContainsString('The database already contains tables, but none match the expected LoGD schema', $output);
+        }
+
+        public function testStage7HidesUpgradeCardWhenLogdTablesMissing(): void
+        {
+            $_SESSION['dbinfo'] = [
+                'existing_tables' => ['unrelated_table'],
+                'existing_logd_tables' => [],
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertSame('-1', $_SESSION['fromversion']);
+            $this->assertFalse($_SESSION['dbinfo']['upgrade']);
+            $this->assertStringNotContainsString('Perform an upgrade.', $output);
+            $this->assertStringNotContainsString("value='upgrade'", $output);
         }
 
         public function testStage7IncludesDetectedVersionEvenWhenMissingFromLegacyMap(): void
@@ -267,6 +305,24 @@ namespace Lotgd\Tests\Installer {
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
             $this->assertSame('2.0.1', $_SESSION['fromversion']);
             $this->assertStringContainsString('<option value="2.0.1" selected>2.0.1</option>', $output);
+        }
+
+        public function testStage7ShowsUpgradeDropdownWhenLogdTablesPresent(): void
+        {
+            $_SESSION['dbinfo'] = [
+                'existing_tables' => ['logd_accounts'],
+                'existing_logd_tables' => ['logd_accounts'],
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertStringContainsString('Perform an upgrade.', $output);
+            $this->assertStringContainsString("<select name='version'>", $output);
         }
 
         public function testStage7AfterStage5WithExistingDbconnectDefaultsToUpgrade(): void
