@@ -1045,7 +1045,14 @@ class Installer
                 if ($hasMigrationMetadata) {
                     $session['fromversion'] = $doctrineDefaultVersion;
                 } else {
-                    $session['fromversion'] = Http::post('version');
+                    $postedVersion = Http::post('version');
+                    if (is_string($postedVersion)) {
+                        $postedVersion = trim($postedVersion);
+                    }
+                    if (! is_string($postedVersion) || $postedVersion === '') {
+                        $postedVersion = $doctrineDefaultVersion;
+                    }
+                    $session['fromversion'] = $postedVersion;
                 }
             }
 
@@ -1101,7 +1108,8 @@ class Installer
             if ($detectedDatabaseVersion == '-1') {
                 $detectedDatabaseVersion = '0.9.7';
             }
-            if ($session['dbinfo']['upgrade']) {
+            $renderVersionSelector = $session['dbinfo']['upgrade'] || $shouldDefaultToUpgrade || $stage5MarkedUpgrade || ! empty($existingTables);
+            if ($renderVersionSelector) {
                 if (! isset($sql_upgrade_statements)) {
                     require __DIR__ . '/../data/installer_sqlstatements.php';
                 }
@@ -1635,6 +1643,13 @@ class Installer
         ];
 
         $from = $session['fromversion'] ?? '-1';
+        if (is_string($from)) {
+            $from = trim($from);
+        }
+        if (! is_string($from) || $from === '') {
+            $from = '-1';
+        }
+
         if ($from !== '-1') {
             // Expose the source version so migrations can load legacy SQL when upgrading
             $_ENV['LOTGD_BASE_VERSION'] = $from;
@@ -1647,6 +1662,8 @@ class Installer
                     }
                 }
             }
+        } else {
+            unset($_ENV['LOTGD_BASE_VERSION']);
         }
 
         $aliasResolver = $dependencyFactory->getVersionAliasResolver();
