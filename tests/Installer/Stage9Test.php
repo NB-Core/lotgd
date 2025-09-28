@@ -302,20 +302,30 @@ namespace Lotgd\Tests\Installer {
         {
             global $session;
 
+            $dbconnect = __DIR__ . '/../../dbconnect.php';
+
             file_put_contents(
-                __DIR__ . '/../../dbconnect.php',
+                $dbconnect,
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'old_'];"
             );
-            clearstatcache();
+            clearstatcache(true, $dbconnect);
 
             $session['dbinfo']['DB_PREFIX'] = 'fresh';
 
             $installer = new Installer();
             $installer->runStage(6);
+
+            // Simulate stage 6 leaving the original prefix on disk (e.g., permissions restored later).
+            file_put_contents(
+                $dbconnect,
+                "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'old_'];"
+            );
+            clearstatcache(true, $dbconnect);
+
             $installer->runStage(9);
 
-            clearstatcache();
-            $config = require __DIR__ . '/../../dbconnect.php';
+            clearstatcache(true, $dbconnect);
+            $config = require $dbconnect;
 
             $this->assertSame('fresh_', $config['DB_PREFIX']);
             $this->assertSame('fresh_', $GLOBALS['DB_PREFIX'] ?? null);
