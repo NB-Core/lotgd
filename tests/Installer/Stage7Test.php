@@ -27,6 +27,7 @@ namespace Lotgd\Tests\Installer {
     use Lotgd\Output;
     use Lotgd\Settings;
     use Lotgd\Tests\Stubs\Database;
+    use Lotgd\Tests\Stubs\DummySettings;
     use PHPUnit\Framework\TestCase;
 
     /**
@@ -35,6 +36,8 @@ namespace Lotgd\Tests\Installer {
      */
     final class Stage7Test extends TestCase
     {
+        private string $dbconnectPath;
+
         protected function setUp(): void
         {
             class_exists(Database::class);
@@ -46,9 +49,19 @@ namespace Lotgd\Tests\Installer {
             $output   = Output::getInstance();
             $settings = null;
 
+            $this->dbconnectPath = dirname(__DIR__, 2) . '/dbconnect.php';
+            if (file_exists($this->dbconnectPath)) {
+                unlink($this->dbconnectPath);
+            }
+
             Database::$settings_table = [];
             Database::$settings_extended_table = [];
+            Database::$mockResults = [];
+            Database::$queries = [];
+            Database::$instance = null;
+            Database::$doctrineConnection = null;
             Settings::setInstance(null);
+            unset($GLOBALS['settings']);
 
             $_POST = [];
             $_SERVER['SCRIPT_NAME'] = 'test.php';
@@ -64,6 +77,23 @@ namespace Lotgd\Tests\Installer {
             $noinstallnavs       = [];
             $stage               = 7;
             $DB_USEDATACACHE     = false;
+        }
+
+        protected function tearDown(): void
+        {
+            if (isset($this->dbconnectPath) && file_exists($this->dbconnectPath)) {
+                unlink($this->dbconnectPath);
+            }
+
+            Settings::setInstance(null);
+            unset($GLOBALS['settings']);
+
+            Database::$mockResults = [];
+            Database::$queries = [];
+            Database::$instance = null;
+            Database::$doctrineConnection = null;
+
+            parent::tearDown();
         }
 
         public function testStage7RendersConfirmationWhenNoSelectionMade(): void
@@ -150,9 +180,10 @@ namespace Lotgd\Tests\Installer {
             $output = Output::getInstance()->getRawOutput();
 
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('2.0.0', $_SESSION['fromversion']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
-            $this->assertStringContainsString('<option value="2.0.0">2.0.0+ (automatic migrations)</option>', $output);
+            $this->assertStringContainsString('<option value="2.0.0" selected>2.0.0+ (automatic migrations)</option>', $output);
         }
 
         public function testStage7DefaultsToUpgradeWhenLogdTablesDetected(): void
@@ -170,6 +201,7 @@ namespace Lotgd\Tests\Installer {
             $output = Output::getInstance()->getRawOutput();
 
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('2.0.0', $_SESSION['fromversion']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
         }
@@ -191,6 +223,7 @@ namespace Lotgd\Tests\Installer {
             $output = Output::getInstance()->getRawOutput();
 
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('2.0.0', $_SESSION['fromversion']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
         }
@@ -232,7 +265,84 @@ namespace Lotgd\Tests\Installer {
             $output = Output::getInstance()->getRawOutput();
 
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('2.0.1', $_SESSION['fromversion']);
             $this->assertStringContainsString('<option value="2.0.1" selected>2.0.1</option>', $output);
+        }
+
+        public function testStage7AfterStage5WithExistingDbconnectDefaultsToUpgrade(): void
+        {
+            $config = [
+                'DB_HOST' => 'localhost',
+                'DB_USER' => 'legacy_user',
+                'DB_PASS' => 'legacy_pass',
+                'DB_NAME' => 'lotgd',
+                'DB_PREFIX' => 'lotgd_',
+            ];
+
+            file_put_contents(
+                $this->dbconnectPath,
+                "<?php\nreturn " . var_export($config, true) . ";\n"
+            );
+
+            Database::$mockResults = [
+                [
+                    ['Tables_in_lotgd' => 'lotgd_accounts'],
+                ],
+                [
+                    ['Grants for user@localhost' => 'GRANT ALL PRIVILEGES'],
+                ],
+            ];
+
+            $settings = new DummySettings(['charset' => 'UTF-8']);
+            Settings::setInstance($settings);
+            $GLOBALS['settings'] = $settings;
+
+            global $session, $stage, $logd_version, $recommended_modules, $noinstallnavs, $DB_USEDATACACHE;
+
+            $session['dbinfo'] = [
+                'DB_HOST' => $config['DB_HOST'],
+                'DB_USER' => $config['DB_USER'],
+                'DB_PASS' => $config['DB_PASS'],
+                'DB_NAME' => $config['DB_NAME'],
+                'DB_PREFIX' => $config['DB_PREFIX'],
+                'DB_USEDATACACHE' => false,
+                'DB_DATACACHEPATH' => '',
+            ];
+            $_SESSION['dbinfo'] = $session['dbinfo'];
+            $session['sure i want to overwrite the tables'] = false;
+            $logd_version = '0.0.0';
+            $recommended_modules = [];
+            $noinstallnavs = [];
+            $stage = 5;
+            $DB_USEDATACACHE = false;
+
+            $installer = new Installer();
+            $installer->stage5();
+
+            $mysqli = Database::getInstance();
+            $this->assertSame([
+                $config['DB_HOST'],
+                $config['DB_USER'],
+                $config['DB_PASS'],
+            ], $mysqli->connectArgs);
+            $this->assertContains('SHOW TABLES', Database::$queries);
+            $this->assertSame(['lotgd_accounts'], $_SESSION['dbinfo']['existing_logd_tables']);
+            $this->assertArrayHasKey('has_migration_metadata', $_SESSION['dbinfo']);
+            $this->assertFalse($_SESSION['dbinfo']['has_migration_metadata']);
+
+            $stage = 7;
+            $_POST = [];
+            $_GET = [];
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('2.0.0', $_SESSION['fromversion']);
+            $this->assertSame(6, $_SESSION['stagecompleted']);
+            $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
+            $this->assertStringContainsString("<select name='version'>", $output);
         }
 
         /**
