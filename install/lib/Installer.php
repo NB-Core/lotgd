@@ -1123,12 +1123,28 @@ class Installer
                 if (! isset($sql_upgrade_statements)) {
                     require __DIR__ . '/../data/installer_sqlstatements.php';
                 }
-                reset($sql_upgrade_statements);
+
+                $versionOptions = $this->getUpgradeVersionOptions(
+                    $sql_upgrade_statements,
+                    $detectedDatabaseVersion
+                );
+                $versionLabels = $sql_upgrade_version_labels ?? [];
+                $charset = (string) $this->getSetting('charset', 'UTF-8');
+
                 $this->output->rawOutput("<select name='version'>");
-                foreach ($sql_upgrade_statements as $key => $val) {
-                    if ($key != '-1') {
-                        $this->output->rawOutput("<option value='$key'" . ($detectedDatabaseVersion == $key ? ' selected' : '') . ">$key</option>");
-                    }
+                foreach ($versionOptions as $version) {
+                    $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
+                    $label = $versionLabels[$version] ?? $version;
+                    $escapedLabel = htmlspecialchars($label, ENT_QUOTES, $charset);
+                    $isSelected = $detectedDatabaseVersion === $version ? ' selected' : '';
+                    $this->output->rawOutput(
+                        sprintf(
+                            '<option value="%1$s"%2$s>%3$s</option>',
+                            $escapedVersion,
+                            $isSelected,
+                            $escapedLabel
+                        )
+                    );
                 }
                 $this->output->rawOutput("</select>");
             }
@@ -1603,6 +1619,35 @@ class Installer
     private function saveSetting(string $name, $value): void
     {
         Settings::getInstance()->saveSetting($name, $value);
+    }
+
+    /**
+     * Compile the list of legacy upgrade versions shown in stage 7.
+     *
+     * @param array<string|int, mixed> $sqlUpgradeStatements
+     *
+     * @return list<string>
+     */
+    private function getUpgradeVersionOptions(array $sqlUpgradeStatements, string $detectedDatabaseVersion): array
+    {
+        $options = [];
+
+        foreach (array_keys($sqlUpgradeStatements) as $version) {
+            $stringVersion = (string) $version;
+            if ($stringVersion === '-1') {
+                continue;
+            }
+            $options[] = $stringVersion;
+        }
+
+        if ($detectedDatabaseVersion !== ''
+            && $detectedDatabaseVersion !== '-1'
+            && ! in_array($detectedDatabaseVersion, $options, true)
+        ) {
+            array_unshift($options, $detectedDatabaseVersion);
+        }
+
+        return array_values(array_unique($options));
     }
 
     /**

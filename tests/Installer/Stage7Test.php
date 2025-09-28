@@ -25,6 +25,7 @@ namespace Lotgd\Tests\Installer {
 
     use Lotgd\Installer\Installer;
     use Lotgd\Output;
+    use Lotgd\Settings;
     use Lotgd\Tests\Stubs\Database;
     use PHPUnit\Framework\TestCase;
 
@@ -44,6 +45,10 @@ namespace Lotgd\Tests\Installer {
             $_SESSION = &$session;
             $output   = Output::getInstance();
             $settings = null;
+
+            Database::$settings_table = [];
+            Database::$settings_extended_table = [];
+            Settings::setInstance(null);
 
             $_POST = [];
             $_SERVER['SCRIPT_NAME'] = 'test.php';
@@ -147,6 +152,7 @@ namespace Lotgd\Tests\Installer {
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
+            $this->assertStringContainsString('<option value="2.0.0">2.0.0+ (automatic migrations)</option>', $output);
         }
 
         public function testStage7DefaultsToUpgradeWhenLogdTablesDetected(): void
@@ -185,6 +191,27 @@ namespace Lotgd\Tests\Installer {
             $this->assertFalse($_SESSION['dbinfo']['upgrade']);
             $this->assertStringContainsString("value='install' name='type' checked", $output);
             $this->assertStringNotContainsString("<select name='version'>", $output);
+        }
+
+        public function testStage7IncludesDetectedVersionEvenWhenMissingFromLegacyMap(): void
+        {
+            $settings = Settings::getInstance();
+            $settings->saveSetting('installer_version', '2.0.1');
+
+            $_SESSION['dbinfo'] = [
+                'upgrade' => false,
+                'existing_tables' => ['logd_accounts'],
+                'existing_logd_tables' => ['logd_accounts'],
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertStringContainsString('<option value="2.0.1" selected>2.0.1</option>', $output);
         }
 
         /**
