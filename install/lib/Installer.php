@@ -1128,17 +1128,21 @@ class Installer
                     $sql_upgrade_statements,
                     $detectedDatabaseVersion
                 );
+                $versionLabels = $sql_upgrade_version_labels ?? [];
                 $charset = (string) $this->getSetting('charset', 'UTF-8');
 
                 $this->output->rawOutput("<select name='version'>");
                 foreach ($versionOptions as $version) {
                     $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
+                    $label = $versionLabels[$version] ?? $version;
+                    $escapedLabel = htmlspecialchars($label, ENT_QUOTES, $charset);
                     $isSelected = $detectedDatabaseVersion === $version ? ' selected' : '';
                     $this->output->rawOutput(
                         sprintf(
-                            '<option value="%1$s"%2$s>%1$s</option>',
+                            '<option value="%1$s"%2$s>%3$s</option>',
                             $escapedVersion,
-                            $isSelected
+                            $isSelected,
+                            $escapedLabel
                         )
                     );
                 }

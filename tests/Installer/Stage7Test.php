@@ -152,6 +152,7 @@ namespace Lotgd\Tests\Installer {
             $this->assertTrue($_SESSION['dbinfo']['upgrade']);
             $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
+            $this->assertStringContainsString('<option value="2.0.0">2.0.0+ (automatic migrations)</option>', $output);
         }
 
         public function testStage7DefaultsToUpgradeWhenLogdTablesDetected(): void

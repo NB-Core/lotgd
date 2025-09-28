@@ -967,10 +967,8 @@ $sql_upgrade_statements = array(
     // Placeholders for releases managed exclusively by Doctrine migrations.
     "2.0.0" => array(
     ),
-    "2.0.1" => array(
-    ),
-    "2.0.2" => array(
-    ),
-    "2.1.0" => array(
-    ),
 );
+
+$sql_upgrade_version_labels = [
+    '2.0.0' => '2.0.0+ (automatic migrations)',
+];
