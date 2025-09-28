@@ -749,6 +749,8 @@ class Installer
         }
 
         $session['dbinfo']['existing_tables'] = $existingTables;
+        $existingLogdTables = array_values(array_unique($conflict));
+        $session['dbinfo']['existing_logd_tables'] = $existingLogdTables;
 
 
         $missing = count($descriptors) - $game;
@@ -1025,9 +1027,17 @@ class Installer
         $installerVersion = $this->getSetting('installer_version', '-1');
         $doctrineDefaultVersion = $installerVersion !== '-1' ? $installerVersion : '2.0.0';
         $existingTables = $session['dbinfo']['existing_tables'] ?? [];
+        $existingLogdTables = $session['dbinfo']['existing_logd_tables'] ?? [];
         $hasStage5UpgradeFlag = array_key_exists('upgrade', $session['dbinfo']);
         $stage5MarkedUpgrade = $hasStage5UpgradeFlag && $session['dbinfo']['upgrade'];
-        $shouldDefaultToUpgrade = $stage5MarkedUpgrade || ! empty($existingTables);
+        if (is_array($existingLogdTables)) {
+            $hasLogdTables = count($existingLogdTables) > 0;
+        } elseif (is_numeric($existingLogdTables)) {
+            $hasLogdTables = (int) $existingLogdTables > 0;
+        } else {
+            $hasLogdTables = ! empty($existingLogdTables);
+        }
+        $shouldDefaultToUpgrade = $stage5MarkedUpgrade || $hasLogdTables;
 
         if ($hasMigrationMetadata) {
             $session['dbinfo']['upgrade'] = true;
@@ -1108,7 +1118,7 @@ class Installer
             if ($detectedDatabaseVersion == '-1') {
                 $detectedDatabaseVersion = '0.9.7';
             }
-            $renderVersionSelector = $session['dbinfo']['upgrade'] || $shouldDefaultToUpgrade || $stage5MarkedUpgrade || ! empty($existingTables);
+            $renderVersionSelector = $session['dbinfo']['upgrade'] || $shouldDefaultToUpgrade || $stage5MarkedUpgrade || $hasLogdTables;
             if ($renderVersionSelector) {
                 if (! isset($sql_upgrade_statements)) {
                     require __DIR__ . '/../data/installer_sqlstatements.php';
