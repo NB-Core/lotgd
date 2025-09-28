@@ -19,6 +19,9 @@ use PHPUnit\Framework\TestCase;
 final class Stage5Test extends TestCase
 {
     private DummySettings $settings;
+    private string $dbconnectPath;
+    private bool $dbconnectExisted = false;
+    private ?string $dbconnectOriginal = null;
 
     protected function setUp(): void
     {
@@ -37,6 +40,16 @@ final class Stage5Test extends TestCase
         $GLOBALS['settings'] = $this->settings;
 
         Output::getInstance();
+
+        $this->dbconnectPath = dirname(__DIR__, 2) . '/dbconnect.php';
+        if (file_exists($this->dbconnectPath)) {
+            $this->dbconnectExisted = true;
+            $contents = file_get_contents($this->dbconnectPath);
+            $this->dbconnectOriginal = $contents === false ? null : $contents;
+        } else {
+            $this->dbconnectExisted = false;
+            $this->dbconnectOriginal = null;
+        }
 
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         $session = [];
@@ -69,6 +82,14 @@ final class Stage5Test extends TestCase
 
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
+
+        if ($this->dbconnectExisted) {
+            if ($this->dbconnectOriginal !== null) {
+                file_put_contents($this->dbconnectPath, $this->dbconnectOriginal);
+            }
+        } elseif (file_exists($this->dbconnectPath)) {
+            unlink($this->dbconnectPath);
+        }
 
         parent::tearDown();
     }
@@ -152,5 +173,53 @@ final class Stage5Test extends TestCase
 
         $this->assertStringContainsString('This looks like a game upgrade', $output);
         $this->assertStringNotContainsString('installer.php?stage=5&op=confirm_overwrite', $output);
+    }
+
+    public function testStage5RetainsDetectedPrefixAndUpdatesTableMetadata(): void
+    {
+        global $session;
+
+        $session['dbinfo']['DB_PREFIX'] = 'lotgd';
+
+        Database::$mockResults = [
+            [
+                ['Tables_in_lotgd' => 'lotgd_accounts'],
+                ['Tables_in_lotgd' => 'lotgd_doctrine_migration_versions'],
+                ['Tables_in_lotgd' => 'custom_table'],
+            ],
+            [
+                ['Grants for user@localhost' => 'GRANT ALL PRIVILEGES'],
+            ],
+        ];
+
+        $installer = new Installer();
+        $installer->stage5();
+
+        $this->assertSame('lotgd_', $session['dbinfo']['DB_PREFIX']);
+        $this->assertTrue($session['dbinfo']['has_migration_metadata']);
+        $this->assertSame(['lotgd_accounts'], $session['dbinfo']['existing_logd_tables']);
+        $this->assertContains('lotgd_doctrine_migration_versions', $session['dbinfo']['existing_tables']);
+    }
+
+    public function testStage5PrefillsPrefixFromDbconnectFile(): void
+    {
+        global $session;
+
+        file_put_contents($this->dbconnectPath, "<?php\nreturn ['DB_PREFIX' => 'lotgd'];\n");
+
+        Database::$mockResults = [
+            [
+                ['Tables_in_lotgd' => 'lotgd_accounts'],
+            ],
+            [
+                ['Grants for user@localhost' => 'GRANT ALL PRIVILEGES'],
+            ],
+        ];
+
+        $installer = new Installer();
+        $installer->stage5();
+
+        $this->assertSame('lotgd_', $session['dbinfo']['DB_PREFIX']);
+        $this->assertSame(['lotgd_accounts'], $session['dbinfo']['existing_logd_tables']);
     }
 }

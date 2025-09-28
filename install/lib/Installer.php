@@ -711,14 +711,8 @@ class Installer
     public function stage5(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        if (!empty(Http::post("DB_PREFIX"))) {
-            $session['dbinfo']['DB_PREFIX'] = Http::post("DB_PREFIX");
-            if (substr($session['dbinfo']['DB_PREFIX'], -1) != "_") {
-                $session['dbinfo']['DB_PREFIX'] .= "_";
-            }
-        } else {
-            $session['dbinfo']['DB_PREFIX'] = "";
-        }
+        $session['dbinfo']['DB_PREFIX'] = $this->resolveDatabasePrefix($session['dbinfo'] ?? []);
+
         $descriptors = $this->descriptors($session['dbinfo']['DB_PREFIX']);
         $unique = 0;
         $game = 0;
@@ -1546,6 +1540,94 @@ class Installer
             $this->output->output("The error returned by the database server was:");
             $this->output->rawOutput("<blockquote>$error</blockquote>");
         }
+    }
+
+    /**
+     * Resolve the database prefix from post data, session state or dbconnect.php.
+     */
+    private function resolveDatabasePrefix(array $dbinfo): string
+    {
+        $postedPrefix = Http::post('DB_PREFIX');
+        if (is_string($postedPrefix)) {
+            $postedPrefix = trim($postedPrefix);
+            if ($postedPrefix !== '' && $postedPrefix !== '0') {
+                return $this->normalizePrefix($postedPrefix);
+            }
+        }
+
+        if (array_key_exists('DB_PREFIX', $dbinfo)) {
+            $rawExisting = trim((string) $dbinfo['DB_PREFIX']);
+            if ($rawExisting !== '' && $rawExisting !== '0') {
+                return $this->normalizePrefix($rawExisting);
+            }
+        }
+
+        $detected = $this->detectPrefixFromDbconnect();
+        if ($detected !== null) {
+            return $detected;
+        }
+
+        return '';
+    }
+
+    /**
+     * Ensure a prefix string is trimmed and ends with a trailing underscore.
+     */
+    private function normalizePrefix(?string $prefix): string
+    {
+        if (! is_string($prefix)) {
+            return '';
+        }
+
+        $normalized = trim($prefix);
+        if ($normalized === '') {
+            return '';
+        }
+
+        if (substr($normalized, -1) !== '_') {
+            $normalized .= '_';
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Attempt to read the table prefix from dbconnect.php (array or legacy format).
+     */
+    private function detectPrefixFromDbconnect(): ?string
+    {
+        $dbconnect = dirname(__DIR__, 2) . '/dbconnect.php';
+
+        if (! file_exists($dbconnect)) {
+            return null;
+        }
+
+        try {
+            /** @psalm-suppress UnresolvableInclude */
+            $config = require $dbconnect;
+            if (is_array($config) && isset($config['DB_PREFIX'])) {
+                return $this->normalizePrefix((string) $config['DB_PREFIX']);
+            }
+        } catch (\Throwable) {
+            $config = null;
+        }
+
+        $handle = fopen($dbconnect, 'r');
+        if (! $handle) {
+            return null;
+        }
+
+        while (($buffer = fgets($handle, 4096)) !== false) {
+            if (strpos($buffer, '$DB_PREFIX') !== false && preg_match('/\$DB_PREFIX\s*=\s*([^;]+);/', $buffer, $matches)) {
+                fclose($handle);
+
+                return $this->normalizePrefix(trim($matches[1], " \t\"'"));
+            }
+        }
+
+        fclose($handle);
+
+        return null;
     }
 
     /**
