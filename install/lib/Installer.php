@@ -1017,9 +1017,17 @@ class Installer
     public function stage7(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
+        if (! isset($session['dbinfo']) || ! is_array($session['dbinfo'])) {
+            $session['dbinfo'] = [];
+        }
+
         $hasMigrationMetadata = $session['dbinfo']['has_migration_metadata'] ?? false;
         $installerVersion = $this->getSetting('installer_version', '-1');
         $doctrineDefaultVersion = $installerVersion !== '-1' ? $installerVersion : '2.0.0';
+        $existingTables = $session['dbinfo']['existing_tables'] ?? [];
+        $hasStage5UpgradeFlag = array_key_exists('upgrade', $session['dbinfo']);
+        $stage5MarkedUpgrade = $hasStage5UpgradeFlag && $session['dbinfo']['upgrade'];
+        $shouldDefaultToUpgrade = $stage5MarkedUpgrade || ! empty($existingTables);
 
         if ($hasMigrationMetadata) {
             $session['dbinfo']['upgrade'] = true;
@@ -1059,12 +1067,16 @@ class Installer
             $session['dbinfo']['upgrade'] = true;
             $detectedDatabaseVersion = $session['fromversion'] ?? $doctrineDefaultVersion;
             $this->output->output("`n`2Doctrine migration metadata detected. The installer will run Doctrine migrations without executing the legacy SQL bundles.`n");
-        } else {
+        } elseif (! $hasStage5UpgradeFlag) {
             if ($detectedDatabaseVersion != '-1' && $detectedDatabaseVersion != $logd_version) {
                 $session['dbinfo']['upgrade'] = true;
             } else {
                 $session['dbinfo']['upgrade'] = false;
             }
+        }
+
+        if ($shouldDefaultToUpgrade) {
+            $session['dbinfo']['upgrade'] = true;
         }
 
         if ($detectedDatabaseVersion != '-1') {

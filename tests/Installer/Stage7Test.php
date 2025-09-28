@@ -115,6 +115,42 @@ namespace Lotgd\Tests\Installer {
             $this->assertStringNotContainsString("<select name='version'>", $output);
         }
 
+        public function testStage7RespectsUpgradeFlagFromStage5(): void
+        {
+            $_SESSION['dbinfo'] = [
+                'upgrade' => true,
+                'existing_tables' => [],
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
+            $this->assertStringContainsString("<select name='version'>", $output);
+        }
+
+        public function testStage7DefaultsToUpgradeWhenExistingTablesDetected(): void
+        {
+            $_SESSION['dbinfo'] = [
+                'upgrade' => false,
+                'existing_tables' => ['logd_accounts'],
+            ];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $output = Output::getInstance()->getRawOutput();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
+            $this->assertStringContainsString("<select name='version'>", $output);
+        }
+
         /**
          * @return list<string>
          */
