@@ -1024,6 +1024,9 @@ class Installer
         $existingLogdTables = $session['dbinfo']['existing_logd_tables'] ?? [];
         $hasStage5UpgradeFlag = array_key_exists('upgrade', $session['dbinfo']);
         $stage5MarkedUpgrade = $hasStage5UpgradeFlag && $session['dbinfo']['upgrade'];
+        $metadataNotice = null;
+        $legacyDefaultVersion = null;
+        $choiceExplanations = [];
         if (is_array($existingLogdTables)) {
             $hasLogdTables = count($existingLogdTables) > 0;
         } elseif (is_numeric($existingLogdTables)) {
@@ -1040,40 +1043,12 @@ class Installer
             }
         }
 
-        if (Http::post('type') > '') {
-            if (Http::post('type') === 'install') {
-                $session['fromversion'] = '-1';
-                $session['dbinfo']['upgrade'] = false;
-            } else {
-                $session['dbinfo']['upgrade'] = true;
-                if ($hasMigrationMetadata) {
-                    $session['fromversion'] = $doctrineDefaultVersion;
-                } else {
-                    $postedVersion = Http::post('version');
-                    if (is_string($postedVersion)) {
-                        $postedVersion = trim($postedVersion);
-                    }
-                    if (! is_string($postedVersion) || $postedVersion === '') {
-                        $postedVersion = $doctrineDefaultVersion;
-                    }
-                    $session['fromversion'] = $postedVersion;
-                }
-            }
-
-            $session['stagecompleted'] = $stage;
-            // Header, because we do not want to save the user(!)
-            header('Location: installer.php?stage=' . ($stage + 1));
-            return;
-        }
-
-        $this->output->output("`@`c`bConfirmation`b`c");
-        $this->output->output("`2Please confirm the following:`0`n");
-
         $detectedDatabaseVersion = $installerVersion;
         if ($hasMigrationMetadata) {
             $session['dbinfo']['upgrade'] = true;
             $detectedDatabaseVersion = $session['fromversion'] ?? $doctrineDefaultVersion;
-            $this->output->output("`n`2Doctrine migration metadata detected. The installer will run Doctrine migrations without executing the legacy SQL bundles.`n");
+            $metadataNotice = "`n`2Doctrine migration metadata detected. The installer will run Doctrine migrations without executing the legacy SQL bundles.`n";
+            $choiceExplanations[] = "`2Doctrine already tracks your schema history, so the upgrade option stays selected and the legacy version selector is hidden.`n";
         } elseif (! $hasStage5UpgradeFlag) {
             if ($detectedDatabaseVersion != '-1' && $detectedDatabaseVersion != $logd_version) {
                 $session['dbinfo']['upgrade'] = true;
@@ -1086,41 +1061,6 @@ class Installer
             $session['dbinfo']['upgrade'] = true;
         }
 
-        $sessionFromVersion = $session['fromversion'] ?? null;
-        $hasValidFromVersion = is_string($sessionFromVersion)
-            && $sessionFromVersion !== ''
-            && $sessionFromVersion !== '-1';
-
-        if (($session['dbinfo']['upgrade'] ?? false)) {
-            if (! $hasValidFromVersion || $sessionFromVersion === false) {
-                $fallbackVersion = $detectedDatabaseVersion;
-                if (! is_string($fallbackVersion) || $fallbackVersion === '' || $fallbackVersion === '-1') {
-                    $fallbackVersion = $doctrineDefaultVersion;
-                }
-
-                $sessionFromVersion = $fallbackVersion;
-                $session['fromversion'] = $sessionFromVersion;
-                $hasValidFromVersion = true;
-            }
-
-            if ($hasValidFromVersion) {
-                $detectedDatabaseVersion = $sessionFromVersion;
-            }
-        }
-
-        if ($detectedDatabaseVersion != '-1') {
-            $this->output->output("`n`2Detected database version: `^%s`2.`n", $detectedDatabaseVersion);
-            if ($session['dbinfo']['upgrade']) {
-                $this->output->output("`2Code version: `^%s`2. The installer will upgrade your database.`n", $logd_version);
-            } else {
-                $this->output->output("`2Code version matches the database version.`n");
-            }
-        } else {
-            if (file_exists('dbconnect.php') && (time() - filemtime('dbconnect.php') < 300)) {
-                $this->output->output("`n`2A new dbconnect.php file was detected; assuming fresh installation.`n");
-            }
-        }
-
         $renderVersionSelector = false;
         $versionOptions = [];
         $versionLabels = [];
@@ -1128,10 +1068,19 @@ class Installer
 
         if (! $hasMigrationMetadata) {
             if ($detectedDatabaseVersion == '-1') {
-                $detectedDatabaseVersion = '0.9.7';
+                $legacyDefaultVersion = '0.9.7';
+                $detectedDatabaseVersion = $legacyDefaultVersion;
             }
 
             $renderVersionSelector = $session['dbinfo']['upgrade'] || $shouldDefaultToUpgrade || $stage5MarkedUpgrade || $hasLogdTables;
+
+            if ($renderVersionSelector) {
+                if ($hasLogdTables) {
+                    $choiceExplanations[] = "`2Existing LoGD tables were detected; choose the version you are upgrading from so the correct legacy SQL bundle can run.`n";
+                } elseif ($stage5MarkedUpgrade || $shouldDefaultToUpgrade) {
+                    $choiceExplanations[] = "`2The installer was instructed to upgrade during the database check, so a legacy version selector is available in case you need to adjust it manually.`n";
+                }
+            }
 
             if ($renderVersionSelector) {
                 if (! isset($sql_upgrade_statements)) {
@@ -1146,11 +1095,119 @@ class Installer
             }
         }
 
+        $upgradeAvailable = $hasMigrationMetadata || $renderVersionSelector;
+
+        if (! $hasMigrationMetadata && $upgradeAvailable) {
+            if ($hasLogdTables) {
+                $choiceExplanations[] = "`2Because existing LoGD tables were found, the upgrade option is pre-selected so you can migrate that data.`n";
+            } elseif ($stage5MarkedUpgrade) {
+                $choiceExplanations[] = "`2You requested an upgrade in the previous step, so the installer keeps the upgrade option selected.`n";
+            }
+        }
+
+        if (Http::post('type') > '') {
+            $requestedType = Http::post('type');
+
+            if ($requestedType === 'upgrade' && $upgradeAvailable) {
+                $session['dbinfo']['upgrade'] = true;
+
+                if ($hasMigrationMetadata) {
+                    $session['fromversion'] = $doctrineDefaultVersion;
+                } else {
+                    $postedVersion = Http::post('version');
+                    if (is_string($postedVersion)) {
+                        $postedVersion = trim($postedVersion);
+                    }
+
+                    if (! is_string($postedVersion) || $postedVersion === '') {
+                        $postedVersion = $doctrineDefaultVersion;
+                    }
+
+                    $session['fromversion'] = $postedVersion;
+                }
+            } else {
+                $session['fromversion'] = '-1';
+                $session['dbinfo']['upgrade'] = false;
+            }
+
+            $session['stagecompleted'] = $stage;
+            // Header, because we do not want to save the user(!)
+            header('Location: installer.php?stage=' . ($stage + 1));
+            return;
+        }
+
+        if (! $upgradeAvailable) {
+            $session['dbinfo']['upgrade'] = false;
+            $session['fromversion'] = '-1';
+
+            $existingTableCount = 0;
+            if (is_array($existingTables)) {
+                $existingTableCount = count($existingTables);
+            } elseif (is_numeric($existingTables)) {
+                $existingTableCount = (int) $existingTables;
+            } elseif (! empty($existingTables)) {
+                $existingTableCount = 1;
+            }
+
+            if ($existingTableCount > 0) {
+                $choiceExplanations[] = "`2The database already contains tables, but none match the expected LoGD schema and no Doctrine metadata was found, so only a clean install is available.`n";
+            } else {
+                $choiceExplanations[] = "`2No existing LoGD data or Doctrine migration metadata was detected, so the installer only offers a clean installation.`n";
+            }
+        }
+
+        $sessionFromVersion = $session['fromversion'] ?? null;
+        $hasValidFromVersion = is_string($sessionFromVersion)
+            && $sessionFromVersion !== ''
+            && $sessionFromVersion !== '-1';
+
+        if ($upgradeAvailable && ($session['dbinfo']['upgrade'] ?? false)) {
+            if (! $hasValidFromVersion || $sessionFromVersion === false) {
+                $fallbackVersion = $detectedDatabaseVersion;
+                $hasLegacyDefault = $legacyDefaultVersion !== null && $fallbackVersion === $legacyDefaultVersion;
+                if (! is_string($fallbackVersion) || $fallbackVersion === '' || $fallbackVersion === '-1' || $hasLegacyDefault) {
+                    $fallbackVersion = $doctrineDefaultVersion;
+                }
+
+                $sessionFromVersion = $fallbackVersion;
+                $session['fromversion'] = $sessionFromVersion;
+                $hasValidFromVersion = true;
+            }
+
+            if ($hasValidFromVersion) {
+                $detectedDatabaseVersion = $sessionFromVersion;
+            }
+        }
+
+        $this->output->output("`@`c`bConfirmation`b`c");
+        $this->output->output("`2Please confirm the following:`0`n");
+
+        if ($metadataNotice !== null) {
+            $this->output->output($metadataNotice);
+        }
+
+        if ($choiceExplanations !== []) {
+            foreach (array_unique($choiceExplanations) as $choiceExplanation) {
+                $this->output->output($choiceExplanation);
+            }
+        }
+
+        if ($detectedDatabaseVersion != '-1') {
+            $this->output->output("`n`2Detected database version: `^%s`2.`n", $detectedDatabaseVersion);
+            if ($session['dbinfo']['upgrade']) {
+                $this->output->output("`2Code version: `^%s`2. The installer will upgrade your database.`n", $logd_version);
+            } else {
+                $this->output->output("`2Code version matches the database version.`n");
+            }
+        } elseif (file_exists('dbconnect.php') && (time() - filemtime('dbconnect.php') < 300)) {
+            $this->output->output("`n`2A new dbconnect.php file was detected; assuming fresh installation.`n");
+        }
+
         $this->output->output("`2I should:`0");
 
         $submit = Translator::translateInline('Submit');
-        $upgradeChecked = ($session['dbinfo']['upgrade'] ?? false) ? ' checked' : '';
-        $installChecked = ($session['dbinfo']['upgrade'] ?? false) ? '' : ' checked';
+        $upgradeChecked = ($upgradeAvailable && ($session['dbinfo']['upgrade'] ?? false)) ? ' checked' : '';
+        $installChecked = $upgradeChecked === ' checked' ? '' : ' checked';
 
         $this->output->rawOutput('<style>'
             . '.installer-stage7{display:flex;flex-direction:column;gap:1rem;margin-top:1rem;}'
@@ -1167,43 +1224,45 @@ class Installer
         $this->output->rawOutput("<div class='installer-stage7'>");
         $this->output->rawOutput("<div class='installer-choice-grid'>");
 
-        $this->output->rawOutput("<div class='installer-choice-card'>");
-        $this->output->rawOutput("<label class='installer-choice-option'>");
-        $this->output->rawOutput("<input type='radio' value='upgrade' name='type'" . $upgradeChecked . ">");
+        if ($upgradeAvailable) {
+            $this->output->rawOutput("<div class='installer-choice-card'>");
+            $this->output->rawOutput("<label class='installer-choice-option'>");
+            $this->output->rawOutput("<input type='radio' value='upgrade' name='type'" . $upgradeChecked . ">");
 
-        if ($hasMigrationMetadata) {
-            $this->output->output("`2Perform an upgrade using Doctrine migrations only.`n");
-        } else {
-            $this->output->output("`2Perform an upgrade.`n");
-        }
-
-        $this->output->rawOutput("</label>");
-
-        if ($hasMigrationMetadata) {
-            $this->output->output("`2Detected Doctrine schema version: `^%s`2.`n", $session['fromversion']);
-        } elseif ($renderVersionSelector && $versionOptions !== []) {
-            $this->output->rawOutput("<div class='installer-choice-extra'>");
-            $this->output->output("`2Select the version you are upgrading from:`0");
-            $this->output->rawOutput("<select name='version'>");
-            foreach ($versionOptions as $version) {
-                $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
-                $label = $versionLabels[$version] ?? $version;
-                $escapedLabel = htmlspecialchars($label, ENT_QUOTES, $charset);
-                $isSelected = $detectedDatabaseVersion === $version ? ' selected' : '';
-                $this->output->rawOutput(
-                    sprintf(
-                        '<option value="%1$s"%2$s>%3$s</option>',
-                        $escapedVersion,
-                        $isSelected,
-                        $escapedLabel
-                    )
-                );
+            if ($hasMigrationMetadata) {
+                $this->output->output("`2Perform an upgrade using Doctrine migrations only.`n");
+            } else {
+                $this->output->output("`2Perform an upgrade.`n");
             }
-            $this->output->rawOutput('</select>');
+
+            $this->output->rawOutput("</label>");
+
+            if ($hasMigrationMetadata) {
+                $this->output->output("`2Detected Doctrine schema version: `^%s`2.`n", $session['fromversion']);
+            } elseif ($renderVersionSelector && $versionOptions !== []) {
+                $this->output->rawOutput("<div class='installer-choice-extra'>");
+                $this->output->output("`2Select the version you are upgrading from:`0");
+                $this->output->rawOutput("<select name='version'>");
+                foreach ($versionOptions as $version) {
+                    $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
+                    $label = $versionLabels[$version] ?? $version;
+                    $escapedLabel = htmlspecialchars($label, ENT_QUOTES, $charset);
+                    $isSelected = $detectedDatabaseVersion === $version ? ' selected' : '';
+                    $this->output->rawOutput(
+                        sprintf(
+                            '<option value="%1$s"%2$s>%3$s</option>',
+                            $escapedVersion,
+                            $isSelected,
+                            $escapedLabel
+                        )
+                    );
+                }
+                $this->output->rawOutput('</select>');
+                $this->output->rawOutput('</div>');
+            }
+
             $this->output->rawOutput('</div>');
         }
-
-        $this->output->rawOutput('</div>');
 
         $this->output->rawOutput("<div class='installer-choice-card'>");
         $this->output->rawOutput("<label class='installer-choice-option'>");
