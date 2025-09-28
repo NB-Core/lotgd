@@ -1090,6 +1090,28 @@ class Installer
             $session['dbinfo']['upgrade'] = true;
         }
 
+        $sessionFromVersion = $session['fromversion'] ?? null;
+        $hasValidFromVersion = is_string($sessionFromVersion)
+            && $sessionFromVersion !== ''
+            && $sessionFromVersion !== '-1';
+
+        if (($session['dbinfo']['upgrade'] ?? false)) {
+            if (! $hasValidFromVersion || $sessionFromVersion === false) {
+                $fallbackVersion = $detectedDatabaseVersion;
+                if (! is_string($fallbackVersion) || $fallbackVersion === '' || $fallbackVersion === '-1') {
+                    $fallbackVersion = $doctrineDefaultVersion;
+                }
+
+                $sessionFromVersion = $fallbackVersion;
+                $session['fromversion'] = $sessionFromVersion;
+                $hasValidFromVersion = true;
+            }
+
+            if ($hasValidFromVersion) {
+                $detectedDatabaseVersion = $sessionFromVersion;
+            }
+        }
+
         if ($detectedDatabaseVersion != '-1') {
             $this->output->output("`n`2Detected database version: `^%s`2.`n", $detectedDatabaseVersion);
             if ($session['dbinfo']['upgrade']) {

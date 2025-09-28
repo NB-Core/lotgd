@@ -53,18 +53,21 @@ if (!$requirements_met) {
     exit(1);
 }
 
-if (!file_exists("dbconnect.php")) {
-    define("DB_NODB", true);
-}
 chdir(__DIR__);
 
+$dbConfig = [];
+if (!file_exists("dbconnect.php")) {
+    define("DB_NODB", true);
+} else {
+    $configFromFile = require __DIR__ . "/dbconnect.php";
+    if (is_array($configFromFile)) {
+        $dbConfig = $configFromFile;
+    }
+}
 
 require_once __DIR__ . "/common.php";
 
 $output = Output::getInstance();
-if (file_exists("dbconnect.php")) {
-    require_once __DIR__ . "/dbconnect.php";
-}
 
 // Load settings only when a database connection is available
 $settings = null;
@@ -117,18 +120,30 @@ if ($stage > $session['stagecompleted'] + 1) {
     $stage = $session['stagecompleted'];
 }
 if (!isset($session['dbinfo'])) {
-    $session['dbinfo'] = array("DB_HOST" => "","DB_USER" => "","DB_PASS" => "","DB_NAME" => "");
+    $session['dbinfo'] = array("DB_HOST" => "","DB_USER" => "","DB_PASS" => "","DB_NAME" => "","DB_PREFIX" => "");
 }
 if (
     file_exists("dbconnect.php") && (
     $stage == 3 ||
-    $stage == 4 ||
-    $stage == 5
+    $stage == 4
     )
 ) {
         $output->output("`%This stage was completed during a previous installation.");
-        $output->output("`2If you wish to perform stages 4 through 6 again, please delete the file named \"dbconnect.php\" from your site.`n`n");
-        $stage = 6;
+        $output->output("`2If you wish to perform stages 3 and 4 again, please delete the file named \"dbconnect.php\" from your site.`n`n");
+        $stage = 5;
+}
+if ($stage >= 5 && $dbConfig) {
+    $keys = ['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME', 'DB_PREFIX'];
+    foreach ($keys as $key) {
+        if (array_key_exists($key, $dbConfig)) {
+            $value = $dbConfig[$key];
+            if (!is_string($value)) {
+                $value = (string) $value;
+            }
+            $session['dbinfo'][$key] = $value;
+        }
+    }
+    $_SESSION['dbinfo'] = $session['dbinfo'];
 }
 if ($stage > $session['stagecompleted']) {
     $session['stagecompleted'] = $stage;
