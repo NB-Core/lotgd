@@ -219,7 +219,7 @@ class Installer
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         $this->output->output("`@`c`bSuperuser Accounts`b`c");
-        $this->output->output("`vThe game is now at version `\$%s`v.`n`n",$logd_version);
+        $this->output->output("`@The game is now at version `\$%s`v.`n`n",$logd_version);
         $sql = "SELECT login, password FROM " . Database::prefix("accounts") . " WHERE superuser & " . SU_MEGAUSER;
         $result = Database::query($sql);
         if (Database::numRows($result) == 0) {
