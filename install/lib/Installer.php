@@ -925,13 +925,7 @@ class Installer
                 $dbconnectContents = $this->buildDbconnectContents($mergedAssignments);
                 $resolvedPath = realpath($dbconnectFile) ?: $dbconnectFile;
 
-                if (! is_writable($dbconnectFile)) {
-                    $this->outputDbconnectManualInstructions($dbconnectContents, true);
-                    $manualUpdateRequired = true;
-                } elseif (! $this->writeDbconnectContents($dbconnectFile, $dbconnectContents)) {
-                    $this->outputDbconnectManualInstructions($dbconnectContents);
-                    $manualUpdateRequired = true;
-                } else {
+                if ($this->writeDbconnectContents($dbconnectFile, $dbconnectContents)) {
                     $this->output->output("`n`@Success!`2  I was able to update your dbconnect.php file with your latest database settings.");
                     if (function_exists('opcache_invalidate')) {
                         opcache_invalidate($resolvedPath, true);
@@ -941,6 +935,10 @@ class Installer
                     $assignments = $mergedAssignments;
                     $config = $mergedAssignments;
                     $legacyAssignmentsFound = false;
+                } else {
+                    $isWritable = is_writable($dbconnectFile);
+                    $this->outputDbconnectManualInstructions($dbconnectContents, ! $isWritable);
+                    $manualUpdateRequired = true;
                 }
             } else {
                 $assignments = $normalizedAssignments;
@@ -1879,11 +1877,8 @@ class Installer
     private function writeDbconnectContents(string $dbconnectFile, string $contents): bool
     {
         $dir = dirname($dbconnectFile);
-        $canWrite = file_exists($dbconnectFile)
-            ? is_writable($dbconnectFile)
-            : is_writable($dir);
 
-        if (! $canWrite) {
+        if (! file_exists($dbconnectFile) && ! is_writable($dir)) {
             return false;
         }
 
