@@ -298,6 +298,43 @@ namespace Lotgd\Tests\Installer {
             );
         }
 
+        public function testStage6ThroughStage9AppliesSessionPrefixUpdate(): void
+        {
+            global $session;
+
+            file_put_contents(
+                __DIR__ . '/../../dbconnect.php',
+                "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'old_'];"
+            );
+            clearstatcache();
+
+            $session['dbinfo']['DB_PREFIX'] = 'fresh';
+
+            $installer = new Installer();
+            $installer->runStage(6);
+            $installer->runStage(9);
+
+            clearstatcache();
+            $config = require __DIR__ . '/../../dbconnect.php';
+
+            $this->assertSame('fresh_', $config['DB_PREFIX']);
+            $this->assertSame('fresh_', $GLOBALS['DB_PREFIX'] ?? null);
+            $this->assertSame('fresh_creatures', Database::prefix('creatures'));
+
+            $configData = \Doctrine\Migrations\DependencyFactory::$instance->configurationData ?? [];
+            $this->assertSame(
+                'fresh_doctrine_migration_versions',
+                $configData['table_storage']['table_name'] ?? null,
+                'Doctrine metadata table should reflect the updated prefix'
+            );
+
+            $migrated = array_map(
+                static fn($v) => (string) $v,
+                \Doctrine\Migrations\DependencyFactory::$instance->migrated
+            );
+            $this->assertNotEmpty($migrated, 'Migrations should run after updating the prefix');
+        }
+
 
         public function testStage9SkipsLegacyInstallerStatementsWhenDataExists(): void
         {
