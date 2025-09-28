@@ -1184,7 +1184,7 @@ class Installer
         } elseif ($renderVersionSelector && $versionOptions !== []) {
             $this->output->rawOutput("<div class='installer-choice-extra'>");
             $this->output->output("`2Select the version you are upgrading from:`0");
-            $this->output->rawOutput("<select id='installer-upgrade-version' name='version'>");
+            $this->output->rawOutput("<select name='version'>");
             foreach ($versionOptions as $version) {
                 $escapedVersion = htmlspecialchars($version, ENT_QUOTES, $charset);
                 $label = $versionLabels[$version] ?? $version;
