@@ -388,6 +388,8 @@ namespace Lotgd\Tests\Installer {
                 }
             }
 
+            $this->assertCount(0, DoctrineBootstrap::$conn->queries, 'Doctrine metadata should bypass legacy installer SQL.');
+
             foreach (DoctrineBootstrap::$conn->queries as $sql) {
                 $this->assertArrayNotHasKey(
                     $sql,
