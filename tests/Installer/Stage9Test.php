@@ -181,12 +181,31 @@ namespace Lotgd\Tests\Installer {
             Database::$doctrineConnection = null;
             DoctrineBootstrap::$conn = null;
 
+            unset($_ENV['LOTGD_BASE_VERSION']);
+
             $ref = new \ReflectionClass(Database::class);
             if ($ref->hasProperty('doctrine')) {
                 $prop = $ref->getProperty('doctrine');
                 $prop->setAccessible(true);
                 $prop->setValue(null, null);
             }
+        }
+
+        public function testStage9IgnoresNonStringFromVersion(): void
+        {
+            global $session;
+
+            $session['fromversion'] = ['2.0.0'];
+
+            $installer = new Installer();
+            $installer->runStage(9);
+
+            $this->assertArrayNotHasKey('LOTGD_BASE_VERSION', $_ENV);
+            $migrated = array_map(
+                static fn($v) => (string) $v,
+                \Doctrine\Migrations\DependencyFactory::$instance->migrated
+            );
+            $this->assertNotEmpty($migrated, 'Doctrine migrations should still run');
         }
 
         public function testStage9RunsMigrationsAndChecksForAdmin(): void

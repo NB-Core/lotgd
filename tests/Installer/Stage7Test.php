@@ -95,6 +95,21 @@ namespace Lotgd\Tests\Installer {
             $this->assertContains('Location: installer.php?stage=8', $this->getRedirectHeaders());
         }
 
+        public function testStage7FallsBackToDefaultVersionWhenPostValueIsInvalid(): void
+        {
+            $_POST['type']    = 'upgrade';
+            $_POST['version'] = ['1.0.0'];
+
+            $installer = new Installer();
+
+            $installer->stage7();
+
+            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('2.0.0', $_SESSION['fromversion']);
+            $this->assertSame(7, $_SESSION['stagecompleted']);
+            $this->assertContains('Location: installer.php?stage=8', $this->getRedirectHeaders());
+        }
+
         public function testStage7SkipsLegacyDropdownWhenDoctrineMetadataExists(): void
         {
             $_SESSION['dbinfo'] = [
