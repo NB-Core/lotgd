@@ -1020,10 +1020,16 @@ class Installer
         $hasMigrationMetadata = $session['dbinfo']['has_migration_metadata'] ?? false;
         $installerVersion = $this->getSetting('installer_version', '-1');
         $doctrineDefaultVersion = $installerVersion !== '-1' ? $installerVersion : '2.0.0';
+        $wasUpgrade = (bool) ($session['dbinfo']['upgrade'] ?? false);
 
         if ($hasMigrationMetadata) {
             $session['dbinfo']['upgrade'] = true;
-            if (! isset($session['fromversion']) || $session['fromversion'] === '' || $session['fromversion'] === '-1') {
+            if (
+                ! isset($session['fromversion']) ||
+                ! is_string($session['fromversion']) ||
+                $session['fromversion'] === '' ||
+                $session['fromversion'] === '-1'
+            ) {
                 $session['fromversion'] = $doctrineDefaultVersion;
             }
         }
@@ -1037,7 +1043,12 @@ class Installer
                 if ($hasMigrationMetadata) {
                     $session['fromversion'] = $doctrineDefaultVersion;
                 } else {
-                    $session['fromversion'] = Http::post('version');
+                    $previous = is_string($session['fromversion'] ?? null) ? $session['fromversion'] : null;
+                    $session['fromversion'] = $this->normalizeFromVersion(
+                        Http::post('version'),
+                        $previous,
+                        $doctrineDefaultVersion
+                    );
                 }
             }
 
@@ -1060,7 +1071,9 @@ class Installer
             $detectedDatabaseVersion = $session['fromversion'] ?? $doctrineDefaultVersion;
             $this->output->output("`n`2Doctrine migration metadata detected. The installer will run Doctrine migrations without executing the legacy SQL bundles.`n");
         } else {
-            if ($detectedDatabaseVersion != '-1' && $detectedDatabaseVersion != $logd_version) {
+            if ($wasUpgrade) {
+                $session['dbinfo']['upgrade'] = true;
+            } elseif ($detectedDatabaseVersion != '-1' && $detectedDatabaseVersion != $logd_version) {
                 $session['dbinfo']['upgrade'] = true;
             } else {
                 $session['dbinfo']['upgrade'] = false;
@@ -1622,7 +1635,15 @@ class Installer
             '1.2.7 +nb Edition' => '20250724000014',
         ];
 
-        $from = $session['fromversion'] ?? '-1';
+        $fromRaw = $session['fromversion'] ?? '-1';
+        $from = is_string($fromRaw) && $fromRaw !== '' ? $fromRaw : '-1';
+
+        if ($from !== $fromRaw) {
+            $session['fromversion'] = $from;
+        }
+
+        unset($_ENV['LOTGD_BASE_VERSION']);
+
         if ($from !== '-1') {
             // Expose the source version so migrations can load legacy SQL when upgrading
             $_ENV['LOTGD_BASE_VERSION'] = $from;
@@ -1648,6 +1669,19 @@ class Installer
             InstallerLogger::log('Migration error: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    private function normalizeFromVersion(mixed $candidate, ?string $fallback, string $default): string
+    {
+        if (is_string($candidate) && $candidate !== '' && $candidate !== '-1') {
+            return $candidate;
+        }
+
+        if (is_string($fallback) && $fallback !== '' && $fallback !== '-1') {
+            return $fallback;
+        }
+
+        return $default;
     }
 
     /**

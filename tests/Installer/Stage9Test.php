@@ -137,6 +137,7 @@ namespace Lotgd\Tests\Installer {
             global $session, $logd_version, $recommended_modules, $noinstallnavs,
             $DB_USEDATACACHE, $settings;
 
+            unset($_ENV['LOTGD_BASE_VERSION']);
             \Lotgd\PhpGenericEnvironment::setRequestUri('/installer.php');
             \Doctrine\Migrations\DependencyFactory::$instance = null;
             $session            = [
@@ -277,6 +278,19 @@ namespace Lotgd\Tests\Installer {
                 $configData['table_storage']['table_name'] ?? null,
                 'Installer did not request prefixed metadata table'
             );
+        }
+
+        public function testStage9NormalizesNonStringFromVersionBeforeMigrations(): void
+        {
+            global $session;
+
+            $session['fromversion'] = ['unexpected'];
+
+            $installer = new Installer();
+            $installer->runStage(9);
+
+            $this->assertSame('-1', $session['fromversion']);
+            $this->assertArrayNotHasKey('LOTGD_BASE_VERSION', $_ENV);
         }
 
 
