@@ -124,6 +124,7 @@ namespace Lotgd\Tests\Installer {
     use Lotgd\Installer\Installer;
     use Lotgd\MySQL\Database;
     use Lotgd\Output;
+    use Lotgd\Settings;
     use Lotgd\Tests\Stubs\DummySettings;
     use Lotgd\Tests\Stubs\DoctrineBootstrap;
     use PHPUnit\Framework\TestCase;
@@ -139,6 +140,12 @@ namespace Lotgd\Tests\Installer {
 
             \Lotgd\PhpGenericEnvironment::setRequestUri('/installer.php');
             \Doctrine\Migrations\DependencyFactory::$instance = null;
+            Settings::setInstance(null);
+            unset($GLOBALS['settings']);
+            Database::$queries = [];
+            Database::$mockResults = [];
+            Database::$doctrineConnection = null;
+            DoctrineBootstrap::$conn = null;
             $session            = [
             'dbinfo'            => [
                 'DB_HOST'         => 'localhost',
@@ -153,11 +160,14 @@ namespace Lotgd\Tests\Installer {
             'skipmodules'      => true,
             'fromversion'      => '-1',
             ];
+            $_SESSION = &$session;
             $logd_version       = '2.0.0-rc +nb Edition';
             $recommended_modules = [];
             $noinstallnavs      = false;
             $DB_USEDATACACHE    = false;
             $settings           = new DummySettings();
+            Settings::setInstance($settings);
+            $GLOBALS['settings'] = $settings;
             $ref = new \ReflectionClass(Output::class);
             $prop = $ref->getProperty('instance');
             $prop->setAccessible(true);
@@ -189,6 +199,10 @@ namespace Lotgd\Tests\Installer {
                 $prop->setAccessible(true);
                 $prop->setValue(null, null);
             }
+
+            Settings::setInstance(null);
+            unset($GLOBALS['settings']);
+            $_SESSION = [];
         }
 
         public function testStage9IgnoresNonStringFromVersion(): void
@@ -410,6 +424,49 @@ namespace Lotgd\Tests\Installer {
                     'Legacy installer SQL should not run on subsequent stage9 invocation: ' . $sql
                 );
             }
+        }
+
+        public function testSettingsOnlyDetectionSeedsLegacyDataOnStage9(): void
+        {
+            global $session, $settings, $stage;
+
+            $settings = new DummySettings([
+                'installer_version' => '1.2.3',
+                'charset' => 'UTF-8',
+            ]);
+            Settings::setInstance($settings);
+            $GLOBALS['settings'] = $settings;
+
+            $session['dbinfo']['existing_tables'] = [];
+            $session['dbinfo']['existing_logd_tables'] = [];
+            $session['dbinfo']['has_migration_metadata'] = false;
+            $session['dbinfo']['upgrade'] = false;
+
+            $_POST = [];
+            $_GET = [];
+            $stage = 7;
+
+            $installer = new Installer();
+            $installer->runStage(7);
+
+            $this->assertFalse($session['dbinfo']['upgrade']);
+            $this->assertSame('-1', $session['fromversion']);
+
+            $stage = 9;
+            DoctrineBootstrap::$conn = new \Lotgd\Tests\Stubs\DoctrineConnection();
+            Database::$doctrineConnection = DoctrineBootstrap::$conn;
+
+            $installer->runStage(9);
+
+            $hasCreaturesSeed = false;
+            foreach (DoctrineBootstrap::$conn->queries as $sql) {
+                if (stripos($sql, 'INSERT INTO creatures') !== false) {
+                    $hasCreaturesSeed = true;
+                    break;
+                }
+            }
+
+            $this->assertTrue($hasCreaturesSeed, 'Legacy installer SQL should seed the creatures table.');
         }
 
         public function testStage9SkipsLegacySqlWhenDoctrineMetadataIsPresent(): void

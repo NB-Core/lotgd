@@ -1023,28 +1023,20 @@ class Installer
         }
         if ($hasMigrationMetadata) {
             $session['dbinfo']['upgrade'] = true;
-            if (! isset($session['fromversion']) || $session['fromversion'] === '' || $session['fromversion'] === '-1') {
-                $session['fromversion'] = $doctrineDefaultVersion;
-            }
-        }
-
-        if ($hasMigrationMetadata) {
-            $session['dbinfo']['upgrade'] = true;
             $detectedDatabaseVersion = $session['fromversion'] ?? $doctrineDefaultVersion;
             $metadataNotice = "`n`2Doctrine migration metadata detected. The installer will run Doctrine migrations without executing the legacy SQL bundles.`n";
             $choiceExplanations[] = "`2Doctrine already tracks your schema history, so the upgrade option stays selected and the legacy version selector is hidden.`n";
-        } elseif (! $hasStage5UpgradeFlag) {
-            if ($detectedDatabaseVersion != '-1' && $detectedDatabaseVersion != $logd_version) {
-                $session['dbinfo']['upgrade'] = true;
-            } else {
-                $session['dbinfo']['upgrade'] = false;
+            if (! isset($session['fromversion']) || $session['fromversion'] === '' || $session['fromversion'] === '-1') {
+                $session['fromversion'] = $doctrineDefaultVersion;
             }
+        } elseif (! $hasStage5UpgradeFlag) {
+            $session['dbinfo']['upgrade'] = $hasLogdTables;
         }
 
         $detectedVersionWithoutTables = $detectedDatabaseVersion !== '-1' && ! $hasLogdTables;
-        $shouldDefaultToUpgrade = $stage5MarkedUpgrade || $hasLogdTables || $detectedVersionWithoutTables;
+        $shouldExposeUpgrade = $stage5MarkedUpgrade || $hasLogdTables || $detectedVersionWithoutTables;
 
-        if ($shouldDefaultToUpgrade) {
+        if ($hasLogdTables && ! ($session['dbinfo']['upgrade'] ?? false)) {
             $session['dbinfo']['upgrade'] = true;
         }
 
@@ -1059,7 +1051,7 @@ class Installer
                 $selectedUpgradeVersion = $legacyFallbackVersion;
             }
 
-            $renderVersionSelector = $session['dbinfo']['upgrade'] || $shouldDefaultToUpgrade || $stage5MarkedUpgrade || $hasLogdTables;
+            $renderVersionSelector = ($session['dbinfo']['upgrade'] ?? false) || $shouldExposeUpgrade;
 
             if ($renderVersionSelector) {
                 if ($hasLogdTables) {
@@ -1069,7 +1061,7 @@ class Installer
                         "`2The installer loaded the previous LoGD version (`^%s`2) from settings, so upgrade tools remain available even though no LoGD tables were detected.`n",
                         $detectedDatabaseVersion
                     );
-                } elseif ($stage5MarkedUpgrade || $shouldDefaultToUpgrade) {
+                } elseif ($stage5MarkedUpgrade || $shouldExposeUpgrade) {
                     $choiceExplanations[] = "`2The installer was instructed to upgrade during the database check, so a legacy version selector is available in case you need to adjust it manually.`n";
                 }
             }
@@ -1100,7 +1092,7 @@ class Installer
                 $choiceExplanations[] = "`2You requested an upgrade in the previous step, so the installer keeps the upgrade option selected.`n";
             } elseif ($detectedVersionWithoutTables) {
                 $choiceExplanations[] = sprintf(
-                    "`2Settings reported a previous LoGD version (`^%s`2), so the upgrade option is pre-selected for you.`n",
+                    "`2Settings reported a previous LoGD version (`^%s`2), so upgrade tools remain available if you need them.`n",
                     $detectedDatabaseVersion
                 );
             }
@@ -1183,6 +1175,8 @@ class Installer
             if ($hasValidFromVersion) {
                 $selectedUpgradeVersion = $sessionFromVersion;
             }
+        } else {
+            $session['fromversion'] = '-1';
         }
 
         $this->output->output("`@`c`bConfirmation`b`c");
