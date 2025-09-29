@@ -31,7 +31,7 @@ use Lotgd\PlayerFunctions;
 require_once __DIR__ . "/common.php";
 
 $skin = Http::post('template');
-if ($skin !== '' && Template::isValidTemplate($skin)) {
+if (is_string($skin) && $skin !== '' && Template::isValidTemplate($skin)) {
         Template::setTemplateCookie($skin);
         Template::prepareTemplate(true);
 }
