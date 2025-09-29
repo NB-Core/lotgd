@@ -215,7 +215,7 @@ namespace Lotgd\Tests\Installer {
             $this->assertStringContainsString('Doctrine already tracks your schema history', $output);
         }
 
-        public function testStage7TreatsDetectedVersionAsExistingInstallWithoutTables(): void
+        public function testStage7ExposesUpgradeWithoutSelectingItWhenOnlySettingsMatch(): void
         {
             $settings = new DummySettings([
                 'charset' => 'UTF-8',
@@ -235,13 +235,15 @@ namespace Lotgd\Tests\Installer {
 
             $output = Output::getInstance()->getRawOutput();
 
-            $this->assertTrue($_SESSION['dbinfo']['upgrade']);
-            $this->assertStringContainsString("value='upgrade' name='type' checked", $output);
+            $this->assertFalse($_SESSION['dbinfo']['upgrade']);
+            $this->assertSame('-1', $_SESSION['fromversion']);
+            $this->assertStringContainsString("value='upgrade' name='type'", $output);
+            $this->assertStringContainsString("value='install' name='type' checked", $output);
             $this->assertStringContainsString("<select name='version'>", $output);
             $this->assertStringContainsString('The installer loaded the previous LoGD version', $output);
             $this->assertStringContainsString('from settings, so upgrade tools remain available even though no LoGD tables were detected', $output);
             $this->assertStringContainsString('Settings reported a previous LoGD version', $output);
-            $this->assertStringContainsString('so the upgrade option is pre-selected for you', $output);
+            $this->assertStringContainsString('so upgrade tools remain available if you need them', $output);
         }
 
         public function testStage7RespectsUpgradeFlagFromStage5(): void
