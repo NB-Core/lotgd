@@ -36,7 +36,7 @@ function clanMembership(): void
         $setrank = (int) Http::get('setrank');
     }
     $whoacctid = (int) Http::get('whoacctid');
-    $remove = Http::get('remove');
+    $remove = (int) Http::get('remove');
 
     // Promotion / demotion
     if ($whoacctid > 0 && $setrank >= 0 && $setrank <= $session['user']['clanrank']) {
@@ -86,12 +86,12 @@ function clanMembership(): void
     }
 
     // Removal
-    if ($remove > '') {
+    if ($remove > 0) {
         $sql = sprintf(
             <<<'SQL'
                 SELECT name, login, clanrank
                 FROM %s
-                WHERE acctid = '%s'
+                WHERE acctid = %d
             SQL,
             Database::prefix('accounts'),
             $remove
@@ -111,7 +111,7 @@ function clanMembership(): void
             <<<'SQL'
                 UPDATE %s
                 SET clanrank = %d, clanid = 0, clanjoindate = '%s'
-                WHERE acctid = '%s' AND clanrank <= %d
+                WHERE acctid = %d AND clanrank <= %d
             SQL,
             Database::prefix('accounts'),
             CLAN_APPLICANT,
