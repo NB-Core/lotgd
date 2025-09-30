@@ -17,10 +17,6 @@ define('CRON_CHARCLEANUP', 8);
 
 define("ALLOW_ANONYMOUS", true);
 
-if (!($settings instanceof Settings)) {
-    $settings = new Settings('settings');
-}
-
 BootstrapErrorHandler::register();
 
 $result = chdir(__DIR__);
