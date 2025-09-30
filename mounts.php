@@ -475,7 +475,7 @@ function mountform($mount)
     $output->output("(message replacements: {badguy}, {goodguy}, {weapon}, {armor}, {creatureweapon}, and where applicable {damage}.)`n");
     $output->output("`n`bEffects:`b`n");
     $output->output("Rounds to last (from new day):");
-    $output->rawOutput("<input name='mount[mountbuff][rounds]' value=\"" . htmlentities((int)$mount['mountbuff']['rounds'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" size='50'><br/>");
+    $output->rawOutput("<input name='mount[mountbuff][rounds]' value=\"" . htmlentities((string)($mount['mountbuff']['rounds'] ?? ''), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" size='50'><br/>");
     $output->output("Player Atk mod:");
     $output->rawOutput("<input name='mount[mountbuff][atkmod]' value=\"" . htmlentities($mount['mountbuff']['atkmod'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" size='50'>");
     $output->output("(multiplier)`n");
