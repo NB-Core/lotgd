@@ -134,12 +134,23 @@ class ErrorHandler
     public static function errorNotify(int $errno, $errstr, string $errfile, int $errline, string $backtrace): void
     {
         global $session;
-        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
-        $output   = Output::getInstance();
-        if (! $settings instanceof Settings) {
+        if (! Settings::hasInstance()) {
             return;
         }
 
+        try {
+            $settings = Settings::getInstance();
+        } catch (\Throwable $exception) {
+            self::logBootstrapFailure(
+                'Error notification skipped: unable to bootstrap Settings singleton.',
+                $exception
+            );
+
+            return;
+        }
+
+        $output   = Output::getInstance();
+        
         $msg = is_string($errstr) ? $errstr : json_encode($errstr);
         if (strlen($msg) <= 0) {
             return;
@@ -196,7 +207,22 @@ class ErrorHandler
                     $output->debug("Notifying $email of this error.", true);
                     $admin = $settings->getSetting('gameadminemail', 'postmaster@localhost');
                     $from = [$admin => $admin];
-                    $mailResult = \Lotgd\Mail::send([$email => $email], $body, $subject, $from, false, 'text/html', true);
+                    try {
+                        $mailResult = \Lotgd\Mail::send([
+                            $email => $email,
+                        ], $body, $subject, $from, false, 'text/html', true);
+                    } catch (\Throwable $exception) {
+                        self::logBootstrapFailure(
+                            'Mail notification skipped: unable to bootstrap mail transport.',
+                            $exception
+                        );
+                        $output->debug(
+                            'Mail notification skipped: unable to bootstrap mail transport.',
+                            true
+                        );
+
+                        return;
+                    }
 
                     if (is_array($mailResult) && ! $mailResult['success']) {
                         $output->debug('Mail notification failed: ' . $mailResult['error'], true);
@@ -216,6 +242,29 @@ class ErrorHandler
             error_log('Unable to write datacache for error_notify');
         }
         $output->debug($data, true);
+    }
+
+    /**
+     * Persist bootstrap failures to the dedicated log file.
+     */
+    private static function logBootstrapFailure(string $message, \Throwable $exception): void
+    {
+        $logFile = dirname(__DIR__, 2) . '/logs/bootstrap.log';
+        $logDir = dirname($logFile);
+
+        if (! is_dir($logDir)) {
+            mkdir($logDir, 0777, true);
+        }
+
+        $logEntry = sprintf(
+            "[%s] %s %s%s",
+            date('c'),
+            $message,
+            $exception->getMessage(),
+            PHP_EOL . $exception->getTraceAsString()
+        );
+
+        error_log($logEntry . PHP_EOL, 3, $logFile);
     }
 
     /**
