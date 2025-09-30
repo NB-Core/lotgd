@@ -285,6 +285,9 @@ if ($op == "") {
 
 function mountform($mount)
 {
+    $output = Output::getInstance();
+    $settings = Settings::getInstance();
+
     // Let's sanitize the data
     if (!isset($mount['mountname'])) {
         $mount['mountname'] = "";
