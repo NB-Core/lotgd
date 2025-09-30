@@ -432,19 +432,19 @@ function mountform($mount)
 
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Mount Cost (DKs):");
-    $output->rawOutput("</td><td><input name='mount[mountdkcost]' value=\"" . htmlentities((int)$mount['mountdkcost'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='mount[mountdkcost]' value=\"" . htmlentities((string)($mount['mountdkcost'] ?? ''), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Mount Cost (Gems):");
-    $output->rawOutput("</td><td><input name='mount[mountcostgems]' value=\"" . htmlentities((int)$mount['mountcostgems'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='mount[mountcostgems]' value=\"" . htmlentities((string)($mount['mountcostgems'] ?? ''), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Mount Cost (Gold):");
-    $output->rawOutput("</td><td><input name='mount[mountcostgold]' value=\"" . htmlentities((int)$mount['mountcostgold'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='mount[mountcostgold]' value=\"" . htmlentities((string)($mount['mountcostgold'] ?? ''), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Mount Feed Cost`n(Gold per level):");
-    $output->rawOutput("</td><td><input name='mount[mountfeedcost]' value=\"" . htmlentities((int)$mount['mountfeedcost'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='mount[mountfeedcost]' value=\"" . htmlentities((string)($mount['mountfeedcost'] ?? ''), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Delta Forest Fights:");
-    $output->rawOutput("</td><td><input name='mount[mountforestfights]' value=\"" . htmlentities((int)$mount['mountforestfights'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" size='5'></td></tr>");
+    $output->rawOutput("</td><td><input name='mount[mountforestfights]' value=\"" . htmlentities((string)($mount['mountforestfights'] ?? ''), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" size='5'></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("`bMount Messages:`b");
     $output->rawOutput("</td><td></td></tr><tr><td nowrap>");
