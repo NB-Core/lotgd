@@ -277,6 +277,9 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         $session['user']['prefs']['timeoffset'] = 0;
     }
 
+    $offsetSeconds = (int) round((float) $session['user']['prefs']['timeoffset'] * 3600);
+    $nowWithOffset = time() + $offsetSeconds;
+
     $form = array(
         "Account Preferences,title",
         "pass1" => "Password,password",
@@ -310,13 +313,13 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         "timeformat" => array("Timestamp format (currently displaying time as %s whereas default format is \"[m/d h:ia]\"),string,20",
             date(
                 $session['user']['prefs']['timeformat'],
-                strtotime("now") + ($session['user']['prefs']['timeoffset'] * 60 * 60)
+                $nowWithOffset
             )),
         "timeoffset" => array("Hours to offset time displays (%s currently displays as %s)?,int",
             date($session['user']['prefs']['timeformat']),
             date(
                 $session['user']['prefs']['timeformat'],
-                strtotime("now") + ($session['user']['prefs']['timeoffset'] * 60 * 60)
+                $nowWithOffset
             )),
         "ihavenocheer" => "`0Always disable all holiday related text replacements (such as a`1`0l`1`0e => e`1`0g`1`0g n`1`0o`1`0g for December),bool",
         "bio" => "Short Character Biography (255 chars max),string,255",
