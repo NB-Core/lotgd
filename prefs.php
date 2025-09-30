@@ -392,8 +392,13 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         $tempdata = array();
         $found = 0;
         foreach ($info['prefs'] as $key => $val) {
-            $isuser = preg_match("/^user_/", $key);
-            $ischeck = preg_match("/^check_/", $key);
+            if (!is_string($key)) {
+                $isuser = false;
+                $ischeck = false;
+            } else {
+                $isuser = preg_match("/^user_/", $key);
+                $ischeck = preg_match("/^check_/", $key);
+            }
 
             if (is_array($val)) {
                 $v = $val[0];
