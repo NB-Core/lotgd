@@ -2,6 +2,7 @@
 
 use Lotgd\ErrorHandling;
 
+// Configure the modern error handler before loading legacy settings.
 ErrorHandling::configure();
 require_once 'settings.php';
 
