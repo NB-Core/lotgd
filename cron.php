@@ -38,20 +38,27 @@ if (!defined('CRON_TEST')) {
         );
         error_log($message, 3, __DIR__ . '/logs/bootstrap.log');
 
-        $email = $settings->getSetting('gameadminemail', '');
-        if ($email !== '') {
-            $body = sprintf(
-                'Cronjob at %s failed to load common.php: %s',
-                $settings->getSetting('serverurl', ''),
-                $e->getMessage()
-            );
-            $mailResult = Mail::send([$email => $email], $body, 'Cronjob Error', [$email => $email], false, 'text/plain', true);
+        if (! Settings::hasInstance()) {
+            exit(1);
+        }
 
-            if (is_array($mailResult) && ! $mailResult['success']) {
-                error_log('Cron notification mail failed: ' . $mailResult['error']);
-            } elseif ($mailResult === false) {
-                error_log('Cron notification mail failed to send.');
-            }
+        $settingsInstance = Settings::getInstance();
+        $email = $settingsInstance->getSetting('gameadminemail', '');
+        if ($email === '') {
+            exit(1);
+        }
+
+        $body = sprintf(
+            'Cronjob at %s failed to load common.php: %s',
+            $settingsInstance->getSetting('serverurl', ''),
+            $e->getMessage()
+        );
+        $mailResult = Mail::send([$email => $email], $body, 'Cronjob Error', [$email => $email], false, 'text/plain', true);
+
+        if (is_array($mailResult) && ! $mailResult['success']) {
+            error_log('Cron notification mail failed: ' . $mailResult['error']);
+        } elseif ($mailResult === false) {
+            error_log('Cron notification mail failed to send.');
         }
 
         exit(1);
