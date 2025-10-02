@@ -183,7 +183,16 @@ as the `tests/` directory.
 
 `cron.php` handles automated tasks such as daily resets. Run it from the command line with `php cron.php` and schedule it in your system's crontab. The script automatically determines its installation directory, so no manual configuration or `$GAME_DIR` value is required.
 
-Enable the `newdaycron` flag in the admin settings (or set `newdaycron` to `1` in the `settings` table) to process new days exclusively through the cron job instead of when the first player logs in.
+| Constant               | Bit value | Routine              | Notes |
+| ---------------------- | --------- | -------------------- | ----- |
+| `CRON_NEWDAY`          | `1`       | Daily reset          | Calls `Newday::runOnce()` to process turns, buffs, and cache maintenance. |
+| `CRON_DBCLEANUP`       | `2`       | Database maintenance | Runs `Newday::dbCleanup()` to optimize all tables. Accepts an optional second CLI argument to force an optimization even if the daily timer has not elapsed. |
+| `CRON_COMMENTCLEANUP`  | `4`       | Content cleanup      | Purges old commentary, news, referers, mail, fail logs, and archives via `Newday::commentCleanup()`. |
+| `CRON_CHARCLEANUP`     | `8`       | Character expiration | Invokes `Newday::charCleanup()` and `ExpireChars::expire()` to remove inactive characters. |
+
+Invoke `php cron.php` with no arguments for the full maintenance run (`1|2|4|8 = 15`). Supply a bitmask to limit the routines—for example, `php cron.php 5` (`1|4`) runs the newday reset and content cleanup while skipping database/character cleanup. Leave off the second argument unless you need to force database optimization.
+
+Enable the `newdaycron` flag in the admin settings (or set `newdaycron` to `1` in the `settings` table) to process new days exclusively through the cron job instead of when the first player logs in. Each maintenance step records its work in the Game Log (Superuser ➜ Game Log or `gamelog.php`), letting administrators confirm that the cron run completed successfully.
 
 ## SMTP Mail Setup
 

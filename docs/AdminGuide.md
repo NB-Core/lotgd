@@ -35,6 +35,23 @@ email. Run `cron.php` regularly via your system's scheduler:
 */5 * * * * php /path/to/lotgd/cron.php >/dev/null 2>&1
 ```
 
+`cron.php` accepts an optional bitmask that selects which routines to execute:
+
+| Constant              | Bit value | Routine              | Notes |
+| --------------------- | --------- | -------------------- | ----- |
+| `CRON_NEWDAY`         | `1`       | Daily reset          | Calls `Newday::runOnce()` for turns, buffs, and cache cleanup. |
+| `CRON_DBCLEANUP`      | `2`       | Database maintenance | Runs `Newday::dbCleanup()` (pass a second CLI argument of `1` to force optimization even if it was run less than a day ago). |
+| `CRON_COMMENTCLEANUP` | `4`       | Content cleanup      | Executes `Newday::commentCleanup()` to purge aged commentary, news, mail, and logs. |
+| `CRON_CHARCLEANUP`    | `8`       | Character expiration | Invokes `Newday::charCleanup()` / `ExpireChars::expire()` to remove inactive characters. |
+
+Omit the argument for the full run (`1|2|4|8 = 15`). To customize, combine bit values: for example,
+`php cron.php 13 1` runs the daily reset (`1`), database optimization (`2`, forced by the second
+`1`), and character expiration (`8`) while skipping the comment cleanup (`4`).
+
+Every routine writes its activity to the Game Log (`gamelog.php`, available from the Superuser
+navigation). Review that log after a cron run to confirm each maintenance step completed; bootstrap
+failures are additionally written to `logs/bootstrap.log`.
+
 ## SMTP and Email
 
 Configure SMTP credentials in `config/configuration.php` or your environment to send reliable
