@@ -1,0 +1,22 @@
+{% if message %}
+<div class="login-message">{{ message|raw }}</div>
+{% endif %}
+<form action="/login" method="post">
+    <div class="login-table">
+        <div class="login-inner">
+            <div class="login-fields">
+                <div class="login-field">
+                    <label class="login-label" for='name'>{{ username|raw }}:</label>
+                    <input name='name' id='name' autocomplete='username' accesskey='u' size='10'></input>
+                </div>
+                <div class="login-field">
+                    <label class="login-label" for='password'>{{ password|raw }}:</label>
+                    <input name='password' autocomplete='current-password' id='password' accesskey='p' type='password' size='10'></input>
+                </div>
+            </div>
+            <div class="login-submit">
+                <input type='submit' value='{{ button|raw }}' class='button'></input>
+            </div>
+        </div>
+    </div>
+</form>

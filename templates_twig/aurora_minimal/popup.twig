@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8"/>
+    <title>{{ title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ meta_description }}">
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
+</head>
+<body class="popup-body">
+    <table class="layout-table" cellpadding="5" width="100%">
+        <tr>
+            <td colspan="2" class="pageheader popup-header">
+                <table class="layout-table noborder" width="100%">
+                    <tr>
+                        <td class="noborder"><strong>{{ title }}</strong><div class="verticalad-wrapper"></div></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td width="100%" class="main-content valign-top">
+                {{ content|raw }}
+            </td>
+        </tr>
+        <tr>
+            <td class="trhead align-left">{{ copyright|raw }}</td>
+        </tr>
+    </table>
+</body>
+</html>

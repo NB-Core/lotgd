@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ meta_description }}">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ '/templates_twig/common/bootstrap.min.css'|ver }}">
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
+    {{ headscript|raw }}{{ script|raw }}
+</head>
+<body class="main-body">
+{% set right_sidebar %}
+    {{ verticalad|raw }}
+    {{ bodyad|raw }}
+    {{ stats|raw }}<br/>
+    {{ paypal|raw }}
+{% endset %}
+<header class="site-header">
+    <div class="container-fluid">
+        <div class="row align-items-center g-3">
+            <div class="col-sm-4 header-info">
+                <div class="motd">{{ motd|raw }}</div>
+                <div class="petition">{{ petition|raw }}</div>
+            </div>
+            <div class="col-sm-4 text-sm-center">
+                <h1 class="site-title">{{ gamename|default(title) }}</h1>
+            </div>
+            <div class="col-sm-4 header-actions text-sm-end">
+                <nav aria-label="Player notifications" class="d-inline-flex align-items-center gap-2">
+                    <span class="mail-icon" aria-hidden="true">&#128231;</span>
+                    <span class="mail-text">{{ mail|raw }}</span>
+                    <span class="separator" aria-hidden="true">|</span>
+                    {{ petitiondisplay|raw }}
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+<div class="container-fluid">
+    <div class="row d-lg-none mobile-toggles">
+        <nav class="navbar navbar-light">
+            <div class="container-fluid justify-content-end gap-2">
+                <button class="navbar-toggler" type="button" aria-label="Navigation" data-bs-toggle="offcanvas" data-bs-target="#leftSidebar">
+                    <span aria-hidden="true">☰</span>
+                </button>
+                <button class="navbar-toggler" type="button" aria-label="Char Stats" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar">
+                    <span aria-hidden="true">ℹ</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    <div class="row">
+        <nav class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content" aria-label="Primary">
+            <div class="navad-wrapper">{{ navad|raw }}</div>
+            <div class="nav-container">{{ nav|raw }}</div>
+        </nav>
+        <main class="col flex-grow-1 main-content">
+            {{ content|raw }}
+        </main>
+        <aside class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content" aria-label="Secondary">
+            {{ right_sidebar|raw }}
+        </aside>
+    </div>
+    <footer class="bootstrap-footer row">
+        <div class="col-12 col-sm-6">
+            {{ copyright|raw }}
+        </div>
+        <div class="col-12 col-sm-6 text-sm-end">
+            {{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})
+        </div>
+    </footer>
+</div>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="leftSidebar">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Menu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        {{ navad|raw }}
+        {{ nav|raw }}
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Info</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        {{ right_sidebar|raw }}
+    </div>
+</div>
+{# Load Bootstrap JS locally with defer #}
+<script src="{{ '/templates_twig/common/bootstrap.bundle.min.js'|ver }}" defer></script>
+</body>
+</html>
