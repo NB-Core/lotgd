@@ -490,8 +490,19 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
             //something awry going on, we have max 1 element there
             $replacearray = array($replacearray[0],'(raw data)');
         }
-        $output->output("`\$There is an email change request pending to the email address `q\"%s`\$\" that was given at the timestamp %s (Server Time Zone).`n", $replacearray[0], $replacearray[1]);
-        $expirationdate = strtotime("+ " . $settings->getSetting('playerchangeemaildays', 3) . " days", strtotime($replacearray[1]));
+        $requestTimestamp = $replacearray[1];
+        // Normalize the stored timestamp so strtotime() receives an int|null and we can
+        // gracefully handle malformed values without triggering a TypeError.
+        $baseTimestamp = strtotime($requestTimestamp);
+        if ($baseTimestamp === false) {
+            $baseTimestamp = null;
+            $requestTimestamp = Translator::translateInline('an unknown time');
+        }
+        $output->output("`\$There is an email change request pending to the email address `q\"%s`\$\" that was given at the timestamp %s (Server Time Zone).`n", $replacearray[0], $requestTimestamp);
+        if ($baseTimestamp === null) {
+            $output->output("`\$The original request time could not be determined; the expiration window is being calculated from the current time.`n");
+        }
+        $expirationdate = strtotime("+ " . $settings->getSetting('playerchangeemaildays', 3) . " days", $baseTimestamp);
         $left = $expirationdate - strtotime("now");
         $hoursleft = round($left / (60 * 60), 1);
         $autoaccept = $settings->getSetting('playerchangeemailauto', 0);
