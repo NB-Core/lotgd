@@ -25,7 +25,7 @@ function example_forestreward_getmoduleinfo(): array
         'settings' => [
             'Example Forest Reward Settings,title',
             'reward_max' => 'Maximum gold that can be awarded each day,int|75',
-            'flavor_text' => 'Flavor text shown when the stash is claimed|`2With %s at your side, you scoop up `%d gold`2 from the mossy cache.`0',
+            'flavor_text' => 'Flavor text shown when the stash is claimed|`2With %s at your side, you scoop up `^%s`2 gold`2 from the mossy cache.`0',
         ],
         'prefs' => [
             'Example Forest Reward User Preferences,title',
@@ -131,6 +131,16 @@ function example_forestreward_run(): void
             debuglog("Collected {$goldFound} gold from example_forestreward (mount: {$mountName})");
 
             $flavor = get_module_setting('flavor_text');
+
+            if (false !== strpos($flavor, '`%d')) {
+                $updatedFlavor = str_replace('`%d', '`^%s', $flavor, $legacyCount);
+
+                if ($legacyCount > 0) {
+                    $flavor = $updatedFlavor;
+                    set_module_setting('flavor_text', $flavor);
+                }
+            }
+
             $output->outputNotl($flavor, $mountName, $goldFound);
         }
     } else {
