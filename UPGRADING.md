@@ -64,6 +64,39 @@ Once the legacy upgrade is complete:
 3. This will apply all new **2.x schema changes**.
 4. Watch for any DB prefix issues — these are now supported and should migrate correctly.
 
+### Advanced admins: CLI-only upgrade
+
+If you prefer to skip the browser installer after copying a new **2.x** release,
+you can complete the upgrade purely from the command line:
+
+1. Copy the new release files over your existing installation (preserving the
+   `config/` directory).
+2. Run Composer to refresh vendor dependencies:
+   ```bash
+   composer install --no-dev --optimize-autoloader
+   ```
+3. Execute the Doctrine migrations:
+   ```bash
+   php bin/doctrine migrations:migrate
+   ```
+4. Update the `settings` table so the `installer_version` value matches the
+   `$logd_version` defined near the top of `common.php`. You can read the target
+   version string directly from that file whenever a new release ships.
+
+Example SQL for updating the installer version:
+
+```sql
+UPDATE settings
+SET value = '2.x.y'
+WHERE setting = 'installer_version';
+```
+
+Replace `2.x.y` with the exact value of `$logd_version` from your current
+`common.php`. Skipping the browser installer is **only** safe when you already
+have an upgraded **2.x** database; fresh installs and legacy bridge upgrades
+still need the web installer to seed legacy SQL data and verify required
+modules.
+
 ---
 
 ## 6. Configuration Changes
