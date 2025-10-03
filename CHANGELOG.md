@@ -19,6 +19,7 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Introduced severity metadata and filtering support for game log entries, including database migrations and automated coverage.
 - Added the Aurora Minimal Twig theme with responsive light and dark styling options.
 - Restyled the installer confirmation stage to better communicate upgrade paths and requirements.
+- Added example modules showcasing a forest reward encounter and a village gem shop integration.
 
 
 ### Bug Fixes
