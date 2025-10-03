@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Output;
@@ -118,7 +117,7 @@ function example_forestreward_run(): void
                 $table = Database::prefix('mounts');
                 $sql = "SELECT mountname FROM {$table} WHERE mountid = :mountId";
                 $statement = $connection->prepare($sql);
-                $statement->bindValue('mountId', (int) $session['user']['hashorse'], ParameterType::INTEGER);
+                $statement->bindValue('mountId', (int) $session['user']['hashorse'], \Doctrine\DBAL\ParameterType::INTEGER);
                 $result = $statement->executeQuery();
                 $foundName = $result->fetchOne();
 
