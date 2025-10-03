@@ -256,7 +256,7 @@ class Nav
      * @param string $text     Headline text
      * @param bool   $collapse Whether the section can collapse
      */
-    public static function addColoredHeadline(string $text, bool $collapse = true): void
+    public static function addColoredHeader(string $text, bool $collapse = true): void
     {
         if (self::$block_new_navs) {
             return;

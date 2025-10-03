@@ -26,10 +26,10 @@ new \Lotgd\Nav\NavigationSubSection(string|array $headline, bool $translate = tr
 
 Represents a sub headline within a section. It contains its own list of `NavigationItem` objects.
 
-## addColoredHeadline
+## addColoredHeader
 
 ```php
-addColoredHeadline(string $text, bool $collapse = true): void
+addColoredHeader(string $text, bool $collapse = true): void
 ```
 
 Adds a navigation headline that supports LOTGD colour codes. Any open colour span is automatically closed by appending `` `0`` before the headline is rendered.
@@ -37,7 +37,7 @@ Adds a navigation headline that supports LOTGD colour codes. Any open colour spa
 Use it when you want section titles with coloured text:
 
 ```php
-\Lotgd\Nav::addColoredHeadline('`!Important Section');
+\Lotgd\Nav::addColoredHeader('`!Important Section');
 ```
 
 The example renders the header using the `!` colour and ends with the default colour.

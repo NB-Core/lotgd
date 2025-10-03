@@ -43,7 +43,7 @@ final class NavColoredHeadlineTest extends TestCase
 
     public function testColoredHeadlineRendersColors(): void
     {
-        Nav::addColoredHeadline('`!Section', false);
+        Nav::addColoredHeader('`!Section', false);
         Nav::add('Link', 'foo.php');
 
         $navs = Nav::buildNavs();
@@ -55,14 +55,14 @@ final class NavColoredHeadlineTest extends TestCase
         $navs = Nav::buildNavs();
         $this->assertSame('', $navs);
 
-        Nav::addColoredHeadline('`!Empty');
+        Nav::addColoredHeader('`!Empty');
         $navs = Nav::buildNavs();
         $this->assertSame('', $navs);
     }
 
     public function testColoredHeadlineWithBlockedLink(): void
     {
-        Nav::addColoredHeadline('`!Section', false);
+        Nav::addColoredHeader('`!Section', false);
         Nav::add('Link', 'foo.php');
         Nav::blockNav('foo.php');
 
@@ -73,7 +73,7 @@ final class NavColoredHeadlineTest extends TestCase
 
     public function testColoredHeadlineWithColoredNavItem(): void
     {
-        Nav::addColoredHeadline('`!Section', false);
+        Nav::addColoredHeader('`!Section', false);
         Nav::add('`$Link', 'foo.php');
 
         $navs = Nav::buildNavs();
