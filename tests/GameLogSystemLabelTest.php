@@ -95,6 +95,6 @@ final class GameLogSystemLabelTest extends TestCase
         require __DIR__ . '/../gamelog.php';
 
         $this->assertGreaterThanOrEqual(2, count(Database::$queries));
-        $this->assertStringContainsString('ORDER BY date DESC', Database::$queries[1]);
+        $this->assertMatchesRegularExpression('/ORDER BY\s+date\s+DESC/i', Database::$queries[1]);
     }
 }

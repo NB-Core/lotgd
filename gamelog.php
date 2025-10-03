@@ -37,9 +37,20 @@ $category = Http::get('cat');
 
 $category = is_string($category) ? $category : '';
 $start = (int) Http::get('start'); //starting
-$sortorder = (int) Http::get('sortorder'); // 0 = DESC 1= ASC
+$sortorderParam = Http::get('sortorder'); // 0 = DESC 1= ASC
+$sortorder = is_numeric($sortorderParam) ? (int) $sortorderParam : 0;
+if ($sortorder !== 0 && $sortorder !== 1) {
+    $sortorder = 0;
+}
+
 $sortby = Http::get('sortby');
-$sortby = is_string($sortby) ? $sortby : '';
+$allowedSortColumns = ['date', 'category'];
+if (! is_string($sortby) || ! in_array(strtolower($sortby), $allowedSortColumns, true)) {
+    $sortby = 'date';
+} else {
+    $sortby = strtolower($sortby);
+}
+
 $encodedSort = urlencode($sortby);
 
 $allowedSeverities = ['info', 'warning', 'error', 'debug'];
@@ -67,9 +78,9 @@ if ($severity !== '') {
     $sqlseverity = '';
 }
 
-$asc_desc = ($sortorder == 0 ? "DESC" : "ASC");
+$asc_desc = ($sortorder === 0 ? 'DESC' : 'ASC');
 
-$sqlsort = " ORDER BY " . $sortby . " " . $asc_desc;
+$sqlsort = ' ORDER BY ' . $sortby . ' ' . $asc_desc;
 
 $sql = "SELECT count(logid) AS c FROM " . Database::prefix("gamelog") . " WHERE 1 $sqlcat $sqlseverity";
 $result = Database::query($sql);
