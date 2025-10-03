@@ -16,6 +16,9 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Account cleanup now runs inside a database transaction for safer deletions.
 - Mail delivery helpers expose PHPMailer error details so admin tools can surface actionable diagnostics.
 - Add "Test SMTP settings" action to `configuration.php` to send a diagnostics email.
+- Introduced severity metadata and filtering support for game log entries, including database migrations and automated coverage.
+- Added the Aurora Minimal Twig theme with responsive light and dark styling options.
+- Restyled the installer confirmation stage to better communicate upgrade paths and requirements.
 
 
 ### Bug Fixes
@@ -29,17 +32,26 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Show "Deleted User" placeholder when reading mail from deleted accounts instead of erroring.
 - Extend the template preference cookie to one year to prevent theme resets.
 - Cast equipment editor and hidden field values to strings to avoid PHP type errors on listings.
+- Default the game log listing to newest-first ordering and preserve chosen sort parameters between requests.
+- Hardened cron bootstrap and error handler wiring to initialize notifications safely before legacy includes.
+- Resolved numerous installer upgrade edge cases, including table prefix syncing, stage gating, and migration auto-detection.
+- Tightened validation across preference previews, mount editors, clan removal, referral handling, and mail replies to eliminate PHP warnings and bad input.
+- Corrected malformed timestamps when reviewing pending email changes.
 
 
 ### Refactor
 - Standardize top-level scripts to use `__DIR__` in `require` statements for safer path resolution.
 - Remove redundant battle buff wrappers.
+- Localized mount editor dependencies and continued migrating legacy entry points toward namespaced services.
 
 
 ### Docs
 - Clarify newday cron configuration and cron job setup instructions.
 - Add module hook reference documentation.
 - Document contributor guidelines and static analysis in maintenance docs.
+- Clarified cron job configuration details in the README and admin guide.
+- Highlighted DragonPrime community resources and the successor project in the README.
+- Documented Docker usage for the PHP 8.3 Apache image.
 
 ## [2.0.0-rc12] – 2025-09-06
 
