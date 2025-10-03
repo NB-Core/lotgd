@@ -84,7 +84,8 @@ class Newday
                 'ERROR, problems with moving the debuglog to the archive',
                 'maintenance',
                 false,
-                $session['user']['acctid'] ?? 0
+                $session['user']['acctid'] ?? 0,
+                'error'
             );
         }
 

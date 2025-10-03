@@ -28,7 +28,7 @@ final class CharCleanupDeletesAccountTest extends TestCase
             eval('namespace Lotgd; class PlayerFunctions { public static function charCleanup(int $id, int $type): bool { return true; } }');
         }
         if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { public static function log(string $m, string $c): void {} }');
+            eval('namespace Lotgd; class GameLog { public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void {} }');
         }
 
         Database::$mockResults = [

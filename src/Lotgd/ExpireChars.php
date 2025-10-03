@@ -103,7 +103,8 @@ class ExpireChars
                     'Failed to delete account ' . $row['acctid'] . ': ' . $error->getMessage(),
                     'char deletion failure',
                     false,
-                    $session['user']['acctid'] ?? 0
+                    $session['user']['acctid'] ?? 0,
+                    'error'
                 );
             } elseif ($cleanupPerformed) {
                 GameLog::log(
@@ -117,7 +118,8 @@ class ExpireChars
                     'Cleanup skipped for account ' . (int) $row['acctid'] . ' (prevented by hook)',
                     'char expiration',
                     false,
-                    $session['user']['acctid'] ?? 0
+                    $session['user']['acctid'] ?? 0,
+                    'warning'
                 );
             }
         }

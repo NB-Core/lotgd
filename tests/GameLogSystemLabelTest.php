@@ -60,6 +60,7 @@ final class GameLogSystemLabelTest extends TestCase
                 'message' => 'Something happened',
                 'name' => '',
                 'who' => 0,
+                'severity' => 'warning',
             ]],
         ];
         Database::$queries = [];
@@ -76,7 +77,7 @@ final class GameLogSystemLabelTest extends TestCase
         }
         require __DIR__ . '/../gamelog.php';
         global $forms_output;
-        $this->assertStringContainsString('System: Something happened', $forms_output);
+        $this->assertStringContainsString('`7[`$WARNING`7]`0 System: Something happened', $forms_output);
     }
 
     public function testDefaultSortOrdersByDateDescending(): void

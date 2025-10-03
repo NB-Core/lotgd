@@ -139,7 +139,8 @@ class DataCache
                     'Failed to remove cache file ' . $fullname,
                     'cache',
                     false,
-                    $session['user']['acctid'] ?? 0
+                    $session['user']['acctid'] ?? 0,
+                    'warning'
                 );
             }
             if (! $withpath) {

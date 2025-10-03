@@ -1128,7 +1128,10 @@ class Battle
                 \Lotgd\GameLog::log(
                     "AI script error for {$badguy['creaturename']} ({$badguy['creatureid']}): "
                     . $e->getMessage() . ' Script: ' . $script,
-                    'battle'
+                    'battle',
+                    false,
+                    null,
+                    'error'
                 );
 
                 if (isset($badguy)) {
