@@ -81,8 +81,6 @@ function example_villageshop_run(): void
     $label = get_module_setting('link_label');
     $purchased = (bool) get_module_pref('purchased_today');
 
-    Translator::tlschema('module_example_villageshop'); // Translator::tlschema() scopes subsequent strings to the module schema.
-
     Header::pageHeader($label);
 
     // Nav::add() translates link text automatically when the module schema is active.
@@ -99,7 +97,6 @@ function example_villageshop_run(): void
     if ($op === 'buy') {
         if ($purchased) {
             $output->outputNotl('You have already purchased today\'s gem.');
-            Translator::tlschema();
             Footer::pageFooter();
 
             return;
@@ -107,7 +104,6 @@ function example_villageshop_run(): void
 
         if ($session['user']['gold'] < $cost) {
             $output->outputNotl('You do not have enough gold to afford the gem.');
-            Translator::tlschema();
             Footer::pageFooter();
 
             return;
@@ -146,7 +142,6 @@ function example_villageshop_run(): void
             ]
         );
 
-        Translator::tlschema();
         Footer::pageFooter();
 
         return;
@@ -158,6 +153,5 @@ function example_villageshop_run(): void
         $output->outputNotl('The shopkeeper offers a single gem for %s gold.', $cost);
     }
 
-    Translator::tlschema();
     Footer::pageFooter();
 }
