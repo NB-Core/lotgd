@@ -34,6 +34,7 @@ SuperuserNav::render();
 
 $step = 500; // hardcoded stepping
 $category = Http::get('cat');
+
 $category = is_string($category) ? $category : '';
 $start = (int) Http::get('start'); //starting
 $sortorder = (int) Http::get('sortorder'); // 0 = DESC 1= ASC
@@ -52,6 +53,7 @@ if ($category !== '') {
     $encodedCategory = urlencode($category);
     $cat = "&cat=$encodedCategory";
     $sqlcat = "AND " . Database::prefix("gamelog") . ".category = '" . addslashes($category) . "'";
+
 } else {
     $cat = '';
     $sqlcat = '';
@@ -67,10 +69,7 @@ if ($severity !== '') {
 
 $asc_desc = ($sortorder == 0 ? "DESC" : "ASC");
 
-$sqlsort = "";
-if ($sortby != '') {
-    $sqlsort = " ORDER BY " . $sortby . " " . $asc_desc;
-}
+$sqlsort = " ORDER BY " . $sortby . " " . $asc_desc;
 
 $sql = "SELECT count(logid) AS c FROM " . Database::prefix("gamelog") . " WHERE 1 $sqlcat $sqlseverity";
 $result = Database::query($sql);

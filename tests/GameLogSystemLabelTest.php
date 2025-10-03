@@ -63,6 +63,7 @@ final class GameLogSystemLabelTest extends TestCase
                 'severity' => 'warning',
             ]],
         ];
+        Database::$queries = [];
         if (!defined('DB_CHOSEN')) {
             define('DB_CHOSEN', false);
         }
@@ -77,5 +78,23 @@ final class GameLogSystemLabelTest extends TestCase
         require __DIR__ . '/../gamelog.php';
         global $forms_output;
         $this->assertStringContainsString('`7[`$WARNING`7]`0 System: Something happened', $forms_output);
+    }
+
+    public function testDefaultSortOrdersByDateDescending(): void
+    {
+        if (!defined('GAMELOG_TEST')) {
+            define('GAMELOG_TEST', true);
+        }
+
+        Database::$mockResults = [
+            [['c' => 0]],
+            [],
+        ];
+        Database::$queries = [];
+
+        require __DIR__ . '/../gamelog.php';
+
+        $this->assertGreaterThanOrEqual(2, count(Database::$queries));
+        $this->assertStringContainsString('ORDER BY date DESC', Database::$queries[1]);
     }
 }
