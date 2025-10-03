@@ -215,7 +215,7 @@ namespace Lotgd\Tests {
 
             $this->assertSame($expectedPaths, $this->listCacheFiles());
 
-            $needle = "INSERT INTO gamelog (message,category,filed,date,who) VALUES ('Module mod force-uninstalled','modules','0'";
+            $needle = "INSERT INTO gamelog (message,category,severity,filed,date,who) VALUES ('Module mod force-uninstalled','modules','info','0'";
             $matches = array_filter(
                 \Lotgd\MySQL\Database::$queries,
                 static fn (string $query): bool => str_contains($query, $needle)
@@ -276,7 +276,7 @@ namespace Lotgd\Tests {
 
         private function assertGamelogEntryContains(string $message): void
         {
-            $needle = "INSERT INTO gamelog (message,category,filed,date,who) VALUES ('{$message}','modules','0'";
+            $needle = "INSERT INTO gamelog (message,category,severity,filed,date,who) VALUES ('{$message}','modules','info','0'";
             $matches = array_filter(
                 \Lotgd\MySQL\Database::$queries,
                 static fn (string $query): bool => str_contains($query, $needle)

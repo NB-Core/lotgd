@@ -29,7 +29,7 @@ final class LogExpiredAccountStatsUsesDeletedAccountsTest extends TestCase
         }
 
         if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { public static array $entries = []; public static function log(string $m, string $c, bool $f = false, ?int $a = null): void { self::$entries[] = [$c, $m]; } }');
+            eval('namespace Lotgd; class GameLog { public static array $entries = []; public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void { self::$entries[] = [$c, $m, $s]; } }');
         } else {
             \Lotgd\GameLog::$entries = [];
         }
@@ -53,5 +53,6 @@ final class LogExpiredAccountStatsUsesDeletedAccountsTest extends TestCase
         $this->assertStringContainsString('Deleted 1 accounts:', $summary[0][1]);
         $this->assertStringContainsString('foo:dk0-lv1', $summary[0][1]);
         $this->assertStringNotContainsString('bar:dk1-lv2', $summary[0][1]);
+        $this->assertSame('info', $summary[0][2]);
     }
 }

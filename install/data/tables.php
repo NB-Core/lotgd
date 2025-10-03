@@ -905,6 +905,11 @@ function get_all_tables()
             'name' => 'category',
             'type' => 'varchar(50)',
             ),
+        'severity' => array(
+            'name' => 'severity',
+            'type' => 'varchar(16)',
+            'default' => 'info',
+            ),
         'filed' => array(
             'name' => 'filed',
             'type' => 'tinyint(4)',
