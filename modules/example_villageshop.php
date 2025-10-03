@@ -7,6 +7,8 @@ use Lotgd\Http;
 use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
 use Lotgd\Translator;
 
 /**
@@ -81,6 +83,8 @@ function example_villageshop_run(): void
 
     Translator::tlschema('module_example_villageshop'); // Translator::tlschema() scopes subsequent strings to the module schema.
 
+    Header::pageHeader($label);
+
     // Nav::add() translates link text automatically when the module schema is active.
     Nav::add('Navigation');
     Nav::add('Return to the village', 'village.php');
@@ -96,12 +100,16 @@ function example_villageshop_run(): void
         if ($purchased) {
             $output->outputNotl('You have already purchased today\'s gem.');
             Translator::tlschema();
+            Footer::pageFooter();
+
             return;
         }
 
         if ($session['user']['gold'] < $cost) {
             $output->outputNotl('You do not have enough gold to afford the gem.');
             Translator::tlschema();
+            Footer::pageFooter();
+
             return;
         }
 
@@ -139,6 +147,8 @@ function example_villageshop_run(): void
         );
 
         Translator::tlschema();
+        Footer::pageFooter();
+
         return;
     }
 
@@ -149,4 +159,5 @@ function example_villageshop_run(): void
     }
 
     Translator::tlschema();
+    Footer::pageFooter();
 }
