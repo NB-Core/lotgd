@@ -454,9 +454,16 @@ final class TableDescriptorTest extends TestCase
                 return new DoctrineResult([['c' => 0]]);
             }
 
-            public function executeStatement(string $sql, array $params = []): int
+            public function executeStatement(string $sql, array $params = [], array $types = []): int
             {
                 $this->queries[] = $sql;
+                $this->executeStatements[] = [
+                    'sql'    => $sql,
+                    'params' => $params,
+                    'types'  => $types,
+                ];
+                $this->lastExecuteStatementParams = $params;
+                $this->lastExecuteStatementTypes  = $types;
                 if (
                     preg_match(
                         "/UPDATE dummy SET created = :DATETIME_DATEMIN WHERE created < :DATETIME_DATEMIN OR created = :zeroDate/",

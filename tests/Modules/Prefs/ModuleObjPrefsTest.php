@@ -57,9 +57,16 @@ namespace Lotgd\Tests\Modules\Prefs {
                     return new DoctrineResult([]);
                 }
 
-                public function executeStatement(string $sql, array $params = []): int
+                public function executeStatement(string $sql, array $params = [], array $types = []): int
                 {
                     $this->queries[] = $sql;
+                    $this->executeStatements[] = [
+                        'sql'    => $sql,
+                        'params' => $params,
+                        'types'  => $types,
+                    ];
+                    $this->lastExecuteStatementParams = $params;
+                    $this->lastExecuteStatementTypes  = $types;
 
                     if (preg_match("/REPLACE INTO module_objprefs\\(modulename,objtype,setting,objid,value\\) VALUES \\('(.*?)', '(.*?)', '(.*?)', '(.*?)', '(.*?)'\\)/", $sql, $m)) {
                         $key = "objpref-{$m[2]}-{$m[4]}-{$m[3]}-{$m[1]}";

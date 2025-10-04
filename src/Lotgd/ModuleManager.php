@@ -9,6 +9,7 @@ use Lotgd\Modules\Installer;
 use Lotgd\DataCache;
 use Lotgd\Modules;
 use Lotgd\GameLog;
+use Lotgd\Sanitize;
 
 class ModuleManager
 {
@@ -161,8 +162,20 @@ class ModuleManager
     public static function reinstall(string $module): bool
     {
         global $session;
-        $sql = 'UPDATE ' . Database::prefix('modules') . " SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='" . $module . "'";
-        Database::query($sql);
+        $normalized = Sanitize::modulenameSanitize($module);
+
+        if ($normalized !== $module) {
+            return false;
+        }
+
+        $conn = Database::getDoctrineConnection();
+        $sql = 'UPDATE ' . Database::prefix('modules') . ' SET filemoddate = :filemoddate WHERE modulename = :modulename';
+        $conn->executeStatement($sql, [
+            'filemoddate' => DATETIME_DATEMIN,
+            'modulename'  => $normalized,
+        ]);
+
+        $module = $normalized;
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('hook');
         DataCache::getInstance()->massinvalidate('module-prepare');
