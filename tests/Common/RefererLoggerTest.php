@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Common;
 
+use Lotgd\Doctrine\Bootstrap;
+use Lotgd\Tests\Stubs\DoctrineConnection;
 use PHPUnit\Framework\TestCase;
 
 final class RefererLoggerTest extends TestCase
@@ -14,6 +16,7 @@ final class RefererLoggerTest extends TestCase
     private function runLogger(string $referer, string $host = 'example.com'): array
     {
         \Lotgd\MySQL\Database::resetDoctrineConnection();
+        Bootstrap::$conn = new DoctrineConnection();
         $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
         $conn->executeStatements = [];
 
