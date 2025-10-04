@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Async\Handler;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Jaxon\Response\Response;
 use Lotgd\Commentary as CoreCommentary;
@@ -54,29 +55,44 @@ class Commentary
             $nobios[$scriptname] = false;
         }
         $linkbios = !$nobios[$scriptname];
-        $sql = 'SELECT ' . Database::prefix('commentary') . '.*, '
-            . Database::prefix('accounts') . '.name, '
-            . Database::prefix('accounts') . '.acctid, '
-            . Database::prefix('accounts') . '.superuser, '
-            . Database::prefix('accounts') . '.clanrank, '
-            . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary')
-            . ' LEFT JOIN ' . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = '
-            . Database::prefix('commentary') . '.author LEFT JOIN ' . Database::prefix('clans')
-            . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid '
-            . "WHERE section='" . addslashes($section) . "' AND commentid > '" . (int) $lastId
-            . "' ORDER BY commentid ASC";
-        $result = Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $commentaryTable = Database::prefix('commentary');
+        $accountsTable = Database::prefix('accounts');
+        $clansTable = Database::prefix('clans');
+
+        $sql = 'SELECT ' . $commentaryTable . '.*, '
+            . $accountsTable . '.name, '
+            . $accountsTable . '.acctid, '
+            . $accountsTable . '.superuser, '
+            . $accountsTable . '.clanrank, '
+            . $clansTable . '.clanshort FROM ' . $commentaryTable
+            . ' LEFT JOIN ' . $accountsTable . ' ON ' . $accountsTable . '.acctid = '
+            . $commentaryTable . '.author LEFT JOIN ' . $clansTable
+            . ' ON ' . $clansTable . '.clanid=' . $accountsTable . '.clanid '
+            . 'WHERE ' . $commentaryTable . '.section = :section AND '
+            . $commentaryTable . '.commentid > :lastId ORDER BY ' . $commentaryTable . '.commentid ASC';
+
+        $rows = $conn->fetchAllAssociative(
+            $sql,
+            [
+                'section' => (string) $section,
+                'lastId' => (int) $lastId,
+            ],
+            [
+                'section' => ParameterType::STRING,
+                'lastId' => ParameterType::INTEGER,
+            ]
+        );
         $newId = $lastId;
         /** @var Output $output */
         $output = Output::getInstance();
-        while ($row = Database::fetchAssoc($result)) {
+        foreach ($rows as $row) {
             $newId = $row['commentid'];
             $line = CoreCommentary::renderCommentLine($row, $linkbios);
             // Convert colour codes but preserve embedded HTML like profile links
             $line = $output->appoencode($line, true);
             $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
         }
-        Database::freeResult($result);
         $html = implode('', $comments);
         $objResponse = jaxon()->newResponse();
         if ($html !== '') {
