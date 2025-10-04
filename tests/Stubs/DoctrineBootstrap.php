@@ -7,10 +7,12 @@ namespace Lotgd\Tests\Stubs;
 class DoctrineResult
 {
     private array $rows;
+    private array $originalRows;
 
     public function __construct(array $rows = [])
     {
         $this->rows = $rows;
+        $this->originalRows = $rows;
     }
 
     public function fetchAssociative()
@@ -20,7 +22,15 @@ class DoctrineResult
 
     public function rowCount(): int
     {
-        return count($this->rows);
+        return count($this->originalRows);
+    }
+
+    public function fetchAllAssociative(): array
+    {
+        $rows = $this->rows;
+        $this->rows = [];
+
+        return $rows;
     }
 
     public function free(): void
@@ -42,10 +52,15 @@ class DoctrineConnection
     public array $executeStatements = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
+    public array $executeQueryParams = [];
+    public array $executeQueryTypes = [];
 
-    public function executeQuery(string $sql): DoctrineResult
+    public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
     {
         $this->queries[] = $sql;
+        $this->executeQueryParams[] = $params;
+        $this->executeQueryTypes[] = $types;
+
         if (stripos($sql, 'count(') !== false) {
             $value = array_shift($this->countResults);
             if ($value === null) {
@@ -55,7 +70,20 @@ class DoctrineConnection
             return new DoctrineResult([["total_count" => $value]]);
         }
 
-        return new DoctrineResult([["ok" => true]]);
+        $rows = [];
+        if (!empty(Database::$mockResults)) {
+            $rows = array_shift(Database::$mockResults);
+        } elseif (!empty($this->fetchAllResults)) {
+            $rows = array_shift($this->fetchAllResults);
+        } else {
+            $rows = [["ok" => true]];
+        }
+
+        if (!is_array($rows)) {
+            $rows = [];
+        }
+
+        return new DoctrineResult($rows);
     }
 
     public function fetchAllAssociative(string $sql, array $params = [], array $types = []): array
