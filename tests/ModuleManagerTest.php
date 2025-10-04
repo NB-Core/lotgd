@@ -17,22 +17,37 @@ namespace Lotgd\Modules {
         }
         public static function install(string $module): bool
         {
+            if (\Lotgd\Sanitize::modulenameSanitize($module) !== $module) {
+                return false;
+            }
             return self::$installShouldSucceed;
         }
         public static function uninstall(string $module): bool
         {
+            if (\Lotgd\Sanitize::modulenameSanitize($module) !== $module) {
+                return false;
+            }
             return self::$uninstallShouldSucceed;
         }
         public static function activate(string $module): bool
         {
+            if (\Lotgd\Sanitize::modulenameSanitize($module) !== $module) {
+                return false;
+            }
             return self::$activateShouldSucceed;
         }
         public static function deactivate(string $module): bool
         {
+            if (\Lotgd\Sanitize::modulenameSanitize($module) !== $module) {
+                return false;
+            }
             return self::$deactivateShouldSucceed;
         }
         public static function forceUninstall(string $module): bool
         {
+            if (\Lotgd\Sanitize::modulenameSanitize($module) !== $module) {
+                return false;
+            }
             return self::$forceUninstallShouldSucceed;
         }
         public static function reset(): void
@@ -130,6 +145,11 @@ namespace Lotgd\Tests {
             $this->assertFalse(ModuleManager::install('mod'));
         }
 
+        public function testInstallRejectsTaintedModuleName(): void
+        {
+            $this->assertFalse(ModuleManager::install('bad name'));
+        }
+
         public function testInstallSuccessClearsCachesAndLogs(): void
         {
             $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta']);
@@ -144,6 +164,11 @@ namespace Lotgd\Tests {
         public function testUninstallReturnsFalseWhenInstallerFails(): void
         {
             $this->assertFalse(ModuleManager::uninstall('mod'));
+        }
+
+        public function testUninstallRejectsTaintedModuleName(): void
+        {
+            $this->assertFalse(ModuleManager::uninstall('bad name'));
         }
 
         public function testUninstallSuccessClearsCachesAndLogs(): void
@@ -162,6 +187,11 @@ namespace Lotgd\Tests {
             $this->assertFalse(ModuleManager::activate('mod'));
         }
 
+        public function testActivateRejectsTaintedModuleName(): void
+        {
+            $this->assertFalse(ModuleManager::activate('bad name'));
+        }
+
         public function testActivateSuccessClearsCachesAndLogs(): void
         {
             $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
@@ -176,6 +206,11 @@ namespace Lotgd\Tests {
         public function testDeactivateReturnsFalseWhenInstallerFails(): void
         {
             $this->assertFalse(ModuleManager::deactivate('mod'));
+        }
+
+        public function testDeactivateRejectsTaintedModuleName(): void
+        {
+            $this->assertFalse(ModuleManager::deactivate('bad name'));
         }
 
         public function testDeactivateSuccessClearsCachesAndLogs(): void
@@ -222,6 +257,11 @@ namespace Lotgd\Tests {
             );
 
             $this->assertEmpty($matches, 'Unexpected gamelog entry was written.');
+        }
+
+        public function testForceUninstallRejectsTaintedModuleName(): void
+        {
+            $this->assertFalse(ModuleManager::forceUninstall('bad name'));
         }
 
         public function testForceUninstallClearsCachesAndLogs(): void

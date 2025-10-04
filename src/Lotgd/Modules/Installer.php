@@ -15,39 +15,70 @@ class Installer
 {
     public static function activate(string $module): bool
     {
+        $normalizedModule = Sanitize::modulenameSanitize($module);
+        if ($normalizedModule !== $module) {
+            return false;
+        }
+        $module = $normalizedModule;
+
         if (!Modules::isInstalled($module)) {
             if (!self::install($module)) {
                 return false;
             }
         }
-        $sql = 'UPDATE ' . Database::prefix('modules') . " SET active=1 WHERE modulename='$module'";
-        Database::query($sql);
+        $table    = Database::prefix('modules');
+        $conn     = Database::getDoctrineConnection();
+        $affected = $conn->executeStatement(
+            "UPDATE {$table} SET active = :active WHERE modulename = :module",
+            [
+                'active' => 1,
+                'module' => $module,
+            ]
+        );
+        Database::setAffectedRows($affected);
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('module_prepare');
-        return Database::affectedRows() > 0;
+        return $affected > 0;
     }
 
     public static function deactivate(string $module): bool
     {
+        $normalizedModule = Sanitize::modulenameSanitize($module);
+        if ($normalizedModule !== $module) {
+            return false;
+        }
+        $module = $normalizedModule;
+
         if (!Modules::isInstalled($module)) {
             if (!self::install($module)) {
                 return false;
             }
             return true;
         }
-        $sql    = 'UPDATE ' . Database::prefix('modules') . " SET active=0 WHERE modulename='$module'";
-        $return = Database::query($sql);
+        $table    = Database::prefix('modules');
+        $conn     = Database::getDoctrineConnection();
+        $affected = $conn->executeStatement(
+            "UPDATE {$table} SET active = :active WHERE modulename = :module",
+            [
+                'active' => 0,
+                'module' => $module,
+            ]
+        );
+        Database::setAffectedRows($affected);
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('module_prepare');
         DataCache::getInstance()->massinvalidate('hook');
-        if (Database::affectedRows() <= 0 || !$return) {
-            return false;
-        }
-        return true;
+        return $affected > 0;
     }
 
     public static function uninstall(string $module): bool
     {
+        $normalizedModule = Sanitize::modulenameSanitize($module);
+        if ($normalizedModule !== $module) {
+            return false;
+        }
+        $module = $normalizedModule;
+
         $output = Output::getInstance();
 
         if (Modules::inject($module, true)) {
@@ -60,20 +91,45 @@ class Installer
             }
             Translator::getInstance()->setSchema();
 
-            $sql = 'DELETE FROM ' . Database::prefix('modules') . " WHERE modulename='$module'";
-            Database::query($sql);
+            $conn  = Database::getDoctrineConnection();
+            $table = Database::prefix('modules');
+            $affected = $conn->executeStatement(
+                "DELETE FROM {$table} WHERE modulename = :module",
+                [
+                    'module' => $module,
+                ]
+            );
+            Database::setAffectedRows($affected);
 
             HookHandler::wipeHooks();
 
-            $sql = 'DELETE FROM ' . Database::prefix('module_settings') . " WHERE modulename='$module'";
-            Database::query($sql);
+            $settingsTable = Database::prefix('module_settings');
+            $affected = $conn->executeStatement(
+                "DELETE FROM {$settingsTable} WHERE modulename = :module",
+                [
+                    'module' => $module,
+                ]
+            );
+            Database::setAffectedRows($affected);
             DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
 
-            $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module'";
-            Database::query($sql);
+            $userPrefsTable = Database::prefix('module_userprefs');
+            $affected = $conn->executeStatement(
+                "DELETE FROM {$userPrefsTable} WHERE modulename = :module",
+                [
+                    'module' => $module,
+                ]
+            );
+            Database::setAffectedRows($affected);
 
-            $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module'";
-            Database::query($sql);
+            $objPrefsTable = Database::prefix('module_objprefs');
+            $affected = $conn->executeStatement(
+                "DELETE FROM {$objPrefsTable} WHERE modulename = :module",
+                [
+                    'module' => $module,
+                ]
+            );
+            Database::setAffectedRows($affected);
             DataCache::getInstance()->invalidatedatacache("inject-$module");
             DataCache::getInstance()->massinvalidate('module_prepare');
             return true;
@@ -86,6 +142,12 @@ class Installer
      */
     public static function forceUninstall(string $module): bool
     {
+        $normalizedModule = Sanitize::modulenameSanitize($module);
+        if ($normalizedModule !== $module) {
+            return false;
+        }
+        $module = $normalizedModule;
+
         $output = Output::getInstance();
 
         if (Modules::inject($module, true)) {
@@ -101,20 +163,45 @@ class Installer
             ModuleManager::setMostRecentModule($module);
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('modules') . " WHERE modulename='$module'";
-        Database::query($sql);
+        $conn  = Database::getDoctrineConnection();
+        $table = Database::prefix('modules');
+        $affected = $conn->executeStatement(
+            "DELETE FROM {$table} WHERE modulename = :module",
+            [
+                'module' => $module,
+            ]
+        );
+        Database::setAffectedRows($affected);
 
         HookHandler::wipeHooks();
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_settings') . " WHERE modulename='$module'";
-        Database::query($sql);
+        $settingsTable = Database::prefix('module_settings');
+        $affected = $conn->executeStatement(
+            "DELETE FROM {$settingsTable} WHERE modulename = :module",
+            [
+                'module' => $module,
+            ]
+        );
+        Database::setAffectedRows($affected);
         DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module'";
-        Database::query($sql);
+        $userPrefsTable = Database::prefix('module_userprefs');
+        $affected = $conn->executeStatement(
+            "DELETE FROM {$userPrefsTable} WHERE modulename = :module",
+            [
+                'module' => $module,
+            ]
+        );
+        Database::setAffectedRows($affected);
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module'";
-        Database::query($sql);
+        $objPrefsTable = Database::prefix('module_objprefs');
+        $affected = $conn->executeStatement(
+            "DELETE FROM {$objPrefsTable} WHERE modulename = :module",
+            [
+                'module' => $module,
+            ]
+        );
+        Database::setAffectedRows($affected);
         DataCache::getInstance()->invalidatedatacache("inject-$module");
         DataCache::getInstance()->massinvalidate('module_prepare');
         return true;
@@ -125,16 +212,24 @@ class Installer
         global $session;
         $output = Output::getInstance();
 
-        $name = $session['user']['name'] ?? '`@System`0';
-
-        if (Sanitize::modulenameSanitize($module) != $module) {
+        $normalizedModule = Sanitize::modulenameSanitize($module);
+        if ($normalizedModule !== $module) {
             $output->output("Error, module file names can only contain alpha numeric characters and underscores before the trailing .php`n`nGood module names include 'testmodule.php', 'joesmodule2.php', while bad module names include, 'test.module.php' or 'joes module.php'`n");
             return false;
         }
+        $module = $normalizedModule;
 
+        $name = $session['user']['name'] ?? '`@System`0';
+
+        $conn = Database::getDoctrineConnection();
         if ($force) {
-            $sql = 'DELETE FROM ' . Database::prefix('modules') . " WHERE modulename='$module'";
-            Database::query($sql);
+            $deleted = $conn->executeStatement(
+                'DELETE FROM ' . Database::prefix('modules') . ' WHERE modulename = :module',
+                [
+                    'module' => $module,
+                ]
+            );
+            Database::setAffectedRows($deleted);
         }
 
         if (Modules::inject($module, true)) {
@@ -147,10 +242,31 @@ class Installer
                 return false;
             }
             $keys = '|' . implode('|', array_keys($info)) . '|';
-            $moduleName = ModuleManager::getMostRecentModule();
-            $sql  = 'INSERT INTO ' . Database::prefix('modules') . " (modulename,formalname,moduleauthor,active,filename,installdate,installedby,category,infokeys,version,download,description) VALUES ('$moduleName','" . addslashes($info['name']) . "','" . addslashes($info['author']) . "',0,'{$moduleName}.php','" . date('Y-m-d H:i:s') . "','" . addslashes($name) . "','" . addslashes($info['category']) . "','$keys','" . addslashes($info['version']) . "','" . addslashes($info['download']) . "', '" . addslashes($info['description']) . "')";
-            $result = Database::query($sql);
-            if (!$result) {
+            $rawModuleName = ModuleManager::getMostRecentModule();
+            $moduleName    = Sanitize::modulenameSanitize($rawModuleName);
+            if ($moduleName !== $rawModuleName) {
+                return false;
+            }
+            $sql     = 'INSERT INTO ' . Database::prefix('modules') . ' '
+                . '(modulename,formalname,moduleauthor,active,filename,installdate,installedby,category,infokeys,version,download,description) '
+                . 'VALUES (:modulename,:formalname,:moduleauthor,:active,:filename,:installdate,:installedby,:category,:infokeys,:version,:download,:description)';
+            $params = [
+                'modulename'  => $moduleName,
+                'formalname'  => (string) ($info['name'] ?? ''),
+                'moduleauthor'=> (string) ($info['author'] ?? ''),
+                'active'      => 0,
+                'filename'    => "{$moduleName}.php",
+                'installdate' => date('Y-m-d H:i:s'),
+                'installedby' => (string) $name,
+                'category'    => (string) ($info['category'] ?? ''),
+                'infokeys'    => $keys,
+                'version'     => (string) ($info['version'] ?? ''),
+                'download'    => (string) ($info['download'] ?? ''),
+                'description' => (string) ($info['description'] ?? ''),
+            ];
+            $affected = $conn->executeStatement($sql, $params);
+            Database::setAffectedRows($affected);
+            if ($affected <= 0) {
                 $output->output('`\$ERROR!`0 The module could not be injected into the database.');
                 return false;
             }
