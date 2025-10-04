@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Modules\HookHandler;
+use Lotgd\MySQL\Database;
 
 /**
  * Base setup for AJAX requests, including the Jaxon library and
@@ -44,9 +45,30 @@ if (preg_match('/<link[^>]*rel=\"icon\"[^>]*sizes=\"32x32\"[^>]*href=\"([^\"]+)\
     $favicon32 = '/images/favicon/favicon-32x32.png';
 }
 
+$lastUnreadMailId = 0;
+$lastUnreadMailCount = 0;
+
+if (! empty($session['user']['acctid'])) {
+    $sql = 'SELECT MAX(messageid) AS lastid, SUM(seen=0) AS unread FROM '
+        . Database::prefix('mail')
+        . ' WHERE msgto=\'' . $session['user']['acctid'] . '\'';
+
+    $result = Database::query($sql);
+
+    if ($result !== false) {
+        $row = Database::fetchAssoc($result) ?: ['lastid' => 0, 'unread' => 0];
+        Database::freeResult($result);
+
+        $lastUnreadMailId = (int) ($row['lastid'] ?? 0);
+        $lastUnreadMailCount = (int) ($row['unread'] ?? 0);
+    }
+}
+
 $polling_script = "<script>";
 $polling_script .= "var lotgd_comment_section = " . json_encode($session['last_comment_section'] ?? '') . ";";
 $polling_script .= "var lotgd_lastCommentId = " . (int)($session['lastcommentid'] ?? 0) . ";";
+$polling_script .= "var lotgd_lastUnreadMailId = " . json_encode($lastUnreadMailId) . ";";
+$polling_script .= "var lotgd_lastUnreadMailCount = " . json_encode($lastUnreadMailCount) . ";";
 
 $timeout = \Lotgd\Async\Handler\Timeout::getInstance();
 $checkMailTimeoutSeconds = $timeout->getCheckMailTimeoutSeconds();
@@ -71,10 +93,6 @@ $polling_script .= "console.log('AJAX polling initialized:', {interval: lotgd_po
 
 // Add missing notification functions and clean AJAX polling implementation
 $polling_script .= "
-// Global mail status for notifications
-var lotgd_lastUnreadMailId = null;
-var lotgd_lastUnreadMailCount = 0;
-
 // Notification functions (previously in ajax_polling.js)
 function lotgdShowNotification(title, message) {
     if (!('Notification' in window)) {
@@ -93,12 +111,9 @@ function lotgdShowNotification(title, message) {
 
 function lotgdMailNotify(lastId, count) {
     var baselineId = lotgd_lastUnreadMailId;
+    var baselineCount = lotgd_lastUnreadMailCount;
 
-    if (baselineId === null) {
-        baselineId = lastId;
-    }
-
-    if (baselineId !== null && lastId > baselineId && !document.hasFocus()) {
+    if ((lastId > baselineId || count > baselineCount) && !document.hasFocus()) {
         var msg = count === 1 ? 'You have 1 unread message' :
             'You have ' + count + ' unread messages';
         lotgdShowNotification('Unread game messages', msg);
