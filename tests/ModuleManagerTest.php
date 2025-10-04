@@ -83,6 +83,7 @@ namespace Lotgd\Tests {
             \Lotgd\Modules\Installer::reset();
             \Lotgd\MySQL\Database::$lastSql = '';
             \Lotgd\MySQL\Database::$queries = [];
+            \Lotgd\MySQL\Database::resetDoctrineConnection();
 
             $this->cacheDir = sys_get_temp_dir() . '/lotgd_module_manager_' . uniqid('', true);
             mkdir($this->cacheDir, 0700, true);
@@ -120,6 +121,7 @@ namespace Lotgd\Tests {
             \Lotgd\Modules\Installer::reset();
             \Lotgd\MySQL\Database::$queries = [];
             \Lotgd\MySQL\Database::$lastSql = '';
+            \Lotgd\MySQL\Database::resetDoctrineConnection();
         }
 
         public function testListInstalledBuildsSql(): void
@@ -228,11 +230,54 @@ namespace Lotgd\Tests {
         {
             $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
 
-            ModuleManager::reinstall('mod');
-            $expected = "UPDATE modules SET filemoddate='" . DATETIME_DATEMIN . "' WHERE modulename='mod'";
-            $this->assertContains($expected, \Lotgd\MySQL\Database::$queries);
+            $this->assertTrue(ModuleManager::reinstall('mod'));
+
+            $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+            $this->assertContains(
+                'UPDATE modules SET filemoddate = :filemoddate WHERE modulename = :modulename',
+                $conn->queries
+            );
+
+            $statements = array_values(
+                array_filter(
+                    $conn->executeStatements,
+                    static fn (array $entry): bool => $entry['sql'] === 'UPDATE modules SET filemoddate = :filemoddate WHERE modulename = :modulename'
+                )
+            );
+
+            $this->assertNotEmpty($statements);
+            $this->assertSame(
+                [
+                    'filemoddate' => DATETIME_DATEMIN,
+                    'modulename'  => 'mod',
+                ],
+                $statements[0]['params']
+            );
             $this->assertCachesRemoved($paths);
             $this->assertGamelogEntryContains('Module mod reinstalled');
+        }
+
+        public function testReinstallRejectsTaintedModuleName(): void
+        {
+            $paths = $this->primeCaches(['hook-alpha', 'module-prepare-beta', 'inject-mod']);
+
+            $this->assertFalse(ModuleManager::reinstall('bad name'));
+
+            foreach ($paths as $path) {
+                $this->assertFileExists($path);
+            }
+
+            $expectedPaths = array_values($paths);
+            sort($expectedPaths);
+            $this->assertSame($expectedPaths, $this->listCacheFiles());
+
+            $needle = "INSERT INTO gamelog (message,category,severity,filed,date,who) VALUES ('Module bad name reinstalled','modules','info','0'";
+            $matches = array_filter(
+                \Lotgd\MySQL\Database::$queries,
+                static fn (string $query): bool => str_contains($query, $needle)
+            );
+
+            $this->assertEmpty($matches, 'Unexpected gamelog entry was written.');
         }
 
         public function testForceUninstallReturnsFalseWhenInstallerFails(): void

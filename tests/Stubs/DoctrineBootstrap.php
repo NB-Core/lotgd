@@ -39,6 +39,9 @@ class DoctrineConnection
     public array $fetchAllResults = [];
     public array $lastFetchAllParams = [];
     public array $lastFetchAllTypes = [];
+    public array $executeStatements = [];
+    public array $lastExecuteStatementParams = [];
+    public array $lastExecuteStatementTypes = [];
 
     public function executeQuery(string $sql): DoctrineResult
     {
@@ -72,9 +75,16 @@ class DoctrineConnection
         return [];
     }
 
-    public function executeStatement(string $sql, array $params = []): int
+    public function executeStatement(string $sql, array $params = [], array $types = []): int
     {
         $this->queries[] = $sql;
+        $this->executeStatements[] = [
+            'sql'    => $sql,
+            'params' => $params,
+            'types'  => $types,
+        ];
+        $this->lastExecuteStatementParams = $params;
+        $this->lastExecuteStatementTypes = $types;
         $table = null;
         if (preg_match('/^INSERT INTO\s+`?([^`\s(]+)`?/i', $sql, $matches)) {
             $table = strtolower($matches[1]);

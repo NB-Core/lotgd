@@ -252,9 +252,16 @@ final class SpecialtyMigrationConnection extends DoctrineConnection
         return new DoctrineResult();
     }
 
-    public function executeStatement(string $sql, array $params = []): int
+    public function executeStatement(string $sql, array $params = [], array $types = []): int
     {
         $this->queries[] = $sql;
+        $this->executeStatements[] = [
+            'sql'    => $sql,
+            'params' => $params,
+            'types'  => $types,
+        ];
+        $this->lastExecuteStatementParams = $params;
+        $this->lastExecuteStatementTypes = $types;
 
         if (preg_match('/INSERT INTO\s+module_userprefs.*SELECT\s+\?,\s+\?,\s+acctid,\s+([a-z0-9_]+)\s+FROM\s+accounts/i', $sql, $matches)) {
             $column = $matches[1];
