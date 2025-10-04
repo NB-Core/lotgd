@@ -109,20 +109,28 @@ if ($op == "deactivate") {
             $buff['schema'] = "mounts";
             httppostset('mount', $buff, 'mountbuff');
 
-            list($sql, $keys, $vals) = postparse(false, 'mount');
-            if ($id > "") {
-                $sql = "UPDATE " . Database::prefix("mounts") .
-                    " SET $sql WHERE mountid='$id'";
-            } else {
-                $sql = "INSERT INTO " . Database::prefix("mounts") .
-                    " ($keys) VALUES ($vals)";
-            }
-            Database::query($sql);
-            invalidatedatacache("mountdata-$id");
-            if (Database::affectedRows() > 0) {
-                $output->output("`^Mount saved!`0`n");
-            } else {
-                $output->output("`^Mount `\$not`^ saved: `\$%s`0`n", $sql);
+            [$columns, $placeholders, $parameters] = postparse(false, 'mount');
+            if ($columns !== []) {
+                $conn = Database::getDoctrineConnection();
+                if ($id > "") {
+                    $assignments = [];
+                    foreach ($columns as $column) {
+                        $assignments[] = "$column = ?";
+                    }
+                    $sql = "UPDATE " . Database::prefix("mounts") .
+                        " SET " . implode(',', $assignments) . " WHERE mountid = ?";
+                    $parameters[] = $id;
+                } else {
+                    $sql = "INSERT INTO " . Database::prefix("mounts") .
+                        " (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+                }
+                $affected = $conn->executeStatement($sql, $parameters);
+                invalidatedatacache("mountdata-$id");
+                if ($affected > 0) {
+                    $output->output("`^Mount saved!`0`n");
+                } else {
+                    $output->output("`^Mount `\$not`^ saved: `\$%s`0`n", $sql);
+                }
             }
         }
     } elseif ($subop == "module") {
