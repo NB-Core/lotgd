@@ -21,6 +21,36 @@ var lotgd_lastUnreadMailId = typeof window.lotgd_lastUnreadMailId !== 'undefined
 var lotgd_lastUnreadMailCount = typeof window.lotgd_lastUnreadMailCount !== 'undefined'
     ? window.lotgd_lastUnreadMailCount
     : 0;   // Track last unread mail count
+var lotgd_windowHasFocus = typeof window.lotgd_windowHasFocus !== 'undefined'
+    ? window.lotgd_windowHasFocus
+    : document.hasFocus();
+
+function lotgdUpdateWindowFocusState()
+{
+    lotgd_windowHasFocus = document.visibilityState === 'visible' && document.hasFocus();
+}
+
+window.addEventListener('focus', function () {
+    lotgd_windowHasFocus = true;
+});
+
+window.addEventListener('blur', function () {
+    lotgd_windowHasFocus = false;
+});
+
+document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') {
+        lotgd_windowHasFocus = false;
+        return;
+    }
+
+    lotgdUpdateWindowFocusState();
+});
+
+function lotgdShouldNotify()
+{
+    return !lotgd_windowHasFocus || document.visibilityState === 'hidden';
+}
 
 /**
  * Display a Web Notification with the given title and message.
@@ -51,7 +81,7 @@ function lotgdMailNotify(lastId, count)
     var baselineId = lotgd_lastUnreadMailId;
     var baselineCount = lotgd_lastUnreadMailCount;
 
-    if ((lastId > baselineId || count > baselineCount) && !document.hasFocus()) {
+    if ((lastId > baselineId || count > baselineCount) && lotgdShouldNotify()) {
         var msg = count === 1 ? 'You have 1 unread message' :
             'You have ' + count + ' unread messages';
         lotgdShowNotification('Unread game messages', msg);
@@ -65,7 +95,7 @@ function lotgdMailNotify(lastId, count)
  */
 function lotgdCommentNotify(count)
 {
-    if (count > 0 && !document.hasFocus()) {
+    if (count > 0 && lotgdShouldNotify()) {
         var msg = count === 1 ? 'A new comment was posted' :
             count + ' new comments were posted';
         lotgdShowNotification('Unread comments', msg);
