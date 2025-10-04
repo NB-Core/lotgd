@@ -69,7 +69,7 @@ final class ModeratedCommentaryFallbackTest extends TestCase
             'value' => 'UTF-8',
         ]];
 
-        Database::$mockResults = [$settingsRows, true, $commentRows];
+        Database::$mockResults = [$settingsRows, $commentRows];
         Settings::getInstance();
 
         set_error_handler(static function (int $errno, string $errstr): void {

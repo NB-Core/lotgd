@@ -82,17 +82,27 @@ class Settings
 
         $this->loadSettings();
 
-        $settingValue = is_string($value) ? '"' . addslashes($value) . '"' : $value;
-        $settingName = is_string($settingname) ? '"' . addslashes($settingname) . '"' : $settingname;
+        $hadDoctrine = Database::hasDoctrineConnection();
+        $conn = Database::getDoctrineConnection();
+        $sql = 'INSERT INTO ' . $this->tablename
+            . ' (setting, value) VALUES (:setting, :value) '
+            . 'ON DUPLICATE KEY UPDATE value = VALUES(value)';
 
-        $sql = "INSERT INTO " . $this->tablename .
-            " (setting,value) VALUES ($settingName,$settingValue) " .
-            "ON DUPLICATE KEY UPDATE value=VALUES(value)";
+        $affected = $conn->executeStatement($sql, [
+            'setting' => $settingname,
+            'value'   => $value,
+        ]);
 
-        Database::query($sql);
+        Database::setAffectedRows($affected);
+
+        if (! $hadDoctrine) {
+            Database::resetDoctrineConnection();
+        }
+
         $this->settings[$settingname] = $value;
         DataCache::getInstance()->invalidatedatacache('game' . $this->tablename);
-        return Database::affectedRows() > 0;
+
+        return $affected > 0;
     }
 
     /**

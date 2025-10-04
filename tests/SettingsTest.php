@@ -78,15 +78,17 @@ final class SettingsTest extends TestCase
         $settings = new Settings('settings');
 
         \Lotgd\MySQL\Database::$affected_rows = 0;
-        \Lotgd\MySQL\Database::$lastSql = '';
+        $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+        $conn->queries = [];
         $this->assertSame('UTF-8', $settings->getSetting('charset', 'ISO-8859-1'));
-        $this->assertStringContainsString('ON DUPLICATE KEY UPDATE', \Lotgd\MySQL\Database::$lastSql);
+        $this->assertNotEmpty($conn->queries);
+        $this->assertStringContainsString('ON DUPLICATE KEY UPDATE', end($conn->queries));
         $this->assertSame(1, \Lotgd\MySQL\Database::$affected_rows);
 
         \Lotgd\MySQL\Database::$affected_rows = 0;
-        \Lotgd\MySQL\Database::$lastSql = '';
+        $queryCount = count($conn->queries);
         $this->assertSame('UTF-8', $settings->getSetting('charset'));
-        $this->assertSame('', \Lotgd\MySQL\Database::$lastSql);
+        $this->assertCount($queryCount, $conn->queries);
         $this->assertSame(0, \Lotgd\MySQL\Database::$affected_rows);
     }
 
@@ -96,15 +98,31 @@ final class SettingsTest extends TestCase
         $settings = new Settings('settings');
 
         \Lotgd\MySQL\Database::$affected_rows = 0;
-        \Lotgd\MySQL\Database::$lastSql = '';
+        $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+        $conn->queries = [];
         $this->assertSame('UTF-8', $settings->getSetting('charset'));
-        $this->assertStringContainsString('ON DUPLICATE KEY UPDATE', \Lotgd\MySQL\Database::$lastSql);
+        $this->assertNotEmpty($conn->queries);
+        $this->assertStringContainsString('ON DUPLICATE KEY UPDATE', end($conn->queries));
         $this->assertSame(1, \Lotgd\MySQL\Database::$affected_rows);
 
         \Lotgd\MySQL\Database::$affected_rows = 0;
-        \Lotgd\MySQL\Database::$lastSql = '';
+        $queryCount = count($conn->queries);
         $this->assertSame('UTF-8', $settings->getSetting('charset'));
-        $this->assertSame('', \Lotgd\MySQL\Database::$lastSql);
+        $this->assertCount($queryCount, $conn->queries);
         $this->assertSame(0, \Lotgd\MySQL\Database::$affected_rows);
+    }
+
+    public function testSaveSettingHandlesQuotedAndMultibyteValues(): void
+    {
+        $settings = new Settings('settings');
+
+        $original = "sp\"ec'al 😀";
+        $settings->saveSetting('special_value', $original);
+
+        $this->assertSame($original, $settings->getSetting('special_value'));
+        $this->assertSame(
+            $original,
+            \Lotgd\MySQL\Database::$settings_table['special_value'] ?? null
+        );
     }
 }
