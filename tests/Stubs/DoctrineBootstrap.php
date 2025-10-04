@@ -36,6 +36,9 @@ class DoctrineConnection
     public array $countResults = [];
     public array $lastInsert = [];
     public array $lastDelete = [];
+    public array $fetchAllResults = [];
+    public array $lastFetchAllParams = [];
+    public array $lastFetchAllTypes = [];
 
     public function executeQuery(string $sql): DoctrineResult
     {
@@ -52,9 +55,20 @@ class DoctrineConnection
         return new DoctrineResult([["ok" => true]]);
     }
 
-    public function fetchAllAssociative(string $sql, array $params = []): array
+    public function fetchAllAssociative(string $sql, array $params = [], array $types = []): array
     {
         $this->queries[] = $sql;
+        $this->lastFetchAllParams = $params;
+        $this->lastFetchAllTypes = $types;
+
+        if (!empty(Database::$mockResults)) {
+            return array_shift(Database::$mockResults);
+        }
+
+        if (!empty($this->fetchAllResults)) {
+            return array_shift($this->fetchAllResults);
+        }
+
         return [];
     }
 

@@ -7,6 +7,7 @@ require_once __DIR__ . '/Stubs/DbMysqli.php';
 require_once __DIR__ . '/Stubs/Database.php';
 require_once __DIR__ . '/Stubs/ArrayCache.php';
 require_once __DIR__ . '/Stubs/Functions.php';
+require_once __DIR__ . '/Stubs/DoctrineBootstrap.php';
 // Preload repository classes to avoid redeclaration when Doctrine loads them
 require_once realpath(__DIR__ . '/../src/Lotgd/Repository/AccountRepository.php');
 require_once realpath(__DIR__ . '/../src/Lotgd/Repository/SettingRepository.php');
