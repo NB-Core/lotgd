@@ -94,22 +94,46 @@ final class HttpHelperTest extends TestCase
         $this->assertSame($_POST, Http::allPost());
     }
 
-    public function testPostParseBuildsSqlFragments(): void
+    public function testPostParseReturnsColumnsPlaceholdersAndParameters(): void
     {
         $_POST = ['foo' => 'bar', 'baz' => 'qux'];
-        [$sql, $keys, $vals] = Http::postParse();
-        $this->assertSame("foo='bar',baz='qux'", $sql);
-        $this->assertSame('foo,baz', $keys);
-        $this->assertSame("'bar','qux'", $vals);
+        [$columns, $placeholders, $parameters] = Http::postParse();
+        $this->assertSame(['foo', 'baz'], $columns);
+        $this->assertSame(['?', '?'], $placeholders);
+        $this->assertSame(['bar', 'qux'], $parameters);
     }
 
-    public function testPostParseHandlesSubvalAndArrays(): void
+    public function testPostParseHandlesSubvalAndSerializesArrays(): void
     {
         $_POST['user'] = ['id' => 1, 'prefs' => ['a' => 'b']];
-        [$sql, $keys, $vals] = Http::postParse(false, 'user');
-        $ser = addslashes(serialize(['a' => 'b']));
-        $this->assertSame("id='1',prefs='" . $ser . "'", $sql);
-        $this->assertSame('id,prefs', $keys);
-        $this->assertSame("'1','" . $ser . "'", $vals);
+        [$columns, $placeholders, $parameters] = Http::postParse(false, 'user');
+        $this->assertSame(['id', 'prefs'], $columns);
+        $this->assertSame(['?', '?'], $placeholders);
+        $this->assertSame([1, serialize(['a' => 'b'])], $parameters);
+    }
+
+    public function testPostParseDoesNotEscapeQuotes(): void
+    {
+        $_POST = ['title' => "O'Reilly"];
+        [, , $parameters] = Http::postParse();
+        $this->assertSame(["O'Reilly"], $parameters);
+    }
+
+    public function testPostParsePreservesUtf8Characters(): void
+    {
+        $_POST = ['greeting' => 'こんにちは', 'emoji' => '😊'];
+        [$columns, $placeholders, $parameters] = Http::postParse();
+        $this->assertSame(['greeting', 'emoji'], $columns);
+        $this->assertSame(['?', '?'], $placeholders);
+        $this->assertSame(['こんにちは', '😊'], $parameters);
+    }
+
+    public function testPostParseRespectsVerifyList(): void
+    {
+        $_POST = ['allowed' => 'yes', 'ignored' => 'no'];
+        [$columns, $placeholders, $parameters] = Http::postParse(['allowed' => true]);
+        $this->assertSame(['allowed'], $columns);
+        $this->assertSame(['?'], $placeholders);
+        $this->assertSame(['yes'], $parameters);
     }
 }

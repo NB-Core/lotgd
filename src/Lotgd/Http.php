@@ -87,26 +87,36 @@ class Http
     }
 
     /**
-     * Build an SQL fragment from POST data.
+     * Prepare column, placeholder, and parameter lists from POST data.
+     *
+     * @return array{0: array<string>, 1: array<string>, 2: array<mixed>}
      */
     public static function postParse(array|false $verify = false, string|false $subval = false): array
     {
-        $var = $subval ? $_POST[$subval] : $_POST;
-        $sql = '';
-        $keys = '';
-        $vals = '';
-        $i = 0;
-        foreach ($var as $key => $val) {
-            if ($verify === false || isset($verify[$key])) {
-                if (is_array($val)) {
-                    $val = addslashes(serialize($val));
-                }
-                $sql .= (($i > 0) ? ',' : '') . "$key='$val'";
-                $keys .= (($i > 0) ? ',' : '') . "$key";
-                $vals .= (($i > 0) ? ',' : '') . "'$val'";
-                $i++;
-            }
+        $var = $subval ? ($_POST[$subval] ?? []) : $_POST;
+
+        if (!is_array($var)) {
+            return [[], [], []];
         }
-        return [$sql, $keys, $vals];
+
+        $columns = [];
+        $placeholders = [];
+        $parameters = [];
+
+        foreach ($var as $key => $val) {
+            if ($verify !== false && !isset($verify[$key])) {
+                continue;
+            }
+
+            if (is_array($val)) {
+                $val = serialize($val);
+            }
+
+            $columns[] = (string) $key;
+            $placeholders[] = '?';
+            $parameters[] = $val;
+        }
+
+        return [$columns, $placeholders, $parameters];
     }
 }
