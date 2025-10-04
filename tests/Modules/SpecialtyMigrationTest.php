@@ -241,7 +241,7 @@ final class SpecialtyMigrationConnection extends DoctrineConnection
         $this->describeRows = $describeRows;
     }
 
-    public function executeQuery(string $sql): DoctrineResult
+    public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
     {
         $this->queries[] = $sql;
 

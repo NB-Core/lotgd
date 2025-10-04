@@ -218,11 +218,16 @@ function mailWrite(): void
  */
 function getSuperuserFlag(string $login): int
 {
-    $sql    = 'SELECT superuser FROM ' . Database::prefix('accounts') . " WHERE login = '" . addslashes($login) . "'";
-    $result = Database::query($sql);
-    $acct   = Database::fetchAssoc($result);
+    $conn  = Database::getDoctrineConnection();
+    $table = Database::prefix('accounts');
 
-    return $acct['superuser'] ?? 0;
+    $stmt = $conn->executeQuery(
+        "SELECT superuser FROM $table WHERE login = :login",
+        ['login' => $login]
+    );
+    $acct = $stmt->fetchAssociative() ?: [];
+
+    return (int) ($acct['superuser'] ?? 0);
 }
 
 /**
@@ -230,9 +235,14 @@ function getSuperuserFlag(string $login): int
  */
 function getAccountByLogin(string $login): ?array
 {
-    $sql    = 'SELECT login,name, superuser FROM ' . Database::prefix('accounts') . " WHERE login='" . addslashes($login) . "'";
-    $result = Database::query($sql);
-    $row    = Database::fetchAssoc($result);
+    $conn  = Database::getDoctrineConnection();
+    $table = Database::prefix('accounts');
+
+    $stmt = $conn->executeQuery(
+        "SELECT login, name, superuser FROM $table WHERE login = :login",
+        ['login' => $login]
+    );
+    $row = $stmt->fetchAssociative();
 
     return $row ?: null;
 }
@@ -250,25 +260,57 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
     $output->output('`2To: ');
     $output->rawOutput('</label>');
 
-    $sql   = 'SELECT acctid,login,name,superuser FROM ' . Database::prefix('accounts') .
-        " WHERE login = '" . addslashes($to) . "' AND locked = 0";
-    $result    = Database::query($sql);
-    $dbNumRows = Database::numRows($result);
+    $conn  = Database::getDoctrineConnection();
+    $table = Database::prefix('accounts');
 
-    if ($dbNumRows !== 1) {
+    $stmt = $conn->executeQuery(
+        "SELECT acctid, login, name, superuser FROM $table WHERE login = :login AND locked = 0",
+        ['login' => $to]
+    );
+
+    $rows = [];
+    $row = $stmt->fetchAssociative();
+
+    if ($row !== false) {
+        $rows[] = $row;
+    } else {
         $string = '%';
-        $toLen  = strlen($to);
-        for ($x = 0; $x < $toLen; ++$x) {
-            $string .= $to[$x] . '%';
+        $charset = $settings->getSetting('charset', 'UTF-8');
+        if (function_exists('mb_strlen')) {
+            $length = mb_strlen($to, $charset);
+            if ($length === false) {
+                $length = strlen($to);
+                for ($x = 0; $x < $length; ++$x) {
+                    $string .= $to[$x] . '%';
+                }
+            } else {
+                for ($x = 0; $x < $length; ++$x) {
+                    $string .= mb_substr($to, $x, 1, $charset) . '%';
+                }
+            }
+        } else {
+            $toLen = strlen($to);
+            for ($x = 0; $x < $toLen; ++$x) {
+                $string .= $to[$x] . '%';
+            }
         }
-        // Fallback search includes acctid for precise recipient identification
-        $sql       = 'SELECT acctid,login,name,superuser FROM ' . Database::prefix('accounts') . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
-        $result    = Database::query($sql);
-        $dbNumRows = Database::numRows($result);
+
+        $stmt = $conn->executeQuery(
+            "SELECT acctid, login, name, superuser FROM $table WHERE name LIKE :pattern AND locked = 0 " .
+            "ORDER BY login = :exact_login DESC, name = :exact_name DESC, login",
+            [
+                'pattern'     => $string,
+                'exact_login' => $to,
+                'exact_name'  => $to,
+            ]
+        );
+        $rows = $stmt->fetchAllAssociative();
     }
 
+    $dbNumRows = count($rows);
+
     if ($dbNumRows == 1) {
-        $row = Database::fetchAssoc($result); // fetch login, name, superuser, and acctid
+        $row = $rows[0];
         $output->outputNotl(
             "<input type='hidden' id='to' name='to' value=\"" .
             htmlentities($row['login'], ENT_COMPAT, $charset) .
@@ -285,13 +327,13 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
         $output->output('`@Please try again.`n');
         Http::set('prepop', $to, true);
         $output->rawOutput('</form>');
-        require 'pages/mail/case_address.php';
+        require_once 'pages/mail/case_address.php';
         popup_footer();
     } else {
         $output->outputNotl("<select name='to' id='to' onchange='check_su_warning();'>", true);
         $superusers = [];
 
-        while ($row = Database::fetchAssoc($result)) {
+        foreach ($rows as $row) {
             $output->outputNotl(
                 "<option value=\"" . htmlentities($row['login'], ENT_COMPAT, $charset) . "\">",
                 true
@@ -312,10 +354,13 @@ function renderSuperuserScript(array $superusers): void
 {
     $output = Output::getInstance();
 
-    $output->rawOutput("<script type='text/javascript'>var superusers = new Array();");
-    foreach ($superusers as $val) {
-        $output->rawOutput(" superusers['" . addslashes($val) . "'] = true;");
+    $map = [];
+    foreach ($superusers as $login) {
+        $map[$login] = true;
     }
+
+    $output->rawOutput("<script type='text/javascript'>");
+    $output->rawOutput('var superusers = ' . json_encode($map, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . ';');
     $output->rawOutput('</script>');
 }
 
@@ -370,4 +415,6 @@ function renderSizeCountScript(): void
     $output->rawOutput('</script>');
 }
 
-mailWrite();
+if (!defined('LOTGD_MAIL_WRITE_AUTORUN') || LOTGD_MAIL_WRITE_AUTORUN) {
+    mailWrite();
+}

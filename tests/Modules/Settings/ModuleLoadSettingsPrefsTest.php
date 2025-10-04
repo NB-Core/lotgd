@@ -79,7 +79,7 @@ namespace Lotgd\Tests\Modules\Settings {
 
             $conn = new class extends DoctrineConnection {
                 public array $data = [];
-                public function executeQuery(string $sql): DoctrineResult
+                public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
                 {
                     $this->queries[] = $sql;
                     return new DoctrineResult($this->data[$sql] ?? []);
@@ -111,7 +111,7 @@ namespace Lotgd\Tests\Modules\Settings {
 
             $conn = new class extends DoctrineConnection {
                 public array $data = [];
-                public function executeQuery(string $sql): DoctrineResult
+                public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
                 {
                     $this->queries[] = $sql;
                     return new DoctrineResult($this->data[$sql] ?? []);

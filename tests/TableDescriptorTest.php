@@ -435,7 +435,7 @@ final class TableDescriptorTest extends TestCase
         $mockConn = new class extends DoctrineConnection {
             public array $table = [['id' => 1, 'created' => '0000-00-00 00:00:00']];
 
-            public function executeQuery(string $sql): DoctrineResult
+            public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
             {
                 $this->queries[] = $sql;
                 if (str_starts_with($sql, 'SHOW FULL COLUMNS FROM dummy')) {
@@ -501,7 +501,7 @@ final class TableDescriptorTest extends TestCase
     public function testSynctableConvertsZeroDatesWithoutException(): void
     {
         $conn = new class extends DoctrineConnection {
-            public function executeQuery(string $sql): DoctrineResult
+            public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
             {
                 $this->queries[] = $sql;
                 if (str_starts_with($sql, 'SHOW FULL COLUMNS FROM dummy')) {
