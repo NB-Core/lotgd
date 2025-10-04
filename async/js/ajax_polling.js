@@ -27,7 +27,7 @@ function lotgdShowNotification(title, message)
     if (!('Notification' in window)) {
         return;
     }
-    const icon = document.querySelector('link[rel="icon"][sizes="32x32"]') ? .href || '/images/favicon/favicon-32x32.png';
+    const icon = document.querySelector('link[rel="icon"][sizes="32x32"]')?.href || '/images/favicon/favicon-32x32.png';
     if (Notification.permission === 'granted') {
         new Notification(title, {body: message, icon: icon});
     } else if (Notification.permission !== 'denied') {
