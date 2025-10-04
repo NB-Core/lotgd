@@ -26,6 +26,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Redirect;
 use Lotgd\Template;
 use Lotgd\MySQL\Database;
+use Lotgd\RefererLogger;
 use Lotgd\DateTime;
 use Lotgd\Cookies;
 use Lotgd\ErrorHandler;
@@ -483,47 +484,12 @@ if ($cookieId === null) {
     $flags['lgi_failed'] = false;
     $session['user']['uniqueid'] = $cookieId;
 }
-if (isset($_SERVER['SERVER_NAME'])) {
-    $url = "http://" . $_SERVER['SERVER_NAME'] . dirname($_SERVER['REQUEST_URI']);
-    $url = substr($url, 0, strlen($url) - 1);
-    $urlport = "http://" . $_SERVER['SERVER_NAME'] . ":" . $_SERVER['SERVER_PORT'] . dirname($_SERVER['REQUEST_URI']);
-    $urlport = substr($urlport, 0, strlen($urlport) - 1);
-} else {
-    //cron access or such via cli
-    $url = "";
-    $urlport = "";
-}
-
-if (!isset($_SERVER['HTTP_REFERER'])) {
-    $_SERVER['HTTP_REFERER'] = "";
-}
-
-if (
-        substr($_SERVER['HTTP_REFERER'], 0, strlen($url)) == $url ||
-        substr($_SERVER['HTTP_REFERER'], 0, strlen($urlport)) == $urlport ||
-        $_SERVER['HTTP_REFERER'] == "" ||
-        strtolower(substr($_SERVER['HTTP_REFERER'], 0, 7)) != "http://"
-) {
-} else {
-    $site = str_replace("http://", "", $_SERVER['HTTP_REFERER']);
-    if (strpos($site, "/")) {
-        $site = substr($site, 0, strpos($site, "/"));
-    }
-    $host = str_replace(":80", "", $_SERVER['HTTP_HOST']);
-
-    if ($site != $host) {
-                $sql = "SELECT * FROM " . Database::prefix("referers") . " WHERE uri='{$_SERVER['HTTP_REFERER']}'";
-                $result = Database::query($sql);
-                $row = Database::fetchAssoc($result);
-                Database::freeResult($result);
-        if (isset($row['refererid']) && $row['refererid'] > "") {
-                $sql = "UPDATE " . Database::prefix("referers") . " SET count=count+1,last='" . date("Y-m-d H:i:s") . "',site='" . addslashes($site) . "',dest='" . addslashes($host) . "/" . addslashes(PhpGenericEnvironment::getRequestUri()) . "',ip='{$_SERVER['REMOTE_ADDR']}' WHERE refererid='{$row['refererid']}'";
-        } else {
-                $sql = "INSERT INTO " . Database::prefix("referers") . " (uri,count,last,site,dest,ip) VALUES ('{$_SERVER['HTTP_REFERER']}',1,'" . date("Y-m-d H:i:s") . "','" . addslashes($site) . "','" . addslashes($host) . "/" . addslashes(PhpGenericEnvironment::getRequestUri()) . "','{$_SERVER['REMOTE_ADDR']}')";
-        }
-                Database::query($sql);
-    }
-}
+$requestUri = PhpGenericEnvironment::getRequestUri();
+RefererLogger::log(
+    $_SERVER,
+    is_string($requestUri) ? $requestUri : '',
+    is_string($remoteAddr) ? $remoteAddr : ''
+);
 
 if (!isset($session['user']['superuser'])) {
     $session['user']['superuser'] = 0;
