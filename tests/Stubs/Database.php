@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Stubs;
 
+require_once __DIR__ . '/DoctrineBootstrap.php';
+
 /**
  * Fake database used for tests.
  */
@@ -422,6 +424,11 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             return self::$affected_rows;
         }
 
+        public static function setAffectedRows(int $affected): void
+        {
+            self::$affected_rows = $affected;
+        }
+
         public static function insertId(): string
         {
             return '1';
@@ -458,6 +465,19 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             }
 
             return self::$doctrineConnection;
+        }
+
+        public static function hasDoctrineConnection(): bool
+        {
+            return self::$doctrineConnection !== null;
+        }
+
+        public static function resetDoctrineConnection(): void
+        {
+            self::$doctrineConnection = null;
+            if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && property_exists('Lotgd\\Doctrine\\Bootstrap', 'conn')) {
+                \Lotgd\Doctrine\Bootstrap::$conn = null;
+            }
         }
 
         public static function getInstance()

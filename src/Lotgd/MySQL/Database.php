@@ -101,6 +101,22 @@ class Database
     }
 
     /**
+     * Determine if the Doctrine connection has been initialised.
+     */
+    public static function hasDoctrineConnection(): bool
+    {
+        return self::$doctrine !== null;
+    }
+
+    /**
+     * Reset the Doctrine connection instance.
+     */
+    public static function resetDoctrineConnection(): void
+    {
+        self::$doctrine = null;
+    }
+
+    /**
      * Assign the Doctrine DBAL connection.
      */
     public static function setDoctrineConnection(Connection $conn): void
@@ -295,6 +311,14 @@ class Database
             return 0;
         }
         return self::getInstance()->affectedRows();
+    }
+
+    /**
+     * Manually update the last affected rows counter.
+     */
+    public static function setAffectedRows(int $affected): void
+    {
+        self::$dbinfo['affected_rows'] = $affected;
     }
 
     /**

@@ -61,6 +61,51 @@ class DoctrineConnection
     public function executeStatement(string $sql, array $params = []): int
     {
         $this->queries[] = $sql;
+        $table = null;
+        if (preg_match('/^INSERT INTO\s+`?([^`\s(]+)`?/i', $sql, $matches)) {
+            $table = strtolower($matches[1]);
+        }
+
+        $isExtended = false;
+        if ($table !== null) {
+            if (str_ends_with($table, 'settings_extended')) {
+                $isExtended = true;
+            } elseif (! str_ends_with($table, 'settings')) {
+                $table = null;
+            }
+        }
+
+        if ($table !== null) {
+            $setting = $params['setting'] ?? ($params[0] ?? null);
+            $value   = $params['value'] ?? ($params[1] ?? null);
+
+            if ($setting === null) {
+                return 0;
+            }
+
+            if ($isExtended) {
+                $target =& Database::$settings_extended_table;
+            } else {
+                $target =& Database::$settings_table;
+            }
+
+            $exists   = array_key_exists($setting, $target);
+            $previous = $target[$setting] ?? null;
+            $target[$setting] = $value;
+
+            if (! $exists) {
+                $affected = 1;
+            } elseif ($previous !== $value) {
+                $affected = 2;
+            } else {
+                $affected = 0;
+            }
+
+            Database::setAffectedRows($affected);
+
+            return $affected;
+        }
+
         return 1;
     }
 
