@@ -91,6 +91,14 @@ if ($clear_script_execution > 0 && $clear_script_execution < $login_timeout) {
 
 $polling_script .= "console.log('AJAX polling initialized:', {interval: lotgd_poll_interval_ms + 'ms', section: lotgd_comment_section});";
 
+// Track window focus/visibility state for consistent notification behaviour
+$polling_script .= "var lotgd_windowHasFocus = document.hasFocus();";
+$polling_script .= "function lotgdUpdateWindowFocusState() { lotgd_windowHasFocus = document.visibilityState === 'visible' && document.hasFocus(); }";
+$polling_script .= "window.addEventListener('focus', function () { lotgd_windowHasFocus = true; });";
+$polling_script .= "window.addEventListener('blur', function () { lotgd_windowHasFocus = false; });";
+$polling_script .= "document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') { lotgd_windowHasFocus = false; } else { lotgdUpdateWindowFocusState(); } });";
+$polling_script .= "function lotgdShouldNotify() { return !lotgd_windowHasFocus || document.visibilityState === 'hidden'; }";
+
 // Add missing notification functions and clean AJAX polling implementation
 $polling_script .= "
 // Notification functions (previously in ajax_polling.js)
@@ -113,7 +121,7 @@ function lotgdMailNotify(lastId, count) {
     var baselineId = lotgd_lastUnreadMailId;
     var baselineCount = lotgd_lastUnreadMailCount;
 
-    if ((lastId > baselineId || count > baselineCount) && !document.hasFocus()) {
+    if ((lastId > baselineId || count > baselineCount) && lotgdShouldNotify()) {
         var msg = count === 1 ? 'You have 1 unread message' :
             'You have ' + count + ' unread messages';
         lotgdShowNotification('Unread game messages', msg);
@@ -123,7 +131,7 @@ function lotgdMailNotify(lastId, count) {
 }
 
 function lotgdCommentNotify(count) {
-    if (count > 0 && !document.hasFocus()) {
+    if (count > 0 && lotgdShouldNotify()) {
         var msg = count === 1 ? 'A new comment was posted' :
             count + ' new comments were posted';
         lotgdShowNotification('Unread comments', msg);
