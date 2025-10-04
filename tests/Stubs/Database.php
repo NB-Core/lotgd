@@ -490,5 +490,11 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         }
     }
 
-    class_alias(Database::class, 'Lotgd\\MySQL\\Database');
+    $productionClass = 'Lotgd\\MySQL\\Database';
+
+    if (!class_exists($productionClass, false)) {
+        class_alias(Database::class, $productionClass);
+    } elseif (!is_a($productionClass, Database::class, true)) {
+        class_alias($productionClass, __NAMESPACE__ . '\\ProductionDatabase');
+    }
 }
