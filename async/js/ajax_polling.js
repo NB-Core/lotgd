@@ -15,8 +15,12 @@ var active_mail_interval;     // ID of the mail polling interval (unused)
 var active_comment_interval;  // ID of the commentary polling interval (unused)
 var active_timeout_interval;  // ID of the timeout polling interval (unused)
 var active_poll_interval;     // ID of the combined polling interval
-var lotgd_lastUnreadMailId = 0;      // Track last mail ID
-var lotgd_lastUnreadMailCount = 0;   // Track last unread mail count
+var lotgd_lastUnreadMailId = typeof window.lotgd_lastUnreadMailId !== 'undefined'
+    ? window.lotgd_lastUnreadMailId
+    : 0;      // Track last mail ID
+var lotgd_lastUnreadMailCount = typeof window.lotgd_lastUnreadMailCount !== 'undefined'
+    ? window.lotgd_lastUnreadMailCount
+    : 0;   // Track last unread mail count
 
 /**
  * Display a Web Notification with the given title and message.
@@ -44,12 +48,10 @@ function lotgdShowNotification(title, message)
  */
 function lotgdMailNotify(lastId, count)
 {
-    if (lotgd_lastUnreadMailId === 0) {
-        lotgd_lastUnreadMailId = lastId;
-        lotgd_lastUnreadMailCount = count;
-        return;
-    }
-    if (lastId > lotgd_lastUnreadMailId && !document.hasFocus()) {
+    var baselineId = lotgd_lastUnreadMailId;
+    var baselineCount = lotgd_lastUnreadMailCount;
+
+    if ((lastId > baselineId || count > baselineCount) && !document.hasFocus()) {
         var msg = count === 1 ? 'You have 1 unread message' :
             'You have ' + count + ' unread messages';
         lotgdShowNotification('Unread game messages', msg);
