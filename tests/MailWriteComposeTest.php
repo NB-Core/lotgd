@@ -27,7 +27,9 @@ namespace {
 namespace Lotgd\Tests {
 
     use Lotgd\Output;
+    use Lotgd\Settings;
     use Lotgd\Tests\Stubs\Database;
+    use Lotgd\Tests\Stubs\DummySettings;
     use PHPUnit\Framework\TestCase;
     use ReflectionClass;
 
@@ -49,6 +51,7 @@ namespace Lotgd\Tests {
             Database::$mockResults = [];
             Database::resetDoctrineConnection();
             unset($GLOBALS['lotgd_mail_player_search']);
+            $this->installSettingsStub();
             $this->resetOutputSingleton();
             if (! defined('LOTGD_MAIL_WRITE_AUTORUN')) {
                 define('LOTGD_MAIL_WRITE_AUTORUN', false);
@@ -72,6 +75,25 @@ namespace Lotgd\Tests {
         protected function tearDown(): void
         {
             unset($GLOBALS['lotgd_mail_player_search']);
+            $this->removeSettingsStub();
+        }
+
+        private function installSettingsStub(): void
+        {
+            $settings = new DummySettings([
+                'charset'             => 'UTF-8',
+                'mailsizelimit'       => 1024,
+                'superuseryommessage' => "Asking an admin for gems, gold, weapons, armor, or anything else which you have not earned will not be honored. If you are experiencing problems with the game, please use the 'Petition for Help' link instead of contacting an admin directly.",
+            ]);
+
+            Settings::setInstance($settings);
+            $GLOBALS['settings'] = $settings;
+        }
+
+        private function removeSettingsStub(): void
+        {
+            Settings::setInstance(null);
+            unset($GLOBALS['settings']);
         }
 
         public function testRecipientDropdownShownForPartialNames(): void
@@ -81,7 +103,6 @@ namespace Lotgd\Tests {
             $_POST['to'] = 'ja';
 
             Database::$mockResults = [
-                [],
                 [],
                 [
                     ['acctid' => 10, 'login' => 'john', 'name' => 'John', 'superuser' => 0, 'locked' => 0],
