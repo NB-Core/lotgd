@@ -6,28 +6,6 @@ use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 
-$subop = httpget("subop");
-$none = Translator::translateInline('NONE');
-if ($subop == "xml") {
-    header("Content-Type: text/xml");
-    $sql = "SELECT DISTINCT " . Database::prefix("accounts") . ".name FROM " . Database::prefix("bans") . ", " . Database::prefix("accounts") . " WHERE (ipfilter='" . addslashes(httpget("ip")) . "' AND " .
-        Database::prefix("bans") . ".uniqueid='" .
-        addslashes(httpget("id")) . "') AND ((substring(" .
-        Database::prefix("accounts") . ".lastip,1,length(ipfilter))=ipfilter " .
-        "AND ipfilter<>'') OR (" .  Database::prefix("bans") . ".uniqueid=" .
-        Database::prefix("accounts") . ".uniqueid AND " .
-        Database::prefix("bans") . ".uniqueid<>''))";
-    $r = Database::query($sql);
-    $output->rawOutput("<xml>");
-    while ($ro = Database::fetchAssoc($r)) {
-        $output->rawOutput("<name name=\"" . urlencode(appoencode("`0{$ro['name']}")) . "\"/>");
-    }
-    if (Database::numRows($r) == 0) {
-        $output->rawOutput("<name name=\"$none\"/>");
-    }
-    $output->rawOutput("</xml>");
-    exit();
-}
 Database::query("DELETE FROM " . Database::prefix("bans") . " WHERE banexpire < \"" . date("Y-m-d") . "\" AND banexpire>'" . DATETIME_DATEMIN . "'");
 $duration =  httpget("duration");
 if (httpget('notbefore')) {
@@ -83,27 +61,26 @@ Nav::add("4 years", "user.php?op=removeban&duration=4+years&notbefore=1");
 
 $sql = "SELECT * FROM " . Database::prefix("bans") . " $since ORDER BY banexpire ASC";
 $result = Database::query($sql);
-$output->rawOutput("<script language='JavaScript'>
-function getUserInfo(ip,id,divid){
-	var filename='user.php?op=removeban&subop=xml&ip='+ip+'&id='+id;
-	//set up the DOM object
-	var xmldom;
-	if (document.implementation &&
-			document.implementation.createDocument){
-		//Mozilla style browsers
-		xmldom = document.implementation.createDocument('', '', null);
-	} else if (window.ActiveXObject) {
-		//IE style browsers
-		xmldom = new ActiveXObject('Microsoft.XMLDOM');
-	}
-		xmldom.async=false;
-	xmldom.load(filename);
-	var output='';
-	for (var x=0; x<xmldom.documentElement.childNodes.length; x++){
-		output = output + unescape(xmldom.documentElement.childNodes[x].getAttribute('name').replace(/\\+/g,' ')) +'<br>';
-	}
-	document.getElementById('user'+divid).innerHTML=output;
-}
+$output->rawOutput("<script>
+(function () {
+    function lotgdLoadAffectedUsers(ip, id, index) {
+        var handlers = typeof window.getJaxonHandlers === 'function'
+            ? window.getJaxonHandlers()
+            : (window.Lotgd && window.Lotgd.Async && window.Lotgd.Async.Handler)
+                || (window.JaxonLotgd && window.JaxonLotgd.Async && window.JaxonLotgd.Async.Handler)
+                || null;
+
+        if (!handlers || !handlers.Bans || typeof handlers.Bans.affectedUsers !== 'function') {
+            console.error('Lotgd.Async.Handler.Bans.affectedUsers is unavailable');
+            return false;
+        }
+
+        handlers.Bans.affectedUsers(ip, id, 'user' + index);
+        return false;
+    }
+
+    window.lotgdLoadAffectedUsers = lotgdLoadAffectedUsers;
+}());
 </script>
 ");
 $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
@@ -155,11 +132,11 @@ while ($row = Database::fetchAssoc($result)) {
     $output->rawOutput("</td><td>");
     $output->outputNotl("%s", $row['banreason']);
     $output->rawOutput("</td><td>");
-    $file = "user.php?op=removeban&subop=xml&ip={$row['ipfilter']}&id={$row['uniqueid']}";
-    $output->rawOutput("<div id='user$i'><a href='$file' target='_blank' onClick=\"getUserInfo('{$row['ipfilter']}','{$row['uniqueid']}',$i); return false;\">");
+    $ipArgument = json_encode($row['ipfilter'], JSON_THROW_ON_ERROR);
+    $idArgument = json_encode($row['uniqueid'], JSON_THROW_ON_ERROR);
+    $output->rawOutput("<div id='user$i'><a href='#' onclick='return lotgdLoadAffectedUsers({$ipArgument}, {$idArgument}, $i);'>");
     $output->outputNotl("%s", $showuser, true);
     $output->rawOutput("</a></div>");
-    Nav::add("", $file);
     $output->rawOutput("</td><td>");
     $output->outputNotl("%s", relativedate($row['lasthit']));
     $output->rawOutput("</td></tr>");
