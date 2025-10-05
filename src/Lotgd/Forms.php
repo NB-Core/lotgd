@@ -528,9 +528,9 @@ JS;
                 array_shift($inf_list);
                 $select = '';
                 $select .= "<select id='$entityId' name='$keyout'>";
-                $optval = '';
+                $optval = null;
                 foreach ($inf_list as $optdis) {
-                    if ($optval == '') {
+                    if ($optval === null) {
                         $optval = $optdis;
                         continue;
                     }
@@ -539,7 +539,7 @@ JS;
                     }
                     $selected = isset($row[$key]) && $row[$key] == $optval ? 1 : 0;
                     $select .= "<option value='$optval'" . ($selected ? ' selected' : '') . '>' . HTMLEntities("$optdis", ENT_COMPAT, $charset) . '</option>';
-                    $optval = '';
+                    $optval = null;
                 }
                 $select .= '</select>';
                 $output->rawOutput($select);
