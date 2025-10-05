@@ -12,6 +12,8 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Lotgd\Serialization;
+use Lotgd\Paylog\LegacyPayloadNormalizer;
 
 // mail ready
 // addnews ready
@@ -19,6 +21,32 @@ use Lotgd\Settings;
 use Lotgd\Output;
 
 require_once __DIR__ . '/common.php';
+
+if (!function_exists('paylogLogInvalidInfo')) {
+    /**
+     * Log legacy paylog entries that cannot be decoded.
+     */
+    function paylogLogInvalidInfo(array $row): void
+    {
+        static $logged = [];
+
+        $txnid = $row['txnid'] ?? null;
+        if ($txnid !== null) {
+            if (isset($logged[$txnid])) {
+                return;
+            }
+            $logged[$txnid] = true;
+        }
+
+        $payid = $row['payid'] ?? null;
+        $identifier = $payid !== null ? sprintf('ID %s', $payid) : 'unknown ID';
+        if ($txnid !== null) {
+            $identifier .= sprintf(' (txnid %s)', $txnid);
+        }
+
+        error_log(sprintf('Paylog entry %s contains an unreadable legacy payload.', $identifier));
+    }
+}
 
 $settings = Settings::getInstance();
 $output = Output::getInstance();
@@ -47,22 +75,28 @@ SuperuserNav::render();
 HookHandler::hook("paylog", array());
 
 $op = (string) Http::get('op');
+$currency = $settings->getSetting('paypalcurrency', 'USD');
 if ($op == "") {
     Nav::add('Actions');
     Nav::add('Refresh', 'paylog.php');
     $sql = "SELECT info,txnid FROM " . Database::prefix("paylog") . " WHERE processdate='" . DATETIME_DATEMIN . "'";
     $result = Database::query($sql);
     while ($row = Database::fetchAssoc($result)) {
-        $info = unserialize($row['info']);
-        if (isset($info['payment_date']) && $info['payment_date'] !== '') {
-            $timestamp = strtotime($info['payment_date']);
+        $info = Serialization::safeUnserialize($row['info']);
+        $normalized = LegacyPayloadNormalizer::normalize($row, $info, $currency);
+        if (! $normalized['is_valid']) {
+            paylogLogInvalidInfo($row);
+            continue;
+        }
+
+        if ($normalized['paymentDate'] !== null) {
+            $timestamp = strtotime($normalized['paymentDate']);
             if ($timestamp !== false) {
                 $sql = "UPDATE " . Database::prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", $timestamp) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
                 Database::query($sql);
             }
         }
     }
-    $currency = $settings->getSetting('paypalcurrency', 'USD');
     $sql = "SELECT YEAR(processdate) AS year, MONTH(processdate) AS month, COALESCE(SUM(amount) - SUM(txfee), 0) AS profit FROM " . Database::prefix('paylog') . " GROUP BY year, month ORDER BY year DESC, month DESC";
     $result = Database::query($sql);
     Nav::add('Months');
@@ -125,11 +159,15 @@ if ($op == "") {
     $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
         $row = Database::fetchAssoc($result);
-        $info = unserialize($row['info']);
+        $info = Serialization::safeUnserialize($row['info']);
+        $normalized = LegacyPayloadNormalizer::normalize($row, $info, $currency);
+        if (! $normalized['is_valid']) {
+            paylogLogInvalidInfo($row);
+        }
         $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td nowrap>");
         $timestamp = null;
-        if (isset($info['payment_date']) && $info['payment_date'] !== '') {
-            $timestamp = strtotime($info['payment_date']);
+        if ($normalized['paymentDate'] !== null) {
+            $timestamp = strtotime($normalized['paymentDate']);
         }
         if ($timestamp === false || $timestamp === null) {
             $fallbackDate = $row['processdate'] ?? '';
@@ -148,13 +186,16 @@ if ($op == "") {
         $output->rawOutput("</td><td>");
         $output->outputNotl("%s", $row['txnid']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("%s", $info['txn_type']);
+        $txnType = $normalized['placeholder']
+            ? Translator::translate($normalized['placeholder'])
+            : ($normalized['txnType'] ?? Translator::translate('Unknown'));
+        $output->outputNotl("%s", $txnType);
         $output->rawOutput("</td><td nowrap>");
-        $output->outputNotl("%.2f %s", $info['mc_gross'], $info['mc_currency']);
+        $output->outputNotl("%.2f %s", $normalized['gross'], $normalized['currency']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("%s", $info['mc_fee']);
+        $output->outputNotl("%.2f", $normalized['fee']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("%.2f", (float)$info['mc_gross'] - (float)$info['mc_fee']);
+        $output->outputNotl("%.2f", $normalized['gross'] - $normalized['fee']);
         $output->rawOutput("</td><td>");
         $output->outputNotl("%s", Translator::translate($row['processed'] ? "`@Yes`0" : "`\$No`0"));
         $output->rawOutput("</td><td nowrap>");
@@ -169,15 +210,15 @@ if ($op == "") {
             $output->rawOutput("</a>");
             Nav::add('', "user.php?op=edit&userid={$row['acctid']}");
         } else {
-            $amt = round((float)$info['mc_gross'] * 100, 0);
-            $memo = "";
-            if (isset($info['memo'])) {
-                $memo = $info['memo'];
+            $amt = round($normalized['gross'] * 100, 0);
+            $memo = $normalized['memo'];
+            if ($normalized['placeholder'] && $memo === '') {
+                $memo = Translator::translate($normalized['placeholder']);
             }
             $link = "donators.php?op=add1&name=" . rawurlencode($memo) . "&amt=$amt&txnid={$row['txnid']}";
-            $itemNumberRaw = isset($info['item_number']) && $info['item_number'] !== ''
-                ? $info['item_number']
-                : Translator::translate('Unknown');
+            $itemNumberRaw = $normalized['itemNumber'] ?? (
+                $normalized['placeholder'] ? Translator::translate($normalized['placeholder']) : Translator::translate('Unknown')
+            );
             $itemNumber = htmlentities($itemNumberRaw, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
             $memoSafe = htmlentities($memo, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
             $output->rawOutput("-=( <a href='$link' title=\"{$itemNumber}\" alt=\"{$itemNumber}\">[{$memoSafe}]</a> )=-");
