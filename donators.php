@@ -45,22 +45,39 @@ Translator::getInstance()->setSchema();
 $add = Translator::translate("Add Donation");
 $output->rawOutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>");
 Nav::add("", "donators.php?op=add1&ret=" . rawurlencode($ret) . "");
+
+$coerceToString = static function ($value): string {
+    if (is_string($value)) {
+        return $value;
+    }
+
+    if (is_scalar($value)) {
+        return (string) $value;
+    }
+
+    return '';
+};
+
 $name = Http::post("name");
 if ($name == "") {
     $name = Http::get("name");
 }
+$name = $coerceToString($name);
 $amt = Http::post("amt");
 if ($amt == "") {
     $amt = Http::get("amt");
 }
+$amt = $coerceToString($amt);
 $reason = Http::post("reason");
 if ($reason == "") {
     $reason = Http::get("reason");
 }
+$reason = $coerceToString($reason);
 $txnid = Http::post("txnid");
 if ($txnid == "") {
     $txnid = Http::get("txnid");
 }
+$txnid = $coerceToString($txnid);
 if ($reason == "") {
     $reason = Translator::translate("manual donation entry");
 }
@@ -164,6 +181,7 @@ if ($op == "") {
     if ($name == '') {
         $name = Http::get('name');
     }
+    $name = $coerceToString($name);
     $columns = ['acctid', 'login', 'name', 'donation', 'donationspent'];
     $results = [];
     if ($name !== '') {
@@ -174,14 +192,17 @@ if ($op == "") {
     if ($amt == '') {
         $amt = Http::get("amt");
     }
+    $amt = $coerceToString($amt);
     $reason = Http::post("reason");
     if ($reason == "") {
         $reason = Http::get("reason");
     }
+    $reason = $coerceToString($reason);
     $txnid = Http::post('txnid');
     if ($txnid == '') {
         $txnid = Http::get("txnid");
     }
+    $txnid = $coerceToString($txnid);
     $output->output("Confirm the addition of %s points to:`n", $amt);
     if ($reason) {
         $output->output("(Reason: `^`b`i%s`i`b`0)`n`n", $reason);
