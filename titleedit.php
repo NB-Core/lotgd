@@ -165,15 +165,16 @@ switch ($op) {
             $row = Database::fetchAssoc($result);
         }
         $output->output("`@`c`b-=Title Editor=-`b`c");
-        $ops = Translator::translate("Ops");
-        $dks = Translator::translate("Dragon Kills");
+        $ops = Translator::translateInline("Ops");
+        $dks = Translator::translateInline("Dragon Kills");
         // $ref is currently unused
         // $reftag = Translator::translate("Reference Tag");
-        $mtit = Translator::translate("Male Title");
-        $ftit = Translator::translate("Female Title");
-        $edit = Translator::translate("Edit");
-        $del = Translator::translate("Delete");
-        $delconfirm = Translator::translate("Are you sure you wish to delete this title?");
+        $mtit = Translator::translateInline("Male Title");
+        $ftit = Translator::translateInline("Female Title");
+        $edit = Translator::translateInline("Edit");
+        $del = Translator::translateInline("Delete");
+        $delconfirm = Translator::translateInline("Are you sure you wish to delete this title?");
+        $delconfirmJs = json_encode($delconfirm, JSON_HEX_APOS | JSON_HEX_QUOT);
         $output->rawOutput("<table border=0 cellspacing=0 cellpadding=2 width='100%' align='center'>");
         // reference tag is currently unused
         // $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$reftag</td><td>$mtit</td><td>$ftit</td></tr>");
@@ -183,7 +184,7 @@ switch ($op) {
         while ($row = Database::fetchAssoc($result)) {
             $id = $row['titleid'];
             $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|<a href='titleedit.php?op=delete&id=$id' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
+            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|<a href='titleedit.php?op=delete&id=$id' onClick='return confirm($delconfirmJs);'>$del</a>]</td>");
             Nav::add("", "titleedit.php?op=edit&id=$id");
             Nav::add("", "titleedit.php?op=delete&id=$id");
             $output->rawOutput("<td>");

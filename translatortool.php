@@ -130,15 +130,15 @@ if ($op == "") {
         $output->outputNotl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . " ({$row['c']})</option>", true);
     }
     $output->outputNotl("</select>", true);
-    $show = Translator::translate("Show");
+    $show = Translator::translateInline("Show");
     $output->outputNotl("<input type='submit' class='button' value=\"$show\">", true);
     $output->outputNotl("</form>", true);
-    $ops = Translator::translate("Ops");
-    $from = Translator::translate("From");
-    $to = Translator::translate("To");
-    $version = Translator::translate("Version");
-    $author = Translator::translate("Author");
-    $norows = Translator::translate("No rows found");
+    $ops = Translator::translateInline("Ops");
+    $from = Translator::translateInline("From");
+    $to = Translator::translateInline("To");
+    $version = Translator::translateInline("Version");
+    $author = Translator::translateInline("Author");
+    $norows = Translator::translateInline("No rows found");
     $output->outputNotl("<table border='0' cellpadding='2' cellspacing='0'>", true);
     $output->outputNotl("<tr class='trhead'><td>$ops</td><td>$from</td><td>$to</td><td>$version</td><td>$author</td></tr>", true);
     $sql = "SELECT * FROM " . Database::prefix("translations") . " WHERE language='" . LANGUAGE . "' AND uri='" . (string) Http::get('u') . "'";
@@ -148,7 +148,7 @@ if ($op == "") {
         while ($row = Database::fetchAssoc($result)) {
             $i++;
             $output->outputNotl("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>", true);
-            $edit = Translator::translate("Edit");
+            $edit = Translator::translateInline("Edit");
             $output->outputNotl("<a href='translatortool.php?u=" . rawurlencode($row['uri']) . "&t=" . rawurlencode($row['intext']) . "'>$edit</a>", true);
             $output->outputNotl("</td><td>", true);
             $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
