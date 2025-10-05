@@ -71,6 +71,7 @@
     window.Lotgd.Async.Handler.Mail = window.Lotgd.Async.Handler.Mail || {};
     window.Lotgd.Async.Handler.Timeout = window.Lotgd.Async.Handler.Timeout || {};
     window.Lotgd.Async.Handler.Commentary = window.Lotgd.Async.Handler.Commentary || {};
+    window.Lotgd.Async.Handler.Bans = window.Lotgd.Async.Handler.Bans || {};
 
     // Create the JaxonLotgd alias for backward compatibility
     window.JaxonLotgd = {
