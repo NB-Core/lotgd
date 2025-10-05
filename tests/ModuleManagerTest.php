@@ -271,10 +271,17 @@ namespace Lotgd\Tests {
             sort($expectedPaths);
             $this->assertSame($expectedPaths, $this->listCacheFiles());
 
-            $needle = "INSERT INTO gamelog (message,category,severity,filed,date,who) VALUES ('Module bad name reinstalled','modules','info','0'";
+            $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+            $sql  = sprintf(
+                'INSERT INTO %s (message,category,severity,filed,date,who) VALUES (:message, :category, :severity, :filed, :date, :who)',
+                \Lotgd\MySQL\Database::prefix('gamelog')
+            );
+
             $matches = array_filter(
-                \Lotgd\MySQL\Database::$queries,
-                static fn (string $query): bool => str_contains($query, $needle)
+                $conn->executeStatements,
+                static fn (array $entry): bool =>
+                    $entry['sql'] === $sql
+                    && ($entry['params']['message'] ?? null) === 'Module bad name reinstalled'
             );
 
             $this->assertEmpty($matches, 'Unexpected gamelog entry was written.');
@@ -295,10 +302,17 @@ namespace Lotgd\Tests {
 
             $this->assertSame($expectedPaths, $this->listCacheFiles());
 
-            $needle = "INSERT INTO gamelog (message,category,severity,filed,date,who) VALUES ('Module mod force-uninstalled','modules','info','0'";
+            $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+            $sql  = sprintf(
+                'INSERT INTO %s (message,category,severity,filed,date,who) VALUES (:message, :category, :severity, :filed, :date, :who)',
+                \Lotgd\MySQL\Database::prefix('gamelog')
+            );
+
             $matches = array_filter(
-                \Lotgd\MySQL\Database::$queries,
-                static fn (string $query): bool => str_contains($query, $needle)
+                $conn->executeStatements,
+                static fn (array $entry): bool =>
+                    $entry['sql'] === $sql
+                    && ($entry['params']['message'] ?? null) === 'Module mod force-uninstalled'
             );
 
             $this->assertEmpty($matches, 'Unexpected gamelog entry was written.');
@@ -361,10 +375,19 @@ namespace Lotgd\Tests {
 
         private function assertGamelogEntryContains(string $message): void
         {
-            $needle = "INSERT INTO gamelog (message,category,severity,filed,date,who) VALUES ('{$message}','modules','info','0'";
+            $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+            $sql  = sprintf(
+                'INSERT INTO %s (message,category,severity,filed,date,who) VALUES (:message, :category, :severity, :filed, :date, :who)',
+                \Lotgd\MySQL\Database::prefix('gamelog')
+            );
+
             $matches = array_filter(
-                \Lotgd\MySQL\Database::$queries,
-                static fn (string $query): bool => str_contains($query, $needle)
+                $conn->executeStatements,
+                static fn (array $entry): bool =>
+                    $entry['sql'] === $sql
+                    && ($entry['params']['message'] ?? null) === $message
+                    && ($entry['params']['category'] ?? null) === 'modules'
+                    && ($entry['params']['severity'] ?? null) === 'info'
             );
 
             $this->assertNotEmpty($matches, 'Expected gamelog entry was not written.');
