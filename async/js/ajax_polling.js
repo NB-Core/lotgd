@@ -31,7 +31,7 @@ function lotgdUpdateWindowFocusState()
 }
 
 window.addEventListener('focus', function () {
-    lotgd_windowHasFocus = true;
+    lotgdUpdateWindowFocusState();
 });
 
 window.addEventListener('blur', function () {
@@ -49,6 +49,7 @@ document.addEventListener('visibilitychange', function () {
 
 function lotgdShouldNotify()
 {
+    lotgdUpdateWindowFocusState();
     return !lotgd_windowHasFocus || document.visibilityState === 'hidden';
 }
 
