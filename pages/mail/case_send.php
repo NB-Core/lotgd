@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Mail;
 use Lotgd\Http;
@@ -34,19 +35,25 @@ function mailSend(): void
         return;
     }
 
-    $sql = 'SELECT acctid FROM ' . Database::prefix('accounts') . " WHERE login='$to'";
-    $result = Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $table = Database::prefix('accounts');
 
-    if (Database::numRows($result) <= 0) {
+    $recipient = $conn->fetchAssociative(
+        "SELECT acctid FROM $table WHERE login = :login",
+        ['login' => $to],
+        ['login' => ParameterType::STRING]
+    );
+
+    if ($recipient === false || ! array_key_exists('acctid', $recipient)) {
         $output->output('Could not find the recipient, please try again.`n');
 
         return;
     }
 
-    $row = Database::fetchAssoc($result);
+    $acctid = (int) $recipient['acctid'];
     $checkUnread = (bool) $settings->getSetting('onlyunreadmails', true);
 
-    if (Mail::isInboxFull($row['acctid'], $checkUnread)) {
+    if (Mail::isInboxFull($acctid, $checkUnread)) {
         $output->output('`$You cannot send that person mail, their mailbox is full!`0`n`n');
 
         return;
@@ -55,8 +62,8 @@ function mailSend(): void
     $subject = sanitizeSubject($subject);
     $body = sanitizeBody($body);
 
-    Mail::systemMail($row['acctid'], $subject, $body, (int) $session['user']['acctid']);
-    DataCache::getInstance()->invalidatedatacache("mail-{$row['acctid']}");
+    Mail::systemMail($acctid, $subject, $body, (int) $session['user']['acctid']);
+    DataCache::getInstance()->invalidatedatacache("mail-{$acctid}");
     $output->output('Your message was sent!`n');
 
     if ($sendClose) {
