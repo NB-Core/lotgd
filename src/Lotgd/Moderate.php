@@ -393,8 +393,27 @@ class Moderate
             if ($moderating) {
                 if ($session['user']['superuser'] & SU_EDIT_USERS) {
                     $reason = $rawc[$i] ?? '';
-                    $out .= "`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> | <a href='user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode((string) $reason) . "'>Ban</a> ]&nbsp;";
-                    Navigation::add('', "user.php?op=setupban&userid=" . $auth[$i] . "&reason=" . rawurlencode((string) $reason));
+                    $commentId = $commentids[$i];
+
+                    if ($reason !== '') {
+                        if (! isset($session['moderation']) || ! is_array($session['moderation'])) {
+                            $session['moderation'] = [];
+                        }
+
+                        if (! isset($session['moderation']['ban_reasons']) || ! is_array($session['moderation']['ban_reasons'])) {
+                            $session['moderation']['ban_reasons'] = [];
+                        }
+
+                        $session['moderation']['ban_reasons'][$commentId] = $reason;
+
+                        if (count($session['moderation']['ban_reasons']) > 50) {
+                            $session['moderation']['ban_reasons'] = array_slice($session['moderation']['ban_reasons'], -50, 50, true);
+                        }
+                    }
+
+                    $banLink = 'user.php?op=setupban&userid=' . $auth[$i] . '&commentid=' . $commentId;
+                    $out .= "`0[ <input type='checkbox' name='comment[{$commentId}]'> | <a href='{$banLink}'>Ban</a> ]&nbsp;";
+                    Navigation::add('', $banLink);
                 } else {
                     $out .= "`0[ <input type='checkbox' name='comment[{$commentids[$i]}]'> ]&nbsp;";
                 }

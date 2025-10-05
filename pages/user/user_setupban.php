@@ -8,6 +8,9 @@ use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Http;
+use Lotgd\Sanitize;
+
+global $session;
 
 $sql = "SELECT name,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE acctid=\"$userid\"";
 $result = Database::query($sql);
@@ -30,8 +33,40 @@ $output->rawOutput("<input name='id' value=\"" . HTMLEntities($row['uniqueid'], 
 $output->output("`nDuration: ");
 $output->rawOutput("<input name='duration' id='duration' size='3' value='14'>");
 $output->output("Days (0 for permanent)`n");
-$reason = Http::get('reason');
-if ($reason == "") {
+$commentId = (int) Http::get('commentid');
+$reason = '';
+
+if ($commentId > 0) {
+    $reason = $session['moderation']['ban_reasons'][$commentId] ?? '';
+
+    if ($reason == '') {
+        $commentTable = Database::prefix('commentary');
+        $accountsTable = Database::prefix('accounts');
+        $sqlComment = "SELECT {$commentTable}.comment, {$accountsTable}.name FROM {$commentTable} LEFT JOIN {$accountsTable} ON {$accountsTable}.acctid = {$commentTable}.author WHERE {$commentTable}.commentid = $commentId";
+        $commentResult = Database::query($sqlComment);
+        if (is_array($commentResult) || is_object($commentResult)) {
+            $commentRow = Database::fetchAssoc($commentResult);
+            Database::freeResult($commentResult);
+        } else {
+            $commentRow = null;
+        }
+
+        if ($commentRow) {
+            $name = $commentRow['name'] ?? '';
+            if ($name === '') {
+                $name = Translator::translateInline('Someone');
+            }
+
+            $commentText = HTMLEntities($commentRow['comment'] ?? '', ENT_COMPAT, $charset);
+            $commentText = str_replace('&amp;', '&', $commentText);
+            $compiled = "`&{$name}`3 says, \"`#{$commentText}`3\"`0`n";
+            $compiled = Sanitize::fullSanitize($compiled);
+            $reason = htmlentities($compiled, ENT_QUOTES, $charset);
+        }
+    }
+}
+
+if ($reason == '') {
     $reason = Translator::translateInline("Don't mess with me.");
 }
 $output->output("Reason for the ban: ");

@@ -38,6 +38,7 @@ final class ModeratedCommentaryFallbackTest extends TestCase
         Nav::getInstance()->clearNavTree();
 
         Database::$mockResults = [];
+        Database::$queries = [];
     }
 
     public function testModerationHandlesGamePostWithoutName(): void
@@ -81,6 +82,53 @@ final class ModeratedCommentaryFallbackTest extends TestCase
         restore_error_handler();
 
         $output = Output::getInstance()->getRawOutput();
-        $this->assertStringContainsString('user.php?op=setupban&userid=0', $output);
+        $this->assertStringContainsString('user.php?op=setupban&userid=0&commentid=1', $output);
+        $this->assertStringNotContainsString('reason=', $output);
+
+    }
+
+    public function testModerationHandlesLongCommentWithoutSqlError(): void
+    {
+        global $session;
+
+        $session['user'] = [
+            'superuser' => SU_EDIT_COMMENTS | SU_EDIT_USERS,
+            'prefs' => ['timeoffset' => 0, 'timestamp' => 0],
+            'recentcomments' => '2000-01-01 00:00:00',
+            'loggedin' => true,
+            'name' => 'Tester',
+        ];
+
+        $longComment = str_repeat('Long text ', 300);
+
+        $commentRows = [[
+            'commentid' => 2,
+            'comment' => $longComment,
+            'acctid' => 1,
+            'author' => 1,
+            'name' => 'LongPoster',
+            'clanrank' => 0,
+            'clanshort' => '',
+            'postdate' => '2000-01-01 00:00:00',
+            'section' => 'test-section',
+        ]];
+
+        $settingsRows = [[
+            'setting' => 'charset',
+            'value' => 'UTF-8',
+        ]];
+
+        Database::$mockResults = [$settingsRows, $commentRows];
+        Settings::getInstance();
+
+        Moderate::viewmoderatedcommentary('test-section', 'X');
+
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString('user.php?op=setupban&userid=1&commentid=2', $output);
+        $this->assertStringNotContainsString('reason=', $output);
+
+        $reasons = $session['moderation']['ban_reasons'] ?? [];
+        $this->assertArrayHasKey(2, $reasons);
+        $this->assertSame(0, substr_count(implode(' ', Database::$queries), 'reason='));
     }
 }
