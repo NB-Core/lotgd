@@ -135,6 +135,8 @@ namespace Lotgd {
 namespace Lotgd\Tests {
     use Lotgd\MySQL\Database;
     use Lotgd\Output;
+    use Lotgd\Settings;
+    use Lotgd\Tests\Stubs\DummySettings;
     use Lotgd\Tests\Stubs\DoctrineBootstrap;
     use Lotgd\Tests\Stubs\DoctrineConnection;
     use PHPUnit\Framework\TestCase;
@@ -160,6 +162,12 @@ namespace Lotgd\Tests {
             Database::$mockResults = [];
             Database::$queries = [];
             DoctrineBootstrap::$conn = null;
+            Database::$settings_table = [
+                'charset'           => 'UTF-8',
+                'enabletranslation' => true,
+                'collecttexts'      => '',
+            ];
+            Settings::setInstance(new DummySettings(Database::$settings_table));
             if (method_exists(Output::class, 'reset')) {
                 Output::reset();
             }
@@ -191,7 +199,7 @@ namespace Lotgd\Tests {
                 'reason'   => 'Testing',
             ];
 
-            Database::$mockResults = [true, [['acctid' => 42]], true];
+            Database::$mockResults = [[['acctid' => 42]]];
 
             $include = static function (): void {
                 global $session, $_POST, $_SERVER;
@@ -200,9 +208,9 @@ namespace Lotgd\Tests {
             };
             \Closure::bind($include, null, null)();
 
-            $this->assertNotEmpty(Database::$queries);
-            $insert = Database::$queries[0] ?? '';
-            $this->assertStringContainsString('"' . DATETIME_DATEMAX . '"', $insert);
+            $statement = $this->connection->executeStatements[0] ?? null;
+            $this->assertNotNull($statement, 'Expected an INSERT statement to be recorded.');
+            $this->assertSame(DATETIME_DATEMAX, $statement['params'][2] ?? null);
         }
 
         public function testRemoveBanHonoursDatetimeBounds(): void
