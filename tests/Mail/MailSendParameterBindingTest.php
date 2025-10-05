@@ -1,8 +1,12 @@
 <?php
-
 declare(strict_types=1);
 
-namespace Lotgd\Tests\Mail;
+namespace {
+    require_once __DIR__ . '/../bootstrap.php';
+    require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
+}
+
+namespace Lotgd\Tests\Mail {
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\DataCache;
@@ -12,25 +16,22 @@ use Lotgd\Tests\Stubs\DoctrineBootstrap;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Tests\Stubs\MailDummySettings;
 use PHPUnit\Framework\TestCase;
+use function Lotgd\Tests\Mail\Fixture\mailSend as fixtureMailSend;
 
-/**
- * @runClassInSeparateProcess
- */
 final class MailSendParameterBindingTest extends TestCase
 {
     private DoctrineConnection $connection;
 
     protected function setUp(): void
     {
-        require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
-
         Database::$doctrineConnection = null;
         Database::$instance = null;
         Database::$mockResults = [];
         Database::$queries = [];
         DoctrineBootstrap::$conn = null;
 
-        $this->connection = Database::getDoctrineConnection();
+        $this->connection = new DoctrineConnection();
+        Database::setDoctrineConnection($this->connection);
         $this->connection->fetchAssociativeResults = [];
         $this->connection->lastFetchAssociativeParams = [];
         $this->connection->lastFetchAssociativeTypes = [];
@@ -75,6 +76,7 @@ final class MailSendParameterBindingTest extends TestCase
 
     protected function tearDown(): void
     {
+        Database::resetDoctrineConnection();
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
     }
@@ -92,13 +94,11 @@ final class MailSendParameterBindingTest extends TestCase
 
     private function executeMailSend(): void
     {
-        if (! function_exists('mailSend')) {
+        if (! function_exists('Lotgd\\Tests\\Mail\\Fixture\\mailSend')) {
             require __DIR__ . '/case_send_fixture.php';
-
-            return;
         }
 
-        mailSend();
+        fixtureMailSend();
     }
 
     public function testMailSendBindsQuotedLogin(): void
@@ -156,4 +156,5 @@ final class MailSendParameterBindingTest extends TestCase
 
         $this->assertNotEmpty($inserted, 'Expected mail insert query to be executed.');
     }
+}
 }

@@ -467,6 +467,15 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             return self::$doctrineConnection;
         }
 
+        public static function setDoctrineConnection(object $connection): void
+        {
+            self::$doctrineConnection = $connection;
+
+            if (class_exists('Lotgd\\Doctrine\\Bootstrap', false) && property_exists('Lotgd\\Doctrine\\Bootstrap', 'conn')) {
+                \Lotgd\Doctrine\Bootstrap::$conn = $connection;
+            }
+        }
+
         public static function hasDoctrineConnection(): bool
         {
             return self::$doctrineConnection !== null;

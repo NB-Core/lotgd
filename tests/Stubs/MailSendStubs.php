@@ -25,31 +25,41 @@ if (! function_exists('mailSend')) {
     }
 }
 
-function sanitizeSubject(string $subject): string
-{
-    return str_replace('`n', '', $subject);
+if (! function_exists('sanitizeSubject')) {
+    function sanitizeSubject(string $subject): string
+    {
+        return str_replace('`n', '', $subject);
+    }
 }
 
-function sanitizeBody(string $body): string
-{
-    $body = replaceGameNewlines($body);
-    $body = normalizeLineEndings($body);
-    return escapeAndTruncateBody($body);
+if (! function_exists('sanitizeBody')) {
+    function sanitizeBody(string $body): string
+    {
+        $body = replaceGameNewlines($body);
+        $body = normalizeLineEndings($body);
+        return escapeAndTruncateBody($body);
+    }
 }
 
-function replaceGameNewlines(string $body): string
-{
-    return str_replace('`n', "\n", $body);
+if (! function_exists('replaceGameNewlines')) {
+    function replaceGameNewlines(string $body): string
+    {
+        return str_replace('`n', "\n", $body);
+    }
 }
 
-function normalizeLineEndings(string $body): string
-{
-    $body = str_replace("\r\n", "\n", $body);
-    return str_replace("\r", "\n", $body);
+if (! function_exists('normalizeLineEndings')) {
+    function normalizeLineEndings(string $body): string
+    {
+        $body = str_replace("\r\n", "\n", $body);
+        return str_replace("\r", "\n", $body);
+    }
 }
 
-function escapeAndTruncateBody(string $body): string
-{
-    $limit = (int) getsetting('mailsizelimit', 1024);
-    return addslashes(substr(stripslashes($body), 0, $limit));
+if (! function_exists('escapeAndTruncateBody')) {
+    function escapeAndTruncateBody(string $body): string
+    {
+        $limit = (int) getsetting('mailsizelimit', 1024);
+        return addslashes(substr(stripslashes($body), 0, $limit));
+    }
 }
