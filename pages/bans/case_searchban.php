@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Http;
@@ -14,10 +15,14 @@ $output = Output::getInstance();
 
 $operator = "<=";
 $playerSearch = new PlayerSearch();
+$conn = Database::getDoctrineConnection();
+$banTable = Database::prefix('bans');
+$banConditions = 'WHERE 0';
+$banParameters = [];
+$banTypes = [];
 
 
 $target = Http::post('target');
-$since = 'WHERE 0';
 $submit = Translator::translateInline("Search");
 if ($target == '') {
     $output->rawOutput("<form action='bans.php?op=searchban' method='POST'>");
@@ -26,11 +31,30 @@ if ($target == '') {
     $output->rawOutput("<input name='target' value='$target'>");
     $output->rawOutput("<input type='submit' class='button' value='$submit'></from><br><br>");
 } elseif (is_numeric($target)) {
-    //none
-    $sql = "SELECT lastip,uniqueid FROM accounts WHERE acctid=" . $target;
-    $result = Database::query($sql);
-    $row = Database::fetchAssoc($result);
-    $since = "WHERE ipfilter LIKE '%" . $row['lastip'] . "%' OR uniqueid LIKE '%" . $row['uniqueid'] . "%'";
+    $accountTable = Database::prefix('accounts');
+    $account = $conn->fetchAssociative(
+        "SELECT lastip, uniqueid FROM $accountTable WHERE acctid = :acctid",
+        ['acctid' => (int) $target],
+        ['acctid' => ParameterType::INTEGER]
+    ) ?: [];
+
+    $filters = [];
+
+    if (($account['lastip'] ?? '') !== '') {
+        $filters[] = 'ipfilter LIKE :ipfilter';
+        $banParameters['ipfilter'] = '%' . $account['lastip'] . '%';
+        $banTypes['ipfilter'] = ParameterType::STRING;
+    }
+
+    if (($account['uniqueid'] ?? '') !== '') {
+        $filters[] = 'uniqueid LIKE :uniqueid';
+        $banParameters['uniqueid'] = '%' . $account['uniqueid'] . '%';
+        $banTypes['uniqueid'] = ParameterType::STRING;
+    }
+
+    if ($filters !== []) {
+        $banConditions = 'WHERE ' . implode(' OR ', $filters);
+    }
 } else {
     $names = $playerSearch->legacyLookup((string) $target, ['acctid', 'login', 'name'], 'login');
     if ($names['rows'] !== []) {
@@ -49,8 +73,11 @@ if ($target == '') {
     }
 }
 
-$sql = "SELECT * FROM " . Database::prefix("bans") . " $since ORDER BY banexpire ASC";
-$result = Database::query($sql);
+$bans = $conn->fetchAllAssociative(
+    "SELECT * FROM $banTable $banConditions ORDER BY banexpire ASC",
+    $banParameters,
+    $banTypes
+);
 $output->rawOutput("<script>
 (function () {
     function lotgdLoadAffectedUsers(ip, id, index) {
@@ -83,7 +110,7 @@ $aff = Translator::translateInline("Affects");
 $l = Translator::translateInline("Last");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$bauth</td><td>$ipd</td><td>$dur</td><td>$mssg</td><td>$aff</td><td>$l</td></tr>");
 $i = 0;
-while ($row = Database::fetchAssoc($result)) {
+foreach ($bans as $row) {
     $liftban = Translator::translateInline("Lift&nbsp;ban");
     $showuser = Translator::translateInline("Click&nbsp;to&nbsp;show&nbsp;users");
     $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");

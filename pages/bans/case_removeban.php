@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Http;
@@ -10,8 +11,22 @@ use Lotgd\Output;
 use Lotgd\DateTime;
 
 $output = Output::getInstance();
+$conn = Database::getDoctrineConnection();
+$banTable = Database::prefix('bans');
 
-Database::query("DELETE FROM " . Database::prefix("bans") . " WHERE banexpire < \"" . date("Y-m-d H:m:s") . "\" AND banexpire<'" . DATETIME_DATEMAX . "'");
+$deleteNow = date('Y-m-d H:m:s');
+$conn->executeStatement(
+    "DELETE FROM $banTable WHERE banexpire < :now AND banexpire < :max",
+    [
+        'now' => $deleteNow,
+        'max' => DATETIME_DATEMAX,
+    ],
+    [
+        'now' => ParameterType::STRING,
+        'max' => ParameterType::STRING,
+    ]
+);
+
 $duration =  Http::get("duration");
 if (Http::get('notbefore')) {
     $operator = ">=";
@@ -20,17 +35,43 @@ if (Http::get('notbefore')) {
 }
 
 if ($duration == "") {
-    $since = " WHERE banexpire $operator '" . date("Y-m-d H:i:s", strtotime("+2 weeks")) . "' AND banexpire < '" . DATETIME_DATEMAX . "'";
+    $limit = date("Y-m-d H:i:s", strtotime("+2 weeks"));
+    $since = " WHERE banexpire $operator :limit AND banexpire < :max";
+    $params = [
+        'limit' => $limit,
+        'max' => DATETIME_DATEMAX,
+    ];
+    $types = [
+        'limit' => ParameterType::STRING,
+        'max' => ParameterType::STRING,
+    ];
         $output->output("`bShowing bans that will expire within 2 weeks.`b`n`n");
 } else {
     if ($duration == "forever") {
-        $since = " WHERE banexpire='" . DATETIME_DATEMAX . "'";
+        $since = " WHERE banexpire = :max";
+        $params = [
+            'max' => DATETIME_DATEMAX,
+        ];
+        $types = [
+            'max' => ParameterType::STRING,
+        ];
         $output->output("`bShowing all permanent bans`b`n`n");
     } elseif ($duration == "all") {
         $since = "";
+        $params = [];
+        $types = [];
         $output->output("`bShowing all bans`b`n`n");
     } else {
-        $since = " WHERE banexpire $operator '" . date("Y-m-d H:i:s", strtotime("+" . $duration)) . "' AND banexpire < '" . DATETIME_DATEMAX . "'";
+        $limit = date("Y-m-d H:i:s", strtotime("+" . $duration));
+        $since = " WHERE banexpire $operator :limit AND banexpire < :max";
+        $params = [
+            'limit' => $limit,
+            'max' => DATETIME_DATEMAX,
+        ];
+        $types = [
+            'limit' => ParameterType::STRING,
+            'max' => ParameterType::STRING,
+        ];
         $output->output("`bShowing bans that will expire within %s.`b`n`n", $duration);
     }
 }
@@ -64,8 +105,11 @@ Nav::add("1 year", "bans.php?op=removeban&duration=1+year&notbefore=1");
 Nav::add("2 years", "bans.php?op=removeban&duration=2+years&notbefore=1");
 Nav::add("4 years", "bans.php?op=removeban&duration=4+years&notbefore=1");
 
-$sql = "SELECT * FROM " . Database::prefix("bans") . " $since ORDER BY banexpire ASC";
-$result = Database::query($sql);
+$bans = $conn->fetchAllAssociative(
+    "SELECT * FROM $banTable $since ORDER BY banexpire ASC",
+    $params ?? [],
+    $types ?? []
+);
 $output->rawOutput("<script>
 (function () {
     function lotgdLoadAffectedUsers(ip, id, index) {
@@ -98,7 +142,7 @@ $aff = Translator::translateInline("Affects");
 $l = Translator::translateInline("Last");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$bauth</td><td>$ipd</td><td>$dur</td><td>$mssg</td><td>$aff</td><td>$l</td></tr>");
 $i = 0;
-while ($row = Database::fetchAssoc($result)) {
+foreach ($bans as $row) {
     $liftban = Translator::translateInline("Lift&nbsp;ban");
     $showuser = Translator::translateInline("Click&nbsp;to&nbsp;show&nbsp;users");
     $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");

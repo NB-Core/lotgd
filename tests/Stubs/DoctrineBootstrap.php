@@ -49,6 +49,9 @@ class DoctrineConnection
     public array $fetchAllResults = [];
     public array $lastFetchAllParams = [];
     public array $lastFetchAllTypes = [];
+    public array $fetchAssociativeResults = [];
+    public array $lastFetchAssociativeParams = [];
+    public array $lastFetchAssociativeTypes = [];
     public array $executeStatements = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
@@ -106,6 +109,28 @@ class DoctrineConnection
         }
 
         return [];
+    }
+
+    public function fetchAssociative(string $sql, array $params = [], array $types = []): array|false
+    {
+        $this->queries[] = $sql;
+        $this->lastFetchAssociativeParams = $params;
+        $this->lastFetchAssociativeTypes = $types;
+
+        if (!empty($this->fetchAssociativeResults)) {
+            $row = array_shift($this->fetchAssociativeResults);
+
+            return is_array($row) ? $row : false;
+        }
+
+        if (!empty(Database::$mockResults)) {
+            $rows = array_shift(Database::$mockResults);
+            if (is_array($rows)) {
+                return array_is_list($rows) ? ($rows[0] ?? false) : $rows;
+            }
+        }
+
+        return false;
     }
 
     public function executeStatement(string $sql, array $params = [], array $types = []): int
