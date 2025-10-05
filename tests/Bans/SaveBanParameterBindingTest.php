@@ -14,6 +14,24 @@ namespace Lotgd {
     if (! class_exists(__NAMESPACE__ . '\\Translator', false)) {
         class Translator
         {
+            public static function getInstance(): self
+            {
+                return new self();
+            }
+
+            public static function enableTranslation(bool $enabled): void
+            {
+            }
+
+            public static function getNamespace(): string
+            {
+                return '';
+            }
+
+            public function setSchema(string|false|null $schema = false): void
+            {
+            }
+
             public static function translate(string $text, string|false|null $schema = false): string
             {
                 return $text;
@@ -30,6 +48,11 @@ namespace Lotgd {
             }
 
             public static function tlbuttonPop(): string
+            {
+                return '';
+            }
+
+            public static function tlbuttonClear(): string
             {
                 return '';
             }
@@ -134,7 +157,7 @@ namespace Lotgd\Tests\Bans {
             $insert = $statements[0] ?? null;
             $this->assertNotNull($insert, 'Insert statement should be recorded.');
             $this->assertSame(
-                ['Admin "Ω"', $ip, $expectedExpiry, $reason],
+                ['Admin "Ω"', $ip, '', $expectedExpiry, $reason],
                 array_values($insert['params'] ?? [])
             );
             $this->assertStringNotContainsString($ip, $insert['sql'] ?? '');

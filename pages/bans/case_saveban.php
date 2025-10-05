@@ -27,10 +27,14 @@ if ($durationInput === 0) {
 if ($type === 'ip') {
     $column = 'ipfilter';
     $key = 'lastip';
+    $ipValue = $targetIdentifier;
+    $uniqueIdValue = '';
     $isSelfBan = substr($_SERVER['REMOTE_ADDR'], 0, strlen($targetIdentifier)) === $targetIdentifier;
 } else {
     $column = 'uniqueid';
     $key = 'uniqueid';
+    $ipValue = '';
+    $uniqueIdValue = $targetIdentifier;
     $isSelfBan = Cookies::getLgi() === $targetIdentifier;
 }
 
@@ -41,8 +45,9 @@ if ($isSelfBan) {
     return;
 }
 
-$sql = 'INSERT INTO ' . Database::prefix('bans') . " (banner, {$column}, banexpire, banreason) VALUES (?, ?, ?, ?)";
-$affected = $conn->executeStatement($sql, [$banner, $targetIdentifier, $duration, $reason]);
+$sql = 'INSERT INTO ' . Database::prefix('bans') . ' (banner, ipfilter, uniqueid, banexpire, banreason) VALUES (?, ?, ?, ?, ?)';
+$parameters = [$banner, $ipValue, $uniqueIdValue, $duration, $reason];
+$affected = $conn->executeStatement($sql, $parameters);
 Database::setAffectedRows($affected);
 
 $output->output("%s ban rows entered.`n`n", Database::affectedRows());
