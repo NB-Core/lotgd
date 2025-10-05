@@ -11,6 +11,7 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Output;
 use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
+use Lotgd\PlayerSearch;
 use Lotgd\Sanitize;
 use Lotgd\Settings;
 use Lotgd\Translator;
@@ -23,6 +24,7 @@ require_once __DIR__ . "/common.php";
 
 $output   = Output::getInstance();
 $settings = Settings::getInstance();
+$playerSearch = new PlayerSearch();
 
 Translator::getInstance()->setSchema("bank");
 
@@ -74,43 +76,52 @@ if ($op == "") {
     }
 } elseif ($op == "transfer2") {
     $output->output("`6`bConfirm Transfer`b:`n");
-    $string = "%";
     $toPost = Http::post('to');
     $to = is_string($toPost) ? $toPost : '';
-    for ($x = 0; $x < strlen($to); $x++) {
-        $string .= substr($to, $x, 1) . "%";
-    }
-    $sql = "SELECT name,login FROM " . Database::prefix("accounts") . " WHERE name LIKE '" . addslashes($string) . "' AND locked=0 ORDER by login='$to' DESC, name='$to' DESC, login";
-    $result = Database::query($sql);
+    $columns = ['acctid', 'login', 'name', 'level', 'locked'];
+    $matches = $playerSearch->findForTransfer($to, $columns);
+    $matches = array_values(array_filter(
+        $matches,
+        static fn(array $candidate): bool => empty($candidate['locked'])
+    ));
     $amountPost = Http::post('amount');
     $amt = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
-    if (Database::numRows($result) == 1) {
-        $row = Database::fetchAssoc($result);
+    $matchCount = count($matches);
+    $charset = $settings->getSetting("charset", "UTF-8");
+    if ($matchCount === 1) {
+        $row = $matches[0];
         $msg = Translator::translateInline("Complete Transfer");
         $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>");
         $output->output("`6Transfer `^%s`6 to `&%s`6.", $amt, $row['name']);
-        $output->rawOutput("<input type='hidden' name='to' value='" . HTMLEntities($row['login'], ENT_COMPAT, $settings->getSetting("charset", "UTF-8")) . "'><input type='hidden' name='amount' value='$amt'><input type='submit' class='button' value='$msg'></form>", true);
+        $output->rawOutput(
+            "<input type='hidden' name='to' value='" .
+            HTMLEntities($row['login'], ENT_COMPAT, $charset) .
+            "'><input type='hidden' name='amount' value='$amt'><input type='submit' class='button' value='$msg'></form>",
+            true
+        );
         Nav::add("", "bank.php?op=transfer3");
-    } elseif (Database::numRows($result) > 100) {
+    } elseif ($matchCount >= 100) {
         $output->output("`@Elessa`6 looks at you disdainfully and coldly, but politely, suggests you try narrowing down the field of who you want to send money to just a little bit!`n`n");
         $msg = Translator::translateInline("Preview Transfer");
         $output->rawOutput("<form action='bank.php?op=transfer2' method='POST'>");
         $output->output("Transfer how much: ");
         $output->rawOutput("<input name='amount' id='amount' width='5' value='$amt'><br>");
         $output->output("To: ");
-        $output->rawOutput("<input name='to' value='$to'>");
+        $output->rawOutput("<input name='to' value='" . HTMLEntities($to, ENT_COMPAT, $charset) . "'>");
         $output->output(" (partial names are ok, you will be asked to confirm the transaction before it occurs).`n");
         $output->rawOutput("<input type='submit' class='button' value='$msg'></form>");
         $output->rawOutput("<script language='javascript'>document.getElementById('amount').focus();</script>", true);
         Nav::add("", "bank.php?op=transfer2");
-    } elseif (Database::numRows($result) > 1) {
+    } elseif ($matchCount > 1) {
         $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>");
-                $output->rawOutput("<label for='bank_to'>");
-                $output->output("`6Transfer `^%s`6 to ", $amt);
-                $output->rawOutput("</label>");
-                $output->rawOutput("<select name='to' id='bank_to' class='input'>");
-        while ($row = Database::fetchAssoc($result)) {
-            $output->rawOutput("<option value=\"" . HTMLEntities($row['login'], ENT_COMPAT, $settings->getSetting("charset", "UTF-8")) . "\">" . Sanitize::fullSanitize($row['name']) . "</option>");
+        $output->rawOutput("<label for='bank_to'>");
+        $output->output("`6Transfer `^%s`6 to ", $amt);
+        $output->rawOutput("</label>");
+        $output->rawOutput("<select name='to' id='bank_to' class='input'>");
+        foreach ($matches as $row) {
+            $label = HTMLEntities(Sanitize::fullSanitize($row['name']), ENT_COMPAT, $charset);
+            $value = HTMLEntities($row['login'], ENT_COMPAT, $charset);
+            $output->rawOutput("<option value='$value'>$label</option>");
         }
         $msg = Translator::translateInline("Complete Transfer");
         $output->rawOutput("</select><input type='hidden' name='amount' value='$amt'><input type='submit' class='button' value='$msg'></form>", true);
@@ -127,10 +138,12 @@ if ($op == "") {
     if ($session['user']['gold'] + $session['user']['goldinbank'] < $amt) {
         $output->output("`@Elessa`6 stands up to her full, but still diminutive height and glares at you, \"`@How can you transfer `^%s`@ gold when you only possess `^%s`@?`6\"", number_format($amt, 0, $point, $sep), number_format($session['user']['gold'] + $session['user']['goldinbank'], 0, $point, $sep));
     } else {
-        $sql = "SELECT name,acctid,level,transferredtoday FROM " . Database::prefix("accounts") . " WHERE login='$to'";
-        $result = Database::query($sql);
-        if (Database::numRows($result) == 1) {
-            $row = Database::fetchAssoc($result);
+        $result = $playerSearch->findExactLogin(
+            $to,
+            ['acctid', 'login', 'name', 'level', 'transferredtoday', 'locked']
+        );
+        $row = $result[0] ?? null;
+        if ($row && empty($row['locked'])) {
             $maxout = $session['user']['level'] * $settings->getSetting("maxtransferout", 25);
             $maxtfer = $row['level'] * $settings->getSetting("transferperlevel", 25);
             if ($session['user']['amountouttoday'] + $amt > $maxout) {
@@ -159,6 +172,8 @@ if ($op == "") {
                 $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!",$session['user']['name'],$amt);
                 Mail::systemMail($row['acctid'], $subj, $body);
             }
+        } elseif ($row && ! empty($row['locked'])) {
+            $output->output("`@Elessa`6 gently closes her ledger, \"`@I'm sorry, but `&%s`@'s account is currently locked. I cannot complete that transfer.`6\"", $row['name']);
         } else {
             $output->output("`@Elessa`6 looks up from her ledger with a bit of surprise on her face, \"`@I'm terribly sorry, but I seem to have run into an accounting error, would you please try telling me what you wish to transfer again?`6\"");
         }
