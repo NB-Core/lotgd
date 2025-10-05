@@ -29,11 +29,13 @@ Translator::getInstance()->setSchema("list");
 Header::pageHeader("List Warriors");
 if ($session['user']['loggedin']) {
     DateTime::checkDay();
+    Nav::add("Navigation");
     if ($session['user']['alive']) {
         VillageNav::render();
     } else {
         Nav::add("Return to the Graveyard", "graveyard.php");
     }
+    Nav::add("Actions");
     Nav::add("Currently Online", "list.php");
     if ($session['user']['clanid'] > 0) {
         Nav::add("Online Clan Members", "list.php?op=clan");
