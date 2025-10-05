@@ -22,6 +22,7 @@ This repository uses PHP with Composer and PHPUnit. To ensure quality and consis
 - Include PHPDoc blocks for functions and classes when relevant.
 - Keep functions small and focused. Avoid unrelated refactoring in a single PR.
 - Prefer namespaced classes under `Lotgd\\...` for new code. Legacy wrappers in `lib/*.php` may still be used for module compatibility, but new core code should avoid adding to the legacy layer.
+- Do **not** create new files inside `lib/`; that directory is reserved for legacy modules and wrappers only. Core development must extend the modern namespaced classes under `Lotgd\\...` and related services instead of adding to the legacy layer.
 
 ## Pull Request Checklist
 
@@ -41,7 +42,7 @@ These rules apply to all directories unless a more specific file overrides them.
 
 ## Compatibility & Deprecations
 
-- Legacy template `.htm` files and `lib/*.php` wrappers are still supported in 2.x to keep existing modules working.
+- Legacy template `.htm` files and `lib/*.php` wrappers are still supported in 2.x to keep existing modules working, but no new core files should be added to `lib/`.
 - New code should use Twig and namespaced APIs; legacy hooks should not be expanded further.
 - Deprecations are tracked in `docs/Deprecations.md`; removals target the next major version.
 
