@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Lotgd\PlayerSearch;
 
 // translator ready
 // addnews ready
@@ -159,25 +160,15 @@ if ($op == "") {
     }
     $output->rawOutput("</table>", true);
 } elseif ($op == "add1") {
-    $search = "%";
     $name = Http::post('name');
     if ($name == '') {
         $name = Http::get('name');
     }
-    $search = str_replace("'", "\'", $name);
-    $sql = "SELECT name,acctid,donation,donationspent FROM " . Database::prefix("accounts") . " WHERE login LIKE '$search' or name LIKE '$search' LIMIT 100";
-    $result = Database::query($sql);
-    if (Database::numRows($result) == 0) {
-        for ($i = 0; $i < strlen($name); $i++) {
-            $z = substr($name, $i, 1);
-            if ($z == "'") {
-                $z = "\'";
-            }
-            $search .= $z . "%";
-        }
-
-        $sql = "SELECT name,acctid,donation,donationspent FROM " . Database::prefix("accounts") . " WHERE login LIKE '$search' or name LIKE '$search' LIMIT 100";
-        $result = Database::query($sql);
+    $columns = ['acctid', 'login', 'name', 'donation', 'donationspent'];
+    $results = [];
+    if ($name !== '') {
+        $playerSearch = new PlayerSearch();
+        $results = $playerSearch->findByDisplayNameFuzzy($name, $columns, 100);
     }
     $ret = Http::get('ret');
     $amt = Http::post('amt');
@@ -196,9 +187,7 @@ if ($op == "") {
     if ($reason) {
         $output->output("(Reason: `^`b`i%s`i`b`0)`n`n", $reason);
     }
-    $number = Database::numRows($result);
-    for ($i = 0; $i < $number; $i++) {
-        $row = Database::fetchAssoc($result);
+    foreach ($results as $row) {
         if ($ret != "") {
             $output->rawOutput("<a href='donators.php?op=add2&id={$row['acctid']}&amt=$amt&ret=" . rawurlencode($ret) . "&reason=" . rawurlencode($reason) . "'>");
         } else {
