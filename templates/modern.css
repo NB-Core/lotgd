@@ -147,6 +147,19 @@ font-family: verdana,arial,helvetica,sans-serif;
      border-right: 1px solid #403225;
      border-bottom: 1px solid #403225;
 }
+.mail-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.mail-nav__link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 0 2px;
+}
 .input {
     background-color: #433828;
     border: 1px solid #806B4D;
