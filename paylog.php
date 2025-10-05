@@ -175,7 +175,12 @@ if ($op == "") {
                 $memo = $info['memo'];
             }
             $link = "donators.php?op=add1&name=" . rawurlencode($memo) . "&amt=$amt&txnid={$row['txnid']}";
-            $output->rawOutput("-=( <a href='$link' title=\"" . htmlentities($info['item_number'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" alt=\"" . htmlentities($info['item_number'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\">[" . htmlentities($memo, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "]</a> )=-");
+            $itemNumberRaw = isset($info['item_number']) && $info['item_number'] !== ''
+                ? $info['item_number']
+                : Translator::translate('Unknown');
+            $itemNumber = htmlentities($itemNumberRaw, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
+            $memoSafe = htmlentities($memo, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
+            $output->rawOutput("-=( <a href='$link' title=\"{$itemNumber}\" alt=\"{$itemNumber}\">[{$memoSafe}]</a> )=-");
             Nav::add('', $link);
         }
         $output->rawOutput("</td></tr>");
