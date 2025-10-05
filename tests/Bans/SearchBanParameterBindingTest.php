@@ -217,7 +217,7 @@ namespace Lotgd\Tests\Bans {
 
             $include = static function (): void {
                 $output = \Lotgd\Output::getInstance();
-                require __DIR__ . '/../../pages/user/user_searchban.php';
+                require __DIR__ . '/../../pages/bans/case_searchban.php';
             };
             \Closure::bind($include, null, null)();
 
