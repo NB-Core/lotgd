@@ -92,7 +92,11 @@ if ($op == "") {
         $row = $matches[0];
         $msg = Translator::translateInline("Complete Transfer");
         $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>");
-        $output->output("`6Transfer `^%s`6 to `&%s`6.", $amt, $row['name']);
+        $output->output(
+            "`6Transfer `^%s`6 gold to `&%s`6.",
+            number_format($amt, 0, $point, $sep),
+            $row['name']
+        );
         $output->rawOutput(
             "<input type='hidden' name='to' value='" .
             HTMLEntities($row['login'], ENT_COMPAT, $charset) .
@@ -115,7 +119,10 @@ if ($op == "") {
     } elseif ($matchCount > 1) {
         $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>");
         $output->rawOutput("<label for='bank_to'>");
-        $output->output("`6Transfer `^%s`6 to ", $amt);
+        $output->output(
+            "`6Transfer `^%s`6 gold to ",
+            number_format($amt, 0, $point, $sep)
+        );
         $output->rawOutput("</label>");
         $output->rawOutput("<select name='to' id='bank_to' class='input'>");
         foreach ($matches as $row) {
