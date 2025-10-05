@@ -55,6 +55,11 @@ class DoctrineConnection
     public array $executeQueryParams = [];
     public array $executeQueryTypes = [];
 
+    public function quoteIdentifier(string $identifier): string
+    {
+        return '`' . str_replace('`', '``', $identifier) . '`';
+    }
+
     public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
     {
         $this->queries[] = $sql;
