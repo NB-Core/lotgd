@@ -59,6 +59,39 @@ final class UtilityTest extends TestCase
         $this->assertSame('Hello `nWorld', Sanitize::colorSanitize('Hello `n`&World'));
     }
 
+    public function testColorSanitizeLegacyWrapperHandlesString(): void
+    {
+        $this->assertSame('Hello `nWorld', \color_sanitize('Hello `n`&World'));
+    }
+
+    public function testColorSanitizeLegacyWrapperHandlesArrays(): void
+    {
+        $input = [
+            'greeting' => 'Hello `n`&World',
+            'styles' => ['`bBold', 'Plain'],
+            'empty' => null,
+            'count' => 42,
+        ];
+
+        $expected = [
+            'greeting' => 'Hello `nWorld',
+            'styles' => ['Bold', 'Plain'],
+            'empty' => '',
+            'count' => '42',
+        ];
+
+        $this->assertSame($expected, \color_sanitize($input));
+    }
+
+    public function testColorSanitizeLegacyWrapperDelegatesToSanitizeClass(): void
+    {
+        $contents = file_get_contents(__DIR__ . '/../lib/sanitize.php');
+
+        $this->assertNotFalse($contents);
+        $this->assertStringContainsString('function color_sanitize($in)', $contents);
+        $this->assertStringContainsString('return Sanitize::colorSanitize($in);', $contents);
+    }
+
     public function testCommentSanitize(): void
     {
         $this->assertSame('Look ``here', Sanitize::commentSanitize('Look `here'));

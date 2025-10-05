@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace {
     use Lotgd\Output;
     use Lotgd\Modules\ModuleManager;
+    use Lotgd\Sanitize;
     if (!function_exists('translate_inline')) {
         function translate_inline($text, $ns = false)
         {
@@ -131,6 +132,13 @@ namespace {
         function sanitize($in)
         {
             return $in;
+        }
+    }
+
+    if (!function_exists('color_sanitize')) {
+        function color_sanitize($in)
+        {
+            return Sanitize::colorSanitize($in);
         }
     }
 

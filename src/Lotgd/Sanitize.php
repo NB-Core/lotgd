@@ -45,17 +45,45 @@ class Sanitize
     /**
      * Remove colour codes except text formatting.
      *
-     * @param string|null $in Input value
+     * @param string|array|null $in Input value
      *
-     * @return string Sanitized value
+     * @return string|array Sanitized value
      */
-    public static function colorSanitize(?string $in): string
+    public static function colorSanitize(string|array|null $in): string|array
     {
-        if ($in == '' || $in === null) {
+        if (is_array($in)) {
+            $sanitized = [];
+
+            foreach ($in as $key => $value) {
+                if (is_array($value)) {
+                    $sanitized[$key] = self::colorSanitize($value);
+                    continue;
+                }
+
+                if ($value === null) {
+                    $sanitized[$key] = '';
+                    continue;
+                }
+
+                $sanitized[$key] = self::colorSanitize((string) $value);
+            }
+
+            return $sanitized;
+        }
+
+        if ($in === null) {
             return '';
         }
-        $out = preg_replace('/[`][0' . Output::getInstance()->getColormapEscaped() . 'cbi]/', '', $in);
-        return $out;
+
+        $value = (string) $in;
+
+        if ($value === '') {
+            return '';
+        }
+
+        $out = preg_replace('/[`][0' . Output::getInstance()->getColormapEscaped() . 'cbi]/', '', $value);
+
+        return $out ?? '';
     }
 
     /**
