@@ -129,8 +129,8 @@ if ($op == "") {
     $res = Database::query($sql);
     $count = Database::numRows($res);
     $ops = Translator::translateInline("Ops");
-    $edit = Translator::translateInline("edit");
-    $del = Translator::translateInline("del");
+    $edit = Translator::translateInline("Edit");
+    $del = Translator::translateInline("Del");
     $delconfirm = Translator::translateInline("Are you sure you wish to delete this master.");
     $delconfirmJs = json_encode($delconfirm, JSON_HEX_APOS | JSON_HEX_QUOT);
     $name = Translator::translateInline("Name");
@@ -148,7 +148,7 @@ if ($op == "") {
         $output->outputNotl($edit);
         $output->rawOutput("</a> | <a href='masters.php?op=del&id=$id' onClick='return confirm($delconfirmJs);'>");
         $output->outputNotl($del);
-        $output->rawOutput("] </a>");
+        $output->rawOutput("</a> ]");
         Nav::add("", "masters.php?op=edit&id=$id");
         Nav::add("", "masters.php?op=del&id=$id");
         $output->rawOutput("</td><td>");
