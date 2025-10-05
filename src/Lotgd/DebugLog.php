@@ -34,30 +34,50 @@ class DebugLog
         }
         $corevalue = $value;
         $id = 0;
+        $conn = Database::getDoctrineConnection();
+        $table = Database::prefix('debuglog');
+
         if ($field !== false && $value !== false && $consolidate) {
-            $sql = "SELECT * FROM " . Database::prefix('debuglog') . " WHERE actor=$user AND field='$field' AND date>'" . date('Y-m-d 00:00:00') . "'";
-            $result = Database::query($sql);
-            if (Database::numRows($result) > 0) {
-                $row = Database::fetchAssoc($result);
-                $value = $row['value'] + $value;
-                $message = $row['message'];
-                $id = $row['id'];
+            $row = $conn->fetchAssociative(
+                "SELECT id, value, message FROM {$table} WHERE actor = :actor AND field = :field AND date > :after",
+                [
+                    'actor' => $user,
+                    'field' => $field,
+                    'after' => date('Y-m-d 00:00:00'),
+                ]
+            );
+
+            if ($row !== false) {
+                $value = (int) $row['value'] + (int) $value;
+                $message = (string) $row['message'];
+                $id = (int) $row['id'];
             }
         }
+
         if ($corevalue !== false) {
             $message .= " ($corevalue)";
         }
-        if ($field === false) {
-            $field = '';
-        }
-        if ($value === false) {
-            $value = 0;
-        }
+
+        $params = [
+            'id'      => $id,
+            'date'    => date('Y-m-d H:i:s'),
+            'actor'   => $user,
+            'target'  => $target,
+            'message' => $message,
+            'field'   => $field === false ? '' : $field,
+            'value'   => $value === false ? 0 : $value,
+        ];
+
         if ($id > 0) {
-            $sql = "UPDATE " . Database::prefix('debuglog') . " SET date='" . date('Y-m-d H:i:s') . "', actor='$user', target='$target', message='" . addslashes($message) . "', field='$field', value='$value' WHERE id=$id";
+            $conn->executeStatement(
+                "UPDATE {$table} SET date = :date, actor = :actor, target = :target, message = :message, field = :field, value = :value WHERE id = :id",
+                $params
+            );
         } else {
-            $sql = "INSERT INTO " . Database::prefix('debuglog') . " (id,date,actor,target,message,field,value) VALUES($id,'" . date('Y-m-d H:i:s') . "',$user,$target,'" . addslashes($message) . "','$field','$value')";
+            $conn->executeStatement(
+                "INSERT INTO {$table} (id, date, actor, target, message, field, value) VALUES (:id, :date, :actor, :target, :message, :field, :value)",
+                $params
+            );
         }
-        Database::query($sql);
     }
 }
