@@ -11,49 +11,65 @@ namespace {
 }
 
 namespace Lotgd {
-    if (! class_exists(__NAMESPACE__ . '\\Output', false)) {
-        class Output
+    if (! class_exists(__NAMESPACE__ . '\\Translator', false)) {
+        class Translator
+        {
+            public static function translate(string $text, string|false|null $schema = false): string
+            {
+                return $text;
+            }
+
+            public static function sprintfTranslate(string $format, mixed ...$args): string
+            {
+                return vsprintf($format, $args);
+            }
+
+            public static function translateInline(string $text): string
+            {
+                return $text;
+            }
+
+            public static function tlbuttonPop(): string
+            {
+                return '';
+            }
+        }
+    }
+
+    if (! class_exists(__NAMESPACE__ . '\\Settings', false)) {
+        class Settings
         {
             private static ?self $instance = null;
+            /** @var array<string, mixed> */
+            public array $values = [
+                'charset'           => 'UTF-8',
+                'enabletranslation' => true,
+                'collecttexts'      => '',
+            ];
 
-            /** @var array<int, array{string, array<int, mixed>}> */
-            public array $messages = [];
+            public function __construct()
+            {
+                self::$instance = $this;
+            }
 
             public static function getInstance(): self
             {
                 return self::$instance ??= new self();
             }
 
-            public static function reset(): void
+            public static function hasInstance(): bool
             {
-                self::$instance = null;
+                return true;
             }
 
-            public function output(string $format, mixed ...$args): void
+            public function getSetting(string $name, mixed $default = null): mixed
             {
-                $this->messages[] = ['output', array_merge([$format], $args)];
+                return $this->values[$name] ?? $default;
             }
 
-            public function outputNotl(string $format, mixed ...$args): void
+            public function setSetting(string $name, mixed $value): void
             {
-                $this->messages[] = ['outputNotl', array_merge([$format], $args)];
-            }
-
-            public function rawOutput(string $text): void
-            {
-                $this->messages[] = ['raw', [$text]];
-            }
-        }
-    }
-
-    if (! class_exists(__NAMESPACE__ . '\\Cookies', false)) {
-        class Cookies
-        {
-            public static string $lgi = 'test-session-id';
-
-            public static function getLgi(): string
-            {
-                return self::$lgi;
+                $this->values[$name] = $value;
             }
         }
     }
@@ -62,6 +78,7 @@ namespace Lotgd {
 namespace Lotgd\Tests\Bans {
     use Doctrine\DBAL\ArrayParameterType;
     use Lotgd\MySQL\Database;
+    use Lotgd\Output;
     use Lotgd\Tests\Stubs\DoctrineBootstrap;
     use Lotgd\Tests\Stubs\DoctrineConnection;
     use PHPUnit\Framework\TestCase;
@@ -78,6 +95,11 @@ namespace Lotgd\Tests\Bans {
             Database::$instance = null;
             DoctrineBootstrap::$conn = null;
             Database::$mockResults = [];
+            Database::$settings_table = [
+                'charset'           => 'UTF-8',
+                'enabletranslation' => true,
+                'collecttexts'      => '',
+            ];
 
             $this->connection = Database::getDoctrineConnection();
             $this->connection->queries = [];
@@ -96,8 +118,15 @@ namespace Lotgd\Tests\Bans {
             $_SERVER['REMOTE_ADDR'] = '1.2.3.4';
             $_COOKIE = [];
             $session = ['user' => ['name' => 'Admin "Ω"']];
-            \Lotgd\Cookies::$lgi = 'different-session';
-            \Lotgd\Output::reset();
+
+            $_COOKIE['lgi'] = str_repeat('a', 32);
+
+            $outputReflection = new \ReflectionClass(Output::class);
+            if ($outputReflection->hasProperty('instance')) {
+                $instance = $outputReflection->getProperty('instance');
+                $instance->setAccessible(true);
+                $instance->setValue(null, null);
+            }
         }
 
         public function testBanCreationUsesBoundParameters(): void
@@ -127,7 +156,15 @@ namespace Lotgd\Tests\Bans {
             };
             \Closure::bind($include, null, null)();
 
-            $insert = $this->connection->executeStatements[0] ?? null;
+            $bansTable = Database::prefix('bans');
+            $accountsTable = Database::prefix('accounts');
+            $statements = array_values(array_filter(
+                $this->connection->executeStatements,
+                static fn (array $statement): bool => isset($statement['sql'])
+                    && (str_contains($statement['sql'], $bansTable) || str_contains($statement['sql'], $accountsTable))
+            ));
+
+            $insert = $statements[0] ?? null;
             $this->assertNotNull($insert, 'Insert statement should be recorded.');
             $this->assertSame(
                 ['Admin "Ω"', $ip, $expectedExpiry, $reason],
@@ -138,7 +175,7 @@ namespace Lotgd\Tests\Bans {
 
             $this->assertSame($ip, $this->connection->lastFetchAllParams['value'] ?? null);
 
-            $update = $this->connection->executeStatements[1] ?? null;
+            $update = $statements[1] ?? null;
             $this->assertNotNull($update, 'Update statement should be recorded.');
             $this->assertSame([[101, 202]], $update['params'] ?? []);
             $this->assertSame(ArrayParameterType::INTEGER, $update['types'][0] ?? null);
