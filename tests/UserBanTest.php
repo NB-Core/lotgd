@@ -210,7 +210,7 @@ namespace Lotgd\Tests {
 
             $statement = $this->connection->executeStatements[0] ?? null;
             $this->assertNotNull($statement, 'Expected an INSERT statement to be recorded.');
-            $this->assertSame(DATETIME_DATEMAX, $statement['params'][2] ?? null);
+            $this->assertSame(DATETIME_DATEMAX, $statement['params'][3] ?? null);
         }
 
         public function testRemoveBanHonoursDatetimeBounds(): void
