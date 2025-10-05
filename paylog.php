@@ -48,6 +48,8 @@ HookHandler::hook("paylog", array());
 
 $op = (string) Http::get('op');
 if ($op == "") {
+    Nav::add('Actions');
+    Nav::add('Refresh', 'paylog.php');
     $sql = "SELECT info,txnid FROM " . Database::prefix("paylog") . " WHERE processdate='" . DATETIME_DATEMIN . "'";
     $result = Database::query($sql);
     while ($row = Database::fetchAssoc($result)) {
@@ -156,6 +158,5 @@ if ($op == "") {
         $output->rawOutput("</td></tr>");
     }
     $output->rawOutput("</table>");
-    Nav::add('Refresh', 'paylog.php');
 }
 Footer::pageFooter();
