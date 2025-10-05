@@ -12,6 +12,7 @@ use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Output;
 use Lotgd\Modules\HookHandler;
+use Lotgd\PlayerSearch;
 use Lotgd\Settings;
 
 // addnews ready
@@ -55,24 +56,21 @@ $totalplayers = $row['c'];
 $op = Http::get('op');
 $page = Http::get('page');
 $search = '';
+$searchName = null;
 $limit = '';
 
 $loginTimeout = (int) $settings->getSetting('LOGINTIMEOUT', 900);
 
 if ($op == "search") {
     $rawName = Http::post('name');
-    $n = '';
+    $name = '';
 
     if (is_string($rawName)) {
-        $n = Database::escape($rawName);
+        $name = trim($rawName);
     }
 
-    if ($n !== '') {
-        $search = "%";
-        for ($x = 0; $x < strlen($n); $x++) {
-            $search .= substr($n, $x, 1) . "%";
-        }
-        $search = " AND name LIKE '" . addslashes($search) . "' ";
+    if ($name !== '') {
+        $searchName = $name;
     } else {
         $op = "";
     }
@@ -127,8 +125,13 @@ if ($page == "" && $op == "") {
         $title = Translator::getInstance()->sprintfTranslate("Warriors of the realm");
     }
     $output->rawOutput(Translator::clearButton());
-    $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
-    $result = Database::query($sql);
+    if ($searchName !== null) {
+        $playerSearch = new PlayerSearch();
+        $result = $playerSearch->searchListByName($searchName, $limit);
+    } else {
+        $sql = "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 $search ORDER BY level DESC, dragonkills DESC, login ASC $limit";
+        $result = Database::query($sql);
+    }
 }
 if ($session['user']['loggedin']) {
     $search = Translator::translate("Search by name: ");
