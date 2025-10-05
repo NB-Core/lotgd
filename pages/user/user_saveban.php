@@ -2,73 +2,74 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ArrayParameterType;
 use Lotgd\Cookies;
+use Lotgd\Http;
 use Lotgd\MySQL\Database;
 use Lotgd\Output;
 
-$sql = "INSERT INTO " . Database::prefix("bans") . " (banner,";
 $output = Output::getInstance();
-$type = httppost("type");
-if ($type == "ip") {
-    $sql .= "ipfilter";
+global $session;
+
+$conn = Database::getDoctrineConnection();
+$type = (string) Http::post('type');
+
+if ($type === "ip") {
     $key = "lastip";
-    $key_value = httppost('ip');
+    $targetIdentifier = (string) Http::post('ip');
+    $ipValue = $targetIdentifier;
+    $uniqueIdValue = '';
+    $isSelfBan = substr($_SERVER['REMOTE_ADDR'], 0, strlen($targetIdentifier)) === $targetIdentifier;
 } else {
-    $sql .= "uniqueid";
     $key = "uniqueid";
-    $key_value = httppost('id');
+    $targetIdentifier = (string) Http::post('id');
+    $ipValue = '';
+    $uniqueIdValue = $targetIdentifier;
+    $isSelfBan = Cookies::getLgi() === $targetIdentifier;
 }
-$sql .= ",banexpire,banreason) VALUES ('" . addslashes($session['user']['name']) . "',";
-if ($type == "ip") {
-    $sql .= "\"" . httppost("ip") . "\"";
-} else {
-    $sql .= "\"" . httppost("id") . "\"";
-}
-$duration = (int)httppost("duration");
-if ($duration == 0) {
+
+$durationInput = (int) Http::post('duration');
+
+if ($durationInput === 0) {
     $duration = DATETIME_DATEMIN;
 } else {
-    $duration = date("Y-m-d", strtotime("+$duration days"));
+    $duration = date('Y-m-d', strtotime(sprintf('+%d days', $durationInput)));
 }
-    $sql .= ",\"$duration\",";
-$sql .= "\"" . httppost("reason") . "\")";
-if ($type == "ip") {
-    if (
-        substr($_SERVER['REMOTE_ADDR'], 0, strlen(httppost("ip"))) ==
-            httppost("ip")
-    ) {
-        $sql = "";
-        $output->output("You don't really want to ban yourself now do you??");
-        $output->output("That's your own IP address!");
+
+if ($isSelfBan) {
+    $output->output("You don't really want to ban yourself now do you??");
+    $output->output($type === "ip" ? "That's your own IP address!" : "That's your own ID!");
+
+    return;
+}
+
+$banner = (string) ($session['user']['name'] ?? '');
+$reason = (string) Http::post('reason');
+$sql = 'INSERT INTO ' . Database::prefix('bans') . ' (banner, ipfilter, uniqueid, banexpire, banreason) VALUES (?, ?, ?, ?, ?)';
+$parameters = [$banner, $ipValue, $uniqueIdValue, $duration, $reason];
+$affected = $conn->executeStatement($sql, $parameters);
+Database::setAffectedRows($affected);
+
+$output->output("%s ban rows entered.`n`n", Database::affectedRows());
+$output->outputNotl(Database::error());
+debuglog("entered a ban: " . ($type === "ip" ? "IP: " . $targetIdentifier : "ID: " . $targetIdentifier) . " Ends after: $duration  Reason: \"" . $reason . "\"");
+
+/* log out affected players */
+$selectSql = 'SELECT acctid FROM ' . Database::prefix('accounts') . " WHERE {$key} = :value";
+$accounts = $conn->fetchAllAssociative($selectSql, ['value' => $targetIdentifier]);
+
+$acctids = array_map(static fn (array $row): int => (int) $row['acctid'], $accounts);
+
+if ($acctids !== []) {
+    $updateSql = 'UPDATE ' . Database::prefix('accounts') . ' SET loggedin = 0 WHERE acctid IN (?)';
+    $updated = $conn->executeStatement($updateSql, [$acctids], [ArrayParameterType::INTEGER]);
+    Database::setAffectedRows($updated);
+
+    if ($updated > 0) {
+        $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows());
+    } else {
+        $output->output("`\$Nobody was logged out. Acctids (%s) did not return rows!`n`n`0", implode(',', $acctids));
     }
 } else {
-    if (Cookies::getLgi() == httppost("id")) {
-            $sql = "";
-            $output->output("You don't really want to ban yourself now do you??");
-            $output->output("That's your own ID!");
-    }
-}
-if ($sql != "") {
-    $result = Database::query($sql);
-    $output->output("%s ban rows entered.`n`n", Database::affectedRows());
-    $output->outputNotl("%s", Database::error());
-    debuglog("entered a ban: " .  ($type == "ip" ?  "IP: " . httppost("ip") : "ID: " . httppost("id")) . " Ends after: $duration  Reason: \"" .  httppost("reason") . "\"");
-    /* log out affected players */
-    $sql = "SELECT acctid FROM " . Database::prefix('accounts') . " WHERE $key='$key_value'";
-    $result = Database::query($sql);
-    $acctids = array();
-    while ($row = Database::fetchAssoc($result)) {
-        $acctids[] = $row['acctid'];
-    }
-    if ($acctids != array()) {
-        $sql = " UPDATE " . Database::prefix('accounts') . " SET loggedin=0 WHERE acctid IN (" . implode(",", $acctids) . ")";
-        $result = Database::query($sql);
-        if ($result) {
-            $output->output("`\$%s people have been logged out!`n`n`0", Database::affectedRows());
-        } else {
-            $output->output("`\$Nobody was logged out. Acctids (%s) did not return rows!`n`n`0", implode(",", $acctids));
-        }
-    } else {
-        $output->output("`\$No account-ids found for that IP/ID!`n`n`0");
-    }
+    $output->output("`\$No account-ids found for that IP/ID!`n`n`0");
 }
