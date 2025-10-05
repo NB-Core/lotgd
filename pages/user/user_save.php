@@ -10,7 +10,7 @@ use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Http;
 
-$sql = "";
+$fieldUpdates = [];
 $updates = 0;
 $output = Output::getInstance();
 $settings = Settings::getInstance();
@@ -45,7 +45,7 @@ foreach ($post as $key => $val) {
     if (isset($userinfo[$key])) {
         if ($key == "newpassword") {
             if ($val > "") {
-                $sql .= "password=\"" . md5(md5($val)) . "\",";
+                $fieldUpdates['password'] = md5(md5($val));
                 $updates++;
                 $output->output("`\$Password value has been updated.`0`n");
                 debuglog($session['user']['name'] . "`0 changed password to $val", $userid);
@@ -71,7 +71,7 @@ foreach ($post as $key => $val) {
             $filteredunremovable = $oldsup & $unremovable;
             $value = $value | $filteredunremovable;
             if ((int)$value != $oldsup) {
-                $sql .= "$key = \"$value\",";
+                $fieldUpdates[$key] = (int) $value;
                 $updates++;
                 $output->output("`\$Superuser values have changed.`0`n");
                 if ($session['user']['acctid'] == $userid) {
@@ -98,7 +98,7 @@ foreach ($post as $key => $val) {
             debug($tmp);
             $newname = Names::changePlayerName($tmp, $oldvalues);
             debug($newname);
-            $sql .= "$key = \"" . addslashes($newname) . "\",";
+            $fieldUpdates[$key] = $newname;
             $output->output("`2Changed player name to %s`0`n", $newname);
             debuglog($session['user']['name'] . "`0 changed player name to $newname`0", $userid);
             $oldvalues['name'] = $newname;
@@ -116,12 +116,12 @@ foreach ($post as $key => $val) {
             if (soap($tmp) != ($tmp)) {
                 $output->output("`^The new title doesn't pass the bad word filter!`0");
             }
-                $newname = Names::changePlayerTitle($tmp, $oldvalues);
-            $sql .= "$key = \"$val\",";
+            $newname = Names::changePlayerTitle($tmp, $oldvalues);
+            $fieldUpdates[$key] = $tmp;
             $output->output("Changed player title from %s`0 to %s`0`n", $oldvalues['title'] ?? '', $tmp);
             $oldvalues[$key] = $tmp;
             if (!isset($oldvalues['name']) || $newname != $oldvalues['name']) {
-                $sql .= "name = \"" . addslashes($newname) . "\",";
+                $fieldUpdates['name'] = $newname;
                 $output->output("`2Changed player name to %s`2 due to changed dragonkill title`n", $newname);
                 debuglog($session['user']['name'] . "`0 changed player name to $newname`0 due to changed dragonkill title", $userid);
                 $oldvalues['name'] = $newname;
@@ -144,11 +144,11 @@ foreach ($post as $key => $val) {
                 $output->output("`^The new custom title doesn't pass the bad word filter!`0");
             }
             $newname = Names::changePlayerCtitle($tmp, $oldvalues);
-            $sql .= "$key = \"$val\",";
+            $fieldUpdates[$key] = $tmp;
             $output->output("`2Changed player ctitle from `\$%s`2 to `\$%s`2`n", $oldvalues['ctitle'] ?? '', $tmp);
             $oldvalues[$key] = $tmp;
             if (!isset($oldvalues['name']) || $newname != $oldvalues['name']) {
-                $sql .= "name = \"" . addslashes($newname) . "\",";
+                $fieldUpdates['name'] = $newname;
                 if ((!isset($oldvalues['playername']) || $oldvalues['playername'] == '') && !isset($post['playername'])) {
                     //no valid title currently, add update
                     $post['playername'] = Names::getPlayerBasename($tmp);
@@ -177,11 +177,11 @@ foreach ($post as $key => $val) {
             debug($tmp);
             $newname = Names::changePlayerName($tmp, $oldvalues);
             debug($newname);
-            $sql .= "$key = \"$val\",";
+            $fieldUpdates[$key] = $tmp;
             $output->output("`2Changed player name from `\$%s`2 to `\$%s`2`n", $oldvalues['playername'] ?? '', $tmp);
             $oldvalues[$key] = $tmp;
             if (!isset($oldvalues['name']) || $newname != $oldvalues['name']) {
-                $sql .= "name = \"" . addslashes($newname) . "\",";
+                $fieldUpdates['name'] = $newname;
                 debuglog($session['user']['name'] . "`0 changed player name to $newname`0 due to changed custom title", $userid);
                 $oldvalues['name'] = $newname;
                 if ($session['user']['acctid'] == $userid) {
@@ -197,7 +197,7 @@ foreach ($post as $key => $val) {
             if ($key == 'name') {
                 continue; //well, name is composed now
             }
-            $sql .= "$key = \"$val\",";
+            $fieldUpdates[$key] = $val;
             $updates++;
             $output->output("`2 Value `\$'%s`2' has changed to '`\$%s`2'.`n", $key, stripslashes($val));
             debuglog($session['user']['name'] . "`0 changed $key from " . ($oldvalues[$key] ?? '') . " to $val", $userid);
@@ -207,21 +207,50 @@ foreach ($post as $key => $val) {
         }
     }
 }
-    $sql = substr($sql, 0, strlen($sql) - 1);
-$sql = "UPDATE " . Database::prefix("accounts") . " SET " . $sql . " WHERE acctid=\"$userid\"";
-    $petition = httpget("returnpetition");
+$petition = httpget("returnpetition");
 if ($petition != "") {
     Nav::add("", "viewpetition.php?op=view&id=$petition");
 }
 Nav::add("", "user.php");
-if ($updates > 0) {
-    Database::query($sql);
-    debug("Updated $updates fields in the user record with:\n$sql");
-    $output->output("%s fields in the user's record were updated.", $updates);
-    GameLog::log(
-        'User ' . $session['user']['acctid'] . ' edited ' . $updates . ' fields for user ' . $userid,
-        'user management'
-    );
+if ($updates > 0 && $fieldUpdates !== []) {
+    $conn = Database::getDoctrineConnection();
+
+    $sets = [];
+    foreach (array_keys($fieldUpdates) as $column) {
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
+            continue;
+        }
+
+        $sets[] = sprintf('%s = :%s', $conn->quoteIdentifier($column), $column);
+    }
+
+    if ($sets === []) {
+        $output->output("No fields were changed in the user's record.");
+    } else {
+        $sql = sprintf(
+            'UPDATE %s SET %s WHERE %s = :acctid',
+            Database::prefix('accounts'),
+            implode(', ', $sets),
+            $conn->quoteIdentifier('acctid')
+        );
+
+        $params = $fieldUpdates;
+        $params['acctid'] = $userid;
+
+        $conn->executeStatement($sql, $params);
+
+        debug(sprintf(
+            "Updated %d fields in the user record with:\n%s\nParameters: %s",
+            $updates,
+            $sql,
+            json_encode($params, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        ));
+        $output->output("%s fields in the user's record were updated.", $updates);
+        GameLog::log(
+            'User ' . $session['user']['acctid'] . ' edited ' . $updates . ' fields for user ' . $userid,
+            'user management'
+        );
+    }
 } else {
     $output->output("No fields were changed in the user's record.");
 }
