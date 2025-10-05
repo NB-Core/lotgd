@@ -29,9 +29,15 @@
             <div class="title-logo">Test Server</div>
         </div>
         <div class="col-sm-4 pageheader-right text-end">
-            <span class="mail-icon">&#128231;</span>
-            <strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
-            {{ petitiondisplay|raw }}
+            <nav class="mail-nav justify-content-end" aria-label="Player notifications">
+                <span class="mail-nav__link">
+                    <span class="mail-icon">&#128231;</span>
+                    <strong>{{ mail|raw }}</strong>
+                </span>
+                <span class="mail-nav__link">
+                    {{ petitiondisplay|raw }}
+                </span>
+            </nav>
         </div>
     </div>
     <div class="row d-lg-none mobile-toggles">

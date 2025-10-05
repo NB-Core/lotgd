@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ (template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates_twig/common/bootstrap.min.css'|ver }}">
 </head>

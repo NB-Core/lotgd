@@ -1,4 +1,72 @@
 /* General Styles */
+:root {
+    --color-body-bg: #f5f2eb;
+    --color-surface-bg: #ffffff;
+    --color-surface-alt-bg: #f0e7d8;
+    --color-text: #2f2415;
+    --color-muted-text: #5b5144;
+    --color-nav-text: #2f2415;
+    --color-nav-border: #cbbda9;
+    --color-nav-hover-bg: #e4d7c1;
+    --color-link: #3f6b16;
+    --color-link-hover: #28480f;
+    --color-input-bg: #ffffff;
+    --color-input-border: #cbbda9;
+    --color-input-text: #2f2415;
+    --color-panel-bg: #f3e8d6;
+    --color-panel-border: #cbbda9;
+    --color-button-bg: #d9c7a5;
+    --color-button-text: #2f2415;
+    --color-button-border: #b9a37d;
+    --color-translator-bg: #5f6b7a;
+    --color-translator-border: #8894a2;
+    --color-translator-hot-bg: #b22b2b;
+    --color-translator-hot-border: #d94949;
+    --color-translator-hover-shadow: rgba(0, 0, 0, 0.25);
+    --color-debug-bg: #f2eadc;
+    --color-debug-text: #3a3225;
+    --color-debug-border: #c8bca8;
+    --color-debug-shadow: rgba(0, 0, 0, 0.15);
+    --color-motd: #b22b2b;
+    --color-motd-hover: #8a1f1f;
+    --color-motd-hot-text: #8a1f1f;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-body-bg: #000000;
+        --color-surface-bg: #2b2b2b;
+        --color-surface-alt-bg: #2b2b2b;
+        --color-text: #d4d4d4;
+        --color-muted-text: #a7a7a7;
+        --color-nav-text: #ffffff;
+        --color-nav-border: #000000;
+        --color-nav-hover-bg: #404040;
+        --color-link: #87c45a;
+        --color-link-hover: #a5d978;
+        --color-input-bg: #000000;
+        --color-input-border: #999999;
+        --color-input-text: #cccccc;
+        --color-panel-bg: #333333;
+        --color-panel-border: #000000;
+        --color-button-bg: #222222;
+        --color-button-text: #f0f0f0;
+        --color-button-border: #666666;
+        --color-translator-bg: #555555;
+        --color-translator-border: #888888;
+        --color-translator-hot-bg: #c0392b;
+        --color-translator-hot-border: #e74c3c;
+        --color-translator-hover-shadow: #ffffff;
+        --color-debug-bg: #1e1e1e;
+        --color-debug-text: #d4d4d4;
+        --color-debug-border: #555555;
+        --color-debug-shadow: rgba(0, 0, 0, 0.4);
+        --color-motd: #c61d2e;
+        --color-motd-hover: #ffffff;
+        --color-motd-hot-text: #ffffff;
+    }
+}
+
 caption {
     white-space: nowrap;
     font-family: Verdana, Arial, Helvetica, sans-serif;
@@ -11,32 +79,32 @@ td {
 }
 
 .main-body {
-    background-color: #000;
-    color: #777474;
+    background-color: var(--color-body-bg);
+    color: var(--color-text);
     margin: 0;
 }
 
 .popup-body {
-    background-color: #000;
-    color: #777474;
+    background-color: var(--color-body-bg);
+    color: var(--color-text);
 }
 
 /* Navigation Table */
 table.nav {
-    border: 1px solid #000000;
+    border: 1px solid var(--color-nav-border);
     height: auto;
     width: 182px;
 }
 
 .navhead {
     text-decoration: none;
-    width: 180px;
+    width: 100%;
     height: auto;
     padding: 1px;
     float: left;
     line-height: 33px;
     clear: none;
-    color: #FFFFFF;
+    color: var(--color-nav-text);
     cursor: default;
     text-align: center;
     font-family: Tahoma Small Cap;
@@ -50,7 +118,7 @@ table.nav {
     float: left;
     line-height: 33px;
     clear: none;
-    color: #FFFFFF;
+    color: var(--color-nav-text);
     cursor: default;
     text-align: center;
     font-family: Tahoma Small Cap;
@@ -59,8 +127,12 @@ table.nav {
 }
 
 a {
-    color: #669933;
+    color: var(--color-link);
     text-decoration: none;
+}
+
+a:hover {
+    color: var(--color-link-hover);
 }
 
 /* Header and other styles */
@@ -72,8 +144,9 @@ a {
 
 .main-content {
     border-style: dotted;
-    background-color: #2B2B2B;
+    background-color: var(--color-surface-alt-bg);
     align-content: start;
+    color: var(--color-text);
 }
 
 .sidebar-content {
@@ -96,14 +169,37 @@ a {
     text-align: right;
 }
 
+.mail-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.mail-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    text-decoration: none;
+    color: var(--color-text);
+}
+
+.mail-nav__link,
+.mail-nav__link a {
+    color: inherit;
+    text-decoration: none;
+}
+
 
 
 
 /* Navigation Link */
 a.nav {
-    color: #FFFFFF;
+    color: var(--color-nav-text);
     text-decoration: none;
-    width: 181px;
+    width: 100%;
     height: auto;
     float: left;
     padding: 1px;
@@ -113,7 +209,7 @@ a.nav {
 
 .navhelp {
     text-decoration: none;
-    width: 181px;
+    width: 100%;
     height: auto;
     padding: 1px;
     float: left;
@@ -123,41 +219,41 @@ a.nav {
 /* Translations and others */
 
 select {
-    background-color: #000000;
-    border: 1px solid #999999;
-    color: #CCCCCC;
+    background-color: var(--color-input-bg);
+    border: 1px solid var(--color-input-border);
+    color: var(--color-input-text);
 }
 
 table.vitalinfo {
-    background-color: #333333;
-    border: 1px solid #000000;
+    background-color: var(--color-panel-bg);
+    border: 1px solid var(--color-panel-border);
     width: 182px;
 }
 
 a.motd {
     text-decoration: none;
-    color: #c61d2e;
+    color: var(--color-motd);
 }
 
 a:hover.motd {
     font-weight: normal;
-    color: #FFFFFF;
+    color: var(--color-motd-hover);
 }
 
 a.hotmotd {
     font-weight: normal;
-    color: #FFFFFF;
+    color: var(--color-motd-hot-text);
 }
 
 .pagetitle {
     font-family: "Arial Black", "Courier";
     font-variant: small-caps;
     font-size: 14px;
-    color: #000000;
+    color: var(--color-text);
 }
 
 .navhi {
-    color: #c61d2e;
+    color: var(--color-motd);
     text-decoration: underline;
 }
 
@@ -175,37 +271,38 @@ td.nav a.t {
 
 /* Hover Effects */
 a:hover.nav {
-    background-color: #404040;
+    background-color: var(--color-nav-hover-bg);
     border: none;
+    color: var(--color-nav-text);
 }
 
 /* Message of the Day Link */
 a.motd {
     text-decoration: none;
-    color: #c61d2e;
+    color: var(--color-motd);
 }
 
 a:hover.motd {
     font-weight: normal;
-    color: #FFFFFF;
+    color: var(--color-motd-hover);
 }
 
 /* Character Info Styles */
 td.charhead {
-    background-color: #222222;
-    color: #FFFFFF;
+    background-color: var(--color-panel-bg);
+    color: var(--color-text);
 }
 
 table.charinfo {
     width: 182px;
-    color: #FFFFFF;
+    color: var(--color-text);
     border: none;
     border-spacing: 0px;
 }
 
 td.charinfo {
-    color: #FFFFFF;
-    border-top: 1px solid #FFFFFF;
+    color: var(--color-text);
+    border-top: 1px solid var(--color-panel-border);
     cursor: default;
     padding: 2px;
 }
@@ -221,33 +318,24 @@ td[class*="page-bottom"] {
 
 /* Button Styles */
 .button {
-    background-color: #222222;
-    color: #000000;
+    background-color: var(--color-button-bg);
+    color: var(--color-button-text);
     font-family: verdana, arial, helvetica, sans-serif;
     font-size: 12px;
     background-image: url(/templates/images/input.gif);
     border: 1px solid;
-    border-color: #000000 #888846 #888846 #000000;
+    border-color: var(--color-button-border) var(--color-button-border) var(--color-button-border) var(--color-button-border);
 }
 
 .login-submit {
     text-align: center;
 }
 
-.login-message {
-    border: 2px solid #ff4d4d;
-    background-color: rgba(68, 0, 0, 0.45);
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.75rem;
-    font-size: 1.1em;
-    border-radius: 4px;
-}
-
 /* Other Styles */
 .select {
-    background-color: #000000;
-    border: 1px solid #999999;
-    color: #CCCCCC;
+    background-color: var(--color-input-bg);
+    border: 1px solid var(--color-input-border);
+    color: var(--color-input-text);
 }
 
 .stonage {
@@ -260,7 +348,7 @@ td[class*="page-bottom"] {
     background-image: url(/templates/images/stone_center.gif);
     background-repeat: no-repeat;
     background-position: left top;
-    color: #669933;
+    color: var(--color-link);
 }
 
 /* Background Images for Different Sections */
@@ -358,27 +446,27 @@ a.t, a.thot {
     border-radius: 3px;
     margin-left: 2px;
     cursor: help;
-    border: 1px solid #aaa;
+    border: 1px solid var(--color-translator-border);
 }
 
 /* Normal Button */
 a.t {
-    background-color: #555; /* less... conspicious */
-    border-color: #888;
+    background-color: var(--color-translator-bg); /* less... conspicious */
+    border-color: var(--color-translator-border);
 }
 
 /* Hot Button, not translated */
 
 a.thot {
-    background-color: #c0392b; /* really red for "hot" */
-    border-color: #e74c3c;
+    background-color: var(--color-translator-hot-bg); /* really red for "hot" */
+    border-color: var(--color-translator-hot-border);
     font-weight: bold;
 }
 
     /* Hover effects for translator buttons */
     a.t:hover, a.thot:hover {
         transform: scale(1.5);
-        box-shadow: 0 0 4px #fff;
+        box-shadow: 0 0 4px var(--color-translator-hover-shadow);
         z-index: 10;
     }
 
@@ -389,13 +477,13 @@ a.thot {
 
 /* Form Fields */
 .formfield-value {
-    word-break: break-all;
+	word-break: break-all;
 }
 
 div.debug {
-    background-color: #1e1e1e; /* dark gray, easy on the eyes */
-    color: #d4d4d4; /* slightly muted white for good readability */
-    border: 1px dashed #555; /* subtle, technical look */
+    background-color: var(--color-debug-bg); /* surface tone adapts to theme */
+    color: var(--color-debug-text); /* readable text */
+    border: 1px dashed var(--color-debug-border); /* subtle, technical look */
     font-family: Consolas, monospace; /* clear debug font */
     font-size: 11px; /* slightly larger than before for better readability */
     padding: 10px;
@@ -403,5 +491,5 @@ div.debug {
     white-space: pre-wrap; /* preserves structure and lines */
     overflow-x: auto; /* scrollbar for long lines */
     border-radius: 4px;
-    box-shadow: 0 0 4px rgba(0,0,0,0.4); /* subtle depth */
+    box-shadow: 0 0 4px var(--color-debug-shadow); /* subtle depth */
 }

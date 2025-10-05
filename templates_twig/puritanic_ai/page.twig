@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ (template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates_twig/common/bootstrap.min.css'|ver }}">
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
@@ -28,8 +28,15 @@
                         <td class="noborder pageheader-center align-center">{{ title }}</td>
                         <td class="noborder pageheader-right valign-top">
                             <button class="btn btn-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasStats" aria-controls="offcanvasStats">&#128202;</button>
-                            <img src="{{ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail"><strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
-                            {{ petitiondisplay|raw }}
+                            <nav class="mail-nav justify-content-end" aria-label="Player notifications">
+                                <span class="mail-nav__link">
+                                    <img src="{{ '/' ~ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail">
+                                    <strong>{{ mail|raw }}</strong>
+                                </span>
+                                <span class="mail-nav__link">
+                                    {{ petitiondisplay|raw }}
+                                </span>
+                            </nav>
                         </td>
                     </tr>
                 </table>
@@ -71,7 +78,7 @@
                         <td class="valign-top">
                             <table class="colOtWhite w-100">
                                 <tr>
-                                    <td class="valign-top">{{ copyright|raw }}<br/>Design: Puritanic AI Mobile theme by NB-Core</td>
+                                    <td class="valign-top">{{ copyright|raw }}Design: Puritanic AI Mobile theme by NB-Core</td>
                                     <td class="valign-top align-right">{{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
                                 </tr>
                             </table>

@@ -5,7 +5,7 @@
     <title>{{ title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
-    <link rel="stylesheet" href="{{ (template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
@@ -25,8 +25,15 @@
                         </td>
                         <td class="noborder pageheader-center align-center">{{ title }}</td>
                         <td class="noborder pageheader-right">
-                            <img src="{{ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail"><strong>{{ mail|raw }}</strong>&nbsp;&nbsp;
-                            {{ petitiondisplay|raw }}
+                            <nav class="mail-nav justify-content-end" aria-label="Player notifications">
+                                <span class="mail-nav__link">
+                                    <img src="{{ '/' ~ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail">
+                                    <strong>{{ mail|raw }}</strong>
+                                </span>
+                                <span class="mail-nav__link">
+                                    {{ petitiondisplay|raw }}
+                                </span>
+                            </nav>
                         </td>
                     </tr>
                 </table>
@@ -74,8 +81,8 @@
                         <td class="valign-top">
                             <table class="layout-table colOtWhite" width="100%">
                                 <tr>
-                                    <td class="valign-top">{{ copyright|raw }}<br/>Design: Puritanic AI Mobile theme by NB-Core</td>
-                                    <td class="valign-top align-right">{{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
+                                    <td class="valign-top">{{ copyright|raw }}Design: Puritanic AI Mobile theme by NB-Core{</td>
+                                    <td class="valign-top align-right">{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
                                 </tr>
                             </table>
                         </td>

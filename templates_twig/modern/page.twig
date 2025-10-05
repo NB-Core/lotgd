@@ -5,7 +5,7 @@
     <title>{{ title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
-    <link rel="stylesheet" href="{{ (template_path ~ '/assets/style.css')|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
@@ -14,7 +14,7 @@
 <table border="0" cellpadding="4" cellspacing="0" width="100%">
     <tr>
         <td colspan="2" class="pageheader" valign="top">
-            <img src="{{ template_path }}/assets/title.gif" width="395" height="55" align="right" alt="Page title graphic"><span class="pagetitle"><br>{{ title }}</span>
+            <img src="{{ '/' ~ template_path }}/assets/title.gif" width="395" height="55" align="right" alt="Page title graphic"><span class="pagetitle"><br>{{ title }}</span>
         </td>
     </tr>
 </table>
@@ -25,14 +25,16 @@
         <td width="190" bgcolor="#433828" valign="top">
             <nav role="navigation">
             <div align="center">{{ navad|raw }}</div>
-            <img src="{{ template_path }}/assets/uscroll.GIF" width="182" height="11" alt="">
+            <img src="{{ '/' ~ template_path }}/assets/uscroll.GIF" width="182" height="11" alt="">
             <table cellspacing="0" cellpadding="0" class="nav">
                 <tr><td>{{ nav|raw }}</td></tr>
             </table>
-            <img src="{{ template_path }}/assets/lscroll.GIF" alt="" width="182" height="11"> <br>
+            <img src="{{ '/' ~ template_path }}/assets/lscroll.GIF" alt="" width="182" height="11"> <br>
             {{ motd|raw }} <br>
-            {{ mail|raw }} <br>
-            {{ petition|raw }}
+            <div class="mail-nav" role="navigation" aria-label="Player notifications">
+                <span class="mail-nav__link">{{ mail|raw }}</span>
+                <span class="mail-nav__link">{{ petition|raw }}</span>
+            </div>
             </nav>
         </td>
         <td width="100%" rowspan="2" valign="top" bgcolor="#352D20">
@@ -43,18 +45,18 @@
         </td>
     </tr>
     <tr>
-        <td width="190" valign="top" bgcolor="#433828"><img src="{{ template_path }}/assets/uscroll.GIF" width="182" height="11" alt="">
+        <td width="190" valign="top" bgcolor="#433828"><img src="{{ '/' ~ template_path }}/assets/uscroll.GIF" width="182" height="11" alt="">
             <table border="0" cellpadding="0" cellspacing="0" class="vitalinfo">
                 <tr><td> {{ stats|raw }} </td></tr>
             </table>
-            <img src="{{ template_path }}/assets/lscroll.GIF" alt="" width="182" height="11"></td>
+            <img src="{{ '/' ~ template_path }}/assets/lscroll.GIF" alt="" width="182" height="11"></td>
     </tr>
     <tr>
         <td colspan="2" class="footer">
             <table border="0" cellpadding="0" cellspacing="0" width="100%" class="noborder">
                 <tr>
-                    <td class="noborder">{{ copyright|raw }}Design: Chris Yarbrough ({{ pagegen|raw }}) </td>
-                    <td align="right" class="noborder" valign="top">{{ source|raw }}<br /><br />{{ version }}</td>
+                    <td class="noborder">{{ copyright|raw }}Design: Chris Yarbrough</td>
+                    <td align="right" class="noborder" valign="top">{{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
                 </tr>
             </table>
         </td>

@@ -133,6 +133,28 @@ a {
         text-align: right;
 }
 
+.mail-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+}
+
+.mail-nav__link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0 0.5rem;
+        text-decoration: none;
+}
+
+.mail-nav__link,
+.mail-nav__link a {
+        color: inherit;
+        text-decoration: none;
+}
+
 .title-logo {
         font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
         font-size: 3rem;

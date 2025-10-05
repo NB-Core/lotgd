@@ -28,11 +28,14 @@
                 <h1 class="site-title">{{ gamename|default(title) }}</h1>
             </div>
             <div class="col-sm-4 header-actions text-sm-end">
-                <nav aria-label="Player notifications" class="d-inline-flex align-items-center gap-2">
-                    <span class="mail-icon" aria-hidden="true">&#128231;</span>
-                    <span class="mail-text">{{ mail|raw }}</span>
-                    <span class="separator" aria-hidden="true">|</span>
-                    {{ petitiondisplay|raw }}
+                <nav aria-label="Player notifications" class="mail-nav justify-content-sm-end">
+                    <span class="mail-nav__link">
+                        <span class="mail-icon" aria-hidden="true">&#128231;</span>
+                        <span class="mail-text">{{ mail|raw }}</span>
+                    </span>
+                    <span class="mail-nav__link">
+                        {{ petitiondisplay|raw }}
+                    </span>
                 </nav>
             </div>
         </div>

@@ -12,9 +12,31 @@ a{
     color: #0099FF;
     text-decoration: none;
 }
+
+.mail-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.mail-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    text-decoration: none;
+}
+
+.mail-nav__link,
+.mail-nav__link a {
+    color: inherit;
+    text-decoration: none;
+}
 a.nav {
     text-decoration: none;
-    width: 181px;
+    width: 100%;
     height: auto;
     padding: 1px;
     float: left;
@@ -54,7 +76,7 @@ a:hover.navhilite {
 }
 .navhelp {
     text-decoration: none;
-    width: 181px;
+    width: 100%;
     height: auto;
     padding: 1px;
     float: left;
@@ -67,7 +89,7 @@ a:hover.navhilite {
 }
 .navhead {
  text-decoration: none;
-    width: 180px;
+    width: 100%;
     border: thin #003366;
     height: auto;
     padding: 1px;
@@ -148,15 +170,6 @@ font-family: verdana,arial,helvetica,sans-serif;
      border-right: 1px solid #403225;
      border-bottom: 1px solid #403225;
 }
-
-.login-message {
-    border: 2px solid #F8DB83;
-    background-color: rgba(107, 86, 63, 0.35);
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.75rem;
-    font-size: 1.1em;
-    border-radius: 4px;
-}
 .input {
     background-color: #433828;
     border: 1px solid #806B4D;
@@ -199,7 +212,7 @@ a.hotmotd {
     text-decoration: none;
     text-align: center;
     color:#FF9900;
-    width: 181px;
+    width: 100%;
     height: auto;
     padding: 1px;
     float: left;
@@ -270,7 +283,7 @@ a.thot {
 
 /* Form Fields */
 .formfield-value {
-    word-break: break-all;
+	word-break: break-all;
 }
 
 /* Clear debug output */
