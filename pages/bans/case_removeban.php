@@ -139,7 +139,7 @@ while ($row = Database::fetchAssoc($result)) {
     $output->rawOutput("</td><td>");
     $ipArgument = json_encode($row['ipfilter'], JSON_THROW_ON_ERROR);
     $idArgument = json_encode($row['uniqueid'], JSON_THROW_ON_ERROR);
-    $output->rawOutput("<div id='user$i'><a href='#' onClick=\"return lotgdLoadAffectedUsers({$ipArgument}, {$idArgument}, $i);\">");
+    $output->rawOutput("<div id='user$i'><a href='#' onclick='return lotgdLoadAffectedUsers({$ipArgument}, {$idArgument}, $i);'>");
     $output->outputNotl("%s", $showuser, true);
     $output->rawOutput("</a></div>");
     $output->rawOutput("</td><td>");
