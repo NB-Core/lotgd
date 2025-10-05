@@ -128,5 +128,56 @@ namespace Lotgd\Tests\Async {
                 $conn->lastFetchAllTypes
             );
         }
+
+        public function testBansAffectedUsersUsesBindingsForQuotedInput(): void
+        {
+            Database::$mockResults = [[
+                ['name' => "Shaun \"Quote\" O'Connor"],
+            ]];
+
+            $response = (new Bans())->affectedUsers("127.0.0.1' OR '1'='1", "abc\" OR \"1\"='1", 'user1');
+
+            $this->assertInstanceOf(Response::class, $response);
+
+            $conn = Database::getDoctrineConnection();
+            $this->assertSame(
+                [
+                    'ipFilter' => "127.0.0.1' OR '1'='1",
+                    'uniqueId' => "abc\" OR \"1\"='1",
+                ],
+                $conn->lastFetchAllParams
+            );
+            $this->assertSame(
+                ['ipFilter' => ParameterType::STRING, 'uniqueId' => ParameterType::STRING],
+                $conn->lastFetchAllTypes
+            );
+
+            $lastQuery = end($conn->queries) ?: '';
+            $this->assertStringContainsString(':ipFilter', $lastQuery);
+            $this->assertStringContainsString(':uniqueId', $lastQuery);
+            $this->assertStringNotContainsString("127.0.0.1' OR '1'='1", $lastQuery);
+            $this->assertStringNotContainsString("abc\" OR \"1\"='1", $lastQuery);
+        }
+
+        public function testBansAffectedUsersHandlesMultibyteInput(): void
+        {
+            Database::$mockResults = [[
+                ['name' => 'さくら"🌸"'],
+            ]];
+
+            $response = (new Bans())->affectedUsers('さくさく', 'ユニーク🌸', 'user2');
+
+            $this->assertInstanceOf(Response::class, $response);
+
+            $conn = Database::getDoctrineConnection();
+            $this->assertSame(
+                ['ipFilter' => 'さくさく', 'uniqueId' => 'ユニーク🌸'],
+                $conn->lastFetchAllParams
+            );
+            $this->assertSame(
+                ['ipFilter' => ParameterType::STRING, 'uniqueId' => ParameterType::STRING],
+                $conn->lastFetchAllTypes
+            );
+        }
     }
 }
