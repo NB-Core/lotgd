@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 use Lotgd\Mail;
+use Lotgd\PlayerSearch;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
 use Lotgd\Http;
@@ -20,6 +21,7 @@ function mailWrite(): void
 
     $output = Output::getInstance();
     $settings = Settings::getInstance();
+    $playerSearch = $GLOBALS['lotgd_mail_player_search'] ?? new PlayerSearch();
 
     // Capture request values
     $subject    = (string) Http::post('subject');
@@ -133,7 +135,7 @@ function mailWrite(): void
             $superusers[] = $row['login'];
         }
     } elseif (is_array($row)) {
-        renderRecipientSelection($toPost, $superusers, $acctidTo, $row);
+        renderRecipientSelection($toPost, $superusers, $acctidTo, $row, $playerSearch);
     }
 
     renderSuperuserScript($superusers);
@@ -250,8 +252,13 @@ function getAccountByLogin(string $login): ?array
 /**
  * Render recipient selection or input field.
  */
-function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo, array &$row): void
-{
+function renderRecipientSelection(
+    string $to,
+    array &$superusers,
+    int &$acctidTo,
+    array &$row,
+    PlayerSearch $playerSearch
+): void {
     $output = Output::getInstance();
     $settings = Settings::getInstance();
     $charset = $settings->getSetting('charset', 'UTF-8');
@@ -260,56 +267,11 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
     $output->output('`2To: ');
     $output->rawOutput('</label>');
 
-    $conn  = Database::getDoctrineConnection();
-    $table = Database::prefix('accounts');
+    $columns = ['acctid', 'login', 'name', 'superuser', 'locked'];
 
-    $stmt = $conn->executeQuery(
-        "SELECT acctid, login, name, superuser FROM $table WHERE login = :login AND locked = 0",
-        ['login' => $to]
-    );
+    $rows = filterUnlockedRecipients($playerSearch->findExactLogin($to, $columns));
 
-    $rows = [];
-    $row = $stmt->fetchAssociative();
-
-    if ($row !== false) {
-        $rows[] = $row;
-    } else {
-        $string = '%';
-        $charset = $settings->getSetting('charset', 'UTF-8');
-        if (function_exists('mb_strlen')) {
-            $length = mb_strlen($to, $charset);
-            if ($length === false) {
-                $length = strlen($to);
-                for ($x = 0; $x < $length; ++$x) {
-                    $string .= $to[$x] . '%';
-                }
-            } else {
-                for ($x = 0; $x < $length; ++$x) {
-                    $string .= mb_substr($to, $x, 1, $charset) . '%';
-                }
-            }
-        } else {
-            $toLen = strlen($to);
-            for ($x = 0; $x < $toLen; ++$x) {
-                $string .= $to[$x] . '%';
-            }
-        }
-
-        $stmt = $conn->executeQuery(
-            "SELECT acctid, login, name, superuser FROM $table WHERE name LIKE :pattern AND locked = 0 " .
-            "ORDER BY login = :exact_login DESC, name = :exact_name DESC, login",
-            [
-                'pattern'     => $string,
-                'exact_login' => $to,
-                'exact_name'  => $to,
-            ]
-        );
-        $rows = $stmt->fetchAllAssociative();
-    }
-
-    $dbNumRows = count($rows);
-
-    if ($dbNumRows == 1) {
+    if (count($rows) === 1) {
         $row = $rows[0];
         $output->outputNotl(
             "<input type='hidden' id='to' name='to' value=\"" .
@@ -322,7 +284,30 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
             $superusers[] = $row['login'];
         }
         $acctidTo = $row['acctid'];
-    } elseif ($dbNumRows == 0) {
+
+        return;
+    }
+
+    $rows = filterUnlockedRecipients(
+        $playerSearch->findByDisplayNameFuzzy($to, $columns, null, $to)
+    );
+
+    $dbNumRows = count($rows);
+
+    if ($dbNumRows === 1) {
+        $row = $rows[0];
+        $output->outputNotl(
+            "<input type='hidden' id='to' name='to' value=\"" .
+            htmlentities($row['login'], ENT_COMPAT, $charset) .
+            "\">",
+            true
+        );
+        $output->outputNotl("`^{$row['name']}`n");
+        if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
+            $superusers[] = $row['login'];
+        }
+        $acctidTo = $row['acctid'];
+    } elseif ($dbNumRows === 0) {
         $output->output("`\$No one was found who matches \"%s\".`n", stripslashes($to));
         $output->output('`@Please try again.`n');
         Http::set('prepop', $to, true);
@@ -333,18 +318,33 @@ function renderRecipientSelection(string $to, array &$superusers, int &$acctidTo
         $output->outputNotl("<select name='to' id='to' onchange='check_su_warning();'>", true);
         $superusers = [];
 
-        foreach ($rows as $row) {
+        foreach ($rows as $candidate) {
             $output->outputNotl(
-                "<option value=\"" . htmlentities($row['login'], ENT_COMPAT, $charset) . "\">",
+                "<option value=\"" . htmlentities($candidate['login'], ENT_COMPAT, $charset) . "\">",
                 true
             );
-            $output->outputNotl('%s', Sanitize::fullSanitize($row['name']));
-            if (($row['superuser'] & SU_GIVES_YOM_WARNING) && !($row['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
-                $superusers[] = $row['login'];
+            $output->outputNotl('%s', Sanitize::fullSanitize($candidate['name']));
+            if (($candidate['superuser'] & SU_GIVES_YOM_WARNING) && !($candidate['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
+                $superusers[] = $candidate['login'];
             }
         }
         $output->outputNotl('</select>`n', true);
     }
+}
+
+/**
+ * @param array<int, array<string, mixed>> $rows
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function filterUnlockedRecipients(array $rows): array
+{
+    $filtered = array_filter(
+        $rows,
+        static fn(array $row): bool => (int) ($row['locked'] ?? 0) === 0
+    );
+
+    return array_values($filtered);
 }
 
 /**

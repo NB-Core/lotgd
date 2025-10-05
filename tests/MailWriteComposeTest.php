@@ -22,7 +22,6 @@ namespace {
         {
         }
     }
-
 }
 
 namespace Lotgd\Tests {
@@ -47,6 +46,7 @@ namespace Lotgd\Tests {
             $_POST = [];
             Database::$mockResults = [];
             Database::resetDoctrineConnection();
+            unset($GLOBALS['lotgd_mail_player_search']);
             if (! defined('LOTGD_MAIL_WRITE_AUTORUN')) {
                 define('LOTGD_MAIL_WRITE_AUTORUN', false);
             }
@@ -58,21 +58,36 @@ namespace Lotgd\Tests {
             $forms_output = '';
         }
 
+        protected function tearDown(): void
+        {
+            unset($GLOBALS['lotgd_mail_player_search']);
+        }
+
         public function testRecipientDropdownShownForPartialNames(): void
         {
             global $forms_output;
+
             $_POST['to'] = 'ja';
-            $test_accounts_query_result = [
-                ['acctid' => 10, 'login' => 'john', 'name' => 'John', 'superuser' => 0],
-                ['acctid' => 11, 'login' => 'jane', 'name' => 'Jane', 'superuser' => 0],
-            ];
+
             $conn = Database::getDoctrineConnection();
-            $conn->fetchAllResults = [$test_accounts_query_result];
-            Database::$mockResults = array_fill(0, 4, []);
+            Database::$mockResults = [];
+            $conn->fetchAllResults = [
+                [],
+                [],
+                [
+                    ['acctid' => 10, 'login' => 'john', 'name' => 'John', 'superuser' => 0, 'locked' => 0],
+                    ['acctid' => 11, 'login' => 'jane', 'name' => 'Jane', 'superuser' => 0, 'locked' => 0],
+                ],
+            ];
+
             \mailWrite();
-            $this->assertGreaterThanOrEqual(2, count($conn->executeQueryParams));
-            $expectedPattern = $this->buildWildcardPattern('ja', 'UTF-8');
-            $this->assertSame($expectedPattern, $conn->executeQueryParams[1]['pattern']);
+
+            $this->assertGreaterThanOrEqual(3, $conn->executeQueryParams);
+            $this->assertSame('ja', $conn->executeQueryParams[1]['loginExact']);
+            $this->assertSame('%ja%', $conn->executeQueryParams[2]['namePattern']);
+            $this->assertSame('%j%a%', $conn->executeQueryParams[2]['nameCharacterPattern']);
+            $this->assertSame('ja', $conn->executeQueryParams[2]['nameExact']);
+            $this->assertStringContainsString("<select name='to' id='to'", $forms_output);
         }
 
         public function testFallbackSearchHandlesQuotedNames(): void
@@ -80,25 +95,29 @@ namespace Lotgd\Tests {
             global $forms_output;
 
             $_POST['to'] = "O'";
-            $test_accounts_query_result = [
+
+            $conn = Database::getDoctrineConnection();
+            Database::$mockResults = [];
+            $conn->fetchAllResults = [
+                [],
                 [
-                    'acctid'    => 20,
-                    'login'     => 'oconnor',
-                    'name'      => "Shaun \"Quote\" O'Connor",
-                    'superuser' => 0,
+                    [
+                        'acctid'    => 20,
+                        'login'     => 'oconnor',
+                        'name'      => "Shaun \"Quote\" O'Connor",
+                        'superuser' => 0,
+                        'locked'    => 0,
+                    ],
                 ],
             ];
 
-            $conn = Database::getDoctrineConnection();
-            $conn->fetchAllResults = [$test_accounts_query_result];
-            Database::$mockResults = array_fill(0, 4, []);
-
             \mailWrite();
 
-            $this->assertGreaterThanOrEqual(2, count($conn->executeQueryParams));
-
-            $expectedPattern = $this->buildWildcardPattern("O'", 'UTF-8');
-            $this->assertSame($expectedPattern, $conn->executeQueryParams[1]['pattern']);
+            $this->assertGreaterThanOrEqual(2, $conn->executeQueryParams);
+            $this->assertSame("O'", $conn->executeQueryParams[0]['loginExact']);
+            $this->assertSame("%O'%", $conn->executeQueryParams[1]['namePattern']);
+            $this->assertSame("%O%'%", $conn->executeQueryParams[1]['nameCharacterPattern']);
+            $this->assertStringContainsString('Shaun &quot;Quote&quot; O\'Connor', $forms_output);
         }
 
         public function testFallbackSearchHandlesMultibyteNames(): void
@@ -106,53 +125,29 @@ namespace Lotgd\Tests {
             global $forms_output;
 
             $_POST['to'] = 'さく';
-            $test_accounts_query_result = [
+
+            $conn = Database::getDoctrineConnection();
+            Database::$mockResults = [];
+            $conn->fetchAllResults = [
+                [],
                 [
-                    'acctid'    => 30,
-                    'login'     => 'sakura',
-                    'name'      => 'さくら"🌸"',
-                    'superuser' => 0,
+                    [
+                        'acctid'    => 30,
+                        'login'     => 'sakura',
+                        'name'      => 'さくら"🌸"',
+                        'superuser' => 0,
+                        'locked'    => 0,
+                    ],
                 ],
             ];
 
-            $conn = Database::getDoctrineConnection();
-            $conn->fetchAllResults = [$test_accounts_query_result];
-            Database::$mockResults = [[], []];
-
             \mailWrite();
 
-            $this->assertGreaterThanOrEqual(2, count($conn->executeQueryParams));
-
-            $expectedPattern = $this->buildWildcardPattern('さく', 'UTF-8');
-            $this->assertSame($expectedPattern, $conn->executeQueryParams[1]['pattern']);
-        }
-
-        private function buildWildcardPattern(string $value, string $charset): string
-        {
-            $pattern = '%';
-
-            if (function_exists('mb_strlen')) {
-                $length = mb_strlen($value, $charset);
-
-                if ($length === false) {
-                    $length = strlen($value);
-                    for ($i = 0; $i < $length; ++$i) {
-                        $pattern .= $value[$i] . '%';
-                    }
-                } else {
-                    for ($i = 0; $i < $length; ++$i) {
-                        $pattern .= mb_substr($value, $i, 1, $charset) . '%';
-                    }
-                }
-            } else {
-                $length = strlen($value);
-                for ($i = 0; $i < $length; ++$i) {
-                    $pattern .= $value[$i] . '%';
-                }
-            }
-
-            return $pattern;
+            $this->assertGreaterThanOrEqual(2, $conn->executeQueryParams);
+            $this->assertSame('さく', $conn->executeQueryParams[0]['loginExact']);
+            $this->assertSame('%さく%', $conn->executeQueryParams[1]['namePattern']);
+            $this->assertSame('%さ%く%', $conn->executeQueryParams[1]['nameCharacterPattern']);
+            $this->assertStringContainsString('さくら&quot;🌸&quot;', $forms_output);
         }
     }
-
 }
