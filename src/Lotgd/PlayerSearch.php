@@ -115,7 +115,7 @@ final class PlayerSearch
         }
 
         $sql = sprintf(
-            'SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM %s WHERE locked=0 AND name LIKE :namePattern ESCAPE \"!\" ORDER BY level DESC, dragonkills DESC, login ASC%s',
+            "SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM %s WHERE locked=0 AND name LIKE :namePattern ESCAPE '!' ORDER BY level DESC, dragonkills DESC, login ASC%s",
             Database::prefix('accounts'),
             $limitClause
         );
