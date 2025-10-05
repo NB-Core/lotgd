@@ -26,6 +26,17 @@ if (!isset($_GET['op']) || $_GET['op'] != 'list') {
     define("OVERRIDE_FORCED_NAV", true);
 }
 
+require_once __DIR__ . '/autoload.php';
+
+$op = Http::get('op');
+$rawAddy = Http::get('addy');
+
+if ($op == "" && $rawAddy === false) {
+    http_response_code(400);
+    echo 'Missing required addy parameter.';
+
+    return;
+}
 
 require_once __DIR__ . "/common.php";
 
@@ -98,14 +109,18 @@ function lotgdsort($a, $b)
     return (($costa < $costb) ? -1 : 1);
 }
 
-$op = Http::get('op');
 if ($op == "") {
-    $addy  = Http::get('addy');
+    $addy  = $rawAddy === false ? '' : (string)$rawAddy;
     $desc  = Http::get('desc');
     $vers  = Http::get('version');
     $admin = Http::get('admin');
     $count = (int)Http::get('c');
     $lang  = Http::get('l');
+
+    $desc = ($desc === false) ? '' : (string)$desc;
+    $vers = ($vers === false) ? '' : (string)$vers;
+    $admin = ($admin === false) ? '' : (string)$admin;
+    $lang = ($lang === false) ? '' : (string)$lang;
 
     if ($vers == "") {
         $vers = "Unknown";
