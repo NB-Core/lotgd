@@ -68,6 +68,10 @@ body, td, caption {
     color: var(--text-color);
 }
 
+.trhead td {
+    color: #000;
+}
+
 a {
     color: var(--accent-color);
     text-decoration: none;
