@@ -58,20 +58,18 @@ array_push($args, ["mail.php?op=address", $write]);
 // and "functionname" is the name of the mail function to add
 $mailfunctions = HookHandler::hook("mailfunctions", $args);
 
-$output->rawOutput("<table width='50%' border='0' cellpadding='0' cellspacing='2'>");
-$output->rawOutput("<tr>");
-$count_mailfunctions = count($mailfunctions);
-for ($i = 0; $i < $count_mailfunctions; ++$i) {
-    if (is_array($mailfunctions[$i])) {
-        if (count($mailfunctions[$i]) == 2) {
-            $page = $mailfunctions[$i][0];
-            $name = $mailfunctions[$i][1]; // already translated
-            $output->rawOutput("<td><a href='$page' class='motd'>$name</a></td>");
-            // No need for addnav since mail function pages are (or should be) outside the page nav system.
-        }
+$output->rawOutput("<div class='mail-nav'>");
+foreach ($mailfunctions as $mailfunction) {
+    if (!is_array($mailfunction) || count($mailfunction) !== 2) {
+        continue;
     }
+
+    $page = $mailfunction[0];
+    $name = $mailfunction[1]; // already translated
+    $output->rawOutput("<a href='{$page}' class='button mail-nav__link'>{$name}</a>");
+    // No need for addnav since mail function pages are (or should be) outside the page nav system.
 }
-$output->rawOutput("</tr></table>");
+$output->rawOutput('</div>');
 $output->outputNotl("`n`n");
 switch (Http::get('even')) {
     case "mailsent":
