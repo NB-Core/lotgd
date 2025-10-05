@@ -35,6 +35,7 @@ SuperuserNav::render();
 
 
 $ret = Http::get('ret');
+$ret = $ret !== false ? (string) $ret : '';
 $return = cmd_sanitize($ret);
 $return = basename($return);
 Translator::getInstance()->setSchema("nav");
@@ -99,7 +100,6 @@ if ($op == "add2") {
     $output->output("%s donation points added to %s`0, reason: `^%s`0", $amt, $row['name'], $reason);
 
     $txnid = Http::get("txnid");
-    $ret = Http::get('ret');
     if ($id == $session['user']['acctid']) {
         $session['user']['donation'] += $amt;
     }
@@ -170,7 +170,6 @@ if ($op == "") {
         $playerSearch = new PlayerSearch();
         $results = $playerSearch->findByDisplayNameFuzzy($name, $columns, 100);
     }
-    $ret = Http::get('ret');
     $amt = Http::post('amt');
     if ($amt == '') {
         $amt = Http::get("amt");
