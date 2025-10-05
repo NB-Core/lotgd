@@ -80,14 +80,10 @@ if ($op == "") {
             "paylog.php?month={$monthString}"
         );
     }
-    $month = (string) Http::get('month');
-    if ($month == "") {
-        $month = date("Y-m");
-    }
+    $rawMonth = (string) Http::get('month');
+    $month = $rawMonth === '' ? date('Y-m') : $rawMonth;
     $startdate = $month . "-01 00:00:00";
     $enddate = date("Y-m-d H:i:s", strtotime("+1 month", strtotime($startdate)));
-    $yearlySql = "SELECT YEAR(processdate) AS year, COALESCE(SUM(amount), 0) AS gross_total, COALESCE(SUM(txfee), 0) AS fee_total FROM " . Database::prefix('paylog') . " GROUP BY year ORDER BY year DESC";
-    $yearlyResult = Database::query($yearlySql);
     $type = Translator::translate("Type");
     $gross = Translator::translate("Gross");
     $fee = Translator::translate("Fee");
@@ -95,22 +91,27 @@ if ($op == "") {
     $processed = Translator::translate("Processed");
     $id = Translator::translate("Transaction ID");
     $who = Translator::translate("Who");
-    $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
-    $output->rawOutput("<tr class='trhead'><td>" . Translator::translate('Year') . "</td><td>" . $gross . "</td><td>" . $fee . "</td><td>" . $net . "</td></tr>");
-    $yearIndex = 0;
-    while ($yearRow = Database::fetchAssoc($yearlyResult)) {
-        $output->rawOutput("<tr class='" . ($yearIndex % 2 ? "trlight" : "trdark") . "'><td>");
-        $output->outputNotl('%s', $yearRow['year']);
-        $output->rawOutput("</td><td>");
-        $output->outputNotl('%.2f %s', $yearRow['gross_total'], $currency);
-        $output->rawOutput("</td><td>");
-        $output->outputNotl('%.2f %s', $yearRow['fee_total'], $currency);
-        $output->rawOutput("</td><td>");
-        $output->outputNotl('%.2f %s', $yearRow['gross_total'] - $yearRow['fee_total'], $currency);
-        $output->rawOutput("</td></tr>");
-        ++$yearIndex;
+
+    if ($rawMonth === '') {
+        $yearlySql = "SELECT YEAR(processdate) AS year, COALESCE(SUM(amount), 0) AS gross_total, COALESCE(SUM(txfee), 0) AS fee_total FROM " . Database::prefix('paylog') . " GROUP BY year ORDER BY year DESC";
+        $yearlyResult = Database::query($yearlySql);
+        $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
+        $output->rawOutput("<tr class='trhead'><td>" . Translator::translate('Year') . "</td><td>" . $gross . "</td><td>" . $fee . "</td><td>" . $net . "</td></tr>");
+        $yearIndex = 0;
+        while ($yearRow = Database::fetchAssoc($yearlyResult)) {
+            $output->rawOutput("<tr class='" . ($yearIndex % 2 ? "trlight" : "trdark") . "'><td>");
+            $output->outputNotl('%s', $yearRow['year']);
+            $output->rawOutput("</td><td>");
+            $output->outputNotl('%.2f %s', $yearRow['gross_total'], $currency);
+            $output->rawOutput("</td><td>");
+            $output->outputNotl('%.2f %s', $yearRow['fee_total'], $currency);
+            $output->rawOutput("</td><td>");
+            $output->outputNotl('%.2f %s', $yearRow['gross_total'] - $yearRow['fee_total'], $currency);
+            $output->rawOutput("</td></tr>");
+            ++$yearIndex;
+        }
+        $output->rawOutput("</table><br>");
     }
-    $output->rawOutput("</table><br>");
 
     $sql = "SELECT " . Database::prefix("paylog") . ".*," . Database::prefix("accounts") . ".name," . Database::prefix("accounts") . ".donation," . Database::prefix("accounts") . ".donationspent FROM " . Database::prefix("paylog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("paylog") . ".acctid = " . Database::prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
     $result = Database::query($sql);
