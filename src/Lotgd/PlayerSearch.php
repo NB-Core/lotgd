@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use InvalidArgumentException;
 use Lotgd\MySQL\Database;
 use Throwable;
@@ -25,7 +26,10 @@ final class PlayerSearch
      */
     private $connection;
 
-    public function __construct(?Connection $connection = null)
+    /**
+     * @param Connection|object|null $connection
+     */
+    public function __construct(?object $connection = null)
     {
         $this->connection = $connection ?? Database::getDoctrineConnection();
     }
@@ -88,6 +92,39 @@ final class PlayerSearch
             'nameCharacterPattern' => $this->buildCharacterWildcardPattern($search),
             'nameExact'   => $exactName,
         ]);
+    }
+
+    /**
+     * Build the spaced wildcard pattern (e.g. %N%A%M%E%) used for fuzzy name searches.
+     */
+    public function createCharacterWildcardPattern(string $search): string
+    {
+        return $this->buildCharacterWildcardPattern($search);
+    }
+
+    /**
+     * Execute the warrior list search used by list.php.
+     */
+    public function searchListByName(string $name, string $limitClause = ''): object
+    {
+        $pattern = $this->createCharacterWildcardPattern($name);
+
+        $limitClause = trim($limitClause);
+        if ($limitClause !== '') {
+            $limitClause = ' ' . $limitClause;
+        }
+
+        $sql = sprintf(
+            'SELECT acctid,name,login,alive,hitpoints,location,race,sex,level,laston,loggedin,lastip,uniqueid FROM %s WHERE locked=0 AND name LIKE :namePattern ESCAPE \"!\" ORDER BY level DESC, dragonkills DESC, login ASC%s',
+            Database::prefix('accounts'),
+            $limitClause
+        );
+
+        return $this->connection->executeQuery(
+            $sql,
+            ['namePattern' => $pattern],
+            ['namePattern' => ParameterType::STRING]
+        );
     }
 
     /**
