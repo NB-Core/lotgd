@@ -69,6 +69,50 @@ class DoctrineConnection
         $this->executeQueryParams[] = $params;
         $this->executeQueryTypes[] = $types;
 
+        $accountsTable = Database::prefix('accounts');
+        if (preg_match("/SELECT\s+prefs,emailaddress\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
+            global $accounts_table;
+            $acctid = (int) $matches[1];
+            $row = $accounts_table[$acctid] ?? ['prefs' => '', 'emailaddress' => ''];
+
+            return new DoctrineResult([$row]);
+        }
+
+        if (preg_match("/SELECT\s+prefs\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
+            global $accounts_table;
+            $acctid = (int) $matches[1];
+            $prefs = $accounts_table[$acctid]['prefs'] ?? '';
+
+            return new DoctrineResult([['prefs' => $prefs]]);
+        }
+
+        if (preg_match("/SELECT\s+name\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
+            global $accounts_table;
+            $acctid = (int) $matches[1];
+            $name = $accounts_table[$acctid]['name'] ?? '';
+
+            return new DoctrineResult([['name' => $name]]);
+        }
+
+        $mailTable = Database::prefix('mail');
+        if (preg_match("/SELECT\s+count\\(messageid\\)\s+AS\s+count\s+FROM\s+" . preg_quote($mailTable, '/') . "\s+WHERE\s+msgto=\'?([0-9]+)\'?([^;]*)/i", $sql, $matches)) {
+            global $mail_table;
+            $acctid = (int) $matches[1];
+            $onlyUnread = str_contains($matches[2], 'seen=0');
+            $count = 0;
+            foreach ($mail_table as $row) {
+                if ((int) ($row['msgto'] ?? 0) === $acctid && (! $onlyUnread || (int) ($row['seen'] ?? 0) === 0)) {
+                    $count++;
+                }
+            }
+
+            return new DoctrineResult([['count' => $count]]);
+        }
+
+        if (preg_match("/SELECT\s+\*\s+FROM\s+" . preg_quote(Database::prefix('nastywords'), '/') . "\s+WHERE\s+type='(good|nasty)'/i", $sql)) {
+            return new DoctrineResult([['words' => '']]);
+        }
+
         if (stripos($sql, 'count(') !== false) {
             $value = array_shift($this->countResults);
             if ($value === null) {
@@ -145,6 +189,27 @@ class DoctrineConnection
         ];
         $this->lastExecuteStatementParams = $params;
         $this->lastExecuteStatementTypes = $types;
+        if (preg_match('/^INSERT INTO\s+`?mail`?/i', $sql)) {
+            global $mail_table;
+            $mail_table ??= [];
+            $from   = $params['msgfrom'] ?? ($params[0] ?? 0);
+            $to     = $params['msgto'] ?? ($params[1] ?? 0);
+            $subject = $params['subject'] ?? ($params[2] ?? '');
+            $body    = $params['body'] ?? ($params[3] ?? '');
+            $sent    = $params['sent'] ?? ($params[4] ?? '');
+            $mail_table[] = [
+                'messageid' => count($mail_table) + 1,
+                'msgfrom'   => $from,
+                'msgto'     => $to,
+                'subject'   => $subject,
+                'body'      => $body,
+                'sent'      => $sent,
+                'seen'      => 0,
+            ];
+            Database::setAffectedRows(1);
+
+            return 1;
+        }
         $table = null;
         if (preg_match('/^INSERT INTO\s+`?([^`\s(]+)`?/i', $sql, $matches)) {
             $table = strtolower($matches[1]);

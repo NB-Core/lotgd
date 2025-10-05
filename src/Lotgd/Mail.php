@@ -50,13 +50,9 @@ class Mail
         $row = Database::fetchAssoc($result);
         Database::freeResult($result);
         $prefs = isset($row['prefs']) ? @unserialize($row['prefs']) : [];
-        $subject = SafeEscape::escape($subject);
-        if ($from === 0) {
-            $body = SafeEscape::escape($body);
-        } else {
+        if ($from !== 0) {
             $subject = str_replace(["\n", '`n'], '', $subject);
-            $body = SafeEscape::escape($body);
-            if (!(isset($prefs['dirtyemail']) && $prefs['dirtyemail'])) {
+            if (! (isset($prefs['dirtyemail']) && $prefs['dirtyemail'])) {
                 $subject = Censor::soap($subject, false, true);
                 $body = Censor::soap($body, false, true);
             }
@@ -65,17 +61,23 @@ class Mail
         $settings = self::getSettings();
         $limit = (int) $settings->getSetting('mailsizelimit', 1024);
         $charset = $settings->getSetting('charset', 'UTF-8');
-        $body = stripslashes($body);
-
         if (extension_loaded('mbstring')) {
             $body = mb_substr($body, 0, $limit, $charset);
         } else {
             $body = substr($body, 0, $limit);
         }
 
-        $body = addslashes($body);
-        $sql = 'INSERT INTO ' . Database::prefix('mail') . " (msgfrom,msgto,subject,body,sent) VALUES ('" . (int)$from . "','" . (int)$to . "','$subject','$body','" . date('Y-m-d H:i:s') . "')";
-        Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
+            'INSERT INTO ' . Database::prefix('mail') . ' (msgfrom, msgto, subject, body, sent) VALUES (:msgfrom, :msgto, :subject, :body, :sent)',
+            [
+                'msgfrom' => $from,
+                'msgto'   => $to,
+                'subject' => $subject,
+                'body'    => $body,
+                'sent'    => date('Y-m-d H:i:s'),
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("mail-$to");
         $email = false;
         if (isset($prefs['emailonmail']) && $prefs['emailonmail'] && $from > 0) {
