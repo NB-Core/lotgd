@@ -26,8 +26,10 @@ namespace {
 
 namespace Lotgd\Tests {
 
+    use Lotgd\Output;
     use Lotgd\Tests\Stubs\Database;
     use PHPUnit\Framework\TestCase;
+    use ReflectionClass;
 
     final class MailWriteComposeTest extends TestCase
     {
@@ -47,6 +49,7 @@ namespace Lotgd\Tests {
             Database::$mockResults = [];
             Database::resetDoctrineConnection();
             unset($GLOBALS['lotgd_mail_player_search']);
+            $this->resetOutputSingleton();
             if (! defined('LOTGD_MAIL_WRITE_AUTORUN')) {
                 define('LOTGD_MAIL_WRITE_AUTORUN', false);
             }
@@ -56,6 +59,14 @@ namespace Lotgd\Tests {
                 $loaded = true;
             }
             $forms_output = '';
+        }
+
+        private function resetOutputSingleton(): void
+        {
+            $reflection = new ReflectionClass(Output::class);
+            $instanceProp = $reflection->getProperty('instance');
+            $instanceProp->setAccessible(true);
+            $instanceProp->setValue(null, null);
         }
 
         protected function tearDown(): void
@@ -69,25 +80,27 @@ namespace Lotgd\Tests {
 
             $_POST['to'] = 'ja';
 
-            $conn = Database::getDoctrineConnection();
-            Database::$mockResults = [];
-            $conn->fetchAllResults = [
+            Database::$mockResults = [
                 [],
                 [],
                 [
                     ['acctid' => 10, 'login' => 'john', 'name' => 'John', 'superuser' => 0, 'locked' => 0],
                     ['acctid' => 11, 'login' => 'jane', 'name' => 'Jane', 'superuser' => 0, 'locked' => 0],
+                    ['acctid' => 12, 'login' => 'jack', 'name' => 'Jack', 'superuser' => 0, 'locked' => 1],
                 ],
             ];
+
+            $conn = Database::getDoctrineConnection();
 
             \mailWrite();
 
             $this->assertGreaterThanOrEqual(3, $conn->executeQueryParams);
-            $this->assertSame('ja', $conn->executeQueryParams[1]['loginExact']);
-            $this->assertSame('%ja%', $conn->executeQueryParams[2]['namePattern']);
-            $this->assertSame('%j%a%', $conn->executeQueryParams[2]['nameCharacterPattern']);
-            $this->assertSame('ja', $conn->executeQueryParams[2]['nameExact']);
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'loginExact', 'ja');
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'namePattern', '%ja%');
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'nameCharacterPattern', '%j%a%');
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'nameExact', 'ja');
             $this->assertStringContainsString("<select name='to' id='to'", $forms_output);
+            $this->assertStringNotContainsString('jack', $forms_output, 'Locked accounts should not appear in options');
         }
 
         public function testFallbackSearchHandlesQuotedNames(): void
@@ -96,9 +109,7 @@ namespace Lotgd\Tests {
 
             $_POST['to'] = "O'";
 
-            $conn = Database::getDoctrineConnection();
-            Database::$mockResults = [];
-            $conn->fetchAllResults = [
+            Database::$mockResults = [
                 [],
                 [
                     [
@@ -111,12 +122,14 @@ namespace Lotgd\Tests {
                 ],
             ];
 
+            $conn = Database::getDoctrineConnection();
+
             \mailWrite();
 
-            $this->assertGreaterThanOrEqual(2, $conn->executeQueryParams);
-            $this->assertSame("O'", $conn->executeQueryParams[0]['loginExact']);
-            $this->assertSame("%O'%", $conn->executeQueryParams[1]['namePattern']);
-            $this->assertSame("%O%'%", $conn->executeQueryParams[1]['nameCharacterPattern']);
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'loginExact', "O'");
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'namePattern', "%O'%");
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'nameCharacterPattern', "%O%'%");
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'nameExact', "O'");
             $this->assertStringContainsString('Shaun &quot;Quote&quot; O\'Connor', $forms_output);
         }
 
@@ -126,9 +139,7 @@ namespace Lotgd\Tests {
 
             $_POST['to'] = 'さく';
 
-            $conn = Database::getDoctrineConnection();
-            Database::$mockResults = [];
-            $conn->fetchAllResults = [
+            Database::$mockResults = [
                 [],
                 [
                     [
@@ -141,13 +152,31 @@ namespace Lotgd\Tests {
                 ],
             ];
 
+            $conn = Database::getDoctrineConnection();
+
             \mailWrite();
 
-            $this->assertGreaterThanOrEqual(2, $conn->executeQueryParams);
-            $this->assertSame('さく', $conn->executeQueryParams[0]['loginExact']);
-            $this->assertSame('%さく%', $conn->executeQueryParams[1]['namePattern']);
-            $this->assertSame('%さ%く%', $conn->executeQueryParams[1]['nameCharacterPattern']);
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'loginExact', 'さく');
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'namePattern', '%さく%');
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'nameCharacterPattern', '%さ%く%');
+            $this->assertQueryParamEquals($conn->executeQueryParams, 'nameExact', 'さく');
             $this->assertStringContainsString('さくら&quot;🌸&quot;', $forms_output);
+        }
+
+        /**
+         * @param array<int, array<string, mixed>> $queries
+         */
+        private function assertQueryParamEquals(array $queries, string $key, string $expected): void
+        {
+            foreach ($queries as $params) {
+                if (array_key_exists($key, $params)) {
+                    $this->assertSame($expected, $params[$key]);
+
+                    return;
+                }
+            }
+
+            $this->fail(sprintf('Failed asserting that query parameters contain key "%s".', $key));
         }
     }
 }
