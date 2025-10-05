@@ -94,10 +94,10 @@ $polling_script .= "console.log('AJAX polling initialized:', {interval: lotgd_po
 // Track window focus/visibility state for consistent notification behaviour
 $polling_script .= "var lotgd_windowHasFocus = document.hasFocus();";
 $polling_script .= "function lotgdUpdateWindowFocusState() { lotgd_windowHasFocus = document.visibilityState === 'visible' && document.hasFocus(); }";
-$polling_script .= "window.addEventListener('focus', function () { lotgd_windowHasFocus = true; });";
+$polling_script .= "window.addEventListener('focus', function () { lotgdUpdateWindowFocusState(); });";
 $polling_script .= "window.addEventListener('blur', function () { lotgd_windowHasFocus = false; });";
 $polling_script .= "document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') { lotgd_windowHasFocus = false; } else { lotgdUpdateWindowFocusState(); } });";
-$polling_script .= "function lotgdShouldNotify() { return !lotgd_windowHasFocus || document.visibilityState === 'hidden'; }";
+$polling_script .= "function lotgdShouldNotify() { lotgdUpdateWindowFocusState(); return !lotgd_windowHasFocus || document.visibilityState === 'hidden'; }";
 
 // Add missing notification functions and clean AJAX polling implementation
 $polling_script .= "
