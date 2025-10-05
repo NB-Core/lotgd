@@ -7,4 +7,4 @@ use Lotgd\MySQL\Database;
 
 $sql = "DELETE FROM " . Database::prefix("bans") . " WHERE ipfilter = '" . httpget("ipfilter") . "' AND uniqueid = '" . httpget("uniqueid") . "'";
 Database::query($sql);
-Redirect::redirect("user.php?op=removeban");
+Redirect::redirect('bans.php?op=removeban');
