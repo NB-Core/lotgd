@@ -101,6 +101,18 @@ final class MailSendParameterBindingTest extends TestCase
         fixtureMailSend();
     }
 
+    private function assertMailInsertIssued(): void
+    {
+        $inserted = array_filter(
+            $this->connection->executeStatements,
+            static fn (array $entry): bool => isset($entry['sql'])
+                && stripos($entry['sql'], 'INSERT INTO') === 0
+                && strpos($entry['sql'], 'mail') !== false
+        );
+
+        $this->assertNotEmpty($inserted, 'Expected mail insert query to be executed.');
+    }
+
     public function testMailSendBindsQuotedLogin(): void
     {
         $login = "O'Brien";
@@ -121,12 +133,7 @@ final class MailSendParameterBindingTest extends TestCase
         $this->assertSame(['login' => $login], $this->connection->lastFetchAssociativeParams);
         $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
 
-        $inserted = array_filter(
-            Database::$queries,
-            static fn (string $sql): bool => strpos($sql, 'INSERT INTO mail') !== false
-        );
-
-        $this->assertNotEmpty($inserted, 'Expected mail insert query to be executed.');
+        $this->assertMailInsertIssued();
     }
 
     public function testMailSendBindsMultibyteLogin(): void
@@ -149,12 +156,7 @@ final class MailSendParameterBindingTest extends TestCase
         $this->assertSame(['login' => $login], $this->connection->lastFetchAssociativeParams);
         $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
 
-        $inserted = array_filter(
-            Database::$queries,
-            static fn (string $sql): bool => strpos($sql, 'INSERT INTO mail') !== false
-        );
-
-        $this->assertNotEmpty($inserted, 'Expected mail insert query to be executed.');
+        $this->assertMailInsertIssued();
     }
 }
 }
