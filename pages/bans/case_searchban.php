@@ -40,8 +40,7 @@ if ($target == '') {
                 $output->output("Search banned user by name: ");
                 $output->rawOutput("</label>");
                 $output->rawOutput("<select name='target' id='target'>");
-        $resultRows = $names['rows'];
-        while ($row = Database::fetchAssoc($resultRows)) {
+        foreach ($names['rows'] as $row) {
             $output->rawOutput("<option value='" . $row['acctid'] . "'>" . $row['login'] . "</option>");
         }
         $output->rawOutput("</select>");
