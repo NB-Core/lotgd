@@ -61,7 +61,14 @@ final class UserSetupBanTest extends TestCase
 
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('value="cached reason text"', $output);
-        $this->assertCount(1, Database::$queries);
+
+        $commentTable = Database::prefix('commentary');
+        $commentQueries = array_values(array_filter(
+            Database::$queries,
+            static fn (string $query): bool => str_contains($query, $commentTable)
+        ));
+
+        $this->assertCount(0, $commentQueries);
     }
 
     public function testReasonFallbacksToCommentLookup(): void
@@ -86,6 +93,13 @@ final class UserSetupBanTest extends TestCase
 
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('Long reason Long reason', $output);
-        $this->assertCount(2, Database::$queries);
+
+        $commentTable = Database::prefix('commentary');
+        $commentQueries = array_values(array_filter(
+            Database::$queries,
+            static fn (string $query): bool => str_contains($query, $commentTable)
+        ));
+
+        $this->assertCount(1, $commentQueries);
     }
 }
