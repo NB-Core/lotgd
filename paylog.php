@@ -54,8 +54,13 @@ if ($op == "") {
     $result = Database::query($sql);
     while ($row = Database::fetchAssoc($result)) {
         $info = unserialize($row['info']);
-        $sql = "UPDATE " . Database::prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", strtotime($info['payment_date'])) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
-        Database::query($sql);
+        if (isset($info['payment_date']) && $info['payment_date'] !== '') {
+            $timestamp = strtotime($info['payment_date']);
+            if ($timestamp !== false) {
+                $sql = "UPDATE " . Database::prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", $timestamp) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
+                Database::query($sql);
+            }
+        }
     }
     $currency = $settings->getSetting('paypalcurrency', 'USD');
     $sql = "SELECT YEAR(processdate) AS year, MONTH(processdate) AS month, COALESCE(SUM(amount) - SUM(txfee), 0) AS profit FROM " . Database::prefix('paylog') . " GROUP BY year, month ORDER BY year DESC, month DESC";
@@ -121,7 +126,24 @@ if ($op == "") {
         $row = Database::fetchAssoc($result);
         $info = unserialize($row['info']);
         $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td nowrap>");
-        $output->outputNotl(date("m/d H:i", strtotime($info['payment_date'])));
+        $timestamp = null;
+        if (isset($info['payment_date']) && $info['payment_date'] !== '') {
+            $timestamp = strtotime($info['payment_date']);
+        }
+        if ($timestamp === false || $timestamp === null) {
+            $fallbackDate = $row['processdate'] ?? '';
+            if ($fallbackDate !== '' && $fallbackDate !== DATETIME_DATEMIN) {
+                $fallbackTimestamp = strtotime($fallbackDate);
+                if ($fallbackTimestamp !== false) {
+                    $timestamp = $fallbackTimestamp;
+                }
+            }
+        }
+        if ($timestamp !== false && $timestamp !== null) {
+            $output->outputNotl(date("m/d H:i", $timestamp));
+        } else {
+            $output->outputNotl('--');
+        }
         $output->rawOutput("</td><td>");
         $output->outputNotl("%s", $row['txnid']);
         $output->rawOutput("</td><td>");
