@@ -55,13 +55,22 @@ class AddNews
             $user = 0;
         }
 
-        $sql = 'INSERT INTO ' . Database::prefix('news')
-            . ' (newstext,newsdate,accountid,arguments,tlschema) VALUES ('
-            . '\'' . addslashes($news) . '\','
-            . '\'' . date('Y-m-d H:i:s') . '\','
-            . $user . ',\'' . addslashes($arguments) . '\','
-            . '\'' . Translator::getNamespace() . '\')';
+        $connection = Database::getDoctrineConnection();
+        $schema = Translator::getNamespace();
+        if ($schema === false) {
+            $schema = '';
+        }
 
-        return Database::query($sql);
+        $sql = 'INSERT INTO ' . Database::prefix('news')
+            . ' (newstext, newsdate, accountid, arguments, tlschema)'
+            . ' VALUES (:newstext, :newsdate, :accountid, :arguments, :tlschema)';
+
+        return $connection->executeStatement($sql, [
+            'newstext'  => $news,
+            'newsdate'  => date('Y-m-d H:i:s'),
+            'accountid' => $user,
+            'arguments' => $arguments,
+            'tlschema'  => $schema,
+        ]);
     }
 }
