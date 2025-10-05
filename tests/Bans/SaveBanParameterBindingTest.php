@@ -36,49 +36,14 @@ namespace Lotgd {
         }
     }
 
-    if (! class_exists(__NAMESPACE__ . '\\Settings', false)) {
-        class Settings
-        {
-            private static ?self $instance = null;
-            /** @var array<string, mixed> */
-            public array $values = [
-                'charset'           => 'UTF-8',
-                'enabletranslation' => true,
-                'collecttexts'      => '',
-            ];
-
-            public function __construct()
-            {
-                self::$instance = $this;
-            }
-
-            public static function getInstance(): self
-            {
-                return self::$instance ??= new self();
-            }
-
-            public static function hasInstance(): bool
-            {
-                return true;
-            }
-
-            public function getSetting(string $name, mixed $default = null): mixed
-            {
-                return $this->values[$name] ?? $default;
-            }
-
-            public function setSetting(string $name, mixed $value): void
-            {
-                $this->values[$name] = $value;
-            }
-        }
-    }
 }
 
 namespace Lotgd\Tests\Bans {
     use Doctrine\DBAL\ArrayParameterType;
     use Lotgd\MySQL\Database;
+    use Lotgd\Settings;
     use Lotgd\Output;
+    use Lotgd\Tests\Stubs\DummySettings;
     use Lotgd\Tests\Stubs\DoctrineBootstrap;
     use Lotgd\Tests\Stubs\DoctrineConnection;
     use PHPUnit\Framework\TestCase;
@@ -100,6 +65,8 @@ namespace Lotgd\Tests\Bans {
                 'enabletranslation' => true,
                 'collecttexts'      => '',
             ];
+
+            Settings::setInstance(new DummySettings(Database::$settings_table));
 
             $this->connection = Database::getDoctrineConnection();
             $this->connection->queries = [];

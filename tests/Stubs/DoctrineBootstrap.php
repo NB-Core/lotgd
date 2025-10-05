@@ -101,7 +101,9 @@ class DoctrineConnection
         $this->lastFetchAllTypes = $types;
 
         if (!empty(Database::$mockResults)) {
-            return array_shift(Database::$mockResults);
+            $rows = array_shift(Database::$mockResults);
+
+            return is_array($rows) ? $rows : [];
         }
 
         if (!empty($this->fetchAllResults)) {
