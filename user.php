@@ -13,6 +13,7 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
+use Lotgd\Redirect;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Sanitize;
 use Lotgd\PlayerSearch;
@@ -30,6 +31,11 @@ Translator::getInstance()->setSchema("user");
 SuAccess::check(SU_EDIT_USERS);
 
 $op = Http::get('op');
+
+if ($op === 'removeban' || $op === 'searchban') {
+    $destination = sprintf('bans.php?op=%s', $op);
+    Redirect::redirect($destination);
+}
 $userid = (int)Http::get("userid");
 
 if ($op == "lasthit") {
@@ -207,12 +213,6 @@ switch ($op) {
         break;
     case "delban":
             require __DIR__ . "/pages/user/user_delban.php";
-        break;
-    case "removeban":
-            require __DIR__ . "/pages/user/user_removeban.php";
-        break;
-    case "searchban":
-            require __DIR__ . "/pages/user/user_searchban.php";
         break;
     case "debuglog":
             require __DIR__ . "/pages/user/user_debuglog.php";
