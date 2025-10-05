@@ -180,19 +180,19 @@ if ($op == "") {
 	</script>");
 
     $sql = "SELECT * FROM " . Database::prefix("mounts") . " ORDER BY mountcategory, mountcostgems, mountcostgold";
-    $ops = Translator::translate("Ops");
-    $name = Translator::translate("Name");
-    $cost = Translator::translate("Cost");
-    $feat = Translator::translate("Features");
-    $owners = Translator::translate("Owners");
+    $ops = Translator::translateInline("Ops");
+    $name = Translator::translateInline("Name");
+    $cost = Translator::translateInline("Cost");
+    $feat = Translator::translateInline("Features");
+    $owners = Translator::translateInline("Owners");
 
-    $edit = Translator::translate("Edit");
-    $give = Translator::translate("Give");
-    $del = Translator::translate("Del");
-    $deac = Translator::translate("Deactivate");
-    $act = Translator::translate("Activate");
+    $edit = Translator::translateInline("Edit");
+    $give = Translator::translateInline("Give");
+    $del = Translator::translateInline("Del");
+    $deac = Translator::translateInline("Deactivate");
+    $act = Translator::translateInline("Activate");
 
-    $conf = Translator::translate("There are %s user(s) who own this mount, are you sure you wish to delete it?");
+    $conf = Translator::translateInline("There are %s user(s) who own this mount, are you sure you wish to delete it?");
 
     $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td nowrap>$ops</td><td>$name</td><td>$cost</td><td>$feat</td><td nowrap>$owners</td></tr>");
@@ -224,7 +224,8 @@ if ($op == "") {
             $output->rawOutput("$del |");
         } else {
             $mconf = sprintf($conf, $mounts[$row['mountid']]);
-            $output->rawOutput("<a href='mounts.php?op=del&id={$row['mountid']}' onClick=\"return confirm('$mconf');\">$del</a> |");
+            $mconfJs = json_encode($mconf, JSON_HEX_APOS | JSON_HEX_QUOT);
+            $output->rawOutput("<a href='mounts.php?op=del&id={$row['mountid']}' onClick=\"return confirm($mconfJs);\">$del</a> |");
             Nav::add("", "mounts.php?op=del&id={$row['mountid']}");
         }
         if ($row['mountactive']) {
@@ -246,7 +247,7 @@ if ($op == "") {
         $mcount = 1;
         $max = count($features);
         foreach ($features as $fname => $fval) {
-            $fname = Translator::translate($fname);
+            $fname = Translator::translateInline($fname);
             $output->outputNotl("%s: %s%s", $fname, $fval, ($mcount == $max ? "" : ", "));
             $mcount++;
         }

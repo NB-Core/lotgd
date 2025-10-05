@@ -81,20 +81,20 @@ if ($op == "list") {
         $output->rawOutput("<option value=\"" . htmlentities($row['namespace'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"" . ((htmlentities($row['namespace'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) == $namespace) ? "selected" : "") . ">" . htmlentities($row['namespace'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . " ({$row['c']})</option>");
     }
     $output->rawOutput("</select>");
-    $output->rawOutput("<input type='submit' class='button' value='" . Translator::translate("Show") . "'>");
+    $output->rawOutput("<input type='submit' class='button' value='" . Translator::translateInline("Show") . "'>");
     $output->rawOutput("<br>");
 
     if ($mode == "edit") {
-        $output->rawOutput(Translator::translate("Text:") . "<br>");
+        $output->rawOutput(Translator::translateInline("Text:") . "<br>");
         $intextRequest = Http::get('intext');
         $intext = is_string($intextRequest) ? stripslashes($intextRequest) : '';
         $output->rawOutput("<textarea name='intext' cols='60' rows='5' readonly>" . htmlentities($intext, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");
-        $output->rawOutput(Translator::translate("Translation:") . "<br>");
+        $output->rawOutput(Translator::translateInline("Translation:") . "<br>");
         $output->rawOutput("<textarea name='outtext' cols='60' rows='5'></textarea><br/>");
-        $output->rawOutput("<input type='submit' value='" . Translator::translate("Save") . "' class='button'>");
+        $output->rawOutput("<input type='submit' value='" . Translator::translateInline("Save") . "' class='button'>");
     } else {
         $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
-        $output->rawOutput("<tr class='trhead'><td>" . Translator::translate("Ops") . "</td><td>" . Translator::translate("Text") . "</td></tr>");
+        $output->rawOutput("<tr class='trhead'><td>" . Translator::translateInline("Ops") . "</td><td>" . Translator::translateInline("Text") . "</td></tr>");
         $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' AND namespace='" . $namespace . "'";
         $result = Database::query($sql);
         if (Database::numRows($result) > 0) {
@@ -102,14 +102,14 @@ if ($op == "list") {
             while ($row = Database::fetchAssoc($result)) {
                 $i++;
                 $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
-                $output->rawOutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . Translator::translate("Edit") . "</a>");
+                $output->rawOutput("<a href='untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']) . "'>" . Translator::translateInline("Edit") . "</a>");
                 Nav::add("", "untranslated.php?op=list&mode=edit&ns=" . rawurlencode($row['namespace']) . "&intext=" . rawurlencode($row['intext']));
                 $output->rawOutput("</td><td>");
                 $output->rawOutput(htmlentities($row['intext'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')));
                 $output->rawOutput("</td></tr>");
             }
         } else {
-            $output->rawOutput("<tr><td colspan='2'>" . Translator::translate("No rows found") . "</td></tr>");
+            $output->rawOutput("<tr><td colspan='2'>" . Translator::translateInline("No rows found") . "</td></tr>");
         }
         $output->rawOutput("</table>");
     }
@@ -139,8 +139,8 @@ if ($op == "list") {
         if (Database::numRows($result) == 1) {
             $row = Database::fetchAssoc($result);
             $row['intext'] = stripslashes($row['intext']);
-            $submit = Translator::translate("Save Translation");
-            $skip = Translator::translate("Skip Translation");
+            $submit = Translator::translateInline("Save Translation");
+            $skip = Translator::translateInline("Skip Translation");
             $output->rawOutput("<form action='untranslated.php?op=step2' method='post'>");
             $output->output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
             $output->rawOutput("<table width='80%'>");

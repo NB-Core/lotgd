@@ -99,14 +99,15 @@ if ($op == "") {
     }
     $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE level=$weaponlevel ORDER BY damage";
     $result = Database::query($sql);
-    $ops = Translator::translate("Ops");
-    $name = Translator::translate("Name");
-    $cost = Translator::translate("Cost");
-    $damage = Translator::translate("Damage");
-    $level = Translator::translate("Level");
-    $edit = Translator::translate("Edit");
-    $del = Translator::translate("Del");
-    $delconfirm = Translator::translate("Are you sure you wish to delete this weapon?");
+    $ops = Translator::translateInline("Ops");
+    $name = Translator::translateInline("Name");
+    $cost = Translator::translateInline("Cost");
+    $damage = Translator::translateInline("Damage");
+    $level = Translator::translateInline("Level");
+    $edit = Translator::translateInline("Edit");
+    $del = Translator::translateInline("Del");
+    $delconfirm = Translator::translateInline("Are you sure you wish to delete this weapon?");
+    $delconfirmJs = json_encode($delconfirm, JSON_HEX_APOS | JSON_HEX_QUOT);
 
     $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$damage</td><td>$level</td></tr>");
@@ -114,7 +115,7 @@ if ($op == "") {
     for ($i = 0; $i < $number; $i++) {
         $row = Database::fetchAssoc($result);
         $output->rawOutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'>");
-        $output->rawOutput("<td>[<a href='weaponeditor.php?op=edit&id={$row['weaponid']}&level=$weaponlevel'>$edit</a>|<a href='weaponeditor.php?op=del&id={$row['weaponid']}&level=$weaponlevel' onClick='return confirm(\"Are you sure you wish to delete this weapon?\");'>$del</a>]</td>");
+        $output->rawOutput("<td>[<a href='weaponeditor.php?op=edit&id={$row['weaponid']}&level=$weaponlevel'>$edit</a>|<a href='weaponeditor.php?op=del&id={$row['weaponid']}&level=$weaponlevel' onClick='return confirm($delconfirmJs);'>$del</a>]</td>");
         Nav::add("", "weaponeditor.php?op=edit&id={$row['weaponid']}&level=$weaponlevel");
         Nav::add("", "weaponeditor.php?op=del&id={$row['weaponid']}&level=$weaponlevel");
         $output->rawOutput("<td>");
