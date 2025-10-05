@@ -44,6 +44,7 @@ final class ListSearchParameterBindingTest extends TestCase
         $sql = $this->connection->queries[0];
         $this->assertStringNotContainsString($tainted, $sql, 'Tainted input leaked into the SQL string.');
         $this->assertStringNotContainsString("' OR 1=1 --", $sql, 'Dangerous substring should not appear in SQL.');
+        $this->assertStringContainsString("ESCAPE '!'", $sql, 'Expected the SQL to declare the configured escape character.');
 
         $params = $this->connection->executeQueryParams[0] ?? [];
         $this->assertArrayHasKey('namePattern', $params, 'Missing bound parameter for name pattern.');
