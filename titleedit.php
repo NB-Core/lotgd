@@ -209,8 +209,12 @@ switch ($op) {
         break;
 }
 
-function title_help()
+function title_help(?Output $output = null): void
 {
+    if (null === $output) {
+        $output = Output::getInstance();
+    }
+
     $output->output("`#You can have multiple titles for a given dragon kill rank.");
     $output->output("If you do, one of those titles will be chosen at random to give to the player when a title is assigned.`n`n");
     $output->output("You can have gaps in the title order.");
