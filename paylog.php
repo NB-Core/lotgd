@@ -55,11 +55,28 @@ if ($op == "") {
         $sql = "UPDATE " . Database::prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", strtotime($info['payment_date'])) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
         Database::query($sql);
     }
-    $sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM " . Database::prefix('paylog') . " GROUP BY month ORDER BY month DESC";
+    $currency = $settings->getSetting('paypalcurrency', 'USD');
+    $sql = "SELECT YEAR(processdate) AS year, MONTH(processdate) AS month, COALESCE(SUM(amount) - SUM(txfee), 0) AS profit FROM " . Database::prefix('paylog') . " GROUP BY year, month ORDER BY year DESC, month DESC";
     $result = Database::query($sql);
     Nav::add('Months');
+    $currentYear = null;
     while ($row = Database::fetchAssoc($result)) {
-        Nav::add(array("%s %s %s", date("M Y", strtotime($row['month'] . '-01')), $settings->getSetting('paypalcurrency', 'USD'), $row['profit']), "paylog.php?month={$row['month']}");
+        if ((int) $currentYear !== (int) $row['year']) {
+            $currentYear = (int) $row['year'];
+            Nav::addSubHeader((string) $currentYear, false);
+        }
+
+        $monthString = sprintf('%04d-%02d', $row['year'], $row['month']);
+        $labelDate = sprintf('%04d-%02d-01', $row['year'], $row['month']);
+        Nav::add(
+            array(
+                "%s %s %s",
+                date('M Y', strtotime($labelDate)),
+                $currency,
+                $row['profit']
+            ),
+            "paylog.php?month={$monthString}"
+        );
     }
     $month = (string) Http::get('month');
     if ($month == "") {
@@ -67,9 +84,8 @@ if ($op == "") {
     }
     $startdate = $month . "-01 00:00:00";
     $enddate = date("Y-m-d H:i:s", strtotime("+1 month", strtotime($startdate)));
-    $sql = "SELECT " . Database::prefix("paylog") . ".*," . Database::prefix("accounts") . ".name," . Database::prefix("accounts") . ".donation," . Database::prefix("accounts") . ".donationspent FROM " . Database::prefix("paylog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("paylog") . ".acctid = " . Database::prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
-    $result = Database::query($sql);
-    $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
+    $yearlySql = "SELECT YEAR(processdate) AS year, COALESCE(SUM(amount), 0) AS gross_total, COALESCE(SUM(txfee), 0) AS fee_total FROM " . Database::prefix('paylog') . " GROUP BY year ORDER BY year DESC";
+    $yearlyResult = Database::query($yearlySql);
     $type = Translator::translate("Type");
     $gross = Translator::translate("Gross");
     $fee = Translator::translate("Fee");
@@ -77,6 +93,26 @@ if ($op == "") {
     $processed = Translator::translate("Processed");
     $id = Translator::translate("Transaction ID");
     $who = Translator::translate("Who");
+    $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
+    $output->rawOutput("<tr class='trhead'><td>" . Translator::translate('Year') . "</td><td>" . $gross . "</td><td>" . $fee . "</td><td>" . $net . "</td></tr>");
+    $yearIndex = 0;
+    while ($yearRow = Database::fetchAssoc($yearlyResult)) {
+        $output->rawOutput("<tr class='" . ($yearIndex % 2 ? "trlight" : "trdark") . "'><td>");
+        $output->outputNotl('%s', $yearRow['year']);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl('%.2f %s', $yearRow['gross_total'], $currency);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl('%.2f %s', $yearRow['fee_total'], $currency);
+        $output->rawOutput("</td><td>");
+        $output->outputNotl('%.2f %s', $yearRow['gross_total'] - $yearRow['fee_total'], $currency);
+        $output->rawOutput("</td></tr>");
+        ++$yearIndex;
+    }
+    $output->rawOutput("</table><br>");
+
+    $sql = "SELECT " . Database::prefix("paylog") . ".*," . Database::prefix("accounts") . ".name," . Database::prefix("accounts") . ".donation," . Database::prefix("accounts") . ".donationspent FROM " . Database::prefix("paylog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("paylog") . ".acctid = " . Database::prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
+    $result = Database::query($sql);
+    $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>Date</td><td>$id</td><td>$type</td><td>$gross</td><td>$fee</td><td>$net</td><td>$processed</td><td>$who</td></tr>");
     $number = Database::numRows($result);
     for ($i = 0; $i < $number; $i++) {
