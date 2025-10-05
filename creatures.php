@@ -311,21 +311,27 @@ if ($op == "" || $op == "search") {
             //get available scripts
             //(uncached, won't hit there very often
             $dir = "scripts";
+            $scriptNames = [];
             if (is_dir($dir)) {
                 if ($opendir = opendir($dir)) {
-                    $sort = array();
                     while (($file = readdir($opendir)) !== false) {
                         $names = explode(".", $file);
                         if (isset($names[1]) && $names[1] == "php") {
-                            //sorting
-                            $sort[] = "," . $names[0] . "," . $names[0];
+                            $scriptNames[] = $names[0];
                         }
                     }
-                    sort($sort);
-                    $scriptenum = implode("", $sort);
+                    sort($scriptNames);
                 }
             }
-            $scriptenum = ",,none" . $scriptenum;
+
+            $scriptOptions = [''];
+            $scriptOptions[] = Translator::translateInline('No script');
+            foreach ($scriptNames as $scriptName) {
+                $scriptOptions[] = $scriptName;
+                $scriptOptions[] = $scriptName;
+            }
+
+            $scriptenum = ',' . implode(',', $scriptOptions);
             $form = array(
                 "Creature Properties,title",
                 "creatureid" => "Creature id,hidden",
@@ -349,6 +355,10 @@ if ($op == "" || $op == "search") {
                 "creatureaiscript" => "Creature's A.I.,enum" . $scriptenum,
             );
             $output->rawOutput("<form action='creatures.php?op=save' method='POST'>");
+            if (! isset($row['creatureaiscript']) || $row['creatureaiscript'] === null) {
+                $row['creatureaiscript'] = '';
+            }
+
             Forms::showForm($form, $row);
             $refresh = Translator::translate("Refresh");
             $output->rawOutput("<input type='submit' class='button' name='refresh' value='$refresh'>");
