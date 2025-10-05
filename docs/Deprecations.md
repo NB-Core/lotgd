@@ -24,10 +24,14 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: Doctrine ORM/DBAL repositories and migrations  
   - Migration: Move writes/reads into services or repositories; create migrations instead of ad‑hoc SQL.
 
-- Custom Ajax endpoints not using Jaxon  
-  - Status: Deprecated  
-  - Replacement: Jaxon-based async calls under `async/`  
+- Custom Ajax endpoints not using Jaxon
+  - Status: Deprecated
+  - Replacement: Jaxon-based async calls under `async/`
   - Migration: Wrap Ajax actions with Jaxon controllers; adhere to rate limiting.
+- `Lotgd\UserLookup::lookup()`
+  - Status: Deprecated in 2.9.0
+  - Replacement: `Lotgd\PlayerSearch::legacyLookup()` and other `PlayerSearch` helpers
+  - Migration: Inject or instantiate `PlayerSearch` directly and call `legacyLookup()` (or a more specific finder), removing usage of the legacy array/SQL wrapper.
 
 ### Upgrade Guidance (1.3.x → 2.0)
 

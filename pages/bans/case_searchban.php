@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Http;
-use Lotgd\UserLookup;
+use Lotgd\PlayerSearch;
 use Lotgd\Translator;
 use Lotgd\Output;
 use Lotgd\DateTime;
@@ -37,6 +37,7 @@ if ($subop == "xml") {
     exit();
 }
 $operator = "<=";
+$playerSearch = new PlayerSearch();
 
 
 $target = Http::post('target');
@@ -55,15 +56,16 @@ if ($target == '') {
     $row = Database::fetchAssoc($result);
     $since = "WHERE ipfilter LIKE '%" . $row['lastip'] . "%' OR uniqueid LIKE '%" . $row['uniqueid'] . "%'";
 } else {
-    $names = UserLookup::lookup($target);
-    if ($names[0] !== false) {
+    $names = $playerSearch->legacyLookup((string) $target, ['acctid', 'login', 'name'], 'login');
+    if ($names['rows'] !== []) {
         $output->rawOutput("<form action='bans.php?op=searchban' method='POST'>");
         Nav::add("", "bans.php?op=searchban");
                 $output->rawOutput("<label for='target'>");
                 $output->output("Search banned user by name: ");
                 $output->rawOutput("</label>");
                 $output->rawOutput("<select name='target' id='target'>");
-        while ($row = Database::fetchAssoc($names[0])) {
+        $resultRows = $names['rows'];
+        while ($row = Database::fetchAssoc($resultRows)) {
             $output->rawOutput("<option value='" . $row['acctid'] . "'>" . $row['login'] . "</option>");
         }
         $output->rawOutput("</select>");

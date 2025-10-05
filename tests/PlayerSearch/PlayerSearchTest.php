@@ -210,6 +210,27 @@ final class PlayerSearchTest extends TestCase
         $this->assertStringContainsString('LIMIT 1', $sql);
     }
 
+    public function testLegacyLookupReturnsExactMatch(): void
+    {
+        \Lotgd\MySQL\Database::$mockResults = [[
+            [
+                'acctid' => 1,
+                'login' => 'alpha',
+                'name' => 'Alpha',
+                'emailaddress' => 'alpha@example.com',
+            ],
+        ]];
+
+        $result = $this->search->legacyLookup('alpha', ['acctid', 'login', 'name', 'emailaddress'], 'login');
+
+        $this->assertSame('', $result['error']);
+        $this->assertCount(1, $result['rows']);
+        $this->assertSame('alpha@example.com', $result['rows'][0]['emailaddress']);
+        $this->assertCount(1, $this->connection->queries);
+        $this->assertStringContainsString('legacyExactPattern', $this->connection->queries[0]);
+        $this->assertArrayHasKey('legacyExactPattern', $this->connection->executeQueryParams[0]);
+    }
+
     public function testInvalidColumnNameThrows(): void
     {
         $this->expectException(InvalidArgumentException::class);

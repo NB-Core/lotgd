@@ -91,6 +91,70 @@ final class PlayerSearch
     }
 
     /**
+     * Execute the legacy administrative lookup that powers {@see UserLookup::lookup()}.
+     *
+     * This method keeps the historical behaviour of running a short exact search first
+     * and falling back to a broader fuzzy match while ensuring that all parameters are
+     * bound safely through Doctrine.
+     *
+     * @param array<int|string, string>|null $columns
+     *
+     * @return array{rows: array<int, array<string, mixed>>, error: string}
+     */
+    public function legacyLookup(
+        string $search,
+        ?array $columns = null,
+        ?string $order = null,
+        int $exactLimit = 2,
+        int $fuzzyLimit = 301
+    ): array {
+        $search = trim($search);
+
+        if ($search === '') {
+            return ['rows' => [], 'error' => ''];
+        }
+
+        $columns = $this->normaliseColumns($columns);
+        $exactLimit = max(1, $exactLimit);
+        $fuzzyLimit = max($exactLimit, $fuzzyLimit);
+
+        $orderConfig = $this->normaliseLegacyOrderClause($order);
+
+        $exact = $this->executeLegacyLookupQuery(
+            $columns,
+            $search,
+            $exactLimit,
+            false,
+            $orderConfig['column'],
+            $orderConfig['direction']
+        );
+
+        if (count($exact) === 1) {
+            return ['rows' => $exact, 'error' => ''];
+        }
+
+        $fuzzy = $this->executeLegacyLookupQuery(
+            $columns,
+            $search,
+            $fuzzyLimit,
+            true,
+            $orderConfig['column'],
+            $orderConfig['direction']
+        );
+
+        if ($fuzzy === []) {
+            return ['rows' => [], 'error' => "`\$No results found`0"];
+        }
+
+        $error = '';
+        if ($fuzzyLimit >= 301 && count($fuzzy) === $fuzzyLimit) {
+            $error = "`\$Too many results found, narrow your search please.`0";
+        }
+
+        return ['rows' => $fuzzy, 'error' => $error];
+    }
+
+    /**
      * Find potential transfer targets by combining an exact login match with a display name search.
      *
      * @param array<int|string, string>|null $columns
@@ -279,6 +343,169 @@ final class PlayerSearch
         }
 
         $orderParts[] = sprintf('LOWER(%s) ASC', $alphabetical);
+        $orderParts[] = 'a.acctid ASC';
+
+        return implode(', ', $orderParts);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildLegacyExactConditions(string $search): array
+    {
+        $conditions = [
+            'a.login LIKE :legacyExactPattern',
+            'a.name LIKE :legacyExactPattern',
+            'CAST(a.acctid AS CHAR) = :legacyAcctExact',
+            'a.emailaddress LIKE :legacyExactPattern',
+            'a.lastip LIKE :legacyExactPattern',
+            'a.uniqueid LIKE :legacyExactPattern',
+        ];
+
+        $parameters = [
+            'legacyExactPattern' => $search,
+            'legacyAcctExact'    => $search,
+            'legacyLoginOrder'   => $search,
+            'legacyNameOrder'    => $search,
+        ];
+
+        $orderPriorities = [
+            ['column' => 'a.login', 'parameter' => 'legacyLoginOrder'],
+            ['column' => 'a.name', 'parameter' => 'legacyNameOrder'],
+        ];
+
+        return [
+            'conditions'      => $conditions,
+            'parameters'      => $parameters,
+            'orderPriorities' => $orderPriorities,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildLegacyFuzzyConditions(string $search): array
+    {
+        $escaped = $this->escapeLikeWildcards($search);
+        $fuzzyPattern = '%' . $escaped . '%';
+        $characterPattern = $this->buildCharacterWildcardPattern($search);
+
+        $conditions = [
+            'a.login = :legacyLoginExact',
+            sprintf("a.login LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            'a.name = :legacyNameExact',
+            sprintf("a.name LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            sprintf("a.name LIKE :legacyCharacterPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            sprintf("CAST(a.acctid AS CHAR) LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            sprintf("a.emailaddress LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            sprintf("a.lastip LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            sprintf("a.uniqueid LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            sprintf("CAST(a.gentimecount AS CHAR) LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+            sprintf("CAST(a.level AS CHAR) LIKE :legacyFuzzyPattern ESCAPE '%s'", self::LIKE_ESCAPE),
+        ];
+
+        $parameters = [
+            'legacyLoginExact'       => $search,
+            'legacyNameExact'        => $search,
+            'legacyFuzzyPattern'     => $fuzzyPattern,
+            'legacyCharacterPattern' => $characterPattern,
+        ];
+
+        $orderPriorities = [
+            ['column' => 'a.login', 'parameter' => 'legacyLoginExact'],
+            ['column' => 'a.name', 'parameter' => 'legacyNameExact'],
+        ];
+
+        return [
+            'conditions'      => $conditions,
+            'parameters'      => $parameters,
+            'orderPriorities' => $orderPriorities,
+        ];
+    }
+
+    /**
+     * @return array{column: string, direction: string}
+     */
+    private function normaliseLegacyOrderClause(?string $order): array
+    {
+        $column = 'a.acctid';
+        $direction = 'ASC';
+
+        if (is_string($order) && $order !== '') {
+            $parts = preg_split('/\s+/', trim($order));
+            if ($parts !== false && isset($parts[0]) && preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $parts[0])) {
+                $column = 'a.' . $parts[0];
+                if (isset($parts[1]) && strtoupper($parts[1]) === 'DESC') {
+                    $direction = 'DESC';
+                }
+            }
+        }
+
+        return ['column' => $column, 'direction' => $direction];
+    }
+
+    /**
+     * @param array<int|string, string> $columns
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function executeLegacyLookupQuery(
+        array $columns,
+        string $search,
+        int $limit,
+        bool $fuzzy,
+        string $orderColumn,
+        string $orderDirection
+    ): array {
+        $definition = $fuzzy
+            ? $this->buildLegacyFuzzyConditions($search)
+            : $this->buildLegacyExactConditions($search);
+
+        if ($definition['conditions'] === []) {
+            return [];
+        }
+
+        $orderClause = $this->buildLegacyOrderClause(
+            $definition['orderPriorities'],
+            $orderColumn,
+            $orderDirection
+        );
+
+        $wrapped = array_map(
+            static fn(string $condition): string => '(' . $condition . ')',
+            $definition['conditions']
+        );
+
+        $sql = sprintf(
+            'SELECT %s FROM accounts a WHERE %s ORDER BY %s LIMIT %d',
+            implode(', ', $columns),
+            implode(' OR ', $wrapped),
+            $orderClause,
+            $limit
+        );
+
+        return $this->connection
+            ->executeQuery($sql, $definition['parameters'])
+            ->fetchAllAssociative();
+    }
+
+    /**
+     * @param array<int, array{column: string, parameter: string}> $orderPriorities
+     */
+    private function buildLegacyOrderClause(array $orderPriorities, string $column, string $direction): string
+    {
+        $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+        $orderParts = [];
+
+        foreach ($orderPriorities as $priority) {
+            $orderParts[] = sprintf(
+                'CASE WHEN %s = :%s THEN 0 ELSE 1 END ASC',
+                $priority['column'],
+                $priority['parameter']
+            );
+        }
+
+        $orderParts[] = sprintf('%s %s', $column, $direction);
         $orderParts[] = 'a.acctid ASC';
 
         return implode(', ', $orderParts);

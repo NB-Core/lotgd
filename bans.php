@@ -11,7 +11,7 @@ use Lotgd\Page\Header;
 use Lotgd\Settings;
 use Lotgd\SuAccess;
 use Lotgd\Translator;
-use Lotgd\UserLookup;
+use Lotgd\PlayerSearch;
 
 //addnews ready
 // mail ready
@@ -45,15 +45,33 @@ if ($query === false) {
 if (!$query && $sort) {
     $query = "%";
 }
-
-    if ($op == "search" || $op == "") {
-        list($searchresult, $err) = UserLookup::lookup($query, $order);
-        $op = "";
-        if ($err) {
-            $output->output('%s', $err);
-        } else {
-            if ($searchresult) {
-                $display = 1;
+ 
+$playerSearch = new PlayerSearch();
+$columns = [
+    'acctid',
+    'login',
+    'name',
+    'level',
+    'laston',
+    'loggedin',
+    'gentimecount',
+    'gentime',
+    'lastip',
+    'uniqueid',
+    'emailaddress',
+];
+$searchresult = [];
+$err = '';
+if ($op == "search" || $op == "") {
+    $lookup = $playerSearch->legacyLookup((string) $query, $columns, $order);
+    $searchresult = $lookup['rows'];
+    $err = $lookup['error'];
+    $op = "";
+    if ($err) {
+        $output->output('%s', $err);
+    } else {
+        if ($searchresult) {
+            $display = 1;
         }
     }
 }
