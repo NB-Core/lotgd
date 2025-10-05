@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Translator;
@@ -55,37 +57,104 @@ $op = Http::get("op");
 if ($op == "commentdelete") {
     $comment = Http::post('comment');
     if (Http::post('delnban') > '') {
-        $sql = "SELECT DISTINCT uniqueid,author FROM " . Database::prefix("commentary") . " INNER JOIN " . Database::prefix("accounts") . " ON acctid=author WHERE commentid IN ('" . join("','", array_keys($comment)) . "')";
-        $result = Database::query($sql);
-        $untildate = date("Y-m-d H:i:s", strtotime("+3 days"));
-        $reason = Http::post("reason");
-        $reason0 = Http::post("reason0");
-        $default = "Banned for comments you posted.";
-        if ($reason0 != $reason && $reason0 != $default) {
-            $reason = $reason0;
-        }
-        if ($reason == "") {
-            $reason = $default;
-        }
-        while ($row = Database::fetchAssoc($result)) {
-            $sql = "SELECT * FROM " . Database::prefix("bans") . " WHERE uniqueid = '{$row['uniqueid']}'";
-            $result2 = Database::query($sql);
-            $sql = "INSERT INTO " . Database::prefix("bans") . " (uniqueid,banexpire,banreason,banner) VALUES ('{$row['uniqueid']}','$untildate','$reason','" . addslashes($session['user']['name']) . "')";
-            $sql2 = "UPDATE " . Database::prefix("accounts") . " SET loggedin=0 WHERE acctid={$row['author']}";
-            if (Database::numRows($result2) > 0) {
-                $row2 = Database::fetchAssoc($result2);
-                if ($row2['banexpire'] < $untildate) {
-                    //don't enter a new ban if a longer lasting one is
-                    //already here.
-                    Database::query($sql);
-                    Database::query($sql2);
+        $commentIds = array_keys($comment ?? []);
+        $commentIds = array_map(static fn ($value): int => (int) $value, $commentIds);
+
+        if ($commentIds !== []) {
+            $conn = Database::getDoctrineConnection();
+            $commentaryTable = Database::prefix('commentary');
+            $accountsTable = Database::prefix('accounts');
+            $bansTable = Database::prefix('bans');
+
+            $rows = $conn->fetchAllAssociative(
+                "SELECT DISTINCT a.acctid AS author, a.uniqueid, a.lastip FROM {$commentaryTable} c INNER JOIN {$accountsTable} a ON a.acctid = c.author WHERE c.commentid IN (?)",
+                [$commentIds],
+                [ArrayParameterType::INTEGER]
+            );
+
+            $untildate = date("Y-m-d H:i:s", strtotime("+3 days"));
+            $reason = (string) Http::post('reason');
+            $reason0 = (string) Http::post('reason0');
+            $default = "Banned for comments you posted.";
+
+            if ($reason0 !== $reason && $reason0 !== $default) {
+                $reason = $reason0;
+            }
+
+            if ($reason === '') {
+                $reason = $default;
+            }
+
+            $banParameters = [
+                'banexpire' => $untildate,
+                'banreason' => $reason,
+                'banner'    => (string) ($session['user']['name'] ?? ''),
+            ];
+
+            $authorsToLogout = [];
+            $inserted = 0;
+
+            foreach ($rows as $row) {
+                $uniqueId = (string) ($row['uniqueid'] ?? '');
+                $ipFilter = (string) ($row['lastip'] ?? '');
+
+                if ($uniqueId === '' && $ipFilter === '') {
+                    continue;
                 }
-            } else {
-                Database::query($sql);
-                Database::query($sql2);
+
+                $existing = $conn->fetchAssociative(
+                    "SELECT banexpire FROM {$bansTable} WHERE (:uniqueid <> '' AND uniqueid = :uniqueid) OR (:ipfilter <> '' AND ipfilter = :ipfilter) ORDER BY banexpire DESC LIMIT 1",
+                    [
+                        'uniqueid' => $uniqueId,
+                        'ipfilter' => $ipFilter,
+                    ],
+                    [
+                        'uniqueid' => ParameterType::STRING,
+                        'ipfilter' => ParameterType::STRING,
+                    ]
+                );
+
+                if ($existing && $existing['banexpire'] >= $untildate) {
+                    continue;
+                }
+
+                $banInsertParameters = $banParameters + [
+                    'ipfilter' => $ipFilter,
+                    'uniqueid' => $uniqueId,
+                ];
+
+                $inserted += $conn->executeStatement(
+                    "INSERT INTO {$bansTable} (ipfilter, uniqueid, banexpire, banreason, banner) VALUES (:ipfilter, :uniqueid, :banexpire, :banreason, :banner)",
+                    $banInsertParameters,
+                    [
+                        'ipfilter'  => ParameterType::STRING,
+                        'uniqueid'  => ParameterType::STRING,
+                        'banexpire' => ParameterType::STRING,
+                        'banreason' => ParameterType::STRING,
+                        'banner'    => ParameterType::STRING,
+                    ]
+                );
+
+                $authorsToLogout[] = (int) $row['author'];
+            }
+
+            if ($inserted > 0) {
+                Database::setAffectedRows($inserted);
+            }
+
+            if ($authorsToLogout !== []) {
+                $authorsToLogout = array_values(array_unique($authorsToLogout));
+                $affected = $conn->executeStatement(
+                    "UPDATE {$accountsTable} SET loggedin = 0 WHERE acctid IN (?)",
+                    [$authorsToLogout],
+                    [ArrayParameterType::INTEGER]
+                );
+
+                Database::setAffectedRows($affected);
             }
         }
     }
+
     if (!isset($comment) || !is_array($comment)) {
         $comment = array();
     }
