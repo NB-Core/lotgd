@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Stripslashes;
 use Lotgd\Cookies;
 use Lotgd\Page\Header;
@@ -17,14 +18,30 @@ Header::popupHeader("Petition for Help");
 $post = (array) Http::allPost();
 $problem = (string) (Http::post('problem') ?? '');
 if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
-        $ip = explode(".", $_SERVER['REMOTE_ADDR']);
-        array_pop($ip);
-        $ip = implode(".", $ip) . ".";
-        $cookie_lgi = Cookies::getLgi() ?? '';
-    $sql = "SELECT count(petitionid) AS c FROM " . Database::prefix("petitions") . " WHERE (ip LIKE '$ip%' OR id = '" . addslashes($cookie_lgi) . "') AND date > '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "'";
-    $result = Database::query($sql);
-    $row = Database::fetchAssoc($result);
-    if ($row['c'] < 5 || (isset($session['user']['superuser']) && $session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO)) {
+    $conn = Database::getDoctrineConnection();
+
+    $ip = explode('.', $_SERVER['REMOTE_ADDR']);
+    array_pop($ip);
+    $ip = implode('.', $ip) . '.';
+    $cookie_lgi = Cookies::getLgi() ?? '';
+    $cutoff = date('Y-m-d H:i:s', strtotime('-1 day'));
+
+    $sql = 'SELECT count(petitionid) AS c FROM ' . Database::prefix('petitions')
+        . ' WHERE (ip LIKE :iplike OR id = :cookie) AND date > :cutoff';
+
+    $row = $conn->fetchAssociative($sql, [
+        'iplike' => $ip . '%',
+        'cookie' => $cookie_lgi,
+        'cutoff' => $cutoff,
+    ], [
+        'iplike' => ParameterType::STRING,
+        'cookie' => ParameterType::STRING,
+        'cutoff' => ParameterType::STRING,
+    ]) ?: [];
+
+    $recentCount = (int) ($row['c'] ?? $row['total_count'] ?? 0);
+
+    if ($recentCount < 5 || (isset($session['user']['superuser']) && $session['user']['superuser'] & ~SU_DOESNT_GIVE_GROTTO)) {
         if (!isset($session['user']['acctid'])) {
             $session['user']['acctid'] = 0;
         }
@@ -38,8 +55,25 @@ if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
         //$post['cancelreason'] = 'The admins here decided they didn\'t like something about how you submitted your petition.  They were also too lazy to give a real reason.';
         $post = HookHandler::hook("addpetition", $post);
         if (!isset($post['cancelpetition']) || !$post['cancelpetition']) {
-            $sql = "INSERT INTO " . Database::prefix("petitions") . " (author,date,body,pageinfo,ip,id) VALUES (" . (int)$session['user']['acctid'] . ",'$date',\"" . addslashes(OutputArray::output($post)) . "\",\"" . addslashes(OutputArray::output($session, "Session:")) . "\",'{$_SERVER['REMOTE_ADDR']}','" . addslashes($cookie_lgi) . "')";
-            Database::query($sql);
+            $sql = 'INSERT INTO ' . Database::prefix('petitions')
+                . ' (author,date,body,pageinfo,ip,id) VALUES '
+                . '(:author,:date,:body,:pageinfo,:ip,:cookie)';
+
+            $conn->executeStatement($sql, [
+                'author'   => (int) $session['user']['acctid'],
+                'date'     => $date,
+                'body'     => OutputArray::output($post),
+                'pageinfo' => OutputArray::output($session, 'Session:'),
+                'ip'       => $_SERVER['REMOTE_ADDR'],
+                'cookie'   => $cookie_lgi,
+            ], [
+                'author'   => ParameterType::INTEGER,
+                'date'     => ParameterType::STRING,
+                'body'     => ParameterType::STRING,
+                'pageinfo' => ParameterType::STRING,
+                'ip'       => ParameterType::STRING,
+                'cookie'   => ParameterType::STRING,
+            ]);
             // If the admin wants it, email the petitions to them.
             if ($settings->getSetting("emailpetitions", 0)) {
                 // Yeah, the format of this is ugly.
@@ -77,7 +111,7 @@ if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
             $output->rawOutput("</blockquote>");
         }
     } else {
-        $output->output("`\$`bError:`b There have already been %s petitions filed from your network in the last day; to prevent abuse of the petition system, you must wait until there have been 5 or fewer within the last 24 hours.", $row['c']);
+        $output->output("`\$`bError:`b There have already been %s petitions filed from your network in the last day; to prevent abuse of the petition system, you must wait until there have been 5 or fewer within the last 24 hours.", $recentCount);
         $output->output("If you have multiple issues to bring up with the staff of this server, you might think about consolidating those issues to reduce the overall number of petitions you file.");
     }
 } else {
