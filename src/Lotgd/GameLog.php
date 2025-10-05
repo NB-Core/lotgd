@@ -32,9 +32,19 @@ class GameLog
             $severity = 'info';
         }
 
-        $sql = 'INSERT INTO ' . Database::prefix('gamelog') .
-            ' (message,category,severity,filed,date,who) VALUES (' .
-            "'" . addslashes($message) . "','" . addslashes($category) . "','" . addslashes($severity) . "','" . ($filed ? "1" : "0") . "','" . date('Y-m-d H:i:s') . "','" . $who . "')";
-        Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $sql  = sprintf(
+            'INSERT INTO %s (message,category,severity,filed,date,who) VALUES (:message, :category, :severity, :filed, :date, :who)',
+            Database::prefix('gamelog')
+        );
+
+        $conn->executeStatement($sql, [
+            'message'  => $message,
+            'category' => $category,
+            'severity' => $severity,
+            'filed'    => $filed ? 1 : 0,
+            'date'     => date('Y-m-d H:i:s'),
+            'who'      => $who,
+        ]);
     }
 }
