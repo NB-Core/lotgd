@@ -35,6 +35,22 @@ namespace Lotgd {
         }
     }
 
+    if (!class_exists(__NAMESPACE__ . '\\Redirect', false)) {
+        class Redirect
+        {
+            /** @var array<int, array{location: string, reason: string|bool}> */
+            public static array $redirects = [];
+
+            public static function redirect(string $location, string|bool $reason = false): void
+            {
+                self::$redirects[] = [
+                    'location' => $location,
+                    'reason' => $reason,
+                ];
+            }
+        }
+    }
+
     if (!class_exists(__NAMESPACE__ . '\\Translator')) {
         class Translator
         {
@@ -154,6 +170,9 @@ namespace Lotgd\Tests\Bans {
             $_POST = [];
             $_GET = [];
             $GLOBALS['output'] = \Lotgd\Output::getInstance();
+            if (property_exists(\Lotgd\Redirect::class, 'redirects')) {
+                \Lotgd\Redirect::$redirects = [];
+            }
         }
 
         public function testCaseSearchBanBindsIpAndId(): void
@@ -277,6 +296,42 @@ namespace Lotgd\Tests\Bans {
             $types = $this->connection->lastFetchAllTypes;
             $this->assertSame(ParameterType::STRING, $types['limit'] ?? null);
             $this->assertSame(ParameterType::STRING, $types['max'] ?? null);
+        }
+
+        public function testDeleteBanBindsIpAndId(): void
+        {
+            $ip = "127.0.0.1' OR '1'='1";
+            $id = "abc'; DROP TABLE bans; --";
+            $_GET['ipfilter'] = $ip;
+            $_GET['uniqueid'] = $id;
+
+            $include = static function (): void {
+                require __DIR__ . '/../../pages/bans/case_delban.php';
+            };
+            \Closure::bind($include, null, null)();
+
+            $delete = $this->connection->executeStatements[0] ?? null;
+            $this->assertNotNull($delete);
+            $this->assertSame($ip, $delete['params']['ip'] ?? null);
+            $this->assertSame($id, $delete['params']['id'] ?? null);
+
+            $this->assertSame(
+                ParameterType::STRING,
+                $delete['types']['ip'] ?? null
+            );
+            $this->assertSame(
+                ParameterType::STRING,
+                $delete['types']['id'] ?? null
+            );
+
+            $sql = $delete['sql'] ?? '';
+            $this->assertStringNotContainsString($ip, $sql);
+            $this->assertStringNotContainsString($id, $sql);
+
+            $this->assertSame(
+                'bans.php?op=removeban',
+                \Lotgd\Redirect::$redirects[0]['location'] ?? null
+            );
         }
     }
 }
