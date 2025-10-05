@@ -11,6 +11,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Jaxon\Jaxon;                      // Use the jaxon core class
+use Lotgd\Async\Handler\Bans;
 use Lotgd\Async\Handler\Commentary;
 use Lotgd\Async\Handler\Mail;
 use Lotgd\Async\Handler\Timeout;
@@ -41,3 +42,4 @@ $jaxon->setOption('core.debug.verbose', false);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Commentary::class);
 $jaxon->register(Jaxon::CALLABLE_CLASS, Timeout::class);
+$jaxon->register(Jaxon::CALLABLE_CLASS, Bans::class);

@@ -6,6 +6,7 @@ namespace Lotgd\Tests\Async {
 
     use Doctrine\DBAL\ParameterType;
     use Jaxon\Response\Response;
+    use Lotgd\Async\Handler\Bans;
     use Lotgd\Async\Handler\Commentary;
     use Lotgd\Async\Handler\Mail;
     use Lotgd\Async\Handler\Timeout;
@@ -94,6 +95,38 @@ namespace Lotgd\Tests\Async {
             Database::$mockResults = [];
             $response = Timeout::getInstance()->timeoutStatus(false);
             $this->assertInstanceOf(Response::class, $response);
+        }
+
+        public function testBansAffectedUsersAssignsHtml(): void
+        {
+            Database::$mockResults = [[
+                ['name' => 'Alpha'],
+                ['name' => 'Beta'],
+            ]];
+
+            $response = (new Bans())->affectedUsers('127.0.0.1', 'device-id', 'user3');
+
+            $this->assertInstanceOf(Response::class, $response);
+
+            $commands = $response->getCommands();
+            $assign = array_values(array_filter(
+                $commands,
+                fn($command) => ($command['cmd'] ?? '') === 'as' && ($command['id'] ?? '') === 'user3'
+            ));
+
+            $this->assertNotEmpty($assign);
+            $this->assertStringContainsString('Alpha', $assign[0]['data']);
+            $this->assertStringContainsString('Beta', $assign[0]['data']);
+
+            $conn = Database::getDoctrineConnection();
+            $this->assertSame(
+                ['ipFilter' => '127.0.0.1', 'uniqueId' => 'device-id'],
+                $conn->lastFetchAllParams
+            );
+            $this->assertSame(
+                ['ipFilter' => ParameterType::STRING, 'uniqueId' => ParameterType::STRING],
+                $conn->lastFetchAllTypes
+            );
         }
     }
 }
