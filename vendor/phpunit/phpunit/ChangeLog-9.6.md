@@ -2,6 +2,26 @@
 
 All notable changes of the PHPUnit 9.6 release series are documented in this file using the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
 
+## [9.6.29] - 2025-09-24
+
+* No changes; `phpunit.phar` rebuilt with updated dependencies
+
+## [9.6.28] - 2025-09-23
+
+* No changes; `phpunit.phar` rebuilt with updated dependencies
+
+## [9.6.27] - 2025-09-14
+
+### Changed
+
+* [#6366](https://github.com/sebastianbergmann/phpunit/issues/6366): Exclude `__sleep()` and `__wakeup()` from test double code generation on PHP >= 8.5
+
+## [9.6.26] - 2025-09-11
+
+### Changed
+
+* Implement `__serialize()` in addition to `__sleep()` (which will be deprecated in PHP 8.5)
+
 ## [9.6.25] - 2025-08-20
 
 ### Changed
@@ -182,6 +202,10 @@ All notable changes of the PHPUnit 9.6 release series are documented in this fil
 * [#5064](https://github.com/sebastianbergmann/phpunit/issues/5064): Deprecate `PHPUnit\Framework\TestCase::getMockClass()`
 * [#5132](https://github.com/sebastianbergmann/phpunit/issues/5132): Deprecate `Test` suffix for abstract test case classes
 
+[9.6.29]: https://github.com/sebastianbergmann/phpunit/compare/9.6.28...9.6.29
+[9.6.28]: https://github.com/sebastianbergmann/phpunit/compare/9.6.27...9.6.28
+[9.6.27]: https://github.com/sebastianbergmann/phpunit/compare/9.6.26...9.6.27
+[9.6.26]: https://github.com/sebastianbergmann/phpunit/compare/9.6.25...9.6.26
 [9.6.25]: https://github.com/sebastianbergmann/phpunit/compare/9.6.24...9.6.25
 [9.6.24]: https://github.com/sebastianbergmann/phpunit/compare/9.6.23...9.6.24
 [9.6.23]: https://github.com/sebastianbergmann/phpunit/compare/9.6.22...9.6.23
