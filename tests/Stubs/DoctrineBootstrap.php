@@ -52,6 +52,7 @@ class DoctrineConnection
     public array $fetchAssociativeResults = [];
     public array $lastFetchAssociativeParams = [];
     public array $lastFetchAssociativeTypes = [];
+    public array $fetchAssociativeLog = [];
     public array $executeStatements = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
@@ -207,6 +208,32 @@ class DoctrineConnection
         $this->queries[] = $sql;
         $this->lastFetchAssociativeParams = $params;
         $this->lastFetchAssociativeTypes = $types;
+        $this->fetchAssociativeLog[] = [
+            'sql'    => $sql,
+            'params' => $params,
+            'types'  => $types,
+        ];
+
+        $accountsTable = Database::prefix('accounts');
+
+        if (preg_match('/SELECT\s+prefs\s*,\s*emailaddress\s+FROM\s+' . preg_quote($accountsTable, '/') . '\s+WHERE\s+acctid\s*=\s*:acctid/i', $sql)) {
+            global $accounts_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
+            $row = $accounts_table[$acctid] ?? [];
+
+            return [
+                'prefs' => $row['prefs'] ?? '',
+                'emailaddress' => $row['emailaddress'] ?? '',
+            ];
+        }
+
+        if (preg_match('/SELECT\s+name\s+FROM\s+' . preg_quote($accountsTable, '/') . '\s+WHERE\s+acctid\s*=\s*:acctid/i', $sql)) {
+            global $accounts_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
+            $row = $accounts_table[$acctid] ?? [];
+
+            return ['name' => $row['name'] ?? ''];
+        }
 
         if (!empty($this->fetchAssociativeResults)) {
             $row = array_shift($this->fetchAssociativeResults);

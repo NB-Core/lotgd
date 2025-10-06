@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Censor;
 use Lotgd\DataCache;
 use Lotgd\MySQL\Database;
@@ -45,10 +46,14 @@ class Mail
             $body = Translator::sprintfTranslate(...$body);
         }
 
-        $sql = 'SELECT prefs,emailaddress FROM ' . Database::prefix('accounts') . " WHERE acctid='$to'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
-        Database::freeResult($result);
+        $conn = Database::getDoctrineConnection();
+
+        $row = $conn->fetchAssociative(
+            'SELECT prefs, emailaddress FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+            ['acctid' => $to],
+            ['acctid' => ParameterType::INTEGER]
+        ) ?: [];
+
         $prefs = isset($row['prefs']) ? @unserialize($row['prefs']) : [];
         if ($from !== 0) {
             $subject = str_replace(["\n", '`n'], '', $subject);
@@ -67,7 +72,6 @@ class Mail
             $body = substr($body, 0, $limit);
         }
 
-        $conn = Database::getDoctrineConnection();
         $conn->executeStatement(
             'INSERT INTO ' . Database::prefix('mail') . ' (msgfrom, msgto, subject, body, sent) VALUES (:msgfrom, :msgto, :subject, :body, :sent)',
             [
@@ -91,19 +95,24 @@ class Mail
             $email = false;
         }
         if ($email && !$noemail) {
-            $sql = 'SELECT name FROM ' . Database::prefix('accounts') . " WHERE acctid='$from'";
-            $result = Database::query($sql);
-            $row1 = Database::fetchAssoc($result);
-            if (Database::numRows($result) > 0 && $row1['name'] != '') {
-                $fromline = Sanitize::fullSanitize($row1['name']);
+            $fromRow = $conn->fetchAssociative(
+                'SELECT name FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => $from],
+                ['acctid' => ParameterType::INTEGER]
+            ) ?: [];
+
+            if (($fromRow['name'] ?? '') !== '') {
+                $fromline = Sanitize::fullSanitize($fromRow['name']);
             } else {
                 $fromline = Translator::translateInline('The Green Dragon', 'mail');
             }
-            $sql = 'SELECT name FROM ' . Database::prefix('accounts') . " WHERE acctid=$to";
-            $result = Database::query($sql);
-            $row1 = Database::fetchAssoc($result);
-            Database::freeResult($result);
-            $toline = Sanitize::fullSanitize($row1['name']);
+            $toRow = $conn->fetchAssociative(
+                'SELECT name FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => $to],
+                ['acctid' => ParameterType::INTEGER]
+            ) ?: [];
+
+            $toline = Sanitize::fullSanitize($toRow['name'] ?? '');
             $body = preg_replace("'[`]n'", "\n", $body);
             $body = Sanitize::fullSanitize($body);
             $subject = htmlentities(Sanitize::fullSanitize($subject), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));

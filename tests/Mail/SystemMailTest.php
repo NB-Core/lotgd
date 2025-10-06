@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Mail;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Mail;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
@@ -13,6 +14,8 @@ use PHPUnit\Framework\TestCase;
 
 final class SystemMailTest extends TestCase
 {
+    private DoctrineConnection $connection;
+
     protected function setUp(): void
     {
         $GLOBALS['accounts_table'] = [];
@@ -42,12 +45,20 @@ final class SystemMailTest extends TestCase
         Settings::setInstance($settings);
         $GLOBALS['settings'] = $settings;
 
+        $this->connection = new DoctrineConnection();
+        Database::setDoctrineConnection($this->connection);
+
         $ref = new \ReflectionClass(Mail::class);
         $prop = $ref->getProperty('settings');
         $prop->setAccessible(true);
         $prop->setValue(null, null);
 
         unset($GLOBALS['mail_force_error'], $GLOBALS['mail_force_error_message']);
+    }
+
+    protected function tearDown(): void
+    {
+        Database::resetDoctrineConnection();
     }
 
     public function testSystemMailPersistsMultibyteAndQuoteCharacters(): void
@@ -79,5 +90,10 @@ final class SystemMailTest extends TestCase
         $this->assertSame(0, $params['msgfrom']);
         $this->assertSame(7, $params['msgto']);
         $this->assertSame($record['sent'], $params['sent']);
+
+        $this->assertNotEmpty($this->connection->fetchAssociativeLog);
+        $firstFetch = $this->connection->fetchAssociativeLog[0];
+        $this->assertSame(['acctid' => 7], $firstFetch['params']);
+        $this->assertSame(['acctid' => ParameterType::INTEGER], $firstFetch['types']);
     }
 }

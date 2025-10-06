@@ -131,8 +131,10 @@ final class MailSendParameterBindingTest extends TestCase
 
         $this->executeMailSend();
 
-        $this->assertSame(['login' => $login], $this->connection->lastFetchAssociativeParams);
-        $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
+        $loginFetch = $this->findFetchAssociativeEntry('WHERE login = :login');
+        $this->assertNotNull($loginFetch, 'Expected login lookup query to be executed.');
+        $this->assertSame(['login' => $login], $loginFetch['params']);
+        $this->assertSame(['login' => ParameterType::STRING], $loginFetch['types']);
 
         $this->assertMailInsertIssued();
 
@@ -160,8 +162,10 @@ final class MailSendParameterBindingTest extends TestCase
 
         $this->executeMailSend();
 
-        $this->assertSame(['login' => $login], $this->connection->lastFetchAssociativeParams);
-        $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
+        $loginFetch = $this->findFetchAssociativeEntry('WHERE login = :login');
+        $this->assertNotNull($loginFetch, 'Expected login lookup query to be executed.');
+        $this->assertSame(['login' => $login], $loginFetch['params']);
+        $this->assertSame(['login' => ParameterType::STRING], $loginFetch['types']);
 
         $this->assertMailInsertIssued();
 
@@ -193,8 +197,10 @@ final class MailSendParameterBindingTest extends TestCase
 
         $this->executeMailSend();
 
-        $this->assertSame(['login' => $login], $this->connection->lastFetchAssociativeParams);
-        $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
+        $loginFetch = $this->findFetchAssociativeEntry('WHERE login = :login');
+        $this->assertNotNull($loginFetch, 'Expected login lookup query to be executed.');
+        $this->assertSame(['login' => $login], $loginFetch['params']);
+        $this->assertSame(['login' => ParameterType::STRING], $loginFetch['types']);
 
         $this->assertMailInsertIssued();
 
@@ -203,5 +209,17 @@ final class MailSendParameterBindingTest extends TestCase
         $this->assertSame($expected, $mail_table[0]['body']);
         $this->assertSame($expected, $this->connection->lastExecuteStatementParams['body'] ?? null);
     }
+
+    private function findFetchAssociativeEntry(string $needle): ?array
+    {
+        foreach (array_reverse($this->connection->fetchAssociativeLog) as $entry) {
+            if (str_contains($entry['sql'], $needle)) {
+                return $entry;
+            }
+        }
+
+        return null;
+    }
 }
+
 }

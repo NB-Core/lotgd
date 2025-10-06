@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Mail;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\MailDummySettings;
 use Lotgd\Tests\Stubs\PHPMailer;
+use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Settings;
 use PHPUnit\Framework\TestCase;
 
 final class MailTest extends TestCase
 {
+    private DoctrineConnection $connection;
+
     protected function setUp(): void
     {
         $GLOBALS['accounts_table'] = [];
@@ -46,7 +50,17 @@ final class MailTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue(null, null);
 
+        $this->connection = new DoctrineConnection();
+        Database::setDoctrineConnection($this->connection);
+
         unset($GLOBALS['mail_force_error'], $GLOBALS['mail_force_error_message']);
+
+        new PHPMailer();
+    }
+
+    protected function tearDown(): void
+    {
+        Database::resetDoctrineConnection();
     }
 
     public function testSystemMailStoresMessageAndSkipsInvalidEmail(): void
@@ -88,6 +102,17 @@ final class MailTest extends TestCase
         $this->assertSame(2, $mailRecord['msgto']);
         $this->assertSame('Subject', $mailRecord['subject']);
         $this->assertSame('Body', $mailRecord['body']);
+
+        $this->assertCount(3, $this->connection->fetchAssociativeLog);
+
+        $this->assertSame(['acctid' => 2], $this->connection->fetchAssociativeLog[0]['params']);
+        $this->assertSame(['acctid' => ParameterType::INTEGER], $this->connection->fetchAssociativeLog[0]['types']);
+
+        $this->assertSame(['acctid' => 1], $this->connection->fetchAssociativeLog[1]['params']);
+        $this->assertSame(['acctid' => ParameterType::INTEGER], $this->connection->fetchAssociativeLog[1]['types']);
+
+        $this->assertSame(['acctid' => 2], $this->connection->fetchAssociativeLog[2]['params']);
+        $this->assertSame(['acctid' => ParameterType::INTEGER], $this->connection->fetchAssociativeLog[2]['types']);
     }
 
     public function testInboxCountAndFull(): void
