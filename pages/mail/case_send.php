@@ -133,8 +133,15 @@ function escapeAndTruncateBody(string $body): string
 {
     $settings = Settings::getInstance();
     $limit = (int) $settings->getSetting('mailsizelimit', 1024);
+    $charset = (string) $settings->getSetting('charset', 'UTF-8');
 
-    return addslashes(mb_substr(stripslashes($body), 0, $limit, $settings->getSetting('charset', 'UTF-8')));
+    if (function_exists('mb_substr')) {
+        $body = mb_substr($body, 0, $limit, $charset);
+    } else {
+        $body = substr($body, 0, $limit);
+    }
+
+    return $body;
 }
 
 mailSend();
