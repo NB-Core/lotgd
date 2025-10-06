@@ -10,6 +10,8 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 ### Features
+- Add asynchronous ban lookups so moderators can review affected accounts inline without leaving the list views.
+- Refresh the mail popup navigation with button-style quick links and theme styling hooks for modern layouts.
 - Enable zlib compression by default.
 - Remove legacy settings stub and streamline cron handling.
 - Expanded logging: game log entries can include account IDs, user management and module lifecycle actions, and anonymous entries show a system label.
@@ -23,6 +25,11 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 
 ### Bug Fixes
+- Parameterize ban creation, search, and removal flows so moderation tools log out affected players safely and avoid injection vectors.
+- Bind parameters throughout petition submissions, news inserts, and debug logging helpers to harden persistence routines against crafted input.
+- Rely on Doctrine-powered mail workflows for composing, sending, and listing messages so subject/body data stays sanitized and mailbox state remains accurate.
+- Guard admin search helpers by routing list, mail, and donation lookups through PlayerSearch, ensuring consistent escaping and locked-account handling.
+- Stabilize asynchronous polling by parameterizing commentary refreshes and surfacing a timeout banner when sessions expire during background checks.
 - Guard against missing city and theme parameters and ensure `diddamage` defaults to zero.
 - Use safe array access for player name lookup and tighten module migration checks.
 - Preserve the `Settings` singleton when loading extended settings or templates.
@@ -41,12 +48,15 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 
 ### Refactor
+- Centralize admin player lookup logic on the PlayerSearch service, extending reuse across bank transfers, mail compose flows, and donor tools.
+- Migrate module installation routines to Doctrine parameter binding for activation, uninstall, and reinstall paths while keeping cache invalidation intact.
 - Standardize top-level scripts to use `__DIR__` in `require` statements for safer path resolution.
 - Remove redundant battle buff wrappers.
 - Localized mount editor dependencies and continued migrating legacy entry points toward namespaced services.
 
 
 ### Docs
+- Clarify the repository's expectations around adding new files to `lib/` in the contributor guidelines.
 - Clarify newday cron configuration and cron job setup instructions.
 - Add module hook reference documentation.
 - Document contributor guidelines and static analysis in maintenance docs.
