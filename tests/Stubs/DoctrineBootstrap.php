@@ -109,6 +109,51 @@ class DoctrineConnection
             return new DoctrineResult([['count' => $count]]);
         }
 
+        if (preg_match('/SELECT\s+(.+?)\s+FROM\s+' . preg_quote($mailTable, '/') . '\b/i', $sql, $matches)) {
+            global $mail_table;
+            $columnsExpr = trim($matches[1]);
+            $rows = $mail_table ?? [];
+
+            if (stripos($sql, 'WHERE') !== false && preg_match('/msgto\s*=\s*(?::([a-z0-9_]+)|\?)/i', $sql, $whereMatches)) {
+                $paramKey = $whereMatches[1] ?? 0;
+                $value = $whereMatches[1] !== null ? ($params[$paramKey] ?? null) : ($params[0] ?? null);
+
+                if ($value !== null) {
+                    $rows = array_values(array_filter(
+                        $rows,
+                        static fn (array $row): bool => (int) ($row['msgto'] ?? 0) === (int) $value
+                    ));
+                }
+            }
+
+            $selectedColumns = null;
+            if ($columnsExpr !== '*') {
+                $selectedColumns = array_map(
+                    static function (string $column): string {
+                        $column = preg_replace('/\s+AS\s+.*/i', '', trim($column));
+                        return str_replace('`', '', $column);
+                    },
+                    explode(',', $columnsExpr)
+                );
+            }
+
+            $results = [];
+            foreach ($rows as $row) {
+                if ($selectedColumns === null) {
+                    $results[] = $row;
+                    continue;
+                }
+
+                $selected = [];
+                foreach ($selectedColumns as $column) {
+                    $selected[$column] = $row[$column] ?? null;
+                }
+                $results[] = $selected;
+            }
+
+            return new DoctrineResult($results);
+        }
+
         if (preg_match("/SELECT\s+\*\s+FROM\s+" . preg_quote(Database::prefix('nastywords'), '/') . "\s+WHERE\s+type='(good|nasty)'/i", $sql)) {
             return new DoctrineResult([['words' => '']]);
         }

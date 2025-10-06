@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\Mail;
+use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
+use Lotgd\Tests\Stubs\DoctrineBootstrap;
+use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Tests\Stubs\MailDummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class MailUtf8Test extends TestCase
 {
+    private DoctrineConnection $connection;
+
     protected function setUp(): void
     {
         $GLOBALS['accounts_table'] = [];
@@ -30,6 +35,18 @@ final class MailUtf8Test extends TestCase
         $GLOBALS['forms_output'] = '';
         $_POST = [];
         $_GET = [];
+
+        Database::resetDoctrineConnection();
+        DoctrineBootstrap::$conn = null;
+        $this->connection = new DoctrineConnection();
+        Database::setDoctrineConnection($this->connection);
+        Database::setPrefix('');
+    }
+
+    protected function tearDown(): void
+    {
+        Database::resetDoctrineConnection();
+        DoctrineBootstrap::$conn = null;
     }
 
     public function testSystemMailStoresUtf8(): void
@@ -80,5 +97,30 @@ final class MailUtf8Test extends TestCase
         $sanitized = Sanitize::sanitizeMb($str);
         $this->assertSame($str, $sanitized);
         $this->assertTrue(mb_check_encoding($sanitized, 'UTF-8'));
+    }
+
+    public function testSystemMailPersistsSpecialCharactersWithoutEscaping(): void
+    {
+        $GLOBALS['accounts_table'][2] = ['prefs' => serialize([]), 'emailaddress' => '', 'name' => '受信者'];
+        $subject = 'He said, "Let\'s meet \\o/"';
+        $body = 'Path \\ shared with 世界🌟';
+
+        Mail::systemMail(2, $subject, $body, 0, true);
+
+        $insert = $this->connection->executeStatements[0] ?? null;
+        $this->assertNotNull($insert, 'Expected an INSERT statement to be executed.');
+        $this->assertStringContainsString(':subject', $insert['sql']);
+        $this->assertSame($subject, $insert['params']['subject']);
+        $this->assertSame($body, $insert['params']['body']);
+
+        $result = $this->connection->executeQuery(
+            'SELECT subject, body FROM ' . Database::prefix('mail') . ' WHERE msgto = :msgto',
+            ['msgto' => 2]
+        );
+        $row = $result->fetchAssociative();
+
+        $this->assertNotFalse($row);
+        $this->assertSame($subject, $row['subject']);
+        $this->assertSame($body, $row['body']);
     }
 }
