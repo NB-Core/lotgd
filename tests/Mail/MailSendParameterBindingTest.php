@@ -121,10 +121,11 @@ final class MailSendParameterBindingTest extends TestCase
         $this->addAccount($acctid, 'Quoted Recipient');
         $this->connection->fetchAssociativeResults[] = ['acctid' => $acctid];
 
+        $body = 'He said "Hi" and it\'s fine.';
         $_POST = [
             'to' => $login,
             'subject' => 'Hello',
-            'body' => 'Greetings',
+            'body' => $body,
             'returnto' => '0',
         ];
 
@@ -134,6 +135,11 @@ final class MailSendParameterBindingTest extends TestCase
         $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
 
         $this->assertMailInsertIssued();
+
+        global $mail_table;
+        $this->assertNotEmpty($mail_table, 'Expected mail to be stored.');
+        $this->assertSame($body, $mail_table[0]['body']);
+        $this->assertSame($body, $this->connection->lastExecuteStatementParams['body'] ?? null);
     }
 
     public function testMailSendBindsMultibyteLogin(): void
@@ -144,10 +150,11 @@ final class MailSendParameterBindingTest extends TestCase
         $this->addAccount($acctid, '受信者');
         $this->connection->fetchAssociativeResults[] = ['acctid' => $acctid];
 
+        $body = '世界🌟からの"こんにちは"';
         $_POST = [
             'to' => $login,
             'subject' => 'こんにちは',
-            'body' => '世界🌟',
+            'body' => $body,
             'returnto' => '0',
         ];
 
@@ -157,6 +164,44 @@ final class MailSendParameterBindingTest extends TestCase
         $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
 
         $this->assertMailInsertIssued();
+
+        global $mail_table;
+        $this->assertNotEmpty($mail_table, 'Expected mail to be stored.');
+        $this->assertSame($body, $mail_table[0]['body']);
+        $this->assertSame($body, $this->connection->lastExecuteStatementParams['body'] ?? null);
+    }
+
+    public function testMailBodyRespectsConfiguredLimit(): void
+    {
+        $login = 'TruncateUser';
+        $acctid = 2003;
+
+        $this->addAccount($acctid, 'Truncate Recipient');
+        $this->connection->fetchAssociativeResults[] = ['acctid' => $acctid];
+
+        $body = 'こんにちは世界🌟';
+        $expected = 'こんにちは';
+
+        Settings::getInstance()->saveSetting('mailsizelimit', 5);
+
+        $_POST = [
+            'to' => $login,
+            'subject' => 'Limit Test',
+            'body' => $body,
+            'returnto' => '0',
+        ];
+
+        $this->executeMailSend();
+
+        $this->assertSame(['login' => $login], $this->connection->lastFetchAssociativeParams);
+        $this->assertSame(['login' => ParameterType::STRING], $this->connection->lastFetchAssociativeTypes);
+
+        $this->assertMailInsertIssued();
+
+        global $mail_table;
+        $this->assertNotEmpty($mail_table, 'Expected mail to be stored.');
+        $this->assertSame($expected, $mail_table[0]['body']);
+        $this->assertSame($expected, $this->connection->lastExecuteStatementParams['body'] ?? null);
     }
 }
 }
