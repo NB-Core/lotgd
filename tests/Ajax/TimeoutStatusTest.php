@@ -74,13 +74,30 @@ namespace Lotgd\Tests\Ajax {
             $this->assertStringContainsString('TIMEOUT', $commands[0]['data'] ?? '');
         }
 
-        public function testNoWarningWhenSessionUserAbsent(): void
+        public function testNoWarningWhenSessionUserAbsentWithoutTimeoutIndicators(): void
         {
             global $session;
             $session = [];
 
             $response = Timeout::getInstance()->timeoutStatus(true);
             $this->assertEmpty($response->getCommands());
+        }
+
+        public function testTimeoutWarningWhenSessionExpiredAndSessionUserAbsent(): void
+        {
+            global $session;
+
+            $session = [
+                'loggedin' => false,
+                'message' => "`nYour session has expired!`n",
+            ];
+
+            $response = Timeout::getInstance()->timeoutStatus(true);
+            $commands = $response->getCommands();
+
+            $this->assertNotEmpty($commands);
+            $this->assertSame('notify', $commands[0]['id'] ?? null);
+            $this->assertStringContainsString('TIMEOUT', $commands[0]['data'] ?? '');
         }
     }
 }

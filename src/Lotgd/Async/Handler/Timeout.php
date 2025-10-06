@@ -94,7 +94,25 @@ class Timeout
         }
 
         if (!isset($session['user'])) {
-            return jaxon()->newResponse();
+            $hasTimedOut = false;
+
+            if (isset($session['loggedin']) && $session['loggedin'] === false) {
+                $hasTimedOut = true;
+            }
+
+            if (!$hasTimedOut && isset($session['message']) && stripos($session['message'], 'Your session has expired!') !== false) {
+                $hasTimedOut = true;
+            }
+
+            if (!$hasTimedOut) {
+                return jaxon()->newResponse();
+            }
+
+            $objResponse = jaxon()->newResponse();
+            $warning = $output->appoencode('`$`b') . 'TIMEOUT: Your session has timed out!' . $output->appoencode('`b');
+            $objResponse->assign('notify', 'innerHTML', $warning);
+
+            return $objResponse;
         }
 
         $warning = '';
