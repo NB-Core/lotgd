@@ -28,6 +28,7 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Parameterize ban creation, search, and removal flows so moderation tools log out affected players safely and avoid injection vectors.
 - Bind parameters throughout petition submissions, news inserts, and debug logging helpers to harden persistence routines against crafted input.
 - Rely on Doctrine-powered mail workflows for composing, sending, and listing messages so subject/body data stays sanitized and mailbox state remains accurate.
+- Parameterize system mail lookups and inserts so notification deliveries stay sanitized when addressing account IDs.
 - Guard admin search helpers by routing list, mail, and donation lookups through PlayerSearch, ensuring consistent escaping and locked-account handling.
 - Stabilize asynchronous polling by parameterizing commentary refreshes and surfacing a timeout banner when sessions expire during background checks.
 - Guard against missing city and theme parameters and ensure `diddamage` defaults to zero.
