@@ -38,6 +38,9 @@ Translator::getInstance()->setSchema("untranslated");
 $op = Http::get('op');
 Header::pageHeader("Untranslated Texts");
 
+Nav::add("Navigation");
+Nav::add("Actions");
+
 //chcek if he/she is allowed to edit that language
 if (!in_array($session['user']['prefs']['language'], explode(",", $session['user']['translatorlanguages']))) {
     $output->output("Sorry, please change your language to one you are allowed to translate.`n`n");
@@ -171,7 +174,9 @@ if ($op == "list") {
         $output->output("Congratulations!!!");
     } // end if
 } // end list if
+Nav::add("Actions");
 Nav::add("R?Restart Translator", "untranslated.php");
 Nav::add("N?Translate by Namespace", "untranslated.php?op=list");
+Nav::add("Navigation");
 SuperuserNav::render();
 Footer::pageFooter();
