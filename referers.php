@@ -71,17 +71,26 @@ $dest = Translator::translate("Destination");
 $none = Translator::translate("`iNone`i");
 $notset = Translator::translate("`iNot set`i");
 $skipped = Translator::translate("`i%s records skipped (over a week old)`i");
-$output->rawOutput("<table border=0 cellpadding=2 cellspacing=1><tr class='trhead'><td>$count</td><td>$last</td><td>URL</td><td>$dest</td><td>IP</td></tr>");
+$output->rawOutput(
+    sprintf(
+        "<table border=0 cellpadding=2 cellspacing=1><tr class='trhead'><td>%s</td><td>%s</td><td>URL</td><td>%s</td><td>IP</td></tr>",
+        $count,
+        $last,
+        $dest
+    )
+);
 $result = Database::query($sql);
 while ($row = Database::fetchAssoc($result)) {
     $output->rawOutput("<tr class='trdark'><td valign='top'>");
-    $output->outputNotl("`b" . $row['count'] . "`b");
+    $rowCount = $row['count'] ?? '';
+    $output->outputNotl('`b%s`b', $rowCount);
     $output->rawOutput("</td><td valign='top'>");
     $diffsecs = strtotime("now") - strtotime($row['last']);
     //$output->output((int)($diffsecs/86400)."d ".(int)($diffsecs/3600%3600)."h ".(int)($diffsecs/60%60)."m ".(int)($diffsecs%60)."s");
-    $output->outputNotl("`b" . Dhms::format($diffsecs) . "`b");
+    $output->outputNotl('`b%s`b', Dhms::format($diffsecs));
     $output->rawOutput("</td><td valign='top' colspan='3'>");
-    $output->outputNotl("`b" . ($row['site'] == "" ? $none : $row['site']) . "`b");
+    $site = $row['site'] ?? '';
+    $output->outputNotl('`b%s`b', $site === '' ? $none : $site);
     $output->rawOutput("</td></tr>");
 
     $sql = "SELECT count,last,uri,dest,ip FROM " . Database::prefix("referers") . " WHERE site='" . addslashes($row['site']) . "' ORDER BY {$order} LIMIT 25";
@@ -94,21 +103,31 @@ while ($row = Database::fetchAssoc($result)) {
         $diffsecs = strtotime("now") - strtotime($row1['last']);
         if ($diffsecs <= 604800) {
             $output->rawOutput("<tr class='trlight'><td>");
-            $output->outputNotl($row1['count']);
+            $rowCountDetail = $row1['count'] ?? '';
+            $output->outputNotl('%s', $rowCountDetail);
             $output->rawOutput("</td><td valign='top'>");
             //$output->output((int)($diffsecs/86400)."d".(int)($diffsecs/3600%3600)."h".(int)($diffsecs/60%60)."m".(int)($diffsecs%60)."s");
-            $output->outputNotl(Dhms::format($diffsecs));
+            $output->outputNotl('%s', Dhms::format($diffsecs));
             $output->rawOutput("</td><td valign='top'>");
-            if ($row1['uri'] > "") {
-                $output->rawOutput("<a href='" . HTMLEntities($row1['uri'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "' target='_blank'>" . HTMLEntities(substr($row1['uri'], 0, 100)) . "</a>");
+            $uri = (string) ($row1['uri'] ?? '');
+            if ($uri !== '') {
+                $output->rawOutput(
+                    sprintf(
+                        "<a href='%s' target='_blank'>%s</a>",
+                        HTMLEntities($uri, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')),
+                        HTMLEntities(substr($uri, 0, 100))
+                    )
+                );
             } else {
-                $output->outputNotl($none);
+                $output->outputNotl('%s', $none);
             }
             $output->outputNotl("`n");
             $output->rawOutput("</td><td valign='top'>");
-            $output->outputNotl($row1['dest'] == '' ? $notset : $row1['dest']);
+            $destValue = $row1['dest'] ?? '';
+            $output->outputNotl('%s', $destValue === '' ? $notset : $destValue);
             $output->rawOutput("</td><td valign='top'>");
-            $output->outputNotl($row1['ip'] == '' ? $notset : $row1['ip']);
+            $ip = $row1['ip'] ?? '';
+            $output->outputNotl('%s', $ip === '' ? $notset : $ip);
             $output->rawOutput("</td></tr>");
         } else {
             $skippedcount++;
@@ -116,7 +135,12 @@ while ($row = Database::fetchAssoc($result)) {
         }
     }
     if ($skippedcount > 0) {
-        $output->rawOutput("<tr class='trlight'><td>$skippedtotal</td><td valign='top' colspan='4'>");
+        $output->rawOutput(
+            sprintf(
+                "<tr class='trlight'><td>%s</td><td valign='top' colspan='4'>",
+                $skippedtotal
+            )
+        );
         $output->outputNotl(sprintf($skipped, $skippedcount));
         $output->rawOutput("</td></tr>");
     }
