@@ -75,13 +75,15 @@ $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1><tr class='trhea
 $result = Database::query($sql);
 while ($row = Database::fetchAssoc($result)) {
     $output->rawOutput("<tr class='trdark'><td valign='top'>");
-    $output->outputNotl("`b" . $row['count'] . "`b");
+    $rowCount = (string) ($row['count'] ?? '');
+    $output->outputNotl("`b" . $rowCount . "`b");
     $output->rawOutput("</td><td valign='top'>");
     $diffsecs = strtotime("now") - strtotime($row['last']);
     //$output->output((int)($diffsecs/86400)."d ".(int)($diffsecs/3600%3600)."h ".(int)($diffsecs/60%60)."m ".(int)($diffsecs%60)."s");
     $output->outputNotl("`b" . Dhms::format($diffsecs) . "`b");
     $output->rawOutput("</td><td valign='top' colspan='3'>");
-    $output->outputNotl("`b" . ($row['site'] == "" ? $none : $row['site']) . "`b");
+    $site = (string) ($row['site'] ?? '');
+    $output->outputNotl("`b" . ($site === '' ? $none : $site) . "`b");
     $output->rawOutput("</td></tr>");
 
     $sql = "SELECT count,last,uri,dest,ip FROM " . Database::prefix("referers") . " WHERE site='" . addslashes($row['site']) . "' ORDER BY {$order} LIMIT 25";
@@ -94,21 +96,28 @@ while ($row = Database::fetchAssoc($result)) {
         $diffsecs = strtotime("now") - strtotime($row1['last']);
         if ($diffsecs <= 604800) {
             $output->rawOutput("<tr class='trlight'><td>");
-            $output->outputNotl($row1['count']);
+            $rowCountDetail = (string) ($row1['count'] ?? '');
+            $output->outputNotl($rowCountDetail);
             $output->rawOutput("</td><td valign='top'>");
             //$output->output((int)($diffsecs/86400)."d".(int)($diffsecs/3600%3600)."h".(int)($diffsecs/60%60)."m".(int)($diffsecs%60)."s");
             $output->outputNotl(Dhms::format($diffsecs));
             $output->rawOutput("</td><td valign='top'>");
-            if ($row1['uri'] > "") {
-                $output->rawOutput("<a href='" . HTMLEntities($row1['uri'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "' target='_blank'>" . HTMLEntities(substr($row1['uri'], 0, 100)) . "</a>");
+            $uri = (string) ($row1['uri'] ?? '');
+            if ($uri !== '') {
+                $output->rawOutput(
+                    "<a href='" . HTMLEntities($uri, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) .
+                    "' target='_blank'>" . HTMLEntities(substr($uri, 0, 100)) . "</a>"
+                );
             } else {
                 $output->outputNotl($none);
             }
             $output->outputNotl("`n");
             $output->rawOutput("</td><td valign='top'>");
-            $output->outputNotl($row1['dest'] == '' ? $notset : $row1['dest']);
+            $destValue = (string) ($row1['dest'] ?? '');
+            $output->outputNotl($destValue === '' ? $notset : $destValue);
             $output->rawOutput("</td><td valign='top'>");
-            $output->outputNotl($row1['ip'] == '' ? $notset : $row1['ip']);
+            $ip = (string) ($row1['ip'] ?? '');
+            $output->outputNotl($ip === '' ? $notset : $ip);
             $output->rawOutput("</td></tr>");
         } else {
             $skippedcount++;
