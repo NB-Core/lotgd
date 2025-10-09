@@ -49,7 +49,10 @@ SuperuserNav::render();
 Nav::add("Referer Options");
 Nav::add("", $_SERVER['REQUEST_URI']);
 $sort = Http::get('sort');
-Nav::add("Refresh", "referers.php?sort=" . URLEncode($sort) . "");
+$sort = $sort === false ? '' : (string) $sort;
+
+$refreshUrl = 'referers.php' . ($sort === '' ? '' : '?sort=' . URLEncode($sort));
+Nav::add("Refresh", $refreshUrl);
 Nav::add("C?Sort by Count", "referers.php?sort=count" . ($sort == "count DESC" ? "" : "+DESC"));
 Nav::add("U?Sort by URL", "referers.php?sort=uri" . ($sort == "uri" ? "+DESC" : ""));
 Nav::add("T?Sort by Time", "referers.php?sort=last" . ($sort == "last DESC" ? "" : "+DESC"));
