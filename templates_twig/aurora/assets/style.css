@@ -6,8 +6,12 @@ caption {
 }
 
 td {
-	font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-	font-size: 13px;
+        font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+        font-size: 13px;
+}
+
+.trlight, .trdark {
+        overflow-wrap: anywhere;
 }
 
 

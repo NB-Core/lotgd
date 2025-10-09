@@ -8,6 +8,9 @@ td {
     font-family: Verdana, Arial, Helvetica, sans-serif;
     font-size: 12px;
 }
+.trlight, .trdark {
+    overflow-wrap: anywhere;
+}
 a{
     color: #0099FF;
     text-decoration: none;

@@ -78,6 +78,10 @@ td {
     font-size: 12px;
 }
 
+.trlight, .trdark {
+    overflow-wrap: anywhere;
+}
+
 .main-body {
     background-color: var(--color-body-bg);
     color: var(--color-text);

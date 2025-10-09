@@ -72,6 +72,28 @@ body, td, caption {
     color: #000;
 }
 
+.trlight, .trdark {
+    overflow-wrap: anywhere;
+}
+
+.hidden {
+    display: none;
+}
+
+div.debug {
+    background-color: #1e1e1e; /* dark gray, easy on the eyes */
+    color: #d4d4d4; /* slightly muted white for good readability */
+    border: 1px dashed #555; /* subtle, technical look */
+    font-family: Consolas, monospace; /* clear debug font */
+    font-size: 11px; /* slightly larger than before for better readability */
+    padding: 10px;
+    margin: 12px 0;
+    white-space: pre-wrap; /* preserves structure and lines */
+    overflow-x: auto; /* scrollbar for long lines */
+    border-radius: 4px;
+    box-shadow: 0 0 4px rgba(0,0,0,0.4); /* subtle depth */
+}
+
 a {
     color: var(--accent-color);
     text-decoration: none;
