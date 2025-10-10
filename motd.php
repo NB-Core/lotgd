@@ -30,7 +30,7 @@ Translator::getInstance()->setSchema("motd");
 $settings = Settings::getInstance();
 
 $op = Http::get('op');
-$id = Http::get('id');
+$id = (int) Http::get('id');
 
 Commentary::addCommentary();
 Header::popupHeader("LoGD Message of the Day (MoTD)");
