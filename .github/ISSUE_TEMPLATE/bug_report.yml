@@ -1,0 +1,90 @@
+name: Bug report
+description: Report a gameplay or platform issue in Legend of the Green Dragon
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us keep the realm stable! Share as much detail as you can so we can reproduce and fix the problem quickly.
+  - type: input
+    id: summary
+    attributes:
+      label: Issue summary
+      description: What went wrong? Summarize the impact in one sentence.
+      placeholder: e.g. Tavern fight soft-locks when using a mount skill
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps (including characters, modules, and settings) that lead to the bug.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: Describe what you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result / screenshots
+      description: Paste error messages, stack traces, or drag & drop screenshots/logs.
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Install method
+      description: How is the game deployed?
+      options:
+        - Fresh install (installer.php)
+        - Upgrade from 1.x
+        - Upgrade from 2.x
+        - Docker
+        - Other (describe below)
+    validations:
+      required: true
+  - type: input
+    id: build_id
+    attributes:
+      label: Game build / commit hash
+      placeholder: e.g. v2.0.0, 1a2b3c4
+  - type: input
+    id: php_version
+    attributes:
+      label: PHP version
+      placeholder: e.g. 8.3.5
+    validations:
+      required: true
+  - type: input
+    id: database
+    attributes:
+      label: Database and version
+      placeholder: e.g. MariaDB 10.6
+  - type: input
+    id: template
+    attributes:
+      label: Active template / skin
+      placeholder: e.g. aurora, custom Twig theme
+  - type: textarea
+    id: modules
+    attributes:
+      label: Enabled modules & notable settings
+      description: List custom or third-party modules, async settings, rate limits, etc.
+      placeholder: |
+        - Module name / version
+        - Async rate limit override?
+        - Cron-driven features enabled?
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Any other details, workarounds, or links to related issues/PRs.

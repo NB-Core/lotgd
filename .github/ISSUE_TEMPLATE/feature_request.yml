@@ -1,0 +1,58 @@
+name: Feature request
+description: Propose a new gameplay feature or quality-of-life enhancement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us understand the player problem and the experience you’d like to deliver. Include module/template context when relevant.
+  - type: input
+    id: summary
+    attributes:
+      label: Elevator pitch
+      description: One sentence that captures the essence of the feature.
+      placeholder: e.g. Add a daily quest board in the village square
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What player pain point or admin need are we addressing?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution / user story
+      description: Describe the desired behaviour, UX flow, or acceptance criteria.
+      placeholder: As a <player/admin>, I want ...
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope highlights
+      description: Touchpoints (modules, nav areas, Twig templates, async endpoints, cron jobs, etc.).
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Considered alternatives
+      description: Mention other ideas you evaluated or prior art in existing modules.
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks & dependencies
+      description: Gameplay balance concerns, migration considerations, settings toggles, data requirements.
+  - type: input
+    id: version
+    attributes:
+      label: Target version / milestone
+      placeholder: e.g. 2.1 roadmap, post-launch backlog
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Links, references, mock-ups, or screenshots that help explain the request.
