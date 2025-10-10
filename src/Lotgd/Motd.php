@@ -236,6 +236,7 @@ class Motd
     public static function saveMotd(int $id): void
     {
         global $session;
+        $connection   = Database::getDoctrineConnection();
         $title        = Http::post('motdtitle');
         $body         = Http::post('motdbody');
         $type         = (int) Http::post('motdtype');
@@ -245,22 +246,44 @@ class Motd
         $author = $session['user']['acctid'];
         $date = date('Y-m-d H:i:s');
         if ($id > 0) {
-            $sql = 'SELECT motdauthor,motddate FROM ' . Database::prefix('motd') . " WHERE motditem=$id";
-            $res = Database::query($sql);
-            $row = Database::numRows($res) > 0 ? Database::fetchAssoc($res) : [];
+            $row = $connection->fetchAssociative(
+                'SELECT motdauthor, motddate FROM ' . Database::prefix('motd') . ' WHERE motditem = :id',
+                ['id' => (int) $id]
+            ) ?: [];
+
             if (!$changeauthor && isset($row['motdauthor'])) {
-                $author = $row['motdauthor'];
+                $author = (int) $row['motdauthor'];
             }
+
             if (!$changedate && isset($row['motddate'])) {
-                $date = $row['motddate'];
+                $date = (string) $row['motddate'];
             }
-            $sql = 'UPDATE ' . Database::prefix('motd') .
-                " SET motdtitle=\"$title\",motdbody=\"$body\",motdtype=$type,motddate=\"$date\",motdauthor=$author WHERE motditem=$id";
+
+            $connection->executeStatement(
+                'UPDATE ' . Database::prefix('motd') .
+                ' SET motdtitle = :title, motdbody = :body, motdtype = :type, motddate = :date, motdauthor = :author WHERE motditem = :id',
+                [
+                    'title'  => (string) $title,
+                    'body'   => (string) $body,
+                    'type'   => (int) $type,
+                    'date'   => (string) $date,
+                    'author' => (int) $author,
+                    'id'     => (int) $id,
+                ]
+            );
         } else {
-            $sql = 'INSERT INTO ' . Database::prefix('motd') .
-                " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",$type,$author)";
+            $connection->executeStatement(
+                'INSERT INTO ' . Database::prefix('motd') .
+                ' (motdtitle, motdbody, motddate, motdtype, motdauthor) VALUES (:title, :body, :date, :type, :author)',
+                [
+                    'title'  => (string) $title,
+                    'body'   => (string) $body,
+                    'date'   => (string) $date,
+                    'type'   => (int) $type,
+                    'author' => (int) $author,
+                ]
+            );
         }
-        Database::query($sql);
         DataCache::getInstance()->invalidatedatacache('motd');
         DataCache::getInstance()->invalidatedatacache('lastmotd');
         DataCache::getInstance()->invalidatedatacache('motddate');
