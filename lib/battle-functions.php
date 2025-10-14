@@ -2,11 +2,15 @@
 
 namespace Lotgd {
 
-    class Fightbar extends \FightBar
-    {
+    if (! class_exists(__NAMESPACE__ . '\\Fightbar', false)) {
+        class Fightbar extends FightBar
+        {
+        }
     }
 
-    \class_alias(Fightbar::class, 'fightbar');
+    if (! class_exists('fightbar', false)) {
+        \class_alias(Fightbar::class, 'fightbar');
+    }
 }
 
 namespace {
