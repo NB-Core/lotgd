@@ -28,6 +28,9 @@ SuperuserNav::render();
 Nav::add("Debug Options");
 Nav::add("", $_SERVER['REQUEST_URI']);
 $sort = Http::get('sort');
+if ($sort === false) {
+    $sort = '';
+}
 Nav::add("Get Pageruntimes", "debug.php?debug=pageruntime&sort=" . URLEncode($sort));
 Nav::add("Get Modulehooktimes", "debug.php?debug=hooksort&sort=" . URLEncode($sort));
 
