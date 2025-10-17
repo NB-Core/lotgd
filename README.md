@@ -183,6 +183,16 @@ as the `tests/` directory.
 
 `cron.php` handles automated tasks such as daily resets. Run it from the command line with `php cron.php` and schedule it in your system's crontab. The script automatically determines its installation directory, so no manual configuration or `$GAME_DIR` value is required.
 
+> ⚠️ **Do not leave `cron.php` publicly reachable.** Remove it from the web root or block direct requests. When using Apache, add the following rule to the project’s root [`.htaccess`](./.htaccess):
+>
+> ```apache
+> <Files "cron.php">
+>     Require all denied
+> </Files>
+> ```
+>
+> Apply the equivalent protection in other servers (for example, an Nginx `location` block that returns `403`) or move the script outside the document root so it can only be executed from the CLI.
+
 | Constant               | Bit value | Routine              | Notes |
 | ---------------------- | --------- | -------------------- | ----- |
 | `CRON_NEWDAY`          | `1`       | Daily reset          | Calls `Newday::runOnce()` to process turns, buffs, and cache maintenance. |
