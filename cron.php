@@ -63,15 +63,42 @@ if (!defined('CRON_TEST')) {
 
 ErrorHandler::register();
 
-$cron_args = $argv;
-array_shift($cron_args);
+$cron_args = $_SERVER['argv'] ?? [];
 
-if (is_array($cron_args) && count($cron_args) < 1) {
-    $executionstyle = CRON_NEWDAY | CRON_DBCLEANUP | CRON_COMMENTCLEANUP | CRON_CHARCLEANUP;
+if (! is_array($cron_args)) { // Handles web-triggered cron runs or register_argc_argv=Off
+    if (! defined('CRON_TEST')) {
+        error_log('[cron] Cron invoked without CLI arguments; check cron job configuration.');
+    }
+    $cron_args = [];
 } else {
-    //write in the first argument the style - the defines above will guide your way. No argument means "do all now"
-    $executionstyle = (int)$cron_args[0];
+    array_shift($cron_args);
 }
+
+if (count($cron_args) < 1) {
+    $usage = <<<'TXT'
+Usage: php cron.php <execution_bitmask> [force_db]
+
+Provide an integer bitmask combining:
+  1  (CRON_NEWDAY)         Run the daily game reset
+  2  (CRON_DBCLEANUP)      Perform database maintenance
+  4  (CRON_COMMENTCLEANUP) Trim commentary tables
+  8  (CRON_CHARCLEANUP)    Remove expired characters
+
+Set [force_db] to 1 to force database optimization even if not scheduled.
+TXT;
+
+    if (! defined('CRON_TEST')) {
+        fwrite(STDERR, $usage . PHP_EOL);
+        exit(1);
+    }
+
+    echo $usage . PHP_EOL;
+
+    return;
+}
+
+// Write in the first argument the style - the defines above will guide your way.
+$executionstyle = (int) $cron_args[0];
 
 if (!$result) {
     //ERROR, could not change the directory or directory empty
