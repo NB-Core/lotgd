@@ -28,7 +28,9 @@ See the [Hooks guide](Hooks.md) for details on how modules integrate with the en
 ## Cron and Background Tasks
 
 LotGD relies on scheduled jobs for housekeeping tasks like resetting daily turns or sending queued
-email. Run `cron.php` regularly via your system's scheduler:
+email. Run `cron.php` regularly via your system's scheduler, but ensure it cannot be accessed directly
+over HTTP. Follow the [Cron Job Setup guidance](../README.md#cron-job-setup) and confirm your web
+server denies requests to the script:
 
 ```bash
 # Example: run every 5 minutes
@@ -51,6 +53,21 @@ Omit the argument for the full run (`1|2|4|8 = 15`). To customize, combine bit v
 Every routine writes its activity to the Game Log (`gamelog.php`, available from the Superuser
 navigation). Review that log after a cron run to confirm each maintenance step completed; bootstrap
 failures are additionally written to `logs/bootstrap.log`.
+
+> ⚠️ **Security reminder:** Keep `cron.php` outside the document root or restrict it in your web
+> server configuration. On Apache, add the rule below to the root [`.htaccess`](../.htaccess) file to
+> deny direct access:
+>
+> ```apache
+> <Files "cron.php">
+>     Require all denied
+> </Files>
+> ```
+>
+> Apply the same protection in other servers (for example, returning `403` from an Nginx `location`
+> block) or remove the script from the public directory so that only CLI cron jobs can invoke it.
+> After deploying the rule, test that your web server responds with `403 Forbidden` (or equivalent)
+> when requesting `/cron.php` directly.
 
 ## SMTP and Email
 
