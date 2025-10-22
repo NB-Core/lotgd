@@ -149,8 +149,7 @@ if ($op == "") {
                             $row['motdtitle'],
                             $row['motdbody'],
                             $row['motdauthorname'],
-                            $row['motddate'],
-                            $row['motditem']
+                            $row['motddate']
                         );
         }
     }
