@@ -76,10 +76,13 @@ if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     $output->outputNotl("`n");
 }
 
-    $output->outputNotl(Nltoappon::convert($row1['clandesc']));
-if (Nltoappon::convert($row1['clandesc']) != "") {
-    $output->output("`n`n");
-}
+    $clanDescription = (string) ($row1['clandesc'] ?? '');
+    $convertedDescription = $clanDescription === '' ? '' : Nltoappon::convert($clanDescription);
+
+    $output->outputNotl($convertedDescription);
+    if ($convertedDescription != "") {
+        $output->output("`n`n");
+    }
     $output->output("`0This is the current clan membership of %s < %s >:`n", $row1['clanname'], $row1['clanshort']);
     Header::pageHeader("Clan Membership for %s &lt;%s&gt;", Sanitize::fullSanitize($row1['clanname']), Sanitize::fullSanitize($row1['clanshort']));
     Nav::add("Clan Options");
