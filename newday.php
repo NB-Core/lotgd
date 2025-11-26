@@ -219,11 +219,19 @@ if ($dp < $dkills) {
     }
     if ($session['user']['hashorse']) {
         $mount = Mounts::getInstance()->getPlayerMount();
-        $buff  = unserialize($mount['mountbuff']);
-        if (!isset($buff['schema']) || $buff['schema'] == "") {
-            $buff['schema'] = "mounts";
+        $mountBuff = $mount['mountbuff'] ?? null;
+
+        if (is_string($mountBuff) && $mountBuff !== '') {
+            $buff = unserialize($mountBuff);
+
+            if (is_array($buff)) {
+                if (empty($buff['schema'])) {
+                    $buff['schema'] = "mounts";
+                }
+
+                Buffs::applyBuff('mount', $buff);
+            }
         }
-        Buffs::applyBuff('mount', $buff);
     }
     if ($dkff > 0) {
         $output->output(
