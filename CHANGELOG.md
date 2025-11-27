@@ -9,6 +9,15 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 ---
 
 ## [Unreleased]
+_No unreleased changes yet._
+
+## [2.0.2] – 2025-11-27
+
+### Bug Fixes
+- Guard mount buff application on new day so characters without mounts do not trigger buff application errors.
+- Initialize the output instance in the mercenary camp heal navigation to avoid rendering notices during heal flows.
+
+## [2.0.0] – 2025-11-26
 ### Features
 - Add asynchronous ban lookups so moderators can review affected accounts inline without leaving the list views.
 - Refresh the mail popup navigation with button-style quick links and theme styling hooks for modern layouts.
@@ -23,6 +32,23 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Restyled the installer confirmation stage to better communicate upgrade paths and requirements.
 - Added example modules showcasing a forest reward encounter and a village gem shop integration.
 
+
+### Refactor
+- Centralize admin player lookup logic on the PlayerSearch service, extending reuse across bank transfers, mail compose flows, and donor tools.
+- Migrate module installation routines to Doctrine parameter binding for activation, uninstall, and reinstall paths while keeping cache invalidation intact.
+- Standardize top-level scripts to use `__DIR__` in `require` statements for safer path resolution.
+- Remove redundant battle buff wrappers.
+- Localized mount editor dependencies and continued migrating legacy entry points toward namespaced services.
+
+
+### Docs
+- Clarify the repository's expectations around adding new files to `lib/` in the contributor guidelines.
+- Clarify newday cron configuration and cron job setup instructions.
+- Add module hook reference documentation.
+- Document contributor guidelines and static analysis in maintenance docs.
+- Clarified cron job configuration details in the README and admin guide.
+- Highlighted DragonPrime community resources and the successor project in the README.
+- Documented Docker usage for the PHP 8.3 Apache image.
 
 ### Bug Fixes
 - Parameterize ban creation, search, and removal flows so moderation tools log out affected players safely and avoid injection vectors.
@@ -46,24 +72,6 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Resolved numerous installer upgrade edge cases, including table prefix syncing, stage gating, and migration auto-detection.
 - Tightened validation across preference previews, mount editors, clan removal, referral handling, and mail replies to eliminate PHP warnings and bad input.
 - Corrected malformed timestamps when reviewing pending email changes.
-
-
-### Refactor
-- Centralize admin player lookup logic on the PlayerSearch service, extending reuse across bank transfers, mail compose flows, and donor tools.
-- Migrate module installation routines to Doctrine parameter binding for activation, uninstall, and reinstall paths while keeping cache invalidation intact.
-- Standardize top-level scripts to use `__DIR__` in `require` statements for safer path resolution.
-- Remove redundant battle buff wrappers.
-- Localized mount editor dependencies and continued migrating legacy entry points toward namespaced services.
-
-
-### Docs
-- Clarify the repository's expectations around adding new files to `lib/` in the contributor guidelines.
-- Clarify newday cron configuration and cron job setup instructions.
-- Add module hook reference documentation.
-- Document contributor guidelines and static analysis in maintenance docs.
-- Clarified cron job configuration details in the README and admin guide.
-- Highlighted DragonPrime community resources and the successor project in the README.
-- Documented Docker usage for the PHP 8.3 Apache image.
 
 ## [2.0.0-rc12] – 2025-09-06
 
