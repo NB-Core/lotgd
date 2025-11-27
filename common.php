@@ -72,7 +72,7 @@ $license = "\n<!-- Creative Commons License -->\n<a rel='license' href='http://c
 // work.  This license text may not be removed nor altered in any way.
 // Please see the file LICENSE for a full textual description of the license.
 
-$logd_version = "2.0.0 +nb Edition";
+$logd_version = "2.0.2 +nb Edition";
 Page::getInstance()->setLogdVersion($logd_version);
 
 // Include some commonly needed and useful routines
