@@ -232,6 +232,8 @@ Footer::pageFooter();
 function healnav($companions, $texts, $schemas)
 {
     global $session, $translator;
+
+    $output = Output::getInstance();
     $translator->setSchema($schemas['healnav']);
     Nav::add($texts['healnav']);
     $translator->setSchema();
