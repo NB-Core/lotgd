@@ -326,6 +326,10 @@ if ($dp < $dkills) {
     $session['user']['lasthit'] = gmdate("Y-m-d H:i:s");
     if ($session['user']['hashorse']) {
         $mount = Mounts::getInstance()->getPlayerMount();
+        if (!isset($mount['newday'], $mount['mountforestfights'])) {
+            $mount['newday'] = '';
+            $mount['mountforestfights'] = 0;
+        }
         $msg   = $mount['newday'];
         $msg   = Substitute::applyArray("`n`&" . $msg . "`0`n");
         $output->output('%s', $msg);
