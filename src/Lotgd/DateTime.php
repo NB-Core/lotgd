@@ -210,4 +210,46 @@ class DateTime
 
         return $abs ? abs($d_return) : $d_return;
     }
+
+    /**
+     * Clamp a timestamp to the supported MySQL date range.
+     */
+    public static function normalizeTimestamp(int $timestamp, ?int $minTimestamp = null, ?int $maxTimestamp = null): int
+    {
+        $minTimestamp = $minTimestamp ?? strtotime(DATETIME_DATEMIN);
+        $maxTimestamp = $maxTimestamp ?? strtotime(DATETIME_DATEMAX);
+
+        if ($timestamp < $minTimestamp) {
+            return $minTimestamp;
+        }
+
+        if ($timestamp > $maxTimestamp) {
+            return $maxTimestamp;
+        }
+
+        return $timestamp;
+    }
+
+    /**
+     * Convert a news offset (days) into a safe timestamp.
+     */
+    public static function newsTimestampFromOffset(int $offset, ?int $baseTime = null): int
+    {
+        $baseTime = $baseTime ?? time();
+        $minTimestamp = strtotime(DATETIME_DATEMIN);
+        $maxTimestamp = strtotime(DATETIME_DATEMAX);
+
+        $minOffset = (int) ceil(($baseTime - $maxTimestamp) / 86400);
+        $maxOffset = (int) floor(($baseTime - $minTimestamp) / 86400);
+
+        if ($offset < $minOffset) {
+            $offset = $minOffset;
+        } elseif ($offset > $maxOffset) {
+            $offset = $maxOffset;
+        }
+
+        $timestamp = $baseTime - ($offset * 86400);
+
+        return self::normalizeTimestamp($timestamp, $minTimestamp, $maxTimestamp);
+    }
 }

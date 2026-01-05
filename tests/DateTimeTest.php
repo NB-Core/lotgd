@@ -11,6 +11,16 @@ use PHPUnit\Framework\TestCase;
 
 final class DateTimeTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        if (!defined('DATETIME_DATEMIN')) {
+            define('DATETIME_DATEMIN', '1970-01-01 00:00:00');
+        }
+        if (!defined('DATETIME_DATEMAX')) {
+            define('DATETIME_DATEMAX', '2159-01-01 00:00:00');
+        }
+    }
+
     public function testReadableTimeShortFormat(): void
     {
         $seconds = 2 * 86400 + 3 * 3600 + 5;
@@ -70,5 +80,21 @@ final class DateTimeTest extends TestCase
     {
         $this->assertSame('1d1h1m1s', Dhms::format(90061));
         $this->assertSame('0d1h1m1.5s', Dhms::format(3661.5, true));
+    }
+
+    public function testNewsTimestampFromOffsetClampsPast(): void
+    {
+        $baseTime = strtotime('2000-01-10 00:00:00');
+        $timestamp = DateTime::newsTimestampFromOffset(1000000, $baseTime);
+
+        $this->assertSame(strtotime(DATETIME_DATEMIN), $timestamp);
+    }
+
+    public function testNewsTimestampFromOffsetClampsFuture(): void
+    {
+        $baseTime = strtotime('2000-01-10 00:00:00');
+        $timestamp = DateTime::newsTimestampFromOffset(-1000000, $baseTime);
+
+        $this->assertSame(strtotime(DATETIME_DATEMAX), $timestamp);
     }
 }

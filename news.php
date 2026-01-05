@@ -36,8 +36,12 @@ if ($session['user']['loggedin']) {
 }
 $newsperpage = (int) $settings->getSetting('newsperpage', 50);
 
-$offset = (int)Http::get('offset');
-$timestamp = strtotime((0 - $offset) . " days");
+$offsetInput = Http::get('offset');
+$offset = filter_var($offsetInput, FILTER_VALIDATE_INT);
+if ($offset === false) {
+    $offset = 0;
+}
+$timestamp = DateTime::newsTimestampFromOffset($offset);
 $sql = "SELECT count(newsid) AS c FROM " . Database::prefix("news") . " WHERE newsdate='" . date("Y-m-d", $timestamp) . "'";
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
