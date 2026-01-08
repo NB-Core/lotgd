@@ -426,6 +426,7 @@ switch ($type_setting) {
                     );
                     $enum .= ",$i,$str";
                 }
+                $setup['gameoffsetseconds'] = "Real time to offset new day,{$enum}";
                 $output->rawOutput(Translator::clearButton());
 
                 $secstonewday = secondstonextgameday($details);
