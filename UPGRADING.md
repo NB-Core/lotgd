@@ -134,7 +134,7 @@ modules.
 - **Twig**: Default rendering pipeline. Legacy template hooks may not work without updates.
 - **Doctrine**: Direct SQL hacks should be migrated to repositories or services.
 - **Doctrine ORM 3**:
-  - The ORM dependency now targets 3.x and continues to require Doctrine DBAL 3.7+.
+  - The ORM dependency now targets 3.x and requires Doctrine DBAL 4.0+.
   - Bootstraps must replace `EntityManager::create()` with `DriverManager::getConnection()` plus the `EntityManager` constructor.
   - Attribute metadata should enable the `reportFieldsWhereDeclared` mode to align with ORM 3 validation.
   - Event listeners must use the dedicated event args classes instead of the deprecated `LifecycleEventArgs`.
