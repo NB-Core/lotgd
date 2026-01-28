@@ -7,6 +7,7 @@ namespace Lotgd\Tests;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\ORM\ORMSetup;
+use Doctrine\DBAL\DriverManager;
 use Lotgd\Entity\Account;
 use Lotgd\Entity\Setting;
 use Lotgd\Entity\ExtendedSetting;
@@ -23,10 +24,15 @@ final class EntityPersistenceTest extends TestCase
             $this->markTestSkipped('PDO SQLite extension not installed');
         }
 
-        $config = ORMSetup::createAttributeMetadataConfiguration([
-            __DIR__ . '/../src/Lotgd/Entity'
-        ], true, null, new ArrayAdapter());
-        $this->em = EntityManager::create(['driver' => 'pdo_sqlite', 'memory' => true], $config);
+        $config = ORMSetup::createAttributeMetadataConfiguration(
+            [__DIR__ . '/../src/Lotgd/Entity'],
+            true,
+            null,
+            new ArrayAdapter(),
+            true
+        );
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $this->em = new EntityManager($connection, $config);
         $tool = new SchemaTool($this->em);
         $tool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
     }

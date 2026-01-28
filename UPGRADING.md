@@ -133,6 +133,13 @@ modules.
 - **Namespaces**: Core code moved to `Lotgd\...`. Custom modules calling internal functions may need refactoring.
 - **Twig**: Default rendering pipeline. Legacy template hooks may not work without updates.
 - **Doctrine**: Direct SQL hacks should be migrated to repositories or services.
+- **Doctrine ORM 3**:
+  - The ORM dependency now targets 3.x and continues to require Doctrine DBAL 3.7+.
+  - Bootstraps must replace `EntityManager::create()` with `DriverManager::getConnection()` plus the `EntityManager` constructor.
+  - Attribute metadata should enable the `reportFieldsWhereDeclared` mode to align with ORM 3 validation.
+  - Event listeners must use the dedicated event args classes instead of the deprecated `LifecycleEventArgs`.
+  - Custom repositories must continue to extend `EntityRepository` and should be fetched via `getRepository(Fully\Qualified\Entity::class)`; string shorthand is no longer supported.
+  - Table prefix subscribers need to prefix both primary tables and join tables using the new mapping object structures.
 - **PHP 8.3**: Old PHP 7.x-style code (e.g., deprecated array/string operations) will break.
 - **Async**: All Ajax endpoints rewritten to use Jaxon.
 
