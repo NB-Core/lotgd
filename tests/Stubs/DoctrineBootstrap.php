@@ -452,17 +452,9 @@ class DoctrineEntityManager
         if ($this->entity) {
             $ref  = new \ReflectionClass($this->entity);
             $data = [];
-            $accessor = static function (object $object, string $name) {
-                return $object->$name;
-            };
-            $boundAccessor = \Closure::bind($accessor, null, $this->entity::class);
             foreach ($ref->getProperties() as $prop) {
-                if ($prop->isPublic()) {
-                    $data[$prop->getName()] = $prop->getValue($this->entity);
-                    continue;
-                }
-
-                $data[$prop->getName()] = $boundAccessor($this->entity, $prop->getName());
+                $prop->setAccessible(true);
+                $data[$prop->getName()] = $prop->getValue($this->entity);
             }
             $this->connection->queries[] = sprintf(
                 'PERSIST ENTITY: %s',
