@@ -91,6 +91,7 @@ class Bootstrap
             $cache,
             true
         );
+        $config->setReportFieldsWhereDeclared(true);
 
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
