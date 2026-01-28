@@ -117,7 +117,21 @@ class DoctrineConnection
         if (preg_match("/SELECT\s+count\\(messageid\\)\s+AS\s+count\s+FROM\s+" . preg_quote($mailTable, '/') . "\s+WHERE\s+msgto=\'?([0-9]+)\'?([^;]*)/i", $sql, $matches)) {
             global $mail_table;
             $acctid = (int) $matches[1];
-            $onlyUnread = str_contains($matches[2], 'seen=0');
+            $onlyUnread = preg_match('/seen\s*=\s*0/i', $matches[2]) === 1;
+            $count = 0;
+            foreach ($mail_table as $row) {
+                if ((int) ($row['msgto'] ?? 0) === $acctid && (! $onlyUnread || (int) ($row['seen'] ?? 0) === 0)) {
+                    $count++;
+                }
+            }
+
+            return $this->makeResult([['count' => $count]]);
+        }
+
+        if (preg_match("/SELECT\s+count\\(messageid\\)\s+AS\s+count\s+FROM\s+" . preg_quote($mailTable, '/') . "\s+WHERE\s+msgto\s*=\s*:msgto([^;]*)/i", $sql, $matches)) {
+            global $mail_table;
+            $acctid = (int) ($params['msgto'] ?? 0);
+            $onlyUnread = preg_match('/seen\s*=\s*0/i', $matches[1]) === 1;
             $count = 0;
             foreach ($mail_table as $row) {
                 if ((int) ($row['msgto'] ?? 0) === $acctid && (! $onlyUnread || (int) ($row['seen'] ?? 0) === 0)) {

@@ -129,6 +129,14 @@ final class MailTest extends TestCase
         $this->assertSame(3, Mail::inboxCount(1));
         $this->assertSame(2, Mail::inboxCount(1, true));
         $this->assertTrue(Mail::isInboxFull(1));
+
+        $this->assertCount(3, $this->connection->executeQueryParams);
+        $this->assertSame(['msgto' => 1], $this->connection->executeQueryParams[0]);
+        $this->assertSame(['msgto' => ParameterType::INTEGER], $this->connection->executeQueryTypes[0]);
+        $this->assertSame(['msgto' => 1], $this->connection->executeQueryParams[1]);
+        $this->assertSame(['msgto' => ParameterType::INTEGER], $this->connection->executeQueryTypes[1]);
+        $this->assertSame(['msgto' => 1], $this->connection->executeQueryParams[2]);
+        $this->assertSame(['msgto' => ParameterType::INTEGER], $this->connection->executeQueryTypes[2]);
     }
 
     public function testSendDetailedSuccessReturnsStructuredResult(): void

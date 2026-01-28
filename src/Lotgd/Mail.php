@@ -250,8 +250,18 @@ class Mail
      */
     public static function deleteMessage(int $userId, int $messageId): void
     {
-        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid=$messageId";
-        Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
+            'DELETE FROM ' . Database::prefix('mail') . ' WHERE msgto = :msgto AND messageid = :messageid',
+            [
+                'msgto' => $userId,
+                'messageid' => $messageId,
+            ],
+            [
+                'msgto' => ParameterType::INTEGER,
+                'messageid' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
@@ -265,9 +275,18 @@ class Mail
         if (empty($messageIds)) {
             return;
         }
-        $ids = implode("','", array_map('intval', $messageIds));
-        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE msgto=$userId AND messageid IN ('$ids')";
-        Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
+            'DELETE FROM ' . Database::prefix('mail') . ' WHERE msgto = :msgto AND messageid IN (:messageids)',
+            [
+                'msgto' => $userId,
+                'messageids' => array_map('intval', $messageIds),
+            ],
+            [
+                'msgto' => ParameterType::INTEGER,
+                'messageids' => \Doctrine\DBAL\ArrayParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
@@ -276,8 +295,18 @@ class Mail
      */
     public static function markUnread(int $userId, int $messageId): void
     {
-        $sql = 'UPDATE ' . Database::prefix('mail') . " SET seen=0 WHERE msgto=$userId AND messageid=$messageId";
-        Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
+            'UPDATE ' . Database::prefix('mail') . ' SET seen = 0 WHERE msgto = :msgto AND messageid = :messageid',
+            [
+                'msgto' => $userId,
+                'messageid' => $messageId,
+            ],
+            [
+                'msgto' => ParameterType::INTEGER,
+                'messageid' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
@@ -286,10 +315,15 @@ class Mail
      */
     public static function inboxCount(int $userId, bool $onlyUnread = false): int
     {
-        $extra = $onlyUnread ? ' AND seen=0' : '';
-        $sql = 'SELECT count(messageid) AS count FROM ' . Database::prefix('mail') . " WHERE msgto=$userId $extra";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+        $conn = Database::getDoctrineConnection();
+        $extra = $onlyUnread ? ' AND seen = 0' : '';
+        $sql = 'SELECT count(messageid) AS count FROM ' . Database::prefix('mail') . ' WHERE msgto = :msgto' . $extra;
+        $result = $conn->executeQuery(
+            $sql,
+            ['msgto' => $userId],
+            ['msgto' => ParameterType::INTEGER]
+        );
+        $row = $result->fetchAssociative() ?: [];
         return (int) ($row['count'] ?? 0);
     }
 
@@ -309,6 +343,7 @@ class Mail
      */
     public static function getInbox(int $userId, string $order = 'sent', string $direction = 'DESC'): array
     {
+        $conn = Database::getDoctrineConnection();
         $mail = Database::prefix('mail');
         $acc = Database::prefix('accounts');
 
@@ -321,15 +356,13 @@ class Mail
 
         $sql = "SELECT subject,messageid,$acc.name,$acc.acctid,msgfrom,seen,sent "
              . "FROM $mail LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
-             . "WHERE msgto='$userId' ORDER BY $order $direction";
+             . 'WHERE msgto = :msgto ORDER BY ' . $order . ' ' . $direction;
 
-        $result = Database::query($sql);
-        $messages = [];
-        while ($row = Database::fetchAssoc($result)) {
-            $messages[] = $row;
-        }
-
-        return $messages;
+        return $conn->fetchAllAssociative(
+            $sql,
+            ['msgto' => $userId],
+            ['msgto' => ParameterType::INTEGER]
+        );
     }
 
     /**
@@ -337,18 +370,26 @@ class Mail
      */
     public static function getMessage(int $userId, int $messageId): ?array
     {
+        $conn = Database::getDoctrineConnection();
         $mail = Database::prefix('mail');
         $acc = Database::prefix('accounts');
         $sql = "SELECT $mail.*,$acc.name,$acc.acctid,$acc.login FROM $mail "
              . "LEFT JOIN $acc ON $acc.acctid=$mail.msgfrom "
-             . "WHERE msgto='$userId' AND messageid='$messageId'";
+             . 'WHERE msgto = :msgto AND messageid = :messageid';
 
-        $result = Database::query($sql);
-        if (Database::numRows($result) > 0) {
-            return Database::fetchAssoc($result);
-        }
+        $row = $conn->fetchAssociative(
+            $sql,
+            [
+                'msgto' => $userId,
+                'messageid' => $messageId,
+            ],
+            [
+                'msgto' => ParameterType::INTEGER,
+                'messageid' => ParameterType::INTEGER,
+            ]
+        );
 
-        return null;
+        return $row ?: null;
     }
 
     /**
@@ -356,9 +397,18 @@ class Mail
      */
     public static function markRead(int $userId, int $messageId): void
     {
-        $sql = 'UPDATE ' . Database::prefix('mail')
-            . " SET seen=1 WHERE msgto='$userId' AND messageid='$messageId'";
-        Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
+            'UPDATE ' . Database::prefix('mail') . ' SET seen = 1 WHERE msgto = :msgto AND messageid = :messageid',
+            [
+                'msgto' => $userId,
+                'messageid' => $messageId,
+            ],
+            [
+                'msgto' => ParameterType::INTEGER,
+                'messageid' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("mail-$userId");
     }
 
@@ -369,16 +419,39 @@ class Mail
      */
     public static function adjacentMessageIds(int $userId, int $messageId): array
     {
+        $conn = Database::getDoctrineConnection();
         $mail = Database::prefix('mail');
-        $sql = "SELECT messageid FROM $mail WHERE msgto=$userId" .
-            " AND messageid < $messageId ORDER BY messageid DESC LIMIT 1";
-        $result = Database::query($sql);
-        $prev = Database::numRows($result) > 0 ? (int)Database::fetchAssoc($result)['messageid'] : 0;
+        $sql = "SELECT messageid FROM $mail WHERE msgto = :msgto" .
+            ' AND messageid < :messageid ORDER BY messageid DESC LIMIT 1';
+        $prevResult = $conn->executeQuery(
+            $sql,
+            [
+                'msgto' => $userId,
+                'messageid' => $messageId,
+            ],
+            [
+                'msgto' => ParameterType::INTEGER,
+                'messageid' => ParameterType::INTEGER,
+            ]
+        );
+        $prevRow = $prevResult->fetchAssociative() ?: [];
+        $prev = isset($prevRow['messageid']) ? (int) $prevRow['messageid'] : 0;
 
-        $sql = "SELECT messageid FROM $mail WHERE msgto=$userId" .
-            " AND messageid > $messageId ORDER BY messageid LIMIT 1";
-        $result = Database::query($sql);
-        $next = Database::numRows($result) > 0 ? (int)Database::fetchAssoc($result)['messageid'] : 0;
+        $sql = "SELECT messageid FROM $mail WHERE msgto = :msgto" .
+            ' AND messageid > :messageid ORDER BY messageid LIMIT 1';
+        $nextResult = $conn->executeQuery(
+            $sql,
+            [
+                'msgto' => $userId,
+                'messageid' => $messageId,
+            ],
+            [
+                'msgto' => ParameterType::INTEGER,
+                'messageid' => ParameterType::INTEGER,
+            ]
+        );
+        $nextRow = $nextResult->fetchAssociative() ?: [];
+        $next = isset($nextRow['messageid']) ? (int) $nextRow['messageid'] : 0;
 
         return ['prev' => $prev, 'next' => $next];
     }

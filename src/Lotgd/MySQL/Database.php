@@ -216,9 +216,13 @@ class Database
             return $data;
         }
         $result = self::query($sql);
-        $data = [];
-        while ($row = self::fetchAssoc($result)) {
-            $data[] = $row;
+        if ($result instanceof DoctrineResult) {
+            $data = $result->fetchAllAssociative();
+        } else {
+            $data = [];
+            while ($row = self::fetchAssoc($result)) {
+                $data[] = $row;
+            }
         }
         DataCache::getInstance()->updatedatacache($name, $data);
         reset($data);
