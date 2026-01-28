@@ -88,8 +88,7 @@ class Bootstrap
             $paths,
             $isDevMode,
             null,
-            $cache,
-            true
+            $cache
         );
         $config->setReportFieldsWhereDeclared(true);
 
