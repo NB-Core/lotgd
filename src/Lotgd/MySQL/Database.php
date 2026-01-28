@@ -162,7 +162,7 @@ class Database
             $readOps = ['select', 'show', 'describe', 'desc', 'explain', 'pragma', 'optimize', 'analyze'];
             if (in_array($keyword, $readOps, true)) {
                 $r = $conn->executeQuery($sql);
-                $affected = $r->rowCount();
+                $affected = (int) $r->rowCount();
             } else {
                 $affected = $conn->executeStatement($sql);
                 $r = $affected >= 0;
@@ -216,9 +216,13 @@ class Database
             return $data;
         }
         $result = self::query($sql);
-        $data = [];
-        while ($row = self::fetchAssoc($result)) {
-            $data[] = $row;
+        if ($result instanceof DoctrineResult) {
+            $data = $result->fetchAllAssociative();
+        } else {
+            $data = [];
+            while ($row = self::fetchAssoc($result)) {
+                $data[] = $row;
+            }
         }
         DataCache::getInstance()->updatedatacache($name, $data);
         reset($data);
@@ -287,13 +291,13 @@ class Database
             return count($result);
         }
         if ($result instanceof \Doctrine\DBAL\Result) {
-            return $result->rowCount();
+            return (int) $result->rowCount();
         }
         if ((defined('DB_NODB') && DB_NODB) && !defined('LINK')) {
             return 0;
         }
         if ($result instanceof DoctrineResult) {
-            return $result->rowCount();
+            return (int) $result->rowCount();
         }
 
         return self::getInstance()->numRows($result);

@@ -20,12 +20,8 @@ class SingleSelectSqlFinalizer implements SqlFinalizer
 {
     use LockSqlHelper;
 
-    /** @var string */
-    private $sql;
-
-    public function __construct(string $sql)
+    public function __construct(private string $sql)
     {
-        $this->sql = $sql;
     }
 
     /**

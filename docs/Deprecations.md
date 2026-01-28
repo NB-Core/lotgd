@@ -24,6 +24,11 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: Doctrine ORM/DBAL repositories and migrations  
   - Migration: Move writes/reads into services or repositories; create migrations instead of ad‑hoc SQL.
 
+- Legacy database wrapper (`Lotgd\MySQL\Database::query()` / `Database::fetchAssoc()` loops)  
+  - Status: Legacy compatibility (modules), discouraged for new core code  
+  - Replacement: `Database::getDoctrineConnection()` with `Result::fetchAssociative()` / `fetchAllAssociative()`  
+  - Migration: Replace wrapper loops with DBAL results and explicit parameter typing.
+
 - Custom Ajax endpoints not using Jaxon
   - Status: Deprecated
   - Replacement: Jaxon-based async calls under `async/`
@@ -42,5 +47,4 @@ See `UPGRADING.md` for the full process. Key points:
 
 ### Contact
 Open an issue if you need a longer grace period or migration examples for a specific API.
-
 

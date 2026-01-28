@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Query\AST\Functions;
 
+use Doctrine\ORM\Query\AST\ASTException;
 use Doctrine\ORM\Query\AST\Node;
 use Doctrine\ORM\Query\Parser;
 use Doctrine\ORM\Query\QueryException;
@@ -19,70 +20,54 @@ use function strtolower;
  */
 class DateAddFunction extends FunctionNode
 {
-    /** @var Node */
-    public $firstDateExpression = null;
+    public Node $firstDateExpression;
+    public Node $intervalExpression;
+    public Node $unit;
 
-    /** @var Node */
-    public $intervalExpression = null;
-
-    /** @var Node */
-    public $unit = null;
-
-    /** @inheritDoc */
-    public function getSql(SqlWalker $sqlWalker)
+    public function getSql(SqlWalker $sqlWalker): string
     {
-        switch (strtolower($this->unit->value)) {
-            case 'second':
-                return $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddSecondsExpression(
-                    $this->firstDateExpression->dispatch($sqlWalker),
-                    $this->intervalExpression->dispatch($sqlWalker)
-                );
-
-            case 'minute':
-                return $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddMinutesExpression(
-                    $this->firstDateExpression->dispatch($sqlWalker),
-                    $this->intervalExpression->dispatch($sqlWalker)
-                );
-
-            case 'hour':
-                return $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddHourExpression(
-                    $this->firstDateExpression->dispatch($sqlWalker),
-                    $this->intervalExpression->dispatch($sqlWalker)
-                );
-
-            case 'day':
-                return $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddDaysExpression(
-                    $this->firstDateExpression->dispatch($sqlWalker),
-                    $this->intervalExpression->dispatch($sqlWalker)
-                );
-
-            case 'week':
-                return $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddWeeksExpression(
-                    $this->firstDateExpression->dispatch($sqlWalker),
-                    $this->intervalExpression->dispatch($sqlWalker)
-                );
-
-            case 'month':
-                return $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddMonthExpression(
-                    $this->firstDateExpression->dispatch($sqlWalker),
-                    $this->intervalExpression->dispatch($sqlWalker)
-                );
-
-            case 'year':
-                return $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddYearsExpression(
-                    $this->firstDateExpression->dispatch($sqlWalker),
-                    $this->intervalExpression->dispatch($sqlWalker)
-                );
-
-            default:
-                throw QueryException::semanticalError(
-                    'DATE_ADD() only supports units of type second, minute, hour, day, week, month and year.'
-                );
-        }
+        return match (strtolower((string) $this->unit->value)) {
+            'second' => $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddSecondsExpression(
+                $this->firstDateExpression->dispatch($sqlWalker),
+                $this->dispatchIntervalExpression($sqlWalker),
+            ),
+            'minute' => $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddMinutesExpression(
+                $this->firstDateExpression->dispatch($sqlWalker),
+                $this->dispatchIntervalExpression($sqlWalker),
+            ),
+            'hour' => $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddHourExpression(
+                $this->firstDateExpression->dispatch($sqlWalker),
+                $this->dispatchIntervalExpression($sqlWalker),
+            ),
+            'day' => $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddDaysExpression(
+                $this->firstDateExpression->dispatch($sqlWalker),
+                $this->dispatchIntervalExpression($sqlWalker),
+            ),
+            'week' => $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddWeeksExpression(
+                $this->firstDateExpression->dispatch($sqlWalker),
+                $this->dispatchIntervalExpression($sqlWalker),
+            ),
+            'month' => $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddMonthExpression(
+                $this->firstDateExpression->dispatch($sqlWalker),
+                $this->dispatchIntervalExpression($sqlWalker),
+            ),
+            'year' => $sqlWalker->getConnection()->getDatabasePlatform()->getDateAddYearsExpression(
+                $this->firstDateExpression->dispatch($sqlWalker),
+                $this->dispatchIntervalExpression($sqlWalker),
+            ),
+            default => throw QueryException::semanticalError(
+                'DATE_ADD() only supports units of type second, minute, hour, day, week, month and year.',
+            ),
+        };
     }
 
-    /** @inheritDoc */
-    public function parse(Parser $parser)
+    /** @throws ASTException */
+    private function dispatchIntervalExpression(SqlWalker $sqlWalker): string
+    {
+        return $this->intervalExpression->dispatch($sqlWalker);
+    }
+
+    public function parse(Parser $parser): void
     {
         $parser->match(TokenType::T_IDENTIFIER);
         $parser->match(TokenType::T_OPEN_PARENTHESIS);

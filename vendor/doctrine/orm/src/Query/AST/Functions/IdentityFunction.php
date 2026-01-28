@@ -21,16 +21,11 @@ use function sprintf;
  */
 class IdentityFunction extends FunctionNode
 {
-    /** @var PathExpression */
-    public $pathExpression;
+    public PathExpression $pathExpression;
 
-    /** @var string|null */
-    public $fieldMapping;
+    public string|null $fieldMapping = null;
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getSql(SqlWalker $sqlWalker)
+    public function getSql(SqlWalker $sqlWalker): string
     {
         assert($this->pathExpression->field !== null);
         $entityManager = $sqlWalker->getEntityManager();
@@ -39,8 +34,10 @@ class IdentityFunction extends FunctionNode
         $dqlAlias      = $this->pathExpression->identificationVariable;
         $assocField    = $this->pathExpression->field;
         $assoc         = $sqlWalker->getMetadataForDqlAlias($dqlAlias)->associationMappings[$assocField];
-        $targetEntity  = $entityManager->getClassMetadata($assoc['targetEntity']);
-        $joinColumn    = reset($assoc['joinColumns']);
+        $targetEntity  = $entityManager->getClassMetadata($assoc->targetEntity);
+
+        assert($assoc->isToOneOwningSide());
+        $joinColumn = reset($assoc->joinColumns);
 
         if ($this->fieldMapping !== null) {
             if (! isset($targetEntity->fieldMappings[$this->fieldMapping])) {
@@ -50,8 +47,8 @@ class IdentityFunction extends FunctionNode
             $field      = $targetEntity->fieldMappings[$this->fieldMapping];
             $joinColumn = null;
 
-            foreach ($assoc['joinColumns'] as $mapping) {
-                if ($mapping['referencedColumnName'] === $field['columnName']) {
+            foreach ($assoc->joinColumns as $mapping) {
+                if ($mapping->referencedColumnName === $field->columnName) {
                     $joinColumn = $mapping;
 
                     break;
@@ -64,7 +61,7 @@ class IdentityFunction extends FunctionNode
         }
 
         // The table with the relation may be a subclass, so get the table name from the association definition
-        $tableName = $entityManager->getClassMetadata($assoc['sourceEntity'])->getTableName();
+        $tableName = $entityManager->getClassMetadata($assoc->sourceEntity)->getTableName();
 
         $tableAlias = $sqlWalker->getSQLTableAlias($tableName, $dqlAlias);
         $columnName = $quoteStrategy->getJoinColumnName($joinColumn, $targetEntity, $platform);
@@ -72,10 +69,7 @@ class IdentityFunction extends FunctionNode
         return $tableAlias . '.' . $columnName;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function parse(Parser $parser)
+    public function parse(Parser $parser): void
     {
         $parser->match(TokenType::T_IDENTIFIER);
         $parser->match(TokenType::T_OPEN_PARENTHESIS);

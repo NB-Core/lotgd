@@ -6,6 +6,45 @@ awareness about deprecated code.
 - Use of our low-overhead runtime deprecation API, details:
   https://github.com/doctrine/deprecations/
 
+# Upgrade to 2.6
+
+When extending `Doctrine\Common\Collections\AbstractLazyCollection`, the
+backing collection initialized in `doInitialize()` must implement
+`Doctrine\Common\Collections\Selectable`. Initializing with a collection that
+does not implement `Selectable` is deprecated and will throw an exception in 3.0.
+
+Also, implementing `ReadableCollection` without implementing `Selectable`
+deprecated and will be an error in 3.0.
+
+# Upgrade to 2.5
+
+Extending the following classes is deprecated and will no longer be possible in 3.0:
+
+- `Doctrine\Common\Collections\Criteria`
+- `Doctrine\Common\Collections\Expr\ClosureExpressionVisitor`
+- `Doctrine\Common\Collections\Expr\Comparison`
+- `Doctrine\Common\Collections\Expr\CompositeExpression`
+- `Doctrine\Common\Collections\Expr\Value`
+- `Doctrine\Common\Collections\ExpressionBuilder`
+
+# Upgrade to 2.4
+
+## Deprecated accessing fields through other means than raw field access when using the criteria filtering API (the `Doctrine\Common\Collections\Selectable` interface)
+
+Starting with the next major version, the only way to access data when using the criteria filtering 
+API is through direct (reflection-based) access at properties directly, also bypassing property hooks.
+This is to ensure consistency with how the ORM/ODM works. See https://github.com/doctrine/collections/pull/472 for
+the full motivation.
+
+To opt-in to the new behaviour, pass `true` for the `$accessRawFieldValues` parameter when creating a `Criteria`
+object through either `Doctrine\Common\Collections\Criteria::create()` or when calling the `Doctrine\Common\Collections\Criteria` constructor.
+
+Be aware that switching to reflection-based field access may prevent ORM or ODM proxy objects
+becoming initialized, since their triggers (like calling public methods) are bypassed. This might lead
+to `null` values being read from such objects, which may cause wrong filtering or sorting results.
+To avoid this issue, use native lazy objects added in PHP 8.4.
+See https://github.com/doctrine/collections/issues/487 for more details on when this may happen.
+
 # Upgrade to 2.2
 
 ## Deprecated string representation of sort order

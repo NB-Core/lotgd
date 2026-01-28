@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Query\AST;
 
+use Doctrine\ORM\Query\SqlWalker;
+
 /**
  * WhenClause ::= "WHEN" ConditionalExpression "THEN" ScalarExpression
  *
@@ -11,27 +13,14 @@ namespace Doctrine\ORM\Query\AST;
  */
 class WhenClause extends Node
 {
-    /** @var ConditionalExpression|Phase2OptimizableConditional */
-    public $caseConditionExpression;
-
-    /** @var mixed */
-    public $thenScalarExpression = null;
-
-    /**
-     * @param ConditionalExpression|Phase2OptimizableConditional $caseConditionExpression
-     * @param mixed                                              $thenScalarExpression
-     */
-    public function __construct($caseConditionExpression, $thenScalarExpression)
-    {
-        $this->caseConditionExpression = $caseConditionExpression;
-        $this->thenScalarExpression    = $thenScalarExpression;
+    public function __construct(
+        public ConditionalExpression|Phase2OptimizableConditional $caseConditionExpression,
+        public mixed $thenScalarExpression = null,
+    ) {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function dispatch($sqlWalker)
+    public function dispatch(SqlWalker $walker): string
     {
-        return $sqlWalker->walkWhenClauseExpression($this);
+        return $walker->walkWhenClauseExpression($this);
     }
 }

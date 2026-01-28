@@ -7,7 +7,7 @@ connection settings from `dbconnect.php` and exposes a helper to create an
 ## Obtaining an EntityManager
 
 Call `Lotgd\Doctrine\Bootstrap::getEntityManager()` to create a configured
-`EntityManager` instance. This method sets up annotation metadata and caching
+`EntityManager` instance. This method sets up attribute metadata and caching
 based on your database configuration.
 
 ```php

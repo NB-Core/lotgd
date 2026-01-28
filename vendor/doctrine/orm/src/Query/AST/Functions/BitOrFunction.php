@@ -16,25 +16,20 @@ use Doctrine\ORM\Query\TokenType;
  */
 class BitOrFunction extends FunctionNode
 {
-    /** @var Node */
-    public $firstArithmetic;
+    public Node $firstArithmetic;
+    public Node $secondArithmetic;
 
-    /** @var Node */
-    public $secondArithmetic;
-
-    /** @inheritDoc */
-    public function getSql(SqlWalker $sqlWalker)
+    public function getSql(SqlWalker $sqlWalker): string
     {
         $platform = $sqlWalker->getConnection()->getDatabasePlatform();
 
         return $platform->getBitOrComparisonExpression(
             $this->firstArithmetic->dispatch($sqlWalker),
-            $this->secondArithmetic->dispatch($sqlWalker)
+            $this->secondArithmetic->dispatch($sqlWalker),
         );
     }
 
-    /** @inheritDoc */
-    public function parse(Parser $parser)
+    public function parse(Parser $parser): void
     {
         $parser->match(TokenType::T_IDENTIFIER);
         $parser->match(TokenType::T_OPEN_PARENTHESIS);

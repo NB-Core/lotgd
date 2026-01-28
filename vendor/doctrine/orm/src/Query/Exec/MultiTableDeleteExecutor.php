@@ -13,7 +13,6 @@ use Doctrine\ORM\Query\SqlWalker;
 use Doctrine\ORM\Utility\PersisterHelper;
 use Throwable;
 
-use function array_merge;
 use function array_reverse;
 use function implode;
 
@@ -25,14 +24,9 @@ use function implode;
  */
 class MultiTableDeleteExecutor extends AbstractSqlExecutor
 {
-    /** @var string */
-    private $createTempTableSql;
-
-    /** @var string */
-    private $dropTempTableSql;
-
-    /** @var string */
-    private $insertSql;
+    private readonly string $createTempTableSql;
+    private readonly string $dropTempTableSql;
+    private readonly string $insertSql;
 
     /**
      * Initializes a new <tt>MultiTableDeleteExecutor</tt>.
@@ -43,10 +37,8 @@ class MultiTableDeleteExecutor extends AbstractSqlExecutor
      * @param DeleteStatement $AST       The root AST node of the DQL query.
      * @param SqlWalker       $sqlWalker The walker used for SQL generation from the AST.
      */
-    public function __construct(AST\Node $AST, $sqlWalker)
+    public function __construct(AST\Node $AST, SqlWalker $sqlWalker)
     {
-        parent::__construct();
-
         $em            = $sqlWalker->getEntityManager();
         $conn          = $em->getConnection();
         $platform      = $conn->getDatabasePlatform();
@@ -67,23 +59,25 @@ class MultiTableDeleteExecutor extends AbstractSqlExecutor
         // 1. Create an INSERT INTO temptable ... SELECT identifiers WHERE $AST->getWhereClause()
         $sqlWalker->setSQLTableAlias($primaryClass->getTableName(), 't0', $primaryDqlAlias);
 
-        $this->insertSql = 'INSERT INTO ' . $tempTable . ' (' . $idColumnList . ')'
+        $insertSql = 'INSERT INTO ' . $tempTable . ' (' . $idColumnList . ')'
                 . ' SELECT t0.' . implode(', t0.', $idColumnNames);
 
-        $rangeDecl        = new AST\RangeVariableDeclaration($primaryClass->name, $primaryDqlAlias);
-        $fromClause       = new AST\FromClause([new AST\IdentificationVariableDeclaration($rangeDecl, null, [])]);
-        $this->insertSql .= $sqlWalker->walkFromClause($fromClause);
+        $rangeDecl  = new AST\RangeVariableDeclaration($primaryClass->name, $primaryDqlAlias);
+        $fromClause = new AST\FromClause([new AST\IdentificationVariableDeclaration($rangeDecl, null, [])]);
+        $insertSql .= $sqlWalker->walkFromClause($fromClause);
 
         // Append WHERE clause, if there is one.
         if ($AST->whereClause) {
-            $this->insertSql .= $sqlWalker->walkWhereClause($AST->whereClause);
+            $insertSql .= $sqlWalker->walkWhereClause($AST->whereClause);
         }
+
+        $this->insertSql = $insertSql;
 
         // 2. Create ID subselect statement used in DELETE ... WHERE ... IN (subselect)
         $idSubselect = 'SELECT ' . $idColumnList . ' FROM ' . $tempTable;
 
         // 3. Create and store DELETE statements
-        $classNames = array_merge($primaryClass->parentClasses, [$primaryClass->name], $primaryClass->subClasses);
+        $classNames = [...$primaryClass->parentClasses, ...[$primaryClass->name], ...$primaryClass->subClasses];
         foreach (array_reverse($classNames) as $className) {
             $tableName             = $quoteStrategy->getTableName($em->getClassMetadata($className), $platform);
             $this->sqlStatements[] = 'DELETE FROM ' . $tableName
@@ -94,6 +88,7 @@ class MultiTableDeleteExecutor extends AbstractSqlExecutor
         $columnDefinitions = [];
         foreach ($idColumnNames as $idColumnName) {
             $columnDefinitions[$idColumnName] = [
+                'name'    => $idColumnName,
                 'notnull' => true,
                 'type'    => Type::getType(PersisterHelper::getTypeOfColumn($idColumnName, $rootClass, $em)),
             ];
@@ -106,10 +101,8 @@ class MultiTableDeleteExecutor extends AbstractSqlExecutor
 
     /**
      * {@inheritDoc}
-     *
-     * @return int
      */
-    public function execute(Connection $conn, array $params, array $types)
+    public function execute(Connection $conn, array $params, array $types): int
     {
         // Create temporary id table
         $conn->executeStatement($this->createTempTableSql);

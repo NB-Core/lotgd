@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Query\AST;
 
-/** @phpstan-ignore class.extendsDeprecatedClass */
-class InSubselectExpression extends InExpression
+use Doctrine\ORM\Query\SqlWalker;
+
+class InSubselectExpression extends Node
 {
-    /** @var Subselect */
-    public $subselect;
+    public function __construct(
+        public ArithmeticExpression $expression,
+        public Subselect $subselect,
+        public bool $not = false,
+    ) {
+    }
 
-    public function __construct(ArithmeticExpression $expression, Subselect $subselect, bool $not = false)
+    public function dispatch(SqlWalker $walker): string
     {
-        $this->subselect = $subselect;
-        $this->not       = $not;
-
-        // @phpstan-ignore staticMethod.deprecatedClass
-        parent::__construct($expression);
+        return $walker->walkInSubselectExpression($this);
     }
 }

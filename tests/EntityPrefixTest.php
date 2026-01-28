@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
-use Doctrine\Common\Cache\ArrayCache;
 use Doctrine\Common\EventManager;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
-use Doctrine\ORM\Tools\Setup;
+use Doctrine\ORM\ORMSetup;
+use Doctrine\DBAL\DriverManager;
 use Lotgd\Doctrine\TablePrefixSubscriber;
 use Lotgd\Entity\Account;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 /**
  * @covers \Lotgd\Doctrine\TablePrefixSubscriber
@@ -26,21 +27,22 @@ final class EntityPrefixTest extends TestCase
             $this->markTestSkipped('PDO SQLite extension not installed');
         }
 
-        if (!class_exists('Doctrine\\Common\\Annotations\\AnnotationReader')) {
-            $this->markTestSkipped('Doctrine annotations not installed');
-        }
-
         global $DB_PREFIX;
         $DB_PREFIX = 'pre_';
 
-        $config = Setup::createAnnotationMetadataConfiguration([
-            __DIR__ . '/../src/Lotgd/Entity'
-        ], true, null, new ArrayCache(), false);
+        $config = ORMSetup::createAttributeMetadataConfiguration(
+            [__DIR__ . '/../src/Lotgd/Entity'],
+            true,
+            null,
+            new ArrayAdapter(),
+            true
+        );
 
         $evm = new EventManager();
         $evm->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
 
-        $this->em = EntityManager::create(['driver' => 'pdo_sqlite', 'memory' => true], $config, $evm);
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true], null, $evm);
+        $this->em = new EntityManager($connection, $config, $evm);
         $tool = new SchemaTool($this->em);
         $tool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
     }

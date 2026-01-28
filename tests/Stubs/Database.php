@@ -113,7 +113,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
                 $readOps = ['select', 'show', 'describe', 'desc', 'explain', 'pragma', 'optimize', 'analyze'];
                 if (in_array($keyword, $readOps, true)) {
                     $last_query_result = $conn->executeQuery($sql);
-                    self::$affected_rows = $last_query_result->rowCount();
+                    self::$affected_rows = (int) $last_query_result->rowCount();
                     return $last_query_result;
                 }
 
@@ -413,7 +413,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         public static function numRows(mixed $result): int
         {
             if (is_object($result) && method_exists($result, 'rowCount')) {
-                return $result->rowCount();
+                return (int) $result->rowCount();
             }
 
             return is_array($result) ? count($result) : 0;

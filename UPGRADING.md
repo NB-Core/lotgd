@@ -117,6 +117,10 @@ modules.
   - Each skin requires a `config.json` and core files (`page.twig`, `popup.twig`).  
   - Old `.htm` templates still work but are deprecated.
 
+- **Doctrine Mapping**  
+  - Entity mappings now rely on PHP attributes; annotation-based mappings are no longer supported.  
+  - Ensure custom entities use attributes and remove any legacy annotation tooling dependencies.
+
 - **Performance Defaults**  
   - Output compression via zlib is enabled by default when the `zlib` extension is present. Disable at the PHP level if undesired.  
   - Data cache requires a writable directory: set `DB_USEDATACACHE=1` and `DB_DATACACHEPATH=/path/to/cache`. The app will warn admins if the path is missing or not writable.  
@@ -129,8 +133,39 @@ modules.
 - **Namespaces**: Core code moved to `Lotgd\...`. Custom modules calling internal functions may need refactoring.
 - **Twig**: Default rendering pipeline. Legacy template hooks may not work without updates.
 - **Doctrine**: Direct SQL hacks should be migrated to repositories or services.
+- **Doctrine ORM 3**:
+  - The ORM dependency now targets 3.x and requires Doctrine DBAL 4.0+.
+  - Bootstraps must replace `EntityManager::create()` with `DriverManager::getConnection()` plus the `EntityManager` constructor.
+  - Attribute metadata should enable the `reportFieldsWhereDeclared` mode to align with ORM 3 validation.
+  - Event listeners must use the dedicated event args classes instead of the deprecated `LifecycleEventArgs`.
+  - Custom repositories must continue to extend `EntityRepository` and should be fetched via `getRepository(Fully\Qualified\Entity::class)`; string shorthand is no longer supported.
+  - Table prefix subscribers need to prefix both primary tables and join tables using the new mapping object structures.
 - **PHP 8.3**: Old PHP 7.x-style code (e.g., deprecated array/string operations) will break.
 - **Async**: All Ajax endpoints rewritten to use Jaxon.
+
+### DBAL 4 Migration Inventory (2.x)
+
+The 2.x branch is already aligned with Doctrine DBAL 4 result APIs and parameter typing, but legacy wrappers still exist for module compatibility. The list below inventories current DBAL usage and maps it to DBAL 4 migration guide sections so you can evaluate upgrades or custom modules consistently.
+
+**Legacy layer usage (DBAL calls via compatibility wrappers):**
+- `src/Lotgd/MySQL/Database.php` → `Connection::executeQuery/executeStatement`, `Result::fetchAssociative/fetchAllAssociative`, `Result::rowCount`, `Connection::quote`.
+- `src/Lotgd/MySQL/DbMysqli.php` → legacy `mysqli` driver implementation (no DBAL APIs, kept for modules).
+- `src/Lotgd/MySQL/TableDescriptor.php` → schema discovery and DDL via `Database::query()` plus selective `Connection::executeStatement()` calls.
+
+**Direct DBAL usage in core (`src/Lotgd/*`):**
+- `src/Lotgd/Mail.php` (DBAL fetch/execute + parameter typing).
+- `src/Lotgd/PlayerSearch.php` (executeQuery → `fetchAllAssociative`).
+- `src/Lotgd/AddNews.php`, `src/Lotgd/Settings.php`, `src/Lotgd/GameLog.php`, `src/Lotgd/ModuleManager.php` (executeStatement).
+- `src/Lotgd/RefererLogger.php`, `src/Lotgd/Translator.php`, `src/Lotgd/Motd.php`, `src/Lotgd/Newday.php` (fetchAssociative/fetchAllAssociative).
+- `src/Lotgd/Async/Handler/Commentary.php`, `src/Lotgd/Async/Handler/Bans.php` (fetchAllAssociative + typed params).
+
+**DBAL 4 migration guide mapping (what to watch for):**
+- **Result handling changes**: `Result::fetchAssociative()` / `fetchAllAssociative()` usage replaces legacy fetch loops.
+- **Statement execution**: `executeQuery()` returns `Result` for reads; `executeStatement()` returns affected row count for writes.
+- **Parameter typing changes**: `ParameterType` / `ArrayParameterType` are used for explicit binding (string/int/array parameters).
+- **Removed connection fetch helpers**: avoid `fetchAssoc`/`fetchArray`/`fetchColumn` in favor of typed `fetchAssociative()` or `fetchOne()`.
+
+If you maintain custom modules, update any legacy calls to `Database::fetchAssoc()` loops by switching to the DBAL `Result` APIs and named parameters as shown in the refactoring examples above.
 
 ### Refactoring Legacy SQL to Prepared Statements
 

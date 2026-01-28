@@ -35,12 +35,22 @@ class TablePrefixSubscriber implements EventSubscriber
 
         $classMetadata = $eventArgs->getClassMetadata();
 
-        $classMetadata->table['name'] = $this->prefix . $classMetadata->table['name'];
+        $primaryTable = $classMetadata->table;
+        $primaryTable['name'] = $this->prefix . $classMetadata->getTableName();
+        $classMetadata->setPrimaryTable($primaryTable);
 
-        foreach ($classMetadata->associationMappings as $fieldName => $mapping) {
-            if (isset($mapping['joinTable']['name'])) {
-                $classMetadata->associationMappings[$fieldName]['joinTable']['name'] =
-                    $this->prefix . $mapping['joinTable']['name'];
+        foreach ($classMetadata->getAssociationMappings() as $fieldName => $mapping) {
+            if (is_array($mapping) && isset($mapping['joinTable']['name'])) {
+                $mapping['joinTable']['name'] = $this->prefix . $mapping['joinTable']['name'];
+                $classMetadata->associationMappings[$fieldName] = $mapping;
+                continue;
+            }
+
+            if (is_object($mapping) && property_exists($mapping, 'joinTable') && $mapping->joinTable !== null) {
+                $joinTable = $mapping->joinTable;
+                if (property_exists($joinTable, 'name') && is_string($joinTable->name)) {
+                    $joinTable->name = $this->prefix . $joinTable->name;
+                }
             }
         }
     }

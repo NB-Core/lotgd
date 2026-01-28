@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Lotgd\Doctrine;
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\Common\EventManager;
+use Doctrine\DBAL\DriverManager;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Lotgd\MySQL\Database;
@@ -83,16 +85,15 @@ class Bootstrap
             $cache = (new ArrayAdapter())->withSubNamespace($DB_PREFIX);
         }
 
-        $config = ORMSetup::createAnnotationMetadataConfiguration(
-            $paths,
-            $isDevMode,
-            null,
-            $cache
-        );
+        $config = ORMSetup::createConfiguration($isDevMode, null, $cache);
+        $config->setMetadataDriverImpl(new AttributeDriver($paths, true));
 
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
 
-        return EntityManager::create($connection, $config, $eventManager);
+        $connection['event_manager'] = $eventManager;
+        $doctrineConnection = DriverManager::getConnection($connection);
+
+        return new EntityManager($doctrineConnection, $config, $eventManager);
     }
 }

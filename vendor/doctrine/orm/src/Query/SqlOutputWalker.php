@@ -11,7 +11,7 @@ use LogicException;
 
 class SqlOutputWalker extends SqlWalker implements OutputWalker
 {
-    public function getFinalizer($AST): SqlFinalizer
+    public function getFinalizer(AST\DeleteStatement|AST\UpdateStatement|AST\SelectStatement $AST): SqlFinalizer
     {
         switch (true) {
             case $AST instanceof AST\SelectStatement:

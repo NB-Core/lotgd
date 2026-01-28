@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\Expr\Expression;
 use Doctrine\Deprecations\Deprecation;
 
 use function array_map;
+use function func_get_arg;
 use function func_num_args;
 use function strtoupper;
 
@@ -16,6 +17,7 @@ use function strtoupper;
  * Criteria for filtering Selectable collections.
  *
  * @phpstan-consistent-constructor
+ * @final since 2.5
  */
 class Criteria
 {
@@ -38,9 +40,11 @@ class Criteria
      *
      * @return static
      */
-    public static function create()
+    public static function create(/* bool $accessRawFieldValues = false */): self
     {
-        return new static();
+        $accessRawFieldValues = 0 < func_num_args() ? func_get_arg(0) : false;
+
+        return new static(firstResult: 0, accessRawFieldValues: $accessRawFieldValues);
     }
 
     /**
@@ -60,23 +64,36 @@ class Criteria
     /**
      * Construct a new Criteria.
      *
+     * @param int|null                         $firstResult
      * @param array<string, string|Order>|null $orderings
      */
     public function __construct(
         private Expression|null $expression = null,
         array|null $orderings = null,
-        int|null $firstResult = null,
+        int|Placeholder|null $firstResult = Placeholder::NotSpecified,
         int|null $maxResults = null,
+        private bool $accessRawFieldValues = false,
     ) {
-        $this->expression = $expression;
+        if (! $accessRawFieldValues) {
+            Deprecation::trigger(
+                'doctrine/collections',
+                'https://github.com/doctrine/collections/pull/472',
+                'Not enabling raw field value access for the Criteria matching API in %s is deprecated. Raw field access will be the only supported method in 3.0',
+                self::class,
+            );
+        }
 
-        if ($firstResult === null && func_num_args() > 2) {
+        if ($firstResult === null) {
             Deprecation::trigger(
                 'doctrine/collections',
                 'https://github.com/doctrine/collections/pull/311',
                 'Passing null as $firstResult to the constructor of %s is deprecated. Pass 0 instead or omit the argument.',
                 self::class,
             );
+        }
+
+        if ($firstResult === Placeholder::NotSpecified) {
+            $firstResult = null;
         }
 
         $this->setFirstResult($firstResult);
@@ -281,5 +298,11 @@ class Criteria
         $this->maxResults = $maxResults;
 
         return $this;
+    }
+
+    /** @internal */
+    public function isRawFieldValueAccessEnabled(): bool
+    {
+        return $this->accessRawFieldValues;
     }
 }

@@ -6,12 +6,13 @@ namespace Lotgd\Tests;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
-use Doctrine\ORM\Tools\Setup;
-use Doctrine\Common\Cache\ArrayCache;
+use Doctrine\ORM\ORMSetup;
+use Doctrine\DBAL\DriverManager;
 use Lotgd\Entity\Account;
 use Lotgd\Entity\Setting;
 use Lotgd\Entity\ExtendedSetting;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 final class RepositoryDoctrineTest extends TestCase
 {
@@ -23,18 +24,15 @@ final class RepositoryDoctrineTest extends TestCase
             $this->markTestSkipped('PDO SQLite extension not installed');
         }
 
-        if (!class_exists('Doctrine\\Common\\Annotations\\AnnotationReader')) {
-            $this->markTestSkipped('Doctrine annotations not installed');
-        }
-
-        $config = Setup::createAnnotationMetadataConfiguration(
+        $config = ORMSetup::createAttributeMetadataConfiguration(
             [__DIR__ . '/../src/Lotgd/Entity'],
             true,
             null,
-            new ArrayCache(),
-            false
+            new ArrayAdapter(),
+            true
         );
-        $this->em = EntityManager::create(['driver' => 'pdo_sqlite', 'memory' => true], $config);
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $this->em = new EntityManager($connection, $config);
         $tool = new SchemaTool($this->em);
         $tool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
     }
@@ -52,13 +50,8 @@ final class RepositoryDoctrineTest extends TestCase
         $this->em->flush();
         $this->em->clear();
 
-        if (!class_exists(\Lotgd\Repository\AccountRepository::class, false)) {
-            require __DIR__ . '/../src/Lotgd/Repository/AccountRepository.php';
-        }
-        $repo = new \Lotgd\Repository\AccountRepository(
-            $this->em,
-            $this->em->getClassMetadata(Account::class)
-        );
+        $repo = $this->em->getRepository(Account::class);
+        $this->assertInstanceOf(\Lotgd\Repository\AccountRepository::class, $repo);
         $found = $repo->findByLogin('john');
 
         $this->assertInstanceOf(Account::class, $found);
@@ -74,13 +67,8 @@ final class RepositoryDoctrineTest extends TestCase
         $this->em->flush();
         $this->em->clear();
 
-        if (!class_exists(\Lotgd\Repository\SettingRepository::class, false)) {
-            require __DIR__ . '/../src/Lotgd/Repository/SettingRepository.php';
-        }
-        $repo = new \Lotgd\Repository\SettingRepository(
-            $this->em,
-            $this->em->getClassMetadata(Setting::class)
-        );
+        $repo = $this->em->getRepository(Setting::class);
+        $this->assertInstanceOf(\Lotgd\Repository\SettingRepository::class, $repo);
 
         $this->assertSame('bar', $repo->findValue('foo'));
         $this->assertNull($repo->findValue('unknown'));
@@ -94,13 +82,8 @@ final class RepositoryDoctrineTest extends TestCase
         $this->em->flush();
         $this->em->clear();
 
-        if (!class_exists(\Lotgd\Repository\ExtendedSettingRepository::class, false)) {
-            require __DIR__ . '/../src/Lotgd/Repository/ExtendedSettingRepository.php';
-        }
-        $repo = new \Lotgd\Repository\ExtendedSettingRepository(
-            $this->em,
-            $this->em->getClassMetadata(ExtendedSetting::class)
-        );
+        $repo = $this->em->getRepository(ExtendedSetting::class);
+        $this->assertInstanceOf(\Lotgd\Repository\ExtendedSettingRepository::class, $repo);
 
         $this->assertSame('qux', $repo->findValue('baz'));
         $this->assertNull($repo->findValue('nope'));
