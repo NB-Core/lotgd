@@ -9,8 +9,20 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 ---
 
 ## [Unreleased]
+
+## [2.0.3] – 2026-01-28
+
 ### Dependencies
-- Move Doctrine ORM to 3.x, updating bootstrap, table prefix metadata handling, and repository access patterns to match ORM 3 expectations.
+- Upgrade Doctrine ORM to 3.x and Doctrine DBAL to 4.x, aligning the core stack with current Doctrine releases.
+
+### Bug Fixes
+- Adjust Doctrine bootstrap configuration to use the ORM 3 attribute driver and field declaration reporting so metadata validation matches ORM 3 expectations.
+- Prefix Doctrine join tables when table prefixes are enabled, preventing mismatched table names during metadata loading.
+- Normalize DBAL 4 result handling and connection setup so affected-row counts and write operations behave consistently across the legacy wrappers.
+- Align mail persistence queries with the DBAL 4 execution flow to keep mailbox updates stable during upgrades.
+
+### Docs
+- Document ORM 3 attribute metadata and DBAL 4 migration guidance in the upgrade notes.
 
 ## [2.0.2] – 2025-11-27
 
