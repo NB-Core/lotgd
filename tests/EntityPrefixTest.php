@@ -8,6 +8,7 @@ use Doctrine\Common\EventManager;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\ORM\ORMSetup;
+use Doctrine\DBAL\DriverManager;
 use Lotgd\Doctrine\TablePrefixSubscriber;
 use Lotgd\Entity\Account;
 use PHPUnit\Framework\TestCase;
@@ -29,14 +30,19 @@ final class EntityPrefixTest extends TestCase
         global $DB_PREFIX;
         $DB_PREFIX = 'pre_';
 
-        $config = ORMSetup::createAttributeMetadataConfiguration([
-            __DIR__ . '/../src/Lotgd/Entity'
-        ], true, null, new ArrayAdapter());
+        $config = ORMSetup::createAttributeMetadataConfiguration(
+            [__DIR__ . '/../src/Lotgd/Entity'],
+            true,
+            null,
+            new ArrayAdapter(),
+            true
+        );
 
         $evm = new EventManager();
         $evm->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
 
-        $this->em = EntityManager::create(['driver' => 'pdo_sqlite', 'memory' => true], $config, $evm);
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true], null, $evm);
+        $this->em = new EntityManager($connection, $config, $evm);
         $tool = new SchemaTool($this->em);
         $tool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
     }

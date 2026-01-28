@@ -7,6 +7,7 @@ namespace Lotgd\Doctrine;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\Common\EventManager;
+use Doctrine\DBAL\DriverManager;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Lotgd\MySQL\Database;
@@ -87,12 +88,15 @@ class Bootstrap
             $paths,
             $isDevMode,
             null,
-            $cache
+            $cache,
+            true
         );
 
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
 
-        return EntityManager::create($connection, $config, $eventManager);
+        $doctrineConnection = DriverManager::getConnection($connection, null, $eventManager);
+
+        return new EntityManager($doctrineConnection, $config, $eventManager);
     }
 }

@@ -9,7 +9,8 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 ---
 
 ## [Unreleased]
-_No unreleased changes yet._
+### Dependencies
+- Move Doctrine ORM to 3.x, updating bootstrap, table prefix metadata handling, and repository access patterns to match ORM 3 expectations.
 
 ## [2.0.2] – 2025-11-27
 
