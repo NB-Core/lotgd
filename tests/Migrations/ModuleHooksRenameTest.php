@@ -6,6 +6,7 @@ namespace Lotgd\Tests\Migrations;
 
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Tools\DsnParser;
 use Lotgd\Migrations\Version20250724000019;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -16,7 +17,8 @@ final class ModuleHooksRenameTest extends TestCase
 {
     public function testUpRenamesColumnAndAdjustsPrimaryKey(): void
     {
-        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
+        $dsnParser = new DsnParser(['sqlite' => 'pdo_sqlite']);
+        $connection = DriverManager::getConnection($dsnParser->parse('sqlite:///:memory:'));
         $connection->executeStatement('CREATE TABLE module_hooks (modulename TEXT, location TEXT, `function` TEXT)');
 
         $migration = new Version20250724000019($connection, new NullLogger());
@@ -35,7 +37,8 @@ final class ModuleHooksRenameTest extends TestCase
 
     public function testUpDoesNothingWhenAlreadyRenamed(): void
     {
-        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
+        $dsnParser = new DsnParser(['sqlite' => 'pdo_sqlite']);
+        $connection = DriverManager::getConnection($dsnParser->parse('sqlite:///:memory:'));
         $connection->executeStatement('CREATE TABLE module_hooks (modulename TEXT, location TEXT, hook_callback TEXT)');
 
         $migration = new Version20250724000019($connection, new NullLogger());
@@ -48,7 +51,8 @@ final class ModuleHooksRenameTest extends TestCase
 
     public function testDownRenamesColumnBackWhenPresent(): void
     {
-        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
+        $dsnParser = new DsnParser(['sqlite' => 'pdo_sqlite']);
+        $connection = DriverManager::getConnection($dsnParser->parse('sqlite:///:memory:'));
         $connection->executeStatement('CREATE TABLE module_hooks (modulename TEXT, location TEXT, hook_callback TEXT)');
 
         $migration = new Version20250724000019($connection, new NullLogger());
@@ -67,7 +71,8 @@ final class ModuleHooksRenameTest extends TestCase
 
     public function testDownDoesNothingWhenAlreadyOriginal(): void
     {
-        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
+        $dsnParser = new DsnParser(['sqlite' => 'pdo_sqlite']);
+        $connection = DriverManager::getConnection($dsnParser->parse('sqlite:///:memory:'));
         $connection->executeStatement('CREATE TABLE module_hooks (modulename TEXT, location TEXT, `function` TEXT)');
 
         $migration = new Version20250724000019($connection, new NullLogger());

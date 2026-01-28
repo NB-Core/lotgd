@@ -8,11 +8,13 @@ class DoctrineResult
 {
     private array $rows;
     private array $originalRows;
+    private int|string|null $rowCountOverride;
 
-    public function __construct(array $rows = [])
+    public function __construct(array $rows = [], int|string|null $rowCountOverride = null)
     {
         $this->rows = $rows;
         $this->originalRows = $rows;
+        $this->rowCountOverride = $rowCountOverride;
     }
 
     public function fetchAssociative()
@@ -20,8 +22,12 @@ class DoctrineResult
         return array_shift($this->rows) ?: false;
     }
 
-    public function rowCount(): int
+    public function rowCount(): int|string
     {
+        if ($this->rowCountOverride !== null) {
+            return $this->rowCountOverride;
+        }
+
         return count($this->originalRows);
     }
 
@@ -44,6 +50,8 @@ class DoctrineConnection
     public array $params = ['charset' => 'utf8mb4'];
     /** @var array<int,int> */
     public array $countResults = [];
+    /** @var array<int, int|string|null> */
+    public array $rowCountOverrides = [];
     public array $lastInsert = [];
     public array $lastDelete = [];
     public array $fetchAllResults = [];
@@ -58,6 +66,16 @@ class DoctrineConnection
     public array $lastExecuteStatementTypes = [];
     public array $executeQueryParams = [];
     public array $executeQueryTypes = [];
+
+    private function makeResult(array $rows): DoctrineResult
+    {
+        $override = null;
+        if (!empty($this->rowCountOverrides)) {
+            $override = array_shift($this->rowCountOverrides);
+        }
+
+        return new DoctrineResult($rows, $override);
+    }
 
     public function quoteIdentifier(string $identifier): string
     {
@@ -76,7 +94,7 @@ class DoctrineConnection
             $acctid = (int) $matches[1];
             $row = $accounts_table[$acctid] ?? ['prefs' => '', 'emailaddress' => ''];
 
-            return new DoctrineResult([$row]);
+            return $this->makeResult([$row]);
         }
 
         if (preg_match("/SELECT\s+prefs\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
@@ -84,7 +102,7 @@ class DoctrineConnection
             $acctid = (int) $matches[1];
             $prefs = $accounts_table[$acctid]['prefs'] ?? '';
 
-            return new DoctrineResult([['prefs' => $prefs]]);
+            return $this->makeResult([['prefs' => $prefs]]);
         }
 
         if (preg_match("/SELECT\s+name\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
@@ -92,7 +110,7 @@ class DoctrineConnection
             $acctid = (int) $matches[1];
             $name = $accounts_table[$acctid]['name'] ?? '';
 
-            return new DoctrineResult([['name' => $name]]);
+            return $this->makeResult([['name' => $name]]);
         }
 
         $mailTable = Database::prefix('mail');
@@ -107,7 +125,7 @@ class DoctrineConnection
                 }
             }
 
-            return new DoctrineResult([['count' => $count]]);
+            return $this->makeResult([['count' => $count]]);
         }
 
         if (preg_match('/SELECT\s+(.+?)\s+FROM\s+' . preg_quote($mailTable, '/') . '\b/i', $sql, $matches)) {
@@ -152,11 +170,11 @@ class DoctrineConnection
                 $results[] = $selected;
             }
 
-            return new DoctrineResult($results);
+            return $this->makeResult($results);
         }
 
         if (preg_match("/SELECT\s+\*\s+FROM\s+" . preg_quote(Database::prefix('nastywords'), '/') . "\s+WHERE\s+type='(good|nasty)'/i", $sql)) {
-            return new DoctrineResult([['words' => '']]);
+            return $this->makeResult([['words' => '']]);
         }
 
         if (stripos($sql, 'count(') !== false) {
@@ -165,7 +183,7 @@ class DoctrineConnection
                 $value = 0;
             }
 
-            return new DoctrineResult([["total_count" => $value]]);
+            return $this->makeResult([["total_count" => $value]]);
         }
 
         $rows = [];
@@ -181,7 +199,7 @@ class DoctrineConnection
             $rows = [];
         }
 
-        return new DoctrineResult($rows);
+        return $this->makeResult($rows);
     }
 
     public function fetchAllAssociative(string $sql, array $params = [], array $types = []): array

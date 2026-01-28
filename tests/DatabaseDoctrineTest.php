@@ -69,6 +69,15 @@ final class DatabaseDoctrineTest extends TestCase
         $this->assertSame(1, Database::numRows($result));
     }
 
+    public function testNumRowsCastsDoctrineRowCountToInt(): void
+    {
+        $conn = Database::getDoctrineConnection();
+        $conn->rowCountOverrides[] = '2';
+        $result = Database::query('SELECT 1');
+
+        $this->assertSame(2, Database::numRows($result));
+    }
+
     public function testUnionQueryWrappedInParenthesesReturnsDoctrineResult(): void
     {
         $result = Database::query('(SELECT 1) UNION (SELECT 2)');
@@ -81,6 +90,15 @@ final class DatabaseDoctrineTest extends TestCase
         Database::query('UPDATE test SET x=1');
 
         $this->assertSame(1, Database::affectedRows());
+    }
+
+    public function testAffectedRowsCastsDoctrineRowCountToInt(): void
+    {
+        $conn = Database::getDoctrineConnection();
+        $conn->rowCountOverrides[] = '3';
+        Database::query('SELECT 1');
+
+        $this->assertSame(3, Database::affectedRows());
     }
 
     public function testFreeResultHandlesDoctrineResult(): void

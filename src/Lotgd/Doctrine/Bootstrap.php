@@ -91,7 +91,8 @@ class Bootstrap
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
 
-        $doctrineConnection = DriverManager::getConnection($connection, null, $eventManager);
+        $connection['event_manager'] = $eventManager;
+        $doctrineConnection = DriverManager::getConnection($connection);
 
         return new EntityManager($doctrineConnection, $config, $eventManager);
     }
