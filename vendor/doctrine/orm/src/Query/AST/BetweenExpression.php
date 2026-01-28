@@ -4,38 +4,20 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Query\AST;
 
+use Doctrine\ORM\Query\SqlWalker;
+
 class BetweenExpression extends Node
 {
-    /** @var ArithmeticExpression */
-    public $expression;
-
-    /** @var ArithmeticExpression */
-    public $leftBetweenExpression;
-
-    /** @var ArithmeticExpression */
-    public $rightBetweenExpression;
-
-    /** @var bool */
-    public $not;
-
-    /**
-     * @param ArithmeticExpression $expr
-     * @param ArithmeticExpression $leftExpr
-     * @param ArithmeticExpression $rightExpr
-     */
-    public function __construct($expr, $leftExpr, $rightExpr, bool $not = false)
-    {
-        $this->expression             = $expr;
-        $this->leftBetweenExpression  = $leftExpr;
-        $this->rightBetweenExpression = $rightExpr;
-        $this->not                    = $not;
+    public function __construct(
+        public ArithmeticExpression $expression,
+        public ArithmeticExpression $leftBetweenExpression,
+        public ArithmeticExpression $rightBetweenExpression,
+        public bool $not = false,
+    ) {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function dispatch($sqlWalker)
+    public function dispatch(SqlWalker $walker): string
     {
-        return $sqlWalker->walkBetweenExpression($this);
+        return $walker->walkBetweenExpression($this);
     }
 }

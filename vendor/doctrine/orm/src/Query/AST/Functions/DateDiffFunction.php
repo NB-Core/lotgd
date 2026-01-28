@@ -16,23 +16,18 @@ use Doctrine\ORM\Query\TokenType;
  */
 class DateDiffFunction extends FunctionNode
 {
-    /** @var Node */
-    public $date1;
+    public Node $date1;
+    public Node $date2;
 
-    /** @var Node */
-    public $date2;
-
-    /** @inheritDoc */
-    public function getSql(SqlWalker $sqlWalker)
+    public function getSql(SqlWalker $sqlWalker): string
     {
         return $sqlWalker->getConnection()->getDatabasePlatform()->getDateDiffExpression(
             $this->date1->dispatch($sqlWalker),
-            $this->date2->dispatch($sqlWalker)
+            $this->date2->dispatch($sqlWalker),
         );
     }
 
-    /** @inheritDoc */
-    public function parse(Parser $parser)
+    public function parse(Parser $parser): void
     {
         $parser->match(TokenType::T_IDENTIFIER);
         $parser->match(TokenType::T_OPEN_PARENTHESIS);

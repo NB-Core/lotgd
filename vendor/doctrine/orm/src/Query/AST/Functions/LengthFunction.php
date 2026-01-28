@@ -19,19 +19,16 @@ use Doctrine\ORM\Query\TokenType;
  */
 class LengthFunction extends FunctionNode implements TypedExpression
 {
-    /** @var Node */
-    public $stringPrimary;
+    public Node $stringPrimary;
 
-    /** @inheritDoc */
-    public function getSql(SqlWalker $sqlWalker)
+    public function getSql(SqlWalker $sqlWalker): string
     {
         return $sqlWalker->getConnection()->getDatabasePlatform()->getLengthExpression(
-            $sqlWalker->walkSimpleArithmeticExpression($this->stringPrimary)
+            $sqlWalker->walkSimpleArithmeticExpression($this->stringPrimary),
         );
     }
 
-    /** @inheritDoc */
-    public function parse(Parser $parser)
+    public function parse(Parser $parser): void
     {
         $parser->match(TokenType::T_IDENTIFIER);
         $parser->match(TokenType::T_OPEN_PARENTHESIS);

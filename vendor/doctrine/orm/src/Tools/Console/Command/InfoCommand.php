@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Doctrine\ORM\Tools\Console\Command;
 
 use Doctrine\ORM\Mapping\MappingException;
-use Doctrine\ORM\Tools\Console\CommandCompatibility;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -21,9 +20,7 @@ use function sprintf;
  */
 class InfoCommand extends AbstractEntityManagerCommand
 {
-    use CommandCompatibility;
-
-    private function doConfigure(): void
+    protected function configure(): void
     {
         $this->setName('orm:info')
              ->setDescription('Show basic information about all mapped entities')
@@ -32,11 +29,10 @@ class InfoCommand extends AbstractEntityManagerCommand
 The <info>%command.name%</info> shows basic information about which
 entities exist and possibly if their mapping information contains errors or
 not.
-EOT
-             );
+EOT);
     }
 
-    private function doExecute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $ui = new SymfonyStyle($input, $output);
 
@@ -51,7 +47,7 @@ EOT
                 [
                     'You do not have any mapped Doctrine ORM entities according to the current configuration.',
                     'If you have entities or mapping files you should check your mapping configuration for errors.',
-                ]
+                ],
             );
 
             return 1;
@@ -72,7 +68,7 @@ EOT
                         sprintf('<error>[FAIL]</error> %s', $entityClassName),
                         sprintf('<comment>%s</comment>', $e->getMessage()),
                         '',
-                    ]
+                    ],
                 );
 
                 $failure = true;

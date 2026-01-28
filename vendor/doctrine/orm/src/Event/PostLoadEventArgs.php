@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Event;
 
-/** @phpstan-ignore class.extendsDeprecatedClass */
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
+
+/** @extends LifecycleEventArgs<EntityManagerInterface> */
 final class PostLoadEventArgs extends LifecycleEventArgs
 {
 }

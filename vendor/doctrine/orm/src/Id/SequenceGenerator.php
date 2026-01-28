@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Doctrine\ORM\Id;
 
 use Doctrine\DBAL\Connections\PrimaryReadReplicaConnection;
+use Doctrine\Deprecations\Deprecation;
 use Doctrine\ORM\EntityManagerInterface;
 use Serializable;
 
@@ -16,25 +17,8 @@ use function unserialize;
  */
 class SequenceGenerator extends AbstractIdGenerator implements Serializable
 {
-    /**
-     * The allocation size of the sequence.
-     *
-     * @var int
-     */
-    private $allocationSize;
-
-    /**
-     * The name of the sequence.
-     *
-     * @var string
-     */
-    private $sequenceName;
-
-    /** @var int */
-    private $nextValue = 0;
-
-    /** @var int|null */
-    private $maxValue = null;
+    private int $nextValue     = 0;
+    private int|null $maxValue = null;
 
     /**
      * Initializes a new sequence generator.
@@ -42,16 +26,13 @@ class SequenceGenerator extends AbstractIdGenerator implements Serializable
      * @param string $sequenceName   The name of the sequence.
      * @param int    $allocationSize The allocation size of the sequence.
      */
-    public function __construct($sequenceName, $allocationSize)
-    {
-        $this->sequenceName   = $sequenceName;
-        $this->allocationSize = $allocationSize;
+    public function __construct(
+        private string $sequenceName,
+        private int $allocationSize,
+    ) {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function generateId(EntityManagerInterface $em, $entity)
+    public function generateId(EntityManagerInterface $em, object|null $entity): int
     {
         if ($this->maxValue === null || $this->nextValue === $this->maxValue) {
             // Allocate new values
@@ -71,31 +52,31 @@ class SequenceGenerator extends AbstractIdGenerator implements Serializable
 
     /**
      * Gets the maximum value of the currently allocated bag of values.
-     *
-     * @return int|null
      */
-    public function getCurrentMaxValue()
+    public function getCurrentMaxValue(): int|null
     {
         return $this->maxValue;
     }
 
     /**
      * Gets the next value that will be returned by generate().
-     *
-     * @return int
      */
-    public function getNextValue()
+    public function getNextValue(): int
     {
         return $this->nextValue;
     }
 
-    /**
-     * @return string
-     *
-     * @final
-     */
-    public function serialize()
+    /** @deprecated without replacement. */
+    final public function serialize(): string
     {
+        Deprecation::trigger(
+            'doctrine/orm',
+            'https://github.com/doctrine/orm/pull/11468',
+            '%s() is deprecated, use __serialize() instead. %s won\'t implement the Serializable interface anymore in ORM 4.',
+            __METHOD__,
+            self::class,
+        );
+
         return serialize($this->__serialize());
     }
 
@@ -108,15 +89,17 @@ class SequenceGenerator extends AbstractIdGenerator implements Serializable
         ];
     }
 
-    /**
-     * @param string $serialized
-     *
-     * @return void
-     *
-     * @final
-     */
-    public function unserialize($serialized)
+    /** @deprecated without replacement. */
+    final public function unserialize(string $serialized): void
     {
+        Deprecation::trigger(
+            'doctrine/orm',
+            'https://github.com/doctrine/orm/pull/11468',
+            '%s() is deprecated, use __unserialize() instead. %s won\'t implement the Serializable interface anymore in ORM 4.',
+            __METHOD__,
+            self::class,
+        );
+
         $this->__unserialize(unserialize($serialized));
     }
 

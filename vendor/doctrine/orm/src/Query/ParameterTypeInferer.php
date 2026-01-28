@@ -9,11 +9,9 @@ use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\DBAL\ArrayParameterType;
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Types\Types;
 
-use function class_exists;
 use function current;
 use function is_array;
 use function is_bool;
@@ -24,18 +22,14 @@ use function is_int;
  *
  * @link    www.doctrine-project.org
  */
-class ParameterTypeInferer
+final class ParameterTypeInferer
 {
     /**
-     * Infers type of a given value, returning a compatible constant:
-     * - Type (\Doctrine\DBAL\Types\Type::*)
-     * - Connection (\Doctrine\DBAL\Connection::PARAM_*)
+     * Infers the type of a given value
      *
-     * @param mixed $value Parameter value.
-     *
-     * @return int|string Parameter type constant.
+     * @return ParameterType::*|ArrayParameterType::*|Types::*
      */
-    public static function inferType($value)
+    public static function inferType(mixed $value): ParameterType|ArrayParameterType|int|string
     {
         if (is_int($value)) {
             return Types::INTEGER;
@@ -69,19 +63,15 @@ class ParameterTypeInferer
                 $firstValue = $firstValue->value;
             }
 
-            if (! class_exists(ArrayParameterType::class)) {
-                return is_int($firstValue)
-                    // @phpstan-ignore classConstant.deprecated
-                    ? Connection::PARAM_INT_ARRAY
-                    // @phpstan-ignore classConstant.deprecated
-                    : Connection::PARAM_STR_ARRAY;
-            }
-
             return is_int($firstValue)
                 ? ArrayParameterType::INTEGER
                 : ArrayParameterType::STRING;
         }
 
         return ParameterType::STRING;
+    }
+
+    private function __construct()
+    {
     }
 }

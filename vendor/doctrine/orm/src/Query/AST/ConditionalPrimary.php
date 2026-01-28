@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Query\AST;
 
+use Doctrine\ORM\Query\SqlWalker;
+
 /**
  * ConditionalPrimary ::= SimpleConditionalExpression | "(" ConditionalExpression ")"
  *
@@ -11,29 +13,22 @@ namespace Doctrine\ORM\Query\AST;
  */
 class ConditionalPrimary extends Node implements Phase2OptimizableConditional
 {
-    /** @var Node|null */
-    public $simpleConditionalExpression;
+    public Node|null $simpleConditionalExpression = null;
 
-    /** @var ConditionalExpression|Phase2OptimizableConditional|null */
-    public $conditionalExpression;
+    public ConditionalExpression|Phase2OptimizableConditional|null $conditionalExpression = null;
 
-    /** @return bool */
-    public function isSimpleConditionalExpression()
+    public function isSimpleConditionalExpression(): bool
     {
         return (bool) $this->simpleConditionalExpression;
     }
 
-    /** @return bool */
-    public function isConditionalExpression()
+    public function isConditionalExpression(): bool
     {
         return (bool) $this->conditionalExpression;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function dispatch($sqlWalker)
+    public function dispatch(SqlWalker $walker): string
     {
-        return $sqlWalker->walkConditionalPrimary($this);
+        return $walker->walkConditionalPrimary($this);
     }
 }

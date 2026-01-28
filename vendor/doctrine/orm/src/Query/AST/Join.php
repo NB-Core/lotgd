@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Query\AST;
 
+use Doctrine\ORM\Query\SqlWalker;
+
 /**
  * Join ::= ["LEFT" ["OUTER"] | "INNER"] "JOIN" JoinAssociationPathExpression
  *          ["AS"] AliasIdentificationVariable [("ON" | "WITH") ConditionalExpression]
@@ -12,38 +14,21 @@ namespace Doctrine\ORM\Query\AST;
  */
 class Join extends Node
 {
-    public const JOIN_TYPE_LEFT      = 1;
-    public const JOIN_TYPE_LEFTOUTER = 2;
-    public const JOIN_TYPE_INNER     = 3;
+    final public const JOIN_TYPE_LEFT      = 1;
+    final public const JOIN_TYPE_LEFTOUTER = 2;
+    final public const JOIN_TYPE_INNER     = 3;
 
-    /**
-     * @var int
-     * @phpstan-var self::JOIN_TYPE_*
-     */
-    public $joinType = self::JOIN_TYPE_INNER;
+    public ConditionalExpression|Phase2OptimizableConditional|null $conditionalExpression = null;
 
-    /** @var Node|null */
-    public $joinAssociationDeclaration = null;
-
-    /** @var ConditionalExpression|Phase2OptimizableConditional|null */
-    public $conditionalExpression = null;
-
-    /**
-     * @param int  $joinType
-     * @param Node $joinAssociationDeclaration
-     * @phpstan-param self::JOIN_TYPE_* $joinType
-     */
-    public function __construct($joinType, $joinAssociationDeclaration)
-    {
-        $this->joinType                   = $joinType;
-        $this->joinAssociationDeclaration = $joinAssociationDeclaration;
+    /** @phpstan-param self::JOIN_TYPE_* $joinType */
+    public function __construct(
+        public int $joinType,
+        public Node|null $joinAssociationDeclaration = null,
+    ) {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function dispatch($sqlWalker)
+    public function dispatch(SqlWalker $walker): string
     {
-        return $sqlWalker->walkJoin($this);
+        return $walker->walkJoin($this);
     }
 }

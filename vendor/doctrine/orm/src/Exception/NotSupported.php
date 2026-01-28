@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Doctrine\ORM\Exception;
 
+use LogicException;
+
 use function sprintf;
 
-final class NotSupported extends ORMException
+/** @deprecated */
+final class NotSupported extends LogicException implements ORMException
 {
     public static function create(): self
     {
@@ -22,7 +25,7 @@ Problem: Feature was deprecated in doctrine/dbal 2.x and is not supported by ins
 Solution: See the doctrine/deprecations logs for new alternative approaches.
 EXCEPTION
             ,
-            $context
+            $context,
         ));
     }
 
@@ -35,7 +38,7 @@ Problem: Feature was deprecated in doctrine/persistence 2.x and is not supported
 Solution: See the doctrine/deprecations logs for new alternative approaches.
 EXCEPTION
             ,
-            $context
+            $context,
         ));
     }
 }
