@@ -5,8 +5,8 @@
         "twig/twig": "^3.0",
         "wikimedia/composer-merge-plugin": "^2.0",
         "doctrine/orm": "^3.0",
-        "doctrine/dbal": "^3.7",
-        "doctrine/migrations": "^3.6",
+        "doctrine/dbal": "^4.0",
+        "doctrine/migrations": "^3.9",
         "symfony/cache": "^7.3"
     },
     "require-dev": {
