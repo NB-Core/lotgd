@@ -90,7 +90,9 @@ class Bootstrap
             null,
             $cache
         );
-        $config->setReportFieldsWhereDeclared(true);
+        if (method_exists($config, 'setReportFieldsWhereDeclared')) {
+            $config->setReportFieldsWhereDeclared(true);
+        }
 
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
