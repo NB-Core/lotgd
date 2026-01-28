@@ -87,6 +87,7 @@ class Bootstrap
 
         $config = ORMSetup::createConfiguration($isDevMode, null, $cache);
         $config->setMetadataDriverImpl(new AttributeDriver($paths, true));
+        $config->setReportFieldsWhereDeclared(true);
 
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
