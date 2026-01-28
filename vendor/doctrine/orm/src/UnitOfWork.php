@@ -62,6 +62,7 @@ use function array_merge;
 use function array_sum;
 use function array_values;
 use function assert;
+use function count;
 use function current;
 use function func_get_arg;
 use function func_num_args;
@@ -76,6 +77,8 @@ use function reset;
 use function spl_object_id;
 use function sprintf;
 use function strtolower;
+
+use const PHP_VERSION_ID;
 
 /**
  * The UnitOfWork is responsible for tracking changes to objects during an
@@ -3170,8 +3173,14 @@ EXCEPTION
                     $reflField->setValue($entity, $pColl);
 
                     if ($hints['fetchMode'][$class->name][$field] === ClassMetadata::FETCH_EAGER) {
-                        $isIteration = isset($hints[Query::HINT_INTERNAL_ITERATION]) && $hints[Query::HINT_INTERNAL_ITERATION];
-                        if ($assoc['type'] === ClassMetadata::ONE_TO_MANY && ! $isIteration && ! $targetClass->isIdentifierComposite && ! isset($assoc['indexBy'])) {
+                        if (
+                            $assoc['type'] === ClassMetadata::ONE_TO_MANY
+                            // is iteration
+                            && ! (isset($hints[Query::HINT_INTERNAL_ITERATION]) && $hints[Query::HINT_INTERNAL_ITERATION])
+                            // is foreign key composite
+                            && ! ($targetClass->hasAssociation($assoc['mappedBy']) && count($targetClass->getAssociationMapping($assoc['mappedBy'])['joinColumns'] ?? []) > 1)
+                            && ! isset($assoc['indexBy'])
+                        ) {
                             $this->scheduleCollectionForBatchLoading($pColl, $class);
                         } else {
                             $this->loadCollection($pColl);
@@ -3886,7 +3895,9 @@ EXCEPTION
         foreach ($this->reflectionPropertiesGetter->getProperties($class->name) as $prop) {
             $name = $prop->name;
 
-            $prop->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $prop->setAccessible(true);
+            }
 
             if (! isset($class->associationMappings[$name])) {
                 if (! $class->isIdentifier($name)) {

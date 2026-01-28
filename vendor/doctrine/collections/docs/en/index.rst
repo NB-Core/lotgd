@@ -15,9 +15,7 @@ arrays of data. Here is an example using the simple
 
     $collection = new ArrayCollection([1, 2, 3]);
 
-    $filteredCollection = $collection->filter(function($element) {
-        return $element > 1;
-    }); // [2, 3]
+    $filteredCollection = $collection->filter(static fn ($element): bool => $element > 1); // [2, 3]
 
 Collection Methods
 ------------------
@@ -152,9 +150,7 @@ Tests for the existence of an element that satisfies the given predicate.
 .. code-block:: php
     $collection = new Collection(['first', 'second', 'third']);
 
-    $exists = $collection->exists(function($key, $value) {
-        return $value === 'first';
-    }); // true
+    $exists = $collection->exists(static fn ($key, $value): bool => $value === 'first'); // true
 
 findFirst
 ^^^^^^^^^
@@ -164,9 +160,7 @@ Returns the first element of this collection that satisfies the given predicate.
 .. code-block:: php
     $collection = new Collection([1, 2, 3, 2, 1]);
 
-    $one = $collection->findFirst(function(int $key, int $value): bool {
-        return $value > 2 && $key > 1;
-    }); // 3
+    $one = $collection->findFirst(static fn (int $key, int $value): bool => $value > 2 && $key > 1); // 3
 
 filter
 ^^^^^^
@@ -177,9 +171,7 @@ The order and keys of the elements are preserved.
 .. code-block:: php
     $collection = new ArrayCollection([1, 2, 3]);
 
-    $filteredCollection = $collection->filter(function($element) {
-        return $element > 1;
-    }); // [2, 3]
+    $filteredCollection = $collection->filter(static fn ($element): bool => $element > 1); // [2, 3]
 
 forAll
 ^^^^^^
@@ -189,9 +181,7 @@ Tests whether the given predicate holds for all elements of this collection.
 .. code-block:: php
     $collection = new ArrayCollection([1, 2, 3]);
 
-    $forAll = $collection->forAll(function($key, $value) {
-        return $value > 1;
-    }); // false
+    $forAll = $collection->forAll(static fn ($key, $value): bool => $value > 1); // false
 
 indexOf
 ^^^^^^^
@@ -233,9 +223,7 @@ Applies the given function to each element in the collection and returns a new c
 .. code-block:: php
     $collection = new ArrayCollection([1, 2, 3]);
 
-    $mappedCollection = $collection->map(function($value) {
-        return $value + 1;
-    }); // [2, 3, 4]
+    $mappedCollection = $collection->map(static fn (int $value): int => $value + 1); // [2, 3, 4]
 
 reduce
 ^^^^^^
@@ -245,9 +233,7 @@ Applies iteratively the given function to each element in the collection, so as 
 .. code-block:: php
     $collection = new ArrayCollection([1, 2, 3]);
 
-    $reduce = $collection->reduce(function(int $accumulator, int $value): int {
-        return $accumulator + $value;
-    }, 0); // 6
+    $reduce = $collection->reduce(static fn (int $accumulator, int $value): int => $accumulator + $value, 0); // 6
 
 next
 ^^^^
@@ -267,9 +253,7 @@ Partitions this collection in two collections according to a predicate. Keys are
 .. code-block:: php
     $collection = new ArrayCollection([1, 2, 3]);
 
-    $mappedCollection = $collection->partition(function($key, $value) {
-        return $value > 1
-    }); // [[2, 3], [1]]
+    $mappedCollection = $collection->partition(static fn ($key, $value): bool => $value > 1); // [[2, 3], [1]]
 
 remove
 ^^^^^^
@@ -358,3 +342,45 @@ returns a new collection containing these elements and preserved keys.
     $matchingCollection = $collection->matching($criteria); // [ 'wage' => [ 'name' => 'jwage' ]]
 
 You can read more about expressions :ref:`here <expressions>`.
+
+.. note::
+
+    Currently, expressions use strict comparison for the ``EQ`` (equal) and ``NEQ`` (not equal)
+    checks. That makes them behave more naturally as long as only scalar values are involved.
+    For example, ``'04'`` and ``4`` are *not* equal.
+
+    However, this can lead to surprising results when working with objects, especially objects
+    representing values. ``DateTime`` and ``DateTimeImmutable`` are two widespread examples for
+    objects that would typically rather be compared by their value than by identity.
+
+    Comparative operators like ``GT`` or ``LTE`` as well as ``IN`` and ``NIN`` do
+    not exhibit this behavior.
+
+    Also, multi-dimensional sorting based on non-scalar values will only consider the
+    next sort criteria for *identical* matches, which may not give the expected results
+    when objects come into play. Keep this in mind, for example, when sorting by fields that
+    contain ``DateTime`` or ``DateTimeImmutable`` objects.
+
+.. note::
+
+    For collections that contain objects, the field name given to ``Comparison`` will
+    lead to various access methods being tried in sequence. This behavior is deprecated
+    as of v2.4.0. Set the ``$accessRawFieldValues`` parameter in the ``Criteria`` constructor
+    to ``true`` to opt-in to the new behaviour of using direct (reflection-based) field access only.
+    This will be the only option in the next major version.
+
+    Unless you opt in, refer to the ``ClosureExpressionVisitor::getObjectFieldValue()`` method
+    for the exact order of accessors tried. Roughly speaking, for a field named ``field``,
+    the following things will be tried in order:
+
+    1. ``getField()``, ``isField()`` and ``field()`` as getter methods
+    2. When the object implements a ``__call`` magic method, invoke it
+       by calling ``getField()``
+    3. When the object implements ``ArrayAccess``, use that to access the
+       ``field`` offset
+    4. When the object contains a ``::$field`` public property that is not
+       ``null``, access it directly
+    5. Convert snake-case field names to camel case and retry the ``get``, ``is``
+       and prefixless accessor methods
+    6. Direct access to ``::$field``, which must be a public property, as a
+       last resort.

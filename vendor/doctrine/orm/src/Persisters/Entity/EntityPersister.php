@@ -73,7 +73,7 @@ interface EntityPersister
     /**
      * Expands the parameters from the given criteria and use the correct binding types if found.
      *
-     * @param string[] $criteria
+     * @param array<string, mixed> $criteria
      *
      * @phpstan-return array{list<mixed>, list<int|string|null>}
      */
@@ -258,6 +258,8 @@ interface EntityPersister
      * @param int|null $offset
      * @phpstan-param array<string, string>|null $orderBy
      * @phpstan-param array<string, mixed>       $criteria
+     *
+     * @return mixed[]
      */
     public function loadAll(array $criteria = [], ?array $orderBy = null, $limit = null, $offset = null);
 
