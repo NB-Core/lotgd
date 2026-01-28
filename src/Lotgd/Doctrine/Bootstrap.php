@@ -83,7 +83,7 @@ class Bootstrap
             $cache = (new ArrayAdapter())->withSubNamespace($DB_PREFIX);
         }
 
-        $config = ORMSetup::createAnnotationMetadataConfiguration(
+        $config = ORMSetup::createAttributeMetadataConfiguration(
             $paths,
             $isDevMode,
             null,

@@ -6,21 +6,15 @@ namespace Lotgd\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="Lotgd\\Repository\\ExtendedSettingRepository")
- * @ORM\Table(name="settings_extended")
- */
+#[ORM\Entity(repositoryClass: \Lotgd\Repository\ExtendedSettingRepository::class)]
+#[ORM\Table(name: 'settings_extended')]
 class ExtendedSetting
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="setting", type="string", length=50)
-     */
+    #[ORM\Id]
+    #[ORM\Column(name: 'setting', type: 'string', length: 50)]
     private string $setting = '';
 
-    /**
-     * @ORM\Column(type="text")
-     */
+    #[ORM\Column(type: 'text')]
     private string $value = '';
 
     public function getSetting(): string

@@ -6,12 +6,12 @@ namespace Lotgd\Tests;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
-use Doctrine\ORM\Tools\Setup;
-use Doctrine\Common\Cache\ArrayCache;
+use Doctrine\ORM\ORMSetup;
 use Lotgd\Entity\Account;
 use Lotgd\Entity\Setting;
 use Lotgd\Entity\ExtendedSetting;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 final class RepositoryDoctrineTest extends TestCase
 {
@@ -23,16 +23,11 @@ final class RepositoryDoctrineTest extends TestCase
             $this->markTestSkipped('PDO SQLite extension not installed');
         }
 
-        if (!class_exists('Doctrine\\Common\\Annotations\\AnnotationReader')) {
-            $this->markTestSkipped('Doctrine annotations not installed');
-        }
-
-        $config = Setup::createAnnotationMetadataConfiguration(
+        $config = ORMSetup::createAttributeMetadataConfiguration(
             [__DIR__ . '/../src/Lotgd/Entity'],
             true,
             null,
-            new ArrayCache(),
-            false
+            new ArrayAdapter()
         );
         $this->em = EntityManager::create(['driver' => 'pdo_sqlite', 'memory' => true], $config);
         $tool = new SchemaTool($this->em);
