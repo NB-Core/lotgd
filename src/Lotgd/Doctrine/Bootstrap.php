@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Doctrine;
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\DriverManager;
@@ -84,15 +85,8 @@ class Bootstrap
             $cache = (new ArrayAdapter())->withSubNamespace($DB_PREFIX);
         }
 
-        $config = ORMSetup::createAttributeMetadataConfiguration(
-            $paths,
-            $isDevMode,
-            null,
-            $cache
-        );
-        if (method_exists($config, 'setReportFieldsWhereDeclared')) {
-            $config->setReportFieldsWhereDeclared(true);
-        }
+        $config = ORMSetup::createConfiguration($isDevMode, null, $cache);
+        $config->setMetadataDriverImpl(new AttributeDriver($paths, true));
 
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
