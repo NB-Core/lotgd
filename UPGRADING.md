@@ -117,6 +117,10 @@ modules.
   - Each skin requires a `config.json` and core files (`page.twig`, `popup.twig`).  
   - Old `.htm` templates still work but are deprecated.
 
+- **Doctrine Mapping**  
+  - Entity mappings now rely on PHP attributes; annotation-based mappings are no longer supported.  
+  - Ensure custom entities use attributes and remove any legacy annotation tooling dependencies.
+
 - **Performance Defaults**  
   - Output compression via zlib is enabled by default when the `zlib` extension is present. Disable at the PHP level if undesired.  
   - Data cache requires a writable directory: set `DB_USEDATACACHE=1` and `DB_DATACACHEPATH=/path/to/cache`. The app will warn admins if the path is missing or not writable.  
