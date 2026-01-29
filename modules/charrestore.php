@@ -11,6 +11,8 @@ use Lotgd\Nav\SuperuserNav;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
 use Lotgd\GameLog;
+use Lotgd\Mail;
+use Lotgd\Settings;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
@@ -292,15 +294,15 @@ function charrestore_notify_admin_snapshot_failure(string $path, string $reason)
     $message = sprintf('Character snapshot failure: %s Path: %s', $reason, $path);
     GameLog::log($message, 'charrestore');
 
-    $adminmail = get_module_setting('adminmail', 'charrestore');
+    $settings = Settings::getInstance();
+    $adminmail = $settings->getSetting('gameadminemail', 'postmaster@localhost');
     if (! $adminmail) {
         return;
     }
 
-    $adminname = get_module_setting('adminname', 'charrestore');
     $subject = 'Character snapshot failed';
     $body = nl2br(sprintf("A character snapshot could not be saved.\nReason: %s\nPath: %s", $reason, $path));
-    charrestore_sendmail($adminmail, $body, $subject, $adminmail, $adminname);
+    Mail::send([$adminmail => $adminmail], $body, $subject, [$adminmail => $adminmail], false, 'text/html');
 }
 
 function charrestore_getstorepath()
