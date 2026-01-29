@@ -15,6 +15,7 @@ return array(
     '9d2b9fc6db0f153a0a149fefb182415e' => $vendorDir . '/symfony/polyfill-php84/bootstrap.php',
     'db9e11d555cf5192f5980e2511fdf45c' => $vendorDir . '/jaxon-php/jaxon-storage/src/helpers.php',
     '6124b4c8570aa390c21fafd04a26c69f' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
+    '9b38cf48e83f5d8f60375221cd213eee' => $vendorDir . '/phpstan/phpstan/bootstrap.php',
     'd720e59f4656d1e0b830a7edc610e533' => $vendorDir . '/jaxon-php/jaxon-core/src/jaxon_ns.php',
     '5ed186430a4cf167f14acb8364a8f8bf' => $vendorDir . '/jaxon-php/jaxon-core/src/jaxon_fn.php',
     'ec07570ca5a812141189b1fa81503674' => $vendorDir . '/phpunit/phpunit/src/Framework/Assert/Functions.php',

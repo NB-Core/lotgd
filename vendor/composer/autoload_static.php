@@ -16,6 +16,7 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         '9d2b9fc6db0f153a0a149fefb182415e' => __DIR__ . '/..' . '/symfony/polyfill-php84/bootstrap.php',
         'db9e11d555cf5192f5980e2511fdf45c' => __DIR__ . '/..' . '/jaxon-php/jaxon-storage/src/helpers.php',
         '6124b4c8570aa390c21fafd04a26c69f' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
+        '9b38cf48e83f5d8f60375221cd213eee' => __DIR__ . '/..' . '/phpstan/phpstan/bootstrap.php',
         'd720e59f4656d1e0b830a7edc610e533' => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src/jaxon_ns.php',
         '5ed186430a4cf167f14acb8364a8f8bf' => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src/jaxon_fn.php',
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
@@ -57,6 +58,7 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
             'Psr\\Container\\' => 14,
             'Psr\\Cache\\' => 10,
             'PhpParser\\' => 10,
+            'PHPStan\\' => 8,
             'PHPMailer\\PHPMailer\\' => 20,
         ),
         'N' => 
@@ -185,6 +187,10 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'PhpParser\\' => 
         array (
             0 => __DIR__ . '/..' . '/nikic/php-parser/lib/PhpParser',
+        ),
+        'PHPStan\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phpstan/phpstan-doctrine/src',
         ),
         'PHPMailer\\PHPMailer\\' => 
         array (
