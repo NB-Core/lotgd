@@ -139,10 +139,24 @@ function lotgdCommentNotify(count) {
 }
 
 // AJAX polling implementation
+function getJaxonHandlers() {
+    if (typeof Lotgd !== 'undefined'
+        && Lotgd.Async && Lotgd.Async.Handler) {
+        return Lotgd.Async.Handler;
+    }
+
+    if (typeof JaxonLotgd !== 'undefined'
+        && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
+        return JaxonLotgd.Async.Handler;
+    }
+
+    return null;
+}
+
 function pollForUpdates() {
-    if (window.Lotgd_Async_Handler_Commentary
-        && typeof window.Lotgd_Async_Handler_Commentary.pollUpdates === 'function') {
-        window.Lotgd_Async_Handler_Commentary.pollUpdates(
+    var handlers = getJaxonHandlers();
+    if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
+        handlers.Commentary.pollUpdates(
             lotgd_comment_section || 'superuser',
             lotgd_lastCommentId || 0
         );
