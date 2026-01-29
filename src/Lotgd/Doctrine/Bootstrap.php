@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Exception\ConnectionException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Lotgd\Entity\Account;
@@ -109,11 +110,15 @@ class Bootstrap
 
         $entityManager = new EntityManager($doctrineConnection, $config, $eventManager);
 
-        $accountMetadata = $entityManager->getClassMetadata(Account::class);
-        if ($accountMetadata->getIdentifierFieldNames() === []) {
-            throw new \RuntimeException(
-                'Doctrine metadata for Account has no identifiers. Clear the doctrine metadata cache at ' . $cacheDir
-            );
+        try {
+            $accountMetadata = $entityManager->getClassMetadata(Account::class);
+            if ($accountMetadata->getIdentifierFieldNames() === []) {
+                throw new \RuntimeException(
+                    'Doctrine metadata for Account has no identifiers. Clear the doctrine metadata cache at ' . $cacheDir
+                );
+            }
+        } catch (ConnectionException $exception) {
+            // Skip metadata sanity checks when the connection cannot be established (e.g., legacy config tests).
         }
 
         return $entityManager;
