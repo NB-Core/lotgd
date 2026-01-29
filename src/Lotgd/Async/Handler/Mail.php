@@ -56,8 +56,8 @@ class Mail
 
         $tabtext = Translator::translateInline('Legend of the Green Dragon', 'home')
             . ' - ' . $tabtext;
-        $objResponse->script('document.title="' . $tabtext . '";');
-        $objResponse->script('lotgdMailNotify(' . $lastMailId . ', ' . $unreadCount . ');');
+        $objResponse->script->jo('document')->title = $tabtext;
+        $objResponse->call('lotgdMailNotify', $lastMailId, $unreadCount);
 
         return $objResponse;
     }

@@ -19,6 +19,8 @@ namespace Lotgd\Tests\Async {
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class HandlerResponseTest extends TestCase
     {
         protected function setUp(): void
@@ -80,8 +82,8 @@ namespace Lotgd\Tests\Async {
 
             $commands = $response->getCommands();
             $this->assertNotEmpty($commands);
-            $this->assertSame('ap', $commands[0]['cmd']);
-            $this->assertSame($section . '-comment', $commands[0]['id']);
+            $this->assertSame('node.append', $commands[0]['name']);
+            $this->assertSame($section . '-comment', $commands[0]['args']['id']);
 
             $conn = Database::getDoctrineConnection();
             $this->assertSame($section, $conn->lastFetchAllParams['section'] ?? null);
@@ -111,12 +113,12 @@ namespace Lotgd\Tests\Async {
             $commands = $response->getCommands();
             $assign = array_values(array_filter(
                 $commands,
-                fn($command) => ($command['cmd'] ?? '') === 'as' && ($command['id'] ?? '') === 'user3'
+                fn($command) => ($command['name'] ?? '') === 'node.assign' && ($command['args']['id'] ?? '') === 'user3'
             ));
 
             $this->assertNotEmpty($assign);
-            $this->assertStringContainsString('Alpha', $assign[0]['data']);
-            $this->assertStringContainsString('Beta', $assign[0]['data']);
+            $this->assertStringContainsString('Alpha', $assign[0]['args']['value']);
+            $this->assertStringContainsString('Beta', $assign[0]['args']['value']);
 
             $conn = Database::getDoctrineConnection();
             $this->assertSame(

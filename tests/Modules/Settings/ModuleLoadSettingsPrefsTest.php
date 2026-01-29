@@ -49,6 +49,9 @@ namespace Lotgd\Tests\Modules\Settings {
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+    #[\PHPUnit\Framework\Attributes\Group("settings")]
     final class ModuleLoadSettingsPrefsTest extends TestCase
     {
         protected function setUp(): void

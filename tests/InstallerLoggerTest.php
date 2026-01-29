@@ -18,6 +18,8 @@ namespace Lotgd\Tests {
  * @runInSeparateProcess
  * @preserveGlobalState disabled
  */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class InstallerLoggerTest extends TestCase
     {
         public function testLogReturnsFalseWithoutWarningsWhenDirectoryIsNotWritable(): void

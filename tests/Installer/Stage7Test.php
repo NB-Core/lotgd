@@ -34,6 +34,8 @@ namespace Lotgd\Tests\Installer {
      * @runTestsInSeparateProcesses
      * @preserveGlobalState disabled
      */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class Stage7Test extends TestCase
     {
         private string $dbconnectPath;
