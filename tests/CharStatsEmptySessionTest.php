@@ -15,6 +15,8 @@ use PHPUnit\Framework\TestCase;
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
 final class CharStatsEmptySessionTest extends TestCase
 {
     public function testCharStatsHandlesEmptySession(): void

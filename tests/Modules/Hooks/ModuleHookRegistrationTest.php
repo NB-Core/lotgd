@@ -76,6 +76,9 @@ namespace Lotgd\Tests\Modules\Hooks {
  * @preserveGlobalState disabled
  * @group hooks
  */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+    #[\PHPUnit\Framework\Attributes\Group("hooks")]
     final class ModuleHookRegistrationTest extends TestCase
     {
         protected function setUp(): void

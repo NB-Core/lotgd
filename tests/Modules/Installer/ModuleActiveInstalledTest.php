@@ -10,6 +10,9 @@ namespace Lotgd\Tests\Modules\Installer {
      * @preserveGlobalState disabled
      * @group installer
      */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+    #[\PHPUnit\Framework\Attributes\Group("installer")]
     final class ModuleActiveInstalledTest extends TestCase
     {
         protected function setUp(): void

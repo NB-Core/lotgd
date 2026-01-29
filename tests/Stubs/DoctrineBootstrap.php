@@ -453,7 +453,6 @@ class DoctrineEntityManager
             $ref  = new \ReflectionClass($this->entity);
             $data = [];
             foreach ($ref->getProperties() as $prop) {
-                $prop->setAccessible(true);
                 $data[$prop->getName()] = $prop->getValue($this->entity);
             }
             $this->connection->queries[] = sprintf(

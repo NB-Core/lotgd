@@ -11,6 +11,9 @@ use PHPUnit\Framework\TestCase;
  * @preserveGlobalState disabled
  * @group modules
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+#[\PHPUnit\Framework\Attributes\Group("modules")]
 final class MassModulePrepareTest extends TestCase
 {
     public function testMassModulePrepareDelegatesHooks(): void
