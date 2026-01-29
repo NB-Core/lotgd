@@ -11,6 +11,10 @@
 (function () {
     'use strict';
 
+    window.Lotgd = window.Lotgd || {};
+    Lotgd.Async = Lotgd.Async || {};
+    Lotgd.Async.Handler = Lotgd.Async.Handler || {};
+
     if (typeof jaxon === 'undefined') {
         return;
     }
