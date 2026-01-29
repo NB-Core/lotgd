@@ -10,6 +10,9 @@ namespace Lotgd\Tests\Modules\Events {
      * @preserveGlobalState disabled
      * @group events
      */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+    #[\PHPUnit\Framework\Attributes\Group("events")]
     final class EventSortTest extends TestCase
     {
         protected function setUp(): void

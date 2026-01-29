@@ -13,6 +13,8 @@ use PHPUnit\Framework\TestCase;
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
 final class FetchAccountsToExpireQueryTest extends TestCase
 {
     protected function setUp(): void
@@ -25,6 +27,7 @@ final class FetchAccountsToExpireQueryTest extends TestCase
     /**
      * @dataProvider provideThresholdCombinations
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('provideThresholdCombinations')]
     public function testQueryBuildsExpectedConditions(int $old, int $new, int $trash): void
     {
         if ($old === 0 && $new === 0 && $trash === 0) {

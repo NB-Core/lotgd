@@ -7,11 +7,9 @@ namespace Lotgd\Tests;
 use Lotgd\ErrorHandler;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @runInSeparateProcess
- */
 final class ErrorHandlerFatalShutdownTest extends TestCase
 {
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
     public function testFatalShutdownOutputsError(): void
     {
         eval(<<<'PHP'

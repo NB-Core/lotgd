@@ -14,6 +14,7 @@ namespace Lotgd\Tests\Ajax {
     /**
      * @runTestsInSeparateProcesses
      */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
     final class MailStatusTest extends TestCase
     {
         protected function setUp(): void
@@ -38,15 +39,18 @@ namespace Lotgd\Tests\Ajax {
             $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
 
-            $assign = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'as' && ($c['id'] ?? '') === 'maillink'));
+            $assign = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'node.assign' && ($c['args']['id'] ?? '') === 'maillink'));
             $this->assertNotEmpty($assign);
-            $this->assertStringContainsString('mail.php', $assign[0]['data']);
+            $this->assertStringContainsString('mail.php', $assign[0]['args']['value']);
 
-            $scripts = array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'js');
-            $notify = array_values(array_filter($scripts, fn($c) => str_contains($c['data'] ?? '', 'lotgdMailNotify(7, 1)')));
+            $notify = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'script.exec.call'));
             $this->assertNotEmpty($notify);
-            $title = array_values(array_filter($scripts, fn($c) => str_contains($c['data'] ?? '', 'Legend of the Green Dragon - 1 new mail(s)')));
+            $this->assertSame('lotgdMailNotify', $notify[0]['args']['func']);
+            $this->assertSame([7, 1], $notify[0]['args']['args']);
+            $title = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'script.exec.expr'));
             $this->assertNotEmpty($title);
+            $exprData = $title[0]['args']['expr']->jsonSerialize();
+            $this->assertSame('title', $exprData['calls'][1]['_name']);
             $this->assertInstanceOf(Response::class, $response);
         }
 
@@ -62,7 +66,7 @@ namespace Lotgd\Tests\Ajax {
             $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
 
-            $scripts = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'js'));
+            $scripts = array_values(array_filter($commands, fn($c) => str_starts_with($c['name'] ?? '', 'script.exec')));
             $this->assertCount(0, $scripts);
         }
 
