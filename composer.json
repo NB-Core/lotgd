@@ -26,6 +26,7 @@
         }
     },
     "scripts": {
+        "static": "phpstan analyse --configuration phpstan.neon",
         "test": "phpunit --configuration phpunit.xml",
         "lint": "phpcs .",
         "lint:fix": "phpcbf ."
@@ -47,4 +48,3 @@
         "sort-packages": true
     }
 }
-
