@@ -10,7 +10,7 @@ use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\MySQL\Database;
 use Lotgd\Forms;
-use Lotgd\ErrorHandler;
+use Lotgd\GameLog;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
@@ -242,20 +242,29 @@ function charrestore_create_snapshot(int $acctid): bool
 
     //write the file
     $path = charrestore_getstorepath();
-    $filename = $path . str_replace(" ", "_", $user['account']['login']) . "|" . $user['account']['acctid'] . "|" . date("Ymd");
-    $fp = @fopen($filename, "w+");
-    $failure = true;
-    if ($fp) {
-        if (fwrite($fp, serialize($user)) !== false) {
-            $failure = false;
-        }
-        fclose($fp);
-    }
-    if ($failure === true) {
-        $errstr = "Path not openable or error writing: " . $filename;
-        ErrorHandler::Register(E_USER_ERROR, $errstr, __FILE__, __LINE__);
+    if (! is_dir($path)) {
+        charrestore_notify_admin_snapshot_failure($path, 'Snapshot directory does not exist.');
         return false;
     }
+    if (! is_writable($path)) {
+        charrestore_notify_admin_snapshot_failure($path, 'Snapshot directory is not writable.');
+        return false;
+    }
+
+    $filename = $path . str_replace(" ", "_", $user['account']['login']) . "|" . $user['account']['acctid'] . "|" . date("Ymd");
+    $fp = @fopen($filename, "w+");
+    if (! $fp) {
+        charrestore_notify_admin_snapshot_failure($filename, 'Snapshot file could not be opened.');
+        return false;
+    }
+
+    if (fwrite($fp, serialize($user)) === false) {
+        fclose($fp);
+        charrestore_notify_admin_snapshot_failure($filename, 'Snapshot file could not be written.');
+        return false;
+    }
+
+    fclose($fp);
 
     $targetid = $user['account']['acctid'];
     $targetmail = $user_email;
@@ -276,6 +285,22 @@ function charrestore_create_snapshot(int $acctid): bool
     }
 
     return true;
+}
+
+function charrestore_notify_admin_snapshot_failure(string $path, string $reason): void
+{
+    $message = sprintf('Character snapshot failure: %s Path: %s', $reason, $path);
+    GameLog::log($message, 'charrestore');
+
+    $adminmail = get_module_setting('adminmail', 'charrestore');
+    if (! $adminmail) {
+        return;
+    }
+
+    $adminname = get_module_setting('adminname', 'charrestore');
+    $subject = 'Character snapshot failed';
+    $body = nl2br(sprintf("A character snapshot could not be saved.\nReason: %s\nPath: %s", $reason, $path));
+    charrestore_sendmail($adminmail, $body, $subject, $adminmail, $adminname);
 }
 
 function charrestore_getstorepath()
