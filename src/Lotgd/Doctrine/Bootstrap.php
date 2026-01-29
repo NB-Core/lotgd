@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Lotgd\Doctrine;
 
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Exception\ConnectionException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Lotgd\Entity\Account;
 use Lotgd\MySQL\Database;
 use Lotgd\Doctrine\TablePrefixSubscriber;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class Bootstrap
 {
@@ -69,10 +73,20 @@ class Bootstrap
             ],
         ];
 
-        $paths = [$rootDir . '/src/Lotgd/Entity'];
-
         $path = !empty($settings['DB_DATACACHEPATH']) ? $settings['DB_DATACACHEPATH'] : sys_get_temp_dir();
         $cacheDir = $path . '/doctrine';
+
+        if (! empty($settings['DB_DATACACHEPATH'])) {
+            if (! is_dir($cacheDir) && ! mkdir($cacheDir, 0775, true) && ! is_dir($cacheDir)) {
+                throw new \RuntimeException('Doctrine metadata cache directory could not be created: ' . $cacheDir);
+            }
+
+            if (! is_writable($cacheDir)) {
+                throw new \RuntimeException('Doctrine metadata cache directory is not writable: ' . $cacheDir);
+            }
+
+            self::clearDoctrineMetadataCache($cacheDir);
+        }
 
         // Disable metadata caching only when datacache path is not configured
         $isDevMode = empty($settings['DB_USEDATACACHE']) || empty($settings['DB_DATACACHEPATH']);
@@ -85,8 +99,8 @@ class Bootstrap
             $cache = (new ArrayAdapter())->withSubNamespace($DB_PREFIX);
         }
 
-        $config = ORMSetup::createConfiguration($isDevMode, null, $cache);
-        $config->setMetadataDriverImpl(new AttributeDriver($paths, true));
+        $paths = [$rootDir . '/src/Lotgd/Entity'];
+        $config = ORMSetup::createAttributeMetadataConfiguration($paths, $isDevMode, null, $cache);
 
         $eventManager = new EventManager();
         $eventManager->addEventSubscriber(new TablePrefixSubscriber($DB_PREFIX));
@@ -94,6 +108,40 @@ class Bootstrap
         $connection['event_manager'] = $eventManager;
         $doctrineConnection = DriverManager::getConnection($connection);
 
-        return new EntityManager($doctrineConnection, $config, $eventManager);
+        $entityManager = new EntityManager($doctrineConnection, $config, $eventManager);
+
+        try {
+            $accountMetadata = $entityManager->getClassMetadata(Account::class);
+            if ($accountMetadata->getIdentifierFieldNames() === []) {
+                throw new \RuntimeException(
+                    'Doctrine metadata for Account has no identifiers. Clear the doctrine metadata cache at ' . $cacheDir
+                );
+            }
+        } catch (ConnectionException $exception) {
+            // Skip metadata sanity checks when the connection cannot be established (e.g., legacy config tests).
+        }
+
+        return $entityManager;
+    }
+
+    private static function clearDoctrineMetadataCache(string $cacheDir): void
+    {
+        if (! is_dir($cacheDir)) {
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($cacheDir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getPathname());
+                continue;
+            }
+
+            unlink($item->getPathname());
+        }
     }
 }
