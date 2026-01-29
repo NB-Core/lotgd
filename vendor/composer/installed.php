@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '9b34cd6a1467c95c6512b00b4d87bbf23b1ff3b5',
+        'reference' => '7d2d60e6a9616241dbf5626db2b4ef86ea1c1b3e',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         '__root__' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '9b34cd6a1467c95c6512b00b4d87bbf23b1ff3b5',
+            'reference' => '7d2d60e6a9616241dbf5626db2b4ef86ea1c1b3e',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -267,6 +267,15 @@
             'install_path' => __DIR__ . '/../phpmailer/phpmailer',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'phpstan/phpstan' => array(
+            'pretty_version' => '1.12.32',
+            'version' => '1.12.32.0',
+            'reference' => '2770dcdf5078d0b0d53f94317e06affe88419aa8',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../phpstan/phpstan',
+            'aliases' => array(),
+            'dev_requirement' => true,
         ),
         'phpunit/php-code-coverage' => array(
             'pretty_version' => '12.5.2',
