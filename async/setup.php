@@ -140,12 +140,9 @@ function lotgdCommentNotify(count) {
 
 // AJAX polling implementation
 function pollForUpdates() {
-    if (window.Lotgd
-        && window.Lotgd.Async
-        && window.Lotgd.Async.Handler
-        && window.Lotgd.Async.Handler.Commentary
-        && typeof window.Lotgd.Async.Handler.Commentary.pollUpdates === 'function') {
-        window.Lotgd.Async.Handler.Commentary.pollUpdates(
+    if (window.Lotgd_Async_Handler_Commentary
+        && typeof window.Lotgd_Async_Handler_Commentary.pollUpdates === 'function') {
+        window.Lotgd_Async_Handler_Commentary.pollUpdates(
             lotgd_comment_section || 'superuser',
             lotgd_lastCommentId || 0
         );
