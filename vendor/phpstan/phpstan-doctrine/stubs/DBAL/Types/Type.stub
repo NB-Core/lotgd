@@ -1,7 +1,0 @@
-<?php
-
-namespace Doctrine\DBAL\Types;
-
-abstract class Type
-{
-}
