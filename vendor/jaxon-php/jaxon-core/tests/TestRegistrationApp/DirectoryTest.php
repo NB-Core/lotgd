@@ -5,13 +5,12 @@ namespace Jaxon\Tests\TestRegistrationApp;
 use Jaxon\Exception\SetupException;
 use Jaxon\Plugin\Request\CallableClass\CallableClassPlugin;
 use Jaxon\Plugin\Request\CallableClass\CallableObject;
-use Jaxon\Plugin\Request\CallableDir\CallableDirPlugin;
+use Jaxon\Plugin\Request\CallableClass\CallableDirPlugin;
 use Jaxon\Tests\Ns\Ajax\ClassA;
 use Jaxon\Tests\Ns\Ajax\ClassB;
 use Jaxon\Tests\Ns\Ajax\ClassC;
 use PHPUnit\Framework\TestCase;
 
-use function Jaxon\jaxon;
 
 class DirectoryTest extends TestCase
 {
@@ -30,7 +29,7 @@ class DirectoryTest extends TestCase
      */
     public function setUp(): void
     {
-        jaxon()->app()->setup(__DIR__ . '/../config/app/directories.php');
+        jaxon()->app()->setup(dirname(__DIR__) . '/config/app/directories.php');
 
         $this->xDirPlugin = jaxon()->di()->getCallableDirPlugin();
         $this->xClassPlugin = jaxon()->di()->getCallableClassPlugin();

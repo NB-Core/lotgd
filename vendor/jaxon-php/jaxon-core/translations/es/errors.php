@@ -34,15 +34,16 @@ return [
             'entities' => "No se puede mezclar entidades de salida (verdadero / falso) en una sola respuesta: :entities",
             'types' => "No se puede mezclar tipos de respuesta al procesar una sola petición: :class",
         ],
-        'events' => [
-            'invalid' => "Solicitud de evento invalida recibida; No hay eventos registrados con el nombre :name.",
-        ],
         'functions' => [
+            'call' => "An error occured during the call of function :name.",
             'invalid' => "Solicitud de función invalida recibida; no hay procesador de peticiones con el nombre :name.",
             'invalid-declaration' => "Declaración de funcion invalida.",
         ],
         'objects' => [
-            'invalid' => "Solicitud de objeto invalida recibida; Sin objeto :class o metodo :method encontrado.",
+            'invalid' => "Solicitud de objeto invalida recibida; objeto :class o metodo :method.",
+            'missing' => "An error occured during the call; Sin objeto :class o metodo :method encontrado.",
+            'excluded' => "Trying to call the excluded method :method of class :class.",
+            'call' => "An error occured during the call of method :method in of class :class",
             'instance' => "Para registrar un objeto, por favor de proveer una instancia de la clase deseada.",
             'invalid-declaration' => "Declaración de objeto invalida.",
         ],
@@ -65,6 +66,11 @@ return [
         ],
         'dialog' => [
             'library' => "There is no :type library with name :name",
+        ],
+        'app' => [
+            'confirm' => [
+                'nested' => "Calls to the confirm command cannot be nested.",
+            ],
         ],
     ],
 ];

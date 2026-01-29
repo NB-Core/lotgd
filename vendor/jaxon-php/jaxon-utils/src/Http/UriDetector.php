@@ -5,7 +5,7 @@
  *
  * Detect and parse the URI of the Jaxon request being processed.
  *
- * @package jaxon-core
+ * @package jaxon-utils
  * @author Thierry Feuzeu <thierry.feuzeu@gmail.com>
  * @copyright 2022 Thierry Feuzeu <thierry.feuzeu@gmail.com>
  * @license https://opensource.org/licenses/BSD-3-Clause BSD 3-Clause License
@@ -41,7 +41,7 @@ class UriDetector
      *
      * @return void
      */
-    private function setScheme(array $aServerParams)
+    private function setScheme(array $aServerParams): void
     {
         if(isset($this->aUrl['scheme']))
         {
@@ -70,7 +70,7 @@ class UriDetector
      *
      * @return void
      */
-    private function setHostFromServer(array $aServerParams, string $sKey)
+    private function setHostFromServer(array $aServerParams, string $sKey): void
     {
         if(isset($this->aUrl['host']) || empty($aServerParams[$sKey]))
         {
@@ -90,7 +90,7 @@ class UriDetector
      * @return void
      * @throws UriException
      */
-    private function setHost(array $aServerParams)
+    private function setHost(array $aServerParams): void
     {
         $this->setHostFromServer($aServerParams, 'HTTP_X_FORWARDED_HOST');
         $this->setHostFromServer($aServerParams, 'HTTP_HOST');
@@ -110,7 +110,7 @@ class UriDetector
      *
      * @return void
      */
-    private function setPath(array $aServerParams)
+    private function setPath(array $aServerParams): void
     {
         if(isset($this->aUrl['path']) && strlen(basename($this->aUrl['path'])) === 0)
         {
@@ -171,7 +171,7 @@ class UriDetector
      *
      * @return void
      */
-    private function setQuery(array $aServerParams)
+    private function setQuery(array $aServerParams): void
     {
         if(empty($this->aUrl['query']))
         {
@@ -227,8 +227,9 @@ class UriDetector
         $this->setQuery($aServerParams);
 
         // Build the URL: Start with scheme, user and pass
-        return $this->aUrl['scheme'] . '://' . $this->getUser() . $this->aUrl['host'] . $this->getPort() .
-            str_replace(['"', "'", '<', '>'], ['%22', '%27', '%3C', '%3E'], $this->getPath() . $this->getQuery());
+        return $this->aUrl['scheme'] . '://' . $this->getUser() . $this->aUrl['host'] .
+            $this->getPort() . str_replace(['"', "'", '<', '>'],
+                ['%22', '%27', '%3C', '%3E'], $this->getPath() . $this->getQuery());
     }
 
     /**

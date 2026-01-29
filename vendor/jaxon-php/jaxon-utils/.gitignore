@@ -6,3 +6,5 @@ composer.lock
 build/
 .phpunit.result.cache
 tests/minifier/dst.min.js
+tests/minifier/error.min.js
+tests/minifier/dst.min.css

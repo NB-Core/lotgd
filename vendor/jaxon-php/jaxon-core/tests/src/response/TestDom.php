@@ -1,116 +1,62 @@
 <?php
 
-use Jaxon\App\CallableClass;
-use Jaxon\Response\Response;
+use Jaxon\App\FuncComponent;
 
-class TestDom extends CallableClass
+class TestDom extends FuncComponent
 {
-    public function assign(): Response
+    public function assign()
     {
-        $this->response->assign('div', 'innerHTML', 'This HTML content to assign');
-        $this->response->assign('div', 'css.color', 'blue');
-        return $this->response;
+        $this->response()->assign('div', 'innerHTML', 'This HTML content to assign');
+        $this->response()->assign('div', 'css.color', 'blue');
     }
 
-    public function html(): Response
+    public function html()
     {
-        $this->response->html('div', 'This HTML content to assign');
-        return $this->response;
+        $this->response()->html('div', 'This HTML content to assign');
     }
 
-    public function append(): Response
+    public function append()
     {
-        $this->response->append('div', 'innerHTML', 'This HTML content to append');
-        return $this->response;
+        $this->response()->append('div', 'innerHTML', 'This HTML content to append');
     }
 
-    public function prepend(): Response
+    public function prepend()
     {
-        $this->response->prepend('div', 'innerHTML', 'This HTML content to prepend');
-        return $this->response;
+        $this->response()->prepend('div', 'innerHTML', 'This HTML content to prepend');
     }
 
-    public function replace(): Response
+    public function replace()
     {
-        $this->response->replace('div', 'innerHTML', 'prepend', 'replace');
-        return $this->response;
+        $this->response()->replace('div', 'innerHTML', 'prepend', 'replace');
     }
 
-    public function clear(): Response
+    public function clear()
     {
-        $this->response->clear('div', 'innerHTML');
-        return $this->response;
+        $this->response()->clear('div', 'innerHTML');
     }
 
-    public function contextAssign(): Response
+    public function remove()
     {
-        $this->response->contextAssign('innerHTML', 'This HTML content to assign');
-        return $this->response;
+        $this->response()->remove('div');
     }
 
-    public function contextAppend(): Response
+    public function create()
     {
-        $this->response->contextAppend('innerHTML', 'This HTML content to append');
-        return $this->response;
+        $this->response()->create('parent-id', 'div', 'elt-id');
     }
 
-    public function contextPrepend(): Response
+    public function insertBefore()
     {
-        $this->response->contextPrepend('innerHTML', 'This HTML content to prepend');
-        return $this->response;
+        $this->response()->insertBefore('target-id', 'div', 'elt-id');
     }
 
-    public function contextClear(): Response
+    public function insert()
     {
-        $this->response->contextClear('innerHTML');
-        return $this->response;
+        $this->response()->insert('target-id', 'div', 'elt-id');
     }
 
-    public function remove(): Response
+    public function insertAfter()
     {
-        $this->response->remove('div');
-        return $this->response;
-    }
-
-    public function create(): Response
-    {
-        $this->response->create('parent-id', 'div', 'elt-id');
-        return $this->response;
-    }
-
-    public function insertBefore(): Response
-    {
-        $this->response->insertBefore('target-id', 'div', 'elt-id');
-        return $this->response;
-    }
-
-    public function insert(): Response
-    {
-        $this->response->insert('target-id', 'div', 'elt-id');
-        return $this->response;
-    }
-
-    public function insertAfter(): Response
-    {
-        $this->response->insertAfter('target-id', 'div', 'elt-id');
-        return $this->response;
-    }
-
-    public function createInput(): Response
-    {
-        $this->response->createInput('parent-id', 'text', 'name', 'elt-id');
-        return $this->response;
-    }
-
-    public function insertInput(): Response
-    {
-        $this->response->insertInput('target-id', 'text', 'name', 'elt-id');
-        return $this->response;
-    }
-
-    public function insertInputAfter(): Response
-    {
-        $this->response->insertInputAfter('target-id', 'text', 'name', 'elt-id');
-        return $this->response;
+        $this->response()->insertAfter('target-id', 'div', 'elt-id');
     }
 }

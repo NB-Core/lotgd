@@ -18,15 +18,14 @@ use Jaxon\Jaxon;
 use Jaxon\App\Config\ConfigManager;
 use Jaxon\App\I18n\Translator;
 use Jaxon\App\View\ViewRenderer;
+use Jaxon\Config\Config;
 use Jaxon\Di\Container;
 use Jaxon\Exception\SetupException;
-use Jaxon\Plugin\Code\CodeGenerator;
-use Jaxon\Plugin\Package;
+use Jaxon\Plugin\AbstractPackage;
+use Jaxon\Plugin\Request\CallableClass\ComponentRegistry;
 use Jaxon\Request\Handler\CallbackManager;
-use Jaxon\Utils\Config\Config;
 
 use function is_array;
-use function is_callable;
 use function is_integer;
 use function is_string;
 use function is_subclass_of;
@@ -35,63 +34,21 @@ use function trim;
 class PackageManager
 {
     /**
-     * @var Container
-     */
-    protected $di;
-
-    /**
-     * @var PluginManager
-     */
-    protected $xPluginManager;
-
-    /**
-     * @var CallbackManager
-     */
-    protected $xCallbackManager;
-
-    /**
-     * @var ConfigManager
-     */
-    protected $xConfigManager;
-
-    /**
-     * @var CodeGenerator
-     */
-    private $xCodeGenerator;
-
-    /**
-     * @var ViewRenderer
-     */
-    protected $xViewRenderer;
-
-    /**
-     * @var Translator
-     */
-    protected $xTranslator;
-
-    /**
      * The constructor
      *
      * @param Container $di
+     * @param Translator $xTranslator
      * @param PluginManager $xPluginManager
      * @param ConfigManager $xConfigManager
-     * @param CallbackManager $xCallbackManager
-     * @param CodeGenerator $xCodeGenerator
      * @param ViewRenderer $xViewRenderer
-     * @param Translator $xTranslator
+     * @param CallbackManager $xCallbackManager
+     * @param ComponentRegistry $xRegistry
      */
-    public function __construct(Container $di, PluginManager $xPluginManager,
-        ConfigManager $xConfigManager, CallbackManager $xCallbackManager,
-        CodeGenerator $xCodeGenerator, ViewRenderer $xViewRenderer, Translator $xTranslator)
-    {
-        $this->di = $di;
-        $this->xPluginManager = $xPluginManager;
-        $this->xConfigManager = $xConfigManager;
-        $this->xCallbackManager = $xCallbackManager;
-        $this->xCodeGenerator = $xCodeGenerator;
-        $this->xViewRenderer = $xViewRenderer;
-        $this->xTranslator = $xTranslator;
-    }
+    public function __construct(private Container $di, private Translator $xTranslator,
+        private PluginManager $xPluginManager, private ConfigManager $xConfigManager,
+        private ViewRenderer $xViewRenderer, private CallbackManager $xCallbackManager,
+        private ComponentRegistry $xRegistry)
+    {}
 
     /**
      * Save items in the DI container
@@ -100,7 +57,7 @@ class PackageManager
      *
      * @return void
      */
-    private function updateContainer(Config $xConfig)
+    public function updateContainer(Config $xConfig): void
     {
         $aOptions = $xConfig->getOption('container.set', []);
         foreach($aOptions as $xKey => $xValue)
@@ -126,6 +83,12 @@ class PackageManager
             // The key is the class name. It must be a string.
             $this->di->alias((string)$xKey, (string)$xValue);
         }
+        $aOptions = $xConfig->getOption('container.extend', []);
+        foreach($aOptions as $xKey => $xValue)
+        {
+            // The key is the class name. It must be a string.
+            $this->di->extend((string)$xKey, $xValue);
+        }
     }
 
     /**
@@ -137,7 +100,7 @@ class PackageManager
      * @return void
      * @throws SetupException
      */
-    private function registerCallables(array $aOptions, string $sCallableType)
+    private function registerCallables(array $aOptions, string $sCallableType): void
     {
         foreach($aOptions as $xKey => $xValue)
         {
@@ -145,8 +108,10 @@ class PackageManager
             {
                 // Register a function without options
                 $this->xPluginManager->registerCallable($sCallableType, $xValue);
+                continue;
             }
-            elseif(is_string($xKey) && (is_array($xValue) || is_string($xValue)))
+
+            if(is_string($xKey) && (is_array($xValue) || is_string($xValue)))
             {
                 // Register a function with options
                 $this->xPluginManager->registerCallable($sCallableType, $xKey, $xValue);
@@ -161,7 +126,7 @@ class PackageManager
      *
      * @return void
      */
-    private function registerExceptionHandlers(Config $xConfig)
+    private function registerExceptionHandlers(Config $xConfig): void
     {
         foreach($xConfig->getOption('exceptions', []) as $sExClass => $xExHandler)
         {
@@ -170,24 +135,72 @@ class PackageManager
     }
 
     /**
+     * Get a callable list from config
+     *
+     * @param Config $xConfig
+     * @param string $sOptionName
+     * @param string $sOptionKey
+     * @param string $sCallableType
+     *
+     * @return void
+     */
+    private function registerCallablesFromConfig(Config $xConfig,
+        string $sOptionName, string $sOptionKey, string $sCallableType): void
+    {
+        // The callable (directory path, class or function name) can be used as the
+        // key of the array item, a string as the value of an entry without a key,
+        // or set with the key $sOptionKey in an array entry without a key.
+        $aCallables = [];
+        foreach($xConfig->getOption($sOptionName, []) as $xKey => $xValue)
+        {
+            if(is_string($xKey))
+            {
+                $aCallables[$xKey] = $xValue;
+                continue;
+            }
+            if(is_string($xValue))
+            {
+                $aCallables[] = $xValue;
+                continue;
+            }
+
+            if(is_array($xValue) && isset($xValue[$sOptionKey]))
+            {
+                $aCallables[$xValue[$sOptionKey]] = $xValue;
+            }
+            // Invalid values are ignored.
+        }
+        $this->registerCallables($aCallables, $sCallableType);
+    }
+
+    /**
      * Read and set Jaxon options from a JSON config file
      *
      * @param Config $xConfig The config options
-     * @param Config|null $xUserConfig The user provided package options
      *
      * @return void
      * @throws SetupException
      */
-    private function registerItemsFromConfig(Config $xConfig, ?Config $xUserConfig = null)
+    private function registerItemsFromConfig(Config $xConfig): void
     {
+        // Set the config for the registered callables.
+        $this->xRegistry->setPackageConfig($xConfig);
+
         // Register functions, classes and directories
-        $this->registerCallables($xConfig->getOption('functions', []), Jaxon::CALLABLE_FUNCTION);
-        $this->registerCallables($xConfig->getOption('classes', []), Jaxon::CALLABLE_CLASS);
-        $this->registerCallables($xConfig->getOption('directories', []), Jaxon::CALLABLE_DIR);
+        $this->registerCallablesFromConfig($xConfig,
+            'functions', 'name', Jaxon::CALLABLE_FUNCTION);
+        $this->registerCallablesFromConfig($xConfig,
+            'classes', 'name', Jaxon::CALLABLE_CLASS);
+        $this->registerCallablesFromConfig($xConfig,
+            'directories', 'path', Jaxon::CALLABLE_DIR);
+
+        // Unset the current config.
+        $this->xRegistry->unsetPackageConfig();
+
         // Register the view namespaces
         // Note: the $xUserConfig can provide a "template" option, which is used to customize
         // the user defined view namespaces. That's why it is needed here.
-        $this->xViewRenderer->addNamespaces($xConfig, $xUserConfig);
+        $this->xViewRenderer->addNamespaces($xConfig);
         // Save items in the DI container
         $this->updateContainer($xConfig);
         // Register the exception handlers
@@ -197,7 +210,7 @@ class PackageManager
     /**
      * Get the options provided by the package library
      *
-     * @param string $sClassName    The package class
+     * @param class-string $sClassName    The package class
      *
      * @return Config
      * @throws SetupException
@@ -223,37 +236,18 @@ class PackageManager
     }
 
     /**
-     * Get the options provided by the package user
-     *
-     * @param array $aUserOptions    The user provided options
-     *
-     * @return Config
-     * @throws SetupException
-     */
-    private function getPackageUserConfig(array $aUserOptions): Config
-    {
-        $xOptionsProvider = $aUserOptions['provider'] ?? null;
-        // The user can provide a callable that returns the package options.
-        if(is_callable($xOptionsProvider))
-        {
-            $aUserOptions = $xOptionsProvider($aUserOptions);
-        }
-        return $this->xConfigManager->newConfig($aUserOptions);
-    }
-
-    /**
      * Register a package
      *
-     * @param string $sClassName    The package class
+     * @param class-string $sClassName    The package class
      * @param array $aUserOptions    The user provided package options
      *
      * @return void
      * @throws SetupException
      */
-    public function registerPackage(string $sClassName, array $aUserOptions)
+    public function registerPackage(string $sClassName, array $aUserOptions = []): void
     {
         $sClassName = trim($sClassName, '\\ ');
-        if(!is_subclass_of($sClassName, Package::class))
+        if(!is_subclass_of($sClassName, AbstractPackage::class))
         {
             $sMessage = $this->xTranslator->trans('errors.register.invalid', ['name' => $sClassName]);
             throw new SetupException($sMessage);
@@ -261,23 +255,24 @@ class PackageManager
 
         // Register the declarations in the package config.
         $xAppConfig = $this->getPackageLibConfig($sClassName);
-        $xUserConfig = $this->getPackageUserConfig($aUserOptions);
-        $this->registerItemsFromConfig($xAppConfig, $xUserConfig);
+        $this->registerItemsFromConfig($xAppConfig);
+
         // Register the package and its options in the DI
-        $this->di->registerPackage($sClassName, $xUserConfig);
+        $this->di->registerPackage($sClassName, $aUserOptions);
 
         // Register the package as a code generator.
-        $this->xCodeGenerator->addCodeGenerator($sClassName, 500);
+        $this->xPluginManager->registerCodeGenerator($sClassName, 500);
     }
 
     /**
      * Get a package instance
      *
-     * @param string $sClassName    The package class name
+     * @template T of AbstractPackage
+     * @param class-string<T> $sClassName    The package class name
      *
-     * @return Package|null
+     * @return T|null
      */
-    public function getPackage(string $sClassName): ?Package
+    public function getPackage(string $sClassName): ?AbstractPackage
     {
         $sClassName = trim($sClassName, '\\ ');
         return $this->di->h($sClassName) ? $this->di->g($sClassName) : null;
@@ -286,20 +281,33 @@ class PackageManager
     /**
      * Read and set Jaxon options from the config
      *
-     * @param Config $xAppConfig    The config options
-     *
      * @return void
      * @throws SetupException
      */
-    public function registerFromConfig(Config $xAppConfig)
+    public function registerFromConfig(): void
     {
+        $xAppConfig = $this->xConfigManager->getAppConfig();
         $this->registerItemsFromConfig($xAppConfig);
 
         // Register packages
         $aPackageConfig = $xAppConfig->getOption('packages', []);
-        foreach($aPackageConfig as $sClassName => $aPkgOptions)
+        foreach($aPackageConfig as $xKey => $xValue)
         {
-            $this->registerPackage($sClassName, $aPkgOptions);
+            if(is_integer($xKey) && is_string($xValue))
+            {
+                // Register a package without options
+                $sClassName = $xValue;
+                $this->registerPackage($sClassName);
+                continue;
+            }
+
+            if(is_string($xKey) && is_array($xValue))
+            {
+                // Register a package with options
+                $sClassName = $xKey;
+                $aPkgOptions = $xValue;
+                $this->registerPackage($sClassName, $aPkgOptions);
+            }
         }
     }
 }

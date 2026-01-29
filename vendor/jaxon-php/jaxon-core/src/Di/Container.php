@@ -14,27 +14,21 @@
 
 namespace Jaxon\Di;
 
-use Jaxon\App\Ajax;
 use Jaxon\App\I18n\Translator;
 use Jaxon\App\Session\SessionInterface;
 use Jaxon\Exception\SetupException;
+use Lagdo\Facades\ContainerWrapper;
 use Pimple\Container as PimpleContainer;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-
 use Closure;
-use Exception;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionNamedType;
-use ReflectionParameter;
 use Throwable;
 
-use function array_map;
-use function realpath;
+use function dirname;
+use function is_a;
 
-class Container
+class Container implements ContainerInterface
 {
     use Traits\AppTrait;
     use Traits\PsrTrait;
@@ -42,16 +36,10 @@ class Container
     use Traits\ResponseTrait;
     use Traits\PluginTrait;
     use Traits\CallableTrait;
-    use Traits\RegisterTrait;
     use Traits\ViewTrait;
     use Traits\UtilTrait;
-
-    /**
-     * The library Dependency Injection Container
-     *
-     * @var PimpleContainer
-     */
-    private $xLibContainer;
+    use Traits\MetadataTrait;
+    use Traits\DiAutoTrait;
 
     /**
      * The application or framework Dependency Injection Container
@@ -63,26 +51,38 @@ class Container
     /**
      * The class constructor
      */
-    public function __construct(Ajax $jaxon)
+    public function __construct()
     {
         $this->xLibContainer = new PimpleContainer();
 
-        // Save the Ajax and Container instances
-        $this->val(Ajax::class, $jaxon);
+        // The container instance is saved in the container.
         $this->val(Container::class, $this);
 
         // Register the null logger by default
         $this->setLogger(new NullLogger());
 
+        // Setup the logger facade. Don't overwrite if it's already set.
+        ContainerWrapper::setContainer($this, false);
+
+        $sBaseDir = dirname(__DIR__, 2);
         // Template directory
-        $sTemplateDir = realpath(__DIR__ . '/../../templates');
-        $this->val('jaxon.core.dir.template', $sTemplateDir);
+        $this->val('jaxon.core.dir.template', "$sBaseDir/templates");
 
         // Translation directory
-        $sTranslationDir = realpath(__DIR__ . '/../../translations');
-        $this->val('jaxon.core.dir.translation', $sTranslationDir);
+        $this->val('jaxon.core.dir.translation', "$sBaseDir/translations");
 
         $this->registerAll();
+        $this->setEventHandlers();
+    }
+
+    /**
+     * The container for parameters
+     *
+     * @return Container
+     */
+    protected function cn(): Container
+    {
+        return $this;
     }
 
     /**
@@ -90,7 +90,7 @@ class Container
      *
      * @return void
      */
-    private function registerAll()
+    private function registerAll(): void
     {
         $this->registerApp();
         $this->registerPsr();
@@ -100,18 +100,21 @@ class Container
         $this->registerCallables();
         $this->registerViews();
         $this->registerUtils();
+        $this->registerMetadataReader();
     }
 
     /**
      * Set the logger
      *
-     * @param LoggerInterface $xLogger
+     * @param LoggerInterface|Closure $xLogger
      *
      * @return void
      */
-    public function setLogger(LoggerInterface $xLogger)
+    public function setLogger(LoggerInterface|Closure $xLogger): void
     {
-        $this->val(LoggerInterface::class, $xLogger);
+        is_a($xLogger, LoggerInterface::class) ?
+            $this->val(LoggerInterface::class, $xLogger) :
+            $this->set(LoggerInterface::class, $xLogger);
     }
 
     /**
@@ -131,7 +134,7 @@ class Container
      *
      * @return void
      */
-    public function setContainer(ContainerInterface $xContainer)
+    public function setContainer(ContainerInterface $xContainer): void
     {
         $this->xAppContainer = $xContainer;
     }
@@ -157,21 +160,19 @@ class Container
      */
     public function has(string $sClass): bool
     {
-        if($this->xAppContainer != null && $this->xAppContainer->has($sClass))
-        {
-            return true;
-        }
-        return $this->xLibContainer->offsetExists($sClass);
+        return $this->xAppContainer != null && $this->xAppContainer->has($sClass) ?
+            true : $this->xLibContainer->offsetExists($sClass);
     }
 
     /**
      * Get a class instance
      *
-     * @param string $sClass    The full class name
+     * @template T
+     * @param class-string<T> $sClass The full class name
      *
-     * @return mixed
+     * @return T
      */
-    public function g(string $sClass)
+    public function g(string $sClass): mixed
     {
         return $this->xLibContainer->offsetGet($sClass);
     }
@@ -179,26 +180,25 @@ class Container
     /**
      * Get a class instance
      *
-     * @param string $sClass The full class name
+     * @template T
+     * @param class-string<T> $sClass The full class name
      *
-     * @return mixed
+     * @return T
      * @throws SetupException
      */
-    public function get(string $sClass)
+    public function get(string $sClass): mixed
     {
         try
         {
-            if($this->xAppContainer != null && $this->xAppContainer->has($sClass))
-            {
-                return $this->xAppContainer->get($sClass);
-            }
-            return $this->xLibContainer->offsetGet($sClass);
+            return $this->xAppContainer != null && $this->xAppContainer->has($sClass) ?
+                $this->xAppContainer->get($sClass) : $this->xLibContainer->offsetGet($sClass);
         }
-        catch(Exception|Throwable $e)
+        catch(Throwable $e)
         {
             $xLogger = $this->g(LoggerInterface::class);
             $xTranslator = $this->g(Translator::class);
-            $sMessage = $e->getMessage() . ': ' . $xTranslator->trans('errors.class.container', ['name' => $sClass]);
+            $sMessage = $e->getMessage() . ': ' .
+                $xTranslator->trans('errors.class.container', ['name' => $sClass]);
             $xLogger->error($e->getMessage(), ['message' => $sMessage]);
             throw new SetupException($sMessage);
         }
@@ -207,27 +207,29 @@ class Container
     /**
      * Save a closure in the container
      *
-     * @param string $sClass    The full class name
+     * @param string|class-string $sClass    The full class name
      * @param Closure $xClosure    The closure
+     * @param bool $bIsSingleton
      *
      * @return void
      */
-    public function set(string $sClass, Closure $xClosure)
+    public function set(string $sClass, Closure $xClosure, bool $bIsSingleton = true): void
     {
-       $this->xLibContainer->offsetSet($sClass, function() use($xClosure) {
-            return $xClosure($this);
-        });
+        // Wrap the user closure into a new closure, so it can take this container as a parameter.
+        $xClosure = fn() => $xClosure($this);
+        $this->xLibContainer->offsetSet($sClass, $bIsSingleton ?
+            $xClosure : $this->xLibContainer->factory($xClosure));
     }
 
     /**
      * Save a value in the container
      *
-     * @param string $sKey    The key
+     * @param string|class-string $sKey    The key
      * @param mixed $xValue    The value
      *
      * @return void
      */
-    public function val(string $sKey, $xValue)
+    public function val(string $sKey, $xValue): void
     {
        $this->xLibContainer->offsetSet($sKey, $xValue);
     }
@@ -235,89 +237,27 @@ class Container
     /**
      * Set an alias in the container
      *
-     * @param string $sAlias    The alias name
-     * @param string $sClass    The class name
+     * @param string|class-string $sAlias    The alias name
+     * @param string|class-string $sClass    The class name
      *
      * @return void
      */
-    public function alias(string $sAlias, string $sClass)
+    public function alias(string $sAlias, string $sClass): void
     {
-        $this->set($sAlias, function($di) use ($sClass) {
-            return $di->get($sClass);
-        });
+        $this->set($sAlias, fn($di) => $di->get($sClass));
     }
 
     /**
-     * @param ReflectionClass $xClass
-     * @param ReflectionParameter $xParameter
+     * Save a closure in the container
      *
-     * @return mixed
-     * @throws SetupException
-     */
-    protected function getParameter(ReflectionClass $xClass, ReflectionParameter $xParameter)
-    {
-        $xType = $xParameter->getType();
-        // Check the parameter class first.
-        if($xType instanceof ReflectionNamedType)
-        {
-            // Check the class + the name
-            if($this->has($xType->getName() . ' $' . $xParameter->getName()))
-            {
-                return $this->get($xType->getName() . ' $' . $xParameter->getName());
-            }
-            // Check the class only
-            if($this->get($xType->getName()))
-            {
-                return $this->get($xType->getName());
-            }
-        }
-        // Check the name only
-        return $this->get('$' . $xParameter->getName());
-    }
-
-    /**
-     * Create an instance of a class, getting the constructor parameters from the DI container
-     *
-     * @param string|ReflectionClass $xClass The class name or the reflection class
-     *
-     * @return object|null
-     * @throws ReflectionException
-     * @throws SetupException
-     */
-    public function make($xClass)
-    {
-        if(is_string($xClass))
-        {
-            $xClass = new ReflectionClass($xClass); // Create the reflection class instance
-        }
-        if(!($xClass instanceof ReflectionClass))
-        {
-            return null;
-        }
-        // Use the Reflection class to get the parameters of the constructor
-        if(($constructor = $xClass->getConstructor()) === null)
-        {
-            return $xClass->newInstance();
-        }
-        $aParameterInstances = array_map(function($xParameter) use($xClass) {
-            return $this->getParameter($xClass, $xParameter);
-        }, $constructor->getParameters());
-
-        return $xClass->newInstanceArgs($aParameterInstances);
-    }
-
-    /**
-     * Create an instance of a class by automatically fetching the dependencies in the constructor.
-     *
-     * @param string $sClass    The class name
+     * @param string|class-string $sClass    The full class name
+     * @param Closure $xClosure    The closure
      *
      * @return void
      */
-    public function auto(string $sClass)
+    public function extend(string $sClass, Closure $xClosure): void
     {
-        $this->set($sClass, function() use ($sClass) {
-            return $this->make($sClass);
-        });
+        $this->xLibContainer->extend($sClass, $xClosure);
     }
 
     /**
@@ -337,7 +277,7 @@ class Container
      *
      * @return void
      */
-    public function setSessionManager(Closure $xClosure)
+    public function setSessionManager(Closure $xClosure): void
     {
         $this->set(SessionInterface::class, $xClosure);
     }

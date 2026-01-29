@@ -37,13 +37,6 @@ interface UploadHandlerInterface
     public function files(): array;
 
     /**
-     * Check if this is an HTTP (and not Ajax) upload
-     *
-     * @return void
-     */
-    public function isHttpUpload();
-
-    /**
      * Check if the current request contains uploaded files
      *
      * @param ServerRequestInterface $xRequest
@@ -60,4 +53,12 @@ interface UploadHandlerInterface
      * @return bool
      */
     public function processRequest(ServerRequestInterface $xRequest): bool;
+
+    /**
+     * @param string $sStorage
+     * @param Closure $cFactory
+     *
+     * @return void
+     */
+    public function registerStorageAdapter(string $sStorage, Closure $cFactory);
 }

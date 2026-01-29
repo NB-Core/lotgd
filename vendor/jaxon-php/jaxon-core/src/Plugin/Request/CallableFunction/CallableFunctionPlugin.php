@@ -26,59 +26,25 @@ use Jaxon\Di\Container;
 use Jaxon\App\I18n\Translator;
 use Jaxon\Exception\RequestException;
 use Jaxon\Exception\SetupException;
-use Jaxon\Plugin\RequestPlugin;
-use Jaxon\Request\Handler\ParameterReader;
+use Jaxon\Plugin\AbstractRequestPlugin;
+use Jaxon\Plugin\JsCode;
+use Jaxon\Plugin\JsCodeGeneratorInterface;
 use Jaxon\Request\Target;
 use Jaxon\Request\Validator;
-use Jaxon\Response\ResponseInterface;
 use Jaxon\Utils\Template\TemplateEngine;
 use Psr\Http\Message\ServerRequestInterface;
+use Exception;
 
 use function array_keys;
+use function count;
 use function implode;
 use function is_array;
 use function is_string;
 use function md5;
 use function trim;
 
-class CallableFunctionPlugin extends RequestPlugin
+class CallableFunctionPlugin extends AbstractRequestPlugin implements JsCodeGeneratorInterface
 {
-    /**
-     * @var string
-     */
-    private $sPrefix;
-
-    /**
-     * The DI container
-     *
-     * @var Container
-     */
-    protected $di;
-
-    /**
-     * The parameter reader
-     *
-     * @var ParameterReader
-     */
-    protected $xParameterReader;
-
-    /**
-     * The request data validator
-     *
-     * @var Validator
-     */
-    protected $xValidator;
-
-    /**
-     * @var TemplateEngine
-     */
-    protected $xTemplateEngine;
-
-    /**
-     * @var Translator
-     */
-    protected $xTranslator;
-
     /**
      * The registered functions names
      *
@@ -97,22 +63,16 @@ class CallableFunctionPlugin extends RequestPlugin
      * The constructor
      *
      * @param string $sPrefix
+     * @param bool $bDebug
      * @param Container $di
-     * @param ParameterReader $xParameterReader
      * @param TemplateEngine $xTemplateEngine
      * @param Translator $xTranslator
      * @param Validator $xValidator
      */
-    public function __construct(string $sPrefix, Container $di, ParameterReader $xParameterReader,
-        TemplateEngine $xTemplateEngine, Translator $xTranslator, Validator $xValidator)
-    {
-        $this->sPrefix = $sPrefix;
-        $this->di = $di;
-        $this->xParameterReader = $xParameterReader;
-        $this->xTemplateEngine = $xTemplateEngine;
-        $this->xTranslator = $xTranslator;
-        $this->xValidator = $xValidator;
-    }
+    public function __construct(private string $sPrefix, private bool $bDebug,
+        private Container $di, private TemplateEngine $xTemplateEngine,
+        private Translator $xTranslator, private Validator $xValidator)
+    {}
 
     /**
      * @inheritDoc
@@ -178,7 +138,7 @@ class CallableFunctionPlugin extends RequestPlugin
     /**
      * @inheritDoc
      */
-    public function getCallable(string $sCallable)
+    public function getCallable(string $sCallable): CallableFunction|null
     {
         $sFunction = trim($sCallable);
         if(!isset($this->aFunctions[$sFunction]))
@@ -203,25 +163,32 @@ class CallableFunctionPlugin extends RequestPlugin
      */
     private function getCallableScript(CallableFunction $xFunction): string
     {
+        $aOptions = [];
+        foreach($xFunction->getOptions() as $sKey => $sValue)
+        {
+            $aOptions[] = "$sKey: $sValue";
+        }
+
         return $this->xTemplateEngine->render('jaxon::callables/function.js', [
             'sName' => $xFunction->getName(),
             'sJsName' => $xFunction->getJsName(),
-            'aOptions' => $xFunction->getOptions(),
+            'sArguments' => count($aOptions) === 0 ? 'args' :
+                'args, { ' . implode(',', $aOptions) . ' }',
         ]);
     }
 
     /**
      * @inheritDoc
      */
-    public function getScript(): string
+    public function getJsCode(): JsCode
     {
-        $code = '';
+        $aScripts = [];
         foreach(array_keys($this->aFunctions) as $sFunction)
         {
             $xFunction = $this->getCallable($sFunction);
-            $code .= $this->getCallableScript($xFunction);
+            $aScripts[] = trim($this->getCallableScript($xFunction));
         }
-        return $code;
+        return new JsCode(implode("\n", $aScripts) . "\n");
     }
 
     /**
@@ -229,35 +196,40 @@ class CallableFunctionPlugin extends RequestPlugin
      */
     public static function canProcessRequest(ServerRequestInterface $xRequest): bool
     {
-        $aBody = $xRequest->getParsedBody();
-        if(is_array($aBody))
-        {
-            return isset($aBody['jxnfun']);
-        }
-        $aParams = $xRequest->getQueryParams();
-        return isset($aParams['jxnfun']);
+        $aCall = $xRequest->getAttribute('jxncall');
+        // throw new \Exception(json_encode(['call' => $aCall]));
+        return $aCall !== null && ($aCall['type'] ?? '') === 'func' && isset($aCall['name']);
     }
 
     /**
      * @inheritDoc
      */
-    public function setTarget(ServerRequestInterface $xRequest)
+    public function setTarget(ServerRequestInterface $xRequest): Target
     {
-        $aBody = $xRequest->getParsedBody();
-        if(is_array($aBody))
-        {
-            $this->xTarget = Target::makeFunction(trim($aBody['jxnfun']));
-            return;
-        }
-        $aParams = $xRequest->getQueryParams();
-        $this->xTarget = Target::makeFunction(trim($aParams['jxnfun']));
+        $aCall = $xRequest->getAttribute('jxncall');
+        $this->xTarget = Target::makeFunction(trim($aCall['name']));
+        return $this->xTarget;
+    }
+
+    /**
+     * @param Exception $xException
+     * @param string $sErrorMessage
+     *
+     * @throws RequestException
+     * @return never
+     */
+    private function throwException(Exception $xException, string $sErrorMessage): void
+    {
+        $this->di->getLogger()->error($xException->getMessage());
+        throw new RequestException($sErrorMessage . (!$this->bDebug ? '' :
+            "\n" . $xException->getMessage()));
     }
 
     /**
      * @inheritDoc
      * @throws RequestException
      */
-    public function processRequest(): ?ResponseInterface
+    public function processRequest(): void
     {
         $sRequestedFunction = $this->xTarget->getFunctionName();
 
@@ -270,7 +242,26 @@ class CallableFunctionPlugin extends RequestPlugin
                 ['name' => $sRequestedFunction]));
         }
 
-        $xFunction = $this->getCallable($sRequestedFunction);
-        return $xFunction->call($this->xParameterReader->args());
+        try
+        {
+            /** @var CallableFunction */
+            $xFunction = $this->getCallable($sRequestedFunction);
+        }
+        catch(Exception $e)
+        {
+            // Unable to find the requested function
+            $this->throwException($e, $this->xTranslator->trans('errors.functions.invalid',
+                ['name' => $sRequestedFunction]));
+        }
+        try
+        {
+            $xFunction->call($this->xTarget->args());
+        }
+        catch(Exception $e)
+        {
+            // Unable to execute the requested function
+            $this->throwException($e, $this->xTranslator->trans('errors.functions.call',
+                ['name' => $sRequestedFunction]));
+        }
     }
 }

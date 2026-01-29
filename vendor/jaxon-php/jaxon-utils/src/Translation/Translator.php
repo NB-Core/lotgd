@@ -5,7 +5,7 @@
  *
  * Provide translation service for strings in the Jaxon library.
  *
- * @package jaxon-core
+ * @package jaxon-utils
  * @author Thierry Feuzeu <thierry.feuzeu@gmail.com>
  * @copyright 2022 Thierry Feuzeu <thierry.feuzeu@gmail.com>
  * @license https://opensource.org/licenses/BSD-3-Clause BSD 3-Clause License
@@ -14,13 +14,15 @@
 
 namespace Jaxon\Utils\Translation;
 
-use function trim;
+use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_values;
+use function explode;
 use function file_exists;
 use function is_array;
 use function str_replace;
-use function array_map;
-use function array_keys;
-use function array_values;
+use function trim;
 
 class Translator
 {
@@ -32,11 +34,18 @@ class Translator
     protected $sDefaultLocale = 'en';
 
     /**
-     * The translations
+     * The translations in a flattened array
      *
      * @var array
      */
     protected $aTranslations = [];
+
+    /**
+     * The translations as received as input
+     *
+     * @var array
+     */
+    protected $aRawTranslations = [];
 
     /**
      * Set the default locale
@@ -45,7 +54,7 @@ class Translator
      *
      * @return void
      */
-    public function setLocale(string $sLocale)
+    public function setLocale(string $sLocale): void
     {
         if(($sLocale = trim($sLocale)))
         {
@@ -62,7 +71,7 @@ class Translator
      *
      * @return void
      */
-    private function _loadTranslations(string $sLanguage, string $sPrefix, array $aTranslations)
+    private function _loadTranslations(string $sLanguage, string $sPrefix, array $aTranslations): void
     {
         foreach($aTranslations as $sKey => $xTranslation)
         {
@@ -100,11 +109,14 @@ class Translator
         {
             return false;
         }
+
         // Load the translations
         if(!isset($this->aTranslations[$sLanguage]))
         {
             $this->aTranslations[$sLanguage] = [];
         }
+        $this->aRawTranslations[$sLanguage] =
+            array_merge($this->aRawTranslations[$sLanguage] ?? [], $aTranslations);
         $this->_loadTranslations($sLanguage, '', $aTranslations);
         return true;
     }
@@ -138,5 +150,32 @@ class Translator
             $sMessage = str_replace($aVars, array_values($aPlaceHolders), $sMessage);
         }
         return $sMessage;
+    }
+
+    /**
+     * Get all the translations under a given key
+     *
+     * @param string $sKey
+     * @param string $sLanguage
+     *
+     * @return array
+     */
+    public function translations(string $sKey, string $sLanguage = ''): array
+    {
+        if(empty($sLanguage))
+        {
+            $sLanguage = $this->sDefaultLocale;
+        }
+        $aKeys = explode('.', $sKey);
+
+        $aTranslations = $this->aRawTranslations[$sLanguage];
+        foreach($aKeys as $sKey)
+        {
+            if($sKey !== '')
+            {
+                $aTranslations = $aTranslations[$sKey] ?? [];
+            }
+        }
+        return $aTranslations;
     }
 }

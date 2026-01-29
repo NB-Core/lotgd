@@ -1,19 +1,22 @@
-JxnSample = {};
-JxnSample.myMethod = function() {
-    return jaxon.request({ jxncls: 'Sample', jxnmthd: 'myMethod' }, { parameters: arguments, asynchronous: true });
+const jx = {
+  rc: (name, method, parameters, options = {}) => jaxon.request({ type: 'class', name, method }, { parameters, ...options}),
+  rf: (name, parameters, options = {}) => jaxon.request({ type: 'func', name }, { parameters, ...options}),
+  c0: 'Sample',
+  c1: 'ClassA',
+  c2: 'ClassB',
+  c3: 'ClassC',
 };
-JxnClassA = {};
-JxnClassA.methodAb = function() {
-    return jaxon.request({ jxncls: 'ClassA', jxnmthd: 'methodAb' }, { parameters: arguments, bags: ["bag.name"] });
+
+JxnSample = {
+  myMethod: (...args) => jx.rc(jx.c0, 'myMethod', args, { asynchronous: true }),
 };
-JxnClassB = {};
-JxnClassB.methodBa = function() {
-    return jaxon.request({ jxncls: 'ClassB', jxnmthd: 'methodBa' }, { parameters: arguments });
+JxnClassA = {
+  methodAb: (...args) => jx.rc(jx.c1, 'methodAb', args, { bags: ["bag.name"] }),
 };
-JxnClassC = {};
-JxnClassC.methodCa = function() {
-    return jaxon.request({ jxncls: 'ClassC', jxnmthd: 'methodCa' }, { parameters: arguments, upload: 'methodBb' });
+JxnClassB = {
+  methodBa: (...args) => jx.rc(jx.c2, 'methodBa', args),
 };
-JxnClassC.methodCb = function() {
-    return jaxon.request({ jxncls: 'ClassC', jxnmthd: 'methodCb' }, { parameters: arguments });
+JxnClassC = {
+  methodCa: (...args) => jx.rc(jx.c3, 'methodCa', args, { upload: 'methodBb' }),
+  methodCb: (...args) => jx.rc(jx.c3, 'methodCb', args),
 };

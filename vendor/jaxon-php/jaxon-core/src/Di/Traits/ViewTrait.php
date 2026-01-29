@@ -2,23 +2,20 @@
 
 namespace Jaxon\Di\Traits;
 
-use Jaxon\App\Config\ConfigManager;
-use Jaxon\App\Dialog\Library\AlertLibrary;
-use Jaxon\App\Dialog\Library\DialogLibraryHelper;
-use Jaxon\App\Dialog\Library\DialogLibraryManager;
-use Jaxon\App\Dialog\LibraryInterface;
-use Jaxon\App\Dialog\MessageInterface;
-use Jaxon\App\Dialog\ModalInterface;
-use Jaxon\App\Dialog\QuestionInterface;
-use Jaxon\App\I18n\Translator;
-use Jaxon\App\View\PaginationRenderer;
+use Jaxon\App\Dialog\Library\AlertInterface;
+use Jaxon\App\Dialog\Library\ConfirmInterface;
+use Jaxon\App\Dialog\Library\ModalInterface;
+use Jaxon\App\Dialog\Library\NoDialogLibrary;
+use Jaxon\App\Dialog\Manager\DialogCommand;
+use Jaxon\App\Dialog\Manager\LibraryRegistryInterface;
+use Jaxon\App\Pagination\PaginationRenderer;
+use Jaxon\App\View\Helper\HtmlAttrHelper;
 use Jaxon\App\View\TemplateView;
 use Jaxon\App\View\ViewRenderer;
+use Jaxon\Di\ComponentContainer;
 use Jaxon\Di\Container;
-use Jaxon\Request\Call\Paginator;
 use Jaxon\Utils\Template\TemplateEngine;
 
-use function call_user_func;
 use function rtrim;
 use function trim;
 
@@ -29,19 +26,15 @@ trait ViewTrait
      *
      * @return void
      */
-    private function registerViews()
+    private function registerViews(): void
     {
         // Jaxon template view
-        $this->set(TemplateView::class, function($di) {
-            return new TemplateView($di->g(TemplateEngine::class));
-        });
+        $this->set(TemplateView::class, fn($di) => new TemplateView($di->g(TemplateEngine::class)));
         // View Renderer
         $this->set(ViewRenderer::class, function($di) {
             $xViewRenderer = new ViewRenderer($di->g(Container::class));
             // Add the default view renderer
-            $xViewRenderer->addRenderer('jaxon', function($di) {
-                return $di->g(TemplateView::class);
-            });
+            $xViewRenderer->addRenderer('jaxon', fn($di) => $di->g(TemplateView::class));
             $sTemplateDir = rtrim(trim($di->g('jaxon.core.dir.template')), '/\\');
             $sPaginationDir = $sTemplateDir . DIRECTORY_SEPARATOR . 'pagination';
             // By default, render pagination templates with Jaxon.
@@ -50,105 +43,37 @@ trait ViewTrait
             return $xViewRenderer;
         });
 
-        // Pagination Paginator
-        $this->set(Paginator::class, function($di) {
-            return new Paginator($di->g(PaginationRenderer::class));
-        });
-        // Pagination Renderer
-        $this->set(PaginationRenderer::class, function($di) {
-            return new PaginationRenderer($di->g(ViewRenderer::class));
-        });
+        // By default there is no dialog library registry.
+        $this->set(NoDialogLibrary::class, fn() => new NoDialogLibrary());
+        $this->set(LibraryRegistryInterface::class, fn($di) =>
+            new class($di) implements LibraryRegistryInterface
+            {
+                public function __construct(private $di)
+                {}
+                public function getAlertLibrary(): AlertInterface
+                {
+                    return $this->di->g(NoDialogLibrary::class);
+                }
+                public function getConfirmLibrary(): ConfirmInterface
+                {
+                    return $this->di->g(NoDialogLibrary::class);
+                }
+                public function getModalLibrary(): ?ModalInterface
+                {
+                    return null;
+                }
+            });
+        // Dialog command
+        $this->set(DialogCommand::class, fn($di) =>
+            new DialogCommand(fn() => $di->g(LibraryRegistryInterface::class)));
 
-        // Dialog library manager
-        $this->set(DialogLibraryManager::class, function($di) {
-            return new DialogLibraryManager($di->g(Container::class), $di->g(ConfigManager::class), $di->g(Translator::class));
-        });
-        $this->val(AlertLibrary::class, new AlertLibrary());
-    }
+        // Pagination renderer
+        $this->set(PaginationRenderer::class, fn($di) =>
+            new PaginationRenderer($di->g(ViewRenderer::class)));
 
-    /**
-     * Register a javascript dialog library adapter.
-     *
-     * @param string $sClass
-     * @param string $sLibraryName
-     *
-     * @return void
-     */
-    public function registerDialogLibrary(string $sClass, string $sLibraryName)
-    {
-        $this->set($sClass, function($di) use($sClass) {
-            // Set the protected attributes of the library
-            $cSetter = function() use($di) {
-                $this->xHelper = new DialogLibraryHelper($this, $di->g(ConfigManager::class), $di->g(TemplateEngine::class));
-            };
-            // Can now access protected attributes
-            $xLibrary = $di->make($sClass);
-            call_user_func($cSetter->bindTo($xLibrary, $xLibrary));
-            return $xLibrary;
-        });
-        // Set the alias, so the libraries can be found by their names.
-        $this->alias("dialog_library_$sLibraryName", $sClass);
-    }
-
-    /**
-     * Get a dialog library
-     *
-     * @param string $sLibraryName
-     *
-     * @return LibraryInterface
-     */
-    public function getDialogLibrary(string $sLibraryName): LibraryInterface
-    {
-        return $this->g("dialog_library_$sLibraryName");
-    }
-
-    /**
-     * Get the QuestionInterface library
-     *
-     * @param string $sLibraryName
-     *
-     * @return QuestionInterface
-     */
-    public function getQuestionLibrary(string $sLibraryName): QuestionInterface
-    {
-        $sKey = "dialog_library_$sLibraryName";
-        return $this->h($sKey) ? $this->g($sKey) : $this->g(AlertLibrary::class);
-    }
-
-    /**
-     * Get the MessageInterface library
-     *
-     * @param string $sLibraryName
-     *
-     * @return MessageInterface
-     */
-    public function getMessageLibrary(string $sLibraryName): MessageInterface
-    {
-        $sKey = "dialog_library_$sLibraryName";
-        return $this->h($sKey) ? $this->g($sKey) : $this->g(AlertLibrary::class);
-    }
-
-    /**
-     * Get the ModalInterface library
-     *
-     * @param string $sLibraryName
-     *
-     * @return ModalInterface|null
-     */
-    public function getModalLibrary(string $sLibraryName): ?ModalInterface
-    {
-        $sKey = "dialog_library_$sLibraryName";
-        return $this->h($sKey) ? $this->g($sKey) : null;
-    }
-
-    /**
-     * Get the dialog library manager
-     *
-     * @return DialogLibraryManager
-     */
-    public function getDialogLibraryManager(): DialogLibraryManager
-    {
-        return $this->g(DialogLibraryManager::class);
+        // Helpers for HTML custom attributes formatting
+        $this->set(HtmlAttrHelper::class, fn($di) =>
+            new HtmlAttrHelper($di->g(ComponentContainer::class)));
     }
 
     /**
@@ -162,12 +87,32 @@ trait ViewTrait
     }
 
     /**
-     * Get the paginator
+     * Get the custom attributes helper
      *
-     * @return Paginator
+     * @return HtmlAttrHelper
      */
-    public function getPaginator(): Paginator
+    public function getHtmlAttrHelper(): HtmlAttrHelper
     {
-        return $this->g(Paginator::class);
+        return $this->g(HtmlAttrHelper::class);
+    }
+
+    /**
+     * Get the dialog command
+     *
+     * @return DialogCommand
+     */
+    public function getDialogCommand(): DialogCommand
+    {
+        return $this->g(DialogCommand::class);
+    }
+
+    /**
+     * Get the pagination renderer
+     *
+     * @return PaginationRenderer
+     */
+    public function getPaginationRenderer(): PaginationRenderer
+    {
+        return $this->g(PaginationRenderer::class);
     }
 }

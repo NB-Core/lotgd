@@ -1,21 +1,20 @@
-JxnClassA = {};
-JxnClassA.methodAa = function() {
-    return jaxon.request({ jxncls: 'ClassA', jxnmthd: 'methodAa' }, { parameters: arguments });
+const jx = {
+  rc: (name, method, parameters, options = {}) => jaxon.request({ type: 'class', name, method }, { parameters, ...options}),
+  rf: (name, parameters, options = {}) => jaxon.request({ type: 'func', name }, { parameters, ...options}),
+  c0: 'ClassA',
+  c1: 'ClassB',
+  c2: 'ClassC',
 };
-JxnClassA.methodAb = function() {
-    return jaxon.request({ jxncls: 'ClassA', jxnmthd: 'methodAb' }, { parameters: arguments });
+
+JxnClassA = {
+  methodAa: (...args) => jx.rc(jx.c0, 'methodAa', args),
+  methodAb: (...args) => jx.rc(jx.c0, 'methodAb', args),
 };
-JxnClassC = {};
-JxnClassC.methodCa = function() {
-    return jaxon.request({ jxncls: 'ClassC', jxnmthd: 'methodCa' }, { parameters: arguments });
+JxnClassB = {
+  methodBa: (...args) => jx.rc(jx.c1, 'methodBa', args),
+  methodBb: (...args) => jx.rc(jx.c1, 'methodBb', args),
 };
-JxnClassC.methodCb = function() {
-    return jaxon.request({ jxncls: 'ClassC', jxnmthd: 'methodCb' }, { parameters: arguments });
-};
-JxnClassB = {};
-JxnClassB.methodBa = function() {
-    return jaxon.request({ jxncls: 'ClassB', jxnmthd: 'methodBa' }, { parameters: arguments });
-};
-JxnClassB.methodBb = function() {
-    return jaxon.request({ jxncls: 'ClassB', jxnmthd: 'methodBb' }, { parameters: arguments });
+JxnClassC = {
+  methodCa: (...args) => jx.rc(jx.c2, 'methodCa', args),
+  methodCb: (...args) => jx.rc(jx.c2, 'methodCb', args),
 };

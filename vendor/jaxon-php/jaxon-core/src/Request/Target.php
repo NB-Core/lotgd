@@ -13,6 +13,8 @@
 
 namespace Jaxon\Request;
 
+use function trim;
+
 class Target implements TargetInterface
 {
     /**
@@ -30,41 +32,6 @@ class Target implements TargetInterface
     const TYPE_CLASS = 'TargetClass';
 
     /**
-     * The target type.
-     *
-     * @var string
-     */
-    private $sType = '';
-
-    /**
-     * The target function name.
-     *
-     * @var string
-     */
-    private $sFunctionName = '';
-
-    /**
-     * The target class name.
-     *
-     * @var string
-     */
-    private $sClassName = '';
-
-    /**
-     * The target method name.
-     *
-     * @var string
-     */
-    private $sMethodName = '';
-
-    /**
-     * The target method args.
-     *
-     * @var array
-     */
-    private $aMethodArgs = [];
-
-    /**
      * The constructor
      *
      * @param string $sType    The target type
@@ -73,14 +40,9 @@ class Target implements TargetInterface
      * @param string $sMethodName    The method name
      * @param array $aMethodArgs    The method args
      */
-    private function __construct(string $sType, string $sFunctionName, string $sClassName, string $sMethodName, array $aMethodArgs = [])
-    {
-        $this->sType = $sType;
-        $this->sFunctionName = $sFunctionName;
-        $this->sClassName = $sClassName;
-        $this->sMethodName = $sMethodName;
-        $this->aMethodArgs = $aMethodArgs;
-    }
+    private function __construct(private string $sType, private string $sFunctionName,
+        private string $sClassName, private string $sMethodName, private array $aMethodArgs = [])
+    {}
 
     /**
      * Create a target of type Function
@@ -97,14 +59,13 @@ class Target implements TargetInterface
     /**
      * Create a target of type Class
      *
-     * @param string $sClassName    The class name
-     * @param string $sMethodName    The method name
+     * @param array $aCall
      *
      * @return Target
      */
-    public static function makeClass(string $sClassName, string $sMethodName): Target
+    public static function makeClass(array $aCall): Target
     {
-        return new Target(self::TYPE_CLASS, '', $sClassName, $sMethodName);
+        return new Target(self::TYPE_CLASS, '', trim($aCall['name']), trim($aCall['method']));
     }
 
     /**
@@ -165,16 +126,6 @@ class Target implements TargetInterface
     public function setMethodArgs(array $aMethodArgs): void
     {
         $this->aMethodArgs = $aMethodArgs;
-    }
-
-    /**
-     * The target method args.
-     *
-     * @return array
-     */
-    public function getMethodArgs(): array
-    {
-        return $this->aMethodArgs;
     }
 
     /**

@@ -1,0 +1,45 @@
+{
+    "name": "lagdo/facades",
+    "type": "library",
+    "description": "Base classes to implement service facades.",
+    "authors": [
+        {"name": "Thierry Feuzeu"}
+    ],
+    "homepage": "https://github.com/lagdo/facades",
+    "license": "BSD-3-Clause",
+    "keywords": ["PHP", "Service Facades"],
+    "support": {
+        "issues": "https://github.com/lagdo/facades/issues",
+        "source": "https://github.com/lagdo/facades"
+    },
+    "require": {
+        "php": ">=8.0.0",
+        "psr/container": "^1.0 || ^2.0"
+    },
+    "require-dev": {
+        "league/container": "^5.0",
+        "phpunit/phpunit": "^9.5",
+        "php-coveralls/php-coveralls": "^2.4",
+        "phpunit/phpcov": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lagdo\\Facades\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Lagdo\\Facades\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@clearCache",
+            "@putenv XDEBUG_MODE=coverage",
+            "vendor/bin/phpunit"
+        ],
+        "clearCache": "rm -rf cache/*"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

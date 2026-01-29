@@ -15,7 +15,7 @@ namespace Jaxon\App\I18n;
  */
 
 use Jaxon\App\Config\ConfigListenerInterface;
-use Jaxon\Utils\Config\Config;
+use Jaxon\Config\Config;
 use Jaxon\Utils\Translation\Translator as BaseTranslator;
 
 class Translator extends BaseTranslator implements ConfigListenerInterface
@@ -23,7 +23,7 @@ class Translator extends BaseTranslator implements ConfigListenerInterface
     /**
      * @inheritDoc
      */
-    public function onChange(Config $xConfig, string $sName)
+    public function onChange(Config $xConfig, string $sName): void
     {
         // Set the library language any time the config is changed.
         if($sName === '' || $sName === 'core.language')

@@ -4,23 +4,51 @@ namespace Jaxon\Tests\TestUi;
 
 use Jaxon\Jaxon;
 use Jaxon\Exception\SetupException;
-use Jaxon\Request\Call\Parameter;
+use Jaxon\App\Pagination\FuncPaginator;
+use Jaxon\App\Pagination\PaginationRenderer;
+use Jaxon\Response\Response;
 use PHPUnit\Framework\TestCase;
 
-use function Jaxon\jaxon;
-use function Jaxon\rq;
-use function Jaxon\pm;
-use function Jaxon\jq;
+use function trim;
 
 class PaginatorTest extends TestCase
 {
+    /**
+     * @var Response
+     */
+    protected $xResponse = null;
+
+    /**
+     * @var PaginationRenderer
+     */
+    protected $xPaginationRenderer = null;
+
     /**
      * @throws SetupException
      */
     public function setUp(): void
     {
         jaxon()->setOption('core.prefix.class', '');
-        jaxon()->register(Jaxon::CALLABLE_CLASS, 'Sample', __DIR__ . '/../src/sample.php');
+        jaxon()->register(Jaxon::CALLABLE_CLASS, 'Sample', dirname(__DIR__) . '/src/sample.php');
+
+        $this->xResponse = jaxon()->getResponse();
+        $this->xResponse->clearCommands();
+        $this->xPaginationRenderer = jaxon()->di()->getPaginationRenderer();
+    }
+
+    /**
+     * Create a paginator.
+     *
+     * @param int $nPageNumber      The current page number
+     * @param int $nItemsPerPage    The number of items per page
+     * @param int $nTotalItems      The total number of items
+     *
+     * @return FuncPaginator
+     */
+    protected function paginator(int $nPageNumber, int $nItemsPerPage, int $nTotalItems): FuncPaginator
+    {
+        return new FuncPaginator($nPageNumber, $nItemsPerPage, $nTotalItems,
+            $this->xPaginationRenderer, $this->xResponse);
     }
 
     /**
@@ -37,23 +65,32 @@ class PaginatorTest extends TestCase
      */
     public function testNoPagination()
     {
-        // No pagination HTML code for only one page
-        $aPagination = rq('Sample')->method(jq('#div')->val)->pg(1, 10, 0);
-        $this->assertEquals('', (string)$aPagination);
-        $aPagination = rq('Sample')->method(jq('#div')->val)->paginate(1, 10, 7);
-        $this->assertEquals('', (string)$aPagination);
-        $aPagination = rq('Sample')->method(jq('#div')->val)->pg(1, 10, 10);
-        $this->assertEquals('', (string)$aPagination);
+        // No pagination for only one page
+        [, $aPages, ] = $this->paginator(1, 10, 0)->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(0, $aPages);
 
-        $aPagination = rq('Sample')->method(jq('#div')->val)->pages(1, 10, 0);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(0, $aPagination);
-        $aPagination = rq('Sample')->method(jq('#div')->val)->pages(1, 10, 7);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(0, $aPagination);
-        $aPagination = rq('Sample')->method(jq('#div')->val)->pages(1, 10, 10);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(0, $aPagination);
+        [, $aPages, ] = $this->paginator(1, 10, 7)->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(0, $aPages);
+
+        [, $aPages, ] = $this->paginator(1, 10, 10)->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(0, $aPages);
+
+        $this->paginator(1, 10, 0)
+            ->render(rq('Sample')->method(jq('#div')->val), 'wrapper');
+        $this->assertCount(1, $this->xResponse->getCommands());
+
+        $this->xResponse->clearCommands();
+        $this->paginator(1, 10, 7)
+            ->render(rq('Sample')->method(jq('#div')->val), 'wrapper');
+        $this->assertCount(1, $this->xResponse->getCommands());
+
+        $this->xResponse->clearCommands();
+        $this->paginator(1, 10, 10)
+            ->render(rq('Sample')->method(jq('#div')->val), 'wrapper');
+        $this->assertCount(1, $this->xResponse->getCommands());
     }
 
     /**
@@ -61,18 +98,34 @@ class PaginatorTest extends TestCase
      */
     public function testFirstPageWithNoPageNumber()
     {
+        $xPaginator = $this->paginator(1, 10, 12);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(2, $aPages);
+
         $sHtml = '<ul class="pagination">' .
             '<li class="disabled"><span>&laquo;</span></li>' .
-            '<li class="active"><a href="javascript:;">1</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 2)">2</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 2)">&raquo;</a></li>' .
+            '<li class="active"><a role="link">1</a></li>' .
+            '<li class="enabled" data-page="2"><a role="link">2</a></li>' .
+            '<li class="enabled" data-page="2"><a role="link">&raquo;</a></li>' .
             '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(1, 10, 12);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(1, 10, 12);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(4, $aPagination);
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
+        // Page number parameter
+        $this->assertIsArray($aCommands[1]['args']['func']['args'][3]);
+        $this->assertEquals('page', $aCommands[1]['args']['func']['args'][3]['_type']);
+        $this->assertEquals('', $aCommands[1]['args']['func']['args'][3]['_name']);
     }
 
     /**
@@ -80,18 +133,30 @@ class PaginatorTest extends TestCase
      */
     public function testLastPageWithNoPageNumber()
     {
+        $xPaginator = $this->paginator(2, 10, 12);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(2, $aPages);
+
         $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">&laquo;</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
-            '<li class="active"><a href="javascript:;">2</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">&laquo;</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
+            '<li class="active"><a role="link">2</a></li>' .
             '<li class="disabled"><span>&raquo;</span></li>' .
             '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(2, 10, 12);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(2, 10, 12);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(4, $aPagination);
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -99,19 +164,31 @@ class PaginatorTest extends TestCase
      */
     public function testMiddlePageWithNoPageNumber()
     {
-        $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">&laquo;</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
-            '<li class="active"><a href="javascript:;">2</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 3)">3</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 3)">&raquo;</a></li>' .
-            '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(2, 10, 24);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator = $this->paginator(2, 10, 24);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(3, $aPages);
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(2, 10, 24);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(5, $aPagination);
+        $sHtml = '<ul class="pagination">' .
+            '<li class="enabled" data-page="1"><a role="link">&laquo;</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
+            '<li class="active"><a role="link">2</a></li>' .
+            '<li class="enabled" data-page="3"><a role="link">3</a></li>' .
+            '<li class="enabled" data-page="3"><a role="link">&raquo;</a></li>' .
+            '</ul>';
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
+
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -119,19 +196,35 @@ class PaginatorTest extends TestCase
      */
     public function testPaginationWithPageNumber()
     {
+        $xPaginator = $this->paginator(1, 10, 24);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(3, $aPages);
+
         $sHtml = '<ul class="pagination">' .
             '<li class="disabled"><span>&laquo;</span></li>' .
-            '<li class="active"><a href="javascript:;">1</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 2, 26, true)">2</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 3, 26, true)">3</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 2, 26, true)">&raquo;</a></li>' .
+            '<li class="active"><a role="link">1</a></li>' .
+            '<li class="enabled" data-page="2"><a role="link">2</a></li>' .
+            '<li class="enabled" data-page="3"><a role="link">3</a></li>' .
+            '<li class="enabled" data-page="2"><a role="link">&raquo;</a></li>' .
             '</ul>';
-        $aPagination = rq('Sample')->method('string', pm()->page(), 26, true)->pg(1, 10, 24);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator->render(rq('Sample')->method('string', je()->rd()->page(), 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
 
-        $aPagination = rq('Sample')->method('string', pm()->page(), 26, true)->pages(1, 10, 24);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(5, $aPagination);
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
+        // Page number parameter
+        $this->assertIsArray($aCommands[1]['args']['func']['args'][1]);
+        $this->assertEquals('page', $aCommands[1]['args']['func']['args'][1]['_type']);
+        $this->assertEquals('', $aCommands[1]['args']['func']['args'][1]['_name']);
     }
 
     /**
@@ -139,20 +232,30 @@ class PaginatorTest extends TestCase
      */
     public function testNextAndPrevTexts()
     {
-        jaxon()->paginator()->setNextText('Next');
-        jaxon()->paginator()->setPreviousText('Prev');
+        $xPaginator = $this->paginator(1, 10, 12)->setNextText('Next')->setPreviousText('Prev');
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(2, $aPages);
+
         $sHtml = '<ul class="pagination">' .
             '<li class="disabled"><span>Prev</span></li>' .
-            '<li class="active"><a href="javascript:;">1</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 2)">2</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 2)">Next</a></li>' .
+            '<li class="active"><a role="link">1</a></li>' .
+            '<li class="enabled" data-page="2"><a role="link">2</a></li>' .
+            '<li class="enabled" data-page="2"><a role="link">Next</a></li>' .
             '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(1, 10, 12);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(1, 10, 12);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(4, $aPagination);
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -160,24 +263,34 @@ class PaginatorTest extends TestCase
      */
     public function testMaxPagesStart()
     {
-        jaxon()->paginator()->setNextText('Next');
-        jaxon()->paginator()->setPreviousText('Prev');
-        jaxon()->paginator()->setMaxPages(5);
-        $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">Prev</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
-            '<li class="active"><a href="javascript:;">2</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 3)">3</a></li>' .
-            '<li class="disabled"><span>...</span></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 10)">10</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 3)">Next</a></li>' .
-            '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(2, 5, 48);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator = $this->paginator(2, 5, 48)
+            ->setNextText('Next')->setPreviousText('Prev')->setMaxPages(5);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(5, $aPages);
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(2, 5, 48);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(7, $aPagination);
+        $sHtml = '<ul class="pagination">' .
+            '<li class="enabled" data-page="1"><a role="link">Prev</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
+            '<li class="active"><a role="link">2</a></li>' .
+            '<li class="enabled" data-page="3"><a role="link">3</a></li>' .
+            '<li class="disabled"><span>...</span></li>' .
+            '<li class="enabled" data-page="10"><a role="link">10</a></li>' .
+            '<li class="enabled" data-page="3"><a role="link">Next</a></li>' .
+            '</ul>';
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
+
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -185,24 +298,34 @@ class PaginatorTest extends TestCase
      */
     public function testMaxPagesMiddle()
     {
-        jaxon()->paginator()->setNextText('Next');
-        jaxon()->paginator()->setPreviousText('Prev');
-        jaxon()->paginator()->setMaxPages(5);
-        $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 5)">Prev</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
-            '<li class="disabled"><span>...</span></li>' .
-            '<li class="active"><a href="javascript:;">6</a></li>' .
-            '<li class="disabled"><span>...</span></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 10)">10</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 7)">Next</a></li>' .
-            '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(6, 5, 48);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator = $this->paginator(6, 5, 48)
+            ->setNextText('Next')->setPreviousText('Prev')->setMaxPages(5);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(5, $aPages);
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(6, 5, 48);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(7, $aPagination);
+        $sHtml = '<ul class="pagination">' .
+            '<li class="enabled" data-page="5"><a role="link">Prev</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
+            '<li class="disabled"><span>...</span></li>' .
+            '<li class="active"><a role="link">6</a></li>' .
+            '<li class="disabled"><span>...</span></li>' .
+            '<li class="enabled" data-page="10"><a role="link">10</a></li>' .
+            '<li class="enabled" data-page="7"><a role="link">Next</a></li>' .
+            '</ul>';
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
+
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -210,26 +333,36 @@ class PaginatorTest extends TestCase
      */
     public function testMaxPagesSevenMiddle()
     {
-        jaxon()->paginator()->setNextText('Next');
-        jaxon()->paginator()->setPreviousText('Prev');
-        jaxon()->paginator()->setMaxPages(7);
-        $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 5)">Prev</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
-            '<li class="disabled"><span>...</span></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 5)">5</a></li>' .
-            '<li class="active"><a href="javascript:;">6</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 7)">7</a></li>' .
-            '<li class="disabled"><span>...</span></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 10)">10</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 7)">Next</a></li>' .
-            '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(6, 5, 48);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator = $this->paginator(6, 5, 48)
+            ->setNextText('Next')->setPreviousText('Prev')->setMaxPages(7);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(7, $aPages);
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(6, 5, 48);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(9, $aPagination);
+        $sHtml = '<ul class="pagination">' .
+            '<li class="enabled" data-page="5"><a role="link">Prev</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
+            '<li class="disabled"><span>...</span></li>' .
+            '<li class="enabled" data-page="5"><a role="link">5</a></li>' .
+            '<li class="active"><a role="link">6</a></li>' .
+            '<li class="enabled" data-page="7"><a role="link">7</a></li>' .
+            '<li class="disabled"><span>...</span></li>' .
+            '<li class="enabled" data-page="10"><a role="link">10</a></li>' .
+            '<li class="enabled" data-page="7"><a role="link">Next</a></li>' .
+            '</ul>';
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
+
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -237,24 +370,34 @@ class PaginatorTest extends TestCase
      */
     public function testMaxPagesEnd()
     {
-        jaxon()->paginator()->setNextText('Next');
-        jaxon()->paginator()->setPreviousText('Prev');
-        jaxon()->paginator()->setMaxPages(5);
+        $xPaginator = $this->paginator(10, 5, 48)
+            ->setNextText('Next')->setPreviousText('Prev')->setMaxPages(5);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(5, $aPages);
+
         $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 9)">Prev</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
+            '<li class="enabled" data-page="9"><a role="link">Prev</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
             '<li class="disabled"><span>...</span></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 8)">8</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 9)">9</a></li>' .
-            '<li class="active"><a href="javascript:;">10</a></li>' .
+            '<li class="enabled" data-page="8"><a role="link">8</a></li>' .
+            '<li class="enabled" data-page="9"><a role="link">9</a></li>' .
+            '<li class="active"><a role="link">10</a></li>' .
             '<li class="disabled"><span>Next</span></li>' .
             '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(10, 5, 48);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(10, 5, 48);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(7, $aPagination);
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -262,24 +405,34 @@ class PaginatorTest extends TestCase
      */
     public function testMaxPagesBeforeEnd()
     {
-        jaxon()->paginator()->setNextText('Next');
-        jaxon()->paginator()->setPreviousText('Prev');
-        jaxon()->paginator()->setMaxPages(5);
-        $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 8)">Prev</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
-            '<li class="disabled"><span>...</span></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 8)">8</a></li>' .
-            '<li class="active"><a href="javascript:;">9</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 10)">10</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 10)">Next</a></li>' .
-            '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(9, 5, 48);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator = $this->paginator(9, 5, 48)
+            ->setNextText('Next')->setPreviousText('Prev')->setMaxPages(5);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(5, $aPages);
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(9, 5, 48);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(7, $aPagination);
+        $sHtml = '<ul class="pagination">' .
+            '<li class="enabled" data-page="8"><a role="link">Prev</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
+            '<li class="disabled"><span>...</span></li>' .
+            '<li class="enabled" data-page="8"><a role="link">8</a></li>' .
+            '<li class="active"><a role="link">9</a></li>' .
+            '<li class="enabled" data-page="10"><a role="link">10</a></li>' .
+            '<li class="enabled" data-page="10"><a role="link">Next</a></li>' .
+            '</ul>';
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
+
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 
     /**
@@ -287,23 +440,33 @@ class PaginatorTest extends TestCase
      */
     public function testMaxPagesMin()
     {
-        jaxon()->paginator()->setNextText('Next');
-        jaxon()->paginator()->setPreviousText('Prev');
-        jaxon()->paginator()->setMaxPages(3);
-        $sHtml = '<ul class="pagination">' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 8)">Prev</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 1)">1</a></li>' .
-            '<li class="disabled"><span>...</span></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 8)">8</a></li>' .
-            '<li class="active"><a href="javascript:;">9</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 10)">10</a></li>' .
-            '<li><a href="javascript:;" onclick="Sample.method(\'string\', 26, true, 10)">Next</a></li>' .
-            '</ul>';
-        $aPagination = rq('Sample')->method('string', 26, true)->pg(9, 5, 48);
-        $this->assertEquals($sHtml, (string)$aPagination);
+        $xPaginator = $this->paginator(9, 5, 48)
+            ->setNextText('Next')->setPreviousText('Prev')->setMaxPages(3);
+        [, $aPages, ] = $xPaginator->pages();
+        $this->assertIsArray($aPages);
+        $this->assertCount(5, $aPages);
 
-        $aPagination = rq('Sample')->method('string', 26, true)->pages(9, 5, 48);
-        $this->assertIsArray($aPagination);
-        $this->assertCount(7, $aPagination);
+        $sHtml = '<ul class="pagination">' .
+            '<li class="enabled" data-page="8"><a role="link">Prev</a></li>' .
+            '<li class="enabled" data-page="1"><a role="link">1</a></li>' .
+            '<li class="disabled"><span>...</span></li>' .
+            '<li class="enabled" data-page="8"><a role="link">8</a></li>' .
+            '<li class="active"><a role="link">9</a></li>' .
+            '<li class="enabled" data-page="10"><a role="link">10</a></li>' .
+            '<li class="enabled" data-page="10"><a role="link">Next</a></li>' .
+            '</ul>';
+        $xPaginator->render(rq('Sample')->method('string', 26, true), 'wrapper');
+        $aCommands = $this->xResponse->getCommands();
+
+        $this->assertCount(2, $aCommands);
+        $this->assertEquals('node.assign', $aCommands[0]['name']);
+        $this->assertEquals('wrapper', $aCommands[0]['args']['id']);
+        $this->assertEquals($sHtml, trim($aCommands[0]['args']['value']));
+
+        $this->assertEquals('pg.paginate', $aCommands[1]['name']);
+        $this->assertEquals('wrapper', $aCommands[1]['args']['id']);
+        $this->assertEquals('func', $aCommands[1]['args']['func']['_type']);
+        $this->assertEquals('Sample.method', $aCommands[1]['args']['func']['_name']);
+        $this->assertCount(4, $aCommands[1]['args']['func']['args']);
     }
 }

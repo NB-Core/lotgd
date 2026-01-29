@@ -10,7 +10,6 @@ use Nyholm\Psr7Server\ServerRequestCreator;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
-use function Jaxon\jaxon;
 
 class HookTest extends TestCase
 {
@@ -46,7 +45,7 @@ class HookTest extends TestCase
     {
         jaxon()->setOption('core.response.send', false);
         jaxon()->setOption('core.prefix.class', '');
-        jaxon()->register(Jaxon::CALLABLE_DIR, __DIR__ . '/../src/response', [
+        jaxon()->register(Jaxon::CALLABLE_DIR, dirname(__DIR__) . '/src/response', [
             'classes' => [
                 'TestHk' => [
                     'functions' => [
@@ -87,13 +86,18 @@ class HookTest extends TestCase
     public function testHookAllBefore()
     {
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestHk',
-                'jxnmthd' => 'one',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestHk',
+                        'method' => 'one',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -107,13 +111,18 @@ class HookTest extends TestCase
     public function testHookAllAfter()
     {
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestHk',
-                'jxnmthd' => 'two',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestHk',
+                        'method' => 'two',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -127,13 +136,18 @@ class HookTest extends TestCase
     public function testHookArrayBefore()
     {
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestHk',
-                'jxnmthd' => 'three',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestHk',
+                        'method' => 'three',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -147,13 +161,18 @@ class HookTest extends TestCase
     public function testHookArrayAfter()
     {
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestHk',
-                'jxnmthd' => 'four',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestHk',
+                        'method' => 'four',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -167,13 +186,18 @@ class HookTest extends TestCase
     public function testHookParamAccess()
     {
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestHk',
-                'jxnmthd' => 'param',
-                'jxnargs' => ['Svalue'],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestHk',
+                        'method' => 'param',
+                        'args' => ['value'],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 

@@ -14,27 +14,19 @@
 
 namespace Jaxon\Request\Handler;
 
-use Exception;
+use Jaxon\Exception\AppException;
 use Jaxon\Exception\RequestException;
 use Jaxon\Request\Target;
-use Jaxon\Response\Manager\ResponseManager;
-use Jaxon\Response\ResponseInterface;
+use Exception;
 
 use function array_merge;
 use function array_values;
-use function count;
 use function call_user_func_array;
+use function count;
 use function is_a;
 
 class CallbackManager
 {
-    /**
-     * The response manager.
-     *
-     * @var ResponseManager
-     */
-    private $xResponseManager;
-
     /**
      * The callbacks to run after booting the library
      *
@@ -85,14 +77,6 @@ class CallbackManager
     protected $aInitCallbacks = [];
 
     /**
-     * @param ResponseManager $xResponseManager
-     */
-    public function __construct(ResponseManager $xResponseManager)
-    {
-        $this->xResponseManager = $xResponseManager;
-    }
-
-    /**
      * Get the library booting callbacks, and reset the array.
      *
      * @return callable[]
@@ -106,26 +90,6 @@ class CallbackManager
         $aCallbacks = $this->aBootCallbacks;
         $this->aBootCallbacks = [];
         return $aCallbacks;
-    }
-
-    /**
-     * Get the exception callbacks.
-     *
-     * @param Exception $xException      The exception class
-     *
-     * @return callable[]
-     */
-    private function getExceptionCallbacks(Exception $xException): array
-    {
-        $aExceptionCallbacks = [];
-        foreach($this->aExceptionCallbacks as $sExClass => $aCallbacks)
-        {
-            if(is_a($xException, $sExClass))
-            {
-                $aExceptionCallbacks = array_merge($aExceptionCallbacks, $aCallbacks);
-            }
-        }
-        return array_values($aExceptionCallbacks);
     }
 
     /**
@@ -224,13 +188,9 @@ class CallbackManager
      *
      * @return void
      */
-    private function executeCallback(callable $xCallback, array $aParameters)
+    private function executeCallback(callable $xCallback, array $aParameters): void
     {
-        $xReturn = call_user_func_array($xCallback, $aParameters);
-        if($xReturn instanceof ResponseInterface)
-        {
-            $this->xResponseManager->append($xReturn);
-        }
+        call_user_func_array($xCallback, $aParameters);
     }
 
     /**
@@ -239,7 +199,7 @@ class CallbackManager
      *
      * @return void
      */
-    private function executeCallbacks(array $aCallbacks, array $aParameters)
+    private function executeCallbacks(array $aCallbacks, array $aParameters): void
     {
         foreach($aCallbacks as $xCallback)
         {
@@ -250,13 +210,13 @@ class CallbackManager
     /**
      * Execute the class initialisation callbacks.
      *
-     * @param mixed $xRegisteredObject
+     * @param mixed $xComponent
      *
      * @return void
      */
-    public function onInit($xRegisteredObject)
+    public function onInit($xComponent): void
     {
-        $this->executeCallbacks($this->aInitCallbacks, [$xRegisteredObject]);
+        $this->executeCallbacks($this->aInitCallbacks, [$xComponent]);
     }
 
     /**
@@ -268,7 +228,7 @@ class CallbackManager
      * @return void
      * @throws RequestException
      */
-    public function onBefore(Target $xTarget, bool &$bEndRequest)
+    public function onBefore(Target $xTarget, bool &$bEndRequest): void
     {
         // Call the user defined callback
         foreach($this->aBeforeCallbacks as $xCallback)
@@ -290,7 +250,7 @@ class CallbackManager
      * @return void
      * @throws RequestException
      */
-    public function onAfter(Target $xTarget, bool $bEndRequest)
+    public function onAfter(Target $xTarget, bool $bEndRequest): void
     {
         $this->executeCallbacks($this->aAfterCallbacks, [$xTarget, $bEndRequest]);
     }
@@ -303,10 +263,30 @@ class CallbackManager
      * @return void
      * @throws RequestException
      */
-    public function onInvalid(RequestException $xException)
+    public function onInvalid(RequestException $xException): void
     {
         $this->executeCallbacks($this->aInvalidCallbacks, [$xException]);
         throw $xException;
+    }
+
+    /**
+     * Get the exception callbacks.
+     *
+     * @param Exception $xException      The exception class
+     *
+     * @return callable[]
+     */
+    private function getExceptionCallbacks(Exception $xException): array
+    {
+        $aExceptionCallbacks = [];
+        foreach($this->aExceptionCallbacks as $sExClass => $aCallbacks)
+        {
+            if(is_a($xException, $sExClass))
+            {
+                $aExceptionCallbacks = array_merge($aExceptionCallbacks, $aCallbacks);
+            }
+        }
+        return array_merge(array_values($aExceptionCallbacks), $this->aErrorCallbacks);
     }
 
     /**
@@ -317,17 +297,15 @@ class CallbackManager
      * @return void
      * @throws Exception
      */
-    public function onError(Exception $xException)
+    public function onError(Exception $xException): void
     {
         $aExceptionCallbacks = $this->getExceptionCallbacks($xException);
-        $this->executeCallbacks($aExceptionCallbacks, [$xException]);
-        if(count($aExceptionCallbacks) > 0)
+        if(count($aExceptionCallbacks) === 0)
         {
-            // Do not throw the exception if a custom handler is defined
-            return;
+            // Throw the exception if no handler is found.
+            throw new AppException($xException->getMessage());
         }
 
-        $this->executeCallbacks($this->aErrorCallbacks, [$xException]);
-        throw $xException;
+        $this->executeCallbacks($aExceptionCallbacks, [$xException]);
     }
 }

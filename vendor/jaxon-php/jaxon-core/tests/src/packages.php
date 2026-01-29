@@ -1,19 +1,17 @@
 <?php
 
-use Jaxon\App\CallableClass;
-use Jaxon\Plugin\Package;
-use Jaxon\Response\Response;
+use Jaxon\App\FuncComponent;
+use Jaxon\Plugin\AbstractPackage;
 
-class SamplePackageClass extends CallableClass
+class SamplePackageClass extends FuncComponent
 {
-    public function home(): Response
+    public function home()
     {
-        $this->response->debug('This class is registered by a package!!');
-        return $this->response;
+        $this->response()->debug('This class is registered by a package!!');
     }
 }
 
-class SamplePackage extends Package
+class SamplePackage extends AbstractPackage
 {
     /**
      * @inheritDoc
@@ -26,7 +24,7 @@ class SamplePackage extends Package
             ],
             'views' => [
                 'test' => [
-                    'directory' => realpath(__DIR__ . '/../views'),
+                    'directory' => realpath(dirname(__DIR__) . '/views'),
                     'extension' => '.php',
                     // 'renderer' => 'jaxon', // This is the default value.
                     'template' => [
@@ -47,12 +45,12 @@ class SamplePackage extends Package
     }
 }
 
-class BadConfigPackage extends Package
+class BadConfigPackage extends AbstractPackage
 {
     /**
      * @inheritDoc
      */
-    public static function config()
+    public static function config(): string|array
     {
         return true; // This is wrong. The return value must be a string or an array.
     }

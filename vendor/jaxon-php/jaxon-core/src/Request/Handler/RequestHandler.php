@@ -1,7 +1,7 @@
 <?php
 
 /**
- * RequestHandler.php - Jaxon RequestPlugin Handler
+ * RequestHandler.php - Jaxon Request Handler
  *
  * This class processes an incoming jaxon request.
  *
@@ -24,52 +24,12 @@ use Jaxon\Di\Container;
 use Jaxon\Exception\RequestException;
 use Jaxon\Plugin\Manager\PluginManager;
 use Jaxon\Plugin\RequestHandlerInterface;
-use Jaxon\Plugin\Response\DataBag\DataBagPlugin;
-use Jaxon\Request\Upload\UploadHandlerInterface;
+use Jaxon\Plugin\Response\Databag\DatabagPlugin;
 use Jaxon\Response\Manager\ResponseManager;
-
 use Exception;
 
 class RequestHandler
 {
-    /**
-     * @var Container
-     */
-    private $di;
-
-    /**
-     * The plugin manager.
-     *
-     * @var PluginManager
-     */
-    private $xPluginManager;
-
-    /**
-     * The response manager.
-     *
-     * @var ResponseManager
-     */
-    private $xResponseManager;
-
-    /**
-     * The callbacks to run while processing the request
-     *
-     * @var CallbackManager
-     */
-    private $xCallbackManager;
-
-    /**
-     * @var UploadHandlerInterface
-     */
-    private $xUploadHandler;
-
-    /**
-     * The data bag response plugin
-     *
-     * @var DataBagPlugin
-     */
-    private $xDataBagPlugin;
-
     /**
      * The request plugin that is able to process the current request
      *
@@ -84,17 +44,12 @@ class RequestHandler
      * @param PluginManager $xPluginManager
      * @param ResponseManager $xResponseManager
      * @param CallbackManager $xCallbackManager
-     * @param DataBagPlugin $xDataBagPlugin
+     * @param DatabagPlugin $xDatabagPlugin
      */
-    public function __construct(Container $di, PluginManager $xPluginManager, ResponseManager $xResponseManager,
-        CallbackManager $xCallbackManager, DataBagPlugin $xDataBagPlugin)
-    {
-        $this->di = $di;
-        $this->xPluginManager = $xPluginManager;
-        $this->xResponseManager = $xResponseManager;
-        $this->xCallbackManager = $xCallbackManager;
-        $this->xDataBagPlugin = $xDataBagPlugin;
-    }
+    public function __construct(private Container $di, private PluginManager $xPluginManager,
+        private ResponseManager $xResponseManager, private CallbackManager $xCallbackManager,
+        private DatabagPlugin $xDatabagPlugin)
+    {}
 
     /**
      * Check if the current request can be processed
@@ -105,8 +60,6 @@ class RequestHandler
      */
     public function canProcessRequest(): bool
     {
-        $this->xUploadHandler = $this->di->getUploadHandler();
-
         // Return true if the request plugin was already found
         if($this->xRequestPlugin !== null)
         {
@@ -115,27 +68,19 @@ class RequestHandler
 
         // The HTTP request
         $xRequest = $this->di->getRequest();
+
         // Find a plugin to process the request
         foreach($this->xPluginManager->getRequestHandlers() as $sClassName)
         {
             if($sClassName::canProcessRequest($xRequest))
             {
                 $this->xRequestPlugin = $this->di->g($sClassName);
-                $this->xRequestPlugin->setTarget($xRequest);
+                $xTarget = $this->xRequestPlugin->setTarget($xRequest);
+                $xTarget->setMethodArgs($this->di->getRequestArguments());
                 return true;
             }
         }
-
-        // Check if the upload plugin is enabled
-        if($this->xUploadHandler === null)
-        {
-            return false;
-        }
-
-        // If no other plugin than the upload plugin can process the request,
-        // then it is an HTTP (not ajax) upload request
-        $this->xUploadHandler->isHttpUpload();
-        return $this->xUploadHandler->canProcessRequest($xRequest);
+        return false;
     }
 
     /**
@@ -144,39 +89,28 @@ class RequestHandler
      * @return void
      * @throws RequestException
      */
-    private function _processRequest()
+    private function _processRequest(): void
     {
-        // The HTTP request
-        $xRequest = $this->di->getRequest();
-        // Process uploaded files, if the upload plugin is enabled
-        if($this->xUploadHandler !== null && $this->xUploadHandler->canProcessRequest($xRequest))
-        {
-            $this->xUploadHandler->processRequest($xRequest);
-        }
         // Process the request
-        if(($this->xRequestPlugin))
+        if($this->xRequestPlugin !== null)
         {
-            $xResponse = $this->xRequestPlugin->processRequest();
-            if(($xResponse))
-            {
-                $this->xResponseManager->append($xResponse);
-            }
+            $this->xRequestPlugin->processRequest();
             // Process the databag
-            $this->xDataBagPlugin->writeCommand();
+            $this->xDatabagPlugin->writeCommand();
         }
     }
 
     /**
      * Process the current request.
      *
-     * Calls each of the request plugins to request that they process the current request.
-     * If any plugin processes the request, it will return true.
-     *
      * @return void
      * @throws RequestException
      */
-    public function processRequest()
+    public function processRequest(): void
     {
+        // We need the library to have been bootstrapped.
+        $this->di->getBootstrap()->onBoot();
+
         // Check if there is a plugin to process this request
         if(!$this->canProcessRequest())
         {
@@ -187,7 +121,7 @@ class RequestHandler
         {
             $bEndRequest = false;
             // Handle before processing event
-            if(($this->xRequestPlugin))
+            if($this->xRequestPlugin !== null)
             {
                 $this->xCallbackManager->onBefore($this->xRequestPlugin->getTarget(), $bEndRequest);
             }
@@ -199,7 +133,7 @@ class RequestHandler
             $this->_processRequest();
 
             // Handle after processing event
-            if(($this->xRequestPlugin))
+            if($this->xRequestPlugin !== null)
             {
                 $this->xCallbackManager->onAfter($this->xRequestPlugin->getTarget(), $bEndRequest);
             }

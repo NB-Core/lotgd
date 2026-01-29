@@ -3,8 +3,7 @@
 /**
  * CallableClassPlugin.php - Jaxon callable class plugin
  *
- * This class registers user defined callable classes, generates client side javascript code,
- * and calls their methods on user request
+ * This class registers user defined callable classes, and calls their methods on user request.
  *
  * @package jaxon-core
  * @author Jared White
@@ -23,102 +22,58 @@ namespace Jaxon\Plugin\Request\CallableClass;
 
 use Jaxon\Jaxon;
 use Jaxon\App\I18n\Translator;
-use Jaxon\Di\Container;
+use Jaxon\Di\ComponentContainer;
 use Jaxon\Exception\RequestException;
 use Jaxon\Exception\SetupException;
-use Jaxon\Plugin\RequestPlugin;
-use Jaxon\Request\Handler\ParameterReader;
+use Jaxon\Plugin\AbstractRequestPlugin;
+use Jaxon\Plugin\JsCode;
+use Jaxon\Plugin\JsCodeGeneratorInterface;
 use Jaxon\Request\Target;
 use Jaxon\Request\Validator;
-use Jaxon\Response\ResponseInterface;
 use Jaxon\Utils\Template\TemplateEngine;
 use Psr\Http\Message\ServerRequestInterface;
-
+use Psr\Log\LoggerInterface;
 use ReflectionException;
 
+use function array_map;
+use function array_merge;
+use function count;
+use function explode;
+use function implode;
 use function is_array;
 use function is_string;
 use function md5;
-use function strlen;
-use function str_replace;
+use function str_repeat;
 use function trim;
-use function uksort;
 
-class CallableClassPlugin extends RequestPlugin
+class CallableClassPlugin extends AbstractRequestPlugin implements JsCodeGeneratorInterface
 {
     /**
-     * @var string
+     * @var array<CallableObject>
      */
-    protected $sPrefix;
+    private array $aCallableObjects = [];
 
     /**
-     * @var Container
+     * @var array<string>
      */
-    protected $di;
-
-    /**
-     * The parameter reader
-     *
-     * @var ParameterReader
-     */
-    protected $xParameterReader;
-
-    /**
-     * The callable registry
-     *
-     * @var CallableRegistry
-     */
-    protected $xRegistry;
-
-    /**
-     * The callable repository
-     *
-     * @var CallableRepository
-     */
-    protected $xRepository;
-
-    /**
-     * The request data validator
-     *
-     * @var Validator
-     */
-    protected $xValidator;
-
-    /**
-     * @var TemplateEngine
-     */
-    protected $xTemplateEngine;
-
-    /**
-     * @var Translator
-     */
-    protected $xTranslator;
+    private array $aCallableParams = [];
 
     /**
      * The class constructor
      *
-     * @param string  $sPrefix
-     * @param Container $di
-     * @param ParameterReader $xParameterReader
-     * @param CallableRegistry $xRegistry    The callable class registry
-     * @param CallableRepository $xRepository    The callable object repository
-     * @param TemplateEngine $xTemplateEngine
+     * @param string $sPrefix
+     * @param LoggerInterface $xLogger
+     * @param ComponentContainer $cdi
+     * @param ComponentRegistry $xRegistry
      * @param Translator $xTranslator
+     * @param TemplateEngine $xTemplateEngine
      * @param Validator $xValidator
      */
-    public function __construct(string $sPrefix, Container $di, ParameterReader $xParameterReader,
-        CallableRegistry $xRegistry, CallableRepository $xRepository,
-        TemplateEngine $xTemplateEngine, Translator $xTranslator, Validator $xValidator)
-    {
-        $this->di = $di;
-        $this->sPrefix = $sPrefix;
-        $this->xParameterReader = $xParameterReader;
-        $this->xRegistry = $xRegistry;
-        $this->xRepository = $xRepository;
-        $this->xTemplateEngine = $xTemplateEngine;
-        $this->xTranslator = $xTranslator;
-        $this->xValidator = $xValidator;
-    }
+    public function __construct(private string $sPrefix,
+        private LoggerInterface $xLogger, private ComponentContainer $cdi,
+        private ComponentRegistry $xRegistry, private Translator $xTranslator,
+        private TemplateEngine $xTemplateEngine, private Validator $xValidator)
+    {}
 
     /**
      * @inheritDoc
@@ -155,7 +110,7 @@ class CallableClassPlugin extends RequestPlugin
     public function register(string $sType, string $sCallable, array $aOptions): bool
     {
         $sClassName = trim($sCallable);
-        $this->xRepository->addClass($sClassName, $aOptions);
+        $this->xRegistry->registerComponent($sClassName, $aOptions);
         return true;
     }
 
@@ -163,9 +118,9 @@ class CallableClassPlugin extends RequestPlugin
      * @inheritDoc
      * @throws SetupException
      */
-    public function getCallable(string $sCallable)
+    public function getCallable(string $sCallable): CallableObject|null
     {
-        return $this->xRegistry->getCallableObject($sCallable);
+        return $this->cdi->makeCallableObject($sCallable);
     }
 
     /**
@@ -173,60 +128,121 @@ class CallableClassPlugin extends RequestPlugin
      */
     public function getHash(): string
     {
-        $this->xRegistry->parseCallableClasses();
-        return md5($this->xRepository->getHash());
+        $this->xRegistry->registerAllComponents();
+        return md5($this->xRegistry->getHash());
     }
 
     /**
-     * Generate client side javascript code for namespaces
+     * Add a callable object to the script generator
      *
-     * @return string
+     * @param CallableObject $xCallableObject
+     *
+     * @return void
      */
-    private function getNamespacesScript(): string
+    private function addCallable(CallableObject $xCallableObject): void
     {
-        $sCode = '';
-        $aJsClasses = [];
-        $aNamespaces = $this->xRepository->getNamespaces();
-        foreach($aNamespaces as $sNamespace)
+        $aCallableMethods = $xCallableObject->getCallableMethods();
+        if($xCallableObject->excluded() || count($aCallableMethods) === 0)
         {
-            $offset = 0;
-            $sJsNamespace = str_replace('\\', '.', $sNamespace);
-            $sJsNamespace .= '.Null'; // This is a sentinel. The last token is not processed in the while loop.
-            while(($dotPosition = strpos($sJsNamespace, '.', $offset)) !== false)
+            return;
+        }
+
+        $aCallableObject = &$this->aCallableObjects;
+        $sJsName = $xCallableObject->getJsName();
+        foreach(explode('.', $sJsName) as $sName)
+        {
+            if(!isset($aCallableObject['children'][$sName]))
             {
-                $sJsClass = substr($sJsNamespace, 0, $dotPosition);
-                // Generate code for this object
-                if(!isset($aJsClasses[$sJsClass]))
-                {
-                    $sCode .= $this->sPrefix . "$sJsClass = {};\n";
-                    $aJsClasses[$sJsClass] = $sJsClass;
-                }
-                $offset = $dotPosition + 1;
+                $aCallableObject['children'][$sName] = [];
             }
+            $aCallableObject = &$aCallableObject['children'][$sName];
         }
-        return $sCode;
+
+        $sJsParam = $xCallableObject->getJsParam();
+
+        $aCallableObject['methods'] = $aCallableMethods;
+        $aCallableObject['param'] = $sJsParam;
+
+        // Add the js param to the list, if it is not already in.
+        if(isset($this->aCallableParams[$sJsParam]))
+        {
+            $aCallableObject['index'] = $this->aCallableParams[$sJsParam];
+            return;
+        }
+
+        $nIndex = count($this->aCallableParams);
+        $this->aCallableParams[$sJsParam] = $nIndex;
+        $aCallableObject['index'] = $nIndex;
     }
 
     /**
-     * Generate client side javascript code for a callable class
-     *
-     * @param CallableObject $xCallableObject The corresponding callable object
+     * @param string $sIndent
+     * @param array $aTemplateVars
      *
      * @return string
      */
-    private function getCallableScript(CallableObject $xCallableObject): string
+    private function renderMethod(string $sIndent, array $aTemplateVars): string
     {
-        if($xCallableObject->excluded())
+        $aOptions = [];
+        foreach($aTemplateVars['aMethod']['options'] as $sKey => $sValue)
         {
-            return '';
+            $aOptions[] = "$sKey: $sValue";
+        }
+        $aTemplateVars['sArguments'] = count($aOptions) === 0 ? 'args' :
+            'args, { ' . implode(', ', $aOptions) . ' }';
+
+        return $sIndent . trim($this->xTemplateEngine
+            ->render('jaxon::callables/method.js', $aTemplateVars));
+    }
+
+    /**
+     * @param string $sJsClass
+     * @param array $aCallable
+     * @param int $nIndent
+     *
+     * @return string
+     */
+    private function renderCallable(string $sJsClass, array $aCallable, int $nIndent): string
+    {
+        $nIndent += 2; // Indentation.
+        $sIndent = str_repeat(' ', $nIndent);
+
+        $fMethodCallback = fn($aMethod) => $this->renderMethod($sIndent, [
+            'aMethod' => $aMethod,
+            'nIndex' => $aCallable['index'] ?? 0,
+        ]);
+        $aMethods = !isset($aCallable['methods']) ? [] :
+            array_map($fMethodCallback, $aCallable['methods']);
+
+        $aChildren = [];
+        foreach($aCallable['children'] ?? [] as $sName => $aChild)
+        {
+            $aChildren[] = $this->renderChild("$sName:", "$sJsClass.$sName",
+                $aChild, $nIndent) . ',';
         }
 
-        return $this->xTemplateEngine->render('jaxon::callables/object.js', [
-            'sPrefix' => $this->sPrefix,
-            'sClass' => str_replace('\\', '.', $xCallableObject->getClassName()),
-            'sJsClass' => $xCallableObject->getJsName(),
-            'aMethods' => $xCallableObject->getCallableMethods(),
-        ]);
+        return implode("\n", array_merge($aMethods, $aChildren));
+    }
+
+    /**
+     * @param string $sJsVar
+     * @param string $sJsClass
+     * @param array $aCallable
+     * @param int $nIndent
+     *
+     * @return string
+     */
+    private function renderChild(string $sJsVar, string $sJsClass,
+        array $aCallable, int $nIndent = 0): string
+    {
+        $sIndent = str_repeat(' ', $nIndent);
+        $sScript = $this->renderCallable($sJsClass, $aCallable, $nIndent);
+
+        return <<<CODE
+$sIndent$sJsVar {
+$sScript
+$sIndent}
+CODE;
     }
 
     /**
@@ -235,18 +251,28 @@ class CallableClassPlugin extends RequestPlugin
      * @return string
      * @throws SetupException
      */
-    public function getScript(): string
+    public function getJsCode(): JsCode
     {
-        $this->xRegistry->parseCallableClasses();
-        $aCallableObjects = $this->xRepository->getCallableObjects();
-        // Sort the options by key length asc
-        uksort($aCallableObjects, function($name1, $name2) {
-            return strlen($name1) - strlen($name2);
-        });
+        $this->xRegistry->registerAllComponents();
 
-        return array_reduce($aCallableObjects, function($sCode, $xCallableObject) {
-            return $sCode . $this->getCallableScript($xCallableObject);
-        }, $this->getNamespacesScript());
+        $this->aCallableParams = [];
+        $this->aCallableObjects = ['children' => []];
+        foreach($this->cdi->getCallableObjects() as $xCallableObject)
+        {
+            $this->addCallable($xCallableObject);
+        }
+
+        $aScripts = [
+            $this->xTemplateEngine ->render('jaxon::callables/objects.js', [
+                'aCallableParams' => $this->aCallableParams,
+            ])
+        ];
+        foreach($this->aCallableObjects['children'] as $sJsClass => $aCallable)
+        {
+            $aScripts[] = $this->renderChild("{$this->sPrefix}$sJsClass =",
+                $sJsClass, $aCallable) . ';';
+        }
+        return new JsCode(implode("\n", $aScripts) . "\n");
     }
 
     /**
@@ -254,60 +280,76 @@ class CallableClassPlugin extends RequestPlugin
      */
     public static function canProcessRequest(ServerRequestInterface $xRequest): bool
     {
-        $aBody = $xRequest->getParsedBody();
-        if(is_array($aBody))
-        {
-            return isset($aBody['jxncls']) && isset($aBody['jxnmthd']);
-        }
-        $aParams = $xRequest->getQueryParams();
-        return isset($aParams['jxncls']) && isset($aParams['jxnmthd']);
+        $aCall = $xRequest->getAttribute('jxncall');
+        return $aCall !== null && ($aCall['type'] ?? '') === 'class' &&
+            isset($aCall['name']) && isset($aCall['method']) &&
+            is_string($aCall['name']) && is_string($aCall['method']);
     }
 
     /**
      * @inheritDoc
      */
-    public function setTarget(ServerRequestInterface $xRequest)
+    public function setTarget(ServerRequestInterface $xRequest): Target
     {
-        $aBody = $xRequest->getParsedBody();
-        if(is_array($aBody))
-        {
-            $this->xTarget = Target::makeClass(trim($aBody['jxncls']), trim($aBody['jxnmthd']));
-            return;
-        }
-        $aParams = $xRequest->getQueryParams();
-        $this->xTarget = Target::makeClass(trim($aParams['jxncls']), trim($aParams['jxnmthd']));
+        $this->xTarget = Target::makeClass($xRequest->getAttribute('jxncall'));
+        return $this->xTarget;
+    }
+
+    /**
+     * @param string $sExceptionMessage
+     * @param string $sErrorCode
+     * @param array $aErrorParams
+     *
+     * @throws RequestException
+     * @return void
+     */
+    private function throwException(string $sExceptionMessage,
+        string $sErrorCode, array $aErrorParams = []): void
+    {
+        $sMessage = $this->xTranslator->trans($sErrorCode, $aErrorParams) .
+            (!$sExceptionMessage ? '' : "\n$sExceptionMessage");
+        $this->xLogger->error($sMessage);
+        throw new RequestException($sMessage);
     }
 
     /**
      * @inheritDoc
      * @throws RequestException
      */
-    public function processRequest(): ?ResponseInterface
+    public function processRequest(): void
     {
         $sClassName = $this->xTarget->getClassName();
         $sMethodName = $this->xTarget->getMethodName();
-        $this->xTarget->setMethodArgs($this->xParameterReader->args());
+        // Will be used to print a translated error message.
+        $aErrorParams = ['class' => $sClassName, 'method' => $sMethodName];
 
         if(!$this->xValidator->validateJsObject($sClassName) ||
             !$this->xValidator->validateMethod($sMethodName))
         {
             // Unable to find the requested object or method
-            throw new RequestException($this->xTranslator->trans('errors.objects.invalid',
-                ['class' => $sClassName, 'method' => $sMethodName]));
+            $this->throwException('', 'errors.objects.invalid', $aErrorParams);
         }
 
         // Call the requested method
         try
         {
-            $xCallableObject = $this->xRegistry->getCallableObject($sClassName);
-            return $xCallableObject->call($this->xTarget);
+            $sError = 'errors.objects.find';
+            /** @var CallableObject */
+            $xCallableObject = $this->getCallable($sClassName);
+
+            if($xCallableObject->excluded($sMethodName))
+            {
+                // Unable to find the requested class or method
+                $this->throwException('', 'errors.objects.excluded', $aErrorParams);
+            }
+
+            $sError = 'errors.objects.call';
+            $xCallableObject->call($this->xTarget);
         }
         catch(ReflectionException|SetupException $e)
         {
-            // Unable to find the requested class or method
-            $this->di->getLogger()->error($e->getMessage());
-            throw new RequestException($this->xTranslator->trans('errors.objects.invalid',
-                ['class' => $sClassName, 'method' => $sMethodName]));
+            // Unable to execute the requested class or method
+            $this->throwException($e->getMessage(), $sError, $aErrorParams);
         }
     }
 }

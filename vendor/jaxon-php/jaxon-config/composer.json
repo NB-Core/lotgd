@@ -1,0 +1,42 @@
+{
+    "name": "jaxon-php/jaxon-config",
+    "type": "library",
+    "description": "Save config options in immutable objects.",
+    "authors": [
+        {"name": "Thierry Feuzeu"}
+    ],
+    "homepage": "https://www.jaxon-php.org",
+    "license": "BSD-3-Clause",
+    "keywords": ["Config", "Options", "Immutable"],
+    "support": {
+        "issues": "https://github.com/jaxon-php/jaxon-config/issues",
+        "source": "https://github.com/jaxon-php/jaxon-config"
+    },
+    "require": {
+        "php": ">=8.0",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "php-coveralls/php-coveralls": "^2.5",
+        "phpunit/phpcov": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jaxon\\Config\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jaxon\\Config\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@clearCache",
+            "@putenv XDEBUG_MODE=coverage",
+            "vendor/bin/phpunit"
+        ],
+        "clearCache": "rm -rf cache/*"
+    }
+}

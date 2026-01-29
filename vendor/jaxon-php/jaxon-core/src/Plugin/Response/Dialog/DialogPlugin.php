@@ -1,58 +1,43 @@
 <?php
 
 /**
- * DialogPlugin.php - ModalInterface, message and question dialogs for Jaxon.
+ * DialogPlugin.php - Modal, alert and confirm dialogs for Jaxon.
  *
- * Show modal, message and question dialogs with various javascript libraries
- * based on user settings.
+ * Show modal, alert and confirm dialogs with various javascript libraries.
+ * This class implements the dialog commands.
  *
  * @package jaxon-core
  * @author Thierry Feuzeu <thierry.feuzeu@gmail.com>
  * @copyright 2016 Thierry Feuzeu <thierry.feuzeu@gmail.com>
  * @license https://opensource.org/licenses/BSD-3-Clause BSD 3-Clause License
- * @link https://github.com/jaxon-php/jaxon-dialogs
+ * @link https://github.com/jaxon-php/jaxon-core
  */
 
 namespace Jaxon\Plugin\Response\Dialog;
 
-use Jaxon\App\Dialog\Library\DialogLibraryManager;
-use Jaxon\App\Dialog\MessageInterface;
+use Jaxon\App\Dialog\AlertInterface;
+use Jaxon\App\Dialog\Manager\DialogCommand;
 use Jaxon\App\Dialog\ModalInterface;
-use Jaxon\Exception\SetupException;
-use Jaxon\Plugin\ResponsePlugin;
-use Jaxon\Response\ResponseInterface;
+use Jaxon\Plugin\PluginInterface;
+use Jaxon\Plugin\ResponsePluginInterface;
+use Jaxon\Plugin\ResponsePluginTrait;
 
-use function array_reduce;
-use function trim;
-
-class DialogPlugin extends ResponsePlugin implements ModalInterface, MessageInterface
+class DialogPlugin implements PluginInterface, ResponsePluginInterface, ModalInterface, AlertInterface
 {
-    use DialogPluginTrait;
+    use ResponsePluginTrait;
 
     /**
      * @const The plugin name
      */
-    const NAME = 'dialog';
-
-    /**
-     * @var DialogLibraryManager
-     */
-    protected $xLibraryManager;
-
-    /**
-     * @var array
-     */
-    protected $aLibraries = null;
+    public const NAME = 'dialog';
 
     /**
      * The constructor
      *
-     * @param DialogLibraryManager $xLibraryManager
+     * @param DialogCommand $xDialogCommand
      */
-    public function __construct(DialogLibraryManager $xLibraryManager)
-    {
-        $this->xLibraryManager = $xLibraryManager;
-    }
+    public function __construct(private DialogCommand $xDialogCommand)
+    {}
 
     /**
      * @inheritDoc
@@ -63,24 +48,12 @@ class DialogPlugin extends ResponsePlugin implements ModalInterface, MessageInte
     }
 
     /**
-     * @inheritDoc
+     * Initialize the plugin
+     *
+     * @return void
      */
-    public function getHash(): string
-    {
-        // The version number is used as hash
-        return '4.0.0';
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function setResponse(ResponseInterface $xResponse)
-    {
-        parent::setResponse($xResponse);
-
-        // Hack the setResponse() method, to set the default libraries on each access to this plugin.
-        $this->xLibraryManager->setNextLibrary('');
-    }
+    protected function init(): void
+    {}
 
     /**
      * Set the library to use for the next call.
@@ -91,134 +64,71 @@ class DialogPlugin extends ResponsePlugin implements ModalInterface, MessageInte
      */
     public function with(string $sLibrary): DialogPlugin
     {
-        $this->xLibraryManager->setNextLibrary($sLibrary);
+        $this->xDialogCommand->library($sLibrary);
         return $this;
     }
 
     /**
-     * Get the library adapter to use for modals.
-     *
-     * @return ModalInterface|null
+     * @inheritDoc
      */
-    protected function getModalLibrary(): ?ModalInterface
+    public function show(string $sTitle, string $sContent, array $aButtons = [], array $aOptions = []): void
     {
-        $xLibrary = $this->xLibraryManager->getModalLibrary();
-        $xLibrary->setResponse($this->xResponse);
-        return $xLibrary;
-    }
-
-    /**
-     * Get the library adapter to use for messages.
-     *
-     * @return MessageInterface|null
-     */
-    protected function getMessageLibrary(): ?MessageInterface
-    {
-        $xLibrary = $this->xLibraryManager->getMessageLibrary();
-        $xLibrary->setResponse($this->xResponse);
-        // By default, always add commands to the response
-        $xLibrary->setReturnCode(false);
-        return $xLibrary;
-    }
-
-    /**
-     * @return array
-     */
-    private function getLibraries(): array
-    {
-        if($this->aLibraries === null)
-        {
-            $this->aLibraries = $this->xLibraryManager->getLibraries();
-        }
-        return $this->aLibraries;
+        // Show the modal dialog
+        $this->addCommand('dialog.modal.show', $this->xDialogCommand
+            ->show($sTitle, $sContent, $aButtons, $aOptions));
     }
 
     /**
      * @inheritDoc
      */
-    public function getJs(): string
+    public function hide(): void
     {
-        return array_reduce($this->getLibraries(), function($sCode, $xLibrary) {
-            return $sCode . $xLibrary->getJs() . "\n\n";
-        }, '');
+        // Hide the modal dialog
+        $this->addCommand('dialog.modal.hide', $this->xDialogCommand->hide());
     }
 
     /**
      * @inheritDoc
      */
-    public function getCss(): string
+    public function title(string $sTitle): AlertInterface
     {
-        return array_reduce($this->getLibraries(), function($sCode, $xLibrary) {
-            return $sCode . trim($xLibrary->getCss()) . "\n\n";
-        }, '');
-    }
-
-    /**
-     * @inheritDoc
-     * @throws SetupException
-     */
-    public function getScript(): string
-    {
-        return array_reduce($this->getLibraries(), function($sCode, $xLibrary) {
-            return $sCode . trim($xLibrary->getScript()) . "\n\n";
-        }, "jaxon.dialogs = {};\n");
+        $this->xDialogCommand->title($sTitle);
+        return $this;
     }
 
     /**
      * @inheritDoc
      */
-    public function getReadyScript(): string
+    public function success(string $sMessage, ...$aArgs): void
     {
-        return array_reduce($this->getLibraries(), function($sCode, $xLibrary) {
-            return $sCode . trim($xLibrary->getReadyScript()) . "\n\n";
-        }, '');
+        $this->addCommand('dialog.alert.show', $this->xDialogCommand
+            ->success($sMessage, $aArgs));
     }
 
     /**
      * @inheritDoc
      */
-    public function show(string $sTitle, string $sContent, array $aButtons = [], array $aOptions = [])
+    public function info(string $sMessage, ...$aArgs): void
     {
-        $this->getModalLibrary()->show($sTitle, $sContent, $aButtons, $aOptions);
+        $this->addCommand('dialog.alert.show', $this->xDialogCommand
+            ->info($sMessage, $aArgs));
     }
 
     /**
      * @inheritDoc
      */
-    public function hide()
+    public function warning(string $sMessage, ...$aArgs): void
     {
-        $this->getModalLibrary()->hide();
+        $this->addCommand('dialog.alert.show', $this->xDialogCommand
+            ->warning($sMessage, $aArgs));
     }
 
     /**
      * @inheritDoc
      */
-    public function success(string $sMessage, string $sTitle = ''): string
+    public function error(string $sMessage, ...$aArgs): void
     {
-        return $this->getMessageLibrary()->success($sMessage, $sTitle);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function info(string $sMessage, string $sTitle = ''): string
-    {
-        return $this->getMessageLibrary()->info($sMessage, $sTitle);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function warning(string $sMessage, string $sTitle = ''): string
-    {
-        return $this->getMessageLibrary()->warning($sMessage, $sTitle);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function error(string $sMessage, string $sTitle = ''): string
-    {
-        return $this->getMessageLibrary()->error($sMessage, $sTitle);
+        $this->addCommand('dialog.alert.show', $this->xDialogCommand
+            ->error($sMessage, $aArgs));
     }
 }

@@ -6,11 +6,10 @@ use Jaxon\App\Config\ConfigManager;
 use Jaxon\App\I18n\Translator;
 use Jaxon\Di\Container;
 use Jaxon\Plugin\Manager\PluginManager;
-use Jaxon\Response\Manager\ResponseManager;
 use Jaxon\Response\Response;
-use Jaxon\Response\ResponseInterface;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Psr\Http\Message\ServerRequestInterface;
+use Jaxon\Response\NodeResponse;
+use Jaxon\Response\Manager\ResponseManager;
+use Jaxon\Script\Call\JxnCall;
 
 use function trim;
 
@@ -21,17 +20,15 @@ trait ResponseTrait
      *
      * @return void
      */
-    private function registerResponses()
+    private function registerResponses(): void
     {
         // Global Response
-        $this->set(Response::class, function($di) {
-            return new Response($di->g(PluginManager::class),
-                $di->g(Psr17Factory::class), $di->g(ServerRequestInterface::class));
-        });
+        $this->set(Response::class, fn($di) =>
+            new Response($di->g(ResponseManager::class), $di->g(PluginManager::class)));
         // Response Manager
         $this->set(ResponseManager::class, function($di) {
-            return new ResponseManager(trim($di->g(ConfigManager::class)->getOption('core.encoding', '')),
-                $di->g(Container::class), $di->g(Translator::class));
+            $sEncoding = trim($di->g(ConfigManager::class)->getOption('core.encoding', ''));
+            return new ResponseManager($di->g(Container::class), $di->g(Translator::class), $sEncoding);
         });
     }
 
@@ -48,31 +45,33 @@ trait ResponseTrait
     /**
      * Get the global Response object
      *
-     * @return ResponseInterface
+     * @return Response
      */
-    public function getResponse(): ResponseInterface
+    public function getResponse(): Response
     {
         return $this->g(Response::class);
     }
 
     /**
-     * Create a new Jaxon response object
+     * Create a new Jaxon response
      *
-     * @return ResponseInterface
+     * @return Response
      */
-    public function newResponse(): ResponseInterface
+    public function newResponse(): Response
     {
-        return new Response($this->g(PluginManager::class),
-            $this->g(Psr17Factory::class), $this->g(ServerRequestInterface::class));
+        return new Response($this->g(ResponseManager::class), $this->g(PluginManager::class));
     }
 
     /**
-     * Get the Psr17 factory
+     * Create a new reponse for a Jaxon component
      *
-     * @return Psr17Factory
+     * @param JxnCall $xJxnCall
+     *
+     * @return NodeResponse
      */
-    public function getPsr17Factory(): Psr17Factory
+    public function newNodeResponse(JxnCall $xJxnCall): NodeResponse
     {
-        return $this->g(Psr17Factory::class);
+        return new NodeResponse($this->g(ResponseManager::class),
+            $this->g(PluginManager::class), $xJxnCall);
     }
 }
