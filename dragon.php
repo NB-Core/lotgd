@@ -317,9 +317,29 @@ if ($battle) {
     require_once __DIR__ . "/battle.php";
 
     if ($victory) {
+        // The battle script mutates and serializes the attack stack into the session.
+        // After battle.php runs, the local $badguy may not reflect the canonical post-battle
+        // state, so we re-read the serialized stack to decide if the dragon landed a hit.
+        $attackstack = unserialize($session['user']['badguy']);
         $flawless = 0;
-        if (isset($badguy['diddamage']) && $badguy['diddamage'] != 1) {
-            $flawless = 1;
+        $dragonEnemy = null;
+        if (isset($attackstack['enemies']) && is_array($attackstack['enemies'])) {
+            // Single-enemy fights (like the dragon) are usually stored at index 0, but
+            // we fall back to the first entry to avoid assuming numeric keys.
+            if (array_key_exists(0, $attackstack['enemies'])) {
+                $dragonEnemy = $attackstack['enemies'][0];
+            } else {
+                $dragonEnemy = reset($attackstack['enemies']);
+            }
+        }
+
+        if (is_array($dragonEnemy)) {
+            // Only mark the fight as flawless when we have a dragon record; if the
+            // diddamage flag is missing, treat it as "no damage" rather than forcing
+            // a false negative from missing keys.
+            if (!isset($dragonEnemy['diddamage']) || $dragonEnemy['diddamage'] != 1) {
+                $flawless = 1;
+            }
         }
         $session['user']['dragonkills']++;
         $output->output("`&With a mighty final blow, `@%s`& lets out a tremendous bellow and falls at your feet, dead at last.", $badguy['creaturename']);
