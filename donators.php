@@ -108,7 +108,21 @@ if (
 $op = Http::get('op');
 if ($op == "add2") {
     $id = Http::get('id');
+    $id = filter_var($id, FILTER_VALIDATE_INT);
+    if ($id === false) {
+        $output->output(Translator::translate("Invalid account id."));
+        Http::set('op', "");
+        $op = "";
+        return;
+    }
     $amt = Http::get('amt');
+    $amt = filter_var($amt, FILTER_VALIDATE_INT);
+    if ($amt === false) {
+        $output->output(Translator::translate("Invalid donation amount."));
+        Http::set('op', "");
+        $op = "";
+        return;
+    }
     $reason = Http::get('reason');
 
     $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid=$id;";
