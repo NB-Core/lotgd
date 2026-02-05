@@ -130,18 +130,87 @@ class Bootstrap
             return;
         }
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($cacheDir, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
+        try {
+            $cache = new FilesystemAdapter('', 0, $cacheDir);
+
+            if (! $cache->clear()) {
+                self::logCacheClearWarning($cacheDir, new \RuntimeException('FilesystemAdapter::clear returned false'));
+            }
+        } catch (\Throwable $exception) {
+            self::logCacheClearWarning($cacheDir, $exception);
+        }
+
+        try {
+            self::clearDirectoryContentsFallback($cacheDir);
+        } catch (\Throwable $exception) {
+            self::throwCacheClearFailure($cacheDir, $exception);
+        }
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    private static function clearDirectoryContentsFallback(string $cacheDir): void
+    {
+        try {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($cacheDir, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
+        } catch (\UnexpectedValueException) {
+            // Directory vanished between checks; treat as already cleared.
+            return;
+        }
 
         foreach ($iterator as $item) {
-            if ($item->isDir()) {
-                rmdir($item->getPathname());
+            $path = $item->getPathname();
+
+            try {
+                if ($item->isDir()) {
+                    if (! is_dir($path)) {
+                        continue;
+                    }
+
+                    if (! rmdir($path) && is_dir($path)) {
+                        throw new \RuntimeException(sprintf('Unable to remove directory "%s".', $path));
+                    }
+
+                    continue;
+                }
+
+                if (! is_file($path) && ! is_link($path)) {
+                    continue;
+                }
+
+                if (! unlink($path) && (is_file($path) || is_link($path))) {
+                    throw new \RuntimeException(sprintf('Unable to remove file "%s".', $path));
+                }
+            } catch (\UnexpectedValueException) {
+                // Entry disappeared while traversing; continue with remaining nodes.
                 continue;
             }
-
-            unlink($item->getPathname());
         }
+    }
+
+    private static function logCacheClearWarning(string $cacheDir, \Throwable $exception): void
+    {
+        error_log(sprintf(
+            'Doctrine metadata cache clear warning for "%s": %s',
+            $cacheDir,
+            $exception->getMessage()
+        ));
+    }
+
+    private static function throwCacheClearFailure(string $cacheDir, \Throwable $previous): never
+    {
+        throw new \RuntimeException(
+            sprintf(
+                'Failed to clear Doctrine metadata cache at "%s". %s',
+                $cacheDir,
+                $previous->getMessage()
+            ),
+            0,
+            $previous
+        );
     }
 }
