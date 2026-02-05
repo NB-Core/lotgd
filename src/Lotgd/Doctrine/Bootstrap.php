@@ -85,7 +85,9 @@ class Bootstrap
                 throw new \RuntimeException('Doctrine metadata cache directory is not writable: ' . $cacheDir);
             }
 
-            self::clearDoctrineMetadataCache($cacheDir);
+            if (self::shouldClearDoctrineMetadataCache()) {
+                self::clearDoctrineMetadataCache($cacheDir);
+            }
         }
 
         // Disable metadata caching only when datacache path is not configured
@@ -143,5 +145,16 @@ class Bootstrap
 
             unlink($item->getPathname());
         }
+    }
+
+    private static function shouldClearDoctrineMetadataCache(): bool
+    {
+        if (defined('IS_INSTALLER') && IS_INSTALLER) {
+            return true;
+        }
+
+        $clearCache = getenv('LOTGD_CLEAR_DOCTRINE_METADATA_CACHE');
+
+        return is_string($clearCache) && in_array(strtolower($clearCache), ['1', 'true', 'yes'], true);
     }
 }
