@@ -123,7 +123,7 @@ modules.
 
 - **Performance Defaults**  
   - Output compression via zlib is enabled by default when the `zlib` extension is present. Disable at the PHP level if undesired.  
-  - Data cache requires a writable directory: set `DB_USEDATACACHE=1` and `DB_DATACACHEPATH=/path/to/cache`. The app will warn admins if the path is missing or not writable.  
+  - Data cache requires a writable directory: set `DB_USEDATACACHE=1` and `DB_DATACACHEPATH=/path/to/cache` in `dbconnect.php`. The app will warn admins if the path is missing or not writable, even if a temporary fallback directory is used for resilience; those warnings are intentional and should be addressed by setting a stable, writable path.  
   - Twig will cache compiled templates under `<datacachepath>/twig` when writable; otherwise it runs without caching.
 
 ---
