@@ -25,14 +25,16 @@ class TwigTemplate extends Template
 
         $options = ['auto_reload' => true];
 
-        if ($datacachePath !== null && $datacachePath !== '') {
-            self::$cacheDir = $datacachePath;
-            $cacheDir = rtrim($datacachePath, '/\\') . '/' . self::CACHE_SUBDIR;
-            if ((is_dir($cacheDir) || @mkdir($cacheDir, 0755, true)) && is_writable($cacheDir)) {
-                $options['cache'] = $cacheDir;
-            } else {
-                // Leave cache disabled; optionally, could log in future
-            }
+        $resolvedCachePath = $datacachePath;
+        if ($resolvedCachePath === null || $resolvedCachePath === '') {
+            $resolvedCachePath = sys_get_temp_dir();
+        }
+        self::$cacheDir = $resolvedCachePath;
+        $cacheDir = rtrim($resolvedCachePath, '/\\') . '/' . self::CACHE_SUBDIR;
+        if ((is_dir($cacheDir) || @mkdir($cacheDir, 0755, true)) && is_writable($cacheDir)) {
+            $options['cache'] = $cacheDir;
+        } else {
+            // Leave cache disabled; optionally, could log in future
         }
 
         self::$env = new Environment($loader, $options);
