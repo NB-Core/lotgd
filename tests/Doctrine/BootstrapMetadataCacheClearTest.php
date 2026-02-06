@@ -74,12 +74,95 @@ final class BootstrapMetadataCacheClearTest extends TestCase
         self::assertFalse($reloadedCache->getItem('entity.weapon')->isHit());
     }
 
+    public function testClearDoctrineMetadataCacheHandlesDisappearingDirectoriesDuringTraversal(): void
+    {
+        $cacheDir = $this->workspace . '/doctrine';
+        $namespaceDir = $cacheDir . '/@namespace';
+        $staleDir = $namespaceDir . '/stale';
+        $staleFile = $staleDir . '/metadata.php';
+
+        mkdir($staleDir, 0775, true);
+        file_put_contents($staleFile, 'stale');
+
+        $process = $this->spawnDelayedDeletion($staleFile, $staleDir);
+
+        $this->invokeClearDoctrineMetadataCache($cacheDir);
+
+        if (is_resource($process)) {
+            proc_close($process);
+        }
+
+        self::assertDirectoryExists($cacheDir);
+    }
+
+    public function testClearDoctrineMetadataCacheSkipsNonEmptyNamespaceDirectory(): void
+    {
+        $cacheDir = $this->workspace . '/doctrine';
+        $namespaceDir = $cacheDir . '/@legacy';
+        $activeFile = $namespaceDir . '/active.cache';
+
+        mkdir($namespaceDir, 0775, true);
+        file_put_contents($activeFile, 'active');
+
+        chmod($namespaceDir, 0555);
+
+        try {
+            $this->invokeClearDoctrineMetadataCache($cacheDir);
+        } finally {
+            chmod($namespaceDir, 0775);
+        }
+
+        self::assertDirectoryExists($namespaceDir);
+        self::assertFileExists($activeFile);
+    }
+
+    public function testClearDoctrineMetadataCacheDoesNotAbortOnRemovalFailure(): void
+    {
+        $cacheDir = $this->workspace . '/doctrine';
+        $blockedFile = $cacheDir . '/blocked.cache';
+
+        mkdir($cacheDir, 0775, true);
+        file_put_contents($blockedFile, 'blocked');
+
+        chmod($cacheDir, 0555);
+
+        try {
+            $this->invokeClearDoctrineMetadataCache($cacheDir);
+        } finally {
+            chmod($cacheDir, 0775);
+        }
+
+        self::assertDirectoryExists($cacheDir);
+    }
+
     private function invokeClearDoctrineMetadataCache(string $cacheDir): void
     {
         $bootstrapClass = $this->resolveBootstrapClass();
         $reflection = new \ReflectionMethod($bootstrapClass, 'clearDoctrineMetadataCache');
         $reflection->setAccessible(true);
         $reflection->invoke(null, $cacheDir);
+    }
+
+    /**
+     * @return resource|null
+     */
+    private function spawnDelayedDeletion(string $filePath, string $directoryPath)
+    {
+        $script = sprintf(
+            'usleep(20000); if (is_file(%1$s)) { unlink(%1$s); } if (is_dir(%2$s)) { rmdir(%2$s); }',
+            var_export($filePath, true),
+            var_export($directoryPath, true)
+        );
+
+        return proc_open(
+            [PHP_BINARY, '-r', $script],
+            [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes
+        );
     }
 
 
