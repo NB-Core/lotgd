@@ -135,10 +135,32 @@ final class BootstrapMetadataCacheClearTest extends TestCase
         self::assertDirectoryExists($cacheDir);
     }
 
+    public function testClearDirectoryContentsFallbackSkipsActivePaths(): void
+    {
+        $cacheDir = $this->workspace . '/doctrine';
+        $activeFile = $cacheDir . '/active.cache';
+
+        mkdir($cacheDir, 0775, true);
+        file_put_contents($activeFile, 'active');
+        touch($activeFile, time() + 5);
+
+        $this->invokeClearDirectoryContentsFallback($cacheDir);
+
+        self::assertFileExists($activeFile);
+    }
+
     private function invokeClearDoctrineMetadataCache(string $cacheDir): void
     {
         $bootstrapClass = $this->resolveBootstrapClass();
         $reflection = new \ReflectionMethod($bootstrapClass, 'clearDoctrineMetadataCache');
+        $reflection->setAccessible(true);
+        $reflection->invoke(null, $cacheDir);
+    }
+
+    private function invokeClearDirectoryContentsFallback(string $cacheDir): void
+    {
+        $bootstrapClass = $this->resolveBootstrapClass();
+        $reflection = new \ReflectionMethod($bootstrapClass, 'clearDirectoryContentsFallback');
         $reflection->setAccessible(true);
         $reflection->invoke(null, $cacheDir);
     }

@@ -167,6 +167,7 @@ class Bootstrap
         }
 
         $normalizedCacheDir = rtrim($cacheDir, DIRECTORY_SEPARATOR);
+        $traversalStart = time();
 
         foreach ($iterator as $item) {
             $path = $item->getPathname();
@@ -181,8 +182,16 @@ class Bootstrap
                         continue;
                     }
 
+                    if (self::isPathActive($path, $traversalStart)) {
+                        continue;
+                    }
+
                     if (! rmdir($path) && is_dir($path)) {
                         if (! self::isDirectoryEmpty($path)) {
+                            continue;
+                        }
+
+                        if (self::isPathActive($path, $traversalStart)) {
                             continue;
                         }
 
@@ -200,7 +209,15 @@ class Bootstrap
                     continue;
                 }
 
+                if (self::isPathActive($path, $traversalStart)) {
+                    continue;
+                }
+
                 if (! unlink($path) && (is_file($path) || is_link($path))) {
+                    if (self::isPathActive($path, $traversalStart)) {
+                        continue;
+                    }
+
                     self::logCacheClearWarning(
                         $cacheDir,
                         $path,
@@ -223,6 +240,17 @@ class Bootstrap
         $prefix = $cacheDir . DIRECTORY_SEPARATOR;
 
         return str_starts_with($path, $prefix);
+    }
+
+    private static function isPathActive(string $path, int $traversalStart): bool
+    {
+        $modifiedAt = filemtime($path);
+
+        if ($modifiedAt === false) {
+            return false;
+        }
+
+        return $modifiedAt > $traversalStart;
     }
 
     private static function isDirectoryEmpty(string $path): bool
