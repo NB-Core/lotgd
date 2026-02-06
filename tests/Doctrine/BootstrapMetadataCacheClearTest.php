@@ -104,7 +104,13 @@ final class BootstrapMetadataCacheClearTest extends TestCase
         mkdir($namespaceDir, 0775, true);
         file_put_contents($activeFile, 'active');
 
-        $this->invokeClearDoctrineMetadataCache($cacheDir);
+        chmod($namespaceDir, 0555);
+
+        try {
+            $this->invokeClearDoctrineMetadataCache($cacheDir);
+        } finally {
+            chmod($namespaceDir, 0775);
+        }
 
         self::assertDirectoryExists($namespaceDir);
         self::assertFileExists($activeFile);
