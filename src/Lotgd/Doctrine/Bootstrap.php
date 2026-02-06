@@ -167,6 +167,7 @@ class Bootstrap
         }
 
         $normalizedCacheDir = rtrim($cacheDir, DIRECTORY_SEPARATOR);
+        $traversalStart = microtime(true);
 
         foreach ($iterator as $item) {
             $path = $item->getPathname();
@@ -176,13 +177,25 @@ class Bootstrap
                     continue;
                 }
 
+                if (self::isPathInActiveNamespace($path, $normalizedCacheDir)) {
+                    continue;
+                }
+
                 if ($item->isDir()) {
                     if (! is_dir($path)) {
                         continue;
                     }
 
+                    if (self::isPathActive($path, $traversalStart)) {
+                        continue;
+                    }
+
                     if (! rmdir($path) && is_dir($path)) {
                         if (! self::isDirectoryEmpty($path)) {
+                            continue;
+                        }
+
+                        if (self::isPathActive($path, $traversalStart)) {
                             continue;
                         }
 
@@ -200,7 +213,15 @@ class Bootstrap
                     continue;
                 }
 
+                if (self::isPathActive($path, $traversalStart)) {
+                    continue;
+                }
+
                 if (! unlink($path) && (is_file($path) || is_link($path))) {
+                    if (self::isPathActive($path, $traversalStart)) {
+                        continue;
+                    }
+
                     self::logCacheClearWarning(
                         $cacheDir,
                         $path,
@@ -223,6 +244,47 @@ class Bootstrap
         $prefix = $cacheDir . DIRECTORY_SEPARATOR;
 
         return str_starts_with($path, $prefix);
+    }
+
+    private static function isPathActive(string $path, float $traversalStart): bool
+    {
+        $changedAt = filectime($path);
+
+        if ($changedAt !== false && $changedAt > $traversalStart) {
+            return true;
+        }
+
+        $modifiedAt = filemtime($path);
+
+        if ($modifiedAt === false) {
+            return false;
+        }
+
+        return $modifiedAt > $traversalStart && $modifiedAt <= time() + 2;
+    }
+
+    private static function isPathInActiveNamespace(string $path, string $cacheDir): bool
+    {
+        $relativePath = ltrim(substr($path, strlen($cacheDir)), DIRECTORY_SEPARATOR);
+
+        if ($relativePath === '') {
+            return false;
+        }
+
+        $segments = explode(DIRECTORY_SEPARATOR, $relativePath);
+        $namespace = $segments[0] ?? '';
+
+        if ($namespace === '' || $namespace[0] !== '@') {
+            return false;
+        }
+
+        $namespacePath = $cacheDir . DIRECTORY_SEPARATOR . $namespace;
+
+        if (! is_dir($namespacePath)) {
+            return false;
+        }
+
+        return ! self::isDirectoryEmpty($namespacePath);
     }
 
     private static function isDirectoryEmpty(string $path): bool
