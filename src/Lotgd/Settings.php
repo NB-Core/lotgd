@@ -183,7 +183,15 @@ class Settings
         if ($settingname == 'usedatacache') {
             return $config['DB_USEDATACACHE'] ?? 0;
         } elseif ($settingname == 'datacachepath') {
-            return $config['DB_DATACACHEPATH'] ?? '';
+            $configuredPath = $config['DB_DATACACHEPATH'] ?? '';
+            if ($configuredPath !== '') {
+                return $configuredPath;
+            }
+            if ($default !== false && $default !== '') {
+                return $default;
+            }
+
+            return sys_get_temp_dir();
         }
         if (!isset($this->settings[$settingname])) {
             $this->loadSettings();
