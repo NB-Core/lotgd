@@ -142,7 +142,7 @@ final class BootstrapMetadataCacheClearTest extends TestCase
 
         mkdir($cacheDir, 0775, true);
         file_put_contents($activeFile, 'active');
-        touch($activeFile, time() + 5);
+        touch($activeFile, time() + 1);
 
         $this->invokeClearDirectoryContentsFallback($cacheDir);
 
