@@ -84,8 +84,7 @@ class Bootstrap
             if (! is_writable($cacheDir)) {
                 throw new \RuntimeException('Doctrine metadata cache directory is not writable: ' . $cacheDir);
             }
-
-            self::clearDoctrineMetadataCache($cacheDir);
+            // Runtime boot must not invalidate metadata cache; maintenance paths handle that explicitly.
         }
 
         // Disable metadata caching only when datacache path is not configured
@@ -122,6 +121,16 @@ class Bootstrap
         }
 
         return $entityManager;
+    }
+
+    public static function clearDoctrineMetadataCacheForMaintenance(?string $cachePath): void
+    {
+        if ($cachePath === null || $cachePath === '') {
+            return;
+        }
+
+        $cacheDir = rtrim($cachePath, '/\\') . '/doctrine';
+        self::clearDoctrineMetadataCache($cacheDir);
     }
 
     private static function clearDoctrineMetadataCache(string $cacheDir): void

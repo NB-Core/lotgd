@@ -2143,6 +2143,8 @@ class Installer
 
         $config = require $configFile;
 
+        Bootstrap::clearDoctrineMetadataCacheForMaintenance($mergedAssignments['DB_DATACACHEPATH'] ?? null);
+
         $em = Bootstrap::getEntityManager();
 
         $dependencyFactory = DependencyFactory::fromEntityManager(
