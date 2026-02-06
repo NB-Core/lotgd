@@ -143,8 +143,14 @@ class DataCache
                     'warning'
                 );
             }
-            if (! $withpath) {
+            if ($withpath) {
                 unset(self::$cache[$name]);
+            } else {
+                foreach (array_keys(self::$cache) as $cacheKey) {
+                    if ($this->makecachetempname($cacheKey) === $fullname) {
+                        unset(self::$cache[$cacheKey]);
+                    }
+                }
             }
         }
     }
@@ -163,6 +169,15 @@ class DataCache
         }
         $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
+            if ($name === '') {
+                self::$cache = [];
+            } else {
+                foreach (array_keys(self::$cache) as $cacheKey) {
+                    if (str_starts_with($cacheKey, $name)) {
+                        unset(self::$cache[$cacheKey]);
+                    }
+                }
+            }
             $name = DATACACHE_FILENAME_PREFIX . $name;
             if (self::$path == '') {
                 self::$path = $this->resolveCachePath($settings);
