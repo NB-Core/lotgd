@@ -134,16 +134,20 @@ class Bootstrap
             $cache = new FilesystemAdapter('', 0, $cacheDir);
 
             if (! $cache->clear()) {
-                self::logCacheClearWarning($cacheDir, new \RuntimeException('FilesystemAdapter::clear returned false'));
+                self::logCacheClearWarning(
+                    $cacheDir,
+                    null,
+                    new \RuntimeException('FilesystemAdapter::clear returned false')
+                );
             }
         } catch (\Throwable $exception) {
-            self::logCacheClearWarning($cacheDir, $exception);
+            self::logCacheClearWarning($cacheDir, null, $exception);
         }
 
         try {
             self::clearDirectoryContentsFallback($cacheDir);
         } catch (\Throwable $exception) {
-            self::throwCacheClearFailure($cacheDir, $exception);
+            self::logCacheClearWarning($cacheDir, null, $exception);
         }
     }
 
@@ -162,17 +166,31 @@ class Bootstrap
             return;
         }
 
+        $normalizedCacheDir = rtrim($cacheDir, DIRECTORY_SEPARATOR);
+
         foreach ($iterator as $item) {
             $path = $item->getPathname();
 
             try {
+                if (! self::isPathWithinCacheDir($path, $normalizedCacheDir)) {
+                    continue;
+                }
+
                 if ($item->isDir()) {
                     if (! is_dir($path)) {
                         continue;
                     }
 
                     if (! rmdir($path) && is_dir($path)) {
-                        throw new \RuntimeException(sprintf('Unable to remove directory "%s".', $path));
+                        if (! self::isDirectoryEmpty($path)) {
+                            continue;
+                        }
+
+                        self::logCacheClearWarning(
+                            $cacheDir,
+                            $path,
+                            new \RuntimeException('Unable to remove directory.')
+                        );
                     }
 
                     continue;
@@ -183,7 +201,11 @@ class Bootstrap
                 }
 
                 if (! unlink($path) && (is_file($path) || is_link($path))) {
-                    throw new \RuntimeException(sprintf('Unable to remove file "%s".', $path));
+                    self::logCacheClearWarning(
+                        $cacheDir,
+                        $path,
+                        new \RuntimeException('Unable to remove file.')
+                    );
                 }
             } catch (\UnexpectedValueException) {
                 // Entry disappeared while traversing; continue with remaining nodes.
@@ -192,25 +214,39 @@ class Bootstrap
         }
     }
 
-    private static function logCacheClearWarning(string $cacheDir, \Throwable $exception): void
+    private static function isPathWithinCacheDir(string $path, string $cacheDir): bool
     {
-        error_log(sprintf(
-            'Doctrine metadata cache clear warning for "%s": %s',
-            $cacheDir,
-            $exception->getMessage()
-        ));
+        if ($path === $cacheDir) {
+            return true;
+        }
+
+        $prefix = $cacheDir . DIRECTORY_SEPARATOR;
+
+        return str_starts_with($path, $prefix);
     }
 
-    private static function throwCacheClearFailure(string $cacheDir, \Throwable $previous): never
+    private static function isDirectoryEmpty(string $path): bool
     {
-        throw new \RuntimeException(
-            sprintf(
-                'Failed to clear Doctrine metadata cache at "%s". %s',
-                $cacheDir,
-                $previous->getMessage()
-            ),
-            0,
-            $previous
-        );
+        try {
+            $iterator = new FilesystemIterator($path, FilesystemIterator::SKIP_DOTS);
+        } catch (\UnexpectedValueException) {
+            return true;
+        }
+
+        foreach ($iterator as $item) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static function logCacheClearWarning(string $cacheDir, ?string $path, \Throwable $exception): void
+    {
+        error_log(sprintf(
+            'Doctrine metadata cache clear warning: cacheDir="%s" path="%s" error="%s"',
+            $cacheDir,
+            $path ?? 'n/a',
+            $exception->getMessage()
+        ));
     }
 }
