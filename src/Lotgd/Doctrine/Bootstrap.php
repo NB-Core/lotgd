@@ -85,7 +85,7 @@ class Bootstrap
                 throw new \RuntimeException('Doctrine metadata cache directory is not writable: ' . $cacheDir);
             }
 
-            self::clearDoctrineMetadataCache($cacheDir);
+            self::clearDoctrineMetadataCacheIfNeeded($cacheDir);
         }
 
         // Disable metadata caching only when datacache path is not configured
@@ -148,6 +148,30 @@ class Bootstrap
             self::clearDirectoryContentsFallback($cacheDir);
         } catch (\Throwable $exception) {
             self::logCacheClearWarning($cacheDir, null, $exception);
+        }
+    }
+
+    private static function clearDoctrineMetadataCacheIfNeeded(string $cacheDir): void
+    {
+        $markerPath = $cacheDir . DIRECTORY_SEPARATOR . '.doctrine_cache_version';
+        $cacheVersion = '1';
+
+        if (is_file($markerPath)) {
+            $markerContents = file_get_contents($markerPath);
+
+            if ($markerContents !== false && trim($markerContents) === $cacheVersion) {
+                return;
+            }
+        }
+
+        self::clearDoctrineMetadataCache($cacheDir);
+
+        if (file_put_contents($markerPath, $cacheVersion) === false) {
+            self::logCacheClearWarning(
+                $cacheDir,
+                $markerPath,
+                new \RuntimeException('Unable to write Doctrine cache version marker.')
+            );
         }
     }
 
