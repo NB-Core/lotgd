@@ -47,7 +47,7 @@ class AssetManifest
             return '';
         }
 
-        $assetPath = ltrim(self::$manifest[$library][$type], '/');
+        $path = '/' . ltrim(self::$manifest[$library][$type], '/');
         $fullPath = self::$basePath . '/' . $assetPath;
         $buster = file_exists($fullPath) ? filemtime($fullPath) : (self::$manifest[$library]['version'] ?? '0');
 
