@@ -28,6 +28,14 @@ Header::pageHeader("Module Manager");
 
 SuperuserNav::render();
 
+$jqueryPath = "async/js/jquery.min.js";
+$dataTablesCssPath = "templates/bootstrap/datatables/datatables.min.css";
+$dataTablesJsPath = "templates/bootstrap/datatables/datatables.min.js";
+
+$output->rawOutput("<link rel='stylesheet' href='{$dataTablesCssPath}'>", true);
+$output->rawOutput("<script src='{$jqueryPath}'></script>", true);
+$output->rawOutput("<script src='{$dataTablesJsPath}'></script>", true);
+
 
 Nav::add("", PhpGenericEnvironment::getRequestUri());
 $op = Http::get('op');
@@ -376,11 +384,21 @@ if ($op == "") {
 }
 
 $datatableSearch = Translator::translateInline("Search");
+$datatableSearchPlaceholder = Translator::translateInline("Search modules");
+$datatableLengthMenu = Translator::translateInline("Show _MENU_ entries");
 $datatableInfo = Translator::translateInline("Showing _START_ to _END_ of _TOTAL_ entries");
+$datatableInfoEmpty = Translator::translateInline("Showing 0 to 0 of 0 entries");
+$datatableInfoFiltered = Translator::translateInline("(filtered from _MAX_ total entries)");
 $datatableEmpty = Translator::translateInline("No data available in table");
 $datatableLoading = Translator::translateInline("Loading...");
+$datatableProcessing = Translator::translateInline("Processing...");
+$datatableZeroRecords = Translator::translateInline("No matching records found");
+$datatablePaginateFirst = Translator::translateInline("First");
+$datatablePaginateLast = Translator::translateInline("Last");
 $datatableNext = Translator::translateInline("Next");
 $datatablePrevious = Translator::translateInline("Previous");
+$datatableAriaSortAscending = Translator::translateInline("Activate to sort column ascending");
+$datatableAriaSortDescending = Translator::translateInline("Activate to sort column descending");
 $output->rawOutput(
     "<script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -390,15 +408,31 @@ document.addEventListener('DOMContentLoaded', function () {
     var dataTableConfig = {
         language: {
             search: " . json_encode($datatableSearch) . ",
+            searchPlaceholder: " . json_encode($datatableSearchPlaceholder) . ",
+            lengthMenu: " . json_encode($datatableLengthMenu) . ",
             info: " . json_encode($datatableInfo) . ",
+            infoEmpty: " . json_encode($datatableInfoEmpty) . ",
+            infoFiltered: " . json_encode($datatableInfoFiltered) . ",
             emptyTable: " . json_encode($datatableEmpty) . ",
             loadingRecords: " . json_encode($datatableLoading) . ",
+            processing: " . json_encode($datatableProcessing) . ",
+            zeroRecords: " . json_encode($datatableZeroRecords) . ",
             paginate: {
+                first: " . json_encode($datatablePaginateFirst) . ",
+                last: " . json_encode($datatablePaginateLast) . ",
                 next: " . json_encode($datatableNext) . ",
                 previous: " . json_encode($datatablePrevious) . "
+            },
+            aria: {
+                sortAscending: " . json_encode($datatableAriaSortAscending) . ",
+                sortDescending: " . json_encode($datatableAriaSortDescending) . "
             }
         },
-        order: []
+        order: [],
+        paging: true,
+        searching: true,
+        serverSide: false,
+        processing: false
     };
     jQuery('.js-modules-table').DataTable(dataTableConfig);
     jQuery('.js-uninstalled-modules-table').DataTable(dataTableConfig);
