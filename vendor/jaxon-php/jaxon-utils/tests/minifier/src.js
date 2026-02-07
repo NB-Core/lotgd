@@ -3550,7 +3550,7 @@ jaxon.ajax.response = {
         }
 
         if (res.code === 'success') {
-            oRequest.requestData += '&jxnupl=' + encodeURIComponent(res.upl);
+            oRequest.requestData += '&jxnupload=' + encodeURIComponent(res.upl);
             jaxon.ajax.request._send(oRequest);
         }
     },

@@ -1,8 +1,13 @@
-JxnSample = {};
-JxnSample.myMethod = function() {
-    return jaxon.request({ jxncls: 'Sample', jxnmthd: 'myMethod' }, { parameters: arguments });
+const jx = {
+  rc: (name, method, parameters, options = {}) => jaxon.request({ type: 'class', name, method }, { parameters, ...options}),
+  rf: (name, parameters, options = {}) => jaxon.request({ type: 'func', name }, { parameters, ...options}),
+  c0: 'Sample',
+  c1: 'TheClass',
 };
-JxnTheClass = {};
-JxnTheClass.theMethod = function() {
-    return jaxon.request({ jxncls: 'TheClass', jxnmthd: 'theMethod' }, { parameters: arguments });
+
+JxnSample = {
+  myMethod: (...args) => jx.rc(jx.c0, 'myMethod', args),
+};
+JxnTheClass = {
+  theMethod: (...args) => jx.rc(jx.c1, 'theMethod', args),
 };

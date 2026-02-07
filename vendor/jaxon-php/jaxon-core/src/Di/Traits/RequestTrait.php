@@ -3,21 +3,18 @@
 namespace Jaxon\Di\Traits;
 
 use Jaxon\App\Config\ConfigManager;
-use Jaxon\App\Dialog\Library\DialogLibraryManager;
 use Jaxon\App\I18n\Translator;
+use Jaxon\Di\ComponentContainer;
 use Jaxon\Di\Container;
 use Jaxon\Plugin\Manager\PluginManager;
-use Jaxon\Plugin\Request\CallableClass\CallableRegistry;
-use Jaxon\Plugin\Response\DataBag\DataBagPlugin;
-use Jaxon\Request\Call\Paginator;
-use Jaxon\Request\Factory\Factory;
-use Jaxon\Request\Factory\ParameterFactory;
-use Jaxon\Request\Factory\RequestFactory;
+use Jaxon\Plugin\Response\Databag\DatabagPlugin;
 use Jaxon\Request\Handler\CallbackManager;
 use Jaxon\Request\Handler\ParameterReader;
 use Jaxon\Request\Handler\RequestHandler;
 use Jaxon\Request\Upload\UploadHandlerInterface;
 use Jaxon\Response\Manager\ResponseManager;
+use Jaxon\Script\CallFactory;
+use Jaxon\Script\ParameterFactory;
 use Jaxon\Utils\Http\UriDetector;
 
 trait RequestTrait
@@ -27,50 +24,55 @@ trait RequestTrait
      *
      * @return void
      */
-    private function registerRequests()
+    private function registerRequests(): void
     {
         // The parameter reader
-        $this->set(ParameterReader::class, function($di) {
-            return new ParameterReader($di->g(Container::class), $di->g(ConfigManager::class),
-                $di->g(Translator::class), $di->g(UriDetector::class));
-        });
+        $this->set(ParameterReader::class, fn($di) =>
+            new ParameterReader($di->g(Container::class), $di->g(Translator::class),
+                $di->g(ConfigManager::class), $di->g(UriDetector::class)));
         // Callback Manager
-        $this->set(CallbackManager::class, function($di) {
-            return new CallbackManager($di->g(ResponseManager::class));
-        });
+        $this->set(CallbackManager::class, fn() => new CallbackManager());
         // By default, register a null upload handler
-        $this->set(UploadHandlerInterface::class, function() {
-            return null;
-        });
+        $this->set(UploadHandlerInterface::class, fn() => null);
         // Request Handler
-        $this->set(RequestHandler::class, function($di) {
-            return new RequestHandler($di->g(Container::class), $di->g(PluginManager::class),
-                $di->g(ResponseManager::class), $di->g(CallbackManager::class), $di->g(DataBagPlugin::class));
-        });
-        // Request Factory
-        $this->set(Factory::class, function($di) {
-            return new Factory($di->g(CallableRegistry::class), $di->g(RequestFactory::class),
-                $di->g(ParameterFactory::class));
-        });
-        // Factory for requests to functions
-        $this->set(RequestFactory::class, function($di) {
-            $sPrefix = $di->g(ConfigManager::class)->getOption('core.prefix.function');
-            return new RequestFactory($sPrefix, $di->g(DialogLibraryManager::class), $di->g(Paginator::class));
-        });
-        // Parameter Factory
-        $this->set(ParameterFactory::class, function() {
-            return new ParameterFactory();
-        });
+        $this->set(RequestHandler::class, fn($di) =>
+            new RequestHandler($di->g(Container::class), $di->g(PluginManager::class),
+                $di->g(ResponseManager::class), $di->g(CallbackManager::class),
+                $di->g(DatabagPlugin::class)));
+        // Requests and calls Factory
+        $this->set(CallFactory::class, fn($di) => new CallFactory($di->g(ComponentContainer::class)));
+        // Factory for function parameters
+        $this->set(ParameterFactory::class, fn() => new ParameterFactory());
     }
 
     /**
-     * Get the factory
+     * Get the callback manager
      *
-     * @return Factory
+     * @return CallbackManager
      */
-    public function getFactory(): Factory
+    public function callback(): CallbackManager
     {
-        return $this->g(Factory::class);
+        return $this->g(CallbackManager::class);
+    }
+
+    /**
+     * Get the js call factory
+     *
+     * @return CallFactory
+     */
+    public function getCallFactory(): CallFactory
+    {
+        return $this->g(CallFactory::class);
+    }
+
+    /**
+     * Get the js call parameter factory
+     *
+     * @return ParameterFactory
+     */
+    public function getParameterFactory(): ParameterFactory
+    {
+        return $this->g(ParameterFactory::class);
     }
 
     /**
@@ -91,16 +93,6 @@ trait RequestTrait
     public function getUploadHandler(): ?UploadHandlerInterface
     {
         return $this->g(UploadHandlerInterface::class);
-    }
-
-    /**
-     * Get the callback manager
-     *
-     * @return CallbackManager
-     */
-    public function getCallbackManager(): CallbackManager
-    {
-        return $this->g(CallbackManager::class);
     }
 
     /**

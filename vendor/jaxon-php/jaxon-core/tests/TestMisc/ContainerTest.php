@@ -12,10 +12,9 @@ use Jaxon\Tests\Ns\Lib\ServiceInterface;
 use Pimple\Container as AppContainer;
 use Pimple\Psr11\Container as PsrContainer;
 use PHPUnit\Framework\TestCase;
-use ReflectionException;
 
+use function dirname;
 use function get_class;
-use function Jaxon\jaxon;
 
 class ContainerTest extends TestCase
 {
@@ -24,7 +23,7 @@ class ContainerTest extends TestCase
      */
     public function setUp(): void
     {
-        jaxon()->app()->setup(__DIR__ . '/../config/app/container.php');
+        jaxon()->app()->setup(dirname(__DIR__) . '/config/app/container.php');
     }
 
     /**
@@ -83,17 +82,5 @@ class ContainerTest extends TestCase
         $this->assertFalse(jaxon()->di()->h(ServiceExt::class));
         $this->assertTrue(jaxon()->di()->has(ServiceExt::class));
         $this->assertEquals(ServiceExt::class, get_class(jaxon()->di()->get(ServiceExt::class)));
-    }
-
-    /**
-     * @throws ReflectionException
-     * @throws SetupException
-     */
-    public function testMakeWithIncorrectParam()
-    {
-        $this->assertEquals(null, jaxon()->di()->make(true));
-        $this->assertEquals(null, jaxon()->di()->make(true));
-        $this->expectException(ReflectionException::class);
-        jaxon()->di()->make('service_config');
     }
 }

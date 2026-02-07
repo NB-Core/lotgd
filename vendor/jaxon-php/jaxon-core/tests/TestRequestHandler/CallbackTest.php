@@ -9,11 +9,9 @@ use Jaxon\Request\Target;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
-
 use Exception;
 
 use function get_class;
-use function Jaxon\jaxon;
 
 class CallbackTest extends TestCase
 {
@@ -48,10 +46,13 @@ class CallbackTest extends TestCase
     public function setUp(): void
     {
         jaxon()->setOption('core.response.send', false);
-        jaxon()->register(Jaxon::CALLABLE_FUNCTION, 'my_first_function',
-            __DIR__ . '/../src/first.php');
+        jaxon()->callback()->boot(fn() => $this->nBootCount++);
         jaxon()->setOption('core.prefix.class', '');
-        jaxon()->register(Jaxon::CALLABLE_DIR, __DIR__ . '/../src/response');
+        // A second callback
+        jaxon()->callback()->boot(fn() => $this->nBootCount += 2);
+        jaxon()->register(Jaxon::CALLABLE_FUNCTION, 'my_first_function',
+            dirname(__DIR__) . '/src/first.php');
+        jaxon()->register(Jaxon::CALLABLE_DIR, dirname(__DIR__) . '/src/response', ['autoload' => true]);
     }
 
     /**
@@ -65,30 +66,16 @@ class CallbackTest extends TestCase
 
     public function testBootCallback()
     {
-        jaxon()->callback()->boot(function() {
-            $this->nBootCount++;
-        });
-        // Process the request and get the response
         $this->assertEquals(0, $this->nBootCount);
-        // The on boot callbacks are called by the jaxon() function.
-        jaxon()->setOption('core.prefix.class', '');
-        $this->assertEquals(1, $this->nBootCount);
-        // But each of them must be called only once.
-        jaxon()->setOption('core.prefix.class', '');
-        $this->assertEquals(1, $this->nBootCount);
+        // Too late to define a callback.
+        jaxon()->callback()->boot(fn() => $this->nBootCount++);
+        $this->assertEquals(0, $this->nBootCount);
 
-        // A second callback
-        jaxon()->callback()->boot(function() {
-            $this->nBootCount += 2;
-        });
-        // Process the request and get the response
-        $this->assertEquals(1, $this->nBootCount);
-        // The on boot callbacks are called by the jaxon() function.
-        jaxon()->setOption('core.prefix.class', '');
-        $this->assertEquals(3, $this->nBootCount);
-        // But each of them must be called only once.
-        jaxon()->setOption('core.prefix.class', '');
-        $this->assertEquals(3, $this->nBootCount);
+        // Process the request and get the response.
+        jaxon()->processRequest();
+
+        // The callbacks has run now.
+        $this->assertEquals(4, $this->nBootCount);
     }
 
     /**
@@ -98,17 +85,20 @@ class CallbackTest extends TestCase
     public function testClassInitCallback()
     {
         $this->xCallable = null;
-        jaxon()->callback()->init(function($xCallable) {
-            $this->xCallable = clone $xCallable;
-        });
+        jaxon()->callback()->init(fn($xCallable) => $this->xCallable = clone $xCallable);
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'simple',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'simple',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -123,16 +113,19 @@ class CallbackTest extends TestCase
     public function testFunctionAfterCallbackValidity()
     {
         $this->xTarget = null;
-        jaxon()->callback()->after(function($xTarget) {
-            $this->xTarget = clone $xTarget;
-        });
+        jaxon()->callback()->after(fn($xTarget) => $this->xTarget = clone $xTarget);
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxnfun' => 'my_first_function',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'func',
+                        'name' => 'my_first_function',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         $this->assertTrue(jaxon()->canProcessRequest());
         jaxon()->processRequest();
@@ -157,13 +150,18 @@ class CallbackTest extends TestCase
             $this->bEndRequest = $bEndRequest;
         });
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'simple',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'simple',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         $this->assertTrue(jaxon()->canProcessRequest());
         jaxon()->processRequest();
@@ -184,17 +182,20 @@ class CallbackTest extends TestCase
     public function testClassAfterCallbackValidity()
     {
         $this->xTarget = null;
-        jaxon()->callback()->after(function($xTarget) {
-            $this->xTarget = clone $xTarget;
-        });
+        jaxon()->callback()->after(fn($xTarget) => $this->xTarget = clone $xTarget);
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'simple',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'simple',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         $this->assertTrue(jaxon()->canProcessRequest());
         jaxon()->processRequest();
@@ -220,13 +221,18 @@ class CallbackTest extends TestCase
             return $xResponse;
         });
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'simple',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'simple',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -248,13 +254,18 @@ class CallbackTest extends TestCase
             return $xResponse;
         });
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'simple',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'simple',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -276,13 +287,18 @@ class CallbackTest extends TestCase
             return $xResponse;
         });
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'simple',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'simple',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         jaxon()->processRequest();
 
@@ -304,13 +320,18 @@ class CallbackTest extends TestCase
             return $xResponse;
         });
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'sim ple', // There's an error in the function name.
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'sim ple', // There's an error in the function name.
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
         $this->expectException(RequestException::class);
         jaxon()->processRequest();
@@ -334,15 +355,20 @@ class CallbackTest extends TestCase
             return $xResponse;
         });
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'TestCb',
-                'jxnmthd' => 'error', // This function throws an exception.
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestCb',
+                        'method' => 'error', // This function throws an exception.
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
         // Process the request and get the response
-        $this->expectException(Exception::class);
+        // $this->expectException(Exception::class);
         jaxon()->processRequest();
 
         $xResponse = jaxon()->getResponse();

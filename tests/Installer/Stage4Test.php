@@ -76,6 +76,8 @@ final class Stage4Test extends TestCase
      * @runInSeparateProcess
      * @preserveGlobalState disabled
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testStage4CompletesWithoutDbconnect(): void
     {
         global $session;
@@ -106,6 +108,8 @@ final class Stage4Test extends TestCase
      * @runInSeparateProcess
      * @preserveGlobalState disabled
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testStage4ReportsConnectionFailure(): void
     {
         global $session;

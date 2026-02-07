@@ -14,7 +14,7 @@ class ExtendedSetting
     #[ORM\Column(name: 'setting', type: 'string', length: 50)]
     private string $setting = '';
 
-    #[ORM\Column(type: 'text')]
+    #[ORM\Column(name: 'value', type: 'text')]
     private string $value = '';
 
     public function getSetting(): string

@@ -1,0 +1,51 @@
+{
+    "name": "jaxon-php/jaxon-storage",
+    "type": "library",
+    "description": "File storage for the Jaxon ajax PHP library",
+    "authors": [
+        {"name": "Thierry Feuzeu"}
+    ],
+    "homepage": "https://www.jaxon-php.org",
+    "license": "BSD-3-Clause",
+    "keywords": ["Jaxon", "Ajax", "PHP", "Storage"],
+    "support": {
+        "issues": "https://github.com/jaxon-php/jaxon-storage/issues",
+        "source": "https://github.com/jaxon-php/jaxon-storage"
+    },
+    "require": {
+        "php": ">=8.0",
+        "jaxon-php/jaxon-config": "^1.0",
+        "jaxon-php/jaxon-utils": "^2.0",
+        "lagdo/facades": "^1.0",
+        "league/flysystem": "^3.0|^2.2"
+    },
+    "require-dev": {
+        "league/flysystem-memory": "^3.0|^2.2",
+        "phpunit/phpunit": "^9.5",
+        "php-coveralls/php-coveralls": "^2.5",
+        "phpunit/phpcov": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jaxon\\Storage\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jaxon\\Storage\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@clearCache",
+            "@putenv XDEBUG_MODE=coverage",
+            "vendor/bin/phpunit"
+        ],
+        "clearCache": "rm -rf cache/*"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

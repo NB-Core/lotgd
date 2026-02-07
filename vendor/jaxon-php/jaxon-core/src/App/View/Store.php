@@ -3,17 +3,18 @@
 namespace Jaxon\App\View;
 
 use JsonSerializable;
+use Stringable;
 
 use function array_merge;
 
-class Store implements JsonSerializable
+class Store implements JsonSerializable, Stringable
 {
     /**
      * The view renderer
      *
-     * @var ViewInterface
+     * @var ViewInterface|null
      */
-    protected $xRenderer;
+    protected $xRenderer = null;
 
     /**
      * The view namespace
@@ -73,7 +74,8 @@ class Store implements JsonSerializable
      *
      * @return Store
      */
-    public function setView(ViewInterface $xRenderer, string $sNamespace, string $sViewName, array $aViewData = []): Store
+    public function setView(ViewInterface $xRenderer,
+        string $sNamespace, string $sViewName, array $aViewData = []): Store
     {
         $this->xRenderer = $xRenderer;
         $this->sNamespace = trim($sNamespace);
@@ -117,9 +119,9 @@ class Store implements JsonSerializable
      *
      * @return string        The string representation of the view
      */
-    public function __toString()
+    public function __toString(): string
     {
-        return ($this->xRenderer) ? $this->xRenderer->render($this) : '';
+        return !$this->xRenderer ? '' : $this->xRenderer->render($this);
     }
 
     /**

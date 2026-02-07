@@ -8,7 +8,6 @@ use Jaxon\Exception\SetupException;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
-use function Jaxon\jaxon;
 
 class ParameterTest extends TestCase
 {
@@ -18,7 +17,7 @@ class ParameterTest extends TestCase
     public function setUp(): void
     {
         jaxon()->setOption('core.response.send', false);
-        jaxon()->register(Jaxon::CALLABLE_CLASS, 'Sample', __DIR__ . '/../src/sample.php');
+        jaxon()->register(Jaxon::CALLABLE_CLASS, 'Sample', dirname(__DIR__) . '/src/sample.php');
     }
 
     /**
@@ -36,12 +35,16 @@ class ParameterTest extends TestCase
     public function testRequestWithNoPlugin()
     {
         // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxnwho' => 'Nobody',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'who' => 'Nobody',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
 
         $this->assertFalse(jaxon()->di()->getRequestHandler()->canProcessRequest());
         // Process the request and get the response
@@ -54,22 +57,25 @@ class ParameterTest extends TestCase
     public function testGetParameterProcessing()
     {
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
                 ->withQueryParams([
-                    'jxnargs' => [
-                        'string' => 'Sstring',
-                        'int' => 'N15',
-                        'true' => 'Btrue',
-                        'false' => 'Bfalse',
-                        'null' => '*',
-                        'empty' => '',
-                        'array' => json_encode(['with', 'multiple', 'values']),
-                    ],
-                ])->withMethod('GET');
-        });
+                    'jxncall' => json_encode([
+                        'args' => [
+                            'string' => 'string',
+                            'int' => 15,
+                            'true' => true,
+                            'false' => false,
+                            'null' => null,
+                            'empty' => '',
+                            'array' => ['with', 'multiple', 'values'],
+                        ],
+                    ]),
+                ])
+                ->withMethod('GET'));
 
-        $aParameter = jaxon()->di()->getParameterReader()->args();
+        $aParameter = jaxon()->di()->getRequestArguments();
 
         $this->assertIsArray($aParameter);
 
@@ -97,22 +103,25 @@ class ParameterTest extends TestCase
     public function testPostParameterProcessing()
     {
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
                 ->withParsedBody([
-                    'jxnargs' => [
-                        'string' => 'Sstring',
-                        'int' => 'N15',
-                        'true' => 'B58',
-                        'false' => 'Bzero',
-                        'null' => '*',
-                        'empty' => '',
-                        'array' => json_encode(['with', 'multiple', 'values']),
-                    ],
-                ])->withMethod('POST');
-        });
+                    'jxncall' => json_encode([
+                        'args' => [
+                            'string' => 'string',
+                            'int' => 15,
+                            'true' => 58,
+                            'false' => 'false',
+                            'null' => null,
+                            'empty' => '',
+                            'array' => ['with', 'multiple', 'values'],
+                        ],
+                    ]),
+                ])
+                ->withMethod('POST'));
 
-        $aParameter = jaxon()->di()->getParameterReader()->args();
+        $aParameter = jaxon()->di()->getRequestArguments();
 
         $this->assertIsArray($aParameter);
 
@@ -122,10 +131,10 @@ class ParameterTest extends TestCase
         $this->assertIsInt($aParameter['int']);
         $this->assertEquals(15, $aParameter['int']);
 
-        $this->assertIsBool($aParameter['true']);
-        $this->assertTrue($aParameter['true']);
-        $this->assertIsBool($aParameter['false']);
-        $this->assertFalse($aParameter['false']);
+        $this->assertIsInt($aParameter['true']);
+        // $this->assertTrue($aParameter['true']);
+        $this->assertIsString($aParameter['false']);
+        // $this->assertFalse($aParameter['false']);
 
         $this->assertNull($aParameter['null']);
         $this->assertEquals('', $aParameter['empty']);
@@ -141,22 +150,25 @@ class ParameterTest extends TestCase
     {
         jaxon()->setOption('core.decode_utf8', true);
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
                 ->withParsedBody([
-                    'jxnargs' => [
-                        'string' => 'Sstring',
-                        'int' => 'N15',
-                        'true' => 'B58',
-                        'false' => 'Bzero',
-                        'null' => '*',
-                        'empty' => '',
-                        'array' => json_encode(['with', 'multiple', 'values']),
-                    ],
-                ])->withMethod('POST');
-        });
+                    'jxncall' => json_encode([
+                        'args' => [
+                            'string' => 'string',
+                            'int' => 15,
+                            'true' => 58,
+                            'false' => 'false',
+                            'null' => null,
+                            'empty' => '',
+                            'array' => ['with', 'multiple', 'values'],
+                        ],
+                    ]),
+                ])
+                ->withMethod('POST'));
 
-        $aParameter = jaxon()->di()->getParameterReader()->args();
+        $aParameter = jaxon()->di()->getRequestArguments();
 
         $this->assertIsArray($aParameter);
 
@@ -166,10 +178,10 @@ class ParameterTest extends TestCase
         $this->assertIsInt($aParameter['int']);
         $this->assertEquals(15, $aParameter['int']);
 
-        $this->assertIsBool($aParameter['true']);
-        $this->assertTrue($aParameter['true']);
-        $this->assertIsBool($aParameter['false']);
-        $this->assertFalse($aParameter['false']);
+        $this->assertIsInt($aParameter['true']);
+        // $this->assertTrue($aParameter['true']);
+        $this->assertIsString($aParameter['false']);
+        // $this->assertFalse($aParameter['false']);
 
         $this->assertNull($aParameter['null']);
         $this->assertEquals('', $aParameter['empty']);
@@ -187,22 +199,25 @@ class ParameterTest extends TestCase
         unset($_SERVER['HTTP_CONTENT_TYPE']);
         $_SERVER['CONTENT_TYPE'] = 'multipart/form-data';
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
                 ->withParsedBody([
-                    'jxnargs' => [
-                        'string' => 'Sstring',
-                        'int' => 'N15',
-                        'true' => 'B58',
-                        'false' => 'Bzero',
-                        'null' => '*',
-                        'empty' => '',
-                        'array' => json_encode(['with', 'multiple', 'values']),
-                    ],
-                ])->withMethod('POST');
-        });
+                    'jxncall' => json_encode([
+                        'args' => [
+                            'string' => 'string',
+                            'int' => 15,
+                            'true' => 58,
+                            'false' => 'false',
+                            'null' => null,
+                            'empty' => '',
+                            'array' => ['with', 'multiple', 'values'],
+                        ],
+                    ]),
+                ])
+                ->withMethod('POST'));
 
-        $aParameter = jaxon()->di()->getParameterReader()->args();
+        $aParameter = jaxon()->di()->getRequestArguments();
 
         $this->assertIsArray($aParameter);
 
@@ -212,10 +227,10 @@ class ParameterTest extends TestCase
         $this->assertIsInt($aParameter['int']);
         $this->assertEquals(15, $aParameter['int']);
 
-        $this->assertIsBool($aParameter['true']);
-        $this->assertTrue($aParameter['true']);
-        $this->assertIsBool($aParameter['false']);
-        $this->assertFalse($aParameter['false']);
+        $this->assertIsInt($aParameter['true']);
+        // $this->assertTrue($aParameter['true']);
+        $this->assertIsString($aParameter['false']);
+        // $this->assertFalse($aParameter['false']);
 
         $this->assertNull($aParameter['null']);
         $this->assertEquals('', $aParameter['empty']);
@@ -233,22 +248,25 @@ class ParameterTest extends TestCase
         unset($_SERVER['CONTENT_TYPE']);
         $_SERVER['HTTP_CONTENT_TYPE'] = 'multipart/form-data';
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
                 ->withParsedBody([
-                    'jxnargs' => [
-                        'string' => 'Sstring',
-                        'int' => 'N15',
-                        'true' => 'B58',
-                        'false' => 'Bzero',
-                        'null' => '*',
-                        'empty' => '',
-                        'array' => json_encode(['with', 'multiple', 'values']),
-                    ],
-                ])->withMethod('POST');
-        });
+                    'jxncall' => json_encode([
+                        'args' => [
+                            'string' => 'string',
+                            'int' => 15,
+                            'true' => 58,
+                            'false' => 'false',
+                            'null' => null,
+                            'empty' => '',
+                            'array' => ['with', 'multiple', 'values'],
+                        ],
+                    ]),
+                ])
+                ->withMethod('POST'));
 
-        $aParameter = jaxon()->di()->getParameterReader()->args();
+        $aParameter = jaxon()->di()->getRequestArguments();
 
         $this->assertIsArray($aParameter);
 
@@ -258,10 +276,10 @@ class ParameterTest extends TestCase
         $this->assertIsInt($aParameter['int']);
         $this->assertEquals(15, $aParameter['int']);
 
-        $this->assertIsBool($aParameter['true']);
-        $this->assertTrue($aParameter['true']);
-        $this->assertIsBool($aParameter['false']);
-        $this->assertFalse($aParameter['false']);
+        $this->assertIsInt($aParameter['true']);
+        // $this->assertTrue($aParameter['true']);
+        $this->assertIsString($aParameter['false']);
+        // $this->assertFalse($aParameter['false']);
 
         $this->assertNull($aParameter['null']);
         $this->assertEquals('', $aParameter['empty']);

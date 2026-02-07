@@ -1,1 +1,1 @@
-    <li><a href="javascript:;" onclick="<?php echo $this->call ?>"><?php echo $this->text ?></a></li>
+    <li class="enabled" data-page="<?php echo $this->page ?>"><a role="link"><?php echo $this->text ?></a></li>

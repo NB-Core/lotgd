@@ -1,28 +1,22 @@
 <?php
 
-use Jaxon\Response\Response;
-use function Jaxon\jaxon;
-
 class ClassC
 {
-    public function methodCa(): Response
+    public function methodCa()
     {
         $xResponse = jaxon()->getResponse();
         $xResponse->html('div', 'This is the div content!!');
-        return $xResponse;
     }
 
-    public function methodCb(): Response
+    public function methodCb()
     {
         $xResponse = jaxon()->getResponse();
         $xResponse->html('div', 'This is the div content!!');
-        return $xResponse;
     }
 
-    public function methodCc(): Response
+    public function methodCc()
     {
         $xResponse = jaxon()->getResponse();
         $xResponse->html('div', 'This is the div content!!');
-        return $xResponse;
     }
 }

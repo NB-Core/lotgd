@@ -15,48 +15,63 @@ namespace Jaxon\App\Config;
  */
 
 use Jaxon\Di\Container;
-use Jaxon\Utils\Config\Config;
+use Jaxon\Config\Config;
 
-class ConfigEventManager implements ConfigListenerInterface
+class ConfigEventManager
 {
     /**
-     * @var Container
+     * @var string[]
      */
-    protected $di;
+    protected $aLibConfigListeners = [];
 
     /**
      * @var string[]
      */
-    protected $aListeners = [];
+    protected $aAppConfigListeners = [];
 
     /**
-     * The constructor
-     *
      * @param Container $di
      */
-    public function __construct(Container $di)
-    {
-        $this->di = $di;
-    }
+    public function __construct(private Container $di)
+    {}
 
     /**
-     * Add a listener
-     *
      * @param string $sClassName
      *
      * @return void
      */
-    public function addListener(string $sClassName)
+    public function addLibConfigListener(string $sClassName): void
     {
-        $this->aListeners[] = $sClassName;
+        $this->aLibConfigListeners[] = $sClassName;
+    }
+
+    /**
+     * @param string $sClassName
+     *
+     * @return void
+     */
+    public function addAppConfigListener(string $sClassName): void
+    {
+        $this->aAppConfigListeners[] = $sClassName;
     }
 
     /**
      * @inheritDoc
      */
-    public function onChange(Config $xConfig, string $sName)
+    public function libConfigChanged(Config $xConfig, string $sName): void
     {
-        foreach($this->aListeners as $sListener)
+        foreach($this->aLibConfigListeners as $sListener)
+        {
+            $this->di->g($sListener)->onChange($xConfig, $sName);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function appConfigChanged(Config $xConfig, string $sName): void
+    {
+        foreach($this->aAppConfigListeners as $sListener)
         {
             $this->di->g($sListener)->onChange($xConfig, $sName);
         }

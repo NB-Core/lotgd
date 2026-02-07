@@ -1,19 +1,19 @@
 {
     "require": {
-        "jaxon-php/jaxon-core": "~4.0",
-        "phpmailer/phpmailer": "^6.7",
-        "twig/twig": "^3.0",
-        "wikimedia/composer-merge-plugin": "^2.0",
-        "doctrine/orm": "^3.0",
-        "doctrine/dbal": "^4.0",
+        "jaxon-php/jaxon-core": "^5.5",
+        "phpmailer/phpmailer": "^7.0",
+        "twig/twig": "^3.23",
+        "wikimedia/composer-merge-plugin": "^2.1",
+        "doctrine/orm": "^3.6",
+        "doctrine/dbal": "^4.4",
         "doctrine/migrations": "^3.9",
-        "symfony/cache": "^7.3"
+        "symfony/cache": "^7.2"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.6",
-        "squizlabs/php_codesniffer": "^3.7",
+        "phpstan/phpstan-doctrine": "^1.3",
         "phpstan/phpstan": "^1.11",
-        "phpstan/phpstan-doctrine": "^1.5"
+        "phpunit/phpunit": "^12.0",
+        "squizlabs/php_codesniffer": "^3.11"
     },
     "autoload": {
         "psr-4": {
@@ -28,10 +28,10 @@
         }
     },
     "scripts": {
+        "static": "phpstan analyse --configuration phpstan.neon",
         "test": "phpunit --configuration phpunit.xml",
         "lint": "phpcs .",
-        "lint:fix": "phpcbf .",
-        "static": "phpstan analyse --memory-limit=1G"
+        "lint:fix": "phpcbf ."
     },
     "extra": {
         "merge-plugin": {
@@ -44,6 +44,9 @@
         "allow-plugins": {
             "wikimedia/composer-merge-plugin": true
         },
-        "platform": { "php": "8.3.0" }
+        "platform": {
+            "php": "8.3.0"
+        },
+        "sort-packages": true
     }
 }

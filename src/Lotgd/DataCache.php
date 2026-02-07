@@ -80,7 +80,7 @@ class DataCache
         }
         $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
-            $base = $settings->getSetting('datacachepath', '/tmp');
+            $base = $this->resolveCachePath($settings);
             if (file_exists($base) && !is_dir($base)) {
                 return false;
             }
@@ -143,8 +143,14 @@ class DataCache
                     'warning'
                 );
             }
-            if (! $withpath) {
+            if ($withpath) {
                 unset(self::$cache[$name]);
+            } else {
+                foreach (array_keys(self::$cache) as $cacheKey) {
+                    if ($this->makecachetempname($cacheKey) === $fullname) {
+                        unset(self::$cache[$cacheKey]);
+                    }
+                }
             }
         }
     }
@@ -163,9 +169,18 @@ class DataCache
         }
         $settings = Settings::getInstance();
         if ($settings->getSetting('usedatacache', 0)) {
+            if ($name === '') {
+                self::$cache = [];
+            } else {
+                foreach (array_keys(self::$cache) as $cacheKey) {
+                    if (str_starts_with($cacheKey, $name)) {
+                        unset(self::$cache[$cacheKey]);
+                    }
+                }
+            }
             $name = DATACACHE_FILENAME_PREFIX . $name;
             if (self::$path == '') {
-                self::$path = $settings->getSetting('datacachepath', '/tmp');
+                self::$path = $this->resolveCachePath($settings);
             }
             $dir = dir(self::$path);
             while (false !== ($file = $dir->read())) {
@@ -193,7 +208,7 @@ class DataCache
         }
         $settings = Settings::getInstance();
         if (self::$path == '') {
-            self::$path = $settings->getSetting('datacachepath', '/tmp');
+            self::$path = $this->resolveCachePath($settings);
         }
         $name = rawurlencode($name);
         $name = str_replace('_', '-', $name);
@@ -214,5 +229,15 @@ class DataCache
             // cleanup old caches intentionally skipped
         }
         return $fullname;
+    }
+
+    private function resolveCachePath(Settings $settings): string
+    {
+        $path = $settings->getSetting('datacachepath', sys_get_temp_dir());
+        if ($path === '') {
+            return sys_get_temp_dir();
+        }
+
+        return $path;
     }
 }

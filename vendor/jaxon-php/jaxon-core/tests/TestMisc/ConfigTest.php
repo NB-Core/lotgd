@@ -4,7 +4,8 @@ namespace Jaxon\Tests\TestMisc;
 
 use Jaxon\Exception\SetupException;
 use PHPUnit\Framework\TestCase;
-use function Jaxon\jaxon;
+
+use function dirname;
 
 final class ConfigTest extends TestCase
 {
@@ -42,7 +43,7 @@ final class ConfigTest extends TestCase
      */
     protected function setUp(): void
     {
-        jaxon()->config()->setOptions(['core' => ['language' => 'en']]);
+        jaxon()->setOptions(['core' => ['language' => 'en']]);
         jaxon()->setOption('core.prefix.function', 'jaxon_');
     }
 
@@ -60,7 +61,7 @@ final class ConfigTest extends TestCase
      */
     public function testPhpConfigReader()
     {
-        jaxon()->config(__DIR__ . '/../config/config.php', 'jaxon');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/config.php', 'jaxon');
         $this->assertEquals('en', jaxon()->getOption('core.language'));
         $this->assertEquals('jaxon_', jaxon()->getOption('core.prefix.function'));
         $this->assertFalse(jaxon()->getOption('core.debug.on'));
@@ -72,7 +73,7 @@ final class ConfigTest extends TestCase
      */
     public function testJsonConfigReader()
     {
-        jaxon()->config(__DIR__ . '/../config/config.json', 'jaxon');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/config.json', 'jaxon');
         $this->assertEquals('en', jaxon()->getOption('core.language'));
         $this->assertEquals('jaxon_', jaxon()->getOption('core.prefix.function'));
         $this->assertFalse(jaxon()->getOption('core.debug.on'));
@@ -84,7 +85,7 @@ final class ConfigTest extends TestCase
      */
     public function testReadOptionNames()
     {
-        jaxon()->config(__DIR__ . '/../config/config.json');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/config.json');
         $aOptionNames = jaxon()->config()->getOptionNames('jaxon.core');
         $this->assertIsArray($aOptionNames);
         $this->assertCount(3, $aOptionNames);
@@ -95,23 +96,11 @@ final class ConfigTest extends TestCase
      */
     public function testSimpleArrayValues()
     {
-        jaxon()->config(__DIR__ . '/../config/array.php');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/array.php');
         $aOption = jaxon()->getOption('core.array');
         $this->assertIsArray($aOption);
         $this->assertCount(4, $aOption);
-        $this->assertEmpty(jaxon()->config()->getOptionNames('jaxon.array'));
-    }
-
-    /**
-     * @throws SetupException
-     */
-    public function testSetOptionsError()
-    {
-        // The key is missing
-        $this->assertFalse(jaxon()->config()->setOptions(['core' => []], 'core.missing'));
-        // The key is not an array
-        $this->assertFalse(jaxon()->config()->setOptions(['core' => ['string' => 'String']], 'core.string'));
-        $this->assertFalse(jaxon()->hasOption('core.string'));
+        $this->assertEmpty(jaxon()->config()->getOptionNames('core.array'));
     }
 
     /**
@@ -120,7 +109,7 @@ final class ConfigTest extends TestCase
     public function testSetOptionsDataDepth()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config()->setOptions($this->aMaxDataDepthOptions);
+        jaxon()->setOptions($this->aMaxDataDepthOptions);
     }
 
     /**
@@ -138,7 +127,7 @@ final class ConfigTest extends TestCase
     public function testLoadConfigDataDepth()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/depth.php');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/depth.php');
     }
 
     /**
@@ -155,7 +144,7 @@ final class ConfigTest extends TestCase
     public function testMissingPhpFile()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/missing.php');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/missing.php');
     }
 
     /**
@@ -164,7 +153,7 @@ final class ConfigTest extends TestCase
     public function testMissingJsonFile()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/missing.json');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/missing.json');
     }
 
     /**
@@ -173,7 +162,7 @@ final class ConfigTest extends TestCase
     public function testMissingYamlFile()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/missing.yml');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/missing.yml');
     }
 
     /**
@@ -182,7 +171,7 @@ final class ConfigTest extends TestCase
     public function testErrorInPhpFile()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/error.php');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/error.php');
     }
 
     /**
@@ -191,7 +180,7 @@ final class ConfigTest extends TestCase
     public function testErrorInJsonFile()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/error.json');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/error.json');
     }
 
     /**
@@ -200,7 +189,7 @@ final class ConfigTest extends TestCase
     public function testErrorInYamlFile()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/error.yml');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/error.yml');
     }
 
     /**
@@ -209,6 +198,6 @@ final class ConfigTest extends TestCase
     public function testUnsupportedFileExtension()
     {
         $this->expectException(SetupException::class);
-        jaxon()->config(__DIR__ . '/../config/config.ini');
+        jaxon()->config()->load(dirname(__DIR__) . '/config/config.ini');
     }
 }

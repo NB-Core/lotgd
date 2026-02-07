@@ -5,11 +5,8 @@
  *
  * Jaxon callable object
  *
- * This class stores a reference to an object whose methods can be called from
+ * This class stores a reference to a component whose methods can be called from
  * the client via a Jaxon request
- *
- * The Jaxon plugin manager will call <CallableObject->getClientScript> so that
- * stub functions can be generated and sent to the browser.
  *
  * @package jaxon-core
  * @author Jared White
@@ -26,48 +23,28 @@
 
 namespace Jaxon\Plugin\Request\CallableClass;
 
+use Jaxon\Di\ComponentContainer;
 use Jaxon\Di\Container;
 use Jaxon\Exception\SetupException;
-use Jaxon\Plugin\AnnotationReaderInterface;
 use Jaxon\Request\Target;
-use Jaxon\Response\ResponseInterface;
+use Closure;
 use ReflectionClass;
 use ReflectionException;
-use ReflectionMethod;
-use ReflectionProperty;
 
-use function array_fill_keys;
-use function array_filter;
-use function array_map;
 use function array_merge;
+use function call_user_func;
 use function is_array;
 use function is_string;
-use function json_encode;
 use function str_replace;
-use function substr;
 
 class CallableObject
 {
     /**
-     * The DI container
-     *
-     * @var Container
-     */
-    protected $di;
-
-    /**
-     * The reflection class of the user registered callable object
-     *
-     * @var ReflectionClass
-     */
-    private $xReflectionClass;
-
-    /**
-     * The user registered callable object
+     * The user registered component
      *
      * @var mixed
      */
-    private $xRegisteredObject = null;
+    private $xComponent = null;
 
     /**
      * The target of the Jaxon call
@@ -77,106 +54,33 @@ class CallableObject
     private $xTarget;
 
     /**
-     * The options of this callable object
-     *
-     * @var CallableObjectOptions|null
-     */
-    private $xOptions = null;
-
-    /**
-     * @var int
-     */
-    private $nPropertiesFilter = ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED;
-
-    /**
-     * @var int
-     */
-    private $nMethodsFilter = ReflectionMethod::IS_PUBLIC;
-
-    /**
-     * @var array
-     */
-    private $aProtectedMethods;
-
-    /**
      * The class constructor
      *
-     * @param Container  $di
-     * @param AnnotationReaderInterface $xAnnotationReader
-     * @param ReflectionClass $xReflectionClass    The reflection class
-     * @param array $aOptions
-     * @param array $aProtectedMethods
+     * @param ComponentContainer $cdi
+     * @param Container $di
+     * @param ReflectionClass $xReflectionClass
+     * @param ComponentOptions $xOptions
      */
-    public function __construct(Container $di, AnnotationReaderInterface $xAnnotationReader,
-        ReflectionClass $xReflectionClass, array $aOptions, array $aProtectedMethods)
-    {
-        $this->di = $di;
-        $this->xReflectionClass = $xReflectionClass;
-        $this->aProtectedMethods = array_fill_keys($aProtectedMethods, true);
-
-        $aAnnotations = $xAnnotationReader->getAttributes($xReflectionClass->getName(),
-            $this->getPublicMethods(true), $this->getProperties());
-        $this->xOptions = new CallableObjectOptions($aOptions, $aAnnotations);
-    }
+    public function __construct(protected ComponentContainer $cdi,
+        protected Container $di, private ReflectionClass $xReflectionClass,
+        private ComponentOptions $xOptions)
+    {}
 
     /**
-     * Get the public and protected attributes of the callable object
-     *
-     * @return array
-     */
-    private function getProperties(): array
-    {
-        return array_map(function($xProperty) {
-            return $xProperty->getName();
-        }, $this->xReflectionClass->getProperties($this->nPropertiesFilter));
-    }
-
-    /**
-     * @param string $sMethodName
-     * @param bool $bTakeAll
+     * @param string|null $sMethodName
      *
      * @return bool
      */
-    private function isProtectedMethod(string $sMethodName, bool $bTakeAll): bool
+    public function excluded(string|null $sMethodName = null): bool
     {
-        // Don't take magic __call, __construct, __destruct methods
-        // Don't take protected methods
-        return substr($sMethodName, 0, 2) === '__' ||
-            isset($this->aProtectedMethods[$sMethodName]) ||
-            (!$bTakeAll && $this->xOptions !== null &&
-            $this->xOptions->isProtectedMethod($sMethodName));
-    }
-
-    /**
-     * Get the public methods of the callable object
-     *
-     * @param bool $bTakeAll
-     *
-     * @return array
-     */
-    public function getPublicMethods(bool $bTakeAll): array
-    {
-        $aMethods = array_map(function($xMethod) {
-            return $xMethod->getShortName();
-        }, $this->xReflectionClass->getMethods($this->nMethodsFilter));
-
-        return array_filter($aMethods, function($sMethodName) use($bTakeAll) {
-            return !$this->isProtectedMethod($sMethodName, $bTakeAll);
-        });
-    }
-
-    /**
-     * @return bool
-     */
-    public function excluded(): bool
-    {
-        return $this->xOptions->excluded();
+        return $sMethodName === null ? $this->xOptions->excluded() :
+            !$this->xOptions->isPublicMethod($sMethodName);
     }
 
     /**
      * Get the name of the registered PHP class
      *
-     * @return string
+     * @return class-string
      */
     public function getClassName(): string
     {
@@ -194,27 +98,17 @@ class CallableObject
     }
 
     /**
-     * @return array
-     */
-    public function getClassDiOptions(): array
-    {
-        $aDiOptions = $this->xOptions->diOptions();
-        return $aDiOptions['*'] ?? [];
-    }
-
-    /**
-     * @param string $sMethodName
+     * Get the name of the javascript parameter in the ajax request
      *
-     * @return array
+     * @return string
      */
-    public function getMethodDiOptions(string $sMethodName): array
+    public function getJsParam(): string
     {
-        $aDiOptions = $this->xOptions->diOptions();
-        return $aDiOptions[$sMethodName] ?? [];
+        return str_replace('\\', '.', $this->getClassName());
     }
 
     /**
-     * Get the js options of the callable class
+     * Get the js options of the component
      *
      * @return array
      */
@@ -224,40 +118,17 @@ class CallableObject
     }
 
     /**
-     * Return a list of methods of the callable object to export to javascript
+     * Return a list of methods of the component to export to javascript
      *
      * @return array
      */
     public function getCallableMethods(): array
     {
-        // Get the method options, and convert each of them to
-        // a string to be displayed in the js script template.
-        $fGetOption = function($sMethodName) {
-            return array_map(function($xOption) {
-                return is_array($xOption) ? json_encode($xOption) : $xOption;
-            }, $this->xOptions->getMethodOptions($sMethodName));
-        };
-
-        return array_map(function($sMethodName) use($fGetOption) {
-            return [
-                'name' => $sMethodName,
-                'config' => $fGetOption($sMethodName),
-            ];
-        }, $this->getPublicMethods(false));
+        return $this->xOptions->getCallableMethods();
     }
 
     /**
-     * Get the registered callable object
-     *
-     * @return null|object
-     */
-    public function getRegisteredObject()
-    {
-        return $this->di->g($this->xReflectionClass->getName());
-    }
-
-    /**
-     * Check if the specified method name is one of the methods of the registered callable object
+     * Check if the specified method name is one of the methods of the component
      *
      * @param string $sMethod    The name of the method to check
      *
@@ -269,31 +140,32 @@ class CallableObject
     }
 
     /**
-     * Call the specified method of the registered callable object using the specified array of arguments
+     * Call the specified method of the component using the specified array of arguments
      *
      * @param string $sMethod    The method name
      * @param array $aArgs    The method arguments
      * @param bool $bAccessible    If false, only calls to public method are allowed
      *
-     * @return mixed
+     * @return void
      * @throws ReflectionException
      */
-    private function callMethod(string $sMethod, array $aArgs, bool $bAccessible)
+    private function callMethod(string $sMethod, array $aArgs, bool $bAccessible): void
     {
         $reflectionMethod = $this->xReflectionClass->getMethod($sMethod);
-        $reflectionMethod->setAccessible($bAccessible); // Make it possible to call protected methods
-        return $reflectionMethod->invokeArgs($this->xRegisteredObject, $aArgs);
+        // Make it possible to call protected methods
+        $reflectionMethod->setAccessible($bAccessible);
+        $reflectionMethod->invokeArgs($this->xComponent, $aArgs);
     }
 
     /**
-     * Call the specified method of the registered callable object using the specified array of arguments
+     * Call the specified method of the component using the specified array of arguments
      *
      * @param array $aHookMethods    The method config options
      *
      * @return void
      * @throws ReflectionException
      */
-    private function callHookMethods(array $aHookMethods)
+    private function callHookMethods(array $aHookMethods): void
     {
         $sMethod = $this->xTarget->getMethodName();
         // The hooks defined at method level are merged with those defined at class level.
@@ -312,28 +184,84 @@ class CallableObject
     }
 
     /**
-     * Call the specified method of the registered callable object using the specified array of arguments
+     * @param object $xComponent
+     * @param string $sAttr
+     * @param object $xDiValue
+     * @param-closure-this object $cSetter
+     *
+     * @return void
+     */
+    private function setDiAttribute($xComponent, string $sAttr, $xDiValue, Closure $cSetter): void
+    {
+        // Allow the setter to access protected attributes.
+        $cSetter = $cSetter->bindTo($xComponent, $xComponent);
+        call_user_func($cSetter, $sAttr, $xDiValue);
+    }
+
+    /**
+     * @param mixed $xComponent
+     * @param array $aDiOptions
+     *
+     * @return void
+     */
+    private function setDiAttributes($xComponent, array $aDiOptions): void
+    {
+        // Set the protected attributes of the object
+        $cSetter = function($sAttr, $xDiValue) {
+            // $this here is related to the registered object instance.
+            // Warning: dynamic properties will be deprecated in PHP8.2.
+            $this->$sAttr = $xDiValue;
+        };
+        foreach($aDiOptions as $sAttr => $sClass)
+        {
+            $this->setDiAttribute($xComponent, $sAttr, $this->di->get($sClass), $cSetter);
+        }
+    }
+
+    /**
+     * @param mixed $xComponent
+     *
+     * @return void
+     */
+    public function setDiClassAttributes($xComponent): void
+    {
+        $aDiOptions = $this->xOptions->diOptions();
+        $this->setDiAttributes($xComponent, $aDiOptions['*'] ?? []);
+    }
+
+    /**
+     * @param mixed $xComponent
+     * @param string $sMethodName
+     *
+     * @return void
+     */
+    public function setDiMethodAttributes($xComponent, string $sMethodName): void
+    {
+        $aDiOptions = $this->xOptions->diOptions();
+        $this->setDiAttributes($xComponent, $aDiOptions[$sMethodName] ?? []);
+    }
+
+    /**
+     * Call the specified method of the component using the specified array of arguments
      *
      * @param Target $xTarget The target of the Jaxon call
      *
-     * @return null|ResponseInterface
+     * @return void
      * @throws ReflectionException
      * @throws SetupException
      */
-    public function call(Target $xTarget): ?ResponseInterface
+    public function call(Target $xTarget): void
     {
         $this->xTarget = $xTarget;
-        $this->xRegisteredObject = $this->di->getRegisteredObject($this, $xTarget);
+        $this->xComponent = $this->cdi->getCalledComponent($this->getClassName(), $xTarget);
 
         // Methods to call before processing the request
         $this->callHookMethods($this->xOptions->beforeMethods());
 
         // Call the request method
-        $sMethod = $xTarget->getMethodName();
-        $xResponse = $this->callMethod($sMethod, $this->xTarget->getMethodArgs(), false);
+        $this->callMethod($xTarget->getMethodName(), $xTarget->args(), false);
 
         // Methods to call after processing the request
         $this->callHookMethods($this->xOptions->afterMethods());
-        return $xResponse;
     }
 }

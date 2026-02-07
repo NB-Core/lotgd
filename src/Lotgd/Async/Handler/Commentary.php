@@ -97,9 +97,9 @@ class Commentary
         $objResponse = jaxon()->newResponse();
         if ($html !== '') {
             $objResponse->append("{$section}-comment", 'innerHTML', $html);
-            $objResponse->script("lotgd_lastCommentId = $newId;");
+            $objResponse->script->jo('window')->lotgd_lastCommentId = $newId;
             if ($lastId > 0 && $lastId < $newId) {
-                $objResponse->script('lotgdCommentNotify(' . count($comments) . ');');
+                $objResponse->call('lotgdCommentNotify', count($comments));
             }
         }
         return $objResponse;
@@ -137,23 +137,42 @@ class Commentary
         $response = jaxon()->newResponse();
 
         try {
-            $response->appendResponse((new Mail())->mailStatus(true));
+            $this->appendResponse($response, (new Mail())->mailStatus(true));
         } catch (\Throwable $e) {
             throw new Exception('AJAX polling: Mail handler error', 0, $e);
         }
 
         try {
-            $response->appendResponse(Timeout::getInstance()->timeoutStatus(true));
+            $this->appendResponse($response, Timeout::getInstance()->timeoutStatus(true));
         } catch (\Throwable $e) {
             throw new Exception('AJAX polling: Timeout handler error', 0, $e);
         }
 
         try {
-            $response->appendResponse($this->commentaryRefresh($section, $lastId));
+            $this->appendResponse($response, $this->commentaryRefresh($section, $lastId));
         } catch (\Throwable $e) {
             throw new Exception('AJAX polling: Commentary handler error', 0, $e);
         }
 
         return $response;
+    }
+
+    private function appendResponse(Response $response, Response $append): void
+    {
+        foreach ($append->getCommands() as $command) {
+            $name = $command['name'] ?? null;
+            if ($name === null) {
+                continue;
+            }
+            $newCommand = $response->addCommand($name, $command['args'] ?? []);
+            if (isset($command['options']) && is_array($command['options'])) {
+                foreach ($command['options'] as $optionName => $optionValue) {
+                    $newCommand->setOption((string) $optionName, $optionValue);
+                }
+            }
+            if (isset($command['component']) && is_array($command['component'])) {
+                $newCommand->setComponent($command['component']);
+            }
+        }
     }
 }

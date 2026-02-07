@@ -11,10 +11,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Jaxon\Jaxon;                      // Use the jaxon core class
-use Lotgd\Async\Handler\Bans;
-use Lotgd\Async\Handler\Commentary;
-use Lotgd\Async\Handler\Mail;
-use Lotgd\Async\Handler\Timeout;
 use function Jaxon\jaxon;
 
 // Load asynchronous configuration settings
@@ -38,8 +34,7 @@ $jaxon->setOption('js.app.uri', '/async/js');
 $jaxon->setOption('core.debug.on', false);
 $jaxon->setOption('core.debug.verbose', false);
 
-// Register callable classes
-$jaxon->register(Jaxon::CALLABLE_CLASS, Mail::class);
-$jaxon->register(Jaxon::CALLABLE_CLASS, Commentary::class);
-$jaxon->register(Jaxon::CALLABLE_CLASS, Timeout::class);
-$jaxon->register(Jaxon::CALLABLE_CLASS, Bans::class);
+// Register callable namespace so Jaxon uses dot separators for class names.
+$jaxon->register(Jaxon::CALLABLE_DIR, __DIR__ . '/../../src/Lotgd/Async/Handler', [
+    'namespace' => 'Lotgd\\Async\\Handler',
+]);

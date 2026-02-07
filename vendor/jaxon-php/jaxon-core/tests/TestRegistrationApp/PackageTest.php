@@ -2,13 +2,12 @@
 
 namespace Jaxon\Tests\TestRegistrationApp;
 
-require_once __DIR__ . '/../src/packages.php';
+require_once dirname(__DIR__) . '/src/packages.php';
 
 use Jaxon\Exception\SetupException;
 use PHPUnit\Framework\TestCase;
 use SamplePackage;
 
-use function Jaxon\jaxon;
 
 class PackageTest extends TestCase
 {
@@ -17,7 +16,7 @@ class PackageTest extends TestCase
      */
     public function setUp(): void
     {
-        jaxon()->app()->setup(__DIR__ . '/../config/app/package.php');
+        jaxon()->app()->setup(dirname(__DIR__) . '/config/app/package.php');
     }
 
     /**

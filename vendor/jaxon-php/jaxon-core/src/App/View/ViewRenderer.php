@@ -2,15 +2,12 @@
 
 namespace Jaxon\App\View;
 
+use Jaxon\Config\Config;
 use Jaxon\Di\Container;
-use Jaxon\Utils\Config\Config;
-
 use Closure;
 
 use function array_filter;
 use function array_merge;
-use function is_array;
-use function rtrim;
 use function strrpos;
 use function substr;
 
@@ -22,18 +19,25 @@ class ViewRenderer
     protected $di;
 
     /**
-     * The view namespaces
+     * The view data store
      *
-     * @var array
+     * @var Store|null
      */
-    protected $aNamespaces = [];
+    protected $xStore = null;
 
     /**
      * The view data store
      *
      * @var Store
      */
-    protected $xStore = null;
+    protected $xEmptyStore = null;
+
+    /**
+     * The view namespaces
+     *
+     * @var array
+     */
+    protected $aNamespaces = [];
 
     /**
      * The default namespace
@@ -57,6 +61,7 @@ class ViewRenderer
     public function __construct(Container $di)
     {
         $this->di = $di;
+        $this->xEmptyStore = new Store();
     }
 
     /**
@@ -69,7 +74,8 @@ class ViewRenderer
      *
      * @return void
      */
-    public function addNamespace(string $sNamespace, string $sDirectory, string $sExtension, string $sRenderer)
+    public function addNamespace(string $sNamespace, string $sDirectory,
+        string $sExtension, string $sRenderer): void
     {
         $aNamespace = [
             'directory' => $sDirectory,
@@ -83,16 +89,16 @@ class ViewRenderer
      * Set the view namespaces.
      *
      * @param Config $xAppConfig    The config options provided in the library
-     * @param Config|null $xUserConfig    The config options provided in the app section of the global config file.
      *
      * @return void
      */
-    public function addNamespaces(Config $xAppConfig, ?Config $xUserConfig = null)
+    public function addNamespaces(Config $xAppConfig): void
     {
         if(empty($aNamespaces = $xAppConfig->getOptionNames('views')))
         {
             return;
         }
+
         $sPackage = $xAppConfig->getOption('package', '');
         foreach($aNamespaces as $sNamespace => $sOption)
         {
@@ -103,17 +109,6 @@ class ViewRenderer
             {
                 $aNamespace['renderer'] = 'jaxon'; // 'jaxon' is the default renderer.
             }
-
-            // If the lib config has defined a template option, then its value must be
-            // read from the app config.
-            if($xUserConfig !== null && isset($aNamespace['template']) && is_array($aNamespace['template']))
-            {
-                $sTemplateOption = $xAppConfig->getOption($sOption . '.template.option');
-                $sTemplateDefault = $xAppConfig->getOption($sOption . '.template.default');
-                $sTemplate = $xUserConfig->getOption($sTemplateOption, $sTemplateDefault);
-                $aNamespace['directory'] = rtrim($aNamespace['directory'], '/') . '/' . $sTemplate;
-            }
-
             $this->aNamespaces[$sNamespace] = $aNamespace;
         }
     }
@@ -128,7 +123,7 @@ class ViewRenderer
     public function getRenderer(string $sId): ViewInterface
     {
         // Return the view renderer with the given id
-        return $this->di->g('jaxon.app.view.' . $sId);
+        return $this->di->g("jaxon.app.view.$sId");
     }
 
     /**
@@ -139,19 +134,18 @@ class ViewRenderer
      *
      * @return void
      */
-    public function addRenderer(string $sId, Closure $xClosure)
+    public function addRenderer(string $sId, Closure $xClosure): void
     {
         // Return the initialized view renderer
-        $this->di->set('jaxon.app.view.' . $sId, function($di) use($sId, $xClosure) {
+        $this->di->set("jaxon.app.view.$sId", function($di) use($sId, $xClosure) {
             // Get the defined renderer
             $xRenderer = $xClosure($di);
             // Init the renderer with the template namespaces
-            $aNamespaces = array_filter($this->aNamespaces, function($aNamespace) use($sId) {
-                return $aNamespace['renderer'] === $sId;
-            });
-            foreach($aNamespaces as $sNamespace => $aNamespace)
+            $aNamespaces = array_filter($this->aNamespaces,
+                fn($aOptions) => $aOptions['renderer'] === $sId);
+            foreach($aNamespaces as $sName => $aOptions)
             {
-                $xRenderer->addNamespace($sNamespace, $aNamespace['directory'], $aNamespace['extension']);
+                $xRenderer->addNamespace($sName, $aOptions['directory'], $aOptions['extension']);
             }
             return $xRenderer;
         });
@@ -166,7 +160,7 @@ class ViewRenderer
      *
      * @return void
      */
-    public function setDefaultRenderer(string $sId, string $sExtension, Closure $xClosure)
+    public function setDefaultRenderer(string $sId, string $sExtension, Closure $xClosure): void
     {
         $this->setDefaultNamespace($sId);
         $this->addNamespace($sId, '', $sExtension, $sId);
@@ -266,9 +260,9 @@ class ViewRenderer
      * @param string $sViewName    The view name
      * @param array $aViewData    The view data
      *
-     * @return null|Store   A store populated with the view data
+     * @return Store   A store populated with the view data
      */
-    public function render(string $sViewName, array $aViewData = []): ?Store
+    public function render(string $sViewName, array $aViewData = []): Store
     {
         $xStore = $this->store();
         // Get the default view namespace
@@ -278,14 +272,19 @@ class ViewRenderer
         if($nSeparatorPosition !== false)
         {
             $sNamespace = substr($sViewName, 0, $nSeparatorPosition);
+            $sViewName = substr($sViewName, $nSeparatorPosition + 2);
         }
+
         $xRenderer = $this->getNamespaceRenderer($sNamespace);
         if(!$xRenderer)
         {
             // Cannot render a view if there's no renderer corresponding to the namespace.
-            return null;
+            return $this->xEmptyStore;
         }
-        $xStore->setData(array_merge($this->aViewData, $aViewData))->setView($xRenderer, $sNamespace, $sViewName);
+
+        $xStore->setData(array_merge($this->aViewData, $aViewData))
+            ->setView($xRenderer, $sNamespace, $sViewName);
+
         // Set the store to null so a new store will be created for the next view.
         $this->xStore = null;
         // Return the store

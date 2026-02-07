@@ -14,7 +14,7 @@
 
 namespace Jaxon\App\Config;
 
-use Jaxon\Utils\Config\Config;
+use Jaxon\Config\Config;
 
 interface ConfigListenerInterface
 {
@@ -26,5 +26,5 @@ interface ConfigListenerInterface
      *
      * @return void
      */
-    public function onChange(Config $xConfig, string $sName);
+    public function onChange(Config $xConfig, string $sName): void;
 }

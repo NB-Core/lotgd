@@ -1,11 +1,7 @@
 <?php
 
-use Jaxon\Response\ResponseInterface;
-use function Jaxon\jaxon;
-
-function my_first_function(): ResponseInterface
+function my_first_function()
 {
     $xResponse = jaxon()->getResponse();
     $xResponse->alert('This is a response!!');
-    return $xResponse;
 }

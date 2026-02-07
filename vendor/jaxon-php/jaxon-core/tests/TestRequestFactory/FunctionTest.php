@@ -6,9 +6,6 @@ use Jaxon\Jaxon;
 use Jaxon\Exception\SetupException;
 use PHPUnit\Framework\TestCase;
 
-use function Jaxon\jaxon;
-use function Jaxon\rq;
-use function Jaxon\pm;
 
 final class FunctionTest extends TestCase
 {
@@ -20,7 +17,7 @@ final class FunctionTest extends TestCase
         jaxon()->setOption('core.prefix.function', 'jxn_');
         // Register a function
         jaxon()->register(Jaxon::CALLABLE_FUNCTION, 'my_first_function',
-            __DIR__ . '/../src/first.php');
+            dirname(__DIR__) . '/src/first.php');
         // Register a function with an alias
         jaxon()->register(Jaxon::CALLABLE_FUNCTION, 'my_second_function', [
             'alias' => 'my_alias_function',
@@ -43,12 +40,8 @@ final class FunctionTest extends TestCase
     public function testRequestToGlobalFunction()
     {
         $this->assertEquals(
-            "jxn_testFunction()",
-            rq()->testFunction()->getScript()
-        );
-        $this->assertEquals(
-            "jxn_testFunction()",
-            jaxon()->request()->testFunction()->getScript()
+            'jaxon.exec({"_type":"expr","calls":[{"_type":"attr","_name":"window"},{"_type":"func","_name":"testFunction","args":[]}]})',
+            jo()->testFunction()->__toString()
         );
     }
 
@@ -58,19 +51,8 @@ final class FunctionTest extends TestCase
     public function testRequestToGlobalFunctionWithParameter()
     {
         $this->assertEquals(
-            "jxn_testFunction('string', 2, true)",
-            rq()->testFunction('string', 2, true)->getScript()
-        );
-    }
-
-    /**
-     * @throws SetupException
-     */
-    public function testRequestToGlobalFunctionWithJaxonParameter()
-    {
-        $this->assertEquals(
-            "jxn_testFunction('string', 2, true, jaxon.getFormValues('elt_id'), jaxon.$('elt_id').value)",
-            rq()->testFunction('string', 2, true, pm()->form('elt_id'), pm()->input('elt_id'))->getScript()
+            'jaxon.exec({"_type":"expr","calls":[{"_type":"attr","_name":"window"},{"_type":"func","_name":"testFunction","args":["string",2,true]}]})',
+            jo()->testFunction('string', 2, true)->__toString()
         );
     }
 
@@ -80,8 +62,8 @@ final class FunctionTest extends TestCase
     public function testRequestToJaxonFunction()
     {
         $this->assertEquals(
-            "jxn_testFunction()",
-            rq()->testFunction()->getScript()
+            'jaxon.exec({"_type":"expr","calls":[{"_type":"func","_name":"jxn_testFunction","args":[]}]})',
+            rq()->testFunction()->__toString()
         );
     }
 
@@ -91,19 +73,16 @@ final class FunctionTest extends TestCase
     public function testRequestToJaxonFunctionWithParameter()
     {
         $this->assertEquals(
-            "jxn_testFunction('string', 2, true)",
-            rq()->testFunction('string', 2, true)->getScript()
+            'jaxon.exec({"_type":"expr","calls":[{"_type":"func","_name":"jxn_testFunction","args":["string",2,true]}]})',
+            rq()->testFunction('string', 2, true)->__toString()
         );
     }
 
     /**
      * @throws SetupException
      */
-    public function testRequestToJaxonFunctionWithJaxonParameter()
+    public function testClassNameIsEmpty()
     {
-        $this->assertEquals(
-            "jxn_testFunction('string', 2, true, jaxon.getFormValues('elt_id'), jaxon.$('elt_id').value)",
-            rq()->testFunction('string', 2, true, pm()->form('elt_id'), pm()->input('elt_id'))->getScript()
-        );
+        $this->assertEquals('', rq()->_class());
     }
 }

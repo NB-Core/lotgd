@@ -1,0 +1,13 @@
+/.idea/
+# Managed by Composer
+/vendor/
+
+# PHPUnit
+/.phpunit.result.cache
+
+# Build data
+/build/
+
+# Composer PHAR
+/composer.phar
+/composer.lock

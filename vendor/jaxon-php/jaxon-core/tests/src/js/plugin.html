@@ -1,0 +1,34 @@
+<style>
+.pagination li a {
+  cursor: pointer;
+}
+</style>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/jaxon-php/jaxon-js@5.1.1/dist/libs/chibi/chibi.js" charset="UTF-8"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/jaxon-php/jaxon-js@5.1.1/dist/jaxon.core.js" charset="UTF-8"></script>
+
+<script type="text/javascript" charset="UTF-8">
+jaxon.config.requestURI = 'http://example.test/path';
+jaxon.config.statusMessages = false;
+jaxon.config.waitCursor = true;
+jaxon.config.version = 'Jaxon 5.x';
+jaxon.config.defaultMode = 'asynchronous';
+jaxon.config.defaultMethod = 'POST';
+jaxon.config.responseType = 'JSON';
+
+jaxon.dom.ready(() => jaxon.processCustomAttrs());
+
+const jx = {
+  rc: (name, method, parameters, options = {}) => jaxon.request({ type: 'class', name, method }, { parameters, ...options}),
+  rf: (name, parameters, options = {}) => jaxon.request({ type: 'func', name }, { parameters, ...options}),
+  c0: 'SamplePackageClass',
+};
+
+JaxonSamplePackageClass = {
+  home: (...args) => jx.rc(jx.c0, 'home', args),
+};
+
+jxn_my_first_function = (...args) => jx.rf('my_first_function', args);
+jxn_my_alias_function = (...args) => jx.rf('my_alias_function', args, { upload: 'html_field_id' });
+jxn_my_third_function = (...args) => jx.rf('my_third_function', args);
+</script>

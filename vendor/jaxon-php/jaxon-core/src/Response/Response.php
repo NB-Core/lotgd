@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Response.php - The Jaxon Response
+ * Response.php
  *
  * This class collects commands to be sent back to the browser in response to a jaxon request.
  * Commands are encoded and packaged in json format.
@@ -21,224 +21,350 @@
 
 namespace Jaxon\Response;
 
-use Jaxon\Plugin\Manager\PluginManager;
-use Jaxon\Plugin\Response\DataBag\DataBagContext;
-use Jaxon\Plugin\Response\JQuery\DomSelector;
-use Jaxon\Plugin\ResponsePlugin;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\Stream;
-use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
-use Psr\Http\Message\ServerRequestInterface as PsrRequestInterface;
+use Jaxon\Script\JsExpr;
+use Jaxon\Script\Call\JxnCall;
 
-use function array_filter;
-use function array_map;
-use function gmdate;
-use function is_array;
-use function is_integer;
-use function json_encode;
-use function trim;
-
-class Response implements ResponseInterface
+class Response extends AjaxResponse
 {
-    use Traits\CommandTrait;
-    use Traits\DomTrait;
-    use Traits\JsTrait;
-
     /**
-     * @var PluginManager
-     */
-    protected $xPluginManager;
-
-    /**
-     * @var Psr17Factory
-     */
-    protected $xPsr17Factory;
-
-    /**
-     * @var PsrRequestInterface
-     */
-    protected $xRequest;
-
-    /**
-     * The constructor
+     * Add a command to assign the specified value to the given element's attribute
      *
-     * @param PluginManager $xPluginManager
-     * @param Psr17Factory $xPsr17Factory
-     * @param PsrRequestInterface $xRequest
+     * @param string $sTarget    The id of the html element on the browser
+     * @param string $sAttribute    The attribute to be assigned
+     * @param string $sValue    The value to be assigned to the attribute
+     *
+     * @return self
      */
-    public function __construct(PluginManager $xPluginManager, Psr17Factory $xPsr17Factory, PsrRequestInterface $xRequest)
+    public function assign(string $sTarget, string $sAttribute, string $sValue): self
     {
-        $this->xPluginManager = $xPluginManager;
-        $this->xPsr17Factory = $xPsr17Factory;
-        $this->xRequest = $xRequest;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getContentType(): string
-    {
-        return 'application/json';
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getOutput(): string
-    {
-        if($this->getCommandCount() === 0)
-        {
-            return '{}';
-        }
-        return json_encode(['jxnobj' => $this->aCommands]);
-    }
-
-    /**
-     * Provides access to registered response plugins
-     *
-     * Pass the plugin name as the first argument and the plugin object will be returned.
-     *
-     * @param string $sName    The name of the plugin
-     *
-     * @return null|ResponsePlugin
-     */
-    public function plugin(string $sName): ?ResponsePlugin
-    {
-        return $this->xPluginManager->getResponsePlugin($sName, $this);
-    }
-
-    /**
-     * Magic PHP function
-     *
-     * Used to permit plugins to be called as if they were native members of the Response instance.
-     *
-     * @param string $sPluginName    The name of the plugin
-     *
-     * @return null|ResponsePlugin
-     */
-    public function __get(string $sPluginName)
-    {
-        return $this->plugin($sPluginName);
-    }
-
-    /**
-     * Create a JQuery DomSelector, and link it to the current response.
-     *
-     * This is a shortcut to the JQuery plugin.
-     *
-     * @param string $sPath    The jQuery selector path
-     * @param mixed $xContext    A context associated to the selector
-     *
-     * @return DomSelector
-     */
-    public function jq(string $sPath = '', $xContext = null): DomSelector
-    {
-        return $this->plugin('jquery')->selector($sPath, $xContext);
-    }
-
-    /**
-     * Get the databag with a given name
-     *
-     * @param string $sName
-     *
-     * @return DataBagContext
-     */
-    public function bag(string $sName): DataBagContext
-    {
-        return $this->plugin('bags')->bag($sName);
-    }
-
-    /**
-     * Add a response command to the array of commands that will be sent to the browser
-     *
-     * @param array $aAttributes    Associative array of attributes that will describe the command
-     * @param mixed $mData    The data to be associated with this command
-     *
-     * @return ResponseInterface
-     */
-    public function addRawCommand(array $aAttributes, $mData): ResponseInterface
-    {
-        $aAttributes['data'] = $mData;
-        $this->aCommands[] = $aAttributes;
+        $this->xManager->addCommand('node.assign', [
+            'id' => $this->str($sTarget),
+            'attr' => $this->str($sAttribute),
+            'value' => $this->str($sValue),
+        ]);
         return $this;
     }
 
     /**
-     * Add a response command to the array of commands that will be sent to the browser
-     * Convert all attributes, excepted integers, to string.
+     * Add a command to assign the specified HTML content to the given element
      *
-     * @param array $aAttributes    Associative array of attributes that will describe the command
-     * @param mixed $mData    The data to be associated with this command
+     * This is a shortcut for assign() on the innerHTML attribute.
      *
-     * @return ResponseInterface
+     * @param string $sTarget    The id of the html element on the browser
+     * @param string $sValue    The value to be assigned to the attribute
+     *
+     * @return self
      */
-    public function addCommand(array $aAttributes, $mData): ResponseInterface
+    public function html(string $sTarget, string $sValue): self
     {
-        $aAttributes = array_map(function($xAttribute) {
-            return is_integer($xAttribute) ? $xAttribute : trim((string)$xAttribute, " \t");
-        }, $aAttributes);
-        return $this->addRawCommand($aAttributes, $mData);
+        return $this->assign($sTarget, 'innerHTML', $sValue);
     }
 
     /**
-     * Add a response command to the array of commands that will be sent to the browser
+     * Add a command to assign the specified value to the given CSS attribute
      *
-     * @param string $sName    The command name
-     * @param array $aAttributes    Associative array of attributes that will describe the command
-     * @param mixed $mData    The data to be associated with this command
-     * @param bool $bRemoveEmpty    If true, remove empty attributes
+     * @param string $sTarget    The id of the html element on the browser
+     * @param string $sCssAttribute    The CSS attribute to be assigned
+     * @param string $sValue    The value to be assigned to the attribute
      *
-     * @return ResponseInterface
+     * @return self
      */
-    protected function _addCommand(string $sName, array $aAttributes,
-        $mData, bool $bRemoveEmpty = false): ResponseInterface
+    public function style(string $sTarget, string $sCssAttribute, string $sValue): self
     {
-        $mData = is_array($mData) ? array_map(function($sData) {
-            return trim((string)$sData, " \t\n");
-        }, $mData) : trim((string)$mData, " \t\n");
-        if($bRemoveEmpty)
-        {
-            $aAttributes = array_filter($aAttributes, function($xValue) {
-                return $xValue === '';
-            });
-        }
-        $aAttributes['cmd'] = $sName;
-        return $this->addCommand($aAttributes, $mData);
+        return $this->assign($sTarget, "style.$sCssAttribute", $sValue);
     }
 
     /**
-     * Add a response command that is generated by a plugin
+     * Add a command to append the specified data to the given element's attribute
      *
-     * @param ResponsePlugin $xPlugin    The plugin object
-     * @param array $aAttributes    The attributes for this response command
-     * @param mixed $mData    The data to be sent with this command
+     * @param string $sTarget    The id of the element to be updated
+     * @param string $sAttribute    The name of the attribute to be appended to
+     * @param string $sValue    The data to be appended to the attribute
      *
-     * @return ResponseInterface
+     * @return self
      */
-    public function addPluginCommand(ResponsePlugin $xPlugin, array $aAttributes, $mData): ResponseInterface
+    public function append(string $sTarget, string $sAttribute, string $sValue): self
     {
-        $aAttributes['plg'] = $xPlugin->getName();
-        return $this->addCommand($aAttributes, $mData);
+        $this->xManager->addCommand('node.append', [
+            'id' => $this->str($sTarget),
+            'attr' => $this->str($sAttribute),
+            'value' => $this->str($sValue),
+        ]);
+        return $this;
     }
 
     /**
-     * Convert this response to a PSR7 response object
+     * Add a command to prepend the specified data to the given element's attribute
      *
-     * @return PsrResponseInterface
+     * @param string $sTarget    The id of the element to be updated
+     * @param string $sAttribute    The name of the attribute to be prepended to
+     * @param string $sValue    The value to be prepended to the attribute
+     *
+     * @return self
      */
-    public function toPsr(): PsrResponseInterface
+    public function prepend(string $sTarget, string $sAttribute, string $sValue): self
     {
-        $xPsrResponse = $this->xPsr17Factory->createResponse(200);
-        if($this->xRequest->getMethod() === 'GET')
-        {
-            $xPsrResponse = $xPsrResponse
-                ->withHeader('Expires', 'Mon, 26 Jul 1997 05:00:00 GMT')
-                ->withHeader('Last-Modified', gmdate("D, d M Y H:i:s") . ' GMT')
-                ->withHeader('Cache-Control', 'no-cache, must-revalidate')
-                ->withHeader('Pragma', 'no-cache');
-        }
-        return $xPsrResponse
-            ->withHeader('content-type', $this->getContentType())
-            ->withBody(Stream::create($this->getOutput()));
+        $this->xManager->addCommand('node.prepend', [
+            'id' => $this->str($sTarget),
+            'attr' => $this->str($sAttribute),
+            'value' => $this->str($sValue),
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to replace a specified value with another value within the given element's attribute
+     *
+     * @param string $sTarget    The id of the element to update
+     * @param string $sAttribute    The attribute to be updated
+     * @param string $sSearch    The needle to search for
+     * @param string $sReplace    The data to use in place of the needle
+     *
+     * @return self
+     */
+    public function replace(string $sTarget, string $sAttribute,
+        string $sSearch, string $sReplace): self
+    {
+        $this->xManager->addCommand('node.replace', [
+            'id' => $this->str($sTarget),
+            'attr' => $this->str($sAttribute),
+            'search' => $this->str($sSearch),
+            'replace' => $this->str($sReplace),
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to clear the specified attribute of the given element
+     *
+     * @param string $sTarget    The id of the element to be updated.
+     * @param string $sAttribute    The attribute to be cleared
+     *
+     * @return self
+     */
+    public function clear(string $sTarget, string $sAttribute = 'innerHTML'): self
+    {
+        $this->xManager->addCommand('node.clear', [
+            'id' => $this->str($sTarget),
+            'attr' => $this->str($sAttribute),
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to remove an element from the document
+     *
+     * @param string $sTarget    The id of the element to be removed
+     *
+     * @return self
+     */
+    public function remove(string $sTarget): self
+    {
+        $this->xManager->addCommand('node.remove', [
+            'id' => $this->str($sTarget),
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to bind an element to a component
+     *
+     * @param string $sTarget   The id of the element
+     * @param JxnCall $xCall    A call to the component
+     * @param string $sItem     The component item
+     *
+     * @return self
+     */
+    public function bind(string $sTarget, JxnCall $xCall, string $sItem = ''): self
+    {
+        $this->xManager->addCommand('node.bind', [
+            'id' => $this->str($sTarget),
+            'component' => !$sItem ? [
+                'name' => $xCall->_class(),
+            ] : [
+                'name' => $xCall->_class(),
+                'item' => $this->str($sItem),
+            ],
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to create a new element on the browser
+     * @deprecated DOM element creation functions are deprecated
+     *
+     * @param string $sParent    The id of the parent element
+     * @param string $sTag    The tag name to be used for the new element
+     * @param string $sId    The id to assign to the new element
+     *
+     * @return self
+     */
+    public function create(string $sParent, string $sTag, string $sId): self
+    {
+        $this->xManager->addCommand('node.create', [
+            'id' => $this->str($sParent),
+            'tag' => [
+                'name' => $this->str($sTag),
+                'id' => $this->str($sId),
+            ],
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to insert a new element just prior to the specified element
+     * @deprecated DOM element creation functions are deprecated
+     *
+     * @param string $sBefore    The id of the element used as a reference point for the insertion
+     * @param string $sTag    The tag name to be used for the new element
+     * @param string $sId    The id to assign to the new element
+     *
+     * @return self
+     */
+    public function insertBefore(string $sBefore, string $sTag, string $sId): self
+    {
+        $this->xManager->addCommand('node.insert.before', [
+            'id' => $this->str($sBefore),
+            'tag' => [
+                'name' => $this->str($sTag),
+                'id' => $this->str($sId),
+            ],
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to insert a new element just prior to the specified element
+     * This is an alias for insertBefore.
+     * @deprecated DOM element creation functions are deprecated
+     *
+     * @param string $sBefore    The id of the element used as a reference point for the insertion
+     * @param string $sTag    The tag name to be used for the new element
+     * @param string $sId    The id to assign to the new element
+     *
+     * @return self
+     */
+    public function insert(string $sBefore, string $sTag, string $sId): self
+    {
+        return $this->insertBefore($sBefore, $sTag, $sId);
+    }
+
+    /**
+     * Add a command to insert a new element after the specified
+     * @deprecated DOM element creation functions are deprecated
+     *
+     * @param string $sAfter    The id of the element used as a reference point for the insertion
+     * @param string $sTag    The tag name to be used for the new element
+     * @param string $sId    The id to assign to the new element
+     *
+     * @return self
+     */
+    public function insertAfter(string $sAfter, string $sTag, string $sId): self
+    {
+        $this->xManager->addCommand('node.insert.after', [
+            'id' => $this->str($sAfter),
+            'tag' => [
+                'name' => $this->str($sTag),
+                'id' => $this->str($sId),
+            ],
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to set an event handler on the specified element
+     * This handler can take custom parameters, and is is executed in a specific context.
+     * @deprecated Event handler functions are deprecated
+     *
+     * @param string $sTarget    The id of the element
+     * @param string $sEvent    The name of the event
+     * @param JsExpr $xCall    The event handler
+     *
+     * @return self
+     */
+    public function setEventHandler(string $sTarget, string $sEvent, JsExpr $xCall): self
+    {
+        $this->xManager->addCommand('handler.event.set', [
+            'id' => $this->str($sTarget),
+            'event' => $this->str($sEvent),
+            'func' => $xCall,
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to set a click handler on the browser
+     * @deprecated Event handler functions are deprecated
+     *
+     * @param string $sTarget    The id of the element
+     * @param JsExpr $xCall    The event handler
+     *
+     * @return self
+     */
+    public function onClick(string $sTarget, JsExpr $xCall): self
+    {
+        return $this->setEventHandler($sTarget, 'onclick', $xCall);
+    }
+
+    /**
+     * Add a command to add an event handler on the specified element
+     * This handler can take custom parameters, and is is executed in a specific context.
+     * @deprecated Event handler functions are deprecated
+     *
+     * @param string $sTarget    The id of the element
+     * @param string $sEvent    The name of the event
+     * @param JsExpr $xCall    The event handler
+     *
+     * @return self
+     */
+    public function addEventHandler(string $sTarget, string $sEvent, JsExpr $xCall): self
+    {
+        $this->xManager->addCommand('handler.event.add', [
+            'id' => $this->str($sTarget),
+            'event' => $this->str($sEvent),
+            'func' => $xCall,
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to install an event handler on the specified element
+     * You can add more than one event handler to an element's event using this method.
+     * @deprecated Event handler functions are deprecated
+     *
+     * @param string $sTarget    The id of the element
+     * @param string $sEvent    The name of the event
+     * @param string $sHandler    The name of the javascript function to call when the event is fired
+     *
+     * @return self
+     */
+    public function addHandler(string $sTarget, string $sEvent, string $sHandler): self
+    {
+        $this->xManager->addCommand('handler.add', [
+            'id' => $this->str($sTarget),
+            'event' => $this->str($sEvent),
+            'func' => $this->str($sHandler),
+        ]);
+        return $this;
+    }
+
+    /**
+     * Add a command to remove an event handler from an element
+     * @deprecated Event handler functions are deprecated
+     *
+     * @param string $sTarget    The id of the element
+     * @param string $sEvent    The name of the event
+     * @param string $sHandler    The name of the javascript function called when the event is fired
+     *
+     * @return self
+     */
+    public function removeHandler(string $sTarget, string $sEvent, string $sHandler): self
+    {
+        $this->xManager->addCommand('handler.remove', [
+            'id' => $this->str($sTarget),
+            'event' => $this->str($sEvent),
+            'func' => $this->str($sHandler),
+        ]);
+        return $this;
     }
 }

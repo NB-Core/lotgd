@@ -17,7 +17,7 @@
         "source": "https://github.com/jaxon-php/jaxon-core"
     },
     "require": {
-        "php": ">=7.1",
+        "php": ">=8.1",
         "ext-json": "*",
         "psr/log": "^1.0|^2.0|^3.0",
         "psr/container": "^1.0|^2.0",
@@ -27,13 +27,16 @@
         "pimple/pimple": "^3.0",
         "nyholm/psr7": "^1.8",
         "nyholm/psr7-server": "^1.1",
-        "jaxon-php/jaxon-utils": "^1.1.2"
+        "lagdo/facades": "^1.1",
+        "jaxon-php/jaxon-config": "^1.0",
+        "jaxon-php/jaxon-storage": "^1.2",
+        "jaxon-php/jaxon-utils": "^2.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",
         "php-coveralls/php-coveralls": "^2.5",
         "phpunit/phpcov": "^8.2",
-        "jaxon-php/jaxon-annotations": "dev-test",
+        "league/flysystem-memory": "^3.0|^2.2",
         "jaxon-php/jaxon-dialogs": "dev-test",
         "jaxon-php/jaxon-upload": "dev-test"
     },
@@ -42,12 +45,14 @@
             "Jaxon\\": "src/"
         },
         "files": [
-            "src/start.php"
+            "src/jaxon_ns.php",
+            "src/jaxon_fn.php"
         ]
     },
     "autoload-dev": {
         "psr-4": {
             "Jaxon\\Tests\\": "tests/",
+            "Jaxon\\Tests\\App\\": "tests/src/",
             "Jaxon\\Tests\\Ns\\": "tests/src/Ns/"
         }
     },

@@ -36,6 +36,8 @@ namespace Lotgd\Tests\Ajax {
     use Lotgd\Async\Handler\Timeout;
     use PHPUnit\Framework\TestCase;
 
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class TimeoutStatusTest extends TestCase
     {
         protected function setUp(): void
@@ -70,8 +72,9 @@ namespace Lotgd\Tests\Ajax {
             $commands = $response->getCommands();
 
             $this->assertNotEmpty($commands);
-            $this->assertSame('notify', $commands[0]['id'] ?? null);
-            $this->assertStringContainsString('TIMEOUT', $commands[0]['data'] ?? '');
+            $this->assertSame('node.assign', $commands[0]['name'] ?? null);
+            $this->assertSame('notify', $commands[0]['args']['id'] ?? null);
+            $this->assertStringContainsString('TIMEOUT', $commands[0]['args']['value'] ?? '');
         }
 
         public function testNoWarningWhenSessionUserAbsentWithoutTimeoutIndicators(): void
@@ -96,8 +99,9 @@ namespace Lotgd\Tests\Ajax {
             $commands = $response->getCommands();
 
             $this->assertNotEmpty($commands);
-            $this->assertSame('notify', $commands[0]['id'] ?? null);
-            $this->assertStringContainsString('TIMEOUT', $commands[0]['data'] ?? '');
+            $this->assertSame('node.assign', $commands[0]['name'] ?? null);
+            $this->assertSame('notify', $commands[0]['args']['id'] ?? null);
+            $this->assertStringContainsString('TIMEOUT', $commands[0]['args']['value'] ?? '');
         }
     }
 }

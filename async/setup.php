@@ -139,78 +139,31 @@ function lotgdCommentNotify(count) {
 }
 
 // AJAX polling implementation
+function getJaxonHandlers() {
+    if (typeof Lotgd !== 'undefined'
+        && Lotgd.Async && Lotgd.Async.Handler) {
+        return Lotgd.Async.Handler;
+    }
+
+    if (typeof JaxonLotgd !== 'undefined'
+        && JaxonLotgd.Async && JaxonLotgd.Async.Handler) {
+        return JaxonLotgd.Async.Handler;
+    }
+
+    return null;
+}
+
 function pollForUpdates() {
-    const formData = new URLSearchParams();
-    formData.append('jxncls', 'Lotgd.Async.Handler.Commentary');
-    formData.append('jxnmthd', 'pollUpdates');
-    formData.append('jxnargs[0]', 'S' + (lotgd_comment_section || 'superuser'));
-    formData.append('jxnargs[1]', 'N' + String(lotgd_lastCommentId || 0));
-    formData.append('jxnr', Math.random().toString().substring(2));
-    
-    fetch('/async/process.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: formData.toString()
-    })
-    .then(response => response.text().then(data => ({status: response.status, data: data})))
-    .then(result => {
-        if (result.status === 200 && !result.data.includes('Application Error')) {
-            try {
-                const json = JSON.parse(result.data);
-                if (json.jxnobj && Array.isArray(json.jxnobj)) {
-                    let hasUpdates = false;
-                    
-                    json.jxnobj.forEach(cmd => {
-                        if (cmd.id && cmd.prop && cmd.data !== undefined) {
-                            const element = document.getElementById(cmd.id);
-                            if (element && cmd.prop === 'innerHTML') {
-                                if (cmd.cmd === 'ap') { // append
-                                    element.innerHTML += cmd.data;
-                                } else { // assign
-                                    element.innerHTML = cmd.data;
-                                }
-                                hasUpdates = true;
-                            }
-                        }
-                        if (cmd.cmd === 'js' && cmd.data) {
-                            try {
-                                const beforeId = window.lotgd_lastCommentId;
-                                eval(cmd.data);
+    var handlers = getJaxonHandlers();
+    if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
+        handlers.Commentary.pollUpdates(
+            lotgd_comment_section || 'superuser',
+            lotgd_lastCommentId || 0
+        );
+        return;
+    }
 
-                                if (window.lotgd_lastCommentId === beforeId) {
-                                    if (cmd.data.includes('lotgd_lastCommentId')) {
-                                        const match = cmd.data.match(/lotgd_lastCommentId\s*=\s*(\d+)/);
-
-                                        if (match) {
-                                            window.lotgd_lastCommentId = parseInt(match[1], 10);
-                                            console.log('AJAX: lastCommentId parsed to', window.lotgd_lastCommentId);
-                                        } else {
-                                            console.warn('AJAX: lastCommentId unchanged after script:', cmd.data);
-                                        }
-                                    }
-                                } else {
-                                    console.log('AJAX: lastCommentId updated to', window.lotgd_lastCommentId);
-                                }
-                            } catch (e) {
-                                console.error('AJAX: Script execution error:', e);
-                            }
-                        }
-                    });
-                    
-                    if (hasUpdates) {
-                        console.log('AJAX: Updates applied (' + json.jxnobj.length + ' commands)');
-                    }
-                }
-            } catch (e) {
-                console.error('AJAX: Response parsing error:', e);
-            }
-        } else if (result.status !== 200) {
-            console.error('AJAX: Server error (HTTP ' + result.status + ')');
-        }
-    })
-    .catch(error => {
-        console.error('AJAX: Network error:', error);
-    });
+    console.error('AJAX: pollUpdates unavailable in Jaxon client namespace');
 }
 
 // Start polling system

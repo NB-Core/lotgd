@@ -48,27 +48,4 @@ interface CodeGeneratorInterface
      * @return string
      */
     public function getScript(): string;
-
-    /**
-     * Get the javascript code to execute after page load
-     *
-     * The code must NOT be enclosed in HTML tags.
-     *
-     * @return string
-     */
-    public function getReadyScript(): string;
-
-    /**
-     * Whether to include the getReadyScript() in the generated code.
-     *
-     * @return bool
-     */
-    public function readyEnabled(): bool;
-
-    /**
-     * Whether to export the getReadyScript() in external javascript files.
-     *
-     * @return bool
-     */
-    public function readyInlined(): bool;
 }

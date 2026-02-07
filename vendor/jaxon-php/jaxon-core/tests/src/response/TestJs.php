@@ -1,129 +1,60 @@
 <?php
 
-use Jaxon\App\CallableClass;
-use Jaxon\Response\Response;
+use Jaxon\App\FuncComponent;
 
-class TestJs extends CallableClass
+class TestJs extends FuncComponent
 {
-    public function redirect(): Response
+    public function redirect()
     {
-        $this->response->redirect('http://example.test/path', 50);
-        $this->response->redirect('http://example.test/path');
-        return $this->response;
+        $this->response()->redirect('http://example.test/path', 50);
+        $this->response()->redirect('http://example.test/path');
     }
 
-    public function confirm(): Response
+    public function confirm()
     {
-        $this->response->confirmCommands(2, 'Confirm?');
-        return $this->response;
+        $this->response()->confirm(function($resp) {
+            $resp->debug('This is the first debug message!!');
+            $resp->debug('This is the second debug message!!');
+        }, 'Confirm?');
     }
 
-    public function alert(): Response
+    public function message()
     {
-        $this->response->alert('This is an alert!!');
-        return $this->response;
+        $this->response()->alert('This is an alert!!');
     }
 
-    public function debug(): Response
+    public function debug()
     {
-        $this->response->debug('This is a debug message!!');
-        return $this->response;
+        $this->response()->debug('This is a debug message!!');
     }
 
-    public function script(): Response
+    public function call()
     {
-        $this->response->script('console.debug("A debug message")');
-        return $this->response;
+        $this->response()->call('console.debug', 'A debug message');
     }
 
-    public function call(): Response
+    public function setEvent()
     {
-        $this->response->call('console.debug', 'A debug message');
-        return $this->response;
+        $this->response()->setEventHandler('div', 'click', jo('console')->debug("A debug message"));
     }
 
-    public function setEvent(): Response
+    public function onClick()
     {
-        $this->response->setEvent('div', 'click', 'console.debug("A debug message")');
-        return $this->response;
+        $this->response()->onClick('div', jo('console')->debug("A debug message"));
     }
 
-    public function onClick(): Response
+    public function addHandler()
     {
-        $this->response->onClick('div', 'console.debug("A debug message")');
-        return $this->response;
+        $this->response()->addHandler('div', 'click', 'jsFunc');
     }
 
-    public function addHandler(): Response
+    public function removeHandler()
     {
-        $this->response->addHandler('div', 'click', 'jsFunc');
-        return $this->response;
+        $this->response()->removeHandler('div', 'click', 'jsFunc');
     }
 
-    public function removeHandler(): Response
+    public function sleep()
     {
-        $this->response->removeHandler('div', 'click', 'jsFunc');
-        return $this->response;
-    }
-
-    public function setFunction(): Response
-    {
-        $this->response->setFunction('jsFunc', 'param1,param2', 'console.debug(param1, param2)');
-        return $this->response;
-    }
-
-    public function wrapFunction(): Response
-    {
-        $this->response->wrapFunction('jsFunc', 'param1,param2', ['let param3=param1+param2;',
-            'return param3+param4;'], 'param4');
-        return $this->response;
-    }
-
-    public function includeScript(): Response
-    {
-        $this->response->includeScript('http://example.test/assets/js/utils.js');
-        return $this->response;
-    }
-
-    public function includeScriptOnce(): Response
-    {
-        $this->response->includeScriptOnce('http://example.test/assets/js/utils.js');
-        return $this->response;
-    }
-
-    public function removeScript(): Response
-    {
-        $this->response->removeScript('http://example.test/assets/js/utils.js');
-        return $this->response;
-    }
-
-    public function includeCss(): Response
-    {
-        $this->response->includeCSS('http://example.test/assets/css/utils.css');
-        return $this->response;
-    }
-
-    public function removeCss(): Response
-    {
-        $this->response->removeCSS('http://example.test/assets/css/utils.css');
-        return $this->response;
-    }
-
-    public function waitForCss(): Response
-    {
-        $this->response->waitForCSS(100);
-        return $this->response;
-    }
-
-    public function waitFor(): Response
-    {
-        $this->response->waitFor('jsVar', 100);
-        return $this->response;
-    }
-
-    public function sleep(): Response
-    {
-        $this->response->sleep(100);
-        return $this->response;
+        $this->response()->sleep(100);
     }
 }

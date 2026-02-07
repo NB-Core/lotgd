@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CodeGenerator.php - Jaxon code generator
+ * CodeGenerator.php
  *
  * Generate HTML, CSS and Javascript code for Jaxon.
  *
@@ -14,82 +14,54 @@
 
 namespace Jaxon\Plugin\Code;
 
+use Jaxon\App\Config\ConfigManager;
 use Jaxon\Di\Container;
-use Jaxon\Plugin\Plugin;
 use Jaxon\Utils\Http\UriException;
 use Jaxon\Utils\Template\TemplateEngine;
 
-use function array_reduce;
-use function is_subclass_of;
-use function ksort;
+use function array_map;
+use function count;
+use function implode;
 use function md5;
 use function trim;
+use function usort;
 
 class CodeGenerator
 {
     /**
-     * @var string
+     * @var AssetManager|null
      */
-    private $sVersion;
+    private $xAssetManager = null;
 
     /**
-     * @var Container
-     */
-    private $di;
-
-    /**
-     * The Jaxon template engine
-     *
-     * @var TemplateEngine
-     */
-    protected $xTemplateEngine;
-
-    /**
-     * @var AssetManager
-     */
-    private $xAssetManager;
-
-    /**
-     * The classes that generate code
-     *
      * @var array<string>
      */
     protected $aCodeGenerators = [];
 
     /**
-     * @var string
+     * @var Code|null
      */
-    protected $sJsOptions;
+    protected $xCode = null;
 
     /**
      * @var string
      */
-    protected $sCss = '';
+    private const SEPARATOR = "\n\n";
 
     /**
-     * @var string
+     * @var int
      */
-    protected $sJs = '';
+    private const TYPE_CSS_CODE = 1;
 
     /**
-     * @var string
+     * @var int
      */
-    protected $sJsScript = '';
+    private const TYPE_JS_CODE = 2;
 
     /**
-     * @var string
+     * @var int
      */
-    protected $sJsReadyScript = '';
-
-    /**
-     * @var string
-     */
-    protected $sJsInlineScript = '';
-
-    /**
-     * @var string
-     */
-    protected $bGenerated = false;
+    private const TYPE_CODE = 3;
 
     /**
      * The constructor
@@ -97,12 +69,24 @@ class CodeGenerator
      * @param string $sVersion
      * @param Container $di
      * @param TemplateEngine $xTemplateEngine
+     * @param ConfigManager $xConfigManager
      */
-    public function __construct(string $sVersion, Container $di, TemplateEngine $xTemplateEngine)
+    public function __construct(private string $sVersion, private Container $di,
+        private TemplateEngine $xTemplateEngine, private ConfigManager $xConfigManager)
     {
-        $this->sVersion = $sVersion;
-        $this->di = $di;
-        $this->xTemplateEngine = $xTemplateEngine;
+        // The Jaxon library config is on top.
+        $this->addJsCodeGenerator(ConfigScriptGenerator::class, 0);
+        // The ready script comes after.
+        $this->addJsCodeGenerator(ReadyScriptGenerator::class, 2);
+    }
+
+    /**
+     * @return AssetManager
+     */
+    private function asset(): AssetManager
+    {
+        // Cannot be injected because of dependency loop.
+        return $this->xAssetManager ??= $this->di->getAssetManager();
     }
 
     /**
@@ -113,13 +97,35 @@ class CodeGenerator
      *
      * @return void
      */
-    public function addCodeGenerator(string $sClassName, int $nPriority)
+    public function addCssCodeGenerator(string $sClassName, int $nPriority): void
     {
-        while(isset($this->aCodeGenerators[$nPriority]))
-        {
-            $nPriority++;
-        }
-        $this->aCodeGenerators[$nPriority] = $sClassName;
+        $this->aCodeGenerators[] = [$sClassName, self::TYPE_CSS_CODE, $nPriority];
+    }
+
+    /**
+     * Add a code generator to the list
+     *
+     * @param string $sClassName    The code generator class
+     * @param int $nPriority    The desired priority, used to order the plugins
+     *
+     * @return void
+     */
+    public function addJsCodeGenerator(string $sClassName, int $nPriority): void
+    {
+        $this->aCodeGenerators[] = [$sClassName, self::TYPE_JS_CODE, $nPriority];
+    }
+
+    /**
+     * Add a code generator to the list
+     *
+     * @param string $sClassName    The code generator class
+     * @param int $nPriority    The desired priority, used to order the plugins
+     *
+     * @return void
+     */
+    public function addCodeGenerator(string $sClassName, int $nPriority): void
+    {
+        $this->aCodeGenerators[] = [$sClassName, self::TYPE_CODE, $nPriority];
     }
 
     /**
@@ -129,9 +135,49 @@ class CodeGenerator
      */
     public function getHash(): string
     {
-        return md5(array_reduce($this->aCodeGenerators, function($sHash, $sClassName) {
-            return $sHash . $this->di->g($sClassName)->getHash();
-        }, $this->sVersion));
+        $aHashes = array_map(fn(array $aGenerator) =>
+            $this->di->g($aGenerator[0])->getHash(), $this->aCodeGenerators);
+        $aHashes[] = $this->sVersion;
+        return md5(implode('', $aHashes));
+    }
+
+    /**
+     * Render a template in the 'plugins' subdir
+     *
+     * @param string $sTemplate    The template filename
+     * @param array $aVars    The template variables
+     *
+     * @return string
+     */
+    private function renderTemplate(string $sTemplate, array $aVars = []): string
+    {
+        return $this->xTemplateEngine->render("jaxon::plugins/$sTemplate", $aVars);
+    }
+
+    /**
+     * @param array $aCssFile
+     *
+     * @return string
+     */
+    private function renderCssTag(array $aCssFile): string
+    {
+        return $this->renderTemplate('include.css', [
+            'sUrl' => $aCssFile['uri'],
+            'sOptions' => $this->asset()->makeFileOptions($aCssFile),
+        ]);
+    }
+
+    /**
+     * @param array $aJsFile
+     *
+     * @return string
+     */
+    private function renderJsTag(array $aJsFile): string
+    {
+        return $this->renderTemplate('include.js', [
+            'sUrl' => $aJsFile['uri'],
+            'sOptions' => $this->asset()->makeFileOptions($aJsFile),
+        ]);
     }
 
     /**
@@ -144,59 +190,8 @@ class CodeGenerator
      */
     private function render(string $sTemplate, array $aVars = []): string
     {
-        $aVars['sJsOptions'] = $this->sJsOptions;
+        $aVars['sJsOptions'] = $this->asset()->getJsOptions();
         return $this->xTemplateEngine->render("jaxon::plugins/$sTemplate", $aVars);
-    }
-
-    /**
-     * Generate the Jaxon CSS and js codes for a given plugin
-     *
-     * @param string $sClassName
-     *
-     * @return void
-     */
-    private function generatePluginCodes(string $sClassName)
-    {
-        $xGenerator = $this->di->g($sClassName);
-        if(!is_subclass_of($xGenerator, Plugin::class) || $this->xAssetManager->shallIncludeAssets($xGenerator))
-        {
-            // HTML tags for CSS
-            $this->sCss = trim($this->sCss) . "\n" . trim($xGenerator->getCss(), " \n");
-            // HTML tags for js
-            $this->sJs = trim($this->sJs) . "\n" . trim($xGenerator->getJs(), " \n");
-        }
-        // Javascript code
-        $this->sJsScript = trim($this->sJsScript) . "\n\n" . trim($xGenerator->getScript(), " \n");
-        if($xGenerator->readyEnabled())
-        {
-            $sScriptAttr = $xGenerator->readyInlined() ? 'sJsInlineScript' : 'sJsReadyScript';
-            $this->$sScriptAttr = trim($this->$sScriptAttr) . "\n\n" . trim($xGenerator->getReadyScript(), " \n");
-        }
-    }
-
-    /**
-     * Render the generated CSS ans js codes
-     *
-     * @return void
-     */
-    private function renderCodes()
-    {
-        $this->sCss = trim($this->sCss, " \n");
-        $this->sJs = trim($this->sJs, " \n");
-        $this->sJsScript = trim($this->sJsScript, " \n");
-        $this->sJsReadyScript = trim($this->sJsReadyScript, " \n");
-        $this->sJsInlineScript = trim($this->sJsInlineScript, " \n");
-        if(($this->sJsReadyScript))
-        {
-            $this->sJsReadyScript = $this->render('ready.js', ['sScript' => $this->sJsReadyScript . "\n"]);
-        }
-        if(($this->sJsInlineScript))
-        {
-            $this->sJsInlineScript = $this->render('ready.js', ['sScript' => $this->sJsInlineScript . "\n"]);
-        }
-        // Prepend Jaxon javascript files to HTML tags for Js
-        $aJsFiles = $this->xAssetManager->getJsLibFiles();
-        $this->sJs = trim($this->render('includes.js', ['aUrls' => $aJsFiles])) . "\n\n" . $this->sJs;
     }
 
     /**
@@ -205,48 +200,45 @@ class CodeGenerator
      * @return void
      * @throws UriException
      */
-    private function generateCodes()
+    private function generateCodes(): void
     {
-        if($this->bGenerated)
+        if($this->xCode !== null)
         {
             return;
         }
 
+        $this->xCode = new Code();
+        // We need the library to have been bootstrapped.
+        $this->di->getBootstrap()->onBoot();
+
         // Sort the code generators by ascending priority
-        ksort($this->aCodeGenerators);
+        usort($this->aCodeGenerators, fn(array $aGen1, array $aGen2) => $aGen1[2] - $aGen2[2]);
 
-        $this->xAssetManager = $this->di->getAssetManager();
-        $this->sJsOptions = $this->xAssetManager->getJsOptions();
-        foreach($this->aCodeGenerators as $sClassName)
+        // Load the Jaxon lib js files, before the other libs js files.
+        $this->xCode->addJsTag(trim($this->renderTemplate('includes.js', [
+            'aUrls' => $this->asset()->getJsLibUrls(),
+            'sOptions' => $this->asset()->getJsOptions(),
+        ])));
+
+        $renderJsTag = fn(array $aJsFile) => $this->renderJsTag($aJsFile);
+        $renderCssTag = fn(array $aCssFile) => $this->renderCssTag($aCssFile);
+        foreach($this->aCodeGenerators as [$sClassName, $nType])
         {
-            $this->generatePluginCodes($sClassName);
-        }
-        $this->renderCodes();
+            $xGenerator = $this->di->g($sClassName);
+            $bIncludeAssets = $this->asset()->shallIncludeAssets($xGenerator);
 
-        $sJsConfigVars = $this->render('config.js', $this->xAssetManager->getOptionVars());
-        // These three parts are always rendered together
-        $this->sJsScript = trim($sJsConfigVars) . "\n\n" .
-            trim($this->sJsScript) . "\n\n" . trim($this->sJsReadyScript);
-        // For js lib versions prior to 4.0, register the redirect command.
-        $sJsLibVersion = $this->di->getJsLibVersion();
-        if((int)$sJsLibVersion[0] < 4)
-        {
-            $this->sJsScript .= '
-
-    jaxon.command.handler.register("rd", (command) => {
-        const { data: sUrl, delay: nDelay } = command;
-        if (nDelay <= 0) {
-            window.location = sUrl;
-            return true;
+            switch($nType)
+            {
+            case self::TYPE_CSS_CODE:
+                $this->xCode->mergeCssCode($xGenerator, $renderCssTag, $bIncludeAssets);
+                break;
+            case self::TYPE_JS_CODE:
+                $this->xCode->mergeJsCode($xGenerator, $renderJsTag, $bIncludeAssets);
+                break;
+            case self::TYPE_CODE:
+                $this->xCode->mergeCode($xGenerator, $bIncludeAssets);
+            }
         }
-        window.setTimeout(() => window.location = sUrl, nDelay * 1000);
-        return true;
-    });
-';
-        }
-
-        // The codes are already generated.
-        $this->bGenerated = true;
     }
 
     /**
@@ -258,7 +250,30 @@ class CodeGenerator
     public function getCss(): string
     {
         $this->generateCodes();
-        return $this->sCss;
+
+        $aTags = $this->xCode->cssTags();
+        $aCodes = $this->xCode->cssCodes();
+        $aCodes[] = '
+.pagination li a {
+  cursor: pointer;
+}';
+
+        $cGetCode = fn() => implode(self::SEPARATOR, array_map(trim(...), $aCodes));
+        $sUrl = $this->asset()->createCssFiles(fn() => $this->getHash(), $cGetCode);
+        // Wrap the js code into the corresponding HTML tag.
+        $aTags[] = $sUrl !== '' ?
+            // The generated code is saved to a file. Render the corresponding URL.
+            $this->renderTemplate('include.css', [
+                'sUrl' => $sUrl,
+                'sOptions' => $this->asset()->getCssOptions(),
+            ]) :
+            // Otherwise, render the code.
+            $this->renderTemplate('wrapper.css', [
+                'sCode' => $cGetCode(),
+                'sOptions' => $this->asset()->getCssOptions(),
+            ]);
+
+        return implode(self::SEPARATOR, array_map(trim(...), $aTags));
     }
 
     /**
@@ -270,17 +285,8 @@ class CodeGenerator
     public function getJs(): string
     {
         $this->generateCodes();
-        return $this->sJs;
-    }
 
-    /**
-     * Get the generated javascript code
-     *
-     * @return string
-     */
-    public function getJsScript(): string
-    {
-        return $this->sJsScript;
+        return implode(self::SEPARATOR, $this->xCode->jsTags());
     }
 
     /**
@@ -295,22 +301,39 @@ class CodeGenerator
     public function getScript(bool $bIncludeJs, bool $bIncludeCss): string
     {
         $this->generateCodes();
-        $sScript = '';
-        if(($bIncludeCss))
+
+        $aTags = [];
+        if($bIncludeCss)
         {
-            $sScript .= $this->getCss() . "\n";
+            $aTags[] = $this->getCss();
         }
-        if(($bIncludeJs))
+        if($bIncludeJs)
         {
-            $sScript .= $this->getJs() . "\n";
+            $aTags[] = $this->getJs();
         }
 
-        if(!($sUrl = $this->xAssetManager->createJsFiles($this)))
+        $aJsOptions = $this->asset()->getJsOptions();
+
+        $aJsCodes = $this->xCode->jsCodes();
+        if(count($this->xCode->jsCodes()) > 0)
         {
-            return trim($sScript) . "\n\n" . $this->render('wrapper.js',
-                ['sScript' => trim($this->sJsScript) . "\n\n" . trim($this->sJsInlineScript)]);
+            $cGetHash = fn() => $this->getHash();
+            $cGetCode = fn() => implode(self::SEPARATOR, $aJsCodes);
+            $sUrl = $this->asset()->createJsFiles($cGetHash, $cGetCode);
+            // Wrap the js code into the corresponding HTML tag.
+            $aTags[] = $sUrl !== '' ?
+                // The generated code is saved to a file. Render the corresponding URL.
+                $this->render('include.js', [
+                    'sUrl' => $sUrl,
+                    'sOptions' => $aJsOptions,
+                ]) :
+                // Otherwise, render the code.
+                $this->render('wrapper.js', [
+                    'sCode' => $cGetCode(),
+                    'sOptions' => $aJsOptions,
+                ]);
         }
-        return trim($sScript) . "\n\n" . trim($this->render('include.js', ['sUrl' => $sUrl])) .
-            "\n\n" . $this->render('wrapper.js', ['sScript' => $this->sJsInlineScript]);
+
+        return implode(self::SEPARATOR, $aTags);
     }
 }

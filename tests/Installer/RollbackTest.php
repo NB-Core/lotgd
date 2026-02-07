@@ -38,6 +38,8 @@ final class RollbackTest extends TestCase
      * @runInSeparateProcess
      * @preserveGlobalState disabled
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testInterruptedMigrationResumes(): void
     {
         $installer1 = new class extends Installer {
@@ -85,6 +87,8 @@ final class RollbackTest extends TestCase
      * @runInSeparateProcess
      * @preserveGlobalState disabled
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testInvalidCredentialsShowsErrorMessage(): void
     {
         $db = new class extends DbMysqli {

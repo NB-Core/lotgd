@@ -11,7 +11,6 @@ use PHPUnit\Framework\TestCase;
 use Jaxon\NsTests\DirA\ClassA;
 use Jaxon\NsTests\DirB\ClassB;
 use Jaxon\NsTests\DirC\ClassC;
-use function Jaxon\jaxon;
 
 class NamespaceTest extends TestCase
 {
@@ -22,7 +21,7 @@ class NamespaceTest extends TestCase
     {
         jaxon()->setOption('core.response.send', false);
         jaxon()->setOption('core.prefix.class', '');
-        jaxon()->register(Jaxon::CALLABLE_DIR, __DIR__ . '/../src/dir_ns', 'Jaxon\NsTests');
+        jaxon()->register(Jaxon::CALLABLE_DIR, dirname(__DIR__) . '/src/dir_ns', 'Jaxon\NsTests');
     }
 
     /**
@@ -40,17 +39,22 @@ class NamespaceTest extends TestCase
     public function testGetRequestToJaxonClass()
     {
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withQueryParams([
-                'jxncls' => 'Jaxon.NsTests.DirA.ClassA',
-                'jxnmthd' => 'methodAa',
-                'jxnargs' => [],
-            ])->withMethod('GET');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withQueryParams([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'Jaxon.NsTests.DirA.ClassA',
+                        'method' => 'methodAa',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('GET'));
 
         $this->assertTrue(jaxon()->di()->getRequestHandler()->canProcessRequest());
         $this->assertTrue(jaxon()->di()->getCallableClassPlugin()->canProcessRequest(jaxon()->di()->getRequest()));
-        $this->assertNotNull(jaxon()->di()->getCallableClassPlugin()->processRequest());
+        jaxon()->di()->getCallableClassPlugin()->processRequest();
     }
 
     /**
@@ -59,17 +63,22 @@ class NamespaceTest extends TestCase
     public function testPostRequestToJaxonClass()
     {
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'Jaxon.NsTests.DirB.ClassB',
-                'jxnmthd' => 'methodBb',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'Jaxon.NsTests.DirB.ClassB',
+                        'method' => 'methodBb',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
 
         $this->assertTrue(jaxon()->di()->getRequestHandler()->canProcessRequest());
         $this->assertTrue(jaxon()->di()->getCallableClassPlugin()->canProcessRequest(jaxon()->di()->getRequest()));
-        $this->assertNotNull(jaxon()->di()->getCallableClassPlugin()->processRequest());
+        jaxon()->di()->getCallableClassPlugin()->processRequest();
     }
 
     /**
@@ -79,20 +88,25 @@ class NamespaceTest extends TestCase
     public function testRequestToJaxonClass()
     {
         // The server request
-        jaxon()->di()->set(ServerRequestInterface::class, function($c) {
-            return $c->g(ServerRequestCreator::class)->fromGlobals()->withParsedBody([
-                'jxncls' => 'Jaxon.NsTests.DirC.ClassC',
-                'jxnmthd' => 'methodCa',
-                'jxnargs' => [],
-            ])->withMethod('POST');
-        });
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'Jaxon.NsTests.DirC.ClassC',
+                        'method' => 'methodCa',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
 
         $this->assertTrue(jaxon()->di()->getRequestHandler()->canProcessRequest());
         jaxon()->processRequest();
         $this->assertNotNull(jaxon()->getResponse());
         $this->assertEquals(2, jaxon()->getResponse()->getCommandCount());
         $xCallableObject = jaxon()->di()->getCallableClassPlugin()->getCallable(ClassC::class);
-        $this->assertEquals(ClassC::class, get_class($xCallableObject->getRegisteredObject()));
+        $this->assertEquals(ClassC::class, $xCallableObject->getClassName());
 
         $xTarget = jaxon()->di()->getCallableClassPlugin()->getTarget();
         $this->assertNotNull($xTarget);

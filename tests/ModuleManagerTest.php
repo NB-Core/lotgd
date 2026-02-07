@@ -73,6 +73,8 @@ namespace Lotgd\Tests {
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class ModuleManagerTest extends TestCase
     {
         private string $cacheDir = '';

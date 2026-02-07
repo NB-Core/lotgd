@@ -2,7 +2,7 @@
 
 namespace Jaxon\Tests\TestRegistration;
 
-require_once __DIR__ . '/../src/functions.php';
+require_once dirname(__DIR__) . '/src/functions.php';
 
 use Jaxon\Exception\SetupException;
 use Jaxon\Jaxon;
@@ -11,9 +11,8 @@ use Jaxon\Plugin\Request\CallableFunction\CallableFunctionPlugin;
 use Jaxon\Utils\Http\UriException;
 use PHPUnit\Framework\TestCase;
 use Sample;
-use function Jaxon\jaxon;
+
 use function strlen;
-use function trim;
 
 final class FunctionTest extends TestCase
 {
@@ -30,7 +29,7 @@ final class FunctionTest extends TestCase
         jaxon()->setOption('core.prefix.function', 'jxn_');
         // Register a function
         jaxon()->register(Jaxon::CALLABLE_FUNCTION, 'my_first_function',
-            __DIR__ . '/../src/first.php');
+            dirname(__DIR__) . '/src/first.php');
         // Register a function with an alias
         jaxon()->register(Jaxon::CALLABLE_FUNCTION, 'my_second_function', [
             'alias' => 'my_alias_function',
@@ -40,7 +39,7 @@ final class FunctionTest extends TestCase
         jaxon()->register(Jaxon::CALLABLE_FUNCTION, 'myMethod', [
             'alias' => 'my_third_function',
             'class' => Sample::class,
-            'include' => __DIR__ . '/../src/classes.php',
+            'include' => dirname(__DIR__) . '/src/classes.php',
         ]);
         $this->xPlugin = jaxon()->di()->getCallableFunctionPlugin();
     }
@@ -117,10 +116,11 @@ final class FunctionTest extends TestCase
 
     public function testCallableFunctionJsCode()
     {
-        $this->assertEquals(32, strlen($this->xPlugin->getHash()));
         // $this->assertEquals('34608e208fda374f8761041969acf96e', $this->xPlugin->getHash());
-        $this->assertEquals(403, strlen($this->xPlugin->getScript()));
-        // $this->assertEquals(file_get_contents(__DIR__ . '/../src/js/function.js'), $this->xPlugin->getScript());
+        $this->assertEquals(32, strlen($this->xPlugin->getHash()));
+        // file_put_contents(dirname(__DIR__) . '/src/js/function.js', $this->xPlugin->getJsCode()->code());
+        $this->assertEquals(file_get_contents(dirname(__DIR__) . '/src/js/function.js'),
+            $this->xPlugin->getJsCode()->code());
     }
 
     /**
@@ -132,8 +132,8 @@ final class FunctionTest extends TestCase
         $_SERVER['REQUEST_URI'] = 'http://example.test/path';
 
         $sJsCode = jaxon()->getScript(true, true);
-        $this->assertEquals(file_get_contents(__DIR__ . '/../src/js/lib.js'), $sJsCode);
-        $this->assertEquals(1656, strlen(trim($sJsCode)));
+        // file_put_contents(dirname(__DIR__) . '/src/js/lib.html', $sJsCode);
+        $this->assertEquals(file_get_contents(dirname(__DIR__) . '/src/js/lib.html'), $sJsCode);
         $this->assertEquals(32, strlen(jaxon()->di()->getCodeGenerator()->getHash()));
 
         unset($_SERVER['REQUEST_URI']);
@@ -145,8 +145,8 @@ final class FunctionTest extends TestCase
      */
     public function testLibraryJsCodeWithPlugins()
     {
-        require_once __DIR__ . '/../src/plugins.php';
-        require_once __DIR__ . '/../src/packages.php';
+        require_once dirname(__DIR__) . '/src/plugins.php';
+        require_once dirname(__DIR__) . '/src/packages.php';
 
         jaxon()->registerPlugin('SamplePlugin', 'plugin');
         jaxon()->registerPackage('SamplePackage');
@@ -154,11 +154,12 @@ final class FunctionTest extends TestCase
         // This URI will be parsed by the URI detector
         $_SERVER['REQUEST_URI'] = 'http://example.test/path';
         $sJsCode = jaxon()->getScript(true, true);
-        $this->assertEquals(1838, strlen(trim($sJsCode)));
+        // file_put_contents(dirname(__DIR__) . '/src/js/plugin.html', $sJsCode);
+        $this->assertEquals(file_get_contents(dirname(__DIR__) . '/src/js/plugin.html'), $sJsCode);
         $this->assertEquals(32, strlen(jaxon()->di()->getCodeGenerator()->getHash()));
 
-        $sJsCode = trim(jaxon()->getCss() . "\n" . jaxon()->getJs()) . jaxon()->getScript();
-        $this->assertEquals(1838, strlen(trim($sJsCode)));
+        $sJsCode = jaxon()->getCss() . "\n\n" . jaxon()->getJs() . "\n\n" . jaxon()->getScript();
+        $this->assertEquals(file_get_contents(dirname(__DIR__) . '/src/js/plugin.html'), $sJsCode);
 
         unset($_SERVER['REQUEST_URI']);
     }

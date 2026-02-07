@@ -30,6 +30,9 @@ if (!function_exists(__NAMESPACE__ . '\\injectmodule')) {
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+#[\PHPUnit\Framework\Attributes\Group("injection")]
 final class InjectModuleSuccessTest extends TestCase
 {
     private string $moduleDir;
