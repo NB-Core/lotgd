@@ -15,10 +15,10 @@ namespace Lotgd\Tests {
     use PHPUnit\Framework\TestCase;
 
 /**
- * @runInSeparateProcess
+ * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
-    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
     #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class InstallerLoggerTest extends TestCase
     {
