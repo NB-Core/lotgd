@@ -272,6 +272,10 @@ class Bootstrap
 
     private static function isPathActive(string $path, float $traversalStart): bool
     {
+        if (! file_exists($path)) {
+            return false;
+        }
+
         $changedAt = filectime($path);
 
         if ($changedAt !== false && $changedAt > $traversalStart) {
