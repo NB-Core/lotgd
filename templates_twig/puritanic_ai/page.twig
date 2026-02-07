@@ -6,7 +6,7 @@
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
-    <link rel="stylesheet" href="{{ '/templates_twig/common/bootstrap.min.css'|ver }}">
+    <link rel="stylesheet" href="{{ 'bootstrap'|asset('css') }}">
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
@@ -116,7 +116,6 @@
         </div>
     </div>
 
-    {# Load Bootstrap JS locally with defer #}
-    <script src="{{ '/templates_twig/common/bootstrap.bundle.min.js'|ver }}" defer></script>
+    <script src="{{ 'bootstrap'|asset('js') }}" defer></script>
 </body>
 </html>

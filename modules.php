@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Sanitize;
+use Lotgd\AssetManifest;
 
 // addnews ready
 // translator ready
@@ -28,9 +29,9 @@ Header::pageHeader("Module Manager");
 
 SuperuserNav::render();
 
-$jqueryPath = "async/js/jquery.min.js";
-$dataTablesCssPath = "templates/bootstrap/datatables/datatables.min.css";
-$dataTablesJsPath = "templates/bootstrap/datatables/datatables.min.js";
+$jqueryPath = AssetManifest::url('jquery', 'js');
+$dataTablesCssPath = AssetManifest::url('datatables', 'css');
+$dataTablesJsPath = AssetManifest::url('datatables', 'js');
 
 $output->rawOutput("<link rel='stylesheet' href='{$dataTablesCssPath}'>", true);
 $output->rawOutput("<style>

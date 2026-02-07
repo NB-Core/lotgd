@@ -7,7 +7,7 @@
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
-    <link rel="stylesheet" href="{{ '/templates_twig/common/bootstrap.min.css'|ver }}">
+    <link rel="stylesheet" href="{{ 'bootstrap'|asset('css') }}">
 </head>
 <body class="popup-body">
     <table class="w-100" cellpadding="5">
@@ -29,7 +29,6 @@
             <td class="trhead align-left">{{ copyright|raw }}</td>
         </tr>
     </table>
-    {# Load Bootstrap JS locally with defer #}
-    <script src="{{ '/templates_twig/common/bootstrap.bundle.min.js'|ver }}" defer></script>
+    <script src="{{ 'bootstrap'|asset('js') }}" defer></script>
 </body>
 </html>

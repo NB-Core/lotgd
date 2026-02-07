@@ -1,0 +1,16 @@
+{
+    "bootstrap": {
+        "version": "5.3.7",
+        "css": "assets/vendor/bootstrap/bootstrap.min.css",
+        "js": "assets/vendor/bootstrap/bootstrap.bundle.min.js"
+    },
+    "jquery": {
+        "version": "3.7.1",
+        "js": "assets/vendor/jquery/jquery.min.js"
+    },
+    "datatables": {
+        "version": "2.3.7",
+        "css": "assets/vendor/datatables/datatables.min.css",
+        "js": "assets/vendor/datatables/datatables.min.js"
+    }
+}
