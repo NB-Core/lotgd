@@ -36,9 +36,9 @@ $output->rawOutput("<link rel='stylesheet' href='{$dataTablesCssPath}'>", true);
 $output->rawOutput("<style>
 .dataTables_length select,
 .dataTables_filter input {
-    color: inherit;
-    background-color: inherit;
-    border-color: currentColor;
+    color: CanvasText;
+    background-color: Canvas;
+    border-color: ButtonBorder;
     color-scheme: light dark;
 }
 </style>", true);
@@ -441,6 +441,8 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         dom: 'lfrtip',
         order: [],
+        pageLength: 50,
+        lengthMenu: [10, 25, 50, 100],
         paging: true,
         searching: true,
         serverSide: false,
