@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-function recaptcha_getmoduleinfo(): array
+function recaptcha_v2_getmoduleinfo(): array
 {
     $info = array(
             "name" => "Google ReCaptcha Plugin",
@@ -20,7 +20,7 @@ function recaptcha_getmoduleinfo(): array
     return $info;
 }
 
-function recaptcha_install(): bool
+function recaptcha_v2_install(): bool
 {
     if (extension_loaded('curl')) {
         debug("CURL is necessary to make this work and is loaded.`n");
@@ -35,12 +35,12 @@ function recaptcha_install(): bool
     return true;
 }
 
-function recaptcha_uninstall(): bool
+function recaptcha_v2_uninstall(): bool
 {
     return true;
 }
 
-function recaptcha_dohook(string $hookname, array $args): array
+function recaptcha_v2_dohook(string $hookname, array $args): array
 {
     global $session;
     if (!extension_loaded('curl')) {
@@ -92,6 +92,6 @@ function recaptcha_dohook(string $hookname, array $args): array
     return $args;
 }
 
-function recaptcha_run(): void
+function recaptcha_v2_run(): void
 {
 }
