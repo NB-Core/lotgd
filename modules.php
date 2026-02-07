@@ -158,7 +158,7 @@ if ($op == "") {
         Nav::add("", "modules.php?op=mass&cat=$cat");
         $installedCaption = Translator::translateInline("Installed modules table");
         $output->rawOutput("<div class='table-responsive'>", true);
-        $output->rawOutput("<table class='table table-striped table-hover'>", true);
+        $output->rawOutput("<table class='table table-striped table-hover js-modules-table'>", true);
         $output->rawOutput("<caption class='visually-hidden'>{$installedCaption}</caption>");
         $output->rawOutput("<thead>");
         $output->rawOutput("<tr class='table-secondary'><th scope='col'>&nbsp;</th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
@@ -266,7 +266,7 @@ if ($op == "") {
         Nav::add("", "modules.php?op=mass&cat=$cat");
         $uninstalledCaption = Translator::translateInline("Uninstalled modules table");
         $output->rawOutput("<div class='table-responsive'>", true);
-        $output->rawOutput("<table class='table table-striped table-hover'>", true);
+        $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'>", true);
         $output->rawOutput("<caption class='visually-hidden'>{$uninstalledCaption}</caption>");
         $output->rawOutput("<thead>");
         $output->rawOutput("<tr class='table-secondary'><th scope='col'>&nbsp;</th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></th><th scope='col'><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></th><th scope='col'><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></th><th scope='col'><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></th></tr>");
@@ -374,5 +374,36 @@ if ($op == "") {
         $output->rawOutput("<input type='submit' name='install' class='button' value='$install'>");
     }
 }
+
+$datatableSearch = Translator::translateInline("Search");
+$datatableInfo = Translator::translateInline("Showing _START_ to _END_ of _TOTAL_ entries");
+$datatableEmpty = Translator::translateInline("No data available in table");
+$datatableLoading = Translator::translateInline("Loading...");
+$datatableNext = Translator::translateInline("Next");
+$datatablePrevious = Translator::translateInline("Previous");
+$output->rawOutput(
+    "<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof jQuery === 'undefined' || typeof jQuery.fn.DataTable === 'undefined') {
+        return;
+    }
+    var dataTableConfig = {
+        language: {
+            search: " . json_encode($datatableSearch) . ",
+            info: " . json_encode($datatableInfo) . ",
+            emptyTable: " . json_encode($datatableEmpty) . ",
+            loadingRecords: " . json_encode($datatableLoading) . ",
+            paginate: {
+                next: " . json_encode($datatableNext) . ",
+                previous: " . json_encode($datatablePrevious) . "
+            }
+        },
+        order: []
+    };
+    jQuery('.js-modules-table').DataTable(dataTableConfig);
+    jQuery('.js-uninstalled-modules-table').DataTable(dataTableConfig);
+});
+</script>"
+);
 
 Footer::pageFooter();
