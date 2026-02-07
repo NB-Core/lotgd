@@ -156,22 +156,26 @@ if ($op == "") {
         $inactive = Translator::translateInline("`\$Inactive`0");
         $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
         Nav::add("", "modules.php?op=mass&cat=$cat");
-        $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>", true);
-        $output->rawOutput("<tr class='trhead'><td>&nbsp;</td><td>$ops</td><td><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></td><td><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></td><td><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></td><td><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></td></tr>");
+        $output->rawOutput("<div class='table-responsive'>", true);
+        $output->rawOutput("<table class='table table-striped table-hover'>", true);
+        $output->rawOutput("<thead>");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'>&nbsp;</th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
+        $output->rawOutput("</thead>");
+        $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1));
         Nav::add("", "modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1));
         Nav::add("", "modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1));
         Nav::add("", "modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? $order : 0));
                 $rows = ModuleManager::listInstalled($cat, $sortby, (bool)$order);
         if (count($rows) == 0) {
-                $output->rawOutput("<tr class='trlight'><td colspan='6' align='center'>");
+                $output->rawOutput("<tr class='table-light'><td colspan='6' align='center'>");
                 $output->output("`i-- No Modules Installed--`i");
                 $output->rawOutput("</td></tr>");
         }
                 $number = count($rows);
         for ($i = 0; $i < $number; $i++) {
                 $row = $rows[$i];
-            $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>", true);
+            $output->rawOutput("<tr>", true);
             $output->rawOutput("<td nowrap valign='top'>");
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
             $output->rawOutput("</td><td valign='top' nowrap>[ ");
@@ -229,7 +233,9 @@ if ($op == "") {
             $output->outputNotl("%s", $line);
             $output->rawOutput("</td></tr>");
         }
-        $output->rawOutput("</table><br />");
+        $output->rawOutput("</tbody>");
+        $output->rawOutput("</table>");
+        $output->rawOutput("</div><br />");
         $activate = Translator::translateInline("Activate");
         $deactivate = Translator::translateInline("Deactivate");
         $reinstall = Translator::translateInline("Reinstall");
@@ -256,8 +262,12 @@ if ($op == "") {
         $fname = Translator::translateInline("Filename");
         $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
         Nav::add("", "modules.php?op=mass&cat=$cat");
-        $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>", true);
-        $output->rawOutput("<tr class='trhead'><td>&nbsp;</td><td>$ops</td><td><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></td><td><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></td><td><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></td><td><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></td></tr>");
+        $output->rawOutput("<div class='table-responsive'>", true);
+        $output->rawOutput("<table class='table table-striped table-hover'>", true);
+        $output->rawOutput("<thead>");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'>&nbsp;</th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></th><th scope='col'><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></th><th scope='col'><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></th><th scope='col'><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></th></tr>");
+        $output->rawOutput("</thead>");
+        $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0));
         Nav::add("", "modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0));
         Nav::add("", "modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0));
@@ -302,7 +312,7 @@ if ($op == "") {
             array_multisort($sortby, ($order ? SORT_DESC : SORT_ASC), $numberarray, ($order ? SORT_DESC : SORT_ASC));
             for ($a = 0; $a < count($moduleinfo); $a++) {
                 $i = $numberarray[$a];
-                $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
+                $output->rawOutput("<tr>");
                 if (isset($moduleinfo[$i]['invalid']) && $moduleinfo[$i]['invalid'] === true) {
                     $output->rawOutput("<td></td><td nowrap valign='top'>");
                     $output->output("Not installable");
@@ -330,7 +340,7 @@ if ($op == "") {
                 $output->rawOutput("</td>");
                 $output->rawOutput("</tr>");
                 if (isset($moduleinfo[$i]['requires']) && is_array($moduleinfo[$i]['requires']) && count($moduleinfo[$i]['requires']) > 0) {
-                    $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
+                    $output->rawOutput("<tr class='table-light'>");
                     $output->rawOutput("<td>&nbsp;</td>");
                     $output->rawOutput("<td colspan='6'>");
                     $output->output("`bRequires:`b`n");
@@ -349,11 +359,13 @@ if ($op == "") {
                 $count++;
             }
         } else {
-            $output->rawOutput("<tr class='trlight'><td colspan='6' align='center'>");
+            $output->rawOutput("<tr class='table-light'><td colspan='6' align='center'>");
             $output->output("`i--No uninstalled modules were found--`i");
             $output->rawOutput("</td></tr>");
         }
-        $output->rawOutput("</table><br />");
+        $output->rawOutput("</tbody>");
+        $output->rawOutput("</table>");
+        $output->rawOutput("</div><br />");
         $install = Translator::translateInline("Install");
         $output->rawOutput("<input type='submit' name='install' class='button' value='$install'>");
     }
