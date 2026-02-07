@@ -441,25 +441,25 @@ document.addEventListener('DOMContentLoaded', function () {
     jQuery('.js-uninstalled-modules-table').DataTable(dataTableConfig);
 
     function updateSelectAllState(table) {
-        var $table = jQuery(table);
-        var $checkboxes = $table.find('tbody input[type=\"checkbox\"]').not(':disabled');
-        var $selectAll = $table.find('thead .js-select-all');
-        if (!$selectAll.length) {
+        var \$table = jQuery(table);
+        var \$checkboxes = \$table.find('tbody input[type=\"checkbox\"]').not(':disabled');
+        var \$selectAll = \$table.find('thead .js-select-all');
+        if (!\$selectAll.length) {
             return;
         }
-        if ($checkboxes.length === 0) {
-            $selectAll.prop('checked', false).prop('indeterminate', false);
+        if (\$checkboxes.length === 0) {
+            \$selectAll.prop('checked', false).prop('indeterminate', false);
             return;
         }
-        var checkedCount = $checkboxes.filter(':checked').length;
-        $selectAll.prop('checked', checkedCount === $checkboxes.length);
-        $selectAll.prop('indeterminate', checkedCount > 0 && checkedCount < $checkboxes.length);
+        var checkedCount = \$checkboxes.filter(':checked').length;
+        \$selectAll.prop('checked', checkedCount === \$checkboxes.length);
+        \$selectAll.prop('indeterminate', checkedCount > 0 && checkedCount < \$checkboxes.length);
     }
 
     jQuery(document).on('change', '.js-select-all', function () {
-        var $table = jQuery(this).closest('table');
-        $table.find('tbody input[type=\"checkbox\"]').not(':disabled').prop('checked', this.checked);
-        updateSelectAllState($table);
+        var \$table = jQuery(this).closest('table');
+        \$table.find('tbody input[type=\"checkbox\"]').not(':disabled').prop('checked', this.checked);
+        updateSelectAllState(\$table);
     });
 
     jQuery(document).on('change', 'tbody input[type=\"checkbox\"]', function () {
