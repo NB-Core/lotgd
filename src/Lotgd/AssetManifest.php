@@ -47,11 +47,36 @@ class AssetManifest
             return '';
         }
 
-        $path = '/' . ltrim(self::$manifest[$library][$type], '/');
-        $fullPath = self::$basePath . $path;
+        $assetPath = ltrim(self::$manifest[$library][$type], '/');
+        $fullPath = self::$basePath . '/' . $assetPath;
         $buster = file_exists($fullPath) ? filemtime($fullPath) : (self::$manifest[$library]['version'] ?? '0');
 
-        return $path . '?v=' . $buster;
+        return self::assetBasePath() . $assetPath . '?v=' . $buster;
+    }
+
+    private static function assetBasePath(): string
+    {
+        if (!Settings::hasInstance()) {
+            return '';
+        }
+
+        $settings = Settings::getInstance();
+        $serverUrl = $settings->getSetting('serverurl', '');
+        if (!is_string($serverUrl) || $serverUrl === '') {
+            return '';
+        }
+
+        $parsed = parse_url($serverUrl);
+        if ($parsed === false) {
+            return '';
+        }
+
+        $path = trim((string) ($parsed['path'] ?? ''), '/');
+        if ($path === '') {
+            return '';
+        }
+
+        return '/' . $path . '/';
     }
 
     /**
