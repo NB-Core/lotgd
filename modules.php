@@ -170,7 +170,7 @@ if ($op == "") {
         Nav::add("", "modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? $order : 0));
                 $rows = ModuleManager::listInstalled($cat, $sortby, (bool)$order);
         if (count($rows) == 0) {
-                $output->rawOutput("<tr class='table-light'><td colspan='6' align='center'>");
+                $output->rawOutput("<tr class='table-light'><td colspan='6' class='text-center'>");
                 $output->output("`i-- No Modules Installed--`i");
                 $output->rawOutput("</td></tr>");
         }
@@ -178,9 +178,9 @@ if ($op == "") {
         for ($i = 0; $i < $number; $i++) {
                 $row = $rows[$i];
             $output->rawOutput("<tr>", true);
-            $output->rawOutput("<td nowrap valign='top'>");
+            $output->rawOutput("<td class='text-nowrap align-top'>");
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
-            $output->rawOutput("</td><td valign='top' nowrap>[ ");
+            $output->rawOutput("</td><td class='text-nowrap align-top'>[ ");
             if ($row['active']) {
                 $output->rawOutput("<a href='modules.php?op=deactivate&module={$row['modulename']}&cat=$cat'>");
                 $output->outputNotl($deactivate);
@@ -216,9 +216,9 @@ if ($op == "") {
                 }
             }
 
-            $output->rawOutput(" ]</td><td valign='top'>");
+            $output->rawOutput(" ]</td><td class='align-top'>");
             $output->outputNotl($row['active'] ? $active : $inactive);
-            $output->rawOutput("</td><td nowrap valign='top'><span title=\"" .
+            $output->rawOutput("</td><td class='text-nowrap align-top'><span title=\"" .
                 (isset($row['description']) && $row['description']
                     ? $row['description']
                     : Sanitize::sanitize($row['formalname'])
@@ -226,9 +226,9 @@ if ($op == "") {
             $output->outputNotl("%s", $row['formalname']);
             $output->rawOutput("<br>");
             $output->outputNotl("(%s) V%s", $row['modulename'], $row['version']);
-            $output->rawOutput("</span></td><td valign='top'>");
+            $output->rawOutput("</span></td><td class='align-top'>");
             $output->outputNotl("`#%s`0", $row['moduleauthor'], true);
-            $output->rawOutput("</td><td nowrap valign='top'>");
+            $output->rawOutput("</td><td class='text-nowrap align-top'>");
             $line = sprintf($installstr, $row['installedby']);
             $output->outputNotl("%s", $row['installdate']);
             $output->rawOutput("<br>");
@@ -318,28 +318,28 @@ if ($op == "") {
                 $i = $numberarray[$a];
                 $output->rawOutput("<tr>");
                 if (isset($moduleinfo[$i]['invalid']) && $moduleinfo[$i]['invalid'] === true) {
-                    $output->rawOutput("<td></td><td nowrap valign='top'>");
+                    $output->rawOutput("<td></td><td class='text-nowrap align-top'>");
                     $output->output("Not installable");
                     $output->rawOutput("</td>");
                 } else {
                     $output->rawOutput("<td><input type='checkbox' name='module[]' value='{$moduleinfo[$i]['shortname']}'></td>");
-                    $output->rawOutput("<td nowrap valign='top'>");
+                    $output->rawOutput("<td class='text-nowrap align-top'>");
                     $output->rawOutput("[ <a href='modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}'>");
                     $output->outputNotl($install);
                     $output->rawOutput("</a>]</td>");
                     Nav::add("", "modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}");
                 }
-                $output->rawOutput("<td nowrap valign='top'><span title=\"" .
+                $output->rawOutput("<td class='text-nowrap align-top'><span title=\"" .
                     (isset($moduleinfo[$i]['description']) &&
                          $moduleinfo[$i]['description'] ?
                      $moduleinfo[$i]['description'] :
                      sanitize($moduleinfo[$i]['name'])) . "\">");
                 $output->rawOutput($moduleinfo[$i]['name'] . " " . $moduleinfo[$i]['version']);
-                $output->rawOutput("</span></td><td valign='top'>");
+                $output->rawOutput("</span></td><td class='align-top'>");
                 $output->outputNotl("`#%s`0", $moduleinfo[$i]['author'], true);
-                $output->rawOutput("</td><td valign='top'>");
+                $output->rawOutput("</td><td class='align-top'>");
                 $output->rawOutput($moduleinfo[$i]['category']);
-                $output->rawOutput("</td><td valign='top'>");
+                $output->rawOutput("</td><td class='align-top'>");
                 $output->rawOutput($moduleinfo[$i]['shortname'] . ".php");
                 $output->rawOutput("</td>");
                 $output->rawOutput("</tr>");
@@ -363,7 +363,7 @@ if ($op == "") {
                 $count++;
             }
         } else {
-            $output->rawOutput("<tr class='table-light'><td colspan='6' align='center'>");
+            $output->rawOutput("<tr class='table-light'><td colspan='6' class='text-center'>");
             $output->output("`i--No uninstalled modules were found--`i");
             $output->rawOutput("</td></tr>");
         }
