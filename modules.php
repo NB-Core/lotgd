@@ -169,7 +169,8 @@ if ($op == "") {
         $output->rawOutput("<table class='table table-striped table-hover js-modules-table'>", true);
         $output->rawOutput("<caption class='visually-hidden'>{$installedCaption}</caption>");
         $output->rawOutput("<thead>");
-        $output->rawOutput("<tr class='table-secondary'><th scope='col'>&nbsp;</th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
+        $selectAllLabel = Translator::translateInline("Select all");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
         $output->rawOutput("</thead>");
         $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1));
@@ -277,7 +278,8 @@ if ($op == "") {
         $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'>", true);
         $output->rawOutput("<caption class='visually-hidden'>{$uninstalledCaption}</caption>");
         $output->rawOutput("<thead>");
-        $output->rawOutput("<tr class='table-secondary'><th scope='col'>&nbsp;</th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></th><th scope='col'><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></th><th scope='col'><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></th><th scope='col'><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></th></tr>");
+        $selectAllLabel = Translator::translateInline("Select all");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></th><th scope='col'><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></th><th scope='col'><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></th><th scope='col'><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></th></tr>");
         $output->rawOutput("</thead>");
         $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0));
@@ -428,6 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 sortDescending: " . json_encode($datatableAriaSortDescending) . "
             }
         },
+        dom: 'lfrtip',
         order: [],
         paging: true,
         searching: true,
@@ -436,6 +439,36 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     jQuery('.js-modules-table').DataTable(dataTableConfig);
     jQuery('.js-uninstalled-modules-table').DataTable(dataTableConfig);
+
+    function updateSelectAllState(table) {
+        var $table = jQuery(table);
+        var $checkboxes = $table.find('tbody input[type=\"checkbox\"]').not(':disabled');
+        var $selectAll = $table.find('thead .js-select-all');
+        if (!$selectAll.length) {
+            return;
+        }
+        if ($checkboxes.length === 0) {
+            $selectAll.prop('checked', false).prop('indeterminate', false);
+            return;
+        }
+        var checkedCount = $checkboxes.filter(':checked').length;
+        $selectAll.prop('checked', checkedCount === $checkboxes.length);
+        $selectAll.prop('indeterminate', checkedCount > 0 && checkedCount < $checkboxes.length);
+    }
+
+    jQuery(document).on('change', '.js-select-all', function () {
+        var $table = jQuery(this).closest('table');
+        $table.find('tbody input[type=\"checkbox\"]').not(':disabled').prop('checked', this.checked);
+        updateSelectAllState($table);
+    });
+
+    jQuery(document).on('change', 'tbody input[type=\"checkbox\"]', function () {
+        updateSelectAllState(jQuery(this).closest('table'));
+    });
+
+    jQuery('.js-modules-table, .js-uninstalled-modules-table').each(function () {
+        updateSelectAllState(this);
+    });
 });
 </script>"
 );
