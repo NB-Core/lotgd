@@ -33,6 +33,15 @@ $dataTablesCssPath = "templates/bootstrap/datatables/datatables.min.css";
 $dataTablesJsPath = "templates/bootstrap/datatables/datatables.min.js";
 
 $output->rawOutput("<link rel='stylesheet' href='{$dataTablesCssPath}'>", true);
+$output->rawOutput("<style>
+.dataTables_length select,
+.dataTables_filter input {
+    color: inherit;
+    background-color: inherit;
+    border-color: currentColor;
+    color-scheme: light dark;
+}
+</style>", true);
 $output->rawOutput("<script src='{$jqueryPath}'></script>", true);
 $output->rawOutput("<script src='{$dataTablesJsPath}'></script>", true);
 
