@@ -526,7 +526,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     }
 
     $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
-    $info = Forms::showForm($form, $prefs);
+    $info = Forms::showFormTabbed($form, $prefs);
     $output->rawOutput("<input type='hidden' value=\"" .
             htmlentities(serialize($info), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" name='oldvalues'>");
 
