@@ -836,7 +836,12 @@ JS;
                     tableApi = \$table.DataTable({
                         paging: false,
                         info: false,
-                        ordering: false
+                        ordering: false,
+                        searching: true
+                    });
+                    var globalSearch = '';
+                    \$table.on('search.dt', function () {
+                        globalSearch = tableApi.search();
                     });
                     jQuery.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
                         if (settings.nTable !== \$table[0]) {
@@ -852,7 +857,11 @@ JS;
                 function setActiveTab(sectionId, sectionName) {
                     activeSection = sectionName || '';
                     if (useDataTable) {
-                        tableApi.draw();
+                        var currentSearch = tableApi.search();
+                        if (globalSearch !== currentSearch) {
+                            globalSearch = currentSearch;
+                        }
+                        tableApi.search(globalSearch).draw();
                     } else {
                         var \$rows = \$table.find('tr');
                         if (!activeSection) {
