@@ -32,7 +32,7 @@ Output::requireVendorAsset('jquery', 'js');
 Output::requireVendorAsset('datatables', 'css');
 Output::requireVendorAsset('datatables', 'js');
 
-$output->rawOutput("<style>
+Output::addHeadMarkup("<style>
 .dataTables_length select,
 .dataTables_filter input {
     color: CanvasText;
