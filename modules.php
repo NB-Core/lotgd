@@ -40,7 +40,7 @@ $output->rawOutput("<style>
     border-color: ButtonBorder;
     color-scheme: light dark;
 }
-</style>", true);
+</style>");
 
 
 Nav::add("", PhpGenericEnvironment::getRequestUri());
@@ -171,8 +171,8 @@ if ($op == "") {
         $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
         Nav::add("", "modules.php?op=mass&cat=$cat");
         $installedCaption = Translator::translateInline("Installed modules table");
-        $output->rawOutput("<div class='table-responsive'>", true);
-        $output->rawOutput("<table class='table table-striped table-hover js-modules-table'>", true);
+        $output->rawOutput("<div class='table-responsive'>");
+        $output->rawOutput("<table class='table table-striped table-hover js-modules-table'>");
         $output->rawOutput("<caption class='visually-hidden'>{$installedCaption}</caption>");
         $output->rawOutput("<thead>");
         $selectAllLabel = Translator::translateInline("Select all");
@@ -192,7 +192,7 @@ if ($op == "") {
                 $number = count($rows);
         for ($i = 0; $i < $number; $i++) {
                 $row = $rows[$i];
-            $output->rawOutput("<tr>", true);
+            $output->rawOutput("<tr>");
             $output->rawOutput("<td class='text-nowrap align-top'>");
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
             $output->rawOutput("</td><td class='text-nowrap align-top'>[ ");
@@ -280,8 +280,8 @@ if ($op == "") {
         $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
         Nav::add("", "modules.php?op=mass&cat=$cat");
         $uninstalledCaption = Translator::translateInline("Uninstalled modules table");
-        $output->rawOutput("<div class='table-responsive'>", true);
-        $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'>", true);
+        $output->rawOutput("<div class='table-responsive'>");
+        $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'>");
         $output->rawOutput("<caption class='visually-hidden'>{$uninstalledCaption}</caption>");
         $output->rawOutput("<thead>");
         $selectAllLabel = Translator::translateInline("Select all");
