@@ -111,7 +111,8 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
 
     $showFormTabIndex = Http::post('showFormTabIndex');
     if (is_array($showFormTabIndex)) {
-        $showFormTabIndex = $showFormTabIndex[10001] ?? false;
+        $firstKey = array_key_first($showFormTabIndex);
+        $showFormTabIndex = $firstKey !== null ? $showFormTabIndex[$firstKey] : false;
     }
     if ($showFormTabIndex !== false && !is_array($showFormTabIndex)) {
         Http::postSet('showFormTabIndex', $showFormTabIndex);
