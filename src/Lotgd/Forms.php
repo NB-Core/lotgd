@@ -268,7 +268,7 @@ JS;
         $valueHeader = HTMLEntities($valueHeader, ENT_QUOTES, $charset);
 
         $output->rawOutput("<table id='showFormTable$showform_id' role='tabpanel' cellpadding='2' cellspacing='0'>");
-        $output->rawOutput("<thead><tr><th class='formfield-label'>{$labelHeader}</th><th class='formfield-value'>{$valueHeader}</th></tr></thead>");
+        $output->rawOutput("<thead class='visually-hidden'><tr><th class='formfield-label'>{$labelHeader}</th><th class='formfield-value'>{$valueHeader}</th></tr></thead>");
         $output->rawOutput('<tbody>');
 
         $i = 0;
