@@ -924,6 +924,7 @@ JS;
                 var tableApi = null;
                 if (useDataTable) {
                     tableApi = \$table.DataTable({
+                        dom: 't',
                         paging: false,
                         info: false,
                         ordering: false,
