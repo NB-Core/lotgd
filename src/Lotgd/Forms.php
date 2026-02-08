@@ -239,6 +239,64 @@ JS;
     }
 
     /**
+     * Render a tabbed form described by the given layout array.
+     */
+    public static function showFormTabbed(array $layout, array $row, bool $nosave = false, string|bool $keypref = false): array
+    {
+        static $showform_id = 10000;
+        static $title_id = 10000;
+
+        $showform_id++;
+        $formSections = [];
+        $returnvalues = [];
+        $extensions = HookHandler::hook('showformextensions', []);
+        $output = Output::getInstance();
+
+        $output->rawOutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
+        $output->rawOutput("<div id='showFormSection$showform_id'></div>");
+        $output->rawOutput("</td></tr><tr><td>&nbsp;</td></tr><tr><td>");
+        $output->rawOutput("<table cellpadding='2' cellspacing='0'>");
+
+        $i = 0;
+        foreach ($layout as $key => $val) {
+            self::renderLayoutEntry(
+                (string) $key,
+                $val,
+                $row,
+                $keypref,
+                $returnvalues,
+                $extensions,
+                $title_id,
+                $i,
+                $formSections
+            );
+        }
+
+        $output->rawOutput("</table><br>");
+
+        if ($showform_id == 10001) {
+            $startIndex = (int) Http::post('showFormTabIndex');
+            if ($startIndex == 0) {
+                $startIndex = 1;
+            }
+        } else {
+            $startIndex = 1;
+        }
+
+        self::setupTabs($showform_id, $formSections, $startIndex, false);
+
+        $output->rawOutput("</td></tr></table>");
+        Translator::getInstance()->setSchema('showform');
+        $save = Translator::translateInline('Save');
+        Translator::getInstance()->setSchema();
+        if (!$nosave) {
+            $output->rawOutput("<input type='submit' class='button' value='$save'>");
+        }
+
+        return $returnvalues;
+    }
+
+    /**
      * Render a single entry of the layout array.
      */
     private static function renderLayoutEntry(
