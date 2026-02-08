@@ -13,7 +13,6 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Sanitize;
-use Lotgd\AssetManifest;
 
 // addnews ready
 // translator ready
@@ -29,11 +28,10 @@ Header::pageHeader("Module Manager");
 
 SuperuserNav::render();
 
-$jqueryPath = AssetManifest::url('jquery', 'js');
-$dataTablesCssPath = AssetManifest::url('datatables', 'css');
-$dataTablesJsPath = AssetManifest::url('datatables', 'js');
+Output::requireVendorAsset('jquery', 'js');
+Output::requireVendorAsset('datatables', 'css');
+Output::requireVendorAsset('datatables', 'js');
 
-$output->rawOutput("<link rel='stylesheet' href='{$dataTablesCssPath}'>", true);
 $output->rawOutput("<style>
 .dataTables_length select,
 .dataTables_filter input {
@@ -43,8 +41,6 @@ $output->rawOutput("<style>
     color-scheme: light dark;
 }
 </style>", true);
-$output->rawOutput("<script src='{$jqueryPath}'></script>", true);
-$output->rawOutput("<script src='{$dataTablesJsPath}'></script>", true);
 
 
 Nav::add("", PhpGenericEnvironment::getRequestUri());
