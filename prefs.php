@@ -109,6 +109,14 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     );
     $oldvalues = unserialize($oldvalues);
 
+    $showFormTabIndex = Http::post('showFormTabIndex');
+    if (is_array($showFormTabIndex)) {
+        $showFormTabIndex = $showFormTabIndex[10001] ?? false;
+    }
+    if ($showFormTabIndex !== false && !is_array($showFormTabIndex)) {
+        Http::postSet('showFormTabIndex', $showFormTabIndex);
+    }
+
     $post = Http::allPost();
     //strip unnecessary values
     unset($post['oldvalues']);

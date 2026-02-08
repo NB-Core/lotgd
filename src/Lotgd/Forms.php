@@ -949,7 +949,9 @@ JS;
                             }).show();
                         }
                     }
-                    jQuery('#showFormTabIndex').val(sectionId);
+                    if (\$tabInput.length) {
+                        \$tabInput.val(sectionId);
+                    }
                     jQuery('[data-showform-tab=\"$formId\"]').css('color', '');
                     jQuery('[data-showform-tab=\"$formId\"]').attr('aria-selected', 'false').attr('tabindex', '-1');
                     var \$activeTab = jQuery('#showFormTab' + sectionId);
@@ -958,6 +960,8 @@ JS;
                     \$table.attr('aria-labelledby', 'showFormTab' + sectionId);
                 }
                 var \$tabsContainer = jQuery('#showFormSection$formId');
+                var tabInputSelector = \"input[name='showFormTabIndex[$formId]']\";
+                var \$tabInput = jQuery();
                 \$tabsContainer.empty();
                 var \$tabList = jQuery('<div/>', {
                     role: 'tablist',
@@ -994,7 +998,8 @@ JS;
                 }
                 \$tabsContainer.append(\$tabList);
                 \$tabsContainer.append(\"<div style='display: block;'>&nbsp;</div>\");
-                \$tabsContainer.append(\"<input type='hidden' name='showFormTabIndex' value='$startIndex' id='showFormTabIndex'>\");
+                \$tabsContainer.append(\"<input type='hidden' name='showFormTabIndex[$formId]' value='$startIndex' id='showFormTabIndex-$formId'>\");
+                \$tabInput = \$tabsContainer.find(tabInputSelector);
                 var initialSection = '';
                 if ($startIndex && formSections[$formId][$startIndex]) {
                     initialSection = formSections[$formId][$startIndex];
