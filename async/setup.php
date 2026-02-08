@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
+use Lotgd\Output;
 
 /**
  * Base setup for AJAX requests, including the Jaxon library and
@@ -193,6 +194,6 @@ $polling_script .= "<div id='notify'></div>";
 $pre_headscript .= $polling_script;
 
 // Load jQuery but skip the old ajax_polling.js
-$pre_headscript .= "<script src='" . \Lotgd\AssetManifest::url('jquery', 'js') . "'></script>";
+Output::requireVendorAsset('jquery', 'js');
 
 addnav("", "async/process.php");
