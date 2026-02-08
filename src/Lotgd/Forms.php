@@ -927,7 +927,22 @@ JS;
                         paging: false,
                         info: false,
                         ordering: false,
-                        searching: true
+                        searching: true,
+                        drawCallback: function () {
+                            var api = this.api();
+                            var \$rows = jQuery(api.rows({ filter: 'applied' }).nodes());
+                            var visibleIndex = 0;
+                            \$rows.removeClass('trlight trdark');
+                            \$rows.each(function () {
+                                var \$row = jQuery(this);
+                                if (\$row.hasClass('trhead')) {
+                                    return;
+                                }
+                                var stripeClass = (visibleIndex % 2 === 0) ? 'trlight' : 'trdark';
+                                \$row.addClass(stripeClass);
+                                visibleIndex++;
+                            });
+                        }
                     });
                     var globalSearch = '';
                     \$table.on('search.dt', function () {
