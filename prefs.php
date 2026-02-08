@@ -342,7 +342,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
 	function md5pass(){
 		//encode passwords before submission to protect them even from network sniffing attacks.
 		var passbox = document.getElementById('pass1');
-		if (passbox.value.len < 4 && passbox.value.len > 0){
+		if (passbox.value.length < 4 && passbox.value.length > 0){
 			alert('$warn');
 			return false;
 		}else{
