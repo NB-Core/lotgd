@@ -198,6 +198,7 @@ JS;
         $output->rawOutput("<table cellpadding='2' cellspacing='0'>");
 
         $i = 0;
+        $currentSection = '';
         foreach ($layout as $key => $val) {
             self::renderLayoutEntry(
                 (string) $key,
@@ -208,7 +209,9 @@ JS;
                 $extensions,
                 $title_id,
                 $i,
-                $formSections
+                $formSections,
+                $currentSection,
+                false
             );
         }
 
@@ -255,9 +258,10 @@ JS;
         $output->rawOutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
         $output->rawOutput("<div id='showFormSection$showform_id'></div>");
         $output->rawOutput("</td></tr><tr><td>&nbsp;</td></tr><tr><td>");
-        $output->rawOutput("<table cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<table id='showFormTable$showform_id' cellpadding='2' cellspacing='0'>");
 
         $i = 0;
+        $currentSection = '';
         foreach ($layout as $key => $val) {
             self::renderLayoutEntry(
                 (string) $key,
@@ -268,7 +272,9 @@ JS;
                 $extensions,
                 $title_id,
                 $i,
-                $formSections
+                $formSections,
+                $currentSection,
+                true
             );
         }
 
@@ -276,14 +282,17 @@ JS;
 
         if ($showform_id == 10001) {
             $startIndex = (int) Http::post('showFormTabIndex');
-            if ($startIndex == 0) {
-                $startIndex = 1;
+            if ($startIndex < 0) {
+                $startIndex = 0;
             }
         } else {
-            $startIndex = 1;
+            $startIndex = 0;
         }
 
-        self::setupTabs($showform_id, $formSections, $startIndex, false);
+        Translator::getInstance()->setSchema('showform');
+        $allLabel = Translator::translateInline('All');
+        Translator::getInstance()->setSchema();
+        self::setupTabbedDataTable($showform_id, $formSections, $startIndex, $allLabel);
 
         $output->rawOutput("</td></tr></table>");
         Translator::getInstance()->setSchema('showform');
@@ -308,7 +317,9 @@ JS;
         array $extensions,
         int &$titleId,
         int &$rowIndex,
-        array &$formSections
+        array &$formSections,
+        string &$currentSection,
+        bool $singleTable
     ): void {
         $keyout = $keypref !== false ? sprintf($keypref, $key) : $key;
 
@@ -330,13 +341,19 @@ JS;
         $info[1] = isset($info[1]) ? trim((string) $info[1]) : '';
 
         $output = Output::getInstance();
+        $settings = Settings::getInstance();
+        $charset  = $settings->getSetting('charset', 'UTF-8');
 
         if ($info[1] == 'title') {
             $titleId++;
-            $output->rawOutput('</table>');
             $formSections[$titleId] = $info[0];
-            $output->rawOutput("<table id='showFormTable$titleId' cellpadding='2' cellspacing='0'>");
-            $output->rawOutput("<tr><td colspan='2' class='trhead'>");
+            $currentSection = $info[0];
+            $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
+            if (!$singleTable) {
+                $output->rawOutput('</table>');
+                $output->rawOutput("<table id='showFormTable$titleId' cellpadding='2' cellspacing='0'$sectionAttribute>");
+            }
+            $output->rawOutput("<tr$sectionAttribute><td colspan='2' class='trhead'>");
             $output->outputNotl("`b%s`b", $info[0], true);
             $output->rawOutput('</td></tr>');
             $rowIndex = 0;
@@ -344,7 +361,11 @@ JS;
         }
 
         if ($info[1] == 'note') {
-            $output->rawOutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td colspan='2'>");
+            $sectionAttribute = '';
+            if ($currentSection !== '') {
+                $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
+            }
+            $output->rawOutput("<tr$sectionAttribute class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td colspan='2'>");
             $output->outputNotl("`i%s`i", $info[0], true);
             $rowIndex++;
             $output->rawOutput('</td></tr>');
@@ -356,12 +377,14 @@ JS;
         }
 
         $fieldId = 'form-' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $keyout);
-        $settings = Settings::getInstance();
-        $charset  = $settings->getSetting('charset', 'UTF-8');
 
         $entityFieldId = HTMLEntities($fieldId, ENT_QUOTES, $charset);
 
-        $output->rawOutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
+        $sectionAttribute = '';
+        if ($currentSection !== '') {
+            $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
+        }
+        $output->rawOutput("<tr$sectionAttribute class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
         $output->rawOutput("<label for='$entityFieldId'>");
         $output->outputNotl('%s', $info[0], true);
         $output->rawOutput("</label></td><td class='formfield-value' valign='top'>");
@@ -780,5 +803,112 @@ JS;
         $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
         $output->rawOutput("prepare_form($formId);</script>");
+    }
+
+    /**
+     * Output tab handling JavaScript for a tabbed form rendered as a single table.
+     */
+    private static function setupTabbedDataTable(
+        int $formId,
+        array $sections,
+        int $startIndex,
+        string $allLabel
+    ): void {
+        $output = Output::getInstance();
+        $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $encodedAllLabel = json_encode($allLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $output->rawOutput("<script language='JavaScript'>");
+        $output->rawOutput("window.formSections = window.formSections || [];");
+        $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
+        $output->rawOutput("
+            (function () {
+                if (typeof jQuery === 'undefined') {
+                    return;
+                }
+                var \$table = jQuery('#showFormTable$formId');
+                if (!\$table.length) {
+                    return;
+                }
+                var activeSection = '';
+                var useDataTable = typeof jQuery.fn.DataTable !== 'undefined';
+                var tableApi = null;
+                if (useDataTable) {
+                    tableApi = \$table.DataTable({
+                        paging: false,
+                        info: false,
+                        ordering: false
+                    });
+                    jQuery.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                        if (settings.nTable !== \$table[0]) {
+                            return true;
+                        }
+                        if (!activeSection) {
+                            return true;
+                        }
+                        var row = settings.aoData[dataIndex].nTr;
+                        return jQuery(row).data('section') === activeSection;
+                    });
+                }
+                function setActiveTab(sectionId, sectionName) {
+                    activeSection = sectionName || '';
+                    if (useDataTable) {
+                        tableApi.draw();
+                    } else {
+                        var \$rows = \$table.find('tr');
+                        if (!activeSection) {
+                            \$rows.show();
+                        } else {
+                            \$rows.hide();
+                            \$rows.filter(function () {
+                                return jQuery(this).data('section') === activeSection;
+                            }).show();
+                        }
+                    }
+                    jQuery('#showFormTabIndex').val(sectionId);
+                    jQuery('[data-showform-tab=\"$formId\"]').css('color', '').css('font-weight', 'normal');
+                    jQuery('#showFormButton' + sectionId).css('color', 'yellow');
+                }
+                var \$tabsContainer = jQuery('#showFormSection$formId');
+                \$tabsContainer.empty();
+                function appendTab(sectionId, label, sectionName) {
+                    var \$tab = jQuery('<div/>', {
+                        id: 'showFormButton' + sectionId,
+                        'class': 'trhead',
+                        'data-showform-tab': '$formId',
+                        'data-section-id': sectionId
+                    })
+                        .css({
+                            float: 'left',
+                            cursor: 'pointer',
+                            padding: '5px',
+                            border: '1px solid #000000'
+                        })
+                        .text(label)
+                        .attr('data-section', sectionName || '');
+                    \$tabsContainer.append(\$tab);
+                }
+                var allLabel = $encodedAllLabel;
+                appendTab(0, allLabel, '');
+                for (var key in formSections[$formId]) {
+                    if (!Object.prototype.hasOwnProperty.call(formSections[$formId], key)) {
+                        continue;
+                    }
+                    appendTab(key, formSections[$formId][key], formSections[$formId][key]);
+                }
+                \$tabsContainer.append(\"<div style='display: block;'>&nbsp;</div>\");
+                \$tabsContainer.append(\"<input type='hidden' name='showFormTabIndex' value='$startIndex' id='showFormTabIndex'>\");
+                var initialSection = '';
+                if ($startIndex && formSections[$formId][$startIndex]) {
+                    initialSection = formSections[$formId][$startIndex];
+                }
+                setActiveTab($startIndex, initialSection);
+                \$tabsContainer.on('click', '[data-showform-tab=\"$formId\"]', function () {
+                    var sectionId = jQuery(this).data('section-id');
+                    var sectionName = jQuery(this).data('section') || '';
+                    setActiveTab(sectionId, sectionName);
+                });
+            })();
+        ");
+        $output->rawOutput("</script>");
     }
 }
