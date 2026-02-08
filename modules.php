@@ -361,7 +361,6 @@ if ($op == "") {
                 $output->rawOutput("</tr>");
                 if (isset($moduleinfo[$i]['requires']) && is_array($moduleinfo[$i]['requires']) && count($moduleinfo[$i]['requires']) > 0) {
                     $output->rawOutput("<tr class='table-light'>");
-                    $output->rawOutput("<td>&nbsp;</td>");
                     $output->rawOutput("<td colspan='6'>");
                     $output->output("`bRequires:`b`n");
                     foreach ($moduleinfo[$i]['requires'] as $key => $val) {
