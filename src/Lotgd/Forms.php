@@ -891,9 +891,11 @@ JS;
     ): void {
         $output = Output::getInstance();
         $tabListLabel = Translator::translateInline('Form sections');
+        $searchLabel = Translator::translateInline('Search');
         $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         $encodedAllLabel = json_encode($allLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         $encodedTabListLabel = json_encode($tabListLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $encodedSearchLabel = json_encode($searchLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         $output->rawOutput("<script language='JavaScript'>");
         $output->rawOutput("window.formSections = window.formSections || [];");
         $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
@@ -964,6 +966,29 @@ JS;
                 var tabInputSelector = \"input[name='showFormTabIndex[$formId]']\";
                 var \$tabInput = jQuery();
                 \$tabsContainer.empty();
+                var \$searchWrapper = jQuery('<div/>', {
+                    id: 'showFormTable$formId' + '_search',
+                    'class': 'datatable-search'
+                }).css({
+                    display: 'block',
+                    margin: '0 0 6px 0'
+                });
+                var \$searchInput = jQuery('<input/>', {
+                    type: 'search',
+                    id: 'showFormTable$formId' + '_search_input',
+                    placeholder: $encodedSearchLabel,
+                    'aria-label': $encodedSearchLabel
+                }).css({
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: '320px'
+                });
+                if (useDataTable) {
+                    \$searchInput.on('keyup', function () {
+                        tableApi.search(this.value).draw();
+                    });
+                    \$searchWrapper.append(\$searchInput);
+                }
                 var \$tabList = jQuery('<div/>', {
                     role: 'group',
                     'aria-label': $encodedTabListLabel,
@@ -996,6 +1021,9 @@ JS;
                         continue;
                     }
                     appendTab(key, formSections[$formId][key], formSections[$formId][key]);
+                }
+                if (\$searchWrapper.children().length) {
+                    \$tabsContainer.append(\$searchWrapper);
                 }
                 \$tabsContainer.append(\$tabList);
                 \$tabsContainer.append(\"<div style='display: block;'>&nbsp;</div>\");
