@@ -124,6 +124,22 @@ class Bootstrap
         return $entityManager;
     }
 
+    /**
+     * Clear Doctrine metadata cache (exposed for tests).
+     */
+    public static function clearDoctrineMetadataCacheForTests(string $cacheDir): void
+    {
+        self::clearDoctrineMetadataCache($cacheDir);
+    }
+
+    /**
+     * Clear directory contents using the fallback logic (exposed for tests).
+     */
+    public static function clearDirectoryContentsFallbackForTests(string $cacheDir): void
+    {
+        self::clearDirectoryContentsFallback($cacheDir);
+    }
+
     private static function clearDoctrineMetadataCache(string $cacheDir): void
     {
         if (! is_dir($cacheDir)) {

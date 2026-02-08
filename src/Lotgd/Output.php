@@ -105,6 +105,14 @@ class Output
     }
 
     /**
+     * Override the global Output instance (primarily for tests).
+     */
+    public static function setInstance(?self $instance): void
+    {
+        self::$instance = $instance;
+    }
+
+    /**
      * Queue a vendor asset for inclusion in the page header.
      */
     public static function requireVendorAsset(string $library, string $type): void
@@ -244,6 +252,26 @@ class Output
             $args[0] = Translator::translate($args[0]);
         }
         call_user_func_array([$this, 'outputNotl'], $args);
+    }
+
+    /**
+     * Reset buffered output and related state for clean test runs.
+     */
+    public function resetOutput(): void
+    {
+        $this->output = '';
+        $this->block_new_output = false;
+        $this->nestedtags = [
+            'font' => false,
+            'div'  => false,
+            'span' => false,
+            'i'    => false,
+            'b'    => false,
+            '<'    => false,
+            '>'    => false,
+            'B'    => false,
+        ];
+        $this->nestedtags_eval = [];
     }
 
     /**

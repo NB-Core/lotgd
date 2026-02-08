@@ -48,10 +48,7 @@ final class SystemMailTest extends TestCase
         $this->connection = new DoctrineConnection();
         Database::setDoctrineConnection($this->connection);
 
-        $ref = new \ReflectionClass(Mail::class);
-        $prop = $ref->getProperty('settings');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
+        Mail::resetSettings();
 
         unset($GLOBALS['mail_force_error'], $GLOBALS['mail_force_error_message']);
     }

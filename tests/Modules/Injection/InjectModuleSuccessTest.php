@@ -65,10 +65,7 @@ PHP;
             'version' => '1.0',
         ]];
 
-        $ref  = new \ReflectionClass(Modules::class);
-        $prop = $ref->getProperty('injectedModules');
-        $prop->setAccessible(true);
-        $prop->setValue(null, [1 => [], 0 => []]);
+        Modules::resetInjectedModules();
 
         $GLOBALS['testInjectedModules'] = [];
     }
@@ -94,10 +91,7 @@ PHP;
 
         $this->assertTrue($result);
 
-        $ref  = new \ReflectionClass(Modules::class);
-        $prop = $ref->getProperty('injectedModules');
-        $prop->setAccessible(true);
-        $injected = $prop->getValue();
+        $injected = Modules::getInjectedModules();
 
         $this->assertArrayHasKey('tempModule', $injected[0]);
         $this->assertTrue($injected[0]['tempModule']);
@@ -113,10 +107,7 @@ PHP;
 
         chdir($this->origCwd);
 
-        $ref  = new \ReflectionClass(Modules::class);
-        $prop = $ref->getProperty('injectedModules');
-        $prop->setAccessible(true);
-        $injected = $prop->getValue();
+        $injected = Modules::getInjectedModules();
 
         $this->assertArrayHasKey('tempModule', $injected[1]);
         $this->assertTrue($injected[1]['tempModule']);

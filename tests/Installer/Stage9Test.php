@@ -35,14 +35,19 @@ namespace Doctrine\Migrations {
                 $instance->configurationData = $config;
                 $instance->metadataTable    = $config['table_storage']['table_name'] ?? null;
             } elseif (is_object($config)) {
-                $ref = new \ReflectionClass($config);
-                if ($ref->hasProperty('configurations')) {
-                    $prop = $ref->getProperty('configurations');
-                    $prop->setAccessible(true);
-                    $data = $prop->getValue($config);
-                    if (is_array($data)) {
-                        $instance->configurationData = $data;
-                        $instance->metadataTable    = $data['table_storage']['table_name'] ?? null;
+                if (method_exists($config, 'getConfiguration')) {
+                    $configuration = $config->getConfiguration();
+                    if (is_object($configuration) && method_exists($configuration, 'getMetadataStorageConfiguration')) {
+                        $storage = $configuration->getMetadataStorageConfiguration();
+                        if (is_object($storage) && method_exists($storage, 'getTableName')) {
+                            $tableName = $storage->getTableName();
+                            $instance->configurationData = [
+                                'table_storage' => [
+                                    'table_name' => $tableName,
+                                ],
+                            ];
+                            $instance->metadataTable = $tableName;
+                        }
                     }
                 }
             }
@@ -168,10 +173,7 @@ namespace Lotgd\Tests\Installer {
             $settings           = new DummySettings();
             Settings::setInstance($settings);
             $GLOBALS['settings'] = $settings;
-            $ref = new \ReflectionClass(Output::class);
-            $prop = $ref->getProperty('instance');
-            $prop->setAccessible(true);
-            $prop->setValue(null, new Output());
+            Output::setInstance(new Output());
 
             file_put_contents(
                 __DIR__ . '/../../dbconnect.php',
@@ -193,12 +195,7 @@ namespace Lotgd\Tests\Installer {
 
             unset($_ENV['LOTGD_BASE_VERSION']);
 
-            $ref = new \ReflectionClass(Database::class);
-            if ($ref->hasProperty('doctrine')) {
-                $prop = $ref->getProperty('doctrine');
-                $prop->setAccessible(true);
-                $prop->setValue(null, null);
-            }
+            Database::resetDoctrineConnection();
 
             Settings::setInstance(null);
             unset($GLOBALS['settings']);

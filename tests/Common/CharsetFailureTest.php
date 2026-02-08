@@ -17,16 +17,14 @@ final class CharsetFailureTest extends TestCase
             "<?php return ['DB_HOST'=>'','DB_USER'=>'','DB_PASS'=>'','DB_NAME'=>'','DB_PREFIX'=>''];"
         );
 
-        $script = <<<'PHP'
+$script = <<<'PHP'
 <?php
 require __DIR__ . '/tests/Stubs/DbMysqli.php';
 require __DIR__ . '/autoload.php';
 class FailDb extends Lotgd\MySQL\DbMysqli {
     public function setCharset(string $charset): bool { return false; }
 }
-$ref = new ReflectionProperty(Lotgd\MySQL\Database::class, 'instance');
-$ref->setAccessible(true);
-$ref->setValue(null, new FailDb());
+Lotgd\MySQL\Database::setInstance(new FailDb());
 include __DIR__ . '/common.php';
 echo "AFTER\n";
 PHP;

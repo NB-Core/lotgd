@@ -25,12 +25,7 @@ final class ErrorHandlerThrottleTest extends TestCase
         $this->cacheDir = sys_get_temp_dir() . '/lotgd_cache_' . uniqid();
         mkdir($this->cacheDir, 0700, true);
 
-        $ref = new \ReflectionClass(DataCache::class);
-        foreach (['cache' => [], 'path' => '', 'checkedOld' => false] as $prop => $val) {
-            $p = $ref->getProperty($prop);
-            $p->setAccessible(true);
-            $p->setValue(null, $val);
-        }
+        DataCache::resetState();
 
         $settings = new DummySettings([
             'notify_on_error' => 1,

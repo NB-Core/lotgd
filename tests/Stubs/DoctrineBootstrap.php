@@ -450,13 +450,10 @@ class DoctrineEntityManager
     {
         // Simulate persisting the entity's state to a mock storage
         if ($this->entity) {
-            $ref  = new \ReflectionClass($this->entity);
-            $data = [];
-            foreach ($ref->getProperties() as $prop) {
-                if (!$prop->isPublic()) {
-                    $prop->setAccessible(true);
-                }
-                $data[$prop->getName()] = $prop->getValue($this->entity);
+            if (method_exists($this->entity, 'toArray')) {
+                $data = $this->entity->toArray();
+            } else {
+                $data = get_object_vars($this->entity);
             }
             $this->connection->queries[] = sprintf(
                 'PERSIST ENTITY: %s',

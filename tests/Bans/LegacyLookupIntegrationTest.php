@@ -28,7 +28,6 @@ namespace Lotgd\Tests\Bans {
     use Lotgd\Tests\Stubs\DummySettings;
     use Lotgd\Translator;
     use PHPUnit\Framework\TestCase;
-    use ReflectionClass;
 
     final class LegacyLookupIntegrationTest extends TestCase
     {
@@ -80,10 +79,7 @@ namespace Lotgd\Tests\Bans {
 
         private function resetOutputSingleton(): void
         {
-            $reflection = new ReflectionClass(Output::class);
-            $instanceProp = $reflection->getProperty('instance');
-            $instanceProp->setAccessible(true);
-            $instanceProp->setValue(null, null);
+            Output::setInstance(null);
         }
 
         public function testBanSearchRendersOptionsWithoutTypeErrors(): void

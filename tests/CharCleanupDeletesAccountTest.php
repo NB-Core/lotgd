@@ -38,10 +38,7 @@ final class CharCleanupDeletesAccountTest extends TestCase
         ];
         Database::$affected_rows = 1;
 
-        $ref = new \ReflectionClass(\Lotgd\ExpireChars::class);
-        $method = $ref->getMethod('cleanupExpiredAccounts');
-        $method->setAccessible(true);
-        $method->invoke(null);
+        \Lotgd\ExpireChars::cleanupExpiredAccountsForTests();
 
         $this->assertStringContainsString('START TRANSACTION', Database::$queries[1] ?? '');
         $this->assertStringContainsString('DELETE FROM accounts WHERE acctid=1', Database::$queries[2] ?? '');

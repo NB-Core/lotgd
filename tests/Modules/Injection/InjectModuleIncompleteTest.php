@@ -48,10 +48,7 @@ PHP;
             'version' => '1.0',
         ]];
 
-        $ref  = new \ReflectionClass(Modules::class);
-        $prop = $ref->getProperty('injectedModules');
-        $prop->setAccessible(true);
-        $prop->setValue(null, [1 => [], 0 => []]);
+        Modules::resetInjectedModules();
     }
 
     protected function tearDown(): void
@@ -75,10 +72,7 @@ PHP;
 
         $this->assertFalse($result);
 
-        $ref  = new \ReflectionClass(Modules::class);
-        $prop = $ref->getProperty('injectedModules');
-        $prop->setAccessible(true);
-        $injected = $prop->getValue();
+        $injected = Modules::getInjectedModules();
 
         $this->assertArrayHasKey('badModule', $injected[0]);
         $this->assertFalse($injected[0]['badModule']);

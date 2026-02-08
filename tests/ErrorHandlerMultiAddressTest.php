@@ -34,10 +34,7 @@ final class ErrorHandlerMultiAddressTest extends TestCase
             }
         };
 
-        $outputObj = Output::getInstance();
-        $ref = new \ReflectionProperty(Output::class, 'output');
-        $ref->setAccessible(true);
-        $ref->setValue($outputObj, '');
+        Output::getInstance()->resetOutput();
     }
 
     public function testErrorNotificationIsSentToAllAddresses(): void

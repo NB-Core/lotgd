@@ -47,10 +47,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         ];
         Database::$affected_rows = 0;
 
-        $ref = new \ReflectionClass(ExpireChars::class);
-        $method = $ref->getMethod('cleanupExpiredAccounts');
-        $method->setAccessible(true);
-        $method->invoke(null);
+        ExpireChars::cleanupExpiredAccountsForTests();
 
         $this->assertSame([
             ['char deletion failure', 'Failed to delete account 1: deletion failed', 'error'],
@@ -69,10 +66,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         ];
         Database::$affected_rows = 1;
 
-        $ref = new \ReflectionClass(ExpireChars::class);
-        $method = $ref->getMethod('cleanupExpiredAccounts');
-        $method->setAccessible(true);
-        $method->invoke(null);
+        ExpireChars::cleanupExpiredAccountsForTests();
 
         $this->assertSame('char expiration', \Lotgd\GameLog::$entries[0][0] ?? null);
         $this->assertSame('Deleted account 1 (test)', \Lotgd\GameLog::$entries[0][1] ?? null);

@@ -23,7 +23,6 @@ namespace Lotgd\Tests\Modules\Hooks {
     use PHPUnit\Framework\TestCase;
     use Lotgd\Util\ScriptName;
     use Lotgd\Modules\ModuleManager;
-    use ReflectionClass;
 
     function modulehook_validation(string $hookName, $args = [], bool $allowInactive = false, $only = false)
     {
@@ -54,10 +53,7 @@ namespace Lotgd\Tests\Modules\Hooks {
 
             Database::$queryCacheResults['hook-sample'] = [];
 
-            $ref  = new ReflectionClass(Modules::class);
-            $prop = $ref->getProperty('injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => [], 0 => []]);
+            Modules::setInjectedModules([1 => [], 0 => []]);
 
             $result = modulehook_validation('sample', 'string');
 
@@ -73,10 +69,7 @@ namespace Lotgd\Tests\Modules\Hooks {
             ['modulename' => 'foo', 'location' => 'sample', 'hook_callback' => 'bad_return', 'whenactive' => ''],
             ];
 
-            $ref  = new ReflectionClass(Modules::class);
-            $prop = $ref->getProperty('injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => ['foo' => true], 0 => ['foo' => true]]);
+            Modules::setInjectedModules([1 => ['foo' => true], 0 => ['foo' => true]]);
 
             $args = ['foo' => 'bar'];
 
@@ -102,10 +95,7 @@ namespace Lotgd\Tests\Modules\Hooks {
             ['modulename' => 'foo', 'location' => 'sample', 'hook_callback' => 'missing_callback', 'whenactive' => ''],
             ];
 
-            $ref  = new ReflectionClass(Modules::class);
-            $prop = $ref->getProperty('injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => ['foo' => true], 0 => ['foo' => true]]);
+            Modules::setInjectedModules([1 => ['foo' => true], 0 => ['foo' => true]]);
 
             $args = ['foo' => 'bar'];
 

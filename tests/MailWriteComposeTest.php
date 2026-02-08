@@ -31,7 +31,6 @@ namespace Lotgd\Tests {
     use Lotgd\Tests\Stubs\Database;
     use Lotgd\Tests\Stubs\DummySettings;
     use PHPUnit\Framework\TestCase;
-    use ReflectionClass;
 
     final class MailWriteComposeTest extends TestCase
     {
@@ -66,10 +65,7 @@ namespace Lotgd\Tests {
 
         private function resetOutputSingleton(): void
         {
-            $reflection = new ReflectionClass(Output::class);
-            $instanceProp = $reflection->getProperty('instance');
-            $instanceProp->setAccessible(true);
-            $instanceProp->setValue(null, null);
+            Output::setInstance(null);
         }
 
         protected function tearDown(): void

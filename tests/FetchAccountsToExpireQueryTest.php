@@ -52,10 +52,7 @@ final class FetchAccountsToExpireQueryTest extends TestCase
                 . ' WHERE (superuser&' . NO_ACCOUNT_EXPIRATION . ')=0 AND (' . implode(' OR ', $conditions) . ')';
         }
 
-        $ref = new \ReflectionClass(ExpireChars::class);
-        $method = $ref->getMethod('fetchAccountsToExpire');
-        $method->setAccessible(true);
-        $method->invoke(null, $old, $new, $trash, $now);
+        ExpireChars::fetchAccountsToExpireForTests($old, $new, $trash, $now);
 
         if ($expected === null) {
             $this->assertSame([], Database::$queries);

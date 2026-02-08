@@ -16,10 +16,7 @@ final class AMotdTest extends TestCase
         global $forms_output, $session;
         $forms_output = '';
         $session = ['user' => ['acctid' => 1, 'loggedin' => true, 'superuser' => 0]];
-        $ref = new \ReflectionClass(Output::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
+        Output::setInstance(null);
         \Lotgd\MySQL\Database::$settings_table = [];
         \Lotgd\MySQL\Database::$onlineCounter = 0;
         \Lotgd\MySQL\Database::$affected_rows = 0;

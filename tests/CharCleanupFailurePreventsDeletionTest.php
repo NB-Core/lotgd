@@ -37,10 +37,7 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
             [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
         ];
 
-        $ref = new \ReflectionClass(\Lotgd\ExpireChars::class);
-        $method = $ref->getMethod('cleanupExpiredAccounts');
-        $method->setAccessible(true);
-        $method->invoke(null);
+        \Lotgd\ExpireChars::cleanupExpiredAccountsForTests();
 
         foreach (Database::$queries as $query) {
             $this->assertStringNotContainsString('DELETE FROM accounts', $query);
