@@ -34,6 +34,42 @@ class Modules
     private static bool $blockAllModules = false;
 
     /**
+     * Reset injected module tracking (primarily for tests).
+     */
+    public static function resetInjectedModules(): void
+    {
+        self::$injectedModules = [1 => [], 0 => []];
+    }
+
+    /**
+     * Replace injected module tracking (primarily for tests).
+     *
+     * @param array<int,array<string,bool>> $modules
+     */
+    public static function setInjectedModules(array $modules): void
+    {
+        self::$injectedModules = $modules;
+    }
+
+    /**
+     * Retrieve injected module tracking (primarily for tests).
+     *
+     * @return array<int,array<string,bool>>
+     */
+    public static function getInjectedModules(): array
+    {
+        return self::$injectedModules;
+    }
+
+    /**
+     * Reset module hook query cache (primarily for tests).
+     */
+    public static function clearModulehookQueries(): void
+    {
+        self::$modulehookQueries = [];
+    }
+
+    /**
      * Inject a module into runtime if available.
      */
     public static function inject(string $moduleName, bool $force = false, bool $withDb = true): bool

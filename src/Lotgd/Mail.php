@@ -32,6 +32,14 @@ class Mail
     }
 
     /**
+     * Reset cached settings (primarily for tests).
+     */
+    public static function resetSettings(): void
+    {
+        self::$settings = null;
+    }
+
+    /**
      * Send a system generated mail to a user.
      *
      * @return bool|array{success:bool,error:string}

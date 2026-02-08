@@ -126,10 +126,7 @@ final class Stage4Test extends TestCase
         ];
 
         $output = Output::getInstance();
-        $outputRef = new \ReflectionClass(Output::class);
-        $outputProp = $outputRef->getProperty('instance');
-        $outputProp->setAccessible(true);
-        $outputProp->setValue(null, $output);
+        Output::setInstance($output);
 
         $errorMessage = 'Access denied';
         $failingDb = new class($errorMessage) extends DbMysqli {
@@ -149,10 +146,7 @@ final class Stage4Test extends TestCase
             }
         };
 
-        $dbRef = new \ReflectionClass(Database::class);
-        $instanceProp = $dbRef->getProperty('instance');
-        $instanceProp->setAccessible(true);
-        $instanceProp->setValue(null, $failingDb);
+        Database::setInstance($failingDb);
 
         require_once dirname(__DIR__, 2) . '/install/lib/Installer.php';
 

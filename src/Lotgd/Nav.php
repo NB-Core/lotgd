@@ -53,6 +53,16 @@ class Nav
         return self::$instance;
     }
 
+    /**
+     * Return navigation sections (primarily for tests).
+     *
+     * @return array<string, NavigationSection>
+     */
+    public static function getSections(): array
+    {
+        return self::$sections;
+    }
+
     public function getNav(): string
     {
         return $this->nav;

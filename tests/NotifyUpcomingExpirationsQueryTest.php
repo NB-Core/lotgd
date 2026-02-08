@@ -40,10 +40,7 @@ final class NotifyUpcomingExpirationsQueryTest extends TestCase
             'serverurl' => 'http://example.com',
         ]));
 
-        $ref = new \ReflectionClass(ExpireChars::class);
-        $prop = $ref->getProperty('settingsExtended');
-        $prop->setAccessible(true);
-        $prop->setValue(null, new DummySettings([
+        ExpireChars::setSettingsExtendedForTests(new DummySettings([
             'expirationnoticesubject' => 'Subject',
             'expirationnoticetext' => 'Body',
         ]));
@@ -61,9 +58,7 @@ final class NotifyUpcomingExpirationsQueryTest extends TestCase
             true,
         ];
 
-        $method = new \ReflectionMethod(ExpireChars::class, 'notifyUpcomingExpirations');
-        $method->setAccessible(true);
-        $method->invoke(null);
+        ExpireChars::notifyUpcomingExpirationsForTests();
 
         $expectedDate = date('Y-m-d H:i:s', strtotime('-40 days'));
         $expected = 'SELECT login,acctid,emailaddress FROM accounts'

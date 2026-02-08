@@ -44,10 +44,7 @@ final class LogExpiredAccountStatsUsesDeletedAccountsTest extends TestCase
             ['acctid' => 2, 'login' => 'bar', 'dragonkills' => 1, 'level' => 2],
         ]];
 
-        $ref = new \ReflectionClass(ExpireChars::class);
-        $method = $ref->getMethod('cleanupExpiredAccounts');
-        $method->setAccessible(true);
-        $method->invoke(null);
+        ExpireChars::cleanupExpiredAccountsForTests();
 
         $summary = array_values(array_filter(\Lotgd\GameLog::$entries, fn($entry) => str_contains($entry[1], 'accounts:')));
 

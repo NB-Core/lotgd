@@ -28,6 +28,25 @@ class DataCache
     }
 
     /**
+     * Reset cached state for tests.
+     */
+    public static function resetState(): void
+    {
+        self::$instance = null;
+        self::$cache = [];
+        self::$path = '';
+        self::$checkedOld = false;
+    }
+
+    /**
+     * Seed an in-memory cache entry for tests.
+     */
+    public static function setCacheEntry(string $name, mixed $value): void
+    {
+        self::$cache[$name] = $value;
+    }
+
+    /**
      * Retrieve an entry from the filesystem cache.
      *
      * @param string $name     Cache key

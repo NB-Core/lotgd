@@ -410,12 +410,7 @@ namespace Lotgd\Tests {
 
         private function resetDataCache(): void
         {
-            $reflection = new \ReflectionClass(\Lotgd\DataCache::class);
-            foreach (['instance' => null, 'cache' => [], 'path' => '', 'checkedOld' => false] as $property => $value) {
-                $prop = $reflection->getProperty($property);
-                $prop->setAccessible(true);
-                $prop->setValue(null, $value);
-            }
+            \Lotgd\DataCache::resetState();
         }
     }
 

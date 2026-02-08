@@ -108,18 +108,7 @@ namespace Lotgd\Tests\Modules\Prefs {
 
         private function resetDataCacheState(): void
         {
-            $reflection = new \ReflectionClass(DataCache::class);
-
-            foreach ([
-                'instance' => null,
-                'cache' => [],
-                'path' => '',
-                'checkedOld' => false,
-            ] as $property => $value) {
-                $propertyRef = $reflection->getProperty($property);
-                $propertyRef->setAccessible(true);
-                $propertyRef->setValue(null, $value);
-            }
+            DataCache::resetState();
         }
 
         private function removeTempDir(): void

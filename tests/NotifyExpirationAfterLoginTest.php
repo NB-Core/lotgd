@@ -41,10 +41,7 @@ final class NotifyExpirationAfterLoginTest extends TestCase
             'serverurl' => 'http://example.com',
         ]));
 
-        $ref = new \ReflectionClass(ExpireChars::class);
-        $prop = $ref->getProperty('settingsExtended');
-        $prop->setAccessible(true);
-        $prop->setValue(null, new DummySettings([
+        ExpireChars::setSettingsExtendedForTests(new DummySettings([
             'expirationnoticesubject' => 'Subject',
             'expirationnoticetext' => 'Body',
         ]));
@@ -88,10 +85,7 @@ final class NotifyExpirationAfterLoginTest extends TestCase
             true,
         ];
 
-        $ref = new \ReflectionClass(ExpireChars::class);
-        $method = $ref->getMethod('notifyUpcomingExpirations');
-        $method->setAccessible(true);
-        $method->invoke(null);
+        ExpireChars::notifyUpcomingExpirationsForTests();
 
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
         $this->assertStringContainsString('sentnotice=1', end(Database::$queries));

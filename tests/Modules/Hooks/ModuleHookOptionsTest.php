@@ -27,7 +27,6 @@ namespace Lotgd\Tests\Modules\Hooks {
     use Lotgd\Modules\HookHandler;
     use Lotgd\MySQL\Database;
     use PHPUnit\Framework\TestCase;
-    use ReflectionClass;
 
     function modulehook_options(string $hookName, array $args = [], bool $allowInactive = false, $only = false): array
     {
@@ -53,10 +52,7 @@ namespace Lotgd\Tests\Modules\Hooks {
             ];
             $this->hooksActive = [$this->hooksAll[0]];
 
-            $ref  = new ReflectionClass(Modules::class);
-            $prop = $ref->getProperty('injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => ['a' => true, 'b' => true], 0 => ['a' => true]]);
+            Modules::setInjectedModules([1 => ['a' => true, 'b' => true], 0 => ['a' => true]]);
         }
 
         public function testOnlySpecificModuleIsMerged(): void

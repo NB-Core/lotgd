@@ -22,10 +22,7 @@ final class RollbackTest extends TestCase
         \Lotgd\MySQL\Database::$doctrineConnection = null;
         \Lotgd\MySQL\Database::$instance = null;
         $this->output = new Output();
-        $ref = new \ReflectionClass(Output::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, $this->output);
+        Output::setInstance($this->output);
         $GLOBALS['session'] = [];
         $GLOBALS['logd_version'] = 'test';
         $GLOBALS['recommended_modules'] = [];
@@ -71,10 +68,7 @@ final class RollbackTest extends TestCase
         $this->assertStringContainsString('Migration error', $first);
 
         $this->output = new Output();
-        $ref = new \ReflectionClass(Output::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, $this->output);
+        Output::setInstance($this->output);
         $class = get_class($installer1);
         $installer2 = new $class();
         $installer2->stage9();

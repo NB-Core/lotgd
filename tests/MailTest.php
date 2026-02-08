@@ -44,11 +44,7 @@ final class MailTest extends TestCase
         $settings = new MailDummySettings($GLOBALS['settings_array']);
         Settings::setInstance($settings);
         $GLOBALS['settings'] = $settings;
-        // Reset Mail's cached settings between tests
-        $ref = new \ReflectionClass(\Lotgd\Mail::class);
-        $prop = $ref->getProperty('settings');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
+        Mail::resetSettings();
 
         $this->connection = new DoctrineConnection();
         Database::setDoctrineConnection($this->connection);

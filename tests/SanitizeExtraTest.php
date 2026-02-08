@@ -14,10 +14,7 @@ final class SanitizeExtraTest extends TestCase
     protected function setUp(): void
     {
         global $settings;
-        $ref = new \ReflectionClass(Output::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, new Output());
+        Output::setInstance(new Output());
         $settings = new DummySettingsSanitize(['charset' => 'UTF-8']);
     }
 

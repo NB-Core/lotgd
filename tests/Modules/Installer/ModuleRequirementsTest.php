@@ -21,7 +21,6 @@ namespace Lotgd\Tests\Modules\Installer {
     use Lotgd\Modules;
     use Lotgd\Tests\Stubs\Database;
     use PHPUnit\Framework\TestCase;
-    use ReflectionProperty;
 
     /**
      * @group installer
@@ -43,9 +42,7 @@ namespace Lotgd\Tests\Modules\Installer {
                 unlink($this->moduleFile);
             }
             Database::$queryCacheResults = [];
-            $prop = new ReflectionProperty(Modules::class, 'injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => [], 0 => []]);
+            Modules::resetInjectedModules();
         }
 
         public function testUninstalledDependencyFails(): void
@@ -80,13 +77,11 @@ namespace Lotgd\Tests\Modules\Installer {
                 ],
             ];
 
-            $prop = new ReflectionProperty(Modules::class, 'injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => [], 0 => []]);
+            Modules::resetInjectedModules();
 
             $this->assertFalse(Modules::checkRequirements(['dep|1.0'], true));
 
-            $current = $prop->getValue();
+            $current = Modules::getInjectedModules();
             $this->assertArrayHasKey('dep', $current[0]);
             $this->assertFalse($current[0]['dep']);
         }

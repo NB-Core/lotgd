@@ -111,12 +111,7 @@ namespace Lotgd\Tests\Bans {
 
             $_COOKIE['lgi'] = str_repeat('a', 32);
 
-            $outputReflection = new \ReflectionClass(Output::class);
-            if ($outputReflection->hasProperty('instance')) {
-                $instance = $outputReflection->getProperty('instance');
-                $instance->setAccessible(true);
-                $instance->setValue(null, null);
-            }
+            Output::setInstance(null);
         }
 
         public function testBanCreationUsesBoundParameters(): void

@@ -29,10 +29,7 @@ final class UserSetupBanTest extends TestCase
             define('DB_NODB', true);
         }
 
-        $outputObj = Output::getInstance();
-        $ref = new \ReflectionProperty(Output::class, 'output');
-        $ref->setAccessible(true);
-        $ref->setValue($outputObj, '');
+        Output::getInstance()->resetOutput();
 
         Database::$mockResults = [];
         Database::$queries = [];
