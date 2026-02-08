@@ -258,7 +258,7 @@ JS;
         $output->rawOutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
         $output->rawOutput("<div id='showFormSection$showform_id'></div>");
         $output->rawOutput("</td></tr><tr><td>&nbsp;</td></tr><tr><td>");
-        $output->rawOutput("<table id='showFormTable$showform_id' cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<table id='showFormTable$showform_id' role='tabpanel' cellpadding='2' cellspacing='0'>");
 
         $i = 0;
         $currentSection = '';
@@ -351,7 +351,7 @@ JS;
             $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
             if (!$singleTable) {
                 $output->rawOutput('</table>');
-                $output->rawOutput("<table id='showFormTable$titleId' cellpadding='2' cellspacing='0'$sectionAttribute>");
+                $output->rawOutput("<table id='showFormTable$titleId' role='tabpanel' aria-labelledby='showFormTab$titleId' cellpadding='2' cellspacing='0'$sectionAttribute>");
             }
             $output->rawOutput("<tr$sectionAttribute><td colspan='2' class='trhead'>");
             $output->outputNotl("`b%s`b", $info[0], true);
@@ -748,51 +748,125 @@ JS;
         }
 
         $output = Output::getInstance();
+        $tabListLabel = Translator::translateInline('Form sections');
+        $encodedTabListLabel = json_encode($tabListLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         if ($formId == 1) {
             $output->rawOutput(
                 "<script language='JavaScript'>
                 function prepare_form(id){
                     var theTable;
-                    var theDivs='';
-                    var x=0;
-                    var weight='';
-                    for (x in formSections[id]){
+                    var tabContainer = document.getElementById('showFormSection'+id);
+                    if (!tabContainer) {
+                        return;
+                    }
+                    tabContainer.innerHTML = '';
+                    var tabList = document.createElement('div');
+                    tabList.setAttribute('role', 'tablist');
+                    tabList.setAttribute('aria-label', $encodedTabListLabel);
+                    tabList.id = 'showFormTablist' + id;
+                    tabContainer.appendChild(tabList);
+                    for (var x in formSections[id]){
+                        if (!Object.prototype.hasOwnProperty.call(formSections[id], x)) {
+                            continue;
+                        }
                         theTable = document.getElementById('showFormTable'+x);
                         if (x != $startIndex ){
                             theTable.style.visibility='hidden';
                             theTable.style.display='none';
-                            weight='';
                         }else{
                             theTable.style.visibility='visible';
                             theTable.style.display='inline';
-                            weight='color: yellow;';
                         }
-                        theDivs += \"<div id='showFormButton\"+x+\"' class='trhead' style='\"+weight+\"float: left; cursor: pointer; cursor: hand; padding: 5px; border: 1px solid #000000;' onClick='showFormTabClick(\"+id+\",\"+x+\");'>\"+formSections[id][x]+\"</div>\";
+                        var button = document.createElement('button');
+                        button.type = 'button';
+                        button.id = 'showFormTab' + x;
+                        button.className = 'trhead';
+                        button.setAttribute('role', 'tab');
+                        button.setAttribute('aria-controls', 'showFormTable' + x);
+                        button.dataset.sectionId = x;
+                        button.style.cssText = 'float: left; cursor: pointer; padding: 5px; border: 1px solid #000000;';
+                        button.appendChild(document.createTextNode(formSections[id][x]));
+                        tabList.appendChild(button);
                     }
-                    theDivs += \"<div style='display: block;'>&nbsp;</div>\";
-                    theDivs += \"<input type='hidden' name='showFormTabIndex' value='$startIndex' id='showFormTabIndex'>\";
-                    document.getElementById('showFormSection'+id).innerHTML = theDivs;
+                    var spacer = document.createElement('div');
+                    spacer.style.display = 'block';
+                    spacer.innerHTML = '&nbsp;';
+                    tabContainer.appendChild(spacer);
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'showFormTabIndex';
+                    hidden.value = '$startIndex';
+                    hidden.id = 'showFormTabIndex';
+                    tabContainer.appendChild(hidden);
+                    tabList.addEventListener('keydown', function (event) {
+                        showFormTabKeydown(event, id);
+                    });
+                    showFormTabClick(id, $startIndex);
                 }
                 function showFormTabClick(formid,sectionid){
                     var theTable;
                     var theButton;
-                    for (x in formSections[formid]){
+                    for (var x in formSections[formid]){
+                        if (!Object.prototype.hasOwnProperty.call(formSections[formid], x)) {
+                            continue;
+                        }
                         theTable = document.getElementById('showFormTable'+x);
-                        theButton = document.getElementById('showFormButton'+x);
+                        theButton = document.getElementById('showFormTab'+x);
+                        theTable.setAttribute('aria-labelledby', theButton.id);
                         if (x == sectionid){
                             theTable.style.visibility='visible';
                             theTable.style.display='inline';
-                            theButton.style.fontWeight='normal';
                             theButton.style.color='yellow';
+                            theButton.setAttribute('aria-selected', 'true');
+                            theButton.tabIndex = 0;
+                            theTable.setAttribute('aria-labelledby', theButton.id);
                             document.getElementById('showFormTabIndex').value = sectionid;
                         }else{
                             theTable.style.visibility='hidden';
                             theTable.style.display='none';
-                            theButton.style.fontWeight='normal';
                             theButton.style.color='';
+                            theButton.setAttribute('aria-selected', 'false');
+                            theButton.tabIndex = -1;
                         }
                     }
+                }
+                function showFormTabKeydown(event, formid){
+                    var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                    if (keys.indexOf(event.key) === -1) {
+                        return;
+                    }
+                    var tabList = document.getElementById('showFormTablist' + formid);
+                    if (!tabList) {
+                        return;
+                    }
+                    var tabs = tabList.querySelectorAll('[role=\"tab\"]');
+                    if (!tabs.length) {
+                        return;
+                    }
+                    var currentIndex = 0;
+                    for (var i = 0; i < tabs.length; i++) {
+                        if (tabs[i] === document.activeElement) {
+                            currentIndex = i;
+                            break;
+                        }
+                    }
+                    var nextIndex = currentIndex;
+                    if (event.key === 'ArrowLeft') {
+                        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                    }
+                    if (event.key === 'ArrowRight') {
+                        nextIndex = (currentIndex + 1) % tabs.length;
+                    }
+                    if (event.key === 'Home') {
+                        nextIndex = 0;
+                    }
+                    if (event.key === 'End') {
+                        nextIndex = tabs.length - 1;
+                    }
+                    event.preventDefault();
+                    tabs[nextIndex].focus();
+                    showFormTabClick(formid, tabs[nextIndex].dataset.sectionId);
                 }
                 formSections = new Array();
                 </script>"
@@ -815,8 +889,10 @@ JS;
         string $allLabel
     ): void {
         $output = Output::getInstance();
+        $tabListLabel = Translator::translateInline('Form sections');
         $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         $encodedAllLabel = json_encode($allLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $encodedTabListLabel = json_encode($tabListLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         $output->rawOutput("<script language='JavaScript'>");
         $output->rawOutput("window.formSections = window.formSections || [];");
         $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
@@ -874,17 +950,29 @@ JS;
                         }
                     }
                     jQuery('#showFormTabIndex').val(sectionId);
-                    jQuery('[data-showform-tab=\"$formId\"]').css('color', '').css('font-weight', 'normal');
-                    jQuery('#showFormButton' + sectionId).css('color', 'yellow');
+                    jQuery('[data-showform-tab=\"$formId\"]').css('color', '');
+                    jQuery('[data-showform-tab=\"$formId\"]').attr('aria-selected', 'false').attr('tabindex', '-1');
+                    var \$activeTab = jQuery('#showFormTab' + sectionId);
+                    \$activeTab.css('color', 'yellow');
+                    \$activeTab.attr('aria-selected', 'true').attr('tabindex', '0');
+                    \$table.attr('aria-labelledby', 'showFormTab' + sectionId);
                 }
                 var \$tabsContainer = jQuery('#showFormSection$formId');
                 \$tabsContainer.empty();
+                var \$tabList = jQuery('<div/>', {
+                    role: 'tablist',
+                    'aria-label': $encodedTabListLabel,
+                    id: 'showFormTablist$formId'
+                });
                 function appendTab(sectionId, label, sectionName) {
-                    var \$tab = jQuery('<div/>', {
-                        id: 'showFormButton' + sectionId,
+                    var \$tab = jQuery('<button/>', {
+                        id: 'showFormTab' + sectionId,
+                        type: 'button',
                         'class': 'trhead',
                         'data-showform-tab': '$formId',
-                        'data-section-id': sectionId
+                        'data-section-id': sectionId,
+                        role: 'tab',
+                        'aria-controls': 'showFormTable$formId'
                     })
                         .css({
                             float: 'left',
@@ -894,7 +982,7 @@ JS;
                         })
                         .text(label)
                         .attr('data-section', sectionName || '');
-                    \$tabsContainer.append(\$tab);
+                    \$tabList.append(\$tab);
                 }
                 var allLabel = $encodedAllLabel;
                 appendTab(0, allLabel, '');
@@ -904,6 +992,7 @@ JS;
                     }
                     appendTab(key, formSections[$formId][key], formSections[$formId][key]);
                 }
+                \$tabsContainer.append(\$tabList);
                 \$tabsContainer.append(\"<div style='display: block;'>&nbsp;</div>\");
                 \$tabsContainer.append(\"<input type='hidden' name='showFormTabIndex' value='$startIndex' id='showFormTabIndex'>\");
                 var initialSection = '';
@@ -914,6 +1003,36 @@ JS;
                 \$tabsContainer.on('click', '[data-showform-tab=\"$formId\"]', function () {
                     var sectionId = jQuery(this).data('section-id');
                     var sectionName = jQuery(this).data('section') || '';
+                    setActiveTab(sectionId, sectionName);
+                });
+                \$tabsContainer.on('keydown', '[data-showform-tab=\"$formId\"]', function (event) {
+                    var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                    if (keys.indexOf(event.key) === -1) {
+                        return;
+                    }
+                    var \$tabs = \$tabList.find('[role=\"tab\"]');
+                    if (!\$tabs.length) {
+                        return;
+                    }
+                    var index = \$tabs.index(this);
+                    var nextIndex = index;
+                    if (event.key === 'ArrowLeft') {
+                        nextIndex = (index - 1 + \$tabs.length) % \$tabs.length;
+                    }
+                    if (event.key === 'ArrowRight') {
+                        nextIndex = (index + 1) % \$tabs.length;
+                    }
+                    if (event.key === 'Home') {
+                        nextIndex = 0;
+                    }
+                    if (event.key === 'End') {
+                        nextIndex = \$tabs.length - 1;
+                    }
+                    event.preventDefault();
+                    var \$nextTab = \$tabs.eq(nextIndex);
+                    \$nextTab.focus();
+                    var sectionId = \$nextTab.data('section-id');
+                    var sectionName = \$nextTab.data('section') || '';
                     setActiveTab(sectionId, sectionName);
                 });
             })();
