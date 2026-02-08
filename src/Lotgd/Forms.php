@@ -762,7 +762,7 @@ JS;
                     }
                     tabContainer.innerHTML = '';
                     var tabList = document.createElement('div');
-                    tabList.setAttribute('role', 'tablist');
+                    tabList.setAttribute('role', 'group');
                     tabList.setAttribute('aria-label', $encodedTabListLabel);
                     tabList.id = 'showFormTablist' + id;
                     tabContainer.appendChild(tabList);
@@ -782,8 +782,9 @@ JS;
                         button.type = 'button';
                         button.id = 'showFormTab' + x;
                         button.className = 'trhead';
-                        button.setAttribute('role', 'tab');
+                        button.setAttribute('role', 'button');
                         button.setAttribute('aria-controls', 'showFormTable' + x);
+                        button.setAttribute('aria-pressed', 'false');
                         button.dataset.sectionId = x;
                         button.style.cssText = 'float: left; cursor: pointer; padding: 5px; border: 1px solid #000000;';
                         button.appendChild(document.createTextNode(formSections[id][x]));
@@ -797,7 +798,7 @@ JS;
                     hidden.type = 'hidden';
                     hidden.name = 'showFormTabIndex';
                     hidden.value = '$startIndex';
-                    hidden.id = 'showFormTabIndex';
+                    hidden.id = 'showFormTabIndex-' + id;
                     tabContainer.appendChild(hidden);
                     tabList.addEventListener('keydown', function (event) {
                         showFormTabKeydown(event, id);
@@ -818,15 +819,15 @@ JS;
                             theTable.style.visibility='visible';
                             theTable.style.display='inline';
                             theButton.style.color='yellow';
-                            theButton.setAttribute('aria-selected', 'true');
+                            theButton.setAttribute('aria-pressed', 'true');
                             theButton.tabIndex = 0;
                             theTable.setAttribute('aria-labelledby', theButton.id);
-                            document.getElementById('showFormTabIndex').value = sectionid;
+                            document.getElementById('showFormTabIndex-' + formid).value = sectionid;
                         }else{
                             theTable.style.visibility='hidden';
                             theTable.style.display='none';
                             theButton.style.color='';
-                            theButton.setAttribute('aria-selected', 'false');
+                            theButton.setAttribute('aria-pressed', 'false');
                             theButton.tabIndex = -1;
                         }
                     }
@@ -840,7 +841,7 @@ JS;
                     if (!tabList) {
                         return;
                     }
-                    var tabs = tabList.querySelectorAll('[role=\"tab\"]');
+                    var tabs = tabList.querySelectorAll('[role=\"button\"]');
                     if (!tabs.length) {
                         return;
                     }
