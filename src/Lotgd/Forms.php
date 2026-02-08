@@ -953,10 +953,10 @@ JS;
                         \$tabInput.val(sectionId);
                     }
                     jQuery('[data-showform-tab=\"$formId\"]').css('color', '');
-                    jQuery('[data-showform-tab=\"$formId\"]').attr('aria-selected', 'false').attr('tabindex', '-1');
+                    jQuery('[data-showform-tab=\"$formId\"]').attr('aria-pressed', 'false').attr('tabindex', '-1');
                     var \$activeTab = jQuery('#showFormTab' + sectionId);
                     \$activeTab.css('color', 'yellow');
-                    \$activeTab.attr('aria-selected', 'true').attr('tabindex', '0');
+                    \$activeTab.attr('aria-pressed', 'true').attr('tabindex', '0');
                     \$table.attr('aria-labelledby', 'showFormTab' + sectionId);
                 }
                 var \$tabsContainer = jQuery('#showFormSection$formId');
@@ -964,7 +964,7 @@ JS;
                 var \$tabInput = jQuery();
                 \$tabsContainer.empty();
                 var \$tabList = jQuery('<div/>', {
-                    role: 'tablist',
+                    role: 'group',
                     'aria-label': $encodedTabListLabel,
                     id: 'showFormTablist$formId'
                 });
@@ -975,8 +975,8 @@ JS;
                         'class': 'trhead',
                         'data-showform-tab': '$formId',
                         'data-section-id': sectionId,
-                        role: 'tab',
-                        'aria-controls': 'showFormTable$formId'
+                        role: 'button',
+                        'aria-pressed': 'false'
                     })
                         .css({
                             float: 'left',
@@ -1015,7 +1015,7 @@ JS;
                     if (keys.indexOf(event.key) === -1) {
                         return;
                     }
-                    var \$tabs = \$tabList.find('[role=\"tab\"]');
+                    var \$tabs = \$tabList.find('[data-showform-tab=\"$formId\"]');
                     if (!\$tabs.length) {
                         return;
                     }
