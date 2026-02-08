@@ -826,6 +826,7 @@ class PageParts
     {
         $markup = $preHeadscript;
         $markup .= Output::renderVendorAssets();
+        $markup .= Output::renderHeadMarkup();
         if (!empty($headscript)) {
             $markup .= "<script type='text/javascript' charset='UTF-8'>" . $headscript . '</script>';
         }

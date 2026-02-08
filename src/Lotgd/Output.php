@@ -21,6 +21,8 @@ class Output
     private static ?self $instance = null;
     /** @var array<string, array{library: string, type: string}> */
     private static array $vendorAssets = [];
+    /** @var string[] */
+    private static array $headMarkup = [];
 
     private $output;             // text collected for display
     private $block_new_output;   // whether new output should be ignored
@@ -137,6 +139,30 @@ class Output
         }
 
         return $markup === [] ? '' : implode("\n", $markup) . "\n";
+    }
+
+    /**
+     * Queue raw markup for inclusion in the page head.
+     */
+    public static function addHeadMarkup(string $markup): void
+    {
+        if (trim($markup) === '') {
+            return;
+        }
+
+        self::$headMarkup[] = $markup;
+    }
+
+    /**
+     * Render queued head markup.
+     */
+    public static function renderHeadMarkup(): string
+    {
+        if (self::$headMarkup === []) {
+            return '';
+        }
+
+        return implode("\n", self::$headMarkup) . "\n";
     }
 
     /**
