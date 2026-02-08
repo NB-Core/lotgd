@@ -44,23 +44,6 @@ class Accounts
     {
         return self::$accountEntity;
     }
-
-    private static function entityToArray(Account $account): array
-    {
-        $ref  = new \ReflectionClass($account);
-        $data = [];
-
-        foreach ($ref->getProperties() as $prop) {
-            $prop->setAccessible(true);
-            $value = $prop->getValue($account);
-            if ($value instanceof \DateTimeInterface) {
-                $value = $value->format('Y-m-d H:i:s');
-            }
-            $data[$prop->getName()] = $value;
-        }
-
-        return $data;
-    }
     /**
      * Persist the current user session to the database.
      *

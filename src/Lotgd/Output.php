@@ -105,6 +105,23 @@ class Output
     }
 
     /**
+     * Replace the global Output instance.
+     */
+    public static function setInstance(self $instance): void
+    {
+        self::$instance = $instance;
+    }
+
+    /**
+     * Reset the global Output instance and return the new collector.
+     */
+    public static function resetInstance(): self
+    {
+        self::$instance = new self();
+        return self::$instance;
+    }
+
+    /**
      * Queue a vendor asset for inclusion in the page header.
      */
     public static function requireVendorAsset(string $library, string $type): void

@@ -565,11 +565,7 @@ SQL;
         $output->rawOutput("<div id='$section-comment'>");
         if ($returnastext !== false) {
             $oldoutput = Output::getInstance();
-            $ref = new \ReflectionClass(Output::class);
-            $prop = $ref->getProperty('instance');
-            $prop->setAccessible(true);
-            $prop->setValue(null, new Output());
-            $collector = Output::getInstance();
+            $collector = Output::resetInstance();
         }
 
         $output->rawOutput("<a name='$section'></a>");
@@ -690,7 +686,7 @@ SQL;
 
         if ($returnastext !== false) {
             $collected = $collector->getOutput();
-            $prop->setValue(null, $oldoutput);
+            Output::setInstance($oldoutput);
             return $collected;
         }
         $output->rawOutput('</div>');

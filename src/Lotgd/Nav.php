@@ -1068,10 +1068,7 @@ class Nav
     public static function clearOutput(): void
     {
         self::clearNav();
-        $ref = new \ReflectionClass(Output::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, new Output());
+        Output::resetInstance();
         self::getInstance()->setHeader('');
     }
 }
