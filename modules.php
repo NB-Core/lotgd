@@ -351,17 +351,9 @@ if ($op == "") {
                      $moduleinfo[$i]['description'] :
                      sanitize($moduleinfo[$i]['name'])) . "\">");
                 $output->rawOutput($moduleinfo[$i]['name'] . " " . $moduleinfo[$i]['version']);
-                $output->rawOutput("</span></td><td class='align-top'>");
-                $output->outputNotl("`#%s`0", $moduleinfo[$i]['author'], true);
-                $output->rawOutput("</td><td class='align-top'>");
-                $output->rawOutput($moduleinfo[$i]['category']);
-                $output->rawOutput("</td><td class='align-top'>");
-                $output->rawOutput($moduleinfo[$i]['shortname'] . ".php");
-                $output->rawOutput("</td>");
-                $output->rawOutput("</tr>");
+                $output->rawOutput("</span>");
                 if (isset($moduleinfo[$i]['requires']) && is_array($moduleinfo[$i]['requires']) && count($moduleinfo[$i]['requires']) > 0) {
-                    $output->rawOutput("<tr class='table-light'>");
-                    $output->rawOutput("<td colspan='6'>");
+                    $output->rawOutput("<div class='module-requires'>");
                     $output->output("`bRequires:`b`n");
                     foreach ($moduleinfo[$i]['requires'] as $key => $val) {
                         $info = explode("|", $val);
@@ -372,9 +364,16 @@ if ($op == "") {
                         }
                         $output->outputNotl("$key {$info[0]} -- {$info[1]}`n");
                     }
-                    $output->rawOutput("</td>");
-                    $output->rawOutput("</tr>");
+                    $output->rawOutput("</div>");
                 }
+                $output->rawOutput("</td><td class='align-top'>");
+                $output->outputNotl("`#%s`0", $moduleinfo[$i]['author'], true);
+                $output->rawOutput("</td><td class='align-top'>");
+                $output->rawOutput($moduleinfo[$i]['category']);
+                $output->rawOutput("</td><td class='align-top'>");
+                $output->rawOutput($moduleinfo[$i]['shortname'] . ".php");
+                $output->rawOutput("</td>");
+                $output->rawOutput("</tr>");
                 $count++;
             }
         } else {
