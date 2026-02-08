@@ -28,6 +28,20 @@ Header::pageHeader("Module Manager");
 
 SuperuserNav::render();
 
+Output::requireVendorAsset('jquery', 'js');
+Output::requireVendorAsset('datatables', 'css');
+Output::requireVendorAsset('datatables', 'js');
+
+Output::addHeadMarkup("<style>
+.dataTables_length select,
+.dataTables_filter input {
+    color: CanvasText;
+    background-color: Canvas;
+    border-color: ButtonBorder;
+    color-scheme: light dark;
+}
+</style>");
+
 
 Nav::add("", PhpGenericEnvironment::getRequestUri());
 $op = Http::get('op');
@@ -156,25 +170,32 @@ if ($op == "") {
         $inactive = Translator::translateInline("`\$Inactive`0");
         $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
         Nav::add("", "modules.php?op=mass&cat=$cat");
-        $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>", true);
-        $output->rawOutput("<tr class='trhead'><td>&nbsp;</td><td>$ops</td><td><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></td><td><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></td><td><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></td><td><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></td></tr>");
+        $installedCaption = Translator::translateInline("Installed modules table");
+        $output->rawOutput("<div class='table-responsive'>");
+        $output->rawOutput("<table class='table table-striped table-hover js-modules-table'>");
+        $output->rawOutput("<caption class='visually-hidden'>{$installedCaption}</caption>");
+        $output->rawOutput("<thead>");
+        $selectAllLabel = Translator::translateInline("Select all");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
+        $output->rawOutput("</thead>");
+        $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1));
         Nav::add("", "modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1));
         Nav::add("", "modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1));
         Nav::add("", "modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? $order : 0));
                 $rows = ModuleManager::listInstalled($cat, $sortby, (bool)$order);
         if (count($rows) == 0) {
-                $output->rawOutput("<tr class='trlight'><td colspan='6' align='center'>");
+                $output->rawOutput("<tr class='table-light'><td colspan='6' class='text-center'>");
                 $output->output("`i-- No Modules Installed--`i");
                 $output->rawOutput("</td></tr>");
         }
                 $number = count($rows);
         for ($i = 0; $i < $number; $i++) {
                 $row = $rows[$i];
-            $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>", true);
-            $output->rawOutput("<td nowrap valign='top'>");
+            $output->rawOutput("<tr>");
+            $output->rawOutput("<td class='text-nowrap align-top'>");
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
-            $output->rawOutput("</td><td valign='top' nowrap>[ ");
+            $output->rawOutput("</td><td class='text-nowrap align-top'>[ ");
             if ($row['active']) {
                 $output->rawOutput("<a href='modules.php?op=deactivate&module={$row['modulename']}&cat=$cat'>");
                 $output->outputNotl($deactivate);
@@ -210,9 +231,9 @@ if ($op == "") {
                 }
             }
 
-            $output->rawOutput(" ]</td><td valign='top'>");
+            $output->rawOutput(" ]</td><td class='align-top'>");
             $output->outputNotl($row['active'] ? $active : $inactive);
-            $output->rawOutput("</td><td nowrap valign='top'><span title=\"" .
+            $output->rawOutput("</td><td class='text-nowrap align-top'><span title=\"" .
                 (isset($row['description']) && $row['description']
                     ? $row['description']
                     : Sanitize::sanitize($row['formalname'])
@@ -220,16 +241,18 @@ if ($op == "") {
             $output->outputNotl("%s", $row['formalname']);
             $output->rawOutput("<br>");
             $output->outputNotl("(%s) V%s", $row['modulename'], $row['version']);
-            $output->rawOutput("</span></td><td valign='top'>");
+            $output->rawOutput("</span></td><td class='align-top'>");
             $output->outputNotl("`#%s`0", $row['moduleauthor'], true);
-            $output->rawOutput("</td><td nowrap valign='top'>");
+            $output->rawOutput("</td><td class='text-nowrap align-top'>");
             $line = sprintf($installstr, $row['installedby']);
             $output->outputNotl("%s", $row['installdate']);
             $output->rawOutput("<br>");
             $output->outputNotl("%s", $line);
             $output->rawOutput("</td></tr>");
         }
-        $output->rawOutput("</table><br />");
+        $output->rawOutput("</tbody>");
+        $output->rawOutput("</table>");
+        $output->rawOutput("</div><br />");
         $activate = Translator::translateInline("Activate");
         $deactivate = Translator::translateInline("Deactivate");
         $reinstall = Translator::translateInline("Reinstall");
@@ -256,8 +279,15 @@ if ($op == "") {
         $fname = Translator::translateInline("Filename");
         $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
         Nav::add("", "modules.php?op=mass&cat=$cat");
-        $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>", true);
-        $output->rawOutput("<tr class='trhead'><td>&nbsp;</td><td>$ops</td><td><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></td><td><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></td><td><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></td><td><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></td></tr>");
+        $uninstalledCaption = Translator::translateInline("Uninstalled modules table");
+        $output->rawOutput("<div class='table-responsive'>");
+        $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'>");
+        $output->rawOutput("<caption class='visually-hidden'>{$uninstalledCaption}</caption>");
+        $output->rawOutput("<thead>");
+        $selectAllLabel = Translator::translateInline("Select all");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></th><th scope='col'><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></th><th scope='col'><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></th><th scope='col'><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></th></tr>");
+        $output->rawOutput("</thead>");
+        $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0));
         Nav::add("", "modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0));
         Nav::add("", "modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0));
@@ -302,37 +332,28 @@ if ($op == "") {
             array_multisort($sortby, ($order ? SORT_DESC : SORT_ASC), $numberarray, ($order ? SORT_DESC : SORT_ASC));
             for ($a = 0; $a < count($moduleinfo); $a++) {
                 $i = $numberarray[$a];
-                $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
+                $output->rawOutput("<tr>");
                 if (isset($moduleinfo[$i]['invalid']) && $moduleinfo[$i]['invalid'] === true) {
-                    $output->rawOutput("<td></td><td nowrap valign='top'>");
+                    $output->rawOutput("<td></td><td class='text-nowrap align-top'>");
                     $output->output("Not installable");
                     $output->rawOutput("</td>");
                 } else {
                     $output->rawOutput("<td><input type='checkbox' name='module[]' value='{$moduleinfo[$i]['shortname']}'></td>");
-                    $output->rawOutput("<td nowrap valign='top'>");
+                    $output->rawOutput("<td class='text-nowrap align-top'>");
                     $output->rawOutput("[ <a href='modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}'>");
                     $output->outputNotl($install);
                     $output->rawOutput("</a>]</td>");
                     Nav::add("", "modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}");
                 }
-                $output->rawOutput("<td nowrap valign='top'><span title=\"" .
+                $output->rawOutput("<td class='text-nowrap align-top'><span title=\"" .
                     (isset($moduleinfo[$i]['description']) &&
                          $moduleinfo[$i]['description'] ?
                      $moduleinfo[$i]['description'] :
                      sanitize($moduleinfo[$i]['name'])) . "\">");
                 $output->rawOutput($moduleinfo[$i]['name'] . " " . $moduleinfo[$i]['version']);
-                $output->rawOutput("</span></td><td valign='top'>");
-                $output->outputNotl("`#%s`0", $moduleinfo[$i]['author'], true);
-                $output->rawOutput("</td><td valign='top'>");
-                $output->rawOutput($moduleinfo[$i]['category']);
-                $output->rawOutput("</td><td valign='top'>");
-                $output->rawOutput($moduleinfo[$i]['shortname'] . ".php");
-                $output->rawOutput("</td>");
-                $output->rawOutput("</tr>");
+                $output->rawOutput("</span>");
                 if (isset($moduleinfo[$i]['requires']) && is_array($moduleinfo[$i]['requires']) && count($moduleinfo[$i]['requires']) > 0) {
-                    $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-                    $output->rawOutput("<td>&nbsp;</td>");
-                    $output->rawOutput("<td colspan='6'>");
+                    $output->rawOutput("<div class='module-requires'>");
                     $output->output("`bRequires:`b`n");
                     foreach ($moduleinfo[$i]['requires'] as $key => $val) {
                         $info = explode("|", $val);
@@ -343,20 +364,119 @@ if ($op == "") {
                         }
                         $output->outputNotl("$key {$info[0]} -- {$info[1]}`n");
                     }
-                    $output->rawOutput("</td>");
-                    $output->rawOutput("</tr>");
+                    $output->rawOutput("</div>");
                 }
+                $output->rawOutput("</td><td class='align-top'>");
+                $output->outputNotl("`#%s`0", $moduleinfo[$i]['author'], true);
+                $output->rawOutput("</td><td class='align-top'>");
+                $output->rawOutput($moduleinfo[$i]['category']);
+                $output->rawOutput("</td><td class='align-top'>");
+                $output->rawOutput($moduleinfo[$i]['shortname'] . ".php");
+                $output->rawOutput("</td>");
+                $output->rawOutput("</tr>");
                 $count++;
             }
         } else {
-            $output->rawOutput("<tr class='trlight'><td colspan='6' align='center'>");
+            $output->rawOutput("<tr class='table-light'><td colspan='6' class='text-center'>");
             $output->output("`i--No uninstalled modules were found--`i");
             $output->rawOutput("</td></tr>");
         }
-        $output->rawOutput("</table><br />");
+        $output->rawOutput("</tbody>");
+        $output->rawOutput("</table>");
+        $output->rawOutput("</div><br />");
         $install = Translator::translateInline("Install");
         $output->rawOutput("<input type='submit' name='install' class='button' value='$install'>");
     }
 }
+
+$datatableSearch = Translator::translateInline("Search");
+$datatableSearchPlaceholder = Translator::translateInline("Search modules");
+$datatableLengthMenu = Translator::translateInline("Show _MENU_ entries");
+$datatableInfo = Translator::translateInline("Showing _START_ to _END_ of _TOTAL_ entries");
+$datatableInfoEmpty = Translator::translateInline("Showing 0 to 0 of 0 entries");
+$datatableInfoFiltered = Translator::translateInline("(filtered from _MAX_ total entries)");
+$datatableEmpty = Translator::translateInline("No data available in table");
+$datatableLoading = Translator::translateInline("Loading...");
+$datatableProcessing = Translator::translateInline("Processing...");
+$datatableZeroRecords = Translator::translateInline("No matching records found");
+$datatablePaginateFirst = Translator::translateInline("First");
+$datatablePaginateLast = Translator::translateInline("Last");
+$datatableNext = Translator::translateInline("Next");
+$datatablePrevious = Translator::translateInline("Previous");
+$datatableAriaSortAscending = Translator::translateInline("Activate to sort column ascending");
+$datatableAriaSortDescending = Translator::translateInline("Activate to sort column descending");
+$output->rawOutput(
+    "<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof jQuery === 'undefined' || typeof jQuery.fn.DataTable === 'undefined') {
+        return;
+    }
+    var dataTableConfig = {
+        language: {
+            search: " . json_encode($datatableSearch) . ",
+            searchPlaceholder: " . json_encode($datatableSearchPlaceholder) . ",
+            lengthMenu: " . json_encode($datatableLengthMenu) . ",
+            info: " . json_encode($datatableInfo) . ",
+            infoEmpty: " . json_encode($datatableInfoEmpty) . ",
+            infoFiltered: " . json_encode($datatableInfoFiltered) . ",
+            emptyTable: " . json_encode($datatableEmpty) . ",
+            loadingRecords: " . json_encode($datatableLoading) . ",
+            processing: " . json_encode($datatableProcessing) . ",
+            zeroRecords: " . json_encode($datatableZeroRecords) . ",
+            paginate: {
+                first: " . json_encode($datatablePaginateFirst) . ",
+                last: " . json_encode($datatablePaginateLast) . ",
+                next: " . json_encode($datatableNext) . ",
+                previous: " . json_encode($datatablePrevious) . "
+            },
+            aria: {
+                sortAscending: " . json_encode($datatableAriaSortAscending) . ",
+                sortDescending: " . json_encode($datatableAriaSortDescending) . "
+            }
+        },
+        dom: 'lfrtip',
+        order: [],
+        pageLength: 50,
+        lengthMenu: [10, 25, 50, 100],
+        paging: true,
+        searching: true,
+        serverSide: false,
+        processing: false
+    };
+    jQuery('.js-modules-table').DataTable(dataTableConfig);
+    jQuery('.js-uninstalled-modules-table').DataTable(dataTableConfig);
+
+    function updateSelectAllState(table) {
+        var \$table = jQuery(table);
+        var \$checkboxes = \$table.find('tbody input[type=\"checkbox\"]').not(':disabled');
+        var \$selectAll = \$table.find('thead .js-select-all');
+        if (!\$selectAll.length) {
+            return;
+        }
+        if (\$checkboxes.length === 0) {
+            \$selectAll.prop('checked', false).prop('indeterminate', false);
+            return;
+        }
+        var checkedCount = \$checkboxes.filter(':checked').length;
+        \$selectAll.prop('checked', checkedCount === \$checkboxes.length);
+        \$selectAll.prop('indeterminate', checkedCount > 0 && checkedCount < \$checkboxes.length);
+    }
+
+    jQuery(document).on('change', '.js-select-all', function () {
+        var \$table = jQuery(this).closest('table');
+        \$table.find('tbody input[type=\"checkbox\"]').not(':disabled').prop('checked', this.checked);
+        updateSelectAllState(\$table);
+    });
+
+    jQuery(document).on('change', 'tbody input[type=\"checkbox\"]', function () {
+        updateSelectAllState(jQuery(this).closest('table'));
+    });
+
+    jQuery('.js-modules-table, .js-uninstalled-modules-table').each(function () {
+        updateSelectAllState(this);
+    });
+});
+</script>"
+);
 
 Footer::pageFooter();

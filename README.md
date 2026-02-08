@@ -140,6 +140,25 @@ or by setting a `template` cookie. If a matching folder is found, pages are
 rendered with Twig; classic `.htm` templates continue to work as before.
 Twig views receive variables for common placeholders like `nav`, `stats`, and
 `paypal`, allowing flexible layouts.
+When a page controller needs vendor assets (CSS/JS) without polluting Twig
+templates, register them in PHP before rendering and let the layout print the
+resulting head/script output. For example, in a controller such as
+`modules.php`:
+
+```php
+use Lotgd\Output;
+use Lotgd\Page\Header;
+use Lotgd\Page\Footer;
+
+Header::pageHeader('Module Manager');
+Output::requireVendorAsset('datatables', 'css');
+Output::requireVendorAsset('datatables', 'js');
+// ... page logic ...
+Footer::pageFooter();
+```
+
+Twig layouts already emit `headscript` and `script` (`{{ headscript|raw }}` /
+`{{ script|raw }}`), so registered assets appear automatically.
 Compiled Twig templates are cached under the directory defined by the
 `datacachepath` setting. The engine attempts to create a `twig` subdirectory
 and only enables caching when it is writable. If the path cannot be created

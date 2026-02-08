@@ -14,10 +14,15 @@ use Lotgd\HolidayText;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\Modules\ModuleManager;
+use Lotgd\AssetManifest;
 
 class Output
 {
     private static ?self $instance = null;
+    /** @var array<string, array{library: string, type: string}> */
+    private static array $vendorAssets = [];
+    /** @var string[] */
+    private static array $headMarkup = [];
 
     private $output;             // text collected for display
     private $block_new_output;   // whether new output should be ignored
@@ -97,6 +102,67 @@ class Output
     public static function getInstance(): self
     {
         return self::$instance ??= new self();
+    }
+
+    /**
+     * Queue a vendor asset for inclusion in the page header.
+     */
+    public static function requireVendorAsset(string $library, string $type): void
+    {
+        $key = sprintf('%s:%s', $library, $type);
+        self::$vendorAssets[$key] = ['library' => $library, 'type' => $type];
+    }
+
+    /**
+     * Render queued vendor assets as link/script tags.
+     */
+    public static function renderVendorAssets(): string
+    {
+        if (self::$vendorAssets === []) {
+            return '';
+        }
+
+        $markup = [];
+        foreach (self::$vendorAssets as $asset) {
+            $url = AssetManifest::url($asset['library'], $asset['type']);
+            if ($url === '') {
+                continue;
+            }
+            $safeUrl = htmlspecialchars($url, ENT_QUOTES);
+            if ($asset['type'] === 'css') {
+                $markup[] = sprintf('<link rel="stylesheet" href="%s">', $safeUrl);
+                continue;
+            }
+            if ($asset['type'] === 'js') {
+                $markup[] = sprintf('<script src="%s"></script>', $safeUrl);
+            }
+        }
+
+        return $markup === [] ? '' : implode("\n", $markup) . "\n";
+    }
+
+    /**
+     * Queue raw markup for inclusion in the page head.
+     */
+    public static function addHeadMarkup(string $markup): void
+    {
+        if (trim($markup) === '') {
+            return;
+        }
+
+        self::$headMarkup[] = $markup;
+    }
+
+    /**
+     * Render queued head markup.
+     */
+    public static function renderHeadMarkup(): string
+    {
+        if (self::$headMarkup === []) {
+            return '';
+        }
+
+        return implode("\n", self::$headMarkup) . "\n";
     }
 
     /**

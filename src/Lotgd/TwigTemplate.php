@@ -44,6 +44,12 @@ class TwigTemplate extends Template
             $full = $_SERVER['DOCUMENT_ROOT'] . $path;
             return $path . '?v=' . (file_exists($full) ? filemtime($full) : time());
         }));
+
+        // Resolve a vendor asset from the central manifest: {{ 'bootstrap'|asset('css') }}
+        self::$env->addFilter(new \Twig\TwigFilter('asset', function (string $library, string $type = 'css'): string {
+            return AssetManifest::url($library, $type);
+        }));
+
         self::$isTwigActive = true;
     }
 
