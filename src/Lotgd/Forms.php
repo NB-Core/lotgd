@@ -258,7 +258,18 @@ JS;
         $output->rawOutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
         $output->rawOutput("<div id='showFormSection$showform_id'></div>");
         $output->rawOutput("</td></tr><tr><td>&nbsp;</td></tr><tr><td>");
+        $settings = Settings::getInstance();
+        $charset  = $settings->getSetting('charset', 'UTF-8');
+        Translator::getInstance()->setSchema('showform');
+        $labelHeader = Translator::translateInline('Label');
+        $valueHeader = Translator::translateInline('Value');
+        Translator::getInstance()->setSchema();
+        $labelHeader = HTMLEntities($labelHeader, ENT_QUOTES, $charset);
+        $valueHeader = HTMLEntities($valueHeader, ENT_QUOTES, $charset);
+
         $output->rawOutput("<table id='showFormTable$showform_id' role='tabpanel' cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<thead><tr><th class='formfield-label'>{$labelHeader}</th><th class='formfield-value'>{$valueHeader}</th></tr></thead>");
+        $output->rawOutput('<tbody>');
 
         $i = 0;
         $currentSection = '';
@@ -278,7 +289,7 @@ JS;
             );
         }
 
-        $output->rawOutput("</table><br>");
+        $output->rawOutput("</tbody></table><br>");
 
         if ($showform_id == 10001) {
             $startIndex = (int) Http::post('showFormTabIndex');
@@ -353,9 +364,9 @@ JS;
                 $output->rawOutput('</table>');
                 $output->rawOutput("<table id='showFormTable$titleId' role='tabpanel' aria-labelledby='showFormTab$titleId' cellpadding='2' cellspacing='0'$sectionAttribute>");
             }
-            $output->rawOutput("<tr$sectionAttribute><td colspan='2' class='trhead'>");
+            $output->rawOutput("<tr$sectionAttribute class='trhead'><td class='formfield-label'>");
             $output->outputNotl("`b%s`b", $info[0], true);
-            $output->rawOutput('</td></tr>');
+            $output->rawOutput("</td><td class='formfield-value'></td></tr>");
             $rowIndex = 0;
             return;
         }
@@ -365,10 +376,10 @@ JS;
             if ($currentSection !== '') {
                 $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
             }
-            $output->rawOutput("<tr$sectionAttribute class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td colspan='2'>");
+            $output->rawOutput("<tr$sectionAttribute class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label'>");
             $output->outputNotl("`i%s`i", $info[0], true);
             $rowIndex++;
-            $output->rawOutput('</td></tr>');
+            $output->rawOutput("</td><td class='formfield-value'></td></tr>");
             return;
         }
 
