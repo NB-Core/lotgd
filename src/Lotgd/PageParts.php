@@ -825,6 +825,7 @@ class PageParts
     public static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
     {
         $markup = $preHeadscript;
+        $markup .= Output::renderVendorAssets();
         if (!empty($headscript)) {
             $markup .= "<script type='text/javascript' charset='UTF-8'>" . $headscript . '</script>';
         }
