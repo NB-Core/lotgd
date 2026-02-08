@@ -922,6 +922,19 @@ JS;
                 var activeSection = '';
                 var useDataTable = typeof jQuery.fn.DataTable !== 'undefined';
                 var tableApi = null;
+                function applyLegacyRowClasses(\$rows) {
+                    var visibleIndex = 0;
+                    \$rows.removeClass('trlight trdark');
+                    \$rows.each(function () {
+                        var \$row = jQuery(this);
+                        if (\$row.hasClass('trhead')) {
+                            return;
+                        }
+                        var stripeClass = (visibleIndex % 2 === 0) ? 'trlight' : 'trdark';
+                        \$row.addClass(stripeClass);
+                        visibleIndex++;
+                    });
+                }
                 if (useDataTable) {
                     tableApi = \$table.DataTable({
                         dom: 't',
@@ -932,17 +945,7 @@ JS;
                         drawCallback: function () {
                             var api = this.api();
                             var \$rows = jQuery(api.rows({ filter: 'applied' }).nodes());
-                            var visibleIndex = 0;
-                            \$rows.removeClass('trlight trdark');
-                            \$rows.each(function () {
-                                var \$row = jQuery(this);
-                                if (\$row.hasClass('trhead')) {
-                                    return;
-                                }
-                                var stripeClass = (visibleIndex % 2 === 0) ? 'trlight' : 'trdark';
-                                \$row.addClass(stripeClass);
-                                visibleIndex++;
-                            });
+                            applyLegacyRowClasses(\$rows);
                         }
                     });
                     var globalSearch = '';
@@ -978,6 +981,7 @@ JS;
                                 return jQuery(this).data('section') === activeSection;
                             }).show();
                         }
+                        applyLegacyRowClasses(\$table.find('tbody tr:visible'));
                     }
                     if (\$tabInput.length) {
                         \$tabInput.val(sectionId);
