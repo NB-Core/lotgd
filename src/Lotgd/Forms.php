@@ -777,7 +777,7 @@ JS;
                     }
                     tabContainer.innerHTML = '';
                     var tabList = document.createElement('div');
-                    tabList.setAttribute('role', 'group');
+                    tabList.setAttribute('role', 'tablist');
                     tabList.setAttribute('aria-label', $encodedTabListLabel);
                     tabList.id = 'showFormTablist' + id;
                     tabContainer.appendChild(tabList);
@@ -789,21 +789,26 @@ JS;
                         if (x != $startIndex ){
                             theTable.style.visibility='hidden';
                             theTable.style.display='none';
+                            theTable.setAttribute('aria-hidden', 'true');
                         }else{
                             theTable.style.visibility='visible';
                             theTable.style.display='inline';
+                            theTable.setAttribute('aria-hidden', 'false');
                         }
                         var button = document.createElement('button');
                         button.type = 'button';
                         button.id = 'showFormTab' + x;
                         button.className = 'trhead';
-                        button.setAttribute('role', 'button');
+                        button.setAttribute('role', 'tab');
                         button.setAttribute('aria-controls', 'showFormTable' + x);
-                        button.setAttribute('aria-pressed', 'false');
+                        button.setAttribute('aria-selected', 'false');
+                        button.tabIndex = -1;
                         button.dataset.sectionId = x;
                         button.style.cssText = 'float: left; cursor: pointer; padding: 5px; border: 1px solid #000000;';
                         button.appendChild(document.createTextNode(formSections[id][x]));
                         tabList.appendChild(button);
+                        theTable.setAttribute('role', 'tabpanel');
+                        theTable.setAttribute('aria-labelledby', button.id);
                     }
                     var spacer = document.createElement('div');
                     spacer.style.display = 'block';
@@ -829,20 +834,22 @@ JS;
                         }
                         theTable = document.getElementById('showFormTable'+x);
                         theButton = document.getElementById('showFormTab'+x);
+                        theTable.setAttribute('role', 'tabpanel');
                         theTable.setAttribute('aria-labelledby', theButton.id);
                         if (x == sectionid){
                             theTable.style.visibility='visible';
                             theTable.style.display='inline';
+                            theTable.setAttribute('aria-hidden', 'false');
                             theButton.style.color='yellow';
-                            theButton.setAttribute('aria-pressed', 'true');
+                            theButton.setAttribute('aria-selected', 'true');
                             theButton.tabIndex = 0;
-                            theTable.setAttribute('aria-labelledby', theButton.id);
                             document.getElementById('showFormTabIndex-' + formid).value = sectionid;
                         }else{
                             theTable.style.visibility='hidden';
                             theTable.style.display='none';
+                            theTable.setAttribute('aria-hidden', 'true');
                             theButton.style.color='';
-                            theButton.setAttribute('aria-pressed', 'false');
+                            theButton.setAttribute('aria-selected', 'false');
                             theButton.tabIndex = -1;
                         }
                     }
@@ -856,7 +863,7 @@ JS;
                     if (!tabList) {
                         return;
                     }
-                    var tabs = tabList.querySelectorAll('[role=\"button\"]');
+                    var tabs = tabList.querySelectorAll('[role=\"tab\"]');
                     if (!tabs.length) {
                         return;
                     }
