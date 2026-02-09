@@ -12,6 +12,12 @@ use Lotgd\Output;
  * asynchronous features like mail and commentary updates.
  */
 
+if (!empty($GLOBALS['lotgd_async_setup_loaded'])) {
+    return;
+}
+
+$GLOBALS['lotgd_async_setup_loaded'] = true;
+
 require_once __DIR__ . '/common/jaxon.php';
 
 global $jaxon;
@@ -169,6 +175,10 @@ function pollForUpdates() {
 
 // Start polling system
 function startAjaxPolling() {
+    if (window.__lotgdAsyncPollingInitialized) {
+        return;
+    }
+    window.__lotgdAsyncPollingInitialized = true;
     console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
     // Regular polling
@@ -177,7 +187,9 @@ function startAjaxPolling() {
 
 // Initialize after page load
 setTimeout(function() {
-    if (typeof lotgd_poll_interval_ms !== 'undefined' && lotgd_poll_interval_ms > 0) {
+    if (!window.__lotgdAsyncPollingInitialized
+        && typeof lotgd_poll_interval_ms !== 'undefined'
+        && lotgd_poll_interval_ms > 0) {
         startAjaxPolling();
     }
 }, 1000);
