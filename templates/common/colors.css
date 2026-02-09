@@ -107,3 +107,5 @@ table.dataTable > tbody > tr.trhighlight,
 
 .trlight td { color: #000; }
 .trdark td { color: #000; }
+
+.prefs-tabs .is-active { color: #333; }

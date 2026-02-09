@@ -986,10 +986,11 @@ JS;
                     if (\$tabInput.length) {
                         \$tabInput.val(sectionId);
                     }
-                    jQuery('[data-showform-tab=\"$formId\"]').css('color', '');
-                    jQuery('[data-showform-tab=\"$formId\"]').attr('aria-pressed', 'false').attr('tabindex', '-1');
+                    var \$tabs = jQuery('[data-showform-tab=\"$formId\"]');
+                    \$tabs.removeClass('is-active');
+                    \$tabs.attr('aria-pressed', 'false').attr('tabindex', '-1');
                     var \$activeTab = jQuery('#showFormTab' + sectionId);
-                    \$activeTab.css('color', 'yellow');
+                    \$activeTab.addClass('is-active');
                     \$activeTab.attr('aria-pressed', 'true').attr('tabindex', '0');
                     \$table.attr('aria-labelledby', 'showFormTab' + sectionId);
                 }
@@ -1023,7 +1024,8 @@ JS;
                 var \$tabList = jQuery('<div/>', {
                     role: 'group',
                     'aria-label': $encodedTabListLabel,
-                    id: 'showFormTablist$formId'
+                    id: 'showFormTablist$formId',
+                    'class': 'prefs-tabs'
                 });
                 function appendTab(sectionId, label, sectionName) {
                     var \$tab = jQuery('<button/>', {
