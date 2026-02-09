@@ -823,6 +823,14 @@ JS;
                     tabList.addEventListener('keydown', function (event) {
                         showFormTabKeydown(event, id);
                     });
+                    tabList.addEventListener('click', function (event) {
+                        var button = event.target.closest('[role=\"tab\"]');
+                        if (!button || !tabList.contains(button)) {
+                            return;
+                        }
+                        showFormTabClick(id, button.dataset.sectionId);
+                        button.focus();
+                    });
                     showFormTabClick(id, $startIndex);
                 }
                 function showFormTabClick(formid,sectionid){
