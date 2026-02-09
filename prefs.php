@@ -291,8 +291,8 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
 
     $form = array(
         "Account Preferences,title",
-        "pass1" => "Password,password",
-        "pass2" => "Retype,password",
+        "pass1" => "Password,password,new-password",
+        "pass2" => "Retype,password,new-password",
         "email" => "Email Address",
 
         "Character Preferences,title",
