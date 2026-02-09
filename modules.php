@@ -28,9 +28,9 @@ Header::pageHeader("Module Manager");
 
 SuperuserNav::render();
 
-Output::requireVendorAsset('jquery', 'js');
+Output::requireVendorAsset('jquery', 'js', Output::VENDOR_BUCKET_MID);
 Output::requireVendorAsset('datatables', 'css', Output::VENDOR_BUCKET_PRE);
-Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_PRE);
+Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_MID);
 
 Output::addHeadMarkup("<style>
 .dataTables_length select,
