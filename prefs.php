@@ -562,7 +562,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
 
     $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
     $usernameValue = htmlentities($session['user']['login'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
-    $output->rawOutput("<input type='text' name='username' class='visually-hidden' value='{$usernameValue}' autocomplete='username' readonly>");
+    $output->rawOutput("<input type='hidden' name='username' class='visually-hidden' value='{$usernameValue}' autocomplete='username' readonly>");
     $info = Forms::showFormTabbed($form, $prefs);
     $output->rawOutput("<input type='hidden' value=\"" .
             htmlentities(serialize($info), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" name='oldvalues'>");
