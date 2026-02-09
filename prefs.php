@@ -30,6 +30,66 @@ use Lotgd\PlayerFunctions;
 
 require_once __DIR__ . "/common.php";
 
+function ensureTimePrefs(array &$session): void
+{
+    if (!isset($session['user']['prefs']['timeformat'])) {
+        $session['user']['prefs']['timeformat'] = "[m/d h:ia]";
+    }
+
+    if (!isset($session['user']['prefs']['timeoffset'])) {
+        $session['user']['prefs']['timeoffset'] = 0;
+    }
+}
+
+function buildPreferenceForm(array $session, Settings $settings, int $nowWithOffset): array
+{
+    return array(
+        "Account Preferences,title",
+        "pass1" => "Password,password,new-password",
+        "pass2" => "Retype,password,new-password",
+        "email" => "Email Address",
+
+        "Character Preferences,title",
+        "sexuality" => "Which sex are you attracted to?,enum,0,male,1,female",
+        "Note: if you find both attractive then choose one to be your primary. You may change it at any time.,note",
+
+        "Display Preferences,title",
+        "template" => "Skin,theme",
+                "sortedmenus" => "Nav Headlines are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
+                "navsort_headers" => "Nav Sub-Headlines are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
+                "navsort_subheaders" => "Items under a headline are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
+                "language" => "Language,enum," . $settings->getSetting('serverlanguages', 'en,English,de,Deutsch,fr,Français,dk,Danish,es,Español,it,Italian'),
+        "tabconfig" => "Show config sections in tabs,bool",
+        "forestcreaturebar" => "Forest Creatures show health ...,enum,0,Only Text,1,Only Healthbar,2,Healthbar AND Text",
+        "ajax" => "Turn AJAX on?,bool",
+        "Note: AJAX refreshes i.e. mail notifications (You have X new mails...) without needing you to reload the page. Turn on and see if it gives your computer a headache or not,note",
+        "mailwidth" => "Width of your standard mail reply textbox,int",
+        "mailheight" => "Height of your standard mail reply textbox,int",
+        "popupsize" => "Size of the mailwindow when it opens,text",
+        "Note: i.e. 150x120 equals 150 pixels times 120 pixels - keep that format.,note",
+
+        "Game Behavior Preferences,title",
+        "emailonmail" => "Send email when you get new Ye Olde Mail?,bool",
+        "systemmail" => "Send email for system generated messages?,bool",
+        "dirtyemail" => "Allow profanity in received Ye Olde Poste messages?,bool",
+        "timestamp" => "Show timestamps in commentary?,enum,0,None,1,Real Time [12/25 1:27pm],2,Relative Time (1h35m)",
+        "timeformat" => array("Timestamp format (currently displaying time as %s whereas default format is \"[m/d h:ia]\"),string,20",
+            date(
+                $session['user']['prefs']['timeformat'],
+                $nowWithOffset
+            )),
+        "timeoffset" => array("Hours to offset time displays (%s currently displays as %s)?,int",
+            date($session['user']['prefs']['timeformat']),
+            date(
+                $session['user']['prefs']['timeformat'],
+                $nowWithOffset
+            )),
+        "ihavenocheer" => "`0Always disable all holiday related text replacements (such as a`1`0l`1`0e => e`1`0g`1`0g n`1`0o`1`0g for December),bool",
+        "bio" => "Short Character Biography (255 chars max),string,255",
+        "nojump" => "Don't jump to comment areas after refreshing or posting a comment?,bool",
+    );
+}
+
 $skin = Http::post('template');
 if (is_string($skin) && $skin !== '' && Template::isValidTemplate($skin)) {
         Template::setTemplateCookie($skin);
@@ -123,6 +183,116 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     unset($post['oldvalues']);
     unset($post['showFormTabIndex']);
 
+    ensureTimePrefs($session);
+    $offsetSeconds = (int) round((float) $session['user']['prefs']['timeoffset'] * 3600);
+    $nowWithOffset = time() + $offsetSeconds;
+    $formDefinition = buildPreferenceForm($session, $settings, $nowWithOffset);
+
+    // Okay, allow modules to add prefs one at a time.
+    // We are going to do it this way to *ensure* that modules don't conflict
+    // in namespace.
+    $sql = "SELECT modulename FROM " . Database::prefix("modules") . " WHERE infokeys LIKE '%|prefs|%' AND active=1 ORDER BY modulename";
+    $result = Database::query($sql);
+    $everfound = 0;
+    $foundmodules = array();
+    $msettings = array();
+    $mdata = array();
+    while ($row = Database::fetchAssoc($result)) {
+        $module = $row['modulename'];
+        $info = get_module_info($module);
+        if (!isset($info['prefs']) || count($info['prefs']) <= 0) {
+            continue;
+        }
+        $tempsettings = array();
+        $tempdata = array();
+        $found = 0;
+        foreach ($info['prefs'] as $key => $val) {
+            if (!is_string($key)) {
+                $isuser = false;
+                $ischeck = false;
+            } else {
+                $isuser = preg_match("/^user_/", $key);
+                $ischeck = preg_match("/^check_/", $key);
+            }
+
+            if (is_array($val)) {
+                $v = $val[0];
+                $x = explode("|", $v);
+                $val[0] = $x[0];
+                $x[0] = $val;
+            } else {
+                $x = explode("|", $val);
+            }
+
+            $type = explode(",", $x[0]);
+            if (isset($type[1])) {
+                $type = trim($type[1]);
+            } else {
+                $type = "string";
+            }
+
+            // Okay, if we have a title section, let's copy over the last
+            // title section
+            if (strstr($type, "title")) {
+                if ($found) {
+                    $everfound = 1;
+                    $found = 0;
+                    $msettings = array_merge($msettings, $tempsettings);
+                    $mdata = array_merge($mdata, $tempdata);
+                }
+                $tempsettings = array();
+                $tempdata = array();
+            }
+
+            if (
+                !$isuser && !$ischeck && !strstr($type, "title") &&
+                    !strstr($type, "note")
+            ) {
+                continue;
+            }
+            if ($isuser) {
+                $found = 1;
+            }
+            // If this is a check preference, we need to call the modulehook
+            // checkuserpref  (requested by cortalUX)
+            if ($ischeck) {
+                $args = HookHandler::hook(
+                    "checkuserpref",
+                    array("name" => $key, "pref" => $x[0], "default" => $x[1]),
+                    false,
+                    $module
+                );
+                if (isset($args['allow']) && !$args['allow']) {
+                    continue;
+                }
+                $x[0] = $args['pref'];
+                $x[1] = $args['default'];
+                $found = 1;
+            }
+
+            $tempsettings[$module . "___" . $key] = $x[0];
+            if (array_key_exists(1, $x)) {
+                $tempdata[$module . "___" . $key] = $x[1];
+            }
+        }
+        if ($found) {
+            $msettings = array_merge($msettings, $tempsettings);
+            $mdata = array_merge($mdata, $tempdata);
+            $everfound = 1;
+        }
+
+        // If we found a user editable one
+        if ($everfound) {
+            // Collect the values
+            $foundmodules[] = $module;
+        }
+    }
+
+    $allowedPrefKeys = array_fill_keys(array_filter(array_keys($formDefinition), 'is_string'), true);
+    foreach (array_keys($msettings) as $allowedKey) {
+        $allowedPrefKeys[$allowedKey] = true;
+    }
+
     if (count($post) == 0) {
     } else {
         $pass1 = Http::post('pass1');
@@ -156,6 +326,9 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         foreach ($post as $key => $val) {
             // If this is one we don't save, skip
             if (isset($nonsettings[$key]) && $nonsettings[$key]) {
+                continue;
+            }
+            if (!isset($allowedPrefKeys[$key])) {
                 continue;
             }
             if (
@@ -278,62 +451,10 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         $output->output("`\$Settings saved!`n`n");
     }
 
-    if (!isset($session['user']['prefs']['timeformat'])) {
-        $session['user']['prefs']['timeformat'] = "[m/d h:ia]";
-    }
-
-    if (!isset($session['user']['prefs']['timeoffset'])) {
-        $session['user']['prefs']['timeoffset'] = 0;
-    }
-
+    ensureTimePrefs($session);
     $offsetSeconds = (int) round((float) $session['user']['prefs']['timeoffset'] * 3600);
     $nowWithOffset = time() + $offsetSeconds;
-
-    $form = array(
-        "Account Preferences,title",
-        "pass1" => "Password,password,new-password",
-        "pass2" => "Retype,password,new-password",
-        "email" => "Email Address",
-
-        "Character Preferences,title",
-        "sexuality" => "Which sex are you attracted to?,enum,0,male,1,female",
-        "Note: if you find both attractive then choose one to be your primary. You may change it at any time.,note",
-
-        "Display Preferences,title",
-        "template" => "Skin,theme",
-                "sortedmenus" => "Nav Headlines are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
-                "navsort_headers" => "Nav Sub-Headlines are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
-                "navsort_subheaders" => "Items under a headline are sorted by order?,enum,off,Off,asc,Ascending,desc,Descending",
-                "language" => "Language,enum," . $settings->getSetting('serverlanguages', 'en,English,de,Deutsch,fr,Français,dk,Danish,es,Español,it,Italian'),
-        "tabconfig" => "Show config sections in tabs,bool",
-        "forestcreaturebar" => "Forest Creatures show health ...,enum,0,Only Text,1,Only Healthbar,2,Healthbar AND Text",
-        "ajax" => "Turn AJAX on?,bool",
-        "Note: AJAX refreshes i.e. mail notifications (You have X new mails...) without needing you to reload the page. Turn on and see if it gives your computer a headache or not,note",
-        "mailwidth" => "Width of your standard mail reply textbox,int",
-        "mailheight" => "Height of your standard mail reply textbox,int",
-        "popupsize" => "Size of the mailwindow when it opens,text",
-        "Note: i.e. 150x120 equals 150 pixels times 120 pixels - keep that format.,note",
-
-        "Game Behavior Preferences,title",
-        "emailonmail" => "Send email when you get new Ye Olde Mail?,bool",
-        "systemmail" => "Send email for system generated messages?,bool",
-        "dirtyemail" => "Allow profanity in received Ye Olde Poste messages?,bool",
-        "timestamp" => "Show timestamps in commentary?,enum,0,None,1,Real Time [12/25 1:27pm],2,Relative Time (1h35m)",
-        "timeformat" => array("Timestamp format (currently displaying time as %s whereas default format is \"[m/d h:ia]\"),string,20",
-            date(
-                $session['user']['prefs']['timeformat'],
-                $nowWithOffset
-            )),
-        "timeoffset" => array("Hours to offset time displays (%s currently displays as %s)?,int",
-            date($session['user']['prefs']['timeformat']),
-            date(
-                $session['user']['prefs']['timeformat'],
-                $nowWithOffset
-            )),
-        "ihavenocheer" => "`0Always disable all holiday related text replacements (such as a`1`0l`1`0e => e`1`0g`1`0g n`1`0o`1`0g for December),bool",
-        "bio" => "Short Character Biography (255 chars max),string,255",
-        "nojump" => "Don't jump to comment areas after refreshing or posting a comment?,bool",
-    );
+    $form = buildPreferenceForm($session, $settings, $nowWithOffset);
     Output::requireVendorAsset('jquery', 'js', Output::VENDOR_BUCKET_MID);
     Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_MID);
     Output::requireVendorAsset('datatables', 'css', Output::VENDOR_BUCKET_MID);
@@ -386,105 +507,6 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         $prefs['tabconfig'] = 1;
     }
 
-    // Okay, allow modules to add prefs one at a time.
-    // We are going to do it this way to *ensure* that modules don't conflict
-    // in namespace.
-    $sql = "SELECT modulename FROM " . Database::prefix("modules") . " WHERE infokeys LIKE '%|prefs|%' AND active=1 ORDER BY modulename";
-    $result = Database::query($sql);
-    $everfound = 0;
-    $foundmodules = array();
-    $msettings = array();
-    $mdata = array();
-    while ($row = Database::fetchAssoc($result)) {
-        $module = $row['modulename'];
-        $info = get_module_info($module);
-        if (!isset($info['prefs']) || count($info['prefs']) <= 0) {
-            continue;
-        }
-        $tempsettings = array();
-        $tempdata = array();
-        $found = 0;
-        foreach ($info['prefs'] as $key => $val) {
-            if (!is_string($key)) {
-                $isuser = false;
-                $ischeck = false;
-            } else {
-                $isuser = preg_match("/^user_/", $key);
-                $ischeck = preg_match("/^check_/", $key);
-            }
-
-            if (is_array($val)) {
-                $v = $val[0];
-                $x = explode("|", $v);
-                $val[0] = $x[0];
-                $x[0] = $val;
-            } else {
-                $x = explode("|", $val);
-            }
-
-            $type = explode(",", $x[0]);
-            if (isset($type[1])) {
-                $type = trim($type[1]);
-            } else {
-                $type = "string";
-            }
-
-            // Okay, if we have a title section, let's copy over the last
-            // title section
-            if (strstr($type, "title")) {
-                if ($found) {
-                    $everfound = 1;
-                    $found = 0;
-                    $msettings = array_merge($msettings, $tempsettings);
-                    $mdata = array_merge($mdata, $tempdata);
-                }
-                $tempsettings = array();
-                $tempdata = array();
-            }
-
-            if (
-                !$isuser && !$ischeck && !strstr($type, "title") &&
-                    !strstr($type, "note")
-            ) {
-                continue;
-            }
-            if ($isuser) {
-                $found = 1;
-            }
-            // If this is a check preference, we need to call the modulehook
-            // checkuserpref  (requested by cortalUX)
-            if ($ischeck) {
-                $args = HookHandler::hook(
-                    "checkuserpref",
-                    array("name" => $key, "pref" => $x[0], "default" => $x[1]),
-                    false,
-                    $module
-                );
-                if (isset($args['allow']) && !$args['allow']) {
-                    continue;
-                }
-                $x[0] = $args['pref'];
-                $x[1] = $args['default'];
-                $found = 1;
-            }
-
-            $tempsettings[$module . "___" . $key] = $x[0];
-            if (array_key_exists(1, $x)) {
-                $tempdata[$module . "___" . $key] = $x[1];
-            }
-        }
-        if ($found) {
-            $msettings = array_merge($msettings, $tempsettings);
-            $mdata = array_merge($mdata, $tempdata);
-            $everfound = 1;
-        }
-
-        // If we found a user editable one
-        if ($everfound) {
-            // Collect the values
-            $foundmodules[] = $module;
-        }
-    }
     if ($foundmodules != array()) {
         $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE modulename IN ('" . implode("','", $foundmodules) . "') AND (setting LIKE 'user_%' OR setting LIKE 'check_%') AND userid='" . $session['user']['acctid'] . "'";
         $result1 = Database::query($sql);
