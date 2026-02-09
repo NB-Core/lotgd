@@ -827,9 +827,13 @@ class PageParts
         $preHook = HookHandler::hook('headscript_pre', ['markup' => []]);
         $midHook = HookHandler::hook('headscript_mid', ['markup' => []]);
 
-        $headscriptPre = $preHeadscript . self::normalizeHeadHookMarkup($preHook);
-        $headscriptVendor = Output::renderVendorAssets();
-        $headscriptMid = Output::renderHeadMarkup() . self::normalizeHeadHookMarkup($midHook);
+        $headscriptPre = $preHeadscript
+            . self::normalizeHeadHookMarkup($preHook)
+            . Output::renderVendorAssets(Output::VENDOR_BUCKET_PRE);
+        $headscriptVendor = Output::renderVendorAssets(Output::VENDOR_BUCKET_DEFAULT);
+        $headscriptMid = Output::renderVendorAssets(Output::VENDOR_BUCKET_MID)
+            . Output::renderHeadMarkup()
+            . self::normalizeHeadHookMarkup($midHook);
         $headscriptMarkup = '';
         if (!empty($headscript)) {
             $headscriptMarkup = "<script type='text/javascript' charset='UTF-8'>" . $headscript . '</script>';
