@@ -308,4 +308,14 @@ div.debug {
 .trhead  { background-color:#006600; color:#FFFFFF; }
 .trlight { background-color:#004000; }
 .trdark  { background-color:#003000; }
+body.template-jade table.dataTable > tbody > tr.trhead {
+    background-color: #006600;
+    color: #FFFFFF;
+}
+body.template-jade table.dataTable > tbody > tr.trlight {
+    background-color: #004000;
+}
+body.template-jade table.dataTable > tbody > tr.trdark {
+    background-color: #003000;
+}
 .trhilight { background-color: #333333; }
