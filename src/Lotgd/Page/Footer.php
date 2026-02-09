@@ -83,7 +83,7 @@ class Footer
             $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
             if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('async/setup.php')) {
-                    require 'async/setup.php';
+                    require_once 'async/setup.php';
                 }
             }
         } else {
@@ -227,7 +227,7 @@ class Footer
         $maillink_add_after = '';
         if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
             if (file_exists('async/setup.php')) {
-                require 'async/setup.php';
+                require_once 'async/setup.php';
             }
         }
 
