@@ -1077,6 +1077,7 @@ JS;
                 var activeSection = '';
                 var useDataTable = typeof jQuery.fn.DataTable !== 'undefined';
                 var tableApi = null;
+                var searchQuery = '';
                 function applyLegacyRowClasses(\$rows) {
                     var visibleIndex = 0;
                     \$rows.removeClass('trlight trdark');
@@ -1088,6 +1089,27 @@ JS;
                         var stripeClass = (visibleIndex % 2 === 0) ? 'trlight' : 'trdark';
                         \$row.addClass(stripeClass);
                         visibleIndex++;
+                    });
+                }
+                function applyLegacyFilters() {
+                    var \$rows = \$table.find('tbody tr');
+                    var query = searchQuery.toLowerCase();
+                    var visibleIndex = 0;
+                    \$rows.each(function () {
+                        var \$row = jQuery(this);
+                        var rowSection = \$row.data('section') || '';
+                        var matchesSection = !activeSection || rowSection === activeSection;
+                        var matchesSearch = !query || \$row.text().toLowerCase().indexOf(query) !== -1;
+                        var shouldShow = matchesSection && matchesSearch;
+                        \$row.toggle(shouldShow);
+                        \$row.css('visibility', shouldShow ? 'visible' : 'hidden');
+                        if (!\$row.hasClass('trhead')) {
+                            \$row.removeClass('trlight trdark');
+                            if (shouldShow) {
+                                \$row.addClass(visibleIndex % 2 === 0 ? 'trlight' : 'trdark');
+                                visibleIndex++;
+                            }
+                        }
                     });
                 }
                 if (useDataTable) {
@@ -1127,16 +1149,7 @@ JS;
                         }
                         tableApi.search(globalSearch).draw();
                     } else {
-                        var \$rows = \$table.find('tr');
-                        if (!activeSection) {
-                            \$rows.show();
-                        } else {
-                            \$rows.hide();
-                            \$rows.filter(function () {
-                                return jQuery(this).data('section') === activeSection;
-                            }).show();
-                        }
-                        applyLegacyRowClasses(\$table.find('tbody tr:visible'));
+                        applyLegacyFilters();
                     }
                     if (\$tabInput.length) {
                         \$tabInput.val(sectionId);
@@ -1170,12 +1183,15 @@ JS;
                     width: '100%',
                     maxWidth: '320px'
                 });
-                if (useDataTable) {
-                    \$searchInput.on('keyup', function () {
-                        tableApi.search(this.value).draw();
-                    });
-                    \$searchWrapper.append(\$searchInput);
-                }
+                \$searchInput.on('keyup', function () {
+                    searchQuery = this.value;
+                    if (useDataTable) {
+                        tableApi.search(searchQuery).draw();
+                    } else {
+                        applyLegacyFilters();
+                    }
+                });
+                \$searchWrapper.append(\$searchInput);
                 var \$tabList = jQuery('<div/>', {
                     role: 'group',
                     'aria-label': $encodedTabListLabel,
@@ -1210,9 +1226,7 @@ JS;
                     }
                     appendTab(key, formSections[$formId][key], formSections[$formId][key]);
                 }
-                if (\$searchWrapper.children().length) {
-                    \$tabsContainer.append(\$searchWrapper);
-                }
+                \$tabsContainer.append(\$searchWrapper);
                 \$tabsContainer.append(\$tabList);
                 \$tabsContainer.append(\"<div style='display: block;'>&nbsp;</div>\");
                 \$tabsContainer.append(\"<input type='hidden' name='showFormTabIndex[$formId]' value='$startIndex' id='showFormTabIndex-$formId'>\");
