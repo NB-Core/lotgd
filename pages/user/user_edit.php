@@ -76,7 +76,7 @@ if (Http::get('subop') == "") {
     $args['user']['test'] = "Is out there???";
     */
     $showformargs = modulehook("modifyuserview", array("userinfo" => $userinfo, "user" => $row));
-    $info = Forms::showForm($showformargs['userinfo'], $showformargs['user']);
+    $info = Forms::showFormTabbed($showformargs['userinfo'], $showformargs['user']);
     $output->rawOutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, $charset) . "\" name='oldvalues'>");
     $output->rawOutput("</form>");
         $output->output("`n`nLast Page Viewed:`n");
