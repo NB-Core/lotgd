@@ -639,7 +639,11 @@ JS;
 
             case 'password':
                 $out = array_key_exists($key, $row) ? $row[$key] : '';
-                $output->rawOutput("<input id='$entityId' type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, $charset) . "'>");
+                $autocomplete = isset($info[2]) ? trim((string) $info[2]) : '';
+                $autocompleteAttribute = $autocomplete !== ''
+                    ? " autocomplete='" . HTMLEntities($autocomplete, ENT_COMPAT, $charset) . "'"
+                    : '';
+                $output->rawOutput("<input id='$entityId' type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, $charset) . "'" . $autocompleteAttribute . '>');
                 break;
 
             case 'bool':
