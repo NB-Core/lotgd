@@ -916,7 +916,143 @@ JS;
         $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
         $output->rawOutput("
             (function () {
+                function initFallback() {
+                    var sections = window.formSections ? window.formSections[$formId] : null;
+                    if (!sections) {
+                        return;
+                    }
+                    var table = document.getElementById('showFormTable$formId');
+                    if (!table) {
+                        return;
+                    }
+                    var container = document.getElementById('showFormSection$formId');
+                    if (!container) {
+                        return;
+                    }
+                    container.innerHTML = '';
+                    var tabList = document.createElement('div');
+                    tabList.setAttribute('role', 'group');
+                    tabList.setAttribute('aria-label', $encodedTabListLabel);
+                    tabList.id = 'showFormTablist$formId';
+                    tabList.className = 'prefs-tabs';
+                    container.appendChild(tabList);
+                    function appendTab(sectionId, label, sectionName) {
+                        var tab = document.createElement('button');
+                        tab.type = 'button';
+                        tab.id = 'showFormTab' + sectionId;
+                        tab.className = 'trhead';
+                        tab.setAttribute('data-showform-tab', '$formId');
+                        tab.setAttribute('data-section-id', sectionId);
+                        tab.setAttribute('role', 'button');
+                        tab.setAttribute('aria-pressed', 'false');
+                        tab.style.cssText = 'float: left; cursor: pointer; padding: 5px; border: 1px solid #000000;';
+                        tab.setAttribute('data-section', sectionName || '');
+                        tab.appendChild(document.createTextNode(label));
+                        tabList.appendChild(tab);
+                    }
+                    var allLabel = $encodedAllLabel;
+                    appendTab(0, allLabel, '');
+                    for (var key in sections) {
+                        if (!Object.prototype.hasOwnProperty.call(sections, key)) {
+                            continue;
+                        }
+                        appendTab(key, sections[key], sections[key]);
+                    }
+                    var spacer = document.createElement('div');
+                    spacer.style.display = 'block';
+                    spacer.innerHTML = '&nbsp;';
+                    container.appendChild(spacer);
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'showFormTabIndex[$formId]';
+                    hidden.value = '$startIndex';
+                    hidden.id = 'showFormTabIndex-$formId';
+                    container.appendChild(hidden);
+                    function setActiveTab(sectionId, sectionName) {
+                        var activeLabel = sectionName || '';
+                        var rows = table.querySelectorAll('tbody tr');
+                        var visibleIndex = 0;
+                        rows.forEach(function (row) {
+                            var rowSection = row.getAttribute('data-section') || '';
+                            var shouldShow = !activeLabel || rowSection === activeLabel;
+                            row.style.display = shouldShow ? '' : 'none';
+                            row.style.visibility = shouldShow ? 'visible' : 'hidden';
+                            if (row.classList.contains('trhead')) {
+                                return;
+                            }
+                            row.classList.remove('trlight', 'trdark');
+                            if (shouldShow) {
+                                row.classList.add(visibleIndex % 2 === 0 ? 'trlight' : 'trdark');
+                                visibleIndex++;
+                            }
+                        });
+                        hidden.value = sectionId;
+                        var tabs = tabList.querySelectorAll('[data-showform-tab=\"$formId\"]');
+                        tabs.forEach(function (tab) {
+                            tab.classList.remove('is-active');
+                            tab.setAttribute('aria-pressed', 'false');
+                            tab.tabIndex = -1;
+                        });
+                        var activeTab = document.getElementById('showFormTab' + sectionId);
+                        if (activeTab) {
+                            activeTab.classList.add('is-active');
+                            activeTab.setAttribute('aria-pressed', 'true');
+                            activeTab.tabIndex = 0;
+                            table.setAttribute('aria-labelledby', activeTab.id);
+                        }
+                    }
+                    var initialSection = '';
+                    if ($startIndex && sections[$startIndex]) {
+                        initialSection = sections[$startIndex];
+                    }
+                    setActiveTab($startIndex, initialSection);
+                    tabList.addEventListener('click', function (event) {
+                        var target = event.target;
+                        if (!target || !target.hasAttribute('data-showform-tab')) {
+                            return;
+                        }
+                        var sectionId = target.getAttribute('data-section-id');
+                        var sectionName = target.getAttribute('data-section') || '';
+                        setActiveTab(sectionId, sectionName);
+                    });
+                    tabList.addEventListener('keydown', function (event) {
+                        var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                        if (keys.indexOf(event.key) === -1) {
+                            return;
+                        }
+                        var tabs = tabList.querySelectorAll('[data-showform-tab=\"$formId\"]');
+                        if (!tabs.length) {
+                            return;
+                        }
+                        var currentIndex = 0;
+                        for (var i = 0; i < tabs.length; i++) {
+                            if (tabs[i] === document.activeElement) {
+                                currentIndex = i;
+                                break;
+                            }
+                        }
+                        var nextIndex = currentIndex;
+                        if (event.key === 'ArrowLeft') {
+                            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                        }
+                        if (event.key === 'ArrowRight') {
+                            nextIndex = (currentIndex + 1) % tabs.length;
+                        }
+                        if (event.key === 'Home') {
+                            nextIndex = 0;
+                        }
+                        if (event.key === 'End') {
+                            nextIndex = tabs.length - 1;
+                        }
+                        event.preventDefault();
+                        tabs[nextIndex].focus();
+                        var nextSectionId = tabs[nextIndex].getAttribute('data-section-id');
+                        var nextSectionName = tabs[nextIndex].getAttribute('data-section') || '';
+                        setActiveTab(nextSectionId, nextSectionName);
+                    });
+                }
                 if (typeof jQuery === 'undefined') {
+                    initFallback();
                     return;
                 }
                 var \$table = jQuery('#showFormTable$formId');
