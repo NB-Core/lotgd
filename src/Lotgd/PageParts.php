@@ -830,8 +830,8 @@ class PageParts
         $headscriptPre = $preHeadscript
             . self::normalizeHeadHookMarkup($preHook)
             . Output::renderVendorAssets(Output::VENDOR_BUCKET_PRE);
-        $headscriptVendor = Output::renderVendorAssets(Output::VENDOR_BUCKET_DEFAULT);
-        $headscriptMid = Output::renderVendorAssets(Output::VENDOR_BUCKET_MID)
+        $headscriptMid = Output::renderVendorAssets(Output::VENDOR_BUCKET_DEFAULT)
+            . Output::renderVendorAssets(Output::VENDOR_BUCKET_MID)
             . Output::renderHeadMarkup()
             . self::normalizeHeadHookMarkup($midHook);
         $headscriptMarkup = '';
@@ -844,7 +844,6 @@ class PageParts
             'header',
             [
                 'headscript_pre' => $headscriptPre,
-                'headscript_vendor' => $headscriptVendor,
                 'headscript_mid' => $headscriptMid,
                 'headscript' => $headscriptMarkup,
             ]
