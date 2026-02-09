@@ -824,18 +824,52 @@ class PageParts
      */
     public static function insertHeadScript(string $header, string $preHeadscript, string $headscript): string
     {
-        $markup = $preHeadscript;
-        $markup .= Output::renderVendorAssets();
-        $markup .= Output::renderHeadMarkup();
+        $preHook = HookHandler::hook('headscript_pre', ['markup' => []]);
+        $midHook = HookHandler::hook('headscript_mid', ['markup' => []]);
+
+        $headscriptPre = $preHeadscript . self::normalizeHeadHookMarkup($preHook);
+        $headscriptVendor = Output::renderVendorAssets();
+        $headscriptMid = Output::renderHeadMarkup() . self::normalizeHeadHookMarkup($midHook);
+        $headscriptMarkup = '';
         if (!empty($headscript)) {
-            $markup .= "<script type='text/javascript' charset='UTF-8'>" . $headscript . '</script>';
+            $headscriptMarkup = "<script type='text/javascript' charset='UTF-8'>" . $headscript . '</script>';
         }
 
         return self::applyTemplateStringReplacements(
             $header,
             'header',
-            ['headscript' => $markup]
+            [
+                'headscript_pre' => $headscriptPre,
+                'headscript_vendor' => $headscriptVendor,
+                'headscript_mid' => $headscriptMid,
+                'headscript' => $headscriptMarkup,
+            ]
         );
+    }
+
+    /**
+     * Normalize hook markup arrays into a raw markup string.
+     *
+     * @internal This method is intended for internal use only and should not be used directly by external code.
+     */
+    private static function normalizeHeadHookMarkup(array $hookResult): string
+    {
+        $markup = $hookResult['markup'] ?? $hookResult;
+        if (is_string($markup)) {
+            return $markup;
+        }
+        if (!is_array($markup)) {
+            return '';
+        }
+
+        $chunks = [];
+        foreach ($markup as $chunk) {
+            if (is_string($chunk)) {
+                $chunks[] = $chunk;
+            }
+        }
+
+        return $chunks === [] ? '' : implode('', $chunks);
     }
 
     /**

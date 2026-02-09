@@ -116,6 +116,7 @@ modules.
   - Templates live under `templates_twig/<skin>/`.  
   - Each skin requires a `config.json` and core files (`page.twig`, `popup.twig`).  
   - Old `.htm` templates still work but are deprecated.
+  - Head rendering now supports `headscript_pre` and `headscript_mid` hook buckets, and base layouts emit head assets in the order: `headscript_pre`, Bootstrap assets, `headscript_mid`, `templates/common/colors.css`, template-specific styles, then `headscript`/`script`.
 
 - **Doctrine Mapping**  
   - Entity mappings now rely on PHP attributes; annotation-based mappings are no longer supported.  
