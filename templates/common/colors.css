@@ -92,10 +92,18 @@
 
 .colburlywood { color: #DEB887; }
 
+/* Table things including data tables */
+table.dataTable > tbody > tr.trhead,
 .trhead    { background-color:#FFFFFF; color:#000000; }
 
+table.dataTable > tbody > tr.trlight,
 .trlight   { background-color:#CDC8AA; color:#000000; }
 
+table.dataTable > tbody > tr.trdark,
 .trdark    { background-color:#A3A6A3; color:#000000; }
 
+table.dataTable > tbody > tr.trhighlight,
 .trhilight { background-color:#CDC8AA; color:#000000; }
+
+.trlight td { color: #000; }
+.trdark td { color: #000; }
