@@ -175,10 +175,11 @@ function pollForUpdates() {
 
 // Start polling system
 function startAjaxPolling() {
-    if (window.__lotgdAsyncPollingInitialized) {
+    var pollingRoot = window.top || window;
+    if (pollingRoot.__lotgdPollingInitialized) {
         return;
     }
-    window.__lotgdAsyncPollingInitialized = true;
+    pollingRoot.__lotgdPollingInitialized = true;
     console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
     // Regular polling
@@ -187,7 +188,8 @@ function startAjaxPolling() {
 
 // Initialize after page load
 setTimeout(function() {
-    if (!window.__lotgdAsyncPollingInitialized
+    var pollingRoot = window.top || window;
+    if (!pollingRoot.__lotgdPollingInitialized
         && typeof lotgd_poll_interval_ms !== 'undefined'
         && lotgd_poll_interval_ms > 0) {
         startAjaxPolling();
