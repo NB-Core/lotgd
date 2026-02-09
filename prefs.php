@@ -334,9 +334,9 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         "bio" => "Short Character Biography (255 chars max),string,255",
         "nojump" => "Don't jump to comment areas after refreshing or posting a comment?,bool",
     );
-    Output::requireVendorAsset('datatables', 'css');
+    Output::requireVendorAsset('datatables', 'css', Output::VENDOR_BUCKET_PRE);
     Output::requireVendorAsset('jquery', 'js');
-    Output::requireVendorAsset('datatables', 'js');
+    Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_PRE);
     $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
     $warn = Translator::translateInline('Your password is too short.  It must be at least 4 characters long.');
     $output->rawOutput("<script language='JavaScript'>
