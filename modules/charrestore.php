@@ -621,7 +621,7 @@ function charrestore_run(): void
                 }
 
                 if ($key === 'laston') {
-                    $metadata->setFieldValue($account, $key, new \DateTimeImmutable('-1 day'));
+                    $metadata->setFieldValue($account, $key, new \DateTime('-1 day'));
                     continue;
                 }
 
@@ -638,7 +638,7 @@ function charrestore_run(): void
                     if ($val < DATETIME_DATEMIN) {
                         $val = DATETIME_DATEMIN; // fix old time stamps
                     }
-                    $metadata->setFieldValue($account, $key, new \DateTimeImmutable($val));
+                    $metadata->setFieldValue($account, $key, new \DateTime($val));
                     continue;
                 }
 
