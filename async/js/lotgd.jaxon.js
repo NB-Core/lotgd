@@ -11,6 +11,12 @@
 (function () {
     'use strict';
 
+    if (window.__lotgdAsyncInitialized) {
+        return;
+    }
+
+    window.__lotgdAsyncInitialized = true;
+
     window.Lotgd = window.Lotgd || {};
     Lotgd.Async = Lotgd.Async || {};
     Lotgd.Async.Handler = Lotgd.Async.Handler || {};

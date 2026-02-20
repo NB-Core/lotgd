@@ -152,17 +152,13 @@ final class BootstrapMetadataCacheClearTest extends TestCase
     private function invokeClearDoctrineMetadataCache(string $cacheDir): void
     {
         $bootstrapClass = $this->resolveBootstrapClass();
-        $reflection = new \ReflectionMethod($bootstrapClass, 'clearDoctrineMetadataCache');
-        $reflection->setAccessible(true);
-        $reflection->invoke(null, $cacheDir);
+        $bootstrapClass::clearDoctrineMetadataCacheForTests($cacheDir);
     }
 
     private function invokeClearDirectoryContentsFallback(string $cacheDir): void
     {
         $bootstrapClass = $this->resolveBootstrapClass();
-        $reflection = new \ReflectionMethod($bootstrapClass, 'clearDirectoryContentsFallback');
-        $reflection->setAccessible(true);
-        $reflection->invoke(null, $cacheDir);
+        $bootstrapClass::clearDirectoryContentsFallbackForTests($cacheDir);
     }
 
     /**

@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
-    <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
+    {{ headscript_pre|raw }}
     <link rel="stylesheet" href="{{ 'bootstrap'|asset('css') }}">
+    {{ headscript_mid|raw }}
+    <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
+    {{ headscript|raw }}{{ script|raw }}
 </head>
 <body class="popup-body">
     <table class="w-100" cellpadding="5">

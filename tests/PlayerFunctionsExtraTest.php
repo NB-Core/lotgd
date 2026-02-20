@@ -42,12 +42,7 @@ final class PlayerFunctionsExtraTest extends TestCase
 
     private function resetDataCache(): void
     {
-        $ref = new \ReflectionClass(DataCache::class);
-        foreach (['cache' => [], 'path' => '', 'checkedOld' => false] as $prop => $val) {
-            $p = $ref->getProperty($prop);
-            $p->setAccessible(true);
-            $p->setValue(null, $val);
-        }
+        DataCache::resetState();
     }
 
     public function testGetPlayerSpeedFromSession(): void
@@ -70,10 +65,7 @@ final class PlayerFunctionsExtraTest extends TestCase
 
     public function testExpForNextLevelUsesCustomArray(): void
     {
-        $ref = new \ReflectionClass(DataCache::class);
-        $prop = $ref->getProperty('cache');
-        $prop->setAccessible(true);
-        $prop->setValue(null, ['exparraydk0' => [50.0, 100.0, 150.0]]);
+        DataCache::setCacheEntry('exparraydk0', [50.0, 100.0, 150.0]);
         $exp = PlayerFunctions::expForNextLevel(2, 0);
         $this->assertSame(100.0, $exp);
         $this->assertSame([50.0, 100.0, 150.0], DataCache::getInstance()->datacache('exparraydk0'));

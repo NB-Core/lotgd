@@ -16,12 +16,7 @@ final class DataCacheTest extends TestCase
     {
         $this->cacheDir = sys_get_temp_dir() . '/lotgd_cache_' . uniqid();
         mkdir($this->cacheDir, 0700, true);
-        $ref = new \ReflectionClass(DataCache::class);
-        foreach (['cache' => [], 'path' => '', 'checkedOld' => false] as $prop => $val) {
-            $p = $ref->getProperty($prop);
-            $p->setAccessible(true);
-            $p->setValue(null, $val);
-        }
+        DataCache::resetState();
         $GLOBALS['settings'] = new CacheDummySettings([
             'datacachepath' => $this->cacheDir,
             'usedatacache'  => 1,
@@ -122,10 +117,7 @@ final class DataCacheTest extends TestCase
         touch($file, time() - $seconds + 1);
         $this->assertSame($data, DataCache::getInstance()->datacache($name, $seconds));
 
-        $ref = new \ReflectionClass(DataCache::class);
-        $prop = $ref->getProperty('cache');
-        $prop->setAccessible(true);
-        $prop->setValue(null, []);
+        DataCache::resetState();
 
         touch($file, time() - $seconds - 1);
         $this->assertFalse(DataCache::getInstance()->datacache($name, $seconds));

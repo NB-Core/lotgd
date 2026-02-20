@@ -19,7 +19,6 @@ namespace Lotgd\Tests\Modules\Installer {
     use Lotgd\Modules;
     use Lotgd\Tests\Stubs\Database;
     use PHPUnit\Framework\TestCase;
-    use ReflectionProperty;
 
     /**
      * @group installer
@@ -34,9 +33,7 @@ namespace Lotgd\Tests\Modules\Installer {
         protected function tearDown(): void
         {
             Database::$queryCacheResults = [];
-            $prop = new ReflectionProperty(Modules::class, 'injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => [], 0 => []]);
+            Modules::resetInjectedModules();
         }
 
         public function testMissingFileReturnsFileNotPresent(): void
@@ -67,11 +64,9 @@ namespace Lotgd\Tests\Modules\Installer {
             Database::$queryCacheResults["inject-$name"] = [
                 ['active' => 1, 'filemoddate' => '', 'infokeys' => '|', 'version' => '1.0'],
             ];
-            $prop    = new ReflectionProperty(Modules::class, 'injectedModules');
-            $prop->setAccessible(true);
-            $current = $prop->getValue();
+            $current = Modules::getInjectedModules();
             $current[0][$name] = true;
-            $prop->setValue(null, $current);
+            Modules::setInjectedModules($current);
             $status = Modules::getStatus($name);
             $mask   = MODULE_INSTALLED | MODULE_ACTIVE | MODULE_INJECTED;
             $this->assertSame(MODULE_INSTALLED | MODULE_ACTIVE | MODULE_INJECTED, $status & $mask);

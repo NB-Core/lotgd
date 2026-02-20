@@ -11,6 +11,18 @@ td {
     font-family: Verdana, Arial, Helvetica, sans-serif;
     font-size: 12px;
 }
+body.template-puritanic_ai table.dataTable > tbody > tr.trhead {
+    background-color: #FFFFFF;
+    color: #000000;
+}
+body.template-puritanic_ai table.dataTable > tbody > tr.trlight {
+    background-color: #CDC8AA;
+    color: #000000;
+}
+body.template-puritanic_ai table.dataTable > tbody > tr.trdark {
+    background-color: #A3A6A3;
+    color: #000000;
+}
 
 .main-body {
     background-color: #000;
@@ -306,5 +318,4 @@ td.dragon {
 
 /* Specific to your HTML structure after <!--!header--> */
 /* Add styling specific to the elements in the HTML structure you provided */
-
 

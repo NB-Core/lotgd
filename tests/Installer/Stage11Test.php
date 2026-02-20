@@ -141,10 +141,7 @@ final class Stage11Test extends TestCase
      */
     private function getNavItems(): array
     {
-        $property = new \ReflectionProperty(Nav::class, 'sections');
-        $property->setAccessible(true);
-        /** @var array<string, \Lotgd\Nav\NavigationSection> $sections */
-        $sections = $property->getValue();
+        $sections = Nav::getSections();
 
         $items = [];
         foreach ($sections as $section) {

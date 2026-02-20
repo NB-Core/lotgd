@@ -198,6 +198,7 @@ JS;
         $output->rawOutput("<table cellpadding='2' cellspacing='0'>");
 
         $i = 0;
+        $currentSection = '';
         foreach ($layout as $key => $val) {
             self::renderLayoutEntry(
                 (string) $key,
@@ -208,7 +209,9 @@ JS;
                 $extensions,
                 $title_id,
                 $i,
-                $formSections
+                $formSections,
+                $currentSection,
+                false
             );
         }
 
@@ -239,6 +242,81 @@ JS;
     }
 
     /**
+     * Render a tabbed form described by the given layout array.
+     */
+    public static function showFormTabbed(array $layout, array $row, bool $nosave = false, string|bool $keypref = false): array
+    {
+        static $showform_id = 10000;
+        static $title_id = 10000;
+
+        $showform_id++;
+        $formSections = [];
+        $returnvalues = [];
+        $extensions = HookHandler::hook('showformextensions', []);
+        $output = Output::getInstance();
+
+        $output->rawOutput("<table width='100%' cellpadding='0' cellspacing='0'><tr><td>");
+        $output->rawOutput("<div id='showFormSection$showform_id'></div>");
+        $output->rawOutput("</td></tr><tr><td>&nbsp;</td></tr><tr><td>");
+        $settings = Settings::getInstance();
+        $charset  = $settings->getSetting('charset', 'UTF-8');
+        Translator::getInstance()->setSchema('showform');
+        $labelHeader = Translator::translateInline('Label');
+        $valueHeader = Translator::translateInline('Value');
+        Translator::getInstance()->setSchema();
+        $labelHeader = HTMLEntities($labelHeader, ENT_QUOTES, $charset);
+        $valueHeader = HTMLEntities($valueHeader, ENT_QUOTES, $charset);
+
+        $output->rawOutput("<table id='showFormTable$showform_id' role='tabpanel' cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<thead class='visually-hidden'><tr class='trhead'><th class='formfield-label'>{$labelHeader}</th><th class='formfield-value'>{$valueHeader}</th></tr></thead>");
+        $output->rawOutput('<tbody>');
+
+        $i = 0;
+        $currentSection = '';
+        foreach ($layout as $key => $val) {
+            self::renderLayoutEntry(
+                (string) $key,
+                $val,
+                $row,
+                $keypref,
+                $returnvalues,
+                $extensions,
+                $title_id,
+                $i,
+                $formSections,
+                $currentSection,
+                true
+            );
+        }
+
+        $output->rawOutput("</tbody></table><br>");
+
+        if ($showform_id == 10001) {
+            $startIndex = (int) Http::post('showFormTabIndex');
+            if ($startIndex < 0) {
+                $startIndex = 0;
+            }
+        } else {
+            $startIndex = 0;
+        }
+
+        Translator::getInstance()->setSchema('showform');
+        $allLabel = Translator::translateInline('All');
+        Translator::getInstance()->setSchema();
+        self::setupTabbedDataTable($showform_id, $formSections, $startIndex, $allLabel);
+
+        $output->rawOutput("</td></tr></table>");
+        Translator::getInstance()->setSchema('showform');
+        $save = Translator::translateInline('Save');
+        Translator::getInstance()->setSchema();
+        if (!$nosave) {
+            $output->rawOutput("<input type='submit' class='button' value='$save'>");
+        }
+
+        return $returnvalues;
+    }
+
+    /**
      * Render a single entry of the layout array.
      */
     private static function renderLayoutEntry(
@@ -250,7 +328,9 @@ JS;
         array $extensions,
         int &$titleId,
         int &$rowIndex,
-        array &$formSections
+        array &$formSections,
+        string &$currentSection,
+        bool $singleTable
     ): void {
         $keyout = $keypref !== false ? sprintf($keypref, $key) : $key;
 
@@ -272,24 +352,34 @@ JS;
         $info[1] = isset($info[1]) ? trim((string) $info[1]) : '';
 
         $output = Output::getInstance();
+        $settings = Settings::getInstance();
+        $charset  = $settings->getSetting('charset', 'UTF-8');
 
         if ($info[1] == 'title') {
             $titleId++;
-            $output->rawOutput('</table>');
             $formSections[$titleId] = $info[0];
-            $output->rawOutput("<table id='showFormTable$titleId' cellpadding='2' cellspacing='0'>");
-            $output->rawOutput("<tr><td colspan='2' class='trhead'>");
+            $currentSection = $info[0];
+            $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
+            if (!$singleTable) {
+                $output->rawOutput('</table>');
+                $output->rawOutput("<table id='showFormTable$titleId' role='tabpanel' aria-labelledby='showFormTab$titleId' cellpadding='2' cellspacing='0'$sectionAttribute>");
+            }
+            $output->rawOutput("<tr$sectionAttribute class='trhead'><td class='formfield-label'>");
             $output->outputNotl("`b%s`b", $info[0], true);
-            $output->rawOutput('</td></tr>');
+            $output->rawOutput("</td><td class='formfield-value'></td></tr>");
             $rowIndex = 0;
             return;
         }
 
         if ($info[1] == 'note') {
-            $output->rawOutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td colspan='2'>");
+            $sectionAttribute = '';
+            if ($currentSection !== '') {
+                $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
+            }
+            $output->rawOutput("<tr$sectionAttribute class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label'>");
             $output->outputNotl("`i%s`i", $info[0], true);
             $rowIndex++;
-            $output->rawOutput('</td></tr>');
+            $output->rawOutput("</td><td class='formfield-value'></td></tr>");
             return;
         }
 
@@ -298,12 +388,14 @@ JS;
         }
 
         $fieldId = 'form-' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $keyout);
-        $settings = Settings::getInstance();
-        $charset  = $settings->getSetting('charset', 'UTF-8');
 
         $entityFieldId = HTMLEntities($fieldId, ENT_QUOTES, $charset);
 
-        $output->rawOutput("<tr class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
+        $sectionAttribute = '';
+        if ($currentSection !== '') {
+            $sectionAttribute = " data-section='" . HTMLEntities($currentSection, ENT_QUOTES, $charset) . "'";
+        }
+        $output->rawOutput("<tr$sectionAttribute class='" . ($rowIndex % 2 ? 'trlight' : 'trdark') . "'><td class='formfield-label' valign='top'>");
         $output->rawOutput("<label for='$entityFieldId'>");
         $output->outputNotl('%s', $info[0], true);
         $output->rawOutput("</label></td><td class='formfield-value' valign='top'>");
@@ -547,7 +639,11 @@ JS;
 
             case 'password':
                 $out = array_key_exists($key, $row) ? $row[$key] : '';
-                $output->rawOutput("<input id='$entityId' type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, $charset) . "'>");
+                $autocomplete = isset($info[2]) ? trim((string) $info[2]) : '';
+                $autocompleteAttribute = $autocomplete !== ''
+                    ? " autocomplete='" . HTMLEntities($autocomplete, ENT_COMPAT, $charset) . "'"
+                    : '';
+                $output->rawOutput("<input id='$entityId' type='password' name='$keyout' value='" . HTMLEntities($out, ENT_COMPAT, $charset) . "'" . $autocompleteAttribute . '>');
                 break;
 
             case 'bool':
@@ -667,51 +763,141 @@ JS;
         }
 
         $output = Output::getInstance();
+        $tabListLabel = Translator::translateInline('Form sections');
+        $encodedTabListLabel = json_encode($tabListLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         if ($formId == 1) {
             $output->rawOutput(
                 "<script language='JavaScript'>
                 function prepare_form(id){
                     var theTable;
-                    var theDivs='';
-                    var x=0;
-                    var weight='';
-                    for (x in formSections[id]){
+                    var tabContainer = document.getElementById('showFormSection'+id);
+                    if (!tabContainer) {
+                        return;
+                    }
+                    tabContainer.innerHTML = '';
+                    var tabList = document.createElement('div');
+                    tabList.setAttribute('role', 'tablist');
+                    tabList.setAttribute('aria-label', $encodedTabListLabel);
+                    tabList.id = 'showFormTablist' + id;
+                    tabContainer.appendChild(tabList);
+                    for (var x in formSections[id]){
+                        if (!Object.prototype.hasOwnProperty.call(formSections[id], x)) {
+                            continue;
+                        }
                         theTable = document.getElementById('showFormTable'+x);
                         if (x != $startIndex ){
                             theTable.style.visibility='hidden';
                             theTable.style.display='none';
-                            weight='';
+                            theTable.setAttribute('aria-hidden', 'true');
                         }else{
                             theTable.style.visibility='visible';
                             theTable.style.display='inline';
-                            weight='color: yellow;';
+                            theTable.setAttribute('aria-hidden', 'false');
                         }
-                        theDivs += \"<div id='showFormButton\"+x+\"' class='trhead' style='\"+weight+\"float: left; cursor: pointer; cursor: hand; padding: 5px; border: 1px solid #000000;' onClick='showFormTabClick(\"+id+\",\"+x+\");'>\"+formSections[id][x]+\"</div>\";
+                        var button = document.createElement('button');
+                        button.type = 'button';
+                        button.id = 'showFormTab' + x;
+                        button.className = 'trhead';
+                        button.setAttribute('role', 'tab');
+                        button.setAttribute('aria-controls', 'showFormTable' + x);
+                        button.setAttribute('aria-selected', 'false');
+                        button.tabIndex = -1;
+                        button.dataset.sectionId = x;
+                        button.style.cssText = 'float: left; cursor: pointer; padding: 5px; border: 1px solid #000000;';
+                        button.appendChild(document.createTextNode(formSections[id][x]));
+                        tabList.appendChild(button);
+                        theTable.setAttribute('role', 'tabpanel');
+                        theTable.setAttribute('aria-labelledby', button.id);
                     }
-                    theDivs += \"<div style='display: block;'>&nbsp;</div>\";
-                    theDivs += \"<input type='hidden' name='showFormTabIndex' value='$startIndex' id='showFormTabIndex'>\";
-                    document.getElementById('showFormSection'+id).innerHTML = theDivs;
+                    var spacer = document.createElement('div');
+                    spacer.style.display = 'block';
+                    spacer.innerHTML = '&nbsp;';
+                    tabContainer.appendChild(spacer);
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'showFormTabIndex';
+                    hidden.value = '$startIndex';
+                    hidden.id = 'showFormTabIndex-' + id;
+                    tabContainer.appendChild(hidden);
+                    tabList.addEventListener('keydown', function (event) {
+                        showFormTabKeydown(event, id);
+                    });
+                    tabList.addEventListener('click', function (event) {
+                        var button = event.target.closest('[role=\"tab\"]');
+                        if (!button || !tabList.contains(button)) {
+                            return;
+                        }
+                        showFormTabClick(id, button.dataset.sectionId);
+                        button.focus();
+                    });
+                    showFormTabClick(id, $startIndex);
                 }
                 function showFormTabClick(formid,sectionid){
                     var theTable;
                     var theButton;
-                    for (x in formSections[formid]){
+                    for (var x in formSections[formid]){
+                        if (!Object.prototype.hasOwnProperty.call(formSections[formid], x)) {
+                            continue;
+                        }
                         theTable = document.getElementById('showFormTable'+x);
-                        theButton = document.getElementById('showFormButton'+x);
+                        theButton = document.getElementById('showFormTab'+x);
+                        theTable.setAttribute('role', 'tabpanel');
+                        theTable.setAttribute('aria-labelledby', theButton.id);
                         if (x == sectionid){
                             theTable.style.visibility='visible';
                             theTable.style.display='inline';
-                            theButton.style.fontWeight='normal';
+                            theTable.setAttribute('aria-hidden', 'false');
                             theButton.style.color='yellow';
-                            document.getElementById('showFormTabIndex').value = sectionid;
+                            theButton.setAttribute('aria-selected', 'true');
+                            theButton.tabIndex = 0;
+                            document.getElementById('showFormTabIndex-' + formid).value = sectionid;
                         }else{
                             theTable.style.visibility='hidden';
                             theTable.style.display='none';
-                            theButton.style.fontWeight='normal';
+                            theTable.setAttribute('aria-hidden', 'true');
                             theButton.style.color='';
+                            theButton.setAttribute('aria-selected', 'false');
+                            theButton.tabIndex = -1;
                         }
                     }
+                }
+                function showFormTabKeydown(event, formid){
+                    var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                    if (keys.indexOf(event.key) === -1) {
+                        return;
+                    }
+                    var tabList = document.getElementById('showFormTablist' + formid);
+                    if (!tabList) {
+                        return;
+                    }
+                    var tabs = tabList.querySelectorAll('[role=\"tab\"]');
+                    if (!tabs.length) {
+                        return;
+                    }
+                    var currentIndex = 0;
+                    for (var i = 0; i < tabs.length; i++) {
+                        if (tabs[i] === document.activeElement) {
+                            currentIndex = i;
+                            break;
+                        }
+                    }
+                    var nextIndex = currentIndex;
+                    if (event.key === 'ArrowLeft') {
+                        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                    }
+                    if (event.key === 'ArrowRight') {
+                        nextIndex = (currentIndex + 1) % tabs.length;
+                    }
+                    if (event.key === 'Home') {
+                        nextIndex = 0;
+                    }
+                    if (event.key === 'End') {
+                        nextIndex = tabs.length - 1;
+                    }
+                    event.preventDefault();
+                    tabs[nextIndex].focus();
+                    showFormTabClick(formid, tabs[nextIndex].dataset.sectionId);
                 }
                 formSections = new Array();
                 </script>"
@@ -722,5 +908,371 @@ JS;
         $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
         $output->rawOutput("prepare_form($formId);</script>");
+    }
+
+    /**
+     * Output tab handling JavaScript for a tabbed form rendered as a single table.
+     */
+    private static function setupTabbedDataTable(
+        int $formId,
+        array $sections,
+        int $startIndex,
+        string $allLabel
+    ): void {
+        $output = Output::getInstance();
+        $tabListLabel = Translator::translateInline('Form sections');
+        $searchLabel = Translator::translateInline('Search');
+        $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $encodedAllLabel = json_encode($allLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $encodedTabListLabel = json_encode($tabListLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $encodedSearchLabel = json_encode($searchLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $output->rawOutput("<script language='JavaScript'>");
+        $output->rawOutput("window.formSections = window.formSections || [];");
+        $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
+        $output->rawOutput("
+            (function () {
+                function initFallback() {
+                    var sections = window.formSections ? window.formSections[$formId] : null;
+                    if (!sections) {
+                        return;
+                    }
+                    var table = document.getElementById('showFormTable$formId');
+                    if (!table) {
+                        return;
+                    }
+                    var container = document.getElementById('showFormSection$formId');
+                    if (!container) {
+                        return;
+                    }
+                    container.innerHTML = '';
+                    var tabList = document.createElement('div');
+                    tabList.setAttribute('role', 'group');
+                    tabList.setAttribute('aria-label', $encodedTabListLabel);
+                    tabList.id = 'showFormTablist$formId';
+                    tabList.className = 'prefs-tabs';
+                    container.appendChild(tabList);
+                    function appendTab(sectionId, label, sectionName) {
+                        var tab = document.createElement('button');
+                        tab.type = 'button';
+                        tab.id = 'showFormTab' + sectionId;
+                        tab.className = 'trhead';
+                        tab.setAttribute('data-showform-tab', '$formId');
+                        tab.setAttribute('data-section-id', sectionId);
+                        tab.setAttribute('role', 'button');
+                        tab.setAttribute('aria-pressed', 'false');
+                        tab.style.cssText = 'float: left; cursor: pointer; padding: 5px; border: 1px solid #000000;';
+                        tab.setAttribute('data-section', sectionName || '');
+                        tab.appendChild(document.createTextNode(label));
+                        tabList.appendChild(tab);
+                    }
+                    var allLabel = $encodedAllLabel;
+                    appendTab(0, allLabel, '');
+                    for (var key in sections) {
+                        if (!Object.prototype.hasOwnProperty.call(sections, key)) {
+                            continue;
+                        }
+                        appendTab(key, sections[key], sections[key]);
+                    }
+                    var spacer = document.createElement('div');
+                    spacer.style.display = 'block';
+                    spacer.innerHTML = '&nbsp;';
+                    container.appendChild(spacer);
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'showFormTabIndex[$formId]';
+                    hidden.value = '$startIndex';
+                    hidden.id = 'showFormTabIndex-$formId';
+                    container.appendChild(hidden);
+                    function setActiveTab(sectionId, sectionName) {
+                        var activeLabel = sectionName || '';
+                        var rows = table.querySelectorAll('tbody tr');
+                        var visibleIndex = 0;
+                        rows.forEach(function (row) {
+                            var rowSection = row.getAttribute('data-section') || '';
+                            var shouldShow = !activeLabel || rowSection === activeLabel;
+                            row.style.display = shouldShow ? '' : 'none';
+                            row.style.visibility = shouldShow ? 'visible' : 'hidden';
+                            if (row.classList.contains('trhead')) {
+                                return;
+                            }
+                            row.classList.remove('trlight', 'trdark');
+                            if (shouldShow) {
+                                row.classList.add(visibleIndex % 2 === 0 ? 'trlight' : 'trdark');
+                                visibleIndex++;
+                            }
+                        });
+                        hidden.value = sectionId;
+                        var tabs = tabList.querySelectorAll('[data-showform-tab=\"$formId\"]');
+                        tabs.forEach(function (tab) {
+                            tab.classList.remove('is-active');
+                            tab.setAttribute('aria-pressed', 'false');
+                            tab.tabIndex = -1;
+                        });
+                        var activeTab = document.getElementById('showFormTab' + sectionId);
+                        if (activeTab) {
+                            activeTab.classList.add('is-active');
+                            activeTab.setAttribute('aria-pressed', 'true');
+                            activeTab.tabIndex = 0;
+                            table.setAttribute('aria-labelledby', activeTab.id);
+                        }
+                    }
+                    var initialSection = '';
+                    if ($startIndex && sections[$startIndex]) {
+                        initialSection = sections[$startIndex];
+                    }
+                    setActiveTab($startIndex, initialSection);
+                    tabList.addEventListener('click', function (event) {
+                        var target = event.target;
+                        if (!target || !target.hasAttribute('data-showform-tab')) {
+                            return;
+                        }
+                        var sectionId = target.getAttribute('data-section-id');
+                        var sectionName = target.getAttribute('data-section') || '';
+                        setActiveTab(sectionId, sectionName);
+                    });
+                    tabList.addEventListener('keydown', function (event) {
+                        var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                        if (keys.indexOf(event.key) === -1) {
+                            return;
+                        }
+                        var tabs = tabList.querySelectorAll('[data-showform-tab=\"$formId\"]');
+                        if (!tabs.length) {
+                            return;
+                        }
+                        var currentIndex = 0;
+                        for (var i = 0; i < tabs.length; i++) {
+                            if (tabs[i] === document.activeElement) {
+                                currentIndex = i;
+                                break;
+                            }
+                        }
+                        var nextIndex = currentIndex;
+                        if (event.key === 'ArrowLeft') {
+                            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                        }
+                        if (event.key === 'ArrowRight') {
+                            nextIndex = (currentIndex + 1) % tabs.length;
+                        }
+                        if (event.key === 'Home') {
+                            nextIndex = 0;
+                        }
+                        if (event.key === 'End') {
+                            nextIndex = tabs.length - 1;
+                        }
+                        event.preventDefault();
+                        tabs[nextIndex].focus();
+                        var nextSectionId = tabs[nextIndex].getAttribute('data-section-id');
+                        var nextSectionName = tabs[nextIndex].getAttribute('data-section') || '';
+                        setActiveTab(nextSectionId, nextSectionName);
+                    });
+                }
+                if (typeof jQuery === 'undefined') {
+                    initFallback();
+                    return;
+                }
+                var \$table = jQuery('#showFormTable$formId');
+                if (!\$table.length) {
+                    return;
+                }
+                var activeSection = '';
+                var useDataTable = typeof jQuery.fn.DataTable !== 'undefined';
+                var tableApi = null;
+                var searchQuery = '';
+                function applyLegacyRowClasses(\$rows) {
+                    var visibleIndex = 0;
+                    \$rows.removeClass('trlight trdark');
+                    \$rows.each(function () {
+                        var \$row = jQuery(this);
+                        if (\$row.hasClass('trhead')) {
+                            return;
+                        }
+                        var stripeClass = (visibleIndex % 2 === 0) ? 'trlight' : 'trdark';
+                        \$row.addClass(stripeClass);
+                        visibleIndex++;
+                    });
+                }
+                function applyLegacyFilters() {
+                    var \$rows = \$table.find('tbody tr');
+                    var query = searchQuery.toLowerCase();
+                    var visibleIndex = 0;
+                    \$rows.each(function () {
+                        var \$row = jQuery(this);
+                        var rowSection = \$row.data('section') || '';
+                        var matchesSection = !activeSection || rowSection === activeSection;
+                        var matchesSearch = !query || \$row.text().toLowerCase().indexOf(query) !== -1;
+                        var shouldShow = matchesSection && matchesSearch;
+                        \$row.toggle(shouldShow);
+                        \$row.css('visibility', shouldShow ? 'visible' : 'hidden');
+                        if (!\$row.hasClass('trhead')) {
+                            \$row.removeClass('trlight trdark');
+                            if (shouldShow) {
+                                \$row.addClass(visibleIndex % 2 === 0 ? 'trlight' : 'trdark');
+                                visibleIndex++;
+                            }
+                        }
+                    });
+                }
+                if (useDataTable) {
+                    tableApi = \$table.DataTable({
+                        dom: 't',
+                        paging: false,
+                        info: false,
+                        ordering: false,
+                        searching: true,
+                        drawCallback: function () {
+                            var api = this.api();
+                            var \$rows = jQuery(api.rows({ filter: 'applied' }).nodes());
+                            applyLegacyRowClasses(\$rows);
+                        }
+                    });
+                    var globalSearch = '';
+                    \$table.on('search.dt', function () {
+                        globalSearch = tableApi.search();
+                    });
+                    jQuery.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                        if (settings.nTable !== \$table[0]) {
+                            return true;
+                        }
+                        if (!activeSection) {
+                            return true;
+                        }
+                        var row = settings.aoData[dataIndex].nTr;
+                        return jQuery(row).data('section') === activeSection;
+                    });
+                }
+                function setActiveTab(sectionId, sectionName) {
+                    activeSection = sectionName || '';
+                    if (useDataTable) {
+                        var currentSearch = tableApi.search();
+                        if (globalSearch !== currentSearch) {
+                            globalSearch = currentSearch;
+                        }
+                        tableApi.search(globalSearch).draw();
+                    } else {
+                        applyLegacyFilters();
+                    }
+                    if (\$tabInput.length) {
+                        \$tabInput.val(sectionId);
+                    }
+                    var \$tabs = jQuery('[data-showform-tab=\"$formId\"]');
+                    \$tabs.removeClass('is-active');
+                    \$tabs.attr('aria-pressed', 'false').attr('tabindex', '-1');
+                    var \$activeTab = jQuery('#showFormTab' + sectionId);
+                    \$activeTab.addClass('is-active');
+                    \$activeTab.attr('aria-pressed', 'true').attr('tabindex', '0');
+                    \$table.attr('aria-labelledby', 'showFormTab' + sectionId);
+                }
+                var \$tabsContainer = jQuery('#showFormSection$formId');
+                var tabInputSelector = \"input[name='showFormTabIndex[$formId]']\";
+                var \$tabInput = jQuery();
+                \$tabsContainer.empty();
+                var \$searchWrapper = jQuery('<div/>', {
+                    id: 'showFormTable$formId' + '_search',
+                    'class': 'datatable-search'
+                }).css({
+                    display: 'block',
+                    margin: '0 0 6px 0'
+                });
+                var \$searchInput = jQuery('<input/>', {
+                    type: 'search',
+                    id: 'showFormTable$formId' + '_search_input',
+                    placeholder: $encodedSearchLabel,
+                    'aria-label': $encodedSearchLabel
+                }).css({
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: '320px'
+                });
+                \$searchInput.on('keyup', function () {
+                    searchQuery = this.value;
+                    if (useDataTable) {
+                        tableApi.search(searchQuery).draw();
+                    } else {
+                        applyLegacyFilters();
+                    }
+                });
+                \$searchWrapper.append(\$searchInput);
+                var \$tabList = jQuery('<div/>', {
+                    role: 'group',
+                    'aria-label': $encodedTabListLabel,
+                    id: 'showFormTablist$formId',
+                    'class': 'prefs-tabs'
+                });
+                function appendTab(sectionId, label, sectionName) {
+                    var \$tab = jQuery('<button/>', {
+                        id: 'showFormTab' + sectionId,
+                        type: 'button',
+                        'class': 'trhead',
+                        'data-showform-tab': '$formId',
+                        'data-section-id': sectionId,
+                        role: 'button',
+                        'aria-pressed': 'false'
+                    })
+                        .css({
+                            float: 'left',
+                            cursor: 'pointer',
+                            padding: '5px',
+                            border: '1px solid #000000'
+                        })
+                        .text(label)
+                        .attr('data-section', sectionName || '');
+                    \$tabList.append(\$tab);
+                }
+                var allLabel = $encodedAllLabel;
+                appendTab(0, allLabel, '');
+                for (var key in formSections[$formId]) {
+                    if (!Object.prototype.hasOwnProperty.call(formSections[$formId], key)) {
+                        continue;
+                    }
+                    appendTab(key, formSections[$formId][key], formSections[$formId][key]);
+                }
+                \$tabsContainer.append(\$searchWrapper);
+                \$tabsContainer.append(\$tabList);
+                \$tabsContainer.append(\"<div style='display: block;'>&nbsp;</div>\");
+                \$tabsContainer.append(\"<input type='hidden' name='showFormTabIndex[$formId]' value='$startIndex' id='showFormTabIndex-$formId'>\");
+                \$tabInput = \$tabsContainer.find(tabInputSelector);
+                var initialSection = '';
+                if ($startIndex && formSections[$formId][$startIndex]) {
+                    initialSection = formSections[$formId][$startIndex];
+                }
+                setActiveTab($startIndex, initialSection);
+                \$tabsContainer.on('click', '[data-showform-tab=\"$formId\"]', function () {
+                    var sectionId = jQuery(this).data('section-id');
+                    var sectionName = jQuery(this).data('section') || '';
+                    setActiveTab(sectionId, sectionName);
+                });
+                \$tabsContainer.on('keydown', '[data-showform-tab=\"$formId\"]', function (event) {
+                    var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                    if (keys.indexOf(event.key) === -1) {
+                        return;
+                    }
+                    var \$tabs = \$tabList.find('[data-showform-tab=\"$formId\"]');
+                    if (!\$tabs.length) {
+                        return;
+                    }
+                    var index = \$tabs.index(this);
+                    var nextIndex = index;
+                    if (event.key === 'ArrowLeft') {
+                        nextIndex = (index - 1 + \$tabs.length) % \$tabs.length;
+                    }
+                    if (event.key === 'ArrowRight') {
+                        nextIndex = (index + 1) % \$tabs.length;
+                    }
+                    if (event.key === 'Home') {
+                        nextIndex = 0;
+                    }
+                    if (event.key === 'End') {
+                        nextIndex = \$tabs.length - 1;
+                    }
+                    event.preventDefault();
+                    var \$nextTab = \$tabs.eq(nextIndex);
+                    \$nextTab.focus();
+                    var sectionId = \$nextTab.data('section-id');
+                    var sectionName = \$nextTab.data('section') || '';
+                    setActiveTab(sectionId, sectionName);
+                });
+            })();
+        ");
+        $output->rawOutput("</script>");
     }
 }

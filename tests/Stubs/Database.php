@@ -497,6 +497,11 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
 
             return self::$instance;
         }
+
+        public static function setInstance(?DbMysqli $instance): void
+        {
+            self::$instance = $instance;
+        }
     }
 
     $productionClass = 'Lotgd\\MySQL\\Database';

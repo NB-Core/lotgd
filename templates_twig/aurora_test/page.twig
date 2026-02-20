@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
     <title>{{ title }}</title>
+    {{ headscript_pre|raw }}
     <link rel="stylesheet" href="{{ 'bootstrap'|asset('css') }}">
-    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
+    {{ headscript_mid|raw }}
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
+    <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body class="main-body">

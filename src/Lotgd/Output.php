@@ -18,9 +18,17 @@ use Lotgd\AssetManifest;
 
 class Output
 {
+    public const VENDOR_BUCKET_PRE = 'pre';
+    public const VENDOR_BUCKET_MID = 'mid';
+    public const VENDOR_BUCKET_DEFAULT = 'default';
+
     private static ?self $instance = null;
-    /** @var array<string, array{library: string, type: string}> */
-    private static array $vendorAssets = [];
+    /** @var array<string, array<string, array{library: string, type: string, bucket: string}>> */
+    private static array $vendorAssets = [
+        self::VENDOR_BUCKET_PRE => [],
+        self::VENDOR_BUCKET_MID => [],
+        self::VENDOR_BUCKET_DEFAULT => [],
+    ];
     /** @var string[] */
     private static array $headMarkup = [];
 
@@ -105,25 +113,35 @@ class Output
     }
 
     /**
+     * Override the global Output instance (primarily for tests).
+     */
+    public static function setInstance(?self $instance): void
+    {
+        self::$instance = $instance;
+    }
+
+    /**
      * Queue a vendor asset for inclusion in the page header.
      */
-    public static function requireVendorAsset(string $library, string $type): void
+    public static function requireVendorAsset(string $library, string $type, string $bucket = self::VENDOR_BUCKET_DEFAULT): void
     {
+        $bucket = self::normalizeVendorBucket($bucket);
         $key = sprintf('%s:%s', $library, $type);
-        self::$vendorAssets[$key] = ['library' => $library, 'type' => $type];
+        self::$vendorAssets[$bucket][$key] = ['library' => $library, 'type' => $type, 'bucket' => $bucket];
     }
 
     /**
      * Render queued vendor assets as link/script tags.
      */
-    public static function renderVendorAssets(): string
+    public static function renderVendorAssets(string $bucket = self::VENDOR_BUCKET_DEFAULT): string
     {
-        if (self::$vendorAssets === []) {
+        $bucket = self::normalizeVendorBucket($bucket);
+        if (self::$vendorAssets[$bucket] === []) {
             return '';
         }
 
         $markup = [];
-        foreach (self::$vendorAssets as $asset) {
+        foreach (self::$vendorAssets[$bucket] as $asset) {
             $url = AssetManifest::url($asset['library'], $asset['type']);
             if ($url === '') {
                 continue;
@@ -139,6 +157,16 @@ class Output
         }
 
         return $markup === [] ? '' : implode("\n", $markup) . "\n";
+    }
+
+    private static function normalizeVendorBucket(string $bucket): string
+    {
+        $bucket = strtolower($bucket);
+        if (in_array($bucket, [self::VENDOR_BUCKET_PRE, self::VENDOR_BUCKET_MID, self::VENDOR_BUCKET_DEFAULT], true)) {
+            return $bucket;
+        }
+
+        return self::VENDOR_BUCKET_DEFAULT;
     }
 
     /**
@@ -244,6 +272,26 @@ class Output
             $args[0] = Translator::translate($args[0]);
         }
         call_user_func_array([$this, 'outputNotl'], $args);
+    }
+
+    /**
+     * Reset buffered output and related state for clean test runs.
+     */
+    public function resetOutput(): void
+    {
+        $this->output = '';
+        $this->block_new_output = false;
+        $this->nestedtags = [
+            'font' => false,
+            'div'  => false,
+            'span' => false,
+            'i'    => false,
+            'b'    => false,
+            '<'    => false,
+            '>'    => false,
+            'B'    => false,
+        ];
+        $this->nestedtags_eval = [];
     }
 
     /**

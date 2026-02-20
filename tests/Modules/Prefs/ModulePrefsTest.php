@@ -43,7 +43,6 @@ namespace Lotgd\Tests\Modules\Prefs {
     use Lotgd\Tests\Stubs\DoctrineConnection;
     use Lotgd\Tests\Stubs\DoctrineResult;
     use PHPUnit\Framework\TestCase;
-    use ReflectionClass;
 
 /**
  * @group prefs
@@ -72,13 +71,8 @@ namespace Lotgd\Tests\Modules\Prefs {
             ModuleManager::setPrefs([]);
             ModuleManager::setMostRecentModule('');
 
-            $ref  = new ReflectionClass(Modules::class);
-            $prop = $ref->getProperty('injectedModules');
-            $prop->setAccessible(true);
-            $prop->setValue(null, [1 => [], 0 => []]);
-            $prop = $ref->getProperty('modulehookQueries');
-            $prop->setAccessible(true);
-            $prop->setValue(null, []);
+            Modules::resetInjectedModules();
+            Modules::clearModulehookQueries();
 
             $this->moduleFile = dirname(__DIR__, 3) . '/modules/modA.php';
             file_put_contents($this->moduleFile, <<<'MODULE'

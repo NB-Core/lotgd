@@ -88,6 +88,14 @@ class Database
     }
 
     /**
+     * Override the singleton database wrapper (primarily for tests).
+     */
+    public static function setInstance(?DbMysqli $instance): void
+    {
+        self::$instance = $instance;
+    }
+
+    /**
      * Get or create the Doctrine DBAL connection.
      */
     public static function getDoctrineConnection(): Connection

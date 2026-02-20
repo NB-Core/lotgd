@@ -40,6 +40,44 @@ class ExpireChars
     }
 
     /**
+     * Provide a settings instance for notifications during tests.
+     */
+    public static function setSettingsExtendedForTests(Settings $settings): void
+    {
+        self::$settingsExtended = $settings;
+    }
+
+    /**
+     * Run the cleanup routine during tests.
+     */
+    public static function cleanupExpiredAccountsForTests(): void
+    {
+        self::cleanupExpiredAccounts();
+    }
+
+    /**
+     * Run the notification routine during tests.
+     */
+    public static function notifyUpcomingExpirationsForTests(): void
+    {
+        if (! isset(self::$settingsExtended)) {
+            self::$settingsExtended = new Settings('settings_extended');
+        }
+
+        self::notifyUpcomingExpirations();
+    }
+
+    /**
+     * Expose expiration query builder for tests.
+     *
+     * @return array<int,array{acctid:int,login:string,dragonkills:int,level:int}>
+     */
+    public static function fetchAccountsToExpireForTests(int $old, int $new, int $trash, ?DateTimeImmutable $now = null): array
+    {
+        return self::fetchAccountsToExpire($old, $new, $trash, $now);
+    }
+
+    /**
      * Determine whether the expiration routine should run.
      * If the last run was more than 23 hours ago, update the timestamp
      * and return true.

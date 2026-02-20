@@ -28,11 +28,7 @@ final class ModeratedCommentaryFallbackTest extends TestCase
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
 
-        // reset Output content
-        $outputObj = Output::getInstance();
-        $ref = new \ReflectionProperty(Output::class, 'output');
-        $ref->setAccessible(true);
-        $ref->setValue($outputObj, '');
+        Output::getInstance()->resetOutput();
 
         // clear navigation
         Nav::getInstance()->clearNavTree();

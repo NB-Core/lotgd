@@ -14,10 +14,7 @@ final class FormsTest extends TestCase
     {
         global $forms_output;
         $forms_output = '';
-        $ref = new \ReflectionClass(Output::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
+        Output::setInstance(null);
     }
 
     public function testCheckboxChecked(): void

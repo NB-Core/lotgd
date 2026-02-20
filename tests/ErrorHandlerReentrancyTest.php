@@ -29,16 +29,12 @@ namespace Lotgd\Tests {
                     ErrorHandler::handleError(E_WARNING, 'Second warning', __FILE__, __LINE__);
                 }
             };
-            $ref = new \ReflectionProperty(Output::class, 'instance');
-            $ref->setAccessible(true);
-            $ref->setValue(null, $mock);
+            Output::setInstance($mock);
         }
 
         protected function tearDown(): void
         {
-            $ref = new \ReflectionProperty(Output::class, 'instance');
-            $ref->setAccessible(true);
-            $ref->setValue(null, $this->originalOutput);
+            Output::setInstance($this->originalOutput);
             unset($GLOBALS['settings']);
         }
 

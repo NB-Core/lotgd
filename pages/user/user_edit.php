@@ -76,7 +76,7 @@ if (Http::get('subop') == "") {
     $args['user']['test'] = "Is out there???";
     */
     $showformargs = modulehook("modifyuserview", array("userinfo" => $userinfo, "user" => $row));
-    $info = Forms::showForm($showformargs['userinfo'], $showformargs['user']);
+    $info = Forms::showFormTabbed($showformargs['userinfo'], $showformargs['user']);
     $output->rawOutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, $charset) . "\" name='oldvalues'>");
     $output->rawOutput("</form>");
         $output->output("`n`nLast Page Viewed:`n");
@@ -117,7 +117,7 @@ if (Http::get('subop') == "") {
         $output->rawOutput("<form action='user.php?op=savemodule&module=$module&userid=$userid$returnpetition' method='POST'>");
         Nav::add("", "user.php?op=savemodule&module=$module&userid=$userid$returnpetition");
         Translator::getInstance()->setSchema("module-$module");
-        Forms::showForm($msettings, $data);
+        Forms::showFormTabbed($msettings, $data);
         Translator::getInstance()->setSchema();
         $output->rawOutput("</form>");
     } else {
