@@ -12,13 +12,24 @@ concurrency:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    env:
+      PHP_VERSION: '8.3'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer
+      - name: Cache Composer files
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php-${{ env.PHP_VERSION }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ env.PHP_VERSION }}-composer-
+            ${{ runner.os }}-php-
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
       - name: Run static analysis
