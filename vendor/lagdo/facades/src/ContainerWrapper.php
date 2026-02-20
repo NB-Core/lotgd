@@ -28,6 +28,14 @@ final class ContainerWrapper
     }
 
     /**
+     * @return ContainerInterface|null
+     */
+    public static function getContainer(): ContainerInterface|null
+    {
+        return self::$container;
+    }
+
+    /**
      * Get a service using the container.
      *
      * @param string $serviceId
@@ -39,5 +47,17 @@ final class ContainerWrapper
     public static function getFacadeService(string $serviceId): mixed
     {
         return self::$container->get($serviceId);
+    }
+
+    /**
+     * Register the local services in a container wrapper.
+     *
+     * @param array $loggerOptions
+     *
+     * @return void
+     */
+    public static function registerLocalServices(array $loggerOptions): void
+    {
+        self::$container = new Service\Container($loggerOptions, self::$container);
     }
 }

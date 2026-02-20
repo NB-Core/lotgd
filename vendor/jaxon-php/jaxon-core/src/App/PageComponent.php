@@ -2,15 +2,14 @@
 
 namespace Jaxon\App;
 
+use Jaxon\App\Pagination\NodePaginator;
 use Jaxon\App\Pagination\PageNumberInput;
-use Jaxon\App\Pagination\Paginator;
 use Jaxon\Script\JsExpr;
 use Closure;
 
 use function is_a;
-use function is_string;
 
-abstract class PageComponent extends NodeComponent
+abstract class PageComponent extends Component\NodeComponent
 {
     /**
      * @var Closure|null
@@ -92,33 +91,47 @@ abstract class PageComponent extends NodeComponent
     /**
      * Get the paginator for the component.
      *
-     * @param Closure|string|int $xOption
+     * @param Closure $fSetup
      *
-     * @return PageComponent|Paginator
+     * @return static
      */
-    final protected function paginator(Closure|string|int $xOption): PageComponent|Paginator
+    final protected function paginatorSetup(Closure $fSetup): static
     {
-        if(is_a($xOption, Closure::class))
-        {
-            $this->fPaginatorSetup = $xOption;
-            return $this;
-        }
+         $this->fPaginatorSetup = $fSetup;
+        return $this;
+    }
 
-        if(is_string($xOption))
+    /**
+     * Get the paginator for the component.
+     *
+     * @param class-string $sComponent
+     *
+     * @return static
+     */
+    final protected function paginatorComponent(string $sComponent): static
+    {
+        // Invalid values are ignored.
+        if(is_a($sComponent, Component\Pagination::class, true))
         {
-            if(is_a($xOption, Component\Pagination::class, true))
-            {
-                $this->sPaginationComponent = $xOption;
-            }
-            // Invalid values are ignored.
-            return $this;
+            $this->sPaginationComponent = $sComponent;
         }
+        return $this;
+    }
 
-        $pageNumber = $this->input()->getInputPageNumber($xOption);
+    /**
+     * Get the paginator for the component.
+     *
+     * @param int $nPageNumber
+     *
+     * @return NodePaginator
+     */
+    final protected function paginator(int $nPageNumber): NodePaginator
+    {
+        $nPageNumber = $this->input()->getInputPageNumber($nPageNumber);
         $paginator = $this->cl($this->sPaginationComponent)
             ->item($this->paginationComponentItem())
             // This call will also set the current page number value.
-            ->paginator($pageNumber, $this->limit(), $this->count())
+            ->paginator($nPageNumber, $this->limit(), $this->count())
             // This callback will receive the final value of the current page number.
             ->page($this->input()->setFinalPageNumber(...));
 
@@ -135,17 +148,47 @@ abstract class PageComponent extends NodeComponent
      * Render the page and pagination components.
      *
      * @param JsExpr $xCall
-     * @param int $pageNumber
+     * @param int $nPageNumber
      *
      * @return void
      */
-    final protected function paginate(JsExpr $xCall, int $pageNumber): void
+    final protected function paginate(JsExpr $xCall, int $nPageNumber): void
     {
         // Get the paginator for the component.
-        $paginator = $this->paginator($pageNumber);
+        $paginator = $this->paginator($nPageNumber);
         // Now the page number is set, the page content can be rendered.
         $this->render();
         // Render the pagination component.
         $paginator->render($xCall);
+    }
+
+    /**
+     * Clear the attached DOM node content.
+     *
+     * @return void
+     */
+    final public function clear(): void
+    {
+        $this->node()->clear();
+        // Also clear the related pagination component.
+        $this->cl($this->sPaginationComponent)
+            ->item($this->paginationComponentItem())
+            ->clear();
+    }
+
+    /**
+     * Show/hide the attached DOM node.
+     *
+     * @param bool $bVisible
+     *
+     * @return void
+     */
+    final public function visible(bool $bVisible): void
+    {
+        $bVisible ? $this->node()->jq()->show() : $this->node()->jq()->hide();
+        // Also show/hide the related pagination component.
+        $this->cl($this->sPaginationComponent)
+            ->item($this->paginationComponentItem())
+            ->visible($bVisible);
     }
 }

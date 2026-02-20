@@ -17,7 +17,7 @@ A service facade can be use without any change with various frameworks, provided
 
 The following packages are currently available:
 - Symfony: https://github.com/lagdo/symfony-facades
-- Laravel (yes): https://github.com/lagdo/laravel-facades
+- Laravel: https://github.com/lagdo/laravel-facades
 - CakePHP: https://github.com/lagdo/cake-facades
 - Yii: https://github.com/lagdo/yii-facades
 
@@ -46,7 +46,7 @@ class MyFacade extends AbstractFacade
 }
 ```
 
-If for any reason a service doesn't need to be fetched from the container at each call, it can be saved in its facade class by using the `Lagdo\Facades\ServiceInstance` trait.
+If a given service doesn't need to be fetched from the container at each call, it can be saved in its facade class by using the `Lagdo\Facades\ServiceInstance` trait.
 
 ```php
 namespace App\Facades;
@@ -93,6 +93,36 @@ It needs to be provided with a `PSR-11` container, which will be done by the fra
 use Lagdo\Facades\ContainerWrapper;
 
 ContainerWrapper::setContainer($container);
+
+$container = ContainerWrapper::getContainer();
+```
+
+### Provided facade and service
+
+A default facade and a default service are provided for logging.
+
+If the provided `PSR-11` container already has a `PSR-3` logger registered, then the `Lagdo\Facades\Logger` facade can be used.
+
+```php
+use Lagdo\Facades\Logger;
+
+Logger::info('This is an information');
+```
+
+A simple `PSR-3` logger implementation is also provided.
+It will return the local services, and revert to the already defined container for the other services.
+
+```php
+use Lagdo\Facades\ContainerWrapper;
+use Lagdo\Facades\Logger;
+
+ContainerWrapper::registerLocalServices([
+    'filename' => '/path/to/logs/dir/app',
+    'extension' => '.log',
+]);
+
+// Log a message in the '/path/to/logs/dir/app.log' file.
+Logger::info('This is an information');
 ```
 
 Contribute
