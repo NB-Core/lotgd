@@ -102,9 +102,20 @@ function twofactorauth_dohook(string $hookname, array $args): array
             if (!isset($session['allowednavs']) || !is_array($session['allowednavs'])) {
                 $session['allowednavs'] = [];
             }
+
+            // Do not rely only on Nav::add() side effects here; persist the allowed target explicitly.
+            $session['allowednavs'][$challengeUrl] = true;
+            $session['allowednavs'][str_replace(' ', '%20', $challengeUrl)] = true;
+            $session['allowednavs'][str_replace(' ', '+', $challengeUrl)] = true;
+
+            // Also allow absolute serverurl form in case REQUEST_URI contains the full URL in this environment.
+            $absoluteChallengeUrl = rtrim(getsetting('serverurl', ''), '/') . '/' . $challengeUrl;
+            $session['allowednavs'][$absoluteChallengeUrl] = true;
+
+            // Keep legacy nav registration for parity with core behavior.
             Nav::add('', $challengeUrl);
 
-            // Mirror into the account payload so the forced-nav bootstrap has the challenge URL persisted for this login handoff.
+            // Persist allowlist into user payload so redirect paths that save immediately keep the challenge URL.
             $session['user']['allowednavs'] = serialize($session['allowednavs']);
             break;
 
