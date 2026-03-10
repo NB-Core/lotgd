@@ -21,7 +21,13 @@ final class Version20250724000021 extends AbstractMigration
         $table = Database::prefix('accounts');
 
         $this->addSql("ALTER TABLE {$table} MODIFY password VARCHAR(255) NOT NULL DEFAULT ''");
-        $this->addSql("ALTER TABLE {$table} ADD COLUMN IF NOT EXISTS password_algo TINYINT UNSIGNED NOT NULL DEFAULT 0");
+
+        // Check whether the column already exists before adding it (MySQL
+        // does not support ADD COLUMN IF NOT EXISTS).
+        $columns = $this->connection->executeQuery("SHOW COLUMNS FROM {$table} LIKE 'password_algo'")->fetchAllAssociative();
+        if (count($columns) === 0) {
+            $this->addSql("ALTER TABLE {$table} ADD COLUMN password_algo TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER password");
+        }
     }
 
     public function down(Schema $schema): void
@@ -29,7 +35,10 @@ final class Version20250724000021 extends AbstractMigration
         Database::setDoctrineConnection($this->connection);
         $table = Database::prefix('accounts');
 
-        $this->addSql("ALTER TABLE {$table} DROP COLUMN IF EXISTS password_algo");
+        $columns = $this->connection->executeQuery("SHOW COLUMNS FROM {$table} LIKE 'password_algo'")->fetchAllAssociative();
+        if (count($columns) > 0) {
+            $this->addSql("ALTER TABLE {$table} DROP COLUMN password_algo");
+        }
         $this->addSql("ALTER TABLE {$table} MODIFY password VARCHAR(32) NOT NULL DEFAULT ''");
     }
 }
