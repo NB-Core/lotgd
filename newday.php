@@ -135,11 +135,6 @@ if ($dp < $dkills) {
     $output->output("`c`b`#It is a New Day!`0`b`c");
     $output->rawOutput("</font>");
 
-    if (\Lotgd\PasswordHelper::isLegacy((int) ($session['user']['password_algo'] ?? 0))) {
-        $output->output("`n`b`\$⚠ Security Notice:`0`b Your password is stored using an outdated hashing method. Please change your password in the account settings as soon as possible to improve your account security.`n`n");
-        addnav('Change Password', 'prefs.php');
-    }
-
     $resurrection = Http::get('resurrection');
 
     if ($session['user']['alive'] != true) {
