@@ -34,7 +34,8 @@ PHP);
         ErrorHandler::fatalShutdown();
         $output = ob_get_clean();
 
-        $this->assertStringContainsString('Fatal example', $output);
-        $this->assertStringContainsString('fatal.php', $output);
+        $this->assertStringContainsString('An unexpected error occurred. Please try again later.', $output);
+        $this->assertStringNotContainsString('Fatal example', $output);
+        $this->assertStringNotContainsString('fatal.php', $output);
     }
 }
