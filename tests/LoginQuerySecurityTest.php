@@ -41,4 +41,23 @@ final class LoginQuerySecurityTest extends TestCase
         self::assertStringContainsString('WHERE ip = :ip AND date > :cutoff', $content);
         self::assertStringContainsString('if ($c >= 10)', $content);
     }
+
+    public function testFailedLoginInsertUsesExplicitFaillogColumnsAndCookieIdField(): void
+    {
+        $content = $this->readLoginScript();
+
+        self::assertStringContainsString('(date, post, ip, acctid, id)', $content);
+        self::assertStringNotContainsString('(date, post, ip, acctid, lgi)', $content);
+        self::assertStringContainsString('INSERT INTO %s (date, post, ip, acctid, id) VALUES', $content);
+    }
+
+    public function testFailedLoginLoggingErrorsAreHandledWithoutLeakingDatabaseErrors(): void
+    {
+        $content = $this->readLoginScript();
+
+        self::assertStringContainsString('Logging should never break login UX.', $content);
+        self::assertStringContainsString('catch (DbalException | \\mysqli_sql_exception $exception)', $content);
+        self::assertStringContainsString("Translator::translateInline(\"`4Error, your login was incorrect`0\")", $content);
+        self::assertStringNotContainsString('$exception->getMessage()', $content);
+    }
 }

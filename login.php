@@ -207,6 +207,12 @@ if ($name != "") {
             $remoteAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
             $post = Http::allPost();
             $serializedPost = serialize($post);
+            /**
+             * faillog schema note:
+             * - Legacy/core schema stores the login-cookie fingerprint in the `id` column.
+             * - Some historical installs may not have optional extra columns, so INSERTs
+             *   must always provide an explicit column list.
+             */
             $cookielgi = (string) (Cookies::getLgi() ?? 'no cookie set');
 
             $failedAccounts = [];
@@ -242,53 +248,61 @@ if ($name != "") {
                 // just in case there manage to be multiple accounts on
                 // this name.
                 foreach ($failedAccounts as $row) {
-                    if ($useDoctrine) {
-                        $entityManager->getConnection()->executeStatement(
-                            "INSERT INTO " . Database::prefix("faillog") . " (date, post, ip, acctid, lgi) VALUES (:date, :post, :ip, :acctid, :lgi)",
-                            [
-                                'date' => date("Y-m-d H:i:s"),
-                                'post' => $serializedPost,
-                                'ip' => $remoteAddr,
-                                'acctid' => (int) ($row['acctid'] ?? 0),
-                                'lgi' => $cookielgi,
-                            ]
-                        );
-                        $rows2 = $entityManager->getConnection()->executeQuery(
-                            "SELECT " . Database::prefix("faillog") . ".*," . Database::prefix("accounts") . ".superuser,name,login FROM " . Database::prefix("faillog") . " INNER JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid=" . Database::prefix("faillog") . ".acctid WHERE ip = :ip AND date > :cutoff",
-                            [
-                                'ip' => $remoteAddr,
-                                'cutoff' => date("Y-m-d H:i:s", strtotime("-1 day")),
-                            ]
-                        )->fetchAllAssociative();
-                    } else {
-                        $sql = sprintf(
-                            "INSERT INTO %s VALUES (0,'%s','%s','%s','%d','%s')",
-                            Database::prefix("faillog"),
-                            Database::escape(date("Y-m-d H:i:s")),
-                            Database::escape($serializedPost),
-                            Database::escape($remoteAddr),
-                            (int) ($row['acctid'] ?? 0),
-                            Database::escape($cookielgi)
-                        );
-                        Database::query($sql);
-                        $sql = sprintf(
-                            "SELECT %s.*, %s.superuser,name,login FROM %s INNER JOIN %s ON %s.acctid=%s.acctid WHERE ip='%s' AND date>'%s'",
-                            Database::prefix("faillog"),
-                            Database::prefix("accounts"),
-                            Database::prefix("faillog"),
-                            Database::prefix("accounts"),
-                            Database::prefix("accounts"),
-                            Database::prefix("faillog"),
-                            Database::escape($remoteAddr),
-                            Database::escape(date("Y-m-d H:i:s", strtotime("-1 day")))
-                        );
-                        $result2 = Database::query($sql);
-                        $rows2 = [];
-                        while ($row2 = Database::fetchAssoc($result2)) {
-                            if ($row2) {
-                                $rows2[] = $row2;
+                    $rows2 = [];
+                    /**
+                     * Logging should never break login UX. Treat faillog write/read issues
+                     * as non-fatal and continue returning the generic invalid-login flow.
+                     */
+                    try {
+                        if ($useDoctrine) {
+                            $entityManager->getConnection()->executeStatement(
+                                "INSERT INTO " . Database::prefix("faillog") . " (date, post, ip, acctid, id) VALUES (:date, :post, :ip, :acctid, :id)",
+                                [
+                                    'date' => date("Y-m-d H:i:s"),
+                                    'post' => $serializedPost,
+                                    'ip' => $remoteAddr,
+                                    'acctid' => (int) ($row['acctid'] ?? 0),
+                                    'id' => $cookielgi,
+                                ]
+                            );
+                            $rows2 = $entityManager->getConnection()->executeQuery(
+                                "SELECT " . Database::prefix("faillog") . ".*," . Database::prefix("accounts") . ".superuser,name,login FROM " . Database::prefix("faillog") . " INNER JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid=" . Database::prefix("faillog") . ".acctid WHERE ip = :ip AND date > :cutoff",
+                                [
+                                    'ip' => $remoteAddr,
+                                    'cutoff' => date("Y-m-d H:i:s", strtotime("-1 day")),
+                                ]
+                            )->fetchAllAssociative();
+                        } else {
+                            $sql = sprintf(
+                                "INSERT INTO %s (date, post, ip, acctid, id) VALUES ('%s','%s','%s','%d','%s')",
+                                Database::prefix("faillog"),
+                                Database::escape(date("Y-m-d H:i:s")),
+                                Database::escape($serializedPost),
+                                Database::escape($remoteAddr),
+                                (int) ($row['acctid'] ?? 0),
+                                Database::escape($cookielgi)
+                            );
+                            Database::query($sql);
+                            $sql = sprintf(
+                                "SELECT %s.*, %s.superuser,name,login FROM %s INNER JOIN %s ON %s.acctid=%s.acctid WHERE ip='%s' AND date>'%s'",
+                                Database::prefix("faillog"),
+                                Database::prefix("accounts"),
+                                Database::prefix("faillog"),
+                                Database::prefix("accounts"),
+                                Database::prefix("accounts"),
+                                Database::prefix("faillog"),
+                                Database::escape($remoteAddr),
+                                Database::escape(date("Y-m-d H:i:s", strtotime("-1 day")))
+                            );
+                            $result2 = Database::query($sql);
+                            while ($row2 = Database::fetchAssoc($result2)) {
+                                if ($row2) {
+                                    $rows2[] = $row2;
+                                }
                             }
                         }
+                    } catch (DbalException | \mysqli_sql_exception $exception) {
+                        $rows2 = [];
                     }
 
                     $c = 0;
