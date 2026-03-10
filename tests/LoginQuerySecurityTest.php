@@ -25,11 +25,13 @@ final class LoginQuerySecurityTest extends TestCase
     {
         $content = $this->readLoginScript();
 
-        self::assertStringContainsString('WHERE login = :login AND password = :password AND locked = 0', $content);
+        self::assertStringContainsString('WHERE login = :login AND locked = 0', $content);
+        self::assertStringContainsString('PasswordHelper::verify(', $content);
+        self::assertStringContainsString('hash_equals(', $content);
         self::assertStringContainsString('catch (DbalException | \\mysqli_sql_exception $exception)', $content);
 
-        self::assertStringNotContainsString("WHERE login = '$name'", $content);
-        self::assertStringNotContainsString("password='$password'", $content);
+        self::assertStringNotContainsString("WHERE login = '\$name'", $content);
+        self::assertStringNotContainsString("password='\$password'", $content);
     }
 
     public function testFailedLoginPathKeepsGenericMessageAndCountsQueryFailures(): void
