@@ -31,13 +31,20 @@ use Lotgd\PlayerFunctions;
 
 require_once __DIR__ . "/common.php";
 
+/**
+ * Ensure timestamp preferences are always valid before calling date().
+ *
+ * Legacy accounts or malformed module data can store unexpected values
+ * (for example boolean false) in the time preference fields. PHP 8+ will
+ * throw a TypeError when date() receives a non-string format.
+ */
 function ensureTimePrefs(array &$session): void
 {
-    if (!isset($session['user']['prefs']['timeformat'])) {
+    if (!isset($session['user']['prefs']['timeformat']) || !is_string($session['user']['prefs']['timeformat']) || $session['user']['prefs']['timeformat'] === '') {
         $session['user']['prefs']['timeformat'] = "[m/d h:ia]";
     }
 
-    if (!isset($session['user']['prefs']['timeoffset'])) {
+    if (!isset($session['user']['prefs']['timeoffset']) || !is_numeric($session['user']['prefs']['timeoffset'])) {
         $session['user']['prefs']['timeoffset'] = 0;
     }
 }
