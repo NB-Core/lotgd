@@ -14,7 +14,10 @@ This module adds a second step (TOTP) to the existing password login flow withou
    - `lock_seconds`
    - `disable_link_ttl_minutes`
    - `require_verified_email`
+   - `qr_provider_endpoint`
+   - `qr_code_size`
 3. Ask users to visit **Preferences -> Two-factor authentication** and complete setup.
+   - Setup now shows a scannable QR code and the manual secret for app enrollment.
 
 ## User flow
 

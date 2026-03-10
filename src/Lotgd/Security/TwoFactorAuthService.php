@@ -137,6 +137,21 @@ class TwoFactorAuthService
         return ['valid' => true, 'acctid' => $acctId, 'email' => $email, 'exp' => $exp];
     }
 
+
+    /**
+     * Build a QR-code provider URL for an otpauth payload.
+     */
+    public static function buildQrCodeUrl(string $endpoint, string $payload, int $size = 220): string
+    {
+        $separator = str_contains($endpoint, '?') ? '&' : '?';
+        $query = http_build_query([
+            'size' => sprintf('%dx%d', $size, $size),
+            'data' => $payload,
+        ]);
+
+        return rtrim($endpoint) . $separator . $query;
+    }
+
     public static function encryptSecret(string $secret, string $key): string
     {
         if (function_exists('openssl_encrypt')) {

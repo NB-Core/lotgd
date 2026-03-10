@@ -63,4 +63,19 @@ class TwoFactorAuthServiceTest extends TestCase
         $this->assertSame(123, $valid['acctid']);
         $this->assertFalse($expired['valid']);
     }
+
+    public function testQrCodeUrlBuilderIncludesPayloadAndSize(): void
+    {
+        $url = TwoFactorAuthService::buildQrCodeUrl(
+            'https://api.qrserver.com/v1/create-qr-code/',
+            'otpauth://totp/Example',
+            180
+        );
+
+        $query = [];
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertSame('180x180', $query['size'] ?? null);
+        $this->assertSame('otpauth://totp/Example', $query['data'] ?? null);
+    }
 }

@@ -33,6 +33,8 @@ function twofactorauth_getmoduleinfo(): array
             'lock_seconds' => 'Cooldown duration in seconds after max failures,int|120',
             'disable_link_ttl_minutes' => 'Disable-via-email link time-to-live (minutes),int|15',
             'require_verified_email' => 'Require account to have verified email before enabling 2FA,bool|0',
+            'qr_provider_endpoint' => 'Optional QR provider endpoint used to render enrollment codes,text|https://api.qrserver.com/v1/create-qr-code/',
+            'qr_code_size' => 'Enrollment QR code width/height in pixels,int|220',
         ],
         'prefs' => [
             'Two Factor Auth Preferences,title',
@@ -234,7 +236,19 @@ function twofactorauth_render_setup(Output $output): void
     $account = (string) ($session['user']['login'] ?? 'player');
 
     $otpauthUri = TwoFactorAuthService::buildOtpAuthUri($issuer, $account, $tempSecret, $digits, $period);
-    $output->output('Scan this URI in your authenticator app:`n%s`n`n', $otpauthUri);
+    $qrProviderEndpoint = trim((string) get_module_setting('qr_provider_endpoint'));
+    $qrCodeSize = max(120, (int) get_module_setting('qr_code_size'));
+
+    $output->output('Scan the QR code in your authenticator app, or enter the secret manually.`n');
+    $output->output('Manual secret: `^%s`0`n', $tempSecret);
+
+    if ($qrProviderEndpoint !== '') {
+        $qrCodeUrl = TwoFactorAuthService::buildQrCodeUrl($qrProviderEndpoint, $otpauthUri, $qrCodeSize);
+        // Show a scannable QR image while also retaining manual setup options.
+        rawoutput("<div class='twofactorauth-qr'><img src='" . htmlspecialchars($qrCodeUrl, ENT_QUOTES, 'UTF-8') . "' alt='" . htmlspecialchars(translate_inline('Authenticator enrollment QR code'), ENT_QUOTES, 'UTF-8') . "' width='" . (int) $qrCodeSize . "' height='" . (int) $qrCodeSize . "'></div>");
+    }
+
+    $output->output('Enrollment URI (copy/paste if needed):`n%s`n`n', $otpauthUri);
     $output->output('Then enter your first one-time token to finish activation.`n');
 
     if (Http::post('token') !== null) {
