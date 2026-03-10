@@ -50,6 +50,7 @@ class TwoFactorAuthServiceTest extends TestCase
         $allowed = \TwoFactorAuthService::buildAllowedChallengeNavs('runmodule.php?module=twofactorauth&op=confirm_disable&token=abc');
 
         $this->assertTrue(\TwoFactorAuthService::isUriAllowed('runmodule.php?module=twofactorauth&op=challenge', $allowed));
+        $this->assertTrue(\TwoFactorAuthService::isUriAllowed('runmodule.php?module=twofactorauth&op=challenge&c=1', $allowed));
         $this->assertFalse(\TwoFactorAuthService::isUriAllowed('village.php', $allowed));
     }
 

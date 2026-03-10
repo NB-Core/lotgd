@@ -93,6 +93,12 @@ function twofactorauth_dohook(string $hookname, array $args): array
 
             $session['twofactorauth_pending'] = true;
             $session['user']['restorepage'] = 'runmodule.php?module=twofactorauth&op=challenge';
+
+            // Whitelist the immediate post-login challenge target so the initial redirect cannot land on badnav.
+            if (!isset($session['allowednavs']) || !is_array($session['allowednavs'])) {
+                $session['allowednavs'] = [];
+            }
+            Nav::add('', 'runmodule.php?module=twofactorauth&op=challenge');
             break;
 
         case 'player-logout':
@@ -132,7 +138,12 @@ function twofactorauth_dohook(string $hookname, array $args): array
                 $requestUri = ltrim($requestUri, '/');
             }
 
-            if (!TwoFactorAuthService::isUriAllowed($requestUri, $allowed)) {
+            // Normalize to script+query so matching tolerates host/path differences.
+            $uriPath = (string) parse_url($requestUri, PHP_URL_PATH);
+            $uriQuery = (string) parse_url($requestUri, PHP_URL_QUERY);
+            $normalizedRequestUri = $uriPath . ($uriQuery !== '' ? ('?' . $uriQuery) : '');
+
+            if (!TwoFactorAuthService::isUriAllowed($normalizedRequestUri, $allowed)) {
                 Redirect::redirect('runmodule.php?module=twofactorauth&op=challenge', '2FA jail redirect');
             }
             break;

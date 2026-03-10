@@ -193,6 +193,11 @@ class TwoFactorAuthService
             if ($uri === $requestUri) {
                 return true;
             }
+
+            // Allow extra query parameters after an approved base URI.
+            if (str_starts_with($requestUri, $uri . '&')) {
+                return true;
+            }
         }
 
         return false;
