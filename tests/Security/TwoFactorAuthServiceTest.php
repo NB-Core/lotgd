@@ -81,4 +81,11 @@ class TwoFactorAuthServiceTest extends TestCase
         $this->assertSame('180x180', $query['size'] ?? null);
         $this->assertSame('otpauth://totp/Example', $query['data'] ?? null);
     }
+
+    public function testNavigationLockWhitelistAcceptsSubdirectoryPath(): void
+    {
+        $allowed = \TwoFactorAuthService::buildAllowedChallengeNavs();
+
+        $this->assertTrue(\TwoFactorAuthService::isUriAllowed('/lotgd/runmodule.php?module=twofactorauth&op=challenge', $allowed));
+    }
 }

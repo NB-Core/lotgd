@@ -202,7 +202,12 @@ class TwoFactorAuthService
         foreach ($allowed as $uri) {
             $allowedPath = (string) parse_url($uri, PHP_URL_PATH);
             if ($allowedPath !== '' && $allowedPath !== $requestPath) {
-                continue;
+                // Accept installations hosted in a subdirectory by matching script basename.
+                $allowedBase = basename($allowedPath);
+                $requestBase = basename($requestPath);
+                if ($allowedBase === '' || $requestBase === '' || $allowedBase !== $requestBase) {
+                    continue;
+                }
             }
 
             $allowedQuery = (string) parse_url($uri, PHP_URL_QUERY);
