@@ -58,7 +58,8 @@ function twofactorauth_getmoduleinfo(): array
 
 function twofactorauth_install(): bool
 {
-    module_addhook('player-login');
+    // Run late so our restorepage/challenge redirect wins over other modules mutating login destination.
+    module_addhook_priority('player-login', 1000);
     module_addhook('player-logout');
     module_addhook('everyhit');
     module_addhook('everyheader');
@@ -92,13 +93,19 @@ function twofactorauth_dohook(string $hookname, array $args): array
             set_module_pref('locked_until', 0);
 
             $session['twofactorauth_pending'] = true;
-            $session['user']['restorepage'] = 'runmodule.php?module=twofactorauth&op=challenge';
+
+            // Force a canonical relative restore target to avoid absolute-URL/whitespace variants causing badnav mismatches.
+            $challengeUrl = 'runmodule.php?module=twofactorauth&op=challenge';
+            $session['user']['restorepage'] = $challengeUrl;
 
             // Whitelist the immediate post-login challenge target so the initial redirect cannot land on badnav.
             if (!isset($session['allowednavs']) || !is_array($session['allowednavs'])) {
                 $session['allowednavs'] = [];
             }
-            Nav::add('', 'runmodule.php?module=twofactorauth&op=challenge');
+            Nav::add('', $challengeUrl);
+
+            // Mirror into the account payload so the forced-nav bootstrap has the challenge URL persisted for this login handoff.
+            $session['user']['allowednavs'] = serialize($session['allowednavs']);
             break;
 
         case 'player-logout':
