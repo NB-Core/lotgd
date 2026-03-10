@@ -18,6 +18,33 @@ use Lotgd\Output;
 class ErrorHandler
 {
     /**
+     * Determine whether the current request context can view detailed errors.
+     *
+     * Security rationale: detailed exception data can expose file paths,
+     * internals, and stack details that help attackers. We only reveal it
+     * when an operator has explicitly enabled debug mode or when a privileged
+     * megauser is logged in.
+     */
+    public static function canShowDetailedErrorToCurrentUser(): bool
+    {
+        global $session;
+
+        $settings = Settings::hasInstance() ? Settings::getInstance() : null;
+        $debugEnabled = $settings instanceof Settings
+            ? (bool) $settings->getSetting('debug', 0)
+            : false;
+
+        // Debug mode is an explicit operator action and always permits detail.
+        if ($debugEnabled) {
+            return true;
+        }
+
+        $superuserFlags = (int) ($session['user']['superuser'] ?? 0);
+
+        return ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER;
+    }
+
+    /**
      * Render a fatal error message in a simple HTML page.
      *
      * @param string $message   Error text to display
@@ -37,9 +64,22 @@ class ErrorHandler
         echo "<style>body{background:#000;color:#fff;font-family:sans-serif;padding:20px;}a{color:#fff;}pre{background:#111;padding:10px;overflow:auto;}</style>\n";
         echo "</head><body>\n";
         echo "<h1>Application Error</h1>\n";
-        echo sprintf('<p>%s</p>', htmlentities($message, ENT_COMPAT));
-        echo sprintf('<p>in <b>%s</b> at <b>%s</b></p>', htmlentities($file, ENT_COMPAT), $line);
-        echo $backtrace;
+
+        if (self::canShowDetailedErrorToCurrentUser()) {
+            echo sprintf('<p>%s</p>', htmlentities($message, ENT_COMPAT));
+            echo sprintf('<p>in <b>%s</b> at <b>%s</b></p>', htmlentities($file, ENT_COMPAT), $line);
+            echo $backtrace;
+        } else {
+            // Public output intentionally avoids raw exception details.
+            echo sprintf(
+                '<p>%s</p>',
+                htmlentities((string) Translator::translateInline(
+                    'An unexpected error occurred. Please try again later.',
+                    'errorhandler'
+                ), ENT_COMPAT)
+            );
+        }
+
         echo "<p>If the problem persists, please <a href='/petition.php'>submit a petition</a>.</p>\n";
         echo "</body></html>";
     }

@@ -31,6 +31,10 @@ class PHPMailer
 
     public function __construct(bool $exc = false)
     {
+        // Keep signature compatibility with PHPMailer while satisfying static analysis.
+        if ($exc) {
+            $this->ErrorInfo = '';
+        }
     }
 
     public function IsSendmail()
@@ -76,6 +80,7 @@ class PHPMailer
 
         $GLOBALS['mail_sent_count'] = ($GLOBALS['mail_sent_count'] ?? 0) + 1;
         $GLOBALS['last_subject'] = $this->Subject;
+        $GLOBALS['last_body'] = $this->Body;
     }
 }
 
