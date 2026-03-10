@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Security;
-
 /**
  * Stateless helper for TOTP and signed recovery-token flows.
  */

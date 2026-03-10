@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/TwoFactorAuth/TwoFactorAuthService.php';
+
 use Lotgd\Http;
 use Lotgd\Nav;
 use Lotgd\Output;
@@ -9,7 +11,6 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\GameLog;
 use Lotgd\Redirect;
-use Lotgd\Security\TwoFactorAuthService;
 use Lotgd\Translator;
 
 /**
