@@ -21,7 +21,7 @@ function twofactorauth_getmoduleinfo(): array
     return [
         'name' => 'Two Factor Auth',
         'version' => '1.0.0',
-        'author' => 'OpenAI Assistant',
+        'author' => 'Oliver Brendei',
         'category' => 'Security',
         'download' => 'core_module',
         'settings' => [
@@ -62,7 +62,7 @@ function twofactorauth_install(): bool
     module_addhook_priority('player-login', 1000);
     module_addhook('player-logout');
     module_addhook('everyhit');
-    module_addhook('everyheader');
+    module_addhook('footer-prefs');
 
     return true;
 }
@@ -85,23 +85,9 @@ function twofactorauth_dohook(string $hookname, array $args): array
             if ((int) get_module_pref('enabled') !== 1) {
                 twofactorauth_clear_pending_state();
                 break;
-            }
-
-            set_module_pref('pending_challenge', 1);
-            set_module_pref('pending_since', time());
-            set_module_pref('failed_attempts', 0);
-            set_module_pref('locked_until', 0);
+	    }
 
             $session['twofactorauth_pending'] = true;
-
-            // Force a canonical relative restore target to avoid absolute-URL/whitespace variants causing badnav mismatches.
-            $challengeUrl = 'runmodule.php?module=twofactorauth&op=challenge';
-            $session['user']['restorepage'] = $challengeUrl;
-
-            // Whitelist the immediate post-login challenge target so the initial redirect cannot land on badnav.
-            if (!isset($session['allowednavs']) || !is_array($session['allowednavs'])) {
-                $session['allowednavs'] = [];
-            }
 
             // Keep legacy nav registration for parity with core behavior.
             Nav::add('', $challengeUrl);
@@ -111,21 +97,22 @@ function twofactorauth_dohook(string $hookname, array $args): array
             twofactorauth_clear_pending_state();
             break;
 
-        case 'everyheader':
-            $script = (string) ($args['script'] ?? '');
-            if ($script === 'prefs') {
-                Translator::tlschema('module_twofactorauth');
-                Nav::add('Security');
-                Nav::add('Two-factor authentication', 'runmodule.php?module=twofactorauth&op=setup');
-                Translator::tlschema();
-            }
+        case 'footer-prefs':
+            Nav::add('Security');
+            Nav::add('Two-factor authentication', 'runmodule.php?module=twofactorauth&op=setup');
             break;
 
         case 'everyhit':
             if (!($session['loggedin'] ?? false)) {
                 break;
             }
-
+	    if (isset($session['twofactorauth_pending']) && $session['twofactorauth_pending'] === true) {
+	           set_module_pref('pending_challenge', 1);
+	           set_module_pref('pending_since', time());
+	           set_module_pref('failed_attempts', 0);
+	           set_module_pref('locked_until', 0);
+		unset($session['twofactorauth_pending']);
+	    }
             if ((int) get_module_pref('pending_challenge') !== 1) {
                 break;
             }
@@ -208,6 +195,7 @@ function twofactorauth_render_setup(Output $output): void
 
     $enabled = (int) get_module_pref('enabled') === 1;
     $requireVerified = (int) get_module_setting('require_verified_email') === 1;
+    $secret = (string) get_module_pref('secret_encrypted');
     $email = (string) ($session['user']['emailaddress'] ?? '');
 
     Nav::add('Navigation');
@@ -216,16 +204,15 @@ function twofactorauth_render_setup(Output $output): void
     $output->output('`bTwo-factor authentication`b`n');
 
     if ($requireVerified && strpos($email, '@') === false) {
-        $output->output('Your account needs a valid email address before this feature can be enabled.`n');
+        $output->output('Your account needs a valid email address before this feature can be enabled.`n`n');
 
         return;
     }
 
     if ($enabled) {
         $output->output('Two-factor authentication is currently enabled on your account.`n');
-        $output->output('If you lose access to your authenticator app, use the login challenge page to request email recovery.`n');
+        $output->output('`$If you lose access to your authenticator app, use the login challenge page to request email recovery.`0`n`n');
 
-        return;
     }
 
     $setupOp = (string) Http::get('setupop');
@@ -239,8 +226,12 @@ function twofactorauth_render_setup(Output $output): void
     $tempSecret = TwoFactorAuthService::decryptSecret((string) get_module_pref('temp_secret_encrypted'), $cryptoKey);
     if ($tempSecret === '') {
         Nav::add('Actions');
-        Nav::add('Begin setup', 'runmodule.php?module=twofactorauth&op=setup&setupop=start');
-        $output->output('You have not yet enrolled a device. Start setup to generate your TOTP secret.`n');
+	if ($secret !== '') {
+		$output->output("You already have a device setup, you can remove it and setup a new device via email recovery`n`n");
+	} else {
+        	$output->output('You have not yet enrolled a device. Start setup to generate your TOTP secret.`n`n');
+        	Nav::add('Begin setup', 'runmodule.php?module=twofactorauth&op=setup&setupop=start');
+	}
 
         return;
     }
