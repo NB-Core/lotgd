@@ -15,6 +15,7 @@ use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Sanitize;
+use Lotgd\PasswordHelper;
 use Lotgd\DataCache;
 use Lotgd\DebugLog;
 use Lotgd\EmailValidator;
@@ -302,12 +303,9 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         } else {
             if ($pass1 != "") {
                 if (strlen($pass1) > 3) {
-                    if (substr($pass1, 0, 5) != "!md5!") {
-                        $pass1 = md5(md5($pass1));
-                    } else {
-                        $pass1 = md5(substr($pass1, 5));
-                    }
+                    $pass1 = PasswordHelper::hash($pass1);
                     $session['user']['password'] = $pass1;
+                    $session['user']['password_algo'] = PasswordHelper::ALGO_MODERN;
                     $output->output("`#Your password has been changed.`n");
                 } else {
                     $output->output("`#Your password is too short.");
@@ -459,28 +457,16 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_MID);
     Output::requireVendorAsset('datatables', 'css', Output::VENDOR_BUCKET_MID);
 
-    $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
-    $warn = Translator::translateInline('Your password is too short.  It must be at least 4 characters long.');
-    $output->rawOutput("<script language='JavaScript'>
-	<!--
-	function md5pass(){
-		//encode passwords before submission to protect them even from network sniffing attacks.
+	$warn = Translator::translateInline('Your password is too short.  It must be at least 4 characters long.');
+	$output->rawOutput("<script>
+	function validatePrefs(){
 		var passbox = document.getElementById('pass1');
 		if (passbox.value.length < 4 && passbox.value.length > 0){
 			alert('$warn');
 			return false;
-		}else{
-			var passbox2 = document.getElementById('pass2');
-			if (passbox2.value.substring(0, 5) != '!md5!') {
-				passbox2.value = '!md5!' + hex_md5(passbox2.value);
-			}
-			if (passbox.value.substring(0, 5) != '!md5!') {
-				passbox.value = '!md5!' + hex_md5(passbox.value);
-			}
-			return true;
 		}
+		return true;
 	}
-	//-->
 	</script>");
     //
     $prefs = $session['user']['prefs'];
@@ -560,7 +546,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         Nav::add("", "prefs.php?op=cancelemail");
     }
 
-    $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(md5pass)'>");
+    $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(validatePrefs())'>");
     $usernameValue = htmlentities($session['user']['login'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     $output->rawOutput("<input type='hidden' name='username' class='visually-hidden' value='{$usernameValue}' autocomplete='username' readonly>");
     $info = Forms::showFormTabbed($form, $prefs);

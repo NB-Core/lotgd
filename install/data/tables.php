@@ -104,7 +104,10 @@ function get_all_tables()
             'name' => 'title', 'type' => 'varchar(50)', 'default' => '' //the dragonkilltitle the user has
             ),
         'password' => array(
-            'name' => 'password', 'type' => 'varchar(32)' //the password stored as MD5 hash
+            'name' => 'password', 'type' => 'varchar(255)' //the password hash (bcrypt or legacy md5)
+            ),
+        'password_algo' => array(
+            'name' => 'password_algo', 'type' => 'tinyint unsigned', 'default' => '0' //0=legacy md5, 1=bcrypt
             ),
         'badguy' => array(
             'name' => 'badguy', 'type' => 'text' //well, what guy(s) does he fight / did he fight last

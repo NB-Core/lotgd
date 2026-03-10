@@ -18,6 +18,7 @@ use Lotgd\Output;
 use Lotgd\Redirect;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Lotgd\PasswordHelper;
 use Doctrine\DBAL\Exception as DbalException;
 
 define("ALLOW_ANONYMOUS", true);
@@ -44,17 +45,19 @@ if ($name != "") {
         $password = is_string($passwordRequest) ? stripslashes($passwordRequest) : '';
         $forceRequest = Http::post('force');
         $force = is_string($forceRequest) ? $forceRequest : '';
-        if (substr($password, 0, 5) == "!md5!") {
-            $password = md5(substr($password, 5));
-        } elseif (substr($password, 0, 6) == "!md52!" && strlen($password) == 38) {
+        if (substr($password, 0, 6) == "!md52!") {
+            // Auto-login passthrough (forgot-password / email validation).
+            // The raw stored hash is embedded in the form value.
             if ($force) {
                 $password = substr($password, 6);
-                $password = preg_replace("/[^a-f0-9]/", "", $password);
+                $isPassthrough = true;
             } else {
                 $password = 'no hax0rs for j00!';
+                $isPassthrough = false;
             }
         } else {
-            $password = md5(md5($password));
+            // Password arrives as plaintext over HTTPS.
+            $isPassthrough = false;
         }
         static $bootstrapExists = null;
         if ($bootstrapExists === null) {
@@ -78,28 +81,76 @@ if ($name != "") {
             if ($bootstrapExists) {
                 $entityManager = \Lotgd\Doctrine\Bootstrap::getEntityManager();
                 $result = $entityManager->getConnection()->executeQuery(
-                    "SELECT * FROM " . Database::prefix("accounts") . " WHERE login = :login AND password = :password AND locked = 0",
+                    "SELECT * FROM " . Database::prefix("accounts") . " WHERE login = :login AND locked = 0",
                     [
                         'login' => $name,
-                        'password' => $password,
                     ]
                 );
                 $acctrow = $result->fetchAssociative();
+
                 if ($acctrow) {
-                    \Lotgd\Accounts::setAccountEntity($entityManager->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
+                    $algo = (int) ($acctrow['password_algo'] ?? PasswordHelper::ALGO_LEGACY);
+
+                    if ($isPassthrough) {
+                        // Passthrough: compare raw stored hash directly.
+                        $passwordValid = hash_equals($acctrow['password'], $password);
+                    } else {
+                        $passwordValid = PasswordHelper::verify($password, $acctrow['password'], $algo);
+                    }
+
+                    if (!$passwordValid) {
+                        $acctrow = null;
+                    } else {
+                        // Transparent upgrade from legacy md5 to bcrypt.
+                        if (!$isPassthrough && PasswordHelper::needsRehash($algo)) {
+                            $newHash = PasswordHelper::hash($password);
+                            $entityManager->getConnection()->executeStatement(
+                                "UPDATE " . Database::prefix("accounts") . " SET password = :password, password_algo = :algo WHERE acctid = :acctid",
+                                [
+                                    'password' => $newHash,
+                                    'algo' => PasswordHelper::ALGO_MODERN,
+                                    'acctid' => $acctrow['acctid'],
+                                ]
+                            );
+                            $acctrow['password'] = $newHash;
+                            $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
+                        }
+                        \Lotgd\Accounts::setAccountEntity($entityManager->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
+                    }
                 }
             }
 
             if (!$acctrow && !$authQueryFailed) {
                 $sql = sprintf(
-                    "SELECT * FROM %s WHERE login = '%s' AND password = '%s' AND locked = 0",
+                    "SELECT * FROM %s WHERE login = '%s' AND locked = 0",
                     Database::prefix("accounts"),
-                    Database::escape($name),
-                    Database::escape($password)
+                    Database::escape($name)
                 );
                 $result = Database::query($sql);
                 if (Database::numRows($result) == 1) {
                     $acctrow = Database::fetchAssoc($result);
+                    $algo = (int) ($acctrow['password_algo'] ?? PasswordHelper::ALGO_LEGACY);
+
+                    if ($isPassthrough) {
+                        $passwordValid = hash_equals($acctrow['password'], $password);
+                    } else {
+                        $passwordValid = PasswordHelper::verify($password, $acctrow['password'], $algo);
+                    }
+
+                    if (!$passwordValid) {
+                        $acctrow = null;
+                    } elseif (!$isPassthrough && PasswordHelper::needsRehash($algo)) {
+                        $newHash = PasswordHelper::hash($password);
+                        Database::query(sprintf(
+                            "UPDATE %s SET password = '%s', password_algo = %d WHERE acctid = %d",
+                            Database::prefix("accounts"),
+                            Database::escape($newHash),
+                            PasswordHelper::ALGO_MODERN,
+                            (int) $acctrow['acctid']
+                        ));
+                        $acctrow['password'] = $newHash;
+                        $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
+                    }
                 }
             }
         } catch (DbalException | \mysqli_sql_exception $exception) {
