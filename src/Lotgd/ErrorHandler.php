@@ -101,12 +101,14 @@ class ErrorHandler
         if (! error_reporting()) {
             return; // @ operator used
         }
-        ini_set('display_errors', '1');
         $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         $output   = Output::getInstance();
         $inErrorHandler++;
         if ($inErrorHandler > 1) {
-            echo "PHP ERROR: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.  Additionally this occurred while within logd_error_handler().<br>";
+            if (self::canShowDetailedErrorToCurrentUser()) {
+                echo "PHP ERROR: \"$errstr\"<br>in <b>$errfile</b> at <b>$errline</b>.  Additionally this occurred while within logd_error_handler().<br>";
+            }
+            error_log("PHP ERROR: \"$errstr\" in $errfile at $errline (recursive error handler)");
             $inErrorHandler--;
             return;
         }

@@ -61,6 +61,11 @@ if ($name != "") {
             $bootstrapExists = class_exists('Lotgd\\Doctrine\\Bootstrap');
         }
 
+        // Pre-authentication hook: allows modules (e.g. reCAPTCHA) to reject
+        // the login attempt before any database query is executed, preventing
+        // brute-force attempts from hitting the DB at all.
+        HookHandler::hook("pre-login");
+
         $acctrow = null;
         $authQueryFailed = false;
         $entityManager = null;
@@ -161,7 +166,7 @@ if ($name != "") {
                     Database::query(
                         "UPDATE " . Database::prefix('accounts')
                         . " SET loggedin=1, laston='" . date('Y-m-d H:i:s')
-                        . "' WHERE acctid=" . $session['user']['acctid']
+                        . "' WHERE acctid=" . (int) $session['user']['acctid']
                     );
                     $session['allowednavs'] = [];
                     if (!empty($session['user']['restorepage'])) {
@@ -173,7 +178,7 @@ if ($name != "") {
                     exit();
                 }
 
-                Database::query("UPDATE " . Database::prefix("accounts") . " SET loggedin=" . true . ", laston='" . date("Y-m-d H:i:s") . "' WHERE acctid = " . $session['user']['acctid']);
+                Database::query("UPDATE " . Database::prefix("accounts") . " SET loggedin=" . true . ", laston='" . date("Y-m-d H:i:s") . "' WHERE acctid = " . (int) $session['user']['acctid']);
 
                 $session['user']['loggedin'] = true;
                 $location = $session['user']['location'];
@@ -382,7 +387,7 @@ if ($name != "") {
     }
 } elseif ($op == "logout") {
     if ($session['user']['loggedin']) {
-        $sql = "UPDATE " . Database::prefix("accounts") . " SET loggedin=0 WHERE acctid = " . $session['user']['acctid'];
+        $sql = "UPDATE " . Database::prefix("accounts") . " SET loggedin=0 WHERE acctid = " . (int) $session['user']['acctid'];
         Database::query($sql);
         DataCache::getInstance()->massinvalidate('charlisthomepage');
         DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
@@ -396,7 +401,7 @@ if ($name != "") {
         HookHandler::hook("player-logout");
 
         // Get allowed navs that are saved, not the ones in the user array, because they are empty (redirect clears)
-        $sql = "SELECT restorepage, allowednavs FROM " . Database::prefix('accounts') . " WHERE acctid=" . $session['user']['acctid'];
+        $sql = "SELECT restorepage, allowednavs FROM " . Database::prefix('accounts') . " WHERE acctid=" . (int) $session['user']['acctid'];
         $result = Database::query($sql);
         // Check if we got anything (we should)
         if (Database::numRows($result) == 1) {
@@ -404,8 +409,8 @@ if ($name != "") {
             $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
             $allowednavs[$row['restorepage']] = true;
             // Write back to database
-            $serialized = addslashes(serialize($allowednavs));
-            $sql = "UPDATE " . Database::prefix('accounts') . " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
+            $serialized = Database::escape(serialize($allowednavs));
+            $sql = "UPDATE " . Database::prefix('accounts') . " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . (int) $session['user']['acctid'];
             Database::query($sql);
         }
     }
