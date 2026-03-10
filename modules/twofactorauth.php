@@ -103,20 +103,8 @@ function twofactorauth_dohook(string $hookname, array $args): array
                 $session['allowednavs'] = [];
             }
 
-            // Do not rely only on Nav::add() side effects here; persist the allowed target explicitly.
-            $session['allowednavs'][$challengeUrl] = true;
-            $session['allowednavs'][str_replace(' ', '%20', $challengeUrl)] = true;
-            $session['allowednavs'][str_replace(' ', '+', $challengeUrl)] = true;
-
-            // Also allow absolute serverurl form in case REQUEST_URI contains the full URL in this environment.
-            $absoluteChallengeUrl = rtrim(getsetting('serverurl', ''), '/') . '/' . $challengeUrl;
-            $session['allowednavs'][$absoluteChallengeUrl] = true;
-
             // Keep legacy nav registration for parity with core behavior.
             Nav::add('', $challengeUrl);
-
-            // Persist allowlist into user payload so redirect paths that save immediately keep the challenge URL.
-            $session['user']['allowednavs'] = serialize($session['allowednavs']);
             break;
 
         case 'player-logout':
@@ -145,12 +133,6 @@ function twofactorauth_dohook(string $hookname, array $args): array
             $confirmUri = (string) get_module_pref('disable_token_uri');
             $allowed = TwoFactorAuthService::buildAllowedChallengeNavs($confirmUri !== '' ? $confirmUri : null);
 
-            $session['allowednavs'] = [];
-            foreach ($allowed as $uri) {
-                $session['allowednavs'][$uri] = true;
-                $session['allowednavs'][str_replace(' ', '%20', $uri)] = true;
-            }
-
             $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
             if ($requestUri !== '' && str_starts_with($requestUri, '/')) {
                 $requestUri = ltrim($requestUri, '/');
@@ -162,7 +144,10 @@ function twofactorauth_dohook(string $hookname, array $args): array
             $normalizedRequestUri = $uriPath . ($uriQuery !== '' ? ('?' . $uriQuery) : '');
 
             if (!TwoFactorAuthService::isUriAllowed($normalizedRequestUri, $allowed)) {
-                Redirect::redirect('runmodule.php?module=twofactorauth&op=challenge', '2FA jail redirect');
+                $challengeUrl = 'runmodule.php?module=twofactorauth&op=challenge';
+                // Register redirect target right before redirect so core allowed-nav persistence keeps this route.
+                Nav::add('', $challengeUrl);
+                Redirect::redirect($challengeUrl, '2FA jail redirect');
             }
             break;
     }
