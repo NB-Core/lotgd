@@ -17,6 +17,9 @@ namespace Lotgd\Tests {
             global $settings;
 
             $settings = new DummySettings([
+                // Reentrancy fallback output is only shown when detailed error
+                // display is permitted for the current context.
+                'debug' => 1,
                 'notify_on_warn' => 0,
                 'usedatacache' => 0,
             ]);
