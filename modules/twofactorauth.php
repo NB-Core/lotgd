@@ -252,20 +252,24 @@ function twofactorauth_render_setup(Output $output): void
     $output->output('Enrollment URI (copy/paste if needed):`n%s`n`n', $otpauthUri);
     $output->output('Then enter your first one-time token to finish activation.`n');
 
-    if (Http::post('token') !== null) {
-        $token = (string) Http::post('token');
-        $window = (int) get_module_setting('window');
-        $result = TwoFactorAuthService::verifyTotp($tempSecret, $token, $digits, $period, $window, 0);
+    // Only verify after an actual token submission; avoid false errors on initial setup page load.
+    $submittedToken = Http::post('token');
+    if ($submittedToken !== null) {
+        $token = trim((string) $submittedToken);
+        if ($token !== '') {
+            $window = (int) get_module_setting('window');
+            $result = TwoFactorAuthService::verifyTotp($tempSecret, $token, $digits, $period, $window, 0);
 
-        if ($result['valid']) {
-            set_module_pref('enabled', 1);
-            set_module_pref('secret_encrypted', (string) get_module_pref('temp_secret_encrypted'));
-            set_module_pref('temp_secret_encrypted', '');
-            set_module_pref('verified_at', time());
-            set_module_pref('last_used_timestep', $result['timestep']);
-            $output->output('Two-factor authentication is now enabled.`n');
-        } else {
-            $output->output('The token was invalid. Please try again.`n');
+            if ($result['valid']) {
+                set_module_pref('enabled', 1);
+                set_module_pref('secret_encrypted', (string) get_module_pref('temp_secret_encrypted'));
+                set_module_pref('temp_secret_encrypted', '');
+                set_module_pref('verified_at', time());
+                set_module_pref('last_used_timestep', $result['timestep']);
+                $output->output('Two-factor authentication is now enabled.`n');
+            } else {
+                $output->output('The token was invalid. Please try again.`n');
+            }
         }
     }
 
