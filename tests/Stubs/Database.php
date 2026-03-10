@@ -127,6 +127,11 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
                 return $last_query_result;
             }
 
+            if (strpos($sql, 'SHOW COLUMNS FROM') === 0) {
+                $last_query_result = self::$full_columns_rows;
+                return $last_query_result;
+            }
+
             if (strpos($sql, 'DESCRIBE ') === 0) {
                 $last_query_result = self::$describe_rows;
                 return $last_query_result;

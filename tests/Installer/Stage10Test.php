@@ -6,6 +6,7 @@ namespace Lotgd\Tests\Installer;
 
 use Lotgd\Installer\Installer;
 use Lotgd\Output;
+use Lotgd\PasswordHelper;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineBootstrap;
@@ -77,6 +78,7 @@ final class Stage10Test extends TestCase
     {
         Database::$mockResults = [
             [],    // SELECT returns zero rows
+            [['Field' => 'password_algo']], // SHOW COLUMNS password_algo
         ];
 
         $connection = new DoctrineConnection();
@@ -93,13 +95,14 @@ final class Stage10Test extends TestCase
         $installer->stage10();
 
         $queries = Database::$queries;
-        $this->assertCount(1, $queries);
+        $this->assertCount(2, $queries);
         $this->assertStringContainsString('SELECT login, password FROM accounts', $queries[0]);
+        $this->assertStringContainsString("SHOW COLUMNS FROM `accounts` LIKE 'password_algo'", $queries[1]);
 
         $this->assertNotEmpty($connection->queries);
         $this->assertSame('DELETE FROM accounts WHERE login = ?', $connection->queries[0]);
         $this->assertSame(
-            'INSERT INTO accounts (login, password, superuser, name, playername, ctitle, title, regdate, badguy, companions, allowednavs, restorepage, bufflist, dragonpoints, prefs, donationconfig, specialinc, specialmisc, emailaddress, replaceemail, emailvalidation, hauntedby, bio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO accounts (login, password, superuser, name, playername, ctitle, title, regdate, badguy, companions, allowednavs, restorepage, bufflist, dragonpoints, prefs, donationconfig, specialinc, specialmisc, emailaddress, replaceemail, emailvalidation, hauntedby, bio, password_algo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             $connection->queries[1]
         );
 
@@ -116,7 +119,8 @@ final class Stage10Test extends TestCase
 
         $this->assertSame('accounts', $connection->lastInsert['table']);
         $this->assertSame('Admin', $connection->lastInsert['data']['login']);
-        $this->assertSame(md5(md5('secret')), $connection->lastInsert['data']['password']);
+        $this->assertTrue(password_verify('secret', $connection->lastInsert['data']['password']));
+        $this->assertSame(PasswordHelper::ALGO_MODERN, $connection->lastInsert['data']['password_algo']);
         $this->assertSame($expectedPrivileges, $connection->lastInsert['data']['superuser']);
         $this->assertSame('`%Admin `&Admin`0', $connection->lastInsert['data']['name']);
         $this->assertSame('`%Admin `&Admin`0', $connection->lastInsert['data']['playername']);
@@ -136,6 +140,7 @@ final class Stage10Test extends TestCase
     public function testStage10RejectsMismatchedPasswords(): void
     {
         Database::$mockResults = [
+            [],
             [],
         ];
 
@@ -188,6 +193,7 @@ final class Stage10Test extends TestCase
     {
         Database::$mockResults = [
             [],
+            [],
         ];
 
         $connection = new DoctrineConnection();
@@ -205,8 +211,33 @@ final class Stage10Test extends TestCase
 
         $this->assertSame("O'Connor", $connection->lastInsert['data']['login']);
         $this->assertSame("`%Admin `&O'Connor`0", $connection->lastInsert['data']['name']);
+        $this->assertArrayNotHasKey('password_algo', $connection->lastInsert['data']);
 
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('Your superuser account has been created', $output);
+    }
+
+    public function testStage10SkipsPasswordAlgoWriteWhenColumnMissing(): void
+    {
+        Database::$mockResults = [
+            [],
+            [],
+        ];
+
+        $connection = new DoctrineConnection();
+        DoctrineBootstrap::$conn = $connection;
+        Database::$doctrineConnection = null;
+
+        $_POST = [
+            'name'  => 'Admin',
+            'pass1' => 'secret',
+            'pass2' => 'secret',
+        ];
+
+        $installer = new Installer();
+        $installer->stage10();
+
+        $this->assertArrayNotHasKey('password_algo', $connection->lastInsert['data']);
+        $this->assertTrue(password_verify('secret', $connection->lastInsert['data']['password']));
     }
 }
