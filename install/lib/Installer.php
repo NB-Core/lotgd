@@ -17,6 +17,7 @@ use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\Redirect;
 use Lotgd\Settings;
+use Lotgd\PasswordHelper;
 use Lotgd\Modules\Installer as ModuleInstaller;
 use Lotgd\Doctrine\Bootstrap;
 use Doctrine\Migrations\DependencyFactory;
@@ -98,38 +99,15 @@ class Installer
                 $needsauthentication = false;
             }
             if (!empty(Http::post("username"))) {
-                //if you have login troubles and wiped your own password, here in the installer you can debug-output it
-                //$this->output->debug(md5(md5(stripslashes(Http::post("password")))), true);
-                $sql = "SELECT * FROM " . Database::prefix("accounts") . " WHERE login='" . Http::post("username") . "' AND password='" . md5(md5(stripslashes(Http::post("password")))) . "' AND superuser & " . SU_MEGAUSER;
+                $sql = "SELECT * FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape(Http::post("username")) . "' AND superuser & " . SU_MEGAUSER;
                 $result = Database::query($sql);
                 if (Database::numRows($result) > 0) {
                     $row = Database::fetchAssoc($result);
-                    //$this->output->debug($row['password'], true);
-                    //$this->output->debug(Http::post('password'), true);
-                    // Okay, we have a username with megauser, now we need to do
-                    // some hackery with the password.
-                    $needsauthentication = true;
-                    $p = stripslashes(Http::post("password"));
-                    $p1 = md5($p);
-                    $p2 = md5($p1);
-                    $this->output->debug($p2, true);
+                    $needsauthentication = ! $this->verifyInstallerAdminPassword(
+                        stripslashes(Http::post("password")),
+                        is_array($row) ? $row : []
+                    );
 
-                    if ($this->getSetting("installer_version", "-1") == "-1") {
-                        $this->output->debug("HERE I AM", true);
-                        // Okay, they are upgrading from 0.9.7  they will have
-                        // either a non-encrypted password, or an encrypted singly
-                        // password.
-                        if (
-                            strlen($row['password']) == 32 &&
-                            $row['password'] == $p1
-                        ) {
-                            $needsauthentication = false;
-                        } elseif ($row['password'] == $p) {
-                            $needsauthentication = false;
-                        }
-                    } elseif ($row['password'] == $p2) {
-                        $needsauthentication = false;
-                    }
                     if ($needsauthentication === false) {
                         Redirect::redirect("installer.php?stage=1");
                     }
@@ -243,7 +221,7 @@ class Installer
                     SU_MANAGE_MODULES | SU_AUDIT_MODERATION | SU_RAW_SQL |
                     SU_VIEW_SOURCE | SU_NEVER_EXPIRE;
                     $name = Http::post("name");
-                    $pass = md5(md5(stripslashes(Http::post("pass1"))));
+                    $pass = PasswordHelper::hash(stripslashes(Http::post("pass1")));
                     $connection = Database::getDoctrineConnection();
                     $table = Database::prefix("accounts");
                     $connection->delete($table, ['login' => $name]);
@@ -251,7 +229,7 @@ class Installer
                     $displayName = '`%Admin `&' . $name . '`0';
                     $regdate = date('Y-m-d H:i:s');
 
-                    $inserted = $connection->insert($table, [
+                    $accountData = [
                         'login'           => $name,
                         'password'        => $pass,
                         'superuser'       => $su,
@@ -275,7 +253,13 @@ class Installer
                         'emailvalidation' => '',
                         'hauntedby'       => '',
                         'bio'             => '',
-                    ]);
+                    ];
+
+                    if ($this->hasAccountsColumn('password_algo')) {
+                        $accountData['password_algo'] = PasswordHelper::ALGO_MODERN;
+                    }
+
+                    $inserted = $connection->insert($table, $accountData);
 
                     if ($inserted <= 0) {
                         throw new \RuntimeException("Failed to create Admin account. Your first check should be to make sure that MYSQL (if that is your type) is not in strict mode.");
@@ -2077,6 +2061,66 @@ class Installer
         }
 
         return array_values(array_unique($options));
+    }
+
+    /**
+     * Verify installer stage-0 admin credentials against runtime password policy.
+     *
+     * Uses PasswordHelper for primary verification and preserves legacy upgrade
+     * compatibility for very old 0.9.7 installs with plaintext/single-md5 values.
+     *
+     * @param string              $plaintext Submitted plaintext password.
+     * @param array<string, mixed> $account   Account row from the accounts table.
+     */
+    private function verifyInstallerAdminPassword(string $plaintext, array $account): bool
+    {
+        $storedHash = (string) ($account['password'] ?? '');
+        if ($storedHash === '') {
+            return false;
+        }
+
+        $algo = isset($account['password_algo'])
+            ? (int) $account['password_algo']
+            : PasswordHelper::ALGO_LEGACY;
+
+        if (PasswordHelper::verify($plaintext, $storedHash, $algo)) {
+            return true;
+        }
+
+        if ($this->getSetting("installer_version", "-1") === "-1") {
+            $singleHash = md5($plaintext);
+            if (strlen($storedHash) === 32 && hash_equals($storedHash, $singleHash)) {
+                return true;
+            }
+
+            if (hash_equals($storedHash, $plaintext)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the accounts table has a specific column.
+     */
+    private function hasAccountsColumn(string $columnName): bool
+    {
+        static $cachedColumns = [];
+
+        $columnName = strtolower($columnName);
+        if (isset($cachedColumns[$columnName])) {
+            return $cachedColumns[$columnName];
+        }
+
+        $table = Database::prefix('accounts');
+        $escapedTable = Database::escape($table);
+        $escapedColumn = Database::escape($columnName);
+        $result = Database::query("SHOW COLUMNS FROM `{$escapedTable}` LIKE '{$escapedColumn}'");
+
+        $cachedColumns[$columnName] = Database::numRows($result) > 0;
+
+        return $cachedColumns[$columnName];
     }
 
     /**
