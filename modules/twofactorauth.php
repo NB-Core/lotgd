@@ -269,6 +269,8 @@ function twofactorauth_render_setup(Output $output): void
         }
     }
 
+    // Raw form actions are not auto-whitelisted by addnav(), so register them explicitly.
+    addnav('', 'runmodule.php?module=twofactorauth&op=setup');
     rawoutput("<form action='runmodule.php?module=twofactorauth&op=setup' method='POST'>");
     rawoutput("<label>" . translate_inline('Authenticator token') . "</label> ");
     rawoutput("<input type='text' name='token' maxlength='10'> ");
@@ -294,6 +296,8 @@ function twofactorauth_render_challenge(Output $output): void
     $output->output('Password accepted, two-factor authentication is required.`n');
     $output->output('Enter the token from your authenticator app to continue.`n');
 
+    // Raw form actions are not auto-whitelisted by addnav(), so register them explicitly.
+    addnav('', 'runmodule.php?module=twofactorauth&op=verify');
     rawoutput("<form action='runmodule.php?module=twofactorauth&op=verify' method='POST'>");
     rawoutput("<label>" . translate_inline('Authenticator token') . "</label> ");
     rawoutput("<input type='text' name='token' maxlength='10'> ");
