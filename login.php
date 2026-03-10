@@ -18,6 +18,7 @@ use Lotgd\Output;
 use Lotgd\Redirect;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Doctrine\DBAL\Exception as DbalException;
 
 define("ALLOW_ANONYMOUS", true);
 require_once __DIR__ . "/common.php";
@@ -61,22 +62,44 @@ if ($name != "") {
         }
 
         $acctrow = null;
-        if ($bootstrapExists) {
-            $em   = \Lotgd\Doctrine\Bootstrap::getEntityManager();
-            $sqlQuery = "SELECT * FROM " . Database::prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
-            $result = $em->getConnection()->executeQuery($sqlQuery);
-            $acctrow = $result->fetchAssociative();
-            if ($acctrow) {
-                \Lotgd\Accounts::setAccountEntity($em->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
-            }
-        }
+        $authQueryFailed = false;
+        $entityManager = null;
 
-        if (!$acctrow) {
-            $sql    = "SELECT * FROM " . Database::prefix("accounts") . " WHERE login = '$name' AND password='$password' AND locked=0";
-            $result = Database::query($sql);
-            if (Database::numRows($result) == 1) {
-                $acctrow = Database::fetchAssoc($result);
+        /**
+         * Authenticate the account with bound parameters and treat query
+         * exceptions exactly like invalid credentials (counted failed attempt).
+         */
+        try {
+            if ($bootstrapExists) {
+                $entityManager = \Lotgd\Doctrine\Bootstrap::getEntityManager();
+                $result = $entityManager->getConnection()->executeQuery(
+                    "SELECT * FROM " . Database::prefix("accounts") . " WHERE login = :login AND password = :password AND locked = 0",
+                    [
+                        'login' => $name,
+                        'password' => $password,
+                    ]
+                );
+                $acctrow = $result->fetchAssociative();
+                if ($acctrow) {
+                    \Lotgd\Accounts::setAccountEntity($entityManager->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
+                }
             }
+
+            if (!$acctrow && !$authQueryFailed) {
+                $sql = sprintf(
+                    "SELECT * FROM %s WHERE login = '%s' AND password = '%s' AND locked = 0",
+                    Database::prefix("accounts"),
+                    Database::escape($name),
+                    Database::escape($password)
+                );
+                $result = Database::query($sql);
+                if (Database::numRows($result) == 1) {
+                    $acctrow = Database::fetchAssoc($result);
+                }
+            }
+        } catch (DbalException | \mysqli_sql_exception $exception) {
+            $authQueryFailed = true;
+            $acctrow = null;
         }
 
         if ($acctrow) {
@@ -181,22 +204,97 @@ if ($name != "") {
             $sql = "DELETE FROM " . Database::prefix("faillog") . " WHERE date<'" . date("Y-m-d H:i:s", strtotime("-" . ($settings->getSetting("expirecontent", 180) / 4) . " days")) . "'";
             CheckBan::check();
             //Database::query($sql);
-            $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$name'";
-            $result = Database::query($sql);
-            if (Database::numRows($result) > 0) {
+            $remoteAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+            $post = Http::allPost();
+            $serializedPost = serialize($post);
+            $cookielgi = (string) (Cookies::getLgi() ?? 'no cookie set');
+
+            $failedAccounts = [];
+            try {
+                if ($bootstrapExists && $entityManager !== null) {
+                    $lookupResult = $entityManager->getConnection()->executeQuery(
+                    "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login = :login",
+                    ['login' => $name]
+                );
+                $failedAccounts = $lookupResult->fetchAllAssociative();
+                } else {
+                    $sql = sprintf(
+                    "SELECT acctid FROM %s WHERE login='%s'",
+                    Database::prefix("accounts"),
+                    Database::escape($name)
+                );
+                $result = Database::query($sql);
+                while ($row = Database::fetchAssoc($result)) {
+                    if ($row) {
+                        $failedAccounts[] = $row;
+                    }
+                }
+                }
+            } catch (DbalException | \mysqli_sql_exception $exception) {
+                $failedAccounts = [];
+            }
+
+            $useDoctrine = $bootstrapExists && $entityManager !== null;
+            if (count($failedAccounts) > 0 || $authQueryFailed) {
+                if (count($failedAccounts) === 0) {
+                    $failedAccounts[] = ['acctid' => 0];
+                }
                 // just in case there manage to be multiple accounts on
                 // this name.
-                while ($row = Database::fetchAssoc($result)) {
-                    $post = Http::allPost();
-                                        $cookielgi = Cookies::getLgi() ?? 'no cookie set';
-                    $sql = "INSERT INTO " . Database::prefix("faillog") . " VALUES (0,'" . date("Y-m-d H:i:s") . "','" . addslashes(serialize($post)) . "','{$_SERVER['REMOTE_ADDR']}','{$row['acctid']}','$cookielgi')";
-                    Database::query($sql);
-                    $sql = "SELECT " . Database::prefix("faillog") . ".*," . Database::prefix("accounts") . ".superuser,name,login FROM " . Database::prefix("faillog") . " INNER JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid=" . Database::prefix("faillog") . ".acctid WHERE ip='{$_SERVER['REMOTE_ADDR']}' AND date>'" . date("Y-m-d H:i:s", strtotime("-1 day")) . "'";
-                    $result2 = Database::query($sql);
+                foreach ($failedAccounts as $row) {
+                    if ($useDoctrine) {
+                        $entityManager->getConnection()->executeStatement(
+                            "INSERT INTO " . Database::prefix("faillog") . " (date, post, ip, acctid, lgi) VALUES (:date, :post, :ip, :acctid, :lgi)",
+                            [
+                                'date' => date("Y-m-d H:i:s"),
+                                'post' => $serializedPost,
+                                'ip' => $remoteAddr,
+                                'acctid' => (int) ($row['acctid'] ?? 0),
+                                'lgi' => $cookielgi,
+                            ]
+                        );
+                        $rows2 = $entityManager->getConnection()->executeQuery(
+                            "SELECT " . Database::prefix("faillog") . ".*," . Database::prefix("accounts") . ".superuser,name,login FROM " . Database::prefix("faillog") . " INNER JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid=" . Database::prefix("faillog") . ".acctid WHERE ip = :ip AND date > :cutoff",
+                            [
+                                'ip' => $remoteAddr,
+                                'cutoff' => date("Y-m-d H:i:s", strtotime("-1 day")),
+                            ]
+                        )->fetchAllAssociative();
+                    } else {
+                        $sql = sprintf(
+                            "INSERT INTO %s VALUES (0,'%s','%s','%s','%d','%s')",
+                            Database::prefix("faillog"),
+                            Database::escape(date("Y-m-d H:i:s")),
+                            Database::escape($serializedPost),
+                            Database::escape($remoteAddr),
+                            (int) ($row['acctid'] ?? 0),
+                            Database::escape($cookielgi)
+                        );
+                        Database::query($sql);
+                        $sql = sprintf(
+                            "SELECT %s.*, %s.superuser,name,login FROM %s INNER JOIN %s ON %s.acctid=%s.acctid WHERE ip='%s' AND date>'%s'",
+                            Database::prefix("faillog"),
+                            Database::prefix("accounts"),
+                            Database::prefix("faillog"),
+                            Database::prefix("accounts"),
+                            Database::prefix("accounts"),
+                            Database::prefix("faillog"),
+                            Database::escape($remoteAddr),
+                            Database::escape(date("Y-m-d H:i:s", strtotime("-1 day")))
+                        );
+                        $result2 = Database::query($sql);
+                        $rows2 = [];
+                        while ($row2 = Database::fetchAssoc($result2)) {
+                            if ($row2) {
+                                $rows2[] = $row2;
+                            }
+                        }
+                    }
+
                     $c = 0;
                     $alert = "";
                     $su = false;
-                    while ($row2 = Database::fetchAssoc($result2)) {
+                    foreach ($rows2 as $row2) {
                         if ($row2['superuser'] > 0) {
                             $c += 1;
                             $su = true;
@@ -207,8 +305,27 @@ if ($name != "") {
                     if ($c >= 10) {
                         // 5 failed attempts for superuser, 10 for regular user
                         $banmessage = Translator::translateInline("Automatic System Ban: Too many failed login attempts.");
-                        $sql = "INSERT INTO " . Database::prefix("bans") . " VALUES ('{$_SERVER['REMOTE_ADDR']}','','" . date("Y-m-d H:i:s", strtotime("+15 minutes")) . "','$banmessage','System','" . DATETIME_DATEMIN . "')";
-                        Database::query($sql);
+                        if ($useDoctrine) {
+                            $entityManager->getConnection()->executeStatement(
+                                "INSERT INTO " . Database::prefix("bans") . " (ipfilter, uniqueid, banexpire, banreason, banner, lasthit) VALUES (:ip, '', :banexpire, :reason, 'System', :lasthit)",
+                                [
+                                    'ip' => $remoteAddr,
+                                    'banexpire' => date("Y-m-d H:i:s", strtotime("+15 minutes")),
+                                    'reason' => $banmessage,
+                                    'lasthit' => DATETIME_DATEMIN,
+                                ]
+                            );
+                        } else {
+                            $sql = sprintf(
+                                "INSERT INTO %s VALUES ('%s','','%s','%s','System','%s')",
+                                Database::prefix("bans"),
+                                Database::escape($remoteAddr),
+                                Database::escape(date("Y-m-d H:i:s", strtotime("+15 minutes"))),
+                                Database::escape($banmessage),
+                                Database::escape(DATETIME_DATEMIN)
+                            );
+                            Database::query($sql);
+                        }
                         if ($su) {
                             // send a system message to admins regarding
                             // this failed attempt if it includes superusers.
@@ -217,8 +334,23 @@ if ($name != "") {
                             $subj = Translator::translateMail(array("`#%s failed to log in too many times!",$_SERVER['REMOTE_ADDR']), 0);
                             while ($row2 = Database::fetchAssoc($result2)) {
                                 //delete old messages that
-                                $sql = "DELETE FROM " . Database::prefix("mail") . " WHERE msgto={$row2['acctid']} AND msgfrom=0 AND subject = '" . serialize($subj) . "' AND seen=0";
-                                Database::query($sql);
+                                if ($useDoctrine) {
+                                    $entityManager->getConnection()->executeStatement(
+                                        "DELETE FROM " . Database::prefix("mail") . " WHERE msgto = :msgto AND msgfrom = 0 AND subject = :subject AND seen = 0",
+                                        [
+                                            'msgto' => (int) $row2['acctid'],
+                                            'subject' => serialize($subj),
+                                        ]
+                                    );
+                                } else {
+                                    $sql = sprintf(
+                                        "DELETE FROM %s WHERE msgto=%d AND msgfrom=0 AND subject='%s' AND seen=0",
+                                        Database::prefix("mail"),
+                                        (int) $row2['acctid'],
+                                        Database::escape(serialize($subj))
+                                    );
+                                    Database::query($sql);
+                                }
                                 if (Database::affectedRows() > 0) {
                                     $noemail = true;
                                 } else {
