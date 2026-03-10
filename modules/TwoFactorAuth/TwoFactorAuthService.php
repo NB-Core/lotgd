@@ -185,17 +185,43 @@ class TwoFactorAuthService
     }
 
     /**
+     * Check whether a request URI matches at least one allowed route.
+     *
+     * Matching is path-aware and query-parameter-aware to tolerate
+     * parameter ordering/encoding differences across requests.
+     *
      * @param array<int, string> $allowed
      */
     public static function isUriAllowed(string $requestUri, array $allowed): bool
     {
+        $requestPath = (string) parse_url($requestUri, PHP_URL_PATH);
+        $requestQuery = (string) parse_url($requestUri, PHP_URL_QUERY);
+        $requestParams = [];
+        parse_str($requestQuery, $requestParams);
+
         foreach ($allowed as $uri) {
-            if ($uri === $requestUri) {
+            $allowedPath = (string) parse_url($uri, PHP_URL_PATH);
+            if ($allowedPath !== '' && $allowedPath !== $requestPath) {
+                continue;
+            }
+
+            $allowedQuery = (string) parse_url($uri, PHP_URL_QUERY);
+            if ($allowedQuery === '') {
                 return true;
             }
 
-            // Allow extra query parameters after an approved base URI.
-            if (str_starts_with($requestUri, $uri . '&')) {
+            $allowedParams = [];
+            parse_str($allowedQuery, $allowedParams);
+
+            $matched = true;
+            foreach ($allowedParams as $key => $value) {
+                if (!array_key_exists($key, $requestParams) || (string) $requestParams[$key] !== (string) $value) {
+                    $matched = false;
+                    break;
+                }
+            }
+
+            if ($matched) {
                 return true;
             }
         }
