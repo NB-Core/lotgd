@@ -11,6 +11,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\GameLog;
 use Lotgd\Redirect;
+use Lotgd\Serialization;
 use Lotgd\Translator;
 
 /**
@@ -52,6 +53,8 @@ function twofactorauth_getmoduleinfo(): array
             'disable_token_hash' => 'Hash of active disable token,viewonly',
             'disable_token_expires' => 'Unix expiry for disable token,int|0',
             'disable_token_uri' => 'Whitelisted disable confirmation URI,viewonly',
+            'resume_restorepage' => 'Stored pre-challenge restore target,viewonly',
+            'resume_allowednavs_json' => 'Stored pre-challenge allowed-nav map as JSON,viewonly',
         ],
     ];
 }
@@ -85,12 +88,11 @@ function twofactorauth_dohook(string $hookname, array $args): array
             if ((int) get_module_pref('enabled') !== 1) {
                 twofactorauth_clear_pending_state();
                 break;
-	    }
+            }
+
+            twofactorauth_stage_resume_snapshot_in_session();
 
             $session['twofactorauth_pending'] = true;
-
-            // Keep legacy nav registration for parity with core behavior.
-            Nav::add('', $challengeUrl);
             break;
 
         case 'player-logout':
@@ -106,13 +108,18 @@ function twofactorauth_dohook(string $hookname, array $args): array
             if (!($session['loggedin'] ?? false)) {
                 break;
             }
-	    if (isset($session['twofactorauth_pending']) && $session['twofactorauth_pending'] === true) {
-	           set_module_pref('pending_challenge', 1);
-	           set_module_pref('pending_since', time());
-	           set_module_pref('failed_attempts', 0);
-	           set_module_pref('locked_until', 0);
-		unset($session['twofactorauth_pending']);
-	    }
+
+            if (($session['twofactorauth_pending'] ?? false) === true) {
+                set_module_pref('pending_challenge', 1);
+                set_module_pref('pending_since', time());
+                set_module_pref('failed_attempts', 0);
+                set_module_pref('locked_until', 0);
+
+                twofactorauth_persist_staged_resume_snapshot();
+                twofactorauth_clear_session_staging_keys();
+                unset($session['twofactorauth_pending']);
+            }
+
             if ((int) get_module_pref('pending_challenge') !== 1) {
                 break;
             }
@@ -174,6 +181,8 @@ function twofactorauth_run(): void
 
     if ($op === 'verify') {
         twofactorauth_handle_challenge_verification($output);
+    } elseif ($op === 'resume') {
+        twofactorauth_handle_resume($output);
     } elseif ($op === 'disable_email') {
         twofactorauth_handle_disable_via_email($output);
     } elseif ($op === 'confirm_disable') {
@@ -344,9 +353,8 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     if ($result['valid']) {
         set_module_pref('last_used_timestep', $result['timestep']);
         twofactorauth_clear_pending_state();
-        $session['user']['restorepage'] = '';
         $output->output('Two-factor authentication complete. Welcome back.`n');
-        Nav::add('Continue', 'village.php');
+        Nav::add('Continue', 'runmodule.php?module=twofactorauth&op=resume');
 
         return;
     }
@@ -362,6 +370,41 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     } else {
         $output->output('Invalid token. Please try again.`n');
     }
+}
+
+/**
+ * Restore pre-challenge navigation context and continue to the original target.
+ */
+function twofactorauth_handle_resume(Output $output): void
+{
+    global $session;
+
+    if ((int) get_module_pref('pending_challenge') === 1) {
+        Redirect::redirect('runmodule.php?module=twofactorauth&op=challenge', '2FA resume requested while challenge pending');
+    }
+
+    $storedTarget = trim((string) get_module_pref('resume_restorepage'));
+    $storedAllowedNavs = twofactorauth_decode_allowednavs_snapshot((string) get_module_pref('resume_allowednavs_json'));
+
+    if ($storedAllowedNavs !== []) {
+        $session['allowednavs'] = $storedAllowedNavs;
+    }
+
+    if ($storedTarget !== '') {
+        $session['user']['restorepage'] = $storedTarget;
+    }
+
+    $target = twofactorauth_resolve_resume_target($storedTarget, $storedAllowedNavs);
+
+    twofactorauth_clear_resume_snapshot();
+    twofactorauth_clear_session_staging_keys();
+
+    if ($target === '') {
+        $output->output('Two-factor authentication complete. Returning you to the village.`n');
+        Redirect::redirect('village.php', '2FA resume fallback target');
+    }
+
+    Redirect::redirect($target, '2FA resume redirect to restorepage');
 }
 
 /**
@@ -446,6 +489,138 @@ function twofactorauth_clear_pending_state(): void
     set_module_pref('failed_attempts', 0);
     set_module_pref('locked_until', 0);
     set_module_pref('disable_token_uri', '');
+}
+
+/**
+ * Stage the current login target and allowed-nav snapshot in session before everyhit persists prefs.
+ */
+function twofactorauth_stage_resume_snapshot_in_session(): void
+{
+    global $session;
+
+    $session['twofactorauth_resume_restorepage'] = (string) ($session['user']['restorepage'] ?? '');
+
+    // Prefer the in-memory allowlist, but fall back to account-serialized allowednavs
+    // when login flow has not hydrated $session['allowednavs'] yet.
+    $session['twofactorauth_resume_allowednavs'] = twofactorauth_collect_resume_allowednavs_snapshot();
+}
+
+
+/**
+ * Collect the best-available allowed-nav snapshot for post-challenge resume.
+ *
+ * Priority order:
+ * 1) Active session allowlist (already hydrated in this request)
+ * 2) Account-stored serialized allowlist (pre-hydration login flows)
+ *
+ * @return array<string, bool>
+ */
+function twofactorauth_collect_resume_allowednavs_snapshot(): array
+{
+    global $session;
+
+    $sessionAllowed = twofactorauth_snapshot_allowednavs($session['allowednavs'] ?? []);
+    if ($sessionAllowed !== []) {
+        return $sessionAllowed;
+    }
+
+    $serializedAccountAllowed = $session['user']['allowednavs'] ?? '';
+    $decodedAccountAllowed = Serialization::safeUnserialize($serializedAccountAllowed);
+
+    return twofactorauth_snapshot_allowednavs($decodedAccountAllowed);
+}
+
+/**
+ * Persist staged resume context into module prefs once everyhit confirms the pending challenge.
+ */
+function twofactorauth_persist_staged_resume_snapshot(): void
+{
+    global $session;
+
+    $restorepage = (string) ($session['twofactorauth_resume_restorepage'] ?? '');
+    $allowedNavs = twofactorauth_snapshot_allowednavs($session['twofactorauth_resume_allowednavs'] ?? []);
+
+    set_module_pref('resume_restorepage', $restorepage);
+    set_module_pref('resume_allowednavs_json', json_encode($allowedNavs, JSON_UNESCAPED_SLASHES) ?: '[]');
+}
+
+/**
+ * Remove transient session staging keys once they are no longer needed.
+ */
+function twofactorauth_clear_session_staging_keys(): void
+{
+    global $session;
+
+    unset($session['twofactorauth_resume_restorepage'], $session['twofactorauth_resume_allowednavs']);
+}
+
+/**
+ * Clear stored resume snapshots after resume/abort/logout transitions.
+ */
+function twofactorauth_clear_resume_snapshot(): void
+{
+    set_module_pref('resume_restorepage', '');
+    set_module_pref('resume_allowednavs_json', '');
+}
+
+/**
+ * @param mixed $allowedNavs
+ *
+ * @return array<string, bool>
+ */
+function twofactorauth_snapshot_allowednavs(mixed $allowedNavs): array
+{
+    if (!is_array($allowedNavs)) {
+        return [];
+    }
+
+    $snapshot = [];
+    foreach ($allowedNavs as $uri => $isAllowed) {
+        if (!is_string($uri) || $uri === '') {
+            continue;
+        }
+        $snapshot[$uri] = (bool) $isAllowed;
+    }
+
+    return $snapshot;
+}
+
+/**
+ * @return array<string, bool>
+ */
+function twofactorauth_decode_allowednavs_snapshot(string $json): array
+{
+    if ($json === '') {
+        return [];
+    }
+
+    $decoded = json_decode($json, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    return twofactorauth_snapshot_allowednavs($decoded);
+}
+
+/**
+ * Choose a safe post-challenge destination from the stored target and snapshot allowlist.
+ */
+function twofactorauth_resolve_resume_target(string $target, array $allowedNavs): string
+{
+    $target = trim($target);
+    if ($target === '') {
+        return '';
+    }
+
+    if (str_starts_with($target, '/')) {
+        $target = ltrim($target, '/');
+    }
+
+    if (TwoFactorAuthService::isUriAllowed($target, array_keys($allowedNavs))) {
+        return $target;
+    }
+
+    return '';
 }
 
 /**
