@@ -395,7 +395,8 @@ function twofactorauth_log_challenge_outcome(int $acctId, string $event, ?string
         sprintf('2FA token verification %s for account %d%s.', $event, $acctId, $suffix),
         $acctId,
         $acctId,
-        'twofactorauth_token_verification',
+        // Keep this short: debuglog.field is varchar(20) in legacy schema.
+        '2fa_verify',
         false,
         false
     );

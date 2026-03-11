@@ -159,7 +159,7 @@ namespace Lotgd\Tests\Security {
 
             self::assertTrue($foundResumeNav, 'Expected verify success to register resume navigation.');
 
-            $this->assertDebugLogContains('2FA token verification success for account 7.');
+            $this->assertDebugLogContains('2FA token verification success for account 7.', '2fa_verify');
         }
 
         public function testVerifyFailureKeepsChallengePendingForRetry(): void
@@ -178,7 +178,7 @@ namespace Lotgd\Tests\Security {
             self::assertSame(1, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
             self::assertSame(0, (int) ($GLOBALS['twofactorauth_test_prefs']['locked_until'] ?? 0));
 
-            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: mismatch).');
+            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: mismatch).', '2fa_verify');
         }
 
         public function testVerifyLockoutStillAppliesAfterThreshold(): void
@@ -196,7 +196,7 @@ namespace Lotgd\Tests\Security {
             self::assertSame(5, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
             self::assertGreaterThan(time(), (int) $GLOBALS['twofactorauth_test_prefs']['locked_until']);
 
-            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: locked).');
+            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: locked).', '2fa_verify');
         }
 
         #[RunInSeparateProcess]
@@ -227,17 +227,34 @@ namespace Lotgd\Tests\Security {
             self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json']);
         }
 
-        private function assertDebugLogContains(string $expectedMessage): void
+        private function assertDebugLogContains(string $expectedMessage, ?string $expectedField = null): void
         {
             self::assertNotNull(Bootstrap::$conn);
 
             $matches = array_filter(
                 Bootstrap::$conn->executeStatements,
-                static fn (array $statement): bool => str_contains((string) ($statement['sql'] ?? ''), 'debuglog')
-                    && (($statement['params']['message'] ?? '') === $expectedMessage)
+                static function (array $statement) use ($expectedMessage, $expectedField): bool {
+                    if (!str_contains((string) ($statement['sql'] ?? ''), 'debuglog')) {
+                        return false;
+                    }
+
+                    if (($statement['params']['message'] ?? '') !== $expectedMessage) {
+                        return false;
+                    }
+
+                    if ($expectedField !== null && ($statement['params']['field'] ?? '') !== $expectedField) {
+                        return false;
+                    }
+
+                    return true;
+                }
             );
 
             self::assertNotEmpty($matches, sprintf('Expected debug-log message not found: %s', $expectedMessage));
+
+            if ($expectedField !== null) {
+                self::assertLessThanOrEqual(20, strlen($expectedField));
+            }
         }
     }
 }
