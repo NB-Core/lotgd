@@ -29,6 +29,7 @@ namespace {
 
 namespace Lotgd\Tests\Security {
 
+    use Lotgd\Doctrine\Bootstrap;
     use Lotgd\Nav;
     use Lotgd\Output;
     use PHPUnit\Framework\Attributes\PreserveGlobalState;
@@ -43,6 +44,8 @@ namespace Lotgd\Tests\Security {
         protected function setUp(): void
         {
             global $session;
+
+            Bootstrap::$conn = null;
 
             $session = [
                 'loggedin' => true,
@@ -155,6 +158,45 @@ namespace Lotgd\Tests\Security {
             }
 
             self::assertTrue($foundResumeNav, 'Expected verify success to register resume navigation.');
+
+            $this->assertDebugLogContains('2FA token verification success for account 7.');
+        }
+
+        public function testVerifyFailureKeepsChallengePendingForRetry(): void
+        {
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret(
+                \TwoFactorAuthService::generateSecret(),
+                twofactorauth_signing_key()
+            );
+            $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 0;
+            $_POST['token'] = '000000';
+
+            twofactorauth_handle_challenge_verification(Output::getInstance());
+
+            self::assertSame(1, $GLOBALS['twofactorauth_test_prefs']['pending_challenge']);
+            self::assertSame(1, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
+            self::assertSame(0, (int) ($GLOBALS['twofactorauth_test_prefs']['locked_until'] ?? 0));
+
+            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: mismatch).');
+        }
+
+        public function testVerifyLockoutStillAppliesAfterThreshold(): void
+        {
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret(
+                \TwoFactorAuthService::generateSecret(),
+                twofactorauth_signing_key()
+            );
+            $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 4;
+            $_POST['token'] = '000000';
+
+            twofactorauth_handle_challenge_verification(Output::getInstance());
+
+            self::assertSame(5, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
+            self::assertGreaterThan(time(), (int) $GLOBALS['twofactorauth_test_prefs']['locked_until']);
+
+            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: locked).');
         }
 
         #[RunInSeparateProcess]
@@ -183,6 +225,19 @@ namespace Lotgd\Tests\Security {
             self::assertSame(['forest.php?op=fight' => true], $session['allowednavs']);
             self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['resume_restorepage']);
             self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json']);
+        }
+
+        private function assertDebugLogContains(string $expectedMessage): void
+        {
+            self::assertNotNull(Bootstrap::$conn);
+
+            $matches = array_filter(
+                Bootstrap::$conn->executeStatements,
+                static fn (array $statement): bool => str_contains((string) ($statement['sql'] ?? ''), 'debuglog')
+                    && (($statement['params']['message'] ?? '') === $expectedMessage)
+            );
+
+            self::assertNotEmpty($matches, sprintf('Expected debug-log message not found: %s', $expectedMessage));
         }
     }
 }

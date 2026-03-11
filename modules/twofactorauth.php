@@ -10,6 +10,7 @@ use Lotgd\Output;
 use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\GameLog;
+use Lotgd\DebugLog;
 use Lotgd\Redirect;
 use Lotgd\Serialization;
 use Lotgd\Translator;
@@ -335,8 +336,10 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     }
 
     $now = time();
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
     $lockedUntil = (int) get_module_pref('locked_until');
     if ($lockedUntil > $now) {
+        twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
         $output->output('Too many failures. Please wait before trying again.`n');
 
         return;
@@ -353,6 +356,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     if ($result['valid']) {
         set_module_pref('last_used_timestep', $result['timestep']);
         twofactorauth_clear_pending_state();
+        twofactorauth_log_challenge_outcome($acctId, 'success');
         $output->output('Two-factor authentication complete. Welcome back.`n');
         Nav::add('Continue', 'runmodule.php?module=twofactorauth&op=resume');
 
@@ -366,10 +370,35 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     if ($fails >= $maxAttempts) {
         $lockSeconds = (int) get_module_setting('lock_seconds');
         set_module_pref('locked_until', $now + $lockSeconds);
+        twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
         $output->output('Too many failures. Challenge temporarily locked.`n');
     } else {
+        // Slow down automated guessing while keeping the current challenge active for retries.
+        sleep(2);
+        twofactorauth_log_challenge_outcome($acctId, 'failure', (string) $result['reason']);
         $output->output('Invalid token. Please try again.`n');
+        twofactorauth_render_challenge($output);
     }
+}
+
+/**
+ * Add debug-log audit events for 2FA challenge verification outcomes.
+ */
+function twofactorauth_log_challenge_outcome(int $acctId, string $event, ?string $reason = null): void
+{
+    if ($acctId < 1) {
+        return;
+    }
+
+    $suffix = $reason !== null && $reason !== '' ? sprintf(' (reason: %s)', $reason) : '';
+    DebugLog::add(
+        sprintf('2FA token verification %s for account %d%s.', $event, $acctId, $suffix),
+        $acctId,
+        $acctId,
+        'twofactorauth_token_verification',
+        false,
+        false
+    );
 }
 
 /**
