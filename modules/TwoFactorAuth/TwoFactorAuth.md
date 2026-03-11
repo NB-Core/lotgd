@@ -19,13 +19,21 @@ This module adds a second step (TOTP) to the existing password login flow withou
 3. Ask users to visit **Preferences -> Two-factor authentication** and complete setup.
    - Setup now shows a scannable QR code and the manual secret for app enrollment.
 
-## User flow
+## User flow (challenge interstitial + resume)
 
 1. User logs in with password.
-2. If 2FA is enabled, login enters a pending challenge state.
-3. User is redirected to `runmodule.php?module=twofactorauth&op=challenge`.
-4. While pending, navigation is locked to challenge actions only.
-5. Valid token clears pending state and resumes normal navigation.
+2. `player-login` stages a **resume snapshot in session** only:
+   - `twofactorauth_resume_restorepage`
+   - `twofactorauth_resume_allowednavs`
+   - `twofactorauth_pending = true`
+3. On the next `everyhit`, the module persists challenge state (`pending_challenge`, `pending_since`, lock counters) and writes the staged resume snapshot into module prefs.
+4. While `pending_challenge=1`, navigation stays jailed to challenge actions only.
+5. Successful verification does **not** jump directly to village; it offers a continue link to `runmodule.php?module=twofactorauth&op=resume`.
+6. `op=resume` restores `restorepage` and `allowednavs` from the stored snapshot, validates that the target URI is allowlisted for this transition, then redirects to the original destination. If no valid target exists, it falls back to village.
+
+### Why session staging exists before `everyhit`
+
+`player-login` runs before the module has established persisted pending state for the challenge interstitial. Staging restore context in session first avoids writing partial/early snapshot prefs during login and lets `everyhit` perform a single cohesive persistence step once the pending challenge is confirmed. This preserves the pre-challenge navigation context safely until the user passes 2FA.
 
 ## Recovery flow (disable via email)
 
