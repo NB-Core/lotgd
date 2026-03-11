@@ -98,6 +98,38 @@ namespace Lotgd\Tests\Security {
             self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $persistedNavs);
         }
 
+
+
+        public function testLoginStagesSnapshotFromSerializedAccountAllowedNavsWhenSessionMapIsEmpty(): void
+        {
+            global $session;
+
+            $session['allowednavs'] = [];
+            $session['user']['allowednavs'] = serialize([
+                'forest.php?op=fight' => true,
+                'village.php' => true,
+            ]);
+
+            twofactorauth_dohook('player-login', []);
+
+            self::assertSame(
+                ['forest.php?op=fight' => true, 'village.php' => true],
+                $session['twofactorauth_resume_allowednavs']
+            );
+
+            twofactorauth_dohook('everyhit', []);
+
+            $persistedNavs = json_decode((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'], true);
+            self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $persistedNavs);
+
+            $resolvedTarget = twofactorauth_resolve_resume_target(
+                (string) $GLOBALS['twofactorauth_test_prefs']['resume_restorepage'],
+                twofactorauth_decode_allowednavs_snapshot((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'])
+            );
+
+            self::assertSame('forest.php?op=fight', $resolvedTarget);
+        }
+
         public function testVerifySuccessAddsResumeNavigation(): void
         {
             $secret = \TwoFactorAuthService::generateSecret();

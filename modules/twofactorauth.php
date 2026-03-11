@@ -11,6 +11,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\GameLog;
 use Lotgd\Redirect;
+use Lotgd\Serialization;
 use Lotgd\Translator;
 
 /**
@@ -498,7 +499,35 @@ function twofactorauth_stage_resume_snapshot_in_session(): void
     global $session;
 
     $session['twofactorauth_resume_restorepage'] = (string) ($session['user']['restorepage'] ?? '');
-    $session['twofactorauth_resume_allowednavs'] = twofactorauth_snapshot_allowednavs($session['allowednavs'] ?? []);
+
+    // Prefer the in-memory allowlist, but fall back to account-serialized allowednavs
+    // when login flow has not hydrated $session['allowednavs'] yet.
+    $session['twofactorauth_resume_allowednavs'] = twofactorauth_collect_resume_allowednavs_snapshot();
+}
+
+
+/**
+ * Collect the best-available allowed-nav snapshot for post-challenge resume.
+ *
+ * Priority order:
+ * 1) Active session allowlist (already hydrated in this request)
+ * 2) Account-stored serialized allowlist (pre-hydration login flows)
+ *
+ * @return array<string, bool>
+ */
+function twofactorauth_collect_resume_allowednavs_snapshot(): array
+{
+    global $session;
+
+    $sessionAllowed = twofactorauth_snapshot_allowednavs($session['allowednavs'] ?? []);
+    if ($sessionAllowed !== []) {
+        return $sessionAllowed;
+    }
+
+    $serializedAccountAllowed = $session['user']['allowednavs'] ?? '';
+    $decodedAccountAllowed = Serialization::safeUnserialize($serializedAccountAllowed);
+
+    return twofactorauth_snapshot_allowednavs($decodedAccountAllowed);
 }
 
 /**
