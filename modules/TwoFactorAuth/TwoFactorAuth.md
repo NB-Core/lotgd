@@ -48,3 +48,5 @@ This module adds a second step (TOTP) to the existing password login flow withou
 - Drift window is configurable.
 - Replay protection rejects previously used timesteps.
 - Brute-force mitigation uses failed-attempt counters and lockouts.
+- Invalid token submissions keep the pending challenge active, add a short delay (`~2s`), and present the retry form again instead of forcing immediate logout.
+- Token verification outcomes are audit-logged via debug log entries (success and categorized failure reasons: `format`, `mismatch`, `replay`, `locked`) without recording token values.
