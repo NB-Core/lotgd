@@ -106,8 +106,11 @@ class Account
     #[ORM\Column(type: 'string', length: 50)]
     private string $title = '';
 
-    #[ORM\Column(type: 'string', length: 32)]
+    #[ORM\Column(type: 'string', length: 255)]
     private string $password = '';
+
+    #[ORM\Column(type: 'smallint', options: ['unsigned' => true])]
+    private int $password_algo = 0;
 
     #[ORM\Column(type: 'text')]
     private string $badguy = '';

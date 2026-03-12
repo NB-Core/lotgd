@@ -18,6 +18,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\PasswordHelper;
 use Lotgd\EmailValidator;
 use Lotgd\PlayerFunctions;
 
@@ -258,13 +259,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 }
             }
 
-            $passlen = (int)Http::post("passlen");
-            if (
-                substr($pass1, 0, 5) != "!md5!" &&
-                    substr($pass1, 0, 6) != "!md52!"
-            ) {
-                $passlen = strlen($pass1);
-            }
+            $passlen = strlen($pass1);
             if ($passlen <= 3) {
                 $msg .= Translator::translate("Your password must be at least 4 characters long.`n");
                 $blockaccount = true;
@@ -337,17 +332,13 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                     } else {
                         $referer = 0;
                     }
-                    $dbpass = "";
-                    if (substr($pass1, 0, 5) == "!md5!") {
-                        $dbpass = md5(substr($pass1, 5));
-                    } else {
-                        $dbpass = md5(md5($pass1));
-                    }
+                    $dbpass = PasswordHelper::hash($pass1);
+                    $dbpassAlgo = PasswordHelper::ALGO_MODERN;
                     $allowednavs = addslashes(serialize(['village.php' => true]));
                     $sql = "INSERT INTO " . Database::prefix("accounts") . "
-                                                (playername,name, superuser, title, password, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate,badguy,allowednavs,restorepage,specialinc,specialmisc,bufflist,dragonpoints,replaceemail,forgottenpassword,prefs,hauntedby,donationconfig,bio,ctitle,companions)
+                                                (playername,name, superuser, title, password, password_algo, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate,badguy,allowednavs,restorepage,specialinc,specialmisc,bufflist,dragonpoints,replaceemail,forgottenpassword,prefs,hauntedby,donationconfig,bio,ctitle,companions)
                                                 VALUES
-                                                ('$shortname','$title $shortname', '" . (int) $settings->getSetting('defaultsuperuser', 0) . "', '$title', '$dbpass', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . (int) $settings->getSetting('newplayerstartgold', 50) . ", '" . addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','" . $allowednavs . "', 'village.php','','','',0,'','','','','','','','')";
+                                                ('$shortname','$title $shortname', '" . (int) $settings->getSetting('defaultsuperuser', 0) . "', '$title', '$dbpass', '$dbpassAlgo', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . (int) $settings->getSetting('newplayerstartgold', 50) . ", '" . addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','" . $allowednavs . "', 'village.php','','','',0,'','','','','','','','')";
                     Database::query($sql);
                     if (Database::affectedRows() <= 0) {
                         $output->output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
@@ -416,30 +407,9 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
             $refer = "&r=" . htmlentities($refer, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
         }
 
-        $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
-        $output->rawOutput("<script language='JavaScript'>
-				<!--
-				function md5pass(){
-				// encode passwords
-				var plen = document.getElementById('passlen');
-				var pass1 = document.getElementById('pass1');
-				plen.value = pass1.value.length;
-
-				if(pass1.value.substring(0, 5) != '!md5!') {
-				pass1.value = '!md5!'+hex_md5(pass1.value);
-				}
-				var pass2 = document.getElementById('pass2');
-				if(pass2.value.substring(0, 5) != '!md5!') {
-				pass2.value = '!md5!'+hex_md5(pass2.value);
-				}
-
-				}
-				//-->
-				</script>");
-                $output->rawOutput("<form action=\"create.php?op=create$refer\" method='POST' onSubmit=\"md5pass();\">");
+		$output->rawOutput("<form action=\"create.php?op=create$refer\" method='POST'>");
                 // this is the first thing a new player will se, so let's make it look
                 // better
-                $output->rawOutput("<input type='hidden' name='passlen' id='passlen' value='0'>");
                 $output->rawOutput("<table><tr valign='top'><td>");
                 $output->output("How will you be known to this world? ");
                 $output->rawOutput("</td><td><input name='name'></td></tr><tr valign='top'><td>");

@@ -138,18 +138,6 @@ if ($onlinecount < $maxOnline || $maxOnline === 0) {
         $output->outputNotl("`b`\$%s`b`n", $session['message'], true);
     }
 
-    $output->rawOutput("<script src='src/Lotgd/md5.js' defer></script>");
-    $output->rawOutput("<script language='JavaScript'>
-        <!--
-        function md5pass(){
-                //encode passwords before submission to protect them even from network sniffing attacks.
-                var passbox = document.getElementById('password');
-                if (passbox.value.substring(0, 5) != '!md5!') {
-                        passbox.value = '!md5!' + hex_md5(passbox.value);
-                }
-        }
-        //-->
-        </script>");
 
     $usernameLabel = Translator::translateInline("<u>U</u>sername");
     $passwordLabel = Translator::translateInline("<u>P</u>assword");
@@ -170,7 +158,7 @@ if ($onlinecount < $maxOnline || $maxOnline === 0) {
         $templateVars['template_path'] = TwigTemplate::getPath();
     }
 
-    $output->rawOutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">" . templatereplace('login', $templateVars) . "</form>");
+    $output->rawOutput("<form action='login.php' method='POST'>" . templatereplace('login', $templateVars) . "</form>");
     $output->output("Did you forget your password? Visit the <a href='create.php?op=forgot'>password reset page</a> to retrieve a new one!`n", true);
     $output->outputNotl('`c');
     Nav::add('', 'login.php');

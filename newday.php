@@ -134,6 +134,7 @@ if ($dp < $dkills) {
     $output->rawOutput("<font size='+1'>");
     $output->output("`c`b`#It is a New Day!`0`b`c");
     $output->rawOutput("</font>");
+
     $resurrection = Http::get('resurrection');
 
     if ($session['user']['alive'] != true) {
