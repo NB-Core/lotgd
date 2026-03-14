@@ -103,3 +103,4 @@ If passkey registration or verification fails, verify the relying party/domain s
 - **HTTPS is required** for passkeys in normal environments.
   - Local development can use `http://localhost`, but production/staging passkey flows should use valid TLS.
 - If you run behind a reverse proxy, ensure the external host players see is consistent with `serverurl`; host mismatches can cause browser-side `NotAllowedError` / RP mismatch failures.
+- If the browser shows **"Unexpected end of JSON input"** during passkey begin/finish, the backend likely returned empty content, HTML, or another non-JSON response. Inspect the raw begin/finish endpoint response body first to identify redirects/login pages/PHP errors quickly.
