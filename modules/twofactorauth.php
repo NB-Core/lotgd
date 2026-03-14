@@ -22,12 +22,17 @@ use Lotgd\Translator;
  */
 function twofactorauth_getmoduleinfo(): array
 {
+    $overrideForcedNav = twofactorauth_should_override_forced_nav_for_setup_async();
+
     return [
         'name' => 'Two Factor Auth',
         'version' => '1.0.0',
         'author' => 'Oliver Brendei',
         'category' => 'Security',
         'download' => 'core_module',
+        // Only bypass forced-nav for authenticated setup async routes that must emit raw JSON.
+        // Leaving this broad would let normal module page flow skip nav enforcement.
+        'override_forced_nav' => $overrideForcedNav,
         'settings' => [
             'Two Factor Auth Settings,title',
             'issuer_name' => 'Issuer label shown in authenticator apps,text|Legend of the Green Dragon',
@@ -61,6 +66,36 @@ function twofactorauth_getmoduleinfo(): array
             'resume_allowednavs_json' => 'Stored pre-challenge allowed-nav map as JSON,viewonly',
         ],
     ];
+}
+
+/**
+ * Restrict forced-nav bypass to passkey setup fetch endpoints.
+ *
+ * runmodule.php performs a second forced-nav check after common bootstrap. We only bypass
+ * that check for setup async routes to prevent fetch requests from being treated as the user's
+ * next interactive navigation target.
+ */
+function twofactorauth_should_override_forced_nav_for_setup_async(): bool
+{
+    global $session;
+
+    if (!(($session['loggedin'] ?? false) === true) || (int) ($session['user']['acctid'] ?? 0) <= 0) {
+        return false;
+    }
+
+    $op = (string) Http::get('op');
+    $setupOp = (string) Http::get('setupop');
+    if ($op !== 'setup') {
+        return false;
+    }
+
+    if ($setupOp !== 'begin_passkey_registration' && $setupOp !== 'finish_passkey_registration') {
+        return false;
+    }
+
+    $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? ''));
+
+    return $requestMethod === 'POST';
 }
 
 function twofactorauth_install(): bool
