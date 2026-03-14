@@ -10,6 +10,9 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 
+### Bug Fixes
+- Add a Doctrine migration that backfills the `twofactorauth_passkeys` table for existing installs, including index/charset parity with installer schema definitions.
+
 ## [2.0.4] – 2026-03-10
 
 ### Features
