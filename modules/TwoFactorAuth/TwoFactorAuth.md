@@ -50,3 +50,44 @@ This module adds a second step (TOTP) to the existing password login flow withou
 - Brute-force mitigation uses failed-attempt counters and lockouts.
 - Invalid token submissions keep the pending challenge active, add a short delay (`~2s`), and present the retry form again instead of forcing immediate logout.
 - Token verification outcomes are audit-logged via debug log entries (success and categorized failure reasons: `format`, `mismatch`, `replay`, `locked`) without recording token values.
+
+## Passkeys (WebAuthn) as 2FA alternative
+
+This iteration adds passkeys as an **alternative** challenge method while keeping TOTP in place.
+
+### Enrollment in Preferences
+
+- The setup page now includes a **Passkeys** section.
+- Users can enroll multiple passkeys (for example: phone + laptop + hardware key).
+- Each passkey stores:
+  - credential id (base64url)
+  - credential public key
+  - signature counter
+  - label
+  - transports metadata
+  - created timestamp
+  - last used timestamp
+- Credentials are listed with created/last-used times.
+- Each credential can be removed individually from the same page.
+
+### Login challenge behavior
+
+- During the existing pending 2FA challenge, users can:
+  - continue with **TOTP token** (unchanged), or
+  - choose **Use passkey** to complete assertion with `navigator.credentials.get`.
+- On success, pending challenge state is cleared and resume flow remains unchanged (`op=resume`).
+- On failure, failed-attempt counters/lockout behavior are shared with TOTP challenge policy.
+
+### Security controls
+
+- Registration and authentication challenges are short-lived and bound to account id in session.
+- RP ID/origin checks are enforced by WebAuthn verification.
+- Signature counter updates are persisted; counter regressions are treated as authentication failures (clone-signal policy).
+- Passkey registration/authentication success/failure are audit-logged without sensitive credential material.
+- Passkey deletion requires both account ownership checks and a CSRF token.
+
+### Recovery and fallback
+
+- TOTP remains available as fallback while passkeys are introduced.
+- Email-based disable/recovery flow remains available for lockout scenarios.
+- Full passwordless login redesign is intentionally out of scope for this iteration.

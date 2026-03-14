@@ -1,13 +1,14 @@
 {
     "require": {
-        "jaxon-php/jaxon-core": "^5.5",
-        "phpmailer/phpmailer": "^7.0",
-        "twig/twig": "^3.23",
-        "wikimedia/composer-merge-plugin": "^2.1",
-        "doctrine/orm": "^3.6",
         "doctrine/dbal": "^4.4",
         "doctrine/migrations": "^3.9",
-        "symfony/cache": "^7.2"
+        "doctrine/orm": "^3.6",
+        "jaxon-php/jaxon-core": "^5.5",
+        "lbuchs/webauthn": "^2.0",
+        "phpmailer/phpmailer": "^7.0",
+        "symfony/cache": "^7.2",
+        "twig/twig": "^3.23",
+        "wikimedia/composer-merge-plugin": "^2.1"
     },
     "require-dev": {
         "phpstan/phpstan-doctrine": "^1.3",

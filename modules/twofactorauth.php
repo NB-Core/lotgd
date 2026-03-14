@@ -5,6 +5,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/TwoFactorAuth/TwoFactorAuthService.php';
 
 use Lotgd\Http;
+use Lotgd\Security\PasskeyCredentialRepository;
+use Lotgd\Security\PasskeyService;
 use Lotgd\Nav;
 use Lotgd\Output;
 use Lotgd\Page\Footer;
@@ -42,6 +44,7 @@ function twofactorauth_getmoduleinfo(): array
         'prefs' => [
             'Two Factor Auth Preferences,title',
             'enabled' => 'Is TOTP enabled for this account?,bool|0',
+            'passkeys_enabled' => 'Has at least one passkey enrolled,bool|0',
             'secret_encrypted' => 'Encrypted TOTP secret,viewonly',
             'temp_secret_encrypted' => 'Temporary setup secret awaiting confirmation,viewonly',
             'verified_at' => 'Unix time of first successful setup verification,int|0',
@@ -62,6 +65,7 @@ function twofactorauth_getmoduleinfo(): array
 
 function twofactorauth_install(): bool
 {
+    twofactorauth_passkey_repository()->ensureTable();
     // Run late so our restorepage/challenge redirect wins over other modules mutating login destination.
     module_addhook_priority('player-login', 1000);
     module_addhook('player-logout');
@@ -73,6 +77,8 @@ function twofactorauth_install(): bool
 
 function twofactorauth_uninstall(): bool
 {
+    twofactorauth_passkey_repository()->dropTable();
+
     return true;
 }
 
@@ -86,7 +92,9 @@ function twofactorauth_dohook(string $hookname, array $args): array
                 break;
             }
 
-            if ((int) get_module_pref('enabled') !== 1) {
+            $totpEnabled = (int) get_module_pref('enabled') === 1;
+            $passkeysEnabled = (int) get_module_pref('passkeys_enabled') === 1;
+            if (!$totpEnabled && !$passkeysEnabled) {
                 twofactorauth_clear_pending_state();
                 break;
             }
@@ -163,6 +171,21 @@ function twofactorauth_run(): void
     Translator::tlschema('module_twofactorauth');
 
     if ($op === 'setup') {
+        $setupOp = (string) Http::get('setupop');
+        if ($setupOp === 'begin_passkey_registration') {
+            twofactorauth_handle_begin_passkey_registration();
+            Translator::tlschema();
+
+            return;
+        }
+
+        if ($setupOp === 'finish_passkey_registration') {
+            twofactorauth_handle_finish_passkey_registration();
+            Translator::tlschema();
+
+            return;
+        }
+
         Header::pageHeader('Two-factor authentication setup');
         twofactorauth_render_setup($output);
         Footer::pageFooter();
@@ -182,6 +205,10 @@ function twofactorauth_run(): void
 
     if ($op === 'verify') {
         twofactorauth_handle_challenge_verification($output);
+    } elseif ($op === 'verify_passkey') {
+        twofactorauth_handle_passkey_verification();
+    } elseif ($op === 'begin_passkey_auth') {
+        twofactorauth_handle_begin_passkey_auth();
     } elseif ($op === 'resume') {
         twofactorauth_handle_resume($output);
     } elseif ($op === 'disable_email') {
@@ -203,10 +230,12 @@ function twofactorauth_render_setup(Output $output): void
 {
     global $session;
 
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
     $enabled = (int) get_module_pref('enabled') === 1;
     $requireVerified = (int) get_module_setting('require_verified_email') === 1;
     $secret = (string) get_module_pref('secret_encrypted');
     $email = (string) ($session['user']['emailaddress'] ?? '');
+    $csrf = twofactorauth_csrf_token();
 
     Nav::add('Navigation');
     Nav::add('Return to preferences', 'prefs.php');
@@ -222,10 +251,58 @@ function twofactorauth_render_setup(Output $output): void
     if ($enabled) {
         $output->output('Two-factor authentication is currently enabled on your account.`n');
         $output->output('`$If you lose access to your authenticator app, use the login challenge page to request email recovery.`0`n`n');
-
     }
 
+    $repo = twofactorauth_passkey_repository();
+    $passkeys = $repo->listForAccount($acctId);
+    set_module_pref('passkeys_enabled', count($passkeys) > 0 ? 1 : 0);
+
     $setupOp = (string) Http::get('setupop');
+    $deleteCredentialId = trim((string) Http::post('delete_credential_id'));
+    if ($setupOp === 'delete_passkey' && $deleteCredentialId !== '') {
+        $postedCsrf = (string) Http::post('csrf_token');
+        if (hash_equals($csrf, $postedCsrf)) {
+            if ($repo->deleteForAccount($acctId, $deleteCredentialId)) {
+                $output->output('Passkey removed.`n');
+            } else {
+                $output->output('Passkey deletion failed or credential is not yours.`n');
+            }
+            $passkeys = $repo->listForAccount($acctId);
+            set_module_pref('passkeys_enabled', count($passkeys) > 0 ? 1 : 0);
+        } else {
+            $output->output('Invalid request token.`n');
+        }
+    }
+
+    $output->output('`n`bPasskeys`b`n');
+    $output->output('Passkeys are available as an alternative second factor to TOTP during login.`n');
+
+    addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration');
+    addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration');
+    rawoutput("<div id='twofactorauth-passkey-registration'>");
+    rawoutput("<label>" . htmlspecialchars(translate_inline('Passkey label'), ENT_QUOTES, 'UTF-8') . "</label> ");
+    rawoutput("<input type='text' id='passkey-label' value='This device' maxlength='120'> ");
+    rawoutput("<button type='button' id='passkey-add-button'>" . htmlspecialchars(translate_inline('Add passkey'), ENT_QUOTES, 'UTF-8') . "</button>");
+    rawoutput('</div>');
+
+    if ($passkeys === []) {
+        $output->output('No passkeys enrolled yet.`n');
+    } else {
+        foreach ($passkeys as $item) {
+            $label = htmlspecialchars((string) ($item['label'] ?: 'Passkey'), ENT_QUOTES, 'UTF-8');
+            $credentialId = htmlspecialchars((string) $item['credential_id'], ENT_QUOTES, 'UTF-8');
+            $created = (int) ($item['created_at'] ?? 0);
+            $lastUsed = (int) ($item['last_used_at'] ?? 0);
+            $output->output('• %s (created: %s, last used: %s)`n', $label, date('Y-m-d H:i', $created), $lastUsed > 0 ? date('Y-m-d H:i', $lastUsed) : 'never');
+            addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=delete_passkey');
+            rawoutput("<form action='runmodule.php?module=twofactorauth&op=setup&setupop=delete_passkey' method='POST' style='display:inline-block;margin-bottom:6px'>");
+            rawoutput("<input type='hidden' name='csrf_token' value='" . htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') . "'>");
+            rawoutput("<input type='hidden' name='delete_credential_id' value='" . $credentialId . "'>");
+            rawoutput("<button type='submit'>" . htmlspecialchars(translate_inline('Delete passkey'), ENT_QUOTES, 'UTF-8') . "</button>");
+            rawoutput('</form><br>');
+        }
+    }
+
     $cryptoKey = twofactorauth_signing_key();
 
     if ($setupOp === 'start') {
@@ -236,12 +313,14 @@ function twofactorauth_render_setup(Output $output): void
     $tempSecret = TwoFactorAuthService::decryptSecret((string) get_module_pref('temp_secret_encrypted'), $cryptoKey);
     if ($tempSecret === '') {
         Nav::add('Actions');
-	if ($secret !== '') {
-		$output->output("You already have a device setup, you can remove it and setup a new device via email recovery`n`n");
-	} else {
-        	$output->output('You have not yet enrolled a device. Start setup to generate your TOTP secret.`n`n');
-        	Nav::add('Begin setup', 'runmodule.php?module=twofactorauth&op=setup&setupop=start');
-	}
+        if ($secret !== '') {
+            $output->output("`nYou already have a TOTP device setup, you can remove it and setup a new device via email recovery`n`n");
+        } else {
+            $output->output('`nYou have not yet enrolled a TOTP device. Start setup to generate your TOTP secret.`n`n');
+            Nav::add('Begin TOTP setup', 'runmodule.php?module=twofactorauth&op=setup&setupop=start');
+        }
+
+        twofactorauth_render_passkey_registration_script($csrf);
 
         return;
     }
@@ -255,19 +334,18 @@ function twofactorauth_render_setup(Output $output): void
     $qrProviderEndpoint = trim((string) get_module_setting('qr_provider_endpoint'));
     $qrCodeSize = max(120, (int) get_module_setting('qr_code_size'));
 
+    $output->output('`n`bTOTP fallback`b`n');
     $output->output('Scan the QR code in your authenticator app, or enter the secret manually.`n');
     $output->output('Manual secret: `^%s`0`n', $tempSecret);
 
     if ($qrProviderEndpoint !== '') {
         $qrCodeUrl = TwoFactorAuthService::buildQrCodeUrl($qrProviderEndpoint, $otpauthUri, $qrCodeSize);
-        // Show a scannable QR image while also retaining manual setup options.
         rawoutput("<div class='twofactorauth-qr'><img src='" . htmlspecialchars($qrCodeUrl, ENT_QUOTES, 'UTF-8') . "' alt='" . htmlspecialchars(translate_inline('Authenticator enrollment QR code'), ENT_QUOTES, 'UTF-8') . "' width='" . (int) $qrCodeSize . "' height='" . (int) $qrCodeSize . "'></div>");
     }
 
     $output->output('Enrollment URI (copy/paste if needed):`n%s`n`n', $otpauthUri);
     $output->output('Then enter your first one-time token to finish activation.`n');
 
-    // Only verify after an actual token submission; avoid false errors on initial setup page load.
     $submittedToken = Http::post('token');
     if ($submittedToken !== null) {
         $token = trim((string) $submittedToken);
@@ -288,13 +366,14 @@ function twofactorauth_render_setup(Output $output): void
         }
     }
 
-    // Raw form actions are not auto-whitelisted by addnav(), so register them explicitly.
     addnav('', 'runmodule.php?module=twofactorauth&op=setup');
     rawoutput("<form action='runmodule.php?module=twofactorauth&op=setup' method='POST'>");
     rawoutput("<label>" . translate_inline('Authenticator token') . "</label> ");
     rawoutput("<input type='text' name='token' maxlength='10'> ");
     rawoutput("<button type='submit'>" . translate_inline('Enable') . "</button>");
     rawoutput('</form>');
+
+    twofactorauth_render_passkey_registration_script($csrf);
 }
 
 /**
@@ -302,26 +381,40 @@ function twofactorauth_render_setup(Output $output): void
  */
 function twofactorauth_render_challenge(Output $output): void
 {
+    global $session;
+
     if ((int) get_module_pref('pending_challenge') !== 1) {
         $output->output('No two-factor challenge is currently pending.`n');
 
         return;
     }
 
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    $passkeys = twofactorauth_passkey_repository()->listForAccount($acctId);
+
     Nav::add('Actions');
     Nav::add('Submit token', 'runmodule.php?module=twofactorauth&op=verify');
+    if ($passkeys !== []) {
+        Nav::add('Use passkey', 'runmodule.php?module=twofactorauth&op=challenge');
+        addnav('', 'runmodule.php?module=twofactorauth&op=begin_passkey_auth');
+        addnav('', 'runmodule.php?module=twofactorauth&op=verify_passkey');
+    }
     Nav::add('Disable via email', 'runmodule.php?module=twofactorauth&op=disable_email');
 
     $output->output('Password accepted, two-factor authentication is required.`n');
     $output->output('Enter the token from your authenticator app to continue.`n');
 
-    // Raw form actions are not auto-whitelisted by addnav(), so register them explicitly.
     addnav('', 'runmodule.php?module=twofactorauth&op=verify');
     rawoutput("<form action='runmodule.php?module=twofactorauth&op=verify' method='POST'>");
     rawoutput("<label>" . translate_inline('Authenticator token') . "</label> ");
     rawoutput("<input type='text' name='token' maxlength='10'> ");
     rawoutput("<button type='submit'>" . translate_inline('Verify') . "</button>");
     rawoutput('</form>');
+
+    if ($passkeys !== []) {
+        rawoutput("<div style='margin-top:12px'><button type='button' id='twofactorauth-use-passkey'>" . htmlspecialchars(translate_inline('Use passkey'), ENT_QUOTES, 'UTF-8') . "</button></div>");
+        rawoutput("<script>(function(){const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}btn.addEventListener('click',async function(){try{const begin=await fetch('runmodule.php?module=twofactorauth&op=begin_passkey_auth',{method:'POST',headers:{'Content-Type':'application/json'}});const beginData=await begin.json();if(!beginData.ok){alert('Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verify=await fetch('runmodule.php?module=twofactorauth&op=verify_passkey',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const verifyData=await verify.json();if(verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}alert('Passkey verification failed.');}catch(e){alert('Passkey operation failed.');}});})();</script>");
+    }
 }
 
 /**
@@ -651,6 +744,182 @@ function twofactorauth_resolve_resume_target(string $target, array $allowedNavs)
     }
 
     return '';
+}
+
+
+/**
+ * Build or return a CSRF token for setup lifecycle actions.
+ */
+function twofactorauth_csrf_token(): string
+{
+    global $session;
+
+    if (!isset($session['twofactorauth_csrf']) || !is_string($session['twofactorauth_csrf']) || $session['twofactorauth_csrf'] === '') {
+        $session['twofactorauth_csrf'] = bin2hex(random_bytes(16));
+    }
+
+    return (string) $session['twofactorauth_csrf'];
+}
+
+/**
+ * Shared passkey credential repository instance.
+ */
+function twofactorauth_passkey_repository(): PasskeyCredentialRepository
+{
+    static $repository = null;
+    if (!$repository instanceof PasskeyCredentialRepository) {
+        $repository = new PasskeyCredentialRepository();
+    }
+
+    return $repository;
+}
+
+/**
+ * Shared passkey service instance.
+ */
+function twofactorauth_passkey_service(): PasskeyService
+{
+    static $service = null;
+    if (!$service instanceof PasskeyService) {
+        $service = new PasskeyService(twofactorauth_passkey_repository());
+    }
+
+    return $service;
+}
+
+/**
+ * Render browser helpers for base64url decoding and passkey registration.
+ */
+function twofactorauth_render_passkey_registration_script(string $csrf): void
+{
+    rawoutput("<script>window.twofactorauthArrayBufferToBase64Url=function(buffer){const bytes=new Uint8Array(buffer);let binary='';for(let i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i]);}return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');};window.twofactorauthBase64UrlToArrayBuffer=function(base64url){const padded=(base64url+'==='.slice((base64url.length+3)%4)).replace(/-/g,'+').replace(/_/g,'/');const binary=atob(padded);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}return bytes.buffer;};window.twofactorauthDecodeCredentialOptions=function(publicKey){if(publicKey.challenge){publicKey.challenge=window.twofactorauthBase64UrlToArrayBuffer(publicKey.challenge);}if(publicKey.user&&publicKey.user.id){publicKey.user.id=window.twofactorauthBase64UrlToArrayBuffer(publicKey.user.id);}if(Array.isArray(publicKey.excludeCredentials)){publicKey.excludeCredentials=publicKey.excludeCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}if(Array.isArray(publicKey.allowCredentials)){publicKey.allowCredentials=publicKey.allowCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}return publicKey;};(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}button.addEventListener('click',async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . addslashes($csrf) . "',label:label})});const beginData=await begin.json();if(!beginData.ok){alert('Unable to start passkey registration.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . addslashes($csrf) . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await finish.json();if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}alert('Passkey registration failed.');}catch(error){alert('Passkey registration error.');}});})();</script>");
+}
+
+/**
+ * Begin setup passkey registration and return publicKeyCredentialCreationOptions as JSON.
+ */
+function twofactorauth_handle_begin_passkey_registration(): void
+{
+    global $session;
+
+    $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
+    if (!is_array($requestBody)) {
+        $requestBody = [];
+    }
+
+    $csrf = (string) ($requestBody['csrf_token'] ?? '');
+    if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
+        rawoutput(json_encode(['ok' => false, 'error' => 'csrf']) ?: '{"ok":false}');
+
+        return;
+    }
+
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    $login = (string) ($session['user']['login'] ?? 'player');
+    $display = (string) ($session['user']['name'] ?? $login);
+    $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
+    $excludeIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
+
+    $options = twofactorauth_passkey_service()->beginRegistration($acctId, $login, $display, $excludeIds);
+
+    rawoutput(json_encode(['ok' => true, 'options' => $options]) ?: '{"ok":false}');
+}
+
+/**
+ * Complete setup passkey registration and persist credential metadata.
+ */
+function twofactorauth_handle_finish_passkey_registration(): void
+{
+    global $session;
+
+    $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
+    if (!is_array($requestBody)) {
+        $requestBody = [];
+    }
+
+    $csrf = (string) ($requestBody['csrf_token'] ?? '');
+    if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
+        rawoutput(json_encode(['ok' => false, 'error' => 'csrf']) ?: '{"ok":false}');
+
+        return;
+    }
+
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    $label = (string) ($requestBody['label'] ?? 'Passkey');
+    $result = twofactorauth_passkey_service()->finishRegistration($acctId, $requestBody, $label);
+
+    if ($result['ok']) {
+        DebugLog::add(sprintf('2FA passkey registration success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
+    } else {
+        DebugLog::add(sprintf('2FA passkey registration failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
+    }
+
+    rawoutput(json_encode(['ok' => $result['ok'], 'error' => $result['error']]) ?: '{"ok":false}');
+}
+
+/**
+ * Begin passkey authentication challenge for the pending 2FA login.
+ */
+function twofactorauth_handle_begin_passkey_auth(): void
+{
+    global $session;
+
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
+    $credentialIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
+
+    $options = twofactorauth_passkey_service()->beginAuthentication($acctId, $credentialIds);
+
+    rawoutput(json_encode(['ok' => true, 'options' => $options]) ?: '{"ok":false}');
+}
+
+/**
+ * Complete passkey authentication and clear pending 2FA state on success.
+ */
+function twofactorauth_handle_passkey_verification(): void
+{
+    global $session;
+
+    if ((int) get_module_pref('pending_challenge') !== 1) {
+        rawoutput(json_encode(['ok' => false, 'error' => 'no_pending']) ?: '{"ok":false}');
+
+        return;
+    }
+
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    $lockedUntil = (int) get_module_pref('locked_until');
+    $now = time();
+    if ($lockedUntil > $now) {
+        rawoutput(json_encode(['ok' => false, 'error' => 'locked']) ?: '{"ok":false}');
+
+        return;
+    }
+
+    $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
+    if (!is_array($requestBody)) {
+        $requestBody = [];
+    }
+
+    $result = twofactorauth_passkey_service()->finishAuthentication($acctId, $requestBody);
+    if ($result['ok']) {
+        twofactorauth_clear_pending_state();
+        twofactorauth_log_challenge_outcome($acctId, 'success', 'passkey');
+        DebugLog::add(sprintf('2FA passkey authentication success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
+        rawoutput(json_encode(['ok' => true]) ?: '{"ok":false}');
+
+        return;
+    }
+
+    $fails = (int) get_module_pref('failed_attempts') + 1;
+    set_module_pref('failed_attempts', $fails);
+    $maxAttempts = (int) get_module_setting('max_attempts');
+    if ($fails >= $maxAttempts) {
+        set_module_pref('locked_until', $now + (int) get_module_setting('lock_seconds'));
+    }
+
+    twofactorauth_log_challenge_outcome($acctId, 'failure', 'passkey_' . $result['error']);
+    DebugLog::add(sprintf('2FA passkey authentication failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
+    rawoutput(json_encode(['ok' => false, 'error' => $result['error']]) ?: '{"ok":false}');
 }
 
 /**

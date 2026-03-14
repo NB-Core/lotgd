@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => '__root__',
-        'pretty_version' => 'dev-master',
-        'version' => 'dev-master',
-        'reference' => 'b0f64f5bd6d8aa0edbcd8b1a9ae9341c5f8d2784',
+        'pretty_version' => 'dev-work',
+        'version' => 'dev-work',
+        'reference' => 'a7dfcd729ccee5ddf72893aa5478fdcecb8fd8f4',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         '__root__' => array(
-            'pretty_version' => 'dev-master',
-            'version' => 'dev-master',
-            'reference' => 'b0f64f5bd6d8aa0edbcd8b1a9ae9341c5f8d2784',
+            'pretty_version' => 'dev-work',
+            'version' => 'dev-work',
+            'reference' => 'a7dfcd729ccee5ddf72893aa5478fdcecb8fd8f4',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -151,6 +151,15 @@
             'reference' => 'da6fda83fadfc7936e71740e84d5137e6925489c',
             'type' => 'library',
             'install_path' => __DIR__ . '/../lagdo/facades',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'lbuchs/webauthn' => array(
+            'pretty_version' => 'v2.2.0',
+            'version' => '2.2.0.0',
+            'reference' => '20adb4a240c3997bd8cac7dc4dde38ab0bea0ed1',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../lbuchs/webauthn',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

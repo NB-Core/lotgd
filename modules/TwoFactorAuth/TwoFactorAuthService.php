@@ -242,6 +242,8 @@ class TwoFactorAuthService
         $allowed = [
             'runmodule.php?module=twofactorauth&op=challenge',
             'runmodule.php?module=twofactorauth&op=verify',
+            'runmodule.php?module=twofactorauth&op=begin_passkey_auth',
+            'runmodule.php?module=twofactorauth&op=verify_passkey',
             'runmodule.php?module=twofactorauth&op=disable_email',
             'login.php?op=logout',
         ];
