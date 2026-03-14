@@ -2088,12 +2088,9 @@ class Installer
         }
 
         if ($this->getSetting("installer_version", "-1") === "-1") {
-            $singleHash = md5($plaintext);
-            if (strlen($storedHash) === 32 && hash_equals($storedHash, $singleHash)) {
-                return true;
-            }
-
-            if (hash_equals($storedHash, $plaintext)) {
+            // Compatibility for very old installs that stored plain text or
+            // single-MD5 credentials before modern password algorithms.
+            if (PasswordHelper::verifyLegacyUpgradeCredential($plaintext, $storedHash)) {
                 return true;
             }
         }
