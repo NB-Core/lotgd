@@ -174,6 +174,33 @@ class PasskeyServiceTest extends TestCase
         self::assertSame('payload_invalid', $authResult['error']);
     }
 
+    public function testExpiredAuthenticationChallengeIsRejected(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $service->beginAuthentication(100, []);
+
+        $GLOBALS['session']['twofactorauth_passkey_challenge_auth']['expires_at'] = time() - 1;
+
+        $result = $service->finishAuthentication(100, []);
+
+        self::assertFalse($result['ok']);
+        self::assertSame('challenge_missing', $result['error']);
+    }
+
+    public function testWrongAccountFinishRegistrationDoesNotConsumeStoredChallenge(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $service->beginRegistration(100, 'tester', 'Tester', []);
+
+        $wrongAccountResult = $service->finishRegistration(200, [], 'Device');
+        self::assertFalse($wrongAccountResult['ok']);
+        self::assertSame('challenge_missing', $wrongAccountResult['error']);
+
+        $correctAccountResult = $service->finishRegistration(100, [], 'Device');
+        self::assertFalse($correctAccountResult['ok']);
+        self::assertSame('payload_invalid', $correctAccountResult['error']);
+    }
+
     public function testMalformedAssertionPayloadReturnsPayloadInvalid(): void
     {
         $service = new PasskeyService($this->repo);
