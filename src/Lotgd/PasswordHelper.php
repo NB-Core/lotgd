@@ -21,6 +21,9 @@ final class PasswordHelper
     /** Modern bcrypt algorithm identifier. */
     public const ALGO_MODERN = 1;
 
+    /** Prefix used by bcrypt hashes. */
+    private const BCRYPT_PREFIX = '$2';
+
     /**
      * Hash a plaintext password for storage using bcrypt.
      *
@@ -46,12 +49,37 @@ final class PasswordHelper
      */
     public static function verify(string $plaintext, string $storedHash, int $algo): bool
     {
-        if ($algo === self::ALGO_MODERN) {
+        if ($algo === self::ALGO_MODERN || self::looksLikeBcryptHash($storedHash)) {
             return password_verify($plaintext, $storedHash);
         }
 
         // Legacy: stored hash is md5(md5(plaintext)).
         return hash_equals($storedHash, md5(md5($plaintext)));
+    }
+
+    /**
+     * Verify very old installer-upgrade credentials.
+     *
+     * Historical 0.9.7-era data could store the password as plaintext or as
+     * a single MD5 hash. This helper keeps that compatibility logic in one
+     * place so installer code does not reimplement hashing checks.
+     *
+     * @param string $plaintext Submitted plaintext password.
+     * @param string $storedHash Stored database value for the password column.
+     *
+     * @return bool True when the legacy upgrade credential format matches.
+     */
+    public static function verifyLegacyUpgradeCredential(string $plaintext, string $storedHash): bool
+    {
+        if ($storedHash === '') {
+            return false;
+        }
+
+        if (strlen($storedHash) === 32 && ctype_xdigit($storedHash)) {
+            return hash_equals(strtolower($storedHash), md5($plaintext));
+        }
+
+        return hash_equals($storedHash, $plaintext);
     }
 
     /**
@@ -61,8 +89,12 @@ final class PasswordHelper
      *
      * @return bool True if the password should be re-hashed.
      */
-    public static function needsRehash(int $algo): bool
+    public static function needsRehash(int $algo, string $storedHash = ''): bool
     {
+        if (self::looksLikeBcryptHash($storedHash)) {
+            return false;
+        }
+
         return $algo !== self::ALGO_MODERN;
     }
 
@@ -76,5 +108,16 @@ final class PasswordHelper
     public static function isLegacy(int $algo): bool
     {
         return $algo === self::ALGO_LEGACY;
+    }
+
+    /**
+     * Detect whether a stored hash is already a bcrypt hash.
+     *
+     * This enables safe verification during upgrades where password_algo
+     * may still be unset or stale, but hashes were already migrated.
+     */
+    private static function looksLikeBcryptHash(string $storedHash): bool
+    {
+        return str_starts_with($storedHash, self::BCRYPT_PREFIX);
     }
 }
