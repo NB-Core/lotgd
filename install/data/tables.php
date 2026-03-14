@@ -1109,6 +1109,43 @@ function get_all_tables()
             'columns' => 'modid'
             )
         ),
+    'twofactorauth_passkeys' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'credential_id' => array(
+            'name' => 'credential_id', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'public_key' => array(
+            'name' => 'public_key', 'type' => 'text'
+            ),
+        'sign_count' => array(
+            'name' => 'sign_count', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'label' => array(
+            'name' => 'label', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'transports' => array(
+            'name' => 'transports', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'created_at' => array(
+            'name' => 'created_at', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'last_used_at' => array(
+            'name' => 'last_used_at', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'credential_id'
+            ),
+        'key-acctid' => array(
+            'name' => 'acctid', 'type' => 'key', 'columns' => 'acctid'
+            ),
+        ),
     'module_event_hooks' => array(
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',

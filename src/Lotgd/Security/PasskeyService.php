@@ -6,6 +6,7 @@ namespace Lotgd\Security;
 
 use lbuchs\WebAuthn\Binary\ByteBuffer;
 use lbuchs\WebAuthn\WebAuthn;
+use lbuchs\WebAuthn\WebAuthnException;
 use Throwable;
 
 /**
@@ -13,7 +14,7 @@ use Throwable;
  */
 class PasskeyService
 {
-    private const SESSION_KEY = 'twofactorauth_passkey_challenge';
+    private const SESSION_KEY_PREFIX = 'twofactorauth_passkey_challenge_';
     private const CHALLENGE_TTL_SECONDS = 300;
 
     public function __construct(private readonly PasskeyCredentialRepository $credentials)
@@ -174,7 +175,8 @@ class PasskeyService
             $newCount = $webauthn->getSignatureCounter() ?? (int) ($stored['sign_count'] ?? 0);
             $this->credentials->updateUsage($credentialId, $newCount, time());
         } catch (Throwable $error) {
-            $clone = str_contains(strtolower($error->getMessage()), 'counter');
+            $clone = $error instanceof WebAuthnException
+                && $error->getCode() === WebAuthnException::SIGNATURE_COUNTER;
 
             return ['ok' => false, 'error' => $clone ? 'clone_detected' : 'verify_failed', 'clone' => $clone];
         }
@@ -208,7 +210,7 @@ class PasskeyService
     private function storeChallengeState(string $type, int $acctId, string $challenge): void
     {
         $session = &$this->sessionStore();
-        $session[self::SESSION_KEY] = [
+        $session[$this->challengeSessionKey($type)] = [
             'type' => $type,
             'acctid' => $acctId,
             'challenge' => base64_encode($challenge),
@@ -219,8 +221,8 @@ class PasskeyService
     private function consumeChallengeState(string $expectedType, int $acctId): string
     {
         $session = &$this->sessionStore();
-        $state = $session[self::SESSION_KEY] ?? null;
-        unset($session[self::SESSION_KEY]);
+        $sessionKey = $this->challengeSessionKey($expectedType);
+        $state = $session[$sessionKey] ?? null;
 
         if (!is_array($state)) {
             return '';
@@ -231,10 +233,22 @@ class PasskeyService
         }
 
         if ((int) ($state['expires_at'] ?? 0) < time()) {
+            unset($session[$sessionKey]);
+
             return '';
         }
 
-        return base64_decode((string) ($state['challenge'] ?? ''), true) ?: '';
+        $challenge = base64_decode((string) ($state['challenge'] ?? ''), true) ?: '';
+        if ($challenge === '') {
+            unset($session[$sessionKey]);
+
+            return '';
+        }
+
+        // Consume only after successful validation to avoid clobbering parallel/accidental requests.
+        unset($session[$sessionKey]);
+
+        return $challenge;
     }
 
     /**
@@ -251,6 +265,14 @@ class PasskeyService
         }
 
         return $_SESSION;
+    }
+
+    /**
+     * Build the session key for a specific ceremony type.
+     */
+    private function challengeSessionKey(string $type): string
+    {
+        return self::SESSION_KEY_PREFIX . $type;
     }
 
     private function normalizeCredentialId(string $id): string

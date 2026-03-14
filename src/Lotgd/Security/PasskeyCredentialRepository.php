@@ -12,28 +12,12 @@ class PasskeyCredentialRepository
     private const TABLE_NAME = 'twofactorauth_passkeys';
 
     /**
-     * Ensure the passkey credential table exists.
+     * Table lifecycle is managed by core table sync (`install/data/tables.php`).
+     *
+     * This method is intentionally a no-op for module compatibility.
      */
     public function ensureTable(): void
     {
-        if (!$this->hasDb()) {
-            return;
-        }
-        $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
-        LegacyBridge::dbQuery(
-            "CREATE TABLE IF NOT EXISTS {$table} ("
-            . 'acctid INT NOT NULL,'
-            . 'credential_id VARCHAR(255) NOT NULL,'
-            . 'public_key TEXT NOT NULL,'
-            . 'sign_count BIGINT NOT NULL DEFAULT 0,'
-            . 'label VARCHAR(255) NOT NULL DEFAULT \"\",'
-            . 'transports VARCHAR(255) NOT NULL DEFAULT \"\",'
-            . 'created_at INT NOT NULL,'
-            . 'last_used_at INT NOT NULL DEFAULT 0,'
-            . 'PRIMARY KEY (credential_id),'
-            . 'KEY idx_passkey_acctid (acctid)'
-            . ')'
-        );
     }
 
     /**
@@ -162,16 +146,12 @@ class PasskeyCredentialRepository
     }
 
     /**
-     * Drop passkey table during uninstall.
+     * Table lifecycle is managed by core table sync (`install/data/tables.php`).
+     *
+     * This method is intentionally a no-op for module compatibility.
      */
     public function dropTable(): void
     {
-        if (!$this->hasDb()) {
-            return;
-        }
-
-        $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
-        LegacyBridge::dbQuery("DROP TABLE IF EXISTS {$table}");
     }
 
     /**

@@ -65,7 +65,6 @@ function twofactorauth_getmoduleinfo(): array
 
 function twofactorauth_install(): bool
 {
-    twofactorauth_passkey_repository()->ensureTable();
     // Run late so our restorepage/challenge redirect wins over other modules mutating login destination.
     module_addhook_priority('player-login', 1000);
     module_addhook('player-logout');
@@ -77,8 +76,6 @@ function twofactorauth_install(): bool
 
 function twofactorauth_uninstall(): bool
 {
-    twofactorauth_passkey_repository()->dropTable();
-
     return true;
 }
 
@@ -415,6 +412,8 @@ function twofactorauth_render_challenge(Output $output): void
     rawoutput('</form>');
 
     if ($passkeys !== []) {
+        // Shared helper utilities are needed both on setup and challenge pages.
+        twofactorauth_render_passkey_js_helpers();
         rawoutput("<div style='margin-top:12px'><button type='button' id='twofactorauth-use-passkey'>" . htmlspecialchars(translate_inline('Use passkey'), ENT_QUOTES, 'UTF-8') . "</button></div>");
         rawoutput("<script>(function(){const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}btn.addEventListener('click',async function(){try{const begin=await fetch('runmodule.php?module=twofactorauth&op=begin_passkey_auth',{method:'POST',headers:{'Content-Type':'application/json'}});const beginData=await begin.json();if(!beginData.ok){alert('Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verify=await fetch('runmodule.php?module=twofactorauth&op=verify_passkey',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const verifyData=await verify.json();if(verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}alert('Passkey verification failed.');}catch(e){alert('Passkey operation failed.');}});})();</script>");
     }
@@ -793,9 +792,19 @@ function twofactorauth_passkey_service(): PasskeyService
 /**
  * Render browser helpers for base64url decoding and passkey registration.
  */
+function twofactorauth_render_passkey_js_helpers(): void
+{
+    rawoutput("<script>window.twofactorauthArrayBufferToBase64Url=window.twofactorauthArrayBufferToBase64Url||function(buffer){const bytes=new Uint8Array(buffer);let binary='';for(let i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i]);}return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');};window.twofactorauthBase64UrlToArrayBuffer=window.twofactorauthBase64UrlToArrayBuffer||function(base64url){const padded=(base64url+'==='.slice((base64url.length+3)%4)).replace(/-/g,'+').replace(/_/g,'/');const binary=atob(padded);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}return bytes.buffer;};window.twofactorauthDecodeCredentialOptions=window.twofactorauthDecodeCredentialOptions||function(publicKey){if(publicKey.challenge){publicKey.challenge=window.twofactorauthBase64UrlToArrayBuffer(publicKey.challenge);}if(publicKey.user&&publicKey.user.id){publicKey.user.id=window.twofactorauthBase64UrlToArrayBuffer(publicKey.user.id);}if(Array.isArray(publicKey.excludeCredentials)){publicKey.excludeCredentials=publicKey.excludeCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}if(Array.isArray(publicKey.allowCredentials)){publicKey.allowCredentials=publicKey.allowCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}return publicKey;};</script>");
+}
+
+/**
+ * Render browser helpers for base64url decoding and passkey registration.
+ */
 function twofactorauth_render_passkey_registration_script(string $csrf): void
 {
-    rawoutput("<script>window.twofactorauthArrayBufferToBase64Url=function(buffer){const bytes=new Uint8Array(buffer);let binary='';for(let i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i]);}return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');};window.twofactorauthBase64UrlToArrayBuffer=function(base64url){const padded=(base64url+'==='.slice((base64url.length+3)%4)).replace(/-/g,'+').replace(/_/g,'/');const binary=atob(padded);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}return bytes.buffer;};window.twofactorauthDecodeCredentialOptions=function(publicKey){if(publicKey.challenge){publicKey.challenge=window.twofactorauthBase64UrlToArrayBuffer(publicKey.challenge);}if(publicKey.user&&publicKey.user.id){publicKey.user.id=window.twofactorauthBase64UrlToArrayBuffer(publicKey.user.id);}if(Array.isArray(publicKey.excludeCredentials)){publicKey.excludeCredentials=publicKey.excludeCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}if(Array.isArray(publicKey.allowCredentials)){publicKey.allowCredentials=publicKey.allowCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}return publicKey;};(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}button.addEventListener('click',async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . addslashes($csrf) . "',label:label})});const beginData=await begin.json();if(!beginData.ok){alert('Unable to start passkey registration.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . addslashes($csrf) . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await finish.json();if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}alert('Passkey registration failed.');}catch(error){alert('Passkey registration error.');}});})();</script>");
+    twofactorauth_render_passkey_js_helpers();
+
+    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}button.addEventListener('click',async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . addslashes($csrf) . "',label:label})});const beginData=await begin.json();if(!beginData.ok){alert('Unable to start passkey registration.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . addslashes($csrf) . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await finish.json();if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}alert('Passkey registration failed.');}catch(error){alert('Passkey registration error.');}});})();</script>");
 }
 
 /**
