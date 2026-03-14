@@ -7,14 +7,14 @@ This is a fork of the original Legend of the Green Dragon game by Eric "MightyE"
 
 The original readme and license texts follow below, also the installation + upgrade routines which haven't changed much.
 
-**Note:** The `CHANGELOG.txt` file does not cover every change. Around 300 commits were made without entries, so refer to the git history for a complete list.
+**Note:** `CHANGELOG.md` is the current changelog for modern releases (2.x+). The `docs/LegacyChangelog.txt` file is archival and does not cover every historical change; around 300 commits were made without entries, so refer to git history for a complete list.
 
 This fork updates the Dragonprime 1.1.1 release with modern tooling while remaining compatible with existing modules. It aims to provide a smoother experience on current PHP versions.  The source lives on [GitHub](https://github.com/NB-Core/lotgd) where you can follow development and open issues.
 
 Features of this fork include:
 - additional hooks
 - a stat system with strength, dexterity, and other attributes
-- numerous other changes documented in `CHANGELOG.txt`
+- numerous other changes documented in `docs/LegacyChangelog.txt`
 - compatibility with PHP 8.3
 - PHPMailer replacing the sendmail system
 - mail notifications that auto-refresh via Ajax (resources under `async/`)
@@ -71,7 +71,7 @@ See [AGENTS.md](AGENTS.md) for full contributor guidelines. Highlights:
 ## Read Me First
 
 Thank you for downloading the modified version of Legend Of the Green Dragon.
-See `CHANGELOG.txt` for a list of changes up until version 1.3.2.
+See `docs/LegacyChangelog.txt` for a list of changes up until version 1.3.2.
 👉 See [CHANGELOG.md](CHANGELOG.md) for a detailed history after that up until now.
 
 If you need **modules**, [go there](https://github.com/NB-Core/modules) and fetch the ones you like.

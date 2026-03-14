@@ -10,6 +10,22 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 
+## [2.0.4] – 2026-03-10
+
+### Features
+- Add optional two-factor authentication (TOTP) with QR/manual enrollment and a staged challenge flow during login.
+- Add reCAPTCHA v3 integration for pre-login verification hardening.
+
+### Security
+- Migrate password handling to bcrypt with `password_algo` tracking and align installer/login password flows with the new helper behavior.
+- Harden login and failed-attempt persistence paths against SQL injection risks and schema drift edge cases.
+- Restrict public error rendering and expand security coverage around error handling and authentication flows.
+
+### Bug Fixes
+- Stabilize 2FA challenge navigation/redirect handling across repeated logins, subdirectory installs, and failed token submissions.
+- Keep 2FA challenge state active across retries and normalize stored allowed-navigation data for resume flows.
+- Guard invalid time preference values to prevent date argument type errors in preference handling.
+
 ## [2.0.3] – 2026-01-28
 
 ### Dependencies
