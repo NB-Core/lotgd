@@ -18,6 +18,7 @@ final class PasswordHelperTest extends TestCase
     public function testVerifyAcceptsBcryptHashEvenWithLegacyAlgo(): void
     {
         $hash = password_hash('swordfish', PASSWORD_BCRYPT);
+        $this->assertIsString($hash);
 
         $this->assertTrue(PasswordHelper::verify('swordfish', $hash, PasswordHelper::ALGO_LEGACY));
     }
@@ -28,6 +29,7 @@ final class PasswordHelperTest extends TestCase
     public function testNeedsRehashReturnsFalseForBcryptHashWithLegacyAlgo(): void
     {
         $hash = password_hash('swordfish', PASSWORD_BCRYPT);
+        $this->assertIsString($hash);
 
         $this->assertFalse(PasswordHelper::needsRehash(PasswordHelper::ALGO_LEGACY, $hash));
     }
