@@ -300,7 +300,7 @@ function twofactorauth_render_setup(Output $output): void
         $output->output('No passkeys enrolled yet.`n');
     } else {
         foreach ($passkeys as $item) {
-            $label = htmlspecialchars((string) ($item['label'] ?: 'Passkey'), ENT_QUOTES, 'UTF-8');
+            $label = (string) ($item['label'] ?: 'Passkey');
             $credentialId = htmlspecialchars((string) $item['credential_id'], ENT_QUOTES, 'UTF-8');
             $created = (int) ($item['created_at'] ?? 0);
             $lastUsed = (int) ($item['last_used_at'] ?? 0);
