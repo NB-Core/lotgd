@@ -179,7 +179,18 @@ class PasskeyServiceTest extends TestCase
         $service = new PasskeyService($this->repo);
         $service->beginAuthentication(100, []);
 
-        $GLOBALS['session']['twofactorauth_passkey_challenge_auth']['expires_at'] = time() - 1;
+        $challengeKeys = array_keys(array_filter(
+            $GLOBALS['session'],
+            static fn(mixed $state): bool => is_array($state)
+                && ($state['type'] ?? null) === 'auth'
+                && (int) ($state['acctid'] ?? 0) === 100
+                && isset($state['challenge'])
+                && isset($state['expires_at'])
+        ));
+
+        self::assertCount(1, $challengeKeys, 'Expected exactly one stored auth challenge entry in session.');
+
+        $GLOBALS['session'][$challengeKeys[0]]['expires_at'] = time() - 1;
 
         $result = $service->finishAuthentication(100, []);
 
