@@ -170,8 +170,15 @@ function twofactorauth_run(): void
 
     Translator::tlschema('module_twofactorauth');
 
+    // Keep setup async routes in the explicit nav allow-list for this request lifecycle.
+    // Forced navigation checks compare the incoming URI against allowednavs and can reroute
+    // requests before handlers run when async endpoints are not whitelisted.
+    twofactorauth_allow_setup_async_nav_routes();
+
     if ($op === 'setup') {
         $setupOp = (string) Http::get('setupop');
+        // Setup async handlers must short-circuit before page chrome/nav rendering so browser
+        // fetch callers always receive raw JSON responses.
         if ($setupOp === 'begin_passkey_registration') {
             twofactorauth_handle_begin_passkey_registration();
             Translator::tlschema();
@@ -837,11 +844,62 @@ function twofactorauth_output_json(array $payload): void
 }
 
 /**
+ * Keep setup async routes explicitly in allowed navigation entries.
+ *
+ * These passkey routes are triggered with fetch() calls from the setup screen and must not be
+ * treated like normal page navigation; only these specific setupops are allowed here.
+ */
+function twofactorauth_allow_setup_async_nav_routes(): void
+{
+    addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration');
+    addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration');
+}
+
+/**
+ * Write structured debug log details for passkey setup async handlers.
+ */
+function twofactorauth_log_setup_async_debug(string $handler, string $state, int $acctId): void
+{
+    DebugLog::add(
+        sprintf('2FA passkey setup async [%s] %s for account %d.', $handler, $state, $acctId),
+        $acctId,
+        $acctId,
+        '2fa_passkey',
+        false,
+        false
+    );
+}
+
+/**
+ * Build a setup async error payload while limiting detailed diagnostic data to megausers.
+ *
+ * @return array<string, mixed>
+ */
+function twofactorauth_setup_async_error_payload(string $errorCode, ?\Throwable $exception = null): array
+{
+    global $session;
+
+    $payload = ['ok' => false, 'error' => $errorCode, 'code' => $errorCode];
+    $superuserFlags = (int) ($session['user']['superuser'] ?? 0);
+    if ($exception instanceof \Throwable && ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER) {
+        $payload['debug'] = [
+            'exception' => $exception::class,
+            'message' => $exception->getMessage(),
+        ];
+    }
+
+    return $payload;
+}
+
+/**
  * Begin setup passkey registration and return publicKeyCredentialCreationOptions as JSON.
  */
 function twofactorauth_handle_begin_passkey_registration(): void
 {
     global $session;
+
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    twofactorauth_log_setup_async_debug('begin_passkey_registration', 'entered begin handler', $acctId);
 
     try {
         $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -851,12 +909,13 @@ function twofactorauth_handle_begin_passkey_registration(): void
 
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
         if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
-            twofactorauth_output_json(['ok' => false, 'error' => 'csrf', 'code' => 'csrf']);
+            twofactorauth_output_json(twofactorauth_setup_async_error_payload('csrf'));
+            twofactorauth_log_setup_async_debug('begin_passkey_registration', 'json emitted', $acctId);
+            twofactorauth_log_setup_async_debug('begin_passkey_registration', 'returned', $acctId);
 
             return;
         }
 
-        $acctId = (int) ($session['user']['acctid'] ?? 0);
         $login = (string) ($session['user']['login'] ?? 'player');
         $display = (string) ($session['user']['name'] ?? $login);
         $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
@@ -865,8 +924,11 @@ function twofactorauth_handle_begin_passkey_registration(): void
         $options = twofactorauth_passkey_service()->beginRegistration($acctId, $login, $display, $excludeIds);
 
         twofactorauth_output_json(['ok' => true, 'options' => $options]);
+        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'json emitted', $acctId);
+        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'returned', $acctId);
+
+        return;
     } catch (\Throwable $e) {
-        $acctId = (int) ($session['user']['acctid'] ?? 0);
         DebugLog::add(
             sprintf(
                 '2FA passkey registration begin exception for account %d (%s: %s).',
@@ -881,7 +943,11 @@ function twofactorauth_handle_begin_passkey_registration(): void
             false
         );
 
-        twofactorauth_output_json(['ok' => false, 'error' => 'begin_exception']);
+        twofactorauth_output_json(twofactorauth_setup_async_error_payload('begin_exception', $e));
+        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'json emitted', $acctId);
+        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'returned', $acctId);
+
+        return;
     }
 }
 
@@ -892,6 +958,9 @@ function twofactorauth_handle_finish_passkey_registration(): void
 {
     global $session;
 
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    twofactorauth_log_setup_async_debug('finish_passkey_registration', 'entered finish handler', $acctId);
+
     try {
         $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
         if (!is_array($requestBody)) {
@@ -900,12 +969,13 @@ function twofactorauth_handle_finish_passkey_registration(): void
 
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
         if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
-            twofactorauth_output_json(['ok' => false, 'error' => 'csrf', 'code' => 'csrf']);
+            twofactorauth_output_json(twofactorauth_setup_async_error_payload('csrf'));
+            twofactorauth_log_setup_async_debug('finish_passkey_registration', 'json emitted', $acctId);
+            twofactorauth_log_setup_async_debug('finish_passkey_registration', 'returned', $acctId);
 
             return;
         }
 
-        $acctId = (int) ($session['user']['acctid'] ?? 0);
         $label = (string) ($requestBody['label'] ?? 'Passkey');
         $result = twofactorauth_passkey_service()->finishRegistration($acctId, $requestBody, $label);
 
@@ -916,8 +986,30 @@ function twofactorauth_handle_finish_passkey_registration(): void
         }
 
         twofactorauth_output_json(['ok' => $result['ok'], 'error' => $result['error'], 'code' => $result['ok'] ? '' : (string) $result['error']]);
+        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'json emitted', $acctId);
+        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'returned', $acctId);
+
+        return;
     } catch (\Throwable $e) {
-        twofactorauth_output_json(['ok' => false, 'error' => 'finish_exception', 'message' => 'Passkey registration finish failed.']);
+        DebugLog::add(
+            sprintf(
+                '2FA passkey registration finish exception for account %d (%s: %s).',
+                $acctId,
+                $e::class,
+                $e->getMessage()
+            ),
+            $acctId,
+            $acctId,
+            '2fa_passkey',
+            false,
+            false
+        );
+
+        twofactorauth_output_json(twofactorauth_setup_async_error_payload('finish_exception', $e));
+        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'json emitted', $acctId);
+        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'returned', $acctId);
+
+        return;
     }
 }
 
