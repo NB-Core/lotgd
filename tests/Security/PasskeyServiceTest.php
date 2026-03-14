@@ -2,31 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Security;
-
-if (!function_exists(__NAMESPACE__ . '\\getsetting')) {
-    function getsetting(string $name, mixed $default = null): mixed
-    {
-        if ($name === 'serverurl') {
-            return 'https://example.test';
-        }
-
-        if ($name === 'gameadminemail') {
-            return 'Legend of the Green Dragon';
-        }
-
-        if ($name === 'serverdesc') {
-            return 'Legend of the Green Dragon Test Realm';
-        }
-
-        return $default;
-    }
-}
-
 namespace Lotgd\Tests\Security;
 
 use Lotgd\Security\PasskeyCredentialRepository;
 use Lotgd\Security\PasskeyService;
+use Lotgd\Settings;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -105,6 +85,26 @@ class PasskeyServiceTest extends TestCase
     {
         $this->repo = new InMemoryPasskeyCredentialRepository();
         $GLOBALS['session'] = [];
+
+        $settings = $this->createMock(Settings::class);
+        $settings->method('getSetting')->willReturnCallback(static function (string $name, mixed $default = false): mixed {
+            return match ($name) {
+                'serverurl' => 'https://example.test',
+                'serverdesc' => 'Legend of the Green Dragon Test Realm',
+                default => $default,
+            };
+        });
+
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
+    }
+
+    protected function tearDown(): void
+    {
+        Settings::setInstance(null);
+        unset($GLOBALS['settings']);
+
+        parent::tearDown();
     }
 
     public function testAuthenticationChallengeIsBoundToAccount(): void

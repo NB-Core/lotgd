@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Security;
 
+use Lotgd\MySQL\Database;
+
 /**
  * Persistence helper for passkey credentials used by the TwoFactorAuth module.
  */
@@ -30,11 +32,11 @@ class PasskeyCredentialRepository
         }
 
         $acctId = max(0, $acctId);
-        $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
-        $result = LegacyBridge::dbQuery("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE acctid = {$acctId} ORDER BY created_at ASC");
+        $table = Database::prefix(self::TABLE_NAME);
+        $result = Database::query("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE acctid = {$acctId} ORDER BY created_at ASC");
 
         $items = [];
-        while ($row = LegacyBridge::dbFetchAssoc($result)) {
+        while ($row = Database::fetchAssoc($result)) {
             $items[] = [
                 'acctid' => (int) ($row['acctid'] ?? 0),
                 'credential_id' => (string) ($row['credential_id'] ?? ''),
@@ -61,11 +63,11 @@ class PasskeyCredentialRepository
         }
 
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
-        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
-        $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
-        $result = LegacyBridge::dbQuery("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}' LIMIT 1");
-        $row = LegacyBridge::dbFetchAssoc($result);
+        $credentialIdEscaped = Database::escape($credentialId);
+        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
+        $table = Database::prefix(self::TABLE_NAME);
+        $result = Database::query("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}' LIMIT 1");
+        $row = Database::fetchAssoc($result);
 
         if (!is_array($row)) {
             return null;
@@ -99,18 +101,18 @@ class PasskeyCredentialRepository
             return;
         }
 
-        $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
+        $table = Database::prefix(self::TABLE_NAME);
         $acctId = max(0, $acctId);
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
-        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
-        $publicKeyPem = LegacyBridge::dbEscape($publicKeyPem);
+        $credentialIdEscaped = Database::escape($credentialId);
+        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
+        $publicKeyPem = Database::escape($publicKeyPem);
         $signCount = max(0, $signCount);
-        $label = LegacyBridge::dbEscape(trim($label));
-        $transports = LegacyBridge::dbEscape($transports);
+        $label = Database::escape(trim($label));
+        $transports = Database::escape($transports);
         $createdAt = max(0, $createdAt);
 
-        LegacyBridge::dbQuery(
+        Database::query(
             "INSERT INTO {$table} (acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at)"
             . " VALUES ({$acctId}, '{$credentialIdEscaped}', '{$credentialIdHashEscaped}', '{$publicKeyPem}', {$signCount}, '{$label}', '{$transports}', {$createdAt}, 0)"
         );
@@ -125,14 +127,14 @@ class PasskeyCredentialRepository
             return;
         }
 
-        $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
+        $table = Database::prefix(self::TABLE_NAME);
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
-        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
+        $credentialIdEscaped = Database::escape($credentialId);
+        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
         $signCount = max(0, $signCount);
         $lastUsedAt = max(0, $lastUsedAt);
 
-        LegacyBridge::dbQuery("UPDATE {$table} SET sign_count = {$signCount}, last_used_at = {$lastUsedAt} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
+        Database::query("UPDATE {$table} SET sign_count = {$signCount}, last_used_at = {$lastUsedAt} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
     }
 
     /**
@@ -144,14 +146,14 @@ class PasskeyCredentialRepository
             return false;
         }
 
-        $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
+        $table = Database::prefix(self::TABLE_NAME);
         $acctId = max(0, $acctId);
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
-        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
-        LegacyBridge::dbQuery("DELETE FROM {$table} WHERE acctid = {$acctId} AND credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
+        $credentialIdEscaped = Database::escape($credentialId);
+        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
+        Database::query("DELETE FROM {$table} WHERE acctid = {$acctId} AND credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
 
-        return LegacyBridge::dbAffectedRows() > 0;
+        return Database::affectedRows() > 0;
     }
 
     /**
@@ -173,10 +175,14 @@ class PasskeyCredentialRepository
     }
 
     /**
-     * Guard for isolated test contexts where DB legacy wrappers are not loaded.
+     * Guard for isolated test contexts where the legacy bootstrap has not loaded DB APIs.
      */
     private function hasDb(): bool
     {
-        return LegacyBridge::hasDatabaseApi();
+        return function_exists('db_prefix')
+            && function_exists('db_query')
+            && function_exists('db_fetch_assoc')
+            && function_exists('db_real_escape_string')
+            && function_exists('db_affected_rows');
     }
 }
