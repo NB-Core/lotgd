@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Security;
 
+use Lotgd\Settings;
 use lbuchs\WebAuthn\Binary\ByteBuffer;
 use lbuchs\WebAuthn\WebAuthn;
 use lbuchs\WebAuthn\WebAuthnException;
@@ -193,7 +194,8 @@ class PasskeyService
 
     private function resolveRpId(): string
     {
-        $serverUrl = trim((string) LegacyBridge::getSetting('serverurl', 'http://localhost'));
+        $settings = Settings::getInstance();
+        $serverUrl = trim((string) $settings->getSetting('serverurl', 'http://localhost'));
         $host = (string) parse_url($serverUrl, PHP_URL_HOST);
 
         return $host !== '' ? $host : 'localhost';
@@ -202,7 +204,8 @@ class PasskeyService
     private function resolveRpName(): string
     {
         // Use server description as human-facing RP name; gameadminemail is not user-facing.
-        $serverDescription = trim((string) LegacyBridge::getSetting('serverdesc', 'Legend of the Green Dragon'));
+        $settings = Settings::getInstance();
+        $serverDescription = trim((string) $settings->getSetting('serverdesc', 'Legend of the Green Dragon'));
 
         return $serverDescription !== '' ? $serverDescription : 'Legend of the Green Dragon';
     }
