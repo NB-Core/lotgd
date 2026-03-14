@@ -1116,7 +1116,10 @@ function get_all_tables()
             'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
             ),
         'credential_id' => array(
-            'name' => 'credential_id', 'type' => 'varchar(255)', 'default' => ''
+            'name' => 'credential_id', 'type' => 'text'
+            ),
+        'credential_id_hash' => array(
+            'name' => 'credential_id_hash', 'type' => 'char(64)', 'default' => ''
             ),
         'public_key' => array(
             'name' => 'public_key', 'type' => 'text'
@@ -1140,7 +1143,7 @@ function get_all_tables()
             'name' => 'PRIMARY',
             'type' => 'primary key',
             'unique' => '1',
-            'columns' => 'credential_id'
+            'columns' => 'credential_id_hash'
             ),
         'key-acctid' => array(
             'name' => 'acctid', 'type' => 'key', 'columns' => 'acctid'

@@ -15,6 +15,10 @@ if (!function_exists(__NAMESPACE__ . '\\getsetting')) {
             return 'Legend of the Green Dragon';
         }
 
+        if ($name === 'serverdesc') {
+            return 'Legend of the Green Dragon Test Realm';
+        }
+
         return $default;
     }
 }
@@ -141,4 +145,79 @@ class PasskeyServiceTest extends TestCase
         self::assertFalse($this->repo->deleteForAccount(200, 'credential-a'));
         self::assertTrue($this->repo->deleteForAccount(100, 'credential-a'));
     }
+
+    public function testWrongAccountAttemptDoesNotConsumeAuthenticationChallenge(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $service->beginAuthentication(100, []);
+
+        $wrongAccountResult = $service->finishAuthentication(200, []);
+        self::assertFalse($wrongAccountResult['ok']);
+        self::assertSame('challenge_missing', $wrongAccountResult['error']);
+
+        $correctAccountResult = $service->finishAuthentication(100, []);
+        self::assertFalse($correctAccountResult['ok']);
+        self::assertSame('payload_invalid', $correctAccountResult['error']);
+    }
+
+    public function testWrongCeremonyTypeDoesNotConsumeStoredChallenge(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $service->beginAuthentication(100, []);
+
+        $wrongTypeResult = $service->finishRegistration(100, [], 'Device');
+        self::assertFalse($wrongTypeResult['ok']);
+        self::assertSame('challenge_missing', $wrongTypeResult['error']);
+
+        $authResult = $service->finishAuthentication(100, []);
+        self::assertFalse($authResult['ok']);
+        self::assertSame('payload_invalid', $authResult['error']);
+    }
+
+    public function testMalformedAssertionPayloadReturnsPayloadInvalid(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $this->repo->insert(100, 'credential-a', 'pem', 0, 'Device', 'internal', time());
+
+        $service->beginAuthentication(100, ['credential-a']);
+
+        $result = $service->finishAuthentication(100, [
+            'id' => 'credential-a',
+            'response' => [
+                'clientDataJSON' => '%%%not-base64url%%%',
+                'authenticatorData' => '%%%not-base64url%%%',
+                'signature' => '%%%not-base64url%%%',
+            ],
+        ]);
+
+        self::assertFalse($result['ok']);
+        self::assertContains($result['error'], ['payload_invalid', 'verify_failed']);
+    }
+
+    public function testBeginAuthenticationSkipsInvalidCredentialIdValues(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $options = $service->beginAuthentication(100, ['%%%invalid%%%']);
+
+        self::assertArrayHasKey('publicKey', $options);
+        self::assertArrayHasKey('challenge', $options['publicKey']);
+    }
+
+    public function testRegistrationRejectsMalformedPayloadAfterChallengeIssued(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $service->beginRegistration(100, 'tester', 'Tester', []);
+
+        $result = $service->finishRegistration(100, [
+            'id' => 'credential-a',
+            'response' => [
+                'clientDataJSON' => '%%%not-base64url%%%',
+                'attestationObject' => '%%%not-base64url%%%',
+            ],
+        ], 'Device');
+
+        self::assertFalse($result['ok']);
+        self::assertContains($result['error'], ['payload_invalid', 'verify_failed']);
+    }
+
 }

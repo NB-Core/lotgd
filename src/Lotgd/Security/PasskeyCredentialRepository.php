@@ -31,13 +31,14 @@ class PasskeyCredentialRepository
 
         $acctId = max(0, $acctId);
         $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
-        $result = LegacyBridge::dbQuery("SELECT acctid, credential_id, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE acctid = {$acctId} ORDER BY created_at ASC");
+        $result = LegacyBridge::dbQuery("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE acctid = {$acctId} ORDER BY created_at ASC");
 
         $items = [];
         while ($row = LegacyBridge::dbFetchAssoc($result)) {
             $items[] = [
                 'acctid' => (int) ($row['acctid'] ?? 0),
                 'credential_id' => (string) ($row['credential_id'] ?? ''),
+                'credential_id_hash' => (string) ($row['credential_id_hash'] ?? ''),
                 'public_key' => (string) ($row['public_key'] ?? ''),
                 'sign_count' => (int) ($row['sign_count'] ?? 0),
                 'label' => (string) ($row['label'] ?? ''),
@@ -59,9 +60,11 @@ class PasskeyCredentialRepository
             return null;
         }
 
-        $credentialId = LegacyBridge::dbEscape($credentialId);
+        $credentialId = trim($credentialId);
+        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
+        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
         $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
-        $result = LegacyBridge::dbQuery("SELECT acctid, credential_id, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE credential_id = '{$credentialId}' LIMIT 1");
+        $result = LegacyBridge::dbQuery("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}' LIMIT 1");
         $row = LegacyBridge::dbFetchAssoc($result);
 
         if (!is_array($row)) {
@@ -98,7 +101,9 @@ class PasskeyCredentialRepository
 
         $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
         $acctId = max(0, $acctId);
-        $credentialId = LegacyBridge::dbEscape($credentialId);
+        $credentialId = trim($credentialId);
+        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
+        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
         $publicKeyPem = LegacyBridge::dbEscape($publicKeyPem);
         $signCount = max(0, $signCount);
         $label = LegacyBridge::dbEscape(trim($label));
@@ -106,8 +111,8 @@ class PasskeyCredentialRepository
         $createdAt = max(0, $createdAt);
 
         LegacyBridge::dbQuery(
-            "INSERT INTO {$table} (acctid, credential_id, public_key, sign_count, label, transports, created_at, last_used_at)"
-            . " VALUES ({$acctId}, '{$credentialId}', '{$publicKeyPem}', {$signCount}, '{$label}', '{$transports}', {$createdAt}, 0)"
+            "INSERT INTO {$table} (acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at)"
+            . " VALUES ({$acctId}, '{$credentialIdEscaped}', '{$credentialIdHashEscaped}', '{$publicKeyPem}', {$signCount}, '{$label}', '{$transports}', {$createdAt}, 0)"
         );
     }
 
@@ -121,11 +126,13 @@ class PasskeyCredentialRepository
         }
 
         $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
-        $credentialId = LegacyBridge::dbEscape($credentialId);
+        $credentialId = trim($credentialId);
+        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
+        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
         $signCount = max(0, $signCount);
         $lastUsedAt = max(0, $lastUsedAt);
 
-        LegacyBridge::dbQuery("UPDATE {$table} SET sign_count = {$signCount}, last_used_at = {$lastUsedAt} WHERE credential_id = '{$credentialId}'");
+        LegacyBridge::dbQuery("UPDATE {$table} SET sign_count = {$signCount}, last_used_at = {$lastUsedAt} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
     }
 
     /**
@@ -139,8 +146,10 @@ class PasskeyCredentialRepository
 
         $table = LegacyBridge::dbPrefix(self::TABLE_NAME);
         $acctId = max(0, $acctId);
-        $credentialId = LegacyBridge::dbEscape($credentialId);
-        LegacyBridge::dbQuery("DELETE FROM {$table} WHERE acctid = {$acctId} AND credential_id = '{$credentialId}'");
+        $credentialId = trim($credentialId);
+        $credentialIdEscaped = LegacyBridge::dbEscape($credentialId);
+        $credentialIdHashEscaped = LegacyBridge::dbEscape($this->credentialIdHash($credentialId));
+        LegacyBridge::dbQuery("DELETE FROM {$table} WHERE acctid = {$acctId} AND credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
 
         return LegacyBridge::dbAffectedRows() > 0;
     }
@@ -152,6 +161,15 @@ class PasskeyCredentialRepository
      */
     public function dropTable(): void
     {
+    }
+
+
+    /**
+     * Build a stable lookup hash for potentially long credential IDs.
+     */
+    private function credentialIdHash(string $credentialId): string
+    {
+        return hash('sha256', $credentialId);
     }
 
     /**

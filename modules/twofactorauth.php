@@ -198,6 +198,21 @@ function twofactorauth_run(): void
         Redirect::redirect('index.php?op=timeout', '2FA endpoint without login');
     }
 
+    // JSON challenge operations must return raw JSON without page chrome wrappers.
+    if ($op === 'begin_passkey_auth') {
+        twofactorauth_handle_begin_passkey_auth();
+        Translator::tlschema();
+
+        return;
+    }
+
+    if ($op === 'verify_passkey') {
+        twofactorauth_handle_passkey_verification();
+        Translator::tlschema();
+
+        return;
+    }
+
     Header::pageHeader('Two-factor authentication challenge');
 
     Nav::add('Navigation');
@@ -205,10 +220,6 @@ function twofactorauth_run(): void
 
     if ($op === 'verify') {
         twofactorauth_handle_challenge_verification($output);
-    } elseif ($op === 'verify_passkey') {
-        twofactorauth_handle_passkey_verification();
-    } elseif ($op === 'begin_passkey_auth') {
-        twofactorauth_handle_begin_passkey_auth();
     } elseif ($op === 'resume') {
         twofactorauth_handle_resume($output);
     } elseif ($op === 'disable_email') {
@@ -808,6 +819,20 @@ function twofactorauth_render_passkey_registration_script(string $csrf): void
 }
 
 /**
+ * Emit a JSON payload for passkey async endpoints.
+ *
+ * @param array<string, mixed> $payload
+ */
+function twofactorauth_output_json(array $payload): void
+{
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=UTF-8');
+    }
+
+    rawoutput(json_encode($payload) ?: '{"ok":false}');
+}
+
+/**
  * Begin setup passkey registration and return publicKeyCredentialCreationOptions as JSON.
  */
 function twofactorauth_handle_begin_passkey_registration(): void
@@ -821,7 +846,7 @@ function twofactorauth_handle_begin_passkey_registration(): void
 
     $csrf = (string) ($requestBody['csrf_token'] ?? '');
     if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
-        rawoutput(json_encode(['ok' => false, 'error' => 'csrf']) ?: '{"ok":false}');
+        twofactorauth_output_json(['ok' => false, 'error' => 'csrf']);
 
         return;
     }
@@ -834,7 +859,7 @@ function twofactorauth_handle_begin_passkey_registration(): void
 
     $options = twofactorauth_passkey_service()->beginRegistration($acctId, $login, $display, $excludeIds);
 
-    rawoutput(json_encode(['ok' => true, 'options' => $options]) ?: '{"ok":false}');
+    twofactorauth_output_json(['ok' => true, 'options' => $options]);
 }
 
 /**
@@ -851,7 +876,7 @@ function twofactorauth_handle_finish_passkey_registration(): void
 
     $csrf = (string) ($requestBody['csrf_token'] ?? '');
     if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
-        rawoutput(json_encode(['ok' => false, 'error' => 'csrf']) ?: '{"ok":false}');
+        twofactorauth_output_json(['ok' => false, 'error' => 'csrf']);
 
         return;
     }
@@ -866,7 +891,7 @@ function twofactorauth_handle_finish_passkey_registration(): void
         DebugLog::add(sprintf('2FA passkey registration failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
     }
 
-    rawoutput(json_encode(['ok' => $result['ok'], 'error' => $result['error']]) ?: '{"ok":false}');
+    twofactorauth_output_json(['ok' => $result['ok'], 'error' => $result['error']]);
 }
 
 /**
@@ -882,7 +907,7 @@ function twofactorauth_handle_begin_passkey_auth(): void
 
     $options = twofactorauth_passkey_service()->beginAuthentication($acctId, $credentialIds);
 
-    rawoutput(json_encode(['ok' => true, 'options' => $options]) ?: '{"ok":false}');
+    twofactorauth_output_json(['ok' => true, 'options' => $options]);
 }
 
 /**
@@ -893,7 +918,7 @@ function twofactorauth_handle_passkey_verification(): void
     global $session;
 
     if ((int) get_module_pref('pending_challenge') !== 1) {
-        rawoutput(json_encode(['ok' => false, 'error' => 'no_pending']) ?: '{"ok":false}');
+        twofactorauth_output_json(['ok' => false, 'error' => 'no_pending']);
 
         return;
     }
@@ -902,7 +927,7 @@ function twofactorauth_handle_passkey_verification(): void
     $lockedUntil = (int) get_module_pref('locked_until');
     $now = time();
     if ($lockedUntil > $now) {
-        rawoutput(json_encode(['ok' => false, 'error' => 'locked']) ?: '{"ok":false}');
+        twofactorauth_output_json(['ok' => false, 'error' => 'locked']);
 
         return;
     }
@@ -917,7 +942,7 @@ function twofactorauth_handle_passkey_verification(): void
         twofactorauth_clear_pending_state();
         twofactorauth_log_challenge_outcome($acctId, 'success', 'passkey');
         DebugLog::add(sprintf('2FA passkey authentication success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
-        rawoutput(json_encode(['ok' => true]) ?: '{"ok":false}');
+        twofactorauth_output_json(['ok' => true]);
 
         return;
     }
@@ -931,7 +956,7 @@ function twofactorauth_handle_passkey_verification(): void
 
     twofactorauth_log_challenge_outcome($acctId, 'failure', 'passkey_' . $result['error']);
     DebugLog::add(sprintf('2FA passkey authentication failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
-    rawoutput(json_encode(['ok' => false, 'error' => $result['error']]) ?: '{"ok":false}');
+    twofactorauth_output_json(['ok' => false, 'error' => $result['error']]);
 }
 
 /**
