@@ -259,6 +259,19 @@ class PasskeyServiceTest extends TestCase
         self::assertContains($result['error'], ['payload_invalid', 'verify_failed']);
     }
 
+
+    public function testBeginRegistrationNormalizesInvalidUtf8Identifiers(): void
+    {
+        $service = new PasskeyService($this->repo);
+        $invalidLogin = "tester\xC3\x28";
+        $invalidDisplayName = "Display\xA0Name";
+
+        $options = $service->beginRegistration(100, $invalidLogin, $invalidDisplayName, []);
+
+        self::assertArrayHasKey('publicKey', $options);
+        self::assertArrayHasKey('challenge', $options['publicKey']);
+    }
+
     public function testResolveRpIdUsesHostFromConfiguredServerUrl(): void
     {
         $settings = $this->createMock(Settings::class);

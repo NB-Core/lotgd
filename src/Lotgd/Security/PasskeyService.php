@@ -8,6 +8,7 @@ use Lotgd\Settings;
 use lbuchs\WebAuthn\Binary\ByteBuffer;
 use lbuchs\WebAuthn\WebAuthn;
 use lbuchs\WebAuthn\WebAuthnException;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -34,12 +35,14 @@ class PasskeyService
         $webauthn = $this->createWebAuthn();
         // Stored credential IDs are base64url; WebAuthn options require binary IDs.
         $excludeCredentialBuffers = $this->decodeCredentialIdList($excludeCredentialIds);
-        $args = $webauthn->getCreateArgs((string) $acctId, $login, $displayName, 60, false, true, null, $excludeCredentialBuffers);
+        $safeLogin = $this->normalizeUtf8($login, 'player');
+        $safeDisplayName = $this->normalizeUtf8($displayName, $safeLogin);
+        $args = $webauthn->getCreateArgs((string) $acctId, $safeLogin, $safeDisplayName, 60, false, true, null, $excludeCredentialBuffers);
         $challenge = $webauthn->getChallenge();
 
         $this->storeChallengeState('register', $acctId, $challenge->getBinaryString());
 
-        return json_decode(json_encode($args, JSON_THROW_ON_ERROR), true, flags: JSON_THROW_ON_ERROR);
+        return $this->convertOptionsToArray($args, 'registration');
     }
 
     /**
@@ -126,7 +129,7 @@ class PasskeyService
 
         $this->storeChallengeState('auth', $acctId, $challenge->getBinaryString());
 
-        return json_decode(json_encode($args, JSON_THROW_ON_ERROR), true, flags: JSON_THROW_ON_ERROR);
+        return $this->convertOptionsToArray($args, 'authentication');
     }
 
     /**
@@ -343,5 +346,46 @@ class PasskeyService
         }
 
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    /**
+     * Normalize possibly invalid user strings to UTF-8 for safe JSON encoding.
+     */
+    private function normalizeUtf8(string $value, string $fallback): string
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return $fallback;
+        }
+
+        // Keep user-visible values readable while replacing malformed byte sequences.
+        if (function_exists('mb_convert_encoding')) {
+            $normalized = mb_convert_encoding($trimmed, 'UTF-8', 'UTF-8');
+        } else {
+            $normalized = iconv('UTF-8', 'UTF-8//IGNORE', $trimmed);
+            if ($normalized === false) {
+                $normalized = '';
+            }
+        }
+
+        $normalized = str_replace("\0", '', $normalized);
+
+        return $normalized !== '' ? $normalized : $fallback;
+    }
+
+    /**
+     * Convert WebAuthn option objects into arrays with controlled error surface.
+     *
+     * @param mixed $options
+     *
+     * @return array<string, mixed>
+     */
+    private function convertOptionsToArray(mixed $options, string $context): array
+    {
+        try {
+            return json_decode(json_encode($options, JSON_THROW_ON_ERROR), true, flags: JSON_THROW_ON_ERROR);
+        } catch (Throwable $error) {
+            throw new RuntimeException(sprintf('passkey_%s_options_conversion_failed', $context), 0, $error);
+        }
     }
 }
