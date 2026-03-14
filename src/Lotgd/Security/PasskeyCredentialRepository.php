@@ -27,10 +27,8 @@ class PasskeyCredentialRepository
      */
     public function listForAccount(int $acctId): array
     {
-        if (!$this->hasDb()) {
-            return [];
-        }
-
+        // Database readiness is delegated to the Database layer (including DB_NODB),
+        // which prevents false negatives from legacy-wrapper-specific checks.
         $acctId = max(0, $acctId);
         $table = Database::prefix(self::TABLE_NAME);
         $result = Database::query("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE acctid = {$acctId} ORDER BY created_at ASC");
@@ -58,10 +56,6 @@ class PasskeyCredentialRepository
      */
     public function findByCredentialId(string $credentialId): ?array
     {
-        if (!$this->hasDb()) {
-            return null;
-        }
-
         $credentialId = trim($credentialId);
         $credentialIdEscaped = Database::escape($credentialId);
         $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
@@ -97,10 +91,6 @@ class PasskeyCredentialRepository
         string $transports,
         int $createdAt
     ): void {
-        if (!$this->hasDb()) {
-            return;
-        }
-
         $table = Database::prefix(self::TABLE_NAME);
         $acctId = max(0, $acctId);
         $credentialId = trim($credentialId);
@@ -123,10 +113,6 @@ class PasskeyCredentialRepository
      */
     public function updateUsage(string $credentialId, int $signCount, int $lastUsedAt): void
     {
-        if (!$this->hasDb()) {
-            return;
-        }
-
         $table = Database::prefix(self::TABLE_NAME);
         $credentialId = trim($credentialId);
         $credentialIdEscaped = Database::escape($credentialId);
@@ -142,10 +128,6 @@ class PasskeyCredentialRepository
      */
     public function deleteForAccount(int $acctId, string $credentialId): bool
     {
-        if (!$this->hasDb()) {
-            return false;
-        }
-
         $table = Database::prefix(self::TABLE_NAME);
         $acctId = max(0, $acctId);
         $credentialId = trim($credentialId);
@@ -172,17 +154,5 @@ class PasskeyCredentialRepository
     private function credentialIdHash(string $credentialId): string
     {
         return hash('sha256', $credentialId);
-    }
-
-    /**
-     * Guard for isolated test contexts where the legacy bootstrap has not loaded DB APIs.
-     */
-    private function hasDb(): bool
-    {
-        return function_exists('db_prefix')
-            && function_exists('db_query')
-            && function_exists('db_fetch_assoc')
-            && function_exists('db_real_escape_string')
-            && function_exists('db_affected_rows');
     }
 }
