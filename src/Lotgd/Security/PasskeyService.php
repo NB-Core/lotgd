@@ -245,7 +245,7 @@ class PasskeyService
             return '';
         }
 
-        // Consume only after successful validation to avoid clobbering parallel/accidental requests.
+        // Consume the challenge as soon as the stored state is validated to prevent reuse.
         unset($session[$sessionKey]);
 
         return $challenge;
