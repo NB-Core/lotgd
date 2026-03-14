@@ -121,6 +121,6 @@ final class PasswordHelper
 
         $info = password_get_info($storedHash);
 
-        return ($info['algo'] ?? null) !== null && $info['algo'] !== 0;
+        return ($info['algo'] ?? null) === PASSWORD_BCRYPT;
     }
 }
