@@ -103,6 +103,7 @@ class PasskeyServiceTest extends TestCase
     {
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
+        unset($_SERVER['HTTP_HOST']);
 
         parent::tearDown();
     }
@@ -256,6 +257,74 @@ class PasskeyServiceTest extends TestCase
 
         self::assertFalse($result['ok']);
         self::assertContains($result['error'], ['payload_invalid', 'verify_failed']);
+    }
+
+    public function testResolveRpIdUsesHostFromConfiguredServerUrl(): void
+    {
+        $settings = $this->createMock(Settings::class);
+        $settings->method('getSetting')->willReturnCallback(static function (string $name, mixed $default = false): mixed {
+            return match ($name) {
+                'serverurl' => 'https://auth.example.test:8443/path?x=1',
+                'serverdesc' => 'Legend of the Green Dragon Test Realm',
+                default => $default,
+            };
+        });
+
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
+        $_SERVER['HTTP_HOST'] = 'ignored-host.test:9000';
+
+        $service = new PasskeyService($this->repo);
+
+        self::assertSame('auth.example.test', $this->invokeResolveRpId($service));
+    }
+
+    public function testResolveRpIdFallsBackToRequestHostWhenServerUrlIsMalformed(): void
+    {
+        $settings = $this->createMock(Settings::class);
+        $settings->method('getSetting')->willReturnCallback(static function (string $name, mixed $default = false): mixed {
+            return match ($name) {
+                'serverurl' => 'example.test/no-scheme',
+                'serverdesc' => 'Legend of the Green Dragon Test Realm',
+                default => $default,
+            };
+        });
+
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
+        $_SERVER['HTTP_HOST'] = 'fallback.example.test:8080';
+
+        $service = new PasskeyService($this->repo);
+
+        self::assertSame('fallback.example.test', $this->invokeResolveRpId($service));
+    }
+
+    public function testResolveRpIdFallsBackToLocalhostWhenNoConfiguredOrRequestHostExists(): void
+    {
+        $settings = $this->createMock(Settings::class);
+        $settings->method('getSetting')->willReturnCallback(static function (string $name, mixed $default = false): mixed {
+            return match ($name) {
+                'serverurl' => '',
+                'serverdesc' => 'Legend of the Green Dragon Test Realm',
+                default => $default,
+            };
+        });
+
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
+        unset($_SERVER['HTTP_HOST']);
+
+        $service = new PasskeyService($this->repo);
+
+        self::assertSame('localhost', $this->invokeResolveRpId($service));
+    }
+
+    private function invokeResolveRpId(PasskeyService $service): string
+    {
+        $method = new \ReflectionMethod($service, 'resolveRpId');
+        $method->setAccessible(true);
+
+        return (string) $method->invoke($service);
     }
 
 }

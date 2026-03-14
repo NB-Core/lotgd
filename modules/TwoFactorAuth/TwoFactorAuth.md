@@ -91,3 +91,15 @@ This iteration adds passkeys as an **alternative** challenge method while keepin
 - TOTP remains available as fallback while passkeys are introduced.
 - Email-based disable/recovery flow remains available for lockout scenarios.
 - Full passwordless login redesign is intentionally out of scope for this iteration.
+
+
+## Troubleshooting passkey enrollment and login
+
+If passkey registration or verification fails, verify the relying party/domain setup first:
+
+- **RP ID must match the site domain** used by players in the browser. WebAuthn validates RP ID against the current origin host.
+- **Use a fully-qualified `serverurl` with scheme**, for example `https://game.example.com`.
+  - Avoid malformed values such as `game.example.com/path` (no scheme), which can break RP ID parsing.
+- **HTTPS is required** for passkeys in normal environments.
+  - Local development can use `http://localhost`, but production/staging passkey flows should use valid TLS.
+- If you run behind a reverse proxy, ensure the external host players see is consistent with `serverurl`; host mismatches can cause browser-side `NotAllowedError` / RP mismatch failures.

@@ -198,6 +198,16 @@ class PasskeyService
         $serverUrl = trim((string) $settings->getSetting('serverurl', 'http://localhost'));
         $host = (string) parse_url($serverUrl, PHP_URL_HOST);
 
+        // WebAuthn compares rpId with the browser origin host during both ceremonies.
+        // A malformed serverurl (for example missing scheme) can parse to an empty host,
+        // which causes origin/rpId mismatch and fails registration/authentication.
+        if ($host === '') {
+            $requestHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            if ($requestHost !== '') {
+                $host = explode(':', $requestHost, 2)[0];
+            }
+        }
+
         return $host !== '' ? $host : 'localhost';
     }
 

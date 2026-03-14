@@ -815,7 +815,7 @@ function twofactorauth_render_passkey_registration_script(string $csrf): void
 {
     twofactorauth_render_passkey_js_helpers();
 
-    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}button.addEventListener('click',async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . addslashes($csrf) . "',label:label})});const beginData=await begin.json();if(!beginData.ok){alert('Unable to start passkey registration.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . addslashes($csrf) . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await finish.json();if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}alert('Passkey registration failed.');}catch(error){alert('Passkey registration error.');}});})();</script>");
+    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}button.addEventListener('click',async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . addslashes($csrf) . "',label:label})});const beginData=await begin.json();if(!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'unknown';alert('Unable to start passkey registration. Code: '+beginCode+'.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . addslashes($csrf) . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await finish.json();if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}const finishCode=finishData&&finishData.error?String(finishData.error):'unknown';alert('Passkey registration failed. Code: '+finishCode+'.');}catch(error){const errorName=error&&error.name?String(error.name):'Error';const errorMessage=error&&error.message?String(error.message):'No additional details.';alert('Passkey registration error ('+errorName+'): '+errorMessage);}});})();</script>");
 }
 
 /**
@@ -846,7 +846,7 @@ function twofactorauth_handle_begin_passkey_registration(): void
 
     $csrf = (string) ($requestBody['csrf_token'] ?? '');
     if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
-        twofactorauth_output_json(['ok' => false, 'error' => 'csrf']);
+        twofactorauth_output_json(['ok' => false, 'error' => 'csrf', 'code' => 'csrf']);
 
         return;
     }
@@ -876,7 +876,7 @@ function twofactorauth_handle_finish_passkey_registration(): void
 
     $csrf = (string) ($requestBody['csrf_token'] ?? '');
     if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
-        twofactorauth_output_json(['ok' => false, 'error' => 'csrf']);
+        twofactorauth_output_json(['ok' => false, 'error' => 'csrf', 'code' => 'csrf']);
 
         return;
     }
@@ -891,7 +891,7 @@ function twofactorauth_handle_finish_passkey_registration(): void
         DebugLog::add(sprintf('2FA passkey registration failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
     }
 
-    twofactorauth_output_json(['ok' => $result['ok'], 'error' => $result['error']]);
+    twofactorauth_output_json(['ok' => $result['ok'], 'error' => $result['error'], 'code' => $result['ok'] ? '' : (string) $result['error']]);
 }
 
 /**
