@@ -44,7 +44,7 @@ function twofactorauth_getmoduleinfo(): array
         'prefs' => [
             'Two Factor Auth Preferences,title',
             'enabled' => 'Is TOTP enabled for this account?,bool|0',
-            'passkeys_enabled' => 'Has at least one passkey enrolled,bool|0',
+            'passkeys_enabled' => 'Has at least one passkey enrolled,viewonly',
             'secret_encrypted' => 'Encrypted TOTP secret,viewonly',
             'temp_secret_encrypted' => 'Temporary setup secret awaiting confirmation,viewonly',
             'verified_at' => 'Unix time of first successful setup verification,int|0',
