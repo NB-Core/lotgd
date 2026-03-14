@@ -21,9 +21,6 @@ final class PasswordHelper
     /** Modern bcrypt algorithm identifier. */
     public const ALGO_MODERN = 1;
 
-    /** Prefix used by bcrypt hashes. */
-    private const BCRYPT_PREFIX = '$2';
-
     /**
      * Hash a plaintext password for storage using bcrypt.
      *
@@ -49,7 +46,7 @@ final class PasswordHelper
      */
     public static function verify(string $plaintext, string $storedHash, int $algo): bool
     {
-        if ($algo === self::ALGO_MODERN || self::looksLikeBcryptHash($storedHash)) {
+        if ($algo === self::ALGO_MODERN || self::isModernHash($storedHash)) {
             return password_verify($plaintext, $storedHash);
         }
 
@@ -91,7 +88,7 @@ final class PasswordHelper
      */
     public static function needsRehash(int $algo, string $storedHash = ''): bool
     {
-        if (self::looksLikeBcryptHash($storedHash)) {
+        if (self::isModernHash($storedHash)) {
             return false;
         }
 
@@ -111,13 +108,19 @@ final class PasswordHelper
     }
 
     /**
-     * Detect whether a stored hash is already a bcrypt hash.
+     * Detect whether the stored hash is already a modern password hash.
      *
-     * This enables safe verification during upgrades where password_algo
-     * may still be unset or stale, but hashes were already migrated.
+     * Uses password_get_info() instead of prefix matching so malformed strings
+     * like "$2broken" are not treated as valid bcrypt hashes.
      */
-    private static function looksLikeBcryptHash(string $storedHash): bool
+    public static function isModernHash(string $storedHash): bool
     {
-        return str_starts_with($storedHash, self::BCRYPT_PREFIX);
+        if ($storedHash === '') {
+            return false;
+        }
+
+        $info = password_get_info($storedHash);
+
+        return ($info['algo'] ?? null) !== null && $info['algo'] !== 0;
     }
 }

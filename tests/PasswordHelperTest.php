@@ -49,4 +49,14 @@ final class PasswordHelperTest extends TestCase
     {
         $this->assertTrue(PasswordHelper::verifyLegacyUpgradeCredential('swordfish', 'swordfish'));
     }
+
+
+    /**
+     * Ensure malformed values with "$2" prefix are not treated as bcrypt hashes.
+     */
+    public function testIsModernHashRejectsMalformedBcryptPrefix(): void
+    {
+        $this->assertFalse(PasswordHelper::isModernHash('$2definitely-not-a-bcrypt-hash'));
+        $this->assertTrue(PasswordHelper::needsRehash(PasswordHelper::ALGO_LEGACY, '$2definitely-not-a-bcrypt-hash'));
+    }
 }
