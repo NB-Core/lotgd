@@ -93,7 +93,10 @@ function twofactorauth_dohook(string $hookname, array $args): array
             }
 
             $totpEnabled = (int) get_module_pref('enabled') === 1;
-            $passkeysEnabled = (int) get_module_pref('passkeys_enabled') === 1;
+            $acctId = (int) ($session['user']['acctid'] ?? 0);
+            // Recompute passkey presence on login to avoid stale pref dead-ends.
+            $passkeysEnabled = $acctId > 0 && count(twofactorauth_passkey_repository()->listForAccount($acctId)) > 0;
+            set_module_pref('passkeys_enabled', $passkeysEnabled ? 1 : 0);
             if (!$totpEnabled && !$passkeysEnabled) {
                 twofactorauth_clear_pending_state();
                 break;

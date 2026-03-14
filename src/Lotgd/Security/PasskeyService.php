@@ -30,7 +30,9 @@ class PasskeyService
     public function beginRegistration(int $acctId, string $login, string $displayName, array $excludeCredentialIds): array
     {
         $webauthn = $this->createWebAuthn();
-        $args = $webauthn->getCreateArgs((string) $acctId, $login, $displayName, 60, false, true, null, $excludeCredentialIds);
+        // Stored credential IDs are base64url; WebAuthn options require binary IDs.
+        $excludeCredentialBuffers = $this->decodeCredentialIdList($excludeCredentialIds);
+        $args = $webauthn->getCreateArgs((string) $acctId, $login, $displayName, 60, false, true, null, $excludeCredentialBuffers);
         $challenge = $webauthn->getChallenge();
 
         $this->storeChallengeState('register', $acctId, $challenge->getBinaryString());
@@ -52,9 +54,9 @@ class PasskeyService
             return ['ok' => false, 'error' => 'challenge_missing'];
         }
 
-        $rawId = $this->normalizeCredentialId((string) ($payload['id'] ?? ''));
+        $clientCredentialId = $this->normalizeCredentialId((string) ($payload['id'] ?? ''));
         $response = $payload['response'] ?? null;
-        if ($rawId === '' || !is_array($response)) {
+        if ($clientCredentialId === '' || !is_array($response)) {
             return ['ok' => false, 'error' => 'payload_invalid'];
         }
 
@@ -79,10 +81,20 @@ class PasskeyService
         }
 
         try {
+            $verifiedCredentialId = $this->base64UrlEncode((string) ($credential->credentialId ?? ''));
+            if ($verifiedCredentialId === '' || $verifiedCredentialId !== $clientCredentialId) {
+                return ['ok' => false, 'error' => 'payload_invalid'];
+            }
+
+            $publicKey = (string) ($credential->credentialPublicKey ?? '');
+            if ($publicKey === '') {
+                return ['ok' => false, 'error' => 'verify_failed'];
+            }
+
             $this->credentials->insert(
                 $acctId,
-                $rawId,
-                (string) ($credential->credentialPublicKeyPem ?? ''),
+                $verifiedCredentialId,
+                $publicKey,
                 max(0, (int) ($credential->signatureCounter ?? 0)),
                 $saveLabel,
                 $transports,
@@ -105,7 +117,9 @@ class PasskeyService
     public function beginAuthentication(int $acctId, array $credentialIds): array
     {
         $webauthn = $this->createWebAuthn();
-        $args = $webauthn->getGetArgs($credentialIds, 60, true, true, true, true, true, true);
+        // Stored credential IDs are base64url; WebAuthn options require binary IDs.
+        $credentialBuffers = $this->decodeCredentialIdList($credentialIds);
+        $args = $webauthn->getGetArgs($credentialBuffers, 60, true, true, true, true, true, true);
         $challenge = $webauthn->getChallenge();
 
         $this->storeChallengeState('auth', $acctId, $challenge->getBinaryString());
@@ -185,9 +199,10 @@ class PasskeyService
 
     private function resolveRpName(): string
     {
-        $gameName = trim((string) LegacyBridge::getSetting('gameadminemail', 'Legend of the Green Dragon'));
+        // Use server description as human-facing RP name; gameadminemail is not user-facing.
+        $serverDescription = trim((string) LegacyBridge::getSetting('serverdesc', 'Legend of the Green Dragon'));
 
-        return $gameName !== '' ? $gameName : 'Legend of the Green Dragon';
+        return $serverDescription !== '' ? $serverDescription : 'Legend of the Green Dragon';
     }
 
     private function storeChallengeState(string $type, int $acctId, string $challenge): void
@@ -250,8 +265,48 @@ class PasskeyService
             return '';
         }
 
-        $buffer = ByteBuffer::fromBase64Url($value);
+        try {
+            $buffer = ByteBuffer::fromBase64Url($value);
 
-        return $buffer->getBinaryString();
+            return $buffer->getBinaryString();
+        } catch (Throwable) {
+            // Invalid client payload should be treated as validation failure, not a 500.
+            return '';
+        }
+    }
+
+
+    /**
+     * Decode a list of base64url credential IDs to raw binary values for WebAuthn options.
+     *
+     * @param array<int, string> $credentialIds
+     *
+     * @return array<int, string>
+     */
+    private function decodeCredentialIdList(array $credentialIds): array
+    {
+        $decoded = [];
+        foreach ($credentialIds as $credentialId) {
+            $binaryId = $this->decodeBase64Url((string) $credentialId);
+            if ($binaryId === '') {
+                continue;
+            }
+
+            $decoded[] = $binaryId;
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Encode binary credential IDs to base64url for safe storage.
+     */
+    private function base64UrlEncode(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 }
