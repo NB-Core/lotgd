@@ -104,3 +104,4 @@ If passkey registration or verification fails, verify the relying party/domain s
   - Local development can use `http://localhost`, but production/staging passkey flows should use valid TLS.
 - If you run behind a reverse proxy, ensure the external host players see is consistent with `serverurl`; host mismatches can cause browser-side `NotAllowedError` / RP mismatch failures.
 - If the browser shows **"Unexpected end of JSON input"** during passkey begin/finish, the backend likely returned empty content, HTML, or another non-JSON response. Inspect the raw begin/finish endpoint response body first to identify redirects/login pages/PHP errors quickly.
+- If begin-response **Raw start is empty**, treat it as backend exception/empty output. Check the Two Factor Auth module debug log and your web server/PHP error log for the root cause.
