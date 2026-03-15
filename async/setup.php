@@ -180,8 +180,11 @@ function pollForUpdates() {
     var handlers = getJaxonHandlers();
     if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
         try {
+            var section = (typeof lotgd_comment_section === 'string' && lotgd_comment_section.trim() !== '')
+                ? lotgd_comment_section
+                : 'village';
             var response = handlers.Commentary.pollUpdates(
-                lotgd_comment_section || 'superuser',
+                section,
                 lotgd_lastCommentId || 0
             );
             if (response && typeof response.then === 'function') {
