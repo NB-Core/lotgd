@@ -109,6 +109,19 @@ Why direct `runmodule.php` fetch is problematic in this context:
 - Full passwordless login redesign is intentionally out of scope for this iteration.
 
 
+
+### Challenge polling behaviour and failure modes
+
+- The challenge page initializes Jaxon and background polling via `async/setup.php` while the user submits the classic verify form (`runmodule.php?module=twofactorauth&op=verify`).
+- Polling setup is guarded in JavaScript to avoid duplicate interval registration and competing async requests.
+- If async endpoints return empty or invalid JSON, browser-side Jaxon parsing can fail with `SyntaxError` (for example `Unexpected end of JSON input`).
+
+### Quick troubleshooting sequence (challenge)
+
+1. **Verify POST first:** confirm the token form posts to `runmodule.php?module=twofactorauth&op=verify` and check module debug checkpoints (`run entry`, `verify handler entry`, token length, and branch `valid`/`invalid`/`locked`).
+2. **Then inspect polling response:** check `async/process.php` responses in browser devtools. Ensure failures still return valid JSON payloads, not empty bodies or HTML.
+3. **If parse errors persist:** inspect PHP/webserver logs for thrown exceptions and correlate timestamps with the 2FA/passkey debug log entries.
+
 ## Troubleshooting passkey enrollment and login
 
 If passkey registration or verification fails, verify the relying party/domain setup first:

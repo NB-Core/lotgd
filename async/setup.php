@@ -229,15 +229,22 @@ function startAjaxPolling() {
     pollingRoot.__lotgdPollingIntervalId = setInterval(pollForUpdates, lotgd_poll_interval_ms);
 }
 
-// Initialize after page load
-setTimeout(function() {
+// Initialize after page load only once to avoid duplicate timeout registration.
+(function schedulePollingBootstrapOnce() {
     var pollingRoot = window.top || window;
-    if (!pollingRoot.__lotgdPollingInitialized
-        && typeof lotgd_poll_interval_ms !== 'undefined'
-        && lotgd_poll_interval_ms > 0) {
-        startAjaxPolling();
+    if (pollingRoot.__lotgdPollingBootstrapScheduled) {
+        return;
     }
-}, 1000);
+
+    pollingRoot.__lotgdPollingBootstrapScheduled = true;
+    setTimeout(function() {
+        if (!pollingRoot.__lotgdPollingInitialized
+            && typeof lotgd_poll_interval_ms !== 'undefined'
+            && lotgd_poll_interval_ms > 0) {
+            startAjaxPolling();
+        }
+    }, 1000);
+})();
 
 // Disable old polling system
 window.set_poll_ajax = function() {};
