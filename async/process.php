@@ -35,6 +35,16 @@ function lotgd_async_emit_error_payload(int $statusCode, array $payload): void
     echo json_encode($payload) ?: '{"status":"error","error":"json_encode_failed"}';
 }
 
+/**
+ * Check whether the current user has megauser diagnostics privileges.
+ */
+function lotgd_async_is_megauser(): bool
+{
+    $superuserFlags = (int) ($_SESSION['user']['superuser'] ?? 0);
+
+    return \defined('SU_MEGAUSER') && ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER;
+}
+
 // Simple rate limiting for Jaxon requests.  If an Ajax request arrives less
 // than the configured threshold after the previous one, we respond with HTTP 429 and skip
 // executing the handler.  The timestamp is only updated when the request is
@@ -57,12 +67,34 @@ if ($jaxon->canProcessRequest()) {
     try {
         $jaxon->processRequest();
     } catch (\Throwable $e) {
-        error_log("Jaxon processing error: " . $e->getMessage());
-        lotgd_async_emit_error_payload(500, [
+        $diagnosticId = bin2hex(random_bytes(8));
+        error_log(sprintf(
+            "Jaxon processing exception [diag=%s]: class=%s message=%s file=%s line=%d trace=%s",
+            $diagnosticId,
+            $e::class,
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            $e->getTraceAsString()
+        ));
+
+        $payload = [
             'status' => 'error',
             'error' => 'server_error',
             'message' => 'Server Error',
-        ]);
+        ];
+
+        if (lotgd_async_is_megauser()) {
+            $payload['diagnostic_id'] = $diagnosticId;
+            $payload['diagnostic'] = [
+                'type' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ];
+        }
+
+        lotgd_async_emit_error_payload(500, $payload);
     }
 } else {
     lotgd_async_emit_error_payload(400, [
