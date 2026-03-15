@@ -106,7 +106,7 @@ namespace Lotgd\Tests\Async {
             $handler = new TwoFactorAuthPasskey($service, $repo);
             $response = $handler->beginRegistration('req-1', 'csrf-test-token', 'My device');
 
-            $payload = $this->extractCallbackPayload($response->getOutput());
+            $payload = $this->extractCallbackPayload($response->getCommands());
             self::assertSame('req-1', $payload['requestId']);
             self::assertTrue($payload['data']['ok']);
             self::assertSame('abc', $payload['data']['options']['publicKey']['challenge']);
@@ -120,7 +120,7 @@ namespace Lotgd\Tests\Async {
             );
 
             $response = $handler->beginRegistration('req-csrf', 'wrong-token', 'Label');
-            $payload = $this->extractCallbackPayload($response->getOutput());
+            $payload = $this->extractCallbackPayload($response->getCommands());
 
             self::assertFalse($payload['data']['ok']);
             self::assertSame('csrf', $payload['data']['error']);
@@ -133,7 +133,7 @@ namespace Lotgd\Tests\Async {
 
             $handler = new TwoFactorAuthPasskey($service, $this->createMock(PasskeyCredentialRepository::class));
             $response = $handler->verifyAuthentication('req-verify', 'csrf-test-token', ['id' => 'cred', 'response' => []]);
-            $payload = $this->extractCallbackPayload($response->getOutput());
+            $payload = $this->extractCallbackPayload($response->getCommands());
 
             self::assertFalse($payload['data']['ok']);
             self::assertSame('verify_failed', $payload['data']['error']);
@@ -150,21 +150,20 @@ namespace Lotgd\Tests\Async {
             );
 
             $response = $handler->beginAuthentication('req-pending', 'csrf-test-token');
-            $payload = $this->extractCallbackPayload($response->getOutput());
+            $payload = $this->extractCallbackPayload($response->getCommands());
 
             self::assertFalse($payload['data']['ok']);
             self::assertSame('no_pending', $payload['data']['error']);
         }
 
         /**
-         * Decode the Jaxon response and return the callback envelope.
+         * Decode the Jaxon command list and return the callback envelope.
          *
+         * @param array<int, mixed> $commands
          * @return array{requestId:string,data:array<string,mixed>}
          */
-        private function extractCallbackPayload(string $output): array
+        private function extractCallbackPayload(array $commands): array
         {
-            $decoded = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
-            $commands = $decoded['jxn']['commands'] ?? [];
             self::assertNotEmpty($commands);
 
             $first = $commands[0];

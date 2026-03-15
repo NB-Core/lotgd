@@ -247,6 +247,10 @@ function twofactorauth_run(): void
             return;
         }
 
+        // Passkey UI depends on Jaxon handlers; ensure async bootstrap is prepared
+        // regardless of the user's global AJAX preference for this critical 2FA flow.
+        twofactorauth_force_async_bootstrap();
+
         Header::pageHeader('Two-factor authentication setup');
         twofactorauth_render_setup($output);
         Footer::pageFooter();
@@ -273,6 +277,9 @@ function twofactorauth_run(): void
 
         return;
     }
+
+    // Challenge passkey actions also need Jaxon available even when normal polling is disabled.
+    twofactorauth_force_async_bootstrap();
 
     Header::pageHeader('Two-factor authentication challenge');
 
@@ -881,6 +888,23 @@ function twofactorauth_render_passkey_js_helpers(): void
 function twofactorauth_render_passkey_jaxon_bridge(): void
 {
     rawoutput("<script>(function(){window.twofactorauthPendingRequests=window.twofactorauthPendingRequests||{};window.twofactorauthHandleJaxonResponse=window.twofactorauthHandleJaxonResponse||function(requestId,payload){if(!requestId){return;}const entry=window.twofactorauthPendingRequests[requestId];if(!entry){return;}if(entry.timeoutId){window.clearTimeout(entry.timeoutId);}delete window.twofactorauthPendingRequests[requestId];entry.resolve(payload||{ok:false,error:'empty_response'});};window.twofactorauthJaxonPasskeyCall=window.twofactorauthJaxonPasskeyCall||function(method,args){return new Promise(function(resolve,reject){const resolvedHandlers=typeof window.getJaxonHandlers==='function'?window.getJaxonHandlers():null;const namespace=resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey?resolvedHandlers.TwoFactorAuthPasskey:(window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler&&window.Lotgd.Async.Handler.TwoFactorAuthPasskey?window.Lotgd.Async.Handler.TwoFactorAuthPasskey:(window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler&&window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey?window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey:null));if(!namespace||typeof namespace[method]!=='function'){reject(new Error('Passkey async handler unavailable.'));return;}const requestId='tfa_'+Date.now()+'_'+Math.random().toString(16).slice(2);const timeoutId=window.setTimeout(function(){const timeoutEntry=window.twofactorauthPendingRequests[requestId];if(!timeoutEntry){return;}delete window.twofactorauthPendingRequests[requestId];timeoutEntry.reject(new Error('Passkey async request timed out.'));},20000);window.twofactorauthPendingRequests[requestId]={resolve:resolve,reject:reject,timeoutId:timeoutId};try{namespace[method].apply(namespace,[requestId].concat(args||[]));}catch(error){window.clearTimeout(timeoutId);delete window.twofactorauthPendingRequests[requestId];reject(error);}});};})();</script>");
+}
+
+/**
+ * Force-load async/Jaxon setup for passkey pages.
+ *
+ * Footer normally includes async/setup.php only when user AJAX preference is enabled.
+ * Passkey 2FA must continue to work regardless of that preference, so this helper loads
+ * the async bootstrap explicitly before headers are rendered on setup/challenge pages.
+ */
+function twofactorauth_force_async_bootstrap(): void
+{
+    $asyncSetupFile = dirname(__DIR__) . '/async/setup.php';
+    if (!file_exists($asyncSetupFile)) {
+        return;
+    }
+
+    require_once $asyncSetupFile;
 }
 
 /**
