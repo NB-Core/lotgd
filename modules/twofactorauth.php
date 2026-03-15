@@ -1294,6 +1294,29 @@ function twofactorauth_handle_begin_passkey_auth(): void
 {
     global $session;
 
+    // Ensure there is a pending 2FA challenge and the account is not locked out
+    $twofaState        = $session['user']['twofactorauth'] ?? [];
+    $pendingChallenge  = (int) ($twofaState['pending_challenge'] ?? 0);
+    $lockedUntil       = isset($twofaState['locked_until']) ? (int) $twofaState['locked_until'] : 0;
+    $now               = time();
+
+    if ($pendingChallenge !== 1) {
+        twofactorauth_output_json([
+            'ok'    => false,
+            'error' => 'no_pending_2fa_challenge',
+        ]);
+        return;
+    }
+
+    if ($lockedUntil > 0 && $lockedUntil > $now) {
+        twofactorauth_output_json([
+            'ok'           => false,
+            'error'        => 'locked_out',
+            'locked_until' => $lockedUntil,
+        ]);
+        return;
+    }
+
     try {
         $acctId = (int) ($session['user']['acctid'] ?? 0);
         $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
