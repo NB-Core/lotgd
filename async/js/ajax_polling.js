@@ -217,9 +217,19 @@ function set_poll_ajax()
 
         var handlers = getJaxonHandlers();
         if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
-            console.log('DEBUG: Calling Commentary.pollUpdates');
+            // Ensure we never send an empty/undefined section, which would cause
+            // the server to fall back to the privileged "superuser" section.
+            var safeSection;
+            if (typeof lotgd_comment_section === 'string' && lotgd_comment_section.trim() !== '') {
+                safeSection = lotgd_comment_section;
+            } else {
+                safeSection = 'village'; // non-privileged default section
+                console.log('DEBUG: lotgd_comment_section not set/empty, defaulting to section:', safeSection);
+            }
+
+            console.log('DEBUG: Calling Commentary.pollUpdates for section:', safeSection);
             try {
-                var response = handlers.Commentary.pollUpdates(lotgd_comment_section, lotgd_lastCommentId);
+                var response = handlers.Commentary.pollUpdates(safeSection, lotgd_lastCommentId);
                 if (response && typeof response.then === 'function') {
                     response.catch(function (error) {
                         if (lotgdIsJsonParseError(error)) {
