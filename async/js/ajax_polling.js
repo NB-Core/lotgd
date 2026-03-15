@@ -235,7 +235,8 @@ function set_poll_ajax()
                     return;
                 }
 
-                throw error;
+                console.error('DEBUG: pollUpdates threw:', error);
+                return;
             }
         } else {
             console.log('DEBUG: pollUpdates not available, handlers:', handlers);

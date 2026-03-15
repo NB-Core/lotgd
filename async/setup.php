@@ -163,6 +163,10 @@ function getJaxonHandlers() {
 function pausePollingOnParseError(error) {
     var pollingRoot = window.top || window;
     pollingRoot.__lotgdPollingPaused = true;
+    if (typeof pollingRoot.__lotgdPollingIntervalId !== 'undefined' && pollingRoot.__lotgdPollingIntervalId !== null) {
+        clearInterval(pollingRoot.__lotgdPollingIntervalId);
+        pollingRoot.__lotgdPollingIntervalId = null;
+    }
     var message = error && error.message ? String(error.message) : 'Unknown JSON parse failure';
     console.error('AJAX: Polling paused after JSON parse failure:', message);
 }
@@ -198,7 +202,8 @@ function pollForUpdates() {
                 return;
             }
 
-            throw error;
+            console.error('AJAX: pollUpdates threw:', error);
+            return;
         }
         return;
     }
@@ -216,8 +221,9 @@ function startAjaxPolling() {
     pollingRoot.__lotgdPollingPaused = false;
     console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
-    // Regular polling
-    setInterval(pollForUpdates, lotgd_poll_interval_ms);
+    // Regular polling: keep the interval handle on the shared root so parse-failure
+    // handling can cancel future ticks deterministically.
+    pollingRoot.__lotgdPollingIntervalId = setInterval(pollForUpdates, lotgd_poll_interval_ms);
 }
 
 // Initialize after page load

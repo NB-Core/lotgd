@@ -509,33 +509,39 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     global $session;
 
     $acctId = (int) ($session['user']['acctid'] ?? 0);
+    if ((int) get_module_pref('pending_challenge') !== 1) {
+        Redirect::redirect('village.php', '2FA verify without pending state');
+    }
+
     $token = trim((string) Http::post('token'));
     $hasToken = $token !== '';
     $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-    DebugLog::add(
-        sprintf(
-            '2FA verify entry account %d method=%s token_present=%s token_length=%d.',
+    // Temporary diagnostics: only persist verify request-entry details for valid accounts to
+    // avoid noisy target=0 rows when unauthenticated/invalid requests hit the endpoint.
+    if ($acctId > 0) {
+        DebugLog::add(
+            sprintf(
+                '2FA verify entry account %d method=%s token_present=%s token_length=%d.',
+                $acctId,
+                $requestMethod,
+                $hasToken ? 'yes' : 'no',
+                strlen($token)
+            ),
             $acctId,
-            $requestMethod,
-            $hasToken ? 'yes' : 'no',
-            strlen($token)
-        ),
-        $acctId,
-        $acctId,
-        '2fa_verify',
-        false,
-        false
-    );
-
-    if ((int) get_module_pref('pending_challenge') !== 1) {
-        Redirect::redirect('village.php', '2FA verify without pending state');
+            $acctId,
+            '2fa_verify',
+            false,
+            false
+        );
     }
 
     $now = time();
     $lockedUntil = (int) get_module_pref('locked_until');
     if ($lockedUntil > $now) {
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
-        DebugLog::add(sprintf('2FA verify exit account %d branch=locked.', $acctId), $acctId, $acctId, '2fa_verify', false, false);
+        if ($acctId > 0) {
+            DebugLog::add(sprintf('2FA verify exit account %d branch=locked.', $acctId), $acctId, $acctId, '2fa_verify', false, false);
+        }
         $output->output('Too many failures. Please wait before trying again.`n');
 
         return;
@@ -552,7 +558,9 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         set_module_pref('last_used_timestep', $result['timestep']);
         twofactorauth_clear_pending_state();
         twofactorauth_log_challenge_outcome($acctId, 'success');
-        DebugLog::add(sprintf('2FA verify exit account %d branch=valid timestep=%d.', $acctId, (int) $result['timestep']), $acctId, $acctId, '2fa_verify', false, false);
+        if ($acctId > 0) {
+            DebugLog::add(sprintf('2FA verify exit account %d branch=valid timestep=%d.', $acctId, (int) $result['timestep']), $acctId, $acctId, '2fa_verify', false, false);
+        }
         $output->output('Two-factor authentication complete. Welcome back.`n');
         Nav::add('Continue', 'runmodule.php?module=twofactorauth&op=resume');
 
@@ -567,13 +575,17 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         $lockSeconds = (int) get_module_setting('lock_seconds');
         set_module_pref('locked_until', $now + $lockSeconds);
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
-        DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_locked fails=%d.', $acctId, $fails), $acctId, $acctId, '2fa_verify', false, false);
+        if ($acctId > 0) {
+            DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_locked fails=%d.', $acctId, $fails), $acctId, $acctId, '2fa_verify', false, false);
+        }
         $output->output('Too many failures. Challenge temporarily locked.`n');
     } else {
         // Slow down automated guessing while keeping the current challenge active for retries.
         sleep(2);
         twofactorauth_log_challenge_outcome($acctId, 'failure', (string) $result['reason']);
-        DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_retry reason=%s fails=%d.', $acctId, (string) ($result['reason'] ?? 'unknown'), $fails), $acctId, $acctId, '2fa_verify', false, false);
+        if ($acctId > 0) {
+            DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_retry reason=%s fails=%d.', $acctId, (string) ($result['reason'] ?? 'unknown'), $fails), $acctId, $acctId, '2fa_verify', false, false);
+        }
         $output->output('Invalid token. Please try again.`n');
         twofactorauth_render_challenge($output);
     }
