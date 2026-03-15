@@ -896,6 +896,10 @@ function twofactorauth_render_passkey_jaxon_bridge(): void
  * Footer normally includes async/setup.php only when user AJAX preference is enabled.
  * Passkey 2FA must continue to work regardless of that preference, so this helper loads
  * the async bootstrap explicitly before headers are rendered on setup/challenge pages.
+ *
+ * Contract note: async/setup.php appends markup with string concatenation into the global
+ * $pre_headscript buffer. This must be initialized as a string so Jaxon handler namespaces
+ * are bootstrapped reliably for passkey setup/login flows.
  */
 function twofactorauth_force_async_bootstrap(): void
 {
@@ -907,14 +911,20 @@ function twofactorauth_force_async_bootstrap(): void
     // Ensure async/setup.php sees the expected globals and capture any head scripts it registers.
     global $session;
 
-    /** @var array<int, string> $pre_headscript */
-    $pre_headscript = [];
+    /** @var string|array<int, string> $pre_headscript */
+    // Do not change to array; async/setup.php concatenates strings into this global buffer.
+    $pre_headscript = '';
 
     require_once $asyncSetupFile;
 
-    if (!empty($pre_headscript)) {
+    // Do not change this handling to array-only; legacy paths may still provide an array.
+    if (is_string($pre_headscript) && $pre_headscript !== '') {
+        Output::addHeadMarkup($pre_headscript);
+    } elseif (is_array($pre_headscript)) {
         foreach ($pre_headscript as $scriptMarkup) {
-            Output::addHeadMarkup($scriptMarkup);
+            if (is_string($scriptMarkup) && $scriptMarkup !== '') {
+                Output::addHeadMarkup($scriptMarkup);
+            }
         }
     }
 }
