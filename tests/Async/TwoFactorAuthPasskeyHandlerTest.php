@@ -81,7 +81,7 @@ namespace Lotgd\Tests\Async {
                 ],
             ];
 
-            $GLOBALS['twofactorauth_csrf_token'] = 'csrf-test-token';
+            $session['twofactorauth_csrf'] = 'csrf-test-token';
             $GLOBALS['twofactorauth_module_prefs'] = [
                 42 => [
                     'pending_challenge' => 1,
