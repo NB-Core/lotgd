@@ -187,19 +187,56 @@ function set_timeout_ajax()
 /**
  * Start polling for all updates using a single server call.
  */
+function lotgdPausePollingOnParseError(error)
+{
+    var message = error && error.message ? String(error.message) : 'Unknown JSON parse failure';
+    console.error('DEBUG: Polling paused due to JSON parse failure:', message);
+    window.__lotgdPollingPaused = true;
+    window.clearInterval(active_poll_interval);
+}
+
+function lotgdIsJsonParseError(error)
+{
+    var message = error && error.message ? String(error.message).toLowerCase() : '';
+    return message.indexOf('json') !== -1 || message.indexOf('parse') !== -1;
+}
+
 function set_poll_ajax()
 {
     if (typeof lotgd_poll_interval_ms === 'undefined') {
         console.log('DEBUG: lotgd_poll_interval_ms not defined, skipping combined polling');
         return;
     }
+    window.__lotgdPollingPaused = false;
     console.log('DEBUG: Starting combined polling with interval:', lotgd_poll_interval_ms);
     window.clearInterval(active_poll_interval); // Clear any existing interval
     active_poll_interval = window.setInterval(function () {
+        if (window.__lotgdPollingPaused) {
+            return;
+        }
+
         var handlers = getJaxonHandlers();
         if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
             console.log('DEBUG: Calling Commentary.pollUpdates');
-            handlers.Commentary.pollUpdates(lotgd_comment_section, lotgd_lastCommentId);
+            try {
+                var response = handlers.Commentary.pollUpdates(lotgd_comment_section, lotgd_lastCommentId);
+                if (response && typeof response.then === 'function') {
+                    response.catch(function (error) {
+                        if (lotgdIsJsonParseError(error)) {
+                            lotgdPausePollingOnParseError(error);
+                            return;
+                        }
+                        console.error('DEBUG: pollUpdates rejected:', error);
+                    });
+                }
+            } catch (error) {
+                if (lotgdIsJsonParseError(error)) {
+                    lotgdPausePollingOnParseError(error);
+                    return;
+                }
+
+                throw error;
+            }
         } else {
             console.log('DEBUG: pollUpdates not available, handlers:', handlers);
         }

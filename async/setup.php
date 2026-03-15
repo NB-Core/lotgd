@@ -160,13 +160,46 @@ function getJaxonHandlers() {
     return null;
 }
 
+function pausePollingOnParseError(error) {
+    var pollingRoot = window.top || window;
+    pollingRoot.__lotgdPollingPaused = true;
+    var message = error && error.message ? String(error.message) : 'Unknown JSON parse failure';
+    console.error('AJAX: Polling paused after JSON parse failure:', message);
+}
+
 function pollForUpdates() {
+    var pollingRoot = window.top || window;
+    if (pollingRoot.__lotgdPollingPaused) {
+        return;
+    }
+
     var handlers = getJaxonHandlers();
     if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
-        handlers.Commentary.pollUpdates(
-            lotgd_comment_section || 'superuser',
-            lotgd_lastCommentId || 0
-        );
+        try {
+            var response = handlers.Commentary.pollUpdates(
+                lotgd_comment_section || 'superuser',
+                lotgd_lastCommentId || 0
+            );
+            if (response && typeof response.then === 'function') {
+                response.catch(function(error) {
+                    var message = error && error.message ? String(error.message) : '';
+                    if (message.toLowerCase().indexOf('json') !== -1 || message.toLowerCase().indexOf('parse') !== -1) {
+                        pausePollingOnParseError(error);
+                        return;
+                    }
+
+                    console.error('AJAX: pollUpdates rejected:', error);
+                });
+            }
+        } catch (error) {
+            var message = error && error.message ? String(error.message) : '';
+            if (message.toLowerCase().indexOf('json') !== -1 || message.toLowerCase().indexOf('parse') !== -1) {
+                pausePollingOnParseError(error);
+                return;
+            }
+
+            throw error;
+        }
         return;
     }
 
@@ -180,6 +213,7 @@ function startAjaxPolling() {
         return;
     }
     pollingRoot.__lotgdPollingInitialized = true;
+    pollingRoot.__lotgdPollingPaused = false;
     console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
     // Regular polling

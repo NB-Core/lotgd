@@ -495,8 +495,9 @@ function twofactorauth_render_challenge(Output $output): void
         twofactorauth_render_passkey_js_helpers();
         twofactorauth_render_passkey_jaxon_bridge();
         $csrfJson = json_encode(twofactorauth_csrf_token()) ?: '""';
+        $showDebugJson = twofactorauth_is_megauser() ? 'true' : 'false';
         rawoutput("<div style='margin-top:12px'><button type='button' id='twofactorauth-use-passkey'>" . htmlspecialchars(translate_inline('Use passkey'), ENT_QUOTES, 'UTF-8') . "</button></div>");
-        rawoutput("<script>(function(){const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}const csrfToken=" . $csrfJson . ";btn.addEventListener('click',async function(){try{const beginData=await window.twofactorauthJaxonPasskeyCall('beginAuthentication',[csrfToken]);if(!beginData||!beginData.ok){alert('Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verifyData=await window.twofactorauthJaxonPasskeyCall('verifyAuthentication',[csrfToken,body]);if(verifyData&&verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}alert('Passkey verification failed.');}catch(e){alert('Passkey operation failed.');}});})();</script>");
+        rawoutput("<script>(function(){const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";btn.onclick=async function(){try{const beginData=await window.twofactorauthJaxonPasskeyCall('beginAuthentication',[csrfToken]);if(!beginData||!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'';alert(showDebug&&beginCode!==''?'Passkey challenge failed. Code: '+beginCode:'Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verifyData=await window.twofactorauthJaxonPasskeyCall('verifyAuthentication',[csrfToken,body]);if(verifyData&&verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}const verifyCode=verifyData&&verifyData.error?String(verifyData.error):'';alert(showDebug&&verifyCode!==''?'Passkey verification failed. Code: '+verifyCode:'Passkey verification failed.');}catch(e){const detail=e&&e.message?String(e.message):'';alert(showDebug&&detail!==''?'Passkey operation failed: '+detail:'Passkey operation failed.');}};})();</script>");
     }
 }
 
@@ -507,22 +508,40 @@ function twofactorauth_handle_challenge_verification(Output $output): void
 {
     global $session;
 
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    $token = trim((string) Http::post('token'));
+    $hasToken = $token !== '';
+    $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    DebugLog::add(
+        sprintf(
+            '2FA verify entry account %d method=%s token_present=%s token_length=%d.',
+            $acctId,
+            $requestMethod,
+            $hasToken ? 'yes' : 'no',
+            strlen($token)
+        ),
+        $acctId,
+        $acctId,
+        '2fa_verify',
+        false,
+        false
+    );
+
     if ((int) get_module_pref('pending_challenge') !== 1) {
         Redirect::redirect('village.php', '2FA verify without pending state');
     }
 
     $now = time();
-    $acctId = (int) ($session['user']['acctid'] ?? 0);
     $lockedUntil = (int) get_module_pref('locked_until');
     if ($lockedUntil > $now) {
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
+        DebugLog::add(sprintf('2FA verify exit account %d branch=locked.', $acctId), $acctId, $acctId, '2fa_verify', false, false);
         $output->output('Too many failures. Please wait before trying again.`n');
 
         return;
     }
 
     $secret = TwoFactorAuthService::decryptSecret((string) get_module_pref('secret_encrypted'), twofactorauth_signing_key());
-    $token = (string) Http::post('token');
     $digits = (int) get_module_setting('token_digits');
     $period = (int) get_module_setting('period_seconds');
     $window = (int) get_module_setting('window');
@@ -533,6 +552,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         set_module_pref('last_used_timestep', $result['timestep']);
         twofactorauth_clear_pending_state();
         twofactorauth_log_challenge_outcome($acctId, 'success');
+        DebugLog::add(sprintf('2FA verify exit account %d branch=valid timestep=%d.', $acctId, (int) $result['timestep']), $acctId, $acctId, '2fa_verify', false, false);
         $output->output('Two-factor authentication complete. Welcome back.`n');
         Nav::add('Continue', 'runmodule.php?module=twofactorauth&op=resume');
 
@@ -547,11 +567,13 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         $lockSeconds = (int) get_module_setting('lock_seconds');
         set_module_pref('locked_until', $now + $lockSeconds);
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
+        DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_locked fails=%d.', $acctId, $fails), $acctId, $acctId, '2fa_verify', false, false);
         $output->output('Too many failures. Challenge temporarily locked.`n');
     } else {
         // Slow down automated guessing while keeping the current challenge active for retries.
         sleep(2);
         twofactorauth_log_challenge_outcome($acctId, 'failure', (string) $result['reason']);
+        DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_retry reason=%s fails=%d.', $acctId, (string) ($result['reason'] ?? 'unknown'), $fails), $acctId, $acctId, '2fa_verify', false, false);
         $output->output('Invalid token. Please try again.`n');
         twofactorauth_render_challenge($output);
     }
@@ -904,6 +926,11 @@ function twofactorauth_render_passkey_jaxon_bridge(): void
  */
 function twofactorauth_force_async_bootstrap(): void
 {
+    static $bootstrapInjected = false;
+    if ($bootstrapInjected) {
+        return;
+    }
+
     $asyncSetupFile = dirname(__DIR__) . '/async/setup.php';
     if (!file_exists($asyncSetupFile)) {
         return;
@@ -913,7 +940,7 @@ function twofactorauth_force_async_bootstrap(): void
     global $session;
 
     /** @var string|array<int, string> $pre_headscript */
-    // Do not change to array; async/setup.php concatenates strings into this include-scope buffer.
+    // Keep string contract for async/setup.php and defensively normalize legacy array buffers.
     $pre_headscript = '';
 
     require_once $asyncSetupFile;
@@ -921,13 +948,27 @@ function twofactorauth_force_async_bootstrap(): void
     // Do not change this handling to array-only; legacy paths may still provide an array.
     if (is_string($pre_headscript) && $pre_headscript !== '') {
         Output::addHeadMarkup($pre_headscript);
+        $bootstrapInjected = true;
     } elseif (is_array($pre_headscript)) {
         foreach ($pre_headscript as $scriptMarkup) {
             if (is_string($scriptMarkup) && $scriptMarkup !== '') {
                 Output::addHeadMarkup($scriptMarkup);
+                $bootstrapInjected = true;
             }
         }
     }
+}
+
+/**
+ * Determine whether deep client/server diagnostics may be shown.
+ */
+function twofactorauth_is_megauser(): bool
+{
+    global $session;
+
+    $superuserFlags = (int) ($session['user']['superuser'] ?? 0);
+
+    return ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER;
 }
 
 /**
@@ -939,10 +980,11 @@ function twofactorauth_render_passkey_registration_script(string $csrf): void
     twofactorauth_render_passkey_jaxon_bridge();
 
     $csrfJson = json_encode($csrf) ?: '""';
+    $showDebugJson = twofactorauth_is_megauser() ? 'true' : 'false';
 
     // Assign via `onclick` so repeated script injection cannot stack multiple handlers.
     // This setup page can be re-rendered in some module flows.
-    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const csrfToken=" . $csrfJson . ";button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const beginData=await window.twofactorauthJaxonPasskeyCall('beginRegistration',[csrfToken,label]);if(!beginData||!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'unknown';const beginDebug=beginData&&beginData.debug_message?String(beginData.debug_message):'';const beginDetail=beginDebug!==''?' Debug: '+beginDebug:'';alert('Unable to start passkey registration. Code: '+beginCode+'.'+beginDetail);return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finishData=await window.twofactorauthJaxonPasskeyCall('finishRegistration',[csrfToken,label,payload]);if(finishData&&finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}const finishCode=finishData&&finishData.error?String(finishData.error):'unknown';const finishDebug=finishData&&finishData.debug_message?String(finishData.debug_message):'';const finishDetail=finishDebug!==''?' Debug: '+finishDebug:'';alert('Passkey registration failed. Code: '+finishCode+'.'+finishDetail);}catch(error){const errorName=error&&error.name?String(error.name):'Error';const errorMessage=error&&error.message?String(error.message):'No additional details.';alert('Passkey registration error ('+errorName+'): '+errorMessage);}};})();</script>");
+    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const beginData=await window.twofactorauthJaxonPasskeyCall('beginRegistration',[csrfToken,label]);if(!beginData||!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'unknown';const beginDebug=beginData&&beginData.debug_message?String(beginData.debug_message):'';const beginDetail=showDebug&&beginDebug!==''?' Debug: '+beginDebug:'';const beginPrefix=showDebug?'Unable to start passkey registration. Code: '+beginCode+'.':'Unable to start passkey registration.';alert(beginPrefix+beginDetail);return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finishData=await window.twofactorauthJaxonPasskeyCall('finishRegistration',[csrfToken,label,payload]);if(finishData&&finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}const finishCode=finishData&&finishData.error?String(finishData.error):'unknown';const finishDebug=finishData&&finishData.debug_message?String(finishData.debug_message):'';const finishDetail=showDebug&&finishDebug!==''?' Debug: '+finishDebug:'';const finishPrefix=showDebug?'Passkey registration failed. Code: '+finishCode+'.':'Passkey registration failed.';alert(finishPrefix+finishDetail);}catch(error){const errorName=error&&error.name?String(error.name):'Error';const errorMessage=error&&error.message?String(error.message):'No additional details.';alert(showDebug?'Passkey registration error ('+errorName+'): '+errorMessage:'Passkey registration error.');}};})();</script>");
 }
 
 /**
@@ -1026,13 +1068,10 @@ function twofactorauth_log_setup_async_checkpoint(string $handler, string $check
  */
 function twofactorauth_setup_async_error_payload(string $errorCode, ?\Throwable $exception = null): array
 {
-    global $session;
-
     // Privilege-gate deep diagnostics: only megausers get internals to avoid leaking
     // exception context to normal players while still enabling admin troubleshooting.
     $payload = ['ok' => false, 'error' => $errorCode, 'code' => $errorCode];
-    $superuserFlags = (int) ($session['user']['superuser'] ?? 0);
-    if ($exception instanceof \Throwable && ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER) {
+    if ($exception instanceof \Throwable && twofactorauth_is_megauser()) {
         $payload['debug_message'] = sprintf('%s: %s', $exception::class, $exception->getMessage());
     }
 
