@@ -904,7 +904,19 @@ function twofactorauth_force_async_bootstrap(): void
         return;
     }
 
+    // Ensure async/setup.php sees the expected globals and capture any head scripts it registers.
+    global $session;
+
+    /** @var array<int, string> $pre_headscript */
+    $pre_headscript = [];
+
     require_once $asyncSetupFile;
+
+    if (!empty($pre_headscript)) {
+        foreach ($pre_headscript as $scriptMarkup) {
+            Output::addHeadMarkup($scriptMarkup);
+        }
+    }
 }
 
 /**
