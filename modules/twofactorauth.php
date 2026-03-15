@@ -554,8 +554,26 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         );
     }
 
-    if ($requestMethod !== 'POST' && $acctId > 0) {
-        DebugLog::add(sprintf('2FA verify request account %d used unexpected method=%s.', $acctId, $requestMethod), $acctId, $acctId, '2fa_verify', false, false);
+    if ($requestMethod !== 'POST') {
+        if ($acctId > 0) {
+            DebugLog::add(
+                sprintf(
+                    '2FA verify request account %d used unexpected method=%s.',
+                    $acctId,
+                    $requestMethod
+                ),
+                $acctId,
+                $acctId,
+                '2fa_verify',
+                false,
+                false
+            );
+        }
+        // Only classic form POST submissions are supported for verification; ignore other methods
+        // without mutating lockout or failed-attempts state.
+        $output->output('Invalid request method for verification.`n');
+
+        return;
     }
 
     $now = time();
