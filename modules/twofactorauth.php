@@ -205,6 +205,9 @@ function twofactorauth_run(): void
 
     Translator::tlschema('module_twofactorauth');
 
+    $acctId = (int) ($session['user']['acctid'] ?? 0);
+    twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'entry', $acctId);
+
     // Keep setup async routes in the explicit nav allow-list for this request lifecycle.
     // Forced navigation checks compare the incoming URI against allowednavs and can reroute
     // requests before handlers run when async endpoints are not whitelisted.
@@ -215,14 +218,30 @@ function twofactorauth_run(): void
         // Setup async handlers must short-circuit before page chrome/nav rendering so browser
         // fetch callers always receive raw JSON responses.
         if ($setupOp === 'begin_passkey_registration') {
+            // CSRF validation is performed in the handler; run() records delegation boundaries.
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'pre-csrf', $acctId);
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'pre-service_call', $acctId);
             twofactorauth_handle_begin_passkey_registration();
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'post-service_call', $acctId);
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'post-csrf', $acctId);
+            // Output is emitted in the async handler; keep explicit run() checkpoints for traceability.
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'pre-output', $acctId);
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'post-output', $acctId);
             Translator::tlschema();
 
             return;
         }
 
         if ($setupOp === 'finish_passkey_registration') {
+            // CSRF validation is performed in the handler; run() records delegation boundaries.
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'pre-csrf', $acctId);
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'pre-service_call', $acctId);
             twofactorauth_handle_finish_passkey_registration();
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'post-service_call', $acctId);
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'post-csrf', $acctId);
+            // Output is emitted in the async handler; keep explicit run() checkpoints for traceability.
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'pre-output', $acctId);
+            twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'post-output', $acctId);
             Translator::tlschema();
 
             return;
@@ -861,7 +880,7 @@ function twofactorauth_render_passkey_registration_script(string $csrf): void
 
     // Assign via `onclick` so repeated script injection cannot stack multiple handlers.
     // This setup page can be re-rendered in some module flows.
-    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const parseJsonResponse=async function(response,context){const raw=await response.text();try{return JSON.parse(raw);}catch(parseError){const snippet=raw.slice(0,200);console.error(context+' raw response snippet:',snippet);alert(context+' returned non-JSON data. Raw start: '+snippet);throw parseError;}};button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . $csrfEscaped . "',label:label})});const raw=await begin.text();let beginData;try{beginData=JSON.parse(raw);}catch(parseError){const snippet=raw.slice(0,200);console.error('Passkey registration start raw response snippet:',snippet);alert('Passkey registration start returned non-JSON data. Raw start: '+snippet);return;}if(!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'unknown';alert('Unable to start passkey registration. Code: '+beginCode+'.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . $csrfEscaped . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await parseJsonResponse(finish,'Passkey registration finish');if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}const finishCode=finishData&&finishData.error?String(finishData.error):'unknown';alert('Passkey registration failed. Code: '+finishCode+'.');}catch(error){const errorName=error&&error.name?String(error.name):'Error';const errorMessage=error&&error.message?String(error.message):'No additional details.';alert('Passkey registration error ('+errorName+'): '+errorMessage);}};})();</script>");
+    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const parseJsonResponse=async function(response,context){const raw=await response.text();try{return JSON.parse(raw);}catch(parseError){const snippet=raw.slice(0,200);console.error(context+' raw response snippet:',snippet);alert(context+' returned non-JSON data. Raw start: '+snippet);throw parseError;}};button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . $csrfEscaped . "',label:label})});const raw=await begin.text();let beginData;try{beginData=JSON.parse(raw);}catch(parseError){const snippet=raw.slice(0,200);console.error('Passkey registration start raw response snippet:',snippet);alert('Passkey registration start returned non-JSON data. Raw start: '+snippet);return;}if(!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'unknown';const beginDebug=beginData&&beginData.debug_message?String(beginData.debug_message):'';const beginDetail=beginDebug!==''?' Debug: '+beginDebug:'';alert('Unable to start passkey registration. Code: '+beginCode+'.'+beginDetail);return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . $csrfEscaped . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await parseJsonResponse(finish,'Passkey registration finish');if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}const finishCode=finishData&&finishData.error?String(finishData.error):'unknown';const finishDebug=finishData&&finishData.debug_message?String(finishData.debug_message):'';const finishDetail=finishDebug!==''?' Debug: '+finishDebug:'';alert('Passkey registration failed. Code: '+finishCode+'.'+finishDetail);}catch(error){const errorName=error&&error.name?String(error.name):'Error';const errorMessage=error&&error.message?String(error.message):'No additional details.';alert('Passkey registration error ('+errorName+'): '+errorMessage);}};})();</script>");
 }
 
 /**
@@ -881,22 +900,55 @@ function twofactorauth_output_json(array $payload): void
 /**
  * Keep setup async routes explicitly in allowed navigation entries.
  *
- * These passkey routes are triggered with fetch() calls from the setup screen and must not be
- * treated like normal page navigation; only these specific setupops are allowed here.
+ * Forced-nav can redirect requests before module code fully executes. These endpoints are called
+ * by JavaScript fetch() during setup and must stay forced-nav safe so JSON responses are not
+ * replaced by HTML redirects/chrome. Keep this allow-list narrow to avoid global bypasses.
  */
 function twofactorauth_allow_setup_async_nav_routes(): void
 {
-    addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration');
-    addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration');
+    $op = (string) Http::get('op');
+    $setupOp = (string) Http::get('setupop');
+
+    if ($op !== 'setup') {
+        return;
+    }
+
+    if ($setupOp !== 'begin_passkey_registration' && $setupOp !== 'finish_passkey_registration') {
+        return;
+    }
+
+    addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=' . $setupOp);
 }
 
 /**
- * Write structured debug log details for passkey setup async handlers.
+ * Return a shared correlation id for this module request.
+ *
+ * Async passkey setup calls run via fetch() and never render full page chrome, so we attach
+ * one request-scoped id to every checkpoint log line to make end-to-end tracing reliable.
  */
-function twofactorauth_log_setup_async_debug(string $handler, string $state, int $acctId): void
+function twofactorauth_setup_async_correlation_id(): string
+{
+    static $correlationId = null;
+    if (!is_string($correlationId)) {
+        $correlationId = bin2hex(random_bytes(8));
+    }
+
+    return $correlationId;
+}
+
+/**
+ * Write structured debug checkpoint details for passkey setup async handlers.
+ */
+function twofactorauth_log_setup_async_checkpoint(string $handler, string $checkpoint, int $acctId): void
 {
     DebugLog::add(
-        sprintf('2FA passkey setup async [%s] %s for account %d.', $handler, $state, $acctId),
+        sprintf(
+            '2FA passkey setup async [%s] checkpoint=%s corr=%s acct=%d.',
+            $handler,
+            $checkpoint,
+            twofactorauth_setup_async_correlation_id(),
+            $acctId
+        ),
         $acctId,
         $acctId,
         '2fa_passkey',
@@ -914,13 +966,12 @@ function twofactorauth_setup_async_error_payload(string $errorCode, ?\Throwable 
 {
     global $session;
 
+    // Privilege-gate deep diagnostics: only megausers get internals to avoid leaking
+    // exception context to normal players while still enabling admin troubleshooting.
     $payload = ['ok' => false, 'error' => $errorCode, 'code' => $errorCode];
     $superuserFlags = (int) ($session['user']['superuser'] ?? 0);
     if ($exception instanceof \Throwable && ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER) {
-        $payload['debug'] = [
-            'exception' => $exception::class,
-            'message' => $exception->getMessage(),
-        ];
+        $payload['debug_message'] = sprintf('%s: %s', $exception::class, $exception->getMessage());
     }
 
     return $payload;
@@ -928,13 +979,16 @@ function twofactorauth_setup_async_error_payload(string $errorCode, ?\Throwable 
 
 /**
  * Begin setup passkey registration and return publicKeyCredentialCreationOptions as JSON.
+ *
+ * Output contract note: this endpoint is called via fetch() and must always emit JSON on every
+ * exit path. Returning HTML or an empty body breaks frontend parsing and hides actionable errors.
  */
 function twofactorauth_handle_begin_passkey_registration(): void
 {
     global $session;
 
     $acctId = (int) ($session['user']['acctid'] ?? 0);
-    twofactorauth_log_setup_async_debug('begin_passkey_registration', 'entered begin handler', $acctId);
+    twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'entry', $acctId);
 
     try {
         $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -942,32 +996,38 @@ function twofactorauth_handle_begin_passkey_registration(): void
             $requestBody = [];
         }
 
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
         if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
+            twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'post-csrf', $acctId);
+            twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-output', $acctId);
             twofactorauth_output_json(twofactorauth_setup_async_error_payload('csrf'));
-            twofactorauth_log_setup_async_debug('begin_passkey_registration', 'json emitted', $acctId);
-            twofactorauth_log_setup_async_debug('begin_passkey_registration', 'returned', $acctId);
+            twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'post-output', $acctId);
 
             return;
         }
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'post-csrf', $acctId);
 
         $login = (string) ($session['user']['login'] ?? 'player');
         $display = (string) ($session['user']['name'] ?? $login);
         $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
         $excludeIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
 
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-service_call', $acctId);
         $options = twofactorauth_passkey_service()->beginRegistration($acctId, $login, $display, $excludeIds);
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'post-service_call', $acctId);
 
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-output', $acctId);
         twofactorauth_output_json(['ok' => true, 'options' => $options]);
-        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'json emitted', $acctId);
-        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'returned', $acctId);
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'post-output', $acctId);
 
         return;
     } catch (\Throwable $e) {
         DebugLog::add(
             sprintf(
-                '2FA passkey registration begin exception for account %d (%s: %s).',
+                '2FA passkey registration begin exception for account %d corr=%s (%s: %s).',
                 $acctId,
+                twofactorauth_setup_async_correlation_id(),
                 $e::class,
                 $e->getMessage()
             ),
@@ -978,9 +1038,9 @@ function twofactorauth_handle_begin_passkey_registration(): void
             false
         );
 
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-output', $acctId);
         twofactorauth_output_json(twofactorauth_setup_async_error_payload('begin_exception', $e));
-        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'json emitted', $acctId);
-        twofactorauth_log_setup_async_debug('begin_passkey_registration', 'returned', $acctId);
+        twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'post-output', $acctId);
 
         return;
     }
@@ -988,13 +1048,16 @@ function twofactorauth_handle_begin_passkey_registration(): void
 
 /**
  * Complete setup passkey registration and persist credential metadata.
+ *
+ * Output contract note: this endpoint is called via fetch() and must always emit JSON on every
+ * exit path. Returning HTML or an empty body breaks frontend parsing and hides actionable errors.
  */
 function twofactorauth_handle_finish_passkey_registration(): void
 {
     global $session;
 
     $acctId = (int) ($session['user']['acctid'] ?? 0);
-    twofactorauth_log_setup_async_debug('finish_passkey_registration', 'entered finish handler', $acctId);
+    twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'entry', $acctId);
 
     try {
         $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -1002,17 +1065,23 @@ function twofactorauth_handle_finish_passkey_registration(): void
             $requestBody = [];
         }
 
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
         if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
+            twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-csrf', $acctId);
+            twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-output', $acctId);
             twofactorauth_output_json(twofactorauth_setup_async_error_payload('csrf'));
-            twofactorauth_log_setup_async_debug('finish_passkey_registration', 'json emitted', $acctId);
-            twofactorauth_log_setup_async_debug('finish_passkey_registration', 'returned', $acctId);
+            twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-output', $acctId);
 
             return;
         }
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-csrf', $acctId);
 
         $label = (string) ($requestBody['label'] ?? 'Passkey');
+
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-service_call', $acctId);
         $result = twofactorauth_passkey_service()->finishRegistration($acctId, $requestBody, $label);
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-service_call', $acctId);
 
         if ($result['ok']) {
             DebugLog::add(sprintf('2FA passkey registration success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
@@ -1020,16 +1089,17 @@ function twofactorauth_handle_finish_passkey_registration(): void
             DebugLog::add(sprintf('2FA passkey registration failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
         }
 
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-output', $acctId);
         twofactorauth_output_json(['ok' => $result['ok'], 'error' => $result['error'], 'code' => $result['ok'] ? '' : (string) $result['error']]);
-        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'json emitted', $acctId);
-        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'returned', $acctId);
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-output', $acctId);
 
         return;
     } catch (\Throwable $e) {
         DebugLog::add(
             sprintf(
-                '2FA passkey registration finish exception for account %d (%s: %s).',
+                '2FA passkey registration finish exception for account %d corr=%s (%s: %s).',
                 $acctId,
+                twofactorauth_setup_async_correlation_id(),
                 $e::class,
                 $e->getMessage()
             ),
@@ -1040,9 +1110,9 @@ function twofactorauth_handle_finish_passkey_registration(): void
             false
         );
 
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-output', $acctId);
         twofactorauth_output_json(twofactorauth_setup_async_error_payload('finish_exception', $e));
-        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'json emitted', $acctId);
-        twofactorauth_log_setup_async_debug('finish_passkey_registration', 'returned', $acctId);
+        twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-output', $acctId);
 
         return;
     }
