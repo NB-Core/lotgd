@@ -206,6 +206,16 @@ function twofactorauth_run(): void
     Translator::tlschema('module_twofactorauth');
 
     $acctId = (int) ($session['user']['acctid'] ?? 0);
+    if ($acctId > 0) {
+        DebugLog::add(
+            sprintf('2FA run entry account %d op=%s.', $acctId, $op),
+            $acctId,
+            $acctId,
+            '2fa_verify',
+            false,
+            false
+        );
+    }
     twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'entry', $acctId);
 
     // Keep setup async routes in the explicit nav allow-list for this request lifecycle.
@@ -484,7 +494,8 @@ function twofactorauth_render_challenge(Output $output): void
     $output->output('Enter the token from your authenticator app to continue.`n');
 
     addnav('', 'runmodule.php?module=twofactorauth&op=verify');
-    rawoutput("<form action='runmodule.php?module=twofactorauth&op=verify' method='POST'>");
+    // Keep explicit POST action; challenge verification must remain a classic form submit.
+    rawoutput("<form id='twofactorauth-challenge-form' action='runmodule.php?module=twofactorauth&op=verify' method='POST'>");
     rawoutput("<label>" . translate_inline('Authenticator token') . "</label> ");
     rawoutput("<input type='text' name='token' maxlength='10'> ");
     rawoutput("<button type='submit'>" . translate_inline('Verify') . "</button>");
@@ -497,7 +508,7 @@ function twofactorauth_render_challenge(Output $output): void
         $csrfJson = json_encode(twofactorauth_csrf_token()) ?: '""';
         $showDebugJson = twofactorauth_is_megauser() ? 'true' : 'false';
         rawoutput("<div style='margin-top:12px'><button type='button' id='twofactorauth-use-passkey'>" . htmlspecialchars(translate_inline('Use passkey'), ENT_QUOTES, 'UTF-8') . "</button></div>");
-        rawoutput("<script>(function(){const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";btn.onclick=async function(){try{const beginData=await window.twofactorauthJaxonPasskeyCall('beginAuthentication',[csrfToken]);if(!beginData||!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'';alert(showDebug&&beginCode!==''?'Passkey challenge failed. Code: '+beginCode:'Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verifyData=await window.twofactorauthJaxonPasskeyCall('verifyAuthentication',[csrfToken,body]);if(verifyData&&verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}const verifyCode=verifyData&&verifyData.error?String(verifyData.error):'';alert(showDebug&&verifyCode!==''?'Passkey verification failed. Code: '+verifyCode:'Passkey verification failed.');}catch(e){const detail=e&&e.message?String(e.message):'';alert(showDebug&&detail!==''?'Passkey operation failed: '+detail:'Passkey operation failed.');}};})();</script>");
+        rawoutput("<script>(function(){if(window.__lotgdTwofactorauthChallengeSetupDone){return;}window.__lotgdTwofactorauthChallengeSetupDone=true;const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";btn.onclick=async function(){try{const beginData=await window.twofactorauthJaxonPasskeyCall('beginAuthentication',[csrfToken]);if(!beginData||!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'';alert(showDebug&&beginCode!==''?'Passkey challenge failed. Code: '+beginCode:'Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verifyData=await window.twofactorauthJaxonPasskeyCall('verifyAuthentication',[csrfToken,body]);if(verifyData&&verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}const verifyCode=verifyData&&verifyData.error?String(verifyData.error):'';const verifyDebug=verifyData&&verifyData.debug_message?String(verifyData.debug_message):'';const verifyDetail=showDebug&&verifyDebug!==''?' Debug: '+verifyDebug:'';const verifyPrefix=showDebug&&verifyCode!==''?'Passkey verification failed. Code: '+verifyCode+'.':'Passkey verification failed.';alert(verifyPrefix+verifyDetail);}catch(e){const detail=e&&e.message?String(e.message):'';alert(showDebug&&detail!==''?'Passkey operation failed: '+detail:'Passkey operation failed.');}};})();</script>");
     }
 }
 
@@ -509,6 +520,9 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     global $session;
 
     $acctId = (int) ($session['user']['acctid'] ?? 0);
+    if ($acctId > 0) {
+        DebugLog::add(sprintf('2FA verify handler entry account %d.', $acctId), $acctId, $acctId, '2fa_verify', false, false);
+    }
     if ((int) get_module_pref('pending_challenge') !== 1) {
         Redirect::redirect('village.php', '2FA verify without pending state');
     }
@@ -538,6 +552,28 @@ function twofactorauth_handle_challenge_verification(Output $output): void
             false,
             false
         );
+    }
+
+    if ($requestMethod !== 'POST') {
+        if ($acctId > 0) {
+            DebugLog::add(
+                sprintf(
+                    '2FA verify request account %d used unexpected method=%s.',
+                    $acctId,
+                    $requestMethod
+                ),
+                $acctId,
+                $acctId,
+                '2fa_verify',
+                false,
+                false
+            );
+        }
+        // Only classic form POST submissions are supported for verification; ignore other methods
+        // without mutating lockout or failed-attempts state.
+        $output->output('Invalid request method for verification.`n');
+
+        return;
     }
 
     $now = time();
@@ -581,7 +617,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         set_module_pref('locked_until', $now + $lockSeconds);
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
         if ($acctId > 0) {
-            DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_locked fails=%d.', $acctId, $fails), $acctId, $acctId, '2fa_verify', false, false);
+            DebugLog::add(sprintf('2FA verify exit account %d branch=locked fails=%d.', $acctId, $fails), $acctId, $acctId, '2fa_verify', false, false);
         }
         $output->output('Too many failures. Challenge temporarily locked.`n');
     } else {
@@ -589,7 +625,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         sleep(2);
         twofactorauth_log_challenge_outcome($acctId, 'failure', (string) $result['reason']);
         if ($acctId > 0) {
-            DebugLog::add(sprintf('2FA verify exit account %d branch=invalid_retry reason=%s fails=%d.', $acctId, (string) ($result['reason'] ?? 'unknown'), $fails), $acctId, $acctId, '2fa_verify', false, false);
+            DebugLog::add(sprintf('2FA verify exit account %d branch=invalid reason=%s fails=%d.', $acctId, (string) ($result['reason'] ?? 'unknown'), $fails), $acctId, $acctId, '2fa_verify', false, false);
         }
         $output->output('Invalid token. Please try again.`n');
         twofactorauth_render_challenge($output);
@@ -962,18 +998,33 @@ function twofactorauth_force_async_bootstrap(): void
 
     require_once $asyncSetupFile;
 
-    // Do not change this handling to array-only; legacy paths may still provide an array.
-    if (is_string($pre_headscript) && $pre_headscript !== '') {
+    // async/setup.php expects string concatenation. Normalize array fallbacks into one buffer,
+    // then add the resulting head markup exactly once in this module request lifecycle.
+    if (is_array($pre_headscript)) {
+        $pre_headscript = implode('', array_filter($pre_headscript, static fn(mixed $item): bool => is_string($item) && $item !== ''));
+    } elseif (!is_string($pre_headscript)) {
+        $pre_headscript = '';
+    }
+
+    if ($pre_headscript !== '') {
         Output::addHeadMarkup($pre_headscript);
         $bootstrapInjected = true;
-    } elseif (is_array($pre_headscript)) {
-        foreach ($pre_headscript as $scriptMarkup) {
-            if (is_string($scriptMarkup) && $scriptMarkup !== '') {
-                Output::addHeadMarkup($scriptMarkup);
-                $bootstrapInjected = true;
-            }
-        }
     }
+}
+
+/**
+ * Build an async challenge error payload and expose debug internals only to megausers.
+ *
+ * @return array<string, mixed>
+ */
+function twofactorauth_challenge_async_error_payload(string $errorCode, ?\Throwable $exception = null): array
+{
+    $payload = ['ok' => false, 'error' => $errorCode, 'code' => $errorCode];
+    if ($exception instanceof \Throwable && twofactorauth_is_megauser()) {
+        $payload['debug_message'] = sprintf('%s: %s', $exception::class, $exception->getMessage());
+    }
+
+    return $payload;
 }
 
 /**
@@ -1243,13 +1294,50 @@ function twofactorauth_handle_begin_passkey_auth(): void
 {
     global $session;
 
-    $acctId = (int) ($session['user']['acctid'] ?? 0);
-    $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
-    $credentialIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
+    // Ensure there is a pending 2FA challenge and the account is not locked out
+    $twofaState        = $session['user']['twofactorauth'] ?? [];
+    $pendingChallenge  = (int) ($twofaState['pending_challenge'] ?? 0);
+    $lockedUntil       = isset($twofaState['locked_until']) ? (int) $twofaState['locked_until'] : 0;
+    $now               = time();
 
-    $options = twofactorauth_passkey_service()->beginAuthentication($acctId, $credentialIds);
+    if ($pendingChallenge !== 1) {
+        twofactorauth_output_json([
+            'ok'    => false,
+            'error' => 'no_pending_2fa_challenge',
+        ]);
+        return;
+    }
 
-    twofactorauth_output_json(['ok' => true, 'options' => $options]);
+    if ($lockedUntil > 0 && $lockedUntil > $now) {
+        twofactorauth_output_json([
+            'ok'           => false,
+            'error'        => 'locked_out',
+            'locked_until' => $lockedUntil,
+        ]);
+        return;
+    }
+
+    try {
+        $acctId = (int) ($session['user']['acctid'] ?? 0);
+        $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
+        $credentialIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
+
+        $options = twofactorauth_passkey_service()->beginAuthentication($acctId, $credentialIds);
+
+        twofactorauth_output_json(['ok' => true, 'options' => $options]);
+    } catch (\Throwable $exception) {
+        $acctId = (int) ($session['user']['acctid'] ?? 0);
+        DebugLog::add(
+            sprintf('2FA passkey challenge begin exception for account %d (%s: %s).', $acctId, $exception::class, $exception->getMessage()),
+            $acctId,
+            $acctId,
+            '2fa_passkey',
+            false,
+            false
+        );
+
+        twofactorauth_output_json(twofactorauth_challenge_async_error_payload('begin_auth_exception', $exception));
+    }
 }
 
 /**
@@ -1259,46 +1347,60 @@ function twofactorauth_handle_passkey_verification(): void
 {
     global $session;
 
-    if ((int) get_module_pref('pending_challenge') !== 1) {
-        twofactorauth_output_json(['ok' => false, 'error' => 'no_pending']);
+    try {
+        if ((int) get_module_pref('pending_challenge') !== 1) {
+            twofactorauth_output_json(['ok' => false, 'error' => 'no_pending']);
 
-        return;
+            return;
+        }
+
+        $acctId = (int) ($session['user']['acctid'] ?? 0);
+        $lockedUntil = (int) get_module_pref('locked_until');
+        $now = time();
+        if ($lockedUntil > $now) {
+            twofactorauth_output_json(['ok' => false, 'error' => 'locked']);
+
+            return;
+        }
+
+        $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
+        if (!is_array($requestBody)) {
+            $requestBody = [];
+        }
+
+        $result = twofactorauth_passkey_service()->finishAuthentication($acctId, $requestBody);
+        if ($result['ok']) {
+            twofactorauth_clear_pending_state();
+            twofactorauth_log_challenge_outcome($acctId, 'success', 'passkey');
+            DebugLog::add(sprintf('2FA passkey authentication success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
+            twofactorauth_output_json(['ok' => true]);
+
+            return;
+        }
+
+        $fails = (int) get_module_pref('failed_attempts') + 1;
+        set_module_pref('failed_attempts', $fails);
+        $maxAttempts = (int) get_module_setting('max_attempts');
+        if ($fails >= $maxAttempts) {
+            set_module_pref('locked_until', $now + (int) get_module_setting('lock_seconds'));
+        }
+
+        twofactorauth_log_challenge_outcome($acctId, 'failure', 'passkey_' . $result['error']);
+        DebugLog::add(sprintf('2FA passkey authentication failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
+        twofactorauth_output_json(['ok' => false, 'error' => $result['error']]);
+    } catch (\Throwable $exception) {
+        $acctId = (int) ($session['user']['acctid'] ?? 0);
+        DebugLog::add(
+            sprintf('2FA passkey challenge verify exception for account %d (%s: %s).', $acctId, $exception::class, $exception->getMessage()),
+            $acctId,
+            $acctId,
+            '2fa_passkey',
+            false,
+            false
+        );
+
+        twofactorauth_output_json(twofactorauth_challenge_async_error_payload('verify_auth_exception', $exception));
     }
-
-    $acctId = (int) ($session['user']['acctid'] ?? 0);
-    $lockedUntil = (int) get_module_pref('locked_until');
-    $now = time();
-    if ($lockedUntil > $now) {
-        twofactorauth_output_json(['ok' => false, 'error' => 'locked']);
-
-        return;
-    }
-
-    $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($requestBody)) {
-        $requestBody = [];
-    }
-
-    $result = twofactorauth_passkey_service()->finishAuthentication($acctId, $requestBody);
-    if ($result['ok']) {
-        twofactorauth_clear_pending_state();
-        twofactorauth_log_challenge_outcome($acctId, 'success', 'passkey');
-        DebugLog::add(sprintf('2FA passkey authentication success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
-        twofactorauth_output_json(['ok' => true]);
-
-        return;
-    }
-
-    $fails = (int) get_module_pref('failed_attempts') + 1;
-    set_module_pref('failed_attempts', $fails);
-    $maxAttempts = (int) get_module_setting('max_attempts');
-    if ($fails >= $maxAttempts) {
-        set_module_pref('locked_until', $now + (int) get_module_setting('lock_seconds'));
-    }
-
-    twofactorauth_log_challenge_outcome($acctId, 'failure', 'passkey_' . $result['error']);
-    DebugLog::add(sprintf('2FA passkey authentication failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
-    twofactorauth_output_json(['ok' => false, 'error' => $result['error']]);
 }
 
 /**
