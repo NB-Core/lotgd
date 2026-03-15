@@ -247,6 +247,10 @@ function twofactorauth_run(): void
             return;
         }
 
+        // Passkey UI depends on Jaxon handlers; ensure async bootstrap is prepared
+        // regardless of the user's global AJAX preference for this critical 2FA flow.
+        twofactorauth_force_async_bootstrap();
+
         Header::pageHeader('Two-factor authentication setup');
         twofactorauth_render_setup($output);
         Footer::pageFooter();
@@ -273,6 +277,9 @@ function twofactorauth_run(): void
 
         return;
     }
+
+    // Challenge passkey actions also need Jaxon available even when normal polling is disabled.
+    twofactorauth_force_async_bootstrap();
 
     Header::pageHeader('Two-factor authentication challenge');
 
@@ -486,8 +493,10 @@ function twofactorauth_render_challenge(Output $output): void
     if ($passkeys !== []) {
         // Shared helper utilities are needed both on setup and challenge pages.
         twofactorauth_render_passkey_js_helpers();
+        twofactorauth_render_passkey_jaxon_bridge();
+        $csrfJson = json_encode(twofactorauth_csrf_token()) ?: '""';
         rawoutput("<div style='margin-top:12px'><button type='button' id='twofactorauth-use-passkey'>" . htmlspecialchars(translate_inline('Use passkey'), ENT_QUOTES, 'UTF-8') . "</button></div>");
-        rawoutput("<script>(function(){const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}btn.addEventListener('click',async function(){try{const begin=await fetch('runmodule.php?module=twofactorauth&op=begin_passkey_auth',{method:'POST',headers:{'Content-Type':'application/json'}});const beginData=await begin.json();if(!beginData.ok){alert('Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verify=await fetch('runmodule.php?module=twofactorauth&op=verify_passkey',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const verifyData=await verify.json();if(verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}alert('Passkey verification failed.');}catch(e){alert('Passkey operation failed.');}});})();</script>");
+        rawoutput("<script>(function(){const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}const csrfToken=" . $csrfJson . ";btn.addEventListener('click',async function(){try{const beginData=await window.twofactorauthJaxonPasskeyCall('beginAuthentication',[csrfToken]);if(!beginData||!beginData.ok){alert('Passkey challenge failed.');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey not available.');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verifyData=await window.twofactorauthJaxonPasskeyCall('verifyAuthentication',[csrfToken,body]);if(verifyData&&verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}alert('Passkey verification failed.');}catch(e){alert('Passkey operation failed.');}});})();</script>");
     }
 }
 
@@ -870,17 +879,59 @@ function twofactorauth_render_passkey_js_helpers(): void
 }
 
 /**
+ * Render a small Jaxon bridge for promise-based passkey calls.
+ *
+ * Jaxon executes response commands asynchronously but does not return ceremony payloads
+ * as fetch()-style JSON promises by default. This bridge maps request IDs to promise
+ * resolvers and receives payloads from the async handler callback.
+ */
+function twofactorauth_render_passkey_jaxon_bridge(): void
+{
+    rawoutput("<script>(function(){window.twofactorauthPendingRequests=window.twofactorauthPendingRequests||{};window.twofactorauthHandleJaxonResponse=window.twofactorauthHandleJaxonResponse||function(requestId,payload){if(!requestId){return;}const entry=window.twofactorauthPendingRequests[requestId];if(!entry){return;}if(entry.timeoutId){window.clearTimeout(entry.timeoutId);}delete window.twofactorauthPendingRequests[requestId];entry.resolve(payload||{ok:false,error:'empty_response'});};window.twofactorauthJaxonPasskeyCall=window.twofactorauthJaxonPasskeyCall||function(method,args){return new Promise(function(resolve,reject){const resolvedHandlers=typeof window.getJaxonHandlers==='function'?window.getJaxonHandlers():null;const namespace=resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey?resolvedHandlers.TwoFactorAuthPasskey:(window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler&&window.Lotgd.Async.Handler.TwoFactorAuthPasskey?window.Lotgd.Async.Handler.TwoFactorAuthPasskey:(window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler&&window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey?window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey:null));if(!namespace||typeof namespace[method]!=='function'){reject(new Error('Passkey async handler unavailable.'));return;}const requestId='tfa_'+Date.now()+'_'+Math.random().toString(16).slice(2);const timeoutId=window.setTimeout(function(){const timeoutEntry=window.twofactorauthPendingRequests[requestId];if(!timeoutEntry){return;}delete window.twofactorauthPendingRequests[requestId];timeoutEntry.reject(new Error('Passkey async request timed out.'));},20000);window.twofactorauthPendingRequests[requestId]={resolve:resolve,reject:reject,timeoutId:timeoutId};try{namespace[method].apply(namespace,[requestId].concat(args||[]));}catch(error){window.clearTimeout(timeoutId);delete window.twofactorauthPendingRequests[requestId];reject(error);}});};})();</script>");
+}
+
+/**
+ * Force-load async/Jaxon setup for passkey pages.
+ *
+ * Footer normally includes async/setup.php only when user AJAX preference is enabled.
+ * Passkey 2FA must continue to work regardless of that preference, so this helper loads
+ * the async bootstrap explicitly before headers are rendered on setup/challenge pages.
+ */
+function twofactorauth_force_async_bootstrap(): void
+{
+    $asyncSetupFile = dirname(__DIR__) . '/async/setup.php';
+    if (!file_exists($asyncSetupFile)) {
+        return;
+    }
+
+    // Ensure async/setup.php sees the expected globals and capture any head scripts it registers.
+    global $session;
+
+    /** @var array<int, string> $pre_headscript */
+    $pre_headscript = [];
+
+    require_once $asyncSetupFile;
+
+    if (!empty($pre_headscript)) {
+        foreach ($pre_headscript as $scriptMarkup) {
+            Output::addHeadMarkup($scriptMarkup);
+        }
+    }
+}
+
+/**
  * Render browser helpers for base64url decoding and passkey registration.
  */
 function twofactorauth_render_passkey_registration_script(string $csrf): void
 {
     twofactorauth_render_passkey_js_helpers();
+    twofactorauth_render_passkey_jaxon_bridge();
 
-    $csrfEscaped = addslashes($csrf);
+    $csrfJson = json_encode($csrf) ?: '""';
 
     // Assign via `onclick` so repeated script injection cannot stack multiple handlers.
     // This setup page can be re-rendered in some module flows.
-    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const parseJsonResponse=async function(response,context){const raw=await response.text();try{return JSON.parse(raw);}catch(parseError){const snippet=raw.slice(0,200);console.error(context+' raw response snippet:',snippet);alert(context+' returned non-JSON data. Raw start: '+snippet);throw parseError;}};button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const begin=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_token:'" . $csrfEscaped . "',label:label})});const raw=await begin.text();let beginData;try{beginData=JSON.parse(raw);}catch(parseError){const snippet=raw.slice(0,200);console.error('Passkey registration start raw response snippet:',snippet);alert('Passkey registration start returned non-JSON data. Raw start: '+snippet);return;}if(!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'unknown';const beginDebug=beginData&&beginData.debug_message?String(beginData.debug_message):'';const beginDetail=beginDebug!==''?' Debug: '+beginDebug:'';alert('Unable to start passkey registration. Code: '+beginCode+'.'+beginDetail);return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={csrf_token:'" . $csrfEscaped . "',label:label,id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finish=await fetch('runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const finishData=await parseJsonResponse(finish,'Passkey registration finish');if(finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}const finishCode=finishData&&finishData.error?String(finishData.error):'unknown';const finishDebug=finishData&&finishData.debug_message?String(finishData.debug_message):'';const finishDetail=finishDebug!==''?' Debug: '+finishDebug:'';alert('Passkey registration failed. Code: '+finishCode+'.'+finishDetail);}catch(error){const errorName=error&&error.name?String(error.name):'Error';const errorMessage=error&&error.message?String(error.message):'No additional details.';alert('Passkey registration error ('+errorName+'): '+errorMessage);}};})();</script>");
+    rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const csrfToken=" . $csrfJson . ";button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const beginData=await window.twofactorauthJaxonPasskeyCall('beginRegistration',[csrfToken,label]);if(!beginData||!beginData.ok){const beginCode=beginData&&beginData.error?String(beginData.error):'unknown';const beginDebug=beginData&&beginData.debug_message?String(beginData.debug_message):'';const beginDetail=beginDebug!==''?' Debug: '+beginDebug:'';alert('Unable to start passkey registration. Code: '+beginCode+'.'+beginDetail);return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey registration cancelled.');return;}const payload={id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finishData=await window.twofactorauthJaxonPasskeyCall('finishRegistration',[csrfToken,label,payload]);if(finishData&&finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}const finishCode=finishData&&finishData.error?String(finishData.error):'unknown';const finishDebug=finishData&&finishData.debug_message?String(finishData.debug_message):'';const finishDetail=finishDebug!==''?' Debug: '+finishDebug:'';alert('Passkey registration failed. Code: '+finishCode+'.'+finishDetail);}catch(error){const errorName=error&&error.name?String(error.name):'Error';const errorMessage=error&&error.message?String(error.message):'No additional details.';alert('Passkey registration error ('+errorName+'): '+errorMessage);}};})();</script>");
 }
 
 /**
