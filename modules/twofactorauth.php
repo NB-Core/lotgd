@@ -897,9 +897,10 @@ function twofactorauth_render_passkey_jaxon_bridge(): void
  * Passkey 2FA must continue to work regardless of that preference, so this helper loads
  * the async bootstrap explicitly before headers are rendered on setup/challenge pages.
  *
- * Contract note: async/setup.php appends markup with string concatenation into the global
- * $pre_headscript buffer. This must be initialized as a string so Jaxon handler namespaces
- * are bootstrapped reliably for passkey setup/login flows.
+ * Contract note: async/setup.php appends markup with string concatenation into a
+ * $pre_headscript buffer that it expects to receive from the including scope. This must
+ * be initialized as a string so Jaxon handler namespaces are bootstrapped reliably for
+ * passkey setup/login flows.
  */
 function twofactorauth_force_async_bootstrap(): void
 {
@@ -912,7 +913,7 @@ function twofactorauth_force_async_bootstrap(): void
     global $session;
 
     /** @var string|array<int, string> $pre_headscript */
-    // Do not change to array; async/setup.php concatenates strings into this global buffer.
+    // Do not change to array; async/setup.php concatenates strings into this include-scope buffer.
     $pre_headscript = '';
 
     require_once $asyncSetupFile;
