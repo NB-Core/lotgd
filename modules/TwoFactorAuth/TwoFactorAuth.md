@@ -86,6 +86,22 @@ This iteration adds passkeys as an **alternative** challenge method while keepin
 - Passkey registration/authentication success/failure are audit-logged without sensitive credential material.
 - Passkey deletion requires both account ownership checks and a CSRF token.
 
+### Async architecture: why passkey flows now run through Jaxon
+
+Passkey setup/login begin+finish calls are routed through a dedicated Jaxon handler (`Lotgd.Async.Handler.TwoFactorAuthPasskey`) and `async/process.php`.
+
+Rationale:
+
+- `async/process.php` is explicitly built for async transport and uses `OVERRIDE_FORCED_NAV`, so payload responses are not replaced by forced-navigation redirects.
+- Jaxon handler responses keep the flow inside the established async pipeline used by core AJAX features (commentary/mail/timeout), improving consistency and observability.
+- The passkey domain logic remains centralized in `PasskeyService` + `PasskeyCredentialRepository`; the async handler is a transport/orchestration layer only.
+
+Why direct `runmodule.php` fetch is problematic in this context:
+
+- `runmodule.php` requests are still subject to AllowedNav / ForcedNav checks tied to full-page navigation assumptions.
+- In challenge/setup edge-cases, those checks can return HTML redirects/chrome instead of JSON, which breaks WebAuthn ceremony parsing in the browser.
+- This mismatch caused brittle behavior (for example JSON parse failures on passkey begin/finish) that is avoided by using the dedicated async endpoint.
+
 ### Recovery and fallback
 
 - TOTP remains available as fallback while passkeys are introduced.
