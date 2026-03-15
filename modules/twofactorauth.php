@@ -513,7 +513,12 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         Redirect::redirect('village.php', '2FA verify without pending state');
     }
 
-    $token = trim((string) Http::post('token'));
+    $rawToken = Http::post('token');
+    if (!is_string($rawToken)) {
+        $token = '';
+    } else {
+        $token = trim($rawToken);
+    }
     $hasToken = $token !== '';
     $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     // Temporary diagnostics: only persist verify request-entry details for valid accounts to
