@@ -25,16 +25,51 @@ namespace Lotgd\Tests\Async {
 
             require_once __DIR__ . '/../bootstrap.php';
 
-            if (!function_exists('get_module_pref')) {
-                eval("function get_module_pref(string \$name, ?string \$module = null, ?int \$user = null) { return \$GLOBALS['twofactorauth_module_prefs'][\$name] ?? 0; }");
+            // Define global test doubles lazily inside the isolated process only.
+            if (!\function_exists('get_module_pref')) {
+                eval(
+                    <<<'PHPSTUB'
+                    namespace {
+                        function get_module_pref(string $name, ?string $module = null, ?int $user = null)
+                        {
+                            $acctId = $user ?? 0;
+
+                            return $GLOBALS['twofactorauth_module_prefs'][$acctId][$name] ?? 0;
+                        }
+                    }
+                    PHPSTUB
+                );
             }
 
-            if (!function_exists('set_module_pref')) {
-                eval("function set_module_pref(string \$name, mixed \$value, ?string \$module = null, ?int \$user = null): void { \$GLOBALS['twofactorauth_module_prefs'][\$name] = \$value; }");
+            if (!\function_exists('set_module_pref')) {
+                eval(
+                    <<<'PHPSTUB'
+                    namespace {
+                        function set_module_pref(string $name, mixed $value, ?string $module = null, ?int $user = null): void
+                        {
+                            $acctId = $user ?? 0;
+                            if (!isset($GLOBALS['twofactorauth_module_prefs'][$acctId]) || !is_array($GLOBALS['twofactorauth_module_prefs'][$acctId])) {
+                                $GLOBALS['twofactorauth_module_prefs'][$acctId] = [];
+                            }
+
+                            $GLOBALS['twofactorauth_module_prefs'][$acctId][$name] = $value;
+                        }
+                    }
+                    PHPSTUB
+                );
             }
 
-            if (!function_exists('get_module_setting')) {
-                eval("function get_module_setting(string \$name, ?string \$module = null) { return \$GLOBALS['twofactorauth_module_settings'][\$name] ?? 0; }");
+            if (!\function_exists('get_module_setting')) {
+                eval(
+                    <<<'PHPSTUB'
+                    namespace {
+                        function get_module_setting(string $name, ?string $module = null)
+                        {
+                            return $GLOBALS['twofactorauth_module_settings'][$name] ?? 0;
+                        }
+                    }
+                    PHPSTUB
+                );
             }
 
             $session = [
@@ -48,9 +83,11 @@ namespace Lotgd\Tests\Async {
 
             $GLOBALS['twofactorauth_csrf_token'] = 'csrf-test-token';
             $GLOBALS['twofactorauth_module_prefs'] = [
-                'pending_challenge' => 1,
-                'failed_attempts' => 0,
-                'locked_until' => 0,
+                42 => [
+                    'pending_challenge' => 1,
+                    'failed_attempts' => 0,
+                    'locked_until' => 0,
+                ],
             ];
             $GLOBALS['twofactorauth_module_settings'] = [
                 'max_attempts' => 5,
@@ -100,12 +137,12 @@ namespace Lotgd\Tests\Async {
 
             self::assertFalse($payload['data']['ok']);
             self::assertSame('verify_failed', $payload['data']['error']);
-            self::assertSame(1, (int) ($GLOBALS['twofactorauth_module_prefs']['failed_attempts'] ?? 0));
+            self::assertSame(1, (int) ($GLOBALS['twofactorauth_module_prefs'][42]['failed_attempts'] ?? 0));
         }
 
         public function testBeginAuthenticationWithoutPendingChallengeIsRejected(): void
         {
-            $GLOBALS['twofactorauth_module_prefs']['pending_challenge'] = 0;
+            $GLOBALS['twofactorauth_module_prefs'][42]['pending_challenge'] = 0;
 
             $handler = new TwoFactorAuthPasskey(
                 $this->createMock(PasskeyService::class),
@@ -120,6 +157,8 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
+         * Decode the Jaxon response and return the callback envelope.
+         *
          * @return array{requestId:string,data:array<string,mixed>}
          */
         private function extractCallbackPayload(string $output): array

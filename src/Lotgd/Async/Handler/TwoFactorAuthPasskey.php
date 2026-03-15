@@ -20,6 +20,11 @@ use function Jaxon\jaxon;
 class TwoFactorAuthPasskey
 {
     /**
+     * Module slug used when reading/writing module preferences and settings.
+     */
+    private const MODULE_NAME = 'twofactorauth';
+
+    /**
      * Browser callback used to resolve in-flight Jaxon passkey calls.
      */
     private const CALLBACK_FUNCTION = 'window.twofactorauthHandleJaxonResponse';
@@ -98,7 +103,7 @@ class TwoFactorAuthPasskey
             );
 
             if ($ok) {
-                $this->setModulePref('passkeys_enabled', 1);
+                $this->setModulePref('passkeys_enabled', 1, $acctId);
 
                 return $this->respond($requestId, ['ok' => true]);
             }
@@ -169,13 +174,27 @@ class TwoFactorAuthPasskey
             return $this->respond($requestId, $this->errorPayload('csrf'));
         }
 
-        $lockedUntil = (int) $this->getModulePref('locked_until');
+        $lockedUntil = (int) $this->getModulePref('locked_until', $acctId);
         $now = time();
         if ($lockedUntil > $now) {
             return $this->respond($requestId, $this->errorPayload('locked'));
         }
 
-        $result = $this->service()->finishAuthentication($acctId, $credentialPayload);
+        try {
+            $result = $this->service()->finishAuthentication($acctId, $credentialPayload);
+        } catch (\Throwable $error) {
+            DebugLog::add(
+                sprintf('2FA passkey authentication verify exception for account %d (%s: %s).', $acctId, $error::class, $error->getMessage()),
+                $acctId,
+                $acctId,
+                '2fa_passkey',
+                false,
+                false
+            );
+
+            return $this->respond($requestId, $this->errorPayload('verify_exception', $error));
+        }
+
         if ((bool) ($result['ok'] ?? false)) {
             $this->clearPendingState();
             DebugLog::add(sprintf('2FA passkey authentication success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
@@ -184,11 +203,11 @@ class TwoFactorAuthPasskey
         }
 
         $errorCode = (string) ($result['error'] ?? 'verify_failed');
-        $fails = (int) $this->getModulePref('failed_attempts') + 1;
-        $this->setModulePref('failed_attempts', $fails);
+        $fails = (int) $this->getModulePref('failed_attempts', $acctId) + 1;
+        $this->setModulePref('failed_attempts', $fails, $acctId);
         $maxAttempts = (int) $this->getModuleSetting('max_attempts');
         if ($maxAttempts > 0 && $fails >= $maxAttempts) {
-            $this->setModulePref('locked_until', $now + (int) $this->getModuleSetting('lock_seconds'));
+            $this->setModulePref('locked_until', $now + (int) $this->getModuleSetting('lock_seconds'), $acctId);
         }
 
         DebugLog::add(
@@ -221,7 +240,7 @@ class TwoFactorAuthPasskey
 
     private function isPendingChallenge(): bool
     {
-        return (int) $this->getModulePref('pending_challenge') === 1;
+        return (int) $this->getModulePref('pending_challenge', $this->accountId()) === 1;
     }
 
     private function isCsrfValid(string $csrfToken): bool
@@ -254,27 +273,33 @@ class TwoFactorAuthPasskey
 
     private function clearPendingState(): void
     {
-        $this->setModulePref('pending_challenge', 0);
-        $this->setModulePref('pending_since', 0);
-        $this->setModulePref('failed_attempts', 0);
-        $this->setModulePref('locked_until', 0);
-        $this->setModulePref('disable_token_uri', '');
+        $acctId = $this->accountId();
+        $this->setModulePref('pending_challenge', 0, $acctId);
+        $this->setModulePref('pending_since', 0, $acctId);
+        $this->setModulePref('failed_attempts', 0, $acctId);
+        $this->setModulePref('locked_until', 0, $acctId);
+        $this->setModulePref('disable_token_uri', '', $acctId);
     }
 
-
-    private function getModulePref(string $name): mixed
+    /**
+     * Read a module preference from the canonical module namespace.
+     */
+    private function getModulePref(string $name, ?int $acctId = null): mixed
     {
         if (\function_exists('get_module_pref')) {
-            return \call_user_func('get_module_pref', $name);
+            return \call_user_func('get_module_pref', $name, self::MODULE_NAME, $acctId);
         }
 
         return $GLOBALS['twofactorauth_module_prefs'][$name] ?? 0;
     }
 
-    private function setModulePref(string $name, mixed $value): void
+    /**
+     * Persist a module preference into the canonical module namespace.
+     */
+    private function setModulePref(string $name, mixed $value, ?int $acctId = null): void
     {
         if (\function_exists('set_module_pref')) {
-            \call_user_func('set_module_pref', $name, $value);
+            \call_user_func('set_module_pref', $name, $value, self::MODULE_NAME, $acctId);
 
             return;
         }
@@ -282,10 +307,13 @@ class TwoFactorAuthPasskey
         $GLOBALS['twofactorauth_module_prefs'][$name] = $value;
     }
 
+    /**
+     * Read a module setting from the canonical module namespace.
+     */
     private function getModuleSetting(string $name): mixed
     {
         if (\function_exists('get_module_setting')) {
-            return \call_user_func('get_module_setting', $name);
+            return \call_user_func('get_module_setting', $name, self::MODULE_NAME);
         }
 
         return $GLOBALS['twofactorauth_module_settings'][$name] ?? 0;
