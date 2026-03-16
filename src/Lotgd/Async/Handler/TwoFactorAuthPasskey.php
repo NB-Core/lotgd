@@ -29,10 +29,42 @@ class TwoFactorAuthPasskey
      */
     private const CALLBACK_FUNCTION = 'window.twofactorauthHandleJaxonResponse';
 
-    public function __construct(
-        private readonly ?PasskeyService $service = null,
-        private readonly ?PasskeyCredentialRepository $repository = null
-    ) {
+    /**
+     * Optional service override used by tests and explicit bootstrap code.
+     */
+    private ?PasskeyService $service = null;
+
+    /**
+     * Optional repository override used by tests and explicit bootstrap code.
+     */
+    private ?PasskeyCredentialRepository $repository = null;
+
+    /**
+     * This handler is instantiated by async/process.php without using Jaxon's DI container.
+     *
+     * Although Jaxon supports constructor injection when its container is configured,
+     * our async bootstrap does not provide bindings for PasskeyService or
+     * PasskeyCredentialRepository, so we intentionally keep the constructor parameterless
+     * and rely on setter injection for tests and explicit overrides.
+     */
+    public function __construct()
+    {
+    }
+
+    /**
+     * Test seam: override the passkey service without constructor injection.
+     */
+    protected function setService(PasskeyService $service): void
+    {
+        $this->service = $service;
+    }
+
+    /**
+     * Test seam: override the passkey repository without constructor injection.
+     */
+    protected function setRepository(PasskeyCredentialRepository $repository): void
+    {
+        $this->repository = $repository;
     }
 
     /**
@@ -410,11 +442,22 @@ class TwoFactorAuthPasskey
 
     private function repository(): PasskeyCredentialRepository
     {
-        return $this->repository ?? new PasskeyCredentialRepository();
+        // Keep dependency creation local so default construction remains DI-free
+        // for Jaxon callable resolution.
+        if ($this->repository === null) {
+            $this->repository = new PasskeyCredentialRepository();
+        }
+
+        return $this->repository;
     }
 
     private function service(): PasskeyService
     {
-        return $this->service ?? new PasskeyService($this->repository());
+        // Lazily create the concrete service on-demand for production calls.
+        if ($this->service === null) {
+            $this->service = new PasskeyService($this->repository());
+        }
+
+        return $this->service;
     }
 }
