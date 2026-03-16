@@ -52,18 +52,34 @@ class TwoFactorAuthPasskey
     }
 
     /**
-     * Test seam: override the passkey service without constructor injection.
+     * Test-only seam to override the passkey service without constructor injection.
+     *
+     * This is intentionally public so async handler tests can inject stubs.
+     * It is not part of the runtime API surface and should not be used by
+     * production call sites.
      */
-    protected function setService(PasskeyService $service): void
+    public function setService(PasskeyService $service): void
     {
+        // Jaxon only invokes explicitly registered handler methods
+        // (beginRegistration, finishRegistration, beginAuthentication,
+        // verifyAuthentication), so widening this setter does not create an
+        // additional remote-call surface.
         $this->service = $service;
     }
 
     /**
-     * Test seam: override the passkey repository without constructor injection.
+     * Test-only seam to override the passkey repository without constructor injection.
+     *
+     * This is intentionally public so async handler tests can inject stubs.
+     * It is not part of the runtime API surface and should not be used by
+     * production call sites.
      */
-    protected function setRepository(PasskeyCredentialRepository $repository): void
+    public function setRepository(PasskeyCredentialRepository $repository): void
     {
+        // Jaxon only invokes explicitly registered handler methods
+        // (beginRegistration, finishRegistration, beginAuthentication,
+        // verifyAuthentication), so widening this setter does not create an
+        // additional remote-call surface.
         $this->repository = $repository;
     }
 
