@@ -444,12 +444,20 @@ class TwoFactorAuthPasskey
     {
         // Keep dependency creation local so default construction remains DI-free
         // for Jaxon callable resolution.
-        return $this->repository ?? new PasskeyCredentialRepository();
+        if ($this->repository === null) {
+            $this->repository = new PasskeyCredentialRepository();
+        }
+
+        return $this->repository;
     }
 
     private function service(): PasskeyService
     {
         // Lazily create the concrete service on-demand for production calls.
-        return $this->service ?? new PasskeyService($this->repository());
+        if ($this->service === null) {
+            $this->service = new PasskeyService($this->repository());
+        }
+
+        return $this->service;
     }
 }
