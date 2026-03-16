@@ -250,7 +250,6 @@ class TwoFactorAuthService
             // Redirecting these requests to the challenge page returns HTML instead of JSON,
             // which breaks the browser-side parser for passkey/challenge async flows.
             'async/process.php',
-            '/async/process.php',
             'runmodule.php?module=twofactorauth&op=begin_passkey_auth',
             'runmodule.php?module=twofactorauth&op=verify_passkey',
             'runmodule.php?module=twofactorauth&op=disable_email',
