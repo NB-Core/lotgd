@@ -29,10 +29,41 @@ class TwoFactorAuthPasskey
      */
     private const CALLBACK_FUNCTION = 'window.twofactorauthHandleJaxonResponse';
 
-    public function __construct(
-        private readonly ?PasskeyService $service = null,
-        private readonly ?PasskeyCredentialRepository $repository = null
-    ) {
+    /**
+     * Optional service override used by tests and explicit bootstrap code.
+     */
+    private ?PasskeyService $service = null;
+
+    /**
+     * Optional repository override used by tests and explicit bootstrap code.
+     */
+    private ?PasskeyCredentialRepository $repository = null;
+
+    /**
+     * Jaxon callable classes must expose a parameterless constructor.
+     *
+     * Jaxon tries to resolve constructor arguments from its DI container when
+     * invoking callables. This handler intentionally avoids constructor DI so
+     * async/process.php can instantiate it reliably in production.
+     */
+    public function __construct()
+    {
+    }
+
+    /**
+     * Test seam: override the passkey service without constructor injection.
+     */
+    public function setService(PasskeyService $service): void
+    {
+        $this->service = $service;
+    }
+
+    /**
+     * Test seam: override the passkey repository without constructor injection.
+     */
+    public function setRepository(PasskeyCredentialRepository $repository): void
+    {
+        $this->repository = $repository;
     }
 
     /**
@@ -410,11 +441,14 @@ class TwoFactorAuthPasskey
 
     private function repository(): PasskeyCredentialRepository
     {
+        // Keep dependency creation local so default construction remains DI-free
+        // for Jaxon callable resolution.
         return $this->repository ?? new PasskeyCredentialRepository();
     }
 
     private function service(): PasskeyService
     {
+        // Lazily create the concrete service on-demand for production calls.
         return $this->service ?? new PasskeyService($this->repository());
     }
 }

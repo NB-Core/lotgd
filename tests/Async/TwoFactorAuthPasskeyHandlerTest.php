@@ -104,13 +104,30 @@ namespace Lotgd\Tests\Async {
             $service = $this->createMock(PasskeyService::class);
             $service->method('beginRegistration')->willReturn(['publicKey' => ['challenge' => 'abc']]);
 
-            $handler = new TwoFactorAuthPasskey($service, $repo);
+            $handler = new TwoFactorAuthPasskey();
+            $handler->setService($service);
+            $handler->setRepository($repo);
             $response = $handler->beginRegistration('req-1', 'csrf-test-token', 'My device');
 
             $payload = $this->extractCallbackPayload($response->getCommands());
             self::assertSame('req-1', $payload['requestId']);
             self::assertTrue($payload['data']['ok']);
             self::assertSame('abc', $payload['data']['options']['publicKey']['challenge']);
+        }
+
+
+        public function testBeginRegistrationWorksWithNoConstructorArgumentsInProductionPath(): void
+        {
+            $handler = new TwoFactorAuthPasskey();
+
+            $response = $handler->beginRegistration('req-default-ctor', 'csrf-test-token', 'Laptop');
+            $payload = $this->extractCallbackPayload($response->getCommands());
+
+            self::assertSame('req-default-ctor', $payload['requestId']);
+            self::assertTrue($payload['data']['ok']);
+            self::assertArrayHasKey('options', $payload['data']);
+            self::assertArrayHasKey('publicKey', $payload['data']['options']);
+            self::assertArrayHasKey('challenge', $payload['data']['options']['publicKey']);
         }
 
         public function testBeginRegistrationRepositoryExceptionReturnsStructuredErrorPayload(): void
@@ -122,7 +139,9 @@ namespace Lotgd\Tests\Async {
             $service = $this->createMock(PasskeyService::class);
             $service->expects(self::never())->method('beginRegistration');
 
-            $handler = new TwoFactorAuthPasskey($service, $repo);
+            $handler = new TwoFactorAuthPasskey();
+            $handler->setService($service);
+            $handler->setRepository($repo);
             $response = $handler->beginRegistration('req-repo-fail', 'csrf-test-token', 'My device');
 
             $payload = $this->extractCallbackPayload($response->getCommands());
@@ -138,7 +157,9 @@ namespace Lotgd\Tests\Async {
             $repo->method('hasCredentialTable')->willReturn(true);
             $repo->method('listForAccount')->willThrowException(new \RuntimeException('db unavailable'));
 
-            $handler = new TwoFactorAuthPasskey($this->createMock(PasskeyService::class), $repo);
+            $handler = new TwoFactorAuthPasskey();
+            $handler->setService($this->createMock(PasskeyService::class));
+            $handler->setRepository($repo);
             $response = $handler->beginRegistration('req-timeout-guard', 'csrf-test-token', 'Label');
 
             $commands = $response->getCommands();
@@ -155,7 +176,9 @@ namespace Lotgd\Tests\Async {
             $repo = $this->createMock(PasskeyCredentialRepository::class);
             $repo->method('hasCredentialTable')->willReturn(false);
 
-            $handler = new TwoFactorAuthPasskey($this->createMock(PasskeyService::class), $repo);
+            $handler = new TwoFactorAuthPasskey();
+            $handler->setService($this->createMock(PasskeyService::class));
+            $handler->setRepository($repo);
 
             $GLOBALS['session']['user']['superuser'] = 0;
             $payload = $this->extractCallbackPayload(
@@ -172,7 +195,9 @@ namespace Lotgd\Tests\Async {
             $repo = $this->createMock(PasskeyCredentialRepository::class);
             $repo->method('hasCredentialTable')->willReturn(false);
 
-            $handler = new TwoFactorAuthPasskey($this->createMock(PasskeyService::class), $repo);
+            $handler = new TwoFactorAuthPasskey();
+            $handler->setService($this->createMock(PasskeyService::class));
+            $handler->setRepository($repo);
 
             $GLOBALS['session']['user']['superuser'] = 1;
             $payload = $this->extractCallbackPayload(
@@ -186,10 +211,7 @@ namespace Lotgd\Tests\Async {
 
         public function testBeginRegistrationRejectsInvalidCsrf(): void
         {
-            $handler = new TwoFactorAuthPasskey(
-                $this->createMock(PasskeyService::class),
-                $this->createMock(PasskeyCredentialRepository::class)
-            );
+            $handler = new TwoFactorAuthPasskey();
 
             $response = $handler->beginRegistration('req-csrf', 'wrong-token', 'Label');
             $payload = $this->extractCallbackPayload($response->getCommands());
@@ -203,7 +225,8 @@ namespace Lotgd\Tests\Async {
             $service = $this->createMock(PasskeyService::class);
             $service->method('finishAuthentication')->willReturn(['ok' => false, 'error' => 'verify_failed', 'clone' => false]);
 
-            $handler = new TwoFactorAuthPasskey($service, $this->createMock(PasskeyCredentialRepository::class));
+            $handler = new TwoFactorAuthPasskey();
+            $handler->setService($service);
             $response = $handler->verifyAuthentication('req-verify', 'csrf-test-token', ['id' => 'cred', 'response' => []]);
             $payload = $this->extractCallbackPayload($response->getCommands());
 
@@ -216,10 +239,7 @@ namespace Lotgd\Tests\Async {
         {
             $GLOBALS['twofactorauth_module_prefs'][42]['pending_challenge'] = 0;
 
-            $handler = new TwoFactorAuthPasskey(
-                $this->createMock(PasskeyService::class),
-                $this->createMock(PasskeyCredentialRepository::class)
-            );
+            $handler = new TwoFactorAuthPasskey();
 
             $response = $handler->beginAuthentication('req-pending', 'csrf-test-token');
             $payload = $this->extractCallbackPayload($response->getCommands());
