@@ -41,10 +41,11 @@ class TwoFactorAuthPasskey
     public function beginRegistration(string $requestId, string $csrfToken, string $label = ''): Response
     {
         $acctId = $this->accountId();
-        $this->logCheckpoint('beginRegistration', 'entry', $acctId);
         if ($acctId < 1) {
             return $this->respond($requestId, $this->errorPayload('unauthorized'));
         }
+
+        $this->logCheckpoint('beginRegistration', 'entry', $acctId);
 
         if (!$this->isCsrfValid($csrfToken)) {
             $this->logCheckpoint('beginRegistration', 'csrf_fail', $acctId);
