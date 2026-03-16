@@ -57,6 +57,66 @@ function lotgd_async_is_megauser(): bool
     return \defined('SU_MEGAUSER') && ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER;
 }
 
+
+/**
+ * Normalize async identifier tokens (class/method) to avoid log forging and
+ * confusing diagnostics when these values are logged or echoed.
+ *
+ * Strips ASCII control characters (including newlines) and trims whitespace,
+ * but otherwise leaves printable characters untouched.
+ */
+function lotgd_async_sanitize_token(string $value): string
+{
+    // Remove ASCII control characters: 0x00-0x1F and 0x7F.
+    $sanitized = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
+    if ($sanitized === null) {
+        $sanitized = '';
+    }
+
+    return trim($sanitized);
+}
+
+/**
+ * Build best-effort async callable context from incoming request payload.
+ *
+ * Different Jaxon versions can use different keys for class/method metadata. We capture
+ * whichever keys are present so diagnostic IDs can be correlated with handler targets.
+ *
+ * @return array{class:string,method:string}
+ */
+function lotgd_async_request_context(): array
+{
+    $class = '';
+    $method = '';
+
+    foreach (['jxncls', 'jxnpkg', 'class', 'callable'] as $classKey) {
+        $value = $_POST[$classKey] ?? $_GET[$classKey] ?? null;
+        if (is_string($value)) {
+            $sanitized = lotgd_async_sanitize_token($value);
+            if ($sanitized !== '') {
+                $class = $sanitized;
+                break;
+            }
+        }
+    }
+
+    foreach (['jxnmthd', 'method', 'func', 'function'] as $methodKey) {
+        $value = $_POST[$methodKey] ?? $_GET[$methodKey] ?? null;
+        if (is_string($value)) {
+            $sanitized = lotgd_async_sanitize_token($value);
+            if ($sanitized !== '') {
+                $method = $sanitized;
+                break;
+            }
+        }
+    }
+
+    return [
+        'class' => $class,
+        'method' => $method,
+    ];
+}
+
 // Simple rate limiting for Jaxon requests.  If an Ajax request arrives less
 // than the configured threshold after the previous one, we respond with HTTP 429 and skip
 // executing the handler.  The timestamp is only updated when the request is
@@ -85,9 +145,13 @@ if ($jaxon->canProcessRequest()) {
             // Fall back to a non-cryptographic identifier if entropy is unavailable.
             $diagnosticId = uniqid('diag_', true);
         }
+
+        $requestContext = lotgd_async_request_context();
         error_log(sprintf(
-            "Jaxon processing exception [diag=%s]: class=%s message=%s file=%s line=%d trace=%s",
+            'Jaxon processing exception [diag=%s handler=%s::%s]: class=%s message=%s file=%s line=%d trace=%s',
             $diagnosticId,
+            $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
+            $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown',
             $e::class,
             $e->getMessage(),
             $e->getFile(),
@@ -104,6 +168,8 @@ if ($jaxon->canProcessRequest()) {
         if (lotgd_async_is_megauser()) {
             $payload['diagnostic_id'] = $diagnosticId;
             $payload['diagnostic'] = [
+                'handler_class' => $requestContext['class'],
+                'handler_method' => $requestContext['method'],
                 'type' => $e::class,
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),

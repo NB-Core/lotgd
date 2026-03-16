@@ -87,7 +87,13 @@ namespace Lotgd\Tests\Security {
 
             self::assertTrue($session['twofactorauth_pending']);
             self::assertSame('forest.php?op=fight', $session['twofactorauth_resume_restorepage']);
-            self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $session['twofactorauth_resume_allowednavs']);
+            self::assertSame([
+                'forest.php?op=fight' => true,
+                'village.php' => true,
+                'runmodule.php?module=twofactorauth&op=challenge' => true,
+                'runmodule.php?module=twofactorauth&op=resume' => true,
+                'runmodule.php?module=twofactorauth&op=setup' => true,
+            ], $session['twofactorauth_resume_allowednavs']);
             self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['resume_restorepage']);
 
             twofactorauth_dohook('everyhit', []);
@@ -99,7 +105,13 @@ namespace Lotgd\Tests\Security {
             self::assertArrayNotHasKey('twofactorauth_resume_allowednavs', $session);
 
             $persistedNavs = json_decode((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'], true);
-            self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $persistedNavs);
+            self::assertSame([
+                'forest.php?op=fight' => true,
+                'village.php' => true,
+                'runmodule.php?module=twofactorauth&op=challenge' => true,
+                'runmodule.php?module=twofactorauth&op=resume' => true,
+                'runmodule.php?module=twofactorauth&op=setup' => true,
+            ], $persistedNavs);
         }
 
 
@@ -117,14 +129,26 @@ namespace Lotgd\Tests\Security {
             twofactorauth_dohook('player-login', []);
 
             self::assertSame(
-                ['forest.php?op=fight' => true, 'village.php' => true],
+                [
+                    'forest.php?op=fight' => true,
+                    'village.php' => true,
+                    'runmodule.php?module=twofactorauth&op=challenge' => true,
+                    'runmodule.php?module=twofactorauth&op=resume' => true,
+                    'runmodule.php?module=twofactorauth&op=setup' => true,
+                ],
                 $session['twofactorauth_resume_allowednavs']
             );
 
             twofactorauth_dohook('everyhit', []);
 
             $persistedNavs = json_decode((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'], true);
-            self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $persistedNavs);
+            self::assertSame([
+                'forest.php?op=fight' => true,
+                'village.php' => true,
+                'runmodule.php?module=twofactorauth&op=challenge' => true,
+                'runmodule.php?module=twofactorauth&op=resume' => true,
+                'runmodule.php?module=twofactorauth&op=setup' => true,
+            ], $persistedNavs);
 
             $resolvedTarget = twofactorauth_resolve_resume_target(
                 (string) $GLOBALS['twofactorauth_test_prefs']['resume_restorepage'],
@@ -132,6 +156,33 @@ namespace Lotgd\Tests\Security {
             );
 
             self::assertSame('forest.php?op=fight', $resolvedTarget);
+        }
+
+
+
+        public function testPasskeyTransitionNavTargetsAreRegisteredInSnapshotHelper(): void
+        {
+            $snapshot = twofactorauth_ensure_nav_snapshot_has_passkey_transitions(['forest.php?op=fight' => true]);
+
+            self::assertTrue((bool) ($snapshot['runmodule.php?module=twofactorauth&op=challenge'] ?? false));
+            self::assertTrue((bool) ($snapshot['runmodule.php?module=twofactorauth&op=resume'] ?? false));
+            self::assertTrue((bool) ($snapshot['runmodule.php?module=twofactorauth&op=setup'] ?? false));
+        }
+
+        public function testPersistedResumeSnapshotKeepsPasskeyTransitionTargetsAllowed(): void
+        {
+            global $session;
+
+            $session['allowednavs'] = ['forest.php?op=fight' => true];
+
+            twofactorauth_dohook('player-login', []);
+            twofactorauth_dohook('everyhit', []);
+
+            $persistedNavs = json_decode((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'], true);
+            self::assertIsArray($persistedNavs);
+            self::assertTrue((bool) ($persistedNavs['runmodule.php?module=twofactorauth&op=challenge'] ?? false));
+            self::assertTrue((bool) ($persistedNavs['runmodule.php?module=twofactorauth&op=resume'] ?? false));
+            self::assertTrue((bool) ($persistedNavs['runmodule.php?module=twofactorauth&op=setup'] ?? false));
         }
 
         public function testVerifySuccessAddsResumeNavigation(): void

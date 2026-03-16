@@ -245,6 +245,27 @@ namespace Lotgd\Tests\Async {
             self::assertSame(1, (int) ($GLOBALS['twofactorauth_module_prefs'][42]['failed_attempts'] ?? 0));
         }
 
+
+        public function testBeginAuthenticationRepositoryExceptionReturnsCallbackPayload(): void
+        {
+            $repo = $this->createMock(PasskeyCredentialRepository::class);
+            $repo->method('listForAccount')->willThrowException(new \RuntimeException('repository unavailable'));
+
+            $service = $this->createMock(PasskeyService::class);
+            $service->expects(self::never())->method('beginAuthentication');
+
+            $handler = new TwoFactorAuthPasskey();
+            $handler->setRepository($repo);
+            $handler->setService($service);
+
+            $response = $handler->beginAuthentication('req-auth-exception', 'csrf-test-token');
+            $payload = $this->extractCallbackPayload($response->getCommands());
+
+            self::assertSame('req-auth-exception', $payload['requestId']);
+            self::assertFalse($payload['data']['ok']);
+            self::assertSame('begin_auth_exception', $payload['data']['error']);
+        }
+
         public function testBeginAuthenticationWithoutPendingChallengeIsRejected(): void
         {
             $GLOBALS['twofactorauth_module_prefs'][42]['pending_challenge'] = 0;

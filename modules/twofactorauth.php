@@ -222,6 +222,7 @@ function twofactorauth_run(): void
     // Forced navigation checks compare the incoming URI against allowednavs and can reroute
     // requests before handlers run when async endpoints are not whitelisted.
     twofactorauth_allow_setup_async_nav_routes();
+    twofactorauth_register_passkey_transition_nav_targets();
 
     if ($op === 'setup') {
         $setupOp = (string) Http::get('setupop');
@@ -802,13 +803,13 @@ function twofactorauth_collect_resume_allowednavs_snapshot(): array
 
     $sessionAllowed = twofactorauth_snapshot_allowednavs($session['allowednavs'] ?? []);
     if ($sessionAllowed !== []) {
-        return $sessionAllowed;
+        return twofactorauth_ensure_nav_snapshot_has_passkey_transitions($sessionAllowed);
     }
 
     $serializedAccountAllowed = $session['user']['allowednavs'] ?? '';
     $decodedAccountAllowed = Serialization::safeUnserialize($serializedAccountAllowed);
 
-    return twofactorauth_snapshot_allowednavs($decodedAccountAllowed);
+    return twofactorauth_ensure_nav_snapshot_has_passkey_transitions(twofactorauth_snapshot_allowednavs($decodedAccountAllowed));
 }
 
 /**
@@ -819,7 +820,9 @@ function twofactorauth_persist_staged_resume_snapshot(): void
     global $session;
 
     $restorepage = (string) ($session['twofactorauth_resume_restorepage'] ?? '');
-    $allowedNavs = twofactorauth_snapshot_allowednavs($session['twofactorauth_resume_allowednavs'] ?? []);
+    $allowedNavs = twofactorauth_ensure_nav_snapshot_has_passkey_transitions(
+        twofactorauth_snapshot_allowednavs($session['twofactorauth_resume_allowednavs'] ?? [])
+    );
 
     set_module_pref('resume_restorepage', $restorepage);
     set_module_pref('resume_allowednavs_json', json_encode($allowedNavs, JSON_UNESCAPED_SLASHES) ?: '[]');
@@ -965,7 +968,11 @@ function twofactorauth_render_passkey_js_helpers(): void
  */
 function twofactorauth_render_passkey_jaxon_bridge(): void
 {
-    rawoutput("<script>(function(){window.twofactorauthPendingRequests=window.twofactorauthPendingRequests||{};window.twofactorauthHandleJaxonResponse=window.twofactorauthHandleJaxonResponse||function(requestId,payload){if(!requestId){return;}const entry=window.twofactorauthPendingRequests[requestId];if(!entry){return;}if(entry.timeoutId){window.clearTimeout(entry.timeoutId);}delete window.twofactorauthPendingRequests[requestId];entry.resolve(payload||{ok:false,error:'empty_response'});};window.twofactorauthJaxonPasskeyCall=window.twofactorauthJaxonPasskeyCall||function(method,args){return new Promise(function(resolve,reject){const resolvedHandlers=typeof window.getJaxonHandlers==='function'?window.getJaxonHandlers():null;const namespace=resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey?resolvedHandlers.TwoFactorAuthPasskey:(window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler&&window.Lotgd.Async.Handler.TwoFactorAuthPasskey?window.Lotgd.Async.Handler.TwoFactorAuthPasskey:(window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler&&window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey?window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey:null));if(!namespace||typeof namespace[method]!=='function'){reject(new Error('Passkey async handler unavailable.'));return;}const requestId='tfa_'+Date.now()+'_'+Math.random().toString(16).slice(2);const timeoutId=window.setTimeout(function(){const timeoutEntry=window.twofactorauthPendingRequests[requestId];if(!timeoutEntry){return;}delete window.twofactorauthPendingRequests[requestId];timeoutEntry.reject(new Error('Passkey async request timed out.'));},20000);window.twofactorauthPendingRequests[requestId]={resolve:resolve,reject:reject,timeoutId:timeoutId};try{namespace[method].apply(namespace,[requestId].concat(args||[]));}catch(error){window.clearTimeout(timeoutId);delete window.twofactorauthPendingRequests[requestId];reject(error);}});};})();</script>");
+    rawoutput(
+        <<<'JAVASCRIPT'
+<script>(function(){window.twofactorauthPendingRequests=window.twofactorauthPendingRequests||{};const rejectPending=function(requestId,message){if(!requestId){return;}const entry=window.twofactorauthPendingRequests[requestId];if(!entry){return;}if(entry.timeoutId){window.clearTimeout(entry.timeoutId);}delete window.twofactorauthPendingRequests[requestId];entry.reject(new Error(message));};window.twofactorauthRejectAllPending=window.twofactorauthRejectAllPending||function(message){const ids=Object.keys(window.twofactorauthPendingRequests||{});for(let i=0;i<ids.length;i++){rejectPending(ids[i],message);}return ids.length;};window.twofactorauthHandleJaxonResponse=window.twofactorauthHandleJaxonResponse||function(requestId,payload){if(!requestId){return;}const entry=window.twofactorauthPendingRequests[requestId];if(!entry){return;}if(entry.timeoutId){window.clearTimeout(entry.timeoutId);}delete window.twofactorauthPendingRequests[requestId];entry.resolve(payload||{ok:false,error:'empty_response'});};window.twofactorauthJaxonPasskeyCall=window.twofactorauthJaxonPasskeyCall||function(method,args){return new Promise(function(resolve,reject){const resolvedHandlers=typeof window.getJaxonHandlers==='function'?window.getJaxonHandlers():null;const namespace=resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey?resolvedHandlers.TwoFactorAuthPasskey:(window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler&&window.Lotgd.Async.Handler.TwoFactorAuthPasskey?window.Lotgd.Async.Handler.TwoFactorAuthPasskey:(window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler&&window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey?window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey:null));if(!namespace||typeof namespace[method]!=='function'){reject(new Error('Passkey async handler unavailable.'));return;}const requestId='tfa_'+Date.now()+'_'+Math.random().toString(16).slice(2);const timeoutId=window.setTimeout(function(){rejectPending(requestId,'Passkey async request timed out.');},20000);window.twofactorauthPendingRequests[requestId]={resolve:resolve,reject:reject,timeoutId:timeoutId};try{const maybePromise=namespace[method].apply(namespace,[requestId].concat(args||[]));if(maybePromise&&typeof maybePromise.catch==='function'){maybePromise.catch(function(error){const detail=error&&error.message?String(error.message):'Passkey async transport failure.';rejectPending(requestId,detail);});}}catch(error){window.clearTimeout(timeoutId);delete window.twofactorauthPendingRequests[requestId];reject(error);}});};if(!window.__lotgdTwofactorauthJaxonErrorBridge){window.__lotgdTwofactorauthJaxonErrorBridge=true;window.addEventListener('unhandledrejection',function(event){const reason=event&&event.reason?String(event.reason):'';if(reason.indexOf('Unexpected end of JSON input')!==-1||reason.indexOf('JSON')!==-1){window.twofactorauthRejectAllPending('Passkey async parser failure: '+reason);}});window.addEventListener('error',function(event){const message=event&&event.message?String(event.message):'';if(message.indexOf('Unexpected end of JSON input')!==-1){window.twofactorauthRejectAllPending('Passkey async parser failure: '+message);}});}})();</script>
+JAVASCRIPT
+    );
 }
 
 /**
@@ -1093,6 +1100,56 @@ function twofactorauth_allow_setup_async_nav_routes(): void
     }
 
     addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=' . $setupOp);
+}
+
+/**
+ * Return passkey lifecycle routes that must remain in allowed-nav snapshots.
+ *
+ * Async passkey success paths redirect the browser back to runmodule URLs. If these
+ * routes are missing from the forced-nav allowlist snapshot, the player can be sent to
+ * badnav.php after a successful ceremony.
+ *
+ * @return array<int, string>
+ */
+function twofactorauth_passkey_transition_nav_targets(): array
+{
+    return [
+        'runmodule.php?module=twofactorauth&op=challenge',
+        'runmodule.php?module=twofactorauth&op=resume',
+        'runmodule.php?module=twofactorauth&op=setup',
+    ];
+}
+
+/**
+ * Register passkey transition routes in the active request allowlist.
+ *
+ * These addnav() entries protect challenge/setup/resume redirects triggered by
+ * passkey success/failure handlers and by browser-side async completion callbacks.
+ */
+function twofactorauth_register_passkey_transition_nav_targets(): void
+{
+    foreach (twofactorauth_passkey_transition_nav_targets() as $target) {
+        addnav('', $target);
+    }
+}
+
+/**
+ * Ensure stored allowed-nav snapshots retain passkey transition URLs.
+ *
+ * Persisting these entries prevents forced-nav mismatches when async completion lands on
+ * op=resume or op=setup after the challenge lifecycle has already persisted its snapshot.
+ *
+ * @param array<string, bool> $allowedNavs
+ *
+ * @return array<string, bool>
+ */
+function twofactorauth_ensure_nav_snapshot_has_passkey_transitions(array $allowedNavs): array
+{
+    foreach (twofactorauth_passkey_transition_nav_targets() as $target) {
+        $allowedNavs[$target] = true;
+    }
+
+    return $allowedNavs;
 }
 
 /**
