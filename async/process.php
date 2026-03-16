@@ -40,7 +40,19 @@ function lotgd_async_emit_error_payload(int $statusCode, array $payload): void
  */
 function lotgd_async_is_megauser(): bool
 {
-    $superuserFlags = (int) ($_SESSION['user']['superuser'] ?? 0);
+    global $session;
+
+    $superuserFlags = 0;
+
+    if (isset($session['user']['superuser'])) {
+        $superuserFlags = (int) $session['user']['superuser'];
+    } elseif (isset($_SESSION['session']['user']['superuser'])) {
+        // Fallback to game session stored under $_SESSION['session']
+        $superuserFlags = (int) $_SESSION['session']['user']['superuser'];
+    } elseif (isset($_SESSION['user']['superuser'])) {
+        // Legacy/alternate storage fallback
+        $superuserFlags = (int) $_SESSION['user']['superuser'];
+    }
 
     return \defined('SU_MEGAUSER') && ($superuserFlags & SU_MEGAUSER) === SU_MEGAUSER;
 }
