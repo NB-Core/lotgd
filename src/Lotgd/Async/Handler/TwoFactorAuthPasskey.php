@@ -29,6 +29,7 @@ class TwoFactorAuthPasskey
      */
     private const CALLBACK_FUNCTION = 'window.twofactorauthHandleJaxonResponse';
 
+
     /**
      * Optional service override used by tests and explicit bootstrap code.
      */
@@ -205,10 +206,10 @@ class TwoFactorAuthPasskey
             return $this->respond($requestId, $this->errorPayload('csrf'));
         }
 
-        $existing = $this->repository()->listForAccount($acctId);
-        $credentialIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
-
         try {
+            $existing = $this->repository()->listForAccount($acctId);
+            $credentialIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
+
             $options = $this->service()->beginAuthentication($acctId, $credentialIds);
 
             return $this->respond($requestId, ['ok' => true, 'options' => $options]);
@@ -291,6 +292,12 @@ class TwoFactorAuthPasskey
     }
 
     /**
+     * Build the canonical callback envelope consumed by the browser promise bridge.
+     *
+     * Jaxon clients parse command arrays, not raw handler return values. Returning this
+     * callback payload on every branch prevents empty/non-Jaxon responses that surface as
+     * `Unexpected end of JSON input` parser failures in the browser.
+     *
      * @param array<string, mixed> $payload
      */
     private function respond(string $requestId, array $payload): Response
