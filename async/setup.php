@@ -31,6 +31,10 @@ $pre_headscript = ($pre_headscript ?? '')
     . $s_js;
 
 // Load Jaxon's generated client code first, then apply LotGD integration hooks.
+//
+// IMPORTANT: Passkey async flows must keep Jaxon transport pinned to /async/process.php.
+// Using runmodule.php transport can trigger forced-nav HTML responses, which violates the
+// Jaxon JSON response contract and surfaces as parser errors/timeouts in passkey handlers.
 $pre_headscript .= $s_script
     . "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
     // The generated Jaxon script can rewrite requestURI based on the current page URL.
