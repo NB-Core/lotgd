@@ -76,6 +76,7 @@ namespace Lotgd\Tests\Security {
             $_GET = [];
             $_POST = [];
             $_SERVER['REQUEST_URI'] = 'runmodule.php?module=twofactorauth&op=challenge';
+            $_SERVER['REQUEST_METHOD'] = 'POST';
         }
 
         public function testLoginStagesSessionSnapshotAndEveryhitPersistsIt(): void
@@ -136,11 +137,14 @@ namespace Lotgd\Tests\Security {
         public function testVerifySuccessAddsResumeNavigation(): void
         {
             $secret = \TwoFactorAuthService::generateSecret();
-            $token = \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, time());
 
             $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
-            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret($secret, twofactorauth_signing_key());
+            // Store a deterministic plain-encoded secret in tests so this flow assertion
+            // does not depend on OpenSSL availability/behavior in the CI runtime.
+            $storedSecret = $this->encodePlainStoredSecret($secret);
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $storedSecret;
             $GLOBALS['twofactorauth_test_prefs']['last_used_timestep'] = 0;
+            $token = $this->currentTokenForStoredSecret($storedSecret);
             $_POST['token'] = $token;
 
             twofactorauth_handle_challenge_verification(Output::getInstance());
@@ -164,13 +168,13 @@ namespace Lotgd\Tests\Security {
 
         public function testVerifyFailureKeepsChallengePendingForRetry(): void
         {
+            $secret = \TwoFactorAuthService::generateSecret();
             $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
-            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret(
-                \TwoFactorAuthService::generateSecret(),
-                twofactorauth_signing_key()
-            );
+            // Use plain storage format for deterministic secret decryption in unit tests.
+            $storedSecret = $this->encodePlainStoredSecret($secret);
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $storedSecret;
             $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 0;
-            $_POST['token'] = '000000';
+            $_POST['token'] = $this->differentTokenForStoredSecret($storedSecret);
 
             twofactorauth_handle_challenge_verification(Output::getInstance());
 
@@ -183,13 +187,13 @@ namespace Lotgd\Tests\Security {
 
         public function testVerifyLockoutStillAppliesAfterThreshold(): void
         {
+            $secret = \TwoFactorAuthService::generateSecret();
             $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
-            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret(
-                \TwoFactorAuthService::generateSecret(),
-                twofactorauth_signing_key()
-            );
+            // Use plain storage format for deterministic secret decryption in unit tests.
+            $storedSecret = $this->encodePlainStoredSecret($secret);
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $storedSecret;
             $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 4;
-            $_POST['token'] = '000000';
+            $_POST['token'] = $this->differentTokenForStoredSecret($storedSecret);
 
             twofactorauth_handle_challenge_verification(Output::getInstance());
 
@@ -255,6 +259,39 @@ namespace Lotgd\Tests\Security {
             if ($expectedField !== null) {
                 self::assertLessThanOrEqual(20, strlen($expectedField));
             }
+        }
+
+        /**
+         * Encode a TOTP secret using the legacy plain-at-rest format.
+         *
+         * Tests that exercise challenge-control flow should not depend on OpenSSL internals.
+         */
+        private function encodePlainStoredSecret(string $secret): string
+        {
+            $encoded = rtrim(strtr(base64_encode($secret), '+/', '-_'), '=');
+
+            return 'plain:' . $encoded;
+        }
+
+        /**
+         * Build a token that should currently validate for a given at-rest secret string.
+         */
+        private function currentTokenForStoredSecret(string $storedSecret): string
+        {
+            $secret = \TwoFactorAuthService::decryptSecret($storedSecret, twofactorauth_signing_key());
+
+            return \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, time());
+        }
+
+        /**
+         * Build a token that intentionally differs from the current valid token.
+         */
+        private function differentTokenForStoredSecret(string $storedSecret): string
+        {
+            $current = (int) $this->currentTokenForStoredSecret($storedSecret);
+            $next = ($current + 1) % 1000000;
+
+            return str_pad((string) $next, 6, '0', STR_PAD_LEFT);
         }
     }
 }
