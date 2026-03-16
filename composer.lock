@@ -911,16 +911,16 @@
         },
         {
             "name": "jaxon-php/jaxon-core",
-            "version": "v5.7.1",
+            "version": "v5.7.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jaxon-php/jaxon-core.git",
-                "reference": "53103780328355b3c0e7bb70004aaa46cb593065"
+                "reference": "f13ae2629c8fa22c7689761a62e389c76727abba"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/53103780328355b3c0e7bb70004aaa46cb593065",
-                "reference": "53103780328355b3c0e7bb70004aaa46cb593065",
+                "url": "https://api.github.com/repos/jaxon-php/jaxon-core/zipball/f13ae2629c8fa22c7689761a62e389c76727abba",
+                "reference": "f13ae2629c8fa22c7689761a62e389c76727abba",
                 "shasum": ""
             },
             "require": {
@@ -991,7 +991,7 @@
                 "issues": "https://github.com/jaxon-php/jaxon-core/issues",
                 "source": "https://github.com/jaxon-php/jaxon-core"
             },
-            "time": "2026-02-18T00:31:19+00:00"
+            "time": "2026-03-13T03:01:12+00:00"
         },
         {
             "name": "jaxon-php/jaxon-storage",
@@ -5296,13 +5296,13 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
+    "platform": {},
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.3.0"
     },
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.9.0"
 }
