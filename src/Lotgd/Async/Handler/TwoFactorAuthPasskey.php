@@ -27,7 +27,7 @@ class TwoFactorAuthPasskey
     /**
      * Browser callback used to resolve in-flight Jaxon passkey calls.
      */
-    private const CALLBACK_FUNCTION = 'window.twofactorauthHandleJaxonResponse';
+    private const CALLBACK_FUNCTION = 'twofactorauthHandleJaxonResponse';
 
 
     /**
@@ -304,6 +304,10 @@ class TwoFactorAuthPasskey
     private function respond(string $requestId, array $payload): Response
     {
         $response = jaxon()->newResponse();
+
+        // Call the bridge callback by global identifier so Jaxon dispatch does
+        // not rely on dotted path traversal (e.g. `window.fn`) that can differ
+        // across client runtimes.
         $response->call(self::CALLBACK_FUNCTION, $requestId, $payload);
 
         return $response;
