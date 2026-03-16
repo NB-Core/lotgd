@@ -23,6 +23,14 @@ class PasskeyCredentialRepository
     }
 
     /**
+     * Check whether the credential table exists so async handlers can fail gracefully.
+     */
+    public function hasCredentialTable(): bool
+    {
+        return Database::tableExists(Database::prefix(self::TABLE_NAME));
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function listForAccount(int $acctId): array
