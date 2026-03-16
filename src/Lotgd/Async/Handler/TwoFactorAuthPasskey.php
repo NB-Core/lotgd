@@ -54,7 +54,7 @@ class TwoFactorAuthPasskey
     /**
      * Test seam: override the passkey service without constructor injection.
      */
-    public function setService(PasskeyService $service): void
+    protected function setService(PasskeyService $service): void
     {
         $this->service = $service;
     }
@@ -62,7 +62,7 @@ class TwoFactorAuthPasskey
     /**
      * Test seam: override the passkey repository without constructor injection.
      */
-    public function setRepository(PasskeyCredentialRepository $repository): void
+    protected function setRepository(PasskeyCredentialRepository $repository): void
     {
         $this->repository = $repository;
     }
