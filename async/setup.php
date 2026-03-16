@@ -30,10 +30,13 @@ $pre_headscript = ($pre_headscript ?? '')
     . $jaxon->getCss()
     . $s_js;
 
-// CRITICAL: Add our namespace creation BEFORE the PHP-generated script
-// This ensures Lotgd namespace exists when the generated code references it
-$pre_headscript .= "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
-    . $s_script;
+// Load Jaxon's generated client code first, then apply LotGD integration hooks.
+$pre_headscript .= $s_script
+    . "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
+    // The generated Jaxon script can rewrite requestURI based on the current page URL.
+    // Apply a final absolute override *after* all Jaxon scripts to keep async calls pinned
+    // to /async/process.php (and prevent fallback to /async/runmodule.php?... paths).
+    . "<script>if (window.jaxon && jaxon.config) { jaxon.config.requestURI = '/async/process.php'; }</script>";
 
 // Add polling variables directly here
 // Load the async settings
