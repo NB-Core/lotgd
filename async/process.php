@@ -79,7 +79,12 @@ if ($jaxon->canProcessRequest()) {
     try {
         $jaxon->processRequest();
     } catch (\Throwable $e) {
-        $diagnosticId = bin2hex(random_bytes(8));
+        try {
+            $diagnosticId = bin2hex(random_bytes(8));
+        } catch (\Throwable $entropyException) {
+            // Fall back to a non-cryptographic identifier if entropy is unavailable.
+            $diagnosticId = uniqid('diag_', true);
+        }
         error_log(sprintf(
             "Jaxon processing exception [diag=%s]: class=%s message=%s file=%s line=%d trace=%s",
             $diagnosticId,
