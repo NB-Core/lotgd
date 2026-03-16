@@ -118,7 +118,16 @@ namespace Lotgd\Tests\Async {
 
         public function testBeginRegistrationWorksWithNoConstructorArgumentsInProductionPath(): void
         {
+            $repo = $this->createMock(PasskeyCredentialRepository::class);
+            $repo->method('hasCredentialTable')->willReturn(true);
+            $repo->method('listForAccount')->willReturn([]);
+
+            $service = $this->createMock(PasskeyService::class);
+            $service->method('beginRegistration')->willReturn(['publicKey' => ['challenge' => 'prod-path-challenge']]);
+
             $handler = new TwoFactorAuthPasskey();
+            $handler->setService($service);
+            $handler->setRepository($repo);
 
             $response = $handler->beginRegistration('req-default-ctor', 'csrf-test-token', 'Laptop');
             $payload = $this->extractCallbackPayload($response->getCommands());
@@ -128,6 +137,7 @@ namespace Lotgd\Tests\Async {
             self::assertArrayHasKey('options', $payload['data']);
             self::assertArrayHasKey('publicKey', $payload['data']['options']);
             self::assertArrayHasKey('challenge', $payload['data']['options']['publicKey']);
+            self::assertSame('prod-path-challenge', $payload['data']['options']['publicKey']['challenge']);
         }
 
         public function testBeginRegistrationRepositoryExceptionReturnsStructuredErrorPayload(): void
