@@ -45,9 +45,15 @@ class TwoFactorAuthPasskey
             return $this->respond($requestId, $this->errorPayload('unauthorized'));
         }
 
+        $this->logCheckpoint('beginRegistration', 'entry', $acctId);
+
         if (!$this->isCsrfValid($csrfToken)) {
+            $this->logCheckpoint('beginRegistration', 'csrf_fail', $acctId);
+
             return $this->respond($requestId, $this->errorPayload('csrf'));
         }
+
+        $this->logCheckpoint('beginRegistration', 'csrf_ok', $acctId);
 
         $login = trim((string) ($GLOBALS['session']['user']['login'] ?? ''));
         $display = trim((string) ($GLOBALS['session']['user']['name'] ?? $login));
@@ -55,7 +61,9 @@ class TwoFactorAuthPasskey
         $excludeIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
 
         try {
+            $this->logCheckpoint('beginRegistration', 'pre_service', $acctId);
             $options = $this->service()->beginRegistration($acctId, $login, $display, $excludeIds);
+            $this->logCheckpoint('beginRegistration', 'post_service', $acctId);
 
             return $this->respond($requestId, ['ok' => true, 'options' => $options]);
         } catch (\Throwable $error) {
@@ -279,6 +287,22 @@ class TwoFactorAuthPasskey
         }
 
         return $payload;
+    }
+
+
+    /**
+     * Write begin-registration checkpoints so failures can be localized quickly.
+     */
+    private function logCheckpoint(string $method, string $checkpoint, int $acctId): void
+    {
+        DebugLog::add(
+            sprintf('2FA passkey async %s checkpoint=%s acct=%d.', $method, $checkpoint, $acctId),
+            $acctId,
+            $acctId,
+            '2fa_passkey',
+            false,
+            false
+        );
     }
 
     private function clearPendingState(): void
