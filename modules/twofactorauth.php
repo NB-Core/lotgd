@@ -177,9 +177,12 @@ function twofactorauth_dohook(string $hookname, array $args): array
             }
 
             // Normalize to script+query so matching tolerates host/path differences.
+            // Keep async transport requests allowlisted while the challenge is pending:
+            // Jaxon polling/passkey methods expect JSON, and an HTML redirect response
+            // causes the client parser to fail before challenge handlers can run.
             $uriPath = (string) parse_url($requestUri, PHP_URL_PATH);
             $uriQuery = (string) parse_url($requestUri, PHP_URL_QUERY);
-            $normalizedRequestUri = $uriPath . ($uriQuery !== '' ? ('?' . $uriQuery) : '');
+            $normalizedRequestUri = ltrim($uriPath, '/') . ($uriQuery !== '' ? ('?' . $uriQuery) : '');
 
             if (!TwoFactorAuthService::isUriAllowed($normalizedRequestUri, $allowed)) {
                 $challengeUrl = 'runmodule.php?module=twofactorauth&op=challenge';

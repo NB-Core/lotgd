@@ -185,6 +185,22 @@ namespace Lotgd\Tests\Security {
             self::assertTrue((bool) ($persistedNavs['runmodule.php?module=twofactorauth&op=setup'] ?? false));
         }
 
+        /**
+         * Pending challenge must allow async transport calls to continue without redirect.
+         *
+         * Jaxon polling/passkey challenge methods expect JSON payloads from async/process.php;
+         * forcing an HTML challenge redirect here would break the client-side JSON parser.
+         */
+        public function testEveryhitAllowsAsyncTransportWhileChallengeIsPending(): void
+        {
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $_SERVER['REQUEST_URI'] = 'async/process.php';
+
+            twofactorauth_dohook('everyhit', []);
+
+            self::assertSame(1, $GLOBALS['twofactorauth_test_prefs']['pending_challenge']);
+        }
+
         public function testVerifySuccessAddsResumeNavigation(): void
         {
             $secret = \TwoFactorAuthService::generateSecret();

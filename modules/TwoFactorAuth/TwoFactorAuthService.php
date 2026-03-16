@@ -190,17 +190,21 @@ class TwoFactorAuthService
      * Matching is path-aware and query-parameter-aware to tolerate
      * parameter ordering/encoding differences across requests.
      *
+     * Path checks are normalized to tolerate:
+     * - leading-slash variations (`/async/process.php` vs `async/process.php`)
+     * - deployment subdirectory prefixes (`/lotgd/async/process.php`)
+     *
      * @param array<int, string> $allowed
      */
     public static function isUriAllowed(string $requestUri, array $allowed): bool
     {
-        $requestPath = (string) parse_url($requestUri, PHP_URL_PATH);
+        $requestPath = ltrim((string) parse_url($requestUri, PHP_URL_PATH), '/');
         $requestQuery = (string) parse_url($requestUri, PHP_URL_QUERY);
         $requestParams = [];
         parse_str($requestQuery, $requestParams);
 
         foreach ($allowed as $uri) {
-            $allowedPath = (string) parse_url($uri, PHP_URL_PATH);
+            $allowedPath = ltrim((string) parse_url($uri, PHP_URL_PATH), '/');
             if ($allowedPath !== '' && $allowedPath !== $requestPath) {
                 // Accept installations hosted in a subdirectory by matching script basename.
                 $allowedBase = basename($allowedPath);
@@ -242,6 +246,10 @@ class TwoFactorAuthService
         $allowed = [
             'runmodule.php?module=twofactorauth&op=challenge',
             'runmodule.php?module=twofactorauth&op=verify',
+            // During a pending challenge, Jaxon transport must still reach async/process.php.
+            // Redirecting these requests to the challenge page returns HTML instead of JSON,
+            // which breaks the browser-side parser for passkey/challenge async flows.
+            'async/process.php',
             'runmodule.php?module=twofactorauth&op=begin_passkey_auth',
             'runmodule.php?module=twofactorauth&op=verify_passkey',
             'runmodule.php?module=twofactorauth&op=disable_email',
