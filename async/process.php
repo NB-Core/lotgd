@@ -59,6 +59,24 @@ function lotgd_async_is_megauser(): bool
 
 
 /**
+ * Normalize async identifier tokens (class/method) to avoid log forging and
+ * confusing diagnostics when these values are logged or echoed.
+ *
+ * Strips ASCII control characters (including newlines) and trims whitespace,
+ * but otherwise leaves printable characters untouched.
+ */
+function lotgd_async_sanitize_token(string $value): string
+{
+    // Remove ASCII control characters: 0x00-0x1F and 0x7F.
+    $sanitized = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
+    if ($sanitized === null) {
+        $sanitized = '';
+    }
+
+    return trim($sanitized);
+}
+
+/**
  * Build best-effort async callable context from incoming request payload.
  *
  * Different Jaxon versions can use different keys for class/method metadata. We capture
@@ -73,17 +91,23 @@ function lotgd_async_request_context(): array
 
     foreach (['jxncls', 'jxnpkg', 'class', 'callable'] as $classKey) {
         $value = $_POST[$classKey] ?? $_GET[$classKey] ?? null;
-        if (is_string($value) && trim($value) !== '') {
-            $class = trim($value);
-            break;
+        if (is_string($value)) {
+            $sanitized = lotgd_async_sanitize_token($value);
+            if ($sanitized !== '') {
+                $class = $sanitized;
+                break;
+            }
         }
     }
 
     foreach (['jxnmthd', 'method', 'func', 'function'] as $methodKey) {
         $value = $_POST[$methodKey] ?? $_GET[$methodKey] ?? null;
-        if (is_string($value) && trim($value) !== '') {
-            $method = trim($value);
-            break;
+        if (is_string($value)) {
+            $sanitized = lotgd_async_sanitize_token($value);
+            if ($sanitized !== '') {
+                $method = $sanitized;
+                break;
+            }
         }
     }
 
