@@ -18,16 +18,9 @@ require_once __DIR__ . '/common/jaxon.php';
 global $jaxon, $ajax_rate_limit_seconds;
 
 /**
- * Emit a valid JSON/Jaxon-compatible error payload for async failures.
- *
- * Frontend callers expect parseable JSON and may surface hard SyntaxErrors when this endpoint
- * returns plain text or an empty body. Keep this contract stable across all failure branches.
- *
- * @param array<string, mixed> $payload
- */
-
-/**
  * Generate a correlation id for async diagnostics and log stitching.
+ *
+ * @return string Correlation identifier for request/diagnostic stitching.
  */
 function lotgd_async_correlation_id(): string
 {
@@ -38,6 +31,17 @@ function lotgd_async_correlation_id(): string
     }
 }
 
+/**
+ * Emit a valid JSON/Jaxon-compatible error payload for async failures.
+ *
+ * Frontend callers expect parseable JSON and may surface hard SyntaxErrors when this endpoint
+ * returns plain text or an empty body. Keep this contract stable across all failure branches.
+ *
+ * @param int                   $statusCode HTTP status code to send with the response.
+ * @param array<string, mixed>  $payload    Structured error payload to JSON-encode.
+ *
+ * @return void
+ */
 function lotgd_async_emit_error_payload(int $statusCode, array $payload): void
 {
     if (!headers_sent()) {
