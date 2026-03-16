@@ -40,11 +40,12 @@ class TwoFactorAuthPasskey
     private ?PasskeyCredentialRepository $repository = null;
 
     /**
-     * Jaxon callable classes must expose a parameterless constructor.
+     * This handler is instantiated by async/process.php without using Jaxon's DI container.
      *
-     * Jaxon tries to resolve constructor arguments from its DI container when
-     * invoking callables. This handler intentionally avoids constructor DI so
-     * async/process.php can instantiate it reliably in production.
+     * Although Jaxon supports constructor injection when its container is configured,
+     * our async bootstrap does not provide bindings for PasskeyService or
+     * PasskeyCredentialRepository, so we intentionally keep the constructor parameterless
+     * and rely on setter injection for tests and explicit overrides.
      */
     public function __construct()
     {
