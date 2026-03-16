@@ -85,7 +85,16 @@ $checkMailTimeoutSeconds = $timeout->getCheckMailTimeoutSeconds();
 $clearScriptExecutionSeconds = $timeout->getClearScriptExecutionSeconds();
 $start_timeout_show = max(1, $timeout->getStartTimeoutShowSeconds());
 
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+$currentScript = is_string($requestPath) ? basename($requestPath) : '';
+$currentModule = (string) ($_GET['module'] ?? '');
+$currentOperation = (string) ($_GET['op'] ?? '');
+$isTwoFactorChallengeRoute = $currentScript === 'runmodule.php'
+    && $currentModule === 'twofactorauth'
+    && in_array($currentOperation, ['challenge', 'setup'], true);
+
 $polling_script .= "var lotgd_poll_interval_ms = " . ($checkMailTimeoutSeconds * 1000) . ";";
+$polling_script .= "var lotgd_background_polling_enabled = " . ($isTwoFactorChallengeRoute ? 'false' : 'true') . ";";
 
 // Fix timeout calculations to prevent negative values
 $login_timeout = getsetting('LOGINTIMEOUT', 900);
@@ -219,6 +228,10 @@ function pollForUpdates() {
 
 // Start polling system
 function startAjaxPolling() {
+    if (!lotgd_background_polling_enabled) {
+        return;
+    }
+
     var pollingRoot = window.top || window;
     if (pollingRoot.__lotgdPollingInitialized) {
         return;
@@ -241,6 +254,12 @@ function startAjaxPolling() {
 
     pollingRoot.__lotgdPollingBootstrapScheduled = true;
     setTimeout(function() {
+        // 2FA setup/challenge pages intentionally skip the global commentary/mail polling loop
+        // to keep the challenge UX stable and avoid Jaxon parse errors from unrelated background calls.
+        if (!lotgd_background_polling_enabled) {
+            return;
+        }
+
         if (!pollingRoot.__lotgdPollingInitialized
             && typeof lotgd_poll_interval_ms !== 'undefined'
             && lotgd_poll_interval_ms > 0) {
