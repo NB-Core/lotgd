@@ -25,7 +25,15 @@
         return;
     }
 
-    jaxon.config.requestURI = "/async/process.php";
+    const enforceRequestUri = function () {
+        if (!window.jaxon || !jaxon.config) {
+            return;
+        }
+
+        jaxon.config.requestURI = '/async/process.php';
+    };
+
+    enforceRequestUri();
     jaxon.config.statusMessages = false;
     jaxon.config.waitCursor = true;
     jaxon.config.version = "Jaxon 5.x";
@@ -49,6 +57,14 @@
 
     if (jaxon.dom && jaxon.dom.ready) {
         jaxon.dom.ready(function () {
+            enforceRequestUri();
+
+            if (!window.__lotgdJaxonUriLogged) {
+                window.__lotgdJaxonUriLogged = true;
+                // Temporary startup trace to confirm the final request endpoint in browser diagnostics.
+                console.debug('[LotGD Async] Effective Jaxon requestURI:', jaxon.config.requestURI);
+            }
+
             if (jaxon.command && jaxon.command.handler) {
                 jaxon.command.handler.register("jquery", (args) => jaxon.cmd.script.execute(args));
 
@@ -59,5 +75,23 @@
                 });
             }
         });
+    } else if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            enforceRequestUri();
+
+            if (!window.__lotgdJaxonUriLogged) {
+                window.__lotgdJaxonUriLogged = true;
+                // Temporary startup trace to confirm the final request endpoint in browser diagnostics.
+                console.debug('[LotGD Async] Effective Jaxon requestURI:', jaxon.config.requestURI);
+            }
+        }, { once: true });
+    } else {
+        enforceRequestUri();
+
+        if (!window.__lotgdJaxonUriLogged) {
+            window.__lotgdJaxonUriLogged = true;
+            // Temporary startup trace to confirm the final request endpoint in browser diagnostics.
+            console.debug('[LotGD Async] Effective Jaxon requestURI:', jaxon.config.requestURI);
+        }
     }
 })();

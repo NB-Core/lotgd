@@ -197,16 +197,16 @@ class TwoFactorAuthPasskey
      */
     public function beginAuthentication(string $requestId, string $csrfToken): Response
     {
-        $acctId = $this->accountId();
-        if ($acctId < 1 || !$this->isPendingChallenge()) {
-            return $this->respond($requestId, $this->errorPayload('no_pending'));
-        }
-
-        if (!$this->isCsrfValid($csrfToken)) {
-            return $this->respond($requestId, $this->errorPayload('csrf'));
-        }
-
         try {
+            $acctId = $this->accountId();
+            if ($acctId < 1 || !$this->isPendingChallenge()) {
+                return $this->respond($requestId, $this->errorPayload('no_pending'));
+            }
+
+            if (!$this->isCsrfValid($csrfToken)) {
+                return $this->respond($requestId, $this->errorPayload('csrf'));
+            }
+
             $existing = $this->repository()->listForAccount($acctId);
             $credentialIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
 
@@ -214,6 +214,7 @@ class TwoFactorAuthPasskey
 
             return $this->respond($requestId, ['ok' => true, 'options' => $options]);
         } catch (\Throwable $error) {
+            $acctId = $this->accountId();
             DebugLog::add(
                 sprintf('2FA passkey authentication begin exception for account %d (%s: %s).', $acctId, $error::class, $error->getMessage()),
                 $acctId,

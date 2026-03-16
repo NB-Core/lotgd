@@ -18,12 +18,29 @@ require_once __DIR__ . '/common/jaxon.php';
 global $jaxon, $ajax_rate_limit_seconds;
 
 /**
+ * Generate a correlation id for async diagnostics and log stitching.
+ *
+ * @return string Correlation identifier for request/diagnostic stitching.
+ */
+function lotgd_async_correlation_id(): string
+{
+    try {
+        return bin2hex(random_bytes(8));
+    } catch (\Throwable) {
+        return uniqid('diag_', true);
+    }
+}
+
+/**
  * Emit a valid JSON/Jaxon-compatible error payload for async failures.
  *
  * Frontend callers expect parseable JSON and may surface hard SyntaxErrors when this endpoint
  * returns plain text or an empty body. Keep this contract stable across all failure branches.
  *
- * @param array<string, mixed> $payload
+ * @param int                   $statusCode HTTP status code to send with the response.
+ * @param array<string, mixed>  $payload    Structured error payload to JSON-encode.
+ *
+ * @return void
  */
 function lotgd_async_emit_error_payload(int $statusCode, array $payload): void
 {
@@ -126,11 +143,33 @@ if ($jaxon->canProcessRequest()) {
     $threshold = $ajax_rate_limit_seconds ?? 1.0; // from async settings with fallback
 
     if (isset($_SESSION['lastrequest']) && ($now - $_SESSION['lastrequest']) < $threshold) {
-        lotgd_async_emit_error_payload(429, [
+        $requestContext = lotgd_async_request_context();
+        $diagnosticId = lotgd_async_correlation_id();
+        error_log(sprintf(
+            'Jaxon rate limit hit [diag=%s handler=%s::%s]: threshold=%s now=%s last=%s',
+            $diagnosticId,
+            $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
+            $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown',
+            (string) $threshold,
+            (string) $now,
+            isset($_SESSION['lastrequest']) ? (string) $_SESSION['lastrequest'] : 'unset'
+        ));
+
+        $payload = [
             'status' => 'error',
             'error' => 'rate_limited',
             'message' => 'Too Many Requests',
-        ]);
+        ];
+
+        if (lotgd_async_is_megauser()) {
+            $payload['diagnostic_id'] = $diagnosticId;
+            $payload['diagnostic'] = [
+                'handler_class' => $requestContext['class'],
+                'handler_method' => $requestContext['method'],
+            ];
+        }
+
+        lotgd_async_emit_error_payload(429, $payload);
         exit;
     }
 
@@ -139,12 +178,7 @@ if ($jaxon->canProcessRequest()) {
     try {
         $jaxon->processRequest();
     } catch (\Throwable $e) {
-        try {
-            $diagnosticId = bin2hex(random_bytes(8));
-        } catch (\Throwable $entropyException) {
-            // Fall back to a non-cryptographic identifier if entropy is unavailable.
-            $diagnosticId = uniqid('diag_', true);
-        }
+        $diagnosticId = lotgd_async_correlation_id();
 
         $requestContext = lotgd_async_request_context();
         error_log(sprintf(
@@ -180,9 +214,28 @@ if ($jaxon->canProcessRequest()) {
         lotgd_async_emit_error_payload(500, $payload);
     }
 } else {
-    lotgd_async_emit_error_payload(400, [
+    $requestContext = lotgd_async_request_context();
+    $diagnosticId = lotgd_async_correlation_id();
+    error_log(sprintf(
+        'Jaxon bad request [diag=%s handler=%s::%s]: canProcessRequest returned false',
+        $diagnosticId,
+        $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
+        $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown'
+    ));
+
+    $payload = [
         'status' => 'error',
         'error' => 'bad_request',
         'message' => 'Bad Request',
-    ]);
+    ];
+
+    if (lotgd_async_is_megauser()) {
+        $payload['diagnostic_id'] = $diagnosticId;
+        $payload['diagnostic'] = [
+            'handler_class' => $requestContext['class'],
+            'handler_method' => $requestContext['method'],
+        ];
+    }
+
+    lotgd_async_emit_error_payload(400, $payload);
 }
