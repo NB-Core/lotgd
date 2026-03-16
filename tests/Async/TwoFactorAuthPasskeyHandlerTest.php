@@ -291,7 +291,7 @@ namespace Lotgd\Tests\Async {
 
             $first = $commands[0];
             self::assertSame('script.exec.call', $first['name'] ?? '');
-            self::assertSame('window.twofactorauthHandleJaxonResponse', $first['args']['func'] ?? '');
+            self::assertSame('twofactorauthHandleJaxonResponse', $first['args']['func'] ?? '');
 
             return [
                 'requestId' => (string) ($first['args']['args'][0] ?? ''),
