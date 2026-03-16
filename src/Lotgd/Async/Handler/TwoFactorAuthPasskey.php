@@ -55,28 +55,40 @@ class TwoFactorAuthPasskey
 
         $this->logCheckpoint('beginRegistration', 'csrf_ok', $acctId);
 
-        $login = trim((string) ($GLOBALS['session']['user']['login'] ?? ''));
-        $display = trim((string) ($GLOBALS['session']['user']['name'] ?? $login));
-        $existing = $this->repository()->listForAccount($acctId);
-        $excludeIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
+        // Track the failing phase so we can classify repository/schema failures
+        // separately from generic begin-registration errors.
+        $phase = 'begin';
 
         try {
+            $phase = 'repo_health_check';
+            if (!$this->repository()->hasCredentialTable()) {
+                throw new \RuntimeException('Passkey credential storage table is missing.');
+            }
+
+            $phase = 'account_context';
+            $login = trim((string) ($GLOBALS['session']['user']['login'] ?? ''));
+            $display = trim((string) ($GLOBALS['session']['user']['name'] ?? $login));
+
+            $phase = 'repo_list';
+            $existing = $this->repository()->listForAccount($acctId);
+
+            $phase = 'exclude_map';
+            $excludeIds = array_map(static fn(array $item): string => (string) ($item['credential_id'] ?? ''), $existing);
+
             $this->logCheckpoint('beginRegistration', 'pre_service', $acctId);
+            $phase = 'service_begin';
             $options = $this->service()->beginRegistration($acctId, $login, $display, $excludeIds);
             $this->logCheckpoint('beginRegistration', 'post_service', $acctId);
 
             return $this->respond($requestId, ['ok' => true, 'options' => $options]);
         } catch (\Throwable $error) {
-            DebugLog::add(
-                sprintf('2FA passkey registration begin exception for account %d (%s: %s).', $acctId, $error::class, $error->getMessage()),
-                $acctId,
-                $acctId,
-                '2fa_passkey',
-                false,
-                false
-            );
+            $errorCode = $this->isBeginRepositoryFailure($phase, $error)
+                ? 'begin_repo_exception'
+                : 'begin_exception';
 
-            return $this->respond($requestId, $this->errorPayload('begin_exception', $error));
+            $this->logBeginRegistrationException($acctId, $phase, $error);
+
+            return $this->respond($requestId, $this->errorPayload($errorCode, $error));
         }
     }
 
@@ -359,6 +371,43 @@ class TwoFactorAuthPasskey
 
         return $GLOBALS['twofactorauth_module_settings'][$name] ?? 0;
     }
+
+    /**
+     * Determine if begin-registration errors came from repository/schema activity.
+     */
+    private function isBeginRepositoryFailure(string $phase, \Throwable $error): bool
+    {
+        if (str_starts_with($phase, 'repo_') || $phase === 'exclude_map' || $phase === 'account_context') {
+            return true;
+        }
+
+        $context = strtolower($error::class . ' ' . $error->getMessage());
+        foreach (['sqlstate', 'mysqli', 'pdo', 'doctrine\\dbal', 'table', 'column', 'no such table', 'base table or view'] as $needle) {
+            if (str_contains($context, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Send begin-registration exception details to both in-game debug logs and server logs.
+     */
+    private function logBeginRegistrationException(int $acctId, string $phase, \Throwable $error): void
+    {
+        $message = sprintf(
+            '2FA passkey registration begin exception for account %d phase=%s (%s: %s).',
+            $acctId,
+            $phase,
+            $error::class,
+            $error->getMessage()
+        );
+
+        DebugLog::add($message, $acctId, $acctId, '2fa_passkey', false, false);
+        error_log($message);
+    }
+
     private function repository(): PasskeyCredentialRepository
     {
         return $this->repository ?? new PasskeyCredentialRepository();

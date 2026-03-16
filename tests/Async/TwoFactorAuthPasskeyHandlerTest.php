@@ -98,6 +98,7 @@ namespace Lotgd\Tests\Async {
         public function testBeginRegistrationSuccessReturnsJaxonPayload(): void
         {
             $repo = $this->createMock(PasskeyCredentialRepository::class);
+            $repo->method('hasCredentialTable')->willReturn(true);
             $repo->method('listForAccount')->willReturn([]);
 
             $service = $this->createMock(PasskeyService::class);
@@ -110,6 +111,77 @@ namespace Lotgd\Tests\Async {
             self::assertSame('req-1', $payload['requestId']);
             self::assertTrue($payload['data']['ok']);
             self::assertSame('abc', $payload['data']['options']['publicKey']['challenge']);
+        }
+
+        public function testBeginRegistrationRepositoryExceptionReturnsStructuredErrorPayload(): void
+        {
+            $repo = $this->createMock(PasskeyCredentialRepository::class);
+            $repo->method('hasCredentialTable')->willReturn(true);
+            $repo->method('listForAccount')->willThrowException(new \RuntimeException('no such table: twofactorauth_passkeys'));
+
+            $service = $this->createMock(PasskeyService::class);
+            $service->expects(self::never())->method('beginRegistration');
+
+            $handler = new TwoFactorAuthPasskey($service, $repo);
+            $response = $handler->beginRegistration('req-repo-fail', 'csrf-test-token', 'My device');
+
+            $payload = $this->extractCallbackPayload($response->getCommands());
+            self::assertSame('req-repo-fail', $payload['requestId']);
+            self::assertFalse($payload['data']['ok']);
+            self::assertSame('begin_repo_exception', $payload['data']['error']);
+            self::assertArrayNotHasKey('debug_message', $payload['data']);
+        }
+
+        public function testBeginRegistrationRepositoryExceptionAlwaysReturnsCallbackPayload(): void
+        {
+            $repo = $this->createMock(PasskeyCredentialRepository::class);
+            $repo->method('hasCredentialTable')->willReturn(true);
+            $repo->method('listForAccount')->willThrowException(new \RuntimeException('db unavailable'));
+
+            $handler = new TwoFactorAuthPasskey($this->createMock(PasskeyService::class), $repo);
+            $response = $handler->beginRegistration('req-timeout-guard', 'csrf-test-token', 'Label');
+
+            $commands = $response->getCommands();
+            self::assertNotEmpty($commands);
+            $payload = $this->extractCallbackPayload($commands);
+
+            self::assertSame('req-timeout-guard', $payload['requestId']);
+            self::assertFalse($payload['data']['ok']);
+            self::assertArrayHasKey('error', $payload['data']);
+        }
+
+        public function testBeginRegistrationHidesDiagnosticsForNormalUser(): void
+        {
+            $repo = $this->createMock(PasskeyCredentialRepository::class);
+            $repo->method('hasCredentialTable')->willReturn(false);
+
+            $handler = new TwoFactorAuthPasskey($this->createMock(PasskeyService::class), $repo);
+
+            $GLOBALS['session']['user']['superuser'] = 0;
+            $payload = $this->extractCallbackPayload(
+                $handler->beginRegistration('req-normal', 'csrf-test-token', 'Label')->getCommands()
+            );
+
+            self::assertSame('begin_repo_exception', $payload['data']['error']);
+            self::assertArrayNotHasKey('debug_message', $payload['data']);
+            self::assertArrayNotHasKey('diagnostic', $payload['data']);
+        }
+
+        public function testBeginRegistrationShowsDiagnosticsForMegauser(): void
+        {
+            $repo = $this->createMock(PasskeyCredentialRepository::class);
+            $repo->method('hasCredentialTable')->willReturn(false);
+
+            $handler = new TwoFactorAuthPasskey($this->createMock(PasskeyService::class), $repo);
+
+            $GLOBALS['session']['user']['superuser'] = 1;
+            $payload = $this->extractCallbackPayload(
+                $handler->beginRegistration('req-mega', 'csrf-test-token', 'Label')->getCommands()
+            );
+
+            self::assertSame('begin_repo_exception', $payload['data']['error']);
+            self::assertArrayHasKey('debug_message', $payload['data']);
+            self::assertArrayHasKey('diagnostic', $payload['data']);
         }
 
         public function testBeginRegistrationRejectsInvalidCsrf(): void
