@@ -9,7 +9,8 @@ use Nyholm\Psr7Server\ServerRequestCreator;
 use Psr\Http\Message\ServerRequestInterface;
 use PHPUnit\Framework\TestCase;
 
-class PluginScriptTest extends TestCase
+
+class NodeDomTest extends TestCase
 {
     /**
      * @throws SetupException
@@ -29,23 +30,11 @@ class PluginScriptTest extends TestCase
         parent::tearDown();
     }
 
-    public function testJeNull()
-    {
-        // No function in the js expession
-        $this->assertNull(je('value')->checked->func());
-    }
-
-    public function testJqNull()
-    {
-        // No function in the js expession
-        $this->assertNull(jq('#value')->checked->func());
-    }
-
     /**
      * @throws SetupException
      * @throws RequestException
      */
-    public function testJeHtml()
+    public function testCommandAssign()
     {
         // Send a request to the registered class
         jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
@@ -54,71 +43,7 @@ class PluginScriptTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestJeSelector',
-                        'method' => 'html',
-                        'args' => [],
-                    ]),
-                ])
-                ->withMethod('POST'));
-        // Process the request and get the response
-        $this->assertTrue(jaxon()->canProcessRequest());
-        jaxon()->di()->getRequestHandler()->processRequest();
-        $aCommands = jaxon()->getResponse()->getCommands();
-        $this->assertCount(3, $aCommands);
-
-        $this->assertEquals('script', $aCommands[0]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[0]['name']);
-
-        $this->assertEquals('script', $aCommands[1]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[1]['name']);
-    }
-
-    /**
-     * @throws SetupException
-     * @throws RequestException
-     */
-    public function testJqHtml()
-    {
-        // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
-            $c->g(ServerRequestCreator::class)
-                ->fromGlobals()
-                ->withParsedBody([
-                    'jxncall' => json_encode([
-                        'type' => 'class',
-                        'name' => 'TestJqSelector',
-                        'method' => 'html',
-                        'args' => [],
-                    ]),
-                ])
-                ->withMethod('POST'));
-        // Process the request and get the response
-        $this->assertTrue(jaxon()->canProcessRequest());
-        jaxon()->di()->getRequestHandler()->processRequest();
-        $aCommands = jaxon()->getResponse()->getCommands();
-        $this->assertCount(3, $aCommands);
-
-        $this->assertEquals('script', $aCommands[0]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[0]['name']);
-
-        $this->assertEquals('script', $aCommands[1]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[1]['name']);
-    }
-
-    /**
-     * @throws SetupException
-     * @throws RequestException
-     */
-    public function testJeAssign()
-    {
-        // Send a request to the registered class
-        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
-            $c->g(ServerRequestCreator::class)
-                ->fromGlobals()
-                ->withParsedBody([
-                    'jxncall' => json_encode([
-                        'type' => 'class',
-                        'name' => 'TestJeSelector',
+                        'name' => 'TestNode',
                         'method' => 'assign',
                         'args' => [],
                     ]),
@@ -127,24 +52,15 @@ class PluginScriptTest extends TestCase
         // Process the request and get the response
         $this->assertTrue(jaxon()->canProcessRequest());
         jaxon()->di()->getRequestHandler()->processRequest();
-        $aCommands = jaxon()->getResponse()->getCommands();
-        $this->assertCount(3, $aCommands);
-
-        $this->assertEquals('script', $aCommands[0]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[0]['name']);
-
-        $this->assertEquals('script', $aCommands[1]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[1]['name']);
-
-        $this->assertEquals('script', $aCommands[2]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[2]['name']);
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(2, $xResponse->getCommandCount());
     }
 
     /**
      * @throws SetupException
      * @throws RequestException
      */
-    public function testJqAssign()
+    public function testCommandStyle()
     {
         // Send a request to the registered class
         jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
@@ -153,8 +69,8 @@ class PluginScriptTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestJqSelector',
-                        'method' => 'assign',
+                        'name' => 'TestNode',
+                        'method' => 'style',
                         'args' => [],
                     ]),
                 ])
@@ -162,24 +78,15 @@ class PluginScriptTest extends TestCase
         // Process the request and get the response
         $this->assertTrue(jaxon()->canProcessRequest());
         jaxon()->di()->getRequestHandler()->processRequest();
-        $aCommands = jaxon()->getResponse()->getCommands();
-        $this->assertCount(3, $aCommands);
-
-        $this->assertEquals('script', $aCommands[0]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[0]['name']);
-
-        $this->assertEquals('script', $aCommands[1]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[1]['name']);
-
-        $this->assertEquals('script', $aCommands[2]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[2]['name']);
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(2, $xResponse->getCommandCount());
     }
 
     /**
      * @throws SetupException
      * @throws RequestException
      */
-    public function testJeClick()
+    public function testCommandAppend()
     {
         // Send a request to the registered class
         jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
@@ -188,8 +95,8 @@ class PluginScriptTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestJeSelector',
-                        'method' => 'click',
+                        'name' => 'TestNode',
+                        'method' => 'append',
                         'args' => [],
                     ]),
                 ])
@@ -197,24 +104,15 @@ class PluginScriptTest extends TestCase
         // Process the request and get the response
         $this->assertTrue(jaxon()->canProcessRequest());
         jaxon()->di()->getRequestHandler()->processRequest();
-        $aCommands = jaxon()->getResponse()->getCommands();
-        $this->assertCount(3, $aCommands);
-
-        $this->assertEquals('script', $aCommands[0]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[0]['name']);
-
-        $this->assertEquals('script', $aCommands[1]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[1]['name']);
-
-        $this->assertEquals('script', $aCommands[2]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[2]['name']);
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
     }
 
     /**
      * @throws SetupException
      * @throws RequestException
      */
-    public function testJqClick()
+    public function testCommandPrepend()
     {
         // Send a request to the registered class
         jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
@@ -223,8 +121,8 @@ class PluginScriptTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestJqSelector',
-                        'method' => 'click',
+                        'name' => 'TestNode',
+                        'method' => 'prepend',
                         'args' => [],
                     ]),
                 ])
@@ -232,16 +130,85 @@ class PluginScriptTest extends TestCase
         // Process the request and get the response
         $this->assertTrue(jaxon()->canProcessRequest());
         jaxon()->di()->getRequestHandler()->processRequest();
-        $aCommands = jaxon()->getResponse()->getCommands();
-        $this->assertCount(3, $aCommands);
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
 
-        $this->assertEquals('script', $aCommands[0]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[0]['name']);
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandReplace()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'replace',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
 
-        $this->assertEquals('script', $aCommands[1]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[1]['name']);
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandClear()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'clean',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
 
-        $this->assertEquals('script', $aCommands[2]['options']['plugin']);
-        $this->assertEquals('script.exec.expr', $aCommands[2]['name']);
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandRemove()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'remove',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
     }
 }
