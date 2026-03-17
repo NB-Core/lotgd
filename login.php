@@ -102,7 +102,7 @@ if ($name != "") {
                         $acctrow = null;
                     } else {
                         // Transparent upgrade from legacy md5 to bcrypt.
-                        if (!$isPassthrough && PasswordHelper::needsRehash($algo)) {
+                        if (!$isPassthrough && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
                             $newHash = PasswordHelper::hash($password);
                             $entityManager->getConnection()->executeStatement(
                                 "UPDATE " . Database::prefix("accounts") . " SET password = :password, password_algo = :algo WHERE acctid = :acctid",
@@ -113,6 +113,20 @@ if ($name != "") {
                                 ]
                             );
                             $acctrow['password'] = $newHash;
+                            $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
+                        } elseif (!$isPassthrough
+                            && $algo !== PasswordHelper::ALGO_MODERN
+                            && PasswordHelper::isModernHash((string) $acctrow['password'])
+                        ) {
+                            // Metadata-only upgrade: preserve existing bcrypt hash and
+                            // align password_algo with the actual stored algorithm.
+                            $entityManager->getConnection()->executeStatement(
+                                "UPDATE " . Database::prefix("accounts") . " SET password_algo = :algo WHERE acctid = :acctid",
+                                [
+                                    'algo' => PasswordHelper::ALGO_MODERN,
+                                    'acctid' => $acctrow['acctid'],
+                                ]
+                            );
                             $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
                         }
                         \Lotgd\Accounts::setAccountEntity($entityManager->find(\Lotgd\Entity\Account::class, $acctrow['acctid']));
@@ -139,7 +153,7 @@ if ($name != "") {
 
                     if (!$passwordValid) {
                         $acctrow = null;
-                    } elseif (!$isPassthrough && PasswordHelper::needsRehash($algo)) {
+                    } elseif (!$isPassthrough && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
                         $newHash = PasswordHelper::hash($password);
                         Database::query(sprintf(
                             "UPDATE %s SET password = '%s', password_algo = %d WHERE acctid = %d",
@@ -149,6 +163,19 @@ if ($name != "") {
                             (int) $acctrow['acctid']
                         ));
                         $acctrow['password'] = $newHash;
+                        $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
+                    } elseif (!$isPassthrough
+                        && $algo !== PasswordHelper::ALGO_MODERN
+                        && PasswordHelper::isModernHash((string) $acctrow['password'])
+                    ) {
+                        // Metadata-only upgrade: preserve existing bcrypt hash and
+                        // align password_algo with the actual stored algorithm.
+                        Database::query(sprintf(
+                            "UPDATE %s SET password_algo = %d WHERE acctid = %d",
+                            Database::prefix("accounts"),
+                            PasswordHelper::ALGO_MODERN,
+                            (int) $acctrow['acctid']
+                        ));
                         $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
                     }
                 }

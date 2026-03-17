@@ -27,6 +27,10 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
     );
 
     public static $prefixLengthsPsr4 = array (
+        'l' => 
+        array (
+            'lbuchs\\WebAuthn\\' => 16,
+        ),
         'W' => 
         array (
             'Wikimedia\\Composer\\Merge\\V2\\' => 28,
@@ -106,6 +110,10 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
     );
 
     public static $prefixDirsPsr4 = array (
+        'lbuchs\\WebAuthn\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/lbuchs/webauthn/src',
+        ),
         'Wikimedia\\Composer\\Merge\\V2\\' => 
         array (
             0 => __DIR__ . '/..' . '/wikimedia/composer-merge-plugin/src',

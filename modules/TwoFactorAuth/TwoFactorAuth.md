@@ -50,3 +50,87 @@ This module adds a second step (TOTP) to the existing password login flow withou
 - Brute-force mitigation uses failed-attempt counters and lockouts.
 - Invalid token submissions keep the pending challenge active, add a short delay (`~2s`), and present the retry form again instead of forcing immediate logout.
 - Token verification outcomes are audit-logged via debug log entries (success and categorized failure reasons: `format`, `mismatch`, `replay`, `locked`) without recording token values.
+
+## Passkeys (WebAuthn) as 2FA alternative
+
+This iteration adds passkeys as an **alternative** challenge method while keeping TOTP in place.
+
+### Enrollment in Preferences
+
+- The setup page now includes a **Passkeys** section.
+- Users can enroll multiple passkeys (for example: phone + laptop + hardware key).
+- Each passkey stores:
+  - credential id (base64url)
+  - credential public key
+  - signature counter
+  - label
+  - transports metadata
+  - created timestamp
+  - last used timestamp
+- Credentials are listed with created/last-used times.
+- Each credential can be removed individually from the same page.
+
+### Login challenge behavior
+
+- During the existing pending 2FA challenge, users can:
+  - continue with **TOTP token** (unchanged), or
+  - choose **Use passkey** to complete assertion with `navigator.credentials.get`.
+- On success, pending challenge state is cleared and resume flow remains unchanged (`op=resume`).
+- On failure, failed-attempt counters/lockout behavior are shared with TOTP challenge policy.
+
+### Security controls
+
+- Registration and authentication challenges are short-lived and bound to account id in session.
+- RP ID/origin checks are enforced by WebAuthn verification.
+- Signature counter updates are persisted; counter regressions are treated as authentication failures (clone-signal policy).
+- Passkey registration/authentication success/failure are audit-logged without sensitive credential material.
+- Passkey deletion requires both account ownership checks and a CSRF token.
+
+### Async architecture: why passkey flows now run through Jaxon
+
+Passkey setup/login begin+finish calls are routed through a dedicated Jaxon handler (`Lotgd.Async.Handler.TwoFactorAuthPasskey`) and `async/process.php`.
+
+Rationale:
+
+- `async/process.php` is explicitly built for async transport and uses `OVERRIDE_FORCED_NAV`, so payload responses are not replaced by forced-navigation redirects.
+- Jaxon handler responses keep the flow inside the established async pipeline used by core AJAX features (commentary/mail/timeout), improving consistency and observability.
+- The passkey domain logic remains centralized in `PasskeyService` + `PasskeyCredentialRepository`; the async handler is a transport/orchestration layer only.
+
+Why direct `runmodule.php` fetch is problematic in this context:
+
+- `runmodule.php` requests are still subject to AllowedNav / ForcedNav checks tied to full-page navigation assumptions.
+- In challenge/setup edge-cases, those checks can return HTML redirects/chrome instead of JSON, which breaks WebAuthn ceremony parsing in the browser.
+- This mismatch caused brittle behavior (for example JSON parse failures on passkey begin/finish) that is avoided by using the dedicated async endpoint.
+
+### Recovery and fallback
+
+- TOTP remains available as fallback while passkeys are introduced.
+- Email-based disable/recovery flow remains available for lockout scenarios.
+- Full passwordless login redesign is intentionally out of scope for this iteration.
+
+
+
+### Challenge polling behaviour and failure modes
+
+- The challenge page initializes Jaxon and background polling via `async/setup.php` while the user submits the classic verify form (`runmodule.php?module=twofactorauth&op=verify`).
+- Polling setup is guarded in JavaScript to avoid duplicate interval registration and competing async requests.
+- If async endpoints return empty or invalid JSON, browser-side Jaxon parsing can fail with `SyntaxError` (for example `Unexpected end of JSON input`).
+
+### Quick troubleshooting sequence (challenge)
+
+1. **Verify POST first:** confirm the token form posts to `runmodule.php?module=twofactorauth&op=verify` and check module debug checkpoints (`run entry`, `verify handler entry`, token length, and branch `valid`/`invalid`/`locked`).
+2. **Then inspect polling response:** check `async/process.php` responses in browser devtools. Ensure failures still return valid JSON payloads, not empty bodies or HTML.
+3. **If parse errors persist:** inspect PHP/webserver logs for thrown exceptions and correlate timestamps with the 2FA/passkey debug log entries.
+
+## Troubleshooting passkey enrollment and login
+
+If passkey registration or verification fails, verify the relying party/domain setup first:
+
+- **RP ID must match the site domain** used by players in the browser. WebAuthn validates RP ID against the current origin host.
+- **Use a fully-qualified `serverurl` with scheme**, for example `https://game.example.com`.
+  - Avoid malformed values such as `game.example.com/path` (no scheme), which can break RP ID parsing.
+- **HTTPS is required** for passkeys in normal environments.
+  - Local development can use `http://localhost`, but production/staging passkey flows should use valid TLS.
+- If you run behind a reverse proxy, ensure the external host players see is consistent with `serverurl`; host mismatches can cause browser-side `NotAllowedError` / RP mismatch failures.
+- If the browser shows **"Unexpected end of JSON input"** during passkey begin/finish, the backend likely returned empty content, HTML, or another non-JSON response. Inspect the raw begin/finish endpoint response body first to identify redirects/login pages/PHP errors quickly.
+- If begin-response **Raw start is empty**, treat it as backend exception/empty output. Check the Two Factor Auth module debug log and your web server/PHP error log for the root cause.

@@ -34,7 +34,13 @@ $jaxon->setOption('js.app.uri', '/async/js');
 $jaxon->setOption('core.debug.on', false);
 $jaxon->setOption('core.debug.verbose', false);
 
-// Register callable namespace so Jaxon uses dot separators for class names.
+/**
+ * Register async handlers from the directory to keep the historical Jaxon
+ * client export shape (Lotgd.Async.Handler.*) stable for runtime bridge code.
+ *
+ * Security note: passkey method allowlisting is enforced server-side in
+ * async/process.php so hardening does not alter this client namespace contract.
+ */
 $jaxon->register(Jaxon::CALLABLE_DIR, __DIR__ . '/../../src/Lotgd/Async/Handler', [
     'namespace' => 'Lotgd\\Async\\Handler',
 ]);

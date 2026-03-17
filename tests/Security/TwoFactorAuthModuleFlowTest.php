@@ -76,6 +76,7 @@ namespace Lotgd\Tests\Security {
             $_GET = [];
             $_POST = [];
             $_SERVER['REQUEST_URI'] = 'runmodule.php?module=twofactorauth&op=challenge';
+            $_SERVER['REQUEST_METHOD'] = 'POST';
         }
 
         public function testLoginStagesSessionSnapshotAndEveryhitPersistsIt(): void
@@ -86,7 +87,13 @@ namespace Lotgd\Tests\Security {
 
             self::assertTrue($session['twofactorauth_pending']);
             self::assertSame('forest.php?op=fight', $session['twofactorauth_resume_restorepage']);
-            self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $session['twofactorauth_resume_allowednavs']);
+            self::assertSame([
+                'forest.php?op=fight' => true,
+                'village.php' => true,
+                'runmodule.php?module=twofactorauth&op=challenge' => true,
+                'runmodule.php?module=twofactorauth&op=resume' => true,
+                'runmodule.php?module=twofactorauth&op=setup' => true,
+            ], $session['twofactorauth_resume_allowednavs']);
             self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['resume_restorepage']);
 
             twofactorauth_dohook('everyhit', []);
@@ -98,7 +105,13 @@ namespace Lotgd\Tests\Security {
             self::assertArrayNotHasKey('twofactorauth_resume_allowednavs', $session);
 
             $persistedNavs = json_decode((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'], true);
-            self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $persistedNavs);
+            self::assertSame([
+                'forest.php?op=fight' => true,
+                'village.php' => true,
+                'runmodule.php?module=twofactorauth&op=challenge' => true,
+                'runmodule.php?module=twofactorauth&op=resume' => true,
+                'runmodule.php?module=twofactorauth&op=setup' => true,
+            ], $persistedNavs);
         }
 
 
@@ -116,14 +129,26 @@ namespace Lotgd\Tests\Security {
             twofactorauth_dohook('player-login', []);
 
             self::assertSame(
-                ['forest.php?op=fight' => true, 'village.php' => true],
+                [
+                    'forest.php?op=fight' => true,
+                    'village.php' => true,
+                    'runmodule.php?module=twofactorauth&op=challenge' => true,
+                    'runmodule.php?module=twofactorauth&op=resume' => true,
+                    'runmodule.php?module=twofactorauth&op=setup' => true,
+                ],
                 $session['twofactorauth_resume_allowednavs']
             );
 
             twofactorauth_dohook('everyhit', []);
 
             $persistedNavs = json_decode((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'], true);
-            self::assertSame(['forest.php?op=fight' => true, 'village.php' => true], $persistedNavs);
+            self::assertSame([
+                'forest.php?op=fight' => true,
+                'village.php' => true,
+                'runmodule.php?module=twofactorauth&op=challenge' => true,
+                'runmodule.php?module=twofactorauth&op=resume' => true,
+                'runmodule.php?module=twofactorauth&op=setup' => true,
+            ], $persistedNavs);
 
             $resolvedTarget = twofactorauth_resolve_resume_target(
                 (string) $GLOBALS['twofactorauth_test_prefs']['resume_restorepage'],
@@ -133,14 +158,60 @@ namespace Lotgd\Tests\Security {
             self::assertSame('forest.php?op=fight', $resolvedTarget);
         }
 
+
+
+        public function testPasskeyTransitionNavTargetsAreRegisteredInSnapshotHelper(): void
+        {
+            $snapshot = twofactorauth_ensure_nav_snapshot_has_passkey_transitions(['forest.php?op=fight' => true]);
+
+            self::assertTrue((bool) ($snapshot['runmodule.php?module=twofactorauth&op=challenge'] ?? false));
+            self::assertTrue((bool) ($snapshot['runmodule.php?module=twofactorauth&op=resume'] ?? false));
+            self::assertTrue((bool) ($snapshot['runmodule.php?module=twofactorauth&op=setup'] ?? false));
+        }
+
+        public function testPersistedResumeSnapshotKeepsPasskeyTransitionTargetsAllowed(): void
+        {
+            global $session;
+
+            $session['allowednavs'] = ['forest.php?op=fight' => true];
+
+            twofactorauth_dohook('player-login', []);
+            twofactorauth_dohook('everyhit', []);
+
+            $persistedNavs = json_decode((string) $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json'], true);
+            self::assertIsArray($persistedNavs);
+            self::assertTrue((bool) ($persistedNavs['runmodule.php?module=twofactorauth&op=challenge'] ?? false));
+            self::assertTrue((bool) ($persistedNavs['runmodule.php?module=twofactorauth&op=resume'] ?? false));
+            self::assertTrue((bool) ($persistedNavs['runmodule.php?module=twofactorauth&op=setup'] ?? false));
+        }
+
+        /**
+         * Pending challenge must allow async transport calls to continue without redirect.
+         *
+         * Jaxon polling/passkey challenge methods expect JSON payloads from async/process.php;
+         * forcing an HTML challenge redirect here would break the client-side JSON parser.
+         */
+        public function testEveryhitAllowsAsyncTransportWhileChallengeIsPending(): void
+        {
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $_SERVER['REQUEST_URI'] = 'async/process.php';
+
+            twofactorauth_dohook('everyhit', []);
+
+            self::assertSame(1, $GLOBALS['twofactorauth_test_prefs']['pending_challenge']);
+        }
+
         public function testVerifySuccessAddsResumeNavigation(): void
         {
             $secret = \TwoFactorAuthService::generateSecret();
-            $token = \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, time());
 
             $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
-            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret($secret, twofactorauth_signing_key());
+            // Store a deterministic plain-encoded secret in tests so this flow assertion
+            // does not depend on OpenSSL availability/behavior in the CI runtime.
+            $storedSecret = $this->encodePlainStoredSecret($secret);
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $storedSecret;
             $GLOBALS['twofactorauth_test_prefs']['last_used_timestep'] = 0;
+            $token = $this->currentTokenForStoredSecret($storedSecret);
             $_POST['token'] = $token;
 
             twofactorauth_handle_challenge_verification(Output::getInstance());
@@ -164,13 +235,13 @@ namespace Lotgd\Tests\Security {
 
         public function testVerifyFailureKeepsChallengePendingForRetry(): void
         {
+            $secret = \TwoFactorAuthService::generateSecret();
             $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
-            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret(
-                \TwoFactorAuthService::generateSecret(),
-                twofactorauth_signing_key()
-            );
+            // Use plain storage format for deterministic secret decryption in unit tests.
+            $storedSecret = $this->encodePlainStoredSecret($secret);
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $storedSecret;
             $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 0;
-            $_POST['token'] = '000000';
+            $_POST['token'] = $this->differentTokenForStoredSecret($storedSecret);
 
             twofactorauth_handle_challenge_verification(Output::getInstance());
 
@@ -183,13 +254,13 @@ namespace Lotgd\Tests\Security {
 
         public function testVerifyLockoutStillAppliesAfterThreshold(): void
         {
+            $secret = \TwoFactorAuthService::generateSecret();
             $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
-            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = \TwoFactorAuthService::encryptSecret(
-                \TwoFactorAuthService::generateSecret(),
-                twofactorauth_signing_key()
-            );
+            // Use plain storage format for deterministic secret decryption in unit tests.
+            $storedSecret = $this->encodePlainStoredSecret($secret);
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $storedSecret;
             $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 4;
-            $_POST['token'] = '000000';
+            $_POST['token'] = $this->differentTokenForStoredSecret($storedSecret);
 
             twofactorauth_handle_challenge_verification(Output::getInstance());
 
@@ -255,6 +326,39 @@ namespace Lotgd\Tests\Security {
             if ($expectedField !== null) {
                 self::assertLessThanOrEqual(20, strlen($expectedField));
             }
+        }
+
+        /**
+         * Encode a TOTP secret using the legacy plain-at-rest format.
+         *
+         * Tests that exercise challenge-control flow should not depend on OpenSSL internals.
+         */
+        private function encodePlainStoredSecret(string $secret): string
+        {
+            $encoded = rtrim(strtr(base64_encode($secret), '+/', '-_'), '=');
+
+            return 'plain:' . $encoded;
+        }
+
+        /**
+         * Build a token that should currently validate for a given at-rest secret string.
+         */
+        private function currentTokenForStoredSecret(string $storedSecret): string
+        {
+            $secret = \TwoFactorAuthService::decryptSecret($storedSecret, twofactorauth_signing_key());
+
+            return \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, time());
+        }
+
+        /**
+         * Build a token that intentionally differs from the current valid token.
+         */
+        private function differentTokenForStoredSecret(string $storedSecret): string
+        {
+            $current = (int) $this->currentTokenForStoredSecret($storedSecret);
+            $next = ($current + 1) % 1000000;
+
+            return str_pad((string) $next, 6, '0', STR_PAD_LEFT);
         }
     }
 }

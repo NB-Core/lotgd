@@ -52,6 +52,8 @@ class TwoFactorAuthServiceTest extends TestCase
         $this->assertTrue(\TwoFactorAuthService::isUriAllowed('runmodule.php?module=twofactorauth&op=challenge', $allowed));
         $this->assertTrue(\TwoFactorAuthService::isUriAllowed('runmodule.php?module=twofactorauth&op=challenge&c=1', $allowed));
         $this->assertTrue(\TwoFactorAuthService::isUriAllowed('runmodule.php?op=challenge&module=twofactorauth&c=1', $allowed));
+        $this->assertTrue(\TwoFactorAuthService::isUriAllowed('async/process.php', $allowed));
+        $this->assertTrue(\TwoFactorAuthService::isUriAllowed('/async/process.php', $allowed));
         $this->assertFalse(\TwoFactorAuthService::isUriAllowed('village.php', $allowed));
     }
 

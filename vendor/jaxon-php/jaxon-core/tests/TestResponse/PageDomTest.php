@@ -43,8 +43,34 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'assign',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(2, $xResponse->getCommandCount());
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandStyle()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestPage',
+                        'method' => 'style',
                         'args' => [],
                     ]),
                 ])
@@ -69,7 +95,7 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'html',
                         'args' => [],
                     ]),
@@ -95,7 +121,7 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'append',
                         'args' => [],
                     ]),
@@ -121,7 +147,7 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'prepend',
                         'args' => [],
                     ]),
@@ -147,7 +173,7 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'replace',
                         'args' => [],
                     ]),
@@ -173,7 +199,7 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'clear',
                         'args' => [],
                     ]),
@@ -199,7 +225,7 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'remove',
                         'args' => [],
                     ]),
@@ -225,7 +251,7 @@ class PageDomTest extends TestCase
                 ->withParsedBody([
                     'jxncall' => json_encode([
                         'type' => 'class',
-                        'name' => 'TestDom',
+                        'name' => 'TestPage',
                         'method' => 'insertBefore',
                         'args' => [],
                     ]),

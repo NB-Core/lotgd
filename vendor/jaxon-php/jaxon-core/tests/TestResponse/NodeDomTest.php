@@ -1,0 +1,214 @@
+<?php
+
+namespace Jaxon\Tests\TestResponse;
+
+use Jaxon\Jaxon;
+use Jaxon\Exception\RequestException;
+use Jaxon\Exception\SetupException;
+use Nyholm\Psr7Server\ServerRequestCreator;
+use Psr\Http\Message\ServerRequestInterface;
+use PHPUnit\Framework\TestCase;
+
+
+class NodeDomTest extends TestCase
+{
+    /**
+     * @throws SetupException
+     */
+    public function setUp(): void
+    {
+        jaxon()->setOption('core.prefix.class', '');
+        jaxon()->register(Jaxon::CALLABLE_DIR, dirname(__DIR__) . '/src/response');
+    }
+
+    /**
+     * @throws SetupException
+     */
+    public function tearDown(): void
+    {
+        jaxon()->reset();
+        parent::tearDown();
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandAssign()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'assign',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(2, $xResponse->getCommandCount());
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandStyle()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'style',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(2, $xResponse->getCommandCount());
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandAppend()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'append',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandPrepend()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'prepend',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandReplace()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'replace',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandClear()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'clean',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
+
+    /**
+     * @throws SetupException
+     * @throws RequestException
+     */
+    public function testCommandRemove()
+    {
+        // Send a request to the registered class
+        jaxon()->di()->set(ServerRequestInterface::class, fn($c) =>
+            $c->g(ServerRequestCreator::class)
+                ->fromGlobals()
+                ->withParsedBody([
+                    'jxncall' => json_encode([
+                        'type' => 'class',
+                        'name' => 'TestNode',
+                        'method' => 'remove',
+                        'args' => [],
+                    ]),
+                ])
+                ->withMethod('POST'));
+        // Process the request and get the response
+        $this->assertTrue(jaxon()->canProcessRequest());
+        jaxon()->di()->getRequestHandler()->processRequest();
+        $xResponse = jaxon()->getResponse();
+        $this->assertEquals(1, $xResponse->getCommandCount());
+    }
+}

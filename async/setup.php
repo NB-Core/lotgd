@@ -30,10 +30,17 @@ $pre_headscript = ($pre_headscript ?? '')
     . $jaxon->getCss()
     . $s_js;
 
-// CRITICAL: Add our namespace creation BEFORE the PHP-generated script
-// This ensures Lotgd namespace exists when the generated code references it
-$pre_headscript .= "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
-    . $s_script;
+// Load Jaxon's generated client code first, then apply LotGD integration hooks.
+//
+// IMPORTANT: Passkey async flows must keep Jaxon transport pinned to /async/process.php.
+// Using runmodule.php transport can trigger forced-nav HTML responses, which violates the
+// Jaxon JSON response contract and surfaces as parser errors/timeouts in passkey handlers.
+$pre_headscript .= $s_script
+    . "<script>" . file_get_contents(__DIR__ . '/js/lotgd.jaxon.js') . "</script>"
+    // The generated Jaxon script can rewrite requestURI based on the current page URL.
+    // Apply a final absolute override *after* all Jaxon scripts to keep async calls pinned
+    // to /async/process.php (and prevent fallback to /async/runmodule.php?... paths).
+    . "<script>(function(){if(window.jaxon&&jaxon.config){jaxon.config.requestURI='/async/process.php';}})();</script>";
 
 // Add polling variables directly here
 // Load the async settings
@@ -82,7 +89,16 @@ $checkMailTimeoutSeconds = $timeout->getCheckMailTimeoutSeconds();
 $clearScriptExecutionSeconds = $timeout->getClearScriptExecutionSeconds();
 $start_timeout_show = max(1, $timeout->getStartTimeoutShowSeconds());
 
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+$currentScript = is_string($requestPath) ? basename($requestPath) : '';
+$currentModule = (string) ($_GET['module'] ?? '');
+$currentOperation = (string) ($_GET['op'] ?? '');
+$isTwoFactorChallengeRoute = $currentScript === 'runmodule.php'
+    && $currentModule === 'twofactorauth'
+    && in_array($currentOperation, ['challenge', 'setup'], true);
+
 $polling_script .= "var lotgd_poll_interval_ms = " . ($checkMailTimeoutSeconds * 1000) . ";";
+$polling_script .= "var lotgd_background_polling_enabled = " . ($isTwoFactorChallengeRoute ? 'false' : 'true') . ";";
 
 // Fix timeout calculations to prevent negative values
 $login_timeout = getsetting('LOGINTIMEOUT', 900);
@@ -160,13 +176,54 @@ function getJaxonHandlers() {
     return null;
 }
 
+function pausePollingOnParseError(error) {
+    var pollingRoot = window.top || window;
+    pollingRoot.__lotgdPollingPaused = true;
+    if (typeof pollingRoot.__lotgdPollingIntervalId !== 'undefined' && pollingRoot.__lotgdPollingIntervalId !== null) {
+        clearInterval(pollingRoot.__lotgdPollingIntervalId);
+        pollingRoot.__lotgdPollingIntervalId = null;
+    }
+    var message = error && error.message ? String(error.message) : 'Unknown JSON parse failure';
+    console.error('AJAX: Polling paused after JSON parse failure:', message);
+}
+
 function pollForUpdates() {
+    var pollingRoot = window.top || window;
+    if (pollingRoot.__lotgdPollingPaused) {
+        return;
+    }
+
     var handlers = getJaxonHandlers();
     if (handlers && handlers.Commentary && typeof handlers.Commentary.pollUpdates === 'function') {
-        handlers.Commentary.pollUpdates(
-            lotgd_comment_section || 'superuser',
-            lotgd_lastCommentId || 0
-        );
+        try {
+            var section = (typeof lotgd_comment_section === 'string' && lotgd_comment_section.trim() !== '')
+                ? lotgd_comment_section
+                : 'village';
+            var response = handlers.Commentary.pollUpdates(
+                section,
+                lotgd_lastCommentId || 0
+            );
+            if (response && typeof response.then === 'function') {
+                response.catch(function(error) {
+                    var message = error && error.message ? String(error.message) : '';
+                    if (message.toLowerCase().indexOf('json') !== -1 || message.toLowerCase().indexOf('parse') !== -1) {
+                        pausePollingOnParseError(error);
+                        return;
+                    }
+
+                    console.error('AJAX: pollUpdates rejected:', error);
+                });
+            }
+        } catch (error) {
+            var message = error && error.message ? String(error.message) : '';
+            if (message.toLowerCase().indexOf('json') !== -1 || message.toLowerCase().indexOf('parse') !== -1) {
+                pausePollingOnParseError(error);
+                return;
+            }
+
+            console.error('AJAX: pollUpdates threw:', error);
+            return;
+        }
         return;
     }
 
@@ -175,26 +232,45 @@ function pollForUpdates() {
 
 // Start polling system
 function startAjaxPolling() {
+    if (!lotgd_background_polling_enabled) {
+        return;
+    }
+
     var pollingRoot = window.top || window;
     if (pollingRoot.__lotgdPollingInitialized) {
         return;
     }
     pollingRoot.__lotgdPollingInitialized = true;
+    pollingRoot.__lotgdPollingPaused = false;
     console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
-    // Regular polling
-    setInterval(pollForUpdates, lotgd_poll_interval_ms);
+    // Regular polling: keep the interval handle on the shared root so parse-failure
+    // handling can cancel future ticks deterministically.
+    pollingRoot.__lotgdPollingIntervalId = setInterval(pollForUpdates, lotgd_poll_interval_ms);
 }
 
-// Initialize after page load
-setTimeout(function() {
+// Initialize after page load only once to avoid duplicate timeout registration.
+(function schedulePollingBootstrapOnce() {
     var pollingRoot = window.top || window;
-    if (!pollingRoot.__lotgdPollingInitialized
-        && typeof lotgd_poll_interval_ms !== 'undefined'
-        && lotgd_poll_interval_ms > 0) {
-        startAjaxPolling();
+    if (pollingRoot.__lotgdPollingBootstrapScheduled) {
+        return;
     }
-}, 1000);
+
+    pollingRoot.__lotgdPollingBootstrapScheduled = true;
+    setTimeout(function() {
+        // 2FA setup/challenge pages intentionally skip the global commentary/mail polling loop
+        // to keep the challenge UX stable and avoid Jaxon parse errors from unrelated background calls.
+        if (!lotgd_background_polling_enabled) {
+            return;
+        }
+
+        if (!pollingRoot.__lotgdPollingInitialized
+            && typeof lotgd_poll_interval_ms !== 'undefined'
+            && lotgd_poll_interval_ms > 0) {
+            startAjaxPolling();
+        }
+    }, 1000);
+})();
 
 // Disable old polling system
 window.set_poll_ajax = function() {};

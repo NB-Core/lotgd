@@ -10,6 +10,43 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 
+### Features
+- Route passkey registration/authentication ceremonies through a dedicated Jaxon async handler (`Lotgd.Async.Handler.TwoFactorAuthPasskey`) to keep setup and challenge flows on `/async/process.php`.
+- Add migration/installer alignment for the `twofactorauth_passkeys` table so upgraded environments get the same schema/index/charset guarantees as fresh installs.
+
+### Security
+- Harden passkey challenge enforcement with account-bound pending-state checks, tighter CSRF validation for async passkey operations, and stricter module-pref namespace handling.
+- Pin Jaxon transport to `/async/process.php` for passkey calls and guard setup/challenge route handling to prevent forced-nav HTML responses from breaking JSON callback contracts.
+- Expand passkey verification diagnostics and error-path controls while preserving opaque user-facing failure messages for non-megausers.
+
+### Bug Fixes
+- Add a Doctrine migration that backfills the `twofactorauth_passkeys` table for existing installs, including index/charset parity with installer schema definitions.
+- Stabilize 2FA passkey setup/challenge async flows by isolating setup endpoints from normal nav lifecycle checks and restoring reliable callback dispatch.
+- Fix Jaxon handler/bootstrap compatibility regressions (constructor/injection seams, async bootstrap buffering, request URI override ordering, and challenge-route polling behavior).
+- Improve passkey registration begin/finish failure handling to return consistent JSON payloads instead of transport/parser failures.
+
+### Tests
+- Extend async and 2FA verification coverage around passkey handler behavior, callback contracts, and challenge-flow lock/error assertions.
+
+### Docs
+- Add `docs/PasskeyService.md` describing core passkey service usage, security boundaries, and integration points with `modules/twofactorauth.php`.
+
+## [2.0.4] – 2026-03-10
+
+### Features
+- Add optional two-factor authentication (TOTP) with QR/manual enrollment and a staged challenge flow during login.
+- Add reCAPTCHA v3 integration for pre-login verification hardening.
+
+### Security
+- Migrate password handling to bcrypt with `password_algo` tracking and align installer/login password flows with the new helper behavior.
+- Harden login and failed-attempt persistence paths against SQL injection risks and schema drift edge cases.
+- Restrict public error rendering and expand security coverage around error handling and authentication flows.
+
+### Bug Fixes
+- Stabilize 2FA challenge navigation/redirect handling across repeated logins, subdirectory installs, and failed token submissions.
+- Keep 2FA challenge state active across retries and normalize stored allowed-navigation data for resume flows.
+- Guard invalid time preference values to prevent date argument type errors in preference handling.
+
 ## [2.0.3] – 2026-01-28
 
 ### Dependencies

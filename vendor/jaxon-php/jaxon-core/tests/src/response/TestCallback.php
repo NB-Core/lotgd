@@ -1,8 +1,9 @@
 <?php
 
 use Jaxon\App\FuncComponent;
+use Jaxon\Exception\AppException;
 
-class TestCb extends FuncComponent
+class TestCallback extends FuncComponent
 {
     public function simple()
     {
@@ -15,5 +16,13 @@ class TestCb extends FuncComponent
     public function error()
     {
         throw new Exception('This method throws an exception!');
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function app()
+    {
+        throw new AppException('This method throws an exception!');
     }
 }
