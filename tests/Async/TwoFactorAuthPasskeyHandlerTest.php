@@ -245,6 +245,37 @@ namespace Lotgd\Tests\Async {
             self::assertSame(1, (int) ($GLOBALS['twofactorauth_module_prefs'][42]['failed_attempts'] ?? 0));
         }
 
+        public function testJaxonBootstrapExportsOnlyPasskeyAllowlistedMethods(): void
+        {
+            require __DIR__ . '/../../async/common/jaxon.php';
+
+            global $jaxon;
+            self::assertNotNull($jaxon);
+
+            $exportedMethods = $this->extractPasskeyExportedMethods((string) $jaxon->getScript());
+
+            self::assertSame(
+                ['beginRegistration', 'finishRegistration', 'beginAuthentication', 'verifyAuthentication'],
+                $exportedMethods
+            );
+        }
+
+        public function testJaxonBootstrapDoesNotExportNonAllowlistedPasskeyMethods(): void
+        {
+            require __DIR__ . '/../../async/common/jaxon.php';
+
+            global $jaxon;
+            self::assertNotNull($jaxon);
+
+            $script = (string) $jaxon->getScript();
+
+            // These public methods are used by tests/DI only and must never be remotely callable.
+            self::assertStringNotContainsString("'setService'", $script);
+            self::assertStringNotContainsString("'setRepository'", $script);
+            self::assertStringNotContainsString("'setRepositoryFactory'", $script);
+            self::assertStringNotContainsString("'setServiceFactory'", $script);
+        }
+
 
         public function testBeginAuthenticationRepositoryExceptionReturnsCallbackPayload(): void
         {
@@ -297,6 +328,31 @@ namespace Lotgd\Tests\Async {
                 'requestId' => (string) ($first['args']['args'][0] ?? ''),
                 'data' => (array) ($first['args']['args'][1] ?? []),
             ];
+        }
+
+        /**
+         * Parse exported passkey methods from generated Jaxon bootstrap script.
+         *
+         * @return array<int, string>
+         */
+        private function extractPasskeyExportedMethods(string $script): array
+        {
+            $prefix = 'Lotgd_Async_Handler_TwoFactorAuthPasskey = {';
+            $start = strpos($script, $prefix);
+            self::assertNotFalse($start, 'Passkey handler object was not exported in Jaxon bootstrap script.');
+
+            $slice = substr($script, (int) $start);
+            self::assertIsString($slice);
+
+            $end = strpos($slice, '};', 0);
+            self::assertNotFalse($end, 'Unable to parse passkey handler export block from Jaxon bootstrap script.');
+
+            $block = substr($slice, 0, (int) $end);
+            self::assertIsString($block);
+
+            preg_match_all('/^\s*([a-zA-Z0-9_]+):\s+\(\.\.\.args\)\s+=>\s+jx\.rc\(/m', $block, $matches);
+
+            return array_values((array) ($matches[1] ?? []));
         }
     }
 }
