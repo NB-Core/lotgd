@@ -57,3 +57,24 @@ $jaxon->register(Jaxon::CALLABLE_CLASS, TwoFactorAuthPasskey::class, [
         ],
     ],
 ]);
+
+/**
+ * Server-side sanity check for passkey export visibility in generated bootstrap script.
+ *
+ * Why this exists:
+ * - Explicit method allowlists are the security boundary for passkey async handlers.
+ * - Client-side bridge dispatch depends on Jaxon exporting the passkey namespace.
+ * - If export generation regresses, we prefer a debug log hint during bootstrap instead
+ *   of a runtime timeout/error that is harder to diagnose.
+ *
+ * This check is intentionally non-fatal and debug-only/log-only.
+ */
+$debugExportVerification = (($_ENV['LOTGD_DEBUG_JAXON_EXPORT_CHECK'] ?? '') === '1')
+    || (($_SERVER['LOTGD_DEBUG_JAXON_EXPORT_CHECK'] ?? '') === '1');
+
+if ($debugExportVerification) {
+    $generatedScript = (string) $jaxon->getScript();
+    if (strpos($generatedScript, 'TwoFactorAuthPasskey') === false) {
+        error_log('[Jaxon][Passkey] Export verification failed: generated script is missing TwoFactorAuthPasskey namespace bindings.');
+    }
+}
