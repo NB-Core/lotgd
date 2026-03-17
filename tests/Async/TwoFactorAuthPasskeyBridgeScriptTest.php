@@ -71,7 +71,13 @@ namespace Lotgd\Tests\Async {
             $script = $this->renderBridgeScript();
 
             self::assertStringContainsString("if(!namespace){", $script);
-            self::assertStringContainsString("reject(new Error('Passkey async handler unavailable.'));", $script);
+            self::assertStringContainsString("const hasAnyRoot=sources.some", $script);
+            self::assertStringContainsString(
+                "'Passkey async export missing from generated Jaxon script.'",
+                $script
+            );
+            self::assertStringContainsString("const missingExportMessage=hasAnyRoot?'Passkey async export missing from generated Jaxon script.':'Passkey async handler unavailable.';", $script);
+            self::assertStringContainsString("reject(new Error(missingExportMessage));", $script);
         }
 
         public function testBridgeMegauserDiagnosticsIncludeNamespaceRootsAndMethod(): void

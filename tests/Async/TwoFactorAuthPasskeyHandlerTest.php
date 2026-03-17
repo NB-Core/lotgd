@@ -276,6 +276,19 @@ namespace Lotgd\Tests\Async {
             self::assertStringNotContainsString("'setServiceFactory'", $script);
         }
 
+        public function testJaxonBootstrapExportsAuthenticationCallBindings(): void
+        {
+            require __DIR__ . '/../../async/common/jaxon.php';
+
+            global $jaxon;
+            self::assertNotNull($jaxon);
+
+            $script = (string) $jaxon->getScript();
+
+            self::assertStringContainsString('beginAuthentication: (...args) => jx.rc(', $script);
+            self::assertStringContainsString('verifyAuthentication: (...args) => jx.rc(', $script);
+        }
+
 
         public function testBeginAuthenticationRepositoryExceptionReturnsCallbackPayload(): void
         {
