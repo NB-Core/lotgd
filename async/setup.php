@@ -40,7 +40,7 @@ $pre_headscript .= $s_script
     // The generated Jaxon script can rewrite requestURI based on the current page URL.
     // Apply a final absolute override *after* all Jaxon scripts to keep async calls pinned
     // to /async/process.php (and prevent fallback to /async/runmodule.php?... paths).
-    . "<script>(function(){if(window.jaxon&&jaxon.config){jaxon.config.requestURI='/async/process.php';if(!window.__lotgdJaxonUriLogged){window.__lotgdJaxonUriLogged=true;console.debug('[LotGD Async] Effective Jaxon requestURI:',jaxon.config.requestURI);}}})();</script>";
+    . "<script>(function(){if(window.jaxon&&jaxon.config){jaxon.config.requestURI='/async/process.php';}})();</script>";
 
 // Add polling variables directly here
 // Load the async settings

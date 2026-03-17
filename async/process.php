@@ -134,11 +134,66 @@ function lotgd_async_request_context(): array
     ];
 }
 
+
+/**
+ * Validate async callable routing against a minimal hardening allowlist.
+ *
+ * Compatibility note: this must not change client-side Jaxon exports. We enforce
+ * sensitive passkey method restrictions on the server so the historical
+ * Lotgd.Async.Handler namespace remains stable for browser bridge code.
+ *
+ * @param array{class:string,method:string} $requestContext
+ */
+function lotgd_async_is_allowed_callable(array $requestContext): bool
+{
+    $className = $requestContext['class'] ?? '';
+    $methodName = $requestContext['method'] ?? '';
+
+    if ($className !== 'Lotgd.Async.Handler.TwoFactorAuthPasskey') {
+        return true;
+    }
+
+    return in_array($methodName, [
+        'beginRegistration',
+        'finishRegistration',
+        'beginAuthentication',
+        'verifyAuthentication',
+    ], true);
+}
+
 // Simple rate limiting for Jaxon requests.  If an Ajax request arrives less
 // than the configured threshold after the previous one, we respond with HTTP 429 and skip
 // executing the handler.  The timestamp is only updated when the request is
 // accepted to avoid locking out legitimate retries.
 if ($jaxon->canProcessRequest()) {
+    $requestContext = lotgd_async_request_context();
+    if (!lotgd_async_is_allowed_callable($requestContext)) {
+        $diagnosticId = lotgd_async_correlation_id();
+        error_log(sprintf(
+            'Jaxon callable rejected by allowlist [diag=%s handler=%s::%s]',
+            $diagnosticId,
+            $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
+            $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown'
+        ));
+
+        $payload = [
+            'status' => 'error',
+            'error' => 'callable_not_allowed',
+            'message' => 'Forbidden',
+        ];
+
+        if (lotgd_async_is_megauser()) {
+            $payload['diagnostic_id'] = $diagnosticId;
+            $payload['diagnostic'] = [
+                'handler_class' => $requestContext['class'],
+                'handler_method' => $requestContext['method'],
+            ];
+        }
+
+        lotgd_async_emit_error_payload(403, $payload);
+        exit;
+    }
+
     $now       = microtime(true);
     $threshold = $ajax_rate_limit_seconds ?? 1.0; // from async settings with fallback
 
