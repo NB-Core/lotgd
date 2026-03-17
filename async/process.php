@@ -322,9 +322,11 @@ function lotgd_async_denied_request_is_throttled(float $now, float $threshold): 
             return true;
         }
 
-        apcu_store($apcuKey, $now, $ttlSeconds);
-
-        return false;
+        // APCu can appear available while writes fail in some CLI/CI environments.
+        // Only short-circuit when the write succeeds; otherwise continue to fallback storage.
+        if (apcu_store($apcuKey, $now, $ttlSeconds)) {
+            return false;
+        }
     }
 
     $storePath = lotgd_async_denied_throttle_store_path();
