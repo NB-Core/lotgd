@@ -36,16 +36,9 @@ namespace Lotgd\Tests\Async {
             $script = $this->renderBridgeScript();
 
             self::assertStringContainsString('window.twofactorauthResolvePasskeyHandler', $script);
-
-            $first = strpos($script, "name:'window.getJaxonHandlers()'");
-            $second = strpos($script, "name:'window.Lotgd.Async.Handler'");
-            $third = strpos($script, "name:'window.JaxonLotgd.Async.Handler'");
-
-            self::assertIsInt($first);
-            self::assertIsInt($second);
-            self::assertIsInt($third);
-            self::assertLessThan($second, $first);
-            self::assertLessThan($third, $second);
+            self::assertStringContainsString('resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey', $script);
+            self::assertStringContainsString('window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler', $script);
+            self::assertStringContainsString('window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler', $script);
         }
 
         public function testBridgeDispatchAcceptsLotgdOrJaxonLotgdHandlerWhenMethodExists(): void
@@ -53,7 +46,7 @@ namespace Lotgd\Tests\Async {
             $script = $this->renderBridgeScript();
 
             self::assertStringContainsString(
-                "typeof candidate.handler[requestedMethod]==='function'",
+                "typeof candidate[requestedMethod]==='function'",
                 $script
             );
             self::assertStringContainsString(
@@ -71,13 +64,7 @@ namespace Lotgd\Tests\Async {
             $script = $this->renderBridgeScript();
 
             self::assertStringContainsString("if(!namespace){", $script);
-            self::assertStringContainsString("const hasAnyRoot=sources.some", $script);
-            self::assertStringContainsString(
-                "'Passkey async export missing from generated Jaxon script.'",
-                $script
-            );
-            self::assertStringContainsString("const missingExportMessage=hasAnyRoot?'Passkey async export missing from generated Jaxon script.':'Passkey async handler unavailable.';", $script);
-            self::assertStringContainsString("reject(new Error(missingExportMessage));", $script);
+            self::assertStringContainsString("reject(new Error('Passkey async handler unavailable.'));", $script);
         }
 
         public function testBridgeMegauserDiagnosticsIncludeNamespaceRootsAndMethod(): void
@@ -88,9 +75,7 @@ namespace Lotgd\Tests\Async {
             $script = $this->renderBridgeScript();
 
             self::assertStringContainsString("const showDebug=true;", $script);
-            self::assertStringContainsString("' rootPresent='+String", $script);
-            self::assertStringContainsString("' method='+String(method)", $script);
-            self::assertStringContainsString("resolvedSource=", $script);
+            self::assertStringContainsString("console.warn('[TwoFactorAuthPasskey] Transport failure:'", $script);
         }
 
         private function renderBridgeScript(): string

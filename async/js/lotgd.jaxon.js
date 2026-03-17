@@ -99,11 +99,6 @@
         jaxon.dom.ready(function () {
             enforceRequestUri();
 
-            if (!window.__lotgdJaxonUriLogged) {
-                window.__lotgdJaxonUriLogged = true;
-                // Temporary startup trace to confirm the final request endpoint in browser diagnostics.
-                console.debug('[LotGD Async] Effective Jaxon requestURI:', jaxon.config.requestURI);
-            }
 
             if (jaxon.command && jaxon.command.handler) {
                 jaxon.command.handler.register('jquery', (args) => jaxon.cmd.script.execute(args));
@@ -121,21 +116,11 @@
             function () {
                 enforceRequestUri();
 
-                if (!window.__lotgdJaxonUriLogged) {
-                    window.__lotgdJaxonUriLogged = true;
-                    // Temporary startup trace to confirm the final request endpoint in browser diagnostics.
-                    console.debug('[LotGD Async] Effective Jaxon requestURI:', jaxon.config.requestURI);
-                }
             },
             { once: true }
         );
     } else {
         enforceRequestUri();
 
-        if (!window.__lotgdJaxonUriLogged) {
-            window.__lotgdJaxonUriLogged = true;
-            // Temporary startup trace to confirm the final request endpoint in browser diagnostics.
-            console.debug('[LotGD Async] Effective Jaxon requestURI:', jaxon.config.requestURI);
-        }
     }
 })();
