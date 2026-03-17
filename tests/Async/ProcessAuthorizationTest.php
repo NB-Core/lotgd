@@ -30,6 +30,15 @@ namespace Lotgd\Tests\Async {
             }
 
             require_once __DIR__ . '/../../async/process.php';
+
+            $storePath = lotgd_async_denied_throttle_store_path();
+            if (file_exists($storePath)) {
+                unlink($storePath);
+            }
+
+            if (function_exists('apcu_clear_cache')) {
+                apcu_clear_cache();
+            }
         }
 
         public function testUnauthenticatedProtectedCallableIsDeniedBeforeDispatch(): void
@@ -162,6 +171,36 @@ namespace Lotgd\Tests\Async {
             $this->assertSame('error', $payload['status']);
             $this->assertSame('callable_not_allowed', $payload['error']);
             $this->assertSame('Forbidden', $payload['message']);
+        }
+
+        public function testDeniedThrottleRemainsEffectiveWithoutSessionCookie(): void
+        {
+            $_SERVER['REMOTE_ADDR'] = '203.0.113.77';
+            $_SERVER['HTTP_USER_AGENT'] = 'lotgd-test-agent/1.0';
+            $_COOKIE = [];
+
+            $start = microtime(true);
+            $this->assertFalse(lotgd_async_denied_request_is_throttled($start, 2.0));
+
+            // Simulate session churn for unauthenticated clients that do not return a PHPSESSID cookie.
+            $_SESSION = [];
+
+            $this->assertTrue(lotgd_async_denied_request_is_throttled($start + 0.2, 2.0));
+        }
+
+        public function testAbuseKeyIgnoresSessionIdWhenNoCookieIsPresent(): void
+        {
+            $_SERVER['REMOTE_ADDR'] = '198.51.100.24';
+            $_SERVER['HTTP_USER_AGENT'] = 'lotgd-key-test/1.0';
+            $_COOKIE = [];
+
+            session_id('first-session-id');
+            $firstKey = lotgd_async_abuse_key();
+
+            session_id('second-session-id');
+            $secondKey = lotgd_async_abuse_key();
+
+            $this->assertSame($firstKey, $secondKey);
         }
     }
 }

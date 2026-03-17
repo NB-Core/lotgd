@@ -252,45 +252,133 @@ function lotgd_async_authorization_policy(array $requestContext): array
 /**
  * Build an abuse throttling key for denied/unauth async attempts.
  *
- * This is intentionally independent from $_SESSION['lastrequest'] so authz
- * abuse controls cannot be bypassed or coupled to normal accepted request flow.
+ * We intentionally favor stable network identity (IP + User-Agent) and only
+ * append the session cookie when it is explicitly supplied by the client. This
+ * avoids a bypass where cookie-less unauthenticated traffic receives a new
+ * PHP session id each request and evades throttling.
  */
 function lotgd_async_abuse_key(): string
 {
     $ip = isset($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown_ip';
     $ip = lotgd_async_sanitize_token($ip);
 
-    $sessionFragment = '';
+    $userAgent = isset($_SERVER['HTTP_USER_AGENT']) && is_string($_SERVER['HTTP_USER_AGENT'])
+        ? lotgd_async_sanitize_token($_SERVER['HTTP_USER_AGENT'])
+        : 'unknown_ua';
+
     $sessionCookieName = session_name();
     if ($sessionCookieName !== '' && isset($_COOKIE[$sessionCookieName]) && is_string($_COOKIE[$sessionCookieName])) {
-        $sessionFragment = $_COOKIE[$sessionCookieName];
-    } elseif (session_id() !== '') {
-        $sessionFragment = session_id();
-    } else {
-        $sessionFragment = 'no_session';
+        return hash('sha256', $ip . '|' . $userAgent . '|cookie:' . $_COOKIE[$sessionCookieName]);
     }
 
-    return hash('sha256', $ip . '|' . $sessionFragment);
+    return hash('sha256', $ip . '|' . $userAgent . '|no_cookie');
+}
+
+/**
+ * Return the shared file path used for denied-request throttle state.
+ */
+function lotgd_async_denied_throttle_store_path(): string
+{
+    return rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'lotgd_async_denied_throttle.json';
+}
+
+/**
+ * Prune throttle bookkeeping to keep state bounded.
+ *
+ * @param array<string, float|int|string> $store
+ */
+function lotgd_async_prune_denied_throttle_store(array &$store, float $now, float $threshold): void
+{
+    $ttl = max($threshold * 10.0, 5.0);
+    foreach ($store as $key => $value) {
+        if (!is_numeric($value) || ($now - (float) $value) > $ttl) {
+            unset($store[$key]);
+        }
+    }
+
+    $maxEntries = 256;
+    if (count($store) > $maxEntries) {
+        asort($store);
+        $store = array_slice($store, -$maxEntries, null, true);
+    }
 }
 
 /**
  * Check and update deny-throttle state for denied/unauthenticated requests.
+ *
+ * State is stored in a process-shared cache (APCu when available, otherwise a
+ * small temp-file map) so throttling remains effective even when requests do
+ * not carry a stable PHP session cookie.
  */
 function lotgd_async_denied_request_is_throttled(float $now, float $threshold): bool
 {
-    if (!isset($_SESSION['async_authz_denied_last']) || !is_array($_SESSION['async_authz_denied_last'])) {
-        $_SESSION['async_authz_denied_last'] = [];
-    }
-
     $key = lotgd_async_abuse_key();
-    $last = $_SESSION['async_authz_denied_last'][$key] ?? null;
-    if (is_numeric($last) && ($now - (float) $last) < $threshold) {
-        return true;
+    $ttlSeconds = max((int) ceil($threshold * 10.0), 5);
+
+    if (function_exists('apcu_fetch') && filter_var(ini_get('apc.enabled') ?: '0', FILTER_VALIDATE_BOOLEAN)) {
+        $apcuKey = 'lotgd:async:deny:' . $key;
+        $last = apcu_fetch($apcuKey, $success);
+        if ($success && is_numeric($last) && ($now - (float) $last) < $threshold) {
+            return true;
+        }
+
+        apcu_store($apcuKey, $now, $ttlSeconds);
+
+        return false;
     }
 
-    $_SESSION['async_authz_denied_last'][$key] = $now;
+    $storePath = lotgd_async_denied_throttle_store_path();
+    $directory = dirname($storePath);
+    if (!is_dir($directory) || !is_writable($directory)) {
+        if (!isset($_SESSION['async_authz_denied_last']) || !is_array($_SESSION['async_authz_denied_last'])) {
+            $_SESSION['async_authz_denied_last'] = [];
+        }
 
-    return false;
+        lotgd_async_prune_denied_throttle_store($_SESSION['async_authz_denied_last'], $now, $threshold);
+        $last = $_SESSION['async_authz_denied_last'][$key] ?? null;
+        if (is_numeric($last) && ($now - (float) $last) < $threshold) {
+            return true;
+        }
+
+        $_SESSION['async_authz_denied_last'][$key] = $now;
+
+        return false;
+    }
+
+    $handle = fopen($storePath, 'c+');
+    if ($handle === false) {
+        return false;
+    }
+
+    $isThrottled = false;
+    if (flock($handle, LOCK_EX)) {
+        $contents = stream_get_contents($handle);
+        $store = [];
+        if (is_string($contents) && $contents !== '') {
+            $decoded = json_decode($contents, true);
+            if (is_array($decoded)) {
+                $store = $decoded;
+            }
+        }
+
+        lotgd_async_prune_denied_throttle_store($store, $now, $threshold);
+        $last = $store[$key] ?? null;
+        if (is_numeric($last) && ($now - (float) $last) < $threshold) {
+            $isThrottled = true;
+        } else {
+            $store[$key] = $now;
+        }
+
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, json_encode($store) ?: '{}');
+        fflush($handle);
+        flock($handle, LOCK_UN);
+    }
+
+    fclose($handle);
+
+    return $isThrottled;
 }
 
 /**
