@@ -1093,6 +1093,51 @@ function twofactorauth_output_json(array $payload): void
 }
 
 /**
+ * Read the raw request body for passkey endpoints.
+ *
+ * Tests can override the transport body with a fixture string because php://input is not
+ * writable in the CLI runtime used by PHPUnit.
+ */
+function twofactorauth_read_request_body(): string
+{
+    if (isset($GLOBALS['twofactorauth_test_request_body']) && is_string($GLOBALS['twofactorauth_test_request_body'])) {
+        return $GLOBALS['twofactorauth_test_request_body'];
+    }
+
+    return (string) (file_get_contents('php://input') ?: '');
+}
+
+/**
+ * Decode a JSON request body into an associative array for passkey endpoints.
+ *
+ * @return array<string, mixed>
+ */
+function twofactorauth_read_json_request_body(): array
+{
+    $requestBody = json_decode(twofactorauth_read_request_body() ?: '{}', true);
+
+    return is_array($requestBody) ? $requestBody : [];
+}
+
+/**
+ * Extract the module CSRF token from either a JSON body or classic POST fields.
+ *
+ * The legacy synchronous passkey entry point may still receive either fetch()-style JSON
+ * or a traditional POST payload. This helper normalizes both transports before the
+ * handler compares the request token against the session token.
+ */
+function twofactorauth_extract_request_csrf_token(): string
+{
+    $requestBody = twofactorauth_read_json_request_body();
+    $csrf = (string) ($requestBody['csrf_token'] ?? '');
+    if ($csrf !== '') {
+        return $csrf;
+    }
+
+    return (string) Http::post('csrf_token');
+}
+
+/**
  * Keep setup async routes explicitly in allowed navigation entries.
  *
  * Forced-nav can redirect requests before module code fully executes. These endpoints are called
@@ -1233,10 +1278,7 @@ function twofactorauth_handle_begin_passkey_registration(): void
     twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'entry', $acctId);
 
     try {
-        $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
-        if (!is_array($requestBody)) {
-            $requestBody = [];
-        }
+        $requestBody = twofactorauth_read_json_request_body();
 
         twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
@@ -1302,10 +1344,7 @@ function twofactorauth_handle_finish_passkey_registration(): void
     twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'entry', $acctId);
 
     try {
-        $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
-        if (!is_array($requestBody)) {
-            $requestBody = [];
-        }
+        $requestBody = twofactorauth_read_json_request_body();
 
         twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
@@ -1390,6 +1429,13 @@ function twofactorauth_handle_begin_passkey_auth(): void
         return;
     }
 
+    $csrf = twofactorauth_extract_request_csrf_token();
+    if ($csrf === '' || !hash_equals(twofactorauth_csrf_token(), $csrf)) {
+        twofactorauth_output_json(twofactorauth_challenge_async_error_payload('csrf'));
+
+        return;
+    }
+
     try {
         $acctId = (int) ($session['user']['acctid'] ?? 0);
         $existing = twofactorauth_passkey_repository()->listForAccount($acctId);
@@ -1436,9 +1482,12 @@ function twofactorauth_handle_passkey_verification(): void
             return;
         }
 
-        $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
-        if (!is_array($requestBody)) {
-            $requestBody = [];
+        $requestBody = twofactorauth_read_json_request_body();
+        $csrf = (string) ($requestBody['csrf_token'] ?? '');
+        if ($csrf === '' || !hash_equals(twofactorauth_csrf_token(), $csrf)) {
+            twofactorauth_output_json(twofactorauth_challenge_async_error_payload('csrf'));
+
+            return;
         }
 
         $result = twofactorauth_passkey_service()->finishAuthentication($acctId, $requestBody);
