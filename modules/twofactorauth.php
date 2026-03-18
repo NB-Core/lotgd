@@ -15,6 +15,7 @@ use Lotgd\GameLog;
 use Lotgd\DebugLog;
 use Lotgd\Redirect;
 use Lotgd\Serialization;
+use Lotgd\Settings;
 use Lotgd\Translator;
 
 /**
@@ -592,7 +593,8 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         return;
     }
 
-    $secret = TwoFactorAuthService::decryptSecret((string) get_module_pref('secret_encrypted'), twofactorauth_signing_key());
+    $secretState = twofactorauth_decrypt_secret_with_compat((string) get_module_pref('secret_encrypted'));
+    $secret = $secretState['secret'];
     $digits = (int) get_module_setting('token_digits');
     $period = (int) get_module_setting('period_seconds');
     $window = (int) get_module_setting('window');
@@ -600,6 +602,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
 
     $result = TwoFactorAuthService::verifyTotp($secret, $token, $digits, $period, $window, $lastStep, $now);
     if ($result['valid']) {
+        twofactorauth_migrate_secret_after_success($secretState);
         set_module_pref('last_used_timestep', $result['timestep']);
         twofactorauth_clear_pending_state();
         twofactorauth_log_challenge_outcome($acctId, 'success');
@@ -708,7 +711,7 @@ function twofactorauth_handle_disable_via_email(Output $output): void
     }
 
     $expires = time() + ((int) get_module_setting('disable_link_ttl_minutes') * 60);
-    $token = TwoFactorAuthService::signDisableToken($acctId, $email, $expires, twofactorauth_signing_key());
+    $token = TwoFactorAuthService::signDisableToken($acctId, $email, $expires, twofactorauth_current_signing_key());
     $confirmUri = 'runmodule.php?module=twofactorauth&op=confirm_disable&token=' . rawurlencode($token);
 
     set_module_pref('disable_token_hash', hash('sha256', $token));
@@ -735,7 +738,7 @@ function twofactorauth_handle_disable_confirmation(Output $output): void
     global $session;
 
     $token = (string) Http::get('token');
-    $validation = TwoFactorAuthService::verifyDisableToken($token, twofactorauth_signing_key());
+    $validation = twofactorauth_verify_disable_token_with_compat($token);
     $expectedHash = (string) get_module_pref('disable_token_hash');
     $expires = (int) get_module_pref('disable_token_expires');
 
@@ -1526,9 +1529,173 @@ function twofactorauth_handle_passkey_verification(): void
 }
 
 /**
- * Return the shared signing/encryption key material for this module.
+ * Return the preferred signing/encryption key material for this module.
+ *
+ * The current key is derived from installation-scoped secret material instead of only public
+ * configuration. Existing installs may still hold data encrypted/signed with the legacy key, so
+ * read/verify paths should call the compatibility helpers below during the transition window.
  */
 function twofactorauth_signing_key(): string
 {
+    return twofactorauth_current_signing_key();
+}
+
+/**
+ * Resolve the installation secret that anchors 2FA key derivation.
+ *
+ * The value is stored outside module settings so it is not exposed as routine public config. A
+ * generated secret must stay stable across requests; rotating it invalidates encrypted TOTP
+ * secrets and outstanding signed disable links unless the legacy fallback path can still read them.
+ */
+function twofactorauth_secret_material(): string
+{
+    if (isset($GLOBALS['twofactorauth_test_install_secret']) && is_string($GLOBALS['twofactorauth_test_install_secret'])) {
+        $testSecret = trim($GLOBALS['twofactorauth_test_install_secret']);
+        if ($testSecret !== '') {
+            return $testSecret;
+        }
+    }
+
+    $settings = Settings::getInstance();
+    $settingName = 'twofactorauth_key_material';
+    $existing = trim((string) $settings->getSetting($settingName, ''));
+    if ($existing !== '') {
+        return $existing;
+    }
+
+    try {
+        $generated = bin2hex(random_bytes(32));
+    } catch (\Throwable) {
+        $generated = hash('sha256', uniqid('twofactorauth-key-', true) . '|' . microtime(true));
+    }
+
+    if ($settings->saveSetting($settingName, $generated)) {
+        return $generated;
+    }
+
+    // Re-read in case another request populated the setting first.
+    $reloaded = trim((string) $settings->getSetting($settingName, ''));
+    if ($reloaded !== '') {
+        return $reloaded;
+    }
+
+    // Last-resort fallback preserves availability in misconfigured environments, but this path
+    // should be treated as degraded because it cannot provide secret-backed key material.
+    return twofactorauth_legacy_signing_key();
+}
+
+/**
+ * Derive the current 2FA key from installation-secret material.
+ */
+function twofactorauth_current_signing_key(): string
+{
+    return hash_hmac('sha256', 'lotgd|twofactorauth|v2', twofactorauth_secret_material());
+}
+
+/**
+ * Derive the legacy 2FA key used before secret-backed key material existed.
+ *
+ * This path exists only for backward compatibility while existing encrypted TOTP secrets and
+ * disable-link tokens are migrated forward.
+ */
+function twofactorauth_legacy_signing_key(): string
+{
     return hash('sha256', getsetting('serverurl', 'lotgd') . '|' . getsetting('gameadminemail', 'admin@example.com'));
+}
+
+/**
+ * Return the ordered list of keys accepted for compatibility reads/verifications.
+ *
+ * @return array<int, string>
+ */
+function twofactorauth_compatible_signing_keys(): array
+{
+    $keys = [twofactorauth_current_signing_key(), twofactorauth_legacy_signing_key()];
+
+    return array_values(array_unique(array_filter($keys, static fn(string $key): bool => $key !== '')));
+}
+
+/**
+ * Decrypt a stored TOTP secret using the current key first, then the legacy key if needed.
+ *
+ * @return array{secret:string,key:string,used_legacy:bool,needs_reencrypt:bool,stored_secret:string}
+ */
+function twofactorauth_decrypt_secret_with_compat(string $storedSecret): array
+{
+    $storedSecret = trim($storedSecret);
+    if ($storedSecret === '') {
+        return [
+            'secret' => '',
+            'key' => '',
+            'used_legacy' => false,
+            'needs_reencrypt' => false,
+            'stored_secret' => $storedSecret,
+        ];
+    }
+
+    $currentKey = twofactorauth_current_signing_key();
+    foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
+        $secret = TwoFactorAuthService::decryptSecret($storedSecret, $candidateKey);
+        if ($secret === '') {
+            continue;
+        }
+
+        $usedLegacy = $candidateKey !== $currentKey;
+        $needsReencrypt = $usedLegacy || !str_starts_with($storedSecret, 'enc:');
+
+        return [
+            'secret' => $secret,
+            'key' => $candidateKey,
+            'used_legacy' => $usedLegacy,
+            'needs_reencrypt' => $needsReencrypt,
+            'stored_secret' => $storedSecret,
+        ];
+    }
+
+    return [
+        'secret' => '',
+        'key' => '',
+        'used_legacy' => false,
+        'needs_reencrypt' => false,
+        'stored_secret' => $storedSecret,
+    ];
+}
+
+/**
+ * Re-encrypt a TOTP secret with the current key after a successful compatibility read.
+ *
+ * This keeps existing installs working while gradually moving accounts off the legacy key or
+ * plaintext-at-rest fallback format during normal successful verification.
+ *
+ * @param array{secret:string,key:string,used_legacy:bool,needs_reencrypt:bool,stored_secret:string} $secretState
+ */
+function twofactorauth_migrate_secret_after_success(array $secretState): void
+{
+    if (($secretState['secret'] ?? '') === '' || !($secretState['needs_reencrypt'] ?? false)) {
+        return;
+    }
+
+    $reencrypted = TwoFactorAuthService::encryptSecret((string) $secretState['secret'], twofactorauth_current_signing_key());
+    if ($reencrypted === '') {
+        return;
+    }
+
+    set_module_pref('secret_encrypted', $reencrypted);
+}
+
+/**
+ * Verify disable-link tokens against both current and legacy signing keys.
+ *
+ * @return array{valid:bool,acctid:int,email:string,exp:int}
+ */
+function twofactorauth_verify_disable_token_with_compat(string $token): array
+{
+    foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
+        $validation = TwoFactorAuthService::verifyDisableToken($token, $candidateKey);
+        if ($validation['valid']) {
+            return $validation;
+        }
+    }
+
+    return TwoFactorAuthService::verifyDisableToken($token, twofactorauth_current_signing_key());
 }

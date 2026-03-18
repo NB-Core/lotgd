@@ -73,12 +73,20 @@ namespace Lotgd\Tests\Security {
                 'max_attempts' => 5,
                 'lock_seconds' => 120,
             ];
+            $GLOBALS['twofactorauth_test_install_secret'] = 'test-install-secret-material';
             $_GET = [];
             $_POST = [];
             $GLOBALS['forms_output'] = '';
             unset($GLOBALS['twofactorauth_test_request_body']);
             $_SERVER['REQUEST_URI'] = 'runmodule.php?module=twofactorauth&op=challenge';
             $_SERVER['REQUEST_METHOD'] = 'POST';
+        }
+
+        protected function tearDown(): void
+        {
+            unset($GLOBALS['twofactorauth_test_install_secret']);
+
+            parent::tearDown();
         }
 
         public function testLoginStagesSessionSnapshotAndEveryhitPersistsIt(): void
@@ -252,6 +260,54 @@ namespace Lotgd\Tests\Security {
             self::assertSame(0, (int) ($GLOBALS['twofactorauth_test_prefs']['locked_until'] ?? 0));
 
             $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: mismatch).', '2fa_verify');
+        }
+
+        public function testVerifyAcceptsLegacyEncryptedSecretAndReencryptsWithCurrentKey(): void
+        {
+            $secret = \TwoFactorAuthService::generateSecret();
+            $legacyStoredSecret = \TwoFactorAuthService::encryptSecret($secret, twofactorauth_legacy_signing_key());
+
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $legacyStoredSecret;
+            $GLOBALS['twofactorauth_test_prefs']['last_used_timestep'] = 0;
+            $_POST['token'] = \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, time());
+
+            twofactorauth_handle_challenge_verification(Output::getInstance());
+
+            self::assertSame(0, $GLOBALS['twofactorauth_test_prefs']['pending_challenge']);
+            self::assertNotSame($legacyStoredSecret, $GLOBALS['twofactorauth_test_prefs']['secret_encrypted']);
+            self::assertSame(
+                $secret,
+                \TwoFactorAuthService::decryptSecret(
+                    (string) $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'],
+                    twofactorauth_current_signing_key()
+                )
+            );
+        }
+
+        public function testDisableConfirmationAcceptsLegacySignedToken(): void
+        {
+            global $session;
+
+            $legacyToken = \TwoFactorAuthService::signDisableToken(
+                7,
+                'player@example.test',
+                time() + 300,
+                twofactorauth_legacy_signing_key()
+            );
+
+            $session['user']['emailaddress'] = 'player@example.test';
+            $_GET['token'] = $legacyToken;
+            $GLOBALS['twofactorauth_test_prefs']['enabled'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $this->encodePlainStoredSecret(\TwoFactorAuthService::generateSecret());
+            $GLOBALS['twofactorauth_test_prefs']['disable_token_hash'] = hash('sha256', $legacyToken);
+            $GLOBALS['twofactorauth_test_prefs']['disable_token_expires'] = time() + 300;
+
+            twofactorauth_handle_disable_confirmation(Output::getInstance());
+
+            self::assertSame(0, $GLOBALS['twofactorauth_test_prefs']['enabled']);
+            self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['secret_encrypted']);
+            self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['disable_token_hash']);
         }
 
         public function testVerifyLockoutStillAppliesAfterThreshold(): void
