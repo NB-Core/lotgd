@@ -75,6 +75,8 @@ namespace Lotgd\Tests\Security {
             ];
             $_GET = [];
             $_POST = [];
+            $GLOBALS['forms_output'] = '';
+            unset($GLOBALS['twofactorauth_test_request_body']);
             $_SERVER['REQUEST_URI'] = 'runmodule.php?module=twofactorauth&op=challenge';
             $_SERVER['REQUEST_METHOD'] = 'POST';
         }
@@ -268,6 +270,52 @@ namespace Lotgd\Tests\Security {
             self::assertGreaterThan(time(), (int) $GLOBALS['twofactorauth_test_prefs']['locked_until']);
 
             $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: locked).', '2fa_verify');
+        }
+
+        public function testBeginPasskeyAuthRejectsInvalidCsrfOnSynchronousRoute(): void
+        {
+            global $session;
+
+            $session['user']['twofactorauth'] = [
+                'pending_challenge' => 1,
+                'locked_until' => 0,
+            ];
+            $session['twofactorauth_csrf'] = 'csrf-test-token';
+            $_POST['csrf_token'] = 'wrong-token';
+            $GLOBALS['forms_output'] = '';
+
+            twofactorauth_handle_begin_passkey_auth();
+
+            $payload = json_decode((string) $GLOBALS['forms_output'], true);
+            self::assertSame([
+                'ok' => false,
+                'error' => 'csrf',
+                'code' => 'csrf',
+            ], $payload);
+        }
+
+        public function testVerifyPasskeyRejectsEmptyCsrfOnSynchronousRoute(): void
+        {
+            global $session;
+
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 0;
+            $session['twofactorauth_csrf'] = 'csrf-test-token';
+            $GLOBALS['twofactorauth_test_request_body'] = json_encode([
+                'id' => 'credential-id',
+                'response' => [],
+            ]);
+            $GLOBALS['forms_output'] = '';
+
+            twofactorauth_handle_passkey_verification();
+
+            $payload = json_decode((string) $GLOBALS['forms_output'], true);
+            self::assertSame([
+                'ok' => false,
+                'error' => 'csrf',
+                'code' => 'csrf',
+            ], $payload);
+            self::assertSame(0, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
         }
 
         #[RunInSeparateProcess]
