@@ -19,6 +19,9 @@ class PasskeyService
     private const SESSION_KEY_PREFIX = 'twofactorauth_passkey_challenge_';
     private const CHALLENGE_TTL_SECONDS = 300;
 
+    /** @var array<int, string> */
+    private static array $diagnostics = [];
+
     public function __construct(private readonly PasskeyCredentialRepository $credentials)
     {
     }
@@ -188,6 +191,24 @@ class PasskeyService
         return ['ok' => true, 'error' => '', 'clone' => false];
     }
 
+    /**
+     * Clear captured diagnostics between requests/tests.
+     */
+    public static function clearDiagnostics(): void
+    {
+        self::$diagnostics = [];
+    }
+
+    /**
+     * Return captured diagnostics emitted while resolving passkey configuration.
+     *
+     * @return array<int, string>
+     */
+    public static function getDiagnostics(): array
+    {
+        return self::$diagnostics;
+    }
+
     private function createWebAuthn(): WebAuthn
     {
         $rpId = $this->resolveRpId();
@@ -207,11 +228,32 @@ class PasskeyService
         if ($host === '') {
             $requestHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
             if ($requestHost !== '') {
-                $host = explode(':', $requestHost, 2)[0];
+                $fallbackHost = explode(':', $requestHost, 2)[0];
+                $this->emitRpIdDiagnostic(sprintf(
+                    'Passkey rpId fallback: configured serverurl "%s" did not yield a valid host; using HTTP_HOST "%s" (rpId "%s").',
+                    $serverUrl !== '' ? $serverUrl : '[empty]',
+                    $requestHost,
+                    $fallbackHost
+                ));
+                $host = $fallbackHost;
+            } else {
+                $this->emitRpIdDiagnostic(sprintf(
+                    'Passkey rpId fallback: configured serverurl "%s" did not yield a valid host and HTTP_HOST is unavailable; using localhost.',
+                    $serverUrl !== '' ? $serverUrl : '[empty]'
+                ));
             }
         }
 
         return $host !== '' ? $host : 'localhost';
+    }
+
+    /**
+     * Emit an observable diagnostic when passkey rpId resolution has to fall back.
+     */
+    private function emitRpIdDiagnostic(string $message): void
+    {
+        self::$diagnostics[] = $message;
+        error_log($message);
     }
 
     private function resolveRpName(): string

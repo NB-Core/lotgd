@@ -143,6 +143,10 @@ modules.
   - Table prefix subscribers need to prefix both primary tables and join tables using the new mapping object structures.
 - **PHP 8.3**: Old PHP 7.x-style code (e.g., deprecated array/string operations) will break.
 - **Async**: All Ajax endpoints rewritten to use Jaxon.
+- **Two-factor auth key derivation**:
+  - The `twofactorauth` module now derives its crypto key from installation-secret material stored in the main settings table (`twofactorauth_key_material`) instead of only `serverurl` and `gameadminemail`.
+  - Existing installs keep a compatibility window: encrypted TOTP secrets and signed disable links are still accepted with the legacy key and TOTP secrets are re-encrypted with the new key after a successful verification.
+  - Rotating or deleting `twofactorauth_key_material` invalidates any TOTP secrets already re-encrypted with the new key and any disable links signed with it. Plan rotations carefully and keep backups if you must replace the secret.
 
 ### DBAL 4 Migration Inventory (2.x)
 

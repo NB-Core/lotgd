@@ -132,5 +132,7 @@ If passkey registration or verification fails, verify the relying party/domain s
 - **HTTPS is required** for passkeys in normal environments.
   - Local development can use `http://localhost`, but production/staging passkey flows should use valid TLS.
 - If you run behind a reverse proxy, ensure the external host players see is consistent with `serverurl`; host mismatches can cause browser-side `NotAllowedError` / RP mismatch failures.
+- When `serverurl` is malformed and the passkey service must fall back to `HTTP_HOST` for the RP ID, the server now emits an explicit diagnostic to the PHP/web server error log so admins can correct the configuration instead of debugging silent WebAuthn mismatches.
+- The module now stores dedicated installation secret material in the main settings table (`twofactorauth_key_material`) to derive 2FA encryption/signing keys. Changing that value impacts already re-encrypted TOTP secrets and newly signed disable links, so treat it like any other installation secret.
 - If the browser shows **"Unexpected end of JSON input"** during passkey begin/finish, the backend likely returned empty content, HTML, or another non-JSON response. Inspect the raw begin/finish endpoint response body first to identify redirects/login pages/PHP errors quickly.
 - If begin-response **Raw start is empty**, treat it as backend exception/empty output. Check the Two Factor Auth module debug log and your web server/PHP error log for the root cause.
