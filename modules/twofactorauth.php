@@ -1691,12 +1691,23 @@ function twofactorauth_migrate_secret_after_success(array $secretState): void
  */
 function twofactorauth_verify_disable_token_with_compat(string $token): array
 {
+    $currentKey = twofactorauth_current_signing_key();
+    $currentKeyValidation = null;
+
     foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
         $validation = TwoFactorAuthService::verifyDisableToken($token, $candidateKey);
         if ($validation['valid']) {
             return $validation;
         }
+
+        if ($candidateKey === $currentKey) {
+            $currentKeyValidation = $validation;
+        }
     }
 
-    return TwoFactorAuthService::verifyDisableToken($token, twofactorauth_current_signing_key());
+    if ($currentKeyValidation !== null) {
+        return $currentKeyValidation;
+    }
+
+    return TwoFactorAuthService::verifyDisableToken($token, $currentKey);
 }
