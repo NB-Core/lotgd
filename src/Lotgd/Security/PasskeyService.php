@@ -216,6 +216,26 @@ class PasskeyService
         return new WebAuthn($this->resolveRpName(), $rpId, ['none', 'packed', 'fido-u2f', 'apple'], true);
     }
 
+    /**
+     * Normalizes potentially untrusted values before including them in log messages.
+     *
+     * Strips control characters (including newlines) and truncates to a safe length.
+     */
+    private function sanitizeForLog(string $value, int $maxLength = 200): string
+    {
+        // Remove non-printable characters, including newlines and other control characters.
+        $sanitized = preg_replace('/[[:^print:]]/', '', $value);
+        if ($sanitized === null) {
+            $sanitized = '';
+        }
+
+        if (strlen($sanitized) > $maxLength) {
+            $sanitized = substr($sanitized, 0, $maxLength) . '...';
+        }
+
+        return $sanitized;
+    }
+
     private function resolveRpId(): string
     {
         // Ensure diagnostics are scoped to a single rpId resolution and do not leak across requests.
@@ -232,17 +252,22 @@ class PasskeyService
             $requestHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
             if ($requestHost !== '') {
                 $fallbackHost = explode(':', $requestHost, 2)[0];
+
+                $logServerUrl   = $this->sanitizeForLog($serverUrl !== '' ? $serverUrl : '[empty]');
+                $logFallbackHost = $this->sanitizeForLog($fallbackHost);
+
                 $this->emitRpIdDiagnostic(sprintf(
-                    'Passkey rpId fallback: configured serverurl "%s" did not yield a valid host; using HTTP_HOST "%s" (rpId "%s").',
-                    $serverUrl !== '' ? $serverUrl : '[empty]',
-                    $requestHost,
-                    $fallbackHost
+                    'Passkey rpId fallback: configured serverurl "%s" did not yield a valid host; using derived rpId "%s" from HTTP_HOST.',
+                    $logServerUrl,
+                    $logFallbackHost
                 ));
                 $host = $fallbackHost;
             } else {
+                $logServerUrl = $this->sanitizeForLog($serverUrl !== '' ? $serverUrl : '[empty]');
+
                 $this->emitRpIdDiagnostic(sprintf(
                     'Passkey rpId fallback: configured serverurl "%s" did not yield a valid host and HTTP_HOST is unavailable; using localhost.',
-                    $serverUrl !== '' ? $serverUrl : '[empty]'
+                    $logServerUrl
                 ));
             }
         }
