@@ -38,9 +38,31 @@ $jaxon->setOption('core.debug.verbose', false);
  * Register async handlers from the directory to keep the historical Jaxon
  * client export shape (Lotgd.Async.Handler.*) stable for runtime bridge code.
  *
- * Security note: passkey method allowlisting is enforced server-side in
- * async/process.php so hardening does not alter this client namespace contract.
+ * Security note: async/process.php still enforces its allowlist before Jaxon
+ * dispatch. The passkey class options below narrow Jaxon's callable surface as
+ * defense in depth so helper/test seams are never exported or invokable.
+ *
+ * @var array<int, string> $passkeyRuntimeMethods
  */
+$passkeyRuntimeMethods = [
+    'beginRegistration',
+    'finishRegistration',
+    'beginAuthentication',
+    'verifyAuthentication',
+];
+
 $jaxon->register(Jaxon::CALLABLE_DIR, __DIR__ . '/../../src/Lotgd/Async/Handler', [
     'namespace' => 'Lotgd\\Async\\Handler',
+    'classes' => [
+        'Lotgd\\Async\\Handler\\TwoFactorAuthPasskey' => [
+            'export' => [
+                'only' => $passkeyRuntimeMethods,
+            ],
+            'functions' => [
+                'setService,setRepository' => [
+                    'excluded' => true,
+                ],
+            ],
+        ],
+    ],
 ]);

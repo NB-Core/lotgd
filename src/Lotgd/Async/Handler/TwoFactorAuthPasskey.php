@@ -55,32 +55,28 @@ class TwoFactorAuthPasskey
     /**
      * Test-only seam to override the passkey service without constructor injection.
      *
-     * This is intentionally public so async handler tests can inject stubs.
-     * It is not part of the runtime API surface and should not be used by
-     * production call sites.
+     * This remains public only so async handler tests can inject stubs.
+     * Jaxon registration explicitly excludes it from the remote callable
+     * surface, so production async requests cannot invoke this helper seam.
      */
     public function setService(PasskeyService $service): void
     {
-        // Jaxon only invokes explicitly registered handler methods
-        // (beginRegistration, finishRegistration, beginAuthentication,
-        // verifyAuthentication), so widening this setter does not create an
-        // additional remote-call surface.
+        // Keep test wiring local to the object instance. Runtime requests are
+        // blocked earlier because async/common/jaxon.php excludes this helper.
         $this->service = $service;
     }
 
     /**
      * Test-only seam to override the passkey repository without constructor injection.
      *
-     * This is intentionally public so async handler tests can inject stubs.
-     * It is not part of the runtime API surface and should not be used by
-     * production call sites.
+     * This remains public only so async handler tests can inject stubs.
+     * Jaxon registration explicitly excludes it from the remote callable
+     * surface, so production async requests cannot invoke this helper seam.
      */
     public function setRepository(PasskeyCredentialRepository $repository): void
     {
-        // Jaxon only invokes explicitly registered handler methods
-        // (beginRegistration, finishRegistration, beginAuthentication,
-        // verifyAuthentication), so widening this setter does not create an
-        // additional remote-call surface.
+        // Keep test wiring local to the object instance. Runtime requests are
+        // blocked earlier because async/common/jaxon.php excludes this helper.
         $this->repository = $repository;
     }
 
