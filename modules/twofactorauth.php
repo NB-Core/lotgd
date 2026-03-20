@@ -1404,15 +1404,19 @@ function twofactorauth_handle_finish_passkey_registration(): void
 
 /**
  * Begin passkey authentication challenge for the pending 2FA login.
+ *
+ * Module prefs are the canonical persisted 2FA challenge state. Legacy ad-hoc
+ * nested session data is not guaranteed to be synchronized for the synchronous
+ * challenge flow, so this handler must read the pending challenge flags from
+ * module prefs before applying the existing CSRF and ceremony begin logic.
  */
 function twofactorauth_handle_begin_passkey_auth(): void
 {
     global $session;
 
-    // Ensure there is a pending 2FA challenge and the account is not locked out
-    $twofaState        = $session['user']['twofactorauth'] ?? [];
-    $pendingChallenge  = (int) ($twofaState['pending_challenge'] ?? 0);
-    $lockedUntil       = isset($twofaState['locked_until']) ? (int) $twofaState['locked_until'] : 0;
+    // Module prefs are the persisted source of truth for pending 2FA state.
+    $pendingChallenge  = (int) get_module_pref('pending_challenge');
+    $lockedUntil       = (int) get_module_pref('locked_until');
     $now               = time();
 
     if ($pendingChallenge !== 1) {
