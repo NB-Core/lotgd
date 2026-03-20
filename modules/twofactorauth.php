@@ -343,8 +343,8 @@ function twofactorauth_render_setup(Output $output): void
     }
 
     if ($enabled) {
-        $output->output('Two-factor authentication is currently enabled on your account.`n');
-        $output->output('`$If you lose access to your authenticator app, use the login challenge page to request email recovery.`0`n`n');
+        $output->output('`vTwo-factor authentication is currently enabled on your account.`0`n`n');
+        $output->output('`$If you lose access to your authenticator app, use the login challenge page to request email recovery.`0`n');
     }
 
     $repo = twofactorauth_passkey_repository();
@@ -495,7 +495,7 @@ function twofactorauth_render_challenge(Output $output): void
     }
     Nav::add('Disable via email', 'runmodule.php?module=twofactorauth&op=disable_email');
 
-    $output->output('Password accepted, two-factor authentication is required.`n');
+    $output->output('`vPassword accepted, two-factor authentication is required.`0`n`n');
     $output->output('Enter the token from your authenticator app to continue.`n');
 
     addnav('', 'runmodule.php?module=twofactorauth&op=verify');
