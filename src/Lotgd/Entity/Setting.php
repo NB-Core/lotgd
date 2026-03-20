@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 class Setting
 {
     #[ORM\Id]
-    #[ORM\Column(type: 'string', length: 25, name: 'setting')]
+    #[ORM\Column(type: 'string', length: 50, name: 'setting')]
     private string $setting = '';
 
     #[ORM\Column(type: 'string', length: 255, name: 'value')]

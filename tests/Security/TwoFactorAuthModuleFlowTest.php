@@ -262,6 +262,56 @@ namespace Lotgd\Tests\Security {
             $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: mismatch).', '2fa_verify');
         }
 
+
+        /**
+         * The 2FA bootstrap path must persist secret-backed key material in the
+         * main settings table using the longer identifier without truncation.
+         */
+        public function testSecretMaterialBootstrapPersistsLongMainSettingKey(): void
+        {
+            unset($GLOBALS['twofactorauth_test_install_secret']);
+
+            $capturedSettingName = null;
+            $capturedSettingValue = null;
+
+            $settings = new class () extends \Lotgd\Settings {
+                /** @var array<string, string> */
+                private array $values = [];
+
+                public function __construct()
+                {
+                }
+
+                public function getSetting(string|int $settingname, mixed $default = false): mixed
+                {
+                    return $this->values[(string) $settingname] ?? $default;
+                }
+
+                public function saveSetting(string|int $settingname, mixed $value): bool
+                {
+                    $this->values[(string) $settingname] = (string) $value;
+                    $GLOBALS['twofactorauth_saved_setting_name'] = (string) $settingname;
+                    $GLOBALS['twofactorauth_saved_setting_value'] = (string) $value;
+
+                    return true;
+                }
+            };
+
+            $GLOBALS['settings'] = $settings;
+            \Lotgd\Settings::setInstance($settings);
+
+            $secretMaterial = twofactorauth_secret_material();
+            $currentSigningKey = twofactorauth_current_signing_key();
+            $capturedSettingName = $GLOBALS['twofactorauth_saved_setting_name'] ?? null;
+            $capturedSettingValue = $GLOBALS['twofactorauth_saved_setting_value'] ?? null;
+
+            self::assertSame('twofactorauth_key_material', $capturedSettingName);
+            self::assertIsString($capturedSettingValue);
+            self::assertSame($capturedSettingValue, $secretMaterial);
+            self::assertSame(64, strlen($secretMaterial));
+            self::assertSame(hash_hmac('sha256', 'lotgd|twofactorauth|v2', $secretMaterial), $currentSigningKey);
+        }
+
         public function testVerifyAcceptsLegacyEncryptedSecretAndReencryptsWithCurrentKey(): void
         {
             $secret = \TwoFactorAuthService::generateSecret();
