@@ -1575,7 +1575,7 @@ function get_all_tables()
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
         'setting' => array(
-            'name' => 'setting', 'type' => 'varchar(25)'
+            'name' => 'setting', 'type' => 'varchar(50)'
             ),
         'value' => array(
             'name' => 'value', 'type' => 'varchar(255)'
