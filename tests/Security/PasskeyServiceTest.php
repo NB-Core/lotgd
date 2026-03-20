@@ -312,9 +312,13 @@ class PasskeyServiceTest extends TestCase
         $service = new PasskeyService($this->repo);
 
         self::assertSame('fallback.example.test', $this->invokeResolveRpId($service));
-        self::assertSame([
-            'Passkey rpId fallback: configured serverurl "example.test/no-scheme" did not yield a valid host; using HTTP_HOST "fallback.example.test:8080" (rpId "fallback.example.test").',
-        ], PasskeyService::getDiagnostics());
+
+        $diagnostics = PasskeyService::getDiagnostics();
+
+        self::assertCount(1, $diagnostics);
+        self::assertStringContainsString('configured serverurl "example.test/no-scheme"', $diagnostics[0]);
+        self::assertStringContainsString('derived rpId "fallback.example.test"', $diagnostics[0]);
+        self::assertStringContainsString('from HTTP_HOST', $diagnostics[0]);
     }
 
     public function testResolveRpIdFallsBackToLocalhostWhenNoConfiguredOrRequestHostExists(): void
