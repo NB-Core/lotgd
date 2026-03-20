@@ -218,6 +218,9 @@ class PasskeyService
 
     private function resolveRpId(): string
     {
+        // Ensure diagnostics are scoped to a single rpId resolution and do not leak across requests.
+        self::$diagnostics = [];
+
         $settings = Settings::getInstance();
         $serverUrl = trim((string) $settings->getSetting('serverurl', 'http://localhost'));
         $host = (string) parse_url($serverUrl, PHP_URL_HOST);
@@ -253,6 +256,13 @@ class PasskeyService
     private function emitRpIdDiagnostic(string $message): void
     {
         self::$diagnostics[] = $message;
+
+        // Enforce a small bounded size on diagnostics to avoid unbounded growth in long-lived workers.
+        $maxDiagnostics = 50;
+        if (count(self::$diagnostics) > $maxDiagnostics) {
+            self::$diagnostics = array_slice(self::$diagnostics, -$maxDiagnostics);
+        }
+
         error_log($message);
     }
 
