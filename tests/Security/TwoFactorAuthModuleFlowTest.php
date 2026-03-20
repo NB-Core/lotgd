@@ -378,14 +378,15 @@ namespace Lotgd\Tests\Security {
             $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: locked).', '2fa_verify');
         }
 
-        public function testBeginPasskeyAuthRejectsInvalidCsrfOnSynchronousRoute(): void
+        public function testBeginPasskeyAuthReadsPendingStateFromModulePrefsOnSynchronousRoute(): void
         {
             global $session;
 
-            $session['user']['twofactorauth'] = [
-                'pending_challenge' => 1,
-                'locked_until' => 0,
-            ];
+            // Module prefs are the canonical persisted 2FA challenge state for
+            // synchronous passkey routes; nested session data is intentionally
+            // not seeded here so this regression covers the persisted-path read.
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['locked_until'] = 0;
             $session['twofactorauth_csrf'] = 'csrf-test-token';
             $_POST['csrf_token'] = 'wrong-token';
             $GLOBALS['forms_output'] = '';
