@@ -1634,6 +1634,7 @@ function twofactorauth_decrypt_secret_with_compat(string $storedSecret): array
     }
 
     $currentKey = twofactorauth_current_signing_key();
+    $canEncrypt = function_exists('openssl_encrypt');
     foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
         $secret = TwoFactorAuthService::decryptSecret($storedSecret, $candidateKey);
         if ($secret === '') {
@@ -1641,7 +1642,7 @@ function twofactorauth_decrypt_secret_with_compat(string $storedSecret): array
         }
 
         $usedLegacy = $candidateKey !== $currentKey;
-        $needsReencrypt = $usedLegacy || !str_starts_with($storedSecret, 'enc:');
+        $needsReencrypt = $usedLegacy || ($canEncrypt && !str_starts_with($storedSecret, 'enc:'));
 
         return [
             'secret' => $secret,
