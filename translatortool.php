@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ArrayParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
 use Lotgd\Sanitize;
@@ -44,8 +45,8 @@ function translatortoolGetActiveLanguage(): string
 /**
  * Build the exact translation cache key format used by Translator::translateLoadNamespace().
  *
- * The namespace segment must follow the loader's normalization and length
- * handling so reopening the same translation after save cannot hit stale cache.
+ * The namespace segment uses the original namespace argument, with the same
+ * overlong-value sha1 fallback that the loader applies before caching.
  */
 function translatortoolBuildTranslationCacheKey(string $namespace, string $language): string
 {
@@ -92,8 +93,9 @@ if ($op == "") {
      * Persist a translator edit using the same namespace normalization as the loader.
      *
      * Matching Translator::translateLoadNamespace() matters because the loader
-     * queries by both page and normalized URI and caches under the normalized
-     * namespace string. Writes therefore use bound parameters instead of raw
+     * queries by both page and normalized URI, while its cache key keeps the
+     * original namespace argument unless it must fall back to sha1 for length.
+     * Writes therefore use bound parameters instead of raw
      * interpolation so translator-entered text such as apostrophes is stored
      * safely and so save-time SQL matches lookup semantics exactly.
      */
@@ -196,12 +198,16 @@ if ($op == "") {
                 $connection->executeStatement(
                     'UPDATE ' . $translationsTable . '
                         SET author = :author, version = :version, uri = :uri, outtext = :translation
-                      WHERE tid IN (' . implode(',', $matchingIds) . ')',
+                      WHERE tid IN (:tids)',
                     [
                         'author'      => $session['user']['login'],
                         'version'     => $logd_version,
                         'uri'         => $namespace,
                         'translation' => $trans,
+                        'tids'        => $matchingIds,
+                    ],
+                    [
+                        'tids' => ArrayParameterType::INTEGER,
                     ]
                 );
             }
