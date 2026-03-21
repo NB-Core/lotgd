@@ -19,6 +19,9 @@ class PasskeyService
     private const SESSION_KEY_PREFIX = 'twofactorauth_passkey_challenge_';
     private const CHALLENGE_TTL_SECONDS = 300;
 
+    /** @var array<int, string> */
+    private static array $diagnostics = [];
+
     public function __construct(private readonly PasskeyCredentialRepository $credentials)
     {
     }
@@ -188,6 +191,24 @@ class PasskeyService
         return ['ok' => true, 'error' => '', 'clone' => false];
     }
 
+    /**
+     * Clear captured diagnostics between requests/tests.
+     */
+    public static function clearDiagnostics(): void
+    {
+        self::$diagnostics = [];
+    }
+
+    /**
+     * Return captured diagnostics emitted while resolving passkey configuration.
+     *
+     * @return array<int, string>
+     */
+    public static function getDiagnostics(): array
+    {
+        return self::$diagnostics;
+    }
+
     private function createWebAuthn(): WebAuthn
     {
         $rpId = $this->resolveRpId();
@@ -195,8 +216,31 @@ class PasskeyService
         return new WebAuthn($this->resolveRpName(), $rpId, ['none', 'packed', 'fido-u2f', 'apple'], true);
     }
 
+    /**
+     * Normalizes potentially untrusted values before including them in log messages.
+     *
+     * Strips control characters (including newlines) and truncates to a safe length.
+     */
+    private function sanitizeForLog(string $value, int $maxLength = 200): string
+    {
+        // Remove non-printable characters, including newlines and other control characters.
+        $sanitized = preg_replace('/[[:^print:]]/', '', $value);
+        if ($sanitized === null) {
+            $sanitized = '';
+        }
+
+        if (strlen($sanitized) > $maxLength) {
+            $sanitized = substr($sanitized, 0, $maxLength) . '...';
+        }
+
+        return $sanitized;
+    }
+
     private function resolveRpId(): string
     {
+        // Ensure diagnostics are scoped to a single rpId resolution and do not leak across requests.
+        self::$diagnostics = [];
+
         $settings = Settings::getInstance();
         $serverUrl = trim((string) $settings->getSetting('serverurl', 'http://localhost'));
         $host = (string) parse_url($serverUrl, PHP_URL_HOST);
@@ -207,11 +251,44 @@ class PasskeyService
         if ($host === '') {
             $requestHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
             if ($requestHost !== '') {
-                $host = explode(':', $requestHost, 2)[0];
+                $fallbackHost = explode(':', $requestHost, 2)[0];
+
+                $logServerUrl   = $this->sanitizeForLog($serverUrl !== '' ? $serverUrl : '[empty]');
+                $logFallbackHost = $this->sanitizeForLog($fallbackHost);
+
+                $this->emitRpIdDiagnostic(sprintf(
+                    'Passkey rpId fallback: configured serverurl "%s" did not yield a valid host; using derived rpId "%s" from HTTP_HOST.',
+                    $logServerUrl,
+                    $logFallbackHost
+                ));
+                $host = $fallbackHost;
+            } else {
+                $logServerUrl = $this->sanitizeForLog($serverUrl !== '' ? $serverUrl : '[empty]');
+
+                $this->emitRpIdDiagnostic(sprintf(
+                    'Passkey rpId fallback: configured serverurl "%s" did not yield a valid host and HTTP_HOST is unavailable; using localhost.',
+                    $logServerUrl
+                ));
             }
         }
 
         return $host !== '' ? $host : 'localhost';
+    }
+
+    /**
+     * Emit an observable diagnostic when passkey rpId resolution has to fall back.
+     */
+    private function emitRpIdDiagnostic(string $message): void
+    {
+        self::$diagnostics[] = $message;
+
+        // Enforce a small bounded size on diagnostics to avoid unbounded growth in long-lived workers.
+        $maxDiagnostics = 50;
+        if (count(self::$diagnostics) > $maxDiagnostics) {
+            self::$diagnostics = array_slice(self::$diagnostics, -$maxDiagnostics);
+        }
+
+        error_log($message);
     }
 
     private function resolveRpName(): string

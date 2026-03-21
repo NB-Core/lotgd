@@ -73,10 +73,20 @@ namespace Lotgd\Tests\Security {
                 'max_attempts' => 5,
                 'lock_seconds' => 120,
             ];
+            $GLOBALS['twofactorauth_test_install_secret'] = 'test-install-secret-material';
             $_GET = [];
             $_POST = [];
+            $GLOBALS['forms_output'] = '';
+            unset($GLOBALS['twofactorauth_test_request_body']);
             $_SERVER['REQUEST_URI'] = 'runmodule.php?module=twofactorauth&op=challenge';
             $_SERVER['REQUEST_METHOD'] = 'POST';
+        }
+
+        protected function tearDown(): void
+        {
+            unset($GLOBALS['twofactorauth_test_install_secret']);
+
+            parent::tearDown();
         }
 
         public function testLoginStagesSessionSnapshotAndEveryhitPersistsIt(): void
@@ -252,6 +262,104 @@ namespace Lotgd\Tests\Security {
             $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: mismatch).', '2fa_verify');
         }
 
+
+        /**
+         * The 2FA bootstrap path must persist secret-backed key material in the
+         * main settings table using the longer identifier without truncation.
+         */
+        public function testSecretMaterialBootstrapPersistsLongMainSettingKey(): void
+        {
+            unset($GLOBALS['twofactorauth_test_install_secret']);
+
+            $capturedSettingName = null;
+            $capturedSettingValue = null;
+
+            $settings = new class () extends \Lotgd\Settings {
+                /** @var array<string, string> */
+                private array $values = [];
+
+                public function __construct()
+                {
+                }
+
+                public function getSetting(string|int $settingname, mixed $default = false): mixed
+                {
+                    return $this->values[(string) $settingname] ?? $default;
+                }
+
+                public function saveSetting(string|int $settingname, mixed $value): bool
+                {
+                    $this->values[(string) $settingname] = (string) $value;
+                    $GLOBALS['twofactorauth_saved_setting_name'] = (string) $settingname;
+                    $GLOBALS['twofactorauth_saved_setting_value'] = (string) $value;
+
+                    return true;
+                }
+            };
+
+            $GLOBALS['settings'] = $settings;
+            \Lotgd\Settings::setInstance($settings);
+
+            $secretMaterial = twofactorauth_secret_material();
+            $currentSigningKey = twofactorauth_current_signing_key();
+            $capturedSettingName = $GLOBALS['twofactorauth_saved_setting_name'] ?? null;
+            $capturedSettingValue = $GLOBALS['twofactorauth_saved_setting_value'] ?? null;
+
+            self::assertSame('twofactorauth_key_material', $capturedSettingName);
+            self::assertIsString($capturedSettingValue);
+            self::assertSame($capturedSettingValue, $secretMaterial);
+            self::assertSame(64, strlen($secretMaterial));
+            self::assertSame(hash_hmac('sha256', 'lotgd|twofactorauth|v2', $secretMaterial), $currentSigningKey);
+        }
+
+        public function testVerifyAcceptsLegacyEncryptedSecretAndReencryptsWithCurrentKey(): void
+        {
+            $secret = \TwoFactorAuthService::generateSecret();
+            $legacyStoredSecret = \TwoFactorAuthService::encryptSecret($secret, twofactorauth_legacy_signing_key());
+
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $legacyStoredSecret;
+            $GLOBALS['twofactorauth_test_prefs']['last_used_timestep'] = 0;
+            $_POST['token'] = \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, time());
+
+            twofactorauth_handle_challenge_verification(Output::getInstance());
+
+            self::assertSame(0, $GLOBALS['twofactorauth_test_prefs']['pending_challenge']);
+            self::assertNotSame($legacyStoredSecret, $GLOBALS['twofactorauth_test_prefs']['secret_encrypted']);
+            self::assertSame(
+                $secret,
+                \TwoFactorAuthService::decryptSecret(
+                    (string) $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'],
+                    twofactorauth_current_signing_key()
+                )
+            );
+        }
+
+        public function testDisableConfirmationAcceptsLegacySignedToken(): void
+        {
+            global $session;
+
+            $legacyToken = \TwoFactorAuthService::signDisableToken(
+                7,
+                'player@example.test',
+                time() + 300,
+                twofactorauth_legacy_signing_key()
+            );
+
+            $session['user']['emailaddress'] = 'player@example.test';
+            $_GET['token'] = $legacyToken;
+            $GLOBALS['twofactorauth_test_prefs']['enabled'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $this->encodePlainStoredSecret(\TwoFactorAuthService::generateSecret());
+            $GLOBALS['twofactorauth_test_prefs']['disable_token_hash'] = hash('sha256', $legacyToken);
+            $GLOBALS['twofactorauth_test_prefs']['disable_token_expires'] = time() + 300;
+
+            twofactorauth_handle_disable_confirmation(Output::getInstance());
+
+            self::assertSame(0, $GLOBALS['twofactorauth_test_prefs']['enabled']);
+            self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['secret_encrypted']);
+            self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['disable_token_hash']);
+        }
+
         public function testVerifyLockoutStillAppliesAfterThreshold(): void
         {
             $secret = \TwoFactorAuthService::generateSecret();
@@ -268,6 +376,53 @@ namespace Lotgd\Tests\Security {
             self::assertGreaterThan(time(), (int) $GLOBALS['twofactorauth_test_prefs']['locked_until']);
 
             $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: locked).', '2fa_verify');
+        }
+
+        public function testBeginPasskeyAuthReadsPendingStateFromModulePrefsOnSynchronousRoute(): void
+        {
+            global $session;
+
+            // Module prefs are the canonical persisted 2FA challenge state for
+            // synchronous passkey routes; nested session data is intentionally
+            // not seeded here so this regression covers the persisted-path read.
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['locked_until'] = 0;
+            $session['twofactorauth_csrf'] = 'csrf-test-token';
+            $_POST['csrf_token'] = 'wrong-token';
+            $GLOBALS['forms_output'] = '';
+
+            twofactorauth_handle_begin_passkey_auth();
+
+            $payload = json_decode((string) $GLOBALS['forms_output'], true);
+            self::assertSame([
+                'ok' => false,
+                'error' => 'csrf',
+                'code' => 'csrf',
+            ], $payload);
+        }
+
+        public function testVerifyPasskeyRejectsEmptyCsrfOnSynchronousRoute(): void
+        {
+            global $session;
+
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['failed_attempts'] = 0;
+            $session['twofactorauth_csrf'] = 'csrf-test-token';
+            $GLOBALS['twofactorauth_test_request_body'] = json_encode([
+                'id' => 'credential-id',
+                'response' => [],
+            ]);
+            $GLOBALS['forms_output'] = '';
+
+            twofactorauth_handle_passkey_verification();
+
+            $payload = json_decode((string) $GLOBALS['forms_output'], true);
+            self::assertSame([
+                'ok' => false,
+                'error' => 'csrf',
+                'code' => 'csrf',
+            ], $payload);
+            self::assertSame(0, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
         }
 
         #[RunInSeparateProcess]

@@ -15,6 +15,7 @@ use Lotgd\GameLog;
 use Lotgd\DebugLog;
 use Lotgd\Redirect;
 use Lotgd\Serialization;
+use Lotgd\Settings;
 use Lotgd\Translator;
 
 /**
@@ -318,6 +319,9 @@ function twofactorauth_run(): void
 
 /**
  * Render and process the user-facing setup page in preferences.
+ *
+ * Use Output::output() for translated/game-formatted text and Output::rawOutput()
+ * for literal HTML or JavaScript fragments that should bypass game-text formatting.
  */
 function twofactorauth_render_setup(Output $output): void
 {
@@ -342,8 +346,8 @@ function twofactorauth_render_setup(Output $output): void
     }
 
     if ($enabled) {
-        $output->output('Two-factor authentication is currently enabled on your account.`n');
-        $output->output('`$If you lose access to your authenticator app, use the login challenge page to request email recovery.`0`n`n');
+        $output->output('`vTwo-factor authentication is currently enabled on your account.`0`n`n');
+        $output->output('`$If you lose access to your authenticator app, use the login challenge page to request email recovery.`0`n');
     }
 
     $repo = twofactorauth_passkey_repository();
@@ -372,11 +376,12 @@ function twofactorauth_render_setup(Output $output): void
 
     addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=begin_passkey_registration');
     addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=finish_passkey_registration');
-    rawoutput("<div id='twofactorauth-passkey-registration'>");
-    rawoutput("<label>" . htmlspecialchars(translate_inline('Passkey label'), ENT_QUOTES, 'UTF-8') . "</label> ");
-    rawoutput("<input type='text' id='passkey-label' value='This device' maxlength='120'> ");
-    rawoutput("<button type='button' id='passkey-add-button'>" . htmlspecialchars(translate_inline('Add passkey'), ENT_QUOTES, 'UTF-8') . "</button>");
-    rawoutput('</div>');
+    // Literal markup stays on rawOutput(); player-facing text remains on output().
+    $output->rawOutput("<div id='twofactorauth-passkey-registration'>");
+    $output->rawOutput("<label>" . htmlspecialchars(translate_inline('Passkey label'), ENT_QUOTES, 'UTF-8') . "</label> ");
+    $output->rawOutput("<input type='text' id='passkey-label' value='This device' maxlength='120'> ");
+    $output->rawOutput("<button type='button' id='passkey-add-button'>" . htmlspecialchars(translate_inline('Add passkey'), ENT_QUOTES, 'UTF-8') . "</button>");
+    $output->rawOutput('</div>');
 
     if ($passkeys === []) {
         $output->output('No passkeys enrolled yet.`n');
@@ -388,11 +393,11 @@ function twofactorauth_render_setup(Output $output): void
             $lastUsed = (int) ($item['last_used_at'] ?? 0);
             $output->output('• %s (created: %s, last used: %s)`n', $label, date('Y-m-d H:i', $created), $lastUsed > 0 ? date('Y-m-d H:i', $lastUsed) : 'never');
             addnav('', 'runmodule.php?module=twofactorauth&op=setup&setupop=delete_passkey');
-            rawoutput("<form action='runmodule.php?module=twofactorauth&op=setup&setupop=delete_passkey' method='POST' style='display:inline-block;margin-bottom:6px'>");
-            rawoutput("<input type='hidden' name='csrf_token' value='" . htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') . "'>");
-            rawoutput("<input type='hidden' name='delete_credential_id' value='" . $credentialId . "'>");
-            rawoutput("<button type='submit'>" . htmlspecialchars(translate_inline('Delete passkey'), ENT_QUOTES, 'UTF-8') . "</button>");
-            rawoutput('</form><br>');
+            $output->rawOutput("<form action='runmodule.php?module=twofactorauth&op=setup&setupop=delete_passkey' method='POST' style='display:inline-block;margin-bottom:6px'>");
+            $output->rawOutput("<input type='hidden' name='csrf_token' value='" . htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') . "'>");
+            $output->rawOutput("<input type='hidden' name='delete_credential_id' value='" . $credentialId . "'>");
+            $output->rawOutput("<button type='submit'>" . htmlspecialchars(translate_inline('Delete passkey'), ENT_QUOTES, 'UTF-8') . "</button>");
+            $output->rawOutput('</form><br>');
         }
     }
 
@@ -413,7 +418,7 @@ function twofactorauth_render_setup(Output $output): void
             Nav::add('Begin TOTP setup', 'runmodule.php?module=twofactorauth&op=setup&setupop=start');
         }
 
-        twofactorauth_render_passkey_registration_script($csrf);
+        twofactorauth_render_passkey_registration_script($output, $csrf);
 
         return;
     }
@@ -433,7 +438,7 @@ function twofactorauth_render_setup(Output $output): void
 
     if ($qrProviderEndpoint !== '') {
         $qrCodeUrl = TwoFactorAuthService::buildQrCodeUrl($qrProviderEndpoint, $otpauthUri, $qrCodeSize);
-        rawoutput("<div class='twofactorauth-qr'><img src='" . htmlspecialchars($qrCodeUrl, ENT_QUOTES, 'UTF-8') . "' alt='" . htmlspecialchars(translate_inline('Authenticator enrollment QR code'), ENT_QUOTES, 'UTF-8') . "' width='" . (int) $qrCodeSize . "' height='" . (int) $qrCodeSize . "'></div>");
+        $output->rawOutput("<div class='twofactorauth-qr'><img src='" . htmlspecialchars($qrCodeUrl, ENT_QUOTES, 'UTF-8') . "' alt='" . htmlspecialchars(translate_inline('Authenticator enrollment QR code'), ENT_QUOTES, 'UTF-8') . "' width='" . (int) $qrCodeSize . "' height='" . (int) $qrCodeSize . "'></div>");
     }
 
     $output->output('Enrollment URI (copy/paste if needed):`n%s`n`n', $otpauthUri);
@@ -452,7 +457,7 @@ function twofactorauth_render_setup(Output $output): void
                 set_module_pref('temp_secret_encrypted', '');
                 set_module_pref('verified_at', time());
                 set_module_pref('last_used_timestep', $result['timestep']);
-                $output->output('Two-factor authentication is now enabled.`n');
+                $output->output('`$Two-factor authentication is now enabled.`n`n');
             } else {
                 $output->output('The token was invalid. Please try again.`n');
             }
@@ -460,17 +465,20 @@ function twofactorauth_render_setup(Output $output): void
     }
 
     addnav('', 'runmodule.php?module=twofactorauth&op=setup');
-    rawoutput("<form action='runmodule.php?module=twofactorauth&op=setup' method='POST'>");
-    rawoutput("<label>" . translate_inline('Authenticator token') . "</label> ");
-    rawoutput("<input type='text' name='token' maxlength='10'> ");
-    rawoutput("<button type='submit'>" . translate_inline('Enable') . "</button>");
-    rawoutput('</form>');
+    $output->rawOutput("<form action='runmodule.php?module=twofactorauth&op=setup' method='POST'>");
+    $output->rawOutput("<label>" . translate_inline('Authenticator token') . "</label> ");
+    $output->rawOutput("<input type='text' name='token' maxlength='10'> ");
+    $output->rawOutput("<button type='submit'>" . translate_inline('Enable') . "</button>");
+    $output->rawOutput('</form>');
 
-    twofactorauth_render_passkey_registration_script($csrf);
+    twofactorauth_render_passkey_registration_script($output, $csrf);
 }
 
 /**
  * Render the 2FA challenge while login is pending.
+ *
+ * Keep Output::output() for translated/game text and Output::rawOutput() for
+ * literal form/button/script fragments rendered into the page.
  */
 function twofactorauth_render_challenge(Output $output): void
 {
@@ -494,25 +502,25 @@ function twofactorauth_render_challenge(Output $output): void
     }
     Nav::add('Disable via email', 'runmodule.php?module=twofactorauth&op=disable_email');
 
-    $output->output('Password accepted, two-factor authentication is required.`n');
+    $output->output('`vPassword accepted, two-factor authentication is required.`0`n`n');
     $output->output('Enter the token from your authenticator app to continue.`n');
 
     addnav('', 'runmodule.php?module=twofactorauth&op=verify');
     // Keep explicit POST action; challenge verification must remain a classic form submit.
-    rawoutput("<form id='twofactorauth-challenge-form' action='runmodule.php?module=twofactorauth&op=verify' method='POST'>");
-    rawoutput("<label>" . translate_inline('Authenticator token') . "</label> ");
-    rawoutput("<input type='text' name='token' maxlength='10'> ");
-    rawoutput("<button type='submit'>" . translate_inline('Verify') . "</button>");
-    rawoutput('</form>');
+    $output->rawOutput("<form id='twofactorauth-challenge-form' action='runmodule.php?module=twofactorauth&op=verify' method='POST'>");
+    $output->rawOutput("<label>" . translate_inline('Authenticator token') . "</label> ");
+    $output->rawOutput("<input type='text' name='token' maxlength='10'> ");
+    $output->rawOutput("<button type='submit'>" . translate_inline('Verify') . "</button>");
+    $output->rawOutput('</form>');
 
     if ($passkeys !== []) {
         // Shared helper utilities are needed both on setup and challenge pages.
-        twofactorauth_render_passkey_js_helpers();
-        twofactorauth_render_passkey_jaxon_bridge();
+        twofactorauth_render_passkey_js_helpers($output);
+        twofactorauth_render_passkey_jaxon_bridge($output);
         $csrfJson = json_encode(twofactorauth_csrf_token()) ?: '""';
         $showDebugJson = twofactorauth_is_megauser() ? 'true' : 'false';
-        rawoutput("<div style='margin-top:12px'><button type='button' id='twofactorauth-use-passkey'>" . htmlspecialchars(translate_inline('Use passkey'), ENT_QUOTES, 'UTF-8') . "</button></div>");
-        rawoutput("<script>(function(){if(window.__lotgdTwofactorauthChallengeSetupDone){return;}window.__lotgdTwofactorauthChallengeSetupDone=true;const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";const resolvedHandlers=typeof window.getJaxonHandlers==='function'?window.getJaxonHandlers():null;const namespace=resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey?resolvedHandlers.TwoFactorAuthPasskey:(window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler&&window.Lotgd.Async.Handler.TwoFactorAuthPasskey?window.Lotgd.Async.Handler.TwoFactorAuthPasskey:(window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler&&window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey?window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey:null));const beginExists=!!(namespace&&typeof namespace.beginAuthentication==='function');const buildDiag=function(data){if(!showDebug||!data){return'';}const code=data.error?String(data.error):'unknown';const diagId=data.diagnostic_id?String(data.diagnostic_id):'';const debug=data.debug_message?String(data.debug_message):'';const diagType=data.diagnostic&&data.diagnostic.type?String(data.diagnostic.type):'';let message='Passkey operation failed. Code: '+code+'.';if(diagId!==''){message+=' Diagnostic: '+diagId+'.';}if(diagType!==''){message+=' Type: '+diagType+'.';}if(debug!==''){message+=' Debug: '+debug;}return message;};btn.onclick=async function(){try{const beginData=await window.twofactorauthJaxonPasskeyCall('beginAuthentication',[csrfToken]);if(!beginData||!beginData.ok){alert(showDebug?buildDiag(beginData):'Passkey operation failed');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey operation failed');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verifyData=await window.twofactorauthJaxonPasskeyCall('verifyAuthentication',[csrfToken,body]);if(verifyData&&verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}alert(showDebug?buildDiag(verifyData):'Passkey operation failed');}catch(e){const detail=e&&e.message?String(e.message):'';alert(showDebug&&detail!==''?'Passkey operation failed. Diagnostic: '+detail:'Passkey operation failed');}};})();</script>");
+        $output->rawOutput("<div style='margin-top:12px'><button type='button' id='twofactorauth-use-passkey'>" . htmlspecialchars(translate_inline('Use passkey'), ENT_QUOTES, 'UTF-8') . "</button></div>");
+        $output->rawOutput("<script>(function(){if(window.__lotgdTwofactorauthChallengeSetupDone){return;}window.__lotgdTwofactorauthChallengeSetupDone=true;const btn=document.getElementById('twofactorauth-use-passkey');if(!btn){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";const resolvedHandlers=typeof window.getJaxonHandlers==='function'?window.getJaxonHandlers():null;const namespace=resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey?resolvedHandlers.TwoFactorAuthPasskey:(window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler&&window.Lotgd.Async.Handler.TwoFactorAuthPasskey?window.Lotgd.Async.Handler.TwoFactorAuthPasskey:(window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler&&window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey?window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey:null));const beginExists=!!(namespace&&typeof namespace.beginAuthentication==='function');const buildDiag=function(data){if(!showDebug||!data){return'';}const code=data.error?String(data.error):'unknown';const diagId=data.diagnostic_id?String(data.diagnostic_id):'';const debug=data.debug_message?String(data.debug_message):'';const diagType=data.diagnostic&&data.diagnostic.type?String(data.diagnostic.type):'';let message='Passkey operation failed. Code: '+code+'.';if(diagId!==''){message+=' Diagnostic: '+diagId+'.';}if(diagType!==''){message+=' Type: '+diagType+'.';}if(debug!==''){message+=' Debug: '+debug;}return message;};btn.onclick=async function(){try{const beginData=await window.twofactorauthJaxonPasskeyCall('beginAuthentication',[csrfToken]);if(!beginData||!beginData.ok){alert(showDebug?buildDiag(beginData):'Passkey operation failed');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const cred=await navigator.credentials.get({publicKey});if(!cred){alert('Passkey operation failed');return;}const body={id:cred.id,type:cred.type,response:{authenticatorData:window.twofactorauthArrayBufferToBase64Url(cred.response.authenticatorData),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(cred.response.clientDataJSON),signature:window.twofactorauthArrayBufferToBase64Url(cred.response.signature),userHandle:cred.response.userHandle?window.twofactorauthArrayBufferToBase64Url(cred.response.userHandle):''}};const verifyData=await window.twofactorauthJaxonPasskeyCall('verifyAuthentication',[csrfToken,body]);if(verifyData&&verifyData.ok){window.location='runmodule.php?module=twofactorauth&op=resume';return;}alert(showDebug?buildDiag(verifyData):'Passkey operation failed');}catch(e){const detail=e&&e.message?String(e.message):'';alert(showDebug&&detail!==''?'Passkey operation failed. Diagnostic: '+detail:'Passkey operation failed');}};})();</script>");
     }
 }
 
@@ -592,7 +600,8 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         return;
     }
 
-    $secret = TwoFactorAuthService::decryptSecret((string) get_module_pref('secret_encrypted'), twofactorauth_signing_key());
+    $secretState = twofactorauth_decrypt_secret_with_compat((string) get_module_pref('secret_encrypted'));
+    $secret = $secretState['secret'];
     $digits = (int) get_module_setting('token_digits');
     $period = (int) get_module_setting('period_seconds');
     $window = (int) get_module_setting('window');
@@ -600,6 +609,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
 
     $result = TwoFactorAuthService::verifyTotp($secret, $token, $digits, $period, $window, $lastStep, $now);
     if ($result['valid']) {
+        twofactorauth_migrate_secret_after_success($secretState);
         set_module_pref('last_used_timestep', $result['timestep']);
         twofactorauth_clear_pending_state();
         twofactorauth_log_challenge_outcome($acctId, 'success');
@@ -708,7 +718,7 @@ function twofactorauth_handle_disable_via_email(Output $output): void
     }
 
     $expires = time() + ((int) get_module_setting('disable_link_ttl_minutes') * 60);
-    $token = TwoFactorAuthService::signDisableToken($acctId, $email, $expires, twofactorauth_signing_key());
+    $token = TwoFactorAuthService::signDisableToken($acctId, $email, $expires, twofactorauth_current_signing_key());
     $confirmUri = 'runmodule.php?module=twofactorauth&op=confirm_disable&token=' . rawurlencode($token);
 
     set_module_pref('disable_token_hash', hash('sha256', $token));
@@ -735,7 +745,7 @@ function twofactorauth_handle_disable_confirmation(Output $output): void
     global $session;
 
     $token = (string) Http::get('token');
-    $validation = TwoFactorAuthService::verifyDisableToken($token, twofactorauth_signing_key());
+    $validation = twofactorauth_verify_disable_token_with_compat($token);
     $expectedHash = (string) get_module_pref('disable_token_hash');
     $expires = (int) get_module_pref('disable_token_expires');
 
@@ -953,10 +963,23 @@ function twofactorauth_passkey_service(): PasskeyService
 
 /**
  * Render browser helpers for base64url decoding and passkey registration.
+ *
+ * These are literal script fragments, so they should use Output::rawOutput() from
+ * the active page-rendering context instead of the legacy global rawoutput().
+ *
+ * The Output argument is optional to preserve direct helper/test invocations.
  */
-function twofactorauth_render_passkey_js_helpers(): void
+function twofactorauth_render_passkey_js_helpers(?Output $output = null): void
 {
-    rawoutput("<script>window.twofactorauthArrayBufferToBase64Url=window.twofactorauthArrayBufferToBase64Url||function(buffer){const bytes=new Uint8Array(buffer);let binary='';for(let i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i]);}return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');};window.twofactorauthBase64UrlToArrayBuffer=window.twofactorauthBase64UrlToArrayBuffer||function(base64url){const padded=(base64url+'==='.slice((base64url.length+3)%4)).replace(/-/g,'+').replace(/_/g,'/');const binary=atob(padded);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}return bytes.buffer;};window.twofactorauthDecodeCredentialOptions=window.twofactorauthDecodeCredentialOptions||function(publicKey){if(publicKey.challenge){publicKey.challenge=window.twofactorauthBase64UrlToArrayBuffer(publicKey.challenge);}if(publicKey.user&&publicKey.user.id){publicKey.user.id=window.twofactorauthBase64UrlToArrayBuffer(publicKey.user.id);}if(Array.isArray(publicKey.excludeCredentials)){publicKey.excludeCredentials=publicKey.excludeCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}if(Array.isArray(publicKey.allowCredentials)){publicKey.allowCredentials=publicKey.allowCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}return publicKey;};</script>");
+    $script = "<script>window.twofactorauthArrayBufferToBase64Url=window.twofactorauthArrayBufferToBase64Url||function(buffer){const bytes=new Uint8Array(buffer);let binary='';for(let i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i]);}return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');};window.twofactorauthBase64UrlToArrayBuffer=window.twofactorauthBase64UrlToArrayBuffer||function(base64url){const padded=(base64url+'==='.slice((base64url.length+3)%4)).replace(/-/g,'+').replace(/_/g,'/');const binary=atob(padded);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}return bytes.buffer;};window.twofactorauthDecodeCredentialOptions=window.twofactorauthDecodeCredentialOptions||function(publicKey){if(publicKey.challenge){publicKey.challenge=window.twofactorauthBase64UrlToArrayBuffer(publicKey.challenge);}if(publicKey.user&&publicKey.user.id){publicKey.user.id=window.twofactorauthBase64UrlToArrayBuffer(publicKey.user.id);}if(Array.isArray(publicKey.excludeCredentials)){publicKey.excludeCredentials=publicKey.excludeCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}if(Array.isArray(publicKey.allowCredentials)){publicKey.allowCredentials=publicKey.allowCredentials.map(function(c){if(c.id){c.id=window.twofactorauthBase64UrlToArrayBuffer(c.id);}return c;});}return publicKey;};</script>";
+
+    if ($output instanceof Output) {
+        $output->rawOutput($script);
+
+        return;
+    }
+
+    rawoutput($script);
 }
 
 /**
@@ -972,8 +995,12 @@ function twofactorauth_render_passkey_js_helpers(): void
  * Preflight note: before invoking any passkey handler we verify the live Jaxon request URI still
  * points at /async/process.php. This catches endpoint drift immediately, instead of waiting for
  * bridge timeouts after requests are routed to non-JSON endpoints.
+ *
+ * This helper emits literal JavaScript, so it should stay on Output::rawOutput().
+ *
+ * The Output argument is optional to preserve direct helper/test invocations.
  */
-function twofactorauth_render_passkey_jaxon_bridge(): void
+function twofactorauth_render_passkey_jaxon_bridge(?Output $output = null): void
 {
     $showDebugJson = twofactorauth_is_megauser() ? 'true' : 'false';
 
@@ -984,6 +1011,12 @@ function twofactorauth_render_passkey_jaxon_bridge(): void
  * Jaxon can emit namespaces under window.Lotgd, window.JaxonLotgd or helper accessors.
  */window.twofactorauthResolvePasskeyHandler=window.twofactorauthResolvePasskeyHandler||function(method){const resolvedHandlers=typeof window.getJaxonHandlers==='function'?window.getJaxonHandlers():null;const requestedMethod=String(method||'');const candidates=[resolvedHandlers&&resolvedHandlers.TwoFactorAuthPasskey?resolvedHandlers.TwoFactorAuthPasskey:null,window.Lotgd&&window.Lotgd.Async&&window.Lotgd.Async.Handler?window.Lotgd.Async.Handler.TwoFactorAuthPasskey:null,window.JaxonLotgd&&window.JaxonLotgd.Async&&window.JaxonLotgd.Async.Handler?window.JaxonLotgd.Async.Handler.TwoFactorAuthPasskey:null];for(let i=0;i<candidates.length;i++){const candidate=candidates[i];if(candidate&&typeof candidate[requestedMethod]==='function'){return candidate;}}return null;};window.twofactorauthJaxonPasskeyCall=window.twofactorauthJaxonPasskeyCall||function(method,args){return new Promise(function(resolve,reject){const preflight=window.twofactorauthPreflightPasskeyRequestUri(method);if(!preflight.ok){const message='Passkey async endpoint mismatch.';const detail=preflight.detail||'';reject(new Error(showDebug&&detail!==''?message+' '+detail:message));return;}const namespace=window.twofactorauthResolvePasskeyHandler(method);if(!namespace){reject(new Error('Passkey async handler unavailable.'));return;}const requestId='tfa_'+Date.now()+'_'+Math.random().toString(16).slice(2);const timeoutId=window.setTimeout(function(){rejectPending(requestId,'Passkey async request timed out.','method='+String(method));},20000);window.twofactorauthPendingRequests[requestId]={resolve:resolve,reject:reject,timeoutId:timeoutId,method:method};const params=Array.isArray(args)?args.slice():[];params.unshift(requestId);try{namespace[method].apply(namespace,params);}catch(error){rejectPending(requestId,'Passkey async request dispatch failed.',error&&error.message?String(error.message):'unknown');}});};if(!window.__lotgdTwofactorPasskeyBridgeRejectionHooks){window.__lotgdTwofactorPasskeyBridgeRejectionHooks=true;window.addEventListener('unhandledrejection',function(event){const reason=event&&event.reason&&event.reason.message?String(event.reason.message):'';if(reason.indexOf('Unexpected end of JSON input')!==-1||reason.indexOf('JSON')!==-1){if(showDebug){console.warn('[TwoFactorAuthPasskey] Transport failure:',reason);}window.twofactorauthRejectAllPending('Passkey async parser failure.',reason);}});window.addEventListener('error',function(event){const message=event&&event.message?String(event.message):'';if(message.indexOf('Unexpected end of JSON input')!==-1){if(showDebug){console.warn('[TwoFactorAuthPasskey] Transport failure:',message);}window.twofactorauthRejectAllPending('Passkey async parser failure.',message);}});}})();</script>
 JAVASCRIPT;
+
+    if ($output instanceof Output) {
+        $output->rawOutput(str_replace('__SHOW_DEBUG__', $showDebugJson, $script));
+
+        return;
+    }
 
     rawoutput(str_replace('__SHOW_DEBUG__', $showDebugJson, $script));
 }
@@ -1063,18 +1096,29 @@ function twofactorauth_is_megauser(): bool
 }
 
 /**
- * Render browser helpers for base64url decoding and passkey registration.
+ * Render the setup-page passkey registration script.
+ *
+ * The setup script is raw JavaScript markup, while nearby explanatory strings remain
+ * in Output::output() so they continue through the game's formatting/translation path.
+ *
+ * The Output argument is optional to preserve direct helper/test invocations.
  */
-function twofactorauth_render_passkey_registration_script(string $csrf): void
+function twofactorauth_render_passkey_registration_script(?Output $output = null, string $csrf = ''): void
 {
-    twofactorauth_render_passkey_js_helpers();
-    twofactorauth_render_passkey_jaxon_bridge();
+    twofactorauth_render_passkey_js_helpers($output);
+    twofactorauth_render_passkey_jaxon_bridge($output);
 
     $csrfJson = json_encode($csrf) ?: '""';
     $showDebugJson = twofactorauth_is_megauser() ? 'true' : 'false';
 
     // Assign via `onclick` so repeated script injection cannot stack multiple handlers.
     // This setup page can be re-rendered in some module flows.
+    if ($output instanceof Output) {
+        $output->rawOutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";const buildDiag=function(data){if(!showDebug||!data){return'';}const code=data.error?String(data.error):'unknown';const diagId=data.diagnostic_id?String(data.diagnostic_id):'';const debug=data.debug_message?String(data.debug_message):'';const diagType=data.diagnostic&&data.diagnostic.type?String(data.diagnostic.type):'';let message='Passkey operation failed. Code: '+code+'.';if(diagId!==''){message+=' Diagnostic: '+diagId+'.';}if(diagType!==''){message+=' Type: '+diagType+'.';}if(debug!==''){message+=' Debug: '+debug;}return message;};button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const beginData=await window.twofactorauthJaxonPasskeyCall('beginRegistration',[csrfToken,label]);if(!beginData||!beginData.ok){alert(showDebug?buildDiag(beginData):'Passkey operation failed');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey operation failed');return;}const payload={id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finishData=await window.twofactorauthJaxonPasskeyCall('finishRegistration',[csrfToken,label,payload]);if(finishData&&finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}alert(showDebug?buildDiag(finishData):'Passkey operation failed');}catch(error){const detail=error&&error.message?String(error.message):'';alert(showDebug&&detail!==''?'Passkey operation failed. Diagnostic: '+detail:'Passkey operation failed');}};})();</script>");
+
+        return;
+    }
+
     rawoutput("<script>(function(){const button=document.getElementById('passkey-add-button');if(!button){return;}const csrfToken=" . $csrfJson . ";const showDebug=" . $showDebugJson . ";const buildDiag=function(data){if(!showDebug||!data){return'';}const code=data.error?String(data.error):'unknown';const diagId=data.diagnostic_id?String(data.diagnostic_id):'';const debug=data.debug_message?String(data.debug_message):'';const diagType=data.diagnostic&&data.diagnostic.type?String(data.diagnostic.type):'';let message='Passkey operation failed. Code: '+code+'.';if(diagId!==''){message+=' Diagnostic: '+diagId+'.';}if(diagType!==''){message+=' Type: '+diagType+'.';}if(debug!==''){message+=' Debug: '+debug;}return message;};button.onclick=async function(){try{const labelEl=document.getElementById('passkey-label');const label=labelEl?labelEl.value:'';const beginData=await window.twofactorauthJaxonPasskeyCall('beginRegistration',[csrfToken,label]);if(!beginData||!beginData.ok){alert(showDebug?buildDiag(beginData):'Passkey operation failed');return;}const publicKey=window.twofactorauthDecodeCredentialOptions(beginData.options.publicKey);const credential=await navigator.credentials.create({publicKey});if(!credential){alert('Passkey operation failed');return;}const payload={id:credential.id,type:credential.type,response:{attestationObject:window.twofactorauthArrayBufferToBase64Url(credential.response.attestationObject),clientDataJSON:window.twofactorauthArrayBufferToBase64Url(credential.response.clientDataJSON),transports:typeof credential.response.getTransports==='function'?credential.response.getTransports():[]}};const finishData=await window.twofactorauthJaxonPasskeyCall('finishRegistration',[csrfToken,label,payload]);if(finishData&&finishData.ok){window.location='runmodule.php?module=twofactorauth&op=setup';return;}alert(showDebug?buildDiag(finishData):'Passkey operation failed');}catch(error){const detail=error&&error.message?String(error.message):'';alert(showDebug&&detail!==''?'Passkey operation failed. Diagnostic: '+detail:'Passkey operation failed');}};})();</script>");
 }
 
@@ -1090,6 +1134,51 @@ function twofactorauth_output_json(array $payload): void
     }
 
     rawoutput(json_encode($payload) ?: '{"ok":false}');
+}
+
+/**
+ * Read the raw request body for passkey endpoints.
+ *
+ * Tests can override the transport body with a fixture string because php://input is not
+ * writable in the CLI runtime used by PHPUnit.
+ */
+function twofactorauth_read_request_body(): string
+{
+    if (isset($GLOBALS['twofactorauth_test_request_body']) && is_string($GLOBALS['twofactorauth_test_request_body'])) {
+        return $GLOBALS['twofactorauth_test_request_body'];
+    }
+
+    return (string) (file_get_contents('php://input') ?: '');
+}
+
+/**
+ * Decode a JSON request body into an associative array for passkey endpoints.
+ *
+ * @return array<string, mixed>
+ */
+function twofactorauth_read_json_request_body(): array
+{
+    $requestBody = json_decode(twofactorauth_read_request_body() ?: '{}', true);
+
+    return is_array($requestBody) ? $requestBody : [];
+}
+
+/**
+ * Extract the module CSRF token from either a JSON body or classic POST fields.
+ *
+ * The legacy synchronous passkey entry point may still receive either fetch()-style JSON
+ * or a traditional POST payload. This helper normalizes both transports before the
+ * handler compares the request token against the session token.
+ */
+function twofactorauth_extract_request_csrf_token(): string
+{
+    $requestBody = twofactorauth_read_json_request_body();
+    $csrf = (string) ($requestBody['csrf_token'] ?? '');
+    if ($csrf !== '') {
+        return $csrf;
+    }
+
+    return (string) Http::post('csrf_token');
 }
 
 /**
@@ -1233,10 +1322,7 @@ function twofactorauth_handle_begin_passkey_registration(): void
     twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'entry', $acctId);
 
     try {
-        $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
-        if (!is_array($requestBody)) {
-            $requestBody = [];
-        }
+        $requestBody = twofactorauth_read_json_request_body();
 
         twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
@@ -1302,10 +1388,7 @@ function twofactorauth_handle_finish_passkey_registration(): void
     twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'entry', $acctId);
 
     try {
-        $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
-        if (!is_array($requestBody)) {
-            $requestBody = [];
-        }
+        $requestBody = twofactorauth_read_json_request_body();
 
         twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
@@ -1362,15 +1445,19 @@ function twofactorauth_handle_finish_passkey_registration(): void
 
 /**
  * Begin passkey authentication challenge for the pending 2FA login.
+ *
+ * Module prefs are the canonical persisted 2FA challenge state. Legacy ad-hoc
+ * nested session data is not guaranteed to be synchronized for the synchronous
+ * challenge flow, so this handler must read the pending challenge flags from
+ * module prefs before applying the existing CSRF and ceremony begin logic.
  */
 function twofactorauth_handle_begin_passkey_auth(): void
 {
     global $session;
 
-    // Ensure there is a pending 2FA challenge and the account is not locked out
-    $twofaState        = $session['user']['twofactorauth'] ?? [];
-    $pendingChallenge  = (int) ($twofaState['pending_challenge'] ?? 0);
-    $lockedUntil       = isset($twofaState['locked_until']) ? (int) $twofaState['locked_until'] : 0;
+    // Module prefs are the persisted source of truth for pending 2FA state.
+    $pendingChallenge  = (int) get_module_pref('pending_challenge');
+    $lockedUntil       = (int) get_module_pref('locked_until');
     $now               = time();
 
     if ($pendingChallenge !== 1) {
@@ -1387,6 +1474,13 @@ function twofactorauth_handle_begin_passkey_auth(): void
             'error'        => 'locked_out',
             'locked_until' => $lockedUntil,
         ]);
+        return;
+    }
+
+    $csrf = twofactorauth_extract_request_csrf_token();
+    if ($csrf === '' || !hash_equals(twofactorauth_csrf_token(), $csrf)) {
+        twofactorauth_output_json(twofactorauth_challenge_async_error_payload('csrf'));
+
         return;
     }
 
@@ -1436,9 +1530,12 @@ function twofactorauth_handle_passkey_verification(): void
             return;
         }
 
-        $requestBody = json_decode(file_get_contents('php://input') ?: '{}', true);
-        if (!is_array($requestBody)) {
-            $requestBody = [];
+        $requestBody = twofactorauth_read_json_request_body();
+        $csrf = (string) ($requestBody['csrf_token'] ?? '');
+        if ($csrf === '' || !hash_equals(twofactorauth_csrf_token(), $csrf)) {
+            twofactorauth_output_json(twofactorauth_challenge_async_error_payload('csrf'));
+
+            return;
         }
 
         $result = twofactorauth_passkey_service()->finishAuthentication($acctId, $requestBody);
@@ -1477,9 +1574,185 @@ function twofactorauth_handle_passkey_verification(): void
 }
 
 /**
- * Return the shared signing/encryption key material for this module.
+ * Return the preferred signing/encryption key material for this module.
+ *
+ * The current key is derived from installation-scoped secret material instead of only public
+ * configuration. Existing installs may still hold data encrypted/signed with the legacy key, so
+ * read/verify paths should call the compatibility helpers below during the transition window.
  */
 function twofactorauth_signing_key(): string
 {
+    return twofactorauth_current_signing_key();
+}
+
+/**
+ * Resolve the installation secret that anchors 2FA key derivation.
+ *
+ * The value is stored outside module settings so it is not exposed as routine public config. A
+ * generated secret must stay stable across requests; rotating it invalidates encrypted TOTP
+ * secrets and outstanding signed disable links unless the legacy fallback path can still read them.
+ */
+function twofactorauth_secret_material(): string
+{
+    if (isset($GLOBALS['twofactorauth_test_install_secret']) && is_string($GLOBALS['twofactorauth_test_install_secret'])) {
+        $testSecret = trim($GLOBALS['twofactorauth_test_install_secret']);
+        if ($testSecret !== '') {
+            return $testSecret;
+        }
+    }
+
+    $settings = Settings::getInstance();
+    $settingName = 'twofactorauth_key_material';
+    $existing = trim((string) $settings->getSetting($settingName, ''));
+    if ($existing !== '') {
+        return $existing;
+    }
+
+    try {
+        $generated = bin2hex(random_bytes(32));
+    } catch (\Throwable) {
+        $generated = hash('sha256', uniqid('twofactorauth-key-', true) . '|' . microtime(true));
+    }
+
+    if ($settings->saveSetting($settingName, $generated)) {
+        return $generated;
+    }
+
+    // Re-read in case another request populated the setting first.
+    $reloaded = trim((string) $settings->getSetting($settingName, ''));
+    if ($reloaded !== '') {
+        return $reloaded;
+    }
+
+    // Last-resort fallback preserves availability in misconfigured environments, but this path
+    // should be treated as degraded because it cannot provide secret-backed key material.
+    return twofactorauth_legacy_signing_key();
+}
+
+/**
+ * Derive the current 2FA key from installation-secret material.
+ */
+function twofactorauth_current_signing_key(): string
+{
+    return hash_hmac('sha256', 'lotgd|twofactorauth|v2', twofactorauth_secret_material());
+}
+
+/**
+ * Derive the legacy 2FA key used before secret-backed key material existed.
+ *
+ * This path exists only for backward compatibility while existing encrypted TOTP secrets and
+ * disable-link tokens are migrated forward.
+ */
+function twofactorauth_legacy_signing_key(): string
+{
     return hash('sha256', getsetting('serverurl', 'lotgd') . '|' . getsetting('gameadminemail', 'admin@example.com'));
+}
+
+/**
+ * Return the ordered list of keys accepted for compatibility reads/verifications.
+ *
+ * @return array<int, string>
+ */
+function twofactorauth_compatible_signing_keys(): array
+{
+    $keys = [twofactorauth_current_signing_key(), twofactorauth_legacy_signing_key()];
+
+    return array_values(array_unique(array_filter($keys, static fn(string $key): bool => $key !== '')));
+}
+
+/**
+ * Decrypt a stored TOTP secret using the current key first, then the legacy key if needed.
+ *
+ * @return array{secret:string,key:string,used_legacy:bool,needs_reencrypt:bool,stored_secret:string}
+ */
+function twofactorauth_decrypt_secret_with_compat(string $storedSecret): array
+{
+    $storedSecret = trim($storedSecret);
+    if ($storedSecret === '') {
+        return [
+            'secret' => '',
+            'key' => '',
+            'used_legacy' => false,
+            'needs_reencrypt' => false,
+            'stored_secret' => $storedSecret,
+        ];
+    }
+
+    $currentKey = twofactorauth_current_signing_key();
+    $canEncrypt = function_exists('openssl_encrypt');
+    foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
+        $secret = TwoFactorAuthService::decryptSecret($storedSecret, $candidateKey);
+        if ($secret === '') {
+            continue;
+        }
+
+        $usedLegacy = $candidateKey !== $currentKey;
+        $needsReencrypt = $usedLegacy || ($canEncrypt && !str_starts_with($storedSecret, 'enc:'));
+
+        return [
+            'secret' => $secret,
+            'key' => $candidateKey,
+            'used_legacy' => $usedLegacy,
+            'needs_reencrypt' => $needsReencrypt,
+            'stored_secret' => $storedSecret,
+        ];
+    }
+
+    return [
+        'secret' => '',
+        'key' => '',
+        'used_legacy' => false,
+        'needs_reencrypt' => false,
+        'stored_secret' => $storedSecret,
+    ];
+}
+
+/**
+ * Re-encrypt a TOTP secret with the current key after a successful compatibility read.
+ *
+ * This keeps existing installs working while gradually moving accounts off the legacy key or
+ * plaintext-at-rest fallback format during normal successful verification.
+ *
+ * @param array{secret:string,key:string,used_legacy:bool,needs_reencrypt:bool,stored_secret:string} $secretState
+ */
+function twofactorauth_migrate_secret_after_success(array $secretState): void
+{
+    if (($secretState['secret'] ?? '') === '' || !($secretState['needs_reencrypt'] ?? false)) {
+        return;
+    }
+
+    $reencrypted = TwoFactorAuthService::encryptSecret((string) $secretState['secret'], twofactorauth_current_signing_key());
+    if ($reencrypted === '') {
+        return;
+    }
+
+    set_module_pref('secret_encrypted', $reencrypted);
+}
+
+/**
+ * Verify disable-link tokens against both current and legacy signing keys.
+ *
+ * @return array{valid:bool,acctid:int,email:string,exp:int}
+ */
+function twofactorauth_verify_disable_token_with_compat(string $token): array
+{
+    $currentKey = twofactorauth_current_signing_key();
+    $currentKeyValidation = null;
+
+    foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
+        $validation = TwoFactorAuthService::verifyDisableToken($token, $candidateKey);
+        if ($validation['valid']) {
+            return $validation;
+        }
+
+        if ($candidateKey === $currentKey) {
+            $currentKeyValidation = $validation;
+        }
+    }
+
+    if ($currentKeyValidation !== null) {
+        return $currentKeyValidation;
+    }
+
+    return TwoFactorAuthService::verifyDisableToken($token, $currentKey);
 }

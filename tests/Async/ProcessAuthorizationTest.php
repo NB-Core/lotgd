@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Async {
 
+    use PHPUnit\Framework\Attributes\DataProvider;
     use PHPUnit\Framework\TestCase;
 
     /**
@@ -135,6 +136,42 @@ namespace Lotgd\Tests\Async {
             $this->assertSame(1, $jaxon->processCount);
         }
 
+
+        #[DataProvider('deniedPasskeyHelperMethodProvider')]
+        public function testPasskeyHelperCallableIsDeniedBeforeJaxonDispatch(string $methodName): void
+        {
+            global $jaxon, $ajax_rate_limit_seconds;
+
+            $ajax_rate_limit_seconds = 1.0;
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.TwoFactorAuthPasskey';
+            $_POST['jxnmthd'] = $methodName;
+
+            $jaxon = new class {
+                public int $processCount = 0;
+
+                public function canProcessRequest(): bool
+                {
+                    return true;
+                }
+
+                public function processRequest(): void
+                {
+                    $this->processCount++;
+                }
+            };
+
+            ob_start();
+            lotgd_async_process_entrypoint();
+            $body = (string) ob_get_clean();
+
+            $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertSame(403, http_response_code());
+            $this->assertSame(0, $jaxon->processCount);
+            $this->assertSame('callable_not_allowed', $payload['error'] ?? null);
+            $this->assertSame('Forbidden', $payload['message'] ?? null);
+        }
+
         public function testDeniedResponsesHaveConsistentJsonShape(): void
         {
             global $jaxon, $ajax_rate_limit_seconds;
@@ -186,6 +223,18 @@ namespace Lotgd\Tests\Async {
             $_SESSION = [];
 
             $this->assertTrue(lotgd_async_denied_request_is_throttled($start + 0.2, 2.0));
+        }
+
+
+        /**
+         * @return array<string, array{0:string}>
+         */
+        public static function deniedPasskeyHelperMethodProvider(): array
+        {
+            return [
+                'setService helper' => ['setService'],
+                'setRepository helper' => ['setRepository'],
+            ];
         }
 
         public function testAbuseKeyIgnoresSessionIdWhenNoCookieIsPresent(): void

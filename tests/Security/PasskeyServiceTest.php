@@ -85,6 +85,7 @@ class PasskeyServiceTest extends TestCase
     {
         $this->repo = new InMemoryPasskeyCredentialRepository();
         $GLOBALS['session'] = [];
+        PasskeyService::clearDiagnostics();
 
         $settings = $this->createMock(Settings::class);
         $settings->method('getSetting')->willReturnCallback(static function (string $name, mixed $default = false): mixed {
@@ -101,6 +102,7 @@ class PasskeyServiceTest extends TestCase
 
     protected function tearDown(): void
     {
+        PasskeyService::clearDiagnostics();
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
         unset($_SERVER['HTTP_HOST']);
@@ -310,6 +312,13 @@ class PasskeyServiceTest extends TestCase
         $service = new PasskeyService($this->repo);
 
         self::assertSame('fallback.example.test', $this->invokeResolveRpId($service));
+
+        $diagnostics = PasskeyService::getDiagnostics();
+
+        self::assertCount(1, $diagnostics);
+        self::assertStringContainsString('configured serverurl "example.test/no-scheme"', $diagnostics[0]);
+        self::assertStringContainsString('derived rpId "fallback.example.test"', $diagnostics[0]);
+        self::assertStringContainsString('from HTTP_HOST', $diagnostics[0]);
     }
 
     public function testResolveRpIdFallsBackToLocalhostWhenNoConfiguredOrRequestHostExists(): void
@@ -330,6 +339,9 @@ class PasskeyServiceTest extends TestCase
         $service = new PasskeyService($this->repo);
 
         self::assertSame('localhost', $this->invokeResolveRpId($service));
+        self::assertSame([
+            'Passkey rpId fallback: configured serverurl "[empty]" did not yield a valid host and HTTP_HOST is unavailable; using localhost.',
+        ], PasskeyService::getDiagnostics());
     }
 
     private function invokeResolveRpId(PasskeyService $service): string

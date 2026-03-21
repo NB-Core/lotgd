@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Async {
 
+    use Jaxon\Exception\RequestException;
     use Lotgd\Async\Handler\TwoFactorAuthPasskey;
     use Lotgd\Security\PasskeyCredentialRepository;
     use Lotgd\Security\PasskeyService;
+    use Nyholm\Psr7Server\ServerRequestCreator;
+    use Psr\Http\Message\ServerRequestInterface;
+    use PHPUnit\Framework\Attributes\DataProvider;
     use PHPUnit\Framework\Attributes\PreserveGlobalState;
     use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
     use PHPUnit\Framework\TestCase;
@@ -258,6 +262,35 @@ namespace Lotgd\Tests\Async {
             self::assertContains('finishRegistration', $exportedMethods);
             self::assertContains('beginAuthentication', $exportedMethods);
             self::assertContains('verifyAuthentication', $exportedMethods);
+            self::assertNotContains('setService', $exportedMethods);
+            self::assertNotContains('setRepository', $exportedMethods);
+        }
+
+        #[DataProvider('excludedPasskeyHelperMethodProvider')]
+        public function testJaxonBootstrapRejectsExcludedPasskeyHelperRequestsBeforeInvocation(string $methodName): void
+        {
+            require __DIR__ . '/../../async/common/jaxon.php';
+
+            global $jaxon;
+            self::assertNotNull($jaxon);
+
+            $jaxon->setOption('core.response.send', false);
+            $jaxon->di()->set(ServerRequestInterface::class, static fn($container) =>
+                $container->g(ServerRequestCreator::class)
+                    ->fromGlobals()
+                    ->withParsedBody([
+                        'jxncall' => json_encode([
+                            'type' => 'class',
+                            'name' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
+                            'method' => $methodName,
+                            'args' => [],
+                        ], JSON_THROW_ON_ERROR),
+                    ]));
+
+            $this->expectException(RequestException::class);
+            $this->expectExceptionMessage('excluded method');
+
+            $jaxon->processRequest();
         }
 
         public function testJaxonBootstrapPreservesLegacyNamespaceExportShapeForPasskeyBridge(): void
@@ -338,6 +371,17 @@ namespace Lotgd\Tests\Async {
             return [
                 'requestId' => (string) ($first['args']['args'][0] ?? ''),
                 'data' => (array) ($first['args']['args'][1] ?? []),
+            ];
+        }
+
+        /**
+         * @return array<string, array{0:string}>
+         */
+        public static function excludedPasskeyHelperMethodProvider(): array
+        {
+            return [
+                'setService helper' => ['setService'],
+                'setRepository helper' => ['setRepository'],
             ];
         }
 
