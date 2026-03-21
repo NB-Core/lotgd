@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Lotgd\DataCache;
+use Lotgd\Sanitize;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -21,6 +23,39 @@ require_once __DIR__ . "/common.php";
 $settings = Settings::getInstance();
 $output = Output::getInstance();
 Translator::getInstance()->setSchema("translatortool");
+
+/**
+ * Return the active translator language used by translation loading.
+ *
+ * The loader prefers the LANGUAGE constant once translator setup has run, so
+ * the save handler must invalidate caches with that same language value.
+ */
+function translatortoolGetActiveLanguage(): string
+{
+    if (defined('LANGUAGE')) {
+        return (string) constant('LANGUAGE');
+    }
+
+    Translator::translatorSetup();
+
+    return Translator::getInstance()->getLanguage();
+}
+
+/**
+ * Build the exact translation cache key format used by Translator::translateLoadNamespace().
+ *
+ * The namespace segment must follow the loader's normalization and length
+ * handling so reopening the same translation after save cannot hit stale cache.
+ */
+function translatortoolBuildTranslationCacheKey(string $namespace, string $language): string
+{
+    $cacheNamespace = $namespace;
+    if (strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH) {
+        $cacheNamespace = sha1($cacheNamespace);
+    }
+
+    return 'translations-' . $cacheNamespace . '-' . $language;
+}
 
 SuAccess::check(SU_IS_TRANSLATOR);
 $opRequest = Http::get('op');
@@ -53,65 +88,169 @@ if ($op == "") {
     $output->rawOutput("</form>");
     popup_footer();
 } elseif ($op == 'save') {
+    /**
+     * Persist a translator edit using the same namespace normalization as the loader.
+     *
+     * Matching Translator::translateLoadNamespace() matters because the loader
+     * queries by both page and normalized URI and caches under the normalized
+     * namespace string. Writes therefore use bound parameters instead of raw
+     * interpolation so translator-entered text such as apostrophes is stored
+     * safely and so save-time SQL matches lookup semantics exactly.
+     */
+    global $session, $logd_version;
+
     $uriPost = Http::post('uri');
-    $uri = is_string($uriPost) ? $uriPost : '';
+    $rawUri = is_string($uriPost) ? $uriPost : '';
     $textPost = Http::post('text');
     $text = is_string($textPost) ? $textPost : '';
     $transPost = Http::post('trans');
     $trans = is_string($transPost) ? $transPost : '';
+    $language = translatortoolGetActiveLanguage();
+    $namespace = Sanitize::translatorUri($rawUri);
+    $page = Sanitize::translatorPage($rawUri);
+    $connection = Database::getDoctrineConnection();
+    $translationsTable = Database::prefix('translations');
+    $untranslatedTable = Database::prefix('untranslated');
 
-    $page = $uri;
-    if (strpos($page, "?") !== false) {
-        $page = substr($page, 0, strpos($page, "?"));
-    }
+    $rows = $connection->fetchAllAssociative(
+        'SELECT tid, intext FROM ' . $translationsTable . '
+            WHERE language = :language
+              AND intext = :text
+              AND (uri = :page OR uri = :uri)',
+        [
+            'language' => $language,
+            'text'     => $text,
+            'page'     => $page,
+            'uri'      => $namespace,
+        ]
+    );
 
-    if ($trans == "") {
-        $sql = "DELETE ";
+    $saveSucceeded = false;
+
+    if ($trans === '') {
+        $connection->executeStatement(
+            'DELETE FROM ' . $translationsTable . '
+                WHERE language = :language
+                  AND intext = :text
+                  AND (uri = :page OR uri = :uri)',
+            [
+                'language' => $language,
+                'text'     => $text,
+                'page'     => $page,
+                'uri'      => $namespace,
+            ]
+        );
+        $saveSucceeded = true;
     } else {
-        $sql = "SELECT * ";
-    }
-    $sql .= "
-		FROM " . Database::prefix("translations") . "
-		WHERE language='" . LANGUAGE . "'
-			AND intext='$text'
-			AND (uri='$page' OR uri='$uri')";
-    if ($trans > "") {
-        $result = Database::query($sql);
-        invalidatedatacache("translations-" . $uri . "-" . $language);
-        if (Database::numRows($result) == 0) {
-            $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES ('" . LANGUAGE . "','$uri','$text','$trans','{$session['user']['login']}','$logd_version ')";
-            $sql1 = "DELETE FROM " . Database::prefix("untranslated") .
-                " WHERE intext='$text' AND language='" . LANGUAGE .
-                "' AND namespace='$url'";
-            Database::query($sql1);
-        } elseif (Database::numRows($result) == 1) {
-            $row = Database::fetchAssoc($result);
-            // MySQL is case insensitive so we need to do it here.
-            if ($row['intext'] == $text) {
-                $sql = "UPDATE " . Database::prefix("translations") . " SET author='{$session['user']['login']}', version='$logd_version', uri='$uri', outtext='$trans' WHERE tid={$row['tid']}";
-            } else {
-                $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES ('" . LANGUAGE . "','$uri','$text','$trans','{$session['user']['login']}','$logd_version ')";
-                $sql1 = "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext='$text' AND language='" . LANGUAGE . "' AND namespace='$url'";
-                Database::query($sql1);
-            }
-        } elseif (Database::numRows($result) > 1) {
-        /* To say the least, this case is bad. Simply because if there are duplicates, you make them even more equal. But most likely you won't get this far, as the code itself should not produce duplicates unless you insert manually or via module the same row more than once*/
-            $rows = array();
-            while ($row = Database::fetchAssoc($result)) {
-                // MySQL is case insensitive so we need to do it here.
-                if ($row['intext'] == $text) {
-                    $rows[] = $row['tid'];
+        if (count($rows) === 0) {
+            $connection->executeStatement(
+                'INSERT INTO ' . $translationsTable . '
+                    (language, uri, intext, outtext, author, version)
+                 VALUES (:language, :uri, :text, :translation, :author, :version)',
+                [
+                    'language'    => $language,
+                    'uri'         => $namespace,
+                    'text'        => $text,
+                    'translation' => $trans,
+                    'author'      => $session['user']['login'],
+                    'version'     => $logd_version,
+                ]
+            );
+        } elseif (count($rows) === 1 && $rows[0]['intext'] === $text) {
+            $connection->executeStatement(
+                'UPDATE ' . $translationsTable . '
+                    SET author = :author, version = :version, uri = :uri, outtext = :translation
+                  WHERE tid = :tid',
+                [
+                    'author'      => $session['user']['login'],
+                    'version'     => $logd_version,
+                    'uri'         => $namespace,
+                    'translation' => $trans,
+                    'tid'         => (int) $rows[0]['tid'],
+                ]
+            );
+        } else {
+            $matchingIds = [];
+            foreach ($rows as $row) {
+                // MySQL comparisons can be case-insensitive, so keep the legacy exact-text guard.
+                if ($row['intext'] === $text) {
+                    $matchingIds[] = (int) $row['tid'];
                 }
             }
-            $sql = "UPDATE " . Database::prefix("translations") . " SET author='{$session['user']['login']}', version='$logd_version', uri='$page', outtext='$trans' WHERE tid IN (" . join(",", $rows) . ")";
+
+            if ($matchingIds === []) {
+                $connection->executeStatement(
+                    'INSERT INTO ' . $translationsTable . '
+                        (language, uri, intext, outtext, author, version)
+                     VALUES (:language, :uri, :text, :translation, :author, :version)',
+                    [
+                        'language'    => $language,
+                        'uri'         => $namespace,
+                        'text'        => $text,
+                        'translation' => $trans,
+                        'author'      => $session['user']['login'],
+                        'version'     => $logd_version,
+                    ]
+                );
+            } else {
+                $connection->executeStatement(
+                    'UPDATE ' . $translationsTable . '
+                        SET author = :author, version = :version, uri = :uri, outtext = :translation
+                      WHERE tid IN (' . implode(',', $matchingIds) . ')',
+                    [
+                        'author'      => $session['user']['login'],
+                        'version'     => $logd_version,
+                        'uri'         => $namespace,
+                        'translation' => $trans,
+                    ]
+                );
+            }
+        }
+
+        $connection->executeStatement(
+            'DELETE FROM ' . $untranslatedTable . '
+                WHERE intext = :text
+                  AND language = :language
+                  AND namespace = :namespace',
+            [
+                'text'      => $text,
+                'language'  => $language,
+                'namespace' => $rawUri,
+            ]
+        );
+        $connection->executeStatement(
+            'DELETE FROM ' . $untranslatedTable . '
+                WHERE intext = :text
+                  AND language = :language
+                  AND namespace = :namespace',
+            [
+                'text'      => $text,
+                'language'  => $language,
+                'namespace' => $namespace,
+            ]
+        );
+
+        $saveSucceeded = true;
+    }
+
+    if ($saveSucceeded) {
+        // The cache key must exactly mirror Translator::translateLoadNamespace() so immediate re-open shows fresh data.
+        foreach (array_unique([$rawUri, $namespace, $page]) as $cacheNamespace) {
+            if ($cacheNamespace === '') {
+                continue;
+            }
+
+            DataCache::getInstance()->invalidatedatacache(
+                translatortoolBuildTranslationCacheKey($cacheNamespace, $language)
+            );
         }
     }
-    Database::query($sql);
+
     $saveNotClosePost = Http::post('savenotclose');
-    if (is_string($saveNotClosePost) && $saveNotClosePost > "") {
-        header("Location: translatortool.php?op=list&u=$page");
+    if ($saveSucceeded && is_string($saveNotClosePost) && $saveNotClosePost > "") {
+        header("Location: translatortool.php?op=list&u=" . rawurlencode($page));
         exit();
-    } else {
+    } elseif ($saveSucceeded) {
         popup_header("Updated");
         $output->rawOutput("<script language='javascript'>window.close();</script>");
         popup_footer();
