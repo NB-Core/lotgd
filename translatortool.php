@@ -217,22 +217,14 @@ if ($op == "") {
             'DELETE FROM ' . $untranslatedTable . '
                 WHERE intext = :text
                   AND language = :language
-                  AND namespace = :namespace',
+                  AND namespace IN (:namespaces)',
             [
-                'text'      => $text,
-                'language'  => $language,
-                'namespace' => $rawUri,
-            ]
-        );
-        $connection->executeStatement(
-            'DELETE FROM ' . $untranslatedTable . '
-                WHERE intext = :text
-                  AND language = :language
-                  AND namespace = :namespace',
+                'text'       => $text,
+                'language'   => $language,
+                'namespaces' => [$rawUri, $namespace],
+            ],
             [
-                'text'      => $text,
-                'language'  => $language,
-                'namespace' => $namespace,
+                'namespaces' => ArrayParameterType::STRING,
             ]
         );
 
