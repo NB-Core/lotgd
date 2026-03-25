@@ -32,12 +32,8 @@ final class LegacyHttpWrapperUsageCheck
     /**
      * @var list<string>
      */
-    private const ALLOWED_ROOTS = [
-        'lib/',
-        'modules/',
-        'install/',
-        'tests/',
-        'vendor/',
+    private const ALLOWED_PATHS = [
+        // Self-exclusion so policy text/examples in this checker are not flagged.
         'src/Lotgd/QA/LegacyHttpWrapperUsageCheck.php',
     ];
 
@@ -95,8 +91,8 @@ final class LegacyHttpWrapperUsageCheck
 
     private function isWhitelistedPath(string $relativePath): bool
     {
-        foreach (self::ALLOWED_ROOTS as $allowedRoot) {
-            if (str_starts_with($relativePath, $allowedRoot)) {
+        foreach (self::ALLOWED_PATHS as $allowedPath) {
+            if (str_starts_with($relativePath, $allowedPath)) {
                 return true;
             }
         }

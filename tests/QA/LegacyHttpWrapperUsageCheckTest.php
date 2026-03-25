@@ -9,6 +9,19 @@ use PHPUnit\Framework\TestCase;
 
 final class LegacyHttpWrapperUsageCheckTest extends TestCase
 {
+    /**
+     * @var list<string>
+     */
+    private array $fixtureRoots = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->fixtureRoots as $root) {
+            $this->removeDirectoryRecursively($root);
+        }
+        $this->fixtureRoots = [];
+    }
+
     public function testCheckerFlagsLegacyHttpWrappersInCorePaths(): void
     {
         $root = $this->createFixtureRoot();
@@ -58,7 +71,36 @@ PHP
         $root = sys_get_temp_dir() . '/lotgd-http-check-' . uniqid('', true);
         mkdir($root . '/pages', 0777, true);
         mkdir($root . '/src', 0777, true);
+        $this->fixtureRoots[] = $root;
 
         return $root;
+    }
+
+    private function removeDirectoryRecursively(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $items = scandir($path);
+        if ($items === false) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $current = $path . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($current)) {
+                $this->removeDirectoryRecursively($current);
+                continue;
+            }
+
+            @unlink($current);
+        }
+
+        @rmdir($path);
     }
 }

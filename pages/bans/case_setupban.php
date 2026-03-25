@@ -13,6 +13,7 @@ use Doctrine\DBAL\ParameterType;
 
 $output = Output::getInstance();
 $settings = Settings::getInstance();
+$charset = $settings->getSetting('charset', 'UTF-8');
 
 $sql = 'SELECT name,lastip,uniqueid FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $userid;
 $result = Database::query($sql);
@@ -69,7 +70,11 @@ if (isset($row['name']) && !empty($row['name'])) {
             $row['lastip'],
             $row['name'],
             $row['gentimecount'],
-            DateTime::relTime(strtotime($row['laston']))
+            (
+                isset($row['laston']) && is_string($row['laston']) && $row['laston'] !== ''
+                    ? DateTime::relTime(strtotime($row['laston']))
+                    : Translator::translateInline('unknown')
+            )
         );
     }
     $sameIdResult->free();
@@ -99,7 +104,9 @@ if (isset($row['name']) && !empty($row['name'])) {
             if (!$hasRows) {
                 $hasRows = true;
                 $output->output("IP Filter: %s ", $thisip);
-                $output->rawOutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
+                $thisIpJson = json_encode($thisip, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                $onClick = "document.getElementById('ip').value={$thisIpJson}; document.getElementById('ipradio').checked = true; return false";
+                $output->rawOutput("<a href='#' onClick=\"" . HTMLEntities($onClick, ENT_QUOTES, $charset) . "\">");
                 $output->output("Use this filter");
                 $output->rawOutput("</a>");
                 $output->outputNotl("`n");
@@ -112,7 +119,11 @@ if (isset($row['name']) && !empty($row['name'])) {
                     $row['uniqueid'],
                     $row['name'],
                     $row['gentimecount'],
-                    DateTime::relTime(strtotime($row['laston']))
+                    (
+                        isset($row['laston']) && is_string($row['laston']) && $row['laston'] !== ''
+                            ? DateTime::relTime(strtotime($row['laston']))
+                            : Translator::translateInline('unknown')
+                    )
                 );
         }
         $similarIpResult->free();

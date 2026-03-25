@@ -2,121 +2,85 @@
 
 declare(strict_types=1);
 
-namespace {
-    if (!function_exists('modulehook')) {
-        /**
-         * Minimal modulehook shim for isolated page include tests.
-         *
-         * @param array<mixed> $args
-         * @return array<mixed>
-         */
-        function modulehook(string $hookname, array $args = [], bool $allowinactive = false, string $modulename = ''): array
-        {
-            return $args;
-        }
-    }
+namespace Lotgd\Tests\User;
 
-    if (!function_exists('httpset')) {
-        function httpset(string $var, mixed $value, bool $force = false): void
-        {
-        }
-    }
-}
+use PHPUnit\Framework\TestCase;
 
-namespace Lotgd {
-    if (!class_exists(__NAMESPACE__ . '\\Redirect', false)) {
-        class Redirect
-        {
-            public static function redirect(string $location, string|bool $reason = false): void
-            {
-            }
-        }
-    }
-}
-
-namespace Lotgd\Tests\User {
-
-    use Doctrine\DBAL\ParameterType;
-    use Lotgd\MySQL\Database;
-    use Lotgd\Tests\Stubs\DoctrineBootstrap;
-    use PHPUnit\Framework\TestCase;
-
-    final class UserLegacyHttpMigrationTest extends TestCase
+final class UserLegacyHttpMigrationTest extends TestCase
+{
+    public function testUserDelbanUsesRawHttpAndTypedBoundParameters(): void
     {
-        protected function setUp(): void
-        {
-            require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
-            Database::$doctrineConnection = null;
-            Database::$instance = null;
-            DoctrineBootstrap::$conn = null;
-            Database::$mockResults = [];
-            $_GET = [];
-            $_POST = [];
-            $GLOBALS['output'] = new class {
-                public function outputNotl(string $format, mixed ...$args): void
-                {
-                }
+        $payload = $this->runIsolatedPageScript(<<<'PHP'
+$_GET['ipfilter'] = "10.0.0.1' OR 1=1 --";
+$_GET['uniqueid'] = 'abc"xyz';
 
-                public function output(string $format, mixed ...$args): void
-                {
-                }
-            };
-        }
+require __DIR__ . '/tests/User/isolated_user_delban.php';
+PHP);
 
-        public function testUserDelbanUsesRawHttpAndTypedBoundParameters(): void
-        {
-            $_GET['ipfilter'] = "10.0.0.1' OR 1=1 --";
-            $_GET['uniqueid'] = 'abc"xyz';
+        $statement = $payload['statement'] ?? null;
+        $this->assertIsArray($statement);
+        $this->assertSame("10.0.0.1' OR 1=1 --", $statement['params']['ip'] ?? null);
+        $this->assertSame('abc"xyz', $statement['params']['id'] ?? null);
+        $this->assertSame('STRING', $statement['types']['ip'] ?? null);
+        $this->assertSame('STRING', $statement['types']['id'] ?? null);
+    }
 
-            $include = static function (): void {
-                require __DIR__ . '/../../pages/user/user_delban.php';
-            };
-            $include();
+    public function testUserDelbanPreservesZeroStringParameters(): void
+    {
+        $payload = $this->runIsolatedPageScript(<<<'PHP'
+$_GET['ipfilter'] = '0';
+$_GET['uniqueid'] = '0';
 
-            $conn = Database::getDoctrineConnection();
-            $statement = $conn->executeStatements[0] ?? null;
-            $this->assertIsArray($statement);
-            $this->assertSame($_GET['ipfilter'], $statement['params']['ip'] ?? null);
-            $this->assertSame($_GET['uniqueid'], $statement['params']['id'] ?? null);
-            $this->assertSame(ParameterType::STRING, $statement['types']['ip'] ?? null);
-            $this->assertSame(ParameterType::STRING, $statement['types']['id'] ?? null);
-        }
+require __DIR__ . '/tests/User/isolated_user_delban.php';
+PHP);
 
-        public function testUserSavemoduleUsesHttpClassAndParameterizedReplace(): void
-        {
-            $_GET['userid'] = '42';
-            $_GET['module'] = 'samplemodule';
-            $_POST = ['display_name' => "O'Reilly"];
+        $statement = $payload['statement'] ?? null;
+        $this->assertIsArray($statement);
+        $this->assertSame('0', $statement['params']['ip'] ?? null);
+        $this->assertSame('0', $statement['params']['id'] ?? null);
+    }
 
-            $include = static function (): void {
-                $output = $GLOBALS['output'];
-                require __DIR__ . '/../../pages/user/user_savemodule.php';
-            };
-            $include();
+    public function testUserSavemoduleUsesHttpClassAndParameterizedReplace(): void
+    {
+        $payload = $this->runIsolatedPageScript(<<<'PHP'
+$_GET['userid'] = '42';
+$_GET['module'] = 'samplemodule';
+$_POST = ['display_name' => "O'Reilly"];
 
-            $conn = Database::getDoctrineConnection();
-            $statement = $conn->executeStatements[0] ?? null;
-            $this->assertIsArray($statement);
-            $this->assertStringContainsString('VALUES (:module,:userid,:setting,:value)', $statement['sql']);
-            $this->assertSame("O'Reilly", $statement['params']['value'] ?? null);
-            $this->assertSame(ParameterType::INTEGER, $statement['types']['userid'] ?? null);
-        }
+require __DIR__ . '/tests/User/isolated_user_savemodule.php';
+PHP);
 
-        public function testUserDelbanPreservesZeroStringParameters(): void
-        {
-            $_GET['ipfilter'] = '0';
-            $_GET['uniqueid'] = '0';
+        $statement = $payload['statement'] ?? null;
+        $this->assertIsArray($statement);
+        $this->assertStringContainsString('VALUES (:module,:userid,:setting,:value)', $statement['sql'] ?? '');
+        $this->assertSame("O'Reilly", $statement['params']['value'] ?? null);
+        $this->assertSame('INTEGER', $statement['types']['userid'] ?? null);
+    }
 
-            $include = static function (): void {
-                require __DIR__ . '/../../pages/user/user_delban.php';
-            };
-            $include();
+    /**
+     * Execute page-inclusion tests in an isolated PHP process so test-only
+     * function/class shims cannot leak into the main PHPUnit process.
+     *
+     * @return array<string,mixed>
+     */
+    private function runIsolatedPageScript(string $snippet): array
+    {
+        $root = dirname(__DIR__, 2);
+        $bootstrap = sprintf(
+            "define('LOTGD_TEST_ROOT', %s);\nrequire %s;\n",
+            var_export($root, true),
+            var_export($root . '/tests/bootstrap.php', true)
+        );
 
-            $conn = Database::getDoctrineConnection();
-            $statement = $conn->executeStatements[0] ?? null;
-            $this->assertIsArray($statement);
-            $this->assertSame('0', $statement['params']['ip'] ?? null);
-            $this->assertSame('0', $statement['params']['id'] ?? null);
-        }
+        $code = $bootstrap . $snippet;
+        $command = sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg($code));
+        $output = shell_exec($command);
+
+        $this->assertNotNull($output, 'Isolated page script produced no output.');
+        $this->assertIsString($output);
+
+        /** @var array<string,mixed> $decoded */
+        $decoded = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+        return $decoded;
     }
 }
