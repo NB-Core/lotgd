@@ -16,9 +16,9 @@ final class LegacyHttpWrapperUsageCheck
     /**
      * @var list<string>
      */
-    private const DISALLOWED_PATTERNS = [
-        '/\bhttpget\s*\(/i',
-        '/\bhttppost\s*\(/i',
+    private const DISALLOWED_FUNCTIONS = [
+        'httpget',
+        'httppost',
     ];
 
     /**
@@ -67,29 +67,7 @@ final class LegacyHttpWrapperUsageCheck
                     continue;
                 }
 
-                $lines = file($file->getPathname(), FILE_IGNORE_NEW_LINES);
-                if ($lines === false) {
-                    continue;
-                }
-
-                foreach ($lines as $lineNumber => $line) {
-                    $trimmed = ltrim($line);
-                    if (str_starts_with($trimmed, '//') || str_starts_with($trimmed, '#')) {
-                        continue;
-                    }
-
-                    foreach (self::DISALLOWED_PATTERNS as $pattern) {
-                        if (preg_match($pattern, $line) === 1) {
-                            $violations[] = sprintf(
-                                '%s:%d:%s',
-                                $relativePath,
-                                $lineNumber + 1,
-                                trim($line)
-                            );
-                            break;
-                        }
-                    }
-                }
+                $violations = array_merge($violations, $this->collectFileViolations($file->getPathname(), $relativePath));
             }
         }
 
@@ -124,5 +102,93 @@ final class LegacyHttpWrapperUsageCheck
         }
 
         return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function collectFileViolations(string $absolutePath, string $relativePath): array
+    {
+        $contents = file_get_contents($absolutePath);
+        if ($contents === false) {
+            return [];
+        }
+
+        $tokens = token_get_all($contents);
+        $lines = file($absolutePath, FILE_IGNORE_NEW_LINES) ?: [];
+        $violations = [];
+
+        foreach ($tokens as $index => $token) {
+            if (!is_array($token) || $token[0] !== T_STRING) {
+                continue;
+            }
+
+            $functionName = strtolower($token[1]);
+            if (!in_array($functionName, self::DISALLOWED_FUNCTIONS, true)) {
+                continue;
+            }
+
+            if (!$this->isFunctionCallToken($tokens, $index)) {
+                continue;
+            }
+
+            $lineNumber = (int) $token[2];
+            $lineText = trim($lines[$lineNumber - 1] ?? '');
+            $violations[] = sprintf('%s:%d:%s', $relativePath, $lineNumber, $lineText);
+        }
+
+        return $violations;
+    }
+
+    /**
+     * @param list<array<int, int|string>|string> $tokens
+     */
+    private function isFunctionCallToken(array $tokens, int $index): bool
+    {
+        $previousToken = $this->findPreviousSignificantToken($tokens, $index);
+        if (is_array($previousToken) && in_array($previousToken[0], [T_FUNCTION, T_FN, T_OBJECT_OPERATOR, T_DOUBLE_COLON], true)) {
+            return false;
+        }
+        if ($previousToken === '->' || $previousToken === '::') {
+            return false;
+        }
+
+        $nextToken = $this->findNextSignificantToken($tokens, $index);
+        return $nextToken === '(';
+    }
+
+    /**
+     * @param list<array<int, int|string>|string> $tokens
+     */
+    private function findPreviousSignificantToken(array $tokens, int $index): array|string|null
+    {
+        for ($i = $index - 1; $i >= 0; $i--) {
+            $token = $tokens[$i];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            return $token;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<array<int, int|string>|string> $tokens
+     */
+    private function findNextSignificantToken(array $tokens, int $index): array|string|null
+    {
+        $count = count($tokens);
+        for ($i = $index + 1; $i < $count; $i++) {
+            $token = $tokens[$i];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            return $token;
+        }
+
+        return null;
     }
 }

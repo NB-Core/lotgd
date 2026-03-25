@@ -59,7 +59,8 @@ PHP);
         $command = sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg($code));
         $output = shell_exec($command);
 
-        $this->assertNotFalse($output, 'Isolated php process did not produce output.');
+        $this->assertNotNull($output, 'Isolated php process did not produce output.');
+        $this->assertIsString($output);
 
         /** @var array<string,mixed> $decoded */
         $decoded = json_decode((string) $output, true, 512, JSON_THROW_ON_ERROR);

@@ -33,6 +33,26 @@ final class LegacyHttpWrapperUsageCheckTest extends TestCase
         $this->assertSame([], $violations);
     }
 
+    public function testCheckerIgnoresMentionsInsideCommentsAndStrings(): void
+    {
+        $root = $this->createFixtureRoot();
+        file_put_contents(
+            $root . '/pages/docs-example.php',
+            <<<'PHP'
+<?php
+/**
+ * Example docs mentioning httpget('foo') for migration notes.
+ */
+$message = "Use httppost('bar') in legacy wrappers only.";
+PHP
+        );
+
+        $checker = new LegacyHttpWrapperUsageCheck();
+        $violations = $checker->collectViolations($root);
+
+        $this->assertSame([], $violations);
+    }
+
     private function createFixtureRoot(): string
     {
         $root = sys_get_temp_dir() . '/lotgd-http-check-' . uniqid('', true);
@@ -44,4 +64,3 @@ final class LegacyHttpWrapperUsageCheckTest extends TestCase
         return $root;
     }
 }
-
