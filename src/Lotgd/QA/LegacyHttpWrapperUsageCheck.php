@@ -92,7 +92,7 @@ final class LegacyHttpWrapperUsageCheck
     private function isWhitelistedPath(string $relativePath): bool
     {
         foreach (self::ALLOWED_PATHS as $allowedPath) {
-            if (str_starts_with($relativePath, $allowedPath)) {
+            if ($relativePath === $allowedPath) {
                 return true;
             }
         }
@@ -111,7 +111,7 @@ final class LegacyHttpWrapperUsageCheck
         }
 
         $tokens = token_get_all($contents);
-        $lines = file($absolutePath, FILE_IGNORE_NEW_LINES) ?: [];
+        $lines = preg_split("/\r\n|\n|\r/", $contents) ?: [];
         $violations = [];
 
         foreach ($tokens as $index => $token) {

@@ -14,7 +14,7 @@ final class UserLegacyHttpMigrationTest extends TestCase
 $_GET['ipfilter'] = "10.0.0.1' OR 1=1 --";
 $_GET['uniqueid'] = 'abc"xyz';
 
-require __DIR__ . '/tests/User/isolated_user_delban.php';
+require LOTGD_TEST_ROOT . '/tests/User/isolated_user_delban.php';
 PHP);
 
         $statement = $payload['statement'] ?? null;
@@ -31,7 +31,7 @@ PHP);
 $_GET['ipfilter'] = '0';
 $_GET['uniqueid'] = '0';
 
-require __DIR__ . '/tests/User/isolated_user_delban.php';
+require LOTGD_TEST_ROOT . '/tests/User/isolated_user_delban.php';
 PHP);
 
         $statement = $payload['statement'] ?? null;
@@ -47,7 +47,7 @@ $_GET['userid'] = '42';
 $_GET['module'] = 'samplemodule';
 $_POST = ['display_name' => "O'Reilly"];
 
-require __DIR__ . '/tests/User/isolated_user_savemodule.php';
+require LOTGD_TEST_ROOT . '/tests/User/isolated_user_savemodule.php';
 PHP);
 
         $statement = $payload['statement'] ?? null;

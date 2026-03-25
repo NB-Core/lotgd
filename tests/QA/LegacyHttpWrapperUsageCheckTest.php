@@ -46,6 +46,19 @@ final class LegacyHttpWrapperUsageCheckTest extends TestCase
         $this->assertSame([], $violations);
     }
 
+    public function testCheckerDoesNotWhitelistPrefixMatchedFilenames(): void
+    {
+        $root = $this->createFixtureRoot();
+        mkdir($root . '/src/Lotgd/QA', 0777, true);
+        file_put_contents($root . '/src/Lotgd/QA/LegacyHttpWrapperUsageCheck.php.bypass.php', "<?php\n\$a = httpget('foo');\n");
+
+        $checker = new LegacyHttpWrapperUsageCheck();
+        $violations = $checker->collectViolations($root);
+
+        $this->assertCount(1, $violations);
+        $this->assertStringContainsString('LegacyHttpWrapperUsageCheck.php.bypass.php', $violations[0]);
+    }
+
     public function testCheckerIgnoresMentionsInsideCommentsAndStrings(): void
     {
         $root = $this->createFixtureRoot();
