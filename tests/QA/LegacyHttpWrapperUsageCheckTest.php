@@ -24,8 +24,8 @@ final class LegacyHttpWrapperUsageCheckTest extends TestCase
     public function testCheckerAllowsLegacyHttpWrappersInWhitelistedLegacyPaths(): void
     {
         $root = $this->createFixtureRoot();
-        file_put_contents($root . '/modules/example.php', "<?php\n\$a = httpget('foo');\n");
-        file_put_contents($root . '/lib/example.php', "<?php\n\$a = httppost('bar');\n");
+        mkdir($root . '/src/Lotgd/QA', 0777, true);
+        file_put_contents($root . '/src/Lotgd/QA/LegacyHttpWrapperUsageCheck.php', "<?php\n\$a = httpget('foo');\n");
 
         $checker = new LegacyHttpWrapperUsageCheck();
         $violations = $checker->collectViolations($root);
@@ -58,8 +58,6 @@ PHP
         $root = sys_get_temp_dir() . '/lotgd-http-check-' . uniqid('', true);
         mkdir($root . '/pages', 0777, true);
         mkdir($root . '/src', 0777, true);
-        mkdir($root . '/lib', 0777, true);
-        mkdir($root . '/modules', 0777, true);
 
         return $root;
     }

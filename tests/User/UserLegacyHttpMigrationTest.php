@@ -101,5 +101,22 @@ namespace Lotgd\Tests\User {
             $this->assertSame("O'Reilly", $statement['params']['value'] ?? null);
             $this->assertSame(ParameterType::INTEGER, $statement['types']['userid'] ?? null);
         }
+
+        public function testUserDelbanPreservesZeroStringParameters(): void
+        {
+            $_GET['ipfilter'] = '0';
+            $_GET['uniqueid'] = '0';
+
+            $include = static function (): void {
+                require __DIR__ . '/../../pages/user/user_delban.php';
+            };
+            $include();
+
+            $conn = Database::getDoctrineConnection();
+            $statement = $conn->executeStatements[0] ?? null;
+            $this->assertIsArray($statement);
+            $this->assertSame('0', $statement['params']['ip'] ?? null);
+            $this->assertSame('0', $statement['params']['id'] ?? null);
+        }
     }
 }

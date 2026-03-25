@@ -54,12 +54,16 @@ if (isset($row['name']) && !empty($row['name'])) {
     $name = $row['name'];
     $output->output("`0To help locate similar users to `@%s`0, here are some other users who are close:`n", $name);
     $output->output("`bSame ID (%s):`b`n", $id);
-    $sameIdRows = $conn->fetchAllAssociative(
+    /**
+     * Stream rows instead of materialising all matches in memory.
+     * This keeps legacy broad filters safer on large account tables.
+     */
+    $sameIdResult = $conn->executeQuery(
         'SELECT name, lastip, uniqueid, laston, gentimecount FROM ' . Database::prefix('accounts') . ' WHERE uniqueid = :uniqueid ORDER BY lastip',
         ['uniqueid' => $id],
         ['uniqueid' => ParameterType::STRING]
     );
-    foreach ($sameIdRows as $row) {
+    while (($row = $sameIdResult->fetchAssociative()) !== false) {
         $output->output(
             "`0* (%s) `%%s`0 - %s hits, last: %s`n",
             $row['lastip'],
@@ -68,6 +72,7 @@ if (isset($row['name']) && !empty($row['name'])) {
             DateTime::relTime(strtotime($row['laston']))
         );
     }
+    $sameIdResult->free();
     $output->outputNotl("`n");
         $oip = "";
     $dots = 0;
@@ -77,7 +82,7 @@ if (isset($row['name']) && !empty($row['name'])) {
             break;
         }
         $thisip = substr($ip, 0, $x);
-        $similarIpRows = $conn->fetchAllAssociative(
+        $similarIpResult = $conn->executeQuery(
             'SELECT name, lastip, uniqueid, laston, gentimecount FROM ' . Database::prefix('accounts') . ' WHERE lastip LIKE :thisIp AND NOT (lastip LIKE :oldIp) ORDER BY uniqueid',
             [
                 'thisIp' => $thisip . '%',
@@ -89,13 +94,17 @@ if (isset($row['name']) && !empty($row['name'])) {
             ]
         );
 
-        if (count($similarIpRows) > 0) {
-            $output->output("IP Filter: %s ", $thisip);
-            $output->rawOutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
-            $output->output("Use this filter");
-            $output->rawOutput("</a>");
-            $output->outputNotl("`n");
-            foreach ($similarIpRows as $row) {
+        $hasRows = false;
+        while (($row = $similarIpResult->fetchAssociative()) !== false) {
+            if (!$hasRows) {
+                $hasRows = true;
+                $output->output("IP Filter: %s ", $thisip);
+                $output->rawOutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
+                $output->output("Use this filter");
+                $output->rawOutput("</a>");
+                $output->outputNotl("`n");
+            }
+
                 $output->output("&nbsp;&nbsp;", true);
                 $output->output(
                     "(%s) [%s] `%%s`0 - %s hits, last: %s`n",
@@ -105,7 +114,10 @@ if (isset($row['name']) && !empty($row['name'])) {
                     $row['gentimecount'],
                     DateTime::relTime(strtotime($row['laston']))
                 );
-            }
+        }
+        $similarIpResult->free();
+
+        if ($hasRows) {
             $output->outputNotl("`n");
         }
         if (substr($ip, $x - 1, 1) == ".") {
