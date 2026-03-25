@@ -9,6 +9,7 @@ use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Http;
 use Lotgd\Sanitize;
+use Doctrine\DBAL\ParameterType;
 
 global $session;
 
@@ -79,14 +80,18 @@ $output->rawOutput("</form>");
 $output->output("For an IP ban, enter the beginning part of the IP you wish to ban if you wish to ban a range, or simply a full IP to ban a single IP`n`n");
 Nav::add("", "user.php?op=saveban");
 if ($row['name'] != "") {
+    $conn = Database::getDoctrineConnection();
     $id = $row['uniqueid'];
     $ip = $row['lastip'];
     $name = $row['name'];
     $output->output("`0To help locate similar users to `@%s`0, here are some other users who are close:`n", $name);
     $output->output("`bSame ID (%s):`b`n", $id);
-    $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . Database::prefix("accounts") . " WHERE uniqueid='" . addslashes($id) . "' ORDER BY lastip";
-    $result = Database::query($sql);
-    while ($row = Database::fetchAssoc($result)) {
+    $sameIdRows = $conn->fetchAllAssociative(
+        'SELECT name, lastip, uniqueid, laston, gentimecount FROM ' . Database::prefix('accounts') . ' WHERE uniqueid = :uniqueid ORDER BY lastip',
+        ['uniqueid' => $id],
+        ['uniqueid' => ParameterType::STRING]
+    );
+    foreach ($sameIdRows as $row) {
         $output->output(
             "`0• (%s) `%%s`0 - %s hits, last: %s`n",
             $row['lastip'],
@@ -104,16 +109,25 @@ if ($row['name'] != "") {
             break;
         }
         $thisip = substr($ip, 0, $x);
-        $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . Database::prefix("accounts") . " WHERE lastip LIKE '$thisip%' AND NOT (lastip LIKE '$oip') ORDER BY uniqueid";
-        //$output->output("$sql`n");
-        $result = Database::query($sql);
-        if (Database::numRows($result) > 0) {
+        $similarIpRows = $conn->fetchAllAssociative(
+            'SELECT name, lastip, uniqueid, laston, gentimecount FROM ' . Database::prefix('accounts') . ' WHERE lastip LIKE :thisIp AND NOT (lastip LIKE :oldIp) ORDER BY uniqueid',
+            [
+                'thisIp' => $thisip . '%',
+                'oldIp' => $oip,
+            ],
+            [
+                'thisIp' => ParameterType::STRING,
+                'oldIp' => ParameterType::STRING,
+            ]
+        );
+
+        if (count($similarIpRows) > 0) {
             $output->output("• IP Filter: %s ", $thisip);
             $output->rawOutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
             $output->output("Use this filter");
             $output->rawOutput("</a>");
             $output->outputNotl("`n");
-            while ($row = Database::fetchAssoc($result)) {
+            foreach ($similarIpRows as $row) {
                 $output->output("&nbsp;&nbsp;", true);
                 $output->output(
                     "• (%s) [%s] `%%s`0 - %s hits, last: %s`n",

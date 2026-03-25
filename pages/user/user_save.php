@@ -207,7 +207,7 @@ foreach ($post as $key => $val) {
         }
     }
 }
-$petition = httpget("returnpetition");
+$petition = (string) Http::get('returnpetition');
 if ($petition != "") {
     Nav::add("", "viewpetition.php?op=view&id=$petition");
 }
