@@ -57,6 +57,11 @@ $op = Http::get("op") ?? "";
 $idRequest = Http::get("id");
 $id = is_string($idRequest) && ctype_digit($idRequest) && (int) $idRequest > 0 ? (int) $idRequest : null;
 $idParam = $id === null ? '' : (string) $id;
+$invalidViewRequest = $op === 'view' && $id === null;
+if ($invalidViewRequest) {
+    // Normalize invalid view requests back to the petition list state.
+    $op = '';
+}
 $connection = Database::getDoctrineConnection();
 $insertCommentary = (string) Http::post('insertcommentary');
 if (!empty(trim($insertCommentary)) && $id !== null) {
@@ -88,6 +93,9 @@ if (!empty(trim($insertCommentary)) && $id !== null) {
 //}
 Header::pageHeader("Petition Viewer");
 if ($op == "") {
+    if ($invalidViewRequest) {
+        $output->output("`\$Invalid petition id supplied. Showing petition list instead.`0");
+    }
     $sql = "DELETE FROM " . Database::prefix("petitions") . " WHERE status=2 AND closedate<'" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
     Database::query($sql);
     /**

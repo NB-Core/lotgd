@@ -19,6 +19,7 @@ use Lotgd\Sanitize;
 use Lotgd\DebugLog;
 use Lotgd\DateTime;
 use Lotgd\Random;
+use Lotgd\DataCache;
 use Doctrine\DBAL\ParameterType;
 
 // translator ready
@@ -121,6 +122,37 @@ if (in_array((string) $op, ['examine', 'buymount', 'confirmbuy'], true) && $id =
     $op = "";
 }
 
+/**
+ * Fetch mount data by normalized mount id with datacache fallback.
+ *
+ * Lotgd\Http request values are normalized before reaching this helper, so the
+ * cache key and bound parameter stay stable and safe.
+ *
+ * @return array<string, mixed>|false
+ */
+function stables_load_mount_by_id(int $mountId): array|false
+{
+    $cache = DataCache::getInstance();
+    $cacheKey = "mountdata-$mountId";
+    $cached = $cache->datacache($cacheKey, 3600);
+    if (is_array($cached) && array_key_exists('mountid', $cached)) {
+        return $cached;
+    }
+
+    $row = Database::getDoctrineConnection()->executeQuery(
+        "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid = :mountid",
+        ['mountid' => $mountId],
+        ['mountid' => ParameterType::INTEGER]
+    )->fetchAssociative();
+
+    if (!is_array($row)) {
+        return false;
+    }
+
+    $cache->updatedatacache($cacheKey, $row);
+    return $row;
+}
+
 
 if ($op == "") {
     DateTime::checkDay();
@@ -135,12 +167,8 @@ if ($op == "") {
     $translator->setSchema();
     HookHandler::hook("stables-desc");
 } elseif ($op == "examine") {
-    $result = Database::getDoctrineConnection()->executeQuery(
-        "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid = :mountid",
-        ['mountid' => $id],
-        ['mountid' => ParameterType::INTEGER]
-    );
-    if (Database::numRows($result) <= 0) {
+    $mount = stables_load_mount_by_id((int) $id);
+    if ($mount === false) {
         $translator->setSchema($schemas['nosuchbeast']);
         $output->output('%s', $texts['nosuchbeast']);
         $translator->setSchema();
@@ -150,7 +178,6 @@ if ($op == "") {
         $translator->setSchema($schemas['finebeast']);
         $output->output('%s', $texts['finebeast'][$t]);
         $translator->setSchema();
-        $mount = Database::fetchAssoc($result);
         $mount = HookHandler::hook("mount-modifycosts", $mount);
         $output->output("`7Creature: `&%s`0`n", $mount['mountname']);
         $output->output("`7Description: `&%s`0`n", $mount['mountdesc']);
@@ -176,17 +203,12 @@ if ($op == "") {
     }
 }
 if ($op == 'confirmbuy') {
-    $result = Database::getDoctrineConnection()->executeQuery(
-        "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid = :mountid",
-        ['mountid' => $id],
-        ['mountid' => ParameterType::INTEGER]
-    );
-    if (Database::numRows($result) <= 0) {
+    $mount = stables_load_mount_by_id((int) $id);
+    if ($mount === false) {
         $translator->setSchema($schemas['nosuchbeast']);
         $output->output('%s', $texts['nosuchbeast']);
         $translator->setSchema();
     } else {
-        $mount = Database::fetchAssoc($result);
         $mount = HookHandler::hook("mount-modifycosts", $mount);
         if (
             ($session['user']['gold'] + $repaygold) < $mount['mountcostgold'] ||

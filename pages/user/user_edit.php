@@ -26,7 +26,7 @@ $petition = is_string($petitionRequest) && ctype_digit($petitionRequest) && (int
     ? (int) $petitionRequest
     : null;
 $returnpetition = $petition === null ? '' : "&returnpetition=$petition";
-if ($petition != "") {
+if ($petition !== null) {
     Nav::add("Navigation");
     Nav::add("Return to the petition", "viewpetition.php?op=view&id=$petition");
 }
