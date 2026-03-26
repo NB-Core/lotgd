@@ -12,6 +12,7 @@ use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Translator;
+use Doctrine\DBAL\ParameterType;
 
 // addnews ready
 // mail ready
@@ -22,6 +23,7 @@ require_once __DIR__ . "/common.php";
 
 $settings = Settings::getInstance();
 $output = Output::getInstance();
+$connection = Database::getDoctrineConnection();
 
 Translator::getInstance()->setSchema("taunt");
 
@@ -37,8 +39,11 @@ if ($op == "edit") {
     $output->rawOutput("<form action='taunt.php?op=save&tauntid=$tauntid' method='POST'>", true);
     Nav::add("", "taunt.php?op=save&tauntid=$tauntid");
     if ($tauntid != "") {
-        $sql = "SELECT * FROM " . Database::prefix("taunts") . " WHERE tauntid=\"$tauntid\"";
-        $result = Database::query($sql);
+        $result = $connection->executeQuery(
+            "SELECT * FROM " . Database::prefix("taunts") . " WHERE tauntid = :tauntid",
+            ['tauntid' => (int) $tauntid],
+            ['tauntid' => ParameterType::INTEGER]
+        );
         $row = Database::fetchAssoc($result);
         $badguy = array(
             'creaturename' => 'Baron Munchausen',
@@ -66,18 +71,42 @@ if ($op == "edit") {
     $output->rawOutput("<input type='submit' class='button' value='$save'>");
     $output->rawOutput("</form>");
 } elseif ($op == "del") {
-    $sql = "DELETE FROM " . Database::prefix("taunts") . " WHERE tauntid=\"$tauntid\"";
-    Database::query($sql);
+    $connection->executeStatement(
+        "DELETE FROM " . Database::prefix("taunts") . " WHERE tauntid = :tauntid",
+        ['tauntid' => (int) $tauntid],
+        ['tauntid' => ParameterType::INTEGER]
+    );
     $op = "";
     Http::set("op", "");
 } elseif ($op == "save") {
     $taunt = Http::post('taunt');
     if ($tauntid != "") {
-        $sql = "UPDATE " . Database::prefix("taunts") . " SET taunt=\"$taunt\",editor=\"" . addslashes($session['user']['login']) . "\" WHERE tauntid=\"$tauntid\"";
+        $connection->executeStatement(
+            "UPDATE " . Database::prefix("taunts") . " SET taunt = :taunt, editor = :editor WHERE tauntid = :tauntid",
+            [
+                'taunt' => $taunt,
+                'editor' => (string) $session['user']['login'],
+                'tauntid' => (int) $tauntid,
+            ],
+            [
+                'taunt' => ParameterType::STRING,
+                'editor' => ParameterType::STRING,
+                'tauntid' => ParameterType::INTEGER,
+            ]
+        );
     } else {
-        $sql = "INSERT INTO " . Database::prefix("taunts") . " (taunt,editor) VALUES (\"$taunt\",\"" . addslashes($session['user']['login']) . "\")";
+        $connection->executeStatement(
+            "INSERT INTO " . Database::prefix("taunts") . " (taunt, editor) VALUES (:taunt, :editor)",
+            [
+                'taunt' => $taunt,
+                'editor' => (string) $session['user']['login'],
+            ],
+            [
+                'taunt' => ParameterType::STRING,
+                'editor' => ParameterType::STRING,
+            ]
+        );
     }
-    Database::query($sql);
     $op = "";
     Http::set("op", "");
 }
