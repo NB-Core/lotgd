@@ -38,6 +38,13 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: `Lotgd\PlayerSearch::legacyLookup()` and other `PlayerSearch` helpers
   - Migration: Inject or instantiate `PlayerSearch` directly and call `legacyLookup()` (or a more specific finder), removing usage of the legacy array/SQL wrapper.
 
+- Legacy HTTP wrappers `httpget()` / `httppost()` in core/refactored paths
+  - Status: Deprecated in 2.x for core and refactored modules (legacy compatibility only)
+  - Policy: `Lotgd\Http` is the only allowed HTTP API in core/refactored code; legacy wrappers are reserved for legacy/module compatibility paths.
+  - Behaviour note: `lib/http.php` wrappers intentionally preserve escaped legacy semantics for compatibility, while `Lotgd\Http` returns raw request values for typed and parameterized handling.
+  - Migration: Replace legacy helper calls with `Lotgd\Http::get()` / `Lotgd\Http::post()` and use bound DBAL parameters instead of SQL string concatenation.
+  - QA enforcement: `composer static` now runs a policy gate that fails when new wrapper usage appears in core/refactored paths.
+
 ### Upgrade Guidance (1.3.x → 2.0)
 
 See `UPGRADING.md` for the full process. Key points:
@@ -47,4 +54,3 @@ See `UPGRADING.md` for the full process. Key points:
 
 ### Contact
 Open an issue if you need a longer grace period or migration examples for a specific API.
-

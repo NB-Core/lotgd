@@ -204,6 +204,22 @@ $result = $conn->executeQuery($sql, ['login' => $login]);
 
 `executeQuery()` returns a `Result` object for `SELECT` statements, while `executeStatement()` returns the affected row count for `INSERT`, `UPDATE`, or `DELETE` queries. See [docs/Doctrine.md#prepared-statements](docs/Doctrine.md#prepared-statements) and the official [Doctrine DBAL prepared statement guide](https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/data-retrieval-and-manipulation.html#prepared-statements) for more details.
 
+### HTTP API Policy and Deprecation Timeline
+
+To keep request handling explicit and secure during the 2.x modernization:
+
+- **Core/refactored code policy (effective now in 2.x):**
+  - Use `Lotgd\Http` (`Http::get()`, `Http::post()`, `Http::allGet()`, `Http::allPost()`) as the only HTTP API.
+  - Do not introduce `httpget()` / `httppost()` in core/refactored paths.
+- **Legacy compatibility policy (2.x only):**
+  - `lib/http.php` wrappers remain for legacy/module compatibility.
+  - Those wrappers intentionally preserve legacy escaped behaviour.
+- **Planned major-version change (3.0 target):**
+  - Escaped wrapper semantics are scheduled for retirement in the next major version.
+  - Legacy wrappers will either be removed or aligned to raw `Lotgd\Http` semantics; module maintainers should migrate to `Lotgd\Http` and bound DBAL parameters before upgrading to 3.0.
+
+As of this policy, static QA enforcement runs during `composer static` and fails when `httpget()` / `httppost()` usage appears in core/refactored paths.
+
 ---
 
 ## 8. After Upgrade

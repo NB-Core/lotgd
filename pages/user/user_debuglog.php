@@ -6,6 +6,7 @@ use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
+use Lotgd\Http;
 
 if ($petition != "") {
     Nav::add("Navigation");
@@ -43,7 +44,7 @@ $row = Database::fetchAssoc($result);
 $max += $row['c'];
 
 
-$start = (int)httpget('start');
+$start = (int) Http::get('start');
 
 $sql = "(
                         SELECT {$debuglog}.*,

@@ -9,9 +9,11 @@ use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\DateTime;
+use Doctrine\DBAL\ParameterType;
 
 $output = Output::getInstance();
 $settings = Settings::getInstance();
+$charset = $settings->getSetting('charset', 'UTF-8');
 
 $sql = 'SELECT name,lastip,uniqueid FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $userid;
 $result = Database::query($sql);
@@ -47,22 +49,35 @@ $output->rawOutput("</form>");
 $output->output("For an IP ban, enter the beginning part of the IP you wish to ban if you wish to ban a range, or simply a full IP to ban a single IP`n`n");
 Nav::add("", "bans.php?op=saveban");
 if (isset($row['name']) && !empty($row['name'])) {
+    $conn = Database::getDoctrineConnection();
     $id = $row['uniqueid'];
     $ip = $row['lastip'];
     $name = $row['name'];
     $output->output("`0To help locate similar users to `@%s`0, here are some other users who are close:`n", $name);
     $output->output("`bSame ID (%s):`b`n", $id);
-    $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . Database::prefix("accounts") . " WHERE uniqueid='" . addslashes($id) . "' ORDER BY lastip";
-    $result = Database::query($sql);
-    while ($row = Database::fetchAssoc($result)) {
+    /**
+     * Stream rows instead of materialising all matches in memory.
+     * This keeps legacy broad filters safer on large account tables.
+     */
+    $sameIdResult = $conn->executeQuery(
+        'SELECT name, lastip, uniqueid, laston, gentimecount FROM ' . Database::prefix('accounts') . ' WHERE uniqueid = :uniqueid ORDER BY lastip',
+        ['uniqueid' => $id],
+        ['uniqueid' => ParameterType::STRING]
+    );
+    while (($row = $sameIdResult->fetchAssociative()) !== false) {
         $output->output(
             "`0* (%s) `%%s`0 - %s hits, last: %s`n",
             $row['lastip'],
             $row['name'],
             $row['gentimecount'],
-            DateTime::relTime(strtotime($row['laston']))
+            (
+                isset($row['laston']) && is_string($row['laston']) && $row['laston'] !== ''
+                    ? DateTime::relTime(strtotime($row['laston']))
+                    : Translator::translateInline('unknown')
+            )
         );
     }
+    $sameIdResult->free();
     $output->outputNotl("`n");
         $oip = "";
     $dots = 0;
@@ -72,16 +87,31 @@ if (isset($row['name']) && !empty($row['name'])) {
             break;
         }
         $thisip = substr($ip, 0, $x);
-        $sql = "SELECT name, lastip, uniqueid, laston, gentimecount FROM " . Database::prefix("accounts") . " WHERE lastip LIKE '$thisip%' AND NOT (lastip LIKE '$oip') ORDER BY uniqueid";
-        //$output->output("$sql`n");
-        $result = Database::query($sql);
-        if (Database::numRows($result) > 0) {
-            $output->output("IP Filter: %s ", $thisip);
-            $output->rawOutput("<a href='#' onClick=\"document.getElementById('ip').value='$thisip'; document.getElementById('ipradio').checked = true; return false\">");
-            $output->output("Use this filter");
-            $output->rawOutput("</a>");
-            $output->outputNotl("`n");
-            while ($row = Database::fetchAssoc($result)) {
+        $similarIpResult = $conn->executeQuery(
+            'SELECT name, lastip, uniqueid, laston, gentimecount FROM ' . Database::prefix('accounts') . ' WHERE lastip LIKE :thisIp AND NOT (lastip LIKE :oldIp) ORDER BY uniqueid',
+            [
+                'thisIp' => $thisip . '%',
+                'oldIp' => $oip,
+            ],
+            [
+                'thisIp' => ParameterType::STRING,
+                'oldIp' => ParameterType::STRING,
+            ]
+        );
+
+        $hasRows = false;
+        while (($row = $similarIpResult->fetchAssociative()) !== false) {
+            if (!$hasRows) {
+                $hasRows = true;
+                $output->output("IP Filter: %s ", $thisip);
+                $thisIpJson = json_encode($thisip, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                $onClick = "document.getElementById('ip').value={$thisIpJson}; document.getElementById('ipradio').checked = true; return false";
+                $output->rawOutput("<a href='#' onClick=\"" . HTMLEntities($onClick, ENT_QUOTES, $charset) . "\">");
+                $output->output("Use this filter");
+                $output->rawOutput("</a>");
+                $output->outputNotl("`n");
+            }
+
                 $output->output("&nbsp;&nbsp;", true);
                 $output->output(
                     "(%s) [%s] `%%s`0 - %s hits, last: %s`n",
@@ -89,9 +119,16 @@ if (isset($row['name']) && !empty($row['name'])) {
                     $row['uniqueid'],
                     $row['name'],
                     $row['gentimecount'],
-                    DateTime::relTime(strtotime($row['laston']))
+                    (
+                        isset($row['laston']) && is_string($row['laston']) && $row['laston'] !== ''
+                            ? DateTime::relTime(strtotime($row['laston']))
+                            : Translator::translateInline('unknown')
+                    )
                 );
-            }
+        }
+        $similarIpResult->free();
+
+        if ($hasRows) {
             $output->outputNotl("`n");
         }
         if (substr($ip, $x - 1, 1) == ".") {
