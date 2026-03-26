@@ -150,9 +150,12 @@ if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
         $abuse = (string) Http::post('abuse');
     }
     if ($abuse === 'yes') {
+        $abusePlayer = petition_normalize_optional_int(Http::post('abuseplayer'));
+        $abusePlayerValue = $abusePlayer === null ? '' : (string) (int) $abusePlayer;
+        $abusePlayerAttr = htmlentities($abusePlayerValue, ENT_COMPAT, $settings->getSetting("charset", "UTF-8"));
         $output->rawOutput("<textarea name='description' cols='55' rows='7' class='input'></textarea>");
         $output->rawOutput("<input type='hidden' name='abuse' value=\"" . Stripslashes::deep($problem) . "\"><br><hr><pre>" . stripslashes(rawurldecode($problem)) . "</pre><hr><br>");
-        $output->rawOutput("<input type='hidden' name='abuseplayer' value=\"" . (string) Http::post('abuseplayer') . "\">");
+        $output->rawOutput("<input type='hidden' name='abuseplayer' value=\"$abusePlayerAttr\">");
     } else {
         $output->rawOutput("<textarea name='description' cols='55' rows='7' class='input'>" . Stripslashes::deep(($problem)) . "</textarea>");
     }
@@ -164,4 +167,27 @@ if (count($post) > 0 && (string) Http::post('abuse') !== 'yes') {
     $output->output("Petitions about game mechanics will more than likely not be answered unless they have something to do with a bug.");
     $output->output("Remember, if you are not signed in, and do not provide an email address, we have no way to contact you.");
     $output->rawOutput("</form>");
+}
+
+/**
+ * Normalise optional integer request values before rendering into HTML.
+ *
+ * Lotgd\Http now returns raw payloads, so abuseplayer must be narrowed to an
+ * integer identifier before writing into hidden input attributes.
+ */
+function petition_normalize_optional_int(mixed $value): ?int
+{
+    if ($value === '' || $value === null || is_array($value) || ! is_scalar($value)) {
+        return null;
+    }
+
+    $valueString = (string) $value;
+
+    if ($valueString === '' || ! ctype_digit($valueString)) {
+        return null;
+    }
+
+    $intValue = (int) $valueString;
+
+    return $intValue > 0 ? $intValue : null;
 }

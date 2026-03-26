@@ -138,10 +138,19 @@ foreach ($seencats as $cat => $count) {
     if ($subnav !== '') {
             Nav::addSubHeader($subnav);
     }
-        Nav::add(array(" ?%s - (%s modules)", $category, $count), "modules.php?cat=$cat");
+        Nav::add(
+            array(" ?%s - (%s modules)", $category, $count),
+            "modules.php?cat=" . rawurlencode($cat)
+        );
 }
 
-$cat = Http::get('cat');
+/**
+ * Lotgd\Http values are raw; constrain category to known categories and
+ * URL-encode when composing links/forms/nav entries.
+ */
+$catRequest = Http::get('cat');
+$cat = is_string($catRequest) && array_key_exists($catRequest, $seencats) ? $catRequest : '';
+$catQuery = rawurlencode($cat);
 if ($op == "") {
     if ($cat) {
         $sortby = Http::get('sortby');
@@ -168,21 +177,21 @@ if ($op == "") {
         $installstr = Translator::translateInline("by %s");
         $active = Translator::translateInline("`@Active`0");
         $inactive = Translator::translateInline("`\$Inactive`0");
-        $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
-        Nav::add("", "modules.php?op=mass&cat=$cat");
+        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>");
+        Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $installedCaption = Translator::translateInline("Installed modules table");
         $output->rawOutput("<div class='table-responsive'>");
         $output->rawOutput("<table class='table table-striped table-hover js-modules-table'>");
         $output->rawOutput("<caption class='visually-hidden'>{$installedCaption}</caption>");
         $output->rawOutput("<thead>");
         $selectAllLabel = Translator::translateInline("Select all");
-        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
         $output->rawOutput("</thead>");
         $output->rawOutput("<tbody>");
-        Nav::add("", "modules.php?cat=$cat&sortby=active&order=" . ($sortby == "active" ? !$order : 1));
-        Nav::add("", "modules.php?cat=$cat&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1));
-        Nav::add("", "modules.php?cat=$cat&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1));
-        Nav::add("", "modules.php?cat=$cat&sortby=installdate&order=" . ($sortby == "installdate" ? $order : 0));
+        Nav::add("", "modules.php?cat=$catQuery&sortby=active&order=" . ($sortby == "active" ? !$order : 1));
+        Nav::add("", "modules.php?cat=$catQuery&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1));
+        Nav::add("", "modules.php?cat=$catQuery&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1));
+        Nav::add("", "modules.php?cat=$catQuery&sortby=installdate&order=" . ($sortby == "installdate" ? $order : 0));
                 $rows = ModuleManager::listInstalled($cat, $sortby, (bool)$order);
         if (count($rows) == 0) {
                 $output->rawOutput("<tr class='table-light'><td colspan='6' class='text-center'>");
@@ -197,28 +206,28 @@ if ($op == "") {
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
             $output->rawOutput("</td><td class='text-nowrap align-top'>[ ");
             if ($row['active']) {
-                $output->rawOutput("<a href='modules.php?op=deactivate&module={$row['modulename']}&cat=$cat'>");
+                $output->rawOutput("<a href='modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery'>");
                 $output->outputNotl($deactivate);
                 $output->rawOutput("</a>");
-                Nav::add("", "modules.php?op=deactivate&module={$row['modulename']}&cat=$cat");
+                Nav::add("", "modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery");
             } else {
-                $output->rawOutput("<a href='modules.php?op=activate&module={$row['modulename']}&cat=$cat'>");
+                $output->rawOutput("<a href='modules.php?op=activate&module={$row['modulename']}&cat=$catQuery'>");
                 $output->outputNotl($activate);
                 $output->rawOutput("</a>");
-                Nav::add("", "modules.php?op=activate&module={$row['modulename']}&cat=$cat");
+                Nav::add("", "modules.php?op=activate&module={$row['modulename']}&cat=$catQuery");
             }
-            $output->rawOutput(" |<a href='modules.php?op=uninstall&module={$row['modulename']}&cat=$cat' onClick='return confirm(\"$uninstallconfirm\");'>");
+            $output->rawOutput(" |<a href='modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery' onClick='return confirm(\"$uninstallconfirm\");'>");
             $output->outputNotl($uninstall);
             $output->rawOutput("</a>");
-            Nav::add("", "modules.php?op=uninstall&module={$row['modulename']}&cat=$cat");
-            $output->rawOutput(" | <a href='modules.php?op=reinstall&module={$row['modulename']}&cat=$cat'>");
+            Nav::add("", "modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery");
+            $output->rawOutput(" | <a href='modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery'>");
             $output->outputNotl($reinstall);
             $output->rawOutput("</a>");
-            Nav::add("", "modules.php?op=reinstall&module={$row['modulename']}&cat=$cat");
-            $output->rawOutput(" | <a href='modules.php?op=remove&module={$row['modulename']}&cat=$cat' onClick='return confirm(\"$removeconfirm\");'>");
+            Nav::add("", "modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery");
+            $output->rawOutput(" | <a href='modules.php?op=remove&module={$row['modulename']}&cat=$catQuery' onClick='return confirm(\"$removeconfirm\");'>");
             $output->outputNotl($remove);
             $output->rawOutput("</a>");
-            Nav::add("", "modules.php?op=remove&module={$row['modulename']}&cat=$cat");
+            Nav::add("", "modules.php?op=remove&module={$row['modulename']}&cat=$catQuery");
 
             if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
                 if (strstr($row['infokeys'], "|settings|")) {
@@ -277,8 +286,8 @@ if ($op == "") {
         $mauth = Translator::translateInline("Module Author");
         $categ = Translator::translateInline("Category");
         $fname = Translator::translateInline("Filename");
-        $output->rawOutput("<form action='modules.php?op=mass&cat=$cat' method='POST'>");
-        Nav::add("", "modules.php?op=mass&cat=$cat");
+        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>");
+        Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $uninstalledCaption = Translator::translateInline("Uninstalled modules table");
         $output->rawOutput("<div class='table-responsive'>");
         $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'>");

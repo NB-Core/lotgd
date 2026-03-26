@@ -172,6 +172,10 @@ The 2.x branch is already aligned with Doctrine DBAL 4 result APIs and parameter
 
 If you maintain custom modules, update any legacy calls to `Database::fetchAssoc()` loops by switching to the DBAL `Result` APIs and named parameters as shown in the refactoring examples above.
 
+### Superuser endpoint hardening update
+
+Recent 2.x updates switched the superuser editors in `deathmessages.php`, `taunt.php`, and `untranslated.php` to explicit Doctrine parameter binding for write operations (and filtered untranslated lookups). These endpoints now rely on `executeStatement()` / `executeQuery()` with typed bound parameters instead of legacy wrapper escaping behavior. If you maintain custom overrides of these pages, update them to match bound-parameter execution semantics.
+
 ### Refactoring Legacy SQL to Prepared Statements
 
 Legacy database calls often used `Lotgd\MySQL\Database::query()` together with manual escaping via `addslashes`. When upgrading, migrate those calls to Doctrine DBAL prepared statements obtained through `Lotgd\MySQL\Database::getDoctrineConnection()`. The following example shows how to convert a legacy lookup:
@@ -203,6 +207,22 @@ $result = $conn->executeQuery($sql, ['login' => $login]);
 ```
 
 `executeQuery()` returns a `Result` object for `SELECT` statements, while `executeStatement()` returns the affected row count for `INSERT`, `UPDATE`, or `DELETE` queries. See [docs/Doctrine.md#prepared-statements](docs/Doctrine.md#prepared-statements) and the official [Doctrine DBAL prepared statement guide](https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/data-retrieval-and-manipulation.html#prepared-statements) for more details.
+
+### HTTP API Policy and Deprecation Timeline
+
+To keep request handling explicit and secure during the 2.x modernization:
+
+- **Core/refactored code policy (effective now in 2.x):**
+  - Use `Lotgd\Http` (`Http::get()`, `Http::post()`, `Http::allGet()`, `Http::allPost()`) as the only HTTP API.
+  - Do not introduce `httpget()` / `httppost()` in core/refactored paths.
+- **Legacy compatibility policy (2.x only):**
+  - `lib/http.php` wrappers remain for legacy/module compatibility.
+  - Those wrappers intentionally preserve legacy escaped behaviour.
+- **Planned major-version change (3.0 target):**
+  - Escaped wrapper semantics are scheduled for retirement in the next major version.
+  - Legacy wrappers will either be removed or aligned to raw `Lotgd\Http` semantics; module maintainers should migrate to `Lotgd\Http` and bound DBAL parameters before upgrading to 3.0.
+
+As of this policy, static QA enforcement runs during `composer static` and fails when `httpget()` / `httppost()` usage appears in core/refactored paths.
 
 ---
 

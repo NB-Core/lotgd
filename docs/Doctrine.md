@@ -64,6 +64,16 @@ values based on the parameter type if you supply a third argument to
 See the official [Doctrine DBAL prepared statements documentation](https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/data-retrieval-and-manipulation.html#prepared-statements)
 for more background.
 
+
+## Legacy Request SQL Refactor Checklist
+
+When converting legacy request-driven SQL to DBAL in place:
+
+1. Keep the SQL semantics unchanged (same table, predicates, grouping, ordering).
+2. Use named placeholders instead of concatenating request values.
+3. Pass an explicit `$types` array (`ParameterType::STRING` / `ParameterType::INTEGER`) for request values.
+4. Add/adjust regression tests with quote-containing payloads to ensure values stay in params, not SQL text.
+
 ## Running Migrations
 
 Schema migrations reside in the `migrations/` directory and are configured

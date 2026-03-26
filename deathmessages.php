@@ -12,6 +12,7 @@ use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Settings;
+use Doctrine\DBAL\ParameterType;
 
 // addnews ready
 // mail ready
@@ -22,6 +23,7 @@ require_once __DIR__ . "/common.php";
 
 $settings = Settings::getInstance();
 $output = Output::getInstance();
+$connection = Database::getDoctrineConnection();
 
 Translator::getInstance()->setSchema("deathmessage");
 
@@ -30,16 +32,22 @@ SuAccess::check(SU_EDIT_CREATURES);
 Header::pageHeader("Deathmessage Editor");
 SuperuserNav::render();
 $op = Http::get('op');
-$deathmessageid = Http::get('deathmessageid');
+$deathmessageidRequest = Http::get('deathmessageid');
+$deathmessageid = deathmessages_normalize_optional_int($deathmessageidRequest);
+$deathmessageidParam = $deathmessageid === null ? '' : (string) $deathmessageid;
+$commentaryPage = deathmessages_normalize_optional_int(Http::get('c'));
 switch ($op) {
     case "edit":
         Nav::add("Deathmessages");
         Nav::add("Return to the Deathmessage editor", "deathmessages.php");
-        $output->rawOutput("<form action='deathmessages.php?op=save&deathmessageid=$deathmessageid' method='POST'>", true);
-        Nav::add("", "deathmessages.php?op=save&deathmessageid=$deathmessageid");
-        if ($deathmessageid != "") {
-            $sql = "SELECT * FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid=\"$deathmessageid\"";
-            $result = Database::query($sql);
+        $output->rawOutput("<form action='deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam) . "' method='POST'>", true);
+        Nav::add("", "deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam));
+        if ($deathmessageid !== null) {
+            $result = $connection->executeQuery(
+                "SELECT * FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid = :deathmessageid",
+                ['deathmessageid' => $deathmessageid],
+                ['deathmessageid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             $badguy = array(
                 'creaturename' => '`2The Nasty Rabbit',
@@ -75,25 +83,115 @@ switch ($op) {
         $output->rawOutput("</form>");
         break;
     case "del":
-        $sql = "DELETE FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid=\"$deathmessageid\"";
-        Database::query($sql);
+        if ($deathmessageid === null) {
+            $op = "";
+            Http::set("op", "");
+            break;
+        }
+        $connection->executeStatement(
+            "DELETE FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid = :deathmessageid",
+            ['deathmessageid' => $deathmessageid],
+            ['deathmessageid' => ParameterType::INTEGER]
+        );
         $op = "";
         Http::set("op", "");
         break;
     case "save":
-        $deathmessage = Http::post('deathmessage');
+        $deathmessage = deathmessages_normalize_text(Http::post('deathmessage'));
         $forest = (int) Http::post('forest');
         $graveyard = (int) Http::post('graveyard');
         $taunt = (int) Http::post('taunt');
-        if ($deathmessageid != "") {
-            $sql = "UPDATE " . Database::prefix("deathmessages") . " SET deathmessage=\"$deathmessage\",taunt=$taunt,forest=$forest,graveyard=$graveyard,editor=\"" . addslashes($session['user']['login']) . "\" WHERE deathmessageid=\"$deathmessageid\"";
+        if ($deathmessageid !== null) {
+            $connection->executeStatement(
+                "UPDATE " . Database::prefix("deathmessages") . " SET deathmessage = :deathmessage, taunt = :taunt, forest = :forest, graveyard = :graveyard, editor = :editor WHERE deathmessageid = :deathmessageid",
+                [
+                    'deathmessage' => $deathmessage,
+                    'taunt' => $taunt,
+                    'forest' => $forest,
+                    'graveyard' => $graveyard,
+                    'editor' => (string) $session['user']['login'],
+                    'deathmessageid' => $deathmessageid,
+                ],
+                [
+                    'deathmessage' => ParameterType::STRING,
+                    'taunt' => ParameterType::INTEGER,
+                    'forest' => ParameterType::INTEGER,
+                    'graveyard' => ParameterType::INTEGER,
+                    'editor' => ParameterType::STRING,
+                    'deathmessageid' => ParameterType::INTEGER,
+                ]
+            );
         } else {
-            $sql = "INSERT INTO " . Database::prefix("deathmessages") . " (deathmessage,taunt,forest,graveyard,editor) VALUES (\"$deathmessage\",$taunt,$forest,$graveyard,\"" . addslashes($session['user']['login']) . "\")";
+            $connection->executeStatement(
+                "INSERT INTO " . Database::prefix("deathmessages") . " (deathmessage, taunt, forest, graveyard, editor) VALUES (:deathmessage, :taunt, :forest, :graveyard, :editor)",
+                [
+                    'deathmessage' => $deathmessage,
+                    'taunt' => $taunt,
+                    'forest' => $forest,
+                    'graveyard' => $graveyard,
+                    'editor' => (string) $session['user']['login'],
+                ],
+                [
+                    'deathmessage' => ParameterType::STRING,
+                    'taunt' => ParameterType::INTEGER,
+                    'forest' => ParameterType::INTEGER,
+                    'graveyard' => ParameterType::INTEGER,
+                    'editor' => ParameterType::STRING,
+                ]
+            );
         }
-        Database::query($sql);
         $op = "";
         Http::set("op", "");
         break;
+}
+
+/**
+ * Normalise request values expected to be optional integer identifiers.
+ *
+ * Lotgd\Http now exposes raw request payloads, so we must explicitly narrow
+ * values such as c/deathmessageid before building navigation URLs.
+ */
+function deathmessages_normalize_optional_int(mixed $value): ?int
+{
+    if ($value === '' || $value === null || is_array($value)) {
+        return null;
+    }
+
+    if (! is_scalar($value)) {
+        return null;
+    }
+
+    // Only accept positive integer values represented as digits-only strings.
+    $valueString = (string) $value;
+
+    if ($valueString === '' || ! ctype_digit($valueString)) {
+        return null;
+    }
+
+    $intValue = (int) $valueString;
+
+    if ($intValue <= 0) {
+        return null;
+    }
+
+    return $intValue;
+}
+
+/**
+ * Normalise request values to a safe string payload for DBAL string binding.
+ */
+function deathmessages_normalize_text(mixed $value): string
+{
+    // Preserve legacy coercion behavior while rejecting array/object payloads.
+    if ($value === false || $value === null || is_array($value)) {
+        return '';
+    }
+
+    if (is_string($value)) {
+        return $value;
+    }
+
+    return is_scalar($value) ? (string) $value : '';
 }
 if ($op == "") {
     $output->output("`i`\$Note: These messages are NEWS messages the user will trigger when he/she dies in the forest or graveyard.`0`i`n`n");
@@ -115,7 +213,7 @@ if ($op == "") {
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this deathmessage?");
-        $id = $row['deathmessageid'];
+        $id = (int) $row['deathmessageid'];
         $output->rawOutput("[ <a href='deathmessages.php?op=edit&deathmessageid=$id'>$edit</a> | <a href='deathmessages.php?op=del&deathmessageid=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
         Nav::add("", "deathmessages.php?op=edit&deathmessageid=$id");
         Nav::add("", "deathmessages.php?op=del&deathmessageid=$id");
@@ -131,7 +229,8 @@ if ($op == "") {
         $output->outputNotl("%s", $row['editor']);
         $output->rawOutput("</td></tr>");
     }
-    Nav::add("", "deathmessages.php?c=" . Http::get('c'));
+    $commentaryPageParam = $commentaryPage === null ? '' : (string) (int) $commentaryPage;
+    Nav::add("", "deathmessages.php?c=$commentaryPageParam");
     $output->rawOutput("</table>");
     Nav::add("Deathmessages");
     Nav::add("Add a new deathmessage", "deathmessages.php?op=edit");

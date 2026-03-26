@@ -12,6 +12,7 @@ use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Translator;
+use Doctrine\DBAL\ParameterType;
 
 // addnews ready
 // mail ready
@@ -22,6 +23,7 @@ require_once __DIR__ . "/common.php";
 
 $settings = Settings::getInstance();
 $output = Output::getInstance();
+$connection = Database::getDoctrineConnection();
 
 Translator::getInstance()->setSchema("taunt");
 
@@ -30,15 +32,21 @@ SuAccess::check(SU_EDIT_CREATURES);
 Header::pageHeader("Taunt Editor");
 SuperuserNav::render();
 $op = Http::get('op');
-$tauntid = Http::get('tauntid');
+$tauntidRequest = Http::get('tauntid');
+$tauntid = taunt_normalize_optional_int($tauntidRequest);
+$tauntidParam = $tauntid === null ? '' : (string) $tauntid;
+$commentaryPage = taunt_normalize_optional_int(Http::get('c'));
 if ($op == "edit") {
     Nav::add("Taunts");
     Nav::add("Return to the taunt editor", "taunt.php");
-    $output->rawOutput("<form action='taunt.php?op=save&tauntid=$tauntid' method='POST'>", true);
-    Nav::add("", "taunt.php?op=save&tauntid=$tauntid");
-    if ($tauntid != "") {
-        $sql = "SELECT * FROM " . Database::prefix("taunts") . " WHERE tauntid=\"$tauntid\"";
-        $result = Database::query($sql);
+    $output->rawOutput("<form action='taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam) . "' method='POST'>", true);
+    Nav::add("", "taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam));
+    if ($tauntid !== null) {
+        $result = $connection->executeQuery(
+            "SELECT * FROM " . Database::prefix("taunts") . " WHERE tauntid = :tauntid",
+            ['tauntid' => $tauntid],
+            ['tauntid' => ParameterType::INTEGER]
+        );
         $row = Database::fetchAssoc($result);
         $badguy = array(
             'creaturename' => 'Baron Munchausen',
@@ -66,18 +74,47 @@ if ($op == "edit") {
     $output->rawOutput("<input type='submit' class='button' value='$save'>");
     $output->rawOutput("</form>");
 } elseif ($op == "del") {
-    $sql = "DELETE FROM " . Database::prefix("taunts") . " WHERE tauntid=\"$tauntid\"";
-    Database::query($sql);
-    $op = "";
-    Http::set("op", "");
-} elseif ($op == "save") {
-    $taunt = Http::post('taunt');
-    if ($tauntid != "") {
-        $sql = "UPDATE " . Database::prefix("taunts") . " SET taunt=\"$taunt\",editor=\"" . addslashes($session['user']['login']) . "\" WHERE tauntid=\"$tauntid\"";
+    if ($tauntid === null) {
+        $op = "";
+        Http::set("op", "");
     } else {
-        $sql = "INSERT INTO " . Database::prefix("taunts") . " (taunt,editor) VALUES (\"$taunt\",\"" . addslashes($session['user']['login']) . "\")";
+        $connection->executeStatement(
+            "DELETE FROM " . Database::prefix("taunts") . " WHERE tauntid = :tauntid",
+            ['tauntid' => $tauntid],
+            ['tauntid' => ParameterType::INTEGER]
+        );
+        $op = "";
+        Http::set("op", "");
     }
-    Database::query($sql);
+} elseif ($op == "save") {
+    $taunt = taunt_normalize_text(Http::post('taunt'));
+    if ($tauntid !== null) {
+        $connection->executeStatement(
+            "UPDATE " . Database::prefix("taunts") . " SET taunt = :taunt, editor = :editor WHERE tauntid = :tauntid",
+            [
+                'taunt' => $taunt,
+                'editor' => (string) $session['user']['login'],
+                'tauntid' => $tauntid,
+            ],
+            [
+                'taunt' => ParameterType::STRING,
+                'editor' => ParameterType::STRING,
+                'tauntid' => ParameterType::INTEGER,
+            ]
+        );
+    } else {
+        $connection->executeStatement(
+            "INSERT INTO " . Database::prefix("taunts") . " (taunt, editor) VALUES (:taunt, :editor)",
+            [
+                'taunt' => $taunt,
+                'editor' => (string) $session['user']['login'],
+            ],
+            [
+                'taunt' => ParameterType::STRING,
+                'editor' => ParameterType::STRING,
+            ]
+        );
+    }
     $op = "";
     Http::set("op", "");
 }
@@ -97,7 +134,7 @@ if ($op == "") {
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this taunt?");
-        $id = $row['tauntid'];
+        $id = (int) $row['tauntid'];
         $output->rawOutput("[ <a href='taunt.php?op=edit&tauntid=$id'>$edit</a> | <a href='taunt.php?op=del&tauntid=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
         Nav::add("", "taunt.php?op=edit&tauntid=$id");
         Nav::add("", "taunt.php?op=del&tauntid=$id");
@@ -107,9 +144,63 @@ if ($op == "") {
         $output->outputNotl("%s", $row['editor']);
         $output->rawOutput("</td></tr>");
     }
-    Nav::add("", "taunt.php?c=" . Http::get('c'));
+    $commentaryPageParam = $commentaryPage === null ? '' : (string) (int) $commentaryPage;
+    Nav::add("", "taunt.php?c=$commentaryPageParam");
     $output->rawOutput("</table>");
     Nav::add("Taunts");
     Nav::add("Add a new taunt", "taunt.php?op=edit");
+}
+
+/**
+ * Normalise request values expected to be optional integer identifiers.
+ *
+ * Lotgd\Http now exposes raw request payloads, so we must explicitly narrow
+ * values such as c/tauntid before building navigation URLs.
+ */
+function taunt_normalize_optional_int(mixed $value): ?int
+{
+    if ($value === '' || $value === null || is_array($value)) {
+        return null;
+    }
+
+    if (! is_scalar($value)) {
+        return null;
+    }
+
+    // Accept only unsigned integer identifiers (> 0, digits only).
+    if (is_int($value)) {
+        return $value > 0 ? $value : null;
+    }
+
+    if (is_string($value)) {
+        // Reject non-digit strings (e.g. "17foo", "-5", "abc").
+        if (! ctype_digit($value)) {
+            return null;
+        }
+
+        $intValue = (int) $value;
+
+        return $intValue > 0 ? $intValue : null;
+    }
+
+    // Reject other scalar types such as bool and float.
+    return null;
+}
+
+/**
+ * Normalise request values to a safe string payload for DBAL string binding.
+ */
+function taunt_normalize_text(mixed $value): string
+{
+    // Preserve legacy coercion behavior while rejecting array/object payloads.
+    if ($value === false || $value === null || is_array($value)) {
+        return '';
+    }
+
+    if (is_string($value)) {
+        return $value;
+    }
+
+    return is_scalar($value) ? (string) $value : '';
 }
 Footer::pageFooter();

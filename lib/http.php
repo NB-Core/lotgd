@@ -5,13 +5,39 @@
 // mail ready
 use Lotgd\Http;
 
+/**
+ * Legacy compatibility escape helper for lib/http.php wrappers.
+ *
+ * The legacy wrappers intentionally preserve historical behaviour by returning
+ * addslashes()-escaped scalar values. Core/refactored code must use
+ * Lotgd\Http directly, which intentionally returns raw values.
+ *
+ * @param mixed $value
+ *
+ * @return mixed
+ */
+function legacy_http_escape(mixed $value): mixed
+{
+    if (is_string($value)) {
+        return addslashes($value);
+    }
+
+    if (is_array($value)) {
+        foreach ($value as $key => $item) {
+            $value[$key] = legacy_http_escape($item);
+        }
+    }
+
+    return $value;
+}
+
 function httpget($var)
 {
-    return Http::get($var);
+    return legacy_http_escape(Http::get($var));
 }
 function httpallget()
 {
-    return Http::allGet();
+    return legacy_http_escape(Http::allGet());
 }
 function httpset($var, $val, $force = false)
 {
@@ -19,7 +45,7 @@ function httpset($var, $val, $force = false)
 }
 function httppost($var)
 {
-    return Http::post($var);
+    return legacy_http_escape(Http::post($var));
 }
 function httppostisset($var)
 {
@@ -31,9 +57,11 @@ function httppostset($var, $val, $sub = false)
 }
 function httpallpost()
 {
-    return Http::allPost();
+    return legacy_http_escape(Http::allPost());
 }
 function postparse($verify = false, $subval = false)
 {
-    return Http::postParse($verify, $subval);
+    [$columns, $placeholders, $parameters] = Http::postParse($verify, $subval);
+
+    return [$columns, $placeholders, legacy_http_escape($parameters)];
 }

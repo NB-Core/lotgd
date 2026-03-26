@@ -14,6 +14,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Sanitize;
+use Doctrine\DBAL\ParameterType;
 
 // translator ready
 // addnews ready
@@ -38,8 +39,14 @@ if ($op == "keepalive") {
     echo '<html><meta http-equiv="Refresh" content="30;url=' . PhpGenericEnvironment::getRequestUri() . '"></html><body>' . date("Y-m-d H:i:s") . "</body></html>";
     exit();
 } elseif ($op == "newsdelete") {
-    $sql = "DELETE FROM " . Database::prefix("news") . " WHERE newsid='" . Http::get('newsid') . "'";
-    Database::query($sql);
+    $newsIdRequest = Http::get('newsid');
+    // Preserve legacy behavior by treating request payload as a string while binding it safely.
+    $newsId = is_string($newsIdRequest) ? $newsIdRequest : (string) $newsIdRequest;
+    Database::getDoctrineConnection()->executeStatement(
+        "DELETE FROM " . Database::prefix("news") . " WHERE newsid = :newsid",
+        ['newsid' => $newsId],
+        ['newsid' => ParameterType::STRING]
+    );
     $return = Http::get('return');
     $return = Sanitize::cmdSanitize($return);
     $return = basename($return);
