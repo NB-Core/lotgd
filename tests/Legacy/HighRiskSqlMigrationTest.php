@@ -44,8 +44,8 @@ final class HighRiskSqlMigrationTest extends TestCase
         self::assertStringContainsString('WHERE language = :language GROUP BY uri ORDER BY uri ASC', $content);
         self::assertStringContainsString('WHERE language = :language AND uri = :uri', $content);
         self::assertStringContainsString("'language' => ParameterType::STRING", $content);
-        self::assertStringContainsString("'uri'      => ParameterType::STRING", $content);
-        self::assertStringNotContainsString("WHERE language='" . LANGUAGE . "'", $content);
+        self::assertStringContainsString("'uri' => ParameterType::STRING", $content);
+        self::assertStringNotContainsString('. LANGUAGE .', $content);
     }
 
     public function testQuoteContainingPayloadsRemainBoundParameters(): void
