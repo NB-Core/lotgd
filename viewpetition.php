@@ -13,6 +13,7 @@ use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Doctrine\DBAL\ParameterType;
 
 // translator ready
 // addnews ready
@@ -49,12 +50,35 @@ $statuses = HookHandler::hook("petition-status", $statuses);
 $statuses = Translator::translateInline($statuses);
 
 $op = Http::get("op") ?? "";
-$id = Http::get("id") ?? "";
+/**
+ * Lotgd\Http returns raw request payloads; normalize petition IDs before
+ * using them in SQL statements or nav URLs.
+ */
+$idRequest = Http::get("id");
+$id = is_string($idRequest) && ctype_digit($idRequest) && (int) $idRequest > 0 ? (int) $idRequest : null;
+$idParam = $id === null ? '' : (string) $id;
+$invalidViewRequest = $op === 'view' && $id === null;
+if ($invalidViewRequest) {
+    // Normalize invalid view requests back to the petition list state.
+    $op = '';
+}
+$connection = Database::getDoctrineConnection();
 $insertCommentary = (string) Http::post('insertcommentary');
-if (!empty(trim($insertCommentary))) {
+if (!empty(trim($insertCommentary)) && $id !== null) {
     /* Update the bug if someone adds comments as well */
-    $sql = "UPDATE " . Database::prefix("petitions") . " SET closeuserid='{$session['user']['acctid']}',closedate='" . date("Y-m-d H:i:s") . "' WHERE petitionid='$id'";
-    Database::query($sql);
+    $connection->executeStatement(
+        "UPDATE " . Database::prefix("petitions") . " SET closeuserid = :closeuserid, closedate = :closedate WHERE petitionid = :petitionid",
+        [
+            'closeuserid' => (int) $session['user']['acctid'],
+            'closedate' => date("Y-m-d H:i:s"),
+            'petitionid' => $id,
+        ],
+        [
+            'closeuserid' => ParameterType::INTEGER,
+            'closedate' => ParameterType::STRING,
+            'petitionid' => ParameterType::INTEGER,
+        ]
+    );
 }
 
 // Eric decide he didn't want petitions to be manually deleted
@@ -69,17 +93,40 @@ if (!empty(trim($insertCommentary))) {
 //}
 Header::pageHeader("Petition Viewer");
 if ($op == "") {
+    if ($invalidViewRequest) {
+        $output->output("`\$Invalid petition id supplied. Showing petition list instead.`0");
+    }
     $sql = "DELETE FROM " . Database::prefix("petitions") . " WHERE status=2 AND closedate<'" . date("Y-m-d H:i:s", strtotime("-7 days")) . "'";
     Database::query($sql);
-    $setstat = Http::get("setstat");
+    /**
+     * Status transitions are enum-like values; narrow to known status keys.
+     */
+    $setstatRequest = Http::get("setstat");
+    $setstat = is_string($setstatRequest) && ctype_digit($setstatRequest) ? (int) $setstatRequest : null;
+    $statusKeys = array_map('intval', array_keys($statuses));
     invalidatedatacache("petition_counts");
-    if ($setstat != "") {
-        $sql = "SELECT status FROM " . Database::prefix("petitions") . " WHERE petitionid='$id'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
-        if ($row['status'] != $setstat) {
-            $sql = "UPDATE " . Database::prefix("petitions") . " SET status='$setstat',closeuserid='{$session['user']['acctid']}',closedate='" . date("Y-m-d H:i:s") . "' WHERE petitionid='$id'";
-            Database::query($sql);
+    if ($setstat !== null && in_array($setstat, $statusKeys, true) && $id !== null) {
+        $row = $connection->executeQuery(
+            "SELECT status FROM " . Database::prefix("petitions") . " WHERE petitionid = :petitionid",
+            ['petitionid' => $id],
+            ['petitionid' => ParameterType::INTEGER]
+        )->fetchAssociative();
+        if ($row && (int) $row['status'] !== $setstat) {
+            $connection->executeStatement(
+                "UPDATE " . Database::prefix("petitions") . " SET status = :status, closeuserid = :closeuserid, closedate = :closedate WHERE petitionid = :petitionid",
+                [
+                    'status' => $setstat,
+                    'closeuserid' => (int) $session['user']['acctid'],
+                    'closedate' => date("Y-m-d H:i:s"),
+                    'petitionid' => $id,
+                ],
+                [
+                    'status' => ParameterType::INTEGER,
+                    'closeuserid' => ParameterType::INTEGER,
+                    'closedate' => ParameterType::STRING,
+                    'petitionid' => ParameterType::INTEGER,
+                ]
+            );
         }
     }
     $sort = "";
@@ -270,14 +317,14 @@ if ($op == "") {
     $output->output("`iClosed`i petitions are for you have dealt with an issue, these will auto delete when they have been closed for 7 days.");
     HookHandler::hook("petitions-descriptions", array());
     $output->rawOutput("</li></ul>");
-} elseif ($op == "view") {
+} elseif ($op == "view" && $id !== null) {
     Nav::add("Petitions");
     Nav::add("Details");
     $viewpageinfo = (int)Http::get("viewpageinfo");
     if ($viewpageinfo == 1) {
-        Nav::add("Hide Details", "viewpetition.php?op=view&id=$id");
+        Nav::add("Hide Details", "viewpetition.php?op=view&id=$idParam");
     } else {
-        Nav::add("D?Show Details", "viewpetition.php?op=view&id=$id&viewpageinfo=1");
+        Nav::add("D?Show Details", "viewpetition.php?op=view&id=$idParam&viewpageinfo=1");
     }
     Nav::add("Navigation");
     Nav::add("V?Petition Viewer", "viewpetition.php");
@@ -293,13 +340,15 @@ if ($op == "") {
         }
         Nav::add(
             array("%s?Mark %s", substr($plain, 0, 1), $val),
-            "viewpetition.php?setstat=$key&id=$id"
+            "viewpetition.php?setstat=$key&id=$idParam"
         );
     }
 
-    $sql = "SELECT " . Database::prefix("accounts") . ".name," .  Database::prefix("accounts") . ".login," .  Database::prefix("accounts") . ".acctid," .  "author,date,closedate,status,petitionid,ip,body,pageinfo," .  "accts.name AS closer FROM " .  Database::prefix("petitions") . " LEFT JOIN " .  Database::prefix("accounts ") . "ON " .  Database::prefix("accounts") . ".acctid=author LEFT JOIN " .  Database::prefix("accounts") . " AS accts ON accts.acctid=" .  "closeuserid WHERE petitionid='$id' ORDER BY date ASC";
-    $result = Database::query($sql);
-    $row = Database::fetchAssoc($result);
+    $row = $connection->executeQuery(
+        "SELECT " . Database::prefix("accounts") . ".name," .  Database::prefix("accounts") . ".login," .  Database::prefix("accounts") . ".acctid," .  "author,date,closedate,status,petitionid,ip,body,pageinfo," .  "accts.name AS closer FROM " .  Database::prefix("petitions") . " LEFT JOIN " .  Database::prefix("accounts ") . "ON " .  Database::prefix("accounts") . ".acctid=author LEFT JOIN " .  Database::prefix("accounts") . " AS accts ON accts.acctid=" .  "closeuserid WHERE petitionid = :petitionid ORDER BY date ASC",
+        ['petitionid' => $id],
+        ['petitionid' => ParameterType::INTEGER]
+    )->fetchAssociative();
     Nav::add("User Ops");
     if (isset($row['login'])) {
         Nav::add("View User Biography", "bio.php?char=" . $row['acctid']
@@ -307,7 +356,7 @@ if ($op == "") {
     }
     if ($row['acctid'] > 0 && $session['user']['superuser'] & SU_EDIT_USERS) {
         Nav::add("User Ops");
-        Nav::add("R?Edit User Record", "user.php?op=edit&userid={$row['acctid']}&returnpetition=$id");
+        Nav::add("R?Edit User Record", "user.php?op=edit&userid={$row['acctid']}&returnpetition=$idParam");
     }
     if ($row['acctid'] > 0 && $session['user']['superuser'] & SU_EDIT_DONATIONS) {
         Nav::add("User Ops");
@@ -364,7 +413,7 @@ if ($op == "") {
             }
         }
     }
-    Commentary::commentDisplay("`n`@Commentary:`0`n", "pet-$id", "Add information", 200);
+    Commentary::commentDisplay("`n`@Commentary:`0`n", "pet-$idParam", "Add information", 200);
     if ($viewpageinfo) {
         $output->output("`n`n`@Page Info:`&`n");
         $row['pageinfo'] = stripslashes($row['pageinfo']);
@@ -375,11 +424,13 @@ if ($op == "") {
     }
 }
 
-if ($id && $op != "") {
-    $prevsql = "SELECT p1.petitionid, p1.status FROM " . Database::prefix("petitions") . " AS p1, " . Database::prefix("petitions") . " AS p2
-			WHERE p1.petitionid<'$id' AND p2.petitionid='$id' AND p1.status=p2.status ORDER BY p1.petitionid DESC LIMIT 1";
-    $prevresult = Database::query($prevsql);
-    $prevrow = Database::fetchAssoc($prevresult);
+if ($id !== null && $op != "") {
+    $prevrow = $connection->executeQuery(
+        "SELECT p1.petitionid, p1.status FROM " . Database::prefix("petitions") . " AS p1, " . Database::prefix("petitions") . " AS p2
+			WHERE p1.petitionid < :petitionid AND p2.petitionid = :petitionid AND p1.status = p2.status ORDER BY p1.petitionid DESC LIMIT 1",
+        ['petitionid' => $id],
+        ['petitionid' => ParameterType::INTEGER]
+    )->fetchAssociative();
     if ($prevrow) {
         $previd = $prevrow['petitionid'];
         $s = $prevrow['status'];
@@ -387,10 +438,12 @@ if ($id && $op != "") {
         Nav::add("Petitions");
         Nav::add(array("Previous %s",$status), "viewpetition.php?op=view&id=$previd");
     }
-    $nextsql = "SELECT p1.petitionid, p1.status FROM " . Database::prefix("petitions") . " AS p1, " . Database::prefix("petitions") . " AS p2
-			WHERE p1.petitionid>'$id' AND p2.petitionid='$id' AND p1.status=p2.status ORDER BY p1.petitionid ASC LIMIT 1";
-    $nextresult = Database::query($nextsql);
-    $nextrow = Database::fetchAssoc($nextresult);
+    $nextrow = $connection->executeQuery(
+        "SELECT p1.petitionid, p1.status FROM " . Database::prefix("petitions") . " AS p1, " . Database::prefix("petitions") . " AS p2
+			WHERE p1.petitionid > :petitionid AND p2.petitionid = :petitionid AND p1.status = p2.status ORDER BY p1.petitionid ASC LIMIT 1",
+        ['petitionid' => $id],
+        ['petitionid' => ParameterType::INTEGER]
+    )->fetchAssociative();
     if ($nextrow) {
         $nextid = $nextrow['petitionid'];
         $s = $nextrow['status'];
