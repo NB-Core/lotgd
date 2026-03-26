@@ -52,12 +52,17 @@ final class TauntParameterBindingRegressionTest extends TestCase
         self::assertStringContainsString('WHERE tauntid = :tauntid', $source);
         self::assertStringContainsString('taunt_normalize_text(Http::post(\'taunt\'))', $source);
         self::assertStringContainsString('rawurlencode($tauntidParam)', $source);
+        self::assertStringContainsString('taunt_normalize_optional_int(Http::get(\'c\'))', $source);
+        self::assertStringContainsString('Nav::add("", "taunt.php?c=$commentaryPageParam");', $source);
+        self::assertStringNotContainsString('Nav::add("", "taunt.php?c=" . Http::get(\'c\'));', $source);
         self::assertStringContainsString('tauntid = :tauntid', $source);
         self::assertStringContainsString('taunt = :taunt', $source);
         self::assertStringContainsString('editor = :editor', $source);
         self::assertStringContainsString('ParameterType::INTEGER', $source);
         self::assertStringContainsString('ParameterType::STRING', $source);
         self::assertStringNotContainsString('addslashes($session[\'user\'][\'login\'])', $source);
+        self::assertStringContainsString('! ctype_digit($value)', $source);
+        self::assertStringContainsString('$intValue > 0 ? $intValue : null;', $source);
     }
 
     public function testPayloadRoundtripIsPreservedInInsertBoundParameters(): void

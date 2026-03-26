@@ -52,11 +52,16 @@ final class DeathmessagesParameterBindingRegressionTest extends TestCase
         self::assertStringContainsString('WHERE deathmessageid = :deathmessageid', $source);
         self::assertStringContainsString('deathmessages_normalize_text(Http::post(\'deathmessage\'))', $source);
         self::assertStringContainsString('rawurlencode($deathmessageidParam)', $source);
+        self::assertStringContainsString('deathmessages_normalize_optional_int(Http::get(\'c\'))', $source);
+        self::assertStringContainsString('Nav::add("", "deathmessages.php?c=$commentaryPageParam");', $source);
+        self::assertStringNotContainsString('Nav::add("", "deathmessages.php?c=" . Http::get(\'c\'));', $source);
         self::assertStringContainsString('deathmessageid = :deathmessageid', $source);
         self::assertStringContainsString('deathmessage = :deathmessage', $source);
         self::assertStringContainsString('ParameterType::INTEGER', $source);
         self::assertStringContainsString('ParameterType::STRING', $source);
         self::assertStringNotContainsString('addslashes($session[\'user\'][\'login\'])', $source);
+        self::assertStringContainsString('ctype_digit($valueString)', $source);
+        self::assertStringContainsString('$intValue <= 0', $source);
     }
 
     public function testPayloadRoundtripIsPreservedInBoundParameters(): void

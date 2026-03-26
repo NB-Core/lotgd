@@ -61,6 +61,8 @@ namespace Lotgd\Tests\Petition {
     use Lotgd\Tests\Stubs\DoctrineConnection;
     use PHPUnit\Framework\TestCase;
 
+    #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class PetitionSubmitTest extends TestCase
     {
         private DoctrineConnection $connection;
@@ -198,6 +200,65 @@ namespace Lotgd\Tests\Petition {
             self::assertSame(ParameterType::STRING, $insertTypes['pageinfo'] ?? null);
             self::assertSame(ParameterType::STRING, $insertTypes['ip'] ?? null);
             self::assertSame(ParameterType::STRING, $insertTypes['cookie'] ?? null);
+        }
+
+        public function testAbusePlayerHiddenFieldIsNormalizedAndEscaped(): void
+        {
+            global $session, $settings, $output;
+
+            $session = [
+                'user' => [
+                    'acctid'       => 42,
+                    'password'     => 'hunter2',
+                    'superuser'    => 0,
+                    'name'         => 'TestUser',
+                    'emailaddress' => 'tester@example.com',
+                    'loggedin'     => true,
+                ],
+            ];
+            $settings = Settings::getInstance();
+            $GLOBALS['settings'] = $settings;
+
+            $output = new class {
+                public array $buffer = [];
+
+                public function output(string $format, mixed ...$args): void
+                {
+                    $this->buffer[] = vsprintf($format, $args);
+                }
+
+                public function outputNotl(string $format, mixed ...$args): void
+                {
+                    $this->buffer[] = vsprintf($format, $args);
+                }
+
+                public function rawOutput(string $text): void
+                {
+                    $this->buffer[] = $text;
+                }
+            };
+
+            $_GET = [];
+            $_POST = [
+                'problem' => 'Mail abuse report',
+                'abuse' => 'yes',
+                'abuseplayer' => "17\"><script>alert(1)</script>",
+            ];
+            $_COOKIE = [];
+            $_SERVER = [];
+
+            $include = static function (): void {
+                global $session, $settings, $output, $_POST, $_SERVER, $_COOKIE;
+
+                require __DIR__ . '/../../pages/petition/petition_default.php';
+            };
+            \Closure::bind($include, null, null)();
+
+            $rendered = implode("\n", $output->buffer);
+            self::assertStringContainsString('name=\'abuseplayer\' value="', $rendered);
+            self::assertStringContainsString('name=\'abuseplayer\' value=""', $rendered);
+            self::assertStringNotContainsString('<script>', $rendered);
+            self::assertStringNotContainsString('abuseplayer\' value="17', $rendered);
         }
     }
 }

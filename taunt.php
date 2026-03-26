@@ -35,6 +35,7 @@ $op = Http::get('op');
 $tauntidRequest = Http::get('tauntid');
 $tauntid = taunt_normalize_optional_int($tauntidRequest);
 $tauntidParam = $tauntid === null ? '' : (string) $tauntid;
+$commentaryPage = taunt_normalize_optional_int(Http::get('c'));
 if ($op == "edit") {
     Nav::add("Taunts");
     Nav::add("Return to the taunt editor", "taunt.php");
@@ -133,7 +134,7 @@ if ($op == "") {
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this taunt?");
-        $id = $row['tauntid'];
+        $id = (int) $row['tauntid'];
         $output->rawOutput("[ <a href='taunt.php?op=edit&tauntid=$id'>$edit</a> | <a href='taunt.php?op=del&tauntid=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
         Nav::add("", "taunt.php?op=edit&tauntid=$id");
         Nav::add("", "taunt.php?op=del&tauntid=$id");
@@ -143,7 +144,8 @@ if ($op == "") {
         $output->outputNotl("%s", $row['editor']);
         $output->rawOutput("</td></tr>");
     }
-    Nav::add("", "taunt.php?c=" . Http::get('c'));
+    $commentaryPageParam = $commentaryPage === null ? '' : (string) (int) $commentaryPage;
+    Nav::add("", "taunt.php?c=$commentaryPageParam");
     $output->rawOutput("</table>");
     Nav::add("Taunts");
     Nav::add("Add a new taunt", "taunt.php?op=edit");
@@ -151,6 +153,9 @@ if ($op == "") {
 
 /**
  * Normalise request values expected to be optional integer identifiers.
+ *
+ * Lotgd\Http now exposes raw request payloads, so we must explicitly narrow
+ * values such as c/tauntid before building navigation URLs.
  */
 function taunt_normalize_optional_int(mixed $value): ?int
 {
