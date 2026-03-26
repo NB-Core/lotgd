@@ -162,7 +162,24 @@ function taunt_normalize_optional_int(mixed $value): ?int
         return null;
     }
 
-    return (int) $value;
+    // Accept only unsigned integer identifiers (> 0, digits only).
+    if (is_int($value)) {
+        return $value > 0 ? $value : null;
+    }
+
+    if (is_string($value)) {
+        // Reject non-digit strings (e.g. "17foo", "-5", "abc").
+        if (! ctype_digit($value)) {
+            return null;
+        }
+
+        $intValue = (int) $value;
+
+        return $intValue > 0 ? $intValue : null;
+    }
+
+    // Reject other scalar types such as bool and float.
+    return null;
 }
 
 /**
