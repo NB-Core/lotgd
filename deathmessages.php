@@ -35,6 +35,7 @@ $op = Http::get('op');
 $deathmessageidRequest = Http::get('deathmessageid');
 $deathmessageid = deathmessages_normalize_optional_int($deathmessageidRequest);
 $deathmessageidParam = $deathmessageid === null ? '' : (string) $deathmessageid;
+$commentaryPage = deathmessages_normalize_optional_int(Http::get('c'));
 switch ($op) {
     case "edit":
         Nav::add("Deathmessages");
@@ -146,6 +147,9 @@ switch ($op) {
 
 /**
  * Normalise request values expected to be optional integer identifiers.
+ *
+ * Lotgd\Http now exposes raw request payloads, so we must explicitly narrow
+ * values such as c/deathmessageid before building navigation URLs.
  */
 function deathmessages_normalize_optional_int(mixed $value): ?int
 {
@@ -209,7 +213,7 @@ if ($op == "") {
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this deathmessage?");
-        $id = $row['deathmessageid'];
+        $id = (int) $row['deathmessageid'];
         $output->rawOutput("[ <a href='deathmessages.php?op=edit&deathmessageid=$id'>$edit</a> | <a href='deathmessages.php?op=del&deathmessageid=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
         Nav::add("", "deathmessages.php?op=edit&deathmessageid=$id");
         Nav::add("", "deathmessages.php?op=del&deathmessageid=$id");
@@ -225,7 +229,8 @@ if ($op == "") {
         $output->outputNotl("%s", $row['editor']);
         $output->rawOutput("</td></tr>");
     }
-    Nav::add("", "deathmessages.php?c=" . Http::get('c'));
+    $commentaryPageParam = $commentaryPage === null ? '' : (string) (int) $commentaryPage;
+    Nav::add("", "deathmessages.php?c=$commentaryPageParam");
     $output->rawOutput("</table>");
     Nav::add("Deathmessages");
     Nav::add("Add a new deathmessage", "deathmessages.php?op=edit");
