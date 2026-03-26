@@ -172,6 +172,10 @@ The 2.x branch is already aligned with Doctrine DBAL 4 result APIs and parameter
 
 If you maintain custom modules, update any legacy calls to `Database::fetchAssoc()` loops by switching to the DBAL `Result` APIs and named parameters as shown in the refactoring examples above.
 
+### Superuser endpoint hardening update
+
+Recent 2.x updates switched the superuser editors in `deathmessages.php`, `taunt.php`, and `untranslated.php` to explicit Doctrine parameter binding for write operations (and filtered untranslated lookups). These endpoints now rely on `executeStatement()` / `executeQuery()` with typed bound parameters instead of legacy wrapper escaping behavior. If you maintain custom overrides of these pages, update them to match bound-parameter execution semantics.
+
 ### Refactoring Legacy SQL to Prepared Statements
 
 Legacy database calls often used `Lotgd\MySQL\Database::query()` together with manual escaping via `addslashes`. When upgrading, migrate those calls to Doctrine DBAL prepared statements obtained through `Lotgd\MySQL\Database::getDoctrineConnection()`. The following example shows how to convert a legacy lookup:
