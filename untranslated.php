@@ -12,6 +12,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Settings;
 use Lotgd\Random;
+use Doctrine\DBAL\ParameterType;
 
 // translator ready
 // addnews ready
@@ -30,6 +31,7 @@ require_once __DIR__ . "/common.php";
 
 $settings = Settings::getInstance();
 $output = Output::getInstance();
+$connection = Database::getDoctrineConnection();
 
 SuAccess::check(SU_IS_TRANSLATOR);
 
@@ -58,10 +60,38 @@ if ($op == "list") {
         if ($outtext <> "") {
             $login = $session['user']['login'];
             $language = $session['user']['prefs']['language'];
-            $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$language','$namespace','$intext','$outtext','$login','$logd_version')";
-            Database::query($sql);
-            $sql = "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
-            Database::query($sql);
+            $connection->executeStatement(
+                "INSERT INTO " . Database::prefix("translations") . " (language, uri, intext, outtext, author, version) VALUES (:language, :namespace, :intext, :outtext, :author, :version)",
+                [
+                    'language' => (string) $language,
+                    'namespace' => (string) $namespace,
+                    'intext' => (string) $intext,
+                    'outtext' => (string) $outtext,
+                    'author' => (string) $login,
+                    'version' => (string) $logd_version,
+                ],
+                [
+                    'language' => ParameterType::STRING,
+                    'namespace' => ParameterType::STRING,
+                    'intext' => ParameterType::STRING,
+                    'outtext' => ParameterType::STRING,
+                    'author' => ParameterType::STRING,
+                    'version' => ParameterType::STRING,
+                ]
+            );
+            $connection->executeStatement(
+                "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext = :intext AND language = :language AND namespace = :namespace",
+                [
+                    'intext' => (string) $intext,
+                    'language' => (string) $language,
+                    'namespace' => (string) $namespace,
+                ],
+                [
+                    'intext' => ParameterType::STRING,
+                    'language' => ParameterType::STRING,
+                    'namespace' => ParameterType::STRING,
+                ]
+            );
         }
     }
 
@@ -73,8 +103,11 @@ if ($op == "list") {
         Nav::add("", "untranslated.php?op=list");
     }
 
-    $sql = "SELECT namespace,count(*) AS c FROM " . Database::prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' GROUP BY namespace ORDER BY namespace ASC";
-    $result = Database::query($sql);
+    $result = $connection->executeQuery(
+        "SELECT namespace, count(*) AS c FROM " . Database::prefix("untranslated") . " WHERE language = :language GROUP BY namespace ORDER BY namespace ASC",
+        ['language' => (string) $session['user']['prefs']['language']],
+        ['language' => ParameterType::STRING]
+    );
     $output->rawOutput("<input type='hidden' name='op' value='list'>");
         $output->rawOutput("<label for='ns'>");
         $output->output("Known Namespaces:");
@@ -98,8 +131,17 @@ if ($op == "list") {
     } else {
         $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
         $output->rawOutput("<tr class='trhead'><td>" . Translator::translateInline("Ops") . "</td><td>" . Translator::translateInline("Text") . "</td></tr>");
-        $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language='" . $session['user']['prefs']['language'] . "' AND namespace='" . $namespace . "'";
-        $result = Database::query($sql);
+        $result = $connection->executeQuery(
+            "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language = :language AND namespace = :namespace",
+            [
+                'language' => (string) $session['user']['prefs']['language'],
+                'namespace' => (string) $namespace,
+            ],
+            [
+                'language' => ParameterType::STRING,
+                'namespace' => ParameterType::STRING,
+            ]
+        );
         if (Database::numRows($result) > 0) {
             $i = 0;
             while ($row = Database::fetchAssoc($result)) {
@@ -126,10 +168,38 @@ if ($op == "list") {
         $language = Http::post('language');
         if ($outtext <> "") {
             $login = $session['user']['login'];
-            $sql = "INSERT INTO " . Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$language','$namespace','$intext','$outtext','$login','$logd_version')";
-            Database::query($sql);
-            $sql = "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
-            Database::query($sql);
+            $connection->executeStatement(
+                "INSERT INTO " . Database::prefix("translations") . " (language, uri, intext, outtext, author, version) VALUES (:language, :namespace, :intext, :outtext, :author, :version)",
+                [
+                    'language' => (string) $language,
+                    'namespace' => (string) $namespace,
+                    'intext' => (string) $intext,
+                    'outtext' => (string) $outtext,
+                    'author' => (string) $login,
+                    'version' => (string) $logd_version,
+                ],
+                [
+                    'language' => ParameterType::STRING,
+                    'namespace' => ParameterType::STRING,
+                    'intext' => ParameterType::STRING,
+                    'outtext' => ParameterType::STRING,
+                    'author' => ParameterType::STRING,
+                    'version' => ParameterType::STRING,
+                ]
+            );
+            $connection->executeStatement(
+                "DELETE FROM " . Database::prefix("untranslated") . " WHERE intext = :intext AND language = :language AND namespace = :namespace",
+                [
+                    'intext' => (string) $intext,
+                    'language' => (string) $language,
+                    'namespace' => (string) $namespace,
+                ],
+                [
+                    'intext' => ParameterType::STRING,
+                    'language' => ParameterType::STRING,
+                    'namespace' => ParameterType::STRING,
+                ]
+            );
             invalidatedatacache("translations-" . $namespace . "-" . $language);
         }
     }
@@ -137,8 +207,11 @@ if ($op == "list") {
     $sql = "SELECT count(intext) AS count FROM " . Database::prefix("untranslated");
     $count = Database::fetchAssoc(Database::query($sql));
     if ($count['count'] > 0) {
-        $sql = "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language = '" . $session['user']['prefs']['language'] . "' ORDER BY rand(" . Random::eRand() . ") LIMIT 1";
-        $result = Database::query($sql);
+        $result = $connection->executeQuery(
+            "SELECT * FROM " . Database::prefix("untranslated") . " WHERE language = :language ORDER BY rand(" . Random::eRand() . ") LIMIT 1",
+            ['language' => (string) $session['user']['prefs']['language']],
+            ['language' => ParameterType::STRING]
+        );
         if (Database::numRows($result) == 1) {
             $row = Database::fetchAssoc($result);
             $row['intext'] = stripslashes($row['intext']);

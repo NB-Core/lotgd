@@ -12,6 +12,7 @@ use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Settings;
+use Doctrine\DBAL\ParameterType;
 
 // addnews ready
 // mail ready
@@ -22,6 +23,7 @@ require_once __DIR__ . "/common.php";
 
 $settings = Settings::getInstance();
 $output = Output::getInstance();
+$connection = Database::getDoctrineConnection();
 
 Translator::getInstance()->setSchema("deathmessage");
 
@@ -75,8 +77,11 @@ switch ($op) {
         $output->rawOutput("</form>");
         break;
     case "del":
-        $sql = "DELETE FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid=\"$deathmessageid\"";
-        Database::query($sql);
+        $connection->executeStatement(
+            "DELETE FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid = :deathmessageid",
+            ['deathmessageid' => (int) $deathmessageid],
+            ['deathmessageid' => ParameterType::INTEGER]
+        );
         $op = "";
         Http::set("op", "");
         break;
@@ -86,11 +91,44 @@ switch ($op) {
         $graveyard = (int) Http::post('graveyard');
         $taunt = (int) Http::post('taunt');
         if ($deathmessageid != "") {
-            $sql = "UPDATE " . Database::prefix("deathmessages") . " SET deathmessage=\"$deathmessage\",taunt=$taunt,forest=$forest,graveyard=$graveyard,editor=\"" . addslashes($session['user']['login']) . "\" WHERE deathmessageid=\"$deathmessageid\"";
+            $connection->executeStatement(
+                "UPDATE " . Database::prefix("deathmessages") . " SET deathmessage = :deathmessage, taunt = :taunt, forest = :forest, graveyard = :graveyard, editor = :editor WHERE deathmessageid = :deathmessageid",
+                [
+                    'deathmessage' => $deathmessage,
+                    'taunt' => $taunt,
+                    'forest' => $forest,
+                    'graveyard' => $graveyard,
+                    'editor' => (string) $session['user']['login'],
+                    'deathmessageid' => (int) $deathmessageid,
+                ],
+                [
+                    'deathmessage' => ParameterType::STRING,
+                    'taunt' => ParameterType::INTEGER,
+                    'forest' => ParameterType::INTEGER,
+                    'graveyard' => ParameterType::INTEGER,
+                    'editor' => ParameterType::STRING,
+                    'deathmessageid' => ParameterType::INTEGER,
+                ]
+            );
         } else {
-            $sql = "INSERT INTO " . Database::prefix("deathmessages") . " (deathmessage,taunt,forest,graveyard,editor) VALUES (\"$deathmessage\",$taunt,$forest,$graveyard,\"" . addslashes($session['user']['login']) . "\")";
+            $connection->executeStatement(
+                "INSERT INTO " . Database::prefix("deathmessages") . " (deathmessage, taunt, forest, graveyard, editor) VALUES (:deathmessage, :taunt, :forest, :graveyard, :editor)",
+                [
+                    'deathmessage' => $deathmessage,
+                    'taunt' => $taunt,
+                    'forest' => $forest,
+                    'graveyard' => $graveyard,
+                    'editor' => (string) $session['user']['login'],
+                ],
+                [
+                    'deathmessage' => ParameterType::STRING,
+                    'taunt' => ParameterType::INTEGER,
+                    'forest' => ParameterType::INTEGER,
+                    'graveyard' => ParameterType::INTEGER,
+                    'editor' => ParameterType::STRING,
+                ]
+            );
         }
-        Database::query($sql);
         $op = "";
         Http::set("op", "");
         break;
