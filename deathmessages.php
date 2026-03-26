@@ -32,17 +32,19 @@ SuAccess::check(SU_EDIT_CREATURES);
 Header::pageHeader("Deathmessage Editor");
 SuperuserNav::render();
 $op = Http::get('op');
-$deathmessageid = Http::get('deathmessageid');
+$deathmessageidRequest = Http::get('deathmessageid');
+$deathmessageid = deathmessages_normalize_optional_int($deathmessageidRequest);
+$deathmessageidParam = $deathmessageid === null ? '' : (string) $deathmessageid;
 switch ($op) {
     case "edit":
         Nav::add("Deathmessages");
         Nav::add("Return to the Deathmessage editor", "deathmessages.php");
-        $output->rawOutput("<form action='deathmessages.php?op=save&deathmessageid=$deathmessageid' method='POST'>", true);
-        Nav::add("", "deathmessages.php?op=save&deathmessageid=$deathmessageid");
-        if ($deathmessageid != "") {
+        $output->rawOutput("<form action='deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam) . "' method='POST'>", true);
+        Nav::add("", "deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam));
+        if ($deathmessageid !== null) {
             $result = $connection->executeQuery(
                 "SELECT * FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid = :deathmessageid",
-                ['deathmessageid' => (int) $deathmessageid],
+                ['deathmessageid' => $deathmessageid],
                 ['deathmessageid' => ParameterType::INTEGER]
             );
             $row = Database::fetchAssoc($result);
@@ -80,20 +82,25 @@ switch ($op) {
         $output->rawOutput("</form>");
         break;
     case "del":
+        if ($deathmessageid === null) {
+            $op = "";
+            Http::set("op", "");
+            break;
+        }
         $connection->executeStatement(
             "DELETE FROM " . Database::prefix("deathmessages") . " WHERE deathmessageid = :deathmessageid",
-            ['deathmessageid' => (int) $deathmessageid],
+            ['deathmessageid' => $deathmessageid],
             ['deathmessageid' => ParameterType::INTEGER]
         );
         $op = "";
         Http::set("op", "");
         break;
     case "save":
-        $deathmessage = Http::post('deathmessage');
+        $deathmessage = deathmessages_normalize_text(Http::post('deathmessage'));
         $forest = (int) Http::post('forest');
         $graveyard = (int) Http::post('graveyard');
         $taunt = (int) Http::post('taunt');
-        if ($deathmessageid != "") {
+        if ($deathmessageid !== null) {
             $connection->executeStatement(
                 "UPDATE " . Database::prefix("deathmessages") . " SET deathmessage = :deathmessage, taunt = :taunt, forest = :forest, graveyard = :graveyard, editor = :editor WHERE deathmessageid = :deathmessageid",
                 [
@@ -102,7 +109,7 @@ switch ($op) {
                     'forest' => $forest,
                     'graveyard' => $graveyard,
                     'editor' => (string) $session['user']['login'],
-                    'deathmessageid' => (int) $deathmessageid,
+                    'deathmessageid' => $deathmessageid,
                 ],
                 [
                     'deathmessage' => ParameterType::STRING,
@@ -135,6 +142,39 @@ switch ($op) {
         $op = "";
         Http::set("op", "");
         break;
+}
+
+/**
+ * Normalise request values expected to be optional integer identifiers.
+ */
+function deathmessages_normalize_optional_int(mixed $value): ?int
+{
+    if ($value === '' || $value === null || is_array($value)) {
+        return null;
+    }
+
+    if (! is_scalar($value)) {
+        return null;
+    }
+
+    return (int) $value;
+}
+
+/**
+ * Normalise request values to a safe string payload for DBAL string binding.
+ */
+function deathmessages_normalize_text(mixed $value): string
+{
+    // Preserve legacy coercion behavior while rejecting array/object payloads.
+    if ($value === false || $value === null || is_array($value)) {
+        return '';
+    }
+
+    if (is_string($value)) {
+        return $value;
+    }
+
+    return is_scalar($value) ? (string) $value : '';
 }
 if ($op == "") {
     $output->output("`i`\$Note: These messages are NEWS messages the user will trigger when he/she dies in the forest or graveyard.`0`i`n`n");

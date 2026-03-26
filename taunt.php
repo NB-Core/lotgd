@@ -32,16 +32,18 @@ SuAccess::check(SU_EDIT_CREATURES);
 Header::pageHeader("Taunt Editor");
 SuperuserNav::render();
 $op = Http::get('op');
-$tauntid = Http::get('tauntid');
+$tauntidRequest = Http::get('tauntid');
+$tauntid = taunt_normalize_optional_int($tauntidRequest);
+$tauntidParam = $tauntid === null ? '' : (string) $tauntid;
 if ($op == "edit") {
     Nav::add("Taunts");
     Nav::add("Return to the taunt editor", "taunt.php");
-    $output->rawOutput("<form action='taunt.php?op=save&tauntid=$tauntid' method='POST'>", true);
-    Nav::add("", "taunt.php?op=save&tauntid=$tauntid");
-    if ($tauntid != "") {
+    $output->rawOutput("<form action='taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam) . "' method='POST'>", true);
+    Nav::add("", "taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam));
+    if ($tauntid !== null) {
         $result = $connection->executeQuery(
             "SELECT * FROM " . Database::prefix("taunts") . " WHERE tauntid = :tauntid",
-            ['tauntid' => (int) $tauntid],
+            ['tauntid' => $tauntid],
             ['tauntid' => ParameterType::INTEGER]
         );
         $row = Database::fetchAssoc($result);
@@ -71,22 +73,27 @@ if ($op == "edit") {
     $output->rawOutput("<input type='submit' class='button' value='$save'>");
     $output->rawOutput("</form>");
 } elseif ($op == "del") {
-    $connection->executeStatement(
-        "DELETE FROM " . Database::prefix("taunts") . " WHERE tauntid = :tauntid",
-        ['tauntid' => (int) $tauntid],
-        ['tauntid' => ParameterType::INTEGER]
-    );
-    $op = "";
-    Http::set("op", "");
+    if ($tauntid === null) {
+        $op = "";
+        Http::set("op", "");
+    } else {
+        $connection->executeStatement(
+            "DELETE FROM " . Database::prefix("taunts") . " WHERE tauntid = :tauntid",
+            ['tauntid' => $tauntid],
+            ['tauntid' => ParameterType::INTEGER]
+        );
+        $op = "";
+        Http::set("op", "");
+    }
 } elseif ($op == "save") {
-    $taunt = Http::post('taunt');
-    if ($tauntid != "") {
+    $taunt = taunt_normalize_text(Http::post('taunt'));
+    if ($tauntid !== null) {
         $connection->executeStatement(
             "UPDATE " . Database::prefix("taunts") . " SET taunt = :taunt, editor = :editor WHERE tauntid = :tauntid",
             [
                 'taunt' => $taunt,
                 'editor' => (string) $session['user']['login'],
-                'tauntid' => (int) $tauntid,
+                'tauntid' => $tauntid,
             ],
             [
                 'taunt' => ParameterType::STRING,
@@ -140,5 +147,38 @@ if ($op == "") {
     $output->rawOutput("</table>");
     Nav::add("Taunts");
     Nav::add("Add a new taunt", "taunt.php?op=edit");
+}
+
+/**
+ * Normalise request values expected to be optional integer identifiers.
+ */
+function taunt_normalize_optional_int(mixed $value): ?int
+{
+    if ($value === '' || $value === null || is_array($value)) {
+        return null;
+    }
+
+    if (! is_scalar($value)) {
+        return null;
+    }
+
+    return (int) $value;
+}
+
+/**
+ * Normalise request values to a safe string payload for DBAL string binding.
+ */
+function taunt_normalize_text(mixed $value): string
+{
+    // Preserve legacy coercion behavior while rejecting array/object payloads.
+    if ($value === false || $value === null || is_array($value)) {
+        return '';
+    }
+
+    if (is_string($value)) {
+        return $value;
+    }
+
+    return is_scalar($value) ? (string) $value : '';
 }
 Footer::pageFooter();

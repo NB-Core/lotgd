@@ -50,6 +50,8 @@ final class TauntParameterBindingRegressionTest extends TestCase
         self::assertStringContainsString('executeStatement(', $source);
         self::assertStringContainsString('executeQuery(', $source);
         self::assertStringContainsString('WHERE tauntid = :tauntid', $source);
+        self::assertStringContainsString('taunt_normalize_text(Http::post(\'taunt\'))', $source);
+        self::assertStringContainsString('rawurlencode($tauntidParam)', $source);
         self::assertStringContainsString('tauntid = :tauntid', $source);
         self::assertStringContainsString('taunt = :taunt', $source);
         self::assertStringContainsString('editor = :editor', $source);

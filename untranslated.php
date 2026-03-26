@@ -93,6 +93,7 @@ if ($op == "list") {
                     'namespace' => ParameterType::STRING,
                 ]
             );
+            invalidatedatacache(untranslated_translation_cache_key((string) $namespace, (string) $language));
         }
     }
 

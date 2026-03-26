@@ -58,6 +58,10 @@ final class UntranslatedParameterBindingRegressionTest extends TestCase
         self::assertStringContainsString('strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH', $source);
         self::assertStringContainsString('$cacheNamespace = sha1($cacheNamespace);', $source);
         self::assertStringContainsString('ParameterType::STRING', $source);
+        self::assertGreaterThanOrEqual(
+            2,
+            substr_count($source, 'invalidatedatacache(untranslated_translation_cache_key((string) $namespace, (string) $language));')
+        );
     }
 
     public function testQuotedMultibytePayloadRemainsBoundAndSqlShapeUnchanged(): void

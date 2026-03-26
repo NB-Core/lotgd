@@ -50,6 +50,8 @@ final class DeathmessagesParameterBindingRegressionTest extends TestCase
         self::assertStringContainsString('executeStatement(', $source);
         self::assertStringContainsString('executeQuery(', $source);
         self::assertStringContainsString('WHERE deathmessageid = :deathmessageid', $source);
+        self::assertStringContainsString('deathmessages_normalize_text(Http::post(\'deathmessage\'))', $source);
+        self::assertStringContainsString('rawurlencode($deathmessageidParam)', $source);
         self::assertStringContainsString('deathmessageid = :deathmessageid', $source);
         self::assertStringContainsString('deathmessage = :deathmessage', $source);
         self::assertStringContainsString('ParameterType::INTEGER', $source);
