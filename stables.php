@@ -19,6 +19,7 @@ use Lotgd\Sanitize;
 use Lotgd\DebugLog;
 use Lotgd\DateTime;
 use Lotgd\Random;
+use Doctrine\DBAL\ParameterType;
 
 // translator ready
 // addnews ready
@@ -110,7 +111,15 @@ if ($playerMount) {
 $confirm = 0;
 
 $op = Http::get('op');
-$id = Http::get('id');
+/**
+ * Lotgd\Http returns raw request payloads; mount ids must be normalized
+ * before SQL and cache-key usage.
+ */
+$idRequest = Http::get('id');
+$id = is_string($idRequest) && ctype_digit($idRequest) && (int) $idRequest > 0 ? (int) $idRequest : null;
+if (in_array((string) $op, ['examine', 'buymount', 'confirmbuy'], true) && $id === null) {
+    $op = "";
+}
 
 
 if ($op == "") {
@@ -126,8 +135,11 @@ if ($op == "") {
     $translator->setSchema();
     HookHandler::hook("stables-desc");
 } elseif ($op == "examine") {
-    $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
-    $result = Database::queryCached($sql, "mountdata-$id", 3600);
+    $result = Database::getDoctrineConnection()->executeQuery(
+        "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid = :mountid",
+        ['mountid' => $id],
+        ['mountid' => ParameterType::INTEGER]
+    );
     if (Database::numRows($result) <= 0) {
         $translator->setSchema($schemas['nosuchbeast']);
         $output->output('%s', $texts['nosuchbeast']);
@@ -164,8 +176,11 @@ if ($op == "") {
     }
 }
 if ($op == 'confirmbuy') {
-    $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid='$id'";
-    $result = Database::queryCached($sql, "mountdata-$id", 3600);
+    $result = Database::getDoctrineConnection()->executeQuery(
+        "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid = :mountid",
+        ['mountid' => $id],
+        ['mountid' => ParameterType::INTEGER]
+    );
     if (Database::numRows($result) <= 0) {
         $translator->setSchema($schemas['nosuchbeast']);
         $output->output('%s', $texts['nosuchbeast']);

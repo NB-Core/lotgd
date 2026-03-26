@@ -45,11 +45,15 @@ if ($op == "lasthit") {
 Header::pageHeader("User Editor");
 
 $sort = Http::get('sort');
-$petition = Http::get("returnpetition");
-$returnpetition = "";
-if ($petition != "") {
-    $returnpetition = "&returnpetition=$petition";
-}
+$petitionRequest = Http::get("returnpetition");
+/**
+ * Lotgd\Http returns raw payloads; accept only positive integer petition IDs
+ * before embedding into user editor navigation links.
+ */
+$petition = is_string($petitionRequest) && ctype_digit($petitionRequest) && (int) $petitionRequest > 0
+    ? (int) $petitionRequest
+    : null;
+$returnpetition = $petition === null ? "" : "&returnpetition=$petition";
 
 $gentime = 0;
 $gentimecount = 0;
@@ -98,9 +102,18 @@ if ($op == "search" || $op == "") {
 }
 
 
-$m = Http::get("module");
-if ($m) {
-    $m = "&module=$m&subop=module";
+/**
+ * Lotgd\Http values are raw; module slugs must pass the module-name sanitizer
+ * and be URL-encoded before composing links.
+ */
+$moduleRequest = Http::get("module");
+$moduleSlug = is_string($moduleRequest) ? modulename_sanitize($moduleRequest) : '';
+if ($moduleSlug !== '') {
+    Http::set('module', $moduleSlug, true);
+}
+$m = '';
+if ($moduleSlug !== '') {
+    $m = '&module=' . rawurlencode($moduleSlug) . '&subop=module';
 }
 $output->rawOutput("<form action='user.php?op=search$m' method='POST'>");
 $output->output("Search by any field below: ");

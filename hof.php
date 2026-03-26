@@ -37,14 +37,14 @@ VillageNav::render();
 
 $playersperpage = 50;
 
-$op = Http::get('op');
-if ($op == "") {
-    $op = "kills";
-}
-$subop = Http::get('subop');
-if ($subop == "") {
-    $subop = "most";
-}
+/**
+ * Lotgd\Http yields raw values; whitelist operation enums before nav reuse.
+ */
+$opRequest = Http::get('op');
+$allowedOps = ['kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days'];
+$op = is_string($opRequest) && in_array($opRequest, $allowedOps, true) ? $opRequest : 'kills';
+$subopRequest = Http::get('subop');
+$subop = is_string($subopRequest) && in_array($subopRequest, ['most', 'least'], true) ? $subopRequest : 'most';
 
 $sql = "SELECT count(acctid) AS c FROM " . Database::prefix("accounts") . " WHERE $standardwhere";
 $extra = "";

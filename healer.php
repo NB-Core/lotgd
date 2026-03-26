@@ -26,8 +26,15 @@ Translator::getInstance()->setSchema("healer");
 
 $config = unserialize($session['user']['donationconfig']);
 
-$return = Http::get("return");
-$returnline = $return > "" ? "&return=$return" : "";
+/**
+ * Lotgd\Http returns raw input; keep return target as an internal route token
+ * from a strict allow-list before reusing it in nav/query links.
+ */
+$returnRequest = Http::get("return");
+$returnToken = is_string($returnRequest) ? basename(parse_url($returnRequest, PHP_URL_PATH) ?? '') : '';
+$allowedReturnTokens = ['forest.php', 'village.php'];
+$return = in_array($returnToken, $allowedReturnTokens, true) ? $returnToken : '';
+$returnline = $return !== '' ? '&return=' . rawurlencode($return) : "";
 
 Header::pageHeader("Healer's Hut");
 $output->output("`#`b`cHealer's Hut`c`b`n");

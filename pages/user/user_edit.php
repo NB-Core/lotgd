@@ -17,10 +17,15 @@ $row = Database::fetchAssoc($result);
 $output = Output::getInstance();
 $settings = Settings::getInstance();
 $charset = $settings->getSetting('charset', 'UTF-8');
-$petition = Http::get('returnpetition');
-if ($petition != "") {
-    $returnpetition = "&returnpetition=$petition";
-}
+/**
+ * Lotgd\Http returns raw payloads, so normalize returnpetition as optional int
+ * before embedding it back into operation/nav URLs.
+ */
+$petitionRequest = Http::get('returnpetition');
+$petition = is_string($petitionRequest) && ctype_digit($petitionRequest) && (int) $petitionRequest > 0
+    ? (int) $petitionRequest
+    : null;
+$returnpetition = $petition === null ? '' : "&returnpetition=$petition";
 if ($petition != "") {
     Nav::add("Navigation");
     Nav::add("Return to the petition", "viewpetition.php?op=view&id=$petition");
