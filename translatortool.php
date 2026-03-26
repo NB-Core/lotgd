@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
 use Lotgd\Sanitize;
@@ -255,15 +256,20 @@ if ($op == "") {
     }
 } elseif ($op == "list") {
     popup_header("Translation List");
-    $sql = "SELECT uri,count(*) AS c FROM " . Database::prefix("translations") . " WHERE language='" . LANGUAGE . "' GROUP BY uri ORDER BY uri ASC";
-    $result = Database::query($sql);
+    // Keep LANGUAGE explicit while ensuring the DBAL layer receives a typed bound parameter.
+    $language = (string) LANGUAGE;
+    $rows = Database::getDoctrineConnection()->fetchAllAssociative(
+        'SELECT uri,count(*) AS c FROM ' . Database::prefix('translations') . ' WHERE language = :language GROUP BY uri ORDER BY uri ASC',
+        ['language' => $language],
+        ['language' => ParameterType::STRING]
+    );
     $output->outputNotl("<form action='translatortool.php' method='GET'>", true);
     $output->outputNotl("<input type='hidden' name='op' value='list'>", true);
         $output->outputNotl("<label for='u'>", true);
         $output->output("Known Namespaces:");
         $output->outputNotl("</label>", true);
         $output->outputNotl("<select name='u' id='u'>", true);
-    while ($row = Database::fetchAssoc($result)) {
+    foreach ($rows as $row) {
         $output->outputNotl("<option value=\"" . htmlentities($row['uri']) . "\">" . htmlentities($row['uri'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . " ({$row['c']})</option>", true);
     }
     $output->outputNotl("</select>", true);
@@ -278,11 +284,22 @@ if ($op == "") {
     $norows = Translator::translateInline("No rows found");
     $output->outputNotl("<table border='0' cellpadding='2' cellspacing='0'>", true);
     $output->outputNotl("<tr class='trhead'><td>$ops</td><td>$from</td><td>$to</td><td>$version</td><td>$author</td></tr>", true);
-    $sql = "SELECT * FROM " . Database::prefix("translations") . " WHERE language='" . LANGUAGE . "' AND uri='" . (string) Http::get('u') . "'";
-    $result = Database::query($sql);
-    if (Database::numRows($result) > 0) {
+    $uriRequest = Http::get('u');
+    $uri = is_string($uriRequest) ? $uriRequest : (string) $uriRequest;
+    $translations = Database::getDoctrineConnection()->fetchAllAssociative(
+        'SELECT * FROM ' . Database::prefix('translations') . ' WHERE language = :language AND uri = :uri',
+        [
+            'language' => $language,
+            'uri'      => $uri,
+        ],
+        [
+            'language' => ParameterType::STRING,
+            'uri'      => ParameterType::STRING,
+        ]
+    );
+    if (count($translations) > 0) {
         $i = 0;
-        while ($row = Database::fetchAssoc($result)) {
+        foreach ($translations as $row) {
             $i++;
             $output->outputNotl("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>", true);
             $edit = Translator::translateInline("Edit");
