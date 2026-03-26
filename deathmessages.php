@@ -157,7 +157,20 @@ function deathmessages_normalize_optional_int(mixed $value): ?int
         return null;
     }
 
-    return (int) $value;
+    // Only accept positive integer values represented as digits-only strings.
+    $valueString = (string) $value;
+
+    if ($valueString === '' || ! ctype_digit($valueString)) {
+        return null;
+    }
+
+    $intValue = (int) $valueString;
+
+    if ($intValue <= 0) {
+        return null;
+    }
+
+    return $intValue;
 }
 
 /**
