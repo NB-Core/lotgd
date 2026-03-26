@@ -12,7 +12,12 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Security regression coverage for untranslated page parameter binding.
+ *
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
 final class UntranslatedParameterBindingRegressionTest extends TestCase
 {
     private DoctrineConnection $connection;
@@ -23,13 +28,22 @@ final class UntranslatedParameterBindingRegressionTest extends TestCase
 
         DoctrineBootstrap::$conn = null;
         Database::resetDoctrineConnection();
-        Database::setPrefix('lotgd_');
+        // Avoid leaking prefix changes into unrelated suites.
+        Database::setPrefix('');
 
         $this->connection = Database::getDoctrineConnection();
         $this->connection->executeStatements = [];
         $this->connection->queries = [];
         $this->connection->executeQueryParams = [];
         $this->connection->executeQueryTypes = [];
+    }
+
+    protected function tearDown(): void
+    {
+        DoctrineBootstrap::$conn = null;
+        Database::resetDoctrineConnection();
+        Database::setPrefix('');
+        parent::tearDown();
     }
 
     public function testSourceUsesBoundParamsForLanguageAndNamespaceFilters(): void
