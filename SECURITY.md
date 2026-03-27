@@ -34,3 +34,11 @@ Good-faith security research is welcome. Please avoid impacting production playe
 ## Recognition
 
 With your permission, verified reporters are thanked in the release notes. The project does not operate a bug bounty or provide monetary rewards.
+
+## Secure coding baseline
+
+When changing security-sensitive code paths, align implementation and review notes with these project references:
+
+- Doctrine prepared statements baseline: [docs/Doctrine.md#prepared-statements](docs/Doctrine.md#prepared-statements)
+- Async authentication and rate-limit guidance: [AGENTS.md#async--jaxon](AGENTS.md#async--jaxon) and [docs/PasskeyService.md#async-boundary](docs/PasskeyService.md#async-boundary)
+- Session, header, and cookie expectations: [docs/PasskeyService.md#security-model-and-boundaries](docs/PasskeyService.md#security-model-and-boundaries), [UPGRADING.md#6-configuration-changes](UPGRADING.md#6-configuration-changes), and [UPGRADING.md#8-after-upgrade](UPGRADING.md#8-after-upgrade)

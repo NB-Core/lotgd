@@ -271,3 +271,14 @@ As of this policy, static QA enforcement runs during `composer static` and fails
 ---
 
 👉 See also [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
+
+---
+
+## 11. Operator Hardening Checklist
+
+After upgrade and smoke tests, run this operator-focused hardening pass:
+
+- Verify HTTPS termination correctness end-to-end (TLS at edge/proxy, forwarded scheme handling, and no mixed-content/login downgrade paths).
+- Re-check cache path permissions (`DB_DATACACHEPATH` and Twig cache path) and confirm directories are writable by the runtime user only as needed.
+- Verify cookie and session behavior in production-like conditions (secure transport, expected login/session persistence, logout invalidation, and async/session continuity).
+- Run post-upgrade admin endpoint smoke checks (superuser login, key admin pages, and at least one state-changing admin action with expected auth/CSRF behavior).

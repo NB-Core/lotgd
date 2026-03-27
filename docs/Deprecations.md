@@ -29,6 +29,12 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: `Database::getDoctrineConnection()` with `Result::fetchAssociative()` / `fetchAllAssociative()`  
   - Migration: Replace wrapper loops with DBAL results and explicit parameter typing.
 
+- Legacy SQL string concatenation in core paths
+  - Status: Deprecated milestone **2026-03-27** (core paths only)
+  - 2.x compatibility: Existing module wrappers and legacy module code paths remain supported in 2.x for backward compatibility.
+  - Replacement: Doctrine DBAL prepared statements via `Database::getDoctrineConnection()` (or equivalent Doctrine abstractions).
+  - Removal target: Next major release (3.0) for core/refactored paths; module maintainers should migrate before upgrading.
+
 - Custom Ajax endpoints not using Jaxon
   - Status: Deprecated
   - Replacement: Jaxon-based async calls under `async/`
