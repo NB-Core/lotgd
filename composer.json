@@ -28,12 +28,12 @@
             "Lotgd\\Tests\\Stubs\\": "tests/Stubs/"
         }
     },
-    "scripts": {
-        "qa:http-wrappers": "php scripts/check-legacy-http-wrappers.php",
-        "static": [
-            "@qa:http-wrappers",
-            "phpstan analyse --configuration phpstan.neon"
-        ],
+  "scripts": {
+    "qa:http-wrappers": "php scripts/check-legacy-http-wrappers.php",
+    "static": [
+      "@qa:http-wrappers",
+      "phpstan analyse --configuration phpstan.neon --memory-limit=512M"
+    ],
         "test": "phpunit --configuration phpunit.xml",
         "lint": "phpcs .",
         "lint:fix": "phpcbf ."
