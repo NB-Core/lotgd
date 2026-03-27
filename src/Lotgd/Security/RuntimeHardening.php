@@ -51,18 +51,29 @@ class RuntimeHardening
             return true;
         }
 
-        if ((bool) ($options['security_trust_forwarded_proto'] ?? false)) {
-            $forwardedProto = (string) ($server['HTTP_X_FORWARDED_PROTO'] ?? '');
-            if ($forwardedProto !== '' && self::isTrustedProxy($server, $options)) {
-                $parts = explode(',', $forwardedProto);
-                $first = strtolower(trim((string) ($parts[0] ?? '')));
-                if ($first === 'https') {
-                    return true;
-                }
+        if ((bool) ($options['security_trust_forwarded_proto'] ?? false) && self::isTrustedProxy($server, $options)) {
+            $proto = self::extractForwardedProto($server);
+            if ($proto === 'https') {
+                return true;
+            }
+
+            $forwardedSsl = strtolower(trim((string) ($server['HTTP_X_FORWARDED_SSL'] ?? '')));
+            if ($forwardedSsl === 'on') {
+                return true;
+            }
+
+            $frontEndHttps = strtolower(trim((string) ($server['HTTP_FRONT_END_HTTPS'] ?? '')));
+            if ($frontEndHttps === 'on') {
+                return true;
+            }
+
+            $requestScheme = strtolower(trim((string) ($server['REQUEST_SCHEME'] ?? '')));
+            if ($requestScheme === 'https') {
+                return true;
             }
         }
 
-        return strtolower((string) ($server['HTTP_FRONT_END_HTTPS'] ?? '')) === 'on';
+        return false;
     }
 
     /**
@@ -276,10 +287,38 @@ class RuntimeHardening
     }
 
     /**
-     * Determine whether the client IP belongs to a trusted reverse proxy.
+     * Extract the forwarded protocol from common proxy headers.
      *
-     * @param array<string, mixed> $options
+     * @param array<string, mixed> $server
      */
+    private static function extractForwardedProto(array $server): string
+    {
+        $candidate = (string) (
+            $server['HTTP_X_FORWARDED_PROTO']
+            ?? $server['X_FORWARDED_PROTO']
+            ?? $server['HTTP_X_FORWARDED_PROTOCOL']
+            ?? $server['HTTP_FORWARDED_PROTO']
+            ?? $server['FORWARDED_PROTO']
+            ?? $server['HTTP_X_URL_SCHEME']
+            ?? ''
+        );
+
+        if ($candidate !== '') {
+            return strtolower(trim(explode(',', $candidate)[0]));
+        }
+
+        $forwarded = (string) ($server['HTTP_FORWARDED'] ?? '');
+        if ($forwarded === '') {
+            return '';
+        }
+
+        if (preg_match('/(?:^|[;,\\s])proto=([^;,\\s]+)/i', $forwarded, $match) !== 1) {
+            return '';
+        }
+
+        return strtolower(trim($match[1], " \t\n\r\0\x0B\"'"));
+    }
+
     private static function isTrustedProxy(array $server, array $options): bool
     {
         $trustedProxies = $options['security_trusted_proxies'] ?? [];
@@ -288,9 +327,10 @@ class RuntimeHardening
         }
 
         if ($trustedProxies === []) {
-            // No trusted proxies configured: do not trust forwarded proto.
-            return false;
+            // No allowlist configured — trust all sources.
+            return true;
         }
+
         $remoteAddr = trim((string) ($server['REMOTE_ADDR'] ?? ''));
         if ($remoteAddr === '') {
             return false;

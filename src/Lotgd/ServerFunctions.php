@@ -128,16 +128,15 @@ class ServerFunctions
         $trustForwardedRaw = getenv('LOTGD_TRUST_FORWARDED_HEADERS');
         $trustForwardedValue = $trustForwardedRaw === false ? '1' : (string) $trustForwardedRaw;
 
-        return RuntimeHardening::isHttpsRequest(
-            $_SERVER,
-            [
-                'SECURITY_TRUST_FORWARDED_PROTO' => !in_array(
-                    strtolower(trim($trustForwardedValue)),
-                    ['0', 'false', 'no'],
-                    true
-                ),
-                'SECURITY_TRUSTED_PROXIES' => getenv('LOTGD_TRUSTED_PROXY_IPS') ?: '',
-            ]
-        );
+        $options = RuntimeHardening::buildOptions([
+            'SECURITY_TRUST_FORWARDED_PROTO' => !in_array(
+                strtolower(trim($trustForwardedValue)),
+                ['0', 'false', 'no'],
+                true
+            ),
+            'SECURITY_TRUSTED_PROXIES' => getenv('LOTGD_TRUSTED_PROXY_IPS') ?: '',
+        ]);
+
+        return RuntimeHardening::isHttpsRequest($_SERVER, $options);
     }
 }
