@@ -124,17 +124,60 @@ class ServerFunctions
      */
     public static function isHttpsRequest(): bool
     {
-        $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
-        if ($forwardedProto !== '') {
-            // Reverse proxies may send a comma-separated list (client, proxy1,
-            // proxy2). Use the first value as the original request protocol.
-            $proto = trim(explode(',', $forwardedProto)[0]);
-            if ($proto === 'https') {
-                return true;
-            }
+        $forwardedProto = self::extractForwardedProto($_SERVER);
+        if ($forwardedProto === 'https') {
+            return true;
         }
 
-        return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        $forwardedSsl = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')));
+        if ($forwardedSsl === 'on') {
+            return true;
+        }
+
+        $frontEndHttps = strtolower(trim((string) ($_SERVER['HTTP_FRONT_END_HTTPS'] ?? '')));
+        if ($frontEndHttps === 'on') {
+            return true;
+        }
+
+        $requestScheme = strtolower(trim((string) ($_SERVER['REQUEST_SCHEME'] ?? '')));
+        if ($requestScheme === 'https') {
+            return true;
+        }
+
+        $https = strtolower(trim((string) ($_SERVER['HTTPS'] ?? '')));
+
+        return ($https !== '' && $https !== 'off' && $https !== '0')
             || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
+    }
+
+    /**
+     * Extract the original protocol from common proxy forwarding headers.
+     *
+     * Supported forms:
+     * - HTTP_X_FORWARDED_PROTO / FORWARDED_PROTO
+     * - RFC 7239 Forwarded header (`proto=https`)
+     *
+     * @param array<string, mixed> $server
+     *
+     * @return string Normalized protocol token or empty string when unknown.
+     */
+    private static function extractForwardedProto(array $server): string
+    {
+        $candidate = (string) ($server['HTTP_X_FORWARDED_PROTO'] ?? $server['FORWARDED_PROTO'] ?? '');
+        if ($candidate !== '') {
+            // Reverse proxies may send comma-separated protocol hops.
+            return strtolower(trim(explode(',', $candidate)[0]));
+        }
+
+        $forwarded = (string) ($server['HTTP_FORWARDED'] ?? '');
+        if ($forwarded === '') {
+            return '';
+        }
+
+        if (preg_match('/(?:^|[;,\\s])proto=([^;,\\s]+)/i', $forwarded, $match) !== 1) {
+            return '';
+        }
+
+        return strtolower(trim($match[1], " \t\n\r\0\x0B\"'"));
     }
 }

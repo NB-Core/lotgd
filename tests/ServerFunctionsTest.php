@@ -43,6 +43,12 @@ final class ServerFunctionsTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https,http';
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
+        $_SERVER = ['HTTP_FORWARDED' => 'for=1.2.3.4;proto=https;by=5.6.7.8'];
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+
+        $_SERVER = ['FORWARDED_PROTO' => 'https'];
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'http';
         $_SERVER['HTTPS'] = 'off';
         $_SERVER['SERVER_PORT'] = 80;
