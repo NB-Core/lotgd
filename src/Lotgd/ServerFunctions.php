@@ -11,6 +11,7 @@ namespace Lotgd;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Security\RuntimeHardening;
 
 class ServerFunctions
 {
@@ -111,7 +112,31 @@ class ServerFunctions
      */
     public static function isSecureConnection(): bool
     {
-        return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
+        return self::isHttpsRequest();
+    }
+
+    /**
+     * Determine whether the request should be treated as HTTPS.
+     *
+     * Supports direct TLS detection and common reverse-proxy forwarded
+     * protocol headers.
+     *
+     * @return bool
+     */
+    public static function isHttpsRequest(): bool
+    {
+        $trustForwardedRaw = getenv('LOTGD_TRUST_FORWARDED_HEADERS');
+        $trustForwardedValue = $trustForwardedRaw === false ? '1' : (string) $trustForwardedRaw;
+
+        $options = RuntimeHardening::buildOptions([
+            'SECURITY_TRUST_FORWARDED_PROTO' => !in_array(
+                strtolower(trim($trustForwardedValue)),
+                ['0', 'false', 'no'],
+                true
+            ),
+            'SECURITY_TRUSTED_PROXIES' => getenv('LOTGD_TRUSTED_PROXY_IPS') ?: '',
+        ]);
+
+        return RuntimeHardening::isHttpsRequest($_SERVER, $options);
     }
 }

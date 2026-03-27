@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\Exception as DbalException;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Http;
@@ -80,16 +82,29 @@ if (!$fp) {
             // process payment
             if ($payment_status == "Completed" || $payment_status == 'Refunded') {
                 if ($payment_status == 'Refunded') {
-                    //sanitize the data to look like a completed transaction
-                    $payment_amount = $mc_gross;
+                    // Sanitize the refund payload to look like a completed transaction.
+                    // Keep using the already-read mc_gross payload value from $payment_amount.
                     $payment_fee = 0;
                     $txn_type = 'refund';
                 }
-                $sql = "SELECT * FROM " . Database::prefix("paylog") . " WHERE txnid='{$txn_id}'";
-                $result = Database::query($sql);
-                if (Database::numRows($result) == 1) {
+                $conn = Database::getDoctrineConnection();
+                $paylogTable = Database::prefix('paylog');
+                $emsg = '';
+                try {
+                    $existing = $conn->fetchAssociative(
+                        "SELECT txnid FROM {$paylogTable} WHERE txnid = :txnid",
+                        ['txnid' => (string) $txn_id],
+                        ['txnid' => ParameterType::STRING]
+                    );
+                } catch (DbalException $exception) {
+                    payment_error(E_ERROR, "Failed to verify transaction duplication: " . $exception->getMessage(), __FILE__, __LINE__);
+                    continue;
+                }
+                if ($existing !== false) {
                     $emsg .= "Already logged this transaction ID ($txn_id)\n";
                     payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
+                    // Duplicate transactions must not be re-processed.
+                    continue;
                 }
                 if (
                     ($receiver_email != "logd@mightye.org") &&
@@ -120,13 +135,32 @@ function writelog($response)
     global $payment_fee,$txn_type;
     $match = array();
     preg_match("'([^:]*):([^/])*'", $item_number, $match);
+    $conn = Database::getDoctrineConnection();
+    $accountsTable = Database::prefix('accounts');
+    $paylogTable = Database::prefix('paylog');
+    // Keep defaults explicit so later logic does not rely on conditionally-defined values.
+    $acctid = 0;
+    $processed = 0;
+    $donation = (float) $payment_amount;
+
     if (isset($match[1]) && $match[1] > "") {
-        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='{$match[1]}'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
-        $acctid = $row['acctid'];
+        try {
+            $row = $conn->fetchAssociative(
+                "SELECT acctid FROM {$accountsTable} WHERE login = :login",
+                ['login' => $match[1]],
+                ['login' => ParameterType::STRING]
+            );
+        } catch (DbalException $exception) {
+            payment_error(E_ERROR, "Failed to resolve donation account: " . $exception->getMessage(), __FILE__, __LINE__);
+            return;
+        }
+        if (!is_array($row)) {
+            $acctid = 0;
+        } else {
+            $acctid = (int) ($row['acctid'] ?? 0);
+        }
         if ($acctid > 0) {
-            $donation = $payment_amount;
+            $donation = (float) $payment_amount;
             // if it's a reversal, it'll only post back to us the amount
             // we received back, with out counting the fees, which we
             // receive under a different transaction, but get no
@@ -139,9 +173,22 @@ function writelog($response)
             //updated to make a setting here for each Dollar, Euro, Shekel
             $hookresult['points'] = round($hookresult['points']);
 
-            $sql = "UPDATE " . Database::prefix("accounts") . " SET donation = donation + '{$hookresult['points']}' WHERE acctid=$acctid";
-
-            $result = Database::query($sql);
+            try {
+                $result = $conn->executeStatement(
+                    "UPDATE {$accountsTable} SET donation = donation + :points WHERE acctid = :acctid",
+                    [
+                        'points' => (int) $hookresult['points'],
+                        'acctid' => (int) $acctid,
+                    ],
+                    [
+                        'points' => ParameterType::INTEGER,
+                        'acctid' => ParameterType::INTEGER,
+                    ]
+                );
+            } catch (DbalException $exception) {
+                payment_error(E_ERROR, "Failed to credit donation points: " . $exception->getMessage(), __FILE__, __LINE__);
+                $result = 0;
+            }
             debuglog("Received donator points for donating -- Credited Automatically", false, $acctid, "donation", $hookresult['points'], false);
             if (!is_array($hookresult['messages'])) {
                 $hookresult['messages'] = array($hookresult['messages']);
@@ -149,9 +196,7 @@ function writelog($response)
             foreach ($hookresult['messages'] as $id => $message) {
                 debuglog($message, false, $acctid, "donation", 0, false);
             }
-            if (Database::affectedRows() > 0) {
-                $processed = 1;
-            }
+            $processed = $result > 0 ? 1 : 0;
         }
     } else {
         $match[1] = "";
@@ -159,39 +204,64 @@ function writelog($response)
     if ($match[1] > "" && $acctid > 0) {
         HookHandler::hook("donation", array("id" => $acctid, "amt" => $donation * $settings->getSetting('dpointspercurrencyunit', 100), "manual" => false));
     }
-    $sql = "
-                INSERT INTO " . Database::prefix("paylog") . " (
-			info,
-			response,
-			txnid,
-			amount,
-			name,
-			acctid,
-			processed,
-			filed,
-			txfee,
-			processdate
-		)VALUES (
-			'" . addslashes(serialize($post)) . "',
-			'" . addslashes($response) . "',
-			'$txn_id',
-			'$payment_amount',
-			'{$match[1]}',
-			" . (int)(isset($acctid) ? $acctid : 0) . ",
-			" . (int)(isset($processed) ? $processed : 0) . ",
-			0,
-			'$payment_fee',
-			'" . date("Y-m-d H:i:s") . "'
-		)";
+    $sql = "INSERT INTO {$paylogTable} (
+            info,
+            response,
+            txnid,
+            amount,
+            name,
+            acctid,
+            processed,
+            filed,
+            txfee,
+            processdate
+        ) VALUES (
+            :info,
+            :response,
+            :txnid,
+            :amount,
+            :name,
+            :acctid,
+            :processed,
+            :filed,
+            :txfee,
+            :processdate
+        )";
     if (isset($acctid)) {
         debuglog($sql, false, $acctid, "donation", 0, false);
     }
-    $result = Database::query($sql);
-    HookHandler::hook("donation-processed", $post);
-    $err = Database::error();
-    if ($err) {
-        payment_error(E_ERROR, "SQL: $sql\nERR: $err", __FILE__, __LINE__);
+    try {
+        $conn->executeStatement(
+            $sql,
+            [
+                'info' => serialize($post),
+                'response' => $response,
+                'txnid' => (string) $txn_id,
+                'amount' => (string) $payment_amount,
+                'name' => (string) $match[1],
+                'acctid' => $acctid,
+                'processed' => $processed,
+                'filed' => 0,
+                'txfee' => (string) $payment_fee,
+                'processdate' => date("Y-m-d H:i:s"),
+            ],
+            [
+                'info' => ParameterType::STRING,
+                'response' => ParameterType::STRING,
+                'txnid' => ParameterType::STRING,
+                'amount' => ParameterType::STRING,
+                'name' => ParameterType::STRING,
+                'acctid' => ParameterType::INTEGER,
+                'processed' => ParameterType::INTEGER,
+                'filed' => ParameterType::INTEGER,
+                'txfee' => ParameterType::STRING,
+                'processdate' => ParameterType::STRING,
+            ]
+        );
+    } catch (DbalException $exception) {
+        payment_error(E_ERROR, "Failed to persist payment log: " . $exception->getMessage(), __FILE__, __LINE__);
     }
+    HookHandler::hook("donation-processed", $post);
 }
 
 function payment_error($errno, $errstr, $errfile, $errline)

@@ -64,6 +64,29 @@ values based on the parameter type if you supply a third argument to
 See the official [Doctrine DBAL prepared statements documentation](https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/data-retrieval-and-manipulation.html#prepared-statements)
 for more background.
 
+### Dynamic `IN (...)` Lists with `ArrayParameterType`
+
+For legacy migrations that previously concatenated comma-separated ID lists,
+bind the full list as a DBAL array parameter instead of manually quoting values:
+
+```php
+use Doctrine\DBAL\ArrayParameterType;
+use Lotgd\MySQL\Database;
+
+$commentIds = [101, 102, 103];
+$conn = Database::getDoctrineConnection();
+
+$rows = $conn->fetchAllAssociative(
+    'SELECT commentid, section FROM ' . Database::prefix('commentary') . ' WHERE commentid IN (?)',
+    [$commentIds],
+    [ArrayParameterType::INTEGER]
+);
+```
+
+Use `ArrayParameterType::INTEGER` for numeric IDs and
+`ArrayParameterType::STRING` for string lists. This preserves SQL semantics
+while removing ad-hoc quoting/escaping logic.
+
 
 ## Legacy Request SQL Refactor Checklist
 

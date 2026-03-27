@@ -199,7 +199,24 @@ If you maintain custom modules, update any legacy calls to `Database::fetchAssoc
 
 ### Superuser endpoint hardening update
 
-Recent 2.x updates switched the superuser editors in `deathmessages.php`, `taunt.php`, and `untranslated.php` to explicit Doctrine parameter binding for write operations (and filtered untranslated lookups). These endpoints now rely on `executeStatement()` / `executeQuery()` with typed bound parameters instead of legacy wrapper escaping behavior. If you maintain custom overrides of these pages, update them to match bound-parameter execution semantics.
+Recent 2.x updates switched several superuser and security-sensitive endpoints to explicit Doctrine parameter binding (`executeStatement()` / `executeQuery()` with typed params) instead of string-built SQL:
+
+**Migrated in this wave:**
+- `moderate.php` (comment delete / restore writes, moderation inserts, dynamic `IN` list binding with `ArrayParameterType::INTEGER`).
+- `payment.php` (IPN duplicate check, account donation credit update, and paylog persistence writes).
+- `badword.php` (good/nasty word list rewrite operations).
+- `masters.php` (training master insert/update writes).
+- `titleedit.php` (title insert/update/delete and account title reset updates).
+- Previously migrated: `deathmessages.php`, `taunt.php`, `untranslated.php`.
+
+**Pending superuser pages still using legacy string-built writes (track for next waves):**
+- `creatures.php`
+- `referers.php`
+- `paylog.php`
+- `configuration.php`
+- `create.php`
+
+If you maintain custom overrides of any migrated page, update those overrides to match bound-parameter execution semantics (including explicit type maps and DBAL array binding for dynamic `IN` clauses).
 
 ### Refactoring Legacy SQL to Prepared Statements
 

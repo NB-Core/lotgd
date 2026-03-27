@@ -7,6 +7,10 @@ namespace Lotgd\Tests\Security;
 use Lotgd\Security\RuntimeHardening;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Regression tests for RuntimeHardening HTTPS detection.
+ */
+
 class RuntimeHardeningTest extends TestCase
 {
     public function testBuildSessionCookieParamsUsesHttpsAndStrictSameSite(): void

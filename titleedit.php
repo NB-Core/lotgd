@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\Exception as DbalException;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
@@ -50,28 +52,79 @@ switch ($op) {
         // Ref is currently unused
         // $ref = Http::post('ref');
         $ref = '';
+        $conn = Database::getDoctrineConnection();
+        $titlesTable = Database::prefix('titles');
+        $dbalErrorMessage = '';
 
-        if ((int)$id == 0) {
-            $sql = "INSERT INTO " . Database::prefix("titles") . " (titleid,dk,ref,male,female) VALUES ($id,$dk,'$ref','$male','$female')";
-            $note = "`^New title added.`0";
-            $errnote = "`\$Unable to add title.`0";
-        } else {
-            $sql = "UPDATE " . Database::prefix("titles") . " SET dk=$dk,ref='$ref',male='$male',female='$female' WHERE titleid=$id";
-            $note = "`^Title modified.`0";
-            $errnote = "`\$Unable to modify title.`0";
+        try {
+            if ((int)$id == 0) {
+                $note = "`^New title added.`0";
+                $errnote = "`\$Unable to add title.`0";
+                $affected = $conn->executeStatement(
+                    "INSERT INTO {$titlesTable} (titleid, dk, ref, male, female) VALUES (:id, :dk, :ref, :male, :female)",
+                    [
+                        'id' => (int) $id,
+                        'dk' => (int) $dk,
+                        'ref' => (string) $ref,
+                        'male' => (string) $male,
+                        'female' => (string) $female,
+                    ],
+                    [
+                        'id' => ParameterType::INTEGER,
+                        'dk' => ParameterType::INTEGER,
+                        'ref' => ParameterType::STRING,
+                        'male' => ParameterType::STRING,
+                        'female' => ParameterType::STRING,
+                    ]
+                );
+                $affected = (int) $affected;
+            } else {
+                $note = "`^Title modified.`0";
+                $errnote = "`\$Unable to modify title.`0";
+                $affected = $conn->executeStatement(
+                    "UPDATE {$titlesTable} SET dk = :dk, ref = :ref, male = :male, female = :female WHERE titleid = :id",
+                    [
+                        'dk' => (int) $dk,
+                        'ref' => (string) $ref,
+                        'male' => (string) $male,
+                        'female' => (string) $female,
+                        'id' => (int) $id,
+                    ],
+                    [
+                        'dk' => ParameterType::INTEGER,
+                        'ref' => ParameterType::STRING,
+                        'male' => ParameterType::STRING,
+                        'female' => ParameterType::STRING,
+                        'id' => ParameterType::INTEGER,
+                    ]
+                );
+                $affected = (int) $affected;
+            }
+        } catch (DbalException $exception) {
+            // DBAL exceptions do not flow through Database::error(), so keep the
+            // concrete message for superuser diagnostics.
+            $affected = 0;
+            $dbalErrorMessage = $exception->getMessage();
         }
-        Database::query($sql);
-        if (Database::affectedRows() == 0) {
+
+        if ($affected === 0) {
             $output->output('%s', $errnote);
-            $output->rawOutput(Database::error());
+            if ($dbalErrorMessage !== '') {
+                $output->rawOutput(htmlspecialchars($dbalErrorMessage, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+            }
         } else {
             $output->output('%s', $note);
         }
         $op = "";
         break;
     case "delete":
-        $sql = "DELETE FROM " . Database::prefix("titles") . " WHERE titleid='$id'";
-        Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $titlesTable = Database::prefix('titles');
+        $conn->executeStatement(
+            "DELETE FROM {$titlesTable} WHERE titleid = :id",
+            ['id' => (int) $id],
+            ['id' => ParameterType::INTEGER]
+        );
         $output->output("`^Title deleted.`0");
         $op = "";
         break;
@@ -107,10 +160,21 @@ switch ($op) {
                         $session['user']['title'] = $newtitle;
                         $session['user']['name'] = $newname;
                     } else {
-                        $sql = "UPDATE " . Database::prefix("accounts") . " SET name='" .
-                            addslashes($newname) . "', title='" .
-                            addslashes($newtitle) . "' WHERE acctid='$id'";
-                        Database::query($sql);
+                        $conn = Database::getDoctrineConnection();
+                        $accountsTable = Database::prefix('accounts');
+                        $conn->executeStatement(
+                            "UPDATE {$accountsTable} SET name = :name, title = :title WHERE acctid = :acctid",
+                            [
+                                'name' => (string) $newname,
+                                'title' => (string) $newtitle,
+                                'acctid' => (int) $id,
+                            ],
+                            [
+                                'name' => ParameterType::STRING,
+                                'title' => ParameterType::STRING,
+                                'acctid' => ParameterType::INTEGER,
+                            ]
+                        );
                     }
                 } elseif ($otitle != $newtitle) {
                     $output->output(
@@ -123,10 +187,19 @@ switch ($op) {
                     if ($session['user']['acctid'] == $row['acctid']) {
                         $session['user']['title'] = $newtitle;
                     } else {
-                        $sql = "UPDATE " . Database::prefix("accounts") .
-                            " SET title='" . addslashes($newtitle) .
-                            "' WHERE acctid='$id'";
-                        Database::query($sql);
+                        $conn = Database::getDoctrineConnection();
+                        $accountsTable = Database::prefix('accounts');
+                        $conn->executeStatement(
+                            "UPDATE {$accountsTable} SET title = :title WHERE acctid = :acctid",
+                            [
+                                'title' => (string) $newtitle,
+                                'acctid' => (int) $id,
+                            ],
+                            [
+                                'title' => ParameterType::STRING,
+                                'acctid' => ParameterType::INTEGER,
+                            ]
+                        );
                     }
                 }
             }

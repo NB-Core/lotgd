@@ -56,14 +56,16 @@ Nav::add("Clan Halls");
 $op = Http::get("op");
 if ($op == "commentdelete") {
     $comment = Http::post('comment');
+    $conn = Database::getDoctrineConnection();
+    $commentaryTable = Database::prefix('commentary');
+    $accountsTable = Database::prefix('accounts');
+    $clansTable = Database::prefix('clans');
+    $moderatedCommentsTable = Database::prefix('moderatedcomments');
+
     if (Http::post('delnban') > '') {
-        $commentIds = array_keys($comment ?? []);
-        $commentIds = array_map(static fn ($value): int => (int) $value, $commentIds);
+        $commentIds = moderateNormalizeIntegerKeys($comment);
 
         if ($commentIds !== []) {
-            $conn = Database::getDoctrineConnection();
-            $commentaryTable = Database::prefix('commentary');
-            $accountsTable = Database::prefix('accounts');
             $bansTable = Database::prefix('bans');
 
             $rows = $conn->fetchAllAssociative(
@@ -158,25 +160,43 @@ if ($op == "commentdelete") {
     if (!isset($comment) || !is_array($comment)) {
         $comment = array();
     }
-    $sql = "SELECT " .
-        Database::prefix("commentary") . ".*," . Database::prefix("accounts") . ".name," .
-        Database::prefix("accounts") . ".login, " . Database::prefix("accounts") . ".clanrank," .
-        Database::prefix("clans") . ".clanshort FROM " . Database::prefix("commentary") .
-        " INNER JOIN " . Database::prefix("accounts") . " ON " .
-        Database::prefix("accounts") . ".acctid = " . Database::prefix("commentary") .
-        ".author LEFT JOIN " . Database::prefix("clans") . " ON " .
-        Database::prefix("clans") . ".clanid=" . Database::prefix("accounts") .
-        ".clanid WHERE commentid IN ('" . join("','", array_keys($comment)) . "')";
-    $result = Database::query($sql);
+    $commentIds = moderateNormalizeIntegerKeys($comment);
     $invalsections = array();
-    while ($row = Database::fetchAssoc($result)) {
-        $sql = "INSERT LOW_PRIORITY INTO " . Database::prefix("moderatedcomments") .
-            " (moderator,moddate,comment) VALUES ('{$session['user']['acctid']}','" . date("Y-m-d H:i:s") . "','" . addslashes(serialize($row)) . "')";
-        Database::query($sql);
-        $invalsections[$row['section']] = 1;
+    if ($commentIds !== []) {
+        $rows = $conn->fetchAllAssociative(
+            "SELECT c.*, a.name, a.login, a.clanrank, cl.clanshort
+                FROM {$commentaryTable} c
+                INNER JOIN {$accountsTable} a ON a.acctid = c.author
+                LEFT JOIN {$clansTable} cl ON cl.clanid = a.clanid
+                WHERE c.commentid IN (?)",
+            [$commentIds],
+            [ArrayParameterType::INTEGER]
+        );
+
+        foreach ($rows as $row) {
+            $conn->executeStatement(
+                "INSERT LOW_PRIORITY INTO {$moderatedCommentsTable} (moderator, moddate, comment) VALUES (:moderator, :moddate, :comment)",
+                [
+                    'moderator' => (int) $session['user']['acctid'],
+                    'moddate'   => date("Y-m-d H:i:s"),
+                    'comment'   => serialize($row),
+                ],
+                [
+                    'moderator' => ParameterType::INTEGER,
+                    'moddate'   => ParameterType::STRING,
+                    'comment'   => ParameterType::STRING,
+                ]
+            );
+            $invalsections[$row['section']] = 1;
+        }
+
+        $conn->executeStatement(
+            "DELETE FROM {$commentaryTable} WHERE commentid IN (?)",
+            [$commentIds],
+            [ArrayParameterType::INTEGER]
+        );
     }
-    $sql = "DELETE FROM " . Database::prefix("commentary") . " WHERE commentid IN ('" . join("','", array_keys($comment)) . "')";
-    Database::query($sql);
+
     $return = Http::get('return');
     $return = Sanitize::cmdSanitize($return);
     $return = basename($return);
@@ -221,21 +241,54 @@ if ($op == "") {
     if ($subop == "undelete") {
         $unkeys = Http::post("mod");
         if ($unkeys && is_array($unkeys)) {
-            $sql = "SELECT * FROM " . Database::prefix("moderatedcomments") . " WHERE modid IN ('" . join("','", array_keys($unkeys)) . "')";
-            $result = Database::query($sql);
-            while ($row = Database::fetchAssoc($result)) {
-                $comment = unserialize($row['comment']);
-                $id = addslashes($comment['commentid']);
-                $postdate = addslashes($comment['postdate']);
-                $section = addslashes($comment['section']);
-                $author = addslashes($comment['author']);
-                $comment = addslashes($comment['comment']);
-                $sql = "INSERT LOW_PRIORITY INTO " . Database::prefix("commentary") . " (commentid,postdate,section,author,comment) VALUES ('$id','$postdate','$section','$author','$comment')";
-                Database::query($sql);
-                DataCache::getInstance()->invalidatedatacache("comments-$section");
+            $modIds = moderateNormalizeIntegerKeys($unkeys);
+            $conn = Database::getDoctrineConnection();
+            $moderatedCommentsTable = Database::prefix('moderatedcomments');
+            $commentaryTable = Database::prefix('commentary');
+
+            $rows = [];
+            if ($modIds !== []) {
+                $rows = $conn->fetchAllAssociative(
+                    "SELECT * FROM {$moderatedCommentsTable} WHERE modid IN (?)",
+                    [$modIds],
+                    [ArrayParameterType::INTEGER]
+                );
             }
-            $sql = "DELETE FROM " . Database::prefix("moderatedcomments") . " WHERE modid IN ('" . join("','", array_keys($unkeys)) . "')";
-            Database::query($sql);
+
+            foreach ($rows as $row) {
+                $comment = unserialize($row['comment'], ['allowed_classes' => false]);
+                if (!is_array($comment)) {
+                    continue;
+                }
+
+                $section = (string) ($comment['section'] ?? '');
+                $conn->executeStatement(
+                    "INSERT LOW_PRIORITY INTO {$commentaryTable} (commentid, postdate, section, author, comment) VALUES (:commentid, :postdate, :section, :author, :comment)",
+                    [
+                        'commentid' => (int) ($comment['commentid'] ?? 0),
+                        'postdate'  => (string) ($comment['postdate'] ?? ''),
+                        'section'   => $section,
+                        'author'    => (int) ($comment['author'] ?? 0),
+                        'comment'   => (string) ($comment['comment'] ?? ''),
+                    ],
+                    [
+                        'commentid' => ParameterType::INTEGER,
+                        'postdate'  => ParameterType::STRING,
+                        'section'   => ParameterType::STRING,
+                        'author'    => ParameterType::INTEGER,
+                        'comment'   => ParameterType::STRING,
+                    ]
+                );
+                DataCache::getInstance()->invalidatedatacache("comments-{$section}");
+            }
+
+            if ($modIds !== []) {
+                $conn->executeStatement(
+                    "DELETE FROM {$moderatedCommentsTable} WHERE modid IN (?)",
+                    [$modIds],
+                    [ArrayParameterType::INTEGER]
+                );
+            }
         } else {
             $output->output("No items selected to undelete -- Please try again`n`n");
         }
@@ -289,7 +342,7 @@ if ($op == "") {
         $output->outputNotl("%s", $row['moddate']);
         $output->rawOutput("</td>");
         $output->rawOutput("<td>");
-        $comment = unserialize($row['comment']);
+        $comment = unserialize($row['comment'], ['allowed_classes' => false]);
         if (!is_array($comment) || !isset($comment['section'])) {
             $output->output("---no comment found---");
             $output->rawOutput("</td>");
@@ -406,3 +459,22 @@ foreach ($mods as $area => $name) {
 $translator->setSchema();
 
 Footer::pageFooter();
+
+/**
+ * Normalize request map keys into a clean integer list for SQL IN clauses.
+ *
+ * @param mixed $values Request payload map where IDs are keys.
+ *
+ * @return list<int>
+ */
+function moderateNormalizeIntegerKeys($values): array
+{
+    if (!is_array($values)) {
+        return [];
+    }
+
+    $keys = array_keys($values);
+    $keys = array_map(static fn ($value): int => (int) $value, $keys);
+
+    return array_values(array_unique(array_filter($keys, static fn (int $value): bool => $value > 0)));
+}
