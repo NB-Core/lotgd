@@ -11,9 +11,14 @@ use Throwable;
 /**
  * Handles database-side IPN persistence and crediting in a testable, stepwise workflow.
  *
- * Note: this flow is intentionally not wrapped in a single DB transaction because
- * legacy behavior expects paylog persistence and follow-up updates to remain visible
- * even if later steps fail.
+ *
+ * Legacy duplicate handling policy:
+ * - Canonical row is the *oldest* paylog row for a txnid (`MIN(payid)`).
+ * - Only the canonical row may be credited.
+ * - Crediting is gated by a transactional claim on `processed = 0`.
+ * - Credit and `processed=1` are guarded in one transaction using a conditional
+ *   `UPDATE ... WHERE payid = :payid AND processed = 0`, which emulates row-lock
+ *   claim semantics on platforms without portable `SELECT ... FOR UPDATE` support.
  */
 final class IpnPaymentProcessor
 {
@@ -58,6 +63,30 @@ final class IpnPaymentProcessor
         }
         $this->updatePaylogAccountId($result);
 
+        $canonicalRow = $this->resolveCanonicalPaylogRow($txnid, $result);
+        if ($canonicalRow === null) {
+            return $result;
+        }
+
+        // Legacy-safe idempotency policy:
+        // only the canonical row may be credited, and only after the
+        // transactional `processed = 0` claim succeeds in guarded flow.
+        if ($result->paylogId !== $canonicalRow['payid']) {
+            $result->duplicateTransaction = true;
+            $result->warnings[] = sprintf(
+                'Skipped non-canonical paylog row for txnid (%s); canonical payid is %d.',
+                $txnid,
+                $canonicalRow['payid']
+            );
+            return $result;
+        }
+
+        if ($canonicalRow['processed'] !== 0) {
+            $result->duplicateTransaction = true;
+            $result->warnings[] = sprintf('Transaction (%s) was already processed.', $txnid);
+            return $result;
+        }
+
         $pointsPerCurrencyUnit = (float) ($payload['pointsPerCurrencyUnit'] ?? 0.0);
         $adjusted = $adjustDonation([
             'points' => $result->donationAmount * $pointsPerCurrencyUnit,
@@ -79,28 +108,7 @@ final class IpnPaymentProcessor
             }
         }
 
-        try {
-            $affected = $this->connection->executeStatement(
-                "UPDATE {$this->accountsTable} SET donation = donation + :points WHERE acctid = :acctid",
-                [
-                    'points' => $points,
-                    'acctid' => $result->accountId,
-                ],
-                [
-                    'points' => ParameterType::INTEGER,
-                    'acctid' => ParameterType::INTEGER,
-                ]
-            );
-        } catch (Throwable $exception) {
-            $result->errors[] = 'Failed to credit donation points: ' . $exception->getMessage();
-            return $result;
-        }
-
-        if ($affected > 0) {
-            $result->processed = 1;
-            $result->credited = true;
-            $this->updatePaylogProcessedState($result);
-        }
+        $this->creditCanonicalRowInGuardedFlow($result, $points, $txnid);
 
         return $result;
     }
@@ -179,7 +187,17 @@ final class IpnPaymentProcessor
     }
 
     /**
-     * Persist paylog with an atomic "insert-if-not-exists" guard to avoid check/insert races.
+     * Persist paylog with a single-statement, best-effort "insert-if-not-exists" guard for auditability.
+     *
+     * This method intentionally does not fail hard when the row already exists because
+     * legacy datasets may already contain duplicate txnid rows; canonical-row
+     * validation and guarded claim checks are applied later before any crediting is attempted.
+     *
+     * Note: without a DB-level unique constraint on txnid, this guard does not fully
+     * prevent concurrent duplicate inserts; canonical claim logic is the true idempotency gate.
+     *
+     * When a duplicate txnid is detected, this method resolves and stores the canonical
+     * payid so downstream guarded processing can still claim/process resumable rows.
      */
     private function insertPaylogIfNew(array $post, array $payload, IpnProcessingResult $result): bool
     {
@@ -244,7 +262,15 @@ final class IpnPaymentProcessor
             if ($inserted === 0) {
                 $result->duplicateTransaction = true;
                 $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
-                return false;
+                $result->paylogId = $this->resolveCanonicalPaylogId($txnid, $result);
+                if ($result->paylogId <= 0) {
+                    $result->errors[] = sprintf(
+                        'Unable to continue duplicate transaction processing because canonical paylog row was not resolved (%s).',
+                        $txnid
+                    );
+                    return false;
+                }
+                return true;
             }
             $result->paylogInserted = true;
             $result->paylogId = (int) $this->connection->lastInsertId();
@@ -253,12 +279,47 @@ final class IpnPaymentProcessor
             if ($this->isDuplicateTransactionError($exception)) {
                 $result->duplicateTransaction = true;
                 $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
-                return false;
+                $result->paylogId = $this->resolveCanonicalPaylogId($txnid, $result);
+                if ($result->paylogId <= 0) {
+                    $result->errors[] = sprintf(
+                        'Unable to continue duplicate transaction processing because canonical paylog row was not resolved (%s).',
+                        $txnid
+                    );
+                    return false;
+                }
+                return true;
             }
 
             $result->errors[] = 'Failed to persist payment log: ' . $exception->getMessage();
             return false;
         }
+    }
+
+    /**
+     * Resolve the canonical paylog identifier for an already-existing transaction.
+     *
+     * Canonical policy is always `MIN(payid)` so retries can safely resume against
+     * the same deterministic row even when legacy duplicate txnid rows exist.
+     */
+    private function resolveCanonicalPaylogId(string $txnid, IpnProcessingResult $result): int
+    {
+        try {
+            $row = $this->connection->fetchAssociative(
+                "SELECT MIN(payid) AS payid FROM {$this->paylogTable} WHERE txnid = :txnid",
+                ['txnid' => $txnid],
+                ['txnid' => ParameterType::STRING]
+            );
+        } catch (Throwable $exception) {
+            $result->errors[] = 'Failed to resolve existing paylog row: ' . $exception->getMessage();
+            return 0;
+        }
+
+        if (!is_array($row) || !array_key_exists('payid', $row) || $row['payid'] === null) {
+            $result->errors[] = 'Failed to resolve canonical paylog id: no existing paylog row found for transaction.';
+            return 0;
+        }
+
+        return (int) $row['payid'];
     }
 
     /**
@@ -288,28 +349,113 @@ final class IpnPaymentProcessor
     }
 
     /**
-     * Mark paylog row as processed once donation points are successfully credited.
+     * Resolve the canonical paylog row for a transaction ID.
+     *
+     * Policy: canonical = `MIN(payid)` to preserve legacy-first processing order.
+     * This deterministic choice prevents older duplicate rows from being bypassed.
+     *
+     * @return array{payid:int,processed:int}|null
      */
-    private function updatePaylogProcessedState(IpnProcessingResult $result): void
+    private function resolveCanonicalPaylogRow(string $txnid, IpnProcessingResult $result): ?array
     {
-        if ($result->paylogId <= 0) {
+        try {
+            $row = $this->connection->fetchAssociative(
+                "SELECT payid, processed
+                 FROM {$this->paylogTable}
+                 WHERE payid = (
+                    SELECT MIN(payid)
+                    FROM {$this->paylogTable}
+                    WHERE txnid = :txnid
+                 )",
+                ['txnid' => $txnid],
+                ['txnid' => ParameterType::STRING]
+            );
+        } catch (Throwable $exception) {
+            $result->errors[] = 'Failed to resolve canonical paylog row: ' . $exception->getMessage();
+            return null;
+        }
+
+        if (! is_array($row)) {
+            $result->errors[] = sprintf('Missing paylog row for transaction ID (%s).', $txnid);
+            return null;
+        }
+
+        return [
+            'payid' => (int) ($row['payid'] ?? 0),
+            'processed' => (int) ($row['processed'] ?? 0),
+        ];
+    }
+
+    /**
+     * Execute donation crediting in one guarded transaction.
+     *
+     * Guard order:
+     * 1) claim canonical paylog row via `processed = 0` conditional update,
+     * 2) credit account donation points,
+     * 3) commit both changes together.
+     *
+     * The conditional claim emulates row-lock ownership on engines where portable
+     * `SELECT ... FOR UPDATE` is not available.
+     */
+    private function creditCanonicalRowInGuardedFlow(IpnProcessingResult $result, int $points, string $txnid): void
+    {
+        if ($result->paylogId <= 0 || $result->accountId <= 0) {
             return;
         }
 
         try {
-            $this->connection->executeStatement(
-                "UPDATE {$this->paylogTable} SET processed = :processed WHERE payid = :payid",
+            $this->connection->beginTransaction();
+
+            $claimed = $this->connection->executeStatement(
+                "UPDATE {$this->paylogTable}
+                 SET processed = :processed
+                 WHERE payid = :payid
+                 AND processed = :unprocessed",
                 [
                     'processed' => 1,
                     'payid' => $result->paylogId,
+                    'unprocessed' => 0,
                 ],
                 [
                     'processed' => ParameterType::INTEGER,
                     'payid' => ParameterType::INTEGER,
+                    'unprocessed' => ParameterType::INTEGER,
                 ]
             );
+
+            if ($claimed === 0) {
+                $this->connection->rollBack();
+                $result->duplicateTransaction = true;
+                $result->warnings[] = sprintf('Transaction (%s) was already processed.', $txnid);
+                return;
+            }
+
+            $affected = $this->connection->executeStatement(
+                "UPDATE {$this->accountsTable} SET donation = donation + :points WHERE acctid = :acctid",
+                [
+                    'points' => $points,
+                    'acctid' => $result->accountId,
+                ],
+                [
+                    'points' => ParameterType::INTEGER,
+                    'acctid' => ParameterType::INTEGER,
+                ]
+            );
+
+            if ($affected <= 0) {
+                $this->connection->rollBack();
+                return;
+            }
+
+            $this->connection->commit();
+            $result->processed = 1;
+            $result->credited = true;
         } catch (Throwable $exception) {
-            $result->errors[] = 'Failed to update paylog processed state: ' . $exception->getMessage();
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+
+            $result->errors[] = 'Failed to credit donation points: ' . $exception->getMessage();
         }
     }
 
