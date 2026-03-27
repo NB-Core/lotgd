@@ -80,7 +80,9 @@ if (! $fp) {
                     && ($receiver_email != $settings->getSetting('paypalemail', ''))
                 ) {
                     $emsg = "This payment isn't to me(" . $settings->getSetting('paypalemail', '') . ")!  It's to $receiver_email.\n";
-                    payment_error(E_WARNING, $emsg, __FILE__, __LINE__);
+                    payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
+                    fclose($fp);
+                    return;
                 }
 
                 writelog($response);
