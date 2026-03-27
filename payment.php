@@ -70,8 +70,8 @@ if (! $fp) {
         $response .= $res;
 
         if (strcmp(trim($res), "VERIFIED") == 0) {
-            if ($payment_status == "Completed" || $payment_status == 'Refunded') {
-                $normalizedStatus = IpnStatus::normalize((string) $payment_status, (float) $payment_fee, (string) $txn_type);
+            $normalizedStatus = IpnStatus::normalize((string) $payment_status, (float) $payment_fee, (string) $txn_type);
+            if ($normalizedStatus['accepted']) {
                 $payment_fee = (string) $normalizedStatus['paymentFee'];
                 $txn_type = $normalizedStatus['txnType'];
 

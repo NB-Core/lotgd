@@ -39,18 +39,18 @@ final class IpnPaymentProcessor
             (float) ($payload['paymentFee'] ?? 0.0),
             (string) ($payload['txnType'] ?? '')
         );
+        $result->accountLogin = $this->extractAccountLogin((string) ($payload['itemNumber'] ?? ''));
         $txnid = (string) ($payload['txnId'] ?? '');
 
-        if ($this->isKnownTransaction($txnid, $result)) {
+        if (! $this->hasValidTransactionId($txnid, $result)) {
             return $result;
         }
 
-        $result->accountLogin = $this->extractAccountLogin((string) ($payload['itemNumber'] ?? ''));
+        if (! $this->insertPaylogIfNew($post, $payload, $result)) {
+            return $result;
+        }
+
         $result->accountId = $this->resolveAccountId($result->accountLogin, $result);
-
-        if (! $this->insertPaylog($post, $payload, $result)) {
-            return $result;
-        }
 
         // No account match: keep the inserted paylog row as processed=0 and return safely.
         if ($result->accountId <= 0) {
@@ -121,45 +121,32 @@ final class IpnPaymentProcessor
     {
         $code = (string) $exception->getCode();
 
-        if ($code === '1062' || $code === '23000' || $code === '23505') {
+        if ($code === '1062' || $code === '23505') {
             return true;
         }
 
         $message = strtolower($exception->getMessage());
 
-        return str_contains($message, 'duplicate')
-            || str_contains($message, 'unique constraint')
-            || str_contains($message, 'unique violation');
-    }
-
-    /**
-     * Compare txnid against existing paylog rows to avoid re-processing known transactions.
-     */
-    private function isKnownTransaction(string $txnid, IpnProcessingResult $result): bool
-    {
-        if ($txnid === '') {
-            $result->errors[] = 'Payment payload has an empty transaction ID.';
-            return true;
-        }
-
-        try {
-            $existing = $this->connection->fetchAssociative(
-                "SELECT txnid FROM {$this->paylogTable} WHERE txnid = :txnid",
-                ['txnid' => $txnid],
-                ['txnid' => ParameterType::STRING]
-            );
-        } catch (Throwable $exception) {
-            $result->errors[] = 'Failed to verify transaction duplication: ' . $exception->getMessage();
-            return true;
-        }
-
-        if ($existing !== false) {
-            $result->duplicateTransaction = true;
-            $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
-            return true;
+        if ($code === '23000') {
+            return str_contains($message, 'duplicate')
+                || str_contains($message, 'unique constraint')
+                || str_contains($message, 'unique violation');
         }
 
         return false;
+    }
+
+    /**
+     * Validate the transaction identifier; an empty txnid is never eligible for crediting.
+     */
+    private function hasValidTransactionId(string $txnid, IpnProcessingResult $result): bool
+    {
+        if ($txnid === '') {
+            $result->errors[] = 'Payment payload has an empty transaction ID.';
+            return false;
+        }
+
+        return true;
     }
 
     private function resolveAccountId(string $accountLogin, IpnProcessingResult $result): int
@@ -187,14 +174,14 @@ final class IpnPaymentProcessor
     }
 
     /**
-     * Persist initial paylog row after txnid compare-check passes.
+     * Persist paylog with an atomic "insert-if-not-exists" guard to avoid check/insert races.
      */
-    private function insertPaylog(array $post, array $payload, IpnProcessingResult $result): bool
+    private function insertPaylogIfNew(array $post, array $payload, IpnProcessingResult $result): bool
     {
         $txnid = (string) ($payload['txnId'] ?? '');
 
         try {
-            $this->connection->executeStatement(
+            $inserted = $this->connection->executeStatement(
                 "INSERT INTO {$this->paylogTable} (
                     info,
                     response,
@@ -206,7 +193,7 @@ final class IpnPaymentProcessor
                     filed,
                     txfee,
                     processdate
-                ) VALUES (
+                ) SELECT
                     :info,
                     :response,
                     :txnid,
@@ -217,6 +204,9 @@ final class IpnPaymentProcessor
                     :filed,
                     :txfee,
                     :processdate
+                WHERE 1 = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM {$this->paylogTable} WHERE txnid = :txnid_check
                 )",
                 [
                     'info' => serialize($post),
@@ -224,11 +214,13 @@ final class IpnPaymentProcessor
                     'txnid' => $txnid,
                     'amount' => (string) ($payload['paymentAmount'] ?? ''),
                     'name' => $result->accountLogin,
-                    'acctid' => $result->accountId,
+                    // acctid is resolved after the paylog insert to preserve atomic duplicate gating.
+                    'acctid' => 0,
                     'processed' => 0,
                     'filed' => 0,
                     'txfee' => (string) ($payload['paymentFee'] ?? ''),
                     'processdate' => (string) ($payload['processDate'] ?? date('Y-m-d H:i:s')),
+                    'txnid_check' => $txnid,
                 ],
                 [
                     'info' => ParameterType::STRING,
@@ -241,8 +233,14 @@ final class IpnPaymentProcessor
                     'filed' => ParameterType::INTEGER,
                     'txfee' => ParameterType::STRING,
                     'processdate' => ParameterType::STRING,
+                    'txnid_check' => ParameterType::STRING,
                 ]
             );
+            if ($inserted === 0) {
+                $result->duplicateTransaction = true;
+                $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
+                return false;
+            }
             $result->paylogInserted = true;
             return true;
         } catch (Throwable $exception) {
@@ -264,13 +262,15 @@ final class IpnPaymentProcessor
     {
         try {
             $this->connection->executeStatement(
-                "UPDATE {$this->paylogTable} SET processed = :processed WHERE txnid = :txnid",
+                "UPDATE {$this->paylogTable} SET processed = :processed, acctid = :acctid WHERE txnid = :txnid",
                 [
                     'processed' => 1,
+                    'acctid' => $result->accountId,
                     'txnid' => $txnid,
                 ],
                 [
                     'processed' => ParameterType::INTEGER,
+                    'acctid' => ParameterType::INTEGER,
                     'txnid' => ParameterType::STRING,
                 ]
             );
