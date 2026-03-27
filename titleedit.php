@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
@@ -53,51 +54,62 @@ switch ($op) {
         $ref = '';
         $conn = Database::getDoctrineConnection();
         $titlesTable = Database::prefix('titles');
+        $dbalErrorMessage = '';
 
-        if ((int)$id == 0) {
-            $affected = $conn->executeStatement(
-                "INSERT INTO {$titlesTable} (titleid, dk, ref, male, female) VALUES (:id, :dk, :ref, :male, :female)",
-                [
-                    'id' => (int) $id,
-                    'dk' => (int) $dk,
-                    'ref' => (string) $ref,
-                    'male' => (string) $male,
-                    'female' => (string) $female,
-                ],
-                [
-                    'id' => ParameterType::INTEGER,
-                    'dk' => ParameterType::INTEGER,
-                    'ref' => ParameterType::STRING,
-                    'male' => ParameterType::STRING,
-                    'female' => ParameterType::STRING,
-                ]
-            );
-            $note = "`^New title added.`0";
-            $errnote = "`\$Unable to add title.`0";
-        } else {
-            $affected = $conn->executeStatement(
-                "UPDATE {$titlesTable} SET dk = :dk, ref = :ref, male = :male, female = :female WHERE titleid = :id",
-                [
-                    'dk' => (int) $dk,
-                    'ref' => (string) $ref,
-                    'male' => (string) $male,
-                    'female' => (string) $female,
-                    'id' => (int) $id,
-                ],
-                [
-                    'dk' => ParameterType::INTEGER,
-                    'ref' => ParameterType::STRING,
-                    'male' => ParameterType::STRING,
-                    'female' => ParameterType::STRING,
-                    'id' => ParameterType::INTEGER,
-                ]
-            );
-            $note = "`^Title modified.`0";
-            $errnote = "`\$Unable to modify title.`0";
+        try {
+            if ((int)$id == 0) {
+                $note = "`^New title added.`0";
+                $errnote = "`\$Unable to add title.`0";
+                $affected = $conn->executeStatement(
+                    "INSERT INTO {$titlesTable} (titleid, dk, ref, male, female) VALUES (:id, :dk, :ref, :male, :female)",
+                    [
+                        'id' => (int) $id,
+                        'dk' => (int) $dk,
+                        'ref' => (string) $ref,
+                        'male' => (string) $male,
+                        'female' => (string) $female,
+                    ],
+                    [
+                        'id' => ParameterType::INTEGER,
+                        'dk' => ParameterType::INTEGER,
+                        'ref' => ParameterType::STRING,
+                        'male' => ParameterType::STRING,
+                        'female' => ParameterType::STRING,
+                    ]
+                );
+            } else {
+                $note = "`^Title modified.`0";
+                $errnote = "`\$Unable to modify title.`0";
+                $affected = $conn->executeStatement(
+                    "UPDATE {$titlesTable} SET dk = :dk, ref = :ref, male = :male, female = :female WHERE titleid = :id",
+                    [
+                        'dk' => (int) $dk,
+                        'ref' => (string) $ref,
+                        'male' => (string) $male,
+                        'female' => (string) $female,
+                        'id' => (int) $id,
+                    ],
+                    [
+                        'dk' => ParameterType::INTEGER,
+                        'ref' => ParameterType::STRING,
+                        'male' => ParameterType::STRING,
+                        'female' => ParameterType::STRING,
+                        'id' => ParameterType::INTEGER,
+                    ]
+                );
+            }
+        } catch (DbalException $exception) {
+            // DBAL exceptions do not flow through Database::error(), so keep the
+            // concrete message for superuser diagnostics.
+            $affected = 0;
+            $dbalErrorMessage = $exception->getMessage();
         }
+
         if ($affected === 0) {
             $output->output('%s', $errnote);
-            $output->rawOutput(Database::error());
+            if ($dbalErrorMessage !== '') {
+                $output->rawOutput($dbalErrorMessage);
+            }
         } else {
             $output->output('%s', $note);
         }

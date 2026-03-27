@@ -25,6 +25,7 @@ final class SuperuserEndpointHardeningWaveRegressionTest extends TestCase
         self::assertMatchesRegularExpression('/DELETE FROM\\s+\\{\\$moderatedCommentsTable\\}\\s+WHERE\\s+modid\\s+IN\\s*\\(\\?\\)/m', $source);
         self::assertStringContainsString('function moderateNormalizeIntegerKeys', $source);
         self::assertStringContainsString('array_filter($keys, static fn (int $value): bool => $value > 0)', $source);
+        self::assertStringContainsString("unserialize(\$row['comment'], ['allowed_classes' => false])", $source);
     }
 
     public function testPaymentPersistsIpnAndCreditsAccountsWithTypedParameters(): void

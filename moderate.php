@@ -257,7 +257,7 @@ if ($op == "") {
             }
 
             foreach ($rows as $row) {
-                $comment = unserialize($row['comment']);
+                $comment = unserialize($row['comment'], ['allowed_classes' => false]);
                 if (!is_array($comment)) {
                     continue;
                 }
@@ -343,7 +343,7 @@ if ($op == "") {
         $output->outputNotl("%s", $row['moddate']);
         $output->rawOutput("</td>");
         $output->rawOutput("<td>");
-        $comment = unserialize($row['comment']);
+        $comment = unserialize($row['comment'], ['allowed_classes' => false]);
         if (!is_array($comment) || !isset($comment['section'])) {
             $output->output("---no comment found---");
             $output->rawOutput("</td>");
