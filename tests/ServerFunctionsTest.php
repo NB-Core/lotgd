@@ -11,9 +11,15 @@ use PHPUnit\Framework\TestCase;
 
 final class ServerFunctionsTest extends TestCase
 {
+    private string|false $oldTrustForwardedHeaders;
+
+    private string|false $oldTrustedProxyIps;
+
     protected function setUp(): void
     {
         $_SERVER = [];
+        $this->oldTrustForwardedHeaders = getenv('LOTGD_TRUST_FORWARDED_HEADERS');
+        $this->oldTrustedProxyIps = getenv('LOTGD_TRUSTED_PROXY_IPS');
         putenv('LOTGD_TRUST_FORWARDED_HEADERS=1');
         putenv('LOTGD_TRUSTED_PROXY_IPS');
         class_exists(Database::class);
@@ -25,9 +31,20 @@ final class ServerFunctionsTest extends TestCase
 
     protected function tearDown(): void
     {
-        putenv('LOTGD_TRUST_FORWARDED_HEADERS');
-        putenv('LOTGD_TRUSTED_PROXY_IPS');
+        $this->restoreEnvVar('LOTGD_TRUST_FORWARDED_HEADERS', $this->oldTrustForwardedHeaders);
+        $this->restoreEnvVar('LOTGD_TRUSTED_PROXY_IPS', $this->oldTrustedProxyIps);
         parent::tearDown();
+    }
+
+    private function restoreEnvVar(string $name, string|false $value): void
+    {
+        if ($value === false) {
+            putenv($name);
+
+            return;
+        }
+
+        putenv("{$name}={$value}");
     }
 
     public function testIsSecureConnection(): void

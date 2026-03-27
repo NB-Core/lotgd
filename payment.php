@@ -103,6 +103,8 @@ if (!$fp) {
                 if ($existing !== false) {
                     $emsg .= "Already logged this transaction ID ($txn_id)\n";
                     payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
+                    // Duplicate transactions must not be re-processed.
+                    continue;
                 }
                 if (
                     ($receiver_email != "logd@mightye.org") &&
@@ -152,7 +154,11 @@ function writelog($response)
             payment_error(E_ERROR, "Failed to resolve donation account: " . $exception->getMessage(), __FILE__, __LINE__);
             return;
         }
-        $acctid = (int) ($row['acctid'] ?? 0);
+        if (!is_array($row)) {
+            $acctid = 0;
+        } else {
+            $acctid = (int) ($row['acctid'] ?? 0);
+        }
         if ($acctid > 0) {
             $donation = (float) $payment_amount;
             // if it's a reversal, it'll only post back to us the amount
@@ -167,17 +173,22 @@ function writelog($response)
             //updated to make a setting here for each Dollar, Euro, Shekel
             $hookresult['points'] = round($hookresult['points']);
 
-            $result = $conn->executeStatement(
-                "UPDATE {$accountsTable} SET donation = donation + :points WHERE acctid = :acctid",
-                [
-                    'points' => (int) $hookresult['points'],
-                    'acctid' => (int) $acctid,
-                ],
-                [
-                    'points' => ParameterType::INTEGER,
-                    'acctid' => ParameterType::INTEGER,
-                ]
-            );
+            try {
+                $result = $conn->executeStatement(
+                    "UPDATE {$accountsTable} SET donation = donation + :points WHERE acctid = :acctid",
+                    [
+                        'points' => (int) $hookresult['points'],
+                        'acctid' => (int) $acctid,
+                    ],
+                    [
+                        'points' => ParameterType::INTEGER,
+                        'acctid' => ParameterType::INTEGER,
+                    ]
+                );
+            } catch (DbalException $exception) {
+                payment_error(E_ERROR, "Failed to credit donation points: " . $exception->getMessage(), __FILE__, __LINE__);
+                $result = 0;
+            }
             debuglog("Received donator points for donating -- Credited Automatically", false, $acctid, "donation", $hookresult['points'], false);
             if (!is_array($hookresult['messages'])) {
                 $hookresult['messages'] = array($hookresult['messages']);

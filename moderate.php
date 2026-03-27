@@ -63,8 +63,7 @@ if ($op == "commentdelete") {
     $moderatedCommentsTable = Database::prefix('moderatedcomments');
 
     if (Http::post('delnban') > '') {
-        $commentIds = array_keys($comment ?? []);
-        $commentIds = array_map(static fn ($value): int => (int) $value, $commentIds);
+        $commentIds = moderateNormalizeIntegerKeys($comment);
 
         if ($commentIds !== []) {
             $bansTable = Database::prefix('bans');
