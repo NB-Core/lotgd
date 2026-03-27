@@ -86,16 +86,51 @@ require_once __DIR__ . "/src/Lotgd/Config/constants.php";
  * so operators can phase in stricter defaults without changing code.
  */
 $hardeningConfig = [];
+$bootstrapDbconnectOutput = '';
 if (file_exists("dbconnect.php")) {
+    /**
+     * Capture any accidental output from legacy dbconnect.php so headers and
+     * session bootstrap still run before output is emitted.
+     */
+    ob_start();
     $loadedConfig = require "dbconnect.php";
+    $bootstrapDbconnectOutput = (string) ob_get_clean();
+
     if (is_array($loadedConfig)) {
-        $hardeningConfig = $loadedConfig;
         $config = $loadedConfig;
+    } else {
+        // Legacy dbconnect.php files set globals instead of returning arrays.
+        $config = [
+            'DB_HOST' => $DB_HOST ?? '',
+            'DB_USER' => $DB_USER ?? '',
+            'DB_PASS' => $DB_PASS ?? '',
+            'DB_NAME' => $DB_NAME ?? '',
+            'DB_PREFIX' => $DB_PREFIX ?? '',
+            'DB_USEDATACACHE' => $DB_USEDATACACHE ?? 0,
+            'DB_DATACACHEPATH' => $DB_DATACACHEPATH ?? '',
+            'SESSION_COOKIE_PATH' => $SESSION_COOKIE_PATH ?? '/',
+            'SESSION_COOKIE_DOMAIN' => $SESSION_COOKIE_DOMAIN ?? '',
+            'SESSION_COOKIE_SAMESITE' => $SESSION_COOKIE_SAMESITE ?? 'Lax',
+            'SESSION_COOKIE_SECURE_AUTO' => $SESSION_COOKIE_SECURE_AUTO ?? true,
+            'SESSION_COOKIE_SECURE_FORCE' => $SESSION_COOKIE_SECURE_FORCE ?? false,
+            'SECURITY_HEADERS_ENABLED' => $SECURITY_HEADERS_ENABLED ?? true,
+            'SECURITY_FRAME_OPTIONS' => $SECURITY_FRAME_OPTIONS ?? 'SAMEORIGIN',
+            'SECURITY_REFERRER_POLICY' => $SECURITY_REFERRER_POLICY ?? 'strict-origin-when-cross-origin',
+            'SECURITY_USE_CSP_FRAME_ANCESTORS' => $SECURITY_USE_CSP_FRAME_ANCESTORS ?? false,
+            'SECURITY_CSP_FRAME_ANCESTORS' => $SECURITY_CSP_FRAME_ANCESTORS ?? "'self'",
+            'SECURITY_HSTS_ENABLED' => $SECURITY_HSTS_ENABLED ?? false,
+            'SECURITY_HSTS_MAX_AGE' => $SECURITY_HSTS_MAX_AGE ?? 31536000,
+            'SECURITY_HSTS_INCLUDE_SUBDOMAINS' => $SECURITY_HSTS_INCLUDE_SUBDOMAINS ?? false,
+            'SECURITY_HSTS_PRELOAD' => $SECURITY_HSTS_PRELOAD ?? false,
+            'SECURITY_TRUST_FORWARDED_PROTO' => $SECURITY_TRUST_FORWARDED_PROTO ?? false,
+            'SECURITY_TRUSTED_PROXIES' => $SECURITY_TRUSTED_PROXIES ?? '',
+        ];
     }
+    $hardeningConfig = $config;
 }
 
-$isHttpsRequest = RuntimeHardening::isHttpsRequest($_SERVER);
 $runtimeHardeningOptions = RuntimeHardening::buildOptions($hardeningConfig);
+$isHttpsRequest = RuntimeHardening::isHttpsRequest($_SERVER, $runtimeHardeningOptions);
 RuntimeHardening::configureSessionCookie($runtimeHardeningOptions, $isHttpsRequest);
 
 // Legacy, because modules may rely on that, but those files are already migrated to namespace structure
@@ -200,6 +235,9 @@ $session =& $_SESSION['session'];
 // like LotGD.net experienced on 7/20/04.
 ob_start();
 if (file_exists("dbconnect.php")) {
+    if ($bootstrapDbconnectOutput !== '') {
+        echo $bootstrapDbconnectOutput;
+    }
     if (!is_array($config ?? null)) {
         $config = require "dbconnect.php";
     }

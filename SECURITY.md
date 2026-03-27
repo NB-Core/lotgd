@@ -76,9 +76,11 @@ These keys are optional and allow phased rollout:
 - `SECURITY_HSTS_MAX_AGE` (default `31536000`)
 - `SECURITY_HSTS_INCLUDE_SUBDOMAINS` (default `false`)
 - `SECURITY_HSTS_PRELOAD` (default `false`)
+- `SECURITY_TRUST_FORWARDED_PROTO` (default `false`)
+- `SECURITY_TRUSTED_PROXIES` (comma-separated IP allowlist, default empty)
 
 ### Deployment notes
 
-- If you run behind a reverse proxy/load balancer, ensure it forwards `X-Forwarded-Proto` correctly so HTTPS detection is accurate.
+- If you run behind a reverse proxy/load balancer, enable `SECURITY_TRUST_FORWARDED_PROTO` and set `SECURITY_TRUSTED_PROXIES` so only trusted peers can influence HTTPS detection.
 - Do not enable `SameSite=None` unless TLS is enforced and `Secure` is enabled.
 - Roll out HSTS carefully (start with low `max-age`) and enable preload only after confirming all subdomains are HTTPS-ready.

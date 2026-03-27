@@ -132,6 +132,7 @@ modules.
 
 1. **Confirm HTTPS detection**
    - Verify your reverse proxy sets `X-Forwarded-Proto: https` for TLS traffic.
+   - Enable `SECURITY_TRUST_FORWARDED_PROTO=true` and define `SECURITY_TRUSTED_PROXIES` with your proxy IPs.
    - Validate that direct HTTP requests do not report HTTPS accidentally.
 2. **Session cookie rollout**
    - Keep `SESSION_COOKIE_SECURE_AUTO=true` (default).

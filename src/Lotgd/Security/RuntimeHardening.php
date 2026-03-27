@@ -33,13 +33,15 @@ class RuntimeHardening
             'security_hsts_max_age' => max(0, (int) ($config['SECURITY_HSTS_MAX_AGE'] ?? 31536000)),
             'security_hsts_include_subdomains' => self::toBool($config['SECURITY_HSTS_INCLUDE_SUBDOMAINS'] ?? false),
             'security_hsts_preload' => self::toBool($config['SECURITY_HSTS_PRELOAD'] ?? false),
+            'security_trust_forwarded_proto' => self::toBool($config['SECURITY_TRUST_FORWARDED_PROTO'] ?? false),
+            'security_trusted_proxies' => self::normalizeTrustedProxies($config['SECURITY_TRUSTED_PROXIES'] ?? ''),
         ];
     }
 
     /**
      * Determine whether the current request is HTTPS, including proxy headers.
      */
-    public static function isHttpsRequest(array $server): bool
+    public static function isHttpsRequest(array $server, array $options = []): bool
     {
         if (!empty($server['HTTPS']) && strtolower((string) $server['HTTPS']) !== 'off') {
             return true;
@@ -49,12 +51,14 @@ class RuntimeHardening
             return true;
         }
 
-        $forwardedProto = (string) ($server['HTTP_X_FORWARDED_PROTO'] ?? '');
-        if ($forwardedProto !== '') {
-            $parts = explode(',', $forwardedProto);
-            $first = strtolower(trim((string) ($parts[0] ?? '')));
-            if ($first === 'https') {
-                return true;
+        if ((bool) ($options['security_trust_forwarded_proto'] ?? false)) {
+            $forwardedProto = (string) ($server['HTTP_X_FORWARDED_PROTO'] ?? '');
+            if ($forwardedProto !== '' && self::isTrustedProxy($server, $options)) {
+                $parts = explode(',', $forwardedProto);
+                $first = strtolower(trim((string) ($parts[0] ?? '')));
+                if ($first === 'https') {
+                    return true;
+                }
             }
         }
 
@@ -70,9 +74,15 @@ class RuntimeHardening
      */
     public static function buildSessionCookieParams(array $options, bool $isHttps): array
     {
+        $sameSite = self::normalizeSameSite($options['session_cookie_samesite'] ?? 'Lax');
         $secure = (bool) ($options['session_cookie_secure_force'] ?? false);
         if (!$secure && (bool) ($options['session_cookie_secure_auto'] ?? true)) {
             $secure = $isHttps;
+        }
+        if ($sameSite === 'None') {
+            // Browsers reject SameSite=None without Secure, which would cause
+            // session cookie drops and login/session loops.
+            $secure = true;
         }
 
         $params = [
@@ -80,7 +90,7 @@ class RuntimeHardening
             'path' => (string) ($options['session_cookie_path'] ?? '/'),
             'secure' => $secure,
             'httponly' => true,
-            'samesite' => self::normalizeSameSite($options['session_cookie_samesite'] ?? 'Lax'),
+            'samesite' => $sameSite,
         ];
 
         $domain = trim((string) ($options['session_cookie_domain'] ?? ''));
@@ -166,15 +176,13 @@ class RuntimeHardening
      */
     public static function regenerateSessionIdFor(string $reason): bool
     {
+        static $regeneratedInRequest = false;
+
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return false;
         }
 
-        if (!isset($_SESSION['__security'])) {
-            $_SESSION['__security'] = [];
-        }
-
-        if (isset($_SESSION['__security']['regenerated_reason'])) {
+        if ($regeneratedInRequest) {
             return false;
         }
 
@@ -182,8 +190,12 @@ class RuntimeHardening
             return false;
         }
 
+        if (!isset($_SESSION['__security'])) {
+            $_SESSION['__security'] = [];
+        }
         $_SESSION['__security']['regenerated_reason'] = $reason;
         $_SESSION['__security']['regenerated_at'] = time();
+        $regeneratedInRequest = true;
 
         return true;
     }
@@ -198,11 +210,11 @@ class RuntimeHardening
         $previousFlags = (int) ($security['superuser_snapshot'] ?? $currentFlags);
 
         if (($currentFlags & ~$previousFlags) !== 0) {
-            self::regenerateSessionIdFor('privilege-elevation');
+            $regenerated = self::regenerateSessionIdFor('privilege-elevation');
             $security['superuser_snapshot'] = $currentFlags;
             $session['security'] = $security;
 
-            return true;
+            return $regenerated;
         }
 
         $security['superuser_snapshot'] = $currentFlags;
@@ -239,5 +251,49 @@ class RuntimeHardening
         $normalized = strtolower(trim((string) $value));
 
         return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function normalizeTrustedProxies(mixed $value): array
+    {
+        if (is_array($value)) {
+            $items = $value;
+        } else {
+            $items = explode(',', (string) $value);
+        }
+
+        $proxies = [];
+        foreach ($items as $item) {
+            $ip = trim((string) $item);
+            if ($ip !== '') {
+                $proxies[] = $ip;
+            }
+        }
+
+        return $proxies;
+    }
+
+    /**
+     * Determine whether the client IP belongs to a trusted reverse proxy.
+     *
+     * @param array<string, mixed> $options
+     */
+    private static function isTrustedProxy(array $server, array $options): bool
+    {
+        $trustedProxies = $options['security_trusted_proxies'] ?? [];
+        if (!is_array($trustedProxies) || $trustedProxies === []) {
+            // Trust is explicitly enabled; without a list we accept forwarded
+            // proto from any immediate peer.
+            return true;
+        }
+
+        $remoteAddr = trim((string) ($server['REMOTE_ADDR'] ?? ''));
+        if ($remoteAddr === '') {
+            return false;
+        }
+
+        return in_array($remoteAddr, $trustedProxies, true);
     }
 }

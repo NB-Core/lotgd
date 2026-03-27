@@ -25,6 +25,20 @@ class RuntimeHardeningTest extends TestCase
         self::assertTrue($params['httponly']);
     }
 
+    public function testBuildSessionCookieParamsForcesSecureWhenSameSiteNone(): void
+    {
+        $options = RuntimeHardening::buildOptions([
+            'SESSION_COOKIE_SAMESITE' => 'None',
+            'SESSION_COOKIE_SECURE_AUTO' => false,
+            'SESSION_COOKIE_SECURE_FORCE' => false,
+        ]);
+
+        $params = RuntimeHardening::buildSessionCookieParams($options, false);
+
+        self::assertSame('None', $params['samesite']);
+        self::assertTrue($params['secure']);
+    }
+
     public function testBuildHtmlHeadersIncludesHstsOnlyWhenHttps(): void
     {
         $options = RuntimeHardening::buildOptions([
@@ -46,14 +60,38 @@ class RuntimeHardeningTest extends TestCase
 
     public function testIsHttpsRequestUnderstandsForwardedProto(): void
     {
+        $options = RuntimeHardening::buildOptions();
+        self::assertFalse(RuntimeHardening::isHttpsRequest([
+            'HTTP_X_FORWARDED_PROTO' => 'https,http',
+        ], $options));
+
+        $trustedOptions = RuntimeHardening::buildOptions([
+            'SECURITY_TRUST_FORWARDED_PROTO' => true,
+        ]);
         self::assertTrue(RuntimeHardening::isHttpsRequest([
             'HTTP_X_FORWARDED_PROTO' => 'https,http',
-        ]));
+            'REMOTE_ADDR' => '127.0.0.1',
+        ], $trustedOptions));
+
+        $allowlistedOptions = RuntimeHardening::buildOptions([
+            'SECURITY_TRUST_FORWARDED_PROTO' => true,
+            'SECURITY_TRUSTED_PROXIES' => '10.0.0.1',
+        ]);
+        self::assertFalse(RuntimeHardening::isHttpsRequest([
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'REMOTE_ADDR' => '127.0.0.1',
+        ], $allowlistedOptions));
+
+        self::assertTrue(RuntimeHardening::isHttpsRequest([
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'REMOTE_ADDR' => '10.0.0.1',
+        ], $allowlistedOptions));
+
         self::assertFalse(RuntimeHardening::isHttpsRequest([
             'HTTP_X_FORWARDED_PROTO' => 'http',
             'HTTPS' => 'off',
             'SERVER_PORT' => '80',
-        ]));
+        ], $trustedOptions));
     }
 
     public function testPrivilegeElevationSnapshotIsTracked(): void
@@ -69,6 +107,21 @@ class RuntimeHardeningTest extends TestCase
 
         RuntimeHardening::regenerateOnPrivilegeElevation($session);
 
+        self::assertSame(8, $session['security']['superuser_snapshot']);
+    }
+
+    public function testPrivilegeElevationReturnsFalseWithoutActiveSession(): void
+    {
+        $session = [
+            'user' => [
+                'superuser' => 8,
+            ],
+            'security' => [
+                'superuser_snapshot' => 1,
+            ],
+        ];
+
+        self::assertFalse(RuntimeHardening::regenerateOnPrivilegeElevation($session));
         self::assertSame(8, $session['security']['superuser_snapshot']);
     }
 }
