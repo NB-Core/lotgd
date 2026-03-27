@@ -77,6 +77,7 @@ switch ($op) {
                         'female' => ParameterType::STRING,
                     ]
                 );
+                $affected = (int) $affected;
             } else {
                 $note = "`^Title modified.`0";
                 $errnote = "`\$Unable to modify title.`0";
@@ -97,6 +98,7 @@ switch ($op) {
                         'id' => ParameterType::INTEGER,
                     ]
                 );
+                $affected = (int) $affected;
             }
         } catch (DbalException $exception) {
             // DBAL exceptions do not flow through Database::error(), so keep the

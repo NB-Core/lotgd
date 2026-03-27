@@ -104,6 +104,19 @@ final class ServerFunctionsTest extends TestCase
         $this->assertTrue(ServerFunctions::isHttpsRequest());
     }
 
+    public function testIsHttpsRequestDoesNotTrustForwardedHeadersWhenDisabled(): void
+    {
+        putenv('LOTGD_TRUST_FORWARDED_HEADERS=0');
+        $_SERVER = [
+            'REMOTE_ADDR' => '10.0.0.2',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => 80,
+        ];
+
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+    }
+
     public function testIsTheServerFull(): void
     {
         $settings = new ServerDummySettings([

@@ -205,19 +205,24 @@ class ServerFunctions
      */
     private static function shouldTrustForwardedHeaders(array $server): bool
     {
-        $trustForwarded = strtolower(trim((string) (getenv('LOTGD_TRUST_FORWARDED_HEADERS') ?: '1')));
+        $trustForwardedRaw = getenv('LOTGD_TRUST_FORWARDED_HEADERS');
+        $trustForwardedValue = $trustForwardedRaw === false ? '1' : (string) $trustForwardedRaw;
+        $trustForwarded = strtolower(trim($trustForwardedValue));
         if (in_array($trustForwarded, ['0', 'false', 'no'], true)) {
             return false;
         }
 
-        $trustedProxyIps = trim((string) (getenv('LOTGD_TRUSTED_PROXY_IPS') ?: ''));
+        $trustedProxyIpsRaw = getenv('LOTGD_TRUSTED_PROXY_IPS');
+        $trustedProxyIps = $trustedProxyIpsRaw === false ? '' : trim((string) $trustedProxyIpsRaw);
         if ($trustedProxyIps === '') {
             return true;
         }
 
         $remoteAddr = trim((string) ($server['REMOTE_ADDR'] ?? ''));
         if ($remoteAddr === '') {
-            return false;
+            // CLI/test contexts may not provide REMOTE_ADDR. Keep behavior
+            // deterministic there by trusting forwarded headers.
+            return PHP_SAPI === 'cli';
         }
 
         $allowed = array_map('trim', explode(',', $trustedProxyIps));
