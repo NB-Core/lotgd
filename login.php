@@ -19,6 +19,7 @@ use Lotgd\Redirect;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\PasswordHelper;
+use Lotgd\Security\RuntimeHardening;
 use Doctrine\DBAL\Exception as DbalException;
 
 define("ALLOW_ANONYMOUS", true);
@@ -186,6 +187,9 @@ if ($name != "") {
         }
 
         if ($acctrow) {
+            // Deterministic session fixation protection: rotate session ID
+            // immediately after successful authentication.
+            RuntimeHardening::regenerateSessionIdFor('login-success');
             $session['user'] = $acctrow;
             $baseaccount = $session['user'];
             CheckBan::check($session['user']['login']); //check if this account is banned
