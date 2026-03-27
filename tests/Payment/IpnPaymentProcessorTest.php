@@ -11,7 +11,7 @@ use RuntimeException;
 
 final class IpnPaymentProcessorTest extends TestCase
 {
-    public function testDuplicateTransactionReturnsNoSecondCredit(): void
+    public function testDuplicateTransactionWithMissingAccountSkipsCrediting(): void
     {
         $connection = $this->createConnectionMock();
         $connection->expects(self::exactly(2))

@@ -14,7 +14,8 @@ use Throwable;
  *
  * Legacy duplicate handling policy:
  * - Canonical row is the *oldest* paylog row for a txnid (`MIN(payid)`).
- * - Only the processor instance that inserted/owns that canonical row may credit points.
+ * - Only the canonical row may be credited.
+ * - Crediting is gated by a transactional claim on `processed = 0`.
  * - Credit and `processed=1` are guarded in one transaction using a conditional
  *   `UPDATE ... WHERE payid = :payid AND processed = 0`, which emulates row-lock
  *   claim semantics on platforms without portable `SELECT ... FOR UPDATE` support.
@@ -185,11 +186,14 @@ final class IpnPaymentProcessor
     }
 
     /**
-     * Persist paylog with an atomic "insert-if-not-exists" guard for auditability.
+     * Persist paylog with a single-statement, best-effort "insert-if-not-exists" guard for auditability.
      *
      * This method intentionally does not fail hard when the row already exists because
-     * legacy datasets may already contain duplicate txnid rows; canonical-row ownership
-     * checks are applied later before any crediting is attempted.
+     * legacy datasets may already contain duplicate txnid rows; canonical-row
+     * validation and guarded claim checks are applied later before any crediting is attempted.
+     *
+     * Note: without a DB-level unique constraint on txnid, this guard does not fully
+     * prevent concurrent duplicate inserts; canonical claim logic is the true idempotency gate.
      *
      * When a duplicate txnid is detected, this method resolves and stores the canonical
      * payid so downstream guarded processing can still claim/process resumable rows.
