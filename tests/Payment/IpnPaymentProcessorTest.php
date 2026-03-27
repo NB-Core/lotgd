@@ -1,0 +1,152 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Lotgd\Tests\Payment;
+
+use Doctrine\DBAL\Connection;
+use Lotgd\Payment\IpnPaymentProcessor;
+use PHPUnit\Framework\TestCase;
+use RuntimeException;
+
+final class IpnPaymentProcessorTest extends TestCase
+{
+    public function testDuplicateTransactionReturnsNoSecondCredit(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::exactly(2))
+            ->method('fetchAssociative')
+            ->willReturnOnConsecutiveCalls(['acctid' => 7], ['txnid' => 'TXN-1']);
+        $connection->expects(self::never())
+            ->method('executeStatement')
+            ->willThrowException(new RuntimeException('Duplicate entry', 23000));
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $this->buildPayload(),
+            static fn (array $data): array => $data
+        );
+
+        self::assertTrue($result->duplicateTransaction);
+        self::assertFalse($result->paylogInserted);
+        self::assertFalse($result->credited);
+        self::assertNotEmpty($result->warnings);
+    }
+
+    public function testFirstDeliveryCreditsOnceAndLogsOnce(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::exactly(2))
+            ->method('fetchAssociative')
+            ->willReturnOnConsecutiveCalls(['acctid' => 13], false);
+
+        $calls = 0;
+        $connection->expects(self::exactly(3))
+            ->method('executeStatement')
+            ->willReturnCallback(static function (string $sql) use (&$calls): int {
+                $calls++;
+                if ($calls === 1) {
+                    self::assertStringContainsString('INSERT INTO paylog', $sql);
+                }
+                if ($calls === 2) {
+                    self::assertStringContainsString('UPDATE accounts SET donation', $sql);
+                }
+                if ($calls === 3) {
+                    self::assertStringContainsString('UPDATE paylog SET processed', $sql);
+                }
+
+                return 1;
+            });
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $this->buildPayload(),
+            static fn (array $data): array => ['points' => $data['points'], 'messages' => ['ok']]
+        );
+
+        self::assertTrue($result->paylogInserted);
+        self::assertTrue($result->credited);
+        self::assertSame(1, $result->processed);
+        self::assertSame(1000, $result->creditedPoints);
+    }
+
+    public function testCreditWriteFailureAddsErrorAndDoesNotFatal(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::exactly(2))
+            ->method('fetchAssociative')
+            ->willReturnOnConsecutiveCalls(['acctid' => 2], false);
+
+        $calls = 0;
+        $connection->method('executeStatement')
+            ->willReturnCallback(static function () use (&$calls): int {
+                $calls++;
+                if ($calls === 2) {
+                    throw new RuntimeException('write failed');
+                }
+
+                return 1;
+            });
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $this->buildPayload(),
+            static fn (array $data): array => $data
+        );
+
+        self::assertTrue($result->paylogInserted);
+        self::assertFalse($result->credited);
+        self::assertStringContainsString('Failed to credit donation points', implode("\n", $result->errors));
+    }
+
+    public function testAccountLookupMissStillPersistsPaylogWithProcessedZero(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::exactly(2))
+            ->method('fetchAssociative')
+            ->willReturnOnConsecutiveCalls(false, false);
+        $connection->expects(self::once())->method('executeStatement')->willReturn(1);
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $this->buildPayload(),
+            static fn (array $data): array => $data
+        );
+
+        self::assertTrue($result->paylogInserted);
+        self::assertFalse($result->credited);
+        self::assertSame(0, $result->accountId);
+        self::assertSame(0, $result->processed);
+    }
+
+    private function createConnectionMock(): Connection
+    {
+        return $this->getMockBuilder(Connection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['fetchAssociative', 'executeStatement'])
+            ->getMock();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildPayload(): array
+    {
+        return [
+            'itemNumber' => 'alice:123',
+            'response' => 'VERIFIED',
+            'txnId' => 'TXN-1',
+            'paymentAmount' => '10.00',
+            'paymentFee' => '1.00',
+            'processDate' => '2026-01-01 00:00:00',
+            'pointsPerCurrencyUnit' => 100,
+        ];
+    }
+}
