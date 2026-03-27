@@ -169,6 +169,7 @@ class ServerFunctions
             $server['HTTP_X_FORWARDED_PROTO']
             ?? $server['X_FORWARDED_PROTO']
             ?? $server['HTTP_X_FORWARDED_PROTOCOL']
+            ?? $server['HTTP_FORWARDED_PROTO']
             ?? $server['FORWARDED_PROTO']
             ?? $server['HTTP_X_URL_SCHEME']
             ?? ''
