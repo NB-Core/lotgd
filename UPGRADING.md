@@ -126,6 +126,31 @@ modules.
   - Output compression via zlib is enabled by default when the `zlib` extension is present. Disable at the PHP level if undesired.  
   - Data cache requires a writable directory: set `DB_USEDATACACHE=1` and `DB_DATACACHEPATH=/path/to/cache` in `dbconnect.php`. The app will warn admins if the path is missing or not writable, even if a temporary fallback directory is used for resilience; those warnings are intentional and should be addressed by setting a stable, writable path.  
   - Twig will cache compiled templates under `<datacachepath>/twig` when writable; otherwise it runs without caching.
+  - Runtime hardening is initialized before `session_start()` in `common.php`. Optional rollout switches live in `dbconnect.php` (`SESSION_COOKIE_*`, `SECURITY_*` keys described in `SECURITY.md`).
+
+### Security rollout checklist (TLS / proxy / HSTS / CSP)
+
+1. **Confirm HTTPS detection**
+   - Verify your reverse proxy sets `X-Forwarded-Proto: https` for TLS traffic.
+   - Enable `SECURITY_TRUST_FORWARDED_PROTO=true` and define `SECURITY_TRUSTED_PROXIES` with your proxy IPs.
+   - Validate that direct HTTP requests do not report HTTPS accidentally.
+2. **Session cookie rollout**
+   - Keep `SESSION_COOKIE_SECURE_AUTO=true` (default).
+   - Start with `SESSION_COOKIE_SAMESITE=Lax`; move to `Strict` only after verifying login/payment and cross-site flows.
+3. **Header rollout**
+   - Keep `SECURITY_HEADERS_ENABLED=true`.
+   - Start with `X-Frame-Options` default; migrate to CSP framing with:
+     - `SECURITY_USE_CSP_FRAME_ANCESTORS=true`
+     - `SECURITY_CSP_FRAME_ANCESTORS='self'` (or stricter)
+4. **HSTS phased enablement**
+   - Enable with a low initial max age:
+     - `SECURITY_HSTS_ENABLED=true`
+     - `SECURITY_HSTS_MAX_AGE=300`
+   - Increase `SECURITY_HSTS_MAX_AGE` gradually after validation.
+   - Add `SECURITY_HSTS_INCLUDE_SUBDOMAINS=true` only when every subdomain is HTTPS-ready.
+   - Add `SECURITY_HSTS_PRELOAD=true` only when you fully satisfy browser preload requirements.
+5. **Session fixation controls**
+   - Ensure custom authentication or privilege elevation code paths call session ID regeneration similarly to `login.php` after authentication success.
 
 ---
 
