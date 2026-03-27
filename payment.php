@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Http;
@@ -85,9 +86,14 @@ if (!$fp) {
                     $payment_fee = 0;
                     $txn_type = 'refund';
                 }
-                $sql = "SELECT * FROM " . Database::prefix("paylog") . " WHERE txnid='{$txn_id}'";
-                $result = Database::query($sql);
-                if (Database::numRows($result) == 1) {
+                $conn = Database::getDoctrineConnection();
+                $paylogTable = Database::prefix('paylog');
+                $existing = $conn->fetchAssociative(
+                    "SELECT txnid FROM {$paylogTable} WHERE txnid = :txnid",
+                    ['txnid' => (string) $txn_id],
+                    ['txnid' => ParameterType::STRING]
+                );
+                if ($existing !== false) {
                     $emsg .= "Already logged this transaction ID ($txn_id)\n";
                     payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
                 }
@@ -120,10 +126,16 @@ function writelog($response)
     global $payment_fee,$txn_type;
     $match = array();
     preg_match("'([^:]*):([^/])*'", $item_number, $match);
+    $conn = Database::getDoctrineConnection();
+    $accountsTable = Database::prefix('accounts');
+    $paylogTable = Database::prefix('paylog');
+
     if (isset($match[1]) && $match[1] > "") {
-        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='{$match[1]}'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+        $row = $conn->fetchAssociative(
+            "SELECT acctid FROM {$accountsTable} WHERE login = :login",
+            ['login' => $match[1]],
+            ['login' => ParameterType::STRING]
+        );
         $acctid = $row['acctid'];
         if ($acctid > 0) {
             $donation = $payment_amount;
@@ -139,9 +151,17 @@ function writelog($response)
             //updated to make a setting here for each Dollar, Euro, Shekel
             $hookresult['points'] = round($hookresult['points']);
 
-            $sql = "UPDATE " . Database::prefix("accounts") . " SET donation = donation + '{$hookresult['points']}' WHERE acctid=$acctid";
-
-            $result = Database::query($sql);
+            $result = $conn->executeStatement(
+                "UPDATE {$accountsTable} SET donation = donation + :points WHERE acctid = :acctid",
+                [
+                    'points' => (int) $hookresult['points'],
+                    'acctid' => (int) $acctid,
+                ],
+                [
+                    'points' => ParameterType::INTEGER,
+                    'acctid' => ParameterType::INTEGER,
+                ]
+            );
             debuglog("Received donator points for donating -- Credited Automatically", false, $acctid, "donation", $hookresult['points'], false);
             if (!is_array($hookresult['messages'])) {
                 $hookresult['messages'] = array($hookresult['messages']);
@@ -149,7 +169,7 @@ function writelog($response)
             foreach ($hookresult['messages'] as $id => $message) {
                 debuglog($message, false, $acctid, "donation", 0, false);
             }
-            if (Database::affectedRows() > 0) {
+            if ($result > 0) {
                 $processed = 1;
             }
         }
@@ -159,34 +179,59 @@ function writelog($response)
     if ($match[1] > "" && $acctid > 0) {
         HookHandler::hook("donation", array("id" => $acctid, "amt" => $donation * $settings->getSetting('dpointspercurrencyunit', 100), "manual" => false));
     }
-    $sql = "
-                INSERT INTO " . Database::prefix("paylog") . " (
-			info,
-			response,
-			txnid,
-			amount,
-			name,
-			acctid,
-			processed,
-			filed,
-			txfee,
-			processdate
-		)VALUES (
-			'" . addslashes(serialize($post)) . "',
-			'" . addslashes($response) . "',
-			'$txn_id',
-			'$payment_amount',
-			'{$match[1]}',
-			" . (int)(isset($acctid) ? $acctid : 0) . ",
-			" . (int)(isset($processed) ? $processed : 0) . ",
-			0,
-			'$payment_fee',
-			'" . date("Y-m-d H:i:s") . "'
-		)";
+    $sql = "INSERT INTO {$paylogTable} (
+            info,
+            response,
+            txnid,
+            amount,
+            name,
+            acctid,
+            processed,
+            filed,
+            txfee,
+            processdate
+        ) VALUES (
+            :info,
+            :response,
+            :txnid,
+            :amount,
+            :name,
+            :acctid,
+            :processed,
+            :filed,
+            :txfee,
+            :processdate
+        )";
     if (isset($acctid)) {
         debuglog($sql, false, $acctid, "donation", 0, false);
     }
-    $result = Database::query($sql);
+    $conn->executeStatement(
+        $sql,
+        [
+            'info' => serialize($post),
+            'response' => $response,
+            'txnid' => (string) $txn_id,
+            'amount' => (string) $payment_amount,
+            'name' => (string) $match[1],
+            'acctid' => (int) (isset($acctid) ? $acctid : 0),
+            'processed' => (int) (isset($processed) ? $processed : 0),
+            'filed' => 0,
+            'txfee' => (string) $payment_fee,
+            'processdate' => date("Y-m-d H:i:s"),
+        ],
+        [
+            'info' => ParameterType::STRING,
+            'response' => ParameterType::STRING,
+            'txnid' => ParameterType::STRING,
+            'amount' => ParameterType::STRING,
+            'name' => ParameterType::STRING,
+            'acctid' => ParameterType::INTEGER,
+            'processed' => ParameterType::INTEGER,
+            'filed' => ParameterType::INTEGER,
+            'txfee' => ParameterType::STRING,
+            'processdate' => ParameterType::STRING,
+        ]
+    );
     HookHandler::hook("donation-processed", $post);
     $err = Database::error();
     if ($err) {
