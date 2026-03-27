@@ -35,6 +35,20 @@ final class ServerFunctionsTest extends TestCase
         $this->assertFalse(ServerFunctions::isSecureConnection());
     }
 
+    public function testIsHttpsRequestUnderstandsForwardedProto(): void
+    {
+        $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+
+        $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https,http';
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+
+        $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'http';
+        $_SERVER['HTTPS'] = 'off';
+        $_SERVER['SERVER_PORT'] = 80;
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+    }
+
     public function testIsTheServerFull(): void
     {
         $settings = new ServerDummySettings([

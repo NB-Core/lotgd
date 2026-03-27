@@ -111,6 +111,29 @@ class ServerFunctions
      */
     public static function isSecureConnection(): bool
     {
+        return self::isHttpsRequest();
+    }
+
+    /**
+     * Determine whether the request should be treated as HTTPS.
+     *
+     * Supports direct TLS detection and common reverse-proxy forwarded
+     * protocol headers.
+     *
+     * @return bool
+     */
+    public static function isHttpsRequest(): bool
+    {
+        $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+        if ($forwardedProto !== '') {
+            // Reverse proxies may send a comma-separated list (client, proxy1,
+            // proxy2). Use the first value as the original request protocol.
+            $proto = trim(explode(',', $forwardedProto)[0]);
+            if ($proto === 'https') {
+                return true;
+            }
+        }
+
         return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
     }

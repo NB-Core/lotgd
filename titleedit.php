@@ -108,7 +108,7 @@ switch ($op) {
         if ($affected === 0) {
             $output->output('%s', $errnote);
             if ($dbalErrorMessage !== '') {
-                $output->rawOutput($dbalErrorMessage);
+                $output->rawOutput(htmlspecialchars($dbalErrorMessage, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
             }
         } else {
             $output->output('%s', $note);

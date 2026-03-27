@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
@@ -208,38 +209,38 @@ function writelog($response)
     if (isset($acctid)) {
         debuglog($sql, false, $acctid, "donation", 0, false);
     }
-    $conn->executeStatement(
-        $sql,
-        [
-            'info' => serialize($post),
-            'response' => $response,
-            'txnid' => (string) $txn_id,
-            'amount' => (string) $payment_amount,
-            'name' => (string) $match[1],
-            'acctid' => $acctid,
-            'processed' => $processed,
-            'filed' => 0,
-            'txfee' => (string) $payment_fee,
-            'processdate' => date("Y-m-d H:i:s"),
-        ],
-        [
-            'info' => ParameterType::STRING,
-            'response' => ParameterType::STRING,
-            'txnid' => ParameterType::STRING,
-            'amount' => ParameterType::STRING,
-            'name' => ParameterType::STRING,
-            'acctid' => ParameterType::INTEGER,
-            'processed' => ParameterType::INTEGER,
-            'filed' => ParameterType::INTEGER,
-            'txfee' => ParameterType::STRING,
-            'processdate' => ParameterType::STRING,
-        ]
-    );
-    HookHandler::hook("donation-processed", $post);
-    $err = Database::error();
-    if ($err) {
-        payment_error(E_ERROR, "SQL: $sql\nERR: $err", __FILE__, __LINE__);
+    try {
+        $conn->executeStatement(
+            $sql,
+            [
+                'info' => serialize($post),
+                'response' => $response,
+                'txnid' => (string) $txn_id,
+                'amount' => (string) $payment_amount,
+                'name' => (string) $match[1],
+                'acctid' => $acctid,
+                'processed' => $processed,
+                'filed' => 0,
+                'txfee' => (string) $payment_fee,
+                'processdate' => date("Y-m-d H:i:s"),
+            ],
+            [
+                'info' => ParameterType::STRING,
+                'response' => ParameterType::STRING,
+                'txnid' => ParameterType::STRING,
+                'amount' => ParameterType::STRING,
+                'name' => ParameterType::STRING,
+                'acctid' => ParameterType::INTEGER,
+                'processed' => ParameterType::INTEGER,
+                'filed' => ParameterType::INTEGER,
+                'txfee' => ParameterType::STRING,
+                'processdate' => ParameterType::STRING,
+            ]
+        );
+    } catch (DbalException $exception) {
+        payment_error(E_ERROR, "Failed to persist payment log: " . $exception->getMessage(), __FILE__, __LINE__);
     }
+    HookHandler::hook("donation-processed", $post);
 }
 
 function payment_error($errno, $errstr, $errfile, $errline)
