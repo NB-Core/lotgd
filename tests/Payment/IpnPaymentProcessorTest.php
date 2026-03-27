@@ -351,4 +351,28 @@ final class IpnPaymentProcessorTest extends TestCase
         self::assertSame(1, $result->processed);
         self::assertSame(300, $result->paylogId);
     }
+
+    public function testDuplicateDeliveryFailsWhenCanonicalPaylogCannotBeResolved(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::once())
+            ->method('fetchAssociative')
+            ->willReturn(false);
+        $connection->expects(self::never())->method('lastInsertId');
+        $connection->expects(self::never())->method('beginTransaction');
+        $connection->expects(self::once())
+            ->method('executeStatement')
+            ->willReturn(0);
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $this->buildPayload(),
+            static fn (array $data): array => $data
+        );
+
+        self::assertFalse($result->credited);
+        self::assertSame(0, $result->paylogId);
+        self::assertStringContainsString('Unable to continue duplicate transaction processing', implode("\n", $result->errors));
+    }
 }

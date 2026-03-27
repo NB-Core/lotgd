@@ -69,7 +69,8 @@ final class IpnPaymentProcessor
         }
 
         // Legacy-safe idempotency policy:
-        // only the instance that inserted the canonical paylog row may perform crediting.
+        // only the canonical row may be credited, and only after the
+        // transactional `processed = 0` claim succeeds in guarded flow.
         if ($result->paylogId !== $canonicalRow['payid']) {
             $result->duplicateTransaction = true;
             $result->warnings[] = sprintf(
@@ -262,6 +263,13 @@ final class IpnPaymentProcessor
                 $result->duplicateTransaction = true;
                 $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
                 $result->paylogId = $this->resolveCanonicalPaylogId($txnid, $result);
+                if ($result->paylogId <= 0) {
+                    $result->errors[] = sprintf(
+                        'Unable to continue duplicate transaction processing because canonical paylog row was not resolved (%s).',
+                        $txnid
+                    );
+                    return false;
+                }
                 return true;
             }
             $result->paylogInserted = true;
@@ -272,6 +280,13 @@ final class IpnPaymentProcessor
                 $result->duplicateTransaction = true;
                 $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
                 $result->paylogId = $this->resolveCanonicalPaylogId($txnid, $result);
+                if ($result->paylogId <= 0) {
+                    $result->errors[] = sprintf(
+                        'Unable to continue duplicate transaction processing because canonical paylog row was not resolved (%s).',
+                        $txnid
+                    );
+                    return false;
+                }
                 return true;
             }
 
