@@ -9,7 +9,11 @@ use Doctrine\DBAL\ParameterType;
 use Throwable;
 
 /**
- * Handles database-side IPN persistence and crediting in an atomic, testable workflow.
+ * Handles database-side IPN persistence and crediting in a testable, stepwise workflow.
+ *
+ * Note: this flow is intentionally not wrapped in a single DB transaction because
+ * legacy behavior expects paylog persistence and follow-up updates to remain visible
+ * even if later steps fail.
  */
 final class IpnPaymentProcessor
 {
@@ -35,14 +39,14 @@ final class IpnPaymentProcessor
             (float) ($payload['paymentFee'] ?? 0.0),
             (string) ($payload['txnType'] ?? '')
         );
-        $result->accountLogin = $this->extractAccountLogin((string) ($payload['itemNumber'] ?? ''));
         $txnid = (string) ($payload['txnId'] ?? '');
-
-        $result->accountId = $this->resolveAccountId($result->accountLogin, $result);
 
         if ($this->isKnownTransaction($txnid, $result)) {
             return $result;
         }
+
+        $result->accountLogin = $this->extractAccountLogin((string) ($payload['itemNumber'] ?? ''));
+        $result->accountId = $this->resolveAccountId($result->accountLogin, $result);
 
         if (! $this->insertPaylog($post, $payload, $result)) {
             return $result;

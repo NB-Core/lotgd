@@ -14,9 +14,9 @@ final class IpnPaymentProcessorTest extends TestCase
     public function testDuplicateTransactionReturnsNoSecondCredit(): void
     {
         $connection = $this->createConnectionMock();
-        $connection->expects(self::exactly(2))
+        $connection->expects(self::once())
             ->method('fetchAssociative')
-            ->willReturnOnConsecutiveCalls(['acctid' => 7], ['txnid' => 'TXN-1']);
+            ->willReturn(['txnid' => 'TXN-1']);
         $connection->expects(self::never())
             ->method('executeStatement')
             ->willThrowException(new RuntimeException('Duplicate entry', 23000));
@@ -40,21 +40,26 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection = $this->createConnectionMock();
         $connection->expects(self::exactly(2))
             ->method('fetchAssociative')
-            ->willReturnOnConsecutiveCalls(['acctid' => 13], false);
+            ->willReturnOnConsecutiveCalls(false, ['acctid' => 13]);
 
         $calls = 0;
         $connection->expects(self::exactly(3))
             ->method('executeStatement')
-            ->willReturnCallback(static function (string $sql) use (&$calls): int {
+            ->willReturnCallback(static function (string $sql, array $params = [], array $types = []) use (&$calls): int {
                 $calls++;
                 if ($calls === 1) {
                     self::assertStringContainsString('INSERT INTO paylog', $sql);
+                    self::assertArrayHasKey('txnid', $params);
+                    self::assertArrayHasKey('txnid', $types);
                 }
                 if ($calls === 2) {
                     self::assertStringContainsString('UPDATE accounts SET donation', $sql);
+                    self::assertArrayHasKey('points', $params);
+                    self::assertArrayHasKey('acctid', $params);
                 }
                 if ($calls === 3) {
                     self::assertStringContainsString('UPDATE paylog SET processed', $sql);
+                    self::assertArrayHasKey('processed', $params);
                 }
 
                 return 1;
@@ -79,11 +84,11 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection = $this->createConnectionMock();
         $connection->expects(self::exactly(2))
             ->method('fetchAssociative')
-            ->willReturnOnConsecutiveCalls(['acctid' => 2], false);
+            ->willReturnOnConsecutiveCalls(false, ['acctid' => 2]);
 
         $calls = 0;
         $connection->method('executeStatement')
-            ->willReturnCallback(static function () use (&$calls): int {
+            ->willReturnCallback(static function (string $sql, array $params = [], array $types = []) use (&$calls): int {
                 $calls++;
                 if ($calls === 2) {
                     throw new RuntimeException('write failed');
@@ -129,9 +134,7 @@ final class IpnPaymentProcessorTest extends TestCase
     public function testEmptyTransactionIdIsHardFailureAndStopsProcessing(): void
     {
         $connection = $this->createConnectionMock();
-        $connection->expects(self::once())
-            ->method('fetchAssociative')
-            ->willReturn(['acctid' => 7]);
+        $connection->expects(self::never())->method('fetchAssociative');
         $connection->expects(self::never())->method('executeStatement');
 
         $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
@@ -155,7 +158,7 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection = $this->createConnectionMock();
         $connection->expects(self::exactly(2))
             ->method('fetchAssociative')
-            ->willReturnOnConsecutiveCalls(['acctid' => 13], false);
+            ->willReturnOnConsecutiveCalls(false, ['acctid' => 13]);
         $connection->expects(self::exactly(3))->method('executeStatement')->willReturn(1);
 
         $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
