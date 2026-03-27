@@ -314,7 +314,12 @@ final class IpnPaymentProcessor
             return 0;
         }
 
-        return (int) ($row['payid'] ?? 0);
+        if (!is_array($row) || !array_key_exists('payid', $row) || $row['payid'] === null) {
+            $result->errors[] = 'Failed to resolve canonical paylog id: no existing paylog row found for transaction.';
+            return 0;
+        }
+
+        return (int) $row['payid'];
     }
 
     /**
