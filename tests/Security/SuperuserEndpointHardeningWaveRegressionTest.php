@@ -30,10 +30,10 @@ final class SuperuserEndpointHardeningWaveRegressionTest extends TestCase
 
     public function testPaymentPersistsIpnAndCreditsAccountsWithTypedParameters(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/payment.php');
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Lotgd/Payment/IpnPaymentProcessor.php');
 
-        self::assertStringContainsString('UPDATE {$accountsTable} SET donation = donation + :points WHERE acctid = :acctid', $source);
-        self::assertStringContainsString('INSERT INTO {$paylogTable}', $source);
+        self::assertStringContainsString('UPDATE {$this->accountsTable} SET donation = donation + :points WHERE acctid = :acctid', $source);
+        self::assertStringContainsString('INSERT INTO {$this->paylogTable}', $source);
         self::assertStringContainsString("'txnid' => ParameterType::STRING", $source);
         self::assertStringContainsString("'acctid' => ParameterType::INTEGER", $source);
         self::assertStringContainsString('fetchAssociative(', $source);
