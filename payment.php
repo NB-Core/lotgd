@@ -58,7 +58,7 @@ $txn_id = Http::post('txn_id');
 $receiver_email = Http::post('business');
 $payer_email = Http::post('payer_email');
 $payment_fee = Http::post('mc_fee');
-$txn_type = '';
+$txn_type = Http::post('txn_type');
 
 $response = '';
 if (! $fp) {
@@ -71,7 +71,7 @@ if (! $fp) {
 
         if (strcmp(trim($res), "VERIFIED") == 0) {
             if ($payment_status == "Completed" || $payment_status == 'Refunded') {
-                $normalizedStatus = IpnStatus::normalize((string) $payment_status, (float) $payment_fee);
+                $normalizedStatus = IpnStatus::normalize((string) $payment_status, (float) $payment_fee, (string) $txn_type);
                 $payment_fee = (string) $normalizedStatus['paymentFee'];
                 $txn_type = $normalizedStatus['txnType'];
 
@@ -104,11 +104,6 @@ function writelog(string $response): void
     global $post;
     global $item_number, $payment_amount, $txn_id, $payment_fee, $txn_type;
 
-    $donationAmount = (float) $payment_amount;
-    if ($txn_type == "reversal") {
-        $donationAmount -= (float) $payment_fee;
-    }
-
     $processor = new IpnPaymentProcessor(
         Database::getDoctrineConnection(),
         Database::prefix('accounts'),
@@ -123,6 +118,7 @@ function writelog(string $response): void
             'txnId' => (string) $txn_id,
             'paymentAmount' => (string) $payment_amount,
             'paymentFee' => (string) $payment_fee,
+            'txnType' => (string) $txn_type,
             'processDate' => date("Y-m-d H:i:s"),
             'pointsPerCurrencyUnit' => (float) $settings->getSetting('dpointspercurrencyunit', 100),
         ],
@@ -144,7 +140,7 @@ function writelog(string $response): void
 
         HookHandler::hook("donation", [
             "id" => $result->accountId,
-            "amt" => $donationAmount * $settings->getSetting('dpointspercurrencyunit', 100),
+            "amt" => $result->donationAmount * $settings->getSetting('dpointspercurrencyunit', 100),
             "manual" => false,
         ]);
     }

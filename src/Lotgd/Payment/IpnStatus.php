@@ -14,13 +14,13 @@ final class IpnStatus
      *
      * @return array{accepted: bool, paymentFee: float, txnType: string}
      */
-    public static function normalize(string $status, float $paymentFee): array
+    public static function normalize(string $status, float $paymentFee, string $txnType = ''): array
     {
         if ($status === 'Completed') {
             return [
                 'accepted' => true,
                 'paymentFee' => $paymentFee,
-                'txnType' => '',
+                'txnType' => $txnType,
             ];
         }
 
@@ -28,6 +28,7 @@ final class IpnStatus
             return [
                 'accepted' => true,
                 'paymentFee' => 0.0,
+                // Keep explicit refund type for downstream handling consistency.
                 'txnType' => 'refund',
             ];
         }
@@ -35,7 +36,7 @@ final class IpnStatus
         return [
             'accepted' => false,
             'paymentFee' => $paymentFee,
-            'txnType' => '',
+            'txnType' => $txnType,
         ];
     }
 }

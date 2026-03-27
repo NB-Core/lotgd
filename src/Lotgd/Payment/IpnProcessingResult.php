@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Payment;
 
 /**
- * Value object representing the outcome of a single IPN transaction processing attempt.
+ * Mutable result DTO representing the outcome of a single IPN transaction processing attempt.
  */
 final class IpnProcessingResult
 {

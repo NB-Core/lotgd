@@ -126,6 +126,53 @@ final class IpnPaymentProcessorTest extends TestCase
         self::assertSame(0, $result->processed);
     }
 
+    public function testEmptyTransactionIdIsHardFailureAndStopsProcessing(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::once())
+            ->method('fetchAssociative')
+            ->willReturn(['acctid' => 7]);
+        $connection->expects(self::never())->method('executeStatement');
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+
+        $payload = $this->buildPayload();
+        $payload['txnId'] = '';
+
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $payload,
+            static fn (array $data): array => $data
+        );
+
+        self::assertFalse($result->paylogInserted);
+        self::assertFalse($result->credited);
+        self::assertStringContainsString('empty transaction ID', implode("\n", $result->errors));
+    }
+
+    public function testReversalUsesFeeAdjustedDonationAmountForPointCalculation(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::exactly(2))
+            ->method('fetchAssociative')
+            ->willReturnOnConsecutiveCalls(['acctid' => 13], false);
+        $connection->expects(self::exactly(3))->method('executeStatement')->willReturn(1);
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+        $payload = $this->buildPayload();
+        $payload['txnType'] = 'reversal';
+
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $payload,
+            static fn (array $data): array => $data
+        );
+
+        self::assertTrue($result->credited);
+        self::assertSame(900, $result->creditedPoints);
+        self::assertSame(9.0, $result->donationAmount);
+    }
+
     private function createConnectionMock(): Connection
     {
         return $this->getMockBuilder(Connection::class)

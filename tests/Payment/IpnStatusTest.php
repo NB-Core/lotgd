@@ -11,11 +11,11 @@ final class IpnStatusTest extends TestCase
 {
     public function testCompletedStatusIsAcceptedWithoutFeeMutation(): void
     {
-        $normalized = IpnStatus::normalize('Completed', 1.25);
+        $normalized = IpnStatus::normalize('Completed', 1.25, 'reversal');
 
         self::assertTrue($normalized['accepted']);
         self::assertSame(1.25, $normalized['paymentFee']);
-        self::assertSame('', $normalized['txnType']);
+        self::assertSame('reversal', $normalized['txnType']);
     }
 
     public function testRefundedStatusIsAcceptedAndFeeIsForcedToZero(): void
@@ -29,9 +29,10 @@ final class IpnStatusTest extends TestCase
 
     public function testOtherStatusIsRejected(): void
     {
-        $normalized = IpnStatus::normalize('Pending', 1.25);
+        $normalized = IpnStatus::normalize('Pending', 1.25, 'subscr_payment');
 
         self::assertFalse($normalized['accepted']);
         self::assertSame(1.25, $normalized['paymentFee']);
+        self::assertSame('subscr_payment', $normalized['txnType']);
     }
 }

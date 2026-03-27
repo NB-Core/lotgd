@@ -30,7 +30,11 @@ final class IpnPaymentProcessor
     public function processVerifiedPayment(array $post, array $payload, callable $adjustDonation): IpnProcessingResult
     {
         $result = new IpnProcessingResult();
-        $result->donationAmount = (float) ($payload['paymentAmount'] ?? 0.0);
+        $result->donationAmount = $this->calculateDonationAmount(
+            (float) ($payload['paymentAmount'] ?? 0.0),
+            (float) ($payload['paymentFee'] ?? 0.0),
+            (string) ($payload['txnType'] ?? '')
+        );
         $result->accountLogin = $this->extractAccountLogin((string) ($payload['itemNumber'] ?? ''));
         $txnid = (string) ($payload['txnId'] ?? '');
 
@@ -130,8 +134,8 @@ final class IpnPaymentProcessor
     private function isKnownTransaction(string $txnid, IpnProcessingResult $result): bool
     {
         if ($txnid === '') {
-            $result->warnings[] = 'Payment payload has an empty transaction ID.';
-            return false;
+            $result->errors[] = 'Payment payload has an empty transaction ID.';
+            return true;
         }
 
         try {
@@ -179,7 +183,7 @@ final class IpnPaymentProcessor
     }
 
     /**
-     * Persist initial paylog row first; this unique-key insert is the idempotency gate.
+     * Persist initial paylog row after txnid compare-check passes.
      */
     private function insertPaylog(array $post, array $payload, IpnProcessingResult $result): bool
     {
@@ -269,5 +273,17 @@ final class IpnPaymentProcessor
         } catch (Throwable $exception) {
             $result->errors[] = 'Failed to update paylog processed state: ' . $exception->getMessage();
         }
+    }
+
+    /**
+     * Apply legacy reversal adjustment to donation amount used for point crediting.
+     */
+    private function calculateDonationAmount(float $amount, float $paymentFee, string $txnType): float
+    {
+        if ($txnType === 'reversal') {
+            return $amount - $paymentFee;
+        }
+
+        return $amount;
     }
 }
