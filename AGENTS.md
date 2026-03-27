@@ -38,6 +38,17 @@ Before opening a PR:
 
 Recommended commit convention: follow Conventional Commits (`feat:`, `fix:`, `perf:`, `docs:`, `refactor:`, `chore:`) to improve release notes.
 
+
+## Security Review Checklist
+
+For any PR touching **authentication, session handling, admin/superuser flows, async endpoints, or SQL execution**, include a short security review note in the PR description that confirms all of the following:
+
+- Input validation boundary is defined (where untrusted input enters and where it is validated/cast).
+- CSRF coverage is present for all state-changing requests.
+- Prepared statements are used for SQL writes/reads; do not introduce new `addslashes`-based SQL patterns.
+- Authorization checks exist for superuser and module-privileged actions.
+- Security-relevant outcomes are logged (for example: auth failures, privilege changes, denied admin actions, suspicious async activity).
+
 These rules apply to all directories unless a more specific file overrides them.
 
 ## Compatibility & Deprecations
