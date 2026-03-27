@@ -33,4 +33,6 @@ final class IpnProcessingResult
     public int $creditedPoints = 0;
 
     public float $donationAmount = 0.0;
+
+    public int $paylogId = 0;
 }

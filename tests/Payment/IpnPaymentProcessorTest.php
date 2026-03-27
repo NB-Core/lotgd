@@ -15,6 +15,7 @@ final class IpnPaymentProcessorTest extends TestCase
     {
         $connection = $this->createConnectionMock();
         $connection->expects(self::never())->method('fetchAssociative');
+        $connection->expects(self::never())->method('lastInsertId');
         $connection->expects(self::once())
             ->method('executeStatement')
             ->willReturn(0);
@@ -39,10 +40,11 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection->expects(self::once())
             ->method('fetchAssociative')
             ->willReturn(['acctid' => 13]);
+        $connection->expects(self::once())->method('lastInsertId')->willReturn(501);
 
         $calls = 0;
         $statements = [];
-        $connection->expects(self::exactly(3))
+        $connection->expects(self::exactly(4))
             ->method('executeStatement')
             ->willReturnCallback(static function (string $sql, array $params = [], array $types = []) use (&$calls, &$statements): int {
                 $calls++;
@@ -67,11 +69,14 @@ final class IpnPaymentProcessorTest extends TestCase
         self::assertStringContainsString('NOT EXISTS', $statements[0]['sql']);
         self::assertArrayHasKey('txnid', $statements[0]['params']);
         self::assertArrayHasKey('txnid', $statements[0]['types']);
-        self::assertStringContainsString('UPDATE accounts SET donation', $statements[1]['sql']);
-        self::assertArrayHasKey('points', $statements[1]['params']);
+        self::assertStringContainsString('UPDATE paylog SET acctid', $statements[1]['sql']);
         self::assertArrayHasKey('acctid', $statements[1]['params']);
-        self::assertStringContainsString('UPDATE paylog SET processed', $statements[2]['sql']);
-        self::assertArrayHasKey('processed', $statements[2]['params']);
+        self::assertArrayHasKey('payid', $statements[1]['params']);
+        self::assertStringContainsString('UPDATE accounts SET donation', $statements[2]['sql']);
+        self::assertArrayHasKey('points', $statements[2]['params']);
+        self::assertArrayHasKey('acctid', $statements[2]['params']);
+        self::assertStringContainsString('UPDATE paylog SET processed', $statements[3]['sql']);
+        self::assertArrayHasKey('processed', $statements[3]['params']);
     }
 
     public function testCreditWriteFailureAddsErrorAndDoesNotFatal(): void
@@ -80,12 +85,13 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection->expects(self::once())
             ->method('fetchAssociative')
             ->willReturn(['acctid' => 2]);
+        $connection->expects(self::once())->method('lastInsertId')->willReturn(502);
 
         $calls = 0;
         $connection->method('executeStatement')
             ->willReturnCallback(static function (string $sql, array $params = [], array $types = []) use (&$calls): int {
                 $calls++;
-                if ($calls === 2) {
+                if ($calls === 3) {
                     throw new RuntimeException('write failed');
                 }
 
@@ -110,6 +116,7 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection->expects(self::once())
             ->method('fetchAssociative')
             ->willReturn(false);
+        $connection->expects(self::once())->method('lastInsertId')->willReturn(503);
         $connection->expects(self::once())->method('executeStatement')->willReturn(1);
 
         $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
@@ -130,6 +137,7 @@ final class IpnPaymentProcessorTest extends TestCase
     {
         $connection = $this->createConnectionMock();
         $connection->expects(self::never())->method('fetchAssociative');
+        $connection->expects(self::never())->method('lastInsertId');
         $connection->expects(self::never())->method('executeStatement');
 
         $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
@@ -154,7 +162,8 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection->expects(self::once())
             ->method('fetchAssociative')
             ->willReturn(['acctid' => 13]);
-        $connection->expects(self::exactly(3))->method('executeStatement')->willReturn(1);
+        $connection->expects(self::once())->method('lastInsertId')->willReturn(504);
+        $connection->expects(self::exactly(4))->method('executeStatement')->willReturn(1);
 
         $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
         $payload = $this->buildPayload();
@@ -175,7 +184,7 @@ final class IpnPaymentProcessorTest extends TestCase
     {
         return $this->getMockBuilder(Connection::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['fetchAssociative', 'executeStatement'])
+            ->onlyMethods(['fetchAssociative', 'executeStatement', 'lastInsertId'])
             ->getMock();
     }
 
@@ -193,5 +202,28 @@ final class IpnPaymentProcessorTest extends TestCase
             'processDate' => '2026-01-01 00:00:00',
             'pointsPerCurrencyUnit' => 100,
         ];
+    }
+
+    public function testItemNumberWithoutLegacyDelimiterDoesNotResolveAccountLogin(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::once())->method('lastInsertId')->willReturn(505);
+        $connection->expects(self::once())->method('executeStatement')->willReturn(1);
+        $connection->expects(self::never())->method('fetchAssociative');
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+        $payload = $this->buildPayload();
+        $payload['itemNumber'] = 'legacy-button-without-delimiter';
+
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $payload,
+            static fn (array $data): array => $data
+        );
+
+        self::assertSame('', $result->accountLogin);
+        self::assertSame(0, $result->accountId);
+        self::assertTrue($result->paylogInserted);
+        self::assertFalse($result->credited);
     }
 }

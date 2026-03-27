@@ -56,6 +56,7 @@ final class IpnPaymentProcessor
         if ($result->accountId <= 0) {
             return $result;
         }
+        $this->updatePaylogAccountId($result);
 
         $pointsPerCurrencyUnit = (float) ($payload['pointsPerCurrencyUnit'] ?? 0.0);
         $adjusted = $adjustDonation([
@@ -98,7 +99,7 @@ final class IpnPaymentProcessor
         if ($affected > 0) {
             $result->processed = 1;
             $result->credited = true;
-            $this->updatePaylogProcessedState((string) ($payload['txnId'] ?? ''), $result);
+            $this->updatePaylogProcessedState($result);
         }
 
         return $result;
@@ -109,8 +110,12 @@ final class IpnPaymentProcessor
      */
     public function extractAccountLogin(string $itemNumber): string
     {
-        $parts = explode(':', $itemNumber, 2);
+        if (! str_contains($itemNumber, ':')) {
+            // Preserve legacy behavior: only login:item payloads are eligible for account resolution.
+            return '';
+        }
 
+        $parts = explode(':', $itemNumber, 2);
         return trim($parts[0] ?? '');
     }
 
@@ -242,6 +247,7 @@ final class IpnPaymentProcessor
                 return false;
             }
             $result->paylogInserted = true;
+            $result->paylogId = (int) $this->connection->lastInsertId();
             return true;
         } catch (Throwable $exception) {
             if ($this->isDuplicateTransactionError($exception)) {
@@ -256,22 +262,50 @@ final class IpnPaymentProcessor
     }
 
     /**
-     * Mark paylog row as processed once donation points are successfully credited.
+     * Persist resolved account ID into paylog even when crediting fails.
      */
-    private function updatePaylogProcessedState(string $txnid, IpnProcessingResult $result): void
+    private function updatePaylogAccountId(IpnProcessingResult $result): void
     {
+        if ($result->paylogId <= 0 || $result->accountId <= 0) {
+            return;
+        }
+
         try {
             $this->connection->executeStatement(
-                "UPDATE {$this->paylogTable} SET processed = :processed, acctid = :acctid WHERE txnid = :txnid",
+                "UPDATE {$this->paylogTable} SET acctid = :acctid WHERE payid = :payid",
+                [
+                    'acctid' => $result->accountId,
+                    'payid' => $result->paylogId,
+                ],
+                [
+                    'acctid' => ParameterType::INTEGER,
+                    'payid' => ParameterType::INTEGER,
+                ]
+            );
+        } catch (Throwable $exception) {
+            $result->errors[] = 'Failed to update paylog account mapping: ' . $exception->getMessage();
+        }
+    }
+
+    /**
+     * Mark paylog row as processed once donation points are successfully credited.
+     */
+    private function updatePaylogProcessedState(IpnProcessingResult $result): void
+    {
+        if ($result->paylogId <= 0) {
+            return;
+        }
+
+        try {
+            $this->connection->executeStatement(
+                "UPDATE {$this->paylogTable} SET processed = :processed WHERE payid = :payid",
                 [
                     'processed' => 1,
-                    'acctid' => $result->accountId,
-                    'txnid' => $txnid,
+                    'payid' => $result->paylogId,
                 ],
                 [
                     'processed' => ParameterType::INTEGER,
-                    'acctid' => ParameterType::INTEGER,
-                    'txnid' => ParameterType::STRING,
+                    'payid' => ParameterType::INTEGER,
                 ]
             );
         } catch (Throwable $exception) {
