@@ -124,24 +124,26 @@ class ServerFunctions
      */
     public static function isHttpsRequest(): bool
     {
-        $forwardedProto = self::extractForwardedProto($_SERVER);
-        if ($forwardedProto === 'https') {
-            return true;
-        }
+        if (self::shouldTrustForwardedHeaders($_SERVER)) {
+            $forwardedProto = self::extractForwardedProto($_SERVER);
+            if ($forwardedProto === 'https') {
+                return true;
+            }
 
-        $forwardedSsl = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')));
-        if ($forwardedSsl === 'on') {
-            return true;
-        }
+            $forwardedSsl = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')));
+            if ($forwardedSsl === 'on') {
+                return true;
+            }
 
-        $frontEndHttps = strtolower(trim((string) ($_SERVER['HTTP_FRONT_END_HTTPS'] ?? '')));
-        if ($frontEndHttps === 'on') {
-            return true;
-        }
+            $frontEndHttps = strtolower(trim((string) ($_SERVER['HTTP_FRONT_END_HTTPS'] ?? '')));
+            if ($frontEndHttps === 'on') {
+                return true;
+            }
 
-        $requestScheme = strtolower(trim((string) ($_SERVER['REQUEST_SCHEME'] ?? '')));
-        if ($requestScheme === 'https') {
-            return true;
+            $requestScheme = strtolower(trim((string) ($_SERVER['REQUEST_SCHEME'] ?? '')));
+            if ($requestScheme === 'https') {
+                return true;
+            }
         }
 
         $https = strtolower(trim((string) ($_SERVER['HTTPS'] ?? '')));
@@ -163,7 +165,14 @@ class ServerFunctions
      */
     private static function extractForwardedProto(array $server): string
     {
-        $candidate = (string) ($server['HTTP_X_FORWARDED_PROTO'] ?? $server['FORWARDED_PROTO'] ?? '');
+        $candidate = (string) (
+            $server['HTTP_X_FORWARDED_PROTO']
+            ?? $server['X_FORWARDED_PROTO']
+            ?? $server['HTTP_X_FORWARDED_PROTOCOL']
+            ?? $server['FORWARDED_PROTO']
+            ?? $server['HTTP_X_URL_SCHEME']
+            ?? ''
+        );
         if ($candidate !== '') {
             // Reverse proxies may send comma-separated protocol hops.
             return strtolower(trim(explode(',', $candidate)[0]));
@@ -179,5 +188,41 @@ class ServerFunctions
         }
 
         return strtolower(trim($match[1], " \t\n\r\0\x0B\"'"));
+    }
+
+    /**
+     * Decide whether forwarded headers should be trusted for TLS detection.
+     *
+     * `LOTGD_TRUST_FORWARDED_HEADERS` defaults to enabled (`1`) for backward
+     * compatibility. Set it to `0` in direct-ingress deployments.
+     *
+     * Optionally scope trust to known proxy source IPs via
+     * `LOTGD_TRUSTED_PROXY_IPS` (comma-separated exact IP list). When this
+     * allowlist is configured, forwarded headers are ignored unless
+     * `REMOTE_ADDR` matches one of the listed IPs.
+     *
+     * @param array<string, mixed> $server
+     */
+    private static function shouldTrustForwardedHeaders(array $server): bool
+    {
+        $trustForwarded = strtolower(trim((string) (getenv('LOTGD_TRUST_FORWARDED_HEADERS') ?: '1')));
+        if (in_array($trustForwarded, ['0', 'false', 'no'], true)) {
+            return false;
+        }
+
+        $trustedProxyIps = trim((string) (getenv('LOTGD_TRUSTED_PROXY_IPS') ?: ''));
+        if ($trustedProxyIps === '') {
+            return true;
+        }
+
+        $remoteAddr = trim((string) ($server['REMOTE_ADDR'] ?? ''));
+        if ($remoteAddr === '') {
+            return false;
+        }
+
+        $allowed = array_map('trim', explode(',', $trustedProxyIps));
+        $allowed = array_filter($allowed, static fn (string $ip): bool => $ip !== '');
+
+        return in_array($remoteAddr, $allowed, true);
     }
 }

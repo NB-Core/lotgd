@@ -14,11 +14,20 @@ final class ServerFunctionsTest extends TestCase
     protected function setUp(): void
     {
         $_SERVER = [];
+        putenv('LOTGD_TRUST_FORWARDED_HEADERS=1');
+        putenv('LOTGD_TRUSTED_PROXY_IPS');
         class_exists(Database::class);
         \Lotgd\MySQL\Database::$onlineCounter = 0;
         \Lotgd\MySQL\Database::$settings_table = [];
         \Lotgd\MySQL\Database::$doctrineConnection = null;
         \Lotgd\MySQL\Database::$instance = null;
+    }
+
+    protected function tearDown(): void
+    {
+        putenv('LOTGD_TRUST_FORWARDED_HEADERS');
+        putenv('LOTGD_TRUSTED_PROXY_IPS');
+        parent::tearDown();
     }
 
     public function testIsSecureConnection(): void
@@ -43,6 +52,12 @@ final class ServerFunctionsTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https,http';
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
+        $_SERVER = ['X_FORWARDED_PROTO' => 'https'];
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+
+        $_SERVER = ['HTTP_X_FORWARDED_PROTOCOL' => 'https'];
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+
         $_SERVER = ['HTTP_FORWARDED' => 'for=1.2.3.4;proto=https;by=5.6.7.8'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
@@ -53,6 +68,23 @@ final class ServerFunctionsTest extends TestCase
         $_SERVER['HTTPS'] = 'off';
         $_SERVER['SERVER_PORT'] = 80;
         $this->assertFalse(ServerFunctions::isHttpsRequest());
+    }
+
+    public function testIsHttpsRequestHonorsTrustedProxyAllowlistWhenConfigured(): void
+    {
+        putenv('LOTGD_TRUST_FORWARDED_HEADERS=1');
+        putenv('LOTGD_TRUSTED_PROXY_IPS=10.0.0.1,10.0.0.2');
+
+        $_SERVER = [
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => 80,
+        ];
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+
+        $_SERVER['REMOTE_ADDR'] = '10.0.0.2';
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
     }
 
     public function testIsTheServerFull(): void

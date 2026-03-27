@@ -90,11 +90,16 @@ if (!$fp) {
                 $conn = Database::getDoctrineConnection();
                 $paylogTable = Database::prefix('paylog');
                 $emsg = '';
-                $existing = $conn->fetchAssociative(
-                    "SELECT txnid FROM {$paylogTable} WHERE txnid = :txnid",
-                    ['txnid' => (string) $txn_id],
-                    ['txnid' => ParameterType::STRING]
-                );
+                try {
+                    $existing = $conn->fetchAssociative(
+                        "SELECT txnid FROM {$paylogTable} WHERE txnid = :txnid",
+                        ['txnid' => (string) $txn_id],
+                        ['txnid' => ParameterType::STRING]
+                    );
+                } catch (DbalException $exception) {
+                    payment_error(E_ERROR, "Failed to verify transaction duplication: " . $exception->getMessage(), __FILE__, __LINE__);
+                    continue;
+                }
                 if ($existing !== false) {
                     $emsg .= "Already logged this transaction ID ($txn_id)\n";
                     payment_error(E_ERROR, $emsg, __FILE__, __LINE__);
@@ -137,11 +142,16 @@ function writelog($response)
     $donation = (float) $payment_amount;
 
     if (isset($match[1]) && $match[1] > "") {
-        $row = $conn->fetchAssociative(
-            "SELECT acctid FROM {$accountsTable} WHERE login = :login",
-            ['login' => $match[1]],
-            ['login' => ParameterType::STRING]
-        );
+        try {
+            $row = $conn->fetchAssociative(
+                "SELECT acctid FROM {$accountsTable} WHERE login = :login",
+                ['login' => $match[1]],
+                ['login' => ParameterType::STRING]
+            );
+        } catch (DbalException $exception) {
+            payment_error(E_ERROR, "Failed to resolve donation account: " . $exception->getMessage(), __FILE__, __LINE__);
+            return;
+        }
         $acctid = (int) ($row['acctid'] ?? 0);
         if ($acctid > 0) {
             $donation = (float) $payment_amount;
