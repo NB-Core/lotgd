@@ -81,13 +81,14 @@ if (!$fp) {
             // process payment
             if ($payment_status == "Completed" || $payment_status == 'Refunded') {
                 if ($payment_status == 'Refunded') {
-                    //sanitize the data to look like a completed transaction
-                    $payment_amount = $mc_gross;
+                    // Sanitize the refund payload to look like a completed transaction.
+                    // Keep using the already-read mc_gross payload value from $payment_amount.
                     $payment_fee = 0;
                     $txn_type = 'refund';
                 }
                 $conn = Database::getDoctrineConnection();
                 $paylogTable = Database::prefix('paylog');
+                $emsg = '';
                 $existing = $conn->fetchAssociative(
                     "SELECT txnid FROM {$paylogTable} WHERE txnid = :txnid",
                     ['txnid' => (string) $txn_id],
@@ -129,6 +130,10 @@ function writelog($response)
     $conn = Database::getDoctrineConnection();
     $accountsTable = Database::prefix('accounts');
     $paylogTable = Database::prefix('paylog');
+    // Keep defaults explicit so later logic does not rely on conditionally-defined values.
+    $acctid = 0;
+    $processed = 0;
+    $donation = (float) $payment_amount;
 
     if (isset($match[1]) && $match[1] > "") {
         $row = $conn->fetchAssociative(
@@ -136,9 +141,9 @@ function writelog($response)
             ['login' => $match[1]],
             ['login' => ParameterType::STRING]
         );
-        $acctid = $row['acctid'];
+        $acctid = (int) ($row['acctid'] ?? 0);
         if ($acctid > 0) {
-            $donation = $payment_amount;
+            $donation = (float) $payment_amount;
             // if it's a reversal, it'll only post back to us the amount
             // we received back, with out counting the fees, which we
             // receive under a different transaction, but get no
@@ -169,9 +174,7 @@ function writelog($response)
             foreach ($hookresult['messages'] as $id => $message) {
                 debuglog($message, false, $acctid, "donation", 0, false);
             }
-            if ($result > 0) {
-                $processed = 1;
-            }
+            $processed = $result > 0 ? 1 : 0;
         }
     } else {
         $match[1] = "";
@@ -213,8 +216,8 @@ function writelog($response)
             'txnid' => (string) $txn_id,
             'amount' => (string) $payment_amount,
             'name' => (string) $match[1],
-            'acctid' => (int) (isset($acctid) ? $acctid : 0),
-            'processed' => (int) (isset($processed) ? $processed : 0),
+            'acctid' => $acctid,
+            'processed' => $processed,
             'filed' => 0,
             'txfee' => (string) $payment_fee,
             'processdate' => date("Y-m-d H:i:s"),

@@ -161,7 +161,7 @@ if ($op == "commentdelete") {
     if (!isset($comment) || !is_array($comment)) {
         $comment = array();
     }
-    $commentIds = normalizeIntegerKeys($comment);
+    $commentIds = moderateNormalizeIntegerKeys($comment);
     $invalsections = array();
     if ($commentIds !== []) {
         $rows = $conn->fetchAllAssociative(
@@ -242,7 +242,7 @@ if ($op == "") {
     if ($subop == "undelete") {
         $unkeys = Http::post("mod");
         if ($unkeys && is_array($unkeys)) {
-            $modIds = normalizeIntegerKeys($unkeys);
+            $modIds = moderateNormalizeIntegerKeys($unkeys);
             $conn = Database::getDoctrineConnection();
             $moderatedCommentsTable = Database::prefix('moderatedcomments');
             $commentaryTable = Database::prefix('commentary');
@@ -468,7 +468,7 @@ Footer::pageFooter();
  *
  * @return list<int>
  */
-function normalizeIntegerKeys($values): array
+function moderateNormalizeIntegerKeys($values): array
 {
     if (!is_array($values)) {
         return [];

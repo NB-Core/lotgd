@@ -203,13 +203,13 @@ if ($op == "") {
         $output->rawOutput("</td><td>");
         $output->outputNotl("`%%s`0", $row['creaturelevel']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`#%s`0", stripslashes($row['creaturename']));
+        $output->outputNotl("`#%s`0", $row['creaturename']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`!%s`0", stripslashes($row['creatureweapon']));
+        $output->outputNotl("`!%s`0", $row['creatureweapon']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`&%s`0", stripslashes($row['creaturelose']));
+        $output->outputNotl("`&%s`0", $row['creaturelose']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`^%s`0", stripslashes($row['creaturewin']));
+        $output->outputNotl("`^%s`0", $row['creaturewin']);
         $output->rawOutput("</td></tr>");
         $i = !$i;
     }
