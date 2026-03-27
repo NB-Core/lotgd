@@ -283,12 +283,14 @@ class RuntimeHardening
     private static function isTrustedProxy(array $server, array $options): bool
     {
         $trustedProxies = $options['security_trusted_proxies'] ?? [];
-        if (!is_array($trustedProxies) || $trustedProxies === []) {
-            // Trust is explicitly enabled; without a list we accept forwarded
-            // proto from any immediate peer.
-            return true;
+        if (!is_array($trustedProxies)) {
+            $trustedProxies = [];
         }
 
+        if ($trustedProxies === []) {
+            // No trusted proxies configured: do not trust forwarded proto.
+            return false;
+        }
         $remoteAddr = trim((string) ($server['REMOTE_ADDR'] ?? ''));
         if ($remoteAddr === '') {
             return false;
