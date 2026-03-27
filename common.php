@@ -32,6 +32,7 @@ use Lotgd\Cookies;
 use Lotgd\ErrorHandler;
 use Lotgd\Page;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Security\RuntimeHardening;
 
 BootstrapErrorHandler::register();
 // translator ready
@@ -79,6 +80,23 @@ Page::getInstance()->setLogdVersion($logd_version);
 require_once __DIR__ . "/lib/output.php";
 LocalConfig::apply();
 require_once __DIR__ . "/src/Lotgd/Config/constants.php";
+
+/**
+ * Runtime hardening configuration is intentionally loaded from dbconnect.php
+ * so operators can phase in stricter defaults without changing code.
+ */
+$hardeningConfig = [];
+if (file_exists("dbconnect.php")) {
+    $loadedConfig = require "dbconnect.php";
+    if (is_array($loadedConfig)) {
+        $hardeningConfig = $loadedConfig;
+        $config = $loadedConfig;
+    }
+}
+
+$isHttpsRequest = RuntimeHardening::isHttpsRequest($_SERVER);
+$runtimeHardeningOptions = RuntimeHardening::buildOptions($hardeningConfig);
+RuntimeHardening::configureSessionCookie($runtimeHardeningOptions, $isHttpsRequest);
 
 // Legacy, because modules may rely on that, but those files are already migrated to namespace structure
 require_once __DIR__ . "/lib/dbwrapper.php";
@@ -138,6 +156,10 @@ if (!defined('AJAX_MODE')) {
     define('AJAX_MODE', false);
 }
 
+if (!AJAX_MODE) {
+    RuntimeHardening::applyHtmlHeaders($runtimeHardeningOptions, $isHttpsRequest);
+}
+
 //Initialize variables required for this page
 
 // wrappers no longer required for these helpers
@@ -178,7 +200,9 @@ $session =& $_SESSION['session'];
 // like LotGD.net experienced on 7/20/04.
 ob_start();
 if (file_exists("dbconnect.php")) {
-    $config = require "dbconnect.php";
+    if (!is_array($config ?? null)) {
+        $config = require "dbconnect.php";
+    }
 
     if (!is_array($config)) {
         $config = [
@@ -549,6 +573,9 @@ if (
         $session['user']['superuser'] =
             $session['user']['superuser'] | SU_EDIT_USERS;
     }
+
+    // Regenerate session ID when in-session superuser privileges increase.
+    RuntimeHardening::regenerateOnPrivilegeElevation($session);
 
     Translator::translatorSetup();
 }
