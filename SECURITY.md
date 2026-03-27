@@ -84,3 +84,10 @@ These keys are optional and allow phased rollout:
 - If you run behind a reverse proxy/load balancer, enable `SECURITY_TRUST_FORWARDED_PROTO` and set `SECURITY_TRUSTED_PROXIES` so only trusted peers can influence HTTPS detection.
 - Do not enable `SameSite=None` unless TLS is enforced and `Secure` is enabled.
 - Roll out HSTS carefully (start with low `max-age`) and enable preload only after confirming all subdomains are HTTPS-ready.
+## Secure coding baseline
+
+When changing security-sensitive code paths, align implementation and review notes with these project references:
+
+- Doctrine prepared statements baseline: [docs/Doctrine.md#prepared-statements](docs/Doctrine.md#prepared-statements)
+- Async authentication and rate-limit guidance: [AGENTS.md#async--jaxon](AGENTS.md#async--jaxon) and [docs/PasskeyService.md#async-boundary](docs/PasskeyService.md#async-boundary)
+- Session, header, and cookie expectations: [docs/PasskeyService.md#security-model-and-boundaries](docs/PasskeyService.md#security-model-and-boundaries), [UPGRADING.md#6-configuration-changes](UPGRADING.md#6-configuration-changes), and [UPGRADING.md#8-after-upgrade](UPGRADING.md#8-after-upgrade)
