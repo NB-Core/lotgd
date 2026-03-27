@@ -11,6 +11,7 @@ namespace Lotgd;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Security\RuntimeHardening;
 
 class ServerFunctions
 {
@@ -124,111 +125,19 @@ class ServerFunctions
      */
     public static function isHttpsRequest(): bool
     {
-        if (self::shouldTrustForwardedHeaders($_SERVER)) {
-            $forwardedProto = self::extractForwardedProto($_SERVER);
-            if ($forwardedProto === 'https') {
-                return true;
-            }
-
-            $forwardedSsl = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')));
-            if ($forwardedSsl === 'on') {
-                return true;
-            }
-
-            $frontEndHttps = strtolower(trim((string) ($_SERVER['HTTP_FRONT_END_HTTPS'] ?? '')));
-            if ($frontEndHttps === 'on') {
-                return true;
-            }
-
-            $requestScheme = strtolower(trim((string) ($_SERVER['REQUEST_SCHEME'] ?? '')));
-            if ($requestScheme === 'https') {
-                return true;
-            }
-        }
-
-        $https = strtolower(trim((string) ($_SERVER['HTTPS'] ?? '')));
-
-        return ($https !== '' && $https !== 'off' && $https !== '0')
-            || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
-    }
-
-    /**
-     * Extract the original protocol from common proxy forwarding headers.
-     *
-     * Supported forms:
-     * - HTTP_X_FORWARDED_PROTO / FORWARDED_PROTO
-     * - RFC 7239 Forwarded header (`proto=https`)
-     *
-     * @param array<string, mixed> $server
-     *
-     * @return string Normalized protocol token or empty string when unknown.
-     */
-    private static function extractForwardedProto(array $server): string
-    {
-        $candidate = (string) (
-            $server['HTTP_X_FORWARDED_PROTO']
-            ?? $server['X_FORWARDED_PROTO']
-            ?? $server['HTTP_X_FORWARDED_PROTOCOL']
-            ?? $server['HTTP_FORWARDED_PROTO']
-            ?? $server['FORWARDED_PROTO']
-            ?? $server['HTTP_X_URL_SCHEME']
-            ?? ''
-        );
-        if ($candidate !== '') {
-            // Reverse proxies may send comma-separated protocol hops.
-            return strtolower(trim(explode(',', $candidate)[0]));
-        }
-
-        $forwarded = (string) ($server['HTTP_FORWARDED'] ?? '');
-        if ($forwarded === '') {
-            return '';
-        }
-
-        if (preg_match('/(?:^|[;,\\s])proto=([^;,\\s]+)/i', $forwarded, $match) !== 1) {
-            return '';
-        }
-
-        return strtolower(trim($match[1], " \t\n\r\0\x0B\"'"));
-    }
-
-    /**
-     * Decide whether forwarded headers should be trusted for TLS detection.
-     *
-     * `LOTGD_TRUST_FORWARDED_HEADERS` defaults to enabled (`1`) for backward
-     * compatibility. Set it to `0` in direct-ingress deployments.
-     *
-     * Optionally scope trust to known proxy source IPs via
-     * `LOTGD_TRUSTED_PROXY_IPS` (comma-separated exact IP list). When this
-     * allowlist is configured, forwarded headers are ignored unless
-     * `REMOTE_ADDR` matches one of the listed IPs.
-     *
-     * @param array<string, mixed> $server
-     */
-    private static function shouldTrustForwardedHeaders(array $server): bool
-    {
         $trustForwardedRaw = getenv('LOTGD_TRUST_FORWARDED_HEADERS');
         $trustForwardedValue = $trustForwardedRaw === false ? '1' : (string) $trustForwardedRaw;
-        $trustForwarded = strtolower(trim($trustForwardedValue));
-        if (in_array($trustForwarded, ['0', 'false', 'no'], true)) {
-            return false;
-        }
 
-        $trustedProxyIpsRaw = getenv('LOTGD_TRUSTED_PROXY_IPS');
-        $trustedProxyIps = $trustedProxyIpsRaw === false ? '' : trim((string) $trustedProxyIpsRaw);
-        if ($trustedProxyIps === '') {
-            return true;
-        }
-
-        $remoteAddr = trim((string) ($server['REMOTE_ADDR'] ?? ''));
-        if ($remoteAddr === '') {
-            // CLI/test contexts may not provide REMOTE_ADDR. Keep behavior
-            // deterministic there by trusting forwarded headers.
-            return PHP_SAPI === 'cli';
-        }
-
-        $allowed = array_map('trim', explode(',', $trustedProxyIps));
-        $allowed = array_filter($allowed, static fn (string $ip): bool => $ip !== '');
-
-        return in_array($remoteAddr, $allowed, true);
+        return RuntimeHardening::isHttpsRequest(
+            $_SERVER,
+            [
+                'SECURITY_TRUST_FORWARDED_PROTO' => !in_array(
+                    strtolower(trim($trustForwardedValue)),
+                    ['0', 'false', 'no'],
+                    true
+                ),
+                'SECURITY_TRUSTED_PROXIES' => getenv('LOTGD_TRUSTED_PROXY_IPS') ?: '',
+            ]
+        );
     }
 }
