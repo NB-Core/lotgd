@@ -190,6 +190,9 @@ final class IpnPaymentProcessor
      * This method intentionally does not fail hard when the row already exists because
      * legacy datasets may already contain duplicate txnid rows; canonical-row ownership
      * checks are applied later before any crediting is attempted.
+     *
+     * When a duplicate txnid is detected, this method resolves and stores the canonical
+     * payid so downstream guarded processing can still claim/process resumable rows.
      */
     private function insertPaylogIfNew(array $post, array $payload, IpnProcessingResult $result): bool
     {
@@ -254,6 +257,7 @@ final class IpnPaymentProcessor
             if ($inserted === 0) {
                 $result->duplicateTransaction = true;
                 $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
+                $result->paylogId = $this->resolveCanonicalPaylogId($txnid, $result);
                 return true;
             }
             $result->paylogInserted = true;
@@ -263,12 +267,35 @@ final class IpnPaymentProcessor
             if ($this->isDuplicateTransactionError($exception)) {
                 $result->duplicateTransaction = true;
                 $result->warnings[] = sprintf('Already logged this transaction ID (%s)', $txnid);
+                $result->paylogId = $this->resolveCanonicalPaylogId($txnid, $result);
                 return true;
             }
 
             $result->errors[] = 'Failed to persist payment log: ' . $exception->getMessage();
             return false;
         }
+    }
+
+    /**
+     * Resolve the canonical paylog identifier for an already-existing transaction.
+     *
+     * Canonical policy is always `MIN(payid)` so retries can safely resume against
+     * the same deterministic row even when legacy duplicate txnid rows exist.
+     */
+    private function resolveCanonicalPaylogId(string $txnid, IpnProcessingResult $result): int
+    {
+        try {
+            $row = $this->connection->fetchAssociative(
+                "SELECT MIN(payid) AS payid FROM {$this->paylogTable} WHERE txnid = :txnid",
+                ['txnid' => $txnid],
+                ['txnid' => ParameterType::STRING]
+            );
+        } catch (Throwable $exception) {
+            $result->errors[] = 'Failed to resolve existing paylog row: ' . $exception->getMessage();
+            return 0;
+        }
+
+        return (int) ($row['payid'] ?? 0);
     }
 
     /**

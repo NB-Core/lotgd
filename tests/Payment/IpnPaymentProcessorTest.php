@@ -14,9 +14,9 @@ final class IpnPaymentProcessorTest extends TestCase
     public function testDuplicateTransactionReturnsNoSecondCredit(): void
     {
         $connection = $this->createConnectionMock();
-        $connection->expects(self::once())
+        $connection->expects(self::exactly(2))
             ->method('fetchAssociative')
-            ->willReturn(false);
+            ->willReturnOnConsecutiveCalls(['payid' => 900], false);
         $connection->expects(self::never())->method('beginTransaction');
         $connection->expects(self::never())->method('lastInsertId');
         $connection->expects(self::once())
@@ -35,6 +35,7 @@ final class IpnPaymentProcessorTest extends TestCase
         self::assertFalse($result->paylogInserted);
         self::assertFalse($result->credited);
         self::assertNotEmpty($result->warnings);
+        self::assertSame(900, $result->paylogId);
     }
 
     public function testFirstDeliveryCreditsOnceAndLogsOnce(): void
@@ -312,5 +313,42 @@ final class IpnPaymentProcessorTest extends TestCase
         self::assertFalse($result->credited);
         self::assertSame(0, $result->processed);
         self::assertTrue($result->duplicateTransaction);
+    }
+
+    public function testDuplicateDeliveryCanResumeCanonicalCreditWhenUnprocessed(): void
+    {
+        $connection = $this->createConnectionMock();
+        $connection->expects(self::exactly(3))
+            ->method('fetchAssociative')
+            ->willReturnOnConsecutiveCalls(
+                ['payid' => 300], // duplicate insert path resolves canonical payid
+                ['acctid' => 13], // account lookup
+                ['payid' => 300, 'processed' => 0] // canonical row state before claim
+            );
+        $connection->expects(self::never())->method('lastInsertId');
+        $connection->expects(self::once())->method('beginTransaction');
+        $connection->expects(self::once())->method('commit');
+        $connection->expects(self::never())->method('rollBack');
+        $connection->expects(self::exactly(4))
+            ->method('executeStatement')
+            ->willReturnOnConsecutiveCalls(
+                0, // insert skipped (duplicate)
+                1, // update paylog acctid using canonical payid
+                1, // claim canonical row processed=0->1
+                1  // credit account donation
+            );
+
+        $processor = new IpnPaymentProcessor($connection, 'accounts', 'paylog');
+        $result = $processor->processVerifiedPayment(
+            ['foo' => 'bar'],
+            $this->buildPayload(),
+            static fn (array $data): array => $data
+        );
+
+        self::assertTrue($result->duplicateTransaction);
+        self::assertFalse($result->paylogInserted);
+        self::assertTrue($result->credited);
+        self::assertSame(1, $result->processed);
+        self::assertSame(300, $result->paylogId);
     }
 }
