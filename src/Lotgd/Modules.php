@@ -152,65 +152,66 @@ class Modules
                 if ($row['filemoddate'] != $filemoddate || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
                     $connection = Database::getDoctrineConnection();
                     $connection->executeStatement('LOCK TABLES ' . Database::prefix('modules') . ' WRITE');
-                    $sql    = 'SELECT filemoddate, infokeys, version FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
-                    $result = $connection->executeQuery(
-                        $sql,
-                        ['modulename' => $moduleName],
-                        ['modulename' => ParameterType::STRING]
-                    );
-                    $row    = Database::fetchAssoc($result);
-                    if ($row['filemoddate'] != $filemoddate || ! isset($row['infokeys']) || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
-                        $output->debug("The module $moduleName was found to have updated, upgrading the module now.");
-                        if (! is_array($info)) {
-                            $fname = $moduleName . '_getmoduleinfo';
-                            $info  = $fname();
-                            if (! isset($info['download'])) {
-                                $info['download'] = '';
-                            }
-                            if (! isset($info['version'])) {
-                                $info['version'] = '0.0';
-                            }
-                            if (! isset($info['description'])) {
-                                $info['description'] = '';
-                            }
-                        }
-                        $keys = '|' . implode('|', array_keys($info)) . '|';
-                        $sql = 'UPDATE ' . Database::prefix('modules')
-                            . ' SET moduleauthor = :moduleauthor, category = :category, formalname = :formalname,'
-                            . ' description = :description, filemoddate = :filemoddate, infokeys = :infokeys,'
-                            . ' version = :version, download = :download WHERE modulename = :modulename';
-                        $connection->executeStatement(
+                    try {
+                        $sql    = 'SELECT filemoddate, infokeys, version FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
+                        $result = $connection->executeQuery(
                             $sql,
-                            [
-                                'moduleauthor' => (string) ($info['author'] ?? ''),
-                                'category' => (string) ($info['category'] ?? ''),
-                                'formalname' => (string) ($info['name'] ?? ''),
-                                'description' => (string) ($info['description'] ?? ''),
-                                'filemoddate' => $filemoddate,
-                                'infokeys' => $keys,
-                                'version' => (string) ($info['version'] ?? ''),
-                                'download' => (string) ($info['download'] ?? ''),
-                                'modulename' => $moduleName,
-                            ],
-                            [
-                                'moduleauthor' => ParameterType::STRING,
-                                'category' => ParameterType::STRING,
-                                'formalname' => ParameterType::STRING,
-                                'description' => ParameterType::STRING,
-                                'filemoddate' => ParameterType::STRING,
-                                'infokeys' => ParameterType::STRING,
-                                'version' => ParameterType::STRING,
-                                'download' => ParameterType::STRING,
-                                'modulename' => ParameterType::STRING,
-                            ]
+                            ['modulename' => $moduleName],
+                            ['modulename' => ParameterType::STRING]
                         );
-                        $output->debug($sql);
-                        $connection->executeStatement('UNLOCK TABLES');
-                        self::wipeHooks();
-                        $fname = $moduleName . '_install';
-                        $fname();
-                        DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
-                    } else {
+                        $row    = Database::fetchAssoc($result);
+                        if ($row['filemoddate'] != $filemoddate || ! isset($row['infokeys']) || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
+                            $output->debug("The module $moduleName was found to have updated, upgrading the module now.");
+                            if (! is_array($info)) {
+                                $fname = $moduleName . '_getmoduleinfo';
+                                $info  = $fname();
+                                if (! isset($info['download'])) {
+                                    $info['download'] = '';
+                                }
+                                if (! isset($info['version'])) {
+                                    $info['version'] = '0.0';
+                                }
+                                if (! isset($info['description'])) {
+                                    $info['description'] = '';
+                                }
+                            }
+                            $keys = '|' . implode('|', array_keys($info)) . '|';
+                            $sql = 'UPDATE ' . Database::prefix('modules')
+                                . ' SET moduleauthor = :moduleauthor, category = :category, formalname = :formalname,'
+                                . ' description = :description, filemoddate = :filemoddate, infokeys = :infokeys,'
+                                . ' version = :version, download = :download WHERE modulename = :modulename';
+                            $connection->executeStatement(
+                                $sql,
+                                [
+                                    'moduleauthor' => (string) ($info['author'] ?? ''),
+                                    'category' => (string) ($info['category'] ?? ''),
+                                    'formalname' => (string) ($info['name'] ?? ''),
+                                    'description' => (string) ($info['description'] ?? ''),
+                                    'filemoddate' => $filemoddate,
+                                    'infokeys' => $keys,
+                                    'version' => (string) ($info['version'] ?? ''),
+                                    'download' => (string) ($info['download'] ?? ''),
+                                    'modulename' => $moduleName,
+                                ],
+                                [
+                                    'moduleauthor' => ParameterType::STRING,
+                                    'category' => ParameterType::STRING,
+                                    'formalname' => ParameterType::STRING,
+                                    'description' => ParameterType::STRING,
+                                    'filemoddate' => ParameterType::STRING,
+                                    'infokeys' => ParameterType::STRING,
+                                    'version' => ParameterType::STRING,
+                                    'download' => ParameterType::STRING,
+                                    'modulename' => ParameterType::STRING,
+                                ]
+                            );
+                            $output->debug($sql);
+                            self::wipeHooks();
+                            $fname = $moduleName . '_install';
+                            $fname();
+                            DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+                        }
+                    } finally {
                         $connection->executeStatement('UNLOCK TABLES');
                     }
                 }
@@ -572,20 +573,20 @@ class Modules
                         $output->debug('Slow Hook (' . round($endtime - $starttime, 2) . 's): ' . $hookName . ' - ' . $row['modulename'] . '`n');
                     }
                     if ($settings->getSetting('debug', 0)) {
-                        $sql = 'INSERT INTO ' . Database::prefix('debug') . ' VALUES (0, :category, :hookName, :moduleName, :duration)';
+                        $sql = 'INSERT INTO ' . Database::prefix('debug') . ' (id, type, category, subcategory, value) VALUES (0, :type, :category, :subcategory, :value)';
                         Database::getDoctrineConnection()->executeStatement(
                             $sql,
                             [
-                                'category' => 'hooktime',
-                                'hookName' => $hookName,
-                                'moduleName' => (string) $row['modulename'],
-                                'duration' => (string) ($endtime - $starttime),
+                                'type' => 'hooktime',
+                                'category' => $hookName,
+                                'subcategory' => (string) $row['modulename'],
+                                'value' => (string) ($endtime - $starttime),
                             ],
                             [
+                                'type' => ParameterType::STRING,
                                 'category' => ParameterType::STRING,
-                                'hookName' => ParameterType::STRING,
-                                'moduleName' => ParameterType::STRING,
-                                'duration' => ParameterType::STRING,
+                                'subcategory' => ParameterType::STRING,
+                                'value' => ParameterType::STRING,
                             ]
                         );
                     }
