@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\ExpireChars;
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +23,12 @@ final class FetchAccountsToExpireQueryTest extends TestCase
     {
         class_exists(Database::class);
         Database::$queries = [];
-        Database::$mockResults = [true];
+        Database::$mockResults = [];
+        CoreDatabase::resetDoctrineConnection();
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
+        $connection->executeQueryParams = [];
+        $connection->executeQueryTypes = [];
     }
 
     /**
@@ -46,18 +53,21 @@ final class FetchAccountsToExpireQueryTest extends TestCase
             $conditions[] = "(laston < '" . $now->modify('-' . ($trash + 1) . ' days')->format('Y-m-d H:i:s') . "' AND level=1 AND experience < 10 AND dragonkills=0)";
         }
 
-        $expected = null;
-        if ($conditions) {
-            $expected = 'SELECT login,acctid,dragonkills,level FROM accounts'
-                . ' WHERE (superuser&' . NO_ACCOUNT_EXPIRATION . ')=0 AND (' . implode(' OR ', $conditions) . ')';
-        }
-
         ExpireChars::fetchAccountsToExpireForTests($old, $new, $trash, $now);
+        $connection = CoreDatabase::getDoctrineConnection();
 
-        if ($expected === null) {
-            $this->assertSame([], Database::$queries);
+        if ($conditions === []) {
+            $this->assertSame([], $connection->queries);
         } else {
-            $this->assertSame($expected, Database::$queries[0]);
+            $this->assertNotEmpty($connection->queries);
+            $sql = $connection->queries[0];
+            $params = $connection->executeQueryParams[0] ?? [];
+            $types = $connection->executeQueryTypes[0] ?? [];
+
+            $this->assertStringContainsString('SELECT login,acctid,dragonkills,level FROM accounts', $sql);
+            $this->assertStringContainsString('(superuser & :noAccountExpiration) = 0', $sql);
+            $this->assertSame(NO_ACCOUNT_EXPIRATION, $params['noAccountExpiration'] ?? null);
+            $this->assertSame(ParameterType::INTEGER, $types['noAccountExpiration'] ?? null);
         }
     }
 

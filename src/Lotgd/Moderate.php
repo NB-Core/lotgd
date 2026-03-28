@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\Nav as Navigation;
 use Lotgd\Output;
@@ -44,36 +45,60 @@ class Moderate
      *
      * @return array<int,array<string,mixed>>
      */
-    private static function getComments(string $sectselect, int $limit, int $com, int $cid, string $section): array
+    private static function getComments(string $whereSql, array $params, array $types, int $limit, int $com, int $cid): array
     {
+        $connection = Database::getDoctrineConnection();
         // Retrieve the batch of comments for this page
         if ($cid == 0) {
-            $sql = 'SELECT ' . Database::prefix('commentary') . '.*, '
+            $queryParams = array_merge($params, [
+                'offset' => $com * $limit,
+                'limit' => $limit,
+            ]);
+            $queryTypes = array_merge($types, [
+                'offset' => ParameterType::INTEGER,
+                'limit' => ParameterType::INTEGER,
+            ]);
+            $result = $connection->executeQuery(
+                'SELECT ' . Database::prefix('commentary') . '.*, '
                 . Database::prefix('accounts') . '.name, '
                 . Database::prefix('accounts') . '.acctid, '
                 . Database::prefix('accounts') . '.clanrank, '
                 . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' LEFT JOIN '
                 . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN '
                 . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE '
-                . "$sectselect (" . Database::prefix('accounts') . ".locked=0 OR " . Database::prefix('accounts') . ".locked is null ) ORDER BY commentid DESC LIMIT " . ($com * $limit) . ",$limit";
-            $result = Database::query($sql);
+                . $whereSql
+                . ' ORDER BY commentid DESC LIMIT :offset,:limit',
+                $queryParams,
+                $queryTypes
+            );
         } else {
-            $sql = 'SELECT ' . Database::prefix('commentary') . '.*, '
+            $queryParams = array_merge($params, [
+                'cid' => $cid,
+                'limit' => $limit,
+            ]);
+            $queryTypes = array_merge($types, [
+                'cid' => ParameterType::INTEGER,
+                'limit' => ParameterType::INTEGER,
+            ]);
+            $result = $connection->executeQuery(
+                'SELECT ' . Database::prefix('commentary') . '.*, '
                 . Database::prefix('accounts') . '.name, '
                 . Database::prefix('accounts') . '.acctid, '
                 . Database::prefix('accounts') . '.clanrank, '
                 . Database::prefix('clans') . '.clanshort FROM ' . Database::prefix('commentary') . ' LEFT JOIN '
                 . Database::prefix('accounts') . ' ON ' . Database::prefix('accounts') . '.acctid = ' . Database::prefix('commentary') . '.author LEFT JOIN '
                 . Database::prefix('clans') . ' ON ' . Database::prefix('clans') . '.clanid=' . Database::prefix('accounts') . '.clanid WHERE '
-                . "$sectselect (" . Database::prefix('accounts') . ".locked=0 OR " . Database::prefix('accounts') . ".locked is null ) AND commentid > '$cid' ORDER BY commentid ASC LIMIT $limit";
-            $result = Database::query($sql);
+                . $whereSql
+                . ' AND commentid > :cid ORDER BY commentid ASC LIMIT :limit',
+                $queryParams,
+                $queryTypes
+            );
         }
 
         $commentbuffer = [];
-        while ($row = Database::fetchAssoc($result)) {
+        while ($row = $result->fetchAssociative()) {
             $commentbuffer[] = $row;
         }
-        Database::freeResult($result);
         if ($cid > 0) {
             // Reverse order when appending new comments to the top
             $commentbuffer = array_reverse($commentbuffer);
@@ -88,6 +113,7 @@ class Moderate
     private static function showNavLinks(string $section, int $limit, int $cid, int $rowcount, bool $jump, int $com, string $requestUri, int $newadded): void
     {
         global $session;
+        $connection = Database::getDoctrineConnection();
 
         $output = Output::getInstance();
 
@@ -98,10 +124,17 @@ class Moderate
         $lastu = Translator::translateInline('Last Page &gt;&gt;');
 
         if ($rowcount >= $limit || $cid > 0) {
-            $sql = "SELECT count(commentid) AS c FROM " . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
-            $r = Database::query($sql);
-            $val = Database::fetchAssoc($r);
-            Database::freeResult($r);
+            $val = $connection->executeQuery(
+                'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . ' WHERE section = :section AND postdate > :recentComments',
+                [
+                    'section' => $section,
+                    'recentComments' => (string) $session['user']['recentcomments'],
+                ],
+                [
+                    'section' => ParameterType::STRING,
+                    'recentComments' => ParameterType::STRING,
+                ]
+            )->fetchAssociative();
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
                 $first = Sanitize::comscrollSanitize($requestUri) . '&comscroll=' . $val;
@@ -176,30 +209,42 @@ class Moderate
         $charset = $settings->getSetting('charset', 'UTF-8');
 
         // Decide whether to limit to a specific section or view all
+        $whereClauses = [];
+        $params = [];
+        $types = [];
         if ($viewall === false) {
             $output->rawOutput("<a name='$section'></a>");
             $args = HookHandler::hook('blockcommentarea', ['section' => $section]);
             if (isset($args['block']) && ($args['block'] == 'yes')) {
                 return;
             }
-            $sectselect = "section='$section' AND ";
-        } else {
-            $sectselect = '';
+            $whereClauses[] = 'section = :section';
+            $params['section'] = $section;
+            $types['section'] = ParameterType::STRING;
         }
+
+        $whereClauses[] = '(' . Database::prefix('accounts') . '.locked = :locked OR ' . Database::prefix('accounts') . '.locked is null)';
+        $params['locked'] = 0;
+        $types['locked'] = ParameterType::INTEGER;
 
         // Some sections may be globally excluded from moderation output
         $excludes = $settings->getSetting('moderateexcludes', '');
         if ($excludes != '') {
             $array = explode(',', $excludes);
-            foreach ($array as $entry) {
-                $sectselect .= "section NOT LIKE '$entry' AND ";
+            foreach ($array as $index => $entry) {
+                $whereClauses[] = 'section NOT LIKE :excludedSection' . $index;
+                $params['excludedSection' . $index] = $entry;
+                $types['excludedSection' . $index] = ParameterType::STRING;
             }
 
             $excludedList = implode(', ', $array);
             if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
                 $output->output('Excluded sections: %s`n', $excludedList);
             }
+        } else {
+            $array = [];
         }
+        $whereSql = implode(' AND ', $whereClauses);
 
         // Determine which translation schema to use for output
         if ($schema === null) {
@@ -246,22 +291,25 @@ class Moderate
         // Count how many new comments have been added since the users last visit
         // Determine how many new comments exist beyond the last id
         if ($com > 0 || $cid > 0) {
-            $sql = 'SELECT COUNT(commentid) AS newadded FROM '
+            $queryParams = array_merge($params, ['cid' => $cid]);
+            $queryTypes = array_merge($types, ['cid' => ParameterType::INTEGER]);
+            $row = Database::getDoctrineConnection()->executeQuery(
+                'SELECT COUNT(commentid) AS newadded FROM '
                 . Database::prefix('commentary') . ' LEFT JOIN '
                 . Database::prefix('accounts') . ' ON '
                 . Database::prefix('accounts') . '.acctid = '
-                . Database::prefix('commentary') . ".author WHERE $sectselect "
-                . '(' . Database::prefix('accounts') . '.locked=0 or ' . Database::prefix('accounts') . ".locked is null) AND commentid > '$cid'";
-            $result = Database::query($sql);
-            $row = Database::fetchAssoc($result);
-            Database::freeResult($result);
+                . Database::prefix('commentary') . '.author WHERE ' . $whereSql
+                . ' AND commentid > :cid',
+                $queryParams,
+                $queryTypes
+            )->fetchAssociative();
             $newadded = (int)$row['newadded'];
         } else {
             $newadded = 0;
         }
 
         // Load the actual comment rows
-        $commentbuffer = self::getComments($sectselect, $limit, $com, $cid, $section);
+        $commentbuffer = self::getComments($whereSql, $params, $types, $limit, $com, $cid);
 
         $rowcount = count($commentbuffer);
         if ($rowcount > 0) {

@@ -62,6 +62,8 @@ class DoctrineConnection
     public array $lastFetchAssociativeTypes = [];
     public array $fetchAssociativeLog = [];
     public array $executeStatements = [];
+    /** @var array<int,int> */
+    public array $executeStatementResults = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
     public array $executeQueryParams = [];
@@ -293,6 +295,9 @@ class DoctrineConnection
         ];
         $this->lastExecuteStatementParams = $params;
         $this->lastExecuteStatementTypes = $types;
+        if ($this->executeStatementResults !== []) {
+            return (int) array_shift($this->executeStatementResults);
+        }
         if (preg_match('/^INSERT INTO\s+`?mail`?/i', $sql)) {
             global $mail_table;
             $mail_table ??= [];

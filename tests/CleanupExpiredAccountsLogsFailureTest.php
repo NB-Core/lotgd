@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\ExpireChars;
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
@@ -21,6 +22,10 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         Database::$queries = [];
         Database::$mockResults = [];
         Database::$affected_rows = 0;
+        CoreDatabase::resetDoctrineConnection();
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
+        $connection->executeStatementResults = [];
 
         if (! class_exists('Lotgd\\Settings', false)) {
             eval('namespace Lotgd; class Settings { public function __construct(string $t = "settings_extended"){} public static function getInstance(): self { return new self(); } public function getSetting(string $n, mixed $d = null): mixed { return $d; } public function saveSetting(string $n, mixed $v): void {} }');
@@ -41,11 +46,12 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
     {
         Database::$mockResults = [
             [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
-            true,
-            true,
-            true,
         ];
-        Database::$affected_rows = 0;
+        CoreDatabase::getDoctrineConnection()->executeStatementResults = [
+            1, // START TRANSACTION
+            0, // DELETE affects 0 rows => failure
+            1, // ROLLBACK
+        ];
 
         ExpireChars::cleanupExpiredAccountsForTests();
 
@@ -53,18 +59,20 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
             ['char deletion failure', 'Failed to delete account 1: deletion failed', 'error'],
         ], \Lotgd\GameLog::$entries);
 
-        $this->assertStringContainsString('ROLLBACK', Database::$queries[3] ?? '');
+        $queries = CoreDatabase::getDoctrineConnection()->queries;
+        $this->assertContains('ROLLBACK', $queries);
     }
 
     public function testLogsOnSuccess(): void
     {
         Database::$mockResults = [
             [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
-            true,
-            true,
-            true,
         ];
-        Database::$affected_rows = 1;
+        CoreDatabase::getDoctrineConnection()->executeStatementResults = [
+            1, // START TRANSACTION
+            1, // DELETE
+            1, // COMMIT
+        ];
 
         ExpireChars::cleanupExpiredAccountsForTests();
 
@@ -74,6 +82,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         $this->assertCount(2, \Lotgd\GameLog::$entries);
         $this->assertSame('info', \Lotgd\GameLog::$entries[1][2] ?? null);
 
-        $this->assertStringContainsString('COMMIT', Database::$queries[3] ?? '');
+        $queries = CoreDatabase::getDoctrineConnection()->queries;
+        $this->assertContains('COMMIT', $queries);
     }
 }

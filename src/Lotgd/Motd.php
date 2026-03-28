@@ -31,12 +31,15 @@ class Motd
     public static function motdAdmin(int $id, bool $poll = false): void
     {
         global $session;
+        $connection = Database::getDoctrineConnection();
         $id = (int)$id;
         if ($id > 0) {
-            $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem=$id";
-            $result = Database::query($sql);
-            if (Database::numRows($result) > 0) {
-                $row = Database::fetchAssoc($result);
+            $row = $connection->executeQuery(
+                'SELECT motdtitle,motdbody,motddate,motdauthor,motdtype FROM ' . Database::prefix('motd') . ' WHERE motditem = :motditem',
+                ['motditem' => $id],
+                ['motditem' => ParameterType::INTEGER]
+            )->fetchAssociative();
+            if ($row !== false) {
                 $subject = $row['motdtitle'];
                 $body = $row['motdbody'];
                 $date = $row['motddate'];
@@ -48,9 +51,13 @@ class Motd
                 }
             }
         }
-        $sql = 'SELECT motdtitle,motdbody,motddate,motdauthor,motditem,motdtype FROM ' . Database::prefix('motd') . ($poll ? ' WHERE motdtype=1' : ' WHERE motdtype=0') . ' ORDER BY motddate DESC';
-        $result = Database::query($sql);
-        while ($row = Database::fetchAssoc($result)) {
+        $result = $connection->executeQuery(
+            'SELECT motdtitle,motdbody,motddate,motdauthor,motditem,motdtype FROM ' . Database::prefix('motd')
+            . ' WHERE motdtype = :motdtype ORDER BY motddate DESC',
+            ['motdtype' => $poll ? 1 : 0],
+            ['motdtype' => ParameterType::INTEGER]
+        );
+        while ($row = $result->fetchAssociative()) {
             if ((int)$row['motdtype'] === 1) {
                 self::pollItem((int)$row['motditem'], $row['motdtitle'], $row['motdbody'], (string)$row['motdauthor'], $row['motddate']);
             } else {
@@ -87,10 +94,20 @@ class Motd
         global $session;
 
         $acctid = isset($session['user']['acctid']) ? (int)$session['user']['acctid'] : 0;
+        $connection = Database::getDoctrineConnection();
 
-        $sql = 'SELECT count(resultid) AS c, MAX(choice) AS choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' AND account='$acctid'";
-        $result = Database::query($sql);
-        $row = Database::numRows($result) > 0 ? Database::fetchAssoc($result) : [];
+        $row = $connection->executeQuery(
+            'SELECT count(resultid) AS c, MAX(choice) AS choice FROM ' . Database::prefix('pollresults')
+            . ' WHERE motditem = :motditem AND account = :acctid',
+            [
+                'motditem' => $id,
+                'acctid' => $acctid,
+            ],
+            [
+                'motditem' => ParameterType::INTEGER,
+                'acctid' => ParameterType::INTEGER,
+            ]
+        )->fetchAssociative() ?: [];
         $choice = $row['choice'] ?? null;
 
         $bodyData = @unserialize(stripslashes($body));
@@ -105,7 +122,7 @@ class Motd
         $output->outputNotl('<div>%s</div>', $bodyText, true);
         $output->outputNotl('<small>%s %s - %s</small>', Translator::translateInline('Posted by'), $author, $date, true);
 
-        $sql = 'SELECT count(resultid) AS c, choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='$id' GROUP BY choice ORDER BY choice";
+        $sql = 'SELECT count(resultid) AS c, choice FROM ' . Database::prefix('pollresults') . " WHERE motditem='" . (int) $id . "' GROUP BY choice ORDER BY choice";
         $results = Database::queryCached($sql, "poll-$id");
         $choices = [];
         $totalanswers = 0;
@@ -160,10 +177,13 @@ class Motd
      */
     public static function motdForm(int $id, array $data = []): void
     {
-        $sql = 'SELECT motdtitle,motdbody,motdtype FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
-        $result = Database::query($sql);
-        if (Database::numRows($result) > 0) {
-            $row = Database::fetchAssoc($result);
+        $connection = Database::getDoctrineConnection();
+        $row = $connection->executeQuery(
+            'SELECT motdtitle,motdbody,motdtype FROM ' . Database::prefix('motd') . ' WHERE motditem = :motditem',
+            ['motditem' => $id],
+            ['motditem' => ParameterType::INTEGER]
+        )->fetchAssociative();
+        if ($row !== false) {
             $title = $row['motdtitle'];
             $body = $row['motdbody'];
             $poll = $row['motdtype'];
@@ -332,8 +352,12 @@ class Motd
      */
     public static function motdDel(int $id): void
     {
-        $sql = 'DELETE FROM ' . Database::prefix('motd') . " WHERE motditem='$id'";
-        Database::query($sql);
+        $connection = Database::getDoctrineConnection();
+        $connection->executeStatement(
+            'DELETE FROM ' . Database::prefix('motd') . ' WHERE motditem = :motditem',
+            ['motditem' => $id],
+            ['motditem' => ParameterType::INTEGER]
+        );
         DataCache::getInstance()->invalidatedatacache('motd');
         DataCache::getInstance()->invalidatedatacache('lastmotd');
         DataCache::getInstance()->invalidatedatacache('motddate');

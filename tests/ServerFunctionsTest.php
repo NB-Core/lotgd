@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\ServerFunctions;
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Tests\Stubs\ServerDummySettings;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
@@ -25,7 +26,12 @@ final class ServerFunctionsTest extends TestCase
         class_exists(Database::class);
         \Lotgd\MySQL\Database::$onlineCounter = 0;
         \Lotgd\MySQL\Database::$settings_table = [];
-        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        CoreDatabase::resetDoctrineConnection();
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
+        $connection->executeQueryParams = [];
+        $connection->executeQueryTypes = [];
+        $connection->countResults = [];
         \Lotgd\MySQL\Database::$instance = null;
     }
 
@@ -129,7 +135,8 @@ final class ServerFunctionsTest extends TestCase
         ]);
         $GLOBALS['settings'] = $settings;
 
-        \Lotgd\MySQL\Database::$onlineCounter = 3;
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->countResults = [3];
         $this->assertFalse(ServerFunctions::isTheServerFull());
         $this->assertSame(3, $settings->getSetting('OnlineCount'));
 

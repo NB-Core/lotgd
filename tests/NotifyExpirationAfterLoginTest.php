@@ -6,6 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\Accounts;
 use Lotgd\ExpireChars;
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\DbMysqli;
 use Lotgd\Tests\Stubs\Database;
@@ -27,7 +28,7 @@ final class NotifyExpirationAfterLoginTest extends TestCase
         if (!class_exists('Lotgd\\Doctrine\\Bootstrap', false)) {
             require __DIR__ . '/Stubs/DoctrineBootstrap.php';
         }
-        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        CoreDatabase::resetDoctrineConnection();
         \Lotgd\MySQL\Database::$instance = null;
         \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
         Database::$queries = [];
@@ -82,12 +83,13 @@ final class NotifyExpirationAfterLoginTest extends TestCase
             [
                 ['login' => 'tester', 'acctid' => 1, 'emailaddress' => 'tester@example.com'],
             ],
-            true,
         ];
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
 
         ExpireChars::notifyUpcomingExpirationsForTests();
 
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
-        $this->assertStringContainsString('sentnotice=1', end(Database::$queries));
+        $this->assertStringContainsString('sentnotice = :sentNotice', (string) end($connection->queries));
     }
 }

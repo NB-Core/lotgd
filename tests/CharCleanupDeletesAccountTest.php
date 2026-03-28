@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
@@ -19,6 +20,10 @@ final class CharCleanupDeletesAccountTest extends TestCase
     {
         Database::$queries = [];
         Database::$mockResults = [];
+        CoreDatabase::resetDoctrineConnection();
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
+        $connection->executeStatementResults = [];
     }
 
     public function testExpireCharsDeletesOnCleanupSuccess(): void
@@ -36,12 +41,12 @@ final class CharCleanupDeletesAccountTest extends TestCase
         Database::$mockResults = [
             [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
         ];
-        Database::$affected_rows = 1;
 
         \Lotgd\ExpireChars::cleanupExpiredAccountsForTests();
 
-        $this->assertStringContainsString('START TRANSACTION', Database::$queries[1] ?? '');
-        $this->assertStringContainsString('DELETE FROM accounts WHERE acctid=1', Database::$queries[2] ?? '');
-        $this->assertStringContainsString('COMMIT', Database::$queries[3] ?? '');
+        $queries = CoreDatabase::getDoctrineConnection()->queries;
+        $this->assertStringContainsString('START TRANSACTION', $queries[1] ?? '');
+        $this->assertStringContainsString('DELETE FROM accounts WHERE acctid = :acctid', $queries[2] ?? '');
+        $this->assertStringContainsString('COMMIT', $queries[3] ?? '');
     }
 }
