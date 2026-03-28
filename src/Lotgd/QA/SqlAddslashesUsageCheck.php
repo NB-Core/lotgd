@@ -65,7 +65,11 @@ final class SqlAddslashesUsageCheck
      *     target_removal_version: string
      * }>
      */
-    private const LEGACY_SQL_ADDSLASHES_BASELINE = [];
+    private const LEGACY_SQL_ADDSLASHES_BASELINE = [
+        // Baseline intentionally empty after staged Doctrine migrations.
+        // Keep array entry format documented above when temporary exceptions
+        // are unavoidable for legacy-only compatibility paths.
+    ];
 
     /**
      * @return list<string> Human-readable violations in "file:line:text" format.

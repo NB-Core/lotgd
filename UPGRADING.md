@@ -221,7 +221,14 @@ If you maintain custom overrides of any migrated page, update those overrides to
 
 ### SQL addslashes baseline status
 
-The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) is now empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage in `pages/` or `src/` will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.
+The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) remains empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage in `pages/` or `src/` will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.
+
+A companion guard (`src/Lotgd/QA/InterpolatedDatabaseQueryCheck.php`) now flags new dynamic `Database::query(...)` usage under `src/Lotgd` except for explicitly whitelisted legacy-heavy paths (`Modules.php`, `Commentary.php`, `Newday.php`, `Pvp.php`) that are still under staged migration.
+
+Recent hardening pass migration status:
+
+- Fully migrated (DBAL parameter binding): `src/Lotgd/Security/PasskeyCredentialRepository.php`, `src/Lotgd/CheckBan.php`, `src/Lotgd/ForcedNavigation.php`, `src/Lotgd/Async/Handler/Timeout.php`, and `src/Lotgd/PlayerFunctions.php`.
+- Partially migrated (legacy SQL still present in staged areas): `src/Lotgd/Modules.php`, `src/Lotgd/Newday.php`, `src/Lotgd/Commentary.php`, `src/Lotgd/Pvp.php`.
 
 ### Refactoring Legacy SQL to Prepared Statements
 

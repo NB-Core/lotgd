@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Security;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 
 /**
@@ -39,7 +40,11 @@ class PasskeyCredentialRepository
         // which prevents false negatives from legacy-wrapper-specific checks.
         $acctId = max(0, $acctId);
         $table = Database::prefix(self::TABLE_NAME);
-        $result = Database::query("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE acctid = {$acctId} ORDER BY created_at ASC");
+        $result = Database::getDoctrineConnection()->executeQuery(
+            "SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE acctid = :acctid ORDER BY created_at ASC",
+            ['acctid' => $acctId],
+            ['acctid' => ParameterType::INTEGER]
+        );
 
         $items = [];
         while ($row = Database::fetchAssoc($result)) {
@@ -65,10 +70,19 @@ class PasskeyCredentialRepository
     public function findByCredentialId(string $credentialId): ?array
     {
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = Database::escape($credentialId);
-        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
+        $credentialIdHash = $this->credentialIdHash($credentialId);
         $table = Database::prefix(self::TABLE_NAME);
-        $result = Database::query("SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}' LIMIT 1");
+        $result = Database::getDoctrineConnection()->executeQuery(
+            "SELECT acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at FROM {$table} WHERE credential_id_hash = :credential_id_hash AND credential_id = :credential_id LIMIT 1",
+            [
+                'credential_id_hash' => $credentialIdHash,
+                'credential_id' => $credentialId,
+            ],
+            [
+                'credential_id_hash' => ParameterType::STRING,
+                'credential_id' => ParameterType::STRING,
+            ]
+        );
         $row = Database::fetchAssoc($result);
 
         if (!is_array($row)) {
@@ -100,19 +114,39 @@ class PasskeyCredentialRepository
         int $createdAt
     ): void {
         $table = Database::prefix(self::TABLE_NAME);
+        $connection = Database::getDoctrineConnection();
         $acctId = max(0, $acctId);
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = Database::escape($credentialId);
-        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
-        $publicKeyPem = Database::escape($publicKeyPem);
+        $credentialIdHash = $this->credentialIdHash($credentialId);
         $signCount = max(0, $signCount);
-        $label = Database::escape(trim($label));
-        $transports = Database::escape($transports);
+        $label = trim($label);
         $createdAt = max(0, $createdAt);
 
-        Database::query(
+        $connection->executeStatement(
             "INSERT INTO {$table} (acctid, credential_id, credential_id_hash, public_key, sign_count, label, transports, created_at, last_used_at)"
-            . " VALUES ({$acctId}, '{$credentialIdEscaped}', '{$credentialIdHashEscaped}', '{$publicKeyPem}', {$signCount}, '{$label}', '{$transports}', {$createdAt}, 0)"
+            . ' VALUES (:acctid, :credential_id, :credential_id_hash, :public_key, :sign_count, :label, :transports, :created_at, :last_used_at)',
+            [
+                'acctid' => $acctId,
+                'credential_id' => $credentialId,
+                'credential_id_hash' => $credentialIdHash,
+                'public_key' => $publicKeyPem,
+                'sign_count' => $signCount,
+                'label' => $label,
+                'transports' => $transports,
+                'created_at' => $createdAt,
+                'last_used_at' => 0,
+            ],
+            [
+                'acctid' => ParameterType::INTEGER,
+                'credential_id' => ParameterType::STRING,
+                'credential_id_hash' => ParameterType::STRING,
+                'public_key' => ParameterType::STRING,
+                'sign_count' => ParameterType::INTEGER,
+                'label' => ParameterType::STRING,
+                'transports' => ParameterType::STRING,
+                'created_at' => ParameterType::INTEGER,
+                'last_used_at' => ParameterType::INTEGER,
+            ]
         );
     }
 
@@ -123,12 +157,25 @@ class PasskeyCredentialRepository
     {
         $table = Database::prefix(self::TABLE_NAME);
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = Database::escape($credentialId);
-        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
+        $credentialIdHash = $this->credentialIdHash($credentialId);
         $signCount = max(0, $signCount);
         $lastUsedAt = max(0, $lastUsedAt);
 
-        Database::query("UPDATE {$table} SET sign_count = {$signCount}, last_used_at = {$lastUsedAt} WHERE credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
+        Database::getDoctrineConnection()->executeStatement(
+            "UPDATE {$table} SET sign_count = :sign_count, last_used_at = :last_used_at WHERE credential_id_hash = :credential_id_hash AND credential_id = :credential_id",
+            [
+                'sign_count' => $signCount,
+                'last_used_at' => $lastUsedAt,
+                'credential_id_hash' => $credentialIdHash,
+                'credential_id' => $credentialId,
+            ],
+            [
+                'sign_count' => ParameterType::INTEGER,
+                'last_used_at' => ParameterType::INTEGER,
+                'credential_id_hash' => ParameterType::STRING,
+                'credential_id' => ParameterType::STRING,
+            ]
+        );
     }
 
     /**
@@ -137,13 +184,25 @@ class PasskeyCredentialRepository
     public function deleteForAccount(int $acctId, string $credentialId): bool
     {
         $table = Database::prefix(self::TABLE_NAME);
+        $connection = Database::getDoctrineConnection();
         $acctId = max(0, $acctId);
         $credentialId = trim($credentialId);
-        $credentialIdEscaped = Database::escape($credentialId);
-        $credentialIdHashEscaped = Database::escape($this->credentialIdHash($credentialId));
-        Database::query("DELETE FROM {$table} WHERE acctid = {$acctId} AND credential_id_hash = '{$credentialIdHashEscaped}' AND credential_id = '{$credentialIdEscaped}'");
+        $credentialIdHash = $this->credentialIdHash($credentialId);
+        $affectedRows = $connection->executeStatement(
+            "DELETE FROM {$table} WHERE acctid = :acctid AND credential_id_hash = :credential_id_hash AND credential_id = :credential_id",
+            [
+                'acctid' => $acctId,
+                'credential_id_hash' => $credentialIdHash,
+                'credential_id' => $credentialId,
+            ],
+            [
+                'acctid' => ParameterType::INTEGER,
+                'credential_id_hash' => ParameterType::STRING,
+                'credential_id' => ParameterType::STRING,
+            ]
+        );
 
-        return Database::affectedRows() > 0;
+        return $affectedRows > 0;
     }
 
     /**

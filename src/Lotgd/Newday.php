@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
@@ -49,39 +50,55 @@ class Newday
     {
         global $session;
         $settings = Settings::getInstance();
+        $connection = Database::getDoctrineConnection();
 
         $timestamp = self::calculateExpirationTimestamp('2 month');
-        Database::query('DELETE FROM ' . Database::prefix('referers') . " WHERE last < '$timestamp'");
+        $affectedRows = $connection->executeStatement(
+            'DELETE FROM ' . Database::prefix('referers') . ' WHERE last < :timestamp',
+            ['timestamp' => $timestamp],
+            ['timestamp' => ParameterType::STRING]
+        );
         GameLog::log(
-            'Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('referers') . " older than $timestamp.",
+            'Deleted ' . $affectedRows . ' records from ' . Database::prefix('referers') . " older than $timestamp.",
             'maintenance',
             false,
             $session['user']['acctid'] ?? 0
         );
 
-        $timestamp = date('Y-m-d H:i:s', strtotime('now'));
-        $sql = 'INSERT IGNORE INTO ' . Database::prefix('debuglog_archive') .
-            ' SELECT * FROM ' . Database::prefix('debuglog') . " WHERE date <'$timestamp'";
-        $ok = Database::query($sql);
-        if ($ok) {
-            $sql = 'DELETE FROM ' . Database::prefix('debuglog') . " WHERE date <'$timestamp'";
-            Database::query($sql);
+        $moveCutoff = date('Y-m-d H:i:s', strtotime('now'));
+        try {
+            $movedToArchive = $connection->executeStatement(
+                'INSERT IGNORE INTO ' . Database::prefix('debuglog_archive') .
+                ' SELECT * FROM ' . Database::prefix('debuglog') . ' WHERE date < :timestamp',
+                ['timestamp' => $moveCutoff],
+                ['timestamp' => ParameterType::STRING]
+            );
+            $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('debuglog') . ' WHERE date < :timestamp',
+                ['timestamp' => $moveCutoff],
+                ['timestamp' => ParameterType::STRING]
+            );
 
-            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiredebuglog', 18) . ' days');
-            $sql = 'DELETE FROM ' . Database::prefix('debuglog_archive') . " WHERE date <'$timestamp'";
+            $purgeCutoff = self::calculateExpirationTimestamp($settings->getSetting('expiredebuglog', 18) . ' days');
+            $expiredArchiveRows = 0;
             if ($settings->getSetting('expiredebuglog', 18) > 0) {
-                Database::query($sql);
+                $expiredArchiveRows = $connection->executeStatement(
+                    'DELETE FROM ' . Database::prefix('debuglog_archive') . ' WHERE date < :timestamp',
+                    ['timestamp' => $purgeCutoff],
+                    ['timestamp' => ParameterType::STRING]
+                );
             }
 
             GameLog::log(
-                'Moved ' . Database::affectedRows() . ' from ' . Database::prefix('debuglog') . ' to ' . Database::prefix('debuglog_archive') . " older than $timestamp.",
+                'Moved ' . $movedToArchive . ' from ' . Database::prefix('debuglog') . ' to ' . Database::prefix('debuglog_archive')
+                . " older than $moveCutoff. Purged $expiredArchiveRows archived rows older than $purgeCutoff.",
                 'maintenance',
                 false,
                 $session['user']['acctid'] ?? 0
             );
-        } else {
+        } catch (\Exception $e) {
             GameLog::log(
-                'ERROR, problems with moving the debuglog to the archive',
+                'ERROR, problems with moving the debuglog to the archive: ' . $e->getMessage(),
                 'maintenance',
                 false,
                 $session['user']['acctid'] ?? 0,
@@ -90,10 +107,13 @@ class Newday
         }
 
         $timestamp = self::calculateExpirationTimestamp($settings->getSetting('oldmail', 14) . ' days');
-        $sql = 'DELETE FROM ' . Database::prefix('mail') . " WHERE sent<'$timestamp'";
-        Database::query($sql);
+        $affectedRows = $connection->executeStatement(
+            'DELETE FROM ' . Database::prefix('mail') . ' WHERE sent < :timestamp',
+            ['timestamp' => $timestamp],
+            ['timestamp' => ParameterType::STRING]
+        );
         GameLog::log(
-            'Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('mail') . " older than $timestamp.",
+            'Deleted ' . $affectedRows . ' records from ' . Database::prefix('mail') . " older than $timestamp.",
             'maintenance',
             false,
             $session['user']['acctid'] ?? 0
@@ -102,58 +122,73 @@ class Newday
 
         if ((int) $settings->getSetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
-            $sql = 'DELETE FROM ' . Database::prefix('news') . " WHERE newsdate<'$timestamp'";
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('news') . ' WHERE newsdate < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
             GameLog::log(
-                'Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('news') . " older than $timestamp.",
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('news') . " older than $timestamp.",
                 'comment expiration',
                 false,
                 $session['user']['acctid'] ?? 0
             );
-            Database::query($sql);
         }
 
         $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiregamelog', 30) . ' days');
-        $sql = 'DELETE FROM ' . Database::prefix('gamelog') . " WHERE date < '$timestamp' ";
         if ($settings->getSetting('expiregamelog', 30) > 0) {
-            Database::query($sql);
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('gamelog') . ' WHERE date < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
             GameLog::log(
-                'Cleaned up ' . Database::prefix('gamelog') . ' table removing ' . Database::affectedRows() . " older than $timestamp.",
+                'Cleaned up ' . Database::prefix('gamelog') . ' table removing ' . $affectedRows . " older than $timestamp.",
                 'maintenance',
                 false,
                 $session['user']['acctid'] ?? 0
             );
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('commentary') . " WHERE postdate<'" . self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days') . "'";
         if ($settings->getSetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
-            Database::query($sql);
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('commentary') . ' WHERE postdate < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
             GameLog::log(
-                'Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('commentary') . " older than $timestamp.",
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('commentary') . " older than $timestamp.",
                 'comment expiration',
                 false,
                 $session['user']['acctid'] ?? 0
             );
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('moderatedcomments') . " WHERE moddate<'" . self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days') . "'";
         if ($settings->getSetting('expirecontent', 180) > 0) {
             $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
-            Database::query($sql);
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('moderatedcomments') . ' WHERE moddate < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
             GameLog::log(
-                'Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('moderatedcomments') . " older than $timestamp.",
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('moderatedcomments') . " older than $timestamp.",
                 'comment expiration',
                 false,
                 $session['user']['acctid'] ?? 0
             );
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('faillog') . " WHERE date<'" . self::calculateExpirationTimestamp($settings->getSetting('expirefaillog', 1) . ' days') . "'";
         if ($settings->getSetting('expirefaillog', 1) > 0) {
-            Database::query($sql);
-            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
+            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirefaillog', 1) . ' days');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('faillog') . ' WHERE date < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
             GameLog::log(
-                'Deleted ' . Database::affectedRows() . ' records from ' . Database::prefix('faillog') . " older than $timestamp.",
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('faillog') . " older than $timestamp.",
                 'maintenance',
                 false,
                 $session['user']['acctid'] ?? 0
