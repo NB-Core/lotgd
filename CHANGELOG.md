@@ -11,25 +11,35 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 ## [Unreleased]
 
 ### Features
-- Route passkey registration/authentication ceremonies through a dedicated Jaxon async handler (`Lotgd.Async.Handler.TwoFactorAuthPasskey`) to keep setup and challenge flows on `/async/process.php`.
-- Add migration/installer alignment for the `twofactorauth_passkeys` table so upgraded environments get the same schema/index/charset guarantees as fresh installs.
+- Add centralized runtime hardening bootstrap so deployments get safer defaults for HTTPS detection, proxy signaling, and request-surface protections out of the box.
+- Improve installer security defaults and enable stronger admin guidance via the recommendations module during first-run setup.
 
 ### Security
-- Harden passkey challenge enforcement with account-bound pending-state checks, tighter CSRF validation for async passkey operations, and stricter module-pref namespace handling.
-- Pin Jaxon transport to `/async/process.php` for passkey calls and guard setup/challenge route handling to prevent forced-nav HTML responses from breaking JSON callback contracts.
-- Expand passkey verification diagnostics and error-path controls while preserving opaque user-facing failure messages for non-megausers.
+- Harden HTTPS/proxy detection by validating forwarded-proto handling paths, including `HTTP_FORWARDED_PROTO` and related trusted-header guardrails.
+- Strengthen payment/IPN duplicate handling with canonical paylog resolution, idempotency checks, and safer failure behavior when canonical rows cannot be resolved.
+- Continue the superuser/core SQL hardening wave by parameterizing high-risk paths across create/referers/creatures/masters/modules/paylog/payment code paths.
+- Enforce and tighten the SQL `addslashes` QA baseline to block regressions back to unsafe query construction patterns.
 
 ### Bug Fixes
-- Add a Doctrine migration that backfills the `twofactorauth_passkeys` table for existing installs, including index/charset parity with installer schema definitions.
-- Stabilize 2FA passkey setup/challenge async flows by isolating setup endpoints from normal nav lifecycle checks and restoring reliable callback dispatch.
-- Fix Jaxon handler/bootstrap compatibility regressions (constructor/injection seams, async bootstrap buffering, request URI override ordering, and challenge-route polling behavior).
-- Improve passkey registration begin/finish failure handling to return consistent JSON payloads instead of transport/parser failures.
+- Fix payment/IPN edge cases around duplicate callbacks, canonical paylog selection, and retry consistency so credits are applied exactly once.
+- Resolve follow-up regressions in proxy-aware HTTPS detection and runtime hardening bootstrap behavior across mixed hosting/proxy setups.
+- Correct module/object preference cache invalidation and related typing issues discovered during the SQL hardening migration wave.
 
-### Tests
-- Extend async and 2FA verification coverage around passkey handler behavior, callback contracts, and challenge-flow lock/error assertions.
+### Refactor
+- Migrate additional legacy SQL reads/writes to Doctrine DBAL with explicit typed bindings across superuser and core maintenance/admin flows.
+- Normalize query structure in multiple admin endpoints to reduce ad-hoc SQL handling and improve long-term maintainability.
+
+### Dependencies/Tooling
+- Transition CI and release workflows to Node.js 24 in GitHub Actions.
+- Raise static analysis memory defaults and tighten QA tooling heuristics to keep large security migration waves reliable in CI.
 
 ### Docs
-- Add `docs/PasskeyService.md` describing core passkey service usage, security boundaries, and integration points with `modules/twofactorauth.php`.
+- Clarify canonical payment idempotency policy and duplicate-IPN test scope for operators and contributors.
+- Add/expand security review and hardening checklist guidance for repository contributors.
+
+### Tests
+- Add and extend regression coverage for runtime hardening, forwarded-proto handling, payment/IPN idempotency, and superuser endpoint SQL hardening waves.
+- Strengthen SQL QA baseline tests to ensure `addslashes` enforcement remains stable as additional legacy paths are migrated.
 
 ## [2.0.4] – 2026-03-10
 
