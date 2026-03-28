@@ -487,7 +487,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                             ],
                             [
                                 'acctid' => ParameterType::INTEGER,
-                                'output' => ParameterType::STRING,
+                                'output' => ParameterType::LARGE_OBJECT,
                             ]
                         );
                         //end
