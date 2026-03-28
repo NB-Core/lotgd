@@ -12,6 +12,10 @@ use Lotgd\Http;
  * addslashes()-escaped scalar values. Core/refactored code must use
  * Lotgd\Http directly, which intentionally returns raw values.
  *
+ * Security note: this helper is legacy-compatibility behavior only and is not
+ * an SQL-safety boundary. Core code must validate/cast input and bind DBAL
+ * parameters at the query sink.
+ *
  * @param mixed $value
  *
  * @return mixed
