@@ -103,7 +103,9 @@ final class SqlAddslashesUsageCheck
                     continue;
                 }
 
-                $violations = array_merge($violations, $this->collectFileViolations($file->getPathname(), $relativePath));
+                foreach ($this->collectFileViolations($file->getPathname(), $relativePath) as $violation) {
+                    $violations[] = $violation;
+                }
             }
         }
 

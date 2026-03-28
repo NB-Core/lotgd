@@ -762,6 +762,15 @@ class Modules
      */
     public static function deleteObjPrefs(string $objtype, $objid): void
     {
+        /**
+         * Normalize object IDs the same way as getObjPref()/setObjPref() so
+         * DataCache invalidation keys remain consistent across numeric-string
+         * caller inputs (for example "001" versus 1).
+         *
+         * @var int $objid
+         */
+        $objid = (int) $objid;
+
         $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . " WHERE objtype='$objtype' AND objid='$objid'";
         Database::query($sql);
         DataCache::getInstance()->massinvalidate("objpref-$objtype-$objid");
