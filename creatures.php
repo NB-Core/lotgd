@@ -350,6 +350,8 @@ if ($op == "" || $op == "search") {
                 $row = $result->fetchAssociative();
                 if ($row === false) {
                     $output->output("`4Error`0, that creature was not found!");
+                    Footer::pageFooter();
+                    return;
                 } else {
                     $level = $row['creaturelevel'];
                 }
