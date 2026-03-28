@@ -209,13 +209,33 @@ if ($op == "" || $op == "search") {
         $level = 1;
     }
     $q = Http::post("q");
-    if ($q) {
-        $where = "creaturename LIKE '%$q%' OR creaturecategory LIKE '%$q%' OR creatureweapon LIKE '%$q%' OR creaturelose LIKE '%$q%' OR createdby LIKE '%$q%'";
+    $conn = Database::getDoctrineConnection();
+    $creaturesTable = Database::prefix('creatures');
+
+    /**
+     * Build the creature list query with strict parameter binding.
+     *
+     * Search mode uses a shared LIKE pattern across all searchable columns so
+     * user-controlled terms never get concatenated into SQL.
+     */
+    $params = [];
+    $types = [];
+    if (is_string($q) && $q !== '') {
+        $sql = "SELECT * FROM {$creaturesTable}
+            WHERE creaturename LIKE :searchTerm
+               OR creaturecategory LIKE :searchTerm
+               OR creatureweapon LIKE :searchTerm
+               OR creaturelose LIKE :searchTerm
+               OR createdby LIKE :searchTerm
+            ORDER BY creaturelevel, creaturename";
+        $params['searchTerm'] = '%' . $q . '%';
+        $types['searchTerm'] = ParameterType::STRING;
     } else {
-        $where = "creaturelevel='$level'";
+        $sql = "SELECT * FROM {$creaturesTable} WHERE creaturelevel = :level ORDER BY creaturelevel, creaturename";
+        $params['level'] = $level;
+        $types['level'] = ParameterType::INTEGER;
     }
-    $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE $where ORDER BY creaturelevel,creaturename";
-    $result = Database::query($sql);
+    $result = $conn->executeQuery($sql, $params, $types);
     // Search form
     $search = Translator::translateInline("Search");
     $output->rawOutput("<form action='creatures.php?op=search' method='POST'>");
@@ -260,7 +280,7 @@ if ($op == "" || $op == "search") {
     $output->rawOutput("<td>$opshead</td><td>$idhead</td><td>$name</td><td>$cat</td><td>$lev</td><td>$weapon</td><td>$script</td><td>$winmsg</td><td>$diemsg</td><td>$forest_text</td><td>$graveyard_text</td><td>$author</td></tr>");
     Nav::add("", "creatures.php");
     $i = true;
-    while ($row = Database::fetchAssoc($result)) {
+    while ($row = $result->fetchAssociative()) {
         $i = !$i;
         $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'>", true);
         $output->rawOutput("<td>[ <a href='creatures.php?op=edit&creatureid={$row['creatureid']}'>");
