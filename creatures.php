@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -81,11 +82,21 @@ if ($op == "save") {
     if ($subop == "") {
         $post = httpallpost();
         $lev = (int)Http::post('creaturelevel');
+        $conn = Database::getDoctrineConnection();
+        $creaturesTable = Database::prefix('creatures');
         if ($id) {
-            $sql = "";
+            $setClauses = [];
+            $params = [];
+            $types = [];
             foreach ($post as $key => $val) {
-                if (substr($key, 0, 8) == "creature") {
-                    $sql .= "$key = '$val', ";
+                if (!is_string($key) || !is_scalar($val)) {
+                    continue;
+                }
+                if (substr($key, 0, 8) == "creature" && preg_match('/^creature[a-z0-9_]+$/i', $key) === 1) {
+                    $paramKey = 'set_' . $key;
+                    $setClauses[] = "{$key} = :{$paramKey}";
+                    $params[$paramKey] = (string) $val;
+                    $types[$paramKey] = ParameterType::STRING;
                 }
             }
             foreach ($creaturestats[$lev] as $key => $val) {
@@ -93,40 +104,64 @@ if ($op == "save") {
                     continue;
                 }
                 if ($key != "creaturelevel" && substr($key, 0, 8) == "creature") {
-                    $sql .= "$key = \"" . addslashes($val) . "\", ";
+                    $paramKey = 'default_' . $key;
+                    $setClauses[] = "{$key} = :{$paramKey}";
+                    $params[$paramKey] = (string) $val;
+                    $types[$paramKey] = ParameterType::STRING;
                 }
             }
-            $sql .= " forest='$forest', ";
-            $sql .= " graveyard='$grave', ";
-            $sql .= " createdby='" . $session['user']['login'] . "' ";
-            $sql = "UPDATE " . Database::prefix("creatures") . " SET " . $sql . " WHERE creatureid='$id'";
-            $result = Database::query($sql) or $output->output("`\$" . Database::error(LINK) . "`0`n`#$sql`0`n");
+            $setClauses[] = 'forest = :forest';
+            $setClauses[] = 'graveyard = :graveyard';
+            $setClauses[] = 'createdby = :createdby';
+            $params['forest'] = $forest;
+            $params['graveyard'] = $grave;
+            $params['createdby'] = (string) $session['user']['login'];
+            $params['id'] = (int) $id;
+            $types['forest'] = ParameterType::INTEGER;
+            $types['graveyard'] = ParameterType::INTEGER;
+            $types['createdby'] = ParameterType::STRING;
+            $types['id'] = ParameterType::INTEGER;
+
+            $sql = "UPDATE {$creaturesTable} SET " . implode(', ', $setClauses) . " WHERE creatureid = :id";
+            $result = $conn->executeStatement($sql, $params, $types) >= 0;
         } else {
             $cols = array();
-            $vals = array();
+            $params = [];
+            $types = [];
 
             foreach ($post as $key => $val) {
-                if (substr($key, 0, 8) == "creature") {
-                    array_push($cols, $key);
-                    array_push($vals, $val);
+                if (!is_string($key) || !is_scalar($val)) {
+                    continue;
+                }
+                if (substr($key, 0, 8) == "creature" && preg_match('/^creature[a-z0-9_]+$/i', $key) === 1) {
+                    $cols[] = $key;
+                    $params[$key] = (string) $val;
+                    $types[$key] = ParameterType::STRING;
                 }
             }
-            array_push($cols, "forest");
-            array_push($vals, $forest);
-            array_push($cols, "graveyard");
-            array_push($vals, $grave);
+            $cols[] = "forest";
+            $params['forest'] = $forest;
+            $types['forest'] = ParameterType::INTEGER;
+            $cols[] = "graveyard";
+            $params['graveyard'] = $grave;
+            $types['graveyard'] = ParameterType::INTEGER;
             reset($creaturestats[$lev]);
             foreach ($creaturestats[$lev] as $key => $val) {
                 if ($post[$key] != "") {
                     continue;
                 }
                 if ($key != "creaturelevel" && substr($key, 0, 8) == "creature") {
-                    array_push($cols, $key);
-                    array_push($vals, $val);
+                    $cols[] = $key;
+                    $params[$key] = (string) $val;
+                    $types[$key] = ParameterType::STRING;
                 }
             }
-            $sql = "INSERT INTO " . Database::prefix("creatures") . " (" . join(",", $cols) . ",createdby) VALUES (\"" . join("\",\"", $vals) . "\",\"" . addslashes($session['user']['login']) . "\")";
-            $result = Database::query($sql);
+            $cols[] = 'createdby';
+            $params['createdby'] = (string) $session['user']['login'];
+            $types['createdby'] = ParameterType::STRING;
+            $placeholders = array_map(static fn (string $column): string => ':' . $column, $cols);
+            $sql = "INSERT INTO {$creaturesTable} (" . implode(',', $cols) . ") VALUES (" . implode(',', $placeholders) . ")";
+            $result = $conn->executeStatement($sql, $params, $types) > 0;
             $id = Database::insertId();
         }
         if ($result) {
@@ -152,9 +187,14 @@ if ($op == "save") {
 $op = Http::get('op');
 $id = Http::get('creatureid');
 if ($op == "del") {
-    $sql = "DELETE FROM " . Database::prefix("creatures") . " WHERE creatureid = '$id'";
-    Database::query($sql);
-    if (Database::affectedRows() > 0) {
+    $conn = Database::getDoctrineConnection();
+    $creaturesTable = Database::prefix('creatures');
+    $affectedRows = $conn->executeStatement(
+        "DELETE FROM {$creaturesTable} WHERE creatureid = :id",
+        ['id' => (int) $id],
+        ['id' => ParameterType::INTEGER]
+    );
+    if ($affectedRows > 0) {
         $output->output("Creature deleted`n`n");
         module_delete_objprefs('creatures', $id);
     } else {

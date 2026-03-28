@@ -205,16 +205,17 @@ Recent 2.x updates switched several superuser and security-sensitive endpoints t
 - `moderate.php` (comment delete / restore writes, moderation inserts, dynamic `IN` list binding with `ArrayParameterType::INTEGER`).
 - `payment.php` (IPN duplicate check, account donation credit update, and paylog persistence writes).
 - `badword.php` (good/nasty word list rewrite operations).
-- `masters.php` (training master insert/update writes).
+- `masters.php` (training master insert/update/delete writes).
 - `titleedit.php` (title insert/update/delete and account title reset updates).
+- `creatures.php` (creature insert/update/delete writes with typed DBAL parameters).
+- `referers.php` (cleanup delete + site rebuild updates now use typed parameter binding).
+- `paylog.php` (process date backfill update is bound through DBAL).
+- `configuration.php` (account location mass updates for village/inn rename flows).
+- `create.php` (validation/forgot-password/email-change account writes now use bound parameters).
 - Previously migrated: `deathmessages.php`, `taunt.php`, `untranslated.php`.
 
 **Pending superuser pages still using legacy string-built writes (track for next waves):**
-- `creatures.php`
-- `referers.php`
-- `paylog.php`
-- `configuration.php`
-- `create.php`
+- None currently tracked in this hardening wave.
 
 If you maintain custom overrides of any migrated page, update those overrides to match bound-parameter execution semantics (including explicit type maps and DBAL array binding for dynamic `IN` clauses).
 

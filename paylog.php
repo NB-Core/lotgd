@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -77,6 +78,8 @@ HookHandler::hook("paylog", array());
 $op = (string) Http::get('op');
 $currency = $settings->getSetting('paypalcurrency', 'USD');
 if ($op == "") {
+    $conn = Database::getDoctrineConnection();
+    $paylogTable = Database::prefix('paylog');
     Nav::add('Actions');
     Nav::add('Refresh', 'paylog.php');
     $sql = "SELECT info,txnid FROM " . Database::prefix("paylog") . " WHERE processdate='" . DATETIME_DATEMIN . "'";
@@ -92,8 +95,17 @@ if ($op == "") {
         if ($normalized['paymentDate'] !== null) {
             $timestamp = strtotime($normalized['paymentDate']);
             if ($timestamp !== false) {
-                $sql = "UPDATE " . Database::prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", $timestamp) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
-                Database::query($sql);
+                $conn->executeStatement(
+                    "UPDATE {$paylogTable} SET processdate = :processdate WHERE txnid = :txnid",
+                    [
+                        'processdate' => date("Y-m-d H:i:s", $timestamp),
+                        'txnid' => (string) $row['txnid'],
+                    ],
+                    [
+                        'processdate' => ParameterType::STRING,
+                        'txnid' => ParameterType::STRING,
+                    ]
+                );
             }
         }
     }
