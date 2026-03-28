@@ -79,4 +79,27 @@ final class SuperuserEndpointHardeningWave2RegressionTest extends TestCase
         self::assertStringContainsString('SET forgottenpassword = :forgottenpassword WHERE login = :login', $source);
         self::assertStringContainsString("'acctid' => ParameterType::INTEGER", $source);
     }
+
+    public function testCreateRegistrationWritesUseBoundParametersForAccountsAndAccountsOutput(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/create.php');
+
+        self::assertStringContainsString(
+            'INSERT INTO {$accountsTable}',
+            $source
+        );
+        self::assertStringContainsString(':playername, :name, :superuser, :title, :password, :password_algo, :sex, :login, :laston, :uniqueid, :lastip, :gold, :location, :emailaddress, :emailvalidation, :referer, NOW(), :badguy, :allowednavs',
+            $source
+        );
+        self::assertStringContainsString("'playername' => ParameterType::STRING", $source);
+        self::assertStringContainsString("'superuser' => ParameterType::INTEGER", $source);
+        self::assertStringContainsString("'gold' => ParameterType::INTEGER", $source);
+        self::assertStringContainsString("'referer' => ParameterType::INTEGER", $source);
+        self::assertStringContainsString('INSERT INTO {$accountsOutputTable} VALUES (:acctid, :output)', $source);
+        self::assertStringContainsString("'output' => ParameterType::STRING", $source);
+        self::assertStringNotContainsString(
+            "('$shortname','$title $shortname'",
+            $source
+        );
+    }
 }
