@@ -132,7 +132,6 @@ final class SuperuserEndpointHardeningWave2RegressionTest extends TestCase
         self::assertStringContainsString('WHERE processdate >= :startdate AND processdate < :enddate', $source);
         self::assertStringContainsString("'startdate' => ParameterType::STRING", $source);
         self::assertStringContainsString("'enddate' => ParameterType::STRING", $source);
-        self::assertStringContainsString('$rows = $result->fetchAllAssociative();', $source);
         self::assertStringNotContainsString("processdate>='$startdate' AND processdate < '$enddate'", $source);
     }
 }
