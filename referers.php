@@ -77,14 +77,16 @@ Header::pageHeader("Referers");
  * Resolve sort safely using a strict allowlist map.
  *
  * Accepted input formats:
+ *  - "count", "uri", "last"
  *  - "count ASC|DESC", "uri ASC|DESC", "last ASC|DESC"
  *
  * Notes:
- *  - Direction defaults to ASC only when the key is valid and direction is omitted.
- *  - Invalid sort values still fall back to count DESC.
+ *  - The direction (ASC|DESC) part is optional; when omitted for a valid key,
+ *    the direction defaults to ASC.
+ *  - Invalid sort keys or directions still fall back to "count DESC".
  *  - Summary/detail sort columns are separated so URL sorting can use `uri`
  *    for detail rows while grouped summary rows still sort by `site`.
- * Defaults to "count DESC" for invalid/missing input.
+ *  Defaults to "count DESC" for invalid/missing input.
  */
 $summaryOrder = 'count DESC';
 $detailOrder = 'count DESC';
