@@ -219,6 +219,10 @@ Recent 2.x updates switched several superuser and security-sensitive endpoints t
 
 If you maintain custom overrides of any migrated page, update those overrides to match bound-parameter execution semantics (including explicit type maps and DBAL array binding for dynamic `IN` clauses).
 
+### SQL addslashes baseline status
+
+The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) is now empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage in `pages/` or `src/` will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.
+
 ### Refactoring Legacy SQL to Prepared Statements
 
 Legacy database calls often used `Lotgd\MySQL\Database::query()` together with manual escaping via `addslashes`. When upgrading, migrate those calls to Doctrine DBAL prepared statements obtained through `Lotgd\MySQL\Database::getDoctrineConnection()`. The following example shows how to convert a legacy lookup:

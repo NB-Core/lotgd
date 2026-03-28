@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\DateTime;
@@ -306,24 +307,51 @@ class Pvp
         $last = date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' sec'));
 
         if ($sql === false) {
-            $loc = addslashes($location);
-            $sql = "SELECT acctid, name, race, alive, location, sex, level, laston, " .
+            $connection = Database::getDoctrineConnection();
+            $params = [
+                'days' => (int) $days,
+                'exp' => (int) $exp,
+                'last' => $last,
+                'id' => (int) $id,
+                'location' => (string) $location,
+            ];
+            $types = [
+                'days' => ParameterType::INTEGER,
+                'exp' => ParameterType::INTEGER,
+                'last' => ParameterType::STRING,
+                'id' => ParameterType::INTEGER,
+                'location' => ParameterType::STRING,
+            ];
+            $levelFilterSql = '';
+            if ($levdiff != -1) {
+                $levelFilterSql = 'AND (level >= :lev1 AND level <= :lev2) ';
+                $params['lev1'] = (int) $lev1;
+                $params['lev2'] = (int) $lev2;
+                $types['lev1'] = ParameterType::INTEGER;
+                $types['lev2'] = ParameterType::INTEGER;
+            }
+
+            $result = $connection->executeQuery(
+                "SELECT acctid, name, race, alive, location, sex, level, laston, " .
                 "loggedin, login, pvpflag, clanshort, clanrank, dragonkills, " .
                 Database::prefix('accounts') . ".clanid FROM " .
                 Database::prefix('accounts') . " LEFT JOIN " .
                 Database::prefix('clans') . " ON " . Database::prefix('clans') . ".clanid=" .
                 Database::prefix('accounts') . ".clanid WHERE (locked=0) " .
                 "AND (slaydragon=0) AND " .
-                "(age>$days OR dragonkills>0 OR pk>0 OR experience>$exp) " .
-                ($levdiff == -1 ? '' : "AND (level>=$lev1 AND level<=$lev2)") .
-                " AND (alive=1) " .
-                "AND (laston<'$last' OR loggedin=0)" .
-                " AND (acctid<>$id) " .
-                "AND location='$loc' " .
-                "ORDER BY location='$loc' DESC, location, level DESC, " .
-                "experience DESC, dragonkills DESC";
+                "(age > :days OR dragonkills > 0 OR pk > 0 OR experience > :exp) " .
+                $levelFilterSql .
+                "AND (alive = 1) " .
+                "AND (laston < :last OR loggedin = 0) " .
+                "AND (acctid <> :id) " .
+                "AND location = :location " .
+                "ORDER BY location = :location DESC, location, level DESC, experience DESC, dragonkills DESC",
+                $params,
+                $types
+            );
+        } else {
+            $result = Database::query((string) $sql);
         }
-        $result = Database::query($sql);
 
         $pvp = [];
         while ($row = Database::fetchAssoc($result)) {

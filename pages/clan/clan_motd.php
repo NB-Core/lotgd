@@ -12,6 +12,7 @@ use Lotgd\Translator;
 use Lotgd\Nltoappon;
 use Lotgd\Output;
 use Lotgd\Settings;
+use Doctrine\DBAL\ParameterType;
 
         Header::pageHeader("Update Clan Description / MoTD");
         Nav::add("Clan Options");
@@ -20,13 +21,25 @@ use Lotgd\Settings;
     $charset = $settings->getSetting('charset', 'UTF-8');
     $charsetIso = $settings->getSetting('charset', 'ISO-8859-1');
 if ($session['user']['clanrank'] >= CLAN_OFFICER) {
+    $connection = Database::getDoctrineConnection();
     $clanmotd = Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, $charsetIso));
     if (
         Http::postIsset('clanmotd') &&
             stripslashes($clanmotd) != $claninfo['clanmotd']
     ) {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET clanmotd='" . addslashes($clanmotd) . "',motdauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
-        Database::query($sql);
+        $connection->executeStatement(
+            "UPDATE " . Database::prefix("clans") . " SET clanmotd = :clanmotd, motdauthor = :motdauthor WHERE clanid = :clanid",
+            [
+                'clanmotd' => $clanmotd,
+                'motdauthor' => (int) $session['user']['acctid'],
+                'clanid' => (int) $claninfo['clanid'],
+            ],
+            [
+                'clanmotd' => ParameterType::STRING,
+                'motdauthor' => ParameterType::INTEGER,
+                'clanid' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $claninfo['clanmotd'] = stripslashes($clanmotd);
         $output->output("Updating MoTD`n");
@@ -39,8 +52,19 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
             stripslashes($clandesc) != $claninfo['clandesc'] &&
             $claninfo['descauthor'] != 4294967295
     ) {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET clandesc='" . addslashes(mb_substr(stripslashes($clandesc), 0, 4096, $charset)) . "',descauthor={$session['user']['acctid']} WHERE clanid={$claninfo['clanid']}";
-        Database::query($sql);
+        $connection->executeStatement(
+            "UPDATE " . Database::prefix("clans") . " SET clandesc = :clandesc, descauthor = :descauthor WHERE clanid = :clanid",
+            [
+                'clandesc' => mb_substr(stripslashes($clandesc), 0, 4096, $charset),
+                'descauthor' => (int) $session['user']['acctid'],
+                'clanid' => (int) $claninfo['clanid'],
+            ],
+            [
+                'clandesc' => ParameterType::STRING,
+                'descauthor' => ParameterType::INTEGER,
+                'clanid' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $output->output("Updating description`n");
         $claninfo['clandesc'] = stripslashes($clandesc);
@@ -49,24 +73,37 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     $customSayPost = Http::post('customsay');
     $customsay = is_string($customSayPost) ? $customSayPost : '';
     if (Http::postIsset('customsay') && $customsay != $claninfo['customsay'] && $session['user']['clanrank'] >= CLAN_LEADER) {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET customsay='$customsay' WHERE clanid={$claninfo['clanid']}";
-        Database::query($sql);
+        $connection->executeStatement(
+            "UPDATE " . Database::prefix("clans") . " SET customsay = :customsay WHERE clanid = :clanid",
+            [
+                'customsay' => $customsay,
+                'clanid' => (int) $claninfo['clanid'],
+            ],
+            [
+                'customsay' => ParameterType::STRING,
+                'clanid' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $output->output("Updating custom say line`n");
         $claninfo['customsay'] = stripslashes($customsay);
     }
-    $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid={$claninfo['motdauthor']}";
-    $result = Database::query($sql);
-    $row = Database::fetchAssoc($result);
+    $row = $connection->fetchAssociative(
+        "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid = :acctid",
+        ['acctid' => (int) $claninfo['motdauthor']],
+        ['acctid' => ParameterType::INTEGER]
+    );
     if (isset($row['name'])) {
         $motdauthname = $row['name'];
     } else {
         $motdauthname = Translator::translateInline("Lost in memory");
     }
 
-    $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid={$claninfo['descauthor']}";
-    $result = Database::query($sql);
-    $row = Database::fetchAssoc($result);
+    $row = $connection->fetchAssociative(
+        "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid = :acctid",
+        ['acctid' => (int) $claninfo['descauthor']],
+        ['acctid' => ParameterType::INTEGER]
+    );
     if (isset($row['name'])) {
         $descauthname = $row['name'];
     } else {

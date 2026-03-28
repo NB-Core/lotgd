@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Motd;
-use Lotgd\Tests\Stubs\Database;
+use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +21,8 @@ final class AMotdTest extends TestCase
         \Lotgd\MySQL\Database::$settings_table = [];
         \Lotgd\MySQL\Database::$onlineCounter = 0;
         \Lotgd\MySQL\Database::$affected_rows = 0;
-        \Lotgd\MySQL\Database::$lastSql = '';
+        Database::resetDoctrineConnection();
+        Database::getDoctrineConnection()->executeStatements = [];
         $_POST = [];
     }
 
@@ -52,15 +54,19 @@ final class AMotdTest extends TestCase
         $this->assertStringContainsString("type='radio' name='choice'", $output);
     }
 
-    public function testSavePollSerializesData(): void
+    public function testSavePollSerializesDataWithTypedParameters(): void
     {
         $_POST['motdtitle'] = 'Title';
         $_POST['motdbody'] = 'Question?';
         $_POST['opt'] = ['Yes', 'No'];
 
+        $connection = Database::getDoctrineConnection();
         Motd::savePoll();
 
-        $expected = addslashes(serialize(['body' => 'Question?', 'opt' => ['Yes', 'No']]));
-        $this->assertStringContainsString($expected, \Lotgd\MySQL\Database::$lastSql);
+        $statement = $connection->executeStatements[0] ?? null;
+        $this->assertNotNull($statement);
+        $this->assertSame(serialize(['body' => 'Question?', 'opt' => ['Yes', 'No']]), $statement['params']['body'] ?? null);
+        $this->assertSame(ParameterType::STRING, $statement['types']['body'] ?? null);
+        $this->assertSame(ParameterType::INTEGER, $statement['types']['author'] ?? null);
     }
 }

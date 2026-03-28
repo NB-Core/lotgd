@@ -65,56 +65,7 @@ final class SqlAddslashesUsageCheck
      *     target_removal_version: string
      * }>
      */
-    private const LEGACY_SQL_ADDSLASHES_BASELINE = [
-        'pages/clan/applicant_new.php:28' => [
-            'hash' => '03502d5628a6cd419d213941ec533826328d4d5260c888a6b0bd0b4817c95cd2',
-            'reason' => 'Legacy clan application workflow still escapes clan names pre-DBAL migration.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-        'pages/clan/clan_motd.php:28' => [
-            'hash' => '7c0b62faa5c75bde868acc4e5e380f5ee2c583ce5ca903b28ff61aedcc54af29',
-            'reason' => 'Legacy clan MOTD update path still uses interpolated SQL string construction.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-        'pages/clan/clan_motd.php:42' => [
-            'hash' => 'cc73112aa7f7e0327d0f5b2d56498219afa252bce010af1bd8595f18daecf631',
-            'reason' => 'Legacy clan description update path remains pre-DBAL and escaped inline.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-        'pages/clan/clan_withdraw.php:55' => [
-            'hash' => '814d0b822836c513c98c315bab7ba4a9c35014c0de20dd707a0d5a6ef6e44f93',
-            'reason' => 'Legacy serialized withdrawal subject is still injected into raw SQL.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-        'src/Lotgd/Motd.php:305' => [
-            'hash' => '864ec7fed5f8965ea8cd9b0df737e7351526d91e6c671c2a58a9378ae59e5b20',
-            'reason' => 'MOTD poll payload is serialized and escaped before legacy persistence flow.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-        'src/Lotgd/PlayerFunctions.php:269' => [
-            'hash' => '9a9e396bb26a75acea49a054ddd88aac4109bb9458e4dec32a0900e037a01b8c',
-            'reason' => 'Legacy IN-clause account list is still assembled as a raw SQL string.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-        'src/Lotgd/Pvp.php:309' => [
-            'hash' => '210cbfa91dd74d70e294d4ecfa25693c871df1b063e1dc0501b8062dc0af379b',
-            'reason' => 'PVP location storage still assigns escaped values before SQL assignment.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-        'src/Lotgd/Translator.php:167' => [
-            'hash' => '64a1ec84cf168bb732d1ea1f29dea281bd15584cf2406a50f83544d51963d9d5',
-            'reason' => 'Translator fallback inserts untranslated text via legacy interpolated SQL.',
-            'owner' => 'core-legacy-maintainers',
-            'target_removal_version' => '3.0.0',
-        ],
-    ];
+    private const LEGACY_SQL_ADDSLASHES_BASELINE = [];
 
     /**
      * @return list<string> Human-readable violations in "file:line:text" format.

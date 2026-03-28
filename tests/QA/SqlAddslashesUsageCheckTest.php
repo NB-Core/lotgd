@@ -51,7 +51,7 @@ final class SqlAddslashesUsageCheckTest extends TestCase
         $this->assertSame([], $violations);
     }
 
-    public function testCheckerAllowsDocumentedLegacyBaselinePatterns(): void
+    public function testCheckerFlagsLegacyLikeLineWithoutBaselineByDefault(): void
     {
         $root = $this->createFixtureRoot();
         mkdir($root . '/src/Lotgd', 0777, true);
@@ -60,24 +60,6 @@ final class SqlAddslashesUsageCheckTest extends TestCase
             $this->buildLegacyPlayerFunctionsFixture(
                 269,
                 "\$sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', \$players)) . ')';"
-            )
-        );
-
-        $checker = new SqlAddslashesUsageCheck();
-        $violations = $checker->collectViolations($root);
-
-        $this->assertSame([], $violations);
-    }
-
-    public function testCheckerFlagsSimilarButNewLegacyLikeLine(): void
-    {
-        $root = $this->createFixtureRoot();
-        mkdir($root . '/src/Lotgd', 0777, true);
-        file_put_contents(
-            $root . '/src/Lotgd/PlayerFunctions.php',
-            $this->buildLegacyPlayerFunctionsFixture(
-                269,
-                "\$sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', \$players)) . ') ORDER BY acctid';"
             )
         );
 
@@ -86,25 +68,6 @@ final class SqlAddslashesUsageCheckTest extends TestCase
 
         $this->assertCount(1, $violations);
         $this->assertStringContainsString('src/Lotgd/PlayerFunctions.php:269:', $violations[0]);
-    }
-
-    public function testCheckerIgnoresOnlyExactBaselineEntry(): void
-    {
-        $root = $this->createFixtureRoot();
-        mkdir($root . '/src/Lotgd', 0777, true);
-        file_put_contents(
-            $root . '/src/Lotgd/PlayerFunctions.php',
-            $this->buildLegacyPlayerFunctionsFixture(
-                270,
-                "\$sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', \$players)) . ')';"
-            )
-        );
-
-        $checker = new SqlAddslashesUsageCheck();
-        $violations = $checker->collectViolations($root);
-
-        $this->assertCount(1, $violations);
-        $this->assertStringContainsString('src/Lotgd/PlayerFunctions.php:270:', $violations[0]);
     }
 
     public function testCheckerFlagsSplitSqlConstructionUsingEscapedTemporaryVariable(): void

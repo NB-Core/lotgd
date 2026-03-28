@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
@@ -266,8 +267,17 @@ class PlayerFunctions
         if ($players === false || $players == [] || !is_array($players)) {
             return [];
         } else {
-            $sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', $players)) . ')';
-            $result = Database::query($sql);
+            $playerIds = array_values(array_unique(array_map(static fn (mixed $player): int => (int) $player, $players)));
+            if ($playerIds === []) {
+                return [];
+            }
+
+            $connection = Database::getDoctrineConnection();
+            $result = $connection->executeQuery(
+                'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (:players)',
+                ['players' => $playerIds],
+                ['players' => ArrayParameterType::INTEGER]
+            );
             $rows = [];
             while ($user = Database::fetchAssoc($result)) {
                 $rows[] = $user;

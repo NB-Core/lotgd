@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
@@ -302,11 +303,27 @@ class Motd
             $choices = [];
         }
         $data = ['body' => $text, 'opt' => $choices];
-        $body = addslashes(serialize($data));
+        $body = serialize($data);
         $date = date('Y-m-d H:i:s');
-        $sql = 'INSERT INTO ' . Database::prefix('motd') .
-            " (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (\"$title\",\"$body\",\"$date\",1,{$session['user']['acctid']})";
-        Database::query($sql);
+        $connection = Database::getDoctrineConnection();
+        $connection->executeStatement(
+            'INSERT INTO ' . Database::prefix('motd') .
+            ' (motdtitle,motdbody,motddate,motdtype,motdauthor) VALUES (:title, :body, :date, :type, :author)',
+            [
+                'title' => (string) $title,
+                'body' => $body,
+                'date' => $date,
+                'type' => 1,
+                'author' => (int) $session['user']['acctid'],
+            ],
+            [
+                'title' => ParameterType::STRING,
+                'body' => ParameterType::STRING,
+                'date' => ParameterType::STRING,
+                'type' => ParameterType::INTEGER,
+                'author' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache('motd');
     }
 
