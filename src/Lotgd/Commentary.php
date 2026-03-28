@@ -477,7 +477,7 @@ SQL;
     /**
      * Build the SQL query used to fetch commentary rows for a section.
      */
-    private static function buildCommentFetchSql(int $cid): string
+    private static function buildCommentFetchSql(int $cid, int $limit, int $offset = 0): string
     {
         $base = 'SELECT '
             . Database::prefix('commentary') . '.*, '
@@ -497,10 +497,10 @@ SQL;
             . Database::prefix('accounts') . '.locked is null) ';
 
         if ($cid === 0) {
-            return $base . 'ORDER BY commentid DESC LIMIT :offset, :limit';
+            return $base . 'ORDER BY commentid DESC LIMIT ' . $offset . ', ' . $limit;
         }
 
-        return $base . 'AND commentid > :commentid ORDER BY commentid ASC LIMIT :limit';
+        return $base . 'AND commentid > :commentid ORDER BY commentid ASC LIMIT ' . $limit;
     }
 
     /**
@@ -510,19 +510,13 @@ SQL;
      */
     private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid): array
     {
-        $sql = self::buildCommentFetchSql($cid);
+        $offset = $com * $limit;
+        $sql = self::buildCommentFetchSql($cid, $limit, $offset);
         $params = ['section' => $section];
         $types = ['section' => ParameterType::STRING];
-        if ($cid === 0) {
-            $params['offset'] = $com * $limit;
-            $params['limit'] = $limit;
-            $types['offset'] = ParameterType::INTEGER;
-            $types['limit'] = ParameterType::INTEGER;
-        } else {
+        if ($cid !== 0) {
             $params['commentid'] = $cid;
-            $params['limit'] = $limit;
             $types['commentid'] = ParameterType::INTEGER;
-            $types['limit'] = ParameterType::INTEGER;
         }
 
         $result = Database::getDoctrineConnection()->executeQuery($sql, $params, $types);
@@ -1058,18 +1052,16 @@ SQL;
         $counttoday = 0;
         if (mb_substr($section, 0, 5) != "clan-") {
                 $sql = 'SELECT author FROM ' . Database::prefix('commentary')
-                    . ' WHERE section = :section AND postdate > :postdate ORDER BY commentid DESC LIMIT :limit';
+                    . ' WHERE section = :section AND postdate > :postdate ORDER BY commentid DESC LIMIT ' . (int) $limit;
                 $result = Database::getDoctrineConnection()->executeQuery(
                     $sql,
                     [
                         'section' => $section,
                         'postdate' => date('Y-m-d 00:00:00'),
-                        'limit' => $limit,
                     ],
                     [
                         'section' => ParameterType::STRING,
                         'postdate' => ParameterType::STRING,
-                        'limit' => ParameterType::INTEGER,
                     ]
                 );
             while ($row = Database::fetchAssoc($result)) {

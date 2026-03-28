@@ -50,7 +50,7 @@ final class LegacySqlAddslashesBaselineRemovalRegressionTest extends TestCase
         $commentary = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Lotgd/Commentary.php');
         self::assertStringContainsString('WHERE section = :section AND postdate > :postdate', $commentary);
         self::assertStringContainsString('AND commentid > :commentid', $commentary);
-        self::assertStringContainsString("'limit' => ParameterType::INTEGER", $commentary);
+        self::assertStringContainsString("'commentid' => ParameterType::INTEGER", $commentary);
         self::assertStringNotContainsString("WHERE section='$section'", $commentary);
     }
 
