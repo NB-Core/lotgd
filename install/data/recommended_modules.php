@@ -61,6 +61,8 @@ $recommended_modules = array(
     "strategyhut",
     "thieves",
     "tutor",
+    "twofactorauth",
     "tynan",
     "waterfall",
+    "admin_recommendations",
 );
