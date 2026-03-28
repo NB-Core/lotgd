@@ -66,13 +66,13 @@ class Newday
         );
 
         $timestamp = date('Y-m-d H:i:s', strtotime('now'));
-        $movedToArchive = $connection->executeStatement(
-            'INSERT IGNORE INTO ' . Database::prefix('debuglog_archive') .
-            ' SELECT * FROM ' . Database::prefix('debuglog') . ' WHERE date < :timestamp',
-            ['timestamp' => $timestamp],
-            ['timestamp' => ParameterType::STRING]
-        );
-        if ($movedToArchive >= 0) {
+        try {
+            $movedToArchive = $connection->executeStatement(
+                'INSERT IGNORE INTO ' . Database::prefix('debuglog_archive') .
+                ' SELECT * FROM ' . Database::prefix('debuglog') . ' WHERE date < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
             $connection->executeStatement(
                 'DELETE FROM ' . Database::prefix('debuglog') . ' WHERE date < :timestamp',
                 ['timestamp' => $timestamp],
@@ -96,9 +96,9 @@ class Newday
                 false,
                 $session['user']['acctid'] ?? 0
             );
-        } else {
+        } catch (\Exception $e) {
             GameLog::log(
-                'ERROR, problems with moving the debuglog to the archive',
+                'ERROR, problems with moving the debuglog to the archive: ' . $e->getMessage(),
                 'maintenance',
                 false,
                 $session['user']['acctid'] ?? 0,

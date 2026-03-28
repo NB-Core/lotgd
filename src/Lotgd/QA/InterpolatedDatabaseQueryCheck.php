@@ -126,8 +126,7 @@ final class InterpolatedDatabaseQueryCheck
                 continue;
             }
 
-            $argumentToken = $this->firstArgumentToken($tokens, $index);
-            if ($argumentToken === null || $this->isAllowedArgumentToken($argumentToken)) {
+            if ($this->isFirstArgumentSafe($tokens, $index)) {
                 continue;
             }
 
@@ -156,29 +155,45 @@ final class InterpolatedDatabaseQueryCheck
     }
 
     /**
+     * Check whether the entire first argument to Database::query() is safe
+     * (composed only of constant string literals, optionally concatenated).
+     *
      * @param list<array<int,int|string>|string> $tokens
      */
-    private function firstArgumentToken(array $tokens, int $index): array|string|null
+    private function isFirstArgumentSafe(array $tokens, int $index): bool
     {
         $tokenCount = count($tokens);
+
         for ($i = $index + 4; $i < $tokenCount; $i++) {
             $token = $tokens[$i];
+
+            // Skip whitespace and comments.
             if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
                 continue;
             }
 
-            return $token;
+            // Closing paren or comma at the top level ends the first argument.
+            if ($token === ')' || $token === ',') {
+                return true;
+            }
+
+            // Constant (single-quoted) string literals are safe.
+            if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+                continue;
+            }
+
+            // Dot (concatenation) of constant strings is safe.
+            if ($token === '.') {
+                continue;
+            }
+
+            // Everything else (variables, interpolated strings, heredocs,
+            // function calls, etc.) is considered dynamic / unsafe.
+            return false;
         }
 
-        return null;
-    }
-
-    private function isAllowedArgumentToken(array|string $token): bool
-    {
-        if (is_string($token)) {
-            return $token === ')' || $token === '"' || $token === '\'';
-        }
-
-        return in_array($token[0], [T_CONSTANT_ENCAPSED_STRING, T_START_HEREDOC], true);
+        // Reached end of token stream without a closing paren – treat as safe
+        // (malformed code; not our concern).
+        return true;
     }
 }
