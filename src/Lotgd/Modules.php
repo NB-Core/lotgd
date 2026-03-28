@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\Backtrace;
@@ -168,14 +169,35 @@ class Modules
                             }
                         }
                         $keys = '|' . implode('|', array_keys($info)) . '|';
-                        $sql  = 'UPDATE ' . Database::prefix('modules') .
-                            " SET moduleauthor='" . addslashes((string) ($info['author'] ?? '')) .
-                            "', category='" . addslashes((string) ($info['category'] ?? '')) .
-                            "', formalname='" . addslashes((string) ($info['name'] ?? '')) .
-                            "', description='" . addslashes((string) ($info['description'] ?? '')) .
-                            "', filemoddate='$filemoddate', infokeys='$keys',version='" . addslashes((string) ($info['version'] ?? '')) .
-                            "',download='" . addslashes((string) ($info['download'] ?? '')) . "' WHERE modulename='$moduleName'";
-                        Database::query($sql);
+                        $sql = 'UPDATE ' . Database::prefix('modules')
+                            . ' SET moduleauthor = :moduleauthor, category = :category, formalname = :formalname,'
+                            . ' description = :description, filemoddate = :filemoddate, infokeys = :infokeys,'
+                            . ' version = :version, download = :download WHERE modulename = :modulename';
+                        Database::getDoctrineConnection()->executeStatement(
+                            $sql,
+                            [
+                                'moduleauthor' => (string) ($info['author'] ?? ''),
+                                'category' => (string) ($info['category'] ?? ''),
+                                'formalname' => (string) ($info['name'] ?? ''),
+                                'description' => (string) ($info['description'] ?? ''),
+                                'filemoddate' => $filemoddate,
+                                'infokeys' => $keys,
+                                'version' => (string) ($info['version'] ?? ''),
+                                'download' => (string) ($info['download'] ?? ''),
+                                'modulename' => $moduleName,
+                            ],
+                            [
+                                'moduleauthor' => ParameterType::STRING,
+                                'category' => ParameterType::STRING,
+                                'formalname' => ParameterType::STRING,
+                                'description' => ParameterType::STRING,
+                                'filemoddate' => ParameterType::STRING,
+                                'infokeys' => ParameterType::STRING,
+                                'version' => ParameterType::STRING,
+                                'download' => ParameterType::STRING,
+                                'modulename' => ParameterType::STRING,
+                            ]
+                        );
                         $output->debug($sql);
                         $sql = 'UNLOCK TABLES';
                         Database::query($sql);
@@ -611,16 +633,37 @@ class Modules
 
         self::loadModuleSettings($module);
 
+        $conn = Database::getDoctrineConnection();
         if (isset($module_settings[$module][$name])) {
-            $sql = 'UPDATE ' . Database::prefix('module_settings')
-                . " SET value='" . addslashes((string) $value)
-                . "' WHERE modulename='$module' AND setting='" . addslashes($name) . "'";
-            Database::query($sql);
+            $conn->executeStatement(
+                'UPDATE ' . Database::prefix('module_settings')
+                . ' SET value = :value WHERE modulename = :module AND setting = :setting',
+                [
+                    'value' => (string) $value,
+                    'module' => $module,
+                    'setting' => $name,
+                ],
+                [
+                    'value' => ParameterType::STRING,
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                ]
+            );
         } else {
-            $sql = 'INSERT INTO ' . Database::prefix('module_settings')
-                . " (modulename,setting,value) VALUES ('$module','" . addslashes($name)
-                . "','" . addslashes((string) $value) . "')";
-            Database::query($sql);
+            $conn->executeStatement(
+                'INSERT INTO ' . Database::prefix('module_settings')
+                . ' (modulename, setting, value) VALUES (:module, :setting, :value)',
+                [
+                    'module' => $module,
+                    'setting' => $name,
+                    'value' => (string) $value,
+                ],
+                [
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'value' => ParameterType::STRING,
+                ]
+            );
         }
 
         DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
@@ -642,15 +685,37 @@ class Modules
 
         self::loadModuleSettings($module);
 
+        $conn = Database::getDoctrineConnection();
         if (isset($module_settings[$module][$name])) {
-            $sql = 'UPDATE ' . Database::prefix('module_settings')
-                . " SET value=value+$value WHERE modulename='$module' AND setting='" . addslashes($name) . "'";
-            Database::query($sql);
+            $conn->executeStatement(
+                'UPDATE ' . Database::prefix('module_settings')
+                . ' SET value = value + :value WHERE modulename = :module AND setting = :setting',
+                [
+                    'value' => (string) $value,
+                    'module' => $module,
+                    'setting' => $name,
+                ],
+                [
+                    'value' => ParameterType::STRING,
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                ]
+            );
         } else {
-            $sql = 'INSERT INTO ' . Database::prefix('module_settings')
-                . " (modulename,setting,value) VALUES ('$module','" . addslashes($name)
-                . "','" . addslashes($value) . "')";
-            Database::query($sql);
+            $conn->executeStatement(
+                'INSERT INTO ' . Database::prefix('module_settings')
+                . ' (modulename, setting, value) VALUES (:module, :setting, :value)',
+                [
+                    'module' => $module,
+                    'setting' => $name,
+                    'value' => (string) $value,
+                ],
+                [
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'value' => ParameterType::STRING,
+                ]
+            );
         }
 
         DataCache::getInstance()->invalidatedatacache("modulesettings-$module");
@@ -710,12 +775,25 @@ class Modules
             $module = ModuleManager::getMostRecentModule();
         }
 
-        $sql = 'SELECT value FROM ' . Database::prefix('module_objprefs')
-            . " WHERE modulename='$module' AND objtype='$type' AND setting='" . addslashes($name) . "' AND objid='$objid'";
-        $result = Database::queryCached($sql, "objpref-$type-$objid-$name-$module", 86400);
+        $result = Database::getDoctrineConnection()->executeQuery(
+            'SELECT value FROM ' . Database::prefix('module_objprefs')
+            . ' WHERE modulename = :module AND objtype = :objtype AND setting = :setting AND objid = :objid',
+            [
+                'module' => $module,
+                'objtype' => $type,
+                'setting' => $name,
+                'objid' => (string) $objid,
+            ],
+            [
+                'module' => ParameterType::STRING,
+                'objtype' => ParameterType::STRING,
+                'setting' => ParameterType::STRING,
+                'objid' => ParameterType::STRING,
+            ]
+        );
+        $row = $result->fetchAssociative();
 
-        if (Database::numRows($result) > 0) {
-            $row = Database::fetchAssoc($result);
+        if ($row !== false) {
             return $row['value'];
         }
 
@@ -744,9 +822,24 @@ class Modules
             $module = ModuleManager::getMostRecentModule();
         }
 
-        $sql = 'REPLACE INTO ' . Database::prefix('module_objprefs')
-            . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes((string)$value) . "')";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'REPLACE INTO ' . Database::prefix('module_objprefs')
+            . ' (modulename, objtype, setting, objid, value) VALUES (:module, :objtype, :setting, :objid, :value)',
+            [
+                'module' => $module,
+                'objtype' => $objtype,
+                'setting' => $name,
+                'objid' => (string) $objid,
+                'value' => (string) $value,
+            ],
+            [
+                'module' => ParameterType::STRING,
+                'objtype' => ParameterType::STRING,
+                'setting' => ParameterType::STRING,
+                'objid' => ParameterType::STRING,
+                'value' => ParameterType::STRING,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("objpref-$objtype-$objid-$name-$module");
     }
 
@@ -761,14 +854,45 @@ class Modules
             $module = ModuleManager::getMostRecentModule();
         }
 
-        $sql = 'UPDATE ' . Database::prefix('module_objprefs')
-            . " SET value=value+$value WHERE modulename='$module' AND setting='" . addslashes($name)
-            . "' AND objtype='" . addslashes($objtype) . "' AND objid=$objid;";
-        $result = Database::query($sql);
-        if (Database::affectedRows() == 0) {
-            $sql = 'INSERT INTO ' . Database::prefix('module_objprefs')
-                . "(modulename,objtype,setting,objid,value) VALUES ('$module', '$objtype', '$name', '$objid', '" . addslashes((string)$value) . "')";
-            Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $affected = $conn->executeStatement(
+            'UPDATE ' . Database::prefix('module_objprefs')
+            . ' SET value = value + :value WHERE modulename = :module AND setting = :setting'
+            . ' AND objtype = :objtype AND objid = :objid',
+            [
+                'value' => (string) $value,
+                'module' => $module,
+                'setting' => $name,
+                'objtype' => $objtype,
+                'objid' => (string) $objid,
+            ],
+            [
+                'value' => ParameterType::STRING,
+                'module' => ParameterType::STRING,
+                'setting' => ParameterType::STRING,
+                'objtype' => ParameterType::STRING,
+                'objid' => ParameterType::STRING,
+            ]
+        );
+        if ($affected === 0) {
+            $conn->executeStatement(
+                'INSERT INTO ' . Database::prefix('module_objprefs')
+                . ' (modulename, objtype, setting, objid, value) VALUES (:module, :objtype, :setting, :objid, :value)',
+                [
+                    'module' => $module,
+                    'objtype' => $objtype,
+                    'setting' => $name,
+                    'objid' => (string) $objid,
+                    'value' => (string) $value,
+                ],
+                [
+                    'module' => ParameterType::STRING,
+                    'objtype' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'objid' => ParameterType::STRING,
+                    'value' => ParameterType::STRING,
+                ]
+            );
         }
 
         DataCache::getInstance()->invalidatedatacache("objpref-$objtype-$objid-$name-$module");
@@ -891,15 +1015,41 @@ class Modules
             return;
         }
 
+        $conn = Database::getDoctrineConnection();
         if (isset($module_prefs[$uid][$module][$name])) {
-            $sql = 'UPDATE ' . Database::prefix('module_userprefs')
-                . " SET value='" . addslashes((string) $value)
-                . "' WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
-            Database::query($sql);
+            $conn->executeStatement(
+                'UPDATE ' . Database::prefix('module_userprefs')
+                . ' SET value = :value WHERE modulename = :module AND setting = :setting AND userid = :userid',
+                [
+                    'value' => (string) $value,
+                    'module' => $module,
+                    'setting' => $name,
+                    'userid' => (int) $uid,
+                ],
+                [
+                    'value' => ParameterType::STRING,
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'userid' => ParameterType::INTEGER,
+                ]
+            );
         } else {
-            $sql = 'INSERT INTO ' . Database::prefix('module_userprefs')
-                . " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','" . addslashes((string) $value) . "')";
-            Database::query($sql);
+            $conn->executeStatement(
+                'INSERT INTO ' . Database::prefix('module_userprefs')
+                . ' (modulename, setting, userid, value) VALUES (:module, :setting, :userid, :value)',
+                [
+                    'module' => $module,
+                    'setting' => $name,
+                    'userid' => (int) $uid,
+                    'value' => (string) $value,
+                ],
+                [
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'userid' => ParameterType::INTEGER,
+                    'value' => ParameterType::STRING,
+                ]
+            );
         }
 
         $module_prefs[$uid][$module][$name] = $value;
@@ -1103,9 +1253,20 @@ class Modules
 
         self::dropEventHook($type);
 
-        $sql = 'INSERT INTO ' . Database::prefix('module_event_hooks')
-            . " (modulename, event_type, event_chance) VALUES ('" . $module . "', '$type', '" . addslashes($chance) . "')";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'INSERT INTO ' . Database::prefix('module_event_hooks')
+            . ' (modulename, event_type, event_chance) VALUES (:module, :eventType, :eventChance)',
+            [
+                'module' => $module,
+                'eventType' => $type,
+                'eventChance' => $chance,
+            ],
+            [
+                'module' => ParameterType::STRING,
+                'eventType' => ParameterType::STRING,
+                'eventChance' => ParameterType::STRING,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("event-$type-0");
         DataCache::getInstance()->invalidatedatacache("event-$type-1");
     }
@@ -1120,9 +1281,18 @@ class Modules
     {
         $module = ModuleManager::getMostRecentModule();
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks')
-            . " WHERE modulename='$module' AND event_type='" . addslashes($type) . "'";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . Database::prefix('module_event_hooks')
+            . ' WHERE modulename = :module AND event_type = :eventType',
+            [
+                'module' => $module,
+                'eventType' => $type,
+            ],
+            [
+                'module' => ParameterType::STRING,
+                'eventType' => ParameterType::STRING,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("event-$type-0");
         DataCache::getInstance()->invalidatedatacache("event-$type-1");
     }
@@ -1138,10 +1308,20 @@ class Modules
             $functioncall = $module . '_dohook';
         }
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_hooks')
-            . " WHERE modulename='$module' AND location='" . addslashes($hookname)
-            . "' AND hook_callback='" . addslashes($functioncall) . "'";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . Database::prefix('module_hooks')
+            . ' WHERE modulename = :module AND location = :location AND hook_callback = :callback',
+            [
+                'module' => $module,
+                'location' => $hookname,
+                'callback' => (string) $functioncall,
+            ],
+            [
+                'module' => ParameterType::STRING,
+                'location' => ParameterType::STRING,
+                'callback' => ParameterType::STRING,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("hook-$hookname");
         DataCache::getInstance()->invalidatedatacache('module_prepare');
     }
@@ -1170,10 +1350,25 @@ class Modules
             $whenactive = '';
         }
 
-        $sql = 'REPLACE INTO ' . Database::prefix('module_hooks')
-            . " (modulename,location,hook_callback,whenactive,priority) VALUES ('$module','" . addslashes($hookname)
-            . "','" . addslashes($functioncall) . "','" . addslashes($whenactive) . "','" . $priority . "')";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'REPLACE INTO ' . Database::prefix('module_hooks')
+            . ' (modulename, location, hook_callback, whenactive, priority)'
+            . ' VALUES (:module, :location, :callback, :whenactive, :priority)',
+            [
+                'module' => $module,
+                'location' => $hookname,
+                'callback' => (string) $functioncall,
+                'whenactive' => (string) $whenactive,
+                'priority' => $priority,
+            ],
+            [
+                'module' => ParameterType::STRING,
+                'location' => ParameterType::STRING,
+                'callback' => ParameterType::STRING,
+                'whenactive' => ParameterType::STRING,
+                'priority' => ParameterType::INTEGER,
+            ]
+        );
         DataCache::getInstance()->invalidatedatacache("hook-$hookname");
         DataCache::getInstance()->invalidatedatacache('module_prepare');
     }
