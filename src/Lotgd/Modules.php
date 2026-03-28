@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Types\Types;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
@@ -149,66 +150,73 @@ class Modules
                 }
                 $filemoddate = date('Y-m-d H:i:s', filemtime($modulefilename));
                 if ($row['filemoddate'] != $filemoddate || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
-                    $sql = 'LOCK TABLES ' . Database::prefix('modules') . ' WRITE';
-                    Database::query($sql);
-                    $sql    = 'SELECT filemoddate FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
-                    $result = Database::query($sql);
-                    $row    = Database::fetchAssoc($result);
-                    if ($row['filemoddate'] != $filemoddate || ! isset($row['infokeys']) || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
-                        $output->debug("The module $moduleName was found to have updated, upgrading the module now.");
-                        if (! is_array($info)) {
-                            $fname = $moduleName . '_getmoduleinfo';
-                            $info  = $fname();
-                            if (! isset($info['download'])) {
-                                $info['download'] = '';
-                            }
-                            if (! isset($info['version'])) {
-                                $info['version'] = '0.0';
-                            }
-                            if (! isset($info['description'])) {
-                                $info['description'] = '';
-                            }
-                        }
-                        $keys = '|' . implode('|', array_keys($info)) . '|';
-                        $sql = 'UPDATE ' . Database::prefix('modules')
-                            . ' SET moduleauthor = :moduleauthor, category = :category, formalname = :formalname,'
-                            . ' description = :description, filemoddate = :filemoddate, infokeys = :infokeys,'
-                            . ' version = :version, download = :download WHERE modulename = :modulename';
-                        Database::getDoctrineConnection()->executeStatement(
+                    $connection = Database::getDoctrineConnection();
+                    $needsUpgrade = false;
+                    $connection->executeStatement('LOCK TABLES ' . Database::prefix('modules') . ' WRITE');
+                    try {
+                        $sql    = 'SELECT filemoddate, infokeys, version FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
+                        $result = $connection->executeQuery(
                             $sql,
-                            [
-                                'moduleauthor' => (string) ($info['author'] ?? ''),
-                                'category' => (string) ($info['category'] ?? ''),
-                                'formalname' => (string) ($info['name'] ?? ''),
-                                'description' => (string) ($info['description'] ?? ''),
-                                'filemoddate' => $filemoddate,
-                                'infokeys' => $keys,
-                                'version' => (string) ($info['version'] ?? ''),
-                                'download' => (string) ($info['download'] ?? ''),
-                                'modulename' => $moduleName,
-                            ],
-                            [
-                                'moduleauthor' => ParameterType::STRING,
-                                'category' => ParameterType::STRING,
-                                'formalname' => ParameterType::STRING,
-                                'description' => ParameterType::STRING,
-                                'filemoddate' => ParameterType::STRING,
-                                'infokeys' => ParameterType::STRING,
-                                'version' => ParameterType::STRING,
-                                'download' => ParameterType::STRING,
-                                'modulename' => ParameterType::STRING,
-                            ]
+                            ['modulename' => $moduleName],
+                            ['modulename' => ParameterType::STRING]
                         );
-                        $output->debug($sql);
-                        $sql = 'UNLOCK TABLES';
-                        Database::query($sql);
+                        $row    = Database::fetchAssoc($result);
+                        if ($row['filemoddate'] != $filemoddate || ! isset($row['infokeys']) || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
+                            $output->debug("The module $moduleName was found to have updated, upgrading the module now.");
+                            if (! is_array($info)) {
+                                $fname = $moduleName . '_getmoduleinfo';
+                                $info  = $fname();
+                                if (! isset($info['download'])) {
+                                    $info['download'] = '';
+                                }
+                                if (! isset($info['version'])) {
+                                    $info['version'] = '0.0';
+                                }
+                                if (! isset($info['description'])) {
+                                    $info['description'] = '';
+                                }
+                            }
+                            $keys = '|' . implode('|', array_keys($info)) . '|';
+                            $sql = 'UPDATE ' . Database::prefix('modules')
+                                . ' SET moduleauthor = :moduleauthor, category = :category, formalname = :formalname,'
+                                . ' description = :description, filemoddate = :filemoddate, infokeys = :infokeys,'
+                                . ' version = :version, download = :download WHERE modulename = :modulename';
+                            $connection->executeStatement(
+                                $sql,
+                                [
+                                    'moduleauthor' => (string) ($info['author'] ?? ''),
+                                    'category' => (string) ($info['category'] ?? ''),
+                                    'formalname' => (string) ($info['name'] ?? ''),
+                                    'description' => (string) ($info['description'] ?? ''),
+                                    'filemoddate' => $filemoddate,
+                                    'infokeys' => $keys,
+                                    'version' => (string) ($info['version'] ?? ''),
+                                    'download' => (string) ($info['download'] ?? ''),
+                                    'modulename' => $moduleName,
+                                ],
+                                [
+                                    'moduleauthor' => ParameterType::STRING,
+                                    'category' => ParameterType::STRING,
+                                    'formalname' => ParameterType::STRING,
+                                    'description' => ParameterType::STRING,
+                                    'filemoddate' => ParameterType::STRING,
+                                    'infokeys' => ParameterType::STRING,
+                                    'version' => ParameterType::STRING,
+                                    'download' => ParameterType::STRING,
+                                    'modulename' => ParameterType::STRING,
+                                ]
+                            );
+                            $output->debug($sql);
+                            $needsUpgrade = true;
+                        }
+                    } finally {
+                        $connection->executeStatement('UNLOCK TABLES');
+                    }
+                    if ($needsUpgrade) {
                         self::wipeHooks();
                         $fname = $moduleName . '_install';
                         $fname();
                         DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
-                    } else {
-                        $sql = 'UNLOCK TABLES';
-                        Database::query($sql);
                     }
                 }
             }
@@ -414,10 +422,17 @@ class Modules
             self::$modulePreload[$row['location']][$row['modulename']] = $row['hook_callback'];
         }
 
-        $moduleList = "'" . implode("', '", $moduleNames) . "'";
+        if ($moduleNames === []) {
+            return true;
+        }
 
-        $sql = 'SELECT modulename,setting,value FROM ' . $Pmodule_settings . ' WHERE modulename IN (' . $moduleList . ')';
-        $result = Database::query($sql);
+        $connection = Database::getDoctrineConnection();
+        $sql = 'SELECT modulename,setting,value FROM ' . $Pmodule_settings . ' WHERE modulename IN (:moduleNames)';
+        $result = $connection->executeQuery(
+            $sql,
+            ['moduleNames' => array_values($moduleNames)],
+            ['moduleNames' => ArrayParameterType::STRING]
+        );
         while ($row = Database::fetchAssoc($result)) {
             $module_settings[$row['modulename']][$row['setting']] = $row['value'];
         }
@@ -427,9 +442,19 @@ class Modules
         }
 
         $sql = 'SELECT modulename,setting,userid,value FROM ' . $Pmodule_userprefs
-            . ' WHERE modulename IN (' . $moduleList . ')'
-            . ' AND userid = ' . (int) $session['user']['acctid'];
-        $result = Database::query($sql);
+            . ' WHERE modulename IN (:moduleNames)'
+            . ' AND userid = :userid';
+        $result = $connection->executeQuery(
+            $sql,
+            [
+                'moduleNames' => array_values($moduleNames),
+                'userid' => (int) $session['user']['acctid'],
+            ],
+            [
+                'moduleNames' => ArrayParameterType::STRING,
+                'userid' => ParameterType::INTEGER,
+            ]
+        );
         while ($row = Database::fetchAssoc($result)) {
             $module_prefs[$row['userid']][$row['modulename']][$row['setting']] = $row['value'];
         }
@@ -552,8 +577,22 @@ class Modules
                         $output->debug('Slow Hook (' . round($endtime - $starttime, 2) . 's): ' . $hookName . ' - ' . $row['modulename'] . '`n');
                     }
                     if ($settings->getSetting('debug', 0)) {
-                        $sql = 'INSERT INTO ' . Database::prefix('debug') . " VALUES (0,'hooktime','" . $hookName . "','" . $row['modulename'] . "','" . ($endtime - $starttime) . "');";
-                        Database::query($sql);
+                        $sql = 'INSERT INTO ' . Database::prefix('debug') . ' (id, type, category, subcategory, value) VALUES (0, :type, :category, :subcategory, :value)';
+                        Database::getDoctrineConnection()->executeStatement(
+                            $sql,
+                            [
+                                'type' => 'hooktime',
+                                'category' => $hookName,
+                                'subcategory' => (string) $row['modulename'],
+                                'value' => (string) ($endtime - $starttime),
+                            ],
+                            [
+                                'type' => ParameterType::STRING,
+                                'category' => ParameterType::STRING,
+                                'subcategory' => ParameterType::STRING,
+                                'value' => ParameterType::STRING,
+                            ]
+                        );
                     }
 
                     if (!is_array($res)) {
@@ -950,8 +989,11 @@ class Modules
     {
         $module_prefs = &ModuleManager::prefs();
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_userprefs') . " WHERE userid='$user'";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . Database::prefix('module_userprefs') . ' WHERE userid = :userid',
+            ['userid' => $user],
+            ['userid' => ParameterType::INTEGER]
+        );
 
         unset($module_prefs[$user]);
         DataCache::getInstance()->massinvalidate("module_userprefs-$user");
@@ -1131,14 +1173,40 @@ class Modules
         }
 
         if (isset($module_prefs[$uid][$module][$name])) {
-            $sql = 'UPDATE ' . Database::prefix('module_userprefs')
-                . " SET value=value+$value WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
-            Database::query($sql);
+            Database::getDoctrineConnection()->executeStatement(
+                'UPDATE ' . Database::prefix('module_userprefs')
+                . ' SET value = value + :value WHERE modulename = :module AND setting = :setting AND userid = :userid',
+                [
+                    'value' => $value,
+                    'module' => $module,
+                    'setting' => $name,
+                    'userid' => $uid,
+                ],
+                [
+                    'value' => Types::FLOAT,
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'userid' => ParameterType::INTEGER,
+                ]
+            );
         } else {
             $module_prefs[$uid][$module][$name] = $value;
-            $sql = 'INSERT INTO ' . Database::prefix('module_userprefs')
-                . " (modulename,setting,userid,value) VALUES ('$module','$name','$uid','" . $value . "')";
-            Database::query($sql);
+            Database::getDoctrineConnection()->executeStatement(
+                'INSERT INTO ' . Database::prefix('module_userprefs')
+                . ' (modulename,setting,userid,value) VALUES (:module,:setting,:userid,:value)',
+                [
+                    'module' => $module,
+                    'setting' => $name,
+                    'userid' => $uid,
+                    'value' => (string) $value,
+                ],
+                [
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'userid' => ParameterType::INTEGER,
+                    'value' => ParameterType::STRING,
+                ]
+            );
         }
 
         $module_prefs[$uid][$module][$name] = ($module_prefs[$uid][$module][$name] ?? 0) + $value;
@@ -1172,9 +1240,20 @@ class Modules
         }
 
         if (isset($module_prefs[$uid][$module][$name])) {
-            $sql = 'DELETE FROM ' . Database::prefix('module_userprefs')
-                . " WHERE modulename='$module' AND setting='$name' AND userid='$uid'";
-            Database::query($sql);
+            Database::getDoctrineConnection()->executeStatement(
+                'DELETE FROM ' . Database::prefix('module_userprefs')
+                . ' WHERE modulename = :module AND setting = :setting AND userid = :userid',
+                [
+                    'module' => $module,
+                    'setting' => $name,
+                    'userid' => $uid,
+                ],
+                [
+                    'module' => ParameterType::STRING,
+                    'setting' => ParameterType::STRING,
+                    'userid' => ParameterType::INTEGER,
+                ]
+            );
         }
 
         unset($module_prefs[$uid][$module][$name]);
@@ -1202,8 +1281,12 @@ class Modules
 
         if (!isset($module_prefs[$user][$module])) {
             $module_prefs[$user][$module] = [];
-            $sql    = 'SELECT setting,value FROM ' . Database::prefix('module_userprefs') . " WHERE modulename='$module' AND userid='$user'";
-            $result = Database::query($sql);
+            $sql    = 'SELECT setting,value FROM ' . Database::prefix('module_userprefs') . ' WHERE modulename = :module AND userid = :userid';
+            $result = Database::getDoctrineConnection()->executeQuery(
+                $sql,
+                ['module' => $module, 'userid' => (int) $user],
+                ['module' => ParameterType::STRING, 'userid' => ParameterType::INTEGER]
+            );
             while ($row = Database::fetchAssoc($result)) {
                 $module_prefs[$user][$module][$row['setting']] = $row['value'];
             }
@@ -1275,10 +1358,16 @@ class Modules
     {
         $module = ModuleManager::getMostRecentModule();
 
-        $sql = 'DELETE FROM ' . Database::prefix('module_hooks') . " WHERE modulename='$module'";
-        Database::query($sql);
-        $sql = 'DELETE FROM ' . Database::prefix('module_event_hooks') . " WHERE modulename='$module'";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . Database::prefix('module_hooks') . ' WHERE modulename = :module',
+            ['module' => $module],
+            ['module' => ParameterType::STRING]
+        );
+        Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . Database::prefix('module_event_hooks') . ' WHERE modulename = :module',
+            ['module' => $module],
+            ['module' => ParameterType::STRING]
+        );
 
         DataCache::getInstance()->invalidatedatacache('hook-' . $module);
 
@@ -1423,8 +1512,7 @@ class Modules
      */
     public static function semAcquire(): void
     {
-        $sql = 'LOCK TABLES ' . Database::prefix('module_settings') . ' WRITE';
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement('LOCK TABLES ' . Database::prefix('module_settings') . ' WRITE');
     }
 
     /**
@@ -1432,8 +1520,7 @@ class Modules
      */
     public static function semRelease(): void
     {
-        $sql = 'UNLOCK TABLES';
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement('UNLOCK TABLES');
     }
 
     /**
@@ -1631,8 +1718,13 @@ class Modules
      */
     public static function editorNavs(string $like, string $linkprefix): void
     {
-        $sql    = 'SELECT formalname,modulename,active,category FROM ' . Database::prefix('modules') . " WHERE infokeys LIKE '%|$like|%' ORDER BY category,formalname";
-        $result = Database::query($sql);
+        $sql = 'SELECT formalname,modulename,active,category FROM ' . Database::prefix('modules')
+            . ' WHERE infokeys LIKE :needle ORDER BY category,formalname';
+        $result = Database::getDoctrineConnection()->executeQuery(
+            $sql,
+            ['needle' => '%|' . $like . '|%'],
+            ['needle' => ParameterType::STRING]
+        );
         $curcat = '';
         while ($row = Database::fetchAssoc($result)) {
             if ($curcat != $row['category']) {
@@ -1670,8 +1762,21 @@ class Modules
                     $data[$key] = $x[1];
                 }
             }
-            $sql    = 'SELECT setting, value FROM ' . Database::prefix('module_objprefs') . " WHERE modulename='$module' AND objtype='$type' AND objid='$id'";
-            $result = Database::query($sql);
+            $sql    = 'SELECT setting, value FROM ' . Database::prefix('module_objprefs')
+                . ' WHERE modulename = :module AND objtype = :objtype AND objid = :objid';
+            $result = Database::getDoctrineConnection()->executeQuery(
+                $sql,
+                [
+                    'module' => $module,
+                    'objtype' => $type,
+                    'objid' => (int) $id,
+                ],
+                [
+                    'module' => ParameterType::STRING,
+                    'objtype' => ParameterType::STRING,
+                    'objid' => ParameterType::INTEGER,
+                ]
+            );
             while ($row = Database::fetchAssoc($result)) {
                 $data[$row['setting']] = $row['value'];
             }

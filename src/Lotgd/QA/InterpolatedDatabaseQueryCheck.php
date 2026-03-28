@@ -29,11 +29,6 @@ final class InterpolatedDatabaseQueryCheck
         // Self-exclusion so examples in this checker are not flagged.
         'src/Lotgd/QA/InterpolatedDatabaseQueryCheck.php',
 
-        // Legacy-heavy core paths still in migration.
-        'src/Lotgd/Modules.php',
-        'src/Lotgd/Commentary.php',
-        'src/Lotgd/Newday.php',
-        'src/Lotgd/Pvp.php',
     ];
 
     /**

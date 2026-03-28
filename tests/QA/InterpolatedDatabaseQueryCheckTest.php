@@ -37,11 +37,12 @@ final class InterpolatedDatabaseQueryCheckTest extends TestCase
         $this->assertStringContainsString('src/Lotgd/Security/example.php:3:', $violations[0]);
     }
 
-    public function testCheckerIgnoresWhitelistedLegacyPath(): void
+    public function testCheckerIgnoresSelfWhitelistedPath(): void
     {
         $root = $this->createFixtureRoot();
+        mkdir($root . '/src/Lotgd/QA', 0777, true);
         file_put_contents(
-            $root . '/src/Lotgd/Modules.php',
+            $root . '/src/Lotgd/QA/InterpolatedDatabaseQueryCheck.php',
             "<?php\nDatabase::query(\$sql);\n"
         );
 

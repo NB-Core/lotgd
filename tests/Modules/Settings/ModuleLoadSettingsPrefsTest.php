@@ -88,7 +88,7 @@ namespace Lotgd\Tests\Modules\Settings {
                     return new DoctrineResult($this->data[$sql] ?? []);
                 }
             };
-            $sql = "SELECT setting,value FROM module_userprefs WHERE modulename='$module' AND userid='$userId'";
+            $sql = 'SELECT setting,value FROM module_userprefs WHERE modulename = :module AND userid = :userid';
             $conn->data[$sql] = [
             ['setting' => 'pkey', 'value' => 'pval'],
             ];
@@ -120,7 +120,7 @@ namespace Lotgd\Tests\Modules\Settings {
                     return new DoctrineResult($this->data[$sql] ?? []);
                 }
             };
-            $sql = "SELECT setting,value FROM module_userprefs WHERE modulename='$module' AND userid='$userId'";
+            $sql = 'SELECT setting,value FROM module_userprefs WHERE modulename = :module AND userid = :userid';
             $conn->data[$sql] = [
             ['setting' => 'pkey', 'value' => 'pval'],
             ];

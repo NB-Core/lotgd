@@ -26,14 +26,14 @@ class Newday
         // Fetch all table names at once to avoid leaving an unbuffered
         // result active which can cause "Cannot execute queries while other
         // unbuffered queries are active" errors with PDO MySQL.
-        $rows = Database::getDoctrineConnection()
-            ->fetchAllAssociative('SHOW TABLES');
+        $conn = Database::getDoctrineConnection();
+        $rows = $conn->fetchAllAssociative('SHOW TABLES');
 
         $tables = [];
         $start = microtime(true);
         foreach ($rows as $row) {
             foreach ($row as $val) {
-                Database::query("OPTIMIZE TABLE $val");
+                $conn->executeStatement('OPTIMIZE TABLE ' . $conn->quoteIdentifier((string) $val));
                 $tables[] = $val;
             }
         }
