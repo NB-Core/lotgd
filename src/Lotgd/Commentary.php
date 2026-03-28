@@ -514,8 +514,10 @@ SQL;
 
         // Cache the first page to reduce DB load on high-traffic sections.
         // The cache key matches the invalidation calls in injectRawComment()
-        // and removeComment().
-        if ($cid === 0 && $com === 0) {
+        // and removeComment().  Bypass the cache on moderation pages so
+        // moderators always see fresh data after removals/edits.
+        $useCache = ScriptName::current() !== 'moderate';
+        if ($useCache && $cid === 0 && $com === 0) {
             $cacheKey = "comments-$section";
             $cached = DataCache::getInstance()->datacache($cacheKey, 900);
             if (is_array($cached)) {

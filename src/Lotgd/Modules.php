@@ -151,6 +151,7 @@ class Modules
                 $filemoddate = date('Y-m-d H:i:s', filemtime($modulefilename));
                 if ($row['filemoddate'] != $filemoddate || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
                     $connection = Database::getDoctrineConnection();
+                    $needsUpgrade = false;
                     $connection->executeStatement('LOCK TABLES ' . Database::prefix('modules') . ' WRITE');
                     try {
                         $sql    = 'SELECT filemoddate, infokeys, version FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
@@ -206,13 +207,16 @@ class Modules
                                 ]
                             );
                             $output->debug($sql);
-                            self::wipeHooks();
-                            $fname = $moduleName . '_install';
-                            $fname();
-                            DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+                            $needsUpgrade = true;
                         }
                     } finally {
                         $connection->executeStatement('UNLOCK TABLES');
+                    }
+                    if ($needsUpgrade) {
+                        self::wipeHooks();
+                        $fname = $moduleName . '_install';
+                        $fname();
+                        DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
                     }
                 }
             }
