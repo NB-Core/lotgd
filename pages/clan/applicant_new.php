@@ -11,6 +11,7 @@ use Lotgd\Sanitize;
 use Lotgd\DebugLog;
 use Lotgd\Output;
 use Lotgd\Settings;
+use Doctrine\DBAL\ParameterType;
 
         $apply = Http::get('apply');
     $output = Output::getInstance();
@@ -25,15 +26,18 @@ if ($apply == 1) {
     if ($settings->getSetting('clannamesanitize', 0)) {
         $clanname = preg_replace("'[^[:alpha:] \\'-]'", "", $clanname);
     }
-    $clanname = addslashes($clanname);
     Http::postSet('clanname', $clanname);
     $clanshort = Sanitize::fullSanitize($ocs);
     if ($settings->getSetting('clanshortnamesanitize', 0)) {
         $clanshort = preg_replace("'[^[:alpha:]]'", "", $clanshort);
     }
     Http::postSet('clanshort', $clanshort);
-    $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanname='$clanname'";
-    $result = Database::query($sql);
+    $connection = Database::getDoctrineConnection();
+    $result = $connection->executeQuery(
+        "SELECT * FROM " . Database::prefix("clans") . " WHERE clanname = :clanname",
+        ['clanname' => $clanname],
+        ['clanname' => ParameterType::STRING]
+    );
     $e = array (Translator::translateInline("%s`7 looks over your form but informs you that your clan name must consist only of letters, spaces, apostrophes, or dashes.  Also, your short name can consist only of letters. She hands you a blank form."),
         Translator::translateInline("%s`7 looks over your form but informs you that you must have at least 5 and no more than 50 characters in your clan's name (and they must consist only of letters, spaces, apostrophes, or dashes), then hands you a blank form."),
         Translator::translateInline("%s`7 looks over your form but informs you that you must have at least 2 and no more than %s characters in your clan's short name (and they must all be letters), then hands you a blank form."),
@@ -64,8 +68,11 @@ if ($apply == 1) {
         //too many stupids put < and > in their clanshort name -_-
         $clanshort = str_replace("<", "", $clanshort);
         $clanshort = str_replace(">", "", $clanshort);
-        $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanshort='$clanshort'";
-        $result = Database::query($sql);
+        $result = $connection->executeQuery(
+            "SELECT * FROM " . Database::prefix("clans") . " WHERE clanshort = :clanshort",
+            ['clanshort' => $clanshort],
+            ['clanshort' => ParameterType::STRING]
+        );
         if (Database::numRows($result) > 0) {
             $output->outputNotl($e[4], $registrar, stripslashes($clanshort));
             clanform();
@@ -90,8 +97,17 @@ if ($apply == 1) {
 /*//*/                          Nav::add("Return to the Lobby", "clan.php");
 /*//*/
 } else {
-                            $sql = "INSERT INTO " . Database::prefix("clans") . " (clanname,clanshort) VALUES ('$clanname','$clanshort')";
-                            Database::query($sql);
+                            $connection->executeStatement(
+                                "INSERT INTO " . Database::prefix("clans") . " (clanname,clanshort) VALUES (:clanname, :clanshort)",
+                                [
+                                    'clanname' => $clanname,
+                                    'clanshort' => $clanshort,
+                                ],
+                                [
+                                    'clanname' => ParameterType::STRING,
+                                    'clanshort' => ParameterType::STRING,
+                                ]
+                            );
                             $id = Database::insertId();
                             $session['user']['clanid'] = $id;
                             $session['user']['clanrank'] = CLAN_LEADER + 1; //+1 because he is the founder

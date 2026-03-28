@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
@@ -164,8 +165,20 @@ class Translator
                     }
                     */
                 } elseif ($settings instanceof Settings && $settings->getSetting("collecttexts", false)) {
-                    $sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "', " .  "'$namespace')";
-                    Database::query($sql, false);
+                    $connection = Database::getDoctrineConnection();
+                    $connection->executeStatement(
+                        "INSERT IGNORE INTO " . Database::prefix("untranslated") . " (intext,language,namespace) VALUES (:intext, :language, :namespace)",
+                        [
+                            'intext' => (string) $indata,
+                            'language' => (defined('LANGUAGE') ? constant('LANGUAGE') : ''),
+                            'namespace' => (string) $namespace,
+                        ],
+                        [
+                            'intext' => ParameterType::STRING,
+                            'language' => ParameterType::STRING,
+                            'namespace' => ParameterType::STRING,
+                        ]
+                    );
                 }
                                 self::tlbuttonPush($indata, !$foundtranslation, $namespace);
             } else {

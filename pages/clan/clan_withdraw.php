@@ -8,6 +8,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\DebugLog;
 use Lotgd\GameLog;
+use Doctrine\DBAL\ParameterType;
 
         Modules::hook("clan-withdraw", array('clanid' => $session['user']['clanid'], 'clanrank' => $session['user']['clanrank'], 'acctid' => $session['user']['acctid']));
 if ($session['user']['clanrank'] >= CLAN_LEADER) {
@@ -52,8 +53,20 @@ if ($session['user']['clanrank'] >= CLAN_LEADER) {
         $result = Database::query($sql);
         $withdraw_subj = array("`\$Clan Withdraw: `&%s`0",$session['user']['name']);
         $msg = array("`^One of your clan members has resigned their membership.  `&%s`^ has surrendered their position within your clan!",$session['user']['name']);
-        $sql = "DELETE FROM " . Database::prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='" . addslashes(serialize($withdraw_subj)) . "'"; //addslashes for names with ' inside
-        Database::query($sql);
+        $connection = Database::getDoctrineConnection();
+        $connection->executeStatement(
+            "DELETE FROM " . Database::prefix("mail") . " WHERE msgfrom = :msgfrom AND seen = :seen AND subject = :subject",
+            [
+                'msgfrom' => 0,
+                'seen' => 0,
+                'subject' => serialize($withdraw_subj),
+            ],
+            [
+                'msgfrom' => ParameterType::INTEGER,
+                'seen' => ParameterType::INTEGER,
+                'subject' => ParameterType::STRING,
+            ]
+        );
 while ($row = Database::fetchAssoc($result)) {
     Mail::systemMail($row['acctid'], $withdraw_subj, $msg);
 }
