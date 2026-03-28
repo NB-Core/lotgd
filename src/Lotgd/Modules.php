@@ -179,7 +179,7 @@ class Modules
                             . ' SET moduleauthor = :moduleauthor, category = :category, formalname = :formalname,'
                             . ' description = :description, filemoddate = :filemoddate, infokeys = :infokeys,'
                             . ' version = :version, download = :download WHERE modulename = :modulename';
-                        Database::getDoctrineConnection()->executeStatement(
+                        $connection->executeStatement(
                             $sql,
                             [
                                 'moduleauthor' => (string) ($info['author'] ?? ''),

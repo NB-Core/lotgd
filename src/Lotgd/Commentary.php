@@ -511,6 +511,18 @@ SQL;
     private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid): array
     {
         $offset = $com * $limit;
+
+        // Cache the first page to reduce DB load on high-traffic sections.
+        // The cache key matches the invalidation calls in injectRawComment()
+        // and removeComment().
+        if ($cid === 0 && $com === 0) {
+            $cacheKey = "comments-$section";
+            $cached = DataCache::getInstance()->datacache($cacheKey, 900);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
+
         $sql = self::buildCommentFetchSql($cid, $limit, $offset);
         $params = ['section' => $section];
         $types = ['section' => ParameterType::STRING];
@@ -530,6 +542,10 @@ SQL;
 
         if ($cid !== 0) {
             $buffer = array_reverse($buffer);
+        }
+
+        if ($cid === 0 && $com === 0 && isset($cacheKey)) {
+            DataCache::getInstance()->updatedatacache($cacheKey, $buffer);
         }
 
         return $buffer;
