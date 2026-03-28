@@ -13,7 +13,7 @@ use Throwable;
  *
  *
  * Legacy duplicate handling policy:
- * - Canonical row is the *oldest* paylog row for a txnid (`MIN(payid)`).
+ * - Canonical row is the *newest* paylog row for a txnid (`MAX(payid)`).
  * - Only the canonical row may be credited.
  * - Crediting is gated by a transactional claim on `processed = 0`.
  * - Credit and `processed=1` are guarded in one transaction using a conditional
@@ -298,14 +298,14 @@ final class IpnPaymentProcessor
     /**
      * Resolve the canonical paylog identifier for an already-existing transaction.
      *
-     * Canonical policy is always `MIN(payid)` so retries can safely resume against
-     * the same deterministic row even when legacy duplicate txnid rows exist.
+     * Canonical policy is always `MAX(payid)` so retries consistently bind to the
+     * latest persisted duplicate row in legacy datasets.
      */
     private function resolveCanonicalPaylogId(string $txnid, IpnProcessingResult $result): int
     {
         try {
             $row = $this->connection->fetchAssociative(
-                "SELECT MIN(payid) AS payid FROM {$this->paylogTable} WHERE txnid = :txnid",
+                "SELECT MAX(payid) AS payid FROM {$this->paylogTable} WHERE txnid = :txnid",
                 ['txnid' => $txnid],
                 ['txnid' => ParameterType::STRING]
             );
@@ -351,8 +351,8 @@ final class IpnPaymentProcessor
     /**
      * Resolve the canonical paylog row for a transaction ID.
      *
-     * Policy: canonical = `MIN(payid)` to preserve legacy-first processing order.
-     * This deterministic choice prevents older duplicate rows from being bypassed.
+     * Policy: canonical = `MAX(payid)` to preserve latest-row processing order.
+     * This deterministic choice keeps duplicate retries pinned to the newest row.
      *
      * @return array{payid:int,processed:int}|null
      */
@@ -363,7 +363,7 @@ final class IpnPaymentProcessor
                 "SELECT payid, processed
                  FROM {$this->paylogTable}
                  WHERE payid = (
-                    SELECT MIN(payid)
+                    SELECT MAX(payid)
                     FROM {$this->paylogTable}
                     WHERE txnid = :txnid
                  )",
