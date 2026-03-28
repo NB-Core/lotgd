@@ -21,7 +21,10 @@ final class ModulesWipeHooksTest extends TestCase
     public function testWipeHooksRemovesEventHooks(): void
     {
         Modules::wipeHooks();
-        $this->assertStringContainsString('module_event_hooks', \Lotgd\MySQL\Database::$lastSql);
-        $this->assertStringContainsString("modulename='mymodule'", \Lotgd\MySQL\Database::$lastSql);
+        $connection = \Lotgd\MySQL\Database::getDoctrineConnection();
+        $this->assertNotEmpty($connection->executeStatements);
+        $lastStatement = $connection->executeStatements[array_key_last($connection->executeStatements)];
+        $this->assertStringContainsString('module_event_hooks', $lastStatement['sql']);
+        $this->assertSame('mymodule', $lastStatement['params']['module']);
     }
 }

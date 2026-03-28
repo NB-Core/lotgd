@@ -33,7 +33,7 @@ class Newday
         $start = microtime(true);
         foreach ($rows as $row) {
             foreach ($row as $val) {
-                Database::query("OPTIMIZE TABLE $val");
+                Database::getDoctrineConnection()->executeStatement('OPTIMIZE TABLE ' . Database::getDoctrineConnection()->quoteIdentifier((string) $val));
                 $tables[] = $val;
             }
         }

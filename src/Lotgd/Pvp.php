@@ -395,7 +395,7 @@ class Pvp
                 $types
             );
         } else {
-            $result = Database::query((string) $sql);
+            $result = Database::getDoctrineConnection()->executeQuery((string) $sql);
         }
 
         $pvp = [];

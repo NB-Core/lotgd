@@ -42,5 +42,31 @@ final class LegacySqlAddslashesBaselineRemovalRegressionTest extends TestCase
         self::assertStringContainsString('AND location = :location', $pvp);
         self::assertStringContainsString("'location' => ParameterType::STRING", $pvp);
         self::assertStringNotContainsString('$loc = addslashes($location);', $pvp);
+        self::assertStringNotContainsString('Database::query((string) $sql)', $pvp);
+    }
+
+    public function testCommentaryPathsUseBoundParametersInSource(): void
+    {
+        $commentary = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Lotgd/Commentary.php');
+        self::assertStringContainsString('WHERE section = :section AND postdate > :postdate', $commentary);
+        self::assertStringContainsString('AND commentid > :commentid', $commentary);
+        self::assertStringContainsString("'limit' => ParameterType::INTEGER", $commentary);
+        self::assertStringNotContainsString("WHERE section='$section'", $commentary);
+    }
+
+    public function testModulesSettingsAndPrefsUseBoundParametersInSource(): void
+    {
+        $modules = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Lotgd/Modules.php');
+        self::assertStringContainsString('WHERE modulename IN (:moduleNames)', $modules);
+        self::assertStringContainsString("'moduleNames' => ArrayParameterType::STRING", $modules);
+        self::assertStringContainsString('WHERE modulename = :module AND setting = :setting AND userid = :userid', $modules);
+        self::assertStringNotContainsString("WHERE modulename='$module' AND userid='$user'", $modules);
+    }
+
+    public function testNewdayMaintenanceUsesDbalStatementForOptimizeInSource(): void
+    {
+        $newday = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Lotgd/Newday.php');
+        self::assertStringContainsString("executeStatement('OPTIMIZE TABLE ' . Database::getDoctrineConnection()->quoteIdentifier((string) \$val))", $newday);
+        self::assertStringNotContainsString('Database::query("OPTIMIZE TABLE $val")', $newday);
     }
 }
