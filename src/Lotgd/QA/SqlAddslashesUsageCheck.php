@@ -195,22 +195,97 @@ final class SqlAddslashesUsageCheck
      */
     private function isSqlContext(array $lines, int $lineNumber): bool
     {
-        $start = max(1, $lineNumber - 2);
-        $end = min(count($lines), $lineNumber + 2);
-        $window = '';
-        for ($line = $start; $line <= $end; $line++) {
-            $window .= ' ' . strtolower($lines[$line - 1] ?? '');
-        }
+        $start = max(1, $lineNumber - 6);
+        $end = min(count($lines), $lineNumber + 12);
+        $windowLines = array_slice($lines, $start - 1, $end - $start + 1);
+        $window = strtolower(implode("\n", $windowLines));
 
-        $keywordsPattern = '/\b(' . implode('|', self::SQL_KEYWORDS) . ')\b/';
-        if (preg_match($keywordsPattern, $window) !== 1) {
+        if (!$this->containsSqlKeywords($window)) {
             return false;
         }
 
-        return str_contains($window, '$sql')
-            || str_contains($window, 'database::query')
-            || str_contains($window, 'executequery(')
-            || str_contains($window, 'executestatement(');
+        $lineText = strtolower($lines[$lineNumber - 1] ?? '');
+        if (
+            $this->containsSqlSinkMarker($window)
+            && (
+                $this->containsSqlKeywords($lineText)
+                || str_contains($lineText, '$sql')
+                || $this->hasDirectNearbySqlLine($lines, $lineNumber)
+            )
+        ) {
+            return true;
+        }
+
+        /**
+         * Catch split SQL building patterns:
+         *   $escaped = addslashes(...);
+         *   ... (several lines later)
+         *   $sql = "... '$escaped' ...";
+         */
+        $assignedVariable = $this->extractAssignedVariable($lines[$lineNumber - 1] ?? '');
+        if ($assignedVariable === null) {
+            return false;
+        }
+
+        foreach ($windowLines as $windowLine) {
+            $normalizedLine = strtolower($windowLine);
+            if (!str_contains($normalizedLine, '$sql')) {
+                continue;
+            }
+            if (!str_contains($windowLine, '$' . $assignedVariable)) {
+                continue;
+            }
+            if ($this->containsSqlKeywords($normalizedLine)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Detect direct SQL assignment/building very close to addslashes().
+     *
+     * @param list<string> $lines
+     */
+    private function hasDirectNearbySqlLine(array $lines, int $lineNumber): bool
+    {
+        $start = max(1, $lineNumber - 1);
+        $end = min(count($lines), $lineNumber + 1);
+        for ($line = $start; $line <= $end; $line++) {
+            $normalizedLine = strtolower($lines[$line - 1] ?? '');
+            if (!str_contains($normalizedLine, '$sql')) {
+                continue;
+            }
+            if ($this->containsSqlKeywords($normalizedLine)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function containsSqlKeywords(string $text): bool
+    {
+        $keywordsPattern = '/\b(' . implode('|', self::SQL_KEYWORDS) . ')\b/';
+        return preg_match($keywordsPattern, $text) === 1;
+    }
+
+    private function containsSqlSinkMarker(string $text): bool
+    {
+        return str_contains($text, '$sql')
+            || str_contains($text, 'database::query')
+            || str_contains($text, 'executequery(')
+            || str_contains($text, 'executestatement(');
+    }
+
+    private function extractAssignedVariable(string $lineText): ?string
+    {
+        if (preg_match('/\$(?<variable>[A-Za-z_]\w*)\s*=\s*.*addslashes\s*\(/i', $lineText, $matches) !== 1) {
+            return null;
+        }
+
+        return $matches['variable'];
     }
 
     /**

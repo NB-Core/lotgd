@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Types\Types;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\Backtrace;
@@ -691,12 +692,12 @@ class Modules
                 'UPDATE ' . Database::prefix('module_settings')
                 . ' SET value = value + :value WHERE modulename = :module AND setting = :setting',
                 [
-                    'value' => (string) $value,
+                    'value' => $value,
                     'module' => $module,
                     'setting' => $name,
                 ],
                 [
-                    'value' => ParameterType::STRING,
+                    'value' => Types::FLOAT,
                     'module' => ParameterType::STRING,
                     'setting' => ParameterType::STRING,
                 ]
@@ -784,7 +785,7 @@ class Modules
          * Keep the legacy objpref cache behavior so repeated reads can be served
          * from DataCache, while SQL safety is enforced at the DBAL query sink.
          *
-         * @var array{found:bool,value?:string}|false $cachedValue
+         * @var array{found:bool,value?:string|null}|false $cachedValue
          */
         $cachedValue = $cache->datacache($cacheKey, 86400);
         if (is_array($cachedValue) && array_key_exists('found', $cachedValue)) {
@@ -810,8 +811,10 @@ class Modules
         $row = $result->fetchAssociative();
 
         if ($row !== false) {
-            $cache->updatedatacache($cacheKey, ['found' => true, 'value' => (string) $row['value']]);
-            return $row['value'];
+            /** @var string|null $rawValue */
+            $rawValue = $row['value'];
+            $cache->updatedatacache($cacheKey, ['found' => true, 'value' => $rawValue]);
+            return $rawValue;
         }
 
         $cache->updatedatacache($cacheKey, ['found' => false]);
@@ -883,14 +886,14 @@ class Modules
             . ' SET value = value + :value WHERE modulename = :module AND setting = :setting'
             . ' AND objtype = :objtype AND objid = :objid',
             [
-                'value' => (string) $value,
+                'value' => $value,
                 'module' => $module,
                 'setting' => $name,
                 'objtype' => $objtype,
                 'objid' => $objid,
             ],
             [
-                'value' => ParameterType::STRING,
+                'value' => Types::FLOAT,
                 'module' => ParameterType::STRING,
                 'setting' => ParameterType::STRING,
                 'objtype' => ParameterType::STRING,

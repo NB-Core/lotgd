@@ -66,6 +66,28 @@ final class SqlAddslashesUsageCheckTest extends TestCase
         $this->assertSame([], $violations);
     }
 
+    public function testCheckerFlagsSplitSqlConstructionUsingEscapedTemporaryVariable(): void
+    {
+        $root = $this->createFixtureRoot();
+        file_put_contents(
+            $root . '/pages/split-sql.php',
+            <<<'PHP'
+<?php
+$escapedName = addslashes($name);
+$audit = 'not sql';
+$flag = true;
+$sql = "UPDATE modules SET formalname='" . $escapedName . "'";
+Database::query($sql);
+PHP
+        );
+
+        $checker = new SqlAddslashesUsageCheck();
+        $violations = $checker->collectViolations($root);
+
+        $this->assertCount(1, $violations);
+        $this->assertStringContainsString('pages/split-sql.php:2:', $violations[0]);
+    }
+
     private function createFixtureRoot(): string
     {
         $root = sys_get_temp_dir() . '/lotgd-sql-addslashes-check-' . uniqid('', true);

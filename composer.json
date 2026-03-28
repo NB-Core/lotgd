@@ -28,14 +28,14 @@
             "Lotgd\\Tests\\Stubs\\": "tests/Stubs/"
         }
     },
-  "scripts": {
-    "qa:http-wrappers": "php scripts/check-legacy-http-wrappers.php",
-    "qa:sql-addslashes": "php scripts/check-sql-addslashes.php",
-    "static": [
-      "@qa:http-wrappers",
-      "@qa:sql-addslashes",
-      "phpstan analyse --configuration phpstan.neon --memory-limit=512M"
-    ],
+    "scripts": {
+        "qa:http-wrappers": "php scripts/check-legacy-http-wrappers.php",
+        "qa:sql-addslashes": "php scripts/check-sql-addslashes.php",
+        "static": [
+            "@qa:http-wrappers",
+            "@qa:sql-addslashes",
+            "phpstan analyse --configuration phpstan.neon --memory-limit=512M"
+        ],
         "test": "phpunit --configuration phpunit.xml",
         "lint": "phpcs .",
         "lint:fix": "phpcbf ."
