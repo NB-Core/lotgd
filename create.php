@@ -221,6 +221,7 @@ if ($op == "forgot") {
             if (trim($row['emailaddress']) != "") {
                 if ($row['forgottenpassword'] == "") {
                     $row['forgottenpassword'] = substr("x" . md5(date("Y-m-d H:i:s") . $row['password']), 0, 32);
+                    // Keep account bootstrap writes parameterized to avoid SQL interpolation.
                     $conn = Database::getDoctrineConnection();
                     $accountsTable = Database::prefix('accounts');
                     $conn->executeStatement(
@@ -392,13 +393,82 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                     }
                     $dbpass = PasswordHelper::hash($pass1);
                     $dbpassAlgo = PasswordHelper::ALGO_MODERN;
-                    $allowednavs = addslashes(serialize(['village.php' => true]));
-                    $sql = "INSERT INTO " . Database::prefix("accounts") . "
-                                                (playername,name, superuser, title, password, password_algo, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate,badguy,allowednavs,restorepage,specialinc,specialmisc,bufflist,dragonpoints,replaceemail,forgottenpassword,prefs,hauntedby,donationconfig,bio,ctitle,companions)
-                                                VALUES
-                                                ('$shortname','$title $shortname', '" . (int) $settings->getSetting('defaultsuperuser', 0) . "', '$title', '$dbpass', '$dbpassAlgo', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . (int) $settings->getSetting('newplayerstartgold', 50) . ", '" . addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','" . $allowednavs . "', 'village.php','','','',0,'','','','','','','','')";
-                    Database::query($sql);
-                    if (Database::affectedRows() <= 0) {
+                    $allowednavs = serialize(['village.php' => true]);
+                    $conn = Database::getDoctrineConnection();
+                    $accountsTable = Database::prefix('accounts');
+                    $rowsInserted = $conn->executeStatement(
+                        "INSERT INTO {$accountsTable}
+                            (playername, name, superuser, title, password, password_algo, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate, badguy, allowednavs, restorepage, specialinc, specialmisc, bufflist, dragonpoints, replaceemail, forgottenpassword, prefs, hauntedby, donationconfig, bio, ctitle, companions)
+                        VALUES
+                            (:playername, :name, :superuser, :title, :password, :password_algo, :sex, :login, :laston, :uniqueid, :lastip, :gold, :location, :emailaddress, :emailvalidation, :referer, NOW(), :badguy, :allowednavs, :restorepage, :specialinc, :specialmisc, :bufflist, :dragonpoints, :replaceemail, :forgottenpassword, :prefs, :hauntedby, :donationconfig, :bio, :ctitle, :companions)",
+                        [
+                            'playername' => $shortname,
+                            'name' => "{$title} {$shortname}",
+                            'superuser' => (int) $settings->getSetting('defaultsuperuser', 0),
+                            'title' => $title,
+                            'password' => $dbpass,
+                            'password_algo' => $dbpassAlgo,
+                            'sex' => $sex,
+                            'login' => $shortname,
+                            'laston' => date("Y-m-d H:i:s", strtotime("-1 day")),
+                            'uniqueid' => (string) (Cookies::getLgi() ?? ''),
+                            'lastip' => (string) $_SERVER['REMOTE_ADDR'],
+                            'gold' => (int) $settings->getSetting('newplayerstartgold', 50),
+                            'location' => $settings->getSetting('villagename', LOCATION_FIELDS),
+                            'emailaddress' => $email,
+                            'emailvalidation' => $emailverification,
+                            'referer' => (int) $referer,
+                            'badguy' => '',
+                            'allowednavs' => $allowednavs,
+                            'restorepage' => 'village.php',
+                            'specialinc' => '',
+                            'specialmisc' => '',
+                            'bufflist' => '',
+                            'dragonpoints' => 0,
+                            'replaceemail' => '',
+                            'forgottenpassword' => '',
+                            'prefs' => '',
+                            'hauntedby' => '',
+                            'donationconfig' => '',
+                            'bio' => '',
+                            'ctitle' => '',
+                            'companions' => '',
+                        ],
+                        [
+                            'playername' => ParameterType::STRING,
+                            'name' => ParameterType::STRING,
+                            'superuser' => ParameterType::INTEGER,
+                            'title' => ParameterType::STRING,
+                            'password' => ParameterType::STRING,
+                            'password_algo' => ParameterType::INTEGER,
+                            'sex' => ParameterType::INTEGER,
+                            'login' => ParameterType::STRING,
+                            'laston' => ParameterType::STRING,
+                            'uniqueid' => ParameterType::STRING,
+                            'lastip' => ParameterType::STRING,
+                            'gold' => ParameterType::INTEGER,
+                            'location' => ParameterType::STRING,
+                            'emailaddress' => ParameterType::STRING,
+                            'emailvalidation' => ParameterType::STRING,
+                            'referer' => ParameterType::INTEGER,
+                            'badguy' => ParameterType::STRING,
+                            'allowednavs' => ParameterType::STRING,
+                            'restorepage' => ParameterType::STRING,
+                            'specialinc' => ParameterType::STRING,
+                            'specialmisc' => ParameterType::STRING,
+                            'bufflist' => ParameterType::STRING,
+                            'dragonpoints' => ParameterType::STRING,
+                            'replaceemail' => ParameterType::STRING,
+                            'forgottenpassword' => ParameterType::STRING,
+                            'prefs' => ParameterType::STRING,
+                            'hauntedby' => ParameterType::STRING,
+                            'donationconfig' => ParameterType::STRING,
+                            'bio' => ParameterType::STRING,
+                            'ctitle' => ParameterType::STRING,
+                            'companions' => ParameterType::STRING,
+                        ]
+                    );
+                    if ($rowsInserted <= 0) {
                         $output->output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
                     } else {
                         $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";
@@ -407,8 +477,19 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                         $args = Http::allPost();
                         $args['acctid'] = $row['acctid'];
                         //insert output
-                        $sql_output = "INSERT INTO " . Database::prefix("accounts_output") . " VALUES ({$row['acctid']},'');";
-                        Database::query($sql_output);
+                        // Ensure output bootstrap row uses a bound account id as well.
+                        $accountsOutputTable = Database::prefix('accounts_output');
+                        $conn->executeStatement(
+                            "INSERT INTO {$accountsOutputTable} VALUES (:acctid, :output)",
+                            [
+                                'acctid' => (int) $row['acctid'],
+                                'output' => '',
+                            ],
+                            [
+                                'acctid' => ParameterType::INTEGER,
+                                'output' => ParameterType::STRING,
+                            ]
+                        );
                         //end
                         HookHandler::hook("process-create", $args);
                         if ($emailverification != "") {
