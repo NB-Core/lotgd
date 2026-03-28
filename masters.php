@@ -37,12 +37,16 @@ SuperuserNav::render();
 if ($op == "del") {
     $conn = Database::getDoctrineConnection();
     $mastersTable = Database::prefix('masters');
-    $conn->executeStatement(
+    $affectedRows = $conn->executeStatement(
         "DELETE FROM {$mastersTable} WHERE creatureid = :id",
         ['id' => $id],
         ['id' => ParameterType::INTEGER]
     );
-    $output->output("`^Master deleted.`0");
+    if ($affectedRows > 0) {
+        $output->output("`^Master deleted.`0");
+    } else {
+        $output->output("`\$No master found for the given id.`0");
+    }
     $op = "";
     Http::set("op", "");
 } elseif ($op == "save") {
