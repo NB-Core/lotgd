@@ -76,11 +76,35 @@ Nav::add("T?Sort by Time", "referers.php?sort=last" . ($sort == "last DESC" ? ""
 Nav::add("Rebuild Sites", "referers.php?op=rebuild");
 
 Header::pageHeader("Referers");
-$order = "count DESC";
-if ($sort != "") {
-    $order = $sort;
+/**
+ * Resolve sort safely using a strict allowlist map.
+ *
+ * Accepted input formats:
+ *  - "count", "uri", "last"
+ *  - "count ASC|DESC", "uri ASC|DESC", "last ASC|DESC"
+ * Defaults to "count DESC" for invalid/missing input.
+ */
+$order = 'count DESC';
+$sortColumnMap = [
+    'count' => 'count',
+    'uri'   => 'site',
+    'last'  => 'last',
+];
+$sortDirectionMap = [
+    'ASC'  => 'ASC',
+    'DESC' => 'DESC',
+];
+if ($sort !== '') {
+    $parts = preg_split('/\s+/', trim(str_replace('+', ' ', $sort))) ?: [];
+    $sortKey = strtolower((string) ($parts[0] ?? ''));
+    $sortDirection = strtoupper((string) ($parts[1] ?? 'DESC'));
+
+    if (isset($sortColumnMap[$sortKey], $sortDirectionMap[$sortDirection])) {
+        $order = $sortColumnMap[$sortKey] . ' ' . $sortDirectionMap[$sortDirection];
+    }
 }
-$sql = "SELECT SUM(count) AS count, MAX(last) AS last,site FROM " . Database::prefix("referers") . " GROUP BY site ORDER BY $order LIMIT 100";
+
+$sql = "SELECT SUM(count) AS count, MAX(last) AS last,site FROM {$referersTable} GROUP BY site ORDER BY {$order} LIMIT :summaryLimit";
 $count = Translator::translate("Count");
 $last = Translator::translate("Last");
 $dest = Translator::translate("Destination");
@@ -95,8 +119,12 @@ $output->rawOutput(
         $dest
     )
 );
-$result = Database::query($sql);
-while ($row = Database::fetchAssoc($result)) {
+$result = $conn->executeQuery(
+    $sql,
+    ['summaryLimit' => 100],
+    ['summaryLimit' => ParameterType::INTEGER]
+);
+while ($row = $result->fetchAssociative()) {
     $output->rawOutput("<tr class='trdark'><td valign='top'>");
     $rowCount = $row['count'] ?? '';
     $output->outputNotl('`b%s`b', $rowCount);
@@ -109,13 +137,24 @@ while ($row = Database::fetchAssoc($result)) {
     $output->outputNotl('`b%s`b', $site === '' ? $none : $site);
     $output->rawOutput("</td></tr>");
 
-    $sql = "SELECT count,last,uri,dest,ip FROM " . Database::prefix("referers") . " WHERE site='" . addslashes($row['site']) . "' ORDER BY {$order} LIMIT 25";
-    $result1 = Database::query($sql);
+    $sql = "SELECT count,last,uri,dest,ip FROM {$referersTable} WHERE site = :site ORDER BY {$order} LIMIT :detailLimit";
+    $result1 = $conn->executeQuery(
+        $sql,
+        [
+            'site' => (string) ($row['site'] ?? ''),
+            'detailLimit' => 25,
+        ],
+        [
+            'site' => ParameterType::STRING,
+            'detailLimit' => ParameterType::INTEGER,
+        ]
+    );
     $skippedcount = 0;
     $skippedtotal = 0;
-    $number = Database::numRows($result1);
+    $detailRows = $result1->fetchAllAssociative();
+    $number = count($detailRows);
     for ($k = 0; $k < $number; $k++) {
-        $row1 = Database::fetchAssoc($result1);
+        $row1 = $detailRows[$k];
         $diffsecs = strtotime("now") - strtotime($row1['last']);
         if ($diffsecs <= 604800) {
             $output->rawOutput("<tr class='trlight'><td>");
