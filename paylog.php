@@ -164,13 +164,28 @@ if ($op == "") {
         $output->rawOutput("</table><br>");
     }
 
-    $sql = "SELECT " . Database::prefix("paylog") . ".*," . Database::prefix("accounts") . ".name," . Database::prefix("accounts") . ".donation," . Database::prefix("accounts") . ".donationspent FROM " . Database::prefix("paylog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("paylog") . ".acctid = " . Database::prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
-    $result = Database::query($sql);
+    $accountsTable = Database::prefix('accounts');
+    $result = $conn->executeQuery(
+        "SELECT {$paylogTable}.*, {$accountsTable}.name, {$accountsTable}.donation, {$accountsTable}.donationspent
+            FROM {$paylogTable}
+            LEFT JOIN {$accountsTable} ON {$paylogTable}.acctid = {$accountsTable}.acctid
+            WHERE processdate >= :startdate AND processdate < :enddate
+            ORDER BY payid DESC",
+        [
+            'startdate' => (string) $startdate,
+            'enddate' => (string) $enddate,
+        ],
+        [
+            'startdate' => ParameterType::STRING,
+            'enddate' => ParameterType::STRING,
+        ]
+    );
+    $rows = $result->fetchAllAssociative();
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>Date</td><td>$id</td><td>$type</td><td>$gross</td><td>$fee</td><td>$net</td><td>$processed</td><td>$who</td></tr>");
-    $number = Database::numRows($result);
+    $number = count($rows);
     for ($i = 0; $i < $number; $i++) {
-        $row = Database::fetchAssoc($result);
+        $row = $rows[$i];
         $info = Serialization::safeUnserialize($row['info']);
         $normalized = LegacyPayloadNormalizer::normalize($row, $info, $currency);
         if (! $normalized['is_valid']) {

@@ -102,4 +102,37 @@ final class SuperuserEndpointHardeningWave2RegressionTest extends TestCase
             $source
         );
     }
+
+    public function testCreateDuplicateAndReferralLookupsUseExecuteQueryWithStringBindings(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/create.php');
+
+        self::assertStringContainsString(
+            'SELECT login FROM {$accountsTable} WHERE emailaddress = :emailaddress',
+            $source
+        );
+        self::assertStringContainsString(
+            'SELECT name FROM {$accountsTable} WHERE login = :login',
+            $source
+        );
+        self::assertStringContainsString(
+            'SELECT acctid FROM {$accountsTable} WHERE login = :login',
+            $source
+        );
+        self::assertStringContainsString("'emailaddress' => ParameterType::STRING", $source);
+        self::assertStringContainsString("'login' => ParameterType::STRING", $source);
+        self::assertStringNotContainsString("WHERE login='$shortname'", $source);
+        self::assertStringNotContainsString("Database::escape(\$refer)", $source);
+    }
+
+    public function testPaylogMonthWindowQueryUsesBoundDatetimePlaceholders(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/paylog.php');
+
+        self::assertStringContainsString('WHERE processdate >= :startdate AND processdate < :enddate', $source);
+        self::assertStringContainsString("'startdate' => ParameterType::STRING", $source);
+        self::assertStringContainsString("'enddate' => ParameterType::STRING", $source);
+        self::assertStringContainsString('$rows = $result->fetchAllAssociative();', $source);
+        self::assertStringNotContainsString("processdate>='$startdate' AND processdate < '$enddate'", $source);
+    }
 }
