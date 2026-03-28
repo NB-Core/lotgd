@@ -22,6 +22,16 @@ class DoctrineResult
         return array_shift($this->rows) ?: false;
     }
 
+    public function fetchOne()
+    {
+        $row = array_shift($this->rows);
+        if (!is_array($row) || empty($row)) {
+            return false;
+        }
+
+        return reset($row);
+    }
+
     public function rowCount(): int|string
     {
         if ($this->rowCountOverride !== null) {
@@ -424,6 +434,28 @@ class DoctrineConnection
     public function getParams(): array
     {
         return $this->params;
+    }
+
+    private bool $inTransaction = false;
+
+    public function beginTransaction(): void
+    {
+        $this->inTransaction = true;
+    }
+
+    public function commit(): void
+    {
+        $this->inTransaction = false;
+    }
+
+    public function rollBack(): void
+    {
+        $this->inTransaction = false;
+    }
+
+    public function isTransactionActive(): bool
+    {
+        return $this->inTransaction;
     }
 }
 

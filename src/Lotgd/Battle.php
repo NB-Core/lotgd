@@ -299,13 +299,12 @@ class Battle
     public static function selectTaunt(): string
     {
         $connection = Database::getDoctrineConnection();
-        $result = $connection->executeQuery(
+        $row = $connection->executeQuery(
             'SELECT taunt FROM ' . Database::prefix('taunts') . ' ORDER BY rand(:seed) LIMIT 1',
             ['seed' => random_int(0, mt_getrandmax())],
             ['seed' => ParameterType::INTEGER]
-        );
-        if ($result->rowCount() > 0) {
-            $row = $result->fetchAssociative();
+        )->fetchAssociative();
+        if ($row !== false) {
             $taunt = $row['taunt'];
         } else {
             $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
@@ -320,13 +319,12 @@ class Battle
     public static function selectTauntArray(): array
     {
         $connection = Database::getDoctrineConnection();
-        $result = $connection->executeQuery(
+        $row = $connection->executeQuery(
             'SELECT taunt FROM ' . Database::prefix('taunts') . ' ORDER BY rand(:seed) LIMIT 1',
             ['seed' => random_int(0, mt_getrandmax())],
             ['seed' => ParameterType::INTEGER]
-        );
-        if ($result->rowCount() > 0) {
-            $row = $result->fetchAssociative();
+        )->fetchAssociative();
+        if ($row !== false) {
             $taunt = $row['taunt'];
         } else {
             $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";

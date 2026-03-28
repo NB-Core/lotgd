@@ -116,7 +116,7 @@ class ExpireChars
         $deletedAcctIds = [];
 
         foreach ($rows as $row) {
-            $connection->executeStatement('START TRANSACTION');
+            $connection->beginTransaction();
             $error = null;
             $cleanupPerformed = false;
             try {
@@ -132,13 +132,15 @@ class ExpireChars
                         throw new \RuntimeException('deletion failed');
                     }
 
-                    $connection->executeStatement('COMMIT');
+                    $connection->commit();
                     $deletedAcctIds[] = (int) $row['acctid'];
                 } else {
-                    $connection->executeStatement('ROLLBACK');
+                    $connection->rollBack();
                 }
             } catch (\Throwable $e) {
-                $connection->executeStatement('ROLLBACK');
+                if ($connection->isTransactionActive()) {
+                    $connection->rollBack();
+                }
                 $error = $e;
             }
 

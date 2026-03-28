@@ -28,7 +28,7 @@ class ServerFunctions
         $settings = Settings::getInstance();
         if (abs($settings->getSetting('OnlineCountLast', 0) - strtotime('now')) > 60) {
             $lastOnThreshold = date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds'));
-            $onlinecount = $connection->executeQuery(
+            $onlinecount = (int) $connection->executeQuery(
                 'SELECT count(acctid) as counter FROM ' . Database::prefix('accounts')
                 . ' WHERE locked = :locked AND loggedin = :loggedIn AND laston > :lastOnThreshold',
                 [
@@ -41,8 +41,7 @@ class ServerFunctions
                     'loggedIn' => ParameterType::INTEGER,
                     'lastOnThreshold' => ParameterType::STRING,
                 ]
-            )->fetchAssociative();
-            $onlinecount = (int) ($onlinecount['counter'] ?? $onlinecount['total_count'] ?? 0);
+            )->fetchOne();
             $settings->saveSetting('OnlineCount', $onlinecount);
             $settings->saveSetting('OnlineCountLast', strtotime('now'));
         } else {
