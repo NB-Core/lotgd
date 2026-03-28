@@ -57,13 +57,54 @@ final class SqlAddslashesUsageCheckTest extends TestCase
         mkdir($root . '/src/Lotgd', 0777, true);
         file_put_contents(
             $root . '/src/Lotgd/PlayerFunctions.php',
-            "<?php\n\$sql = 'SELECT acctid FROM accounts WHERE acctid IN (' . addslashes(implode(',', \$players)) . ')';\n"
+            $this->buildLegacyPlayerFunctionsFixture(
+                269,
+                "\$sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', \$players)) . ')';"
+            )
         );
 
         $checker = new SqlAddslashesUsageCheck();
         $violations = $checker->collectViolations($root);
 
         $this->assertSame([], $violations);
+    }
+
+    public function testCheckerFlagsSimilarButNewLegacyLikeLine(): void
+    {
+        $root = $this->createFixtureRoot();
+        mkdir($root . '/src/Lotgd', 0777, true);
+        file_put_contents(
+            $root . '/src/Lotgd/PlayerFunctions.php',
+            $this->buildLegacyPlayerFunctionsFixture(
+                269,
+                "\$sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', \$players)) . ') ORDER BY acctid';"
+            )
+        );
+
+        $checker = new SqlAddslashesUsageCheck();
+        $violations = $checker->collectViolations($root);
+
+        $this->assertCount(1, $violations);
+        $this->assertStringContainsString('src/Lotgd/PlayerFunctions.php:269:', $violations[0]);
+    }
+
+    public function testCheckerIgnoresOnlyExactBaselineEntry(): void
+    {
+        $root = $this->createFixtureRoot();
+        mkdir($root . '/src/Lotgd', 0777, true);
+        file_put_contents(
+            $root . '/src/Lotgd/PlayerFunctions.php',
+            $this->buildLegacyPlayerFunctionsFixture(
+                270,
+                "\$sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', \$players)) . ')';"
+            )
+        );
+
+        $checker = new SqlAddslashesUsageCheck();
+        $violations = $checker->collectViolations($root);
+
+        $this->assertCount(1, $violations);
+        $this->assertStringContainsString('src/Lotgd/PlayerFunctions.php:270:', $violations[0]);
     }
 
     public function testCheckerFlagsSplitSqlConstructionUsingEscapedTemporaryVariable(): void
@@ -96,6 +137,17 @@ PHP
         $this->fixtureRoots[] = $root;
 
         return $root;
+    }
+
+    private function buildLegacyPlayerFunctionsFixture(int $lineNumber, string $line): string
+    {
+        $phpLines = ['<?php'];
+        while (count($phpLines) < ($lineNumber - 1)) {
+            $phpLines[] = '$placeholder = null;';
+        }
+        $phpLines[] = $line;
+
+        return implode("\n", $phpLines) . "\n";
     }
 
     private function removeDirectoryRecursively(string $path): void
