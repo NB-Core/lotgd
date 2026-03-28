@@ -65,7 +65,7 @@ final class AMotdTest extends TestCase
 
         $statement = $connection->executeStatements[0] ?? null;
         $this->assertNotNull($statement);
-        $this->assertSame(serialize(['body' => 'Question?', 'opt' => ['Yes', 'No']]), $statement['params']['body'] ?? null);
+        $this->assertSame(addslashes(serialize(['body' => 'Question?', 'opt' => ['Yes', 'No']])), $statement['params']['body'] ?? null);
         $this->assertSame(ParameterType::STRING, $statement['types']['body'] ?? null);
         $this->assertSame(ParameterType::INTEGER, $statement['types']['author'] ?? null);
     }

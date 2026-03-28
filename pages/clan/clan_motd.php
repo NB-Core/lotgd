@@ -22,10 +22,10 @@ use Doctrine\DBAL\ParameterType;
     $charsetIso = $settings->getSetting('charset', 'ISO-8859-1');
 if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     $connection = Database::getDoctrineConnection();
-    $clanmotd = Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, $charsetIso));
+    $clanmotd = stripslashes(Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, $charsetIso)));
     if (
         Http::postIsset('clanmotd') &&
-            stripslashes($clanmotd) != $claninfo['clanmotd']
+            $clanmotd != $claninfo['clanmotd']
     ) {
         $connection->executeStatement(
             "UPDATE " . Database::prefix("clans") . " SET clanmotd = :clanmotd, motdauthor = :motdauthor WHERE clanid = :clanid",
@@ -41,7 +41,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
             ]
         );
         DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
-        $claninfo['clanmotd'] = stripslashes($clanmotd);
+        $claninfo['clanmotd'] = $clanmotd;
         $output->output("Updating MoTD`n");
         $claninfo['motdauthor'] = $session['user']['acctid'];
     }
@@ -71,7 +71,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
         $claninfo['descauthor'] = $session['user']['acctid'];
     }
     $customSayPost = Http::post('customsay');
-    $customsay = is_string($customSayPost) ? $customSayPost : '';
+    $customsay = stripslashes(is_string($customSayPost) ? $customSayPost : '');
     if (Http::postIsset('customsay') && $customsay != $claninfo['customsay'] && $session['user']['clanrank'] >= CLAN_LEADER) {
         $connection->executeStatement(
             "UPDATE " . Database::prefix("clans") . " SET customsay = :customsay WHERE clanid = :clanid",
@@ -86,7 +86,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
         );
         DataCache::getInstance()->invalidatedatacache("clandata-{$claninfo['clanid']}");
         $output->output("Updating custom say line`n");
-        $claninfo['customsay'] = stripslashes($customsay);
+        $claninfo['customsay'] = $customsay;
     }
     $row = $connection->fetchAssociative(
         "SELECT name FROM " . Database::prefix("accounts") . " WHERE acctid = :acctid",
