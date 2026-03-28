@@ -237,9 +237,12 @@ final class SqlAddslashesUsageCheck
             if (!str_contains($windowLine, '$' . $assignedVariable)) {
                 continue;
             }
-            if ($this->containsSqlKeywords($normalizedLine)) {
-                return true;
-            }
+            // At this point we know:
+            //  - The surrounding window contains SQL keywords (line 205),
+            //  - This line is part of that window,
+            //  - It references both $sql and the escaped variable.
+            // Treat this as SQL context even if this specific line has no keyword.
+            return true;
         }
 
         return false;
