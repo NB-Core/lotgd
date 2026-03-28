@@ -303,7 +303,7 @@ class Motd
             $choices = [];
         }
         $data = ['body' => $text, 'opt' => $choices];
-        $body = serialize($data);
+        $body = addslashes(serialize($data));
         $date = date('Y-m-d H:i:s');
         $connection = Database::getDoctrineConnection();
         $connection->executeStatement(
