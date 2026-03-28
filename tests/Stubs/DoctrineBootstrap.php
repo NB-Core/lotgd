@@ -440,16 +440,19 @@ class DoctrineConnection
 
     public function beginTransaction(): void
     {
+        $this->queries[] = 'START TRANSACTION';
         $this->inTransaction = true;
     }
 
     public function commit(): void
     {
+        $this->queries[] = 'COMMIT';
         $this->inTransaction = false;
     }
 
     public function rollBack(): void
     {
+        $this->queries[] = 'ROLLBACK';
         $this->inTransaction = false;
     }
 

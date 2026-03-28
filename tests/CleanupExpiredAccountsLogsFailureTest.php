@@ -48,9 +48,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
             [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
         ];
         CoreDatabase::getDoctrineConnection()->executeStatementResults = [
-            1, // START TRANSACTION
             0, // DELETE affects 0 rows => failure
-            1, // ROLLBACK
         ];
 
         ExpireChars::cleanupExpiredAccountsForTests();
@@ -69,9 +67,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
             [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
         ];
         CoreDatabase::getDoctrineConnection()->executeStatementResults = [
-            1, // START TRANSACTION
             1, // DELETE
-            1, // COMMIT
         ];
 
         ExpireChars::cleanupExpiredAccountsForTests();
