@@ -248,7 +248,7 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection = $this->createConnectionMock();
         $connection->expects(self::exactly(2))
             ->method('fetchAssociative')
-            ->willReturnOnConsecutiveCalls(['acctid' => 13], ['payid' => 100, 'processed' => 0]);
+            ->willReturnOnConsecutiveCalls(['acctid' => 13], ['payid' => 102, 'processed' => 0]);
         $connection->expects(self::once())->method('lastInsertId')->willReturn(101);
         $connection->expects(self::never())->method('beginTransaction');
         $connection->expects(self::exactly(2))
@@ -296,7 +296,7 @@ final class IpnPaymentProcessorTest extends TestCase
         $connection = $this->createConnectionMock();
         $connection->expects(self::exactly(2))
             ->method('fetchAssociative')
-            ->willReturnOnConsecutiveCalls(['acctid' => 13], ['payid' => 200, 'processed' => 0]);
+            ->willReturnOnConsecutiveCalls(['acctid' => 13], ['payid' => 202, 'processed' => 0]);
         $connection->expects(self::once())->method('lastInsertId')->willReturn(201);
         $connection->expects(self::never())->method('beginTransaction');
         $connection->expects(self::exactly(2))
