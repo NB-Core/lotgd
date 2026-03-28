@@ -29,11 +29,12 @@ class Newday
         $rows = Database::getDoctrineConnection()
             ->fetchAllAssociative('SHOW TABLES');
 
+        $conn = Database::getDoctrineConnection();
         $tables = [];
         $start = microtime(true);
         foreach ($rows as $row) {
             foreach ($row as $val) {
-                Database::getDoctrineConnection()->executeStatement('OPTIMIZE TABLE ' . Database::getDoctrineConnection()->quoteIdentifier((string) $val));
+                $conn->executeStatement('OPTIMIZE TABLE ' . $conn->quoteIdentifier((string) $val));
                 $tables[] = $val;
             }
         }

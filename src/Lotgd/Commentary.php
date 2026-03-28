@@ -508,7 +508,7 @@ SQL;
      *
      * @return array<int, array>
      */
-    private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid, string $real_request_uri): array
+    private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid): array
     {
         $sql = self::buildCommentFetchSql($cid);
         $params = ['section' => $section];
@@ -639,7 +639,7 @@ SQL;
 
         // Determine pagination data and fetch comments
         [$com, $cid, $newadded] = self::getPaginationData($section, $limit, $comscroll);
-        $commentbuffer = self::fetchCommentBuffer($section, $limit, $com, $cid, $real_request_uri);
+        $commentbuffer = self::fetchCommentBuffer($section, $limit, $com, $cid);
 
         $rowcount = count($commentbuffer);
         if ($rowcount > 0) {

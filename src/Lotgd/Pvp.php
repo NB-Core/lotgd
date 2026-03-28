@@ -395,6 +395,7 @@ class Pvp
                 $types
             );
         } else {
+            @trigger_error('Passing a raw SQL string to Pvp::listTargets() is deprecated. Use bound parameters via DBAL instead.', E_USER_DEPRECATED);
             $result = Database::getDoctrineConnection()->executeQuery((string) $sql);
         }
 
