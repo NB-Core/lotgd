@@ -113,7 +113,6 @@ class Moderate
     private static function showNavLinks(string $section, int $limit, int $cid, int $rowcount, bool $jump, int $com, string $requestUri, int $newadded): void
     {
         global $session;
-        $connection = Database::getDoctrineConnection();
 
         $output = Output::getInstance();
 
@@ -124,7 +123,7 @@ class Moderate
         $lastu = Translator::translateInline('Last Page &gt;&gt;');
 
         if ($rowcount >= $limit || $cid > 0) {
-            $val = $connection->executeQuery(
+            $val = Database::getDoctrineConnection()->executeQuery(
                 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . ' WHERE section = :section AND postdate > :recentComments',
                 [
                     'section' => $section,

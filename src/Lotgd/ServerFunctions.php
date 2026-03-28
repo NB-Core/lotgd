@@ -24,9 +24,9 @@ class ServerFunctions
      */
     public static function isTheServerFull(): bool
     {
-        $connection = Database::getDoctrineConnection();
         $settings = Settings::getInstance();
         if (abs($settings->getSetting('OnlineCountLast', 0) - strtotime('now')) > 60) {
+            $connection = Database::getDoctrineConnection();
             $lastOnThreshold = date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds'));
             $onlinecount = (int) $connection->executeQuery(
                 'SELECT count(acctid) as counter FROM ' . Database::prefix('accounts')
