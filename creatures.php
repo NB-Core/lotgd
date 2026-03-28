@@ -340,14 +340,19 @@ if ($op == "" || $op == "search") {
             Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
         } else {
             if ($op == "edit" && $id != "") {
-                $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE creatureid=$id";
-                $result = Database::query($sql);
-                if (Database::numRows($result) <> 1) {
+                $conn = Database::getDoctrineConnection();
+                $creaturesTable = Database::prefix('creatures');
+                $result = $conn->executeQuery(
+                    "SELECT * FROM {$creaturesTable} WHERE creatureid = :id",
+                    ['id' => (int) $id],
+                    ['id' => ParameterType::INTEGER]
+                );
+                $row = $result->fetchAssociative();
+                if ($row === false) {
                     $output->output("`4Error`0, that creature was not found!");
                 } else {
-                    $row = Database::fetchAssoc($result);
+                    $level = $row['creaturelevel'];
                 }
-                $level = $row['creaturelevel'];
             } else {
                 //check what was posted if this is a refresh, always fill in the base values
                 if ($refresh) {
