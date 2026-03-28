@@ -457,7 +457,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                             'specialinc' => ParameterType::STRING,
                             'specialmisc' => ParameterType::STRING,
                             'bufflist' => ParameterType::STRING,
-                            'dragonpoints' => ParameterType::INTEGER,
+                            'dragonpoints' => ParameterType::STRING,
                             'replaceemail' => ParameterType::STRING,
                             'forgottenpassword' => ParameterType::STRING,
                             'prefs' => ParameterType::STRING,
