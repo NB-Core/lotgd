@@ -123,7 +123,7 @@ if ($op == "save") {
             $types['id'] = ParameterType::INTEGER;
 
             $sql = "UPDATE {$creaturesTable} SET " . implode(', ', $setClauses) . " WHERE creatureid = :id";
-            $result = $conn->executeStatement($sql, $params, $types) > 0;
+            $result = $conn->executeStatement($sql, $params, $types) >= 0;
         } else {
             $cols = array();
             $params = [];
