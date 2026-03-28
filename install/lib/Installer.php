@@ -30,6 +30,40 @@ use Symfony\Component\Console\Input\ArrayInput;
 class Installer
 {
     /**
+     * Canonical dbconnect.php defaults used for fresh installs and migrations.
+     *
+     * Keep these defaults aligned with RuntimeHardening::buildOptions() so
+     * operators receive predictable behavior after installation.
+     *
+     * @var array<string, mixed>
+     */
+    private const DBCONNECT_DEFAULTS = [
+        'DB_HOST' => '',
+        'DB_USER' => '',
+        'DB_PASS' => '',
+        'DB_NAME' => '',
+        'DB_PREFIX' => '',
+        'DB_USEDATACACHE' => 0,
+        'DB_DATACACHEPATH' => '',
+        'SESSION_COOKIE_PATH' => '/',
+        'SESSION_COOKIE_DOMAIN' => '',
+        'SESSION_COOKIE_SAMESITE' => 'Lax',
+        'SESSION_COOKIE_SECURE_AUTO' => true,
+        'SESSION_COOKIE_SECURE_FORCE' => false,
+        'SECURITY_HEADERS_ENABLED' => true,
+        'SECURITY_FRAME_OPTIONS' => 'SAMEORIGIN',
+        'SECURITY_REFERRER_POLICY' => 'strict-origin-when-cross-origin',
+        'SECURITY_USE_CSP_FRAME_ANCESTORS' => false,
+        'SECURITY_CSP_FRAME_ANCESTORS' => "'self'",
+        'SECURITY_HSTS_ENABLED' => false,
+        'SECURITY_HSTS_MAX_AGE' => 31536000,
+        'SECURITY_HSTS_INCLUDE_SUBDOMAINS' => false,
+        'SECURITY_HSTS_PRELOAD' => false,
+        'SECURITY_TRUST_FORWARDED_PROTO' => false,
+        'SECURITY_TRUSTED_PROXIES' => '',
+    ];
+
+    /**
      * Counter for unique HTML tip identifiers used by the tip() helper.
      *
      * @var int
@@ -828,18 +862,11 @@ class Installer
             $this->output->output("`@`c`bWriting your dbconnect.php file`b`c");
             $this->output->output("`2I'm attempting to write a file named 'dbconnect.php' to your site root.");
             $this->output->output("This file tells LoGD how to connect to the database, and is necessary to continue installation.`n");
-            $dbconnect =
-                "<?php\n"
-                . "//This file automatically created by installer.php on " . date("M d, Y h:i a") . "\n"
-                . "return [\n"
-                . "    'DB_HOST' => '{$session['dbinfo']['DB_HOST']}',\n"
-                . "    'DB_USER' => '{$session['dbinfo']['DB_USER']}',\n"
-                . "    'DB_PASS' => '{$session['dbinfo']['DB_PASS']}',\n"
-                . "    'DB_NAME' => '{$session['dbinfo']['DB_NAME']}',\n"
-                . "    'DB_PREFIX' => '{$session['dbinfo']['DB_PREFIX']}',\n"
-                . "    'DB_USEDATACACHE' => " . ((int)$session['dbinfo']['DB_USEDATACACHE']) . ",\n"
-                . "    'DB_DATACACHEPATH' => '{$session['dbinfo']['DB_DATACACHEPATH']}',\n"
-                . "];\n";
+            $dbconnect = $this->buildDbconnectContents(
+                $this->normalizeDbconnectAssignments(
+                    $this->getSessionDbinfoOverrides($session['dbinfo'] ?? [])
+                )
+            );
             $failure = false;
             $dir = dirname($dbconnectPath);
 
@@ -1768,19 +1795,11 @@ class Installer
      *
      * @param array<string, mixed> $assignments
      *
-     * @return array{DB_HOST: string, DB_USER: string, DB_PASS: string, DB_NAME: string, DB_PREFIX: string, DB_USEDATACACHE: int, DB_DATACACHEPATH: string}
+     * @return array<string, mixed>
      */
     private function normalizeDbconnectAssignments(array $assignments): array
     {
-        $normalized = [
-            'DB_HOST' => '',
-            'DB_USER' => '',
-            'DB_PASS' => '',
-            'DB_NAME' => '',
-            'DB_PREFIX' => '',
-            'DB_USEDATACACHE' => 0,
-            'DB_DATACACHEPATH' => '',
-        ];
+        $normalized = self::DBCONNECT_DEFAULTS;
 
         foreach ($normalized as $key => $default) {
             if (! array_key_exists($key, $assignments)) {
@@ -1792,8 +1811,21 @@ class Installer
                 case 'DB_USEDATACACHE':
                     $normalized[$key] = (int) $value;
                     break;
+                case 'SECURITY_HSTS_MAX_AGE':
+                    $normalized[$key] = max(0, (int) $value);
+                    break;
                 case 'DB_PREFIX':
                     $normalized[$key] = $this->normalizePrefixValue($value);
+                    break;
+                case 'SESSION_COOKIE_SECURE_AUTO':
+                case 'SESSION_COOKIE_SECURE_FORCE':
+                case 'SECURITY_HEADERS_ENABLED':
+                case 'SECURITY_USE_CSP_FRAME_ANCESTORS':
+                case 'SECURITY_HSTS_ENABLED':
+                case 'SECURITY_HSTS_INCLUDE_SUBDOMAINS':
+                case 'SECURITY_HSTS_PRELOAD':
+                case 'SECURITY_TRUST_FORWARDED_PROTO':
+                    $normalized[$key] = $this->normalizeBoolean($value);
                     break;
                 default:
                     $normalized[$key] = (string) $value;
@@ -1814,7 +1846,31 @@ class Installer
     private function getSessionDbinfoOverrides(array $sessionDbinfo): array
     {
         $overrides = [];
-        $keys = ['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME', 'DB_PREFIX', 'DB_USEDATACACHE', 'DB_DATACACHEPATH'];
+        $keys = [
+            'DB_HOST',
+            'DB_USER',
+            'DB_PASS',
+            'DB_NAME',
+            'DB_PREFIX',
+            'DB_USEDATACACHE',
+            'DB_DATACACHEPATH',
+            'SESSION_COOKIE_PATH',
+            'SESSION_COOKIE_DOMAIN',
+            'SESSION_COOKIE_SAMESITE',
+            'SESSION_COOKIE_SECURE_AUTO',
+            'SESSION_COOKIE_SECURE_FORCE',
+            'SECURITY_HEADERS_ENABLED',
+            'SECURITY_FRAME_OPTIONS',
+            'SECURITY_REFERRER_POLICY',
+            'SECURITY_USE_CSP_FRAME_ANCESTORS',
+            'SECURITY_CSP_FRAME_ANCESTORS',
+            'SECURITY_HSTS_ENABLED',
+            'SECURITY_HSTS_MAX_AGE',
+            'SECURITY_HSTS_INCLUDE_SUBDOMAINS',
+            'SECURITY_HSTS_PRELOAD',
+            'SECURITY_TRUST_FORWARDED_PROTO',
+            'SECURITY_TRUSTED_PROXIES',
+        ];
 
         foreach ($keys as $key) {
             if (! array_key_exists($key, $sessionDbinfo)) {
@@ -1826,8 +1882,21 @@ class Installer
                 case 'DB_USEDATACACHE':
                     $overrides[$key] = (int) $value;
                     break;
+                case 'SECURITY_HSTS_MAX_AGE':
+                    $overrides[$key] = max(0, (int) $value);
+                    break;
                 case 'DB_PREFIX':
                     $overrides[$key] = $this->normalizePrefixValue($value);
+                    break;
+                case 'SESSION_COOKIE_SECURE_AUTO':
+                case 'SESSION_COOKIE_SECURE_FORCE':
+                case 'SECURITY_HEADERS_ENABLED':
+                case 'SECURITY_USE_CSP_FRAME_ANCESTORS':
+                case 'SECURITY_HSTS_ENABLED':
+                case 'SECURITY_HSTS_INCLUDE_SUBDOMAINS':
+                case 'SECURITY_HSTS_PRELOAD':
+                case 'SECURITY_TRUST_FORWARDED_PROTO':
+                    $overrides[$key] = $this->normalizeBoolean($value);
                     break;
                 default:
                     $overrides[$key] = (string) $value;
@@ -1850,6 +1919,8 @@ class Installer
             "<?php",
             '',
             "//This file automatically created by installer.php on " . date("M d, Y h:i a"),
+            '// Runtime hardening defaults are intentionally explicit below so',
+            '// admins can review and tune cookie/header behavior in one place.',
             'return [',
             "    'DB_HOST' => " . var_export($data['DB_HOST'], true) . ',',
             "    'DB_USER' => " . var_export($data['DB_USER'], true) . ',',
@@ -1858,6 +1929,26 @@ class Installer
             "    'DB_PREFIX' => " . var_export($data['DB_PREFIX'], true) . ',',
             "    'DB_USEDATACACHE' => " . (int) $data['DB_USEDATACACHE'] . ',',
             "    'DB_DATACACHEPATH' => " . var_export($data['DB_DATACACHEPATH'], true) . ',',
+            '',
+            "    'SESSION_COOKIE_PATH' => " . var_export($data['SESSION_COOKIE_PATH'], true) . ',',
+            "    'SESSION_COOKIE_DOMAIN' => " . var_export($data['SESSION_COOKIE_DOMAIN'], true) . ',',
+            "    'SESSION_COOKIE_SAMESITE' => " . var_export($data['SESSION_COOKIE_SAMESITE'], true) . ',',
+            "    'SESSION_COOKIE_SECURE_AUTO' => " . var_export($data['SESSION_COOKIE_SECURE_AUTO'], true) . ',',
+            "    'SESSION_COOKIE_SECURE_FORCE' => " . var_export($data['SESSION_COOKIE_SECURE_FORCE'], true) . ',',
+            '',
+            "    'SECURITY_HEADERS_ENABLED' => " . var_export($data['SECURITY_HEADERS_ENABLED'], true) . ',',
+            "    'SECURITY_FRAME_OPTIONS' => " . var_export($data['SECURITY_FRAME_OPTIONS'], true) . ',',
+            "    'SECURITY_REFERRER_POLICY' => " . var_export($data['SECURITY_REFERRER_POLICY'], true) . ',',
+            "    'SECURITY_USE_CSP_FRAME_ANCESTORS' => " . var_export($data['SECURITY_USE_CSP_FRAME_ANCESTORS'], true) . ',',
+            "    'SECURITY_CSP_FRAME_ANCESTORS' => " . var_export($data['SECURITY_CSP_FRAME_ANCESTORS'], true) . ',',
+            '',
+            "    'SECURITY_HSTS_ENABLED' => " . var_export($data['SECURITY_HSTS_ENABLED'], true) . ',',
+            "    'SECURITY_HSTS_MAX_AGE' => " . (int) $data['SECURITY_HSTS_MAX_AGE'] . ',',
+            "    'SECURITY_HSTS_INCLUDE_SUBDOMAINS' => " . var_export($data['SECURITY_HSTS_INCLUDE_SUBDOMAINS'], true) . ',',
+            "    'SECURITY_HSTS_PRELOAD' => " . var_export($data['SECURITY_HSTS_PRELOAD'], true) . ',',
+            '',
+            "    'SECURITY_TRUST_FORWARDED_PROTO' => " . var_export($data['SECURITY_TRUST_FORWARDED_PROTO'], true) . ',',
+            "    'SECURITY_TRUSTED_PROXIES' => " . var_export($data['SECURITY_TRUSTED_PROXIES'], true) . ',',
             '];',
             '',
         ];
@@ -1920,6 +2011,26 @@ class Installer
         $this->output->output("`2Replace its contents with the following configuration:`n`n`&");
         $this->output->rawOutput("<blockquote><pre>" . htmlentities($contents, ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "</pre></blockquote>");
         $this->output->output("`2After saving the file, rerun this step to continue.`n");
+    }
+
+    /**
+     * Normalize values commonly submitted as booleans in installer payloads.
+     */
+    private function normalizeBoolean(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (int) $value !== 0;
+        }
+
+        return in_array(
+            strtolower(trim((string) $value)),
+            ['1', 'true', 'yes', 'on'],
+            true
+        );
     }
 
     /**
