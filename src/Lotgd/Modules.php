@@ -775,6 +775,22 @@ class Modules
             $module = ModuleManager::getMostRecentModule();
         }
 
+        /** @var int $objid */
+        $objid = (int) $objid;
+        $cacheKey = "objpref-$type-$objid-$name-$module";
+        $cache = DataCache::getInstance();
+
+        /**
+         * Keep the legacy objpref cache behavior so repeated reads can be served
+         * from DataCache, while SQL safety is enforced at the DBAL query sink.
+         *
+         * @var array{found:bool,value?:string}|false $cachedValue
+         */
+        $cachedValue = $cache->datacache($cacheKey, 86400);
+        if (is_array($cachedValue) && array_key_exists('found', $cachedValue)) {
+            return $cachedValue['found'] ? ($cachedValue['value'] ?? null) : null;
+        }
+
         $result = Database::getDoctrineConnection()->executeQuery(
             'SELECT value FROM ' . Database::prefix('module_objprefs')
             . ' WHERE modulename = :module AND objtype = :objtype AND setting = :setting AND objid = :objid',
@@ -782,20 +798,23 @@ class Modules
                 'module' => $module,
                 'objtype' => $type,
                 'setting' => $name,
-                'objid' => (string) $objid,
+                'objid' => $objid,
             ],
             [
                 'module' => ParameterType::STRING,
                 'objtype' => ParameterType::STRING,
                 'setting' => ParameterType::STRING,
-                'objid' => ParameterType::STRING,
+                'objid' => ParameterType::INTEGER,
             ]
         );
         $row = $result->fetchAssociative();
 
         if ($row !== false) {
+            $cache->updatedatacache($cacheKey, ['found' => true, 'value' => (string) $row['value']]);
             return $row['value'];
         }
+
+        $cache->updatedatacache($cacheKey, ['found' => false]);
 
         $info = self::getModuleInfo($module);
         if (isset($info['prefs-' . $type][$name])) {
@@ -821,6 +840,8 @@ class Modules
         if ($module === null) {
             $module = ModuleManager::getMostRecentModule();
         }
+        /** @var int $objid */
+        $objid = (int) $objid;
 
         Database::getDoctrineConnection()->executeStatement(
             'REPLACE INTO ' . Database::prefix('module_objprefs')
@@ -829,14 +850,14 @@ class Modules
                 'module' => $module,
                 'objtype' => $objtype,
                 'setting' => $name,
-                'objid' => (string) $objid,
+                'objid' => $objid,
                 'value' => (string) $value,
             ],
             [
                 'module' => ParameterType::STRING,
                 'objtype' => ParameterType::STRING,
                 'setting' => ParameterType::STRING,
-                'objid' => ParameterType::STRING,
+                'objid' => ParameterType::INTEGER,
                 'value' => ParameterType::STRING,
             ]
         );
@@ -853,6 +874,8 @@ class Modules
         if ($module === null) {
             $module = ModuleManager::getMostRecentModule();
         }
+        /** @var int $objid */
+        $objid = (int) $objid;
 
         $conn = Database::getDoctrineConnection();
         $affected = $conn->executeStatement(
@@ -864,14 +887,14 @@ class Modules
                 'module' => $module,
                 'setting' => $name,
                 'objtype' => $objtype,
-                'objid' => (string) $objid,
+                'objid' => $objid,
             ],
             [
                 'value' => ParameterType::STRING,
                 'module' => ParameterType::STRING,
                 'setting' => ParameterType::STRING,
                 'objtype' => ParameterType::STRING,
-                'objid' => ParameterType::STRING,
+                'objid' => ParameterType::INTEGER,
             ]
         );
         if ($affected === 0) {
@@ -882,14 +905,14 @@ class Modules
                     'module' => $module,
                     'objtype' => $objtype,
                     'setting' => $name,
-                    'objid' => (string) $objid,
+                    'objid' => $objid,
                     'value' => (string) $value,
                 ],
                 [
                     'module' => ParameterType::STRING,
                     'objtype' => ParameterType::STRING,
                     'setting' => ParameterType::STRING,
-                    'objid' => ParameterType::STRING,
+                    'objid' => ParameterType::INTEGER,
                     'value' => ParameterType::STRING,
                 ]
             );
