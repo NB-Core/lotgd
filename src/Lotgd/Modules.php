@@ -417,6 +417,10 @@ class Modules
             self::$modulePreload[$row['location']][$row['modulename']] = $row['hook_callback'];
         }
 
+        if ($moduleNames === []) {
+            return true;
+        }
+
         $connection = Database::getDoctrineConnection();
         $sql = 'SELECT modulename,setting,value FROM ' . $Pmodule_settings . ' WHERE modulename IN (:moduleNames)';
         $result = $connection->executeQuery(
