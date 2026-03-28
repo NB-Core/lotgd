@@ -160,19 +160,46 @@ function admin_recommendations_collect(): array
  */
 function admin_recommendations_load_dbconnect(): array
 {
+    global $hardeningConfig;
+
+    // Prefer the configuration already loaded by common.php to avoid
+    // re-executing dbconnect.php and to support legacy/global formats.
+    if (isset($hardeningConfig) && is_array($hardeningConfig)) {
+        return $hardeningConfig;
+    }
+
     $dbconnectPath = dirname(__DIR__) . '/dbconnect.php';
     if (!file_exists($dbconnectPath)) {
         return [];
     }
 
+    $config       = [];
+    $bufferLevel  = ob_get_level();
+
     try {
+        ob_start();
         /** @psalm-suppress UnresolvableInclude */
-        $config = require $dbconnectPath;
+        $config = require_once $dbconnectPath;
+        ob_end_clean();
     } catch (\Throwable) {
+        // Ensure no partial output escapes if dbconnect.php misbehaves.
+        while (ob_get_level() > $bufferLevel) {
+            ob_end_clean();
+        }
+
         return [];
     }
 
-    return is_array($config) ? $config : [];
+    if (is_array($config)) {
+        return $config;
+    }
+
+    // Legacy dbconnect.php may populate $hardeningConfig via globals.
+    if (isset($hardeningConfig) && is_array($hardeningConfig)) {
+        return $hardeningConfig;
+    }
+
+    return [];
 }
 
 /**
