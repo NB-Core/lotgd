@@ -772,7 +772,7 @@ class Modules
         $objid = (int) $objid;
 
         $sql = 'DELETE FROM ' . Database::prefix('module_objprefs') . ' WHERE objtype = :objtype AND objid = :objid';
-        Database::executeStatement(
+        Database::getDoctrineConnection()->executeStatement(
             $sql,
             [
                 'objtype' => $objtype,
