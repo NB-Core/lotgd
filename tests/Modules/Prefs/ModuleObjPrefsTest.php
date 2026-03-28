@@ -137,9 +137,10 @@ namespace Lotgd\Tests\Modules\Prefs {
                         return 1;
                     }
 
-                    if (preg_match("/DELETE FROM module_objprefs WHERE objtype='([^']+)' AND objid='([^']+)'/", $sql, $m)) {
+                    if (str_contains($sql, 'DELETE FROM module_objprefs')
+                        && isset($params['objtype'], $params['objid'])) {
                         foreach (array_keys($this->objprefs) as $key) {
-                            if (str_starts_with($key, "objpref-{$m[1]}-{$m[2]}-")) {
+                            if (str_starts_with($key, "objpref-{$params['objtype']}-{$params['objid']}-")) {
                                 unset($this->objprefs[$key]);
                                 unset(Database::$queryCacheResults[$key]);
                             }
