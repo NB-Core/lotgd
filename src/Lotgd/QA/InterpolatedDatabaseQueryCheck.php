@@ -122,11 +122,12 @@ final class InterpolatedDatabaseQueryCheck
                 continue;
             }
 
-            if (!$this->isStaticQueryCall($tokens, $index)) {
+            $openParenIndex = 0;
+            if (!$this->isStaticQueryCall($tokens, $index, $openParenIndex)) {
                 continue;
             }
 
-            if ($this->isFirstArgumentSafe($tokens, $index)) {
+            if ($this->isFirstArgumentSafe($tokens, $openParenIndex)) {
                 continue;
             }
 
@@ -141,17 +142,59 @@ final class InterpolatedDatabaseQueryCheck
     /**
      * @param list<array<int,int|string>|string> $tokens
      */
-    private function isStaticQueryCall(array $tokens, int $index): bool
+    private function isStaticQueryCall(array $tokens, int $index, int &$openParenIndex = 0): bool
     {
-        $doubleColonToken = $tokens[$index + 1] ?? null;
+        $tokenCount = count($tokens);
+
+        $i = $this->skipWhitespaceAndComments($tokens, $index + 1, $tokenCount);
+        if ($i >= $tokenCount) {
+            return false;
+        }
+
+        $doubleColonToken = $tokens[$i];
         $isDoubleColon = $doubleColonToken === '::'
             || (is_array($doubleColonToken) && ($doubleColonToken[0] ?? null) === T_DOUBLE_COLON);
+        if (!$isDoubleColon) {
+            return false;
+        }
 
-        return $isDoubleColon
-            && is_array($tokens[$index + 2] ?? null)
-            && ($tokens[$index + 2][0] ?? null) === T_STRING
-            && strtolower((string) ($tokens[$index + 2][1] ?? '')) === 'query'
-            && ($tokens[$index + 3] ?? null) === '(';
+        $i = $this->skipWhitespaceAndComments($tokens, $i + 1, $tokenCount);
+        if (
+            $i >= $tokenCount
+            || !is_array($tokens[$i])
+            || ($tokens[$i][0] ?? null) !== T_STRING
+            || strtolower((string) ($tokens[$i][1] ?? '')) !== 'query'
+        ) {
+            return false;
+        }
+
+        $i = $this->skipWhitespaceAndComments($tokens, $i + 1, $tokenCount);
+        if ($i >= $tokenCount || $tokens[$i] !== '(') {
+            return false;
+        }
+
+        $openParenIndex = $i;
+
+        return true;
+    }
+
+    /**
+     * Advance past whitespace and comment tokens.
+     *
+     * @param list<array<int,int|string>|string> $tokens
+     */
+    private function skipWhitespaceAndComments(array $tokens, int $start, int $tokenCount): int
+    {
+        while ($start < $tokenCount) {
+            $token = $tokens[$start];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                $start++;
+                continue;
+            }
+            break;
+        }
+
+        return $start;
     }
 
     /**
@@ -159,12 +202,13 @@ final class InterpolatedDatabaseQueryCheck
      * (composed only of constant string literals, optionally concatenated).
      *
      * @param list<array<int,int|string>|string> $tokens
+     * @param int $openParenIndex Index of the '(' token that opens the argument list.
      */
-    private function isFirstArgumentSafe(array $tokens, int $index): bool
+    private function isFirstArgumentSafe(array $tokens, int $openParenIndex): bool
     {
         $tokenCount = count($tokens);
 
-        for ($i = $index + 4; $i < $tokenCount; $i++) {
+        for ($i = $openParenIndex + 1; $i < $tokenCount; $i++) {
             $token = $tokens[$i];
 
             // Skip whitespace and comments.
@@ -177,7 +221,10 @@ final class InterpolatedDatabaseQueryCheck
                 return true;
             }
 
-            // Constant (single-quoted) string literals are safe.
+            // Constant string literals (single- or double-quoted without
+            // interpolation) are safe.  Interpolated strings (tokenised as
+            // '"', T_ENCAPSED_AND_WHITESPACE, etc.) and heredocs
+            // (T_START_HEREDOC) will fall through to the unsafe return below.
             if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
                 continue;
             }

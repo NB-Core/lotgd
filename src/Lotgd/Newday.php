@@ -65,33 +65,33 @@ class Newday
             $session['user']['acctid'] ?? 0
         );
 
-        $timestamp = date('Y-m-d H:i:s', strtotime('now'));
+        $moveCutoff = date('Y-m-d H:i:s', strtotime('now'));
         try {
             $movedToArchive = $connection->executeStatement(
                 'INSERT IGNORE INTO ' . Database::prefix('debuglog_archive') .
                 ' SELECT * FROM ' . Database::prefix('debuglog') . ' WHERE date < :timestamp',
-                ['timestamp' => $timestamp],
+                ['timestamp' => $moveCutoff],
                 ['timestamp' => ParameterType::STRING]
             );
             $connection->executeStatement(
                 'DELETE FROM ' . Database::prefix('debuglog') . ' WHERE date < :timestamp',
-                ['timestamp' => $timestamp],
+                ['timestamp' => $moveCutoff],
                 ['timestamp' => ParameterType::STRING]
             );
 
-            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiredebuglog', 18) . ' days');
+            $purgeCutoff = self::calculateExpirationTimestamp($settings->getSetting('expiredebuglog', 18) . ' days');
             $expiredArchiveRows = 0;
             if ($settings->getSetting('expiredebuglog', 18) > 0) {
                 $expiredArchiveRows = $connection->executeStatement(
                     'DELETE FROM ' . Database::prefix('debuglog_archive') . ' WHERE date < :timestamp',
-                    ['timestamp' => $timestamp],
+                    ['timestamp' => $purgeCutoff],
                     ['timestamp' => ParameterType::STRING]
                 );
             }
 
             GameLog::log(
                 'Moved ' . $movedToArchive . ' from ' . Database::prefix('debuglog') . ' to ' . Database::prefix('debuglog_archive')
-                . " older than $timestamp. Purged $expiredArchiveRows archived rows.",
+                . " older than $moveCutoff. Purged $expiredArchiveRows archived rows older than $purgeCutoff.",
                 'maintenance',
                 false,
                 $session['user']['acctid'] ?? 0
@@ -187,7 +187,6 @@ class Newday
                 ['timestamp' => $timestamp],
                 ['timestamp' => ParameterType::STRING]
             );
-            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expirecontent', 180) . ' days');
             GameLog::log(
                 'Deleted ' . $affectedRows . ' records from ' . Database::prefix('faillog') . " older than $timestamp.",
                 'maintenance',
