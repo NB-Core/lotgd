@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
@@ -100,6 +102,7 @@ class ExpireChars
     private static function cleanupExpiredAccounts(): void
     {
         global $session;
+        $connection = Database::getDoctrineConnection();
         $settings = Settings::getInstance();
         $old = (int) $settings->getSetting('expireoldacct', 45);
         $new = (int) $settings->getSetting('expirenewacct', 10);
@@ -113,26 +116,31 @@ class ExpireChars
         $deletedAcctIds = [];
 
         foreach ($rows as $row) {
-            Database::query('START TRANSACTION');
+            $connection->beginTransaction();
             $error = null;
             $cleanupPerformed = false;
             try {
                 $cleanupPerformed = PlayerFunctions::charCleanup($row['acctid'], CHAR_DELETE_AUTO);
 
                 if ($cleanupPerformed) {
-                    $sql = 'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . (int) $row['acctid'];
-                    Database::query($sql);
-                    if (Database::affectedRows() !== 1) {
+                    $affectedRows = $connection->executeStatement(
+                        'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                        ['acctid' => (int) $row['acctid']],
+                        ['acctid' => ParameterType::INTEGER]
+                    );
+                    if ($affectedRows !== 1) {
                         throw new \RuntimeException('deletion failed');
                     }
 
-                    Database::query('COMMIT');
+                    $connection->commit();
                     $deletedAcctIds[] = (int) $row['acctid'];
                 } else {
-                    Database::query('ROLLBACK');
+                    $connection->rollBack();
                 }
             } catch (\Throwable $e) {
-                Database::query('ROLLBACK');
+                if ($connection->isTransactionActive()) {
+                    $connection->rollBack();
+                }
                 $error = $e;
             }
 
@@ -177,31 +185,48 @@ class ExpireChars
      */
     private static function fetchAccountsToExpire(int $old, int $new, int $trash, ?DateTimeImmutable $now = null): array
     {
+        $connection = Database::getDoctrineConnection();
         $base = $now ?? new DateTimeImmutable('now');
         $conditions = [];
+        $params = ['noAccountExpiration' => NO_ACCOUNT_EXPIRATION];
+        $types = ['noAccountExpiration' => ParameterType::INTEGER];
+
         if ($old > 0) {
-            $conditions[] = "(laston < '" . $base->modify("-$old days")->format('Y-m-d H:i:s') . "')";
+            $conditions[] = '(laston < :oldThreshold)';
+            $params['oldThreshold'] = $base->modify("-$old days")->format('Y-m-d H:i:s');
+            $types['oldThreshold'] = ParameterType::STRING;
         }
         if ($new > 0) {
-            $conditions[] = "(laston < '" . $base->modify("-$new days")->format('Y-m-d H:i:s') . "' AND level=1 AND dragonkills=0)";
+            $conditions[] = '(laston < :newThreshold AND level = :newLevel AND dragonkills = :newDragonKills)';
+            $params['newThreshold'] = $base->modify("-$new days")->format('Y-m-d H:i:s');
+            $params['newLevel'] = 1;
+            $params['newDragonKills'] = 0;
+            $types['newThreshold'] = ParameterType::STRING;
+            $types['newLevel'] = ParameterType::INTEGER;
+            $types['newDragonKills'] = ParameterType::INTEGER;
         }
         if ($trash > 0) {
-            $conditions[] = "(laston < '" . $base->modify('-' . ($trash + 1) . ' days')->format('Y-m-d H:i:s') . "' AND level=1 AND experience < 10 AND dragonkills=0)";
+            $conditions[] = '(laston < :trashThreshold AND level = :trashLevel AND experience < :trashExperienceCap AND dragonkills = :trashDragonKills)';
+            $params['trashThreshold'] = $base->modify('-' . ($trash + 1) . ' days')->format('Y-m-d H:i:s');
+            $params['trashLevel'] = 1;
+            $params['trashExperienceCap'] = 10;
+            $params['trashDragonKills'] = 0;
+            $types['trashThreshold'] = ParameterType::STRING;
+            $types['trashLevel'] = ParameterType::INTEGER;
+            $types['trashExperienceCap'] = ParameterType::INTEGER;
+            $types['trashDragonKills'] = ParameterType::INTEGER;
         }
 
         if (empty($conditions)) {
             return [];
         }
 
-        $sql = 'SELECT login,acctid,dragonkills,level FROM ' . Database::prefix('accounts') .
-            ' WHERE (superuser&' . NO_ACCOUNT_EXPIRATION . ')=0 AND (' . implode(' OR ', $conditions) . ')';
-
-        $result = Database::query($sql);
-        $rows = [];
-        while ($row = Database::fetchAssoc($result)) {
-            $rows[] = $row;
-        }
-        return $rows;
+        return $connection->executeQuery(
+            'SELECT login,acctid,dragonkills,level FROM ' . Database::prefix('accounts')
+            . ' WHERE (superuser & :noAccountExpiration) = 0 AND (' . implode(' OR ', $conditions) . ')',
+            $params,
+            $types
+        )->fetchAllAssociative();
     }
 
     /**
@@ -250,14 +275,26 @@ class ExpireChars
      */
     private static function notifyUpcomingExpirations(): void
     {
+        $connection = Database::getDoctrineConnection();
         $settings = Settings::getInstance();
         $old = max(1, ((int) $settings->getSetting('expireoldacct', 45)) - ((int) $settings->getSetting('notifydaysbeforedeletion', 5)));
 
         $threshold = date('Y-m-d H:i:s', strtotime("-$old days"));
-        $sql = 'SELECT login,acctid,emailaddress FROM ' . Database::prefix('accounts')
-            . " WHERE (laston < '$threshold')"
-            . " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
-        $result = Database::query($sql);
+        $result = $connection->executeQuery(
+            'SELECT login,acctid,emailaddress FROM ' . Database::prefix('accounts')
+            . ' WHERE (laston < :threshold)'
+            . " AND emailaddress != '' AND sentnotice = :sentNotice AND (superuser & :noAccountExpiration) = 0",
+            [
+                'threshold' => $threshold,
+                'sentNotice' => 0,
+                'noAccountExpiration' => NO_ACCOUNT_EXPIRATION,
+            ],
+            [
+                'threshold' => ParameterType::STRING,
+                'sentNotice' => ParameterType::INTEGER,
+                'noAccountExpiration' => ParameterType::INTEGER,
+            ]
+        );
 
         $subject = Translator::translateInline(self::$settingsExtended->getSetting('expirationnoticesubject'));
         $message = Translator::translateInline(self::$settingsExtended->getSetting('expirationnoticetext'));
@@ -266,7 +303,7 @@ class ExpireChars
         $collector = [];
         $from = [$settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost')];
         $cc = [];
-        while ($row = Database::fetchAssoc($result)) {
+        while ($row = $result->fetchAssociative()) {
             $to = [$row['emailaddress'] => $row['emailaddress']];
             $body = str_replace('{charname}', $row['login'], $message);
             $mailResult = Mail::send($to, $body, $subject, $from, $cc, 'text/html', true);
@@ -285,8 +322,17 @@ class ExpireChars
         }
 
         if (!empty($collector)) {
-            $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET sentnotice=1 WHERE acctid IN (' . implode(',', $collector) . ');';
-            Database::query($sql);
+            $connection->executeStatement(
+                'UPDATE ' . Database::prefix('accounts') . ' SET sentnotice = :sentNotice WHERE acctid IN (:acctids)',
+                [
+                    'sentNotice' => 1,
+                    'acctids' => array_map('intval', $collector),
+                ],
+                [
+                    'sentNotice' => ParameterType::INTEGER,
+                    'acctids' => ArrayParameterType::INTEGER,
+                ]
+            );
         }
     }
 }

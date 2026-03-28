@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Modules\HookHandler;
@@ -24,10 +26,22 @@ class ServerFunctions
     {
         $settings = Settings::getInstance();
         if (abs($settings->getSetting('OnlineCountLast', 0) - strtotime('now')) > 60) {
-            $sql = "SELECT count(acctid) as counter FROM " . Database::prefix('accounts') . " WHERE locked=0 AND loggedin=1 AND laston>'" . date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')) . "'";
-            $result = Database::query($sql);
-            $onlinecount = Database::fetchAssoc($result);
-            $onlinecount = $onlinecount['counter'];
+            $connection = Database::getDoctrineConnection();
+            $lastOnThreshold = date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds'));
+            $onlinecount = (int) $connection->executeQuery(
+                'SELECT count(acctid) as counter FROM ' . Database::prefix('accounts')
+                . ' WHERE locked = :locked AND loggedin = :loggedIn AND laston > :lastOnThreshold',
+                [
+                    'locked' => 0,
+                    'loggedIn' => 1,
+                    'lastOnThreshold' => $lastOnThreshold,
+                ],
+                [
+                    'locked' => ParameterType::INTEGER,
+                    'loggedIn' => ParameterType::INTEGER,
+                    'lastOnThreshold' => ParameterType::STRING,
+                ]
+            )->fetchOne();
             $settings->saveSetting('OnlineCount', $onlinecount);
             $settings->saveSetting('OnlineCountLast', strtotime('now'));
         } else {
@@ -45,16 +59,26 @@ class ServerFunctions
      */
     public static function resetAllDragonkillPoints(int|array|false $acctid = false): void
     {
+        $connection = Database::getDoctrineConnection();
+        $params = [];
+        $types = [];
         if ($acctid === false) {
             $where = '';
         } elseif (is_array($acctid)) {
-            $where = 'WHERE acctid IN (' . implode(',', $acctid) . ')';
+            $where = 'WHERE acctid IN (:acctids)';
+            $params['acctids'] = array_map('intval', $acctid);
+            $types['acctids'] = ArrayParameterType::INTEGER;
         } else {
-            $where = "WHERE acctid=$acctid";
+            $where = 'WHERE acctid = :acctid';
+            $params['acctid'] = $acctid;
+            $types['acctid'] = ParameterType::INTEGER;
         }
-        $sql = 'SELECT acctid,dragonpoints FROM ' . Database::prefix('accounts') . " $where";
-        $result = Database::query($sql);
-        while ($row = Database::fetchAssoc($result)) {
+        $result = $connection->executeQuery(
+            'SELECT acctid,dragonpoints FROM ' . Database::prefix('accounts') . " $where",
+            $params,
+            $types
+        );
+        while ($row = $result->fetchAssociative()) {
             $dkpoints = $row['dragonpoints'];
             if ($dkpoints == '') {
                 continue;
@@ -98,9 +122,15 @@ class ServerFunctions
                         break;
                 }
             }
+            // $resetactions only contains whitelisted static column fragments
+            // emitted by the switch above; values are cast to integers before
+            // interpolation. SQL identifiers cannot be parameterized in DBAL.
             $resetactions = count($sets) > 0 ? ',' . implode(',', $sets) : '';
-            $sql = 'UPDATE ' . Database::prefix('accounts') . " SET dragonpoints=''$resetactions WHERE acctid=" . $row['acctid'];
-            Database::query($sql);
+            $connection->executeStatement(
+                'UPDATE ' . Database::prefix('accounts') . " SET dragonpoints=''$resetactions WHERE acctid = :acctid",
+                ['acctid' => (int) $row['acctid']],
+                ['acctid' => ParameterType::INTEGER]
+            );
             HookHandler::hook('dragonpointreset', [$row]);
         }
     }

@@ -22,6 +22,16 @@ class DoctrineResult
         return array_shift($this->rows) ?: false;
     }
 
+    public function fetchOne()
+    {
+        $row = array_shift($this->rows);
+        if (!is_array($row) || empty($row)) {
+            return false;
+        }
+
+        return reset($row);
+    }
+
     public function rowCount(): int|string
     {
         if ($this->rowCountOverride !== null) {
@@ -62,6 +72,8 @@ class DoctrineConnection
     public array $lastFetchAssociativeTypes = [];
     public array $fetchAssociativeLog = [];
     public array $executeStatements = [];
+    /** @var array<int,int> */
+    public array $executeStatementResults = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
     public array $executeQueryParams = [];
@@ -293,6 +305,9 @@ class DoctrineConnection
         ];
         $this->lastExecuteStatementParams = $params;
         $this->lastExecuteStatementTypes = $types;
+        if ($this->executeStatementResults !== []) {
+            return (int) array_shift($this->executeStatementResults);
+        }
         if (preg_match('/^INSERT INTO\s+`?mail`?/i', $sql)) {
             global $mail_table;
             $mail_table ??= [];
@@ -419,6 +434,31 @@ class DoctrineConnection
     public function getParams(): array
     {
         return $this->params;
+    }
+
+    private bool $inTransaction = false;
+
+    public function beginTransaction(): void
+    {
+        $this->queries[] = 'START TRANSACTION';
+        $this->inTransaction = true;
+    }
+
+    public function commit(): void
+    {
+        $this->queries[] = 'COMMIT';
+        $this->inTransaction = false;
+    }
+
+    public function rollBack(): void
+    {
+        $this->queries[] = 'ROLLBACK';
+        $this->inTransaction = false;
+    }
+
+    public function isTransactionActive(): bool
+    {
+        return $this->inTransaction;
     }
 }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\DateTime;
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Output;
 use Lotgd\PageParts;
 use Lotgd\Tests\Stubs\Database;
@@ -45,6 +46,12 @@ final class PagePartsOnlineListTest extends TestCase
                 return [];
             }
         };
+        CoreDatabase::resetDoctrineConnection();
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
+        $connection->executeQueryParams = [];
+        $connection->executeQueryTypes = [];
+        $connection->fetchAllResults = [[]];
     }
 
     protected function tearDown(): void
@@ -59,7 +66,8 @@ final class PagePartsOnlineListTest extends TestCase
         global $settings;
         $settings->saveSetting('homeonline_mode', 0);
         $outputString = PageParts::charStats();
-        $this->assertStringContainsString('loggedin=1', Database::$lastSql);
+        $connection = CoreDatabase::getDoctrineConnection();
+        $this->assertStringContainsString('loggedin = :loggedIn', $connection->queries[0] ?? '');
         $this->assertStringContainsString('Online Characters (0 players):', $outputString);
     }
 
@@ -68,7 +76,8 @@ final class PagePartsOnlineListTest extends TestCase
         global $settings;
         $settings->saveSetting('homeonline_mode', 1);
         $outputString = PageParts::charStats();
-        $this->assertStringContainsString('loggedin=1', Database::$lastSql);
+        $connection = CoreDatabase::getDoctrineConnection();
+        $this->assertStringContainsString('loggedin = :loggedIn', $connection->queries[0] ?? '');
         $expected = 'Online Characters in the last ' . DateTime::readableTime(900, false) . ':';
         $this->assertStringContainsString($expected, $outputString);
     }
@@ -79,14 +88,11 @@ final class PagePartsOnlineListTest extends TestCase
         $settings->saveSetting('homeonline_mode', 2);
         $settings->saveSetting('homeonline_minutes', 30);
         $outputString = PageParts::charStats();
-        $this->assertStringNotContainsString('loggedin=1', Database::$lastSql);
+        $connection = CoreDatabase::getDoctrineConnection();
+        $this->assertStringNotContainsString('loggedin = :loggedIn', $connection->queries[0] ?? '');
 
-        $this->assertMatchesRegularExpression(
-            "/laston>'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'/",
-            Database::$lastSql
-        );
-        preg_match("/laston>'([^']+)'/", Database::$lastSql, $matches);
-        $actual = strtotime($matches[1]);
+        $queryParams = $connection->executeQueryParams[0] ?? [];
+        $actual = strtotime((string) ($queryParams['lastOnThreshold'] ?? ''));
         $expected = strtotime('-30 minutes');
         $this->assertEqualsWithDelta($expected, $actual, 1);
 
