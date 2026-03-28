@@ -440,7 +440,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                             'superuser' => ParameterType::INTEGER,
                             'title' => ParameterType::STRING,
                             'password' => ParameterType::STRING,
-                            'password_algo' => ParameterType::STRING,
+                            'password_algo' => ParameterType::INTEGER,
                             'sex' => ParameterType::INTEGER,
                             'login' => ParameterType::STRING,
                             'laston' => ParameterType::STRING,
