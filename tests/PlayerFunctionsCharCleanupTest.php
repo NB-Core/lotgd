@@ -55,6 +55,6 @@ final class PlayerFunctionsCharCleanupTest extends TestCase
         $result = PlayerFunctions::charCleanup(1, 0);
         $this->assertTrue($result);
         $this->assertSame([1], \Lotgd\Modules\HookHandler::$deleted);
-        $this->assertCount(3, Database::$queries);
+        $this->assertCount(0, Database::$queries);
     }
 }

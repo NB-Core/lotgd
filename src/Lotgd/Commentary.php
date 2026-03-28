@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\Nav as Navigation;
 use Lotgd\Output;
@@ -161,6 +162,7 @@ class Commentary
     private static function handleRemoval(string $section, string $returnPath, int $removeId): void
     {
         global $session;
+        $connection = Database::getDoctrineConnection();
 
         $commentary = Database::prefix('commentary');
         $accounts   = Database::prefix('accounts');
@@ -176,30 +178,42 @@ SELECT
 FROM {$commentary} c
 INNER JOIN {$accounts} a ON a.acctid = c.author -- link author data
 LEFT JOIN {$clans} cl ON cl.clanid = a.clanid   -- link clan data
-WHERE commentid = {$removeId}
+WHERE commentid = :commentid
 SQL;
-        $row = Database::fetchAssoc(Database::query($sql));
+        $row = $connection->fetchAssociative(
+            $sql,
+            ['commentid' => $removeId],
+            ['commentid' => ParameterType::INTEGER]
+        );
 
         $moderated = Database::prefix('moderatedcomments');
         $now       = date('Y-m-d H:i:s');
-        $comment   = addslashes(serialize($row));
+        $comment   = serialize($row);
 
         $sql = <<<SQL
 INSERT LOW_PRIORITY INTO {$moderated}
     (moderator, moddate, comment)            -- moderation record columns
 VALUES
-    ('{$session['user']['acctid']}',         -- moderator ID
-     '{$now}',                               -- time of moderation
-     '{$comment}'                            -- serialized comment data
+    (:moderator,                             -- moderator ID
+     :moddate,                               -- time of moderation
+     :comment                                -- serialized comment data
     )
 SQL;
-        Database::query($sql);
+        $connection->executeStatement(
+            $sql,
+            ['moderator' => (int) $session['user']['acctid'], 'moddate' => $now, 'comment' => $comment],
+            ['moderator' => ParameterType::INTEGER, 'moddate' => ParameterType::STRING, 'comment' => ParameterType::STRING]
+        );
 
         $sql = <<<SQL
 DELETE FROM {$commentary}                 -- remove comment entry
-WHERE commentid = {$removeId}             -- by comment identifier
+WHERE commentid = :commentid             -- by comment identifier
 SQL;
-        Database::query($sql);
+        $connection->executeStatement(
+            $sql,
+            ['commentid' => $removeId],
+            ['commentid' => ParameterType::INTEGER]
+        );
 
         DataCache::getInstance()->invalidatedatacache("comments-$section");
         DataCache::getInstance()->invalidatedatacache('comments-or11');
@@ -231,8 +245,11 @@ SQL;
      */
     public static function injectRawComment(string $section, int $author, string $comment): void
     {
-        $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'" . Database::escape($comment) . "')";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'INSERT INTO ' . Database::prefix('commentary') . ' (postdate,section,author,comment) VALUES (:postdate, :section, :author, :comment)',
+            ['postdate' => date('Y-m-d H:i:s'), 'section' => $section, 'author' => $author, 'comment' => $comment],
+            ['postdate' => ParameterType::STRING, 'section' => ParameterType::STRING, 'author' => ParameterType::INTEGER, 'comment' => ParameterType::STRING]
+        );
         DataCache::getInstance()->invalidatedatacache("comments-{$section}");
         DataCache::getInstance()->invalidatedatacache('comments-or11');
     }
@@ -281,8 +298,12 @@ SQL;
         } else {
             // Check for duplicate posts and persist the comment
             $commentary = $args['commentary'];
-            $commentarySql = self::buildCommentQuery($section);
-            $result = Database::query($commentarySql);
+            $commentarySql = self::buildCommentQuery();
+            $result = Database::getDoctrineConnection()->executeQuery(
+                $commentarySql,
+                ['section' => $section],
+                ['section' => ParameterType::STRING]
+            );
             $authorId = (int) $session['user']['acctid'];
 
             self::setDoublePost((bool) self::persistComment($result, $commentary, $authorId, $section));
@@ -352,11 +373,11 @@ SQL;
      * @param string $section The section to retrieve the latest comment from
      * @return string The SQL query string
      */
-    private static function buildCommentQuery(string $section): string
+    private static function buildCommentQuery(): string
     {
         return 'SELECT comment, author FROM '
             . Database::prefix('commentary')
-            . " WHERE section = '$section'"
+            . ' WHERE section = :section'
             . ' ORDER BY commentid DESC LIMIT 1';
     }
 

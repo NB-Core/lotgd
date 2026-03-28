@@ -63,20 +63,25 @@ class Pvp
 
         $settings = Settings::getInstance();
         $output = Output::getInstance();
+        $connection = Database::getDoctrineConnection();
         $pvptime = $settings->getSetting('pvptimeout', 600);
         $pvptimeout = date('Y-m-d H:i:s', strtotime("-$pvptime seconds"));
 
         // Legacy support for numeric id or login name
         if (is_numeric($name)) {
-            $where = "acctid=$name";
+            $where = 'acctid = :acctid';
+            $params = ['acctid' => (int) $name];
+            $types = ['acctid' => ParameterType::INTEGER];
         } else {
-            $where = "login='$name'";
+            $where = 'login = :login';
+            $params = ['login' => (string) $name];
+            $types = ['login' => ParameterType::STRING];
         }
         $sql = "SELECT name AS creaturename, level AS creaturelevel, weapon AS creatureweapon, dragonkills AS dragonkills," .
             "gold AS creaturegold, experience AS creatureexp, maxhitpoints AS creaturehealth, attack AS creatureattack, " .
             "defense AS creaturedefense, loggedin, location, laston, alive, acctid, pvpflag, boughtroomtoday, race FROM " .
             Database::prefix('accounts') . " WHERE $where";
-        $result = Database::query($sql);
+        $result = $connection->executeQuery($sql, $params, $types);
         if (Database::numRows($result) > 0) {
             $row = Database::fetchAssoc($result);
             if ($session['user']['dragonkills'] < $row['dragonkills']) {
@@ -92,8 +97,11 @@ class Pvp
                 $output->output("`\$Error:`4 That user is now online, and cannot be attacked until they log off again.");
                 return false;
             } elseif ($session['user']['playerfights'] > 0) {
-                $sql = "UPDATE " . Database::prefix('accounts') . " SET pvpflag='" . date('Y-m-d H:i:s') . "' WHERE acctid={$row['acctid']}";
-                Database::query($sql);
+                $connection->executeStatement(
+                    'UPDATE ' . Database::prefix('accounts') . ' SET pvpflag = :pvpflag WHERE acctid = :acctid',
+                    ['pvpflag' => date('Y-m-d H:i:s'), 'acctid' => (int) $row['acctid']],
+                    ['pvpflag' => ParameterType::STRING, 'acctid' => ParameterType::INTEGER]
+                );
                 $row['creatureexp'] = round($row['creatureexp'], 0);
                 $row['playerstarthp'] = $session['user']['hitpoints'];
                 $row['fightstartdate'] = strtotime('now');
@@ -117,9 +125,13 @@ class Pvp
 
         $settings = Settings::getInstance();
         $output = Output::getInstance();
+        $connection = Database::getDoctrineConnection();
 
-        $sql = "SELECT gold FROM " . Database::prefix('accounts') . " WHERE acctid='" . (int) $badguy['acctid'] . "'";
-        $result = Database::query($sql);
+        $result = $connection->executeQuery(
+            'SELECT gold FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+            ['acctid' => (int) $badguy['acctid']],
+            ['acctid' => ParameterType::INTEGER]
+        );
         $row = Database::fetchAssoc($result);
         if (!isset($row['gold'])) {
             $row['gold'] = 0;
@@ -190,9 +202,34 @@ class Pvp
             Translator::sprintfTranslate(...$mailmessage)
         );
 
-        $sql = "UPDATE " . Database::prefix('accounts') . " SET alive=0, goldinbank=(goldinbank+IF(gold<{$badguy['creaturegold']},gold-{$badguy['creaturegold']},0)),gold=IF(gold<{$badguy['creaturegold']},0,gold-{$badguy['creaturegold']}), experience=IF(experience>=$lostexp,experience-$lostexp,0) WHERE acctid=" . (int) $badguy['acctid'];
+        $sql = 'UPDATE ' . Database::prefix('accounts')
+            . ' SET alive = 0, '
+            . 'goldinbank = (goldinbank + IF(gold < :creaturegold_for_bank, gold - :creaturegold_for_delta, 0)), '
+            . 'gold = IF(gold < :creaturegold_for_gold, 0, gold - :creaturegold_for_subtract), '
+            . 'experience = IF(experience >= :lostexp_for_check, experience - :lostexp_for_subtract, 0) '
+            . 'WHERE acctid = :acctid';
         DebugLog::add($sql, (int) $badguy['acctid'], $session['user']['acctid']);
-        Database::query($sql);
+        $connection->executeStatement(
+            $sql,
+            [
+                'creaturegold_for_bank' => (int) $badguy['creaturegold'],
+                'creaturegold_for_delta' => (int) $badguy['creaturegold'],
+                'creaturegold_for_gold' => (int) $badguy['creaturegold'],
+                'creaturegold_for_subtract' => (int) $badguy['creaturegold'],
+                'lostexp_for_check' => (int) $lostexp,
+                'lostexp_for_subtract' => (int) $lostexp,
+                'acctid' => (int) $badguy['acctid'],
+            ],
+            [
+                'creaturegold_for_bank' => ParameterType::INTEGER,
+                'creaturegold_for_delta' => ParameterType::INTEGER,
+                'creaturegold_for_gold' => ParameterType::INTEGER,
+                'creaturegold_for_subtract' => ParameterType::INTEGER,
+                'lostexp_for_check' => ParameterType::INTEGER,
+                'lostexp_for_subtract' => ParameterType::INTEGER,
+                'acctid' => ParameterType::INTEGER,
+            ]
+        );
         return $args['handled'];
     }
 
@@ -205,6 +242,7 @@ class Pvp
 
         $settings = Settings::getInstance();
         $output = Output::getInstance();
+        $connection = Database::getDoctrineConnection();
 
         Navigation::add('Daily news', 'news.php');
         $killedin = $badguy['location'];
@@ -216,8 +254,11 @@ class Pvp
             $wonamount = 0;
         }
 
-        $sql = "SELECT level FROM " . Database::prefix('accounts') . " WHERE acctid={$badguy['acctid']}";
-        $result = Database::query($sql);
+        $result = $connection->executeQuery(
+            'SELECT level FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+            ['acctid' => (int) $badguy['acctid']],
+            ['acctid' => ParameterType::INTEGER]
+        );
         $row = Database::fetchAssoc($result);
 
         $wonexp = round($session['user']['experience'] * $settings->getSetting('pvpdefgain', 10) / 100, 0);
@@ -253,9 +294,13 @@ class Pvp
         );
 
         if ($row['level'] >= $badguy['creaturelevel']) {
-            $sql = "UPDATE " . Database::prefix('accounts') . " SET gold=gold+" . $winamount . ", experience=experience+" . $wonexp . " WHERE acctid=" . (int) $badguy['acctid'];
+            $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET gold = gold + :winamount, experience = experience + :wonexp WHERE acctid = :acctid';
             DebugLog::add($sql);
-            Database::query($sql);
+            $connection->executeStatement(
+                $sql,
+                ['winamount' => (int) $winamount, 'wonexp' => (int) $wonexp, 'acctid' => (int) $badguy['acctid']],
+                ['winamount' => ParameterType::INTEGER, 'wonexp' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+            );
         }
 
         $session['user']['alive'] = 0;
@@ -417,15 +462,40 @@ class Pvp
             $output->rawOutput('</tr>');
         }
 
-        $sql = "SELECT count(location) as counter, location FROM " . Database::prefix('accounts') .
-            " WHERE (locked=0) " .
-            "AND (slaydragon=0) AND " .
-            "(age>$days OR dragonkills>0 OR pk>0 OR experience>$exp) " .
-            ($levdiff == -1 ? '' : "AND (level>=$lev1 AND level<=$lev2)") .
-            " AND (alive=1) " .
-            "AND (laston<'$last' OR loggedin=0) AND (acctid<>$id) " .
-            "AND location!='$loc' GROUP BY location ORDER BY location; ";
-        $result = Database::query($sql);
+        $summaryParams = [
+            'days' => (int) $days,
+            'exp' => (int) $exp,
+            'last' => $last,
+            'acctid' => (int) $id,
+            'current_location' => (string) $location,
+        ];
+        $summaryTypes = [
+            'days' => ParameterType::INTEGER,
+            'exp' => ParameterType::INTEGER,
+            'last' => ParameterType::STRING,
+            'acctid' => ParameterType::INTEGER,
+            'current_location' => ParameterType::STRING,
+        ];
+        $levelSummaryFilterSql = '';
+        if ($levdiff != -1) {
+            $levelSummaryFilterSql = 'AND (level >= :lev1 AND level <= :lev2) ';
+            $summaryParams['lev1'] = (int) $lev1;
+            $summaryParams['lev2'] = (int) $lev2;
+            $summaryTypes['lev1'] = ParameterType::INTEGER;
+            $summaryTypes['lev2'] = ParameterType::INTEGER;
+        }
+        $result = Database::getDoctrineConnection()->executeQuery(
+            'SELECT count(location) as counter, location FROM ' . Database::prefix('accounts')
+            . ' WHERE (locked=0) '
+            . 'AND (slaydragon=0) AND '
+            . '(age > :days OR dragonkills > 0 OR pk > 0 OR experience > :exp) '
+            . $levelSummaryFilterSql
+            . 'AND (alive = 1) '
+            . 'AND (laston < :last OR loggedin = 0) AND (acctid <> :acctid) '
+            . 'AND location <> :current_location GROUP BY location ORDER BY location',
+            $summaryParams,
+            $summaryTypes
+        );
 
         if ($j == 0) {
             $noone = Translator::translateInline('`iThere are no available targets.`i');

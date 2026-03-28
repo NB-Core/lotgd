@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Async\Handler;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use Lotgd\Settings;
@@ -119,10 +120,17 @@ class Timeout
 
         if ($this->isNeverTimeoutIfBrowserOpen()) {
             $session['user']['laston'] = date('Y-m-d H:i:s'); // set to now
-            // manual db update
-            $sql = 'UPDATE ' . Database::prefix('accounts') . " set laston='" . $session['user']['laston']
-                . "' WHERE acctid=" . $session['user']['acctid'];
-            Database::query($sql);
+            Database::getDoctrineConnection()->executeStatement(
+                'UPDATE ' . Database::prefix('accounts') . ' SET laston = :laston WHERE acctid = :acctid',
+                [
+                    'laston' => (string) $session['user']['laston'],
+                    'acctid' => (int) ($session['user']['acctid'] ?? 0),
+                ],
+                [
+                    'laston' => ParameterType::STRING,
+                    'acctid' => ParameterType::INTEGER,
+                ]
+            );
         }
 
         $timeout = strtotime($session['user']['laston']) - strtotime(date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')));
