@@ -69,9 +69,6 @@ $sort = $sort === false ? '' : (string) $sort;
 
 $refreshUrl = 'referers.php' . ($sort === '' ? '' : '?sort=' . URLEncode($sort));
 Nav::add("Refresh", $refreshUrl);
-Nav::add("C?Sort by Count", "referers.php?sort=count" . ($sort == "count DESC" ? "" : "+DESC"));
-Nav::add("U?Sort by URL", "referers.php?sort=uri" . ($sort == "uri" ? "+DESC" : ""));
-Nav::add("T?Sort by Time", "referers.php?sort=last" . ($sort == "last DESC" ? "" : "+DESC"));
 
 Nav::add("Rebuild Sites", "referers.php?op=rebuild");
 
@@ -80,31 +77,63 @@ Header::pageHeader("Referers");
  * Resolve sort safely using a strict allowlist map.
  *
  * Accepted input formats:
- *  - "count", "uri", "last"
  *  - "count ASC|DESC", "uri ASC|DESC", "last ASC|DESC"
+ *
+ * Notes:
+ *  - Direction defaults to ASC only when the key is valid and direction is omitted.
+ *  - Invalid sort values still fall back to count DESC.
+ *  - Summary/detail sort columns are separated so URL sorting can use `uri`
+ *    for detail rows while grouped summary rows still sort by `site`.
  * Defaults to "count DESC" for invalid/missing input.
  */
-$order = 'count DESC';
-$sortColumnMap = [
+$summaryOrder = 'count DESC';
+$detailOrder = 'count DESC';
+$sortColumnMapSummary = [
     'count' => 'count',
     'uri'   => 'site',
+    'last'  => 'last',
+];
+$sortColumnMapDetail = [
+    'count' => 'count',
+    'uri'   => 'uri',
     'last'  => 'last',
 ];
 $sortDirectionMap = [
     'ASC'  => 'ASC',
     'DESC' => 'DESC',
 ];
+$sortKey = 'count';
+$sortDirection = 'DESC';
 if ($sort !== '') {
     $parts = preg_split('/\s+/', trim(str_replace('+', ' ', $sort))) ?: [];
-    $sortKey = strtolower((string) ($parts[0] ?? ''));
-    $sortDirection = strtoupper((string) ($parts[1] ?? 'DESC'));
+    $requestedSortKey = strtolower((string) ($parts[0] ?? ''));
+    $requestedSortDirection = strtoupper((string) ($parts[1] ?? 'ASC'));
 
-    if (isset($sortColumnMap[$sortKey], $sortDirectionMap[$sortDirection])) {
-        $order = $sortColumnMap[$sortKey] . ' ' . $sortDirectionMap[$sortDirection];
+    if (
+        isset(
+            $sortColumnMapSummary[$requestedSortKey],
+            $sortColumnMapDetail[$requestedSortKey],
+            $sortDirectionMap[$requestedSortDirection]
+        )
+    ) {
+        $sortKey = $requestedSortKey;
+        $sortDirection = $requestedSortDirection;
+        $summaryOrder = $sortColumnMapSummary[$sortKey] . ' ' . $sortDirection;
+        $detailOrder = $sortColumnMapDetail[$sortKey] . ' ' . $sortDirection;
     }
 }
 
-$sql = "SELECT SUM(count) AS count, MAX(last) AS last,site FROM {$referersTable} GROUP BY site ORDER BY {$order} LIMIT :summaryLimit";
+/**
+ * Build explicit sort links so the toggle behavior does not depend on implicit defaults.
+ */
+$nextCountDirection = ($sortKey === 'count' && $sortDirection === 'ASC') ? 'DESC' : 'ASC';
+$nextUriDirection = ($sortKey === 'uri' && $sortDirection === 'ASC') ? 'DESC' : 'ASC';
+$nextLastDirection = ($sortKey === 'last' && $sortDirection === 'ASC') ? 'DESC' : 'ASC';
+Nav::add("C?Sort by Count", "referers.php?sort=count+{$nextCountDirection}");
+Nav::add("U?Sort by URL", "referers.php?sort=uri+{$nextUriDirection}");
+Nav::add("T?Sort by Time", "referers.php?sort=last+{$nextLastDirection}");
+
+$sql = "SELECT SUM(count) AS count, MAX(last) AS last,site FROM {$referersTable} GROUP BY site ORDER BY {$summaryOrder} LIMIT :summaryLimit";
 $count = Translator::translate("Count");
 $last = Translator::translate("Last");
 $dest = Translator::translate("Destination");
@@ -137,7 +166,7 @@ while ($row = $result->fetchAssociative()) {
     $output->outputNotl('`b%s`b', $site === '' ? $none : $site);
     $output->rawOutput("</td></tr>");
 
-    $sql = "SELECT count,last,uri,dest,ip FROM {$referersTable} WHERE site = :site ORDER BY {$order} LIMIT :detailLimit";
+    $sql = "SELECT count,last,uri,dest,ip FROM {$referersTable} WHERE site = :site ORDER BY {$detailOrder} LIMIT :detailLimit";
     $result1 = $conn->executeQuery(
         $sql,
         [

@@ -38,13 +38,17 @@ final class CreatureRefererQueryBindingRegressionTest extends TestCase
     {
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/referers.php');
 
-        self::assertStringContainsString("\$order = 'count DESC';", $source);
-        self::assertStringContainsString("'count' => 'count'", $source);
+        self::assertStringContainsString("\$summaryOrder = 'count DESC';", $source);
+        self::assertStringContainsString("\$detailOrder = 'count DESC';", $source);
+        self::assertStringContainsString("\$sortColumnMapSummary", $source);
+        self::assertStringContainsString("\$sortColumnMapDetail", $source);
         self::assertStringContainsString("'uri'   => 'site'", $source);
-        self::assertStringContainsString("'last'  => 'last'", $source);
+        self::assertStringContainsString("'uri'   => 'uri'", $source);
         self::assertStringContainsString("'ASC'  => 'ASC'", $source);
         self::assertStringContainsString("'DESC' => 'DESC'", $source);
-        self::assertStringContainsString('if (isset($sortColumnMap[$sortKey], $sortDirectionMap[$sortDirection]))', $source);
+        self::assertStringContainsString('$requestedSortDirection = strtoupper((string) ($parts[1] ?? \'ASC\'));', $source);
+        self::assertStringContainsString('$summaryOrder = $sortColumnMapSummary[$sortKey] . \' \' . $sortDirection;', $source);
+        self::assertStringContainsString('$detailOrder = $sortColumnMapDetail[$sortKey] . \' \' . $sortDirection;', $source);
         self::assertStringNotContainsString('ORDER BY $sort', $source);
     }
 
@@ -55,7 +59,9 @@ final class CreatureRefererQueryBindingRegressionTest extends TestCase
         self::assertStringContainsString('LIMIT :summaryLimit', $source);
         self::assertStringContainsString('WHERE site = :site', $source);
         self::assertStringContainsString('LIMIT :detailLimit', $source);
+        self::assertStringContainsString('referers.php?sort=count+{$nextCountDirection}', $source);
+        self::assertStringContainsString('referers.php?sort=uri+{$nextUriDirection}', $source);
+        self::assertStringContainsString('referers.php?sort=last+{$nextLastDirection}', $source);
         self::assertStringNotContainsString("WHERE site='\" . addslashes(\$row['site']) . \"'", $source);
     }
 }
-
