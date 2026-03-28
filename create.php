@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -64,12 +65,23 @@ if ($op == 'val' || $op == 'forgotval') {
 
 if ($op == "forgotval") {
     $id = Http::get('id');
+    $conn = Database::getDoctrineConnection();
+    $accountsTable = Database::prefix('accounts');
     $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation FROM " . Database::prefix("accounts") . " WHERE forgottenpassword='" . Database::escape($id) . "' AND forgottenpassword!=''";
     $result = Database::query($sql);
     if (Database::numRows($result) > 0) {
         $row = Database::fetchAssoc($result);
-        $sql = "UPDATE " . Database::prefix("accounts") . " SET forgottenpassword='' WHERE forgottenpassword='$id';";
-        Database::query($sql);
+        $conn->executeStatement(
+            "UPDATE {$accountsTable} SET forgottenpassword = :forgottenpassword WHERE forgottenpassword = :id",
+            [
+                'forgottenpassword' => '',
+                'id' => (string) $id,
+            ],
+            [
+                'forgottenpassword' => ParameterType::STRING,
+                'id' => ParameterType::STRING,
+            ]
+        );
         $output->output("`#`cYour login request has been validated.  You may now log in.`c`0");
         $output->rawOutput("<form action='login.php' method='POST'>");
         $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
@@ -89,8 +101,17 @@ if ($op == "forgotval") {
         }
         //rare case: we have somebody who deleted his first validation email and then requests a forgotten PW...
         if ($row['emailvalidation'] != "" && substr($row['emailvalidation'], 0, 1) != "x") {
-            $sql = "UPDATE " . Database::prefix('accounts') . " SET emailvalidation='' WHERE acctid=" . $row['acctid'];
-            Database::query($sql);
+            $conn->executeStatement(
+                "UPDATE {$accountsTable} SET emailvalidation = :emailvalidation WHERE acctid = :acctid",
+                [
+                    'emailvalidation' => '',
+                    'acctid' => (int) $row['acctid'],
+                ],
+                [
+                    'emailvalidation' => ParameterType::STRING,
+                    'acctid' => ParameterType::INTEGER,
+                ]
+            );
         }
     } else {
         $output->output("`#Your request could not be verified.`n`n");
@@ -99,6 +120,8 @@ if ($op == "forgotval") {
     }
 } elseif ($op == "val") {
     $id = Http::get('id');
+    $conn = Database::getDoctrineConnection();
+    $accountsTable = Database::prefix('accounts');
     $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress FROM " . Database::prefix("accounts") . " WHERE emailvalidation='" . Database::escape($id) . "' AND emailvalidation!=''";
     $result = Database::query($sql);
     if (Database::numRows($result) > 0) {
@@ -107,8 +130,23 @@ if ($op == "forgotval") {
             $replace_array = explode("|", $row['replaceemail']);
             $replaceemail = $replace_array[0]; //1==date
             //note: remove any forgotten password request!
-            $sql = "UPDATE " . Database::prefix("accounts") . " SET emailaddress='" . $replaceemail . "', replaceemail='',forgottenpassword='' WHERE emailvalidation='$id';";
-            Database::query($sql);
+            $conn->executeStatement(
+                "UPDATE {$accountsTable}
+                    SET emailaddress = :replaceemail, replaceemail = :replaceemailReset, forgottenpassword = :forgottenpassword
+                    WHERE emailvalidation = :id",
+                [
+                    'replaceemail' => $replaceemail,
+                    'replaceemailReset' => '',
+                    'forgottenpassword' => '',
+                    'id' => (string) $id,
+                ],
+                [
+                    'replaceemail' => ParameterType::STRING,
+                    'replaceemailReset' => ParameterType::STRING,
+                    'forgottenpassword' => ParameterType::STRING,
+                    'id' => ParameterType::STRING,
+                ]
+            );
             $output->output("`#`c Email changed successfully!`c`0`n");
                         DebugLog::add("Email change request validated by link from " . $row['emailaddress'] . " to " . $replaceemail, $row['acctid'], $row['acctid'], "Email");
             //If a superuser changes email, we want to know about it... at least those who can ee it anyway, the user editors...
@@ -130,8 +168,17 @@ if ($op == "forgotval") {
                 }
             }
         }
-        $sql = "UPDATE " . Database::prefix("accounts") . " SET emailvalidation='' WHERE emailvalidation='$id';";
-        Database::query($sql);
+        $conn->executeStatement(
+            "UPDATE {$accountsTable} SET emailvalidation = :emailvalidation WHERE emailvalidation = :id",
+            [
+                'emailvalidation' => '',
+                'id' => (string) $id,
+            ],
+            [
+                'emailvalidation' => ParameterType::STRING,
+                'id' => ParameterType::STRING,
+            ]
+        );
         $output->output("`#`cYour email has been validated.  You may now log in.`c`0");
         $output->output(
             "Your email has been validated, your login name is `^%s`0.`n`n",
@@ -174,8 +221,19 @@ if ($op == "forgot") {
             if (trim($row['emailaddress']) != "") {
                 if ($row['forgottenpassword'] == "") {
                     $row['forgottenpassword'] = substr("x" . md5(date("Y-m-d H:i:s") . $row['password']), 0, 32);
-                    $sql = "UPDATE " . Database::prefix("accounts") . " SET forgottenpassword='{$row['forgottenpassword']}' where login='{$row['login']}'";
-                    Database::query($sql);
+                    $conn = Database::getDoctrineConnection();
+                    $accountsTable = Database::prefix('accounts');
+                    $conn->executeStatement(
+                        "UPDATE {$accountsTable} SET forgottenpassword = :forgottenpassword WHERE login = :login",
+                        [
+                            'forgottenpassword' => (string) $row['forgottenpassword'],
+                            'login' => (string) $row['login'],
+                        ],
+                        [
+                            'forgottenpassword' => ParameterType::STRING,
+                            'login' => ParameterType::STRING,
+                        ]
+                    );
                 }
 
                 $subj = translate_mail($settings_extended->getSetting('forgottenpasswordmailsubject'), $row['acctid']);

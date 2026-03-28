@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -126,10 +127,19 @@ switch ($type_setting) {
                 $villageName = is_string($rawVillageName) ? stripslashes($rawVillageName) : '';
                 if ($villageName !== '' && $villageName != $settings->getSetting('villagename', LOCATION_FIELDS)) {
                     $output->debug("Updating village name -- moving players");
-                    $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
-                        addslashes($villageName) . "' WHERE location='" .
-                        addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "'";
-                    Database::query($sql);
+                    $conn = Database::getDoctrineConnection();
+                    $accountsTable = Database::prefix('accounts');
+                    $conn->executeStatement(
+                        "UPDATE {$accountsTable} SET location = :newLocation WHERE location = :oldLocation",
+                        [
+                            'newLocation' => $villageName,
+                            'oldLocation' => $settings->getSetting('villagename', LOCATION_FIELDS),
+                        ],
+                        [
+                            'newLocation' => ParameterType::STRING,
+                            'oldLocation' => ParameterType::STRING,
+                        ]
+                    );
                     if ($session['user']['location'] == $settings->getSetting('villagename', LOCATION_FIELDS)) {
                         $session['user']['location'] = $villageName;
                     }
@@ -138,10 +148,19 @@ switch ($type_setting) {
                 $innName = is_string($rawInnName) ? stripslashes($rawInnName) : '';
                 if ($innName !== '' && $innName != $settings->getSetting('innname', LOCATION_INN)) {
                     $output->debug("Updating inn name -- moving players");
-                    $sql = "UPDATE " . Database::prefix("accounts") . " SET location='" .
-                        addslashes($innName) . "' WHERE location='" .
-                        addslashes($settings->getSetting('innname', LOCATION_INN)) . "'";
-                    Database::query($sql);
+                    $conn = Database::getDoctrineConnection();
+                    $accountsTable = Database::prefix('accounts');
+                    $conn->executeStatement(
+                        "UPDATE {$accountsTable} SET location = :newLocation WHERE location = :oldLocation",
+                        [
+                            'newLocation' => $innName,
+                            'oldLocation' => $settings->getSetting('innname', LOCATION_INN),
+                        ],
+                        [
+                            'newLocation' => ParameterType::STRING,
+                            'oldLocation' => ParameterType::STRING,
+                        ]
+                    );
                     if ($session['user']['location'] == $settings->getSetting('innname', LOCATION_INN)) {
                         $session['user']['location'] = $innName;
                     }

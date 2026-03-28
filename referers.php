@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -29,8 +30,14 @@ Translator::getInstance()->setSchema("referers");
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-$sql = "DELETE FROM " . Database::prefix("referers") . " WHERE last<'" . date("Y-m-d H:i:s", strtotime("-" . $settings->getSetting('expirecontent', 180) . " days")) . "'";
-Database::query($sql);
+$conn = Database::getDoctrineConnection();
+$referersTable = Database::prefix('referers');
+$cutoffDate = date("Y-m-d H:i:s", strtotime("-" . $settings->getSetting('expirecontent', 180) . " days"));
+$conn->executeStatement(
+    "DELETE FROM {$referersTable} WHERE last < :cutoff",
+    ['cutoff' => $cutoffDate],
+    ['cutoff' => ParameterType::STRING]
+);
 $op = Http::get('op');
 
 if ($op == "rebuild") {
@@ -41,8 +48,17 @@ if ($op == "rebuild") {
         if (strpos($site, "/")) {
             $site = substr($site, 0, strpos($site, "/"));
         }
-        $sql = "UPDATE " . Database::prefix("referers") . " SET site='" . addslashes($site) . "' WHERE refererid='{$row['refererid']}'";
-        Database::query($sql);
+        $conn->executeStatement(
+            "UPDATE {$referersTable} SET site = :site WHERE refererid = :refererid",
+            [
+                'site' => $site,
+                'refererid' => (int) $row['refererid'],
+            ],
+            [
+                'site' => ParameterType::STRING,
+                'refererid' => ParameterType::INTEGER,
+            ]
+        );
     }
 }
 SuperuserNav::render();

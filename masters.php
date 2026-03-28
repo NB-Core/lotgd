@@ -35,8 +35,13 @@ Header::pageHeader("Masters Editor");
 SuperuserNav::render();
 
 if ($op == "del") {
-    $sql = "DELETE FROM " . Database::prefix("masters") . " WHERE creatureid=$id";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $mastersTable = Database::prefix('masters');
+    $conn->executeStatement(
+        "DELETE FROM {$mastersTable} WHERE creatureid = :id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
     $output->output("`^Master deleted.`0");
     $op = "";
     Http::set("op", "");
