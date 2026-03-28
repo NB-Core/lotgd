@@ -127,35 +127,53 @@ class Accounts
                     $em->flush();
                 }
             } else {
-                $sql = '';
+                $conn   = Database::getDoctrineConnection();
+                $sets   = [];
+                $params = [];
+
                 foreach ($session['user'] as $key => $val) {
+                    if ($key === 'acctid') {
+                        continue;
+                    }
                     if (is_array($val)) {
                         $val = serialize($val);
                     }
                     if ($baseaccount[$key] != $val) {
-                        if (is_string($val)) {
-                            $escapedVal = addslashes($val);
-                        } else {
-                            $escapedVal = $val;
-                        }
-                        $sql .= "$key='" . $escapedVal . "', ";
+                        $sets[]       = "$key = :$key";
+                        $params[$key] = $val;
                     }
                 }
+
                 // Always update laston due to output moving to separate table
-                $sql .= "laston='" . date('Y-m-d H:i:s') . "', ";
-                $sql  = substr($sql, 0, strlen($sql) - 2);
-                $sql  = 'UPDATE ' . Database::prefix('accounts') . ' SET ' . $sql .
-                    ' WHERE acctid = ' . $session['user']['acctid'];
-                Database::query($sql);
+                $sets[]           = 'laston = :laston';
+                $params['laston'] = date('Y-m-d H:i:s');
+
+                if ($sets) {
+                    $params['acctid'] = $session['user']['acctid'];
+                    $conn->executeStatement(
+                        'UPDATE ' . Database::prefix('accounts') . ' SET '
+                            . implode(', ', $sets)
+                            . ' WHERE acctid = :acctid',
+                        $params
+                    );
+                }
             }
             if (isset($session['output']) && $session['output']) {
-                $sql_output = 'UPDATE ' . Database::prefix('accounts_output') .
-                    " SET output='" . addslashes(gzcompress($session['output'], 1)) . "' WHERE acctid={$session['user']['acctid']};";
-                Database::query($sql_output);
-                if (Database::affectedRows() < 1) {
-                    $sql_output = 'REPLACE INTO ' . Database::prefix('accounts_output') .
-                        " VALUES ({$session['user']['acctid']},'" . addslashes(gzcompress($session['output'], 1)) . "');";
-                    Database::query($sql_output);
+                $conn       = Database::getDoctrineConnection();
+                $table      = Database::prefix('accounts_output');
+                $compressed = gzcompress($session['output'], 1);
+                $acctid     = $session['user']['acctid'];
+
+                $affected = $conn->executeStatement(
+                    'UPDATE ' . $table . ' SET output = :output WHERE acctid = :acctid',
+                    ['output' => $compressed, 'acctid' => $acctid]
+                );
+
+                if ($affected < 1) {
+                    $conn->executeStatement(
+                        'REPLACE INTO ' . $table . ' (acctid, output) VALUES (:acctid, :output)',
+                        ['acctid' => $acctid, 'output' => $compressed]
+                    );
                 }
             }
             unset($session['bufflist']);
