@@ -19,6 +19,27 @@ namespace {
         }
     }
 
+    if (!function_exists('get_module_info')) {
+        /**
+         * Test shim returning declared preference keys for allowlist behaviour.
+         *
+         * @return array<string,mixed>
+         */
+        function get_module_info(string $shortname, bool $with_db = true): array
+        {
+            if (isset($GLOBALS['__test_module_info']) && is_array($GLOBALS['__test_module_info'])) {
+                return $GLOBALS['__test_module_info'];
+            }
+
+            return [
+                'prefs' => [
+                    'display_name' => 'Display Name|string|',
+                    'theme' => 'Theme|string|',
+                ],
+            ];
+        }
+    }
+
     if (!function_exists('httpset')) {
         function httpset(string $var, mixed $value, bool $force = false): void
         {
@@ -43,7 +64,8 @@ namespace {
     require LOTGD_TEST_ROOT . '/pages/user/user_savemodule.php';
 
     $conn = Database::getDoctrineConnection();
-    $statement = $conn->executeStatements[0] ?? null;
+    $statements = $conn->executeStatements;
+    $statement = $statements[0] ?? null;
     $normalize = static function (mixed $value) use (&$normalize): mixed {
         if ($value instanceof \UnitEnum) {
             return $value->name;
@@ -58,5 +80,5 @@ namespace {
         return $value;
     };
 
-    echo json_encode(['statement' => $normalize($statement)], JSON_THROW_ON_ERROR);
+    echo json_encode(['statement' => $normalize($statement), 'statements' => $normalize($statements)], JSON_THROW_ON_ERROR);
 }

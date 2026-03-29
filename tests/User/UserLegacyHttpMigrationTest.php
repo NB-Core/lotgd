@@ -57,6 +57,41 @@ PHP);
         $this->assertSame('INTEGER', $statement['types']['userid'] ?? null);
     }
 
+    public function testUserSavemoduleFiltersTransportMetadataAndNonScalarValues(): void
+    {
+        $payload = $this->runIsolatedPageScript(<<<'PHP'
+$_GET['userid'] = '42';
+$_GET['module'] = 'samplemodule';
+$_POST = [
+    'showFormTabIndex' => ['bad'],
+    'display_name' => 'Visible Name',
+    'theme' => 'dark',
+    'unknown_pref' => 'ignored',
+];
+$GLOBALS['__test_module_info'] = [
+    'prefs' => [
+        'display_name' => 'Display Name|string|',
+        'theme' => 'Theme|string|',
+    ],
+];
+
+require LOTGD_TEST_ROOT . '/tests/User/isolated_user_savemodule.php';
+PHP);
+
+        $statements = $payload['statements'] ?? null;
+        $this->assertIsArray($statements);
+        $this->assertCount(2, $statements);
+
+        $settings = array_map(
+            static fn (array $statement): string => (string) ($statement['params']['setting'] ?? ''),
+            $statements
+        );
+        sort($settings);
+
+        $this->assertSame(['display_name', 'theme'], $settings);
+    }
+
+
     /**
      * Execute page-inclusion tests in an isolated PHP process so test-only
      * function/class shims cannot leak into the main PHPUnit process.
