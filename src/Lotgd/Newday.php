@@ -33,7 +33,12 @@ class Newday
         $start = microtime(true);
         foreach ($rows as $row) {
             foreach ($row as $val) {
-                $conn->executeStatement('OPTIMIZE TABLE ' . $conn->quoteIdentifier((string) $val));
+                // OPTIMIZE TABLE returns a result set in MySQL. We explicitly
+                // consume and free that result before issuing any further SQL
+                // to avoid SQLSTATE[HY000]: 2014 from unbuffered cursor carryover.
+                $result = $conn->executeQuery('OPTIMIZE TABLE ' . $conn->quoteIdentifier((string) $val));
+                $result->fetchAllAssociative();
+                $result->free();
                 $tables[] = $val;
             }
         }
