@@ -370,10 +370,21 @@ class Translator
         //$in[0] = str_replace("`%","`%%",$in[0]);
         $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         if ($to > 0) {
-            $result = Database::query("SELECT prefs FROM " . Database::prefix("accounts") . " WHERE acctid=$to");
-            $language = Database::fetchAssoc($result);
-            $language['prefs'] = unserialize($language['prefs']);
-            $session['tlanguage'] = (isset($language['prefs']['language']) && $language['prefs']['language'] != '') ? $language['prefs']['language'] : ($settings instanceof Settings ? $settings->getSetting("defaultlanguage", "en") : "en");
+            $connection = Database::getDoctrineConnection();
+            $result = $connection->executeQuery(
+                "SELECT prefs FROM " . Database::prefix("accounts") . " WHERE acctid = :acctid",
+                ['acctid' => $to],
+                ['acctid' => ParameterType::INTEGER]
+            );
+            $language = $result->fetchAssociative();
+            $languagePrefs = [];
+            if (is_array($language)) {
+                $unserializedPrefs = unserialize((string) ($language['prefs'] ?? ''));
+                if (is_array($unserializedPrefs)) {
+                    $languagePrefs = $unserializedPrefs;
+                }
+            }
+            $session['tlanguage'] = (isset($languagePrefs['language']) && $languagePrefs['language'] != '') ? $languagePrefs['language'] : ($settings instanceof Settings ? $settings->getSetting("defaultlanguage", "en") : "en");
         }
         reset($in);
         // translation offered within translation tool here is in language

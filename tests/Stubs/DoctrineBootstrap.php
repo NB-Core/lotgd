@@ -117,6 +117,14 @@ class DoctrineConnection
             return $this->makeResult([['prefs' => $prefs]]);
         }
 
+        if (preg_match('/SELECT\s+prefs\s+FROM\s+' . preg_quote($accountsTable, '/') . '\s+WHERE\s+acctid\s*=\s*:acctid/i', $sql)) {
+            global $accounts_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
+            $prefs = $accounts_table[$acctid]['prefs'] ?? '';
+
+            return $this->makeResult([['prefs' => $prefs]]);
+        }
+
         if (preg_match("/SELECT\s+name\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
             global $accounts_table;
             $acctid = (int) $matches[1];
