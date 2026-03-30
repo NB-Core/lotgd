@@ -127,6 +127,7 @@ class Settings
                 if (!is_array($this->settings)) {
                     $this->settings = [];
 
+                    $hadDoctrine = Database::hasDoctrineConnection();
                     try {
                         $sql = 'SELECT * FROM ' . $this->tablename;
                         $conn = Database::getDoctrineConnection();
@@ -138,6 +139,10 @@ class Settings
                         }
                     } catch (TableNotFoundException $e) {
                         return;
+                    } finally {
+                        if (! $hadDoctrine) {
+                            Database::resetDoctrineConnection();
+                        }
                     }
 
                     DataCache::getInstance()->updatedatacache('game' . $this->tablename, $this->settings);

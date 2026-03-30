@@ -29,11 +29,13 @@ namespace Lotgd\Tests\Ajax {
 
         public function testUnreadMailTriggersNotify(): void
         {
+            global $mail_table;
+
             Database::$queryCacheResults = [
                 'mail-1' => [['seencount' => 0, 'notseen' => 1]],
             ];
-            Database::$mockResults = [
-                [['lastid' => 7, 'unread' => 1]],
+            $mail_table = [
+                ['messageid' => 7, 'msgto' => 1, 'seen' => 0],
             ];
 
             $response = (new Mail())->mailStatus(true);
@@ -56,11 +58,13 @@ namespace Lotgd\Tests\Ajax {
 
         public function testNoUnreadMailNoNotify(): void
         {
+            global $mail_table;
+
             Database::$queryCacheResults = [
                 'mail-1' => [['seencount' => 0, 'notseen' => 0]],
             ];
-            Database::$mockResults = [
-                [['lastid' => 5, 'unread' => 0]],
+            $mail_table = [
+                ['messageid' => 5, 'msgto' => 1, 'seen' => 1],
             ];
 
             $response = (new Mail())->mailStatus(true);
