@@ -67,6 +67,13 @@ class DoctrineConnection
     public array $fetchAllResults = [];
     public array $lastFetchAllParams = [];
     public array $lastFetchAllTypes = [];
+    /**
+     * Log of fetchAllAssociative calls so tests can assert specific query parameters
+     * even when later calls overwrite "last*" tracking fields.
+     *
+     * @var array<int, array{sql:string, params:array, types:array}>
+     */
+    public array $fetchAllLog = [];
     public array $fetchAssociativeResults = [];
     public array $lastFetchAssociativeParams = [];
     public array $lastFetchAssociativeTypes = [];
@@ -112,6 +119,14 @@ class DoctrineConnection
         if (preg_match("/SELECT\s+prefs\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
             global $accounts_table;
             $acctid = (int) $matches[1];
+            $prefs = $accounts_table[$acctid]['prefs'] ?? '';
+
+            return $this->makeResult([['prefs' => $prefs]]);
+        }
+
+        if (preg_match('/SELECT\s+prefs\s+FROM\s+' . preg_quote($accountsTable, '/') . '\s+WHERE\s+acctid\s*=\s*:acctid/i', $sql)) {
+            global $accounts_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
             $prefs = $accounts_table[$acctid]['prefs'] ?? '';
 
             return $this->makeResult([['prefs' => $prefs]]);
@@ -233,6 +248,11 @@ class DoctrineConnection
         $this->queries[] = $sql;
         $this->lastFetchAllParams = $params;
         $this->lastFetchAllTypes = $types;
+        $this->fetchAllLog[] = [
+            'sql'    => $sql,
+            'params' => $params,
+            'types'  => $types,
+        ];
 
         if (!empty(Database::$mockResults)) {
             $rows = array_shift(Database::$mockResults);
