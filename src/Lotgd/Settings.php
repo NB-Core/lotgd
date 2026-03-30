@@ -129,13 +129,13 @@ class Settings
 
                     try {
                         $sql = 'SELECT * FROM ' . $this->tablename;
-                        $result = Database::query($sql);
-                        while ($row = Database::fetchAssoc($result)) {
+                        $conn = Database::getDoctrineConnection();
+                        $result = $conn->executeQuery($sql);
+                        while ($row = $result->fetchAssociative()) {
                             if (is_array($row) && array_key_exists('setting', $row) && array_key_exists('value', $row)) {
                                 $this->settings[$row['setting']] = $row['value'];
                             }
                         }
-                        Database::freeResult($result);
                     } catch (TableNotFoundException $e) {
                         return;
                     }

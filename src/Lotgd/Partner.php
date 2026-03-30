@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 
@@ -39,9 +40,14 @@ class Partner
                     $partner = $settings->getSetting('bard', '`^Seth');
                 }
             } else {
-                $sql = 'SELECT name FROM ' . Database::prefix('accounts') . ' WHERE acctid = ' . $session['user']['marriedto'];
-                $result = Database::query($sql);
-                if ($row = Database::fetchAssoc($result)) {
+                $sql = 'SELECT name FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid';
+                $conn = Database::getDoctrineConnection();
+                $row = $conn->executeQuery(
+                    $sql,
+                    ['acctid' => (int) $session['user']['marriedto']],
+                    ['acctid' => ParameterType::INTEGER]
+                )->fetchAssociative();
+                if (is_array($row)) {
                     $partner = $row['name'];
                 } else {
                     $session['user']['marriedto'] = 0;
