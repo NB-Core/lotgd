@@ -67,6 +67,13 @@ class DoctrineConnection
     public array $fetchAllResults = [];
     public array $lastFetchAllParams = [];
     public array $lastFetchAllTypes = [];
+    /**
+     * Log of fetchAllAssociative calls so tests can assert specific query parameters
+     * even when later calls overwrite "last*" tracking fields.
+     *
+     * @var array<int, array{sql:string, params:array, types:array}>
+     */
+    public array $fetchAllLog = [];
     public array $fetchAssociativeResults = [];
     public array $lastFetchAssociativeParams = [];
     public array $lastFetchAssociativeTypes = [];
@@ -241,6 +248,11 @@ class DoctrineConnection
         $this->queries[] = $sql;
         $this->lastFetchAllParams = $params;
         $this->lastFetchAllTypes = $types;
+        $this->fetchAllLog[] = [
+            'sql'    => $sql,
+            'params' => $params,
+            'types'  => $types,
+        ];
 
         if (!empty(Database::$mockResults)) {
             $rows = array_shift(Database::$mockResults);
