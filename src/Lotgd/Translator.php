@@ -152,18 +152,8 @@ class Translator
                 if (isset(self::$translation_table[$namespace][$indata])) {
                         $outdata = self::$translation_table[$namespace][$indata];
                     $foundtranslation = true;
-                    // Remove this from the untranslated texts table if it is
-                    // in there and we are collecting texts
-                    // This delete is horrible on very heavily translated games.
-                    // It has been requested to be removed.
-                    /*
-                    if (Settings::getInstance()->getSetting("collecttexts", false)) {
-        $sql = "DELETE FROM " . Database::prefix("untranslated") .
-            " WHERE intext='" . addslashes($indata) .
-            "' AND language='" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "'";
-        Database::query($sql);
-                    }
-                    */
+                    // Historical note: the old delete path was intentionally removed for heavy-translation performance reasons.
+                    // Untranslated text collection now relies on the DBAL insert path below.
                 } elseif ($settings instanceof Settings && $settings->getSetting("collecttexts", false)) {
                     $connection = Database::getDoctrineConnection();
                     $connection->executeStatement(
