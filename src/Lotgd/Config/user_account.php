@@ -11,6 +11,9 @@ $settings = Settings::getInstance();
  * Please don't hurt the messenger, this needs a rework
  *
  */
+if (!isset($enum)) $enum = '';
+if (!isset($racesenum)) $reacesenum = '';
+if (!isset($mounts)) $mounts = '';
 
 $userinfo = array(
     "Account info,title",
