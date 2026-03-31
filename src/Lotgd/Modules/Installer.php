@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Modules;
 
+use Doctrine\DBAL\Exception;
 use Lotgd\Modules;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
@@ -315,9 +316,10 @@ class Installer
 
         if ($withDb) {
             $sql    = 'SELECT modulename,category FROM ' . Database::prefix('modules');
-            $result = @Database::query($sql);
-            if ($result !== false) {
-                while ($row = Database::fetchAssoc($result)) {
+            try {
+                $conn = Database::getDoctrineConnection();
+                $result = $conn->executeQuery($sql);
+                while ($row = $result->fetchAssociative()) {
                     $seenmodules[$row['modulename'] . '.php'] = true;
                     if (!array_key_exists($row['category'], $seencats)) {
                         $seencats[$row['category']] = 1;
@@ -325,6 +327,8 @@ class Installer
                         $seencats[$row['category']]++;
                     }
                 }
+            } catch (Exception $e) {
+                // Preserve historical behavior of @Database::query() in this optional status path.
             }
         }
 

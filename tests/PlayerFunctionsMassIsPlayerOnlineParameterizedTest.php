@@ -7,6 +7,8 @@ namespace Lotgd\Tests;
 use Doctrine\DBAL\ArrayParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\PlayerFunctions;
+use Lotgd\Settings;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class PlayerFunctionsMassIsPlayerOnlineParameterizedTest extends TestCase
@@ -19,6 +21,17 @@ final class PlayerFunctionsMassIsPlayerOnlineParameterizedTest extends TestCase
         $connection->executeQueryParams = [];
         $connection->executeQueryTypes = [];
         $connection->fetchAllResults = [];
+
+        $settings = new DummySettings(['LOGINTIMEOUT' => 900]);
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
+    }
+
+    protected function tearDown(): void
+    {
+        unset($GLOBALS['settings']);
+        Settings::setInstance(null);
+        parent::tearDown();
     }
 
     public function testMassIsPlayerOnlineBindsIntegerArrayParameters(): void
@@ -43,4 +56,3 @@ final class PlayerFunctionsMassIsPlayerOnlineParameterizedTest extends TestCase
         );
     }
 }
-

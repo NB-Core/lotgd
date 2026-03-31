@@ -141,6 +141,27 @@ class DoctrineConnection
         }
 
         $mailTable = Database::prefix('mail');
+        if (preg_match('/SELECT\s+MAX\(messageid\).*SUM\(seen\s*=\s*0\).*\s+FROM\s+' . preg_quote($mailTable, '/') . '\s+WHERE\s+msgto\s*=\s*:acctid/i', $sql)) {
+            global $mail_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
+            $lastId = 0;
+            $unread = 0;
+            foreach ($mail_table as $row) {
+                if ((int) ($row['msgto'] ?? 0) !== $acctid) {
+                    continue;
+                }
+                $messageId = (int) ($row['messageid'] ?? 0);
+                if ($messageId > $lastId) {
+                    $lastId = $messageId;
+                }
+                if ((int) ($row['seen'] ?? 0) === 0) {
+                    $unread++;
+                }
+            }
+
+            return $this->makeResult([['lastid' => $lastId, 'unread' => $unread]]);
+        }
+
         if (preg_match("/SELECT\s+count\\(messageid\\)\s+AS\s+count\s+FROM\s+" . preg_quote($mailTable, '/') . "\s+WHERE\s+msgto=\'?([0-9]+)\'?([^;]*)/i", $sql, $matches)) {
             global $mail_table;
             $acctid = (int) $matches[1];
@@ -216,6 +237,18 @@ class DoctrineConnection
 
         if (preg_match("/SELECT\s+\*\s+FROM\s+" . preg_quote(Database::prefix('nastywords'), '/') . "\s+WHERE\s+type='(good|nasty)'/i", $sql)) {
             return $this->makeResult([['words' => '']]);
+        }
+
+        if (preg_match('/SELECT\s+\*\s+FROM\s+' . preg_quote(Database::prefix('settings'), '/') . '/i', $sql)) {
+            $rows = [];
+            foreach (Database::$settings_table as $setting => $value) {
+                $rows[] = [
+                    'setting' => (string) $setting,
+                    'value'   => $value,
+                ];
+            }
+
+            return $this->makeResult($rows);
         }
 
         if (stripos($sql, 'count(') !== false) {

@@ -28,9 +28,9 @@ class DeathMessage
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
         $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::eRand() . ') LIMIT 1';
-        $result = Database::query($sql);
-        if ($result) {
-            $row = Database::fetchAssoc($result);
+        $conn = Database::getDoctrineConnection();
+        $row = $conn->executeQuery($sql)->fetchAssociative();
+        if (is_array($row)) {
             $deathmessage = $row['deathmessage'];
             $taunt = $row['taunt'];
         } else {
@@ -55,9 +55,9 @@ class DeathMessage
         global $session, $badguy;
         $where = ($forest ? 'WHERE forest=1' : 'WHERE graveyard=1');
         $sql = 'SELECT deathmessage,taunt FROM ' . Database::prefix('deathmessages') . " $where ORDER BY rand(" . Random::eRand() . ') LIMIT 1';
-        $result = Database::query($sql);
-        if ($result) {
-            $row = Database::fetchAssoc($result);
+        $conn = Database::getDoctrineConnection();
+        $row = $conn->executeQuery($sql)->fetchAssociative();
+        if (is_array($row)) {
             $deathmessage = $row['deathmessage'];
             $taunt = $row['taunt'];
         } else {

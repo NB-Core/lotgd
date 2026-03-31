@@ -125,13 +125,12 @@ class UserLookup
             $orderSql
         );
 
-        $result = Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $result = $conn->executeQuery($sql);
         $rows = [];
 
-        if ($result !== false) {
-            while (($row = Database::fetchAssoc($result)) !== false && $row !== null) {
-                $rows[] = $row;
-            }
+        while (($row = $result->fetchAssociative()) !== false) {
+            $rows[] = $row;
         }
 
         $error = $rows === [] ? "`\$No results found`0" : '';
