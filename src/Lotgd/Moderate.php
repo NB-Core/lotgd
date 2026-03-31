@@ -400,7 +400,12 @@ class Moderate
                 if (!isset($session['user']['prefs']['timeformat'])) {
                     $session['user']['prefs']['timeformat'] = '[m/d h:ia]';
                 }
-                $time = strtotime($row['postdate']) + ($session['user']['prefs']['timeoffset'] * 60 * 60);
+                /*
+                 * date() requires an integer Unix timestamp.
+                 * Timezone offsets can include fractions (for example, +5.5 hours),
+                 * so force the calculated value back to an int after applying offset.
+                 */
+                $time = (int) (strtotime($row['postdate']) + ($session['user']['prefs']['timeoffset'] * 60 * 60));
                 $s = date('`7' . $session['user']['prefs']['timeformat'] . '`0 ', $time);
                 $op[$i] = $s . $op[$i];
             } elseif ($session['user']['prefs']['timestamp'] == 2) {
