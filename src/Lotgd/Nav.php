@@ -663,7 +663,6 @@ class Nav
             }
         }
         $extra = '';
-        $ignoreuntil = '';
         Output::getInstance()->closeOpenFont();
         if ($link === false) {
             $text = HolidayText::holidayize($text, 'nav');
@@ -687,99 +686,41 @@ class Nav
                     }
                     $extra .= '-' . date('His');
                 }
+                /** @var string $preHolidayText Access-key source text before seasonal substitutions. */
+                $preHolidayText = $text;
+                $renderText = $preHolidayText;
                 $key = '';
-                if ($text[1] == '?') {
-                    $hchar = strtolower($text[0]);
+                $keyrep = '';
+                $explicitKeyMissingFromPreHolidayText = false;
+                if (isset($preHolidayText[1]) && $preHolidayText[1] === '?') {
+                    $hchar = strtolower($preHolidayText[0]);
                     if ($hchar == ' ' || array_key_exists($hchar, self::$accesskeys) && self::$accesskeys[$hchar] == 1) {
-                        $text = substr($text, 2);
-                        $text = HolidayText::holidayize($text, 'nav');
+                        $preHolidayText = substr($preHolidayText, 2);
                         if ($hchar == ' ') {
                             $key = ' ';
                         }
                     } else {
-                        $key = $text[0];
-                        $text = substr($text, 2);
-                        $text = HolidayText::holidayize($text, 'nav');
-                        $found = false;
-                        $text_len = strlen($text);
-                        for ($i = 0; $i < $text_len; ++$i) {
-                            $char = $text[$i];
-                            if ($ignoreuntil == $char) {
-                                $ignoreuntil = '';
-                            } else {
-                                if ($ignoreuntil <> '') {
-                                    if ($char == '<') {
-                                        $ignoreuntil = '>';
-                                    }
-                                    if ($char == '&') {
-                                        $ignoreuntil = ';';
-                                    }
-                                    if ($char == '`') {
-                                        $ignoreuntil = $text[$i + 1];
-                                    }
-                                } else {
-                                    if ($char == $key) {
-                                        $found = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if ($found == false) {
-                            if (strpos($text, '__') !== false) {
-                                $text = str_replace('__', '(' . $key . ') ', $text);
-                            } else {
-                                $text = '(' . strtoupper($key) . ') ' . $text;
-                            }
-                            $i = strpos($text, $key);
-                        }
-                    }
-                } else {
-                    $text = HolidayText::holidayize($text, 'nav');
-                }
-                if ($key == '') {
-                    for ($i = 0; $i < strlen($text); $i++) {
-                        $char = substr($text, $i, 1);
-                        if ($ignoreuntil == $char) {
-                            $ignoreuntil = '';
-                        } else {
-                            if ((isset(self::$accesskeys[strtolower($char)]) && self::$accesskeys[strtolower($char)] == 1) || (strpos('abcdefghijklmnopqrstuvwxyz0123456789', strtolower($char)) === false) || $ignoreuntil <> '') {
-                                if ($char == '<') {
-                                    $ignoreuntil = '>';
-                                }
-                                if ($char == '&') {
-                                    $ignoreuntil = ';';
-                                }
-                                if ($char == '`') {
-                                    $ignoreuntil = substr($text, $i + 1, 1);
-                                }
-                            } else {
-                                break;
-                            }
-                        }
+                        $key = $preHolidayText[0];
+                        $preHolidayText = substr($preHolidayText, 2);
+                        $explicitKeyMissingFromPreHolidayText = !self::containsAccessKeyChar($preHolidayText, $key);
                     }
                 }
-                if (!isset($i)) {
-                    $i = 0;
+
+                $renderText = HolidayText::holidayize($preHolidayText, 'nav');
+                if ($key === '') {
+                    $candidateKey = self::findAvailableAccessKey($preHolidayText);
+                    if ($candidateKey !== null) {
+                        $key = $candidateKey;
+                    }
                 }
-                if ($i < strlen($text) && $key != ' ') {
-                    $key = substr($text, $i, 1);
-                    self::$accesskeys[strtolower($key)] = 1;
+
+                /**
+                 * Invariant: Access-key identity is derived from pre-holiday source text;
+                 * holiday text affects presentation only.
+                 */
+                if ($key !== '' && $key !== ' ') {
+                    self::$accesskeys[strtolower($key)] = true;
                     $keyrep = " accesskey=\"$key\" ";
-                } else {
-                    $key = '';
-                    $keyrep = '';
-                }
-                if ($key == '' || $key == ' ') {
-                } else {
-                    $pattern1 = "/^" . preg_quote($key, "/") . "/";
-                    $pattern2 = "/([^`])" . preg_quote($key, "/") . "/";
-                    $rep1 = "`H$key`H";
-                    $rep2 = "\$1`H$key`H";
-                    $text = preg_replace($pattern1, $rep1, $text, 1);
-                    if (strpos($text, '`H') === false) {
-                        $text = preg_replace($pattern2, $rep2, $text, 1);
-                    }
                     if ($pop) {
                         if ($popsize == '') {
                             self::$quickkeys[$key] = "window.open('$link')";
@@ -789,12 +730,24 @@ class Nav
                     } else {
                         self::$quickkeys[$key] = "window.location='$link$extra'";
                     }
+
+                    if ($explicitKeyMissingFromPreHolidayText) {
+                        if (strpos($renderText, '__') !== false) {
+                            $renderText = str_replace('__', '(' . $key . ') ', $renderText);
+                        } else {
+                            $renderText = '(' . strtoupper($key) . ') ' . $renderText;
+                        }
+                    }
+
+                    // Best effort only: if key cannot be located in holiday text, keep keyboard behavior without highlight markup.
+                    $renderText = self::highlightAccessKey($renderText, $key);
                 }
-                if (is_string($text)) {
-                    $text = preg_replace('/^`0+/', '', $text);
+
+                if (is_string($renderText)) {
+                    $renderText = preg_replace('/^`0+/', '', $renderText);
                 }
                 $n = Template::templateReplace('navitem', [
-                    'text' => $output->appoencode($text, $priv),
+                    'text' => $output->appoencode($renderText, $priv),
                     'link' => $link . ($pop != true ? $extra : ''),
                     'accesskey' => $keyrep,
                     'popup' => ($pop == true ? "target='_blank'" . ($popsize > '' ? " onClick=\"" . PageParts::popup($link, $popsize) . "; return false;\"" : '') : ''),
@@ -817,6 +770,99 @@ class Nav
         }
         $instance->appendNav($thisnav);
         return $thisnav;
+    }
+
+    /**
+     * Locate an explicit access-key character in text while ignoring inline formatting markers.
+     */
+    private static function containsAccessKeyChar(string $text, string $key): bool
+    {
+        $textLen = strlen($text);
+        $ignoreUntil = '';
+        for ($i = 0; $i < $textLen; ++$i) {
+            $char = $text[$i];
+            if ($ignoreUntil === $char) {
+                $ignoreUntil = '';
+                continue;
+            }
+            if ($ignoreUntil !== '') {
+                if ($char === '<') {
+                    $ignoreUntil = '>';
+                }
+                if ($char === '&') {
+                    $ignoreUntil = ';';
+                }
+                if ($char === '`' && isset($text[$i + 1])) {
+                    $ignoreUntil = $text[$i + 1];
+                }
+                continue;
+            }
+            if ($char === $key) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Find the first available access-key candidate from pre-holiday text.
+     */
+    private static function findAvailableAccessKey(string $preHolidayText): ?string
+    {
+        $textLen = strlen($preHolidayText);
+        $ignoreUntil = '';
+        for ($i = 0; $i < $textLen; ++$i) {
+            $char = $preHolidayText[$i];
+            if ($ignoreUntil === $char) {
+                $ignoreUntil = '';
+                continue;
+            }
+
+            if (
+                (isset(self::$accesskeys[strtolower($char)]) && self::$accesskeys[strtolower($char)] == 1)
+                || (strpos('abcdefghijklmnopqrstuvwxyz0123456789', strtolower($char)) === false)
+            ) {
+                if ($char == '<') {
+                    $ignoreUntil = '>';
+                }
+                if ($char == '&') {
+                    $ignoreUntil = ';';
+                }
+                if ($char == '`' && isset($preHolidayText[$i + 1])) {
+                    $ignoreUntil = $preHolidayText[$i + 1];
+                }
+                continue;
+            }
+
+            return $char;
+        }
+
+        return null;
+    }
+
+    /**
+     * Highlight the access key in rendered text when possible.
+     */
+    private static function highlightAccessKey(string $renderText, string $key): string
+    {
+        $pattern1 = "/^" . preg_quote($key, "/") . "/";
+        $pattern2 = "/([^`])" . preg_quote($key, "/") . "/";
+        $rep1 = "`H$key`H";
+        $rep2 = "\$1`H$key`H";
+        $highlighted = preg_replace($pattern1, $rep1, $renderText, 1);
+        if (!is_string($highlighted)) {
+            return $renderText;
+        }
+        if (strpos($highlighted, '`H') !== false) {
+            return $highlighted;
+        }
+        $highlighted = preg_replace($pattern2, $rep2, $highlighted, 1);
+        if (!is_string($highlighted)) {
+            return $renderText;
+        }
+
+        return $highlighted;
     }
 
     private static function privateAddSubHeader($text, bool $priv = false): string
