@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Async\Handler;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\PageParts;
 use Lotgd\Settings;
@@ -36,13 +37,16 @@ class Mail
         // Get the highest message ID and unread mail count for the current user
         $sql = 'SELECT MAX(messageid) AS lastid, SUM(seen=0) AS unread FROM '
             . Database::prefix('mail')
-            . ' WHERE msgto=\'' . $session['user']['acctid'] . '\'';
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+            . ' WHERE msgto = :acctid';
+        $conn = Database::getDoctrineConnection();
+        $row = $conn->executeQuery(
+            $sql,
+            ['acctid' => (int) $session['user']['acctid']],
+            ['acctid' => ParameterType::INTEGER]
+        )->fetchAssociative();
         if ($row === false) {
             $row = ['lastid' => 0, 'unread' => 0];
         }
-        Database::freeResult($result);
         $lastMailId = (int) ($row['lastid'] ?? 0);
         $unreadCount = (int) ($row['unread'] ?? 0);
 

@@ -18,6 +18,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\AddNews;
 use Lotgd\DebugLog;
+use Doctrine\DBAL\ParameterType;
 
 class SuAccess
 {
@@ -67,9 +68,14 @@ class SuAccess
         $session['user']['gold'] = 0;
         $session['user']['experience'] *= 0.75;
         Navigation::add('Daily News', 'news.php');
-        $sql = 'SELECT acctid FROM ' . Database::prefix('accounts') . ' WHERE (superuser&' . SU_EDIT_USERS . ')';
-        $result = Database::query($sql);
-        while ($row = Database::fetchAssoc($result)) {
+        $sql = 'SELECT acctid FROM ' . Database::prefix('accounts') . ' WHERE (superuser&:requiredFlag)';
+        $conn = Database::getDoctrineConnection();
+        $result = $conn->executeQuery(
+            $sql,
+            ['requiredFlag' => SU_EDIT_USERS],
+            ['requiredFlag' => ParameterType::INTEGER]
+        );
+        while ($row = $result->fetchAssociative()) {
             $subj = '`#%s`# tried to hack the superuser pages!';
             $subj = sprintf($subj, $session['user']['name']);
             $body = 'Bad, bad, bad %s, they are a hacker!`n`nTried to access %s from %s.';

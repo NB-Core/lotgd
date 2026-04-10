@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -29,8 +30,14 @@ Translator::getInstance()->setSchema("referers");
 
 SuAccess::check(SU_EDIT_CONFIG);
 
-$sql = "DELETE FROM " . Database::prefix("referers") . " WHERE last<'" . date("Y-m-d H:i:s", strtotime("-" . $settings->getSetting('expirecontent', 180) . " days")) . "'";
-Database::query($sql);
+$conn = Database::getDoctrineConnection();
+$referersTable = Database::prefix('referers');
+$cutoffDate = date("Y-m-d H:i:s", strtotime("-" . $settings->getSetting('expirecontent', 180) . " days"));
+$conn->executeStatement(
+    "DELETE FROM {$referersTable} WHERE last < :cutoff",
+    ['cutoff' => $cutoffDate],
+    ['cutoff' => ParameterType::STRING]
+);
 $op = Http::get('op');
 
 if ($op == "rebuild") {
@@ -41,8 +48,17 @@ if ($op == "rebuild") {
         if (strpos($site, "/")) {
             $site = substr($site, 0, strpos($site, "/"));
         }
-        $sql = "UPDATE " . Database::prefix("referers") . " SET site='" . addslashes($site) . "' WHERE refererid='{$row['refererid']}'";
-        Database::query($sql);
+        $conn->executeStatement(
+            "UPDATE {$referersTable} SET site = :site WHERE refererid = :refererid",
+            [
+                'site' => $site,
+                'refererid' => (int) $row['refererid'],
+            ],
+            [
+                'site' => ParameterType::STRING,
+                'refererid' => ParameterType::INTEGER,
+            ]
+        );
     }
 }
 SuperuserNav::render();
@@ -53,18 +69,73 @@ $sort = $sort === false ? '' : (string) $sort;
 
 $refreshUrl = 'referers.php' . ($sort === '' ? '' : '?sort=' . URLEncode($sort));
 Nav::add("Refresh", $refreshUrl);
-Nav::add("C?Sort by Count", "referers.php?sort=count" . ($sort == "count DESC" ? "" : "+DESC"));
-Nav::add("U?Sort by URL", "referers.php?sort=uri" . ($sort == "uri" ? "+DESC" : ""));
-Nav::add("T?Sort by Time", "referers.php?sort=last" . ($sort == "last DESC" ? "" : "+DESC"));
 
 Nav::add("Rebuild Sites", "referers.php?op=rebuild");
 
 Header::pageHeader("Referers");
-$order = "count DESC";
-if ($sort != "") {
-    $order = $sort;
+/**
+ * Resolve sort safely using a strict allowlist map.
+ *
+ * Accepted input formats:
+ *  - "count", "uri", "last"
+ *  - "count ASC|DESC", "uri ASC|DESC", "last ASC|DESC"
+ *
+ * Notes:
+ *  - The direction (ASC|DESC) part is optional; when omitted for a valid key,
+ *    the direction defaults to ASC.
+ *  - Invalid sort keys or directions still fall back to "count DESC".
+ *  - Summary/detail sort columns are separated so URL sorting can use `uri`
+ *    for detail rows while grouped summary rows still sort by `site`.
+ *  Defaults to "count DESC" for invalid/missing input.
+ */
+$summaryOrder = 'count DESC';
+$detailOrder = 'count DESC';
+$sortColumnMapSummary = [
+    'count' => 'count',
+    'uri'   => 'site',
+    'last'  => 'last',
+];
+$sortColumnMapDetail = [
+    'count' => 'count',
+    'uri'   => 'uri',
+    'last'  => 'last',
+];
+$sortDirectionMap = [
+    'ASC'  => 'ASC',
+    'DESC' => 'DESC',
+];
+$sortKey = 'count';
+$sortDirection = 'DESC';
+if ($sort !== '') {
+    $parts = preg_split('/\s+/', trim(str_replace('+', ' ', $sort))) ?: [];
+    $requestedSortKey = strtolower((string) ($parts[0] ?? ''));
+    $requestedSortDirection = strtoupper((string) ($parts[1] ?? 'ASC'));
+
+    if (
+        isset(
+            $sortColumnMapSummary[$requestedSortKey],
+            $sortColumnMapDetail[$requestedSortKey],
+            $sortDirectionMap[$requestedSortDirection]
+        )
+    ) {
+        $sortKey = $requestedSortKey;
+        $sortDirection = $requestedSortDirection;
+        $summaryOrder = $sortColumnMapSummary[$sortKey] . ' ' . $sortDirection;
+        $detailOrder = $sortColumnMapDetail[$sortKey] . ' ' . $sortDirection;
+    }
 }
-$sql = "SELECT SUM(count) AS count, MAX(last) AS last,site FROM " . Database::prefix("referers") . " GROUP BY site ORDER BY $order LIMIT 100";
+
+/**
+ * Build explicit sort links so the toggle behavior does not depend on implicit defaults.
+ */
+$nextCountDirection = ($sortKey === 'count' && $sortDirection === 'ASC') ? 'DESC' : 'ASC';
+$nextUriDirection = ($sortKey === 'uri' && $sortDirection === 'ASC') ? 'DESC' : 'ASC';
+$nextLastDirection = ($sortKey === 'last' && $sortDirection === 'ASC') ? 'DESC' : 'ASC';
+Nav::add("C?Sort by Count", "referers.php?sort=count+{$nextCountDirection}");
+Nav::add("U?Sort by URL", "referers.php?sort=uri+{$nextUriDirection}");
+Nav::add("T?Sort by Time", "referers.php?sort=last+{$nextLastDirection}");
+
+$sql = "SELECT SUM(count) AS count, MAX(last) AS last,site FROM {$referersTable} GROUP BY site ORDER BY {$summaryOrder} LIMIT :summaryLimit";
 $count = Translator::translate("Count");
 $last = Translator::translate("Last");
 $dest = Translator::translate("Destination");
@@ -79,8 +150,12 @@ $output->rawOutput(
         $dest
     )
 );
-$result = Database::query($sql);
-while ($row = Database::fetchAssoc($result)) {
+$result = $conn->executeQuery(
+    $sql,
+    ['summaryLimit' => 100],
+    ['summaryLimit' => ParameterType::INTEGER]
+);
+while ($row = $result->fetchAssociative()) {
     $output->rawOutput("<tr class='trdark'><td valign='top'>");
     $rowCount = $row['count'] ?? '';
     $output->outputNotl('`b%s`b', $rowCount);
@@ -93,13 +168,24 @@ while ($row = Database::fetchAssoc($result)) {
     $output->outputNotl('`b%s`b', $site === '' ? $none : $site);
     $output->rawOutput("</td></tr>");
 
-    $sql = "SELECT count,last,uri,dest,ip FROM " . Database::prefix("referers") . " WHERE site='" . addslashes($row['site']) . "' ORDER BY {$order} LIMIT 25";
-    $result1 = Database::query($sql);
+    $sql = "SELECT count,last,uri,dest,ip FROM {$referersTable} WHERE site = :site ORDER BY {$detailOrder} LIMIT :detailLimit";
+    $result1 = $conn->executeQuery(
+        $sql,
+        [
+            'site' => (string) ($row['site'] ?? ''),
+            'detailLimit' => 25,
+        ],
+        [
+            'site' => ParameterType::STRING,
+            'detailLimit' => ParameterType::INTEGER,
+        ]
+    );
     $skippedcount = 0;
     $skippedtotal = 0;
-    $number = Database::numRows($result1);
+    $detailRows = $result1->fetchAllAssociative();
+    $number = count($detailRows);
     for ($k = 0; $k < $number; $k++) {
-        $row1 = Database::fetchAssoc($result1);
+        $row1 = $detailRows[$k];
         $diffsecs = strtotime("now") - strtotime($row1['last']);
         if ($diffsecs <= 604800) {
             $output->rawOutput("<tr class='trlight'><td>");

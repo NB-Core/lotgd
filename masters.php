@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
@@ -34,19 +35,51 @@ Header::pageHeader("Masters Editor");
 SuperuserNav::render();
 
 if ($op == "del") {
-    $sql = "DELETE FROM " . Database::prefix("masters") . " WHERE creatureid=$id";
-    Database::query($sql);
-    $output->output("`^Master deleted.`0");
+    $conn = Database::getDoctrineConnection();
+    $mastersTable = Database::prefix('masters');
+    $affectedRows = $conn->executeStatement(
+        "DELETE FROM {$mastersTable} WHERE creatureid = :id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
+    if ($affectedRows > 0) {
+        $output->output("`^Master deleted.`0");
+    } else {
+        $output->output("`\$No master found for the given id.`0");
+    }
     $op = "";
     Http::set("op", "");
 } elseif ($op == "save") {
-    $name = addslashes(Http::post('name'));
-    $weapon = addslashes(Http::post('weapon'));
-    $win = addslashes(Http::post('win'));
-    $lose = addslashes(Http::post('lose'));
+    $name = (string) Http::post('name');
+    $weapon = (string) Http::post('weapon');
+    $win = (string) Http::post('win');
+    $lose = (string) Http::post('lose');
     $lev = (int)Http::post('level');
+    $conn = Database::getDoctrineConnection();
+    $mastersTable = Database::prefix('masters');
+
     if ($id != 0) {
-        $sql = "UPDATE " . Database::prefix("masters") . " SET creaturelevel=$lev, creaturename='$name', creatureweapon='$weapon',  creaturewin='$win', creaturelose='$lose' WHERE creatureid=$id";
+        $conn->executeStatement(
+            "UPDATE {$mastersTable}
+                SET creaturelevel = :level, creaturename = :name, creatureweapon = :weapon, creaturewin = :win, creaturelose = :lose
+                WHERE creatureid = :id",
+            [
+                'level' => $lev,
+                'name' => $name,
+                'weapon' => $weapon,
+                'win' => $win,
+                'lose' => $lose,
+                'id' => $id,
+            ],
+            [
+                'level' => ParameterType::INTEGER,
+                'name' => ParameterType::STRING,
+                'weapon' => ParameterType::STRING,
+                'win' => ParameterType::STRING,
+                'lose' => ParameterType::STRING,
+                'id' => ParameterType::INTEGER,
+            ]
+        );
     } else {
         $atk = $lev * 2;
         $def = $lev * 2;
@@ -54,13 +87,38 @@ if ($op == "del") {
         if ($hp == 11) {
             $hp++;
         }
-        $sql = "INSERT INTO " . Database::prefix("masters") . " (creatureid,creaturelevel,creaturename,creatureweapon,creaturewin,creaturelose,creaturehealth,creatureattack,creaturedefense) VALUES ($id,$lev,'$name', '$weapon', '$win', '$lose', '$hp', '$atk', '$def')";
+        $conn->executeStatement(
+            "INSERT INTO {$mastersTable}
+                (creatureid, creaturelevel, creaturename, creatureweapon, creaturewin, creaturelose, creaturehealth, creatureattack, creaturedefense)
+                VALUES (:id, :level, :name, :weapon, :win, :lose, :health, :attack, :defense)",
+            [
+                'id' => $id,
+                'level' => $lev,
+                'name' => $name,
+                'weapon' => $weapon,
+                'win' => $win,
+                'lose' => $lose,
+                'health' => $hp,
+                'attack' => $atk,
+                'defense' => $def,
+            ],
+            [
+                'id' => ParameterType::INTEGER,
+                'level' => ParameterType::INTEGER,
+                'name' => ParameterType::STRING,
+                'weapon' => ParameterType::STRING,
+                'win' => ParameterType::STRING,
+                'lose' => ParameterType::STRING,
+                'health' => ParameterType::INTEGER,
+                'attack' => ParameterType::INTEGER,
+                'defense' => ParameterType::INTEGER,
+            ]
+        );
     }
-    Database::query($sql);
     if ($id == 0) {
-        $output->output("`^Master %s`^ added.", stripslashes($name));
+        $output->output("`^Master %s`^ added.", $name);
     } else {
-        $output->output("`^Master %s`^ updated.", stripslashes($name));
+        $output->output("`^Master %s`^ updated.", $name);
     }
     $op = "";
     Http::set("op", "");
@@ -154,13 +212,13 @@ if ($op == "") {
         $output->rawOutput("</td><td>");
         $output->outputNotl("`%%s`0", $row['creaturelevel']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`#%s`0", stripslashes($row['creaturename']));
+        $output->outputNotl("`#%s`0", $row['creaturename']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`!%s`0", stripslashes($row['creatureweapon']));
+        $output->outputNotl("`!%s`0", $row['creatureweapon']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`&%s`0", stripslashes($row['creaturelose']));
+        $output->outputNotl("`&%s`0", $row['creaturelose']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl("`^%s`0", stripslashes($row['creaturewin']));
+        $output->outputNotl("`^%s`0", $row['creaturewin']);
         $output->rawOutput("</td></tr>");
         $i = !$i;
     }

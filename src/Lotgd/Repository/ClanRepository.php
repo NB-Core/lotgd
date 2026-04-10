@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Repository;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 
 /**
@@ -16,10 +17,13 @@ class ClanRepository
      */
     public static function fetchAccountName(int $acctid): ?string
     {
-        $sql = 'SELECT name FROM ' . Database::prefix('accounts') . " WHERE acctid={$acctid}";
-        $result = Database::query($sql);
-        if (Database::numRows($result) > 0) {
-            $row = Database::fetchAssoc($result);
+        $connection = Database::getDoctrineConnection();
+        $row = $connection->fetchAssociative(
+            'SELECT name FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+            ['acctid' => $acctid],
+            ['acctid' => ParameterType::INTEGER]
+        );
+        if ($row !== false && isset($row['name'])) {
             return $row['name'];
         }
 
@@ -33,14 +37,13 @@ class ClanRepository
      */
     public static function countMembersByRank(int $clanId): array
     {
-        $sql = 'SELECT count(acctid) AS c, clanrank FROM ' . Database::prefix('accounts') . " WHERE clanid={$clanId} GROUP BY clanrank ORDER BY clanrank DESC";
-        $result = Database::query($sql);
-        $rows = [];
-        while ($row = Database::fetchAssoc($result)) {
-            $rows[] = $row;
-        }
-
-        return $rows;
+        $connection = Database::getDoctrineConnection();
+        return $connection->executeQuery(
+            'SELECT count(acctid) AS c, clanrank FROM ' . Database::prefix('accounts')
+            . ' WHERE clanid = :clanId GROUP BY clanrank ORDER BY clanrank DESC',
+            ['clanId' => $clanId],
+            ['clanId' => ParameterType::INTEGER]
+        )->fetchAllAssociative();
     }
 
     /**
@@ -50,13 +53,21 @@ class ClanRepository
      */
     public static function getHighestRankingMember(int $clanId): ?array
     {
-        $sql = 'SELECT name,acctid,clanrank FROM ' . Database::prefix('accounts') . ' WHERE clanid=' . $clanId . ' AND clanrank > ' . CLAN_APPLICANT . ' ORDER BY clanrank DESC, clanjoindate';
-        $result = Database::query($sql);
-        if (Database::numRows($result)) {
-            return Database::fetchAssoc($result);
-        }
+        $connection = Database::getDoctrineConnection();
+        $row = $connection->executeQuery(
+            'SELECT name,acctid,clanrank FROM ' . Database::prefix('accounts')
+            . ' WHERE clanid = :clanId AND clanrank > :applicantRank ORDER BY clanrank DESC, clanjoindate',
+            [
+                'clanId' => $clanId,
+                'applicantRank' => CLAN_APPLICANT,
+            ],
+            [
+                'clanId' => ParameterType::INTEGER,
+                'applicantRank' => ParameterType::INTEGER,
+            ]
+        )->fetchAssociative();
 
-        return null;
+        return $row === false ? null : $row;
     }
 
     /**
@@ -64,7 +75,17 @@ class ClanRepository
      */
     public static function promoteToLeader(int $acctid): void
     {
-        $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET clanrank=' . CLAN_LEADER . " WHERE acctid={$acctid}";
-        Database::query($sql);
+        $connection = Database::getDoctrineConnection();
+        $connection->executeStatement(
+            'UPDATE ' . Database::prefix('accounts') . ' SET clanrank = :leaderRank WHERE acctid = :acctid',
+            [
+                'leaderRank' => CLAN_LEADER,
+                'acctid' => $acctid,
+            ],
+            [
+                'leaderRank' => ParameterType::INTEGER,
+                'acctid' => ParameterType::INTEGER,
+            ]
+        );
     }
 }

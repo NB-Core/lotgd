@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\DataCache;
@@ -151,21 +152,23 @@ class Translator
                 if (isset(self::$translation_table[$namespace][$indata])) {
                         $outdata = self::$translation_table[$namespace][$indata];
                     $foundtranslation = true;
-                    // Remove this from the untranslated texts table if it is
-                    // in there and we are collecting texts
-                    // This delete is horrible on very heavily translated games.
-                    // It has been requested to be removed.
-                    /*
-                    if (Settings::getInstance()->getSetting("collecttexts", false)) {
-        $sql = "DELETE FROM " . Database::prefix("untranslated") .
-            " WHERE intext='" . addslashes($indata) .
-            "' AND language='" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "'";
-        Database::query($sql);
-                    }
-                    */
+                    // Historical note: the old delete path was intentionally removed for heavy-translation performance reasons.
+                    // Untranslated text collection now relies on the DBAL insert path below.
                 } elseif ($settings instanceof Settings && $settings->getSetting("collecttexts", false)) {
-                    $sql = "INSERT IGNORE INTO " .  Database::prefix("untranslated") .  " (intext,language,namespace) VALUES ('" .  addslashes($indata) . "', '" . (defined('LANGUAGE') ? constant('LANGUAGE') : '') . "', " .  "'$namespace')";
-                    Database::query($sql, false);
+                    $connection = Database::getDoctrineConnection();
+                    $connection->executeStatement(
+                        "INSERT IGNORE INTO " . Database::prefix("untranslated") . " (intext,language,namespace) VALUES (:intext, :language, :namespace)",
+                        [
+                            'intext' => (string) $indata,
+                            'language' => (defined('LANGUAGE') ? constant('LANGUAGE') : ''),
+                            'namespace' => (string) $namespace,
+                        ],
+                        [
+                            'intext' => ParameterType::STRING,
+                            'language' => ParameterType::STRING,
+                            'namespace' => ParameterType::STRING,
+                        ]
+                    );
                 }
                                 self::tlbuttonPush($indata, !$foundtranslation, $namespace);
             } else {
@@ -357,10 +360,21 @@ class Translator
         //$in[0] = str_replace("`%","`%%",$in[0]);
         $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         if ($to > 0) {
-            $result = Database::query("SELECT prefs FROM " . Database::prefix("accounts") . " WHERE acctid=$to");
-            $language = Database::fetchAssoc($result);
-            $language['prefs'] = unserialize($language['prefs']);
-            $session['tlanguage'] = (isset($language['prefs']['language']) && $language['prefs']['language'] != '') ? $language['prefs']['language'] : ($settings instanceof Settings ? $settings->getSetting("defaultlanguage", "en") : "en");
+            $connection = Database::getDoctrineConnection();
+            $result = $connection->executeQuery(
+                "SELECT prefs FROM " . Database::prefix("accounts") . " WHERE acctid = :acctid",
+                ['acctid' => $to],
+                ['acctid' => ParameterType::INTEGER]
+            );
+            $language = $result->fetchAssociative();
+            $languagePrefs = [];
+            if (is_array($language)) {
+                $unserializedPrefs = unserialize((string) ($language['prefs'] ?? ''));
+                if (is_array($unserializedPrefs)) {
+                    $languagePrefs = $unserializedPrefs;
+                }
+            }
+            $session['tlanguage'] = (isset($languagePrefs['language']) && $languagePrefs['language'] != '') ? $languagePrefs['language'] : ($settings instanceof Settings ? $settings->getSetting("defaultlanguage", "en") : "en");
         }
         reset($in);
         // translation offered within translation tool here is in language

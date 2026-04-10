@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
@@ -25,8 +26,11 @@ class ForcedNavigation
         $requestUri = PhpGenericEnvironment::getRequestUri();
         Output::getInstance()->rawOutput("<!--\nAllowAnonymous: " . ($anonymous ? "True" : "False") . "\nOverride Forced Nav: " . ($overrideforced ? "True" : "False") . "\n-->");
         if (isset($session['loggedin']) && $session['loggedin']) {
-            $sql = "SELECT * FROM " . Database::prefix('accounts') . " WHERE acctid='" . $session['user']['acctid'] . "'";
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT * FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) ($session['user']['acctid'] ?? 0)],
+                ['acctid' => ParameterType::INTEGER]
+            );
             if (Database::numRows($result) == 1) {
                 $session['user'] = Database::fetchAssoc($result);
                 global $baseaccount;

@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\HookHandler;
@@ -28,6 +30,7 @@ class PlayerFunctions
     public static function charCleanup(int $id, int $type): bool
     {
         global $session;
+        $connection = Database::getDoctrineConnection();
         // Run module hooks for character deletion
         $args = HookHandler::hook('delete_character', ['acctid' => $id, 'deltype' => $type]);
 
@@ -37,31 +40,51 @@ class PlayerFunctions
         }
 
         // Remove output cache records for this player
-        Database::query('DELETE FROM ' . Database::prefix('accounts_output') . " WHERE acctid=$id;");
+        $connection->executeStatement(
+            'DELETE FROM ' . Database::prefix('accounts_output') . ' WHERE acctid = :acctid',
+            ['acctid' => $id],
+            ['acctid' => ParameterType::INTEGER]
+        );
 
         // Remove comments from this player
-        Database::query('DELETE FROM ' . Database::prefix('commentary') . " WHERE author=$id;");
+        $connection->executeStatement(
+            'DELETE FROM ' . Database::prefix('commentary') . ' WHERE author = :author',
+            ['author' => $id],
+            ['author' => ParameterType::INTEGER]
+        );
 
         // Handle clan cleanup logic
-        $sql = 'SELECT clanrank,clanid FROM ' . Database::prefix('accounts') . " WHERE acctid=$id";
-        $res = Database::query($sql);
+        $res = $connection->executeQuery(
+            'SELECT clanrank, clanid FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+            ['acctid' => $id],
+            ['acctid' => ParameterType::INTEGER]
+        );
         $row = Database::fetchAssoc($res);
         if ($row['clanid'] != 0 && ($row['clanrank'] == CLAN_LEADER || $row['clanrank'] == CLAN_FOUNDER)) {
             $cid = $row['clanid'];
-            $sql = 'SELECT count(acctid) as counter FROM ' . Database::prefix('accounts')
-                . " WHERE clanid=$cid AND clanrank >= " . CLAN_LEADER . " AND acctid<>$id ORDER BY clanrank DESC, clanjoindate";
-            $res = Database::query($sql);
+            $res = $connection->executeQuery(
+                'SELECT count(acctid) as counter FROM ' . Database::prefix('accounts')
+                . ' WHERE clanid = :clanid AND clanrank >= :leader_rank AND acctid <> :acctid ORDER BY clanrank DESC, clanjoindate',
+                ['clanid' => $cid, 'leader_rank' => CLAN_LEADER, 'acctid' => $id],
+                ['clanid' => ParameterType::INTEGER, 'leader_rank' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($res);
             if ($row['counter'] == 0) {
-                $sql = 'SELECT name,acctid,clanrank FROM ' . Database::prefix('accounts')
-                    . " WHERE clanid=$cid AND clanrank > " . CLAN_APPLICANT . " AND acctid<>$id ORDER BY clanrank DESC, clanjoindate";
-                $res = Database::query($sql);
+                $res = $connection->executeQuery(
+                    'SELECT name, acctid, clanrank FROM ' . Database::prefix('accounts')
+                    . ' WHERE clanid = :clanid AND clanrank > :applicant_rank AND acctid <> :acctid ORDER BY clanrank DESC, clanjoindate',
+                    ['clanid' => $cid, 'applicant_rank' => CLAN_APPLICANT, 'acctid' => $id],
+                    ['clanid' => ParameterType::INTEGER, 'applicant_rank' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+                );
                 if (Database::numRows($res)) {
                     $row = Database::fetchAssoc($res);
                     if ($row['clanrank'] != CLAN_LEADER && $row['clanrank'] != CLAN_FOUNDER) {
                         $id1 = $row['acctid'];
-                        $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET clanrank=' . CLAN_LEADER . " WHERE acctid=$id1";
-                        Database::query($sql);
+                        $connection->executeStatement(
+                            'UPDATE ' . Database::prefix('accounts') . ' SET clanrank = :leader_rank WHERE acctid = :acctid',
+                            ['leader_rank' => CLAN_LEADER, 'acctid' => $id1],
+                            ['leader_rank' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+                        );
                     }
                     GameLog::log(
                         'Clan ' . $cid . ' has a new leader ' . $row['name'] . ' as there were no others left',
@@ -70,16 +93,22 @@ class PlayerFunctions
                         $session['user']['acctid'] ?? 0
                     );
                 } else {
-                    $sql = 'DELETE FROM ' . Database::prefix('clans') . " WHERE clanid=$cid";
-                    Database::query($sql);
+                    $connection->executeStatement(
+                        'DELETE FROM ' . Database::prefix('clans') . ' WHERE clanid = :clanid',
+                        ['clanid' => $cid],
+                        ['clanid' => ParameterType::INTEGER]
+                    );
                     GameLog::log(
                         'Clan ' . $cid . ' has been disbanded as the last member left',
                         'clan',
                         false,
                         $session['user']['acctid'] ?? 0
                     );
-                    $sql = 'UPDATE ' . Database::prefix('accounts') . " SET clanid=0,clanrank=0,clanjoindate='" . DATETIME_DATEMIN . "' WHERE clanid=$cid";
-                    Database::query($sql);
+                    $connection->executeStatement(
+                        'UPDATE ' . Database::prefix('accounts') . ' SET clanid = :empty_clanid, clanrank = :empty_clanrank, clanjoindate = :clanjoindate WHERE clanid = :clanid',
+                        ['empty_clanid' => 0, 'empty_clanrank' => 0, 'clanjoindate' => DATETIME_DATEMIN, 'clanid' => $cid],
+                        ['empty_clanid' => ParameterType::INTEGER, 'empty_clanrank' => ParameterType::INTEGER, 'clanjoindate' => ParameterType::STRING, 'clanid' => ParameterType::INTEGER]
+                    );
                 }
             }
         }
@@ -97,8 +126,11 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT strength,wisdom,intelligence,attack FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT strength,wisdom,intelligence,attack FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) $player],
+                ['acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
@@ -120,8 +152,11 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT strength,wisdom,intelligence,attack FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT strength,wisdom,intelligence,attack FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) $player],
+                ['acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
@@ -147,8 +182,11 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) $player],
+                ['acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
@@ -169,8 +207,11 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) $player],
+                ['acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
@@ -195,8 +236,11 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT dexterity,intelligence FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT dexterity,intelligence FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) $player],
+                ['acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
@@ -213,8 +257,11 @@ class PlayerFunctions
     {
         global $session;
         if ($player !== false) {
-            $sql = 'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) $player],
+                ['acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             if (!$row) {
                 return 0;
@@ -237,8 +284,11 @@ class PlayerFunctions
         } elseif (isset($checked_users[$player])) {
             $user =& $checked_users[$player];
         } else {
-            $sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid=' . ((int)$player) . ';';
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => (int) $player],
+                ['acctid' => ParameterType::INTEGER]
+            );
             $row = Database::fetchAssoc($result);
             $row = HookHandler::hook('is-player-online', $row);
             if (!$row) {
@@ -266,8 +316,17 @@ class PlayerFunctions
         if ($players === false || $players == [] || !is_array($players)) {
             return [];
         } else {
-            $sql = 'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (' . addslashes(implode(',', $players)) . ')';
-            $result = Database::query($sql);
+            $playerIds = array_values(array_unique(array_map(static fn (mixed $player): int => (int) $player, $players)));
+            if ($playerIds === []) {
+                return [];
+            }
+
+            $connection = Database::getDoctrineConnection();
+            $result = $connection->executeQuery(
+                'SELECT acctid,laston,loggedin FROM ' . Database::prefix('accounts') . ' WHERE acctid IN (:players)',
+                ['players' => $playerIds],
+                ['players' => ArrayParameterType::INTEGER]
+            );
             $rows = [];
             while ($user = Database::fetchAssoc($result)) {
                 $rows[] = $user;
@@ -443,8 +502,11 @@ class PlayerFunctions
 
     public static function validDkTitle(string $title, int $dks, int $gender): bool
     {
-        $sql = 'SELECT dk,male,female FROM ' . Database::prefix('titles') . " WHERE dk <= $dks ORDER by dk DESC";
-        $res = Database::query($sql);
+        $res = Database::getDoctrineConnection()->executeQuery(
+            'SELECT dk,male,female FROM ' . Database::prefix('titles') . ' WHERE dk <= :dk ORDER by dk DESC',
+            ['dk' => $dks],
+            ['dk' => ParameterType::INTEGER]
+        );
         $d = -1;
         while ($row = Database::fetchAssoc($res)) {
             if ($d == -1) {
@@ -466,24 +528,39 @@ class PlayerFunctions
     public static function getDkTitle(int $dks, int $gender, string|false $ref = false): string
     {
         $refdk = -1;
+        $connection = Database::getDoctrineConnection();
         if ($ref !== false) {
-            $sql = 'SELECT max(dk) as dk FROM ' . Database::prefix('titles') . " WHERE dk<='$dks' and ref='$ref'";
-            $res = Database::query($sql);
+            $res = $connection->executeQuery(
+                'SELECT max(dk) as dk FROM ' . Database::prefix('titles') . ' WHERE dk <= :dk and ref = :ref',
+                ['dk' => $dks, 'ref' => $ref],
+                ['dk' => ParameterType::INTEGER, 'ref' => ParameterType::STRING]
+            );
             $row = Database::fetchAssoc($res);
             $refdk = $row['dk'];
         }
-        $sql = 'SELECT max(dk) as dk FROM ' . Database::prefix('titles') . " WHERE dk<='$dks'";
-        $res = Database::query($sql);
+        $res = $connection->executeQuery(
+            'SELECT max(dk) as dk FROM ' . Database::prefix('titles') . ' WHERE dk <= :dk',
+            ['dk' => $dks],
+            ['dk' => ParameterType::INTEGER]
+        );
         $row = Database::fetchAssoc($res);
         $anydk = $row['dk'];
-        $useref = '';
-        $targetdk = $anydk;
+        $targetdk = (int) $anydk;
+        $params = ['target_dk' => $targetdk];
+        $types = ['target_dk' => ParameterType::INTEGER];
+        $refFilterSql = '';
         if ($refdk >= $anydk) {
-            $useref = "AND ref='$ref'";
-            $targetdk = $refdk;
+            $targetdk = (int) $refdk;
+            $params['target_dk'] = $targetdk;
+            $params['ref'] = (string) $ref;
+            $types['ref'] = ParameterType::STRING;
+            $refFilterSql = ' AND ref = :ref';
         }
-        $sql = 'SELECT male,female FROM ' . Database::prefix('titles') . " WHERE dk='$targetdk' $useref ORDER BY RAND(" . Random::eRand() . ") LIMIT 1";
-        $res = Database::query($sql);
+        $res = $connection->executeQuery(
+            'SELECT male,female FROM ' . Database::prefix('titles') . ' WHERE dk = :target_dk' . $refFilterSql . ' ORDER BY RAND(' . Random::eRand() . ') LIMIT 1',
+            $params,
+            $types
+        );
         $row = ['male' => 'God', 'female' => 'Goddess'];
         if (Database::numRows($res) != 0) {
             $row = Database::fetchAssoc($res);

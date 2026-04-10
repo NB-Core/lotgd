@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -64,12 +65,34 @@ if ($op == 'val' || $op == 'forgotval') {
 
 if ($op == "forgotval") {
     $id = Http::get('id');
-    $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation FROM " . Database::prefix("accounts") . " WHERE forgottenpassword='" . Database::escape($id) . "' AND forgottenpassword!=''";
-    $result = Database::query($sql);
-    if (Database::numRows($result) > 0) {
-        $row = Database::fetchAssoc($result);
-        $sql = "UPDATE " . Database::prefix("accounts") . " SET forgottenpassword='' WHERE forgottenpassword='$id';";
-        Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $accountsTable = Database::prefix('accounts');
+    $result = $conn->executeQuery(
+        "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation
+            FROM {$accountsTable}
+            WHERE forgottenpassword = :forgottenpassword AND forgottenpassword != :emptyForgottenPassword",
+        [
+            'forgottenpassword' => (string) $id,
+            'emptyForgottenPassword' => '',
+        ],
+        [
+            'forgottenpassword' => ParameterType::STRING,
+            'emptyForgottenPassword' => ParameterType::STRING,
+        ]
+    );
+    $row = $result->fetchAssociative();
+    if ($row !== false) {
+        $conn->executeStatement(
+            "UPDATE {$accountsTable} SET forgottenpassword = :forgottenpassword WHERE forgottenpassword = :id",
+            [
+                'forgottenpassword' => '',
+                'id' => (string) $id,
+            ],
+            [
+                'forgottenpassword' => ParameterType::STRING,
+                'id' => ParameterType::STRING,
+            ]
+        );
         $output->output("`#`cYour login request has been validated.  You may now log in.`c`0");
         $output->rawOutput("<form action='login.php' method='POST'>");
         $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
@@ -89,8 +112,17 @@ if ($op == "forgotval") {
         }
         //rare case: we have somebody who deleted his first validation email and then requests a forgotten PW...
         if ($row['emailvalidation'] != "" && substr($row['emailvalidation'], 0, 1) != "x") {
-            $sql = "UPDATE " . Database::prefix('accounts') . " SET emailvalidation='' WHERE acctid=" . $row['acctid'];
-            Database::query($sql);
+            $conn->executeStatement(
+                "UPDATE {$accountsTable} SET emailvalidation = :emailvalidation WHERE acctid = :acctid",
+                [
+                    'emailvalidation' => '',
+                    'acctid' => (int) $row['acctid'],
+                ],
+                [
+                    'emailvalidation' => ParameterType::STRING,
+                    'acctid' => ParameterType::INTEGER,
+                ]
+            );
         }
     } else {
         $output->output("`#Your request could not be verified.`n`n");
@@ -99,16 +131,44 @@ if ($op == "forgotval") {
     }
 } elseif ($op == "val") {
     $id = Http::get('id');
-    $sql = "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress FROM " . Database::prefix("accounts") . " WHERE emailvalidation='" . Database::escape($id) . "' AND emailvalidation!=''";
-    $result = Database::query($sql);
-    if (Database::numRows($result) > 0) {
-        $row = Database::fetchAssoc($result);
+    $conn = Database::getDoctrineConnection();
+    $accountsTable = Database::prefix('accounts');
+    $result = $conn->executeQuery(
+        "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress
+            FROM {$accountsTable}
+            WHERE emailvalidation = :emailvalidation AND emailvalidation != :emptyEmailValidation",
+        [
+            'emailvalidation' => (string) $id,
+            'emptyEmailValidation' => '',
+        ],
+        [
+            'emailvalidation' => ParameterType::STRING,
+            'emptyEmailValidation' => ParameterType::STRING,
+        ]
+    );
+    $row = $result->fetchAssociative();
+    if ($row !== false) {
         if ($row['replaceemail'] != '') {
             $replace_array = explode("|", $row['replaceemail']);
             $replaceemail = $replace_array[0]; //1==date
             //note: remove any forgotten password request!
-            $sql = "UPDATE " . Database::prefix("accounts") . " SET emailaddress='" . $replaceemail . "', replaceemail='',forgottenpassword='' WHERE emailvalidation='$id';";
-            Database::query($sql);
+            $conn->executeStatement(
+                "UPDATE {$accountsTable}
+                    SET emailaddress = :replaceemail, replaceemail = :replaceemailReset, forgottenpassword = :forgottenpassword
+                    WHERE emailvalidation = :id",
+                [
+                    'replaceemail' => $replaceemail,
+                    'replaceemailReset' => '',
+                    'forgottenpassword' => '',
+                    'id' => (string) $id,
+                ],
+                [
+                    'replaceemail' => ParameterType::STRING,
+                    'replaceemailReset' => ParameterType::STRING,
+                    'forgottenpassword' => ParameterType::STRING,
+                    'id' => ParameterType::STRING,
+                ]
+            );
             $output->output("`#`c Email changed successfully!`c`0`n");
                         DebugLog::add("Email change request validated by link from " . $row['emailaddress'] . " to " . $replaceemail, $row['acctid'], $row['acctid'], "Email");
             //If a superuser changes email, we want to know about it... at least those who can ee it anyway, the user editors...
@@ -130,8 +190,17 @@ if ($op == "forgotval") {
                 }
             }
         }
-        $sql = "UPDATE " . Database::prefix("accounts") . " SET emailvalidation='' WHERE emailvalidation='$id';";
-        Database::query($sql);
+        $conn->executeStatement(
+            "UPDATE {$accountsTable} SET emailvalidation = :emailvalidation WHERE emailvalidation = :id",
+            [
+                'emailvalidation' => '',
+                'id' => (string) $id,
+            ],
+            [
+                'emailvalidation' => ParameterType::STRING,
+                'id' => ParameterType::STRING,
+            ]
+        );
         $output->output("`#`cYour email has been validated.  You may now log in.`c`0");
         $output->output(
             "Your email has been validated, your login name is `^%s`0.`n`n",
@@ -167,15 +236,38 @@ if ($op == "forgotval") {
 if ($op == "forgot") {
     $charname = Http::post('charname');
     if ($charname != "") {
-        $sql = "SELECT acctid,login,emailaddress,forgottenpassword,password FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape($charname) . "'";
-        $result = Database::query($sql);
-        if (Database::numRows($result) > 0) {
-            $row = Database::fetchAssoc($result);
+        $conn = Database::getDoctrineConnection();
+        $accountsTable = Database::prefix('accounts');
+        $result = $conn->executeQuery(
+            "SELECT acctid,login,emailaddress,forgottenpassword,password
+                FROM {$accountsTable}
+                WHERE login = :login",
+            [
+                'login' => (string) $charname,
+            ],
+            [
+                'login' => ParameterType::STRING,
+            ]
+        );
+        $row = $result->fetchAssociative();
+        if ($row !== false) {
             if (trim($row['emailaddress']) != "") {
                 if ($row['forgottenpassword'] == "") {
                     $row['forgottenpassword'] = substr("x" . md5(date("Y-m-d H:i:s") . $row['password']), 0, 32);
-                    $sql = "UPDATE " . Database::prefix("accounts") . " SET forgottenpassword='{$row['forgottenpassword']}' where login='{$row['login']}'";
-                    Database::query($sql);
+                    // Keep account bootstrap writes parameterized to avoid SQL interpolation.
+                    $conn = Database::getDoctrineConnection();
+                    $accountsTable = Database::prefix('accounts');
+                    $conn->executeStatement(
+                        "UPDATE {$accountsTable} SET forgottenpassword = :forgottenpassword WHERE login = :login",
+                        [
+                            'forgottenpassword' => (string) $row['forgottenpassword'],
+                            'login' => (string) $row['login'],
+                        ],
+                        [
+                            'forgottenpassword' => ParameterType::STRING,
+                            'login' => ParameterType::STRING,
+                        ]
+                    );
                 }
 
                 $subj = translate_mail($settings_extended->getSetting('forgottenpasswordmailsubject'), $row['acctid']);
@@ -251,9 +343,18 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 $pass2 = '';
             }
             if ((int) $settings->getSetting('blockdupeemail', 0) === 1 && (int) $settings->getSetting('requireemail', 0) === 1) {
-                $sql = "SELECT login FROM " . Database::prefix("accounts") . " WHERE emailaddress='" . Database::escape($email) . "'";
-                $result = Database::query($sql);
-                if (Database::numRows($result) > 0) {
+                $conn = Database::getDoctrineConnection();
+                $accountsTable = Database::prefix('accounts');
+                $result = $conn->executeQuery(
+                    "SELECT login FROM {$accountsTable} WHERE emailaddress = :emailaddress",
+                    [
+                        'emailaddress' => (string) $email,
+                    ],
+                    [
+                        'emailaddress' => ParameterType::STRING,
+                    ]
+                );
+                if ($result->fetchAssociative() !== false) {
                     $blockaccount = true;
                     $msg .= Translator::translate("You may have only one account.`n");
                 }
@@ -292,12 +393,20 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
             }
 
             if (!$blockaccount) {
-                $sql = "SELECT name FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";
-                $result = Database::query($sql);
-                $count = Database::numRows($result);
-                $sql = "SELECT playername FROM " . Database::prefix("accounts") ;
-                $result = Database::query($sql);
-                while ($row = Database::fetchAssoc($result)) {
+                $conn = Database::getDoctrineConnection();
+                $accountsTable = Database::prefix('accounts');
+                $result = $conn->executeQuery(
+                    "SELECT name FROM {$accountsTable} WHERE login = :login",
+                    [
+                        'login' => (string) $shortname,
+                    ],
+                    [
+                        'login' => ParameterType::STRING,
+                    ]
+                );
+                $count = $result->fetchAssociative() === false ? 0 : 1;
+                $result = $conn->executeQuery("SELECT playername FROM {$accountsTable}");
+                while (($row = $result->fetchAssociative()) !== false) {
                     if (Sanitize::sanitize($row['playername']) == $shortname) {
                         $count++;
                         break;
@@ -319,10 +428,17 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                     }
                     $refer = Http::get('r');
                     if ($refer > "") {
-                        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape($refer) . "'";
-                        $result = Database::query($sql);
-                        if (Database::numRows($result) > 0) {
-                            $ref = Database::fetchAssoc($result);
+                        $result = $conn->executeQuery(
+                            "SELECT acctid FROM {$accountsTable} WHERE login = :login",
+                            [
+                                'login' => (string) $refer,
+                            ],
+                            [
+                                'login' => ParameterType::STRING,
+                            ]
+                        );
+                        $ref = $result->fetchAssociative();
+                        if ($ref !== false) {
                             $referer = $ref['acctid'];
                         } else {
                             //expired, deleted...
@@ -334,26 +450,116 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                     }
                     $dbpass = PasswordHelper::hash($pass1);
                     $dbpassAlgo = PasswordHelper::ALGO_MODERN;
-                    $allowednavs = addslashes(serialize(['village.php' => true]));
-                    $sql = "INSERT INTO " . Database::prefix("accounts") . "
-                                                (playername,name, superuser, title, password, password_algo, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate,badguy,allowednavs,restorepage,specialinc,specialmisc,bufflist,dragonpoints,replaceemail,forgottenpassword,prefs,hauntedby,donationconfig,bio,ctitle,companions)
-                                                VALUES
-                                                ('$shortname','$title $shortname', '" . (int) $settings->getSetting('defaultsuperuser', 0) . "', '$title', '$dbpass', '$dbpassAlgo', '$sex', '$shortname', '" . date("Y-m-d H:i:s", strtotime("-1 day")) . "', '" . (Cookies::getLgi() ?? '') . "', '" . $_SERVER['REMOTE_ADDR'] . "', " . (int) $settings->getSetting('newplayerstartgold', 50) . ", '" . addslashes($settings->getSetting('villagename', LOCATION_FIELDS)) . "', '$email', '$emailverification', '$referer', NOW(),'','" . $allowednavs . "', 'village.php','','','',0,'','','','','','','','')";
-                    Database::query($sql);
-                    if (Database::affectedRows() <= 0) {
+                    $allowednavs = serialize(['village.php' => true]);
+                    $conn = Database::getDoctrineConnection();
+                    $accountsTable = Database::prefix('accounts');
+                    $rowsInserted = $conn->executeStatement(
+                        "INSERT INTO {$accountsTable}
+                            (playername, name, superuser, title, password, password_algo, sex, login, laston, uniqueid, lastip, gold, location, emailaddress, emailvalidation, referer, regdate, badguy, allowednavs, restorepage, specialinc, specialmisc, bufflist, dragonpoints, replaceemail, forgottenpassword, prefs, hauntedby, donationconfig, bio, ctitle, companions)
+                        VALUES
+                            (:playername, :name, :superuser, :title, :password, :password_algo, :sex, :login, :laston, :uniqueid, :lastip, :gold, :location, :emailaddress, :emailvalidation, :referer, NOW(), :badguy, :allowednavs, :restorepage, :specialinc, :specialmisc, :bufflist, :dragonpoints, :replaceemail, :forgottenpassword, :prefs, :hauntedby, :donationconfig, :bio, :ctitle, :companions)",
+                        [
+                            'playername' => $shortname,
+                            'name' => "{$title} {$shortname}",
+                            'superuser' => (int) $settings->getSetting('defaultsuperuser', 0),
+                            'title' => $title,
+                            'password' => $dbpass,
+                            'password_algo' => $dbpassAlgo,
+                            'sex' => $sex,
+                            'login' => $shortname,
+                            'laston' => date("Y-m-d H:i:s", strtotime("-1 day")),
+                            'uniqueid' => (string) (Cookies::getLgi() ?? ''),
+                            'lastip' => (string) $_SERVER['REMOTE_ADDR'],
+                            'gold' => (int) $settings->getSetting('newplayerstartgold', 50),
+                            'location' => $settings->getSetting('villagename', LOCATION_FIELDS),
+                            'emailaddress' => $email,
+                            'emailvalidation' => $emailverification,
+                            'referer' => (int) $referer,
+                            'badguy' => '',
+                            'allowednavs' => $allowednavs,
+                            'restorepage' => 'village.php',
+                            'specialinc' => '',
+                            'specialmisc' => '',
+                            'bufflist' => '',
+                            'dragonpoints' => 0,
+                            'replaceemail' => '',
+                            'forgottenpassword' => '',
+                            'prefs' => '',
+                            'hauntedby' => '',
+                            'donationconfig' => '',
+                            'bio' => '',
+                            'ctitle' => '',
+                            'companions' => '',
+                        ],
+                        [
+                            'playername' => ParameterType::STRING,
+                            'name' => ParameterType::STRING,
+                            'superuser' => ParameterType::INTEGER,
+                            'title' => ParameterType::STRING,
+                            'password' => ParameterType::STRING,
+                            'password_algo' => ParameterType::INTEGER,
+                            'sex' => ParameterType::INTEGER,
+                            'login' => ParameterType::STRING,
+                            'laston' => ParameterType::STRING,
+                            'uniqueid' => ParameterType::STRING,
+                            'lastip' => ParameterType::STRING,
+                            'gold' => ParameterType::INTEGER,
+                            'location' => ParameterType::STRING,
+                            'emailaddress' => ParameterType::STRING,
+                            'emailvalidation' => ParameterType::STRING,
+                            'referer' => ParameterType::INTEGER,
+                            'badguy' => ParameterType::STRING,
+                            'allowednavs' => ParameterType::STRING,
+                            'restorepage' => ParameterType::STRING,
+                            'specialinc' => ParameterType::STRING,
+                            'specialmisc' => ParameterType::STRING,
+                            'bufflist' => ParameterType::STRING,
+                            'dragonpoints' => ParameterType::STRING,
+                            'replaceemail' => ParameterType::STRING,
+                            'forgottenpassword' => ParameterType::STRING,
+                            'prefs' => ParameterType::STRING,
+                            'hauntedby' => ParameterType::STRING,
+                            'donationconfig' => ParameterType::STRING,
+                            'bio' => ParameterType::STRING,
+                            'ctitle' => ParameterType::STRING,
+                            'companions' => ParameterType::STRING,
+                        ]
+                    );
+                    if ($rowsInserted <= 0) {
                         $output->output("`\$Error`^: Your account was not created for an unknown reason, please try again. ");
                     } else {
-                        $sql = "SELECT acctid FROM " . Database::prefix("accounts") . " WHERE login='$shortname'";
-                        $result = Database::query($sql);
-                        $row = Database::fetchAssoc($result);
-                        $args = Http::allPost();
-                        $args['acctid'] = $row['acctid'];
-                        //insert output
-                        $sql_output = "INSERT INTO " . Database::prefix("accounts_output") . " VALUES ({$row['acctid']},'');";
-                        Database::query($sql_output);
-                        //end
-                        HookHandler::hook("process-create", $args);
-                        if ($emailverification != "") {
+                        $result = $conn->executeQuery(
+                            "SELECT acctid FROM {$accountsTable} WHERE login = :login",
+                            [
+                                'login' => (string) $shortname,
+                            ],
+                            [
+                                'login' => ParameterType::STRING,
+                            ]
+                        );
+                        $row = $result->fetchAssociative();
+                        if ($row === false) {
+                            $output->output("`\$Error`^: Your account was created, but could not be loaded for post-processing.");
+                        } else {
+                            $args = Http::allPost();
+                            $args['acctid'] = $row['acctid'];
+                            //insert output
+                            // Ensure output bootstrap row uses a bound account id as well.
+                            $accountsOutputTable = Database::prefix('accounts_output');
+                            $conn->executeStatement(
+                                "INSERT INTO {$accountsOutputTable} VALUES (:acctid, :output)",
+                                [
+                                    'acctid' => (int) $row['acctid'],
+                                    'output' => '',
+                                ],
+                                [
+                                    'acctid' => ParameterType::INTEGER,
+                                    'output' => ParameterType::STRING,
+                                ]
+                            );
+                            //end
+                            HookHandler::hook("process-create", $args);
+                            if ($emailverification != "") {
                             $subj = translate_mail($settings_extended->getSetting('verificationmailsubject'), 0);
                             $msg = translate_mail($settings_extended->getSetting('verificationmailtext'), 0);
                             $replace = array(
@@ -371,26 +577,27 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                             $to_array = array($email => $shortname);
                             $from_array = array($settings->getSetting('gameadminemail', 'postmaster@localhost') => $settings->getSetting('gameadminemail', 'postmaster@localhost'));
                             \Lotgd\Mail::send($to_array, $msg, $subj, $from_array, false, "text/plain");
-                            $output->output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
-                        } else {
-                            $output->rawOutput("<form action='login.php' method='POST'>");
-                            $output->rawOutput("<input name='name' value=\"$shortname\" type='hidden'>");
-                            $output->rawOutput("<input name='password' value=\"$pass1\" type='hidden'>");
-                            $click = Translator::translate("Click here to log in");
-                            $output->rawOutput("<input type='submit' class='button' value='$click'>");
-                            $output->rawOutput("</form>");
-                            $output->outputNotl("`n");
-                            savesetting("newestplayer", $row['acctid']);
-                        }
-                        $output->output("`\$Your account was created, your login name is `^%s`\$.`n`n", $shortname);
-                        if ($trash > 0) {
-                            $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
-                        }
-                        if ($new > 0) {
-                            $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
-                        }
-                        if ($old > 0) {
-                            $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+                                $output->output("`4An email was sent to `\$%s`4 to validate your address.  Click the link in the email to activate your account.`0`n`n", $email);
+                            } else {
+                                $output->rawOutput("<form action='login.php' method='POST'>");
+                                $output->rawOutput("<input name='name' value=\"$shortname\" type='hidden'>");
+                                $output->rawOutput("<input name='password' value=\"$pass1\" type='hidden'>");
+                                $click = Translator::translate("Click here to log in");
+                                $output->rawOutput("<input type='submit' class='button' value='$click'>");
+                                $output->rawOutput("</form>");
+                                $output->outputNotl("`n");
+                                savesetting("newestplayer", $row['acctid']);
+                            }
+                            $output->output("`\$Your account was created, your login name is `^%s`\$.`n`n", $shortname);
+                            if ($trash > 0) {
+                                $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
+                            }
+                            if ($new > 0) {
+                                $output->output("`^Characters that have never reached level 2 will be deleted after %s days of no activity.`n`0", $new);
+                            }
+                            if ($old > 0) {
+                                $output->output("`^Characters that have reached level 2 at least once will be deleted after %s days of no activity.`n`0", $old);
+                            }
                         }
                     }
                 }

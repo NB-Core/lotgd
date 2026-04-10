@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 
 /**
@@ -118,10 +119,24 @@ if ($op == "removegood") {
 
 show_word_list($words);
 if ($op == "addgood" || $op == "removegood") {
-    $sql = "DELETE FROM " . Database::prefix("nastywords") . " WHERE type='good'";
-    Database::query($sql);
-    $sql = "INSERT INTO " . Database::prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','good')";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $nastyWordsTable = Database::prefix('nastywords');
+    $conn->executeStatement(
+        "DELETE FROM {$nastyWordsTable} WHERE type = :type",
+        ['type' => 'good'],
+        ['type' => ParameterType::STRING]
+    );
+    $conn->executeStatement(
+        "INSERT INTO {$nastyWordsTable} (words, type) VALUES (:words, :type)",
+        [
+            'words' => join(" ", $words),
+            'type' => 'good',
+        ],
+        [
+            'words' => ParameterType::STRING,
+            'type' => ParameterType::STRING,
+        ]
+    );
     DataCache::getInstance()->invalidatedatacache("goodwordlist");
 }
 
@@ -182,10 +197,24 @@ show_word_list($words);
 $output->outputNotl("`0");
 
 if ($op == "add" || $op == "remove") {
-    $sql = "DELETE FROM " . Database::prefix("nastywords") . " WHERE type='nasty'";
-    Database::query($sql);
-    $sql = "INSERT INTO " . Database::prefix("nastywords") . " (words,type) VALUES ('" . addslashes(join(" ", $words)) . "','nasty')";
-    Database::query($sql);
+    $conn = Database::getDoctrineConnection();
+    $nastyWordsTable = Database::prefix('nastywords');
+    $conn->executeStatement(
+        "DELETE FROM {$nastyWordsTable} WHERE type = :type",
+        ['type' => 'nasty'],
+        ['type' => ParameterType::STRING]
+    );
+    $conn->executeStatement(
+        "INSERT INTO {$nastyWordsTable} (words, type) VALUES (:words, :type)",
+        [
+            'words' => join(" ", $words),
+            'type' => 'nasty',
+        ],
+        [
+            'words' => ParameterType::STRING,
+            'type' => ParameterType::STRING,
+        ]
+    );
     DataCache::getInstance()->invalidatedatacache("nastywordlist");
 }
 Footer::pageFooter();

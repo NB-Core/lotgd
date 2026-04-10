@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
@@ -19,6 +20,10 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
     {
         Database::$queries = [];
         Database::$mockResults = [];
+        CoreDatabase::resetDoctrineConnection();
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
+        $connection->executeStatementResults = [];
     }
 
     public function testExpireCharsDoesNotDeleteOnCleanupFailure(): void
@@ -39,11 +44,12 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
 
         \Lotgd\ExpireChars::cleanupExpiredAccountsForTests();
 
-        foreach (Database::$queries as $query) {
+        $queries = CoreDatabase::getDoctrineConnection()->queries;
+        foreach ($queries as $query) {
             $this->assertStringNotContainsString('DELETE FROM accounts', $query);
         }
-        $this->assertContains('ROLLBACK', Database::$queries);
-        $this->assertNotContains('COMMIT', Database::$queries);
+        $this->assertContains('ROLLBACK', $queries);
+        $this->assertNotContains('COMMIT', $queries);
     }
 
     public function testUserDelAbortsOnCleanupFailure(): void

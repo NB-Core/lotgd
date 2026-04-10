@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\ExpireChars;
+use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\DbMysqli;
 use Lotgd\Tests\Stubs\Database;
@@ -26,7 +27,7 @@ final class NotifyUpcomingExpirationsQueryTest extends TestCase
         if (!class_exists('Lotgd\\Doctrine\\Bootstrap', false)) {
             require __DIR__ . '/Stubs/DoctrineBootstrap.php';
         }
-        \Lotgd\MySQL\Database::$doctrineConnection = null;
+        CoreDatabase::resetDoctrineConnection();
         \Lotgd\MySQL\Database::$instance = null;
         \Lotgd\Tests\Stubs\DoctrineBootstrap::$conn = null;
         Database::$queries = [];
@@ -55,18 +56,19 @@ final class NotifyUpcomingExpirationsQueryTest extends TestCase
             [
                 ['login' => 'tester', 'acctid' => 1, 'emailaddress' => 'tester@example.com'],
             ],
-            true,
         ];
+        $connection = CoreDatabase::getDoctrineConnection();
+        $connection->queries = [];
+        $connection->executeStatements = [];
 
         ExpireChars::notifyUpcomingExpirationsForTests();
 
-        $expectedDate = date('Y-m-d H:i:s', strtotime('-40 days'));
         $expected = 'SELECT login,acctid,emailaddress FROM accounts'
-            . " WHERE (laston < '$expectedDate')"
-            . " AND emailaddress!='' AND sentnotice=0 AND (superuser&" . NO_ACCOUNT_EXPIRATION . ')=0';
+            . ' WHERE (laston < :threshold)'
+            . " AND emailaddress != '' AND sentnotice = :sentNotice AND (superuser & :noAccountExpiration) = 0";
 
-        $this->assertSame($expected, Database::$queries[0]);
+        $this->assertSame($expected, $connection->queries[0] ?? null);
         $this->assertSame(1, $GLOBALS['mail_sent_count']);
-        $this->assertStringContainsString('sentnotice=1', Database::$queries[1]);
+        $this->assertStringContainsString('sentnotice = :sentNotice', $connection->queries[1] ?? '');
     }
 }

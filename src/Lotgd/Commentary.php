@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Settings;
 use Lotgd\Nav as Navigation;
 use Lotgd\Output;
@@ -161,6 +162,7 @@ class Commentary
     private static function handleRemoval(string $section, string $returnPath, int $removeId): void
     {
         global $session;
+        $connection = Database::getDoctrineConnection();
 
         $commentary = Database::prefix('commentary');
         $accounts   = Database::prefix('accounts');
@@ -176,30 +178,42 @@ SELECT
 FROM {$commentary} c
 INNER JOIN {$accounts} a ON a.acctid = c.author -- link author data
 LEFT JOIN {$clans} cl ON cl.clanid = a.clanid   -- link clan data
-WHERE commentid = {$removeId}
+WHERE commentid = :commentid
 SQL;
-        $row = Database::fetchAssoc(Database::query($sql));
+        $row = $connection->fetchAssociative(
+            $sql,
+            ['commentid' => $removeId],
+            ['commentid' => ParameterType::INTEGER]
+        );
 
         $moderated = Database::prefix('moderatedcomments');
         $now       = date('Y-m-d H:i:s');
-        $comment   = addslashes(serialize($row));
+        $comment   = serialize($row);
 
         $sql = <<<SQL
 INSERT LOW_PRIORITY INTO {$moderated}
     (moderator, moddate, comment)            -- moderation record columns
 VALUES
-    ('{$session['user']['acctid']}',         -- moderator ID
-     '{$now}',                               -- time of moderation
-     '{$comment}'                            -- serialized comment data
+    (:moderator,                             -- moderator ID
+     :moddate,                               -- time of moderation
+     :comment                                -- serialized comment data
     )
 SQL;
-        Database::query($sql);
+        $connection->executeStatement(
+            $sql,
+            ['moderator' => (int) $session['user']['acctid'], 'moddate' => $now, 'comment' => $comment],
+            ['moderator' => ParameterType::INTEGER, 'moddate' => ParameterType::STRING, 'comment' => ParameterType::STRING]
+        );
 
         $sql = <<<SQL
 DELETE FROM {$commentary}                 -- remove comment entry
-WHERE commentid = {$removeId}             -- by comment identifier
+WHERE commentid = :commentid             -- by comment identifier
 SQL;
-        Database::query($sql);
+        $connection->executeStatement(
+            $sql,
+            ['commentid' => $removeId],
+            ['commentid' => ParameterType::INTEGER]
+        );
 
         DataCache::getInstance()->invalidatedatacache("comments-$section");
         DataCache::getInstance()->invalidatedatacache('comments-or11');
@@ -231,8 +245,11 @@ SQL;
      */
     public static function injectRawComment(string $section, int $author, string $comment): void
     {
-        $sql = 'INSERT INTO ' . Database::prefix('commentary') . " (postdate,section,author,comment) VALUES ('" . date('Y-m-d H:i:s') . "','$section',$author,'" . Database::escape($comment) . "')";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            'INSERT INTO ' . Database::prefix('commentary') . ' (postdate,section,author,comment) VALUES (:postdate, :section, :author, :comment)',
+            ['postdate' => date('Y-m-d H:i:s'), 'section' => $section, 'author' => $author, 'comment' => $comment],
+            ['postdate' => ParameterType::STRING, 'section' => ParameterType::STRING, 'author' => ParameterType::INTEGER, 'comment' => ParameterType::STRING]
+        );
         DataCache::getInstance()->invalidatedatacache("comments-{$section}");
         DataCache::getInstance()->invalidatedatacache('comments-or11');
     }
@@ -281,8 +298,12 @@ SQL;
         } else {
             // Check for duplicate posts and persist the comment
             $commentary = $args['commentary'];
-            $commentarySql = self::buildCommentQuery($section);
-            $result = Database::query($commentarySql);
+            $commentarySql = self::buildCommentQuery();
+            $result = Database::getDoctrineConnection()->executeQuery(
+                $commentarySql,
+                ['section' => $section],
+                ['section' => ParameterType::STRING]
+            );
             $authorId = (int) $session['user']['acctid'];
 
             self::setDoublePost((bool) self::persistComment($result, $commentary, $authorId, $section));
@@ -352,11 +373,11 @@ SQL;
      * @param string $section The section to retrieve the latest comment from
      * @return string The SQL query string
      */
-    private static function buildCommentQuery(string $section): string
+    private static function buildCommentQuery(): string
     {
         return 'SELECT comment, author FROM '
             . Database::prefix('commentary')
-            . " WHERE section = '$section'"
+            . ' WHERE section = :section'
             . ' ORDER BY commentid DESC LIMIT 1';
     }
 
@@ -420,8 +441,17 @@ SQL;
         // Count new comments when scrolling
         $newadded = 0;
         if ($com > 0 || $cid > 0) {
-            $sql = self::buildNewAddedSql($section, $cid);
-            $result = Database::query($sql);
+            $result = Database::getDoctrineConnection()->executeQuery(
+                self::buildNewAddedSql(),
+                [
+                    'section' => $section,
+                    'commentid' => $cid,
+                ],
+                [
+                    'section' => ParameterType::STRING,
+                    'commentid' => ParameterType::INTEGER,
+                ]
+            );
             $row = Database::fetchAssoc($result);
             $newadded = (int) $row['newadded'];
             Database::freeResult($result);
@@ -433,21 +463,21 @@ SQL;
     /**
      * Build the SQL used to count new comments when paginating.
      */
-    private static function buildNewAddedSql(string $section, int $cid): string
+    private static function buildNewAddedSql(): string
     {
         return 'SELECT COUNT(commentid) AS newadded FROM '
             . Database::prefix('commentary') . ' LEFT JOIN '
             . Database::prefix('accounts') . ' ON '
             . Database::prefix('accounts') . '.acctid = '
-            . Database::prefix('commentary') . ".author WHERE section='$section' AND "
+            . Database::prefix('commentary') . '.author WHERE section = :section AND '
             . '(' . Database::prefix('accounts') . '.locked=0 or '
-            . Database::prefix('accounts') . ".locked is null) AND commentid > '$cid'";
+            . Database::prefix('accounts') . '.locked is null) AND commentid > :commentid';
     }
 
     /**
      * Build the SQL query used to fetch commentary rows for a section.
      */
-    private static function buildCommentFetchSql(string $section, int $limit, int $com, int $cid): string
+    private static function buildCommentFetchSql(int $cid, int $limit, int $offset = 0): string
     {
         $base = 'SELECT '
             . Database::prefix('commentary') . '.*, '
@@ -462,15 +492,15 @@ SQL;
             . Database::prefix('commentary') . '.author LEFT JOIN '
             . Database::prefix('clans') . ' ON '
             . Database::prefix('clans') . '.clanid='
-            . Database::prefix('accounts') . ".clanid WHERE section = '$section'"
+            . Database::prefix('accounts') . '.clanid WHERE section = :section'
             . ' AND (' . Database::prefix('accounts') . '.locked=0 OR '
             . Database::prefix('accounts') . '.locked is null) ';
 
         if ($cid === 0) {
-            return $base . 'ORDER BY commentid DESC LIMIT ' . ($com * $limit) . ',' . $limit;
+            return $base . 'ORDER BY commentid DESC LIMIT ' . $offset . ', ' . $limit;
         }
 
-        return $base . "AND commentid > '$cid' ORDER BY commentid ASC LIMIT $limit";
+        return $base . 'AND commentid > :commentid ORDER BY commentid ASC LIMIT ' . $limit;
     }
 
     /**
@@ -478,28 +508,46 @@ SQL;
      *
      * @return array<int, array>
      */
-    private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid, string $real_request_uri): array
+    private static function fetchCommentBuffer(string $section, int $limit, int $com, int $cid): array
     {
-        $sql = self::buildCommentFetchSql($section, $limit, $com, $cid);
-        $useCache = $cid === 0 && $com === 0 && strstr($real_request_uri, '/moderate.php') === false;
+        $offset = $com * $limit;
 
-        if ($useCache) {
-            $result = Database::queryCached($sql, "comments-{$section}");
-        } else {
-            $result = Database::query($sql);
+        // Cache the first page to reduce DB load on high-traffic sections.
+        // The cache key matches the invalidation calls in injectRawComment()
+        // and removeComment().  Bypass the cache on moderation pages so
+        // moderators always see fresh data after removals/edits.
+        $useCache = ScriptName::current() !== 'moderate';
+        if ($useCache && $cid === 0 && $com === 0) {
+            $cacheKey = "comments-$section";
+            $cached = DataCache::getInstance()->datacache($cacheKey, 900);
+            if (is_array($cached)) {
+                return $cached;
+            }
         }
+
+        $sql = self::buildCommentFetchSql($cid, $limit, $offset);
+        $params = ['section' => $section];
+        $types = ['section' => ParameterType::STRING];
+        if ($cid !== 0) {
+            $params['commentid'] = $cid;
+            $types['commentid'] = ParameterType::INTEGER;
+        }
+
+        $result = Database::getDoctrineConnection()->executeQuery($sql, $params, $types);
 
         $buffer = [];
         while ($row = Database::fetchAssoc($result)) {
             $buffer[] = $row;
         }
 
-        if (!$useCache) {
-            Database::freeResult($result);
-        }
+        Database::freeResult($result);
 
         if ($cid !== 0) {
             $buffer = array_reverse($buffer);
+        }
+
+        if ($cid === 0 && $com === 0 && isset($cacheKey)) {
+            DataCache::getInstance()->updatedatacache($cacheKey, $buffer);
         }
 
         return $buffer;
@@ -603,7 +651,7 @@ SQL;
 
         // Determine pagination data and fetch comments
         [$com, $cid, $newadded] = self::getPaginationData($section, $limit, $comscroll);
-        $commentbuffer = self::fetchCommentBuffer($section, $limit, $com, $cid, $real_request_uri);
+        $commentbuffer = self::fetchCommentBuffer($section, $limit, $com, $cid);
 
         $rowcount = count($commentbuffer);
         if ($rowcount > 0) {
@@ -712,11 +760,23 @@ SQL;
         $lastu = Translator::translateInline('Last Page &gt;&gt;');
         if ($rowcount >= $limit || $cid > 0) {
             if (isset($session['user']['recentcomments']) && $session['user']['recentcomments'] != '') {
-                $sql = 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '{$session['user']['recentcomments']}'";
+                $sql = 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . ' WHERE section = :section AND postdate > :postdate';
+                $params = [
+                    'section' => $section,
+                    'postdate' => (string) $session['user']['recentcomments'],
+                ];
             } else {
-                $sql = 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . " WHERE section='$section' AND postdate > '" . DATETIME_DATEMIN . "'";
+                $sql = 'SELECT count(commentid) AS c FROM ' . Database::prefix('commentary') . ' WHERE section = :section AND postdate > :postdate';
+                $params = [
+                    'section' => $section,
+                    'postdate' => DATETIME_DATEMIN,
+                ];
             }
-            $r = Database::query($sql);
+            $r = Database::getDoctrineConnection()->executeQuery(
+                $sql,
+                $params,
+                ['section' => ParameterType::STRING, 'postdate' => ParameterType::STRING]
+            );
             $val = Database::fetchAssoc($r);
             $val = round($val['c'] / $limit + 0.5, 0) - 1;
             if ($val > 0) {
@@ -1009,8 +1069,19 @@ SQL;
 
         $counttoday = 0;
         if (mb_substr($section, 0, 5) != "clan-") {
-                $sql = "SELECT author FROM " . Database::prefix("commentary") . " WHERE section='$section' AND postdate>'" . date("Y-m-d 00:00:00") . "' ORDER BY commentid DESC LIMIT $limit";
-                $result = Database::query($sql);
+                $sql = 'SELECT author FROM ' . Database::prefix('commentary')
+                    . ' WHERE section = :section AND postdate > :postdate ORDER BY commentid DESC LIMIT ' . (int) $limit;
+                $result = Database::getDoctrineConnection()->executeQuery(
+                    $sql,
+                    [
+                        'section' => $section,
+                        'postdate' => date('Y-m-d 00:00:00'),
+                    ],
+                    [
+                        'section' => ParameterType::STRING,
+                        'postdate' => ParameterType::STRING,
+                    ]
+                );
             while ($row = Database::fetchAssoc($result)) {
                 if ($row['author'] == $session['user']['acctid']) {
                     $counttoday++;

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
 use Lotgd\CharStats;
@@ -421,18 +422,45 @@ class PageParts
                     $onlinecount = $list['count'];
                     $ret = $list['list'];
                 } else {
+                    $connection = Database::getDoctrineConnection();
                     if ($mode === 2) {
                         $minutes = $minutesSetting;
-                        $sql = "SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $minutes . " minutes")) . "' ORDER BY level DESC";
+                        $lastOnThreshold = date("Y-m-d H:i:s", strtotime("-" . $minutes . " minutes"));
+                        $result = $connection->executeQuery(
+                            'SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM '
+                            . Database::prefix('accounts')
+                            . ' WHERE locked = :locked AND laston > :lastOnThreshold ORDER BY level DESC',
+                            [
+                                'locked' => 0,
+                                'lastOnThreshold' => $lastOnThreshold,
+                            ],
+                            [
+                                'locked' => ParameterType::INTEGER,
+                                'lastOnThreshold' => ParameterType::STRING,
+                            ]
+                        );
                     } else {
-                        $sql = "SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM " . Database::prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'" . date("Y-m-d H:i:s", strtotime("-" . $loginTimeout . " seconds")) . "' ORDER BY level DESC";
+                        $lastOnThreshold = date("Y-m-d H:i:s", strtotime("-" . $loginTimeout . " seconds"));
+                        $result = $connection->executeQuery(
+                            'SELECT name,alive,location,sex,level,laston,loggedin,lastip,uniqueid FROM '
+                            . Database::prefix('accounts')
+                            . ' WHERE locked = :locked AND loggedin = :loggedIn AND laston > :lastOnThreshold ORDER BY level DESC',
+                            [
+                                'locked' => 0,
+                                'loggedIn' => 1,
+                                'lastOnThreshold' => $lastOnThreshold,
+                            ],
+                            [
+                                'locked' => ParameterType::INTEGER,
+                                'loggedIn' => ParameterType::INTEGER,
+                                'lastOnThreshold' => ParameterType::STRING,
+                            ]
+                        );
                     }
-                    $result = Database::query($sql);
                     $rows = array();
-                    while ($row = Database::fetchAssoc($result)) {
+                    while ($row = $result->fetchAssociative()) {
                         $rows[] = $row;
                     }
-                    Database::freeResult($result);
                     $rows = HookHandler::hook("loggedin", $rows);
                     if ($mode === 0) {
                         $ret .= $output->appoencode(sprintf(Translator::translateInline("`bOnline Characters (%s players):`b`n"), count($rows)));
@@ -995,10 +1023,29 @@ class PageParts
         }
         $session['user']['gentimecount']++;
         if ($settings->getSetting('debug', 0)) {
-            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime','" . PhpGenericEnvironment::getScriptName() . "','" . ($gentime) . "');";
-            Database::query($sql);
-            $sql = "INSERT INTO " . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime','" . PhpGenericEnvironment::getScriptName() . "','" . (round(Database::getInfo('querytime', 0), 3)) . "');";
-            Database::query($sql);
+            $connection = Database::getDoctrineConnection();
+            $connection->executeStatement(
+                'INSERT INTO ' . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime',:script,:runtime)",
+                [
+                    'script' => PhpGenericEnvironment::getScriptName(),
+                    'runtime' => (string) $gentime,
+                ],
+                [
+                    'script' => ParameterType::STRING,
+                    'runtime' => ParameterType::STRING,
+                ]
+            );
+            $connection->executeStatement(
+                'INSERT INTO ' . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime',:script,:dbtime)",
+                [
+                    'script' => PhpGenericEnvironment::getScriptName(),
+                    'dbtime' => (string) round(Database::getInfo('querytime', 0), 3),
+                ],
+                [
+                    'script' => ParameterType::STRING,
+                    'dbtime' => ParameterType::STRING,
+                ]
+            );
         }
         $queryCount = Database::getQueryCount();
         $querytime = Database::getInfo('querytime', 0);

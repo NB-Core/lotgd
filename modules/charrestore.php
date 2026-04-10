@@ -14,6 +14,7 @@ use Lotgd\GameLog;
 use Lotgd\Settings;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Connection;
 
 function charrestore_getmoduleinfo(): array
 {
@@ -518,6 +519,7 @@ function charrestore_run(): void
             output("You will have to provide a new one, and you should probably think about giving them a new name after the restore.`n");
             output("`^New Login: ");
             rawoutput("<input name='newlogin'><br>");
+            output("`#Note: New Login is used only for full account restores.`n");
         }
 
         $row = $conn->fetchAssociative(
@@ -525,9 +527,14 @@ function charrestore_run(): void
             ['acctid' => (int) ($user['account']['acctid'] ?? 0)],
             ['acctid' => ParameterType::INTEGER]
         );
-        if ((int) ($row['c'] ?? 0) > 0) {
-            output("`\$The user has already a char here ... you want to maybe restore an older version of it.`n`nYou have to DELETE it first in order to restore this one.");
-            page_footer();
+        $acctidExists = ((int) ($row['c'] ?? 0) > 0);
+        if ($acctidExists) {
+            output("`\$The snapshot account ID already exists on this server.`n");
+            output("`\$Default behavior is unchanged: if you do nothing, you must delete that account before doing a full restore.`n`n");
+            output("`^Optional action: ");
+            rawoutput("<label><input type='checkbox' name='overwriteprefs' value='1'>Overwrite prefs</label><br>");
+            output("`#Overwrite prefs semantics: overwrites matching pref keys only; does not remove extra prefs.`0`n");
+            output("`#When Overwrite prefs is selected, New Login is ignored because no full account restore is performed.`0`n");
         }
 
         $yes = translate_inline("Do the restore");
@@ -553,10 +560,43 @@ function charrestore_run(): void
         $file = httpget('file');
         $file = is_string($file) ? stripslashes($file) : '';
         $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
-        $newlogin = (httppost('newlogin') > '' ? httppost('newlogin') : $user['account']['login']);
-        $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
+        // Defensive normalization: malformed/legacy snapshots may omit prefs.
+        $snapshotPrefs = (isset($user['prefs']) && is_array($user['prefs'])) ? $user['prefs'] : [];
+        $overwritePrefs = ((int) httppost('overwriteprefs') === 1);
+        $snapshotAcctid = (int) ($user['account']['acctid'] ?? 0);
         $conn = Database::getDoctrineConnection();
         $table = Database::prefix('accounts');
+        $row = $conn->fetchAssociative(
+            "SELECT COUNT(acctid) AS c FROM {$table} WHERE acctid = :acctid",
+            ['acctid' => $snapshotAcctid],
+            ['acctid' => ParameterType::INTEGER]
+        );
+        $acctidExists = ((int) ($row['c'] ?? 0) > 0);
+
+        if ($acctidExists && ! $overwritePrefs) {
+            output("`\$The user has already a char here ... you want to maybe restore an older version of it.`n`nYou have to DELETE it first in order to restore this one.");
+            output("`#Tip: choose `^Overwrite prefs`# on the restore form to only merge backed up prefs into the existing account.`0");
+            page_footer();
+            return;
+        }
+
+        if ($acctidExists && $overwritePrefs) {
+            output("`#Account ID `^%s`# already exists. Running preference-only overwrite.`n", $snapshotAcctid);
+            $prefRestoreResult = charrestore_restore_prefs_upsert($conn, $snapshotAcctid, $snapshotPrefs);
+            if ($prefRestoreResult['applied']) {
+                output("`#The preferences were restored for the existing account.`n");
+            } else {
+                output("`\$The preferences could not be restored for the existing account.`0`n");
+            }
+            if ($prefRestoreResult['used_fallback']) {
+                output("`#Notice: upsert preconditions were unavailable, so legacy preference restore was used as a safe fallback.`0`n");
+            }
+            output("`#Overwrite prefs semantics: overwrites matching pref keys only; does not remove extra prefs.`0`n");
+            page_footer();
+            return;
+        }
+
+        $newlogin = (httppost('newlogin') > '' ? httppost('newlogin') : $user['account']['login']);
         $rows = $conn->fetchAllAssociative(
             "SELECT acctid FROM {$table} WHERE login = :login",
             ['login' => (string) $newlogin],
@@ -684,30 +724,16 @@ function charrestore_run(): void
                 }
                 output("`#The account was restored.`n");
                 output("`#Now working on module preferences.`n");
-                foreach ($user['prefs'] as $moduleKey => $values) {
-                    if (is_object($moduleKey)) {
-                        if (property_exists($moduleKey, 'modulename') && is_string($moduleKey->modulename)) {
-                            $modulename = $moduleKey->modulename;
-                        } else {
-                            continue;
-                        }
-                    } elseif (is_string($moduleKey)) {
-                        $modulename = $moduleKey;
-                    } else {
-                        continue;
-                    }
-
-                    output("`3Module: `2%s`3...`n", $modulename);
-
-                    if (is_module_installed($modulename)) {
-                        foreach ($values as $prefname => $value) {
-                            set_module_pref($prefname, $value, $modulename, $id);
-                        }
-                    } else {
-                        output("`\$Skipping prefs for module `^%s`\$ because this module is not currently installed.`n", $modulename);
-                    }
+                $prefRestoreResult = charrestore_restore_prefs_upsert($conn, $id, $snapshotPrefs);
+                if ($prefRestoreResult['applied']) {
+                    output("`#The preferences were restored.`n");
+                } else {
+                    output("`\$The preferences could not be restored completely.`0`n");
                 }
-                output("`#The preferences were restored.`n");
+                if ($prefRestoreResult['used_fallback']) {
+                    output("`#Notice: upsert preconditions were unavailable, so legacy preference restore was used as a safe fallback.`0`n");
+                }
+                output("`#Overwrite prefs semantics: overwrites matching pref keys only; does not remove extra prefs.`0`n");
                 if ($idReassigned) {
                     output("`#The original account ID `^%s`# could not be used.`n", $originalId);
                     output("`#A new account ID `^%s`# has been assigned.`n", $id);
@@ -828,4 +854,240 @@ function charrestore_sendmail($to, $body, $subject, $fromaddress, $fromname, $at
 function charrestore_gethash($value)
 {
     return hash('sha512', $value . get_module_setting('email_hash_salt', 'charrestore'));
+}
+
+/**
+ * Restores module preferences for an account using SQL upsert semantics.
+ *
+ * We intentionally avoid deleting rows from module_userprefs because newer keys
+ * may have been introduced since the backup was created; those keys must survive.
+ *
+ * @param Connection $conn  Doctrine DBAL connection.
+ * @param int        $acctid Target account ID receiving the preferences.
+ * @param array      $prefs  Snapshot module preferences grouped by module then setting.
+ *
+ * @return array{unique_key_ready: bool, used_fallback: bool, applied: bool}
+ */
+function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $prefs): array
+{
+    $uniqueKeyReady = charrestore_can_use_userprefs_upsert_key($conn);
+    $hadErrors = false;
+    if ($uniqueKeyReady) {
+        $prefsTable = Database::prefix('module_userprefs');
+        try {
+            // Keep upsert writes atomic so prefs are restored all-or-nothing.
+            $conn->beginTransaction();
+            foreach ($prefs as $moduleKey => $values) {
+                $modulename = charrestore_extract_modulename($moduleKey);
+                if ($modulename === null) {
+                    continue;
+                }
+
+                if (! is_module_installed($modulename)) {
+                    output("`\$Skipping prefs for module `^%s`\$ because this module is not currently installed.`n", $modulename);
+                    continue;
+                }
+                if (! is_array($values)) {
+                    $hadErrors = true;
+                    GameLog::log(
+                        sprintf('charrestore: malformed prefs payload for module %s during upsert restore.', $modulename),
+                        'charrestore'
+                    );
+                    output("`\$Skipping malformed prefs for module `^%s`\$ (expected key/value array).`n", $modulename);
+                    continue;
+                }
+
+                output("`3Module: `2%s`3...`n", $modulename);
+                foreach ($values as $prefname => $value) {
+                    // Upsert updates only the matching key, preserving extra keys already on account.
+                    $conn->executeStatement(
+                        "INSERT INTO {$prefsTable} (userid, modulename, setting, value)
+                         VALUES (:userid, :modulename, :setting, :value)
+                         ON DUPLICATE KEY UPDATE value = VALUES(value)",
+                        [
+                            'userid' => $acctid,
+                            'modulename' => (string) $modulename,
+                            'setting' => (string) $prefname,
+                            'value' => (string) $value,
+                        ],
+                        [
+                            'userid' => ParameterType::INTEGER,
+                            'modulename' => ParameterType::STRING,
+                            'setting' => ParameterType::STRING,
+                            'value' => ParameterType::STRING,
+                        ]
+                    );
+                }
+            }
+            $conn->commit();
+            return ['unique_key_ready' => true, 'used_fallback' => false, 'applied' => ! $hadErrors];
+        } catch (\Throwable $e) {
+            if ($conn->isTransactionActive()) {
+                $conn->rollBack();
+            }
+            GameLog::log(
+                sprintf('charrestore: transactional upsert failed; switching to fallback restore: %s', $e->getMessage()),
+                'charrestore'
+            );
+        }
+    }
+
+    // Fallback preserves pre-existing behavior if upsert prerequisites are unavailable.
+    $applied = charrestore_restore_prefs_fallback($acctid, $prefs);
+    return ['unique_key_ready' => $uniqueKeyReady, 'used_fallback' => true, 'applied' => $applied];
+}
+
+/**
+ * Restores preferences using legacy per-key writes.
+ *
+ * This fallback is used only when upsert prerequisites are unavailable; it still
+ * avoids destructive deletes so newer preference keys are preserved.
+ */
+function charrestore_restore_prefs_fallback(int $acctid, array $prefs): bool
+{
+    $allApplied = true;
+    foreach ($prefs as $moduleKey => $values) {
+        $modulename = charrestore_extract_modulename($moduleKey);
+        if ($modulename === null) {
+            continue;
+        }
+
+        if (! is_module_installed($modulename)) {
+            output("`\$Skipping prefs for module `^%s`\$ because this module is not currently installed.`n", $modulename);
+            continue;
+        }
+        if (! is_array($values)) {
+            $allApplied = false;
+            GameLog::log(
+                sprintf('charrestore: malformed prefs payload for module %s during fallback restore.', $modulename),
+                'charrestore'
+            );
+            output("`\$Skipping malformed prefs for module `^%s`\$ (expected key/value array).`n", $modulename);
+            continue;
+        }
+
+        output("`3Module: `2%s`3...`n", $modulename);
+        foreach ($values as $prefname => $value) {
+            try {
+                set_module_pref((string) $prefname, (string) $value, $modulename, $acctid);
+            } catch (\Throwable $e) {
+                $allApplied = false;
+                GameLog::log(
+                    sprintf(
+                        'charrestore: failed fallback pref restore for module %s setting %s: %s',
+                        $modulename,
+                        (string) $prefname,
+                        $e->getMessage()
+                    ),
+                    'charrestore'
+                );
+            }
+        }
+    }
+
+    return $allApplied;
+}
+
+/**
+ * Extracts a module name from legacy snapshot preference keys.
+ *
+ * Some old snapshots may contain keys as objects with a modulename property,
+ * while newer snapshots use plain string keys.
+ *
+ * @param mixed $moduleKey
+ */
+function charrestore_extract_modulename($moduleKey): ?string
+{
+    if (is_object($moduleKey)) {
+        if (property_exists($moduleKey, 'modulename') && is_string($moduleKey->modulename)) {
+            return $moduleKey->modulename;
+        }
+        return null;
+    }
+
+    if (is_string($moduleKey)) {
+        return $moduleKey;
+    }
+
+    return null;
+}
+
+/**
+ * Checks whether module_userprefs has an exact unique key for upsert safety.
+ *
+ * ON DUPLICATE KEY UPDATE needs a unique key that matches exactly the preference
+ * identity tuple (userid, modulename, setting) and no extra columns.
+ * Runtime schema changes are intentionally avoided here; database migrations
+ * must add/maintain this index during deployment, not during restore actions.
+ */
+function charrestore_can_use_userprefs_upsert_key(Connection $conn): bool
+{
+    try {
+        $prefsTable = Database::prefix('module_userprefs');
+        $indexes = $conn->fetchAllAssociative("SHOW INDEX FROM {$prefsTable}");
+    } catch (\Throwable $e) {
+        GameLog::log(
+            sprintf('charrestore: failed to inspect module_userprefs indexes for upsert check: %s', $e->getMessage()),
+            'charrestore'
+        );
+        return false;
+    }
+
+    if (charrestore_has_exact_userprefs_unique_key($indexes)) {
+        return true;
+    }
+
+    GameLog::log(
+        'charrestore: module_userprefs unique key (userid, modulename, setting) missing; using fallback preference restore.',
+        'charrestore'
+    );
+    return false;
+}
+
+/**
+ * Checks whether any unique index is exactly the 3-key preference identity.
+ *
+ * @param array<int, array<string, mixed>> $indexes
+ */
+function charrestore_has_exact_userprefs_unique_key(array $indexes): bool
+{
+    $uniqueIndexes = [];
+    foreach ($indexes as $index) {
+        if ((int) ($index['Non_unique'] ?? 1) !== 0) {
+            continue;
+        }
+        $keyName = (string) ($index['Key_name'] ?? '');
+        $seq = (int) ($index['Seq_in_index'] ?? 0);
+        $column = strtolower((string) ($index['Column_name'] ?? ''));
+        $subPart = $index['Sub_part'] ?? null;
+        $isFullLength = $subPart === null || $subPart === '' || (int) $subPart === 0;
+        if (! isset($uniqueIndexes[$keyName])) {
+            $uniqueIndexes[$keyName] = [];
+        }
+        $uniqueIndexes[$keyName][$seq] = [
+            'column' => $column,
+            'full_length' => $isFullLength,
+        ];
+    }
+
+    foreach ($uniqueIndexes as $columnsBySeq) {
+        ksort($columnsBySeq);
+        $entries = array_values($columnsBySeq);
+        $columns = array_column($entries, 'column');
+        $allFullLength = ! in_array(false, array_column($entries, 'full_length'), true);
+        // Require an exact 3-column unique key to ensure duplicate detection
+        // is based on userid+modulename+setting only, with no prefix indexing.
+        if (
+            count($entries) === 3 &&
+            $allFullLength &&
+            count(array_unique($columns)) === 3 &&
+            in_array('userid', $columns, true) &&
+            in_array('modulename', $columns, true) &&
+            in_array('setting', $columns, true)
+        ) {
+            return true;
+        }
+    }
+
+    return false;
 }

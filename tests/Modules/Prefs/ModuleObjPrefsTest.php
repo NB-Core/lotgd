@@ -54,6 +54,13 @@ namespace Lotgd\Tests\Modules\Prefs {
                 public function executeQuery(string $sql, array $params = [], array $types = []): DoctrineResult
                 {
                     $this->queries[] = $sql;
+                    if (str_contains($sql, 'SELECT value FROM module_objprefs')
+                        && isset($params['objtype'], $params['objid'], $params['setting'], $params['module'])) {
+                        $key = "objpref-{$params['objtype']}-{$params['objid']}-{$params['setting']}-{$params['module']}";
+                        if (isset($this->objprefs[$key])) {
+                            return new DoctrineResult([['value' => $this->objprefs[$key]]]);
+                        }
+                    }
                     return new DoctrineResult([]);
                 }
 
@@ -67,6 +74,38 @@ namespace Lotgd\Tests\Modules\Prefs {
                     ];
                     $this->lastExecuteStatementParams = $params;
                     $this->lastExecuteStatementTypes  = $types;
+
+                    if (str_contains($sql, 'REPLACE INTO module_objprefs') && isset($params['module'], $params['objtype'], $params['setting'], $params['objid'], $params['value'])) {
+                        $key = "objpref-{$params['objtype']}-{$params['objid']}-{$params['setting']}-{$params['module']}";
+                        $this->objprefs[$key]                 = (string) $params['value'];
+                        Database::$queryCacheResults[$key]    = [['value' => (string) $params['value']]];
+                        Database::$affected_rows              = 1;
+                        return 1;
+                    }
+
+                    if (str_contains($sql, 'UPDATE module_objprefs')
+                        && isset($params['module'], $params['setting'], $params['objtype'], $params['objid'], $params['value'])) {
+                        $increment = (float) $params['value'];
+                        $key       = "objpref-{$params['objtype']}-{$params['objid']}-{$params['setting']}-{$params['module']}";
+                        if (isset($this->objprefs[$key])) {
+                            $new                               = (string) ((float) $this->objprefs[$key] + $increment);
+                            $this->objprefs[$key]              = $new;
+                            Database::$queryCacheResults[$key] = [['value' => $new]];
+                            Database::$affected_rows           = 1;
+                            return 1;
+                        }
+                        Database::$affected_rows = 0;
+                        return 0;
+                    }
+
+                    if (str_contains($sql, 'INSERT INTO module_objprefs')
+                        && isset($params['module'], $params['objtype'], $params['setting'], $params['objid'], $params['value'])) {
+                        $key = "objpref-{$params['objtype']}-{$params['objid']}-{$params['setting']}-{$params['module']}";
+                        $this->objprefs[$key]                 = (string) $params['value'];
+                        Database::$queryCacheResults[$key]    = [['value' => (string) $params['value']]];
+                        Database::$affected_rows              = 1;
+                        return 1;
+                    }
 
                     if (preg_match("/REPLACE INTO module_objprefs\\(modulename,objtype,setting,objid,value\\) VALUES \\('(.*?)', '(.*?)', '(.*?)', '(.*?)', '(.*?)'\\)/", $sql, $m)) {
                         $key = "objpref-{$m[2]}-{$m[4]}-{$m[3]}-{$m[1]}";
@@ -98,9 +137,10 @@ namespace Lotgd\Tests\Modules\Prefs {
                         return 1;
                     }
 
-                    if (preg_match("/DELETE FROM module_objprefs WHERE objtype='([^']+)' AND objid='([^']+)'/", $sql, $m)) {
+                    if (str_contains($sql, 'DELETE FROM module_objprefs')
+                        && isset($params['objtype'], $params['objid'])) {
                         foreach (array_keys($this->objprefs) as $key) {
-                            if (str_starts_with($key, "objpref-{$m[1]}-{$m[2]}-")) {
+                            if (str_starts_with($key, "objpref-{$params['objtype']}-{$params['objid']}-")) {
                                 unset($this->objprefs[$key]);
                                 unset(Database::$queryCacheResults[$key]);
                             }

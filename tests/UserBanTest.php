@@ -181,6 +181,7 @@ namespace Lotgd\Tests {
             $this->connection->fetchAllResults = [];
             $this->connection->lastFetchAllParams = [];
             $this->connection->lastFetchAllTypes = [];
+            $this->connection->fetchAllLog = [];
 
             global $_GET, $_POST, $_SERVER, $session;
             $_GET = [];
@@ -237,7 +238,16 @@ namespace Lotgd\Tests {
             $statement = $this->connection->executeStatements[0] ?? null;
             $this->assertNotNull($statement);
             $this->assertSame(DATETIME_DATEMAX, $statement['params']['max'] ?? null);
-            $this->assertSame(DATETIME_DATEMAX, $this->connection->lastFetchAllParams['max'] ?? null);
+            $banListQuery = null;
+            foreach ($this->connection->fetchAllLog as $entry) {
+                if (str_contains($entry['sql'], 'SELECT * FROM bans') && str_contains($entry['sql'], 'banexpire = :max')) {
+                    $banListQuery = $entry;
+                    break;
+                }
+            }
+
+            $this->assertNotNull($banListQuery, 'Expected ban list query with :max filter.');
+            $this->assertSame(DATETIME_DATEMAX, $banListQuery['params']['max'] ?? null);
         }
     }
 }

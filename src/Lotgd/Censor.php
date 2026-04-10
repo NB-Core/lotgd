@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Modules\HookHandler;
@@ -118,9 +119,16 @@ class Censor
      */
     public static function nastyWordList(): array
     {
-        $sql = 'SELECT * FROM ' . Database::prefix('nastywords') . " WHERE type='nasty'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+        $sql = 'SELECT * FROM ' . Database::prefix('nastywords') . ' WHERE type = :type';
+        $conn = Database::getDoctrineConnection();
+        $row = $conn->executeQuery(
+            $sql,
+            ['type' => 'nasty'],
+            ['type' => ParameterType::STRING]
+        )->fetchAssociative();
+        if ($row === false) {
+            return [];
+        }
         $search = ' ' . $row['words'] . ' ';
         $search = preg_replace('/(?<=.)(?<!\\\\)\'(?=.)/', '\\\'', $search);
 

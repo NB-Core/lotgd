@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Modules\Installer;
 use Lotgd\DataCache;
@@ -25,16 +26,19 @@ class ModuleManager
     public static function listInstalled(?string $category = null, string $sortBy = 'installdate', bool $ascending = false): array
     {
         $sql = 'SELECT * FROM ' . Database::prefix('modules');
+        $params = [];
+        $types = [];
         if ($category !== null) {
-            $sql .= " WHERE category='" . Database::escape($category) . "'";
+            $sql .= ' WHERE category = :category';
+            $params['category'] = $category;
+            $types['category'] = ParameterType::STRING;
         }
         $sql .= ' ORDER BY ' . $sortBy . ' ' . ($ascending ? 'ASC' : 'DESC');
-        $result = Database::query($sql);
+        $conn = Database::getDoctrineConnection();
+        $result = $conn->executeQuery($sql, $params, $types);
         $modules = [];
-        if ($result !== false) {
-            while ($row = Database::fetchAssoc($result)) {
-                $modules[] = $row;
-            }
+        while ($row = $result->fetchAssociative()) {
+            $modules[] = $row;
         }
         return $modules;
     }

@@ -6,8 +6,14 @@ use Lotgd\Translator;
 global $session;
 
 $settings = Settings::getInstance();
-$enum = '';
-$mounts = '';
+/*
+ * Variables "enum", "racesenum" and "mounts" are pre-calculated somewhere else globally and just used in this part
+ * Please don't hurt the messenger, this needs a rework
+ *
+ */
+if (!isset($enum)) $enum = '';
+if (!isset($racesenum)) $reacesenum = '';
+if (!isset($mounts)) $mounts = '';
 
 $userinfo = array(
     "Account info,title",

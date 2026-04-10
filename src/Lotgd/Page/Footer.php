@@ -62,11 +62,11 @@ class Footer
 
         if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
             $sql     = 'SELECT motddate FROM ' . Database::prefix('motd') . ' ORDER BY motditem DESC LIMIT 1';
-            $result  = Database::query($sql);
-            $row     = Database::fetchAssoc($result);
+            $conn = Database::getDoctrineConnection();
+            $row = $conn->executeQuery($sql)->fetchAssociative();
             $headscript = '';
             if (
-                Database::numRows($result) > 0 && isset($session['user']['lastmotd']) &&
+                is_array($row) && isset($session['user']['lastmotd']) &&
                 ($row['motddate'] > $session['user']['lastmotd']) &&
                 (!isset(PageParts::$noPopups[$scriptName]) || PageParts::$noPopups[$scriptName] != 1) &&
                 $session['user']['loggedin']

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
 use Lotgd\FightBar;
@@ -297,12 +298,13 @@ class Battle
     */
     public static function selectTaunt(): string
     {
-        $sql = 'SELECT taunt FROM ' . Database::prefix('taunts') .
-        ' ORDER BY rand(' . random_int(0, mt_getrandmax()) . ') LIMIT 1';
-
-        $result = Database::query($sql);
-        if ($result) {
-            $row = Database::fetchAssoc($result);
+        $connection = Database::getDoctrineConnection();
+        $row = $connection->executeQuery(
+            'SELECT taunt FROM ' . Database::prefix('taunts') . ' ORDER BY rand(:seed) LIMIT 1',
+            ['seed' => random_int(0, mt_getrandmax())],
+            ['seed' => ParameterType::INTEGER]
+        )->fetchAssociative();
+        if ($row !== false) {
             $taunt = $row['taunt'];
         } else {
             $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
@@ -316,12 +318,13 @@ class Battle
     */
     public static function selectTauntArray(): array
     {
-        $sql = 'SELECT taunt FROM ' . Database::prefix('taunts') .
-        ' ORDER BY rand(' . random_int(0, mt_getrandmax()) . ') LIMIT 1';
-
-        $result = Database::query($sql);
-        if ($result) {
-            $row = Database::fetchAssoc($result);
+        $connection = Database::getDoctrineConnection();
+        $row = $connection->executeQuery(
+            'SELECT taunt FROM ' . Database::prefix('taunts') . ' ORDER BY rand(:seed) LIMIT 1',
+            ['seed' => random_int(0, mt_getrandmax())],
+            ['seed' => ParameterType::INTEGER]
+        )->fetchAssociative();
+        if ($row !== false) {
             $taunt = $row['taunt'];
         } else {
             $taunt = "`5\"`6{badgyuname}'s mother wears combat boots`5\", screams {goodguyname}.";
@@ -1069,9 +1072,13 @@ class Battle
             $nextindex++;
         }
         if (is_numeric($creature)) {
-            $sql = "SELECT * FROM " . Database::prefix("creatures") . " WHERE creatureid = $creature LIMIT 1";
-            $result = Database::query($sql);
-            if ($row = Database::fetchAssoc($result)) {
+            $connection = Database::getDoctrineConnection();
+            $row = $connection->executeQuery(
+                'SELECT * FROM ' . Database::prefix('creatures') . ' WHERE creatureid = :creatureid LIMIT 1',
+                ['creatureid' => (int) $creature],
+                ['creatureid' => ParameterType::INTEGER]
+            )->fetchAssociative();
+            if ($row !== false) {
                 $newenemies[$nextindex] = $row;
                 Output::getInstance()->output("`^%s`2 summons `^%s`2 for help!`n", $badguy['creaturename'], $row['creaturename']);
             }

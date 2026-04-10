@@ -22,6 +22,16 @@ class DoctrineResult
         return array_shift($this->rows) ?: false;
     }
 
+    public function fetchOne()
+    {
+        $row = array_shift($this->rows);
+        if (!is_array($row) || empty($row)) {
+            return false;
+        }
+
+        return reset($row);
+    }
+
     public function rowCount(): int|string
     {
         if ($this->rowCountOverride !== null) {
@@ -57,11 +67,20 @@ class DoctrineConnection
     public array $fetchAllResults = [];
     public array $lastFetchAllParams = [];
     public array $lastFetchAllTypes = [];
+    /**
+     * Log of fetchAllAssociative calls so tests can assert specific query parameters
+     * even when later calls overwrite "last*" tracking fields.
+     *
+     * @var array<int, array{sql:string, params:array, types:array}>
+     */
+    public array $fetchAllLog = [];
     public array $fetchAssociativeResults = [];
     public array $lastFetchAssociativeParams = [];
     public array $lastFetchAssociativeTypes = [];
     public array $fetchAssociativeLog = [];
     public array $executeStatements = [];
+    /** @var array<int,int> */
+    public array $executeStatementResults = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
     public array $executeQueryParams = [];
@@ -105,6 +124,14 @@ class DoctrineConnection
             return $this->makeResult([['prefs' => $prefs]]);
         }
 
+        if (preg_match('/SELECT\s+prefs\s+FROM\s+' . preg_quote($accountsTable, '/') . '\s+WHERE\s+acctid\s*=\s*:acctid/i', $sql)) {
+            global $accounts_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
+            $prefs = $accounts_table[$acctid]['prefs'] ?? '';
+
+            return $this->makeResult([['prefs' => $prefs]]);
+        }
+
         if (preg_match("/SELECT\s+name\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
             global $accounts_table;
             $acctid = (int) $matches[1];
@@ -114,6 +141,27 @@ class DoctrineConnection
         }
 
         $mailTable = Database::prefix('mail');
+        if (preg_match('/SELECT\s+MAX\(messageid\).*SUM\(seen\s*=\s*0\).*\s+FROM\s+' . preg_quote($mailTable, '/') . '\s+WHERE\s+msgto\s*=\s*:acctid/i', $sql)) {
+            global $mail_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
+            $lastId = 0;
+            $unread = 0;
+            foreach ($mail_table as $row) {
+                if ((int) ($row['msgto'] ?? 0) !== $acctid) {
+                    continue;
+                }
+                $messageId = (int) ($row['messageid'] ?? 0);
+                if ($messageId > $lastId) {
+                    $lastId = $messageId;
+                }
+                if ((int) ($row['seen'] ?? 0) === 0) {
+                    $unread++;
+                }
+            }
+
+            return $this->makeResult([['lastid' => $lastId, 'unread' => $unread]]);
+        }
+
         if (preg_match("/SELECT\s+count\\(messageid\\)\s+AS\s+count\s+FROM\s+" . preg_quote($mailTable, '/') . "\s+WHERE\s+msgto=\'?([0-9]+)\'?([^;]*)/i", $sql, $matches)) {
             global $mail_table;
             $acctid = (int) $matches[1];
@@ -191,6 +239,18 @@ class DoctrineConnection
             return $this->makeResult([['words' => '']]);
         }
 
+        if (preg_match('/SELECT\s+\*\s+FROM\s+' . preg_quote(Database::prefix('settings'), '/') . '/i', $sql)) {
+            $rows = [];
+            foreach (Database::$settings_table as $setting => $value) {
+                $rows[] = [
+                    'setting' => (string) $setting,
+                    'value'   => $value,
+                ];
+            }
+
+            return $this->makeResult($rows);
+        }
+
         if (stripos($sql, 'count(') !== false) {
             $value = array_shift($this->countResults);
             if ($value === null) {
@@ -221,6 +281,11 @@ class DoctrineConnection
         $this->queries[] = $sql;
         $this->lastFetchAllParams = $params;
         $this->lastFetchAllTypes = $types;
+        $this->fetchAllLog[] = [
+            'sql'    => $sql,
+            'params' => $params,
+            'types'  => $types,
+        ];
 
         if (!empty(Database::$mockResults)) {
             $rows = array_shift(Database::$mockResults);
@@ -293,6 +358,9 @@ class DoctrineConnection
         ];
         $this->lastExecuteStatementParams = $params;
         $this->lastExecuteStatementTypes = $types;
+        if ($this->executeStatementResults !== []) {
+            return (int) array_shift($this->executeStatementResults);
+        }
         if (preg_match('/^INSERT INTO\s+`?mail`?/i', $sql)) {
             global $mail_table;
             $mail_table ??= [];
@@ -419,6 +487,31 @@ class DoctrineConnection
     public function getParams(): array
     {
         return $this->params;
+    }
+
+    private bool $inTransaction = false;
+
+    public function beginTransaction(): void
+    {
+        $this->queries[] = 'START TRANSACTION';
+        $this->inTransaction = true;
+    }
+
+    public function commit(): void
+    {
+        $this->queries[] = 'COMMIT';
+        $this->inTransaction = false;
+    }
+
+    public function rollBack(): void
+    {
+        $this->queries[] = 'ROLLBACK';
+        $this->inTransaction = false;
+    }
+
+    public function isTransactionActive(): bool
+    {
+        return $this->inTransaction;
     }
 }
 

@@ -121,7 +121,7 @@ final class Stage6Test extends TestCase
         $this->assertFileExists($this->dbconnectPath);
 
         $contents = file_get_contents($this->dbconnectPath);
-        $this->assertMatchesRegularExpression('/^<\?php\n\/\/This file automatically created by installer\\.php on .+\nreturn \[\n/s', $contents);
+        $this->assertMatchesRegularExpression('/^<\?php\n(?:\n)?\/\/This file automatically created by installer\\.php on .+\n(?:\/\/.*\n)*return \[\n/s', $contents);
         $this->assertStringContainsString("'DB_HOST' => 'localhost'", $contents);
         $this->assertStringContainsString("'DB_USER' => 'installer'", $contents);
         $this->assertStringContainsString("'DB_PASS' => 'password'", $contents);

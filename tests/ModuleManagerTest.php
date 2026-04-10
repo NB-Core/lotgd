@@ -129,7 +129,9 @@ namespace Lotgd\Tests {
         public function testListInstalledBuildsSql(): void
         {
             ModuleManager::listInstalled();
-            $this->assertStringContainsString('SELECT * FROM modules', \Lotgd\MySQL\Database::$lastSql);
+            $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+            $this->assertNotEmpty($conn->queries);
+            $this->assertStringContainsString('SELECT * FROM modules', $conn->queries[0]);
         }
 
         public function testListUninstalledReturnsStatus(): void

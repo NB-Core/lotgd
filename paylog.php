@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
@@ -77,6 +78,8 @@ HookHandler::hook("paylog", array());
 $op = (string) Http::get('op');
 $currency = $settings->getSetting('paypalcurrency', 'USD');
 if ($op == "") {
+    $conn = Database::getDoctrineConnection();
+    $paylogTable = Database::prefix('paylog');
     Nav::add('Actions');
     Nav::add('Refresh', 'paylog.php');
     $sql = "SELECT info,txnid FROM " . Database::prefix("paylog") . " WHERE processdate='" . DATETIME_DATEMIN . "'";
@@ -92,8 +95,17 @@ if ($op == "") {
         if ($normalized['paymentDate'] !== null) {
             $timestamp = strtotime($normalized['paymentDate']);
             if ($timestamp !== false) {
-                $sql = "UPDATE " . Database::prefix('paylog') . " SET processdate='" . date("Y-m-d H:i:s", $timestamp) . "' WHERE txnid='" . addslashes($row['txnid']) . "'";
-                Database::query($sql);
+                $conn->executeStatement(
+                    "UPDATE {$paylogTable} SET processdate = :processdate WHERE txnid = :txnid",
+                    [
+                        'processdate' => date("Y-m-d H:i:s", $timestamp),
+                        'txnid' => (string) $row['txnid'],
+                    ],
+                    [
+                        'processdate' => ParameterType::STRING,
+                        'txnid' => ParameterType::STRING,
+                    ]
+                );
             }
         }
     }
@@ -152,13 +164,28 @@ if ($op == "") {
         $output->rawOutput("</table><br>");
     }
 
-    $sql = "SELECT " . Database::prefix("paylog") . ".*," . Database::prefix("accounts") . ".name," . Database::prefix("accounts") . ".donation," . Database::prefix("accounts") . ".donationspent FROM " . Database::prefix("paylog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("paylog") . ".acctid = " . Database::prefix("accounts") . ".acctid WHERE processdate>='$startdate' AND processdate < '$enddate' ORDER BY payid DESC";
-    $result = Database::query($sql);
+    $accountsTable = Database::prefix('accounts');
+    $result = $conn->executeQuery(
+        "SELECT {$paylogTable}.*, {$accountsTable}.name, {$accountsTable}.donation, {$accountsTable}.donationspent
+            FROM {$paylogTable}
+            LEFT JOIN {$accountsTable} ON {$paylogTable}.acctid = {$accountsTable}.acctid
+            WHERE processdate >= :startdate AND processdate < :enddate
+            ORDER BY payid DESC",
+        [
+            'startdate' => (string) $startdate,
+            'enddate' => (string) $enddate,
+        ],
+        [
+            'startdate' => ParameterType::STRING,
+            'enddate' => ParameterType::STRING,
+        ]
+    );
+    $rows = $result->fetchAllAssociative();
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1' bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>Date</td><td>$id</td><td>$type</td><td>$gross</td><td>$fee</td><td>$net</td><td>$processed</td><td>$who</td></tr>");
-    $number = Database::numRows($result);
+    $number = count($rows);
     for ($i = 0; $i < $number; $i++) {
-        $row = Database::fetchAssoc($result);
+        $row = $rows[$i];
         $info = Serialization::safeUnserialize($row['info']);
         $normalized = LegacyPayloadNormalizer::normalize($row, $info, $currency);
         if (! $normalized['is_valid']) {

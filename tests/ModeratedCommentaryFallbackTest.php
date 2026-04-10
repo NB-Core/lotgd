@@ -10,6 +10,7 @@ use Lotgd\Nav;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class ModeratedCommentaryFallbackTest extends TestCase
@@ -25,8 +26,12 @@ final class ModeratedCommentaryFallbackTest extends TestCase
 
         require_once __DIR__ . '/bootstrap.php';
 
-        Settings::setInstance(null);
-        unset($GLOBALS['settings']);
+        $settings = new DummySettings([
+            'charset' => 'UTF-8',
+            'LOGINTIMEOUT' => 900,
+        ]);
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
 
         Output::getInstance()->resetOutput();
 
@@ -61,21 +66,16 @@ final class ModeratedCommentaryFallbackTest extends TestCase
             'section' => 'test-section',
         ]];
 
-        $settingsRows = [[
-            'setting' => 'charset',
-            'value' => 'UTF-8',
-        ]];
-
-        Database::$mockResults = [$settingsRows, $commentRows];
-        Settings::getInstance();
+        Database::$mockResults = [$commentRows];
 
         set_error_handler(static function (int $errno, string $errstr): void {
             throw new ErrorException($errstr, 0, $errno);
         });
-
-        Moderate::viewmoderatedcommentary('test-section', 'X');
-
-        restore_error_handler();
+        try {
+            Moderate::viewmoderatedcommentary('test-section', 'X');
+        } finally {
+            restore_error_handler();
+        }
 
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('user.php?op=setupban&userid=0&commentid=1', $output);
@@ -109,13 +109,7 @@ final class ModeratedCommentaryFallbackTest extends TestCase
             'section' => 'test-section',
         ]];
 
-        $settingsRows = [[
-            'setting' => 'charset',
-            'value' => 'UTF-8',
-        ]];
-
-        Database::$mockResults = [$settingsRows, $commentRows];
-        Settings::getInstance();
+        Database::$mockResults = [$commentRows];
 
         Moderate::viewmoderatedcommentary('test-section', 'X');
 

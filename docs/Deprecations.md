@@ -29,6 +29,12 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: `Database::getDoctrineConnection()` with `Result::fetchAssociative()` / `fetchAllAssociative()`  
   - Migration: Replace wrapper loops with DBAL results and explicit parameter typing.
 
+- Legacy SQL string concatenation in core paths
+  - Status: Deprecated milestone **2026-03-27** (core paths only)
+  - 2.x compatibility: Existing module wrappers and legacy module code paths remain supported in 2.x for backward compatibility.
+  - Replacement: Doctrine DBAL prepared statements via `Database::getDoctrineConnection()` (or equivalent Doctrine abstractions).
+  - Removal target: Next major release (3.0) for core/refactored paths; module maintainers should migrate before upgrading.
+
 - Custom Ajax endpoints not using Jaxon
   - Status: Deprecated
   - Replacement: Jaxon-based async calls under `async/`
@@ -44,6 +50,13 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Behaviour note: `lib/http.php` wrappers intentionally preserve escaped legacy semantics for compatibility, while `Lotgd\Http` returns raw request values for typed and parameterized handling.
   - Migration: Replace legacy helper calls with `Lotgd\Http::get()` / `Lotgd\Http::post()` and use bound DBAL parameters instead of SQL string concatenation.
   - QA enforcement: `composer static` now runs a policy gate that fails when new wrapper usage appears in core/refactored paths.
+
+### Security Guidelines for Input and SQL (Core Paths)
+
+- **No global pre-escaping of superglobals**: do not rely on `addslashes()` wrappers around `$_GET`, `$_POST`, or compatibility helpers as an SQL safety boundary.
+- **Validate/cast at input boundaries**: normalize user input as it enters a feature (for example `int`, `bool`, constrained enum/string), and keep those typed values through the call chain.
+- **Parameterized SQL is mandatory for new/updated code**: use Doctrine DBAL `executeQuery()` / `executeStatement()` with explicit parameter arrays and types at the query sink.
+- **Legacy wrapper escape semantics are compatibility-only**: `lib/http.php` retained behavior is for legacy module compatibility and must not be used as justification for SQL string concatenation in core/refactored paths.
 
 ### Upgrade Guidance (1.3.x → 2.0)
 

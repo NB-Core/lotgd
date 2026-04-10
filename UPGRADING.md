@@ -126,6 +126,31 @@ modules.
   - Output compression via zlib is enabled by default when the `zlib` extension is present. Disable at the PHP level if undesired.  
   - Data cache requires a writable directory: set `DB_USEDATACACHE=1` and `DB_DATACACHEPATH=/path/to/cache` in `dbconnect.php`. The app will warn admins if the path is missing or not writable, even if a temporary fallback directory is used for resilience; those warnings are intentional and should be addressed by setting a stable, writable path.  
   - Twig will cache compiled templates under `<datacachepath>/twig` when writable; otherwise it runs without caching.
+  - Runtime hardening is initialized before `session_start()` in `common.php`. Optional rollout switches live in `dbconnect.php` (`SESSION_COOKIE_*`, `SECURITY_*` keys described in `SECURITY.md`).
+
+### Security rollout checklist (TLS / proxy / HSTS / CSP)
+
+1. **Confirm HTTPS detection**
+   - Verify your reverse proxy sets `X-Forwarded-Proto: https` for TLS traffic.
+   - Enable `SECURITY_TRUST_FORWARDED_PROTO=true` and define `SECURITY_TRUSTED_PROXIES` with your proxy IPs.
+   - Validate that direct HTTP requests do not report HTTPS accidentally.
+2. **Session cookie rollout**
+   - Keep `SESSION_COOKIE_SECURE_AUTO=true` (default).
+   - Start with `SESSION_COOKIE_SAMESITE=Lax`; move to `Strict` only after verifying login/payment and cross-site flows.
+3. **Header rollout**
+   - Keep `SECURITY_HEADERS_ENABLED=true`.
+   - Start with `X-Frame-Options` default; migrate to CSP framing with:
+     - `SECURITY_USE_CSP_FRAME_ANCESTORS=true`
+     - `SECURITY_CSP_FRAME_ANCESTORS='self'` (or stricter)
+4. **HSTS phased enablement**
+   - Enable with a low initial max age:
+     - `SECURITY_HSTS_ENABLED=true`
+     - `SECURITY_HSTS_MAX_AGE=300`
+   - Increase `SECURITY_HSTS_MAX_AGE` gradually after validation.
+   - Add `SECURITY_HSTS_INCLUDE_SUBDOMAINS=true` only when every subdomain is HTTPS-ready.
+   - Add `SECURITY_HSTS_PRELOAD=true` only when you fully satisfy browser preload requirements.
+5. **Session fixation controls**
+   - Ensure custom authentication or privilege elevation code paths call session ID regeneration similarly to `login.php` after authentication success.
 
 ---
 
@@ -174,7 +199,36 @@ If you maintain custom modules, update any legacy calls to `Database::fetchAssoc
 
 ### Superuser endpoint hardening update
 
-Recent 2.x updates switched the superuser editors in `deathmessages.php`, `taunt.php`, and `untranslated.php` to explicit Doctrine parameter binding for write operations (and filtered untranslated lookups). These endpoints now rely on `executeStatement()` / `executeQuery()` with typed bound parameters instead of legacy wrapper escaping behavior. If you maintain custom overrides of these pages, update them to match bound-parameter execution semantics.
+Recent 2.x updates switched several superuser and security-sensitive endpoints to explicit Doctrine parameter binding (`executeStatement()` / `executeQuery()` with typed params) instead of string-built SQL:
+
+**Migrated in this wave:**
+- `moderate.php` (comment delete / restore writes, moderation inserts, dynamic `IN` list binding with `ArrayParameterType::INTEGER`).
+- `payment.php` (IPN duplicate check, account donation credit update, and paylog persistence writes).
+- `badword.php` (good/nasty word list rewrite operations).
+- `masters.php` (training master insert/update/delete writes).
+- `titleedit.php` (title insert/update/delete and account title reset updates).
+- `creatures.php` (creature insert/update/delete writes with typed DBAL parameters).
+- `referers.php` (cleanup delete + site rebuild updates now use typed parameter binding).
+- `paylog.php` (process date backfill update is bound through DBAL).
+- `configuration.php` (account location mass updates for village/inn rename flows).
+- `create.php` (validation/forgot-password/email-change account writes now use bound parameters).
+- Previously migrated: `deathmessages.php`, `taunt.php`, `untranslated.php`.
+
+**Pending superuser pages still using legacy string-built writes (track for next waves):**
+- None currently tracked in this hardening wave.
+
+If you maintain custom overrides of any migrated page, update those overrides to match bound-parameter execution semantics (including explicit type maps and DBAL array binding for dynamic `IN` clauses).
+
+### SQL addslashes baseline status
+
+The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) remains empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage in `pages/` or `src/` will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.
+
+A companion guard (`src/Lotgd/QA/InterpolatedDatabaseQueryCheck.php`) now flags new dynamic `Database::query(...)` usage under `src/Lotgd` except for explicitly whitelisted legacy-heavy paths (`Modules.php`, `Commentary.php`, `Newday.php`, `Pvp.php`) that are still under staged migration.
+
+Recent hardening pass migration status:
+
+- Fully migrated (DBAL parameter binding): `src/Lotgd/Security/PasskeyCredentialRepository.php`, `src/Lotgd/CheckBan.php`, `src/Lotgd/ForcedNavigation.php`, `src/Lotgd/Async/Handler/Timeout.php`, and `src/Lotgd/PlayerFunctions.php`.
+- Partially migrated (legacy SQL still present in staged areas): `src/Lotgd/Modules.php`, `src/Lotgd/Newday.php`, `src/Lotgd/Commentary.php`, `src/Lotgd/Pvp.php`.
 
 ### Refactoring Legacy SQL to Prepared Statements
 
@@ -271,3 +325,14 @@ As of this policy, static QA enforcement runs during `composer static` and fails
 ---
 
 👉 See also [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
+
+---
+
+## 11. Operator Hardening Checklist
+
+After upgrade and smoke tests, run this operator-focused hardening pass:
+
+- Verify HTTPS termination correctness end-to-end (TLS at edge/proxy, forwarded scheme handling, and no mixed-content/login downgrade paths).
+- Re-check cache path permissions (`DB_DATACACHEPATH` and Twig cache path) and confirm directories are writable by the runtime user only as needed.
+- Verify cookie and session behavior in production-like conditions (secure transport, expected login/session persistence, logout invalidation, and async/session continuity).
+- Run post-upgrade admin endpoint smoke checks (superuser login, key admin pages, and at least one state-changing admin action with expected auth/CSRF behavior).
