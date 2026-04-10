@@ -984,6 +984,7 @@ return array(
     'PHPUnit\\Util\\Filesystem' => $vendorDir . '/phpunit/phpunit/src/Util/Filesystem.php',
     'PHPUnit\\Util\\Filter' => $vendorDir . '/phpunit/phpunit/src/Util/Filter.php',
     'PHPUnit\\Util\\GlobalState' => $vendorDir . '/phpunit/phpunit/src/Util/GlobalState.php',
+    'PHPUnit\\Util\\GlobalStateResult' => $vendorDir . '/phpunit/phpunit/src/Util/GlobalStateResult.php',
     'PHPUnit\\Util\\Http\\Downloader' => $vendorDir . '/phpunit/phpunit/src/Util/Http/Downloader.php',
     'PHPUnit\\Util\\Http\\PhpDownloader' => $vendorDir . '/phpunit/phpunit/src/Util/Http/PhpDownloader.php',
     'PHPUnit\\Util\\InvalidDirectoryException' => $vendorDir . '/phpunit/phpunit/src/Util/Exception/InvalidDirectoryException.php',
