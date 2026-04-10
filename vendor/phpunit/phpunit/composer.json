@@ -16,6 +16,12 @@
             "role": "lead"
         }
     ],
+    "funding": [
+        {
+            "type": "other",
+            "url": "https://phpunit.de/sponsoring.html"
+        }
+    ],
     "support": {
         "issues": "https://github.com/sebastianbergmann/phpunit/issues",
         "security": "https://github.com/sebastianbergmann/phpunit/security/policy"
@@ -40,7 +46,7 @@
         "sebastian/cli-parser": "^4.2.0",
         "sebastian/comparator": "^7.1.4",
         "sebastian/diff": "^7.0.0",
-        "sebastian/environment": "^8.0.3",
+        "sebastian/environment": "^8.0.4",
         "sebastian/exporter": "^7.0.2",
         "sebastian/global-state": "^8.0.2",
         "sebastian/object-enumerator": "^7.0.0",
@@ -75,7 +81,7 @@
         "files": [
             "tests/_files/deprecation-trigger/trigger_deprecation.php",
             "tests/unit/Event/AbstractEventTestCase.php",
-            "tests/unit/TextUI/AbstractSouceFilterTestCase.php",
+            "tests/unit/TextUI/AbstractSourceFilterTestCase.php",
             "tests/unit/Framework/MockObject/TestDoubleTestCase.php",
             "tests/unit/Metadata/Parser/AttributeParserTestCase.php",
             "tests/unit/Framework/Assert/assertContainsOnlyArrayTest.php",
