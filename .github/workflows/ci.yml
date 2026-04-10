@@ -30,7 +30,6 @@ jobs:
           key: ${{ runner.os }}-php-${{ env.PHP_VERSION }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-${{ env.PHP_VERSION }}-composer-
-            ${{ runner.os }}-php-
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
       - name: Run static analysis
