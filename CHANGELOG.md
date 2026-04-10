@@ -17,6 +17,7 @@ _No unreleased changes yet._
 ### Features
 - Add centralized runtime hardening bootstrap so deployments get safer defaults for HTTPS detection, proxy signaling, and request-surface protections out of the box.
 - Improve installer security defaults and enable stronger admin guidance via the recommendations module during first-run setup.
+- Extend the charrestore module with a user-prefs-only restore option so admins can overwrite preference data without replacing full character records.
 
 ### Security
 - Harden HTTPS/proxy detection by validating forwarded-proto handling paths, including `HTTP_FORWARDED_PROTO` and related trusted-header guardrails.
@@ -28,6 +29,9 @@ _No unreleased changes yet._
 - Fix payment/IPN edge cases around duplicate callbacks, canonical paylog selection, and retry consistency so credits are applied exactly once.
 - Resolve follow-up regressions in proxy-aware HTTPS detection and runtime hardening bootstrap behavior across mixed hosting/proxy setups.
 - Correct module/object preference cache invalidation and related typing issues discovered during the SQL hardening migration wave.
+- Keep navigation access-key generation stable during holiday mode so keybindings no longer depend on seasonal rendering changes.
+- Fix user-account config save/load handling when optional settings are empty, preventing dropped values and inconsistent persistence.
+- Cast moderated commentary timestamps to integers to avoid type-related moderation issues on timestamp handling.
 
 ### Refactor
 - Migrate additional legacy SQL reads/writes to Doctrine DBAL with explicit typed bindings across superuser and core maintenance/admin flows.
@@ -36,6 +40,7 @@ _No unreleased changes yet._
 ### Dependencies/Tooling
 - Transition CI and release workflows to Node.js 24 in GitHub Actions.
 - Raise static analysis memory defaults and tighten QA tooling heuristics to keep large security migration waves reliable in CI.
+- Add a manual release `workflow_dispatch` path, increase release artifact retention, and tighten CI cache-key strategy for more reliable pipeline runs.
 
 ### Docs
 - Clarify canonical payment idempotency policy and duplicate-IPN test scope for operators and contributors.
