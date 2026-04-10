@@ -1,9 +1,13 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # Manual only: release archives are prepared by maintainers on demand.
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag to package (for example: v2.0.0)"
+        required: true
+        type: string
 
 jobs:
   package:
@@ -13,11 +17,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.inputs.release_tag }}
       - name: Extract version
         id: vars
         run: |
           # Remove leading 'v' from the tag name
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${{ github.event.inputs.release_tag }}"
+          VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create archives
         run: |
@@ -32,6 +38,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lotgd-${{ steps.vars.outputs.VERSION }}
+          # Keep release workflow artifacts briefly to reduce billable storage.
+          retention-days: 14
           path: |
             dist/lotgd-${{ steps.vars.outputs.VERSION }}.tar.gz
             dist/lotgd-${{ steps.vars.outputs.VERSION }}.zip

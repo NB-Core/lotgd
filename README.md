@@ -192,11 +192,27 @@ will guide you through the setup.
 
 ## Release Workflow
 
-Releases are created automatically when pushing a tag that starts with `v`.
-Update the version in `common.php`, commit the change and push a tag like
-`v2.0.0` or `v2.0.0-rc1`. GitHub Actions then builds archives that contain the
-application and its `vendor/` dependencies while omitting development files such
-as the `tests/` directory.
+Releases are prepared manually by maintainers. The `Release` GitHub Actions
+workflow is intentionally configured as **manual-only** (`workflow_dispatch`) so
+it does not auto-run on tags.
+
+When a maintainer wants release archives built by GitHub Actions:
+
+1. Update the version in `common.php` and push changes.
+2. Open **Actions → Release → Run workflow**.
+3. Provide the target tag/ref (for example `v2.0.0` or `v2.0.0-rc1`) and run.
+
+The workflow builds archives that contain the application and its `vendor/`
+dependencies while omitting development files such as the `tests/` directory.
+
+### GitHub Actions Storage Policy
+
+- CI uses a Composer cache key scoped to OS + PHP version + `composer.lock` to
+  avoid uncontrolled cache growth.
+- Release artifacts use a 14-day retention period to reduce billable GitHub
+  Actions storage.
+- Set repository-level artifact/log retention in GitHub settings for additional
+  control of monthly storage usage.
 
 ## Cron Job Setup
 
