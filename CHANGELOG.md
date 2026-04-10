@@ -10,6 +10,10 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 
+_No unreleased changes yet._
+
+## [2.0.5] – 2026-04-10
+
 ### Features
 - Add centralized runtime hardening bootstrap so deployments get safer defaults for HTTPS detection, proxy signaling, and request-surface protections out of the box.
 - Improve installer security defaults and enable stronger admin guidance via the recommendations module during first-run setup.
