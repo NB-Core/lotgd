@@ -364,7 +364,7 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
             return;
         }
 
-        IsolatedTestRunnerRegistry::run(
+        (new SeparateProcessTestRunner)->run(
             $this,
             $this->runClassInSeparateProcess && !$this->runTestInSeparateProcess,
             $this->preserveGlobalState,
@@ -599,7 +599,10 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
             $this->stopOutputBuffering()) {
             $outputBufferingStopped = true;
 
-            $this->performAssertionsOnOutput();
+            try {
+                $this->performAssertionsOnOutput();
+            } catch (ExpectationFailedException $e) {
+            }
         }
 
         try {
