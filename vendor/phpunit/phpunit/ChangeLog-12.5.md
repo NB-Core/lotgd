@@ -2,6 +2,52 @@
 
 All notable changes of the PHPUnit 12.5 release series are documented in this file using the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
 
+## [12.5.23] - 2026-04-18
+
+### Changed
+
+* Pass `LIBXML_NONET` when parsing/validating XML configuration files to make explicit that no network I/O is performed
+* Verify the result file written by an isolated child process with a random nonce before deserializing it
+
+## [12.5.22] - 2026-04-17
+
+### Fixed
+
+* [#6590](https://github.com/sebastianbergmann/phpunit/issues/6590): Silent failure when configuration file is invalid
+* [#6592](https://github.com/sebastianbergmann/phpunit/pull/6592): INI metacharacters `;` and `"` are not preserved when forwarding settings to child processes
+
+## [12.5.21] - 2026-04-16
+
+### Fixed
+
+* [#5860](https://github.com/sebastianbergmann/phpunit/issues/5860): PHP CLI `-d` settings are not forwarded to child processes for process isolation
+* [#6451](https://github.com/sebastianbergmann/phpunit/issues/6451): Incomplete version in `RequiresPhp` (e.g. `<=8.5`) is compared against full PHP version, causing unexpected skips
+
+## [12.5.20] - 2026-04-15
+
+### Fixed
+
+* [#5993](https://github.com/sebastianbergmann/phpunit/issues/5993): `DefaultJobRunner` deadlocks on child processes that write large amounts of stderr output
+* [#6465](https://github.com/sebastianbergmann/phpunit/issues/6465): SAPI-populated `$_SERVER` entries leak from parent into child process
+* [#6587](https://github.com/sebastianbergmann/phpunit/issues/6587): `failOnEmptyTestSuite="false"` in `phpunit.xml` is ignored when `--group`/`--filter`/`--testsuite` matches no tests
+* [#6588](https://github.com/sebastianbergmann/phpunit/issues/6588): Order of issue baseline entries is not canonicalized
+
+## [12.5.19] - 2026-04-13
+
+### Fixed
+
+* Regression in XML configuration migration introduced in PHPUnit 12.5.8
+
+## [12.5.18] - 2026-04-13
+
+### Fixed
+
+* [#4571](https://github.com/sebastianbergmann/phpunit/issues/4571): No warning when `--random-order-seed` is used when test execution order is not random
+* [#4975](https://github.com/sebastianbergmann/phpunit/issues/4975): `--filter` does not work when filter string starts with `#`
+* [#5354](https://github.com/sebastianbergmann/phpunit/issues/5354): JUnit XML logger does not handle `TestSuiteSkipped` event
+* [#6276](https://github.com/sebastianbergmann/phpunit/issues/6276): Exit with non-zero exit code when explicit test selection (`--filter`, `--group`, `--testsuite`) yields no tests
+* [#6583](https://github.com/sebastianbergmann/phpunit/issues/6583): Failing output expectation skips `tearDown()` and handler restoration, causing subsequent tests to be marked as risky
+
 ## [12.5.17] - 2026-04-08
 
 ### Changed
@@ -162,6 +208,12 @@ All notable changes of the PHPUnit 12.5 release series are documented in this fi
 * [#6380](https://github.com/sebastianbergmann/phpunit/pull/6380): Allow `Throwable` in `expectExceptionObject()`
 * A PHPUnit notice is now emitted for test methods that create a mock object but do not configure an expectation for it
 
+[12.5.23]: https://github.com/sebastianbergmann/phpunit/compare/12.5.22...12.5.23
+[12.5.22]: https://github.com/sebastianbergmann/phpunit/compare/12.5.21...12.5.22
+[12.5.21]: https://github.com/sebastianbergmann/phpunit/compare/12.5.20...12.5.21
+[12.5.20]: https://github.com/sebastianbergmann/phpunit/compare/12.5.19...12.5.20
+[12.5.19]: https://github.com/sebastianbergmann/phpunit/compare/12.5.18...12.5.19
+[12.5.18]: https://github.com/sebastianbergmann/phpunit/compare/12.5.17...12.5.18
 [12.5.17]: https://github.com/sebastianbergmann/phpunit/compare/12.5.16...12.5.17
 [12.5.16]: https://github.com/sebastianbergmann/phpunit/compare/12.5.15...12.5.16
 [12.5.15]: https://github.com/sebastianbergmann/phpunit/compare/12.5.14...12.5.15
