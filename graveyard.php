@@ -116,7 +116,7 @@ if ($battle) {
                 AddNews::add("%s", $deathmessage['deathmessage']);
             }
 //          AddNews::add("`)%s`) has been defeated in the graveyard by %s.`n%s",$session['user']['name'],$badguy['creaturename'],$taunt);
-            $output->output("`b`&You have been defeated by `%%s`&!!!`n", $badguy['creaturename']);
+            $output->output("`b`&You have been defeated by `%%s`&!!!`b`n", $badguy['creaturename']);
             $output->output("You may not torment any more souls today.");
             $session['user']['gravefights'] = 0;
             Translator::getInstance()->setSchema("nav");
