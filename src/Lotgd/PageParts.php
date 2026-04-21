@@ -694,13 +694,17 @@ class PageParts
      *  - hook name: paypal-below
      *  - input array: ['paypal_below' => string]
      *  - modules should set/append only the paypal_below key and return the array
+     *  - modules are responsible for sanitizing any untrusted input before returning HTML
      *
      * @return string Normalized raw HTML replacement content for {paypal_below}.
      */
     public static function resolvePaypalBelowSlot(): string
     {
         $payload = HookHandler::hook('paypal-below', ['paypal_below' => '']);
-        $value = is_array($payload) ? ($payload['paypal_below'] ?? '') : '';
+        $value = '';
+        if (is_array($payload)) {
+            $value = $payload['paypal_below'] ?? '';
+        }
 
         if (!is_scalar($value)) {
             return '';

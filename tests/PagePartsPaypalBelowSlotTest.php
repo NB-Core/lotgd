@@ -44,6 +44,9 @@ final class PagePartsPaypalBelowSlotTest extends TestCase
 
         $modulehook_returns['paypal-below'] = 'invalid';
         $this->assertSame('', PageParts::resolvePaypalBelowSlot());
+
+        $modulehook_returns['paypal-below'] = ['paypal_below' => " <em><script>alert('x')</script></em> "];
+        $this->assertSame("<em><script>alert('x')</script></em>", PageParts::resolvePaypalBelowSlot());
     }
 
     public function testBuildPaypalDonationMarkupAppendsPlaceholderWithoutEmptyRow(): void
