@@ -171,6 +171,8 @@ class Footer
             'version' => 'Version: ' . $page->getLogdVersion(),
             'pagegen' => PageParts::computePageGenerationStats(PhpGenericEnvironment::getPageStartTime()),
             'copyright' => $page->{$page->getV()}(),
+            // Dedicated slot below PayPal donation markup (intentionally not tied to ad tokens).
+            'paypal_below' => PageParts::resolvePaypalBelowSlot(),
         ];
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);

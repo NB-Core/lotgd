@@ -668,6 +668,11 @@ class PageParts
                 . '</form>';
         }
         $paypalstr .= '</td></tr></table>';
+        // Keep this compartmentalized below-PayPal slot independent from ad placeholders
+        // such as {verticalad}; modules should target the dedicated paypal-below hook instead.
+        // The placeholder intentionally represents the full optional markup so unused hooks
+        // do not render an empty table row or extra whitespace below the PayPal buttons.
+        $paypalstr .= '{paypal_below}';
 
         $replacement = (strpos($palreplace, 'paypal') ? '' : '{stats}') . $paypalstr;
         $token = trim($palreplace, '{}');
@@ -680,6 +685,32 @@ class PageParts
                 'paypal' => $paypalstr,
             ]
         );
+    }
+
+    /**
+     * Resolve the dedicated below-PayPal extension slot via the paypal-below hook.
+     *
+     * Hook contract:
+     *  - hook name: paypal-below
+     *  - input array: ['paypal_below' => string]
+     *  - modules should set/append only the paypal_below key and return the array
+     *  - modules are responsible for sanitizing any untrusted input before returning HTML
+     *
+     * @return string Normalized raw HTML replacement content for {paypal_below}.
+     */
+    public static function resolvePaypalBelowSlot(): string
+    {
+        $payload = HookHandler::hook('paypal-below', ['paypal_below' => '']);
+        $value = '';
+        if (is_array($payload)) {
+            $value = $payload['paypal_below'] ?? '';
+        }
+
+        if (!is_scalar($value)) {
+            return '';
+        }
+
+        return trim((string) $value);
     }
 
     /**
