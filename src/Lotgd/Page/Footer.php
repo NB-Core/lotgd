@@ -29,6 +29,9 @@ class Footer
         $template  = Template::getInstance()->getTemplate();
 
         $scriptName = PhpGenericEnvironment::getScriptName();
+        // paypal_below is a first-class template variable; initialize an empty default
+        // at footer start so both legacy and Twig rendering paths always see the token.
+        PageParts::$twigVars['paypal_below'] = '';
 
         $navInstance = Nav::getInstance();
         $header = $navInstance->getHeader();
@@ -126,6 +129,13 @@ class Footer
         $script .= "});\n";
         $script .= "</script>\n";
 
+        // Resolve this once and keep it first-class in replacements.
+        // If a template does not expose {paypal_below}, we append this finalized
+        // markup to the paypal replacement instead of requiring template edits.
+        $paypalBelow = PageParts::resolvePaypalBelowSlot('');
+        $templateProvidesPaypalBelowSlot = strpos($header, '{paypal_below}') !== false
+            || strpos($footer, '{paypal_below}') !== false;
+
         $palreplace = (strpos($footer, '{paypal}') || strpos($header, '{paypal}')) ? '{paypal}' : '{stats}';
 
         if (defined('DB_CHOSEN')) {
@@ -134,7 +144,9 @@ class Footer
                 $header,
                 $footer,
                 $settings,
-                $page->getLogdVersion()
+                $page->getLogdVersion(),
+                $paypalBelow,
+                !$templateProvidesPaypalBelowSlot
             );
         }
 
@@ -171,8 +183,9 @@ class Footer
             'version' => 'Version: ' . $page->getLogdVersion(),
             'pagegen' => PageParts::computePageGenerationStats(PhpGenericEnvironment::getPageStartTime()),
             'copyright' => $page->{$page->getV()}(),
-            // Dedicated slot below PayPal donation markup (intentionally not tied to ad tokens).
-            'paypal_below' => PageParts::resolvePaypalBelowSlot(),
+            // Dedicated slot below PayPal donation markup. Keep this separate from
+            // {paypal} so one-pass token replacement and Twig rendering stay aligned.
+            'paypal_below' => $paypalBelow,
         ];
         if (TwigTemplate::isActive()) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);

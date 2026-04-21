@@ -574,13 +574,19 @@ class PageParts
      * @param string      $footer       Footer template fragment
      * @param Settings|null $settings   Settings handler or null
      * @param string      $logd_version Current game version string
+     * @param string      $paypal_below_markup Optional finalized below-PayPal markup
+     * @param bool        $append_paypal_below_to_paypal Whether below markup should be appended to
+     *                                                    the paypal token when templates do not expose
+     *                                                    a dedicated {paypal_below} slot.
      */
     public static function buildPaypalDonationMarkup(
         string $palreplace,
         string $header,
         string $footer,
         ?Settings $settings,
-        string $logd_version
+        string $logd_version,
+        string $paypal_below_markup = '',
+        bool $append_paypal_below_to_paypal = false
     ): array {
         global $session;
 
@@ -668,13 +674,15 @@ class PageParts
                 . '</form>';
         }
         $paypalstr .= '</td></tr></table>';
-        // Keep this compartmentalized below-PayPal slot independent from ad placeholders
-        // such as {verticalad}; modules should target the dedicated paypal-below hook instead.
-        // The placeholder intentionally represents the full optional markup so unused hooks
-        // do not render an empty table row or extra whitespace below the PayPal buttons.
-        $paypalstr .= '{paypal_below}';
+        $paypalReplacement = $paypalstr;
+        if ($append_paypal_below_to_paypal && $paypal_below_markup !== '') {
+            // Keep paypal_below as a first-class variable while still supporting
+            // templates that only render {paypal}. In that case, append the
+            // finalized below-slot markup at replacement time (not as a token).
+            $paypalReplacement .= $paypal_below_markup;
+        }
 
-        $replacement = (strpos($palreplace, 'paypal') ? '' : '{stats}') . $paypalstr;
+        $replacement = (strpos($palreplace, 'paypal') ? '' : '{stats}') . $paypalReplacement;
         $token = trim($palreplace, '{}');
 
         return self::replaceHeaderFooterTokens(
@@ -682,7 +690,7 @@ class PageParts
             $footer,
             [
                 $token   => $replacement,
-                'paypal' => $paypalstr,
+                'paypal' => $paypalReplacement,
             ]
         );
     }
@@ -690,24 +698,32 @@ class PageParts
     /**
      * Resolve the dedicated below-PayPal extension slot via the paypal-below hook.
      *
+     * IMPORTANT: keep {paypal} and {paypal_below} as separate tokens.
+     * Embedding one token inside the other breaks one-pass placeholder replacement
+     * and causes inconsistent behavior between legacy template substitution and Twig.
+     *
      * Hook contract:
      *  - hook name: paypal-below
      *  - input array: ['paypal_below' => string]
      *  - modules should set/append only the paypal_below key and return the array
+     *  - this method always seeds an empty default and normalizes non-string outputs
      *  - modules are responsible for sanitizing any untrusted input before returning HTML
      *
+     * @param string $default Default value to seed before hooks run.
      * @return string Normalized raw HTML replacement content for {paypal_below}.
      */
-    public static function resolvePaypalBelowSlot(): string
+    public static function resolvePaypalBelowSlot(string $default = ''): string
     {
-        $payload = HookHandler::hook('paypal-below', ['paypal_below' => '']);
-        $value = '';
+        $payload = HookHandler::hook('paypal-below', ['paypal_below' => $default]);
+        $value = $default;
         if (is_array($payload)) {
-            $value = $payload['paypal_below'] ?? '';
+            $value = $payload['paypal_below'] ?? $default;
         }
 
-        if (!is_scalar($value)) {
-            return '';
+        if (is_array($value)) {
+            $value = implode('', array_map(static fn ($part): string => is_scalar($part) ? (string) $part : '', $value));
+        } elseif (!is_scalar($value)) {
+            return $default;
         }
 
         return trim((string) $value);

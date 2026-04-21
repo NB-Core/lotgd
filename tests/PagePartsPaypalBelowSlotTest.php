@@ -39,8 +39,8 @@ final class PagePartsPaypalBelowSlotTest extends TestCase
         $modulehook_returns['paypal-below'] = ['paypal_below' => "  <strong>Donate</strong>  \n"];
         $this->assertSame('<strong>Donate</strong>', PageParts::resolvePaypalBelowSlot());
 
-        $modulehook_returns['paypal-below'] = ['paypal_below' => ['invalid']];
-        $this->assertSame('', PageParts::resolvePaypalBelowSlot());
+        $modulehook_returns['paypal-below'] = ['paypal_below' => ['<span>', 'Below', '</span>']];
+        $this->assertSame('<span>Below</span>', PageParts::resolvePaypalBelowSlot());
 
         $modulehook_returns['paypal-below'] = 'invalid';
         $this->assertSame('', PageParts::resolvePaypalBelowSlot());
@@ -49,7 +49,7 @@ final class PagePartsPaypalBelowSlotTest extends TestCase
         $this->assertSame("<em><script>alert('x')</script></em>", PageParts::resolvePaypalBelowSlot());
     }
 
-    public function testBuildPaypalDonationMarkupAppendsPlaceholderWithoutEmptyRow(): void
+    public function testBuildPaypalDonationMarkupLeavesPaypalTokenAsPureMarkup(): void
     {
         global $session;
         $_SERVER['HTTP_HOST'] = 'example.test';
@@ -74,7 +74,8 @@ final class PagePartsPaypalBelowSlotTest extends TestCase
             '2.0.0'
         );
 
-        $this->assertStringContainsString('</table>{paypal_below}', $header);
+        $this->assertStringContainsString('</table>', $header);
+        $this->assertStringNotContainsString('{paypal_below}', $header);
         $this->assertStringNotContainsString('margin-top: 0.8em', $header);
         $this->assertStringNotContainsString('colspan="2"', $header);
     }
