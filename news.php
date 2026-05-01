@@ -53,7 +53,8 @@ $page = filter_var($pageInput, FILTER_VALIDATE_INT);
 if ($page === false || $page < 1) {
     $page = 1;
 }
-$page = min($page, 10000);
+$maxPage = max(1, (int) ceil($totaltoday / $newsperpage));
+$page = min($page, $maxPage, 10000);
 $pageoffset = ($page - 1) * $newsperpage;
 $sql = "SELECT * FROM " . Database::prefix("news") . " WHERE newsdate='" . date("Y-m-d", $timestamp) . "' ORDER BY newsid DESC LIMIT $pageoffset,$newsperpage";
 $result = Database::query($sql);
