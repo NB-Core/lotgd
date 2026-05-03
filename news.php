@@ -35,10 +35,14 @@ if ($session['user']['loggedin']) {
     DateTime::checkDay();
 }
 $newsperpage = (int) $settings->getSetting('newsperpage', 50);
+// Upper bound on page number to prevent extreme SQL offsets from being generated
+// by crafted URLs (e.g. page=99999999) before we know the real page count.
+const MAX_PAGE_HARD_LIMIT = 10000;
 
 $offsetInput = Http::get('offset');
 $offset = filter_var($offsetInput, FILTER_VALIDATE_INT);
-if ($offset === false) {
+// Clamp offset to a safe non-negative integer for date navigation.
+if ($offset === false || $offset < 0) {
     $offset = 0;
 }
 $timestamp = DateTime::newsTimestampFromOffset($offset);
@@ -46,15 +50,15 @@ $sql = "SELECT count(newsid) AS c FROM " . Database::prefix("news") . " WHERE ne
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
 $totaltoday = $row['c'];
-$page = (int)Http::get('page');
-if (!$page) {
+$pageInput = Http::get('page');
+$page = filter_var($pageInput, FILTER_VALIDATE_INT);
+// Clamp page to a bounded integer to prevent invalid and extreme offsets.
+if ($page === false || $page < 1) {
     $page = 1;
 }
-$pageoffset = $page;
-if ($pageoffset > 0) {
-    $pageoffset--;
-}
-$pageoffset *= $newsperpage;
+$maxPage = max(1, (int) ceil($totaltoday / $newsperpage));
+$page = min($page, $maxPage, MAX_PAGE_HARD_LIMIT);
+$pageoffset = ($page - 1) * $newsperpage;
 $sql = "SELECT * FROM " . Database::prefix("news") . " WHERE newsdate='" . date("Y-m-d", $timestamp) . "' ORDER BY newsid DESC LIMIT $pageoffset,$newsperpage";
 $result = Database::query($sql);
 Header::pageHeader("LoGD News");
