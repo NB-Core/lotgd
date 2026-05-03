@@ -257,9 +257,12 @@ if ($dp < $dkills) {
             }
             $resurrectionturns = round(($turnsperday + $dkff) * ($resurrectionturns / 100), 0);
         } else {
-            if ($resurrectionturns < -($turnsperday + $dkff)) {
-                $resurrectionturns = -($turnsperday + $dkff);
+            // Settings may be persisted as strings; cast first so strict typing and numeric functions receive a number.
+            $resurrectionturnsNumeric = (int) $resurrectionturns;
+            if ($resurrectionturnsNumeric < -($turnsperday + $dkff)) {
+                $resurrectionturnsNumeric = -($turnsperday + $dkff);
             }
+            $resurrectionturns = $resurrectionturnsNumeric;
         }
         $session['user']['deathpower'] -= $settings->getSetting('resurrectioncost', 100);
         $session['user']['restorepage'] = "village.php?c=1";
