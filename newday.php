@@ -249,7 +249,8 @@ if ($dp < $dkills) {
         AddNews::add("`&%s`& has been resurrected by %s`&.", $session['user']['name'], $settings->getSetting('deathoverlord', '`$Ramius'));
         $spirits = -6;
         $resurrectionturns = $settings->getSetting('resurrectionturns', -6);
-        if (strstr($resurrectionturns, '%')) {
+        // Settings may be persisted as ints/floats/strings; guard string-only operations, then normalize for numeric math.
+        if (is_string($resurrectionturns) && strstr($resurrectionturns, '%')) {
             $resurrectionturns = strtok($resurrectionturns, '%');
             $resurrectionturns = (int)$resurrectionturns;
             if ($resurrectionturns < -100) {
@@ -257,7 +258,7 @@ if ($dp < $dkills) {
             }
             $resurrectionturns = round(($turnsperday + $dkff) * ($resurrectionturns / 100), 0);
         } else {
-            // Settings may be persisted as strings; cast first so strict typing and numeric functions receive a number.
+            // Cast first so strict typing and numeric functions/comparisons always receive a numeric value.
             $resurrectionturnsNumeric = (int) $resurrectionturns;
             if ($resurrectionturnsNumeric < -($turnsperday + $dkff)) {
                 $resurrectionturnsNumeric = -($turnsperday + $dkff);
