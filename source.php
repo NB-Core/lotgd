@@ -107,10 +107,8 @@ if (
             if ($entry[0] == '.') {
                 continue;
             }
-            // Skip any php files. strrpos() returns false for names without a dot,
-            // so guard the offset before passing it to substr() on PHP 8+.
-            $extensionOffset = strrpos($entry, '.');
-            if ($extensionOffset !== false && substr($entry, $extensionOffset) == ".php") {
+            // Skip any .php files.
+            if (str_ends_with($entry, '.php')) {
                 continue;
             }
             $ndir = $base . "/" . $entry;
@@ -141,8 +139,7 @@ if (
         $d = dir("$key");
         $files = array();
         while (false !== ($entry = $d->read())) {
-            $extOffset = strrpos($entry, '.');
-            if ($extOffset !== false && substr($entry, $extOffset) === ".php") {
+            if (str_ends_with($entry, '.php')) {
                 array_push($files, "$entry");
             }
         }
