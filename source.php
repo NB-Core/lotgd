@@ -107,8 +107,8 @@ if (
             if ($entry[0] == '.') {
                 continue;
             }
-            // skip any php files
-            if (substr($entry, strrpos($entry, '.')) == ".php") {
+            // Skip any .php files.
+            if (str_ends_with($entry, '.php')) {
                 continue;
             }
             $ndir = $base . "/" . $entry;
@@ -139,7 +139,7 @@ if (
         $d = dir("$key");
         $files = array();
         while (false !== ($entry = $d->read())) {
-            if (substr($entry, strrpos($entry, ".")) == ".php") {
+            if (str_ends_with($entry, '.php')) {
                 array_push($files, "$entry");
             }
         }
