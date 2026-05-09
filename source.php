@@ -107,8 +107,10 @@ if (
             if ($entry[0] == '.') {
                 continue;
             }
-            // skip any php files
-            if (substr($entry, strrpos($entry, '.')) == ".php") {
+            // Skip any php files. strrpos() returns false for names without a dot,
+            // so guard the offset before passing it to substr() on PHP 8+.
+            $extensionOffset = strrpos($entry, '.');
+            if ($extensionOffset !== false && substr($entry, $extensionOffset) == ".php") {
                 continue;
             }
             $ndir = $base . "/" . $entry;

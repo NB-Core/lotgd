@@ -80,7 +80,7 @@ $output->rawOutput("<input name='word'><input type='submit' class='button' value
 $sql = "SELECT * FROM " . Database::prefix("nastywords") . " WHERE type='good'";
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
-$words = explode(" ", $row['words']);
+$words = badword_words_from_row($row);
 if ($op == "addgood") {
     $newRegexpPost = Http::post('word');
     $newregexp = is_string($newRegexpPost) ? stripslashes($newRegexpPost) : '';
@@ -159,7 +159,7 @@ $sql = "SELECT * FROM " . Database::prefix("nastywords") . " WHERE type='nasty'"
 $result = Database::query($sql);
 $row = Database::fetchAssoc($result);
 
-$words = explode(" ", $row['words']);
+$words = badword_words_from_row($row);
 reset($words);
 
 if ($op == "add") {
@@ -219,8 +219,40 @@ if ($op == "add" || $op == "remove") {
 }
 Footer::pageFooter();
 
-function show_word_list($words)
+/**
+ * Convert a nastywords database row into a normalized word list.
+ *
+ * Legacy installs may be missing either the good-word or nasty-word row, and
+ * the words column is nullable in older schemas. Returning an empty list keeps
+ * the editor usable until the next add/remove operation recreates the row.
+ *
+ * @param array<string, mixed>|false|null $row Database row returned for one word-list type.
+ *
+ * @return array<int, string> Non-empty words from the row.
+ */
+function badword_words_from_row(array|false|null $row): array
 {
+    if (!is_array($row) || !isset($row['words']) || !is_string($row['words'])) {
+        return [];
+    }
+
+    $words = explode(" ", $row['words']);
+
+    return array_values(array_filter(
+        $words,
+        static fn (string $word): bool => trim($word) !== ''
+    ));
+}
+
+/**
+ * Render a grouped list of configured words.
+ *
+ * @param array<int, string> $words Words to display.
+ */
+function show_word_list(array $words): void
+{
+    $output = Output::getInstance();
+
     sort($words);
     $lastletter = "";
     foreach ($words as $key => $val) {
