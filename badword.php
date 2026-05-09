@@ -236,11 +236,11 @@ function badword_words_from_row(array|false|null $row): array
         return [];
     }
 
-    $words = explode(" ", $row['words']);
+    $words = preg_split('/\s+/', $row['words']);
 
     return array_values(array_filter(
-        $words,
-        static fn (string $word): bool => trim($word) !== ''
+        array_map('trim', $words),
+        static fn (string $word): bool => $word !== ''
     ));
 }
 

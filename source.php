@@ -141,7 +141,8 @@ if (
         $d = dir("$key");
         $files = array();
         while (false !== ($entry = $d->read())) {
-            if (substr($entry, strrpos($entry, ".")) == ".php") {
+            $extOffset = strrpos($entry, '.');
+            if ($extOffset !== false && substr($entry, $extOffset) === ".php") {
                 array_push($files, "$entry");
             }
         }
