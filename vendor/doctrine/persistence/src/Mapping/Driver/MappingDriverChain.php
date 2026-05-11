@@ -8,13 +8,14 @@ use Doctrine\Persistence\Mapping\ClassMetadata;
 use Doctrine\Persistence\Mapping\MappingException;
 
 use function array_keys;
-use function rtrim;
 use function spl_object_id;
-use function strpos;
+use function str_starts_with;
 
 /**
  * The DriverChain allows you to add multiple other mapping drivers for
  * certain namespaces.
+ *
+ * @final since 4.2
  */
 class MappingDriverChain implements MappingDriver
 {
@@ -57,7 +58,7 @@ class MappingDriverChain implements MappingDriver
     public function loadMetadataForClass(string $className, ClassMetadata $metadata): void
     {
         foreach ($this->drivers as $namespace => $driver) {
-            if ($this->isInNamespace($className, $namespace)) {
+            if (str_starts_with($className, $namespace)) {
                 $driver->loadMetadataForClass($className, $metadata);
 
                 return;
@@ -89,7 +90,7 @@ class MappingDriverChain implements MappingDriver
             }
 
             foreach ($driverClasses[$oid] as $className) {
-                if (! $this->isInNamespace($className, $namespace)) {
+                if (! str_starts_with($className, $namespace)) {
                     continue;
                 }
 
@@ -109,7 +110,7 @@ class MappingDriverChain implements MappingDriver
     public function isTransient(string $className): bool
     {
         foreach ($this->drivers as $namespace => $driver) {
-            if ($this->isInNamespace($className, $namespace)) {
+            if (str_starts_with($className, $namespace)) {
                 return $driver->isTransient($className);
             }
         }
@@ -119,12 +120,5 @@ class MappingDriverChain implements MappingDriver
         }
 
         return true;
-    }
-
-    private function isInNamespace(string $className, string $namespace): bool
-    {
-        $namespace = rtrim($namespace, '\\') . '\\';
-
-        return strpos($className, $namespace) === 0;
     }
 }

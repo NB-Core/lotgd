@@ -22,6 +22,8 @@ use const DIRECTORY_SEPARATOR;
  *
  * This behavior is independent of the actual content of the file. It just detects
  * the file which is responsible for the given class name.
+ *
+ * @final since 4.2
  */
 class DefaultFileLocator implements FileLocator
 {
@@ -32,9 +34,6 @@ class DefaultFileLocator implements FileLocator
      */
     protected array $paths = [];
 
-    /** The file extension of mapping documents. */
-    protected string|null $fileExtension;
-
     /**
      * Initializes a new FileDriver that looks in the given path(s) for mapping
      * documents and operates in the specified operating mode.
@@ -44,10 +43,9 @@ class DefaultFileLocator implements FileLocator
      * @param string|null               $fileExtension The file extension of mapping documents,
      *                                                 usually prefixed with a dot.
      */
-    public function __construct(string|array $paths, string|null $fileExtension = null)
+    public function __construct(string|array $paths, protected string|null $fileExtension = null)
     {
         $this->addPaths((array) $paths);
-        $this->fileExtension = $fileExtension;
     }
 
     /**

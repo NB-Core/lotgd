@@ -9,6 +9,6 @@ namespace Jaxon\Storage;
  */
 function storage(): StorageManager
 {
-    static $xStorageManager = new StorageManager();
-    return $xStorageManager;
+    static $xStorageManager = null;
+    return $xStorageManager ??= new StorageManager();
 }

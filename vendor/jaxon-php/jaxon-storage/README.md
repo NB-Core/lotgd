@@ -165,12 +165,12 @@ $config = $setter->newConfig([
 
 ## Using without the Jaxon library
 
-Starting from version 1.1.0, the Jaxon Storage classes do not depend on the Jaxon Core classes anymore.
+Starting from version 1.1.0, the Jaxon Storage classes do not depend on the [jaxon-core](https://github.com/jaxon-php/jaxon-core) classes anymore.
 As a consequence, some features will not be automatically available, and will need an extra setup.
 
 #### The locale for translations
 
-Without the Jaxon Core library, the Jaxon Storage will create its own instance of the `Jaxon\Utils\Translation\Translator` class, which will then need to be set.
+Without the [jaxon-core](https://github.com/jaxon-php/jaxon-core) library, the Jaxon Storage will create its own instance of the `Jaxon\Utils\Translation\Translator` class, which will then need to be set.
 
 ```php
 use function Jaxon\Storage\storage;

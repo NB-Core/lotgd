@@ -167,28 +167,28 @@ function specialtydarkarts_dohook($hookname, $args)
             if ($uses > 0) {
                 addnav(array("$ccode$name (%s points)`0", $uses), "");
                 addnav(
-                    array("$ccode &#149; Skeleton Crew`7 (%s)`0", 1),
+                    array("$ccode • Skeleton Crew`7 (%s)`0", 1),
                     $script . "op=fight&skill=$spec&l=1",
                     true
                 );
             }
             if ($uses > 1) {
                 addnav(
-                    array("$ccode &#149; Voodoo`7 (%s)`0", 2),
+                    array("$ccode • Voodoo`7 (%s)`0", 2),
                     $script . "op=fight&skill=$spec&l=2",
                     true
                 );
             }
             if ($uses > 2) {
                 addnav(
-                    array("$ccode &#149; Curse Spirit`7 (%s)`0", 3),
+                    array("$ccode • Curse Spirit`7 (%s)`0", 3),
                     $script . "op=fight&skill=$spec&l=3",
                     true
                 );
             }
             if ($uses > 4) {
                 addnav(
-                    array("$ccode &#149; Wither Soul`7 (%s)`0", 5),
+                    array("$ccode • Wither Soul`7 (%s)`0", 5),
                     $script . "op=fight&skill=$spec&l=5",
                     true
                 );

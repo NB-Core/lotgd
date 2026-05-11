@@ -45,7 +45,7 @@ return array(
     'Jaxon\\Storage\\' => array($vendorDir . '/jaxon-php/jaxon-storage/src'),
     'Jaxon\\Config\\' => array($vendorDir . '/jaxon-php/jaxon-config/src'),
     'Jaxon\\' => array($vendorDir . '/jaxon-php/jaxon-core/src'),
-    'Doctrine\\Persistence\\' => array($vendorDir . '/doctrine/persistence/src/Persistence'),
+    'Doctrine\\Persistence\\' => array($vendorDir . '/doctrine/persistence/src'),
     'Doctrine\\ORM\\' => array($vendorDir . '/doctrine/orm/src'),
     'Doctrine\\Migrations\\' => array($vendorDir . '/doctrine/migrations/src'),
     'Doctrine\\Instantiator\\' => array($vendorDir . '/doctrine/instantiator/src/Doctrine/Instantiator'),
