@@ -6,6 +6,78 @@ awareness about deprecated code.
 - Use of our low-overhead runtime deprecation API, details:
   https://github.com/doctrine/deprecations/
 
+# Upgrade to 4.2
+
+## Add `getFieldValue` and `setFieldValue` to `ClassMetadata` implementation
+
+The interface `Doctrine\Persistence\Mapping\ClassMetadata` has two new methods:
+- `getFieldValue(object $object, string $field)`
+- `setFieldValue(object $object, string $field, mixed $value): void`
+
+Not implementing these methods is deprecated. They will be required in 5.0.
+
+## Several classes are marked as `@final`
+
+The following classes are now marked with `@final` and should not be extended:
+
+- `Doctrine\Persistence\Mapping\Driver\DefaultFileLocator`
+- `Doctrine\Persistence\Mapping\Driver\MappingDriverChain`
+- `Doctrine\Persistence\Mapping\Driver\PHPDriver`
+- `Doctrine\Persistence\Mapping\Driver\StaticPHPDriver`
+- `Doctrine\Persistence\Mapping\Driver\SymfonyFileLocator`
+- `Doctrine\Persistence\Mapping\RuntimeReflectionService`
+- `Doctrine\Persistence\Reflection\EnumReflectionProperty`
+- `Doctrine\Persistence\Reflection\TypedNoDefaultReflectionProperty`
+
+These classes were not designed for extension and will be marked with the `final`
+keyword in 5.0.
+
+Additionally, `Doctrine\Persistence\Reflection\RuntimeReflectionProperty` is marked
+with `@phpstan-sealed` to restrict extension to only `TypedNoDefaultReflectionProperty`.
+Extending this class in your code is not supported.
+
+## Deprecated modifying `$metadata` in PHP mapping files
+
+Relying on the `$metadata` variable directly in PHP mapping files is deprecated.
+Instead, wrap the code in a closure that is returned by the configuration file.
+
+Before:
+
+```php
+<?php // mappings/App.Entity.User.php
+
+$metadata->name = \App\Entity\User::class;
+```
+
+After:
+
+```php
+<?php // mappings/App.Entity.User.php
+
+use Doctrine\Persistence\Mapping\ClassMetadata;
+
+return function (ClassMetadata $metadata): void {
+    $metadata->name = \App\Entity\User::class;
+};
+```
+
+## `StaticPHPDriver` now accepts a `ClassLocator`
+
+The constructor of `StaticPHPDriver` now accepts a `ClassLocator` instance
+in addition to a path or array of paths:
+
+```php
+$driver = new StaticPHPDriver(new ClassNames([MyEntity::class, AnotherEntity::class]));
+```
+
+Using a `ClassLocator` implementation is recommended instead of relying
+on directory scanning.
+
+## Do not pass any proxy interface to `AbstractManagerRegistry` when using native proxies
+
+With PHP 8.4 native lazy objects, you don't need to pass any proxy interface to
+`AbstractManagerRegistry`. The class of the lazy objects is the class being mapped.
+
 # Upgrade to 4.0
 
 ## BC Break: Removed `StaticReflectionService`

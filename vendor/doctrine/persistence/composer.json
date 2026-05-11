@@ -21,6 +21,7 @@
     ],
     "require": {
         "php": "^8.1",
+        "doctrine/deprecations": "^1",
         "doctrine/event-manager": "^1 || ^2",
         "psr/cache": "^1.0 || ^2.0 || ^3.0"
     },
@@ -30,17 +31,17 @@
         "phpstan/phpstan-strict-rules": "^2",
         "doctrine/coding-standard": "^14",
         "phpunit/phpunit": "^10.5.58 || ^12",
-        "symfony/cache": "^4.4 || ^5.4 || ^6.0 || ^7.0",
-        "symfony/finder": "^4.4 || ^5.4 || ^6.0 || ^7.0"
+        "symfony/cache": "^4.4 || ^5.4 || ^6.0 || ^7.0 || ^8.0",
+        "symfony/finder": "^4.4 || ^5.4 || ^6.0 || ^7.0 || ^8.0"
     },
     "autoload": {
         "psr-4": {
-            "Doctrine\\Persistence\\": "src/Persistence"
+            "Doctrine\\Persistence\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Doctrine\\Tests\\": "tests"
+            "Doctrine\\Tests\\Persistence\\": "tests"
         }
     },
     "config": {
@@ -48,5 +49,8 @@
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "composer/package-versions-deprecated": true
         }
+    },
+    "scripts": {
+        "docs": "composer --working-dir docs update && ./docs/vendor/bin/build-docs.sh @additional_args"
     }
 }
