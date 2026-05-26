@@ -1330,6 +1330,7 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'PHPUnit\\Util\\PHP\\PhpProcessException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Exception/PhpProcessException.php',
         'PHPUnit\\Util\\PHP\\Result' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/PHP/Result.php',
         'PHPUnit\\Util\\Reflection' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Reflection.php',
+        'PHPUnit\\Util\\Sanitizer' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Sanitizer.php',
         'PHPUnit\\Util\\Test' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Test.php',
         'PHPUnit\\Util\\ThrowableToStringMapper' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/ThrowableToStringMapper.php',
         'PHPUnit\\Util\\VersionComparisonOperator' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/VersionComparisonOperator.php',
