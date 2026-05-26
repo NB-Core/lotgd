@@ -1004,6 +1004,7 @@ return array(
     'PHPUnit\\Util\\PHP\\PhpProcessException' => $vendorDir . '/phpunit/phpunit/src/Util/Exception/PhpProcessException.php',
     'PHPUnit\\Util\\PHP\\Result' => $vendorDir . '/phpunit/phpunit/src/Util/PHP/Result.php',
     'PHPUnit\\Util\\Reflection' => $vendorDir . '/phpunit/phpunit/src/Util/Reflection.php',
+    'PHPUnit\\Util\\Sanitizer' => $vendorDir . '/phpunit/phpunit/src/Util/Sanitizer.php',
     'PHPUnit\\Util\\Test' => $vendorDir . '/phpunit/phpunit/src/Util/Test.php',
     'PHPUnit\\Util\\ThrowableToStringMapper' => $vendorDir . '/phpunit/phpunit/src/Util/ThrowableToStringMapper.php',
     'PHPUnit\\Util\\VersionComparisonOperator' => $vendorDir . '/phpunit/phpunit/src/Util/VersionComparisonOperator.php',

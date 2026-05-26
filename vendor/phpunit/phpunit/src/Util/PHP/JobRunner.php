@@ -230,11 +230,15 @@ final readonly class JobRunner
 
             assert($pcovSettings !== false);
 
+            // The settings forwarded from the current process must be applied
+            // before the settings configured for the job so that the latter,
+            // for instance a "pcov.directory" set in the --INI-- section of a
+            // PHPT test, take precedence: the value of the last -d flag wins.
             $phpSettings = array_merge(
-                $phpSettings,
                 $runtime->getCurrentSettings(
                     array_keys($pcovSettings),
                 ),
+                $phpSettings,
             );
         } elseif ($runtime->hasXdebug()) {
             assert(function_exists('xdebug_is_debugger_active'));
@@ -243,11 +247,14 @@ final readonly class JobRunner
 
             assert($xdebugSettings !== false);
 
+            // The settings forwarded from the current process must be applied
+            // before the settings configured for the job so that the latter
+            // take precedence: the value of the last -d flag wins.
             $phpSettings = array_merge(
-                $phpSettings,
                 $runtime->getCurrentSettings(
                     array_keys($xdebugSettings),
                 ),
+                $phpSettings,
             );
 
             if (
@@ -349,7 +356,9 @@ final readonly class JobRunner
      *
      * Otherwise quotes the value portion only when it contains characters
      * PHP's INI parser would interpret as metacharacters (`;` starts a
-     * comment, `"` is a string delimiter).
+     * comment, `"` is a string delimiter, `=` is the assignment operator
+     * that would otherwise be parsed as starting a new directive and
+     * trigger `PHP: syntax error, unexpected '='`).
      *
      * Quoting is avoided for plain values so that boolean keywords such as
      * `On` / `Off` keep their special INI semantics; wrapping them in quotes
@@ -377,7 +386,7 @@ final readonly class JobRunner
             );
         }
 
-        if (!str_contains($value, ';') && !str_contains($value, '"')) {
+        if (!str_contains($value, ';') && !str_contains($value, '"') && !str_contains($value, '=')) {
             return $setting;
         }
 

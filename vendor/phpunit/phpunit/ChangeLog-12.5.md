@@ -2,6 +2,30 @@
 
 All notable changes of the PHPUnit 12.5 release series are documented in this file using the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
 
+## [12.5.27] - 2026-05-25
+
+### Fixed
+
+* [#6673](https://github.com/sebastianbergmann/phpunit/issues/6673): Empty PHP settings from the parent process override per-test `-d` settings forwarded to child processes (breaks PCOV coverage)
+
+## [12.5.26] - 2026-05-21
+
+### Fixed
+
+* PHP setting values containing `=` need to be quoted before forwarding via `-d`
+
+## [12.5.25] - 2026-05-13
+
+### Changed
+
+* A `Test` or `Tests` prefix is no longer stripped from class names when they are processed for TestDox output
+
+### Fixed
+
+* [#6605](https://github.com/sebastianbergmann/phpunit/issues/6605): Data set names and provider values containing Unicode bidirectional control characters distort terminal output
+* [#6610](https://github.com/sebastianbergmann/phpunit/issues/6610): Per-testsuite bootstrap script not loaded in process isolation
+* TestDox output collapsed separate test classes into a single group when their prettified class names matched
+
 ## [12.5.24] - 2026-05-01
 
 ### Added
@@ -222,6 +246,9 @@ All notable changes of the PHPUnit 12.5 release series are documented in this fi
 * [#6380](https://github.com/sebastianbergmann/phpunit/pull/6380): Allow `Throwable` in `expectExceptionObject()`
 * A PHPUnit notice is now emitted for test methods that create a mock object but do not configure an expectation for it
 
+[12.5.27]: https://github.com/sebastianbergmann/phpunit/compare/12.5.26...12.5.27
+[12.5.26]: https://github.com/sebastianbergmann/phpunit/compare/12.5.25...12.5.26
+[12.5.25]: https://github.com/sebastianbergmann/phpunit/compare/12.5.24...12.5.25
 [12.5.24]: https://github.com/sebastianbergmann/phpunit/compare/12.5.23...12.5.24
 [12.5.23]: https://github.com/sebastianbergmann/phpunit/compare/12.5.22...12.5.23
 [12.5.22]: https://github.com/sebastianbergmann/phpunit/compare/12.5.21...12.5.22
