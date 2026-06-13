@@ -569,7 +569,7 @@ class Battle
     }
 
     /**
-     * Render the post-combat state when a round ran and combat can continue.
+     * Render the post-combat state when a combat round ran and the player is still alive.
      *
      * Summary rendering follows actual combat execution rather than the request
      * operation because target-selection requests can change the operation
