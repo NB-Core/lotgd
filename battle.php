@@ -187,9 +187,12 @@ if ($op != "run" && $op != "fight" && $op != "newtarget") {
     }
 }
 $needtostopfighting = false;
+$combatRoundExecuted = false;
 if ($op != "newtarget") {
     // Run through as many rounds as needed.
     do {
+        // Request operations can change during processing, so record the fact that combat actually ran.
+        $combatRoundExecuted = true;
         //we need to restore and calculate here to reflect changes that happen throughout the course of multiple rounds.
         restore_buff_fields();
         calculate_buff_fields();
@@ -534,10 +537,7 @@ if ($op != "newtarget") {
 
 $newenemies = Battle::autoSetTarget($newenemies);
 
-if ($session['user']['hitpoints'] > 0 && count($newenemies) > 0 && ($op == "fight" || $op == "run")) {
-    $output->output("`2`bEnd of Round:`b`n");
-        Battle::showEnemies($newenemies);
-}
+Battle::showRoundSummary($newenemies, $combatRoundExecuted);
 
 if ($session['user']['hitpoints'] <= 0) {
     $session['user']['hitpoints'] = 0;

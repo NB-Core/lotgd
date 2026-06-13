@@ -568,6 +568,28 @@ class Battle
         }
     }
 
+    /**
+     * Render the post-combat state when a combat round ran and the player is still alive.
+     *
+     * Summary rendering follows actual combat execution rather than the request
+     * operation because target-selection requests can change the operation
+     * without processing a round, while combat processing can also mutate it.
+     *
+     * @param array<int|string, array<string, mixed>> $enemies Current enemies
+     * @param bool                                    $roundExecuted Whether combat processing ran
+     */
+    public static function showRoundSummary(array $enemies, bool $roundExecuted): void
+    {
+        global $session;
+
+        if (! $roundExecuted || $session['user']['hitpoints'] <= 0 || count($enemies) === 0) {
+            return;
+        }
+
+        Output::getInstance()->output("`2`bEnd of Round:`b`n");
+        self::showEnemies($enemies);
+    }
+
 /**
  * This function prepares the fight, sets up options and gives hook a hook to change options on a per-player basis.
  *
