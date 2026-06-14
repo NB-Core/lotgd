@@ -2,7 +2,9 @@ version: 2
 updates:
   - package-ecosystem: composer
     directory: "/"
-    open-pull-requests-limit: 5
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 0
     labels:
       - dependencies
       - security
