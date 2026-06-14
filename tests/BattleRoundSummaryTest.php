@@ -106,6 +106,25 @@ final class BattleRoundSummaryTest extends TestCase
         );
     }
 
+    public function testInitialSearchWithoutSurpriseDoesNotShowRoundSummary(): void
+    {
+        $enemy = $this->enemy('Forest Goblin', 10, 10, true);
+        $operation = 'search';
+        $surprised = false;
+        $combatRoundExecuted = false;
+
+        if ($operation === 'fight' || $operation === 'run' || $surprised) {
+            $combatRoundExecuted = true;
+        }
+
+        Battle::showRoundSummary([$enemy], $combatRoundExecuted);
+
+        self::assertStringNotContainsString(
+            'End of Round',
+            Output::getInstance()->getRawOutput()
+        );
+    }
+
     /**
      * Build the minimum enemy state consumed by Battle::showEnemies().
      *
