@@ -191,8 +191,6 @@ $combatRoundExecuted = false;
 if ($op != "newtarget") {
     // Run through as many rounds as needed.
     do {
-        // Request operations can change during processing, so record the fact that combat actually ran.
-        $combatRoundExecuted = true;
         //we need to restore and calculate here to reflect changes that happen throughout the course of multiple rounds.
         restore_buff_fields();
         calculate_buff_fields();
@@ -256,6 +254,8 @@ if ($op != "newtarget") {
                         $companions = $newcompanions;
 
                         if ($op == "fight" || $op == "run" || $surprised) {
+                            // Record entry into attack processing, not the surrounding state-management loop.
+                            $combatRoundExecuted = true;
                             // Grab an initial roll.
                             $roll = Battle::rollDamage($badguy);
                             if ($op == "fight" && !$surprised) {
