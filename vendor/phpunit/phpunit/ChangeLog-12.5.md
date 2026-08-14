@@ -2,6 +2,26 @@
 
 All notable changes of the PHPUnit 12.5 release series are documented in this file using the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
 
+## [12.5.33] - 2026-07-28
+
+### Fixed
+
+* [#6861](https://github.com/sebastianbergmann/phpunit/issues/6861): Hook methods run twice when a template method is marked with its corresponding attribute
+* Regression that stopped test methods from being sorted by source code location
+
+## [12.5.32] - 2026-07-25
+
+### Fixed
+
+* [#6833](https://github.com/sebastianbergmann/phpunit/issues/6833): `assertArrayHasKey()` does not accept `ArrayAccess` implementations with a specific value type when test code is analysed with PHPStan at level 9
+* [#6854](https://github.com/sebastianbergmann/phpunit/issues/6854): Deprecation triggered in first-party code is wrongly classified as indirect when the first-party code is called from third-party code
+
+## [12.5.31] - 2026-07-06
+
+### Changed
+
+* [#6797](https://github.com/sebastianbergmann/phpunit/issues/6797): Adapt code generated for test double of interface with constructor for PHP 8.6
+
 ## [12.5.30] - 2026-06-15
 
 ### Fixed
@@ -266,6 +286,9 @@ All notable changes of the PHPUnit 12.5 release series are documented in this fi
 * [#6380](https://github.com/sebastianbergmann/phpunit/pull/6380): Allow `Throwable` in `expectExceptionObject()`
 * A PHPUnit notice is now emitted for test methods that create a mock object but do not configure an expectation for it
 
+[12.5.33]: https://github.com/sebastianbergmann/phpunit/compare/12.5.32...12.5.33
+[12.5.32]: https://github.com/sebastianbergmann/phpunit/compare/12.5.31...12.5.32
+[12.5.31]: https://github.com/sebastianbergmann/phpunit/compare/12.5.30...12.5.31
 [12.5.30]: https://github.com/sebastianbergmann/phpunit/compare/12.5.29...12.5.30
 [12.5.29]: https://github.com/sebastianbergmann/phpunit/compare/12.5.28...12.5.29
 [12.5.28]: https://github.com/sebastianbergmann/phpunit/compare/12.5.27...12.5.28

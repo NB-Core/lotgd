@@ -1,164 +1,76 @@
 <?php
 
 /**
- * CallableFunction.php - Jaxon user function
+ * CallableFunction.php
  *
- * This class stores a reference to a user defined function which can be called from the client via an Jaxon request
+ * This class contains the name of the function targetted by a Jaxon request.
  *
  * @package jaxon-core
- * @author Jared White
- * @author J. Max Wilson
- * @author Joseph Woolley
- * @author Steffen Konerow
  * @author Thierry Feuzeu <thierry.feuzeu@gmail.com>
- * @copyright Copyright (c) 2005-2007 by Jared White & J. Max Wilson
- * @copyright Copyright (c) 2008-2010 by Joseph Woolley, Steffen Konerow, Jared White  & J. Max Wilson
- * @copyright 2016 Thierry Feuzeu <thierry.feuzeu@gmail.com>
  * @license https://opensource.org/licenses/BSD-3-Clause BSD 3-Clause License
  * @link https://github.com/jaxon-php/jaxon-core
  */
 
 namespace Jaxon\Plugin\Request\CallableFunction;
 
-use Jaxon\Di\ComponentContainer;
-use Jaxon\Di\Container;
-use Exception;
+use Jaxon\Request\CallableAction;
 
-use function call_user_func_array;
-use function is_array;
-use function is_string;
-
-class CallableFunction
+class CallableFunction extends CallableAction
 {
     /**
-     * A string or an array which defines the registered PHP function
-     *
-     * @var string|array
+     * @param string $sFunctionName
+     * @param array $aActionArgs
      */
-    private $xPhpFunction;
-
-    /**
-     * The path and file name of the include file where the function is defined
-     *
-     * @var string
-     */
-    private $sInclude = '';
-
-    /**
-     * An associative array containing call options that will be sent
-     * to the browser with the client script.
-     *
-     * @var array
-     */
-    private $aOptions = [];
-
-    /**
-     * The constructor
-     *
-     * @param Container $di
-     * @param ComponentContainer $cdi
-     * @param string $sFunction
-     * @param string $sJsFunction
-     * @param string $sPhpFunction
-     */
-    public function __construct(private Container $di, private ComponentContainer $cdi,
-        private string $sFunction, private string $sJsFunction, string $sPhpFunction)
+    public function __construct(private string $sFunctionName, array $aActionArgs)
     {
-        $this->xPhpFunction = $sPhpFunction;
+        $this->aActionArgs = $aActionArgs;
     }
 
     /**
-     * Get the name of the function being referenced
-     *
-     * @return string
+     * @inheritDoc
      */
-    public function getName(): string
+    public function isFunction(): bool
     {
-        return $this->sFunction;
+        return true;
     }
 
     /**
-     * Get name of the corresponding javascript function
-     *
-     * @return string
+     * @inheritDoc
      */
-    public function getJsName(): string
+    public function isClass(): bool
     {
-        return $this->sJsFunction;
+        return false;
     }
 
     /**
-     * Get the config options of the function being referenced
-     *
-     * @return array
+     * @inheritDoc
      */
-    public function getOptions(): array
+    public function getFunctionName(): string
     {
-        return $this->aOptions;
+        return $this->sFunctionName;
     }
 
     /**
-     * Set call options for this instance
-     *
-     * @param string $sName    The name of the configuration option
-     * @param string $sValue    The value of the configuration option
-     *
-     * @return void
+     * @inheritDoc
      */
-    public function configure(string $sName, string $sValue): void
+    public function getClassName(): string
     {
-        switch($sName)
-        {
-        case 'class': // The user function is a method in the given class
-            $this->xPhpFunction = [$sValue, $this->xPhpFunction];
-            break;
-        case 'include':
-            $this->sInclude = $sValue;
-            break;
-        default:
-            $this->aOptions[$sName] = $sValue;
-            break;
-        }
+        return '';
     }
 
     /**
-     * @param string $sClassName
-     *
-     * @return mixed
+     * @inheritDoc
      */
-    private function getClassInstance(string $sClassName): mixed
+    public function getMethodName(): string
     {
-        try
-        {
-            // First check if the class is a registered component.
-            return $this->cdi->makeComponent($sClassName);
-        }
-        catch(Exception)
-        {
-            return $this->di->h($sClassName) ?
-                $this->di->g($sClassName) : $this->di->make($sClassName);
-        }
+        return '';
     }
 
     /**
-     * Call the registered user function, including an external file if needed
-     * and passing along the specified arguments
-     *
-     * @param array $aArgs    The function arguments
-     *
-     * @return void
+     * @inheritDoc
      */
-    public function call(array $aArgs = []): void
+    public function func(): string
     {
-        if($this->sInclude !== '')
-        {
-            require_once $this->sInclude;
-        }
-        // If the function is an alias for a class method, then instantiate the class
-        if(is_array($this->xPhpFunction) && is_string($this->xPhpFunction[0]))
-        {
-            $this->xPhpFunction[0] = $this->getClassInstance($this->xPhpFunction[0]);
-        }
-        call_user_func_array($this->xPhpFunction, $aArgs);
+        return $this->sFunctionName;
     }
 }

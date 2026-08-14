@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CallableClassPlugin.php - Jaxon callable class plugin
+ * ComponentPlugin.php - Jaxon callable class plugin
  *
  * This class registers user defined callable classes, and calls their methods on user request.
  *
@@ -18,7 +18,7 @@
  * @link https://github.com/jaxon-php/jaxon-core
  */
 
-namespace Jaxon\Plugin\Request\CallableClass;
+namespace Jaxon\Plugin\Request\CallableComponent;
 
 use Jaxon\Jaxon;
 use Jaxon\App\I18n\Translator;
@@ -28,7 +28,6 @@ use Jaxon\Exception\SetupException;
 use Jaxon\Plugin\AbstractRequestPlugin;
 use Jaxon\Plugin\JsCode;
 use Jaxon\Plugin\JsCodeGeneratorInterface;
-use Jaxon\Request\Target;
 use Jaxon\Request\Validator;
 use Jaxon\Utils\Template\TemplateEngine;
 use Psr\Http\Message\ServerRequestInterface;
@@ -36,7 +35,6 @@ use Psr\Log\LoggerInterface;
 use ReflectionException;
 
 use function array_map;
-use function array_merge;
 use function count;
 use function explode;
 use function implode;
@@ -46,12 +44,17 @@ use function md5;
 use function str_repeat;
 use function trim;
 
-class CallableClassPlugin extends AbstractRequestPlugin implements JsCodeGeneratorInterface
+class ComponentPlugin extends AbstractRequestPlugin implements JsCodeGeneratorInterface
 {
     /**
-     * @var array<CallableObject>
+     * @var CallableComponent|null
      */
-    private array $aCallableObjects = [];
+    protected CallableComponent|null $xCallableAction = null;
+
+    /**
+     * @var array<ComponentProxy>
+     */
+    private array $aCallableComponents = [];
 
     /**
      * @var array<string>
@@ -59,21 +62,23 @@ class CallableClassPlugin extends AbstractRequestPlugin implements JsCodeGenerat
     private array $aCallableParams = [];
 
     /**
-     * The class constructor
-     *
      * @param string $sPrefix
-     * @param LoggerInterface $xLogger
+     * @param bool $bDebug
      * @param ComponentContainer $cdi
+     * @param LoggerInterface $xLogger
      * @param ComponentRegistry $xRegistry
      * @param Translator $xTranslator
      * @param TemplateEngine $xTemplateEngine
      * @param Validator $xValidator
      */
-    public function __construct(private string $sPrefix,
-        private LoggerInterface $xLogger, private ComponentContainer $cdi,
+    public function __construct(private string $sPrefix, bool $bDebug,
+        private ComponentContainer $cdi, LoggerInterface $xLogger,
         private ComponentRegistry $xRegistry, private Translator $xTranslator,
         private TemplateEngine $xTemplateEngine, private Validator $xValidator)
-    {}
+    {
+        $this->bDebug = $bDebug;
+        $this->xLogger = $xLogger;
+    }
 
     /**
      * @inheritDoc
@@ -118,9 +123,9 @@ class CallableClassPlugin extends AbstractRequestPlugin implements JsCodeGenerat
      * @inheritDoc
      * @throws SetupException
      */
-    public function getCallable(string $sCallable): CallableObject|null
+    public function getCallableProxy(string $sCallable): ComponentProxy|null
     {
-        return $this->cdi->makeCallableObject($sCallable);
+        return $this->cdi->getComponentProxy($sCallable);
     }
 
     /**
@@ -135,44 +140,44 @@ class CallableClassPlugin extends AbstractRequestPlugin implements JsCodeGenerat
     /**
      * Add a callable object to the script generator
      *
-     * @param CallableObject $xCallableObject
+     * @param ComponentProxy $xComponentProxy
      *
      * @return void
      */
-    private function addCallable(CallableObject $xCallableObject): void
+    private function addComponent(ComponentProxy $xComponentProxy): void
     {
-        $aCallableMethods = $xCallableObject->getCallableMethods();
-        if($xCallableObject->excluded() || count($aCallableMethods) === 0)
+        $aCallableMethods = $xComponentProxy->getComponentMethods();
+        if($xComponentProxy->excluded() || count($aCallableMethods) === 0)
         {
             return;
         }
 
-        $aCallableObject = &$this->aCallableObjects;
-        $sJsName = $xCallableObject->getJsName();
+        $aCallableComponent = &$this->aCallableComponents;
+        $sJsName = $xComponentProxy->getJsName();
         foreach(explode('.', $sJsName) as $sName)
         {
-            if(!isset($aCallableObject['children'][$sName]))
+            if(!isset($aCallableComponent['children'][$sName]))
             {
-                $aCallableObject['children'][$sName] = [];
+                $aCallableComponent['children'][$sName] = [];
             }
-            $aCallableObject = &$aCallableObject['children'][$sName];
+            $aCallableComponent = &$aCallableComponent['children'][$sName];
         }
 
-        $sJsParam = $xCallableObject->getJsParam();
+        $sJsParam = $xComponentProxy->getJsParam();
 
-        $aCallableObject['methods'] = $aCallableMethods;
-        $aCallableObject['param'] = $sJsParam;
+        $aCallableComponent['methods'] = $aCallableMethods;
+        $aCallableComponent['param'] = $sJsParam;
 
         // Add the js param to the list, if it is not already in.
         if(isset($this->aCallableParams[$sJsParam]))
         {
-            $aCallableObject['index'] = $this->aCallableParams[$sJsParam];
+            $aCallableComponent['index'] = $this->aCallableParams[$sJsParam];
             return;
         }
 
         $nIndex = count($this->aCallableParams);
         $this->aCallableParams[$sJsParam] = $nIndex;
-        $aCallableObject['index'] = $nIndex;
+        $aCallableComponent['index'] = $nIndex;
     }
 
     /**
@@ -217,11 +222,11 @@ class CallableClassPlugin extends AbstractRequestPlugin implements JsCodeGenerat
         $aChildren = [];
         foreach($aCallable['children'] ?? [] as $sName => $aChild)
         {
-            $aChildren[] = $this->renderChild("$sName:", "$sJsClass.$sName",
-                $aChild, $nIndent) . ',';
+            $aChildren[] = $this->renderChild("$sName:",
+                "$sJsClass.$sName", $aChild, $nIndent) . ',';
         }
 
-        return implode("\n", array_merge($aMethods, $aChildren));
+        return implode("\n", [...$aMethods, ...$aChildren]);
     }
 
     /**
@@ -256,10 +261,10 @@ CODE;
         $this->xRegistry->registerAllComponents();
 
         $this->aCallableParams = [];
-        $this->aCallableObjects = ['children' => []];
-        foreach($this->cdi->getCallableObjects() as $xCallableObject)
+        $this->aCallableComponents = ['children' => []];
+        foreach($this->cdi->getComponentProxies() as $xComponentProxy)
         {
-            $this->addCallable($xCallableObject);
+            $this->addComponent($xComponentProxy);
         }
 
         $aScripts = [
@@ -267,12 +272,35 @@ CODE;
                 'aCallableParams' => $this->aCallableParams,
             ])
         ];
-        foreach($this->aCallableObjects['children'] as $sJsClass => $aCallable)
+        foreach($this->aCallableComponents['children'] as $sJsClass => $aCallable)
         {
             $aScripts[] = $this->renderChild("{$this->sPrefix}$sJsClass =",
                 $sJsClass, $aCallable) . ';';
         }
         return new JsCode(implode("\n", $aScripts) . "\n");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getCallableAction(): CallableComponent|null
+    {
+        return $this->xCallableAction;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function makeCallableAction(ServerRequestInterface $xRequest): CallableComponent
+    {
+        $aCall = $xRequest->getAttribute('jxncall');
+        $sClassName = trim($aCall['name']);
+        $sMethodName = trim($aCall['method']);
+        $aArgs = $aCall['args'] ?? [];
+        $this->xCallableAction = new CallableComponent($sClassName, $sMethodName, $aArgs);
+        // Save the action in the DI container.
+        $this->cdi->saveCallableAction($this->xCallableAction);
+        return $this->xCallableAction;
     }
 
     /**
@@ -288,68 +316,49 @@ CODE;
 
     /**
      * @inheritDoc
-     */
-    public function setTarget(ServerRequestInterface $xRequest): Target
-    {
-        $this->xTarget = Target::makeClass($xRequest->getAttribute('jxncall'));
-        return $this->xTarget;
-    }
-
-    /**
-     * @param string $sExceptionMessage
-     * @param string $sErrorCode
-     * @param array $aErrorParams
-     *
-     * @throws RequestException
-     * @return void
-     */
-    private function throwException(string $sExceptionMessage,
-        string $sErrorCode, array $aErrorParams = []): void
-    {
-        $sMessage = $this->xTranslator->trans($sErrorCode, $aErrorParams) .
-            (!$sExceptionMessage ? '' : "\n$sExceptionMessage");
-        $this->xLogger->error($sMessage);
-        throw new RequestException($sMessage);
-    }
-
-    /**
-     * @inheritDoc
      * @throws RequestException
      */
     public function processRequest(): void
     {
-        $sClassName = $this->xTarget->getClassName();
-        $sMethodName = $this->xTarget->getMethodName();
-        // Will be used to print a translated error message.
-        $aErrorParams = ['class' => $sClassName, 'method' => $sMethodName];
+        $sClassName = $this->xCallableAction->getClassName();
+        $sMethodName = $this->xCallableAction->getMethodName();
 
         if(!$this->xValidator->validateJsObject($sClassName) ||
             !$this->xValidator->validateMethod($sMethodName))
         {
-            // Unable to find the requested object or method
-            $this->throwException('', 'errors.objects.invalid', $aErrorParams);
+            $sMessage = 'Trying to call an invalid class or method.';
+            $sError = 'errors.objects.invalid';
+            $this->throwException($sMessage, $this->xTranslator->trans($sError, [
+                'class' => $sClassName,
+                'method' => $sMethodName,
+            ]));
         }
 
         // Call the requested method
         try
         {
             $sError = 'errors.objects.find';
-            /** @var CallableObject */
-            $xCallableObject = $this->getCallable($sClassName);
-
-            if($xCallableObject->excluded($sMethodName))
+            $xComponentProxy = $this->getCallableProxy($sClassName);
+            if($xComponentProxy->excluded($sMethodName))
             {
-                // Unable to find the requested class or method
-                $this->throwException('', 'errors.objects.excluded', $aErrorParams);
+                $sMessage = 'Trying to call an excluded method.';
+                $sError = 'errors.objects.excluded';
+                $this->throwException($sMessage, $this->xTranslator->trans($sError, [
+                    'class' => $sClassName,
+                    'method' => $sMethodName,
+                ]));
             }
 
             $sError = 'errors.objects.call';
-            $xCallableObject->call($this->xTarget);
+            $xComponentProxy->call($this->xCallableAction);
         }
         catch(ReflectionException|SetupException $e)
         {
             // Unable to execute the requested class or method
-            $this->throwException($e->getMessage(), $sError, $aErrorParams);
+            $this->throwException($e->getMessage(), $this->xTranslator->trans($sError, [
+                'class' => $sClassName,
+                'method' => $sMethodName,
+            ]));
         }
     }
 }

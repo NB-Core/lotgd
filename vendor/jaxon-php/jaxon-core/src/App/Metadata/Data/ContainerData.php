@@ -75,15 +75,20 @@ class ContainerData extends AbstractData
     /**
      * @param string $sAttr
      * @param string $sClass
+     * @param string $sDeclaringClass
      *
      * @return void
      */
-    public function addValue(string $sAttr, string $sClass): void
+    public function addValue(string $sAttr, string $sClass, string $sDeclaringClass): void
     {
         $this->validateAttr($sAttr);
         $this->validateClass($sClass);
+        $this->validateClass($sDeclaringClass);
 
-        $this->aProperties[$sAttr] = $sClass;
+        // Allow the setter to access private and protected attributes.
+        $cSetter = (static fn($xComponent, $sAttr, $xDiValue) =>
+            $xComponent->$sAttr = $xDiValue)->bindTo(null, $sDeclaringClass);
+        $this->aProperties[$sAttr] = [$sClass, $sDeclaringClass, $cSetter];
     }
 
     /**
@@ -92,9 +97,10 @@ class ContainerData extends AbstractData
     public function encode(string $sVarName): array
     {
         $aCalls = [];
-        foreach($this->aProperties as $sAttr => $sClass)
+        foreach($this->aProperties as $sAttr => [$sClass, $sDeclaringClass])
         {
-            $aCalls[] = "{$sVarName}->addValue('$sAttr', '" . addslashes($sClass) . "');";
+            $aCalls[] = "{$sVarName}->addValue('$sAttr', '" .
+                addslashes($sClass) . "', '" . addslashes($sDeclaringClass) . "');";
         }
         return $aCalls;
     }

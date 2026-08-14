@@ -9,9 +9,11 @@
  */
 namespace PHPUnit\Logging\TestDox;
 
+use function array_keys;
 use function array_merge;
 use function assert;
 use function is_subclass_of;
+use function strnatcasecmp;
 use function uasort;
 use function uksort;
 use function usort;
@@ -85,9 +87,9 @@ final class TestResultCollector
                 $testsByDeclaringClass[$declaringClassName][] = $test;
             }
 
-            foreach ($testsByDeclaringClass as $declaringClassName) {
+            foreach (array_keys($testsByDeclaringClass) as $declaringClassName) {
                 usort(
-                    $declaringClassName,
+                    $testsByDeclaringClass[$declaringClassName],
                     static function (TestDoxTestMethod $a, TestDoxTestMethod $b): int
                     {
                         return $a->test()->line() <=> $b->test()->line();
@@ -128,8 +130,10 @@ final class TestResultCollector
             $result,
             static function (TestResultCollection $a, TestResultCollection $b): int
             {
-                return $a->asArray()[0]->test()->testDox()->prettifiedClassName()
-                    <=> $b->asArray()[0]->test()->testDox()->prettifiedClassName();
+                return strnatcasecmp(
+                    $a->asArray()[0]->test()->testDox()->prettifiedClassName(),
+                    $b->asArray()[0]->test()->testDox()->prettifiedClassName(),
+                );
             },
         );
 

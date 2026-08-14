@@ -4,9 +4,9 @@ namespace Jaxon\Tests\TestRegistration;
 
 use Jaxon\Jaxon;
 use Jaxon\Exception\SetupException;
-use Jaxon\Plugin\Request\CallableClass\CallableClassPlugin;
-use Jaxon\Plugin\Request\CallableClass\CallableObject;
-use Jaxon\Plugin\Request\CallableClass\CallableDirPlugin;
+use Jaxon\Plugin\Request\CallableComponent\ComponentPlugin;
+use Jaxon\Plugin\Request\CallableComponent\DirectoryPlugin;
+use Jaxon\Plugin\Request\CallableComponent\ComponentProxy;
 use PHPUnit\Framework\TestCase;
 
 use function dirname;
@@ -15,12 +15,12 @@ use function strlen;
 class DirectoryTest extends TestCase
 {
     /**
-     * @var CallableDirPlugin
+     * @var DirectoryPlugin
      */
     protected $xDirPlugin;
 
     /**
-     * @var CallableClassPlugin
+     * @var ComponentPlugin
      */
     protected $xClassPlugin;
 
@@ -42,8 +42,8 @@ class DirectoryTest extends TestCase
             ],
         ]);
 
-        $this->xDirPlugin = jaxon()->di()->getCallableDirPlugin();
-        $this->xClassPlugin = jaxon()->di()->getCallableClassPlugin();
+        $this->xDirPlugin = jaxon()->di()->getDirectoryPlugin();
+        $this->xClassPlugin = jaxon()->di()->getComponentPlugin();
     }
 
     /**
@@ -65,15 +65,15 @@ class DirectoryTest extends TestCase
      */
     public function testCallableDirClass()
     {
-        $xClassACallable = $this->xClassPlugin->getCallable('ClassA');
-        $xClassBCallable = $this->xClassPlugin->getCallable('ClassB');
-        $xClassCCallable = $this->xClassPlugin->getCallable('ClassC');
-        $xClassDCallable = $this->xClassPlugin->getCallable('ClassD');
+        $xClassACallable = $this->xClassPlugin->getCallableProxy('ClassA');
+        $xClassBCallable = $this->xClassPlugin->getCallableProxy('ClassB');
+        $xClassCCallable = $this->xClassPlugin->getCallableProxy('ClassC');
+        $xClassDCallable = $this->xClassPlugin->getCallableProxy('ClassD');
         // Test callables classes
-        $this->assertEquals(CallableObject::class, get_class($xClassACallable));
-        $this->assertEquals(CallableObject::class, get_class($xClassBCallable));
-        $this->assertEquals(CallableObject::class, get_class($xClassCCallable));
-        $this->assertEquals(CallableObject::class, get_class($xClassDCallable));
+        $this->assertEquals(ComponentProxy::class, get_class($xClassACallable));
+        $this->assertEquals(ComponentProxy::class, get_class($xClassBCallable));
+        $this->assertEquals(ComponentProxy::class, get_class($xClassCCallable));
+        $this->assertEquals(ComponentProxy::class, get_class($xClassDCallable));
         // Check export
         $this->assertFalse($xClassACallable->excluded());
         $this->assertFalse($xClassBCallable->excluded());
@@ -102,7 +102,7 @@ class DirectoryTest extends TestCase
     {
         // No callable for standard PHP functions.
         $this->expectException(SetupException::class);
-        $this->xDirPlugin->getCallable('Simple');
+        $this->xDirPlugin->getCallableProxy('Simple');
     }
 
     public function testCallableDirIncorrectOption()

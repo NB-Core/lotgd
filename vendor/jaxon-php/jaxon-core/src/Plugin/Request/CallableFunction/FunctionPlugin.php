@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CallableFunctionPlugin.php - Jaxon user function plugin
+ * FunctionPlugin.php - Jaxon user function plugin
  *
  * This class registers user defined functions, generates client side javascript code,
  * and calls them on user request
@@ -23,17 +23,16 @@ namespace Jaxon\Plugin\Request\CallableFunction;
 
 use Jaxon\Jaxon;
 use Jaxon\Di\ComponentContainer;
-use Jaxon\Di\Container;
 use Jaxon\App\I18n\Translator;
 use Jaxon\Exception\RequestException;
 use Jaxon\Exception\SetupException;
 use Jaxon\Plugin\AbstractRequestPlugin;
 use Jaxon\Plugin\JsCode;
 use Jaxon\Plugin\JsCodeGeneratorInterface;
-use Jaxon\Request\Target;
 use Jaxon\Request\Validator;
 use Jaxon\Utils\Template\TemplateEngine;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 use function array_keys;
@@ -46,37 +45,44 @@ use function is_string;
 use function md5;
 use function trim;
 
-class CallableFunctionPlugin extends AbstractRequestPlugin implements JsCodeGeneratorInterface
+class FunctionPlugin extends AbstractRequestPlugin implements JsCodeGeneratorInterface
 {
+    /**
+     * @var CallableFunction|null
+     */
+    private CallableFunction|null $xCallableFunction = null;
+
     /**
      * The registered functions names
      *
      * @var array
      */
-    protected $aFunctions = [];
+    private array $aFunctions = [];
 
     /**
      * The registered functions options
      *
      * @var array
      */
-    protected $aOptions = [];
+    private array $aOptions = [];
 
     /**
-     * The constructor
-     *
      * @param string $sPrefix
      * @param bool $bDebug
-     * @param Container $di
      * @param ComponentContainer $cdi
+     * @param LoggerInterface $xLogger
      * @param Translator $xTranslator
      * @param Validator $xValidator
      * @param TemplateEngine $xTemplateEngine
      */
-    public function __construct(private string $sPrefix, private bool $bDebug,
-        private Container $di, private ComponentContainer $cdi, private Translator $xTranslator,
-        private Validator $xValidator, private TemplateEngine $xTemplateEngine)
-    {}
+    public function __construct(private string $sPrefix, bool $bDebug,
+        private ComponentContainer $cdi, LoggerInterface $xLogger,
+        private Translator $xTranslator, private Validator $xValidator,
+        private TemplateEngine $xTemplateEngine)
+    {
+        $this->bDebug = $bDebug;
+        $this->xLogger = $xLogger;
+    }
 
     /**
      * @inheritDoc
@@ -142,14 +148,14 @@ class CallableFunctionPlugin extends AbstractRequestPlugin implements JsCodeGene
     /**
      * @inheritDoc
      */
-    public function getCallable(string $sCallable): CallableFunction|null
+    public function getCallableProxy(string $sCallable): FunctionProxy|null
     {
         $sFunction = trim($sCallable);
         if(!isset($this->aFunctions[$sFunction]))
         {
             return null;
         }
-        $xCallable = new CallableFunction($this->di, $this->cdi, $sFunction,
+        $xCallable = new FunctionProxy($this->cdi, $sFunction,
             "{$this->sPrefix}$sFunction", $this->aFunctions[$sFunction]);
         foreach($this->aOptions[$sFunction] as $sName => $sValue)
         {
@@ -161,19 +167,18 @@ class CallableFunctionPlugin extends AbstractRequestPlugin implements JsCodeGene
     /**
      * Generate the javascript function stub that is sent to the browser on initial page load
      *
-     * @param CallableFunction $xFunction
+     * @param FunctionProxy $xFunctionProxy
      *
      * @return string
      */
-    private function getCallableScript(CallableFunction $xFunction): string
+    private function getFunctionScript(FunctionProxy $xFunctionProxy): string
     {
-        $aOptions = $xFunction->getOptions();
+        $aOptions = $xFunctionProxy->getOptions();
         $aOptions = array_map(fn($sKey, $sValue) => "$sKey: $sValue",
             array_keys($aOptions), array_values($aOptions));
-
         return $this->xTemplateEngine->render('jaxon::callables/function.js', [
-            'sName' => $xFunction->getName(),
-            'sJsName' => $xFunction->getJsName(),
+            'sName' => $xFunctionProxy->getName(),
+            'sJsName' => $xFunctionProxy->getJsName(),
             'sArguments' => count($aOptions) === 0 ? 'args' :
                 'args, { ' . implode(',', $aOptions) . ' }',
         ]);
@@ -187,10 +192,32 @@ class CallableFunctionPlugin extends AbstractRequestPlugin implements JsCodeGene
         $aScripts = [];
         foreach(array_keys($this->aFunctions) as $sFunction)
         {
-            $xFunction = $this->getCallable($sFunction);
-            $aScripts[] = trim($this->getCallableScript($xFunction));
+            $xFunctionProxy = $this->getCallableProxy($sFunction);
+            $aScripts[] = trim($this->getFunctionScript($xFunctionProxy));
         }
         return new JsCode(implode("\n", $aScripts) . "\n");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getCallableAction(): CallableFunction|null
+    {
+        return $this->xCallableFunction;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function makeCallableAction(ServerRequestInterface $xRequest): CallableFunction
+    {
+        $aCall = $xRequest->getAttribute('jxncall');
+        $sFunctionName = trim($aCall['name']);
+        $aArgs = $aCall['args'] ?? [];
+        $this->xCallableFunction = new CallableFunction($sFunctionName, $aArgs);
+        // Save the action in the DI container.
+        $this->cdi->saveCallableAction($this->xCallableFunction);
+        return $this->xCallableFunction;
     }
 
     /**
@@ -200,31 +227,8 @@ class CallableFunctionPlugin extends AbstractRequestPlugin implements JsCodeGene
     {
         $aCall = $xRequest->getAttribute('jxncall');
         // throw new \Exception(json_encode(['call' => $aCall]));
-        return $aCall !== null && ($aCall['type'] ?? '') === 'func' && isset($aCall['name']);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function setTarget(ServerRequestInterface $xRequest): Target
-    {
-        $aCall = $xRequest->getAttribute('jxncall');
-        $this->xTarget = Target::makeFunction(trim($aCall['name']));
-        return $this->xTarget;
-    }
-
-    /**
-     * @param Exception $xException
-     * @param string $sErrorMessage
-     *
-     * @throws RequestException
-     * @return never
-     */
-    private function throwException(Exception $xException, string $sErrorMessage): void
-    {
-        $this->di->getLogger()->error($xException->getMessage());
-        throw new RequestException($sErrorMessage . (!$this->bDebug ? '' :
-            "\n" . $xException->getMessage()));
+        return $aCall !== null && ($aCall['type'] ?? '') === 'func' &&
+            isset($aCall['name']) && is_string($aCall['name']);
     }
 
     /**
@@ -233,37 +237,33 @@ class CallableFunctionPlugin extends AbstractRequestPlugin implements JsCodeGene
      */
     public function processRequest(): void
     {
-        $sRequestedFunction = $this->xTarget->getFunctionName();
+        $sRequestedFunction = $this->xCallableFunction->func();
 
         // Security check: make sure the requested function was registered.
-        if(!$this->xValidator->validateFunction($sRequestedFunction) ||
-            !isset($this->aFunctions[$sRequestedFunction]))
+        $bIsValid = $this->xValidator->validateFunction($sRequestedFunction);
+        if(!$bIsValid || !isset($this->aFunctions[$sRequestedFunction]))
         {
-            // Unable to find the requested function
-            throw new RequestException($this->xTranslator->trans('errors.functions.invalid',
-                ['name' => $sRequestedFunction]));
+            $sMessage = 'Trying to call an invalid or unregistered function.';
+            $sError = 'errors.functions.invalid';
+            $this->throwException($sMessage, $this->xTranslator->trans($sError, [
+                'name' => $sRequestedFunction,
+            ]));
         }
 
         try
         {
-            /** @var CallableFunction */
-            $xFunction = $this->getCallable($sRequestedFunction);
-        }
-        catch(Exception $e)
-        {
-            // Unable to find the requested function
-            $this->throwException($e, $this->xTranslator->trans('errors.functions.invalid',
-                ['name' => $sRequestedFunction]));
-        }
-        try
-        {
-            $xFunction->call($this->xTarget->args());
+            $sError = 'errors.functions.invalid'; // Unable to find the requested function.
+            $xFunctionProxy = $this->getCallableProxy($sRequestedFunction);
+
+            $sError = 'errors.functions.call';
+            $xFunctionProxy->call($this->xCallableFunction);
         }
         catch(Exception $e)
         {
             // Unable to execute the requested function
-            $this->throwException($e, $this->xTranslator->trans('errors.functions.call',
-                ['name' => $sRequestedFunction]));
+            $this->throwException($e->getMessage(), $this->xTranslator->trans($sError, [
+                'name' => $sRequestedFunction,
+            ]));
         }
     }
 }

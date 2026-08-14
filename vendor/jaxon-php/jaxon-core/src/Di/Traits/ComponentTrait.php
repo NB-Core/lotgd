@@ -14,24 +14,34 @@
 
 namespace Jaxon\Di\Traits;
 
-use Jaxon\Di\Container;
+use Jaxon\App\ComponentDataTrait;
+use Jaxon\App\Component\AbstractComponent;
 use Jaxon\App\FuncComponent;
-use Jaxon\App\NodeComponent;
 use Jaxon\App\I18n\Translator;
 use Jaxon\App\Metadata\InputData;
 use Jaxon\App\Metadata\Metadata;
+use Jaxon\App\NodeComponent;
+use Jaxon\App\PageComponent;
+use Jaxon\App\RequestParam;
 use Jaxon\Config\Config;
+use Jaxon\Di\Container;
 use Jaxon\Exception\SetupException;
-use Jaxon\Plugin\Request\CallableClass\CallableObject;
-use Jaxon\Plugin\Request\CallableClass\ComponentOptions;
-use Jaxon\Plugin\Request\CallableClass\ComponentRegistry;
+use Jaxon\Plugin\Request\CallableComponent\ComponentProxy;
+use Jaxon\Plugin\Request\CallableComponent\ComponentOptions;
+use Jaxon\Plugin\Request\CallableComponent\ComponentRegistry;
+use Jaxon\Request\Handler\CallbackManager;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionNamedType;
+use ReflectionParameter;
 use ReflectionProperty;
 
 use function array_filter;
 use function array_map;
+use function array_slice;
+use function count;
 use function in_array;
+use function is_a;
 use function str_replace;
 use function substr;
 
@@ -56,20 +66,15 @@ trait ComponentTrait
      *
      * @return Container
      */
-    abstract protected function cn(): Container;
-
-    /**
-     * @var int
-     */
-    private int $filter = ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED;
+    abstract protected function di(): Container;
 
     /**
      * @param class-string $sClassName
      *
-     * @return CallableObject|null
+     * @return ComponentProxy|null
      * @throws SetupException
      */
-    abstract public function makeCallableObject(string $sClassName): ?CallableObject;
+    abstract public function getComponentProxy(string $sClassName): ComponentProxy|null;
 
     /**
      * @param class-string $sClassName    The class name
@@ -84,9 +89,9 @@ trait ComponentTrait
      *
      * @return string
      */
-    private function getCallableObjectKey(string $sClassName): string
+    private function getComponentProxyKey(string $sClassName): string
     {
-        return "{$sClassName}_CallableObject";
+        return "{$sClassName}_ComponentProxy";
     }
 
     /**
@@ -94,9 +99,9 @@ trait ComponentTrait
      *
      * @return string
      */
-    private function getCallableHelperKey(string $sClassName): string
+    private function getComponentHelperKey(string $sClassName): string
     {
-        return "{$sClassName}_CallableHelper";
+        return "{$sClassName}_ComponentHelper";
     }
 
     /**
@@ -124,9 +129,9 @@ trait ComponentTrait
      *
      * @return string
      */
-    private function getCallableFactoryKey(string $sClassName): string
+    private function getComponentFactoryKey(string $sClassName): string
     {
-        return "{$sClassName}_CallableFactory";
+        return "{$sClassName}_ComponentFactory";
     }
 
     /**
@@ -162,7 +167,7 @@ trait ComponentTrait
      */
     private function discoverComponent(string $sClassName): void
     {
-        $xRegistry = $this->cn()->g(ComponentRegistry::class);
+        $xRegistry = $this->di()->g(ComponentRegistry::class);
         $xRegistry->updateHash(false); // Disable hash calculation.
 
         $sComponentId = str_replace('\\', '.', $sClassName);
@@ -191,22 +196,22 @@ trait ComponentTrait
             return; // The component is found.
         }
 
-        throw new SetupException($this->cn()->g(Translator::class)
+        throw new SetupException($this->di()->g(Translator::class)
             ->trans('errors.class.invalid', ['name' => $sClassName]));
     }
 
     /**
      * Get callable objects for known classes
      *
-     * @return array
+     * @return array<ComponentProxy>
      * @throws SetupException
      */
-    public function getCallableObjects(): array
+    public function getComponentProxies(): array
     {
         $aCallableObjects = [];
         foreach($this->aComponents as $sComponentId => $_)
         {
-            $aCallableObjects[$sComponentId] = $this->makeCallableObject($sComponentId);
+            $aCallableObjects[$sComponentId] = $this->getComponentProxy($sComponentId);
         }
         return $aCallableObjects;
     }
@@ -226,11 +231,15 @@ trait ComponentTrait
             return;
         }
 
+        $xDataTrait = new ReflectionClass(ComponentDataTrait::class);
+        $aSharedMethods = $xDataTrait->getMethods(ReflectionMethod::IS_PUBLIC);
+        $aSharedMethods = array_map(fn($method) => $method->getName(), $aSharedMethods);
+
         $xReflectionClass = new ReflectionClass($sClass);
         $aMethods = $xReflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
         $this->aComponentPublicMethods[$sKey] = [
             array_map(fn($xMethod) => $xMethod->getName(), $aMethods),
-            $aNeverExported,
+            [...$aNeverExported, ...$aSharedMethods],
         ];
     }
 
@@ -256,6 +265,8 @@ trait ComponentTrait
                 $this->aComponentPublicMethods['node'],
             $xReflectionClass->isSubclassOf(FuncComponent::class) =>
                 $this->aComponentPublicMethods['func'],
+            $xReflectionClass->isSubclassOf(PageComponent::class) =>
+                $this->aComponentPublicMethods['page'],
             default => [[], []],
         };
 
@@ -285,7 +296,7 @@ trait ComponentTrait
         }
 
         // Try to get the class metadata from the cache.
-        $di = $this->cn();
+        $di = $this->di();
         $xMetadata = null;
         $xMetadataCache = null;
         $xConfig = $di->config();
@@ -304,18 +315,30 @@ trait ComponentTrait
             }
         }
 
-        $aProperties = array_map(fn($xProperty) => $xProperty->getName(),
-            $xReflectionClass->getProperties($this->filter));
+        $cNameGetter = fn(ReflectionProperty $xProperty) => $xProperty->getName();
+        $cPropFilter = InputData::isInjectable(...);
+        // Get all the properties for the component class.
+        $aProperties = array_filter($xReflectionClass->getProperties(), $cPropFilter);
+        $aPropertyNames = [
+            $xReflectionClass->getName() => array_map($cNameGetter, $aProperties),
+        ];
+        $xClass = $xReflectionClass;
+        while(($xClass = InputData::getParentClass($xClass)) !== null)
+        {
+            // Get only private properties for parent classes.
+            $aProperties = $xClass->getProperties(ReflectionProperty::IS_PRIVATE);
+            if(count($aProperties) > 0)
+            {
+                $aPropertyNames[$xClass->getName()] = array_map($cNameGetter,
+                    array_filter($aProperties, $cPropFilter));
+            }
+        }
 
         $xMetadataReader = $di->getMetadataReader($sMetadataFormat);
-        $xInput = new InputData($xReflectionClass, $aMethods, $aProperties);
+        $xInput = new InputData($xReflectionClass, $aMethods, $aPropertyNames);
         $xMetadata = $xMetadataReader->getAttributes($xInput);
-
         // Try to save the metadata in the cache
-        if($xMetadataCache !== null)
-        {
-            $xMetadataCache->save($xReflectionClass->getName(), $xMetadata);
-        }
+        $xMetadataCache?->save($xReflectionClass->getName(), $xMetadata);
 
         return $xMetadata;
     }
@@ -333,5 +356,99 @@ trait ComponentTrait
         $xMetadata = $this->getComponentMetadata($xReflectionClass, $aMethods[0], $aOptions);
 
         return new ComponentOptions($aMethods, $aOptions, $xMetadata);
+    }
+
+    /**
+     * Convert the request arguments
+     *
+     * @param array $aArgs
+     * @param array<ReflectionParameter> $aArgTypes
+     *
+     * @return array
+     */
+    public function convertArguments(array $aArgs, array $aArgTypes): array
+    {
+        // Ignore the extra argument types.
+        $aArgTypes = array_slice($aArgTypes, 0, count($aArgs));
+        return array_map(function($xArg, ReflectionParameter|null $xArgType) {
+            if(!InputData::isInjectable($xArgType))
+            {
+                return $xArg; // Parameter without a single type.
+            }
+
+            /** @var ReflectionNamedType */
+            $xNamedType = $xArgType->getType();
+            $sTypeName = $xNamedType->getName();
+            if(!is_a($sTypeName, RequestParam::class, true))
+            {
+                return $xArg;
+            }
+
+            $xParam = $this->di->make($sTypeName);
+            $xParam->set($xArg);
+            return $xParam;
+        }, $aArgs, $aArgTypes);
+    }
+
+    /**
+     * @param mixed $xComponent
+     * @param array $aDiOptions
+     *
+     * @return void
+     */
+    private function injectAttributes($xComponent, array $aDiOptions): void
+    {
+        foreach($aDiOptions as $sAttr => [$sClass, , $cSetter])
+        {
+            $cSetter($xComponent, $sAttr, $this->di->get($sClass));
+        }
+    }
+
+    /**
+     * @param string $sClassName
+     * @param string $sProxyKey
+     * @param string $sFactoryKey
+     *
+     * @return mixed
+     */
+    private function initComponent(string $sClassName, string $sProxyKey, string $sFactoryKey): mixed
+    {
+        $xComponent = $this->di()->g($sClassName);
+        // Set attributes from the DI container.
+        // The class level DI options are set on any component.
+        // The method level DI options will be set only on the targetted component.
+        /** @var ComponentProxy */
+        $xComponentProxy = $this->get($sProxyKey);
+        $this->injectAttributes($xComponent, $xComponentProxy->getClassOptions());
+
+        if($xComponent instanceof AbstractComponent)
+        {
+            // Call the protected "initComponent()" method of the Component class.
+            $cSetter = (static fn($xComponent, $di, $xFactory) =>
+                $xComponent->initComponent($di, $xFactory))->bindTo(null, $sClassName);
+            $cSetter($xComponent, $this->di, $this->get($sFactoryKey));
+        }
+
+        // Run the callbacks for class initialisation
+        $this->di()->g(CallbackManager::class)->onInit($xComponent);
+
+        return $xComponent;
+    }
+
+    /**
+     * @param ComponentProxy $xComponentProxy
+     *
+     * @return array
+     */
+    public function getCallParams(ComponentProxy $xComponentProxy): array
+    {
+        $sClassName = $xComponentProxy->getClassName();
+        $xComponent = $this->get($sClassName);
+        // Inject method-specific DI attributes.
+        $this->injectAttributes($xComponent, $xComponentProxy->getMethodOptions());
+
+        [$aArgs, $aArgTypes] = $xComponentProxy->getArguments();
+
+        return [$xComponent, $this->convertArguments($aArgs, $aArgTypes)];
     }
 }

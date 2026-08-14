@@ -2,24 +2,22 @@
 
 namespace Jaxon\Plugin;
 
-use Jaxon\Request\Target;
+use Jaxon\Request\CallableAction;
 use Psr\Http\Message\ServerRequestInterface;
 
 interface RequestHandlerInterface
 {
     /**
-     * Get the target function or class and method
-     *
-     * @return Target|null
-     */
-    public function getTarget(): ?Target;
-
-    /**
      * @param ServerRequestInterface $xRequest
      *
-     * @return Target
+     * @return CallableAction
      */
-    public function setTarget(ServerRequestInterface $xRequest): Target;
+    public function makeCallableAction(ServerRequestInterface $xRequest): CallableAction;
+
+    /**
+     * @return CallableAction|null
+     */
+    public function getCallableAction(): CallableAction|null;
 
     /**
      * Check if this plugin can process the current request

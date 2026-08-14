@@ -26,20 +26,34 @@
 
 namespace Jaxon\Plugin;
 
-use Jaxon\Request\Target;
+use Jaxon\Exception\RequestException;
+use Psr\Log\LoggerInterface;
 
-abstract class AbstractRequestPlugin extends AbstractPlugin implements CallableRegistryInterface, RequestHandlerInterface
+abstract class AbstractRequestPlugin extends AbstractPlugin
+    implements CallableRegistryInterface, RequestHandlerInterface
 {
     /**
-     * @var Target
+     * @var bool
      */
-    protected $xTarget = null;
+    protected bool $bDebug;
 
     /**
-     * @inheritDoc
+     * @var LoggerInterface
      */
-    public function getTarget(): ?Target
+    protected LoggerInterface $xLogger;
+
+    /**
+     * @param string $sExceptionMessage
+     * @param string $sErrorMessage
+     *
+     * @throws RequestException
+     * @return never
+     */
+    protected function throwException(string $sExceptionMessage, string $sErrorMessage): void
     {
-        return $this->xTarget;
+        // Log the message and throw an exception.
+        $this->xLogger->error($sExceptionMessage);
+        $sMessage = $this->bDebug ? "$sErrorMessage\n$sExceptionMessage" : $sErrorMessage;
+        throw new RequestException($sMessage);
     }
 }
