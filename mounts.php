@@ -143,13 +143,15 @@ if ($op == "deactivate") {
     Http::set("op", "");
     invalidatedatacache("mountdata-$id");
 } elseif ($op == "give") {
-    $grantResult = Mounts::grantToCurrentUser($id);
-    if ($grantResult === Mounts::GRANT_NOT_FOUND) {
-        error_log('Denied mount give action: mount record was not found');
-        $output->output('`$That mount could not be found, so it was not granted.`0`n');
-    } elseif ($grantResult === Mounts::GRANT_INVALID_BUFF) {
-        error_log('Denied mount give action: stored mount buff was malformed');
-        $output->output('`$That mount has invalid buff data, so it was not granted.`0`n');
+    if ($id === null) {
+        error_log('Denied mount give action: missing or invalid mount id');
+    } else {
+        $grantResult = Mounts::grantToCurrentUser($id);
+        if ($grantResult === Mounts::GRANT_NOT_FOUND) {
+            $output->output('`$' . Translator::translate('That mount could not be found, so it was not granted.') . '`0`n');
+        } elseif ($grantResult === Mounts::GRANT_INVALID_BUFF) {
+            $output->output('`$' . Translator::translate('That mount has invalid buff data, so it was not granted.') . '`0`n');
+        }
     }
     $op = "";
     Http::set("op", "");

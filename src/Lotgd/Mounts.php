@@ -112,12 +112,14 @@ class Mounts
         )->fetchAssociative();
 
         if ($row === false) {
+            error_log("Denied mount give: mount record not found (mountId={$mountId})");
             return self::GRANT_NOT_FOUND;
         }
 
         $serializedBuff = $row['mountbuff'] ?? null;
         $buff = Serialization::safeUnserialize($serializedBuff);
         if (!is_array($buff)) {
+            error_log("Denied mount give: stored buff is malformed (mountId={$mountId})");
             return self::GRANT_INVALID_BUFF;
         }
 
