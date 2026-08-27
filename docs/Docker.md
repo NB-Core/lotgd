@@ -1,147 +1,135 @@
-# Docker Environment
+# Docker deployment
 
-### docker-compose.yml
+The Docker configuration shares one production image between deployment modes:
+the default Compose file is production-oriented, while
+`docker-compose.dev.yml` adds live source mounts and development PHP settings.
+The image uses PHP 8.3 with Apache, OPcache, optimized production Composer
+dependencies, and MySQL 8.4.
 
-```yaml
+## Initial configuration
 
-volumes:
-  db_data:
+Copy the example environment and replace the sample database passwords:
 
-networks:
-  lotgd-network:
+```bash
+cp .env.example .env
 ```
 
-### .env File
+`MYSQL_USEDATACACHE=1` and `MYSQL_DATACACHEPATH=/var/cache/lotgd` enable the
+application data cache. The installer persists these values in `dbconnect.php`.
+Consequently, changing them in `.env` after installation may also require
+updating `dbconnect.php` or regenerating it by running the installer again.
 
-Copy `.env.example` to `.env` in the root directory and adjust values as needed. The default file contains:
+## Production
 
-```env
-MYSQL_DATABASE=lotgd
-MYSQL_USER=lotgduser
-MYSQL_PASSWORD=lotgdpass
-MYSQL_ROOT_PASSWORD=rootpass
+Build and launch the immutable application image:
+
+```bash
+docker compose up -d --build
 ```
 
-> **Note:** Change these default passwords for production use.
+The default web service has no source-code bind mount. Composer installs without
+development dependencies and generates an authoritative classmap. PHP hides
+errors from responses, logs them to container stderr, and enables OPcache
+without timestamp validation. Rebuild the image to deploy code changes.
 
-### .htaccess
+Only container port 80 is exposed. Set `LOTGD_HTTP_PORT` to choose its host
+mapping.
 
-The root `.htaccess` file configures custom error pages, disables directory listings, protects sensitive files, and blocks the `install/` folder when `index.php` is removed. Nginx equivalents are provided as comments in that file.
+### SSL/TLS is not included
 
----
+This stack intentionally does **not** configure TLS or advertise port 443.
+Certificates are domain- and deployment-specific, must be stored securely, and
+must be renewed regularly, so a useful certificate cannot be safely bundled in
+the image. Terminate HTTPS in a reverse proxy such as Caddy, Nginx, Traefik, or
+a managed load balancer and proxy plain HTTP to this service. That proxy can
+obtain and renew a trusted certificate through Let's Encrypt or another
+certificate authority.
 
-## Notes
+## Development
 
-### Port Configuration
+Start the base stack with the development override:
 
-- The container exposes **port 80**. Ensure this port is available on your host machine.
-- For production use, you should employ a reverse proxy (e.g., Nginx) and configure SSL/TLS.
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
 
-### SSL/TLS
+The override sets `APP_ENV=development`, enables displayed errors and PHP/Twig
+timestamp checks, and mounts the checkout at `/var/www/html`. Named volumes mask
+`vendor/` and `/var/cache/lotgd`, so dependencies and generated files remain
+container-local rather than being written into the host checkout.
 
-- The current configuration **does not support SSL/TLS**.
-- **SSL/TLS must be configured separately**, especially for production environments.
-- Consider using Let's Encrypt or another certificate provider.
+Rebuild after changing Composer dependencies or the image configuration:
 
-### Persistent Volumes
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --force-recreate
+```
 
-- The `db_data` volume ensures that database data is stored persistently.
-- **Adjusting Volumes:**
-  - Modify the volumes in `docker-compose.yml` as needed.
-  - Consider using named volumes or mounting a host directory for backups.
+## Persistent volumes and permissions
 
-### Security
+`db_data` holds MySQL data, `lotgd_cache` holds the shared runtime cache, and
+`lotgd_state` preserves `dbconnect.php` plus the installer's completion marker.
+The state volume prevents an image replacement from losing database settings or
+restoring an installer that an administrator already removed. Back up
+`lotgd_state` together with the database; do not delete it during a routine
+deployment.
 
-- **Change Passwords:** Update the default passwords in the `.env` file.
-- **Access Rights:** Ensure that sensitive files are not publicly accessible.
-- **Updates:** Keep your Docker images and dependencies up to date.
-- **Firewall:** Configure your firewall appropriately to prevent unauthorized access.
+The image creates `/var/cache/lotgd/{twig,doctrine}` as `www-data`; Docker copies
+those initial directories into a newly created named volume. Removing only the
+cache volume discards generated cache data but not game, configuration, or
+database data.
 
-### Base Image Version
+Inspect ownership and repair an existing volume created with incorrect
+permissions as root:
 
-- The PHP base image version lives in the project [`Dockerfile`](../Dockerfile). If you upgrade the image there, update this document to match.
+```bash
+docker compose exec web stat -c '%U:%G %a %n' /var/cache/lotgd /var/cache/lotgd/{twig,doctrine}
+docker compose exec --user root web chown -R www-data:www-data /var/cache/lotgd
+docker compose exec --user root web chmod -R u+rwX,g+rwX /var/cache/lotgd
+```
 
----
+## Health and performance verification
 
-## Useful Commands
+Compose waits for MySQL's health check before starting the web service. The web
+health check requests the static `/errors/403.html` page, avoiding database or
+session mutations.
 
-- **Stop Containers:**
+Validate and inspect the running deployment:
 
-  ```bash
-  docker-compose down
-  ```
+```bash
+docker compose config
+docker compose ps
+docker compose exec web php -i | grep -E 'opcache.enable =>|opcache.validate_timestamps =>'
+docker compose exec --user www-data web sh -c 'test -w /var/cache/lotgd/twig && test -w /var/cache/lotgd/doctrine'
+docker compose exec web find /var/cache/lotgd -mindepth 1 -maxdepth 2 -type f -print
+```
 
-- **Restart Containers:**
+After completing installation and requesting a Twig-backed page, repeat the
+request to compare cold and warm timings (replace `/` with a known lightweight
+page for the installation):
 
-  ```bash
-  docker-compose restart
-  ```
+```bash
+curl -sS -o /dev/null -w 'cold: %{time_total}s\n' http://localhost/
+curl -sS -o /dev/null -w 'warm: %{time_total}s\n' http://localhost/
+```
 
-- **View Logs:**
+The first request may populate Twig and Doctrine caches. Subsequent timings are
+most meaningful after several warm-up requests and without concurrent traffic.
 
-  ```bash
-  docker-compose logs -f
-  ```
+## Operations and troubleshooting
 
-- **Access the Web Container:**
+```bash
+docker compose logs -f web db
+docker compose restart
+docker compose down
+docker compose down --volumes  # destructive: removes database, configuration, and cache data
+```
 
-  ```bash
-  docker-compose exec web bash
-  ```
+If the database connection fails, compare `.env` with the values persisted in
+`dbconnect.php`, then inspect `docker compose ps` and the database logs. If code
+changes do not appear in production, rebuild the immutable image. In
+development, confirm both Compose files were supplied and verify that
+`APP_ENV=development` is present with `docker compose exec web env`.
 
-- **Access the Database Container:**
-
-  ```bash
-  docker-compose exec db bash
-  ```
-
----
-
-## Troubleshooting
-
-- **Web Container Fails to Start:**
-  - Check logs with `docker-compose logs web`.
-  - Ensure the base image is correct (`php:8.3-apache` as defined in the [`Dockerfile`](../Dockerfile)).
-
-- **Database Connection Fails:**
-  - Verify that the environment variables in the `.env` file are correct.
-  - Check the database settings in your application.
-
-- **Code Changes Not Reflected:**
-  - Ensure you have rebuilt the container after making changes to the Dockerfile.
-  - Clear your application's cache or your browser's cache if necessary.
-- **Installer Log Location:**
-  - The installer writes to `install/errors/install.log`. If you see a warning
-    that the log could not be written, ensure this path is writable.
-
-- **Ubuntu Private /tmp notice:**
-  - On some Ubuntu systems `systemd` isolates the `/tmp` directory for the
-    web server. If PHP has `display_errors` enabled, warnings about writing
-    temporary files may be output directly to the browser and interrupt the
-    installer. Set `display_errors = Off` in your PHP configuration (typically
-    located at `/etc/php/<version>/apache2/php.ini`) when this happens. After
-    making this change, restart your web server (e.g., `sudo systemctl restart apache2`)
-    so the installer and game can run correctly.
-
-### Where to find installer logs
-
-Installer errors are saved to `install/errors/install.log`. Check this file if
-the installer fails or reports problems.
-
-## Contributing & Support
-
-Found a bug or have a feature request? Open an issue on GitHub.
-Pull requests are welcome for improvements or fixes.
-Run the unit tests with `composer test` and check modified PHP files using
-`php -l` before submitting PRs. Check coding style with `composer lint` and
-apply automatic fixes using `composer lint:fix`.
-
-## License
-
-This project is licensed under the [Creative Commons License](LICENSE).
-
----
-
-**Note:** This Docker environment is intended for development and testing purposes. Additional configurations and security measures are required for production use.
-
-# Enjoy running LOTGD with Docker!
+Installer failures are logged to `install/errors/install.log`. Production PHP
+errors are available through `docker compose logs web` and are never displayed
+to clients.

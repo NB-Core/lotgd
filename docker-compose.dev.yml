@@ -1,0 +1,13 @@
+services:
+  web:
+    environment:
+      APP_ENV: development
+    volumes:
+      - .:/var/www/html
+      # Keep dependencies and generated cache inside Docker, not on the host.
+      - lotgd_vendor:/var/www/html/vendor
+      - lotgd_cache:/var/cache/lotgd
+      - ./docker/php/development.ini:/usr/local/etc/php/conf.d/zzz-lotgd-development.ini:ro
+
+volumes:
+  lotgd_vendor:

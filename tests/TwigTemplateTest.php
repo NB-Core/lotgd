@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\TwigTemplate;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class TwigTemplateTest extends TestCase
@@ -62,5 +63,39 @@ final class TwigTemplateTest extends TestCase
     {
         $this->assertTrue(TwigTemplate::isActive());
         $this->assertSame('templates_twig/aurora', TwigTemplate::getPath());
+    }
+
+    #[DataProvider('autoReloadEnvironmentProvider')]
+    public function testAutoReloadFollowsApplicationEnvironment(string $environment, bool $expected): void
+    {
+        $this->assertSame($expected, TwigTemplate::shouldAutoReload($environment));
+    }
+
+    /**
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function autoReloadEnvironmentProvider(): iterable
+    {
+        yield 'production' => ['production', false];
+        yield 'production case and whitespace' => [' Production ', false];
+        yield 'development' => ['development', true];
+        yield 'test' => ['test', true];
+        yield 'empty legacy environment' => ['', true];
+    }
+
+    public function testAutoReloadDefaultsToLegacyBehaviorWhenEnvironmentIsUnset(): void
+    {
+        $previousEnvironment = getenv('APP_ENV');
+        putenv('APP_ENV');
+
+        try {
+            $this->assertTrue(TwigTemplate::shouldAutoReload());
+        } finally {
+            if ($previousEnvironment === false) {
+                putenv('APP_ENV');
+            } else {
+                putenv('APP_ENV=' . $previousEnvironment);
+            }
+        }
     }
 }

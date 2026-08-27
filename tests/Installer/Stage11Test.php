@@ -22,6 +22,7 @@ final class Stage11Test extends TestCase
     private string $root;
     private string $installerPath;
     private string $installerBackup;
+    private string $statePath;
     private DummySettings $settings;
 
     protected function setUp(): void
@@ -33,6 +34,9 @@ final class Stage11Test extends TestCase
         $this->root            = dirname(__DIR__, 2);
         $this->installerPath   = $this->root . '/installer.php';
         $this->installerBackup = $this->installerPath . '.bak';
+        $this->statePath       = sys_get_temp_dir() . '/lotgd-state-' . uniqid('', true);
+        mkdir($this->statePath, 0700, true);
+        putenv('LOTGD_STATE_PATH=' . $this->statePath);
 
         if (file_exists($this->installerBackup)) {
             unlink($this->installerBackup);
@@ -78,6 +82,14 @@ final class Stage11Test extends TestCase
 
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
+        putenv('LOTGD_STATE_PATH');
+        $marker = $this->statePath . '/installation-complete';
+        if (file_exists($marker)) {
+            unlink($marker);
+        }
+        if (is_dir($this->statePath)) {
+            rmdir($this->statePath);
+        }
 
         parent::tearDown();
     }
@@ -131,6 +143,7 @@ final class Stage11Test extends TestCase
         $installer->stage11();
 
         $this->assertFileDoesNotExist($this->installerPath);
+        $this->assertFileExists($this->statePath . '/installation-complete');
 
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('Installer file installer.php removed', $output);

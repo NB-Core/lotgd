@@ -330,115 +330,40 @@ Doctrine migrations.
     appropriate paths.
 
 Omitting `--from-version` bypasses legacy SQL entirely.
-- [Installation](#installation)
-  - [Step 1: Clone the Repository](#step-1-clone-the-repository)
-  - [Step 2: Set Up the Docker Environment](#step-2-set-up-the-docker-environment)
-  - [Step 3: Build and Start the Containers](#step-3-build-and-start-the-containers)
-- [Configuration Files](#configuration-files)
-  - [Dockerfile](#dockerfile)
-  - [docker-compose.yml](#docker-composeyml)
-  - [.env File](#env-file)
-  - [.htaccess](#htaccess)
-- [Notes](#notes)
-  - [Port Configuration](#port-configuration)
-  - [SSL/TLS](#ssltls)
-  - [Persistent Volumes](#persistent-volumes)
-  - [Security](#security)
-- [Useful Commands](#useful-commands)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
 
----
+## Docker
 
-## Prerequisites
-
-- **Docker** installed
-- **Docker Compose** installed
-- Basic knowledge of Docker and command-line operations
-
----
-
-## Installation
-
-### Step 1: Clone the Repository
-
-Clone the LOTGD repository to your local machine:
+Docker provides an immutable production image and a source-mounted development
+workflow. Begin by cloning the repository and creating the local environment
+file:
 
 ```bash
 git clone https://github.com/NB-Core/lotgd.git
 cd lotgd
+cp .env.example .env
 ```
 
-### Step 2: Set Up the Docker Environment
+Before starting either deployment, edit `.env` and replace every sample
+database password.
 
-This repository already includes the essential Docker and configuration files. Review these files and adjust them as needed:
-
-1. **Dockerfile**
-2. **docker-compose.yml**
-3. **.env** – copy `\.env.example` to `.env` and update values as needed
-4. **.htaccess**
-
-The details of each file are covered in the [Configuration Files](#configuration-files) section.
-
-### Step 3: Build and Start the Containers
-
-Build the Docker containers and start the environment:
+Build and start the default production configuration:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
-### Step 4: Run the Installer
+For development, layer the override onto the same base configuration:
 
-With the containers running, open `installer.php` in your browser. When prompted for a cache directory, set `DB_DATACACHEPATH` to a writable location (for example `data/cache`) to enable caching.
-
----
-
-## Configuration Files
-
-### Dockerfile
-
-```Dockerfile
-# Composer stage – install dependencies
-FROM composer:2 AS composer
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist
-
-# Final image with PHP and Apache
-FROM php:apache
-
-# Install required packages and PHP extensions
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libonig-dev \
-    libzip-dev \
-    && docker-php-ext-configure gd --with-jpeg \
-    && docker-php-ext-install gd mysqli pdo pdo_mysql mbstring zip \
-    && rm -rf /var/lib/apt/lists/*
-
-# Enable mod_rewrite and .htaccess overrides
-RUN a2enmod rewrite
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
-
-# Copy application code and vendor directory
-WORKDIR /var/www/html
-COPY . /var/www/html
-COPY --from=composer /app/vendor /var/www/html/vendor
-
-# Set permissions for web server
-RUN chown -R www-data:www-data /var/www/html
-
-# Expose Apache port
-EXPOSE 80
-
-# Enable verbose PHP error reporting
-RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
-
-CMD ["apache2-foreground"]
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
+
+The development override mounts the checkout while keeping `vendor/` and the
+application cache in Docker volumes. A separate state volume preserves the
+installer-generated `dbconnect.php` and installer-completion state across image
+replacements. Production serves only HTTP on the chosen `LOTGD_HTTP_PORT`;
+deploy it behind a TLS-terminating reverse proxy for HTTPS.
+TLS is intentionally not bundled because each deployment must supply and renew
+certificates for its own domain, for example through Let's Encrypt.
+See [the Docker guide](docs/Docker.md) for cache behavior, verification, and
+troubleshooting.
