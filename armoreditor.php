@@ -152,18 +152,25 @@ if ($op === '') {
         ['level' => $armorlevel],
         ['level' => ParameterType::INTEGER]
     );
+    $ops = Translator::translateInline('Ops');
+    $name = Translator::translateInline('Name');
+    $cost = Translator::translateInline('Cost');
+    $defense = Translator::translateInline('Defense');
+    $level = Translator::translateInline('Level');
+    $edit = Translator::translateInline('Edit');
+    $delete = Translator::translateInline('Del');
+    $deleteConfirmation = Translator::translateInline('Are you sure you wish to delete this armor?');
+    $deleteConfirmationJs = json_encode($deleteConfirmation, JSON_HEX_APOS | JSON_HEX_QUOT);
     $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
-    $output->rawOutput('<tr class="trhead"><td>Ops</td><td>Name</td><td>Cost</td><td>Defense</td><td>Level</td></tr>');
+    $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$defense</td><td>$level</td></tr>");
     $i = 0;
     while (($row = $result->fetchAssociative()) !== false) {
         $rowId = armorEditorInteger($row['armorid'] ?? null, 1, PHP_INT_MAX);
         if ($rowId === null) {
             continue;
         }
-        $edit = Translator::translateInline('Edit');
-        $delete = Translator::translateInline('Del');
         $output->rawOutput("<tr class='" . ($i++ % 2 ? 'trdark' : 'trlight') . "'><td>[<a href='armoreditor.php?op=edit&amp;id=$rowId&amp;level=$armorlevel'>$edit</a>|");
-        $output->rawOutput("<form method='POST' action='armoreditor.php?level=$armorlevel' style='display:inline'><input type='hidden' name='op' value='del'><input type='hidden' name='id' value='$rowId'><input type='hidden' name='csrf_token' value='$csrfField'><button type='submit'>$delete</button></form>]</td>");
+        $output->rawOutput("<form method='POST' action='armoreditor.php?level=$armorlevel' style='display:inline' onsubmit='return confirm($deleteConfirmationJs);'><input type='hidden' name='op' value='del'><input type='hidden' name='id' value='$rowId'><input type='hidden' name='csrf_token' value='$csrfField'><button type='submit'>$delete</button></form>]</td>");
         Nav::add('', "armoreditor.php?op=edit&id=$rowId&level=$armorlevel");
         $output->rawOutput('<td>');
         $output->outputNotl((string) $row['armorname']);

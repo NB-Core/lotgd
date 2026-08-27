@@ -61,6 +61,26 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
         }
     }
 
+    public function testEquipmentEditorsTranslateHeadingsAndConfirmDeletion(): void
+    {
+        foreach ([
+            ['armoreditor.php', 'Defense', 'armor'],
+            ['weaponeditor.php', 'Damage', 'weapon'],
+        ] as [$file, $statHeading, $item]) {
+            $source = $this->source($file);
+
+            foreach (['Ops', 'Name', 'Cost', $statHeading, 'Level'] as $heading) {
+                self::assertStringContainsString("Translator::translateInline('$heading')", $source);
+            }
+            self::assertStringContainsString(
+                "Translator::translateInline('Are you sure you wish to delete this $item?')",
+                $source
+            );
+            self::assertStringContainsString("onsubmit='return confirm(\$deleteConfirmationJs);'", $source);
+            self::assertStringContainsString('JSON_HEX_APOS | JSON_HEX_QUOT', $source);
+        }
+    }
+
     public function testScalarValidatorsRejectQuoteBearingAndArrayInputs(): void
     {
         foreach (['armoreditor.php', 'weaponeditor.php', 'mounts.php', 'companions.php'] as $file) {
