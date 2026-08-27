@@ -42,12 +42,30 @@ if ($session['user']['superuser'] & SU_POST_MOTD) {
 }
 
 if ($op == "vote") {
-    $motditem = Http::post('motditem');
-    $choice = (string)Http::post('choice');
-    $sql = "DELETE FROM " . Database::prefix("pollresults") . " WHERE motditem='$motditem' AND account='{$session['user']['acctid']}'";
-    Database::query($sql);
-    $sql = "INSERT INTO " . Database::prefix("pollresults") . " (choice,account,motditem) VALUES ('$choice','{$session['user']['acctid']}','$motditem')";
-    Database::query($sql);
+    // POST is the trust boundary: reject rather than coerce malformed identifiers.
+    $motditem = Motd::validatePollVoteIdentifier(Http::post('motditem'));
+    $choice = Motd::validatePollVoteIdentifier(Http::post('choice'));
+    $account = (int)($session['user']['acctid'] ?? 0);
+    $postedCsrf = Http::post('csrf_token');
+    $expectedCsrf = $session['motd_vote_csrf'] ?? null;
+
+    if (
+        $motditem === null
+        || $choice === null
+        || $account <= 0
+        || empty($session['user']['loggedin'])
+        || !is_string($postedCsrf)
+        || !is_string($expectedCsrf)
+        || $expectedCsrf === ''
+        || !hash_equals($expectedCsrf, $postedCsrf)
+    ) {
+        debuglog('Rejected invalid or unauthorized MoTD poll vote request.');
+        http_response_code(400);
+        header("Location: motd.php");
+        exit();
+    }
+
+    Motd::recordPollVote($motditem, $choice, $account);
     DataCache::getInstance()->invalidatedatacache("poll-$motditem");
     header("Location: motd.php");
     exit();
