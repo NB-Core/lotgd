@@ -350,7 +350,7 @@ class Installer
                     if ($this->recordContainerInstallationCompletion() && unlink($file)) {
                         $this->output->output("`\$Installer file installer.php removed.`n");
                     } else {
-                        $this->output->output("`\$Unable to delete installer.php. Please remove it manually.`n");
+                        $this->output->output("`\$Unable to record installation completion or delete installer.php. Please verify LOTGD_STATE_PATH is writable and remove it manually.`n");
                     }
                 } catch (Throwable $e) {
                     $this->output->output("`\$Error deleting installer.php: " . $e->getMessage() . "`n");
