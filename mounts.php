@@ -12,6 +12,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
+use Lotgd\Mounts;
 // addnews ready
 // mail ready
 // translator ready
@@ -143,27 +144,15 @@ if ($op == "deactivate") {
     invalidatedatacache("mountdata-$id");
 } elseif ($op == "give") {
     if ($id === null) {
-        $op = '';
+        error_log('Denied mount give action: missing or invalid mount id');
     } else {
-        $session['user']['hashorse'] = $id;
+        $grantResult = Mounts::grantToCurrentUser($id);
+        if ($grantResult === Mounts::GRANT_NOT_FOUND) {
+            $output->output('`$' . Translator::translate('That mount could not be found, so it was not granted.') . '`0`n');
+        } elseif ($grantResult === Mounts::GRANT_INVALID_BUFF) {
+            $output->output('`$' . Translator::translate('That mount has invalid buff data, so it was not granted.') . '`0`n');
+        }
     }
-    // changed to make use of the cached query
-    $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid = :mountId";
-    $row = $connection->executeQuery($sql, ['mountId' => $id], ['mountId' => ParameterType::INTEGER])->fetchAssociative();
-    if ($row === false) {
-        error_log('Denied mount give action: mount record was not found');
-        $op = '';
-        Http::set('op', '');
-    } else {
-        $buff = unserialize($row['mountbuff']);
-    }
-    if (!isset($buff) || !is_array($buff)) {
-        $buff = [];
-    }
-    if (($buff['schema'] ?? '') == "") {
-        $buff['schema'] = "mounts";
-    }
-    Buffs::applyBuff("mount", $buff);
     $op = "";
     Http::set("op", "");
 } elseif ($op == "save") {

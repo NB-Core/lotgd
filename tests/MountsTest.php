@@ -6,6 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\Mounts;
 use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\DoctrineConnection;
 use PHPUnit\Framework\TestCase;
 
 final class MountsTest extends TestCase
@@ -34,6 +35,8 @@ final class MountsTest extends TestCase
         \Lotgd\MySQL\Database::$lastCacheName = '';
         unset(\Lotgd\MySQL\Database::$queryCacheResults['mountdata-7']);
         Mounts::getInstance()->setPlayerMount([]);
+        Database::resetDoctrineConnection();
+        unset($GLOBALS['session']);
     }
 
     public function testGetmountExecutesQuery(): void
@@ -67,5 +70,62 @@ final class MountsTest extends TestCase
 
         $mounts->loadPlayerMount(7);
         $this->assertSame($this->cachedMountRow, $mounts->getPlayerMount());
+    }
+
+    public function testGrantRejectsMissingMountWithoutChangingCurrentMountOrBuff(): void
+    {
+        $connection = new DoctrineConnection();
+        $connection->fetchAllResults = [[]];
+        Database::setDoctrineConnection($connection);
+        $GLOBALS['session'] = $this->existingMountSession();
+
+        $result = Mounts::grantToCurrentUser(999);
+
+        $this->assertSame(Mounts::GRANT_NOT_FOUND, $result);
+        $this->assertSame(7, $GLOBALS['session']['user']['hashorse']);
+        $this->assertSame(['rounds' => 3], $GLOBALS['session']['bufflist']['mount']);
+    }
+
+    public function testGrantRejectsMalformedBuffWithoutChangingCurrentMountOrBuff(): void
+    {
+        $this->prepareGrantRow(['mountid' => 8, 'mountbuff' => 'not serialized data']);
+        $GLOBALS['session'] = $this->existingMountSession();
+
+        $result = Mounts::grantToCurrentUser(8);
+
+        $this->assertSame(Mounts::GRANT_INVALID_BUFF, $result);
+        $this->assertSame(7, $GLOBALS['session']['user']['hashorse']);
+        $this->assertSame(['rounds' => 3], $GLOBALS['session']['bufflist']['mount']);
+    }
+
+    public function testGrantAppliesValidMountAndBuff(): void
+    {
+        $buff = ['rounds' => 5, 'atkmod' => 1.2];
+        $this->prepareGrantRow(['mountid' => 8, 'mountbuff' => serialize($buff)]);
+        $GLOBALS['session'] = $this->existingMountSession();
+
+        $result = Mounts::grantToCurrentUser(8);
+
+        $this->assertSame(Mounts::GRANT_SUCCESS, $result);
+        $this->assertSame(8, $GLOBALS['session']['user']['hashorse']);
+        $this->assertSame(5, $GLOBALS['session']['bufflist']['mount']['rounds']);
+        $this->assertSame('mounts', $GLOBALS['session']['bufflist']['mount']['schema']);
+    }
+
+    /** @param array<string, mixed> $row */
+    private function prepareGrantRow(array $row): void
+    {
+        $connection = new DoctrineConnection();
+        $connection->fetchAllResults = [[$row]];
+        Database::setDoctrineConnection($connection);
+    }
+
+    /** @return array<string, mixed> */
+    private function existingMountSession(): array
+    {
+        return [
+            'user' => ['hashorse' => 7, 'superuser' => 0],
+            'bufflist' => ['mount' => ['rounds' => 3]],
+        ];
     }
 }
