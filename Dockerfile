@@ -26,8 +26,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # The vhost contains the production security rules, so per-request .htaccess
-# discovery is unnecessary. Only mod_rewrite is needed by those rules.
-RUN a2enmod rewrite \
+# discovery is unnecessary.
+# Compress text responses and let Apache emit explicit freshness metadata for
+# static assets. Dynamic PHP pages remain uncached because game output is tied
+# to the authenticated session.
+RUN a2enmod deflate expires headers rewrite \
     && a2dissite 000-default
 COPY docker/apache/lotgd.conf /etc/apache2/sites-available/lotgd.conf
 RUN a2ensite lotgd

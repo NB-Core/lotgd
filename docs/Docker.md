@@ -115,6 +115,16 @@ curl -sS -o /dev/null -w 'warm: %{time_total}s\n' http://localhost/
 The first request may populate Twig and Doctrine caches. Subsequent timings are
 most meaningful after several warm-up requests and without concurrent traffic.
 
+Apache also compresses text responses and sends bounded browser-cache metadata
+for CSS, JavaScript, images, and WOFF2 fonts. Personalized PHP responses are
+explicitly marked `no-store, private`; full-page HTTP caching must not be added
+without a session-aware cache design. Inspect both behaviors with:
+
+```bash
+curl --compressed -sSI http://localhost/templates_twig/aurora/assets/style.css
+curl -sSI http://localhost/index.php
+```
+
 ## Operations and troubleshooting
 
 ```bash
