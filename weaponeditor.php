@@ -2,133 +2,185 @@
 
 declare(strict_types=1);
 
-use Lotgd\MySQL\Database;
-use Lotgd\Translator;
-use Lotgd\SuAccess;
-use Lotgd\Nav\SuperuserNav;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Forms;
-use Lotgd\Nav;
-use Lotgd\Page\Header;
-use Lotgd\Page\Footer;
 use Lotgd\Http;
-
-// translator ready
-
-
-// addnews ready
-// mail ready
+use Lotgd\MySQL\Database;
+use Lotgd\Nav;
+use Lotgd\Nav\SuperuserNav;
 use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\SuAccess;
+use Lotgd\Translator;
 
-require_once __DIR__ . "/common.php";
+require_once __DIR__ . '/common.php';
+
+/**
+ * Accepts a scalar decimal integer within the inclusive bounds, or returns null.
+ */
+function weaponEditorInteger(mixed $value, int $minimum, int $maximum): ?int
+{
+    if (!is_int($value) && !is_string($value)) {
+        return null;
+    }
+
+    $validated = filter_var($value, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => $minimum, 'max_range' => $maximum],
+    ]);
+
+    return $validated === false ? null : $validated;
+}
 
 $output = Output::getInstance();
-
 SuAccess::check(SU_EDIT_EQUIPMENT);
+Translator::getInstance()->setSchema('weapon');
+Header::pageHeader('Weapon Editor');
 
-Translator::getInstance()->setSchema("weapon");
+$connection = Database::getDoctrineConnection();
+$weaponlevel = weaponEditorInteger(Http::get('level'), 0, PHP_INT_MAX) ?? 0;
+$getOp = Http::get('op');
+$op = is_string($getOp) && in_array($getOp, ['edit', 'add'], true) ? $getOp : '';
+$postedOp = Http::post('op');
+if (is_string($postedOp) && in_array($postedOp, ['save', 'del'], true)) {
+    $op = $postedOp;
+}
 
-Header::pageHeader("Weapon Editor");
-$weaponlevel = (int)Http::get("level");
+if (!isset($session['weapon_editor_csrf']) || !is_string($session['weapon_editor_csrf']) || $session['weapon_editor_csrf'] === '') {
+    $session['weapon_editor_csrf'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $session['weapon_editor_csrf'];
+$csrfField = htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8');
+
 SuperuserNav::render();
+Nav::add('Weapon Editor');
+Nav::add('Weapon Editor Home', "weaponeditor.php?level=$weaponlevel");
+Nav::add('Add a weapon', "weaponeditor.php?op=add&level=$weaponlevel");
 
-Nav::add("Editor");
-Nav::add("Weapon Editor Home", "weaponeditor.php?level=$weaponlevel");
+$values = [1 => 48, 225, 585, 990, 1575, 2250, 2790, 3420, 4230, 5040, 5850, 6840, 8010, 9000, 10350];
+$output->output('`&<h3>Weapons for %s Dragon Kills</h3>`0', $weaponlevel, true);
+$weaponarray = [
+    'Weapon,title',
+    'weaponid' => 'Weapon ID,hidden',
+    'weaponlevel' => 'DK Level',
+    'weaponname' => 'Weapon Name',
+    'damage' => 'Damage,range,1,15,1',
+];
 
-Nav::add("Add a weapon", "weaponeditor.php?op=add&level=$weaponlevel");
-$values = array(1 => 48,225,585,990,1575,2250,2790,3420,4230,5040,5850,6840,8010,9000,10350);
-$output->rawOutput("<h3>");
-if ($weaponlevel == 1) {
-    $output->output("`&Weapons for 1 Dragon Kill`0");
-} else {
-    $output->output("`&Weapons for %s Dragon Kills`0", $weaponlevel);
-}
-$output->rawOutput("<h3>");
-
-$weaponarray = array(
-    "Weapon,title",
-    "weaponid" => "Weapon ID,hidden",
-    "weaponlevel" => "DK Level",
-    "weaponname" => "Weapon Name",
-    "damage" => "Damage,range,1,15,1");
-$op = Http::get('op');
-$id = Http::get('id');
-if ($op == "edit" || $op == "add") {
-    if ($op == "edit") {
-        $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+if ($op === 'edit' || $op === 'add') {
+    if ($op === 'edit') {
+        $id = weaponEditorInteger(Http::get('id'), 1, PHP_INT_MAX);
+        $row = $id === null ? false : $connection->executeQuery(
+            'SELECT * FROM ' . Database::prefix('weapons') . ' WHERE weaponid = :weaponId',
+            ['weaponId' => $id],
+            ['weaponId' => ParameterType::INTEGER]
+        )->fetchAssociative();
+        if ($row === false) {
+            debuglog('Rejected weapon editor lookup with an invalid or unknown weapon ID.');
+            http_response_code(400);
+            $op = '';
+        }
     } else {
-        $sql = "SELECT max(damage+1) AS damage FROM " . Database::prefix("weapons") . " WHERE level=$weaponlevel";
-        $result = Database::query($sql);
-        $row = Database::fetchAssoc($result);
+        $row = $connection->executeQuery(
+            'SELECT max(damage+1) AS damage FROM ' . Database::prefix('weapons') . ' WHERE level = :level',
+            ['level' => $weaponlevel],
+            ['level' => ParameterType::INTEGER]
+        )->fetchAssociative();
     }
-    $output->rawOutput("<form action='weaponeditor.php?op=save&level=$weaponlevel' method='POST'>");
-    Nav::add("", "weaponeditor.php?op=save&level=$weaponlevel");
-    Forms::showForm($weaponarray, $row);
-    $output->rawOutput("</form>");
-} elseif ($op == "del") {
-    $sql = "DELETE FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
-    Database::query($sql);
-    $op = "";
-    Http::set("op", $op);
-} elseif ($op == "save") {
-    $weaponid = (int)Http::post("weaponid");
-    $damage = Http::post("damage");
-    $weaponname = Http::post("weaponname");
-    if ($weaponid > 0) {
-        $sql = "UPDATE " . Database::prefix("weapons") . " SET weaponname=\"$weaponname\",damage=\"$damage\",value=" .  $values[$damage] . " WHERE weaponid='$weaponid'";
-    } else {
-        $sql = "INSERT INTO " . Database::prefix("weapons") . " (level,damage,weaponname,value) VALUES ($weaponlevel,\"$damage\",\"$weaponname\"," . $values[$damage] . ")";
+    if ($op !== '') {
+        $output->rawOutput("<form action='weaponeditor.php?level=$weaponlevel' method='POST'>");
+        $output->rawOutput("<input type='hidden' name='op' value='save'><input type='hidden' name='csrf_token' value='$csrfField'>");
+        Nav::add('', "weaponeditor.php?level=$weaponlevel");
+        Forms::showForm($weaponarray, $row ?: []);
+        $output->rawOutput('</form>');
     }
-    Database::query($sql);
-    //$output->output($sql);
-    $op = "";
-    Http::set("op", $op);
-}
-if ($op == "") {
-    $sql = "SELECT max(level+1) as level FROM " . Database::prefix("weapons");
-    $res = Database::query($sql);
-    $row = Database::fetchAssoc($res);
-    $max = $row['level'];
-    for ($i = 0; $i <= $max; $i++) {
-        if ($i == 1) {
-            Nav::add("Weapons for 1 DK", "weaponeditor.php?level=$i");
+} elseif ($op === 'del' || $op === 'save') {
+    $postedCsrf = Http::post('csrf_token');
+    if (!is_string($postedCsrf) || !hash_equals($csrfToken, $postedCsrf)) {
+        debuglog('Rejected weapon editor state change with an invalid CSRF token.');
+        http_response_code(400);
+    } elseif ($op === 'del') {
+        $id = weaponEditorInteger(Http::post('id'), 1, PHP_INT_MAX);
+        if ($id === null) {
+            debuglog('Rejected weapon deletion with an invalid weapon ID.');
+            http_response_code(400);
         } else {
-            Nav::add(array("Weapons for %s DKs",$i), "weaponeditor.php?level=$i");
+            $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('weapons') . ' WHERE weaponid = :weaponId',
+                ['weaponId' => $id],
+                ['weaponId' => ParameterType::INTEGER]
+            );
+        }
+    } else {
+        $weaponid = weaponEditorInteger(Http::post('weaponid'), 0, PHP_INT_MAX);
+        $damage = weaponEditorInteger(Http::post('damage'), 1, count($values));
+        $weaponname = Http::post('weaponname');
+        if ($weaponid === null || $damage === null || !is_string($weaponname) || $weaponname === '') {
+            debuglog('Rejected weapon save with malformed editor fields.');
+            http_response_code(400);
+        } else {
+            $params = ['level' => $weaponlevel, 'damage' => $damage, 'name' => $weaponname, 'value' => $values[$damage]];
+            $types = ['level' => ParameterType::INTEGER, 'damage' => ParameterType::INTEGER, 'name' => ParameterType::STRING, 'value' => ParameterType::INTEGER];
+            if ($weaponid > 0) {
+                $params['weaponId'] = $weaponid;
+                $types['weaponId'] = ParameterType::INTEGER;
+                unset($params['level'], $types['level']);
+                $connection->executeStatement(
+                    'UPDATE ' . Database::prefix('weapons') . ' SET weaponname = :name, damage = :damage, value = :value WHERE weaponid = :weaponId',
+                    $params,
+                    $types
+                );
+            } else {
+                $connection->executeStatement(
+                    'INSERT INTO ' . Database::prefix('weapons') . ' (level, damage, weaponname, value) VALUES (:level, :damage, :name, :value)',
+                    $params,
+                    $types
+                );
+            }
         }
     }
-    $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE level=$weaponlevel ORDER BY damage";
-    $result = Database::query($sql);
-    $ops = Translator::translateInline("Ops");
-    $name = Translator::translateInline("Name");
-    $cost = Translator::translateInline("Cost");
-    $damage = Translator::translateInline("Damage");
-    $level = Translator::translateInline("Level");
-    $edit = Translator::translateInline("Edit");
-    $del = Translator::translateInline("Del");
-    $delconfirm = Translator::translateInline("Are you sure you wish to delete this weapon?");
-    $delconfirmJs = json_encode($delconfirm, JSON_HEX_APOS | JSON_HEX_QUOT);
+    $op = '';
+}
 
+if ($op === '') {
+    $row = $connection->executeQuery('SELECT max(level+1) AS level FROM ' . Database::prefix('weapons'))->fetchAssociative();
+    $max = weaponEditorInteger($row['level'] ?? null, 0, PHP_INT_MAX) ?? 0;
+    for ($i = 0; $i <= $max; $i++) {
+        Nav::add($i === 1 ? ['Weapons for %s DK', $i] : ['Weapons for %s DKs', $i], "weaponeditor.php?level=$i");
+    }
+    $result = $connection->executeQuery(
+        'SELECT * FROM ' . Database::prefix('weapons') . ' WHERE level = :level ORDER BY damage',
+        ['level' => $weaponlevel],
+        ['level' => ParameterType::INTEGER]
+    );
+    $ops = Translator::translateInline('Ops');
+    $name = Translator::translateInline('Name');
+    $cost = Translator::translateInline('Cost');
+    $damage = Translator::translateInline('Damage');
+    $level = Translator::translateInline('Level');
+    $edit = Translator::translateInline('Edit');
+    $delete = Translator::translateInline('Del');
+    $deleteConfirmation = Translator::translateInline('Are you sure you wish to delete this weapon?');
+    $deleteConfirmationJs = json_encode($deleteConfirmation, JSON_HEX_APOS | JSON_HEX_QUOT);
     $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$damage</td><td>$level</td></tr>");
-    $number = Database::numRows($result);
-    for ($i = 0; $i < $number; $i++) {
-        $row = Database::fetchAssoc($result);
-        $output->rawOutput("<tr class='" . ($i % 2 ? "trdark" : "trlight") . "'>");
-        $output->rawOutput("<td>[<a href='weaponeditor.php?op=edit&id={$row['weaponid']}&level=$weaponlevel'>$edit</a>|<a href='weaponeditor.php?op=del&id={$row['weaponid']}&level=$weaponlevel' onClick='return confirm($delconfirmJs);'>$del</a>]</td>");
-        Nav::add("", "weaponeditor.php?op=edit&id={$row['weaponid']}&level=$weaponlevel");
-        Nav::add("", "weaponeditor.php?op=del&id={$row['weaponid']}&level=$weaponlevel");
-        $output->rawOutput("<td>");
-        $output->outputNotl($row['weaponname']);
-        $output->rawOutput("</td><td>");
-        $output->outputNotl((string)$row['value']);
-        $output->rawOutput("</td><td>");
-        $output->outputNotl((string)$row['damage']);
-        $output->rawOutput("</td><td>");
-        $output->outputNotl((string)$row['level']);
-        $output->rawOutput("</td>");
-        $output->rawOutput("</tr>");
+    $i = 0;
+    while (($row = $result->fetchAssociative()) !== false) {
+        $rowId = weaponEditorInteger($row['weaponid'] ?? null, 1, PHP_INT_MAX);
+        if ($rowId === null) {
+            continue;
+        }
+        $output->rawOutput("<tr class='" . ($i++ % 2 ? 'trdark' : 'trlight') . "'><td>[<a href='weaponeditor.php?op=edit&amp;id=$rowId&amp;level=$weaponlevel'>$edit</a>|");
+        $output->rawOutput("<form method='POST' action='weaponeditor.php?level=$weaponlevel' style='display:inline' onsubmit='return confirm($deleteConfirmationJs);'><input type='hidden' name='op' value='del'><input type='hidden' name='id' value='$rowId'><input type='hidden' name='csrf_token' value='$csrfField'><button type='submit'>$delete</button></form>]</td>");
+        Nav::add('', "weaponeditor.php?op=edit&id=$rowId&level=$weaponlevel");
+        $output->rawOutput('<td>');
+        $output->outputNotl((string) $row['weaponname']);
+        foreach (['value', 'damage', 'level'] as $column) {
+            $output->rawOutput('</td><td>');
+            $output->outputNotl((string) $row[$column]);
+        }
+        $output->rawOutput('</td></tr>');
     }
-    $output->rawOutput("</table>");
+    $output->rawOutput('</table>');
 }
 Footer::pageFooter();

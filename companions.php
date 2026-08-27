@@ -15,6 +15,7 @@ use Lotgd\Settings;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
 use Lotgd\Output;
+use Doctrine\DBAL\ParameterType;
 
 // addnews ready
 // mail ready
@@ -22,6 +23,8 @@ use Lotgd\Output;
 
 // hilarious copy of mounts.php
 require_once __DIR__ . "/common.php";
+
+$connection = Database::getDoctrineConnection();
 
 $settings = Settings::getInstance();
 SuAccess::check(SU_EDIT_MOUNTS);
@@ -35,38 +38,68 @@ SuperuserNav::render();
 Nav::add("Companion Editor");
 Nav::add("Add a companion", "companions.php?op=add");
 
-$op = Http::get('op');
-$id = Http::get('id');
-if ($op == "deactivate") {
-    $sql = "UPDATE " . Database::prefix("companions") . " SET companionactive=0 WHERE companionid='$id'";
-    Database::query($sql);
+$opValue = Http::postIsset('op') ? Http::post('op') : Http::get('op');
+$op = is_string($opValue) ? $opValue : '';
+$rawId = Http::postIsset('id') ? Http::post('id') : Http::get('id');
+$id = companionEditorPositiveInteger($rawId);
+$stateChangingOperations = ['deactivate', 'activate', 'del', 'take', 'save'];
+if (in_array($op, $stateChangingOperations, true) && !companionEditorValidPostRequest()) {
+    error_log(sprintf('Denied companion editor action: op=%s user=%d', $op, (int) ($session['user']['acctid'] ?? 0)));
+    $output->output('`$The requested companion action was rejected.`0');
+    $op = '';
+} elseif (in_array($op, ['deactivate', 'activate', 'del', 'take'], true) && $id === null) {
+    error_log(sprintf('Rejected companion editor action with invalid id: op=%s user=%d', $op, (int) ($session['user']['acctid'] ?? 0)));
+    $output->output('`$The requested companion identifier was invalid.`0');
+    $op = '';
+} elseif ($op === 'save' && $rawId !== null && $rawId !== '' && $id === null) {
+    error_log(sprintf('Rejected companion save with invalid id from user=%d', (int) ($session['user']['acctid'] ?? 0)));
+    $output->output('`$The requested companion identifier was invalid.`0');
+    $op = '';
+}
+
+if ($op == "deactivate" && $id !== null) {
+    $connection->executeStatement(
+        "UPDATE " . Database::prefix("companions") . " SET companionactive=0 WHERE companionid=:id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
     $op = "";
     Http::set("op", "");
     DataCache::getInstance()->invalidatedatacache("companionsdata-$id");
-} elseif ($op == "activate") {
-    $sql = "UPDATE " . Database::prefix("companions") . " SET companionactive=1 WHERE companionid='$id'";
-    Database::query($sql);
+} elseif ($op == "activate" && $id !== null) {
+    $connection->executeStatement(
+        "UPDATE " . Database::prefix("companions") . " SET companionactive=1 WHERE companionid=:id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
     $op = "";
     Http::set("op", "");
     DataCache::getInstance()->invalidatedatacache("companiondata-$id");
-} elseif ($op == "del") {
+} elseif ($op == "del" && $id !== null) {
     //drop the companion.
-    $sql = "DELETE FROM " . Database::prefix("companions") . " WHERE companionid='$id'";
-    Database::query($sql);
+    $connection->executeStatement(
+        "DELETE FROM " . Database::prefix("companions") . " WHERE companionid=:id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
     HookHandler::deleteObjPrefs('companions', $id);
     $op = "";
     Http::set("op", "");
     DataCache::getInstance()->invalidatedatacache("companiondata-$id");
-} elseif ($op == "take") {
-    $sql = "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid='$id'";
-    $result = Database::query($sql);
-    if ($row = Database::fetchAssoc($result)) {
+} elseif ($op == "take" && $id !== null) {
+    $result = $connection->executeQuery(
+        "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid=:id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
+    if ($row = $result->fetchAssociative()) {
         $row['attack'] = $row['attack'] + $row['attackperlevel'] * $session['user']['level'];
         $row['defense'] = $row['defense'] + $row['defenseperlevel'] * $session['user']['level'];
         $row['maxhitpoints'] = $row['maxhitpoints'] + $row['maxhitpointsperlevel'] * $session['user']['level'];
         $row['hitpoints'] = $row['maxhitpoints'];
         $row = HookHandler::moduleHook("alter-companion", $row);
-        $row['abilities'] = @unserialize($row['abilities']);
+        $abilities = unserialize((string) $row['abilities'], ['allowed_classes' => false]);
+        $row['abilities'] = is_array($abilities) ? $abilities : [];
         if (Buffs::applyCompanion($row['name'], $row)) {
             $output->output("`\$Successfully taken `^%s`\$ as companion.", $row['name']);
         } else {
@@ -79,7 +112,7 @@ if ($op == "deactivate") {
     $subop = Http::get("subop");
     if ($subop == "") {
         $companion = Http::post('companion');
-        if ($companion) {
+        if (is_array($companion)) {
             if (!isset($companion['allowinshades'])) {
                 $companion['allowinshades'] = 0;
             }
@@ -101,39 +134,43 @@ if ($op == "deactivate") {
             if (!isset($companion['cannotbehealed'])) {
                 $companion['cannotbehealed'] = false;
             }
-            $sql = "";
-            $keys = "";
-            $vals = "";
-            $i = 0;
-            foreach ($companion as $key => $val) {
-                if (is_array($val)) {
-                    $val = addslashes(serialize($val));
-                }
-                $sql .= (($i > 0) ? ", " : "") . "$key='$val'";
-                $keys .= (($i > 0) ? ", " : "") . "$key";
-                $vals .= (($i > 0) ? ", " : "") . "'$val'";
-                $i++;
-            }
-            if ($id > "") {
-                $sql = "UPDATE " . Database::prefix("companions") .
-                    " SET $sql WHERE companionid='$id'";
+            $normalized = companionEditorNormalizeFields($companion);
+            if ($normalized === null) {
+                error_log(sprintf('Rejected malformed companion fields from user=%d', (int) ($session['user']['acctid'] ?? 0)));
+                $output->output('`$Companion not saved: invalid fields.`0`n`n');
+            } elseif ($id !== null) {
+                $assignments = array_map(static fn (string $column): string => "$column = :$column", array_keys($normalized['params']));
+                $params = $normalized['params'] + ['id' => $id];
+                $types = $normalized['types'] + ['id' => ParameterType::INTEGER];
+                $affected = $connection->executeStatement(
+                    "UPDATE " . Database::prefix("companions") . " SET " . implode(', ', $assignments) .
+                    " WHERE companionid = :id",
+                    $params,
+                    $types
+                );
             } else {
-                $sql = "INSERT INTO " . Database::prefix("companions") .
-                    " ($keys) VALUES ($vals)";
+                $columns = array_keys($normalized['params']);
+                $affected = $connection->executeStatement(
+                    "INSERT INTO " . Database::prefix("companions") . " (" . implode(', ', $columns) .
+                    ") VALUES (:" . implode(', :', $columns) . ")",
+                    $normalized['params'],
+                    $normalized['types']
+                );
             }
-            Database::query($sql);
             DataCache::getInstance()->invalidatedatacache("companiondata-$id");
-            if (Database::affectedRows() > 0) {
+            if (($affected ?? 0) > 0) {
                 $output->output("`^Companion saved!`0`n`n");
-            } else {
-//              if (strlen($sql) > 400) $sql = substr($sql,0,200)." ... ".substr($sql,strlen($sql)-200);
-                $output->output("`^Companion `\$not`^ saved: `\$%s`0`n`n", $sql);
+            } elseif ($normalized !== null) {
+                $output->output("`^Companion `\$not`^ saved.`0`n`n");
             }
+        } else {
+            error_log(sprintf('Rejected array-shaped or missing companion payload from user=%d', (int) ($session['user']['acctid'] ?? 0)));
         }
     } elseif ($subop == "module") {
         // Save modules settings
         $module = Http::get("module");
         $post = Http::allPost();
+        unset($post['csrf_token']);
         reset($post);
         foreach ($post as $key => $val) {
             HookHandler::setObjPref("companions", $id, $key, $val, $module);
@@ -187,18 +224,15 @@ if ($op == "") {
             $output->rawOutput("$del |");
         } else {
             $mconf = sprintf($conf, $companions[$row['companionid']]);
-            $output->rawOutput("<a href='companions.php?op=del&id={$row['companionid']}'>$del</a> |");
-            Nav::add("", "companions.php?op=del&id={$row['companionid']}");
+            companionEditorActionButton('del', (int) $row['companionid'], $del);
         }
         if ($row['companionactive']) {
-            $output->rawOutput("<a href='companions.php?op=deactivate&id={$row['companionid']}'>$deac</a> | ");
-            Nav::add("", "companions.php?op=deactivate&id={$row['companionid']}");
+            companionEditorActionButton('deactivate', (int) $row['companionid'], $deac);
         } else {
-            $output->rawOutput("<a href='companions.php?op=activate&id={$row['companionid']}'>$act</a> | ");
-            Nav::add("", "companions.php?op=activate&id={$row['companionid']}");
+            companionEditorActionButton('activate', (int) $row['companionid'], $act);
         }
-        $output->rawOutput("<a href='companions.php?op=take&id={$row['companionid']}'>$take</a> ]</td>");
-        Nav::add("", "companions.php?op=take&id={$row['companionid']}");
+        companionEditorActionButton('take', (int) $row['companionid'], $take);
+        $output->rawOutput(" ]</td>");
         $output->rawOutput("<td>");
         $output->outputNotl("`&%s`0", $row['name']);
         $output->rawOutput("</td><td>");
@@ -214,9 +248,13 @@ if ($op == "") {
     companionform(array());
 } elseif ($op == "edit") {
     Nav::add("Companion Editor Home", "companions.php");
-    $sql = "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid='$id'";
-    $result = Database::queryCached($sql, "companiondata-$id", 3600);
-    if (Database::numRows($result) <= 0) {
+    $result = $id === null ? null : $connection->executeQuery(
+        "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid = :id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
+    $row = $result?->fetchAssociative();
+    if (!$row) {
         $output->output("`iThis companion was not found.`i");
     } else {
         Nav::add("Companion properties", "companions.php?op=edit&id=$id");
@@ -224,14 +262,16 @@ if ($op == "") {
         $subop = Http::get("subop");
         if ($subop == "module") {
             $module = Http::get("module");
+            $csrfToken = htmlspecialchars(companionEditorCsrfToken(), ENT_QUOTES, 'UTF-8');
             $output->rawOutput("<form action='companions.php?op=save&subop=module&id=$id&module=$module' method='POST'>");
+            $output->rawOutput("<input type='hidden' name='csrf_token' value='$csrfToken'>");
             HookHandler::objprefEdit("companions", $module, $id);
             $output->rawOutput("</form>");
             Nav::add("", "companions.php?op=save&subop=module&id=$id&module=$module");
         } else {
             $output->output("Companion Editor:`n");
-            $row = Database::fetchAssoc($result);
-            $row['abilities'] = @unserialize($row['abilities']);
+            $abilities = unserialize((string) $row['abilities'], ['allowed_classes' => false]);
+            $row['abilities'] = is_array($abilities) ? $abilities : [];
             companionform($row);
         }
     }
@@ -240,6 +280,7 @@ if ($op == "") {
 function companionform($companion)
 {
     $output = Output::getInstance();
+    $settings = Settings::getInstance();
     // Let's sanitize the data
     if (!isset($companion['companionactive'])) {
         $companion['companionactive'] = "";
@@ -327,7 +368,11 @@ function companionform($companion)
         $companion['allowintrain'] = 0;
     }
 
-    $output->rawOutput("<form action='companions.php?op=save&id={$companion['companionid']}' method='POST'>");
+    $csrfToken = htmlspecialchars(companionEditorCsrfToken(), ENT_QUOTES, 'UTF-8');
+    $output->rawOutput("<form action='companions.php' method='POST'>");
+    $output->rawOutput("<input type='hidden' name='op' value='save'>");
+    $output->rawOutput("<input type='hidden' name='id' value='" . (int) $companion['companionid'] . "'>");
+    $output->rawOutput("<input type='hidden' name='csrf_token' value='$csrfToken'>");
     $output->rawOutput("<input type='hidden' name='companion[companionactive]' value=\"" . $companion['companionactive'] . "\">");
     Nav::add("", "companions.php?op=save&id={$companion['companionid']}");
     $output->rawOutput("<table width='100%'>");
@@ -428,6 +473,143 @@ function companionform($companion)
     $output->rawOutput("</table>");
     $save = Translator::translateInline("Save");
     $output->rawOutput("<input type='submit' class='button' value='$save'></form>");
+}
+
+/**
+ * Normalize a scalar decimal request value to an integer from 1 through 2,147,483,647.
+ */
+function companionEditorPositiveInteger(mixed $value): ?int
+{
+    if (!is_int($value) && !is_string($value)) {
+        return null;
+    }
+
+    $validated = filter_var($value, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1, 'max_range' => 2147483647],
+    ]);
+
+    return $validated === false ? null : $validated;
+}
+
+/**
+ * Normalize a scalar decimal request value to an integer from 0 through 2,147,483,647.
+ */
+function companionEditorNonNegativeInteger(mixed $value): ?int
+{
+    if (!is_int($value) && !is_string($value)) {
+        return null;
+    }
+
+    $validated = filter_var($value, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 0, 'max_range' => 2147483647],
+    ]);
+
+    return $validated === false ? null : $validated;
+}
+
+/**
+ * Return the supported form-field-to-column mapping and its DBAL parameter type.
+ *
+ * @return array<string, array{column: string, type: ParameterType, numeric: bool}>
+ */
+function companionEditorFieldMap(): array
+{
+    $strings = ['name', 'description', 'dyingtext', 'jointext', 'category', 'companionlocation'];
+    $integers = [
+        'companionactive', 'companioncostdks', 'companioncostgems', 'companioncostgold', 'attack',
+        'attackperlevel', 'defense', 'defenseperlevel', 'hitpoints', 'maxhitpoints',
+        'maxhitpointsperlevel', 'cannotdie', 'cannotbehealed', 'allowinshades', 'allowinpvp', 'allowintrain',
+    ];
+    $map = [];
+    foreach ($strings as $field) {
+        $map[$field] = ['column' => $field, 'type' => ParameterType::STRING, 'numeric' => false];
+    }
+    foreach ($integers as $field) {
+        $map[$field] = ['column' => $field, 'type' => ParameterType::INTEGER, 'numeric' => true];
+    }
+    $map['abilities'] = ['column' => 'abilities', 'type' => ParameterType::STRING, 'numeric' => false];
+
+    return $map;
+}
+
+/**
+ * Validate supported companion form fields and return DBAL parameters and types.
+ *
+ * @param array<array-key, mixed> $fields
+ * @return array{params: array<string, int|string>, types: array<string, ParameterType>}|null
+ */
+function companionEditorNormalizeFields(array $fields): ?array
+{
+    $map = companionEditorFieldMap();
+    $params = [];
+    $types = [];
+    foreach ($fields as $field => $value) {
+        if (!is_string($field) || !isset($map[$field])) {
+            return null;
+        }
+        if ($field === 'abilities') {
+            if (!is_array($value) || array_diff(array_keys($value), ['fight', 'defend', 'heal', 'magic'])) {
+                return null;
+            }
+            $abilities = [];
+            foreach (['fight', 'defend', 'heal', 'magic'] as $ability) {
+                $normalized = companionEditorNonNegativeInteger($value[$ability] ?? 0);
+                if ($normalized === null || $normalized > 30) {
+                    return null;
+                }
+                $abilities[$ability] = $normalized;
+            }
+            $normalizedValue = serialize($abilities);
+        } elseif ($map[$field]['numeric']) {
+            $normalizedValue = companionEditorNonNegativeInteger($value);
+            if ($normalizedValue === null) {
+                return null;
+            }
+        } elseif (is_string($value)) {
+            $normalizedValue = $value;
+        } else {
+            return null;
+        }
+        $column = $map[$field]['column'];
+        $params[$column] = $normalizedValue;
+        $types[$column] = $map[$field]['type'];
+    }
+
+    return $params === [] ? null : ['params' => $params, 'types' => $types];
+}
+
+/** Return the per-session CSRF token used by companion editor forms. */
+function companionEditorCsrfToken(): string
+{
+    global $session;
+    if (!isset($session['companion_editor_csrf']) || !is_string($session['companion_editor_csrf'])) {
+        $session['companion_editor_csrf'] = bin2hex(random_bytes(32));
+    }
+
+    return $session['companion_editor_csrf'];
+}
+
+/** Return whether the current request is POST and carries the session CSRF token. */
+function companionEditorValidPostRequest(): bool
+{
+    $provided = Http::post('csrf_token');
+
+    return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+        && is_string($provided)
+        && hash_equals(companionEditorCsrfToken(), $provided);
+}
+
+/** Render a POST-only, CSRF-protected button for a state-changing companion action. */
+function companionEditorActionButton(string $operation, int $id, string $label): void
+{
+    $output = Output::getInstance();
+    $token = htmlspecialchars(companionEditorCsrfToken(), ENT_QUOTES, 'UTF-8');
+    $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+    $output->rawOutput("<form action='companions.php' method='POST' style='display:inline'>");
+    $output->rawOutput("<input type='hidden' name='op' value='$operation'>");
+    $output->rawOutput("<input type='hidden' name='id' value='$id'>");
+    $output->rawOutput("<input type='hidden' name='csrf_token' value='$token'>");
+    $output->rawOutput("<button type='submit' class='button'>$safeLabel</button> | </form>");
 }
 
 Footer::pageFooter();
