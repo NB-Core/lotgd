@@ -46,6 +46,39 @@ final class MotdPollVoteSecurityTest extends TestCase
         self::assertNull(Motd::validatePollVoteIdentifier($value));
     }
 
+    /**
+     * Supply malformed values that must not be accepted as poll choice indexes.
+     *
+     * @return iterable<string, array{mixed}>
+     */
+    public static function invalidChoiceProvider(): iterable
+    {
+        yield 'missing' => [null];
+        yield 'negative integer' => [-1];
+        yield 'signed string' => ['-1'];
+        yield 'positive signed string' => ['+1'];
+        yield 'decimal string' => ['1.5'];
+        yield 'decimal number' => [1.5];
+        yield 'array' => [['0']];
+        yield 'boolean true' => [true];
+        yield 'boolean false' => [false];
+        yield 'quote-bearing injection' => ["0' OR 1=1 --"];
+        yield 'integer overflow' => [PHP_INT_MAX . '0'];
+    }
+
+    public function testChoiceValidatorAcceptsZeroBasedIndexes(): void
+    {
+        self::assertSame(0, Motd::validatePollVoteChoice('0'));
+        self::assertSame(0, Motd::validatePollVoteChoice(0));
+        self::assertSame(4, Motd::validatePollVoteChoice('4'));
+    }
+
+    #[DataProvider('invalidChoiceProvider')]
+    public function testMalformedChoicesAreRejectedWithoutCoercion(mixed $value): void
+    {
+        self::assertNull(Motd::validatePollVoteChoice($value));
+    }
+
     public function testValidVoteDeletesPreviousChoiceThenInsertsTypedReplacement(): void
     {
         self::assertSame(17, Motd::validatePollVoteIdentifier('17'));
@@ -53,7 +86,7 @@ final class MotdPollVoteSecurityTest extends TestCase
 
         $connection = Database::getDoctrineConnection();
 
-        Motd::recordPollVote(17, 3, 42);
+        Motd::recordPollVote(17, 0, 42);
 
         self::assertCount(2, $connection->executeStatements);
         [$delete, $insert] = $connection->executeStatements;
@@ -72,7 +105,7 @@ final class MotdPollVoteSecurityTest extends TestCase
             'INSERT INTO pollresults (choice, account, motditem) VALUES (:choice, :account, :motditem)',
             $insert['sql']
         );
-        self::assertSame(['motditem' => 17, 'choice' => 3, 'account' => 42], $insert['params']);
+        self::assertSame(['motditem' => 17, 'choice' => 0, 'account' => 42], $insert['params']);
         self::assertSame(
             [
                 'motditem' => ParameterType::INTEGER,

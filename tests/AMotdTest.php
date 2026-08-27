@@ -41,6 +41,7 @@ final class AMotdTest extends TestCase
 
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString("type='radio' name='choice'", $output);
+        $this->assertStringContainsString("type='radio' name='choice' value='0'", $output);
     }
 
     public function testPollItemUnserializesSlashedData(): void

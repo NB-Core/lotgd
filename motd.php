@@ -42,9 +42,9 @@ if ($session['user']['superuser'] & SU_POST_MOTD) {
 }
 
 if ($op == "vote") {
-    // POST is the trust boundary: reject rather than coerce malformed identifiers.
+    // POST is the trust boundary: validate each integer according to its value domain.
     $motditem = Motd::validatePollVoteIdentifier(Http::post('motditem'));
-    $choice = Motd::validatePollVoteIdentifier(Http::post('choice'));
+    $choice = Motd::validatePollVoteChoice(Http::post('choice'));
     $account = (int)($session['user']['acctid'] ?? 0);
     $postedCsrf = Http::post('csrf_token');
     $expectedCsrf = $session['motd_vote_csrf'] ?? null;
