@@ -33,6 +33,7 @@ COPY docker/apache/lotgd.conf /etc/apache2/sites-available/lotgd.conf
 RUN a2ensite lotgd
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-lotgd.ini
 COPY docker/entrypoint.sh /usr/local/bin/lotgd-entrypoint
+RUN chmod +x /usr/local/bin/lotgd-entrypoint
 
 # Debug-only alternative for users who cannot use docker-compose.dev.yml.
 # Keep this disabled in production because PHP errors may disclose secrets or
