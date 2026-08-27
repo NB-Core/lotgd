@@ -448,8 +448,9 @@ class Database
     {
         if ($force === null || $force === false) {
             $special_prefixes = [];
-            if (file_exists('prefixes.php')) {
-                require_once 'prefixes.php';
+            $prefixesFile = realpath('prefixes.php');
+            if ($prefixesFile !== false) {
+                require_once $prefixesFile;
             }
             $prefix = self::$prefix;
             if (isset($special_prefixes[$tablename])) {

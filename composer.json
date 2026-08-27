@@ -11,8 +11,8 @@
         "wikimedia/composer-merge-plugin": "^2.1"
     },
     "require-dev": {
-        "phpstan/phpstan-doctrine": "^1.3",
-        "phpstan/phpstan": "^1.11",
+        "phpstan/phpstan-doctrine": "^2.0",
+        "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^12.0",
         "squizlabs/php_codesniffer": "^4.0"
     },
