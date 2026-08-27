@@ -4,6 +4,12 @@ set -eu
 state_path="${LOTGD_STATE_PATH:-/var/lib/lotgd}"
 dbconnect_path="/var/www/html/dbconnect.php"
 
+mkdir -p "$state_path"
+if [ ! -w "$state_path" ]; then
+    echo "LOTGD_STATE_PATH '$state_path' is not writable" >&2
+    exit 1
+fi
+
 # Production source is immutable, so direct the installer-generated database
 # configuration into the persistent state volume. Respect a regular file from
 # a development bind mount for compatibility with existing local checkouts.
