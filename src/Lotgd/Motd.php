@@ -136,8 +136,18 @@ class Motd
         }
 
         if ($session['user']['loggedin'] && $showpoll) {
+            if (
+                !isset($session['motd_vote_csrf'])
+                || !is_string($session['motd_vote_csrf'])
+                || $session['motd_vote_csrf'] === ''
+            ) {
+                $session['motd_vote_csrf'] = bin2hex(random_bytes(32));
+            }
+
             $output->rawOutput("<form action='motd.php?op=vote' method='POST'>");
             $output->rawOutput("<input type='hidden' name='motditem' value='$id'>");
+            $csrfToken = htmlspecialchars($session['motd_vote_csrf'], ENT_QUOTES, 'UTF-8');
+            $output->rawOutput("<input type='hidden' name='csrf_token' value='$csrfToken'>");
         }
 
         foreach ($bodyData['opt'] as $key => $val) {
@@ -379,5 +389,61 @@ class Motd
             Nav::add('', "motd.php?op=$editop&id=$id");
             Nav::add('', "motd.php?op=del&id=$id");
         }
+    }
+
+    /**
+     * Validate an untrusted poll identifier without coercing malformed values.
+     *
+     * HTML forms submit decimal strings, while internal callers may supply an
+     * integer. Other scalar types, non-decimal strings, and non-positive values
+     * are deliberately rejected at the request boundary.
+     */
+    public static function validatePollVoteIdentifier(mixed $value): ?int
+    {
+        if (!is_int($value) && !is_string($value)) {
+            return null;
+        }
+
+        if (is_string($value) && preg_match('/^[1-9][0-9]*$/D', $value) !== 1) {
+            return null;
+        }
+
+        $identifier = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return is_int($identifier) ? $identifier : null;
+    }
+
+    /**
+     * Replace an account's previous response to a poll using typed DBAL parameters.
+     */
+    public static function recordPollVote(int $motditem, int $choice, int $account): void
+    {
+        $connection = Database::getDoctrineConnection();
+        $connection->executeStatement(
+            'DELETE FROM ' . Database::prefix('pollresults')
+            . ' WHERE motditem = :motditem AND account = :account',
+            [
+                'motditem' => $motditem,
+                'account' => $account,
+            ],
+            [
+                'motditem' => ParameterType::INTEGER,
+                'account' => ParameterType::INTEGER,
+            ]
+        );
+        $connection->executeStatement(
+            'INSERT INTO ' . Database::prefix('pollresults')
+            . ' (choice, account, motditem) VALUES (:choice, :account, :motditem)',
+            [
+                'motditem' => $motditem,
+                'choice' => $choice,
+                'account' => $account,
+            ],
+            [
+                'motditem' => ParameterType::INTEGER,
+                'choice' => ParameterType::INTEGER,
+                'account' => ParameterType::INTEGER,
+            ]
+        );
     }
 }
