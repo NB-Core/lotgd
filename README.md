@@ -359,8 +359,10 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
 The development override mounts the checkout while keeping `vendor/` and the
-application cache in Docker volumes. Production serves only HTTP on the chosen
-`LOTGD_HTTP_PORT`; deploy it behind a TLS-terminating reverse proxy for HTTPS.
+application cache in Docker volumes. A separate state volume preserves the
+installer-generated `dbconnect.php` and installer-completion state across image
+replacements. Production serves only HTTP on the chosen `LOTGD_HTTP_PORT`;
+deploy it behind a TLS-terminating reverse proxy for HTTPS.
 TLS is intentionally not bundled because each deployment must supply and renew
 certificates for its own domain, for example through Let's Encrypt.
 See [the Docker guide](docs/Docker.md) for cache behavior, verification, and

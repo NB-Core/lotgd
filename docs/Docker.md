@@ -66,10 +66,17 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --f
 
 ## Persistent volumes and permissions
 
-`db_data` holds MySQL data and `lotgd_cache` holds the shared runtime cache.
+`db_data` holds MySQL data, `lotgd_cache` holds the shared runtime cache, and
+`lotgd_state` preserves `dbconnect.php` plus the installer's completion marker.
+The state volume prevents an image replacement from losing database settings or
+restoring an installer that an administrator already removed. Back up
+`lotgd_state` together with the database; do not delete it during a routine
+deployment.
+
 The image creates `/var/cache/lotgd/{twig,doctrine}` as `www-data`; Docker copies
-those initial directories into a newly created named volume. Removing the cache
-volume discards generated cache data but not game or database data.
+those initial directories into a newly created named volume. Removing only the
+cache volume discards generated cache data but not game, configuration, or
+database data.
 
 Inspect ownership and repair an existing volume created with incorrect
 permissions as root:
@@ -114,7 +121,7 @@ most meaningful after several warm-up requests and without concurrent traffic.
 docker compose logs -f web db
 docker compose restart
 docker compose down
-docker compose down --volumes  # destructive: removes database and cache data
+docker compose down --volumes  # destructive: removes database, configuration, and cache data
 ```
 
 If the database connection fails, compare `.env` with the values persisted in

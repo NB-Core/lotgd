@@ -11,6 +11,7 @@ services:
       MYSQL_DATACACHEPATH: /var/cache/lotgd
     volumes:
       - lotgd_cache:/var/cache/lotgd
+      - lotgd_state:/var/lib/lotgd
     depends_on:
       db:
         condition: service_healthy
@@ -45,6 +46,7 @@ services:
 volumes:
   db_data:
   lotgd_cache:
+  lotgd_state:
 
 networks:
   lotgd-network:

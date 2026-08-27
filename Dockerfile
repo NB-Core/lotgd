@@ -32,6 +32,7 @@ RUN a2enmod rewrite \
 COPY docker/apache/lotgd.conf /etc/apache2/sites-available/lotgd.conf
 RUN a2ensite lotgd
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-lotgd.ini
+COPY docker/entrypoint.sh /usr/local/bin/lotgd-entrypoint
 
 # Debug-only alternative for users who cannot use docker-compose.dev.yml.
 # Keep this disabled in production because PHP errors may disclose secrets or
@@ -52,11 +53,14 @@ RUN install -d -o www-data -g www-data -m 0775 \
         /var/cache/lotgd \
         /var/cache/lotgd/twig \
         /var/cache/lotgd/doctrine \
+        /var/lib/lotgd \
     && chown -R www-data:www-data /var/www/html
 
 ENV APP_ENV=production \
+    LOTGD_STATE_PATH=/var/lib/lotgd \
     MYSQL_USEDATACACHE=1 \
     MYSQL_DATACACHEPATH=/var/cache/lotgd
 
 EXPOSE 80
+ENTRYPOINT ["lotgd-entrypoint"]
 CMD ["apache2-foreground"]

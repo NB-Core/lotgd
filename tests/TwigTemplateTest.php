@@ -80,5 +80,22 @@ final class TwigTemplateTest extends TestCase
         yield 'production case and whitespace' => [' Production ', false];
         yield 'development' => ['development', true];
         yield 'test' => ['test', true];
+        yield 'empty legacy environment' => ['', true];
+    }
+
+    public function testAutoReloadDefaultsToLegacyBehaviorWhenEnvironmentIsUnset(): void
+    {
+        $previousEnvironment = getenv('APP_ENV');
+        putenv('APP_ENV');
+
+        try {
+            $this->assertTrue(TwigTemplate::shouldAutoReload());
+        } finally {
+            if ($previousEnvironment === false) {
+                putenv('APP_ENV');
+            } else {
+                putenv('APP_ENV=' . $previousEnvironment);
+            }
+        }
     }
 }

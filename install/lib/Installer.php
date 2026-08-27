@@ -347,7 +347,7 @@ class Installer
         if (array_key_exists('delete_installer', $_POST) && $_POST['delete_installer'] == '1') {
             if (file_exists($file)) {
                 try {
-                    if (unlink($file)) {
+                    if ($this->recordContainerInstallationCompletion() && unlink($file)) {
                         $this->output->output("`\$Installer file installer.php removed.`n");
                     } else {
                         $this->output->output("`\$Unable to delete installer.php. Please remove it manually.`n");
@@ -369,6 +369,26 @@ class Installer
         }
         $this->checkDbconnectPermissions();
         $noinstallnavs = true;
+    }
+
+    /**
+     * Persist installer removal across immutable container replacements.
+     *
+     * Non-container installations do not define LOTGD_STATE_PATH and retain
+     * their traditional file-deletion behavior. In a container, refusing to
+     * delete installer.php when the marker cannot be written prevents a later
+     * deployment from silently restoring an active installer.
+     */
+    private function recordContainerInstallationCompletion(): bool
+    {
+        $statePath = getenv('LOTGD_STATE_PATH');
+        if ($statePath === false || trim($statePath) === '') {
+            return true;
+        }
+
+        $marker = rtrim($statePath, '/\\') . '/installation-complete';
+
+        return file_put_contents($marker, "completed\n", LOCK_EX) !== false;
     }
 
     /**

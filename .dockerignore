@@ -1,6 +1,7 @@
 .git
 .github
 .env
+dbconnect.php
 .idea
 .vscode
 *.log

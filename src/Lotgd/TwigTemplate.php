@@ -23,7 +23,8 @@ class TwigTemplate extends Template
      *
      * APP_ENV controls template freshness: production disables filesystem
      * checks, while development and test environments automatically reload
-     * changed templates. An unset environment defaults safely to production.
+     * changed templates. An unset environment retains the legacy auto-reload
+     * behavior for compatibility with mutable non-Docker installations.
      */
     public static function init(string $templateName, ?string $datacachePath = null): void
     {
@@ -68,9 +69,12 @@ class TwigTemplate extends Template
      */
     public static function shouldAutoReload(?string $environment = null): bool
     {
-        $environment ??= getenv('APP_ENV') ?: 'production';
+        if ($environment === null) {
+            $configuredEnvironment = getenv('APP_ENV');
+            $environment = $configuredEnvironment === false ? '' : $configuredEnvironment;
+        }
 
-        // Only immutable production images skip timestamp checks.
+        // Only an explicitly configured production environment skips checks.
         return strtolower(trim($environment)) !== 'production';
     }
 
