@@ -1,59 +1,62 @@
-# ---------------------------------------------
-# Composer stage - install PHP dependencies
-# ---------------------------------------------
+# syntax=docker/dockerfile:1
+
+# Install dependency archives before copying the application so ordinary source
+# changes retain the expensive Composer download layer.
 FROM composer:2 AS composer
-
-# Working directory for Composer
 WORKDIR /app
-
-# Copy Composer files separately to leverage Docker layer caching
 COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --no-autoloader \
+    --no-scripts
+COPY . ./
+RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction
 
-# Install dependencies without development packages
-RUN composer install --no-dev --no-interaction --prefer-dist
-
-# ---------------------------------------------
-# Application stage - PHP with Apache
-# ---------------------------------------------
 FROM php:8.3-apache
 
-# Install system packages and PHP extensions required by the game
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpng-dev \
-    libjpeg-dev \
-    libonig-dev \
-    libzip-dev \
+        libjpeg-dev \
+        libonig-dev \
+        libpng-dev \
+        libzip-dev \
     && docker-php-ext-configure gd --with-jpeg \
-    && docker-php-ext-install gd mysqli pdo pdo_mysql mbstring zip \
+    && docker-php-ext-install -j"$(nproc)" gd mbstring mysqli opcache pdo pdo_mysql zip \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable mod_rewrite for clean URLs
-RUN a2enmod rewrite
+# The vhost contains the production security rules, so per-request .htaccess
+# discovery is unnecessary. Only mod_rewrite is needed by those rules.
+RUN a2enmod rewrite \
+    && a2dissite 000-default
+COPY docker/apache/lotgd.conf /etc/apache2/sites-available/lotgd.conf
+RUN a2ensite lotgd
+COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-lotgd.ini
 
-# Allow .htaccess overrides
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+# Debug-only alternative for users who cannot use docker-compose.dev.yml.
+# Keep this disabled in production because PHP errors may disclose secrets or
+# implementation details. The development override is the preferred approach.
+# RUN printf '%s\n' \
+#         'display_errors = On' \
+#         'display_startup_errors = On' \
+#         'error_reporting = E_ALL' \
+#         'log_errors = On' \
+#         'error_log = /dev/stderr' \
+#     > /usr/local/etc/php/conf.d/zzz-lotgd-debug.ini
 
-# Application code lives here
 WORKDIR /var/www/html
+COPY --from=composer /app /var/www/html
 
-# Copy application source
-COPY . /var/www/html
+# Twig and Doctrine use separate children of this persistent runtime cache.
+RUN install -d -o www-data -g www-data -m 0775 \
+        /var/cache/lotgd \
+        /var/cache/lotgd/twig \
+        /var/cache/lotgd/doctrine \
+    && chown -R www-data:www-data /var/www/html
 
-# Bring in Composer dependencies from the composer stage
-COPY --from=composer /app/vendor /var/www/html/vendor
+ENV APP_ENV=production \
+    MYSQL_USEDATACACHE=1 \
+    MYSQL_DATACACHEPATH=/var/cache/lotgd
 
-# Set proper permissions
-RUN chown -R www-data:www-data /var/www/html
-
-# Expose the Apache port
 EXPOSE 80
-
-# Enable verbose PHP error reporting (development only)
-RUN echo "display_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "display_startup_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "error_reporting = E_ALL;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "log_errors = On;" >> /usr/local/etc/php/conf.d/docker-php.ini \
-    && echo "error_log = /dev/stderr;" >> /usr/local/etc/php/conf.d/docker-php.ini
-
-# Launch Apache
 CMD ["apache2-foreground"]

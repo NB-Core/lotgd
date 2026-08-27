@@ -18,12 +18,19 @@ class TwigTemplate extends Template
     /** Checks if Twig is enabled or not */
     private static bool $isTwigActive = false;
 
+    /**
+     * Initialize Twig for the requested template.
+     *
+     * APP_ENV controls template freshness: production disables filesystem
+     * checks, while development and test environments automatically reload
+     * changed templates. An unset environment defaults safely to production.
+     */
     public static function init(string $templateName, ?string $datacachePath = null): void
     {
         self::$templateDir = __DIR__ . '/../../templates_twig/' . $templateName;
         $loader = new FilesystemLoader(self::$templateDir);
 
-        $options = ['auto_reload' => true];
+        $options = ['auto_reload' => self::shouldAutoReload()];
 
         $resolvedCachePath = $datacachePath;
         if ($resolvedCachePath === null || $resolvedCachePath === '') {
@@ -51,6 +58,20 @@ class TwigTemplate extends Template
         }));
 
         self::$isTwigActive = true;
+    }
+
+    /**
+     * Determine whether Twig should check source templates for changes.
+     *
+     * @param string|null $environment Explicit environment for tests or null
+     *        to read APP_ENV from the process environment.
+     */
+    public static function shouldAutoReload(?string $environment = null): bool
+    {
+        $environment ??= getenv('APP_ENV') ?: 'production';
+
+        // Only immutable production images skip timestamp checks.
+        return strtolower(trim($environment)) !== 'production';
     }
 
 

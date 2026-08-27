@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.idea
+.vscode
+*.log
+coverage/
+.phpunit.cache/
+.phpunit.result.cache
+phpunit.xml
+tests/
+vendor/
+data/cache/
+var/cache/
+cache/
