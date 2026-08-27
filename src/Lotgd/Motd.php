@@ -414,6 +414,29 @@ class Motd
     }
 
     /**
+     * Validate an untrusted zero-based poll choice index without coercion.
+     *
+     * Poll forms submit decimal strings, while internal callers may supply an
+     * integer. Zero is a valid first-choice index. Other scalar types,
+     * non-decimal strings, negative values, and integers outside PHP's
+     * supported range are deliberately rejected at the request boundary.
+     */
+    public static function validatePollVoteChoice(mixed $value): ?int
+    {
+        if (!is_int($value) && !is_string($value)) {
+            return null;
+        }
+
+        if (is_string($value) && preg_match('/^[0-9]+$/D', $value) !== 1) {
+            return null;
+        }
+
+        $choice = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+        return is_int($choice) ? $choice : null;
+    }
+
+    /**
      * Replace an account's previous response to a poll using typed DBAL parameters.
      */
     public static function recordPollVote(int $motditem, int $choice, int $account): void
