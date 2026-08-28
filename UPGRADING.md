@@ -35,6 +35,16 @@ Before doing anything:
 2. Keep your `config` folder (but update as noted below).  
 3. Run `composer install` to pull required dependencies.
 
+### Docker deployments using legacy example passwords
+
+The hardened Compose configuration rejects the previously documented
+`lotgdpass` and `rootpass` values. Existing `db_data` volumes retain MySQL
+credentials independently of `.env`, so those credentials must be rotated
+before the upgraded web container starts. Follow the complete, backup-aware
+procedure in [Docker deployment: Rotating legacy Docker example
+passwords](docs/Docker.md#rotating-legacy-docker-example-passwords); changing
+only `.env` will leave the application unable to connect.
+
 ---
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
