@@ -73,6 +73,21 @@ until [ "$(docker inspect --format '{{.State.Health.Status}}' "${COMPOSE_PROJECT
     sleep 2
 done
 
+# A restart loop previously surfaced only as an opaque `docker compose exec`
+# daemon error. Require a stable, executable web process first and print its
+# startup logs immediately if the least-privilege entrypoint cannot initialize.
+attempt=0
+until docker compose exec -T web true >/dev/null 2>&1; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 30 ]; then
+        echo "Web container did not reach a runnable state" >&2
+        docker compose ps web
+        docker compose logs web
+        exit 1
+    fi
+    sleep 1
+done
+
 docker compose exec -T web php -r '
     $configuration = [
         "DB_HOST" => getenv("MYSQL_HOST"),

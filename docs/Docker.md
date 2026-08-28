@@ -195,8 +195,9 @@ game remotely, put a TLS reverse proxy on a public interface and proxy to
 
 Both services set `no-new-privileges`, drop Docker's entire default capability
 set, and add back only the startup capabilities exercised by their official
-entrypoints. The web entrypoint needs `CHOWN` and `FOWNER` to repair persistent
-volume metadata, `NET_BIND_SERVICE` for container port 80, and
+entrypoints. The web entrypoint needs `CHOWN`, `FOWNER`, and `DAC_OVERRIDE` to
+traverse and repair restrictive, `www-data`-owned persistent volume metadata,
+`NET_BIND_SERVICE` for container port 80, and
 `SETUID`/`SETGID` to start Apache workers as `www-data`.
 MySQL additionally needs `DAC_OVERRIDE` to traverse an existing mysql-owned
 data volume while initializing it. Neither service retains networking,

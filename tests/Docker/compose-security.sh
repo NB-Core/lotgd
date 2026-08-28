@@ -55,7 +55,7 @@ for name, pattern in pins.items():
 
 services = model["services"]
 expected_caps = {
-    "web": {"CHOWN", "FOWNER", "NET_BIND_SERVICE", "SETGID", "SETUID"},
+    "web": {"CHOWN", "DAC_OVERRIDE", "FOWNER", "NET_BIND_SERVICE", "SETGID", "SETUID"},
     "db": {"CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"},
 }
 for name, capabilities in expected_caps.items():
