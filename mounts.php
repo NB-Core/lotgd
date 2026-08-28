@@ -383,7 +383,13 @@ if ($op == "") {
             Nav::add("", "mounts.php?op=save&subop=module&id=$id&module=$module");
         } else {
             $output->output("Mount Editor:`n");
-            $row['mountbuff'] = unserialize($row['mountbuff']);
+            $preparedBuff = Mounts::prepareBuffForEditor($row['mountbuff'] ?? null, (int) $row['mountid']);
+            $row['mountbuff'] = $preparedBuff['buff'];
+            if (!$preparedBuff['valid']) {
+                $output->output(
+                    '`$' . Translator::translate('The stored buff data for this mount is invalid. An empty buff form is shown instead.') . '`0`n'
+                );
+            }
             mountform($row);
         }
     }

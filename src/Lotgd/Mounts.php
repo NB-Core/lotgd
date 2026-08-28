@@ -131,4 +131,24 @@ class Mounts
 
         return self::GRANT_SUCCESS;
     }
+
+    /**
+     * Decode and validate a stored mount buff before populating the editor form.
+     *
+     * Serialization::safeUnserialize() disables class instantiation. Keeping the
+     * array check here gives every mount-edit caller the same form-safe boundary.
+     *
+     * @return array{buff: array<mixed>, valid: bool}
+     */
+    public static function prepareBuffForEditor(mixed $storedBuff, int $mountId): array
+    {
+        $buff = Serialization::safeUnserialize($storedBuff);
+        if (!is_array($buff)) {
+            error_log("Invalid stored mount buff while editing mount (mountId={$mountId})");
+
+            return ['buff' => [], 'valid' => false];
+        }
+
+        return ['buff' => $buff, 'valid' => true];
+    }
 }

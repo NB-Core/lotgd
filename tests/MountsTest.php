@@ -127,6 +127,33 @@ final class MountsTest extends TestCase
         $this->assertSame(['rounds' => 3], $GLOBALS['session']['bufflist']['mount']);
     }
 
+    public function testPrepareBuffForEditorAcceptsSerializedArray(): void
+    {
+        $buff = ['rounds' => 5, 'atkmod' => 1.2];
+
+        $result = Mounts::prepareBuffForEditor(serialize($buff), 8);
+
+        $this->assertTrue($result['valid']);
+        $this->assertSame($buff, $result['buff']);
+    }
+
+    public function testPrepareBuffForEditorReturnsFormSafeArrayForMalformedData(): void
+    {
+        $result = Mounts::prepareBuffForEditor('not serialized data', 8);
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame([], $result['buff']);
+    }
+
+    public function testPrepareBuffForEditorDoesNotInstantiateSerializedObjects(): void
+    {
+        $result = Mounts::prepareBuffForEditor(serialize(new MountBuffSerializationFixture()), 8);
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame([], $result['buff']);
+        $this->assertFalse(MountBuffSerializationFixture::$wasUnserialized);
+    }
+
     /** @param array<string, mixed> $row */
     private function prepareGrantRow(array $row): void
     {
