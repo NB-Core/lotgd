@@ -52,17 +52,28 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Validate Compose and run production smoke test
-        run: tests/Docker/smoke.sh
-      - name: Build supported 64-bit architectures
+      - name: Reject application-image build toolchains
+        run: tests/Docker/no-build-toolchain.sh
+      - name: Verify runtime image supports AMD64 and ARM64
+        run: |
+          docker buildx imagetools inspect \
+            thecodingmachine/php:8.3-v4-apache@sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7 \
+            --format '{{json .Manifest}}' | tee /tmp/runtime-manifest.json
+          # OS and architecture are separate JSON properties; query them as a
+          # pair instead of depending on a nonexistent "linux/amd64" string.
+          jq -e 'any(.manifests[]; .platform.os == "linux" and .platform.architecture == "amd64")' /tmp/runtime-manifest.json
+          jq -e 'any(.manifests[]; .platform.os == "linux" and .platform.architecture == "arm64")' /tmp/runtime-manifest.json
+      - name: Build and load AMD64 application image once
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          load: true
+          tags: lotgd-ci:${{ github.sha }}
           push: false
-          cache-from: type=gha,scope=lotgd-multiarch
-          cache-to: type=gha,mode=max,scope=lotgd-multiarch
+          cache-from: type=gha,scope=lotgd-amd64
+          cache-to: type=gha,mode=max,scope=lotgd-amd64
+      - name: Validate Compose and run production smoke test
+        run: tests/Docker/smoke.sh lotgd-ci:${{ github.sha }}

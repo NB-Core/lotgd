@@ -6,6 +6,53 @@ the default Compose file is production-oriented, while
 The image uses PHP 8.3 with Apache, OPcache, optimized production Composer
 dependencies, and MySQL 8.4.
 
+## PHP runtime image
+
+The application stage uses the maintained, multiarch
+`thecodingmachine/php:8.3-v4-apache` fat image. It is pinned to the immutable
+manifest-list digest
+`sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7`,
+not merely to its moving tag. The same manifest contains native `linux/amd64`
+and `linux/arm64` variants. The image retains the official PHP/Apache-compatible
+interfaces used here: `a2enmod`, `a2ensite`, `apache2-foreground`, the
+`/usr/local/etc/php/conf.d` scan directory, and the Apache configuration below
+`/etc/apache2`. The application explicitly runs Apache as `www-data` and chains
+the runtime's entrypoint so its binary-module configuration still runs.
+
+The production runtime contract is derived from `Dockerfile`,
+`docker/health/ready.php`, Composer's platform requirements, and the production
+smoke test:
+
+| Requirement | Reason |
+| --- | --- |
+| `gd` | Game image processing; enabled from the runtime's pre-built module. |
+| `mbstring` | Multibyte-safe game and dependency string handling. |
+| `mysqli` | Legacy database access and the readiness query. |
+| `opcache` | Production bytecode caching and readiness cache invalidation. |
+| `pdo`, `pdo_mysql` | Doctrine and modern MySQL data access. |
+| `zip` | Composer dependencies and archive handling. |
+
+Composer also requires the standard/core modules `ctype`, `dom`, `fileinfo`,
+`filter`, `hash`, `iconv`, `json`, `libxml`, `pcre`, `phar`, `simplexml`,
+`tokenizer`, and `xmlwriter`; the selected fat runtime provides them. The smoke
+test verifies the seven explicit runtime extensions and the runtime build runs
+Composer against the resulting platform.
+
+To update the runtime, review upstream release and security information, inspect
+the tag with `docker buildx imagetools inspect`, verify that its manifest still
+contains both required architectures, and run the commands in
+[Health and performance verification](#health-and-performance-verification).
+Then update the digest in `Dockerfile`, `.github/workflows/ci.yml`, and this
+section in one dedicated maintenance PR. Runtime updates are scheduled
+maintenance or definition/security changes; ordinary application PRs must not
+refresh the base. The static CI guard rejects extension compilers and native
+build toolchains in the application Dockerfile.
+
+The Docker CI job has a target wall-clock budget of **at most five minutes**.
+It therefore builds and loads the AMD64 application image once, passes that
+exact image to the production smoke test, and checks ARM64 availability from
+the already-published runtime manifest without QEMU or emulated compilation.
+
 ## Initial configuration
 
 `.env.example` is a template, not a deployable configuration. Copy it and
@@ -186,14 +233,16 @@ docker compose exec --user root web chmod -R u+rwX,g+rwX /var/cache/lotgd
 ## Health and performance verification
 
 Compose waits for MySQL's health check before starting the web service. The web
-health check requests the static `/errors/403.html` page, avoiding database or
-session mutations.
+health check calls the container-local `/_health/ready` endpoint, which validates
+the runtime extensions, configuration file, and a side-effect-free `SELECT 1`
+without creating a game session.
 
 Validate and inspect the running deployment:
 
 ```bash
 docker compose config
 docker compose ps
+docker run --rm <image> php -m
 docker compose exec web php -i | grep -E 'opcache.enable =>|opcache.validate_timestamps =>'
 docker compose exec --user www-data web sh -c 'test -w /var/cache/lotgd/twig && test -w /var/cache/lotgd/doctrine'
 docker compose exec web find /var/cache/lotgd -mindepth 1 -maxdepth 2 -type f -print
@@ -207,10 +256,14 @@ instead of publishing the probe through a reverse proxy. Installation can
 therefore proceed while the container reports `starting` or `unhealthy`, and a
 completed installation transitions it to `healthy` without a restart.
 
-The repository also includes a focused configuration regression test (it
-requires the Docker Compose plugin):
+The repository also includes a focused production smoke test and configuration
+regression test (both require the Docker Compose plugin). Build an image once
+and pass its tag to the smoke test; the script deliberately refuses to build it
+again:
 
 ```bash
+docker build -t lotgd-smoke:local .
+tests/Docker/smoke.sh lotgd-smoke:local
 tests/Docker/compose-security.sh
 ```
 

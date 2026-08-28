@@ -14,6 +14,9 @@ const REQUIRED_EXTENSIONS = [
     'gd',
     'mbstring',
     'mysqli',
+    // OPcache is registered under this Zend extension name; the ini directive
+    // and function prefix use lowercase "opcache", but extension_loaded does not.
+    'Zend OPcache',
     'pdo',
     'pdo_mysql',
     'zip',

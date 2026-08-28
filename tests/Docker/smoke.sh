@@ -11,6 +11,12 @@ export MYSQL_DATABASE=lotgd
 export MYSQL_HOST=db
 export MYSQL_USER=lotgduser
 
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <prebuilt-web-image>" >&2
+    exit 2
+fi
+export LOTGD_WEB_IMAGE="$1"
+
 created_env=false
 
 cleanup() {
@@ -38,8 +44,7 @@ EOF
 fi
 
 docker compose config >/dev/null
-docker compose build web
-docker compose up -d
+docker compose up -d --no-build
 
 # Wait for MySQL before installing the minimal, read-only probe configuration.
 attempt=0
@@ -100,7 +105,8 @@ done
 # Verify the exact runtime prerequisites rather than assuming a successful
 # package installation means PHP loaded every module.
 docker compose exec -T web php -r '
-    foreach (["gd", "mbstring", "mysqli", "pdo", "pdo_mysql", "zip"] as $extension) {
+    // PHP exposes OPcache to extension_loaded() under its registered Zend name.
+    foreach (["gd", "mbstring", "mysqli", "Zend OPcache", "pdo", "pdo_mysql", "zip"] as $extension) {
         if (! extension_loaded($extension)) {
             fwrite(STDERR, "Missing PHP extension\n");
             exit(1);
@@ -148,7 +154,7 @@ assert_status /modules/cities.php 403
 
 # The log directory stays denied even during the deliberately enabled
 # installation window. Recreate Apache so its environment sees the new flag.
-LOTGD_INSTALL_ENABLED=1 docker compose up -d --force-recreate --no-deps web
+LOTGD_INSTALL_ENABLED=1 docker compose up -d --force-recreate --no-deps --no-build web
 attempt=0
 until curl --silent --output /dev/null "http://127.0.0.1:${LOTGD_HTTP_PORT}/install/errors/install.log"; do
     attempt=$((attempt + 1))

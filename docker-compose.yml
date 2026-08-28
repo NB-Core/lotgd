@@ -1,5 +1,6 @@
 services:
   web:
+    image: ${LOTGD_WEB_IMAGE:-lotgd-web:local}
     build: .
     restart: unless-stopped
     ports:
