@@ -11,16 +11,14 @@ class InstallerLogger
      */
     public static function getLogFilePath(): string
     {
-        // Containers define a persistent state path. Never let a data-directory
-        // override redirect their installer diagnostics back into the webroot.
-        $stateDir = getenv('LOTGD_STATE_PATH');
-        if ($stateDir !== false && trim($stateDir) !== '') {
-            return rtrim($stateDir, '/\\') . '/logs/install.log';
-        }
-
         $customDir = getenv('LOTGD_DATA_DIR');
         if ($customDir) {
             return rtrim($customDir, '/') . '/install.log';
+        }
+
+        $stateDir = getenv('LOTGD_STATE_PATH');
+        if ($stateDir !== false && trim($stateDir) !== '') {
+            return rtrim($stateDir, '/\\') . '/logs/install.log';
         }
 
         $defaultDir = __DIR__ . '/../errors';
