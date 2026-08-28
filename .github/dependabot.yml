@@ -1,5 +1,14 @@
 version: 2
 updates:
+  # Docker digest updates retain the human-readable tags in Dockerfile and
+  # docker-compose.yml while proposing reviewable, immutable replacements.
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - security
   - package-ecosystem: composer
     directory: "/"
     schedule:

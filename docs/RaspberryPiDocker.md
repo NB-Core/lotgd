@@ -1,76 +1,87 @@
 # Legend of the Green Dragon on Raspberry Pi 4 (Docker-first)
 
-This guide targets **Raspberry Pi 4 + Raspberry Pi OS 64-bit** for a smooth Docker experience.
+This guide targets **Raspberry Pi 4 with Raspberry Pi OS Lite 64-bit**. The
+production images are checked for native ARM64 support in CI, so emulation is
+not required.
 
-## Why Docker?
-Docker is the easiest path on Raspberry Pi because it bundles PHP, Apache, and database dependencies in a reproducible container setup. This avoids manual package hunting, keeps the host clean, and makes upgrades/rollbacks predictable.
+## 1. Install Docker and Compose
 
-## Recommended base image
-Use **Raspberry Pi OS Lite (64-bit)** as the host OS. It is the most stable, officially supported image for Raspberry Pi 4 and keeps the host lightweight while Docker contains the app stack.
+Install Raspberry Pi OS Lite (64-bit), then follow Docker's maintained Debian
+instructions (which include 64-bit Raspberry Pi OS):
 
-Official Raspberry Pi OS downloads:
-- https://www.raspberrypi.com/software/operating-systems/
+- [Docker Engine on Debian](https://docs.docker.com/engine/install/debian/)
+- [Docker Compose plugin](https://docs.docker.com/compose/install/)
+- [Optional Linux post-install steps](https://docs.docker.com/engine/install/linux-postinstall/)
 
-## Recommended Docker tutorials (Raspberry Pi)
-These are authoritative, maintained sources that match the Pi 4 + Debian-based OS stack:
+Verify the installation:
 
-- Docker Engine (Debian/Raspberry Pi OS):
-  - https://docs.docker.com/engine/install/debian/
-- Docker Compose plugin install:
-  - https://docs.docker.com/compose/install/
-- Optional: Post-install steps (docker group, permissions):
-  - https://docs.docker.com/engine/install/linux-postinstall/
-
-## Install LOTGD via Docker (easiest path)
-
-### 1) Install Raspberry Pi OS Lite (64-bit)
-Flash the OS to your SD card (Raspberry Pi Imager), boot the Pi, and complete the standard first-time setup.
-
-### 2) Install Docker Engine + Compose on the Pi
-Follow the official Docker docs above. The Debian instructions explicitly cover **Raspberry Pi OS (64-bit)** under supported platforms/architectures, so they are the correct reference for Pi 4 ARM64. When done, confirm:
-
-```
+```bash
 docker --version
 docker compose version
 ```
 
-### 3) Clone the LOTGD repository
-```
+## 2. Clone and create private configuration
+
+```bash
 git clone https://github.com/lotgd/lotgd.git
 cd lotgd
+cp .env.example .env
+chmod 600 .env
+sed -i "s|^MYSQL_PASSWORD=$|MYSQL_PASSWORD=$(openssl rand -base64 32)|" .env
+sed -i "s|^MYSQL_ROOT_PASSWORD=$|MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)|" .env
+sed -i 's/^LOTGD_INSTALL_ENABLED=.*/LOTGD_INSTALL_ENABLED=1/' .env
 ```
 
-### 4) Start the Docker environment (already provided in this repo)
-This repository already includes a `Dockerfile` and `docker-compose.yml` suitable for local development/testing. Use the built-in docs:
+Use two independently generated secrets; do not reuse either password or
+commit `.env`. Keep the installer flag at `1` only for initial setup.
 
-- [docs/Docker.md](docs/Docker.md) (repo guide)
+## 3. Start the private installer
 
-Then run:
-
-```
+```bash
 docker compose up -d --build
 ```
 
-CI builds the production Dockerfile for both `linux/amd64` and `linux/arm64`.
-The latter is the 64-bit architecture used by the recommended Raspberry Pi OS
-image, so changes to the documented Pi deployment are checked continuously.
+Compose publishes the selected `${LOTGD_HTTP_PORT}` (8080 by default) on
+`127.0.0.1` **of the Pi only**. It is intentionally not reachable directly at
+`http://raspberrypi.local/` or the Pi's LAN address. From an administrator
+workstation, create an SSH tunnel:
 
-### 5) Finish in the browser
-Open your Pi’s IP address in a browser (e.g., `http://raspberrypi.local/` or `http://<pi-ip>/`) and complete the in-app setup.
+```bash
+ssh -N -L 8080:127.0.0.1:8080 pi@raspberrypi.local
+```
 
-## Notes and troubleshooting
-- If you make changes to the Dockerfile or PHP settings, rebuild with:
-  ```
-  docker compose up -d --build
-  ```
-- For logs:
-  ```
-  docker compose logs -f
-  ```
-- For an interactive shell:
-  ```
-  docker compose exec web bash
-  ```
+Then open `http://127.0.0.1:8080/installer.php` on that workstation and finish
+installation. If `LOTGD_HTTP_PORT` is changed, use that Pi-side port after the
+second colon; the workstation-side port may be any unused local port.
 
-## Alternative (non-Docker) path
-Docker is strongly recommended. If you must install directly on the host, follow the dependencies in `composer.json` and use Apache/PHP + MariaDB on Raspberry Pi OS. This is more fragile, harder to upgrade, and not the easiest path.
+After installation, set `LOTGD_INSTALL_ENABLED=0` in `.env` and recreate web as
+defense in depth. The persistent completion marker already keeps the installer
+locked even if the flag is accidentally left enabled:
+
+```bash
+sed -i 's/^LOTGD_INSTALL_ENABLED=.*/LOTGD_INSTALL_ENABLED=0/' .env
+docker compose up -d --force-recreate web
+```
+
+## 4. Public operation requires a TLS reverse proxy
+
+For a permanently public game, run a TLS-terminating reverse proxy such as
+Caddy, Nginx, or Traefik on the Pi's public/LAN interface and proxy it to
+`127.0.0.1:${LOTGD_HTTP_PORT}`. Do not change the Compose port to `0.0.0.0` and
+do not expose the temporary installer directly. Certificate issuance, trusted
+proxy configuration, Docker network boundaries, backups, and verification are
+covered in [Docker deployment](Docker.md).
+
+## Operations and troubleshooting
+
+```bash
+docker compose logs -f web db
+docker compose up -d --build       # rebuild after image/PHP changes
+docker compose exec web sh         # diagnostic shell
+```
+
+Back up the `db_data` and `lotgd_state` volumes together. The latter contains
+`dbconnect.php`, installer logs, and the completion marker; deleting it can
+lose configuration and installer-lock state. For the non-Docker alternative,
+install the requirements from `composer.json` with Apache/PHP and a compatible
+database, but this path is more fragile and is not recommended.

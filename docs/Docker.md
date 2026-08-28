@@ -6,6 +6,24 @@ the default Compose file is production-oriented, while
 The image uses PHP 8.3 with Apache, OPcache, optimized production Composer
 dependencies, and MySQL 8.4.
 
+## Pinned multi-architecture images
+
+All external images retain a readable tag and are pinned to a reviewed,
+immutable multi-architecture manifest digest:
+
+| Purpose | Pinned image | Authoritative locations |
+| --- | --- | --- |
+| Composer build stage | `composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040` | `Dockerfile`, `.github/workflows/ci.yml` |
+| PHP/Apache runtime | `thecodingmachine/php:8.3-v4-apache@sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7` | `Dockerfile`, `.github/workflows/ci.yml` |
+| MySQL database | `mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb` | `docker-compose.yml`, `.github/workflows/ci.yml` |
+
+Dependabot's Docker ecosystem entry proposes monthly digest updates while
+preserving these tags. Review the upstream release and security information,
+confirm that the proposed digest is a manifest index, and merge only after the
+Docker CI job verifies native `linux/amd64` and `linux/arm64` entries. If an
+update is made manually, change every location in the relevant table row and
+the displayed digest in this section in the same maintenance PR.
+
 ## PHP runtime image
 
 The application stage uses the maintained, multiarch
@@ -38,12 +56,10 @@ Composer also requires the standard/core modules `ctype`, `dom`, `fileinfo`,
 test verifies the seven explicit runtime extensions and the runtime build runs
 Composer against the resulting platform.
 
-To update the runtime, review upstream release and security information, inspect
-the tag with `docker buildx imagetools inspect`, verify that its manifest still
-contains both required architectures, and run the commands in
+To update the runtime, inspect the tag with `docker buildx imagetools inspect`,
+verify that its manifest still contains both required architectures, and run the commands in
 [Health and performance verification](#health-and-performance-verification).
-Then update the digest in `Dockerfile`, `.github/workflows/ci.yml`, and this
-section in one dedicated maintenance PR. Runtime updates are scheduled
+Runtime updates are scheduled
 maintenance or definition/security changes; ordinary application PRs must not
 refresh the base. The static CI guard rejects extension compilers and native
 build toolchains in the application Dockerfile.
@@ -174,6 +190,36 @@ Only container port 80 is exposed, and its host mapping is loopback-only. Set
 `LOTGD_HTTP_PORT` to choose another loopback host port. To serve an installed
 game remotely, put a TLS reverse proxy on a public interface and proxy to
 `127.0.0.1:${LOTGD_HTTP_PORT}`; do not make the installer port public.
+
+### Container privilege and network boundary
+
+Both services set `no-new-privileges`, drop Docker's entire default capability
+set, and add back only the startup capabilities exercised by their official
+entrypoints. The web entrypoint needs `CHOWN`, `FOWNER`, and `DAC_OVERRIDE` to
+traverse and repair restrictive, `www-data`-owned persistent volume metadata,
+`NET_BIND_SERVICE` for container port 80, and
+`SETUID`/`SETGID` to start Apache workers as `www-data`.
+MySQL additionally needs `DAC_OVERRIDE` to traverse an existing mysql-owned
+data volume while initializing it. Neither service retains networking,
+mounting, tracing, raw-socket, or module-loading capabilities.
+
+The `web-proxy` network is the frontend boundary and contains only `web` by
+default. The separate `database` network is marked `internal: true`; `web` joins
+it for SQL traffic, while `db` joins only that network. A reverse proxy should
+join `web-proxy`, never `database`.
+
+The web service uses `tmpfs` for `/tmp`, Apache PID state, and Apache locks with
+`nosuid`, `nodev`, and `noexec`; cache and state remain in their named volumes.
+A fully read-only root filesystem was evaluated but is not enabled for this
+runtime image: its inherited `/usr/local/bin/docker-entrypoint.sh` materializes
+PHP extension configuration under `/usr/local/etc/php/conf.d` at container
+startup (including the requested GD module). That write happens before Apache
+starts and cannot be redirected to the Apache/PHP transient paths without
+masking the image's production INI files. The document root therefore remains
+root-owned with group/other writes removed, `www-data` cannot modify code, and
+the reduced capability/no-new-privileges boundary limits the remaining root
+startup process. Re-evaluate `read_only: true` when adopting a runtime whose
+extension configuration is completely fixed at image-build time.
 
 ### SSL/TLS is not included
 
