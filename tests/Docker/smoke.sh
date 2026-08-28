@@ -65,15 +65,33 @@ docker compose exec -T web php -r '
         . var_export($configuration, true)
         . ";\n";
     if (file_put_contents("/var/www/html/dbconnect.php", $contents) === false) {
+        fwrite(STDERR, "Failed to write dbconnect.php\n");
+        exit(1);
+    }
+    // Verify the file is readable and contains expected content
+    if (!is_readable("/var/www/html/dbconnect.php")) {
+        fwrite(STDERR, "dbconnect.php is not readable\n");
+        exit(1);
+    }
+    $testConfig = require("/var/www/html/dbconnect.php");
+    if (!is_array($testConfig) || empty($testConfig["DB_HOST"])) {
+        fwrite(STDERR, "dbconnect.php configuration invalid\n");
         exit(1);
     }
 '
 
+# Wait for web container to become healthy after configuration is written.
+# The health check probe will attempt a MySQL connection, so increase retry
+# limit to account for any remaining database initialization time.
 attempt=0
 until [ "$(docker inspect --format '{{.State.Health.Status}}' "${COMPOSE_PROJECT_NAME}-web-1")" = healthy ]; do
     attempt=$((attempt + 1))
-    if [ "$attempt" -ge 75 ]; then
+    if [ "$attempt" -ge 90 ]; then
+        echo "Web container failed to become healthy after $((attempt * 2)) seconds" >&2
         docker compose logs web
+        echo "--- Checking dbconnect.php in web container ---" >&2
+        docker compose exec -T web sh -c 'test -f /var/www/html/dbconnect.php && echo "File exists" || echo "File missing"' 2>&1 || true
+        docker compose exec -T web sh -c 'test -r /var/www/html/dbconnect.php && echo "File readable" || echo "File not readable"' 2>&1 || true
         exit 1
     fi
     sleep 2
