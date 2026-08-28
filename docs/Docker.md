@@ -90,8 +90,9 @@ docker compose exec --user root web chmod -R u+rwX,g+rwX /var/cache/lotgd
 ## Health and performance verification
 
 Compose waits for MySQL's health check before starting the web service. The web
-health check requests the static `/errors/403.html` page, avoiding database or
-session mutations.
+health check calls a loopback-only, stateless PHP endpoint that verifies the
+required extensions, readable database configuration, and a `SELECT 1` query.
+It returns no diagnostics or response body and is forbidden to external clients.
 
 Validate and inspect the running deployment:
 

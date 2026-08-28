@@ -36,7 +36,9 @@ COPY docker/apache/lotgd.conf /etc/apache2/sites-available/lotgd.conf
 RUN a2ensite lotgd
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-lotgd.ini
 COPY docker/entrypoint.sh /usr/local/bin/lotgd-entrypoint
-RUN chmod +x /usr/local/bin/lotgd-entrypoint
+COPY docker/health/healthcheck.sh /usr/local/bin/lotgd-healthcheck
+COPY docker/health/readiness.php /usr/local/lib/lotgd/readiness.php
+RUN chmod +x /usr/local/bin/lotgd-entrypoint /usr/local/bin/lotgd-healthcheck
 
 # Debug-only alternative for users who cannot use docker-compose.dev.yml.
 # Keep this disabled in production because PHP errors may disclose secrets or
