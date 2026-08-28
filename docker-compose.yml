@@ -3,6 +3,21 @@ services:
     image: ${LOTGD_WEB_IMAGE:-lotgd-web:local}
     build: .
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # The root entrypoint repairs ownership on persistent volumes.
+      - CHOWN
+      # Persistent directories may already be owned by www-data and need mode
+      # repair before Apache starts.
+      - FOWNER
+      # Apache listens on the image's privileged container port 80.
+      - NET_BIND_SERVICE
+      # Apache starts as root, then switches workers to www-data.
+      - SETGID
+      - SETUID
     ports:
       - "127.0.0.1:${LOTGD_HTTP_PORT:-8080}:80"
     env_file: .env
@@ -21,6 +36,13 @@ services:
     volumes:
       - lotgd_cache:/var/cache/lotgd
       - lotgd_state:/var/lib/lotgd
+    tmpfs:
+      # Keep transient PHP/session data out of the image layer and disallow
+      # executable or privileged files in the shared temporary directory.
+      - /tmp:rw,nosuid,nodev,noexec,mode=1777
+      # Apache needs only volatile PID/lock state in these paths.
+      - /run/apache2:rw,nosuid,nodev,noexec,mode=0755
+      - /var/lock/apache2:rw,nosuid,nodev,noexec,mode=0755
     depends_on:
       db:
         condition: service_healthy
@@ -32,11 +54,27 @@ services:
       retries: 4
       start_period: 60s
     networks:
-      - lotgd-network
+      # Reverse proxies join only this frontend boundary.
+      - web-proxy
+      # Database traffic is isolated from proxy-facing containers.
+      - database
 
   db:
-    image: mysql:8.4
+    image: mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # The official entrypoint initializes and repairs the data-volume owner.
+      - CHOWN
+      # Initialization must traverse and repair mysql-owned volume contents.
+      - DAC_OVERRIDE
+      - FOWNER
+      # MySQL's root entrypoint drops to the dedicated mysql account.
+      - SETGID
+      - SETUID
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-lotgd}
       MYSQL_USER: ${MYSQL_USER:-lotgduser}
@@ -51,7 +89,8 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - lotgd-network
+      # The database has no route onto the proxy-facing network.
+      - database
 
 volumes:
   db_data:
@@ -59,4 +98,8 @@ volumes:
   lotgd_state:
 
 networks:
-  lotgd-network:
+  web-proxy:
+  database:
+    # Prevent direct external routing even when another container publishes a
+    # port; only services explicitly attached here can reach MySQL.
+    internal: true

@@ -46,6 +46,22 @@ fi
 docker compose config >/dev/null
 docker compose up -d --no-build
 
+# Confirm Docker applied, rather than merely parsed, the privilege boundary.
+# Inspect is used deliberately: a Compose YAML assertion alone cannot prove the
+# daemon created the containers with the requested HostConfig.
+for service in web db; do
+    container="${COMPOSE_PROJECT_NAME}-${service}-1"
+    docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$container" \
+        | grep -F 'no-new-privileges:true' >/dev/null || {
+            echo "no-new-privileges is not effective for $service" >&2
+            exit 1
+        }
+    [ "$(docker inspect --format '{{json .HostConfig.CapDrop}}' "$container")" = '["ALL"]' ] || {
+        echo "default capabilities were not dropped for $service" >&2
+        exit 1
+    }
+done
+
 # Wait for MySQL before installing the minimal, read-only probe configuration.
 attempt=0
 until [ "$(docker inspect --format '{{.State.Health.Status}}' "${COMPOSE_PROJECT_NAME}-db-1")" = healthy ]; do
@@ -142,6 +158,29 @@ assert_status() {
     fi
 }
 
+wait_for_status() {
+    path="$1"
+    expected="$2"
+    description="$3"
+    attempt=0
+    while :; do
+        # curl exits successfully for HTTP 403, so readiness is determined only
+        # from its explicit status output, never from curl's process status.
+        actual=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "http://127.0.0.1:${LOTGD_HTTP_PORT}${path}" || true)
+        if [ "$actual" = "$expected" ]; then
+            return
+        fi
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge 30 ]; then
+            echo "$description (expected $expected, got $actual)" >&2
+            docker compose logs web
+            exit 1
+        fi
+        sleep 1
+    done
+}
+
 # These host requests exercise the production vhost, including the leading
 # slash semantics of RewriteRule in VirtualHost context.
 assert_status /installer.php 403
@@ -152,19 +191,32 @@ assert_status /.env 403
 assert_status /lib/dbwrapper.php 403
 assert_status /modules/cities.php 403
 
-# The log directory stays denied even during the deliberately enabled
-# installation window. Recreate Apache so its environment sees the new flag.
+# Seed a log sentinel before recreation. Together with dbconnect.php this proves
+# the state volume retains both installer output and database configuration.
+docker compose exec -T web sh -c \
+    'printf "%s\n" persistent-installer-log > /var/lib/lotgd/logs/install.log'
+
+# Recreate Apache so its environment sees the temporary installer flag. A 200
+# response is required: curl returning zero for a 403 would be a false positive.
 LOTGD_INSTALL_ENABLED=1 docker compose up -d --force-recreate --no-deps --no-build web
-attempt=0
-until curl --silent --output /dev/null "http://127.0.0.1:${LOTGD_HTTP_PORT}/install/errors/install.log"; do
-    attempt=$((attempt + 1))
-    if [ "$attempt" -ge 30 ]; then
-        echo "Web container did not restart after enabling the installer" >&2
-        docker compose logs web
-        exit 1
-    fi
-    sleep 1
-done
+wait_for_status /installer.php 200 "Installer did not become explicitly accessible"
 assert_status /install/errors/install.log 403
+
+# Model installer stage 11 by placing its durable completion marker in the
+# state volume. Recreating with the flag deliberately left at 1 proves the
+# marker takes precedence and cannot be bypassed by stale configuration.
+docker compose exec -T web sh -c \
+    'printf "%s\n" completed > /var/lib/lotgd/installation-complete'
+LOTGD_INSTALL_ENABLED=1 docker compose up -d --force-recreate --no-deps --no-build web
+wait_for_status /installer.php 403 "Completion marker did not lock installer.php"
+assert_status /install/ 403
+
+# All durable installer state must survive both forced recreations.
+docker compose exec -T web sh -c '
+    test -L /var/www/html/dbconnect.php &&
+    test -s /var/lib/lotgd/dbconnect.php &&
+    grep -F persistent-installer-log /var/lib/lotgd/logs/install.log >/dev/null &&
+    grep -F completed /var/lib/lotgd/installation-complete >/dev/null
+'
 
 echo "Docker production smoke test passed"
