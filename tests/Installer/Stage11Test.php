@@ -130,7 +130,7 @@ final class Stage11Test extends TestCase
         $this->assertStringContainsString('installer.php file still exists', $output);
     }
 
-    public function testStage11DeletesInstallerFileWhenRequested(): void
+    public function testStage11RecordsCompletionWithoutDeletingImmutableInstaller(): void
     {
         global $session;
         $session['user'] = ['loggedin' => false, 'restorepage' => 'village.php'];
@@ -142,11 +142,11 @@ final class Stage11Test extends TestCase
         $installer = new Installer();
         $installer->stage11();
 
-        $this->assertFileDoesNotExist($this->installerPath);
+        $this->assertFileExists($this->installerPath);
         $this->assertFileExists($this->statePath . '/installation-complete');
 
         $output = Output::getInstance()->getRawOutput();
-        $this->assertStringContainsString('Installer file installer.php removed', $output);
+        $this->assertStringContainsString('installer is now disabled', $output);
     }
 
     /**

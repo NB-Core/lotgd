@@ -90,8 +90,11 @@ installer publicly. Run this on the administrator's workstation, replacing
 ssh -N -L 8080:127.0.0.1:8080 admin@example.com
 ```
 
-Installer stage 11 writes the persistent `installation-complete` marker and
-removes `installer.php`. That marker takes precedence over
+Installer stage 11 lets `www-data` write only the persistent
+`installation-complete` marker. Apache denies the installer immediately when
+that marker appears; because application files are root-owned, the root-run
+entrypoint removes `installer.php` on the next container start. The marker takes
+precedence over
 `LOTGD_INSTALL_ENABLED`, so restoring or leaving the flag at `1` cannot restore
 installer access after successful completion. Set `LOTGD_INSTALL_ENABLED=0`
 again and recreate the web container as defense in depth:
@@ -113,7 +116,9 @@ Build and launch the immutable application image:
 docker compose up -d --build
 ```
 
-The default web service has no source-code bind mount. Composer installs without
+The default web service has no source-code bind mount. Application code is
+root-owned and read-only to `www-data`; only the cache and persistent state
+volumes are writable by the web process. Composer installs without
 development dependencies and generates an authoritative classmap. PHP hides
 errors from responses, logs them to container stderr, and enables OPcache
 without timestamp validation. Rebuild the image to deploy code changes.
@@ -155,14 +160,17 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --f
 ## Persistent volumes and permissions
 
 `db_data` holds MySQL data, `lotgd_cache` holds the shared runtime cache, and
-`lotgd_state` preserves `dbconnect.php` plus the installer's completion marker.
+`lotgd_state` preserves `dbconnect.php`, installer logs under `logs/install.log`,
+and the installer's completion marker.
 The state volume prevents an image replacement from losing database settings or
 restoring an installer that an administrator already removed. Back up
 `lotgd_state` together with the database; do not delete it during a routine
 deployment.
 
-The image creates `/var/cache/lotgd/{twig,doctrine}` as `www-data`; Docker copies
-those initial directories into a newly created named volume. Removing only the
+The image and entrypoint create `/var/cache/lotgd/{twig,doctrine}` and
+`/var/lib/lotgd/logs` as `www-data` with restrictive permissions; Docker copies
+the initial directories into newly created named volumes, and startup repairs
+volume metadata without making the document root writable. Removing only the
 cache volume discards generated cache data but not game, configuration, or
 database data.
 
@@ -170,7 +178,7 @@ Inspect ownership and repair an existing volume created with incorrect
 permissions as root:
 
 ```bash
-docker compose exec web stat -c '%U:%G %a %n' /var/cache/lotgd /var/cache/lotgd/{twig,doctrine}
+docker compose exec web stat -c '%U:%G %a %n' /var/cache/lotgd /var/cache/lotgd/{twig,doctrine} /var/lib/lotgd /var/lib/lotgd/logs /var/www/html
 docker compose exec --user root web chown -R www-data:www-data /var/cache/lotgd
 docker compose exec --user root web chmod -R u+rwX,g+rwX /var/cache/lotgd
 ```
@@ -243,6 +251,8 @@ changes do not appear in production, rebuild the immutable image. In
 development, confirm both Compose files were supplied and verify that
 `APP_ENV=development` is present with `docker compose exec web env`.
 
-Installer failures are logged to `install/errors/install.log`. Production PHP
+Installer failures are logged outside the document root at
+`/var/lib/lotgd/logs/install.log`. Apache denies `/install/errors/` regardless
+of whether installation is enabled. Production PHP
 errors are available through `docker compose logs web` and are never displayed
 to clients.

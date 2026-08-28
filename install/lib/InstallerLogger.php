@@ -11,6 +11,13 @@ class InstallerLogger
      */
     public static function getLogFilePath(): string
     {
+        // Containers define a persistent state path. Never let a data-directory
+        // override redirect their installer diagnostics back into the webroot.
+        $stateDir = getenv('LOTGD_STATE_PATH');
+        if ($stateDir !== false && trim($stateDir) !== '') {
+            return rtrim($stateDir, '/\\') . '/logs/install.log';
+        }
+
         $customDir = getenv('LOTGD_DATA_DIR');
         if ($customDir) {
             return rtrim($customDir, '/') . '/install.log';
@@ -45,12 +52,14 @@ class InstallerLogger
                 return false;
             }
 
-            if (!@mkdir($logDir, 0755, true) && !is_dir($logDir)) {
+            if (!mkdir($logDir, 0750, true) && !is_dir($logDir)) {
+                error_log(sprintf('Unable to create installer log directory: %s', $logDir));
                 return false;
             }
         }
 
         if (!is_writable($logDir)) {
+            error_log(sprintf('Installer log directory is not writable: %s', $logDir));
             return false;
         }
 
@@ -58,12 +67,14 @@ class InstallerLogger
         $entry = sprintf("[%s] %s\n", $date, $message);
 
         try {
-            $written = @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+            $written = file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
         } catch (\Throwable $th) {
+            error_log(sprintf('Unable to write installer log %s: %s', $logFile, $th->getMessage()));
             return false;
         }
 
         if ($written === false) {
+            error_log(sprintf('Unable to write installer log: %s', $logFile));
             return false;
         }
 
