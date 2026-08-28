@@ -21,6 +21,55 @@ Compose refuses to render the deployment when either secret is missing, and
 the web container rejects the documented legacy/example password values during
 startup.
 
+### Rotating legacy Docker example passwords
+
+Deployments that already initialized `db_data` with the formerly documented
+`lotgdpass` and `rootpass` values must rotate the persisted MySQL accounts
+**before** starting the hardened web container. Merely editing `.env` does not
+change accounts stored in an existing MySQL volume. Back up both the database
+and `lotgd_state`, stop the web service, and then run the following from the
+checkout while `.env` still contains the old values:
+
+```bash
+docker compose stop web
+docker compose up -d db
+
+new_app_password=$(openssl rand -base64 32)
+new_root_password=$(openssl rand -base64 32)
+
+# Update the application configuration in lotgd_state while the web service is stopped.
+docker compose run --rm --no-deps \
+    --entrypoint php \
+    -e NEW_APP_PASSWORD="$new_app_password" \
+    web -r '
+$path = "/var/lib/lotgd/dbconnect.php";
+$config = require $path;
+$config["DB_PASS"] = getenv("NEW_APP_PASSWORD");
+if (file_put_contents($path, "<?php\n\nreturn " . var_export($config, true) . ";\n") === false) {
+    fwrite(STDERR, "Unable to update dbconnect.php\n");
+    exit(1);
+}'
+
+# Rotate both persisted MySQL accounts in one atomic ALTER USER statement.
+docker compose exec -T -e MYSQL_PWD=rootpass db mysql --user=root <<SQL
+ALTER USER
+    'lotgduser'@'%' IDENTIFIED BY '$new_app_password',
+    'root'@'localhost' IDENTIFIED BY '$new_root_password';
+SQL
+
+sed -i "s|^MYSQL_PASSWORD=lotgdpass$|MYSQL_PASSWORD=$new_app_password|" .env
+sed -i "s|^MYSQL_ROOT_PASSWORD=rootpass$|MYSQL_ROOT_PASSWORD=$new_root_password|" .env
+unset new_app_password new_root_password
+
+docker compose up -d --force-recreate db web
+```
+
+If the deployment used a different `MYSQL_USER` or MySQL account host, adjust
+the account in `ALTER USER` accordingly. Do not destroy `db_data` as a shortcut:
+that deletes the game database. After the recreated services are healthy,
+verify application login and retain the pre-rotation backups until the upgrade
+has been validated.
+
 ### Deliberately enabling initial installation
 
 The installer is denied by default. Set `LOTGD_INSTALL_ENABLED=1` in `.env`
@@ -154,8 +203,8 @@ request to compare cold and warm timings (replace `/` with a known lightweight
 page for the installation):
 
 ```bash
-curl -sS -o /dev/null -w 'cold: %{time_total}s\n' http://localhost/
-curl -sS -o /dev/null -w 'warm: %{time_total}s\n' http://localhost/
+curl -sS -o /dev/null -w 'cold: %{time_total}s\n' "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/"
+curl -sS -o /dev/null -w 'warm: %{time_total}s\n' "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/"
 ```
 
 The first request may populate Twig and Doctrine caches. Subsequent timings are
@@ -167,8 +216,8 @@ explicitly marked `no-store, private`; full-page HTTP caching must not be added
 without a session-aware cache design. Inspect both behaviors with:
 
 ```bash
-curl --compressed -sSI http://localhost/templates_twig/aurora/assets/style.css
-curl -sSI http://localhost/index.php
+curl --compressed -sSI "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/templates_twig/aurora/assets/style.css"
+curl -sSI "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/index.php"
 ```
 
 ## Operations and troubleshooting
