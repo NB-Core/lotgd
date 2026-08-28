@@ -10,10 +10,30 @@ export MYSQL_ROOT_PASSWORD="ci-root-secret-$(date +%s)-$$"
 export MYSQL_DATABASE=lotgd
 export MYSQL_USER=lotgduser
 
+created_env=false
+
 cleanup() {
     docker compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+    if [ "$created_env" = true ]; then
+        rm -f .env
+    fi
 }
 trap cleanup EXIT INT TERM
+
+# The production Compose model intentionally requires .env. A clean CI
+# checkout does not contain one, so create a private disposable file without
+# overwriting a developer's existing local configuration.
+if [ ! -e .env ]; then
+    umask 077
+    cat > .env <<EOF
+MYSQL_DATABASE=$MYSQL_DATABASE
+MYSQL_USER=$MYSQL_USER
+MYSQL_PASSWORD=$MYSQL_PASSWORD
+MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+LOTGD_HTTP_PORT=$LOTGD_HTTP_PORT
+EOF
+    created_env=true
+fi
 
 docker compose config >/dev/null
 docker compose build web

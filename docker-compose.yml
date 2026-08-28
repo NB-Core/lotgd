@@ -22,7 +22,8 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "php", "-r", "$c=get_headers('http://127.0.0.1/_health/ready'); exit($c !== false && str_contains($c[0], '204') ? 0 : 1);"]
+      # Compose uses $$ to pass a literal $ through to the PHP process.
+      test: ["CMD", "php", "-r", "$$c=get_headers('http://127.0.0.1/_health/ready'); exit($$c !== false && str_contains($$c[0], '204') ? 0 : 1);"]
       interval: 15s
       timeout: 3s
       retries: 4
