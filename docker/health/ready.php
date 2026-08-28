@@ -30,12 +30,16 @@ try {
     }
 
     $configurationPath = '/var/www/html/dbconnect.php';
+    clearstatcache(true, $configurationPath);
     if (! is_file($configurationPath) || ! is_readable($configurationPath)) {
         throw new RuntimeException('database configuration unavailable');
     }
 
     // Legacy or hand-edited configuration files may print migration notices.
     // Discard all such output so readiness can never disclose their contents.
+    if (function_exists('opcache_invalidate')) {
+        opcache_invalidate($configurationPath, true);
+    }
     ob_start();
     try {
         $configuration = require $configurationPath;
