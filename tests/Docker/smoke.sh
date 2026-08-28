@@ -8,6 +8,7 @@ export LOTGD_HTTP_PORT="${LOTGD_HTTP_PORT:-18080}"
 export MYSQL_PASSWORD="ci-application-secret-$(date +%s)-$$"
 export MYSQL_ROOT_PASSWORD="ci-root-secret-$(date +%s)-$$"
 export MYSQL_DATABASE=lotgd
+export MYSQL_HOST=db
 export MYSQL_USER=lotgduser
 
 created_env=false
@@ -27,6 +28,7 @@ if [ ! -e .env ]; then
     umask 077
     cat > .env <<EOF
 MYSQL_DATABASE=$MYSQL_DATABASE
+MYSQL_HOST=$MYSQL_HOST
 MYSQL_USER=$MYSQL_USER
 MYSQL_PASSWORD=$MYSQL_PASSWORD
 MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
