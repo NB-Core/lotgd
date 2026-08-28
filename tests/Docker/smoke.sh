@@ -62,7 +62,7 @@ docker compose exec -T web php -r '
     $contents = "<?php\necho \"discarded configuration output\";\nreturn "
         . var_export($configuration, true)
         . ";\n";
-    if (file_put_contents("/var/lib/lotgd/dbconnect.php", $contents) === false) {
+    if (file_put_contents("/var/www/html/dbconnect.php", $contents) === false) {
         exit(1);
     }
 '
