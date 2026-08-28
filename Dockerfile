@@ -18,7 +18,7 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction
 
 # This multiarch image ships the required extensions as pre-built modules.
 # Keep the manifest-list digest synchronized with docs/Docker.md.
-FROM thecodingmachine/php:8.3-v4-apache@sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7
+FROM thecodingmachine/php:8.4-v4-apache@sha256:e2c3297e937aee89e742788e6bb1ed4f8f14b831f91dbcc13468a3d6e6bc762b
 
 USER root
 
