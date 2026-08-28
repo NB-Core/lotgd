@@ -14,16 +14,17 @@ RUN composer install \
 COPY . ./
 RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction
 
-FROM php:8.3-apache
+# This multiarch image ships the required extensions as pre-built modules.
+# Keep the manifest-list digest synchronized with docs/Docker.md.
+FROM thecodingmachine/php:8.3-v4-apache@sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libjpeg-dev \
-        libonig-dev \
-        libpng-dev \
-        libzip-dev \
-    && docker-php-ext-configure gd --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" gd mbstring mysqli opcache pdo pdo_mysql zip \
-    && rm -rf /var/lib/apt/lists/*
+USER root
+
+# The fat runtime enables all required modules except GD by default. Its
+# entrypoint materializes the corresponding ini file before Apache starts.
+ENV PHP_EXTENSION_GD=1 \
+    APACHE_RUN_USER=www-data \
+    APACHE_RUN_GROUP=www-data
 
 # The vhost contains the production security rules, so per-request .htaccess
 # discovery is unnecessary.

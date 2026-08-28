@@ -56,4 +56,6 @@ if [ -f "$state_path/installation-complete" ]; then
     rm -f /var/www/html/installer.php
 fi
 
-exec "$@"
+# Preserve the runtime image's extension/Apache initialization after applying
+# the application-specific volume and secret checks above.
+exec /usr/local/bin/docker-entrypoint.sh "$@"

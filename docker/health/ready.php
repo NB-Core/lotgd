@@ -14,6 +14,7 @@ const REQUIRED_EXTENSIONS = [
     'gd',
     'mbstring',
     'mysqli',
+    'opcache',
     'pdo',
     'pdo_mysql',
     'zip',
