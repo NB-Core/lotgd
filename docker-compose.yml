@@ -9,6 +9,9 @@ services:
       APP_ENV: production
       MYSQL_USEDATACACHE: "1"
       MYSQL_DATACACHEPATH: /var/cache/lotgd
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-lotgd}
+      MYSQL_HOST: ${MYSQL_HOST:-db}
+      MYSQL_USER: ${MYSQL_USER:-lotgduser}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       LOTGD_INSTALL_ENABLED: ${LOTGD_INSTALL_ENABLED:-0}
@@ -19,11 +22,12 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "php", "-r", "exit(file_get_contents('http://127.0.0.1/errors/403.html') === false ? 1 : 0);"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      # Compose uses $$ to pass a literal $ through to the PHP process.
+      test: ["CMD", "php", "-r", "$$c=get_headers('http://127.0.0.1/_health/ready'); exit($$c !== false && str_contains($$c[0], '204') ? 0 : 1);"]
+      interval: 15s
+      timeout: 3s
+      retries: 4
+      start_period: 60s
     networks:
       - lotgd-network
 

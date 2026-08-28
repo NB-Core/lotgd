@@ -34,6 +34,7 @@ RUN a2enmod deflate expires headers rewrite \
     && a2dissite 000-default
 COPY docker/apache/lotgd.conf /etc/apache2/sites-available/lotgd.conf
 RUN a2ensite lotgd
+COPY docker/health/ready.php /var/www/lotgd-health/ready.php
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-lotgd.ini
 COPY docker/entrypoint.sh /usr/local/bin/lotgd-entrypoint
 RUN chmod +x /usr/local/bin/lotgd-entrypoint

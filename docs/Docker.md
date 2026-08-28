@@ -191,6 +191,14 @@ docker compose exec --user www-data web sh -c 'test -w /var/cache/lotgd/twig && 
 docker compose exec web find /var/cache/lotgd -mindepth 1 -maxdepth 2 -type f -print
 ```
 
+The web service becomes healthy only after PHP can read `dbconnect.php`, all
+required PHP extensions are loaded, and a side-effect-free `SELECT 1` reaches
+the configured database. The readiness URL is restricted to requests from
+inside the web container; use `docker compose ps` or Docker's health status
+instead of publishing the probe through a reverse proxy. Installation can
+therefore proceed while the container reports `starting` or `unhealthy`, and a
+completed installation transitions it to `healthy` without a restart.
+
 The repository also includes a focused configuration regression test (it
 requires the Docker Compose plugin):
 

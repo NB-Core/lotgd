@@ -51,6 +51,10 @@ Then run:
 docker compose up -d --build
 ```
 
+CI builds the production Dockerfile for both `linux/amd64` and `linux/arm64`.
+The latter is the 64-bit architecture used by the recommended Raspberry Pi OS
+image, so changes to the documented Pi deployment are checked continuously.
+
 ### 5) Finish in the browser
 Open your Pi’s IP address in a browser (e.g., `http://raspberrypi.local/` or `http://<pi-ip>/`) and complete the in-app setup.
 

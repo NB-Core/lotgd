@@ -5,6 +5,9 @@ on:
     branches: [ "**" ]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,3 +44,25 @@ jobs:
           find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Run tests
         run: composer test
+
+  docker:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Validate Compose and run production smoke test
+        run: tests/Docker/smoke.sh
+      - name: Build supported 64-bit architectures
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          cache-from: type=gha,scope=lotgd-multiarch
+          cache-to: type=gha,mode=max,scope=lotgd-multiarch
