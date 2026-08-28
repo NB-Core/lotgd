@@ -85,6 +85,7 @@ final class Stage6Test extends TestCase
 
     protected function tearDown(): void
     {
+        putenv('LOTGD_STATE_PATH');
         chdir($this->originalCwd);
 
         if (is_dir($this->dbconnectPath)) {
@@ -132,6 +133,34 @@ final class Stage6Test extends TestCase
 
         $output = Output::getInstance()->getRawOutput();
         $this->assertStringContainsString('I was able to write your dbconnect.php file', $output);
+    }
+
+    public function testStage6WritesDbconnectIntoContainerStateDirectory(): void
+    {
+        global $session;
+        $statePath = sys_get_temp_dir() . '/lotgd-stage6-' . uniqid('', true);
+        mkdir($statePath, 0700, true);
+        putenv('LOTGD_STATE_PATH=' . $statePath);
+        $session['dbinfo'] = [
+            'DB_HOST' => 'database',
+            'DB_USER' => 'installer',
+            'DB_PASS' => 'password',
+            'DB_NAME' => 'lotgd',
+            'DB_PREFIX' => '',
+        ];
+
+        try {
+            (new Installer())->stage6();
+
+            $this->assertFileExists($statePath . '/dbconnect.php');
+            $this->assertFileDoesNotExist($this->dbconnectPath);
+        } finally {
+            putenv('LOTGD_STATE_PATH');
+            if (file_exists($statePath . '/dbconnect.php')) {
+                unlink($statePath . '/dbconnect.php');
+            }
+            rmdir($statePath);
+        }
     }
 
     public function testStage6GuidesManualCreationWhenFileCannotBeWritten(): void

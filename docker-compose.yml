@@ -15,6 +15,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       LOTGD_INSTALL_ENABLED: ${LOTGD_INSTALL_ENABLED:-0}
+      LOTGD_DATA_DIR: /var/lib/lotgd/logs
+      LOTGD_STATE_PATH: /var/lib/lotgd
     volumes:
       - lotgd_cache:/var/cache/lotgd
       - lotgd_state:/var/lib/lotgd

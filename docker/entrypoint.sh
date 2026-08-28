@@ -2,7 +2,19 @@
 set -eu
 
 state_path="${LOTGD_STATE_PATH:-/var/lib/lotgd}"
+log_path="${LOTGD_DATA_DIR:-$state_path/logs}"
 dbconnect_path="/var/www/html/dbconnect.php"
+
+state_path="$(realpath -m "$state_path")"
+log_path="$(realpath -m "$log_path")"
+
+case "$log_path/" in
+    "$state_path"/*) ;;
+    *)
+        echo "LOTGD_DATA_DIR '$log_path' must be inside LOTGD_STATE_PATH '$state_path'" >&2
+        exit 1
+        ;;
+esac
 
 # Fail before modifying persistent state when database credentials are absent or
 # match values previously published as usable examples.
@@ -20,9 +32,14 @@ validate_secret() {
 validate_secret MYSQL_PASSWORD
 validate_secret MYSQL_ROOT_PASSWORD
 
-mkdir -p "$state_path"
-if [ ! -w "$state_path" ]; then
-    echo "LOTGD_STATE_PATH '$state_path' is not writable" >&2
+# Runtime directories live outside the document root. Re-apply ownership and
+# restrictive modes on every start because named volumes retain old metadata.
+install -d -o www-data -g www-data -m 0750 "$state_path" "$log_path"
+install -d -o www-data -g www-data -m 0770 \
+    /var/cache/lotgd /var/cache/lotgd/twig /var/cache/lotgd/doctrine
+
+if ! su -s /bin/sh www-data -c "test -w '$state_path' && test -w '$log_path'"; then
+    echo "LOTGD_STATE_PATH '$state_path' or installer log directory '$log_path' is not writable by www-data" >&2
     exit 1
 fi
 

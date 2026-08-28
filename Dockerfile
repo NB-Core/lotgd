@@ -59,10 +59,13 @@ RUN install -d -o www-data -g www-data -m 0775 \
         /var/cache/lotgd/twig \
         /var/cache/lotgd/doctrine \
         /var/lib/lotgd \
-    && chown -R www-data:www-data /var/www/html
+        /var/lib/lotgd/logs \
+    && chown -R root:root /var/www/html \
+    && chmod -R go-w /var/www/html
 
 ENV APP_ENV=production \
     LOTGD_STATE_PATH=/var/lib/lotgd \
+    LOTGD_DATA_DIR=/var/lib/lotgd/logs \
     MYSQL_USEDATACACHE=1 \
     MYSQL_DATACACHEPATH=/var/cache/lotgd
 

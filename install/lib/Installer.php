@@ -347,12 +347,20 @@ class Installer
         if (array_key_exists('delete_installer', $_POST) && $_POST['delete_installer'] == '1') {
             if (file_exists($file)) {
                 try {
-                    if ($this->recordContainerInstallationCompletion() && unlink($file)) {
-                        $this->output->output("`\$Installer file installer.php removed.`n");
+                    $statePath = getenv('LOTGD_STATE_PATH');
+                    $containerCompletion = $statePath !== false && trim($statePath) !== '';
+                    if ($this->recordContainerInstallationCompletion()
+                        && ($containerCompletion || unlink($file))
+                    ) {
+                        if ($containerCompletion) {
+                            $this->output->output("`\$Installation completion recorded. The installer is now disabled and will be removed at the next container start.`n");
+                        } else {
+                            $this->output->output("`\$Installer file installer.php removed.`n");
+                        }
                     } else {
                         $this->output->output("`\$Unable to record installation completion or delete installer.php. Please verify LOTGD_STATE_PATH is writable and remove it manually.`n");
                     }
-                } catch (Throwable $e) {
+                } catch (\Throwable $e) {
                     $this->output->output("`\$Error deleting installer.php: " . $e->getMessage() . "`n");
                 }
             }
@@ -871,7 +879,7 @@ class Installer
     public function stage6(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
-        $dbconnectPath = dirname(__DIR__, 2) . '/dbconnect.php';
+        $dbconnectPath = $this->getDbconnectWritePath();
         $success = false;
 
         if (file_exists($dbconnectPath)) {
@@ -2145,14 +2153,28 @@ class Installer
      */
     private function verifyInstallDirectoryWritable(): bool
     {
-        $dir = dirname(__DIR__, 2);
-        if (! is_writable($dir)) {
-            $this->output->output("`\$Installation directory not writable:`2 %s", $dir);
-            $this->output->output("`2Please adjust permissions, e.g., run `#chmod 775 %s`2. See <a href='https://www.php.net/manual/en/function.chmod.php' target='_blank'>permission docs</a>.", $dir, true);
+        $target = $this->getDbconnectWritePath();
+        $writable = file_exists($target) ? is_writable($target) : is_writable(dirname($target));
+        if (! $writable) {
+            $this->output->output("`\$Database configuration target not writable:`2 %s", $target);
+            $this->output->output("`2Please grant the web-server user write access to this file or its parent directory. See <a href='https://www.php.net/manual/en/function.chmod.php' target='_blank'>permission docs</a>.", true);
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Return the real configuration target used by immutable containers.
+     */
+    private function getDbconnectWritePath(): string
+    {
+        $statePath = getenv('LOTGD_STATE_PATH');
+        if ($statePath !== false && trim($statePath) !== '') {
+            return rtrim($statePath, '/\\') . '/dbconnect.php';
+        }
+
+        return dirname(__DIR__, 2) . '/dbconnect.php';
     }
 
     private function getSetting(string $name, $default = '')

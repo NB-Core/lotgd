@@ -111,7 +111,12 @@ docker compose exec -T --user www-data web sh -c '
     test -w /var/cache/lotgd &&
     test -w /var/cache/lotgd/twig &&
     test -w /var/cache/lotgd/doctrine &&
-    test -w /var/lib/lotgd
+    test -w /var/lib/lotgd &&
+    test -w /var/lib/lotgd/logs &&
+    test ! -w /var/www/html &&
+    php_file=$(find /var/www/html -type f -name "*.php" -print -quit) &&
+    test -n "$php_file" &&
+    test ! -w "$php_file"
 '
 
 # The container-local probe must succeed without returning diagnostic content.
@@ -135,9 +140,25 @@ assert_status() {
 # slash semantics of RewriteRule in VirtualHost context.
 assert_status /installer.php 403
 assert_status /install/ 403
+assert_status /install/errors/install.log 403
 assert_status /_health/ready 403
 assert_status /.env 403
 assert_status /lib/dbwrapper.php 403
 assert_status /modules/cities.php 403
+
+# The log directory stays denied even during the deliberately enabled
+# installation window. Recreate Apache so its environment sees the new flag.
+LOTGD_INSTALL_ENABLED=1 docker compose up -d --force-recreate --no-deps web
+attempt=0
+until curl --silent --output /dev/null "http://127.0.0.1:${LOTGD_HTTP_PORT}/install/errors/install.log"; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 30 ]; then
+        echo "Web container did not restart after enabling the installer" >&2
+        docker compose logs web
+        exit 1
+    fi
+    sleep 1
+done
+assert_status /install/errors/install.log 403
 
 echo "Docker production smoke test passed"

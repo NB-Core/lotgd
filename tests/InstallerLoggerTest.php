@@ -22,6 +22,22 @@ namespace Lotgd\Tests {
     #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class InstallerLoggerTest extends TestCase
     {
+        public function testContainerLogPathUsesConfiguredDataDirectory(): void
+        {
+            putenv('LOTGD_STATE_PATH=/var/lib/lotgd');
+            putenv('LOTGD_DATA_DIR=/var/lib/lotgd/custom-logs');
+
+            try {
+                $this->assertSame(
+                    '/var/lib/lotgd/custom-logs/install.log',
+                    InstallerLogger::getLogFilePath()
+                );
+            } finally {
+                putenv('LOTGD_STATE_PATH');
+                putenv('LOTGD_DATA_DIR');
+            }
+        }
+
         public function testLogReturnsFalseWithoutWarningsWhenDirectoryIsNotWritable(): void
         {
             $warnings = [];
