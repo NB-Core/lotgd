@@ -105,7 +105,8 @@ done
 # Verify the exact runtime prerequisites rather than assuming a successful
 # package installation means PHP loaded every module.
 docker compose exec -T web php -r '
-    foreach (["gd", "mbstring", "mysqli", "opcache", "pdo", "pdo_mysql", "zip"] as $extension) {
+    // PHP exposes OPcache to extension_loaded() under its registered Zend name.
+    foreach (["gd", "mbstring", "mysqli", "Zend OPcache", "pdo", "pdo_mysql", "zip"] as $extension) {
         if (! extension_loaded($extension)) {
             fwrite(STDERR, "Missing PHP extension\n");
             exit(1);
