@@ -8,8 +8,7 @@ dbconnect_path="/var/www/html/dbconnect.php"
 # match values previously published as usable examples.
 validate_secret() {
     variable_name="$1"
-    eval "secret_value=\${$variable_name:-}"
-
+    secret_value=$(printenv "$variable_name" 2>/dev/null || true)
     case "$secret_value" in
         ""|lotgdpass|rootpass|changeme|password|example)
             echo "$variable_name must be set to a non-example secret; generate one with 'openssl rand -base64 32'" >&2
