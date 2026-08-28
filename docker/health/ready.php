@@ -34,7 +34,14 @@ try {
         throw new RuntimeException('database configuration unavailable');
     }
 
-    $configuration = require $configurationPath;
+    // Legacy or hand-edited configuration files may print migration notices.
+    // Discard all such output so readiness can never disclose their contents.
+    ob_start();
+    try {
+        $configuration = require $configurationPath;
+    } finally {
+        ob_end_clean();
+    }
     if (! is_array($configuration)) {
         // Keep the probe compatible with pre-array 2.x configuration files.
         $configuration = [
@@ -59,7 +66,9 @@ try {
         $configuration['DB_NAME'],
     );
     $result = $database->query('SELECT 1');
-    $ready = $result instanceof mysqli_result && $result->fetch_row() === ['1'];
+    $row = $result instanceof mysqli_result ? $result->fetch_row() : null;
+    // mysqlnd may return native integers while other drivers return strings.
+    $ready = is_array($row) && isset($row[0]) && (string) $row[0] === '1';
     if ($result instanceof mysqli_result) {
         $result->free();
     }

@@ -57,7 +57,12 @@ docker compose exec -T web php -r '
         "DB_PASS" => getenv("MYSQL_PASSWORD"),
         "DB_NAME" => getenv("MYSQL_DATABASE"),
     ];
-    if (file_put_contents("/var/lib/lotgd/dbconnect.php", "<?php\nreturn " . var_export($configuration, true) . ";\n") === false) {
+    // Deliberate output proves the readiness endpoint safely discards content
+    // emitted by legacy or hand-edited database configuration files.
+    $contents = "<?php\necho \"discarded configuration output\";\nreturn "
+        . var_export($configuration, true)
+        . ";\n";
+    if (file_put_contents("/var/lib/lotgd/dbconnect.php", $contents) === false) {
         exit(1);
     }
 '
