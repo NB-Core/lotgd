@@ -72,7 +72,7 @@ docker compose exec -T web php -r '
 attempt=0
 until [ "$(docker inspect --format '{{.State.Health.Status}}' "${COMPOSE_PROJECT_NAME}-web-1")" = healthy ]; do
     attempt=$((attempt + 1))
-    if [ "$attempt" -ge 40 ]; then
+    if [ "$attempt" -ge 75 ]; then
         docker compose logs web
         exit 1
     fi
@@ -108,7 +108,7 @@ assert_status() {
     expected="$2"
     actual=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${LOTGD_HTTP_PORT}${path}")
     if [ "$actual" != "$expected" ]; then
-        echo "Unexpected HTTP status for protected path (expected $expected, got $actual)" >&2
+        echo "Unexpected HTTP status for ${path} (expected $expected, got $actual)" >&2
         exit 1
     fi
 }

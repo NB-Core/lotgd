@@ -35,14 +35,25 @@ try {
         throw new RuntimeException('database configuration unavailable');
     }
 
+    // Resolve the canonical path so that opcache_invalidate and require use
+    // the real filesystem path rather than the symlink.  With
+    // opcache.validate_timestamps=0 OPcache keeps its own realpath cache that
+    // clearstatcache() cannot clear; passing the resolved path directly
+    // bypasses any stale symlink entry that OPcache may have cached while the
+    // target file did not yet exist.
+    $resolvedPath = realpath($configurationPath);
+    if ($resolvedPath === false) {
+        throw new RuntimeException('database configuration unavailable');
+    }
+
     // Legacy or hand-edited configuration files may print migration notices.
     // Discard all such output so readiness can never disclose their contents.
     if (function_exists('opcache_invalidate')) {
-        opcache_invalidate($configurationPath, true);
+        opcache_invalidate($resolvedPath, true);
     }
     ob_start();
     try {
-        $configuration = require $configurationPath;
+        $configuration = require $resolvedPath;
     } finally {
         ob_end_clean();
     }
