@@ -116,8 +116,14 @@ class Mounts
             return self::GRANT_NOT_FOUND;
         }
 
-        $serializedBuff = $row['mountbuff'] ?? null;
-        $buff = Serialization::safeUnserialize($serializedBuff);
+        // Invalid serialized input is an expected rejection path, so handle its
+        // warning here and emit the more useful mount-specific log below.
+        set_error_handler(static fn (): bool => true);
+        try {
+            $buff = unserialize((string) $row['mountbuff'], ['allowed_classes' => false]);
+        } finally {
+            restore_error_handler();
+        }
         if (!is_array($buff)) {
             error_log("Denied mount give: stored buff is malformed (mountId={$mountId})");
             return self::GRANT_INVALID_BUFF;
