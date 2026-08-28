@@ -116,6 +116,11 @@ docker compose exec -T web php -r '
     }
 '
 
+# The readiness fixture is intentionally a configured installation. Record its
+# exact content so the later fresh-installer window can temporarily hide the
+# file without weakening the persistence assertion.
+dbconnect_checksum=$(docker compose exec -T web sha256sum /var/lib/lotgd/dbconnect.php | awk '{print $1}')
+
 # Wait for web container to become healthy after configuration is written.
 # The health check probe will attempt a MySQL connection, so increase retry
 # limit to account for any remaining database initialization time.
@@ -189,6 +194,9 @@ wait_for_status() {
         attempt=$((attempt + 1))
         if [ "$attempt" -ge 30 ]; then
             echo "$description (expected $expected, got $actual)" >&2
+            echo "--- Unexpected HTTP response ---" >&2
+            curl --silent --show-error --include \
+                "http://127.0.0.1:${LOTGD_HTTP_PORT}${path}" >&2 || true
             docker compose logs web
             exit 1
         fi
@@ -211,11 +219,23 @@ assert_status /modules/cities.php 403
 docker compose exec -T web sh -c \
     'printf "%s\n" persistent-installer-log > /var/lib/lotgd/logs/install.log'
 
+# A real fresh installer has no dbconnect.php yet. The earlier readiness probe
+# needs one, so retain it under a temporary name in the same state volume while
+# testing installer access; leaving it active would make stage 0 treat the empty
+# CI database as an upgrade and query tables which have not been installed.
+docker compose exec -T web \
+    mv /var/lib/lotgd/dbconnect.php /var/lib/lotgd/dbconnect.php.smoke-backup
+
 # Recreate Apache so its environment sees the temporary installer flag. A 200
 # response is required: curl returning zero for a 403 would be a false positive.
 LOTGD_INSTALL_ENABLED=1 docker compose up -d --force-recreate --no-deps --no-build web
 wait_for_status /installer.php 200 "Installer did not become explicitly accessible"
 assert_status /install/errors/install.log 403
+
+# Restore the exact readiness configuration before modelling completion. The
+# final recreation below must preserve this file alongside logs and the marker.
+docker compose exec -T web \
+    mv /var/lib/lotgd/dbconnect.php.smoke-backup /var/lib/lotgd/dbconnect.php
 
 # Model installer stage 11 by placing its durable completion marker in the
 # state volume. Recreating with the flag deliberately left at 1 proves the
@@ -233,5 +253,10 @@ docker compose exec -T web sh -c '
     grep -F persistent-installer-log /var/lib/lotgd/logs/install.log >/dev/null &&
     grep -F completed /var/lib/lotgd/installation-complete >/dev/null
 '
+restored_checksum=$(docker compose exec -T web sha256sum /var/lib/lotgd/dbconnect.php | awk '{print $1}')
+if [ "$restored_checksum" != "$dbconnect_checksum" ]; then
+    echo "dbconnect.php changed while exercising installer persistence" >&2
+    exit 1
+fi
 
 echo "Docker production smoke test passed"
