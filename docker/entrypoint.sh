@@ -4,6 +4,23 @@ set -eu
 state_path="${LOTGD_STATE_PATH:-/var/lib/lotgd}"
 dbconnect_path="/var/www/html/dbconnect.php"
 
+# Fail before modifying persistent state when database credentials are absent or
+# match values previously published as usable examples.
+validate_secret() {
+    variable_name="$1"
+    eval "secret_value=\${$variable_name:-}"
+
+    case "$secret_value" in
+        ""|lotgdpass|rootpass|changeme|password|example)
+            echo "$variable_name must be set to a non-example secret; generate one with 'openssl rand -base64 32'" >&2
+            exit 1
+            ;;
+    esac
+}
+
+validate_secret MYSQL_PASSWORD
+validate_secret MYSQL_ROOT_PASSWORD
+
 mkdir -p "$state_path"
 if [ ! -w "$state_path" ]; then
     echo "LOTGD_STATE_PATH '$state_path' is not writable" >&2

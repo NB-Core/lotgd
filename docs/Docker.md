@@ -8,10 +8,47 @@ dependencies, and MySQL 8.4.
 
 ## Initial configuration
 
-Copy the example environment and replace the sample database passwords:
+`.env.example` is a template, not a deployable configuration. Copy it and
+generate two independent database secrets locally (do not commit `.env`):
 
 ```bash
 cp .env.example .env
+sed -i "s|^MYSQL_PASSWORD=$|MYSQL_PASSWORD=$(openssl rand -base64 32)|" .env
+sed -i "s|^MYSQL_ROOT_PASSWORD=$|MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)|" .env
+```
+
+Compose refuses to render the deployment when either secret is missing, and
+the web container rejects the documented legacy/example password values during
+startup.
+
+### Deliberately enabling initial installation
+
+The installer is denied by default. Set `LOTGD_INSTALL_ENABLED=1` in `.env`
+only for the installation window, recreate the web container, and start the
+stack. The published port remains restricted to the Docker host's loopback
+interface (`127.0.0.1:8080` by default):
+
+```bash
+docker compose up -d --build
+```
+
+On a remote server, reach it through an SSH tunnel instead of publishing the
+installer publicly. Run this on the administrator's workstation, replacing
+`admin@example.com` with the SSH destination, then browse to
+`http://127.0.0.1:8080/installer.php`:
+
+```bash
+ssh -N -L 8080:127.0.0.1:8080 admin@example.com
+```
+
+Installer stage 11 writes the persistent `installation-complete` marker and
+removes `installer.php`. That marker takes precedence over
+`LOTGD_INSTALL_ENABLED`, so restoring or leaving the flag at `1` cannot restore
+installer access after successful completion. Set `LOTGD_INSTALL_ENABLED=0`
+again and recreate the web container as defense in depth:
+
+```bash
+docker compose up -d --force-recreate web
 ```
 
 `MYSQL_USEDATACACHE=1` and `MYSQL_DATACACHEPATH=/var/cache/lotgd` enable the
@@ -32,8 +69,10 @@ development dependencies and generates an authoritative classmap. PHP hides
 errors from responses, logs them to container stderr, and enables OPcache
 without timestamp validation. Rebuild the image to deploy code changes.
 
-Only container port 80 is exposed. Set `LOTGD_HTTP_PORT` to choose its host
-mapping.
+Only container port 80 is exposed, and its host mapping is loopback-only. Set
+`LOTGD_HTTP_PORT` to choose another loopback host port. To serve an installed
+game remotely, put a TLS reverse proxy on a public interface and proxy to
+`127.0.0.1:${LOTGD_HTTP_PORT}`; do not make the installer port public.
 
 ### SSL/TLS is not included
 
@@ -101,6 +140,13 @@ docker compose ps
 docker compose exec web php -i | grep -E 'opcache.enable =>|opcache.validate_timestamps =>'
 docker compose exec --user www-data web sh -c 'test -w /var/cache/lotgd/twig && test -w /var/cache/lotgd/doctrine'
 docker compose exec web find /var/cache/lotgd -mindepth 1 -maxdepth 2 -type f -print
+```
+
+The repository also includes a focused configuration regression test (it
+requires the Docker Compose plugin):
+
+```bash
+tests/Docker/compose-security.sh
 ```
 
 After completing installation and requesting a Twig-backed page, repeat the
