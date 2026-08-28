@@ -61,8 +61,10 @@ jobs:
           docker buildx imagetools inspect \
             thecodingmachine/php:8.3-v4-apache@sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7 \
             --format '{{json .Manifest}}' | tee /tmp/runtime-manifest.json
-          grep -q 'linux/amd64' /tmp/runtime-manifest.json
-          grep -q 'linux/arm64' /tmp/runtime-manifest.json
+          # OS and architecture are separate JSON properties; query them as a
+          # pair instead of depending on a nonexistent "linux/amd64" string.
+          jq -e 'any(.manifests[]; .platform.os == "linux" and .platform.architecture == "amd64")' /tmp/runtime-manifest.json
+          jq -e 'any(.manifests[]; .platform.os == "linux" and .platform.architecture == "arm64")' /tmp/runtime-manifest.json
       - name: Build and load AMD64 application image once
         uses: docker/build-push-action@v6
         with:
