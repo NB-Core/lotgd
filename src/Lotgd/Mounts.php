@@ -116,8 +116,7 @@ class Mounts
             return self::GRANT_NOT_FOUND;
         }
 
-        $serializedBuff = $row['mountbuff'] ?? null;
-        $buff = Serialization::safeUnserialize($serializedBuff);
+        $buff = Serialization::safeUnserialize($row['mountbuff'] ?? null);
         if (!is_array($buff)) {
             error_log("Denied mount give: stored buff is malformed (mountId={$mountId})");
             return self::GRANT_INVALID_BUFF;

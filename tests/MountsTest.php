@@ -27,6 +27,7 @@ final class MountsTest extends TestCase
         \Lotgd\MySQL\Database::$queryCacheResults['mountdata-7'] = [
             $this->cachedMountRow,
         ];
+        MountBuffSerializationFixture::$wasUnserialized = false;
     }
 
     protected function tearDown(): void
@@ -112,6 +113,20 @@ final class MountsTest extends TestCase
         $this->assertSame('mounts', $GLOBALS['session']['bufflist']['mount']['schema']);
     }
 
+    public function testGrantDoesNotInstantiateSerializedBuffObjects(): void
+    {
+        $serializedBuff = serialize(new MountBuffSerializationFixture());
+        $this->prepareGrantRow(['mountid' => 8, 'mountbuff' => $serializedBuff]);
+        $GLOBALS['session'] = $this->existingMountSession();
+
+        $result = Mounts::grantToCurrentUser(8);
+
+        $this->assertSame(Mounts::GRANT_INVALID_BUFF, $result);
+        $this->assertFalse(MountBuffSerializationFixture::$wasUnserialized);
+        $this->assertSame(7, $GLOBALS['session']['user']['hashorse']);
+        $this->assertSame(['rounds' => 3], $GLOBALS['session']['bufflist']['mount']);
+    }
+
     /** @param array<string, mixed> $row */
     private function prepareGrantRow(array $row): void
     {
@@ -127,5 +142,18 @@ final class MountsTest extends TestCase
             'user' => ['hashorse' => 7, 'superuser' => 0],
             'bufflist' => ['mount' => ['rounds' => 3]],
         ];
+    }
+}
+
+/**
+ * Test fixture that records whether PHP instantiated a serialized buff object.
+ */
+final class MountBuffSerializationFixture
+{
+    public static bool $wasUnserialized = false;
+
+    public function __wakeup(): void
+    {
+        self::$wasUnserialized = true;
     }
 }
