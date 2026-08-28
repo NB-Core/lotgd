@@ -5,6 +5,9 @@ state_path="${LOTGD_STATE_PATH:-/var/lib/lotgd}"
 log_path="${LOTGD_DATA_DIR:-$state_path/logs}"
 dbconnect_path="/var/www/html/dbconnect.php"
 
+state_path="$(realpath -m "$state_path")"
+log_path="$(realpath -m "$log_path")"
+
 case "$log_path/" in
     "$state_path"/*) ;;
     *)
