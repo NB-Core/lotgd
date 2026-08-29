@@ -21,7 +21,10 @@ esac
 validate_secret() {
     variable_name="$1"
     secret_value=$(printenv "$variable_name" 2>/dev/null || true)
-    case "$secret_value" in
+    # Normalize only for comparison, so case variants of published placeholders
+    # cannot bypass the guard while the original secret reaches the application.
+    normalized_secret=$(printf '%s' "$secret_value" | tr '[:upper:]' '[:lower:]')
+    case "$normalized_secret" in
         ""|lotgdpass|rootpass|changeme|password|example)
             echo "$variable_name must be set to a non-example secret; generate one with 'openssl rand -base64 32'" >&2
             exit 1

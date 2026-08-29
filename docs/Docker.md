@@ -80,9 +80,10 @@ sed -i "s|^MYSQL_PASSWORD=$|MYSQL_PASSWORD=$(openssl rand -base64 32)|" .env
 sed -i "s|^MYSQL_ROOT_PASSWORD=$|MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)|" .env
 ```
 
-Compose refuses to render the deployment when either secret is missing, and
-the web container rejects the documented legacy/example password values during
-startup.
+Compose refuses to render the deployment when either secret is missing or
+empty. As a second, early runtime boundary, the web container rejects the
+documented legacy/example password values (including case variants) before it
+modifies persistent state. The two generated values must be independent.
 
 ### Rotating legacy Docker example passwords
 

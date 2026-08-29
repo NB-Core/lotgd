@@ -31,6 +31,8 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-lotgd}
       MYSQL_HOST: ${MYSQL_HOST:-db}
       MYSQL_USER: ${MYSQL_USER:-lotgduser}
+      # Required interpolation prevents Compose from creating a container with
+      # an absent or empty database credential.
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       LOTGD_INSTALL_ENABLED: ${LOTGD_INSTALL_ENABLED:-0}
@@ -81,6 +83,7 @@ services:
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-lotgd}
       MYSQL_USER: ${MYSQL_USER:-lotgduser}
+      # Keep database initialization subject to the same fail-closed contract.
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
     volumes:
