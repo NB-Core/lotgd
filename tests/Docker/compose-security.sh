@@ -87,12 +87,26 @@ for path in ("/tmp", "/run/apache2", "/var/lock/apache2"):
         raise SystemExit(f"{path} is not a restrictive tmpfs mount")
 PY
 
-for example_secret in lotgdpass rootpass changeme password example; do
-    if MYSQL_PASSWORD="$example_secret" MYSQL_ROOT_PASSWORD=valid-test-secret \
-        LOTGD_STATE_PATH="$project_dir/state" docker/entrypoint.sh true 2>/dev/null; then
-        echo "Entrypoint accepted documented example secret '$example_secret'" >&2
-        exit 1
-    fi
+# Both credentials pass through the same early runtime boundary. Exercise every
+# rejected value independently so a future regression cannot protect only the
+# lower-privileged application account.
+for variable_name in MYSQL_PASSWORD MYSQL_ROOT_PASSWORD; do
+    for example_secret in '' lotgdpass rootpass changeme password example LOTGDPASS ROOTPASS; do
+        MYSQL_PASSWORD=valid-test-application-secret
+        MYSQL_ROOT_PASSWORD=valid-test-root-secret
+        export MYSQL_PASSWORD MYSQL_ROOT_PASSWORD
+        export "$variable_name=$example_secret"
+
+        error_file="$project_dir/entrypoint-error"
+        if LOTGD_STATE_PATH="$project_dir/state" docker/entrypoint.sh true 2>"$error_file"; then
+            echo "Entrypoint accepted invalid $variable_name value '$example_secret'" >&2
+            exit 1
+        fi
+        if ! grep -F "$variable_name must be set to a non-example secret" "$error_file" >/dev/null; then
+            echo "Entrypoint did not explain the rejected $variable_name value" >&2
+            exit 1
+        fi
+    done
 done
 
 echo "Docker Compose security configuration passed"
