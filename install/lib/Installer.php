@@ -150,6 +150,7 @@ class Installer
                             'acctid' => (int) ($row['acctid'] ?? 0),
                             'login' => (string) ($row['login'] ?? Http::post('username')),
                             'password' => stripslashes(Http::post('password')),
+                            'verifiedPassword' => (string) ($row['password'] ?? ''),
                             'ancient' => $this->getSetting('installer_version', '-1') === '-1',
                         ];
                         Redirect::redirect("installer.php?stage=1");
@@ -2278,28 +2279,42 @@ class Installer
 
         $connection = Database::getDoctrineConnection();
         $table = Database::prefix('accounts');
-        $accounts = $connection->fetchAllAssociative(
-            "SELECT acctid, password, password_algo FROM {$table}"
-        );
         $metadataUpdates = 0;
+        $lastAcctid = 0;
 
-        foreach ($accounts as $account) {
-            $storedPassword = (string) ($account['password'] ?? '');
-            if (! PasswordHelper::isModernHash($storedPassword)
-                || (int) ($account['password_algo'] ?? PasswordHelper::ALGO_LEGACY) === PasswordHelper::ALGO_MODERN
-            ) {
-                continue;
-            }
-
-            $connection->executeStatement(
-                "UPDATE {$table} SET password_algo = :passwordAlgo WHERE acctid = :acctid",
+        do {
+            // Restrict each page to likely bcrypt rows with stale metadata.
+            // PasswordHelper still validates every candidate, so a malformed
+            // value that merely starts with "$2" is never marked modern.
+            $accounts = $connection->fetchAllAssociative(
+                "SELECT acctid, password FROM {$table}"
+                . " WHERE acctid > :lastAcctid AND password_algo <> :modernAlgo"
+                . " AND password LIKE :bcryptPrefix ORDER BY acctid LIMIT 500",
                 [
-                    'passwordAlgo' => PasswordHelper::ALGO_MODERN,
-                    'acctid' => (int) $account['acctid'],
+                    'lastAcctid' => $lastAcctid,
+                    'modernAlgo' => PasswordHelper::ALGO_MODERN,
+                    'bcryptPrefix' => '$2%',
                 ]
             );
-            ++$metadataUpdates;
-        }
+
+            foreach ($accounts as $account) {
+                $lastAcctid = max($lastAcctid, (int) ($account['acctid'] ?? 0));
+                $storedPassword = (string) ($account['password'] ?? '');
+                if (! PasswordHelper::isModernHash($storedPassword)) {
+                    continue;
+                }
+
+                $metadataUpdates += $connection->executeStatement(
+                    "UPDATE {$table} SET password_algo = :passwordAlgo"
+                    . " WHERE acctid = :acctid AND password = :password",
+                    [
+                        'passwordAlgo' => PasswordHelper::ALGO_MODERN,
+                        'acctid' => (int) $account['acctid'],
+                        'password' => $storedPassword,
+                    ]
+                );
+            }
+        } while (count($accounts) === 500);
 
         if ($metadataUpdates > 0) {
             InstallerLogger::log("Aligned password metadata for {$metadataUpdates} modern account(s).");
@@ -2308,19 +2323,28 @@ class Installer
         $credential = $session['installer_admin_credential'] ?? null;
         if (is_array($credential)
             && ($credential['acctid'] ?? 0) > 0
-            && isset($credential['login'], $credential['password'])
+            && isset($credential['login'], $credential['password'], $credential['verifiedPassword'])
         ) {
-            $connection->executeStatement(
+            $adminUpdated = $connection->executeStatement(
                 "UPDATE {$table} SET password = :password, password_algo = :passwordAlgo"
-                . " WHERE acctid = :acctid AND login = :login",
+                . " WHERE acctid = :acctid AND login = :login AND password = :verifiedPassword",
                 [
                     'password' => PasswordHelper::hash((string) $credential['password']),
                     'passwordAlgo' => PasswordHelper::ALGO_MODERN,
                     'acctid' => (int) $credential['acctid'],
                     'login' => (string) $credential['login'],
+                    'verifiedPassword' => (string) $credential['verifiedPassword'],
                 ]
             );
-            InstallerLogger::log('Upgraded the authenticated installer administrator password to bcrypt.');
+            if ($adminUpdated > 0) {
+                InstallerLogger::log('Upgraded the authenticated installer administrator password to bcrypt.');
+            } else {
+                // A concurrent password change must win over the older stage-0
+                // credential; never restore a password that has been replaced.
+                InstallerLogger::log(
+                    'Skipped installer administrator password upgrade because the stored password changed.'
+                );
+            }
         }
 
         if (is_array($credential) && ($credential['ancient'] ?? false)) {

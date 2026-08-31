@@ -489,10 +489,15 @@ namespace Lotgd\Tests\Installer {
                 }
             }
 
-            $this->assertContains(
-                'SELECT acctid, password, password_algo FROM accounts',
-                DoctrineBootstrap::$conn->queries,
-                'The post-schema account password migration should still run.'
+            $this->assertNotEmpty(
+                array_filter(
+                    DoctrineBootstrap::$conn->queries,
+                    static fn (string $sql): bool => str_contains(
+                        $sql,
+                        'SELECT acctid, password FROM accounts WHERE acctid > :lastAcctid'
+                    )
+                ),
+                'The paginated post-schema account password migration should still run.'
             );
 
             foreach (DoctrineBootstrap::$conn->queries as $sql) {
