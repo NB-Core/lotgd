@@ -31,6 +31,7 @@ final class PlayerSearchTest extends TestCase
         }
 
         \Lotgd\MySQL\Database::$mockResults = [];
+        Database::setPrefix('lotgd_');
 
         $this->search = new PlayerSearch();
         $this->connection = Database::getDoctrineConnection();
@@ -46,6 +47,7 @@ final class PlayerSearchTest extends TestCase
         }
 
         \Lotgd\MySQL\Database::$mockResults = [];
+        Database::setPrefix('');
     }
 
     public function testFindExactLoginReturnsSingleRow(): void
@@ -60,6 +62,7 @@ final class PlayerSearchTest extends TestCase
         $this->assertSame('Alpha', $result[0]['name']);
 
         $sql = end($this->connection->queries);
+        $this->assertStringContainsString('FROM lotgd_accounts a', $sql);
         $this->assertStringContainsString('a.login = :loginExact', $sql);
         $this->assertStringContainsString('LIMIT 1', $sql);
 
@@ -227,6 +230,7 @@ final class PlayerSearchTest extends TestCase
         $this->assertCount(1, $result['rows']);
         $this->assertSame('alpha@example.com', $result['rows'][0]['emailaddress']);
         $this->assertCount(1, $this->connection->queries);
+        $this->assertStringContainsString('FROM lotgd_accounts a', $this->connection->queries[0]);
         $this->assertStringContainsString('legacyExactPattern', $this->connection->queries[0]);
         $this->assertArrayHasKey('legacyExactPattern', $this->connection->executeQueryParams[0]);
     }

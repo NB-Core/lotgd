@@ -265,8 +265,9 @@ final class PlayerSearch
         );
 
         $sql = sprintf(
-            'SELECT %s FROM accounts a WHERE %s ORDER BY %s LIMIT %d',
+            'SELECT %s FROM %s a WHERE %s ORDER BY %s LIMIT %d',
             implode(', ', $columns),
+            Database::prefix('accounts'),
             implode(' OR ', $wrapped),
             $this->buildOrderByClause($orderPriorities, $alphabetical),
             $limit
@@ -514,8 +515,9 @@ final class PlayerSearch
         );
 
         $sql = sprintf(
-            'SELECT %s FROM accounts a WHERE %s ORDER BY %s LIMIT %d',
+            'SELECT %s FROM %s a WHERE %s ORDER BY %s LIMIT %d',
             implode(', ', $columns),
+            Database::prefix('accounts'),
             implode(' OR ', $wrapped),
             $orderClause,
             $limit

@@ -7,6 +7,7 @@ use Lotgd\Nav;
 use Lotgd\MySQL\Database;
 use Lotgd\GameLog;
 use Lotgd\Output;
+use Lotgd\PasswordHelper;
 use Lotgd\Settings;
 use Lotgd\Http;
 
@@ -45,12 +46,15 @@ foreach ($post as $key => $val) {
     if (isset($userinfo[$key])) {
         if ($key == "newpassword") {
             if ($val > "") {
-                $fieldUpdates['password'] = md5(md5($val));
+                $passwordHash = PasswordHelper::hash((string) $val);
+                $fieldUpdates['password'] = $passwordHash;
+                $fieldUpdates['password_algo'] = PasswordHelper::ALGO_MODERN;
                 $updates++;
                 $output->output("`\$Password value has been updated.`0`n");
-                debuglog($session['user']['name'] . "`0 changed password to $val", $userid);
+                debuglog($session['user']['name'] . "`0 changed the target account's password", $userid);
                 if ($session['user']['acctid'] == $userid) {
-                    $session['user']['password'] = md5(md5($val));
+                    $session['user']['password'] = $passwordHash;
+                    $session['user']['password_algo'] = PasswordHelper::ALGO_MODERN;
                 }
             }
         } elseif ($key == "superuser") {
