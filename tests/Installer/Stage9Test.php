@@ -489,7 +489,11 @@ namespace Lotgd\Tests\Installer {
                 }
             }
 
-            $this->assertCount(0, DoctrineBootstrap::$conn->queries, 'Doctrine metadata should bypass legacy installer SQL.');
+            $this->assertContains(
+                'SELECT acctid, password, password_algo FROM accounts',
+                DoctrineBootstrap::$conn->queries,
+                'The post-schema account password migration should still run.'
+            );
 
             foreach (DoctrineBootstrap::$conn->queries as $sql) {
                 $this->assertArrayNotHasKey(

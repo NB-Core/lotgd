@@ -143,6 +143,15 @@ class Installer
                     );
 
                     if ($needsauthentication === false) {
+                        // Retain the already-verified credential only until the
+                        // password schema migration can replace this admin's
+                        // ambiguous ancient hash with bcrypt.
+                        $session['installer_admin_credential'] = [
+                            'acctid' => (int) ($row['acctid'] ?? 0),
+                            'login' => (string) ($row['login'] ?? Http::post('username')),
+                            'password' => stripslashes(Http::post('password')),
+                            'ancient' => $this->getSetting('installer_version', '-1') === '-1',
+                        ];
                         Redirect::redirect("installer.php?stage=1");
                     }
                     $this->output->output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
@@ -1559,6 +1568,7 @@ class Installer
         $this->output->output("`2The installer now uses Doctrine migrations to set up the database schema.`n");
         try {
             $this->runMigrations();
+            $this->migrateInstallerAccountPasswords();
             $this->output->output("`@Migrations executed successfully.`n");
         } catch (\Throwable $e) {
             $this->output->output("`\$Migration error:`n" . $e->getMessage());
@@ -2249,6 +2259,82 @@ class Installer
         }
 
         return false;
+    }
+
+    /**
+     * Normalize account password metadata after the bcrypt schema migration.
+     *
+     * This installer-only migration deliberately does not guess whether a
+     * 32-character hexadecimal value is single- or double-MD5. Existing bcrypt
+     * values are preserved and their metadata is corrected. When stage 0 has
+     * authenticated an administrator, that known plaintext credential is used
+     * to replace only that account's password with bcrypt. Other ambiguous MD5
+     * or ancient plaintext accounts remain untouched and must use the Forgotten
+     * Password flow; hashing them speculatively would corrupt valid credentials.
+     */
+    private function migrateInstallerAccountPasswords(): void
+    {
+        global $session;
+
+        $connection = Database::getDoctrineConnection();
+        $table = Database::prefix('accounts');
+        $accounts = $connection->fetchAllAssociative(
+            "SELECT acctid, password, password_algo FROM {$table}"
+        );
+        $metadataUpdates = 0;
+
+        foreach ($accounts as $account) {
+            $storedPassword = (string) ($account['password'] ?? '');
+            if (! PasswordHelper::isModernHash($storedPassword)
+                || (int) ($account['password_algo'] ?? PasswordHelper::ALGO_LEGACY) === PasswordHelper::ALGO_MODERN
+            ) {
+                continue;
+            }
+
+            $connection->executeStatement(
+                "UPDATE {$table} SET password_algo = :passwordAlgo WHERE acctid = :acctid",
+                [
+                    'passwordAlgo' => PasswordHelper::ALGO_MODERN,
+                    'acctid' => (int) $account['acctid'],
+                ]
+            );
+            ++$metadataUpdates;
+        }
+
+        if ($metadataUpdates > 0) {
+            InstallerLogger::log("Aligned password metadata for {$metadataUpdates} modern account(s).");
+        }
+
+        $credential = $session['installer_admin_credential'] ?? null;
+        if (is_array($credential)
+            && ($credential['acctid'] ?? 0) > 0
+            && isset($credential['login'], $credential['password'])
+        ) {
+            $connection->executeStatement(
+                "UPDATE {$table} SET password = :password, password_algo = :passwordAlgo"
+                . " WHERE acctid = :acctid AND login = :login",
+                [
+                    'password' => PasswordHelper::hash((string) $credential['password']),
+                    'passwordAlgo' => PasswordHelper::ALGO_MODERN,
+                    'acctid' => (int) $credential['acctid'],
+                    'login' => (string) $credential['login'],
+                ]
+            );
+            InstallerLogger::log('Upgraded the authenticated installer administrator password to bcrypt.');
+        }
+
+        if (is_array($credential) && ($credential['ancient'] ?? false)) {
+            InstallerLogger::log(
+                'Preserved ambiguous ancient player passwords; affected players must use password recovery.'
+            );
+            $this->output->output(
+                "`^Ancient player passwords were preserved because single- and double-MD5 cannot be distinguished. "
+                . "Players whose old password no longer works must use the Forgotten Password flow; do not hash stored values again.`n"
+            );
+        }
+
+        // Never retain installer plaintext credentials after the one safe use.
+        unset($session['installer_admin_credential']);
     }
 
     /**

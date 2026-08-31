@@ -123,4 +123,16 @@ final class PasswordHelper
 
         return ($info['algo'] ?? null) === PASSWORD_BCRYPT;
     }
+
+    /**
+     * Detect the shape shared by historical single- and double-MD5 hashes.
+     *
+     * The two formats cannot be distinguished from the stored value alone.
+     * Callers must preserve a matching value unless they also have the user's
+     * plaintext password and can verify which historical format was used.
+     */
+    public static function isLegacyHash(string $storedHash): bool
+    {
+        return strlen($storedHash) === 32 && ctype_xdigit($storedHash);
+    }
 }

@@ -52,6 +52,17 @@ final class PasswordHelperTest extends TestCase
         $this->assertTrue(PasswordHelper::verifyLegacyUpgradeCredential('swordfish', 'swordfish'));
     }
 
+    /**
+     * Single- and double-MD5 values share one conservative classification.
+     */
+    public function testLegacyHashClassificationDoesNotGuessMd5Generation(): void
+    {
+        $this->assertTrue(PasswordHelper::isLegacyHash(md5('swordfish')));
+        $this->assertTrue(PasswordHelper::isLegacyHash(md5(md5('swordfish'))));
+        $this->assertFalse(PasswordHelper::isLegacyHash('short plaintext'));
+        $this->assertFalse(PasswordHelper::isLegacyHash(PasswordHelper::hash('swordfish')));
+    }
+
 
     /**
      * Ensure malformed values with "$2" prefix are not treated as bcrypt hashes.
