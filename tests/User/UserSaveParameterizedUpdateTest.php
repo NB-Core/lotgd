@@ -35,6 +35,7 @@ namespace {
     if (!function_exists('debuglog')) {
         function debuglog(string $message, mixed $userid = null): void
         {
+            $GLOBALS['__test_debuglog'][] = ['message' => $message, 'userid' => $userid];
         }
     }
     if (!function_exists('debug')) {
@@ -71,12 +72,79 @@ namespace {
 
 namespace Lotgd\Tests\User {
     use Lotgd\Names;
+    use Lotgd\PasswordHelper;
     use Lotgd\Settings;
     use Lotgd\MySQL\Database;
+    use PHPUnit\Framework\Attributes\RunInSeparateProcess;
     use PHPUnit\Framework\TestCase;
 
     final class UserSaveParameterizedUpdateTest extends TestCase
     {
+        #[RunInSeparateProcess]
+        public function testNewPasswordUsesModernHashAndDoesNotLeakPlaintextToLog(): void
+        {
+            Database::resetDoctrineConnection();
+            $connection = Database::getDoctrineConnection();
+            $connection->executeStatements = [];
+
+            $plaintext = 'Never-Log-This-Password!';
+            $targetUserid = 42;
+            $oldvalues = [
+                'newpassword' => '',
+                'playername' => 'Admin',
+                'title' => '',
+                'ctitle' => '',
+            ];
+            $serialized = htmlentities(serialize($oldvalues), ENT_COMPAT, 'UTF-8');
+
+            $include = function () use ($plaintext, $serialized, $oldvalues, $targetUserid): void {
+                global $_POST, $_GET, $session, $userid, $userinfo, $__test_debuglog;
+
+                $_POST = ['newpassword' => $plaintext, 'oldvalues' => $serialized];
+                $_GET = [];
+                $__test_debuglog = [];
+                $session = [
+                    'user' => [
+                        'acctid' => $targetUserid,
+                        'superuser' => SU_MEGAUSER,
+                        'name' => 'Admin',
+                        'password' => 'old hash',
+                        'password_algo' => PasswordHelper::ALGO_LEGACY,
+                    ],
+                ];
+                $userid = $targetUserid;
+                $userinfo = $oldvalues;
+
+                require __DIR__ . '/../../pages/user/user_save.php';
+            };
+
+            \Closure::bind($include, null, null)();
+
+            $statement = null;
+            foreach (array_reverse($connection->executeStatements) as $entry) {
+                if (str_contains($entry['sql'], 'UPDATE ' . Database::prefix('accounts'))) {
+                    $statement = $entry;
+                    break;
+                }
+            }
+
+            $this->assertNotNull($statement, 'No UPDATE statement executed for accounts table');
+            $params = $statement['params'];
+            $this->assertTrue(PasswordHelper::verify(
+                $plaintext,
+                $params['password'],
+                $params['password_algo']
+            ));
+            $this->assertSame(PasswordHelper::ALGO_MODERN, $params['password_algo']);
+            $this->assertSame($params['password'], $GLOBALS['session']['user']['password']);
+            $this->assertSame(PasswordHelper::ALGO_MODERN, $GLOBALS['session']['user']['password_algo']);
+
+            $logOutput = implode("\n", array_column($GLOBALS['__test_debuglog'], 'message'));
+            $this->assertStringNotContainsString($plaintext, $logOutput);
+            $this->assertStringNotContainsString($params['password'], $logOutput);
+            $this->assertStringContainsString("changed the target account's password", $logOutput);
+        }
+
         public function testUpdateBindsParametersForQuotedAndMultibyteNames(): void
         {
             Database::resetDoctrineConnection();
@@ -221,4 +289,3 @@ namespace Lotgd\Tests\User {
         }
     }
 }
-
