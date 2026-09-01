@@ -61,6 +61,12 @@ If you are coming directly from **1.3.2** (or earlier 1.x):
 
 ## 5. Run Doctrine Migrations
 
+Copying the new files alone is **not** a complete upgrade. Before permitting
+players to log in, either finish the browser installer or run the Doctrine
+migration command below. Migration `Version20250724000021` widens
+`accounts.password` for bcrypt hashes and adds `accounts.password_algo`; logins
+before those schema changes can truncate new hashes or fail.
+
 Once the legacy upgrade is complete:
 
 1. In your project root, run:
@@ -73,6 +79,17 @@ Once the legacy upgrade is complete:
    locations.
 3. This will apply all new **2.x schema changes**.
 4. Watch for any DB prefix issues — these are now supported and should migrate correctly.
+
+### Password recovery for ancient accounts
+
+The browser installer immediately converts the administrator credential used
+to authorize an ancient upgrade to bcrypt. It preserves all other 32-character
+MD5-shaped values because a single-MD5 hash and a double-MD5 hash cannot be
+distinguished without knowing the plaintext password. It also does not guess
+that arbitrary short database values are plaintext passwords. Players whose
+single-MD5 or plaintext credentials cannot be verified must use the **Forgotten
+Password** flow (or have an administrator set a new password); operators must
+not apply another MD5 pass to stored account values.
 
 ### Advanced admins: CLI-only upgrade
 

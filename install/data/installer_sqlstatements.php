@@ -786,8 +786,6 @@ $sql_upgrade_statements = array(
 "UPDATE " . Database::prefix("accounts") . " SET race=\"Horrible Gelatinous Blob\" WHERE race='0'",
 "UPDATE " . Database::prefix("accounts") . " SET location=\"The Boar's Head Inn\" WHERE location='1'",
 "UPDATE " . Database::prefix("accounts") . " SET location=\"Degolburg\" WHERE location='0'",
-"UPDATE " . Database::prefix("accounts") . " SET password=md5(password) WHERE length(password) < 32",
-"UPDATE " . Database::prefix("accounts") . " SET password=md5(password)",
 "UPDATE " . Database::prefix("nastywords") . " SET type='nasty'",
 ),
 "0.9.8-prerelease.2" => array(),
