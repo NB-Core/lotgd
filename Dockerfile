@@ -4,7 +4,7 @@
 # changes retain the expensive Composer download layer.
 # Keep the readable release line while pinning the reviewed multi-architecture
 # index; Dependabot proposes digest refreshes without silently changing builds.
-FROM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS composer
+FROM composer:2@sha256:d020706319701a44468968321dccd0fce6620190159a7a9ec195d78e6e971c71 AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install \
