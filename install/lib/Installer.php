@@ -143,16 +143,19 @@ class Installer
                     );
 
                     if ($needsauthentication === false) {
-                        // Retain the already-verified credential only until the
-                        // password schema migration can replace this admin's
-                        // ambiguous ancient hash with bcrypt.
-                        $session['installer_admin_credential'] = [
-                            'acctid' => (int) ($row['acctid'] ?? 0),
-                            'login' => (string) ($row['login'] ?? Http::post('username')),
-                            'password' => stripslashes(Http::post('password')),
-                            'verifiedPassword' => (string) ($row['password'] ?? ''),
-                            'ancient' => $this->getSetting('installer_version', '-1') === '-1',
-                        ];
+// Retain the already-verified credential only until the
+// password schema migration can replace this admin's
+// ambiguous ancient hash with bcrypt.
+$installerIsAncient = $this->getSetting('installer_version', '-1') === '-1';
+if ($installerIsAncient) {
+    $session['installer_admin_credential'] = [
+        'acctid' => (int) ($row['acctid'] ?? 0),
+        'login' => (string) ($row['login'] ?? Http::post('username')),
+        'password' => stripslashes(Http::post('password')),
+        'verifiedPassword' => (string) ($row['password'] ?? ''),
+        'ancient' => true,
+    ];
+}
                         Redirect::redirect("installer.php?stage=1");
                     }
                     $this->output->output("`\$That username / password was not found, or is not an account with sufficient privileges to perform the upgrade.`n");
