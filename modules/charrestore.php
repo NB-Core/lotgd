@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 /**
  * Administrative module to snapshot and restore player accounts.
+ *
+ * Shared-library contract: charrestore/lib owns snapshot validation, persistence,
+ * and restore mechanics. Dependent reset modules retain their settings, hooks,
+ * directories, and legacy archive names while gaining preference-only overwrite.
  */
 
 use Lotgd\SuAccess;
@@ -21,7 +25,7 @@ function charrestore_getmoduleinfo(): array
     $info = array(
             "name" => "Character Restorer",
             "category" => "Administrative",
-            "version" => "1.2",
+            "version" => "2.0",
             "author" => "Eric Stevens, modifications +nb",
             "download" => "core_module",
             "settings" => array(
@@ -194,99 +198,60 @@ function charrestore_dohook(string $hookname, array $args): array
     return $args;
 }
 
+/** Build the explicit Character Restorer shared-library context. */
+function charrestore_context(): array
+{
+    return array(
+        'owner' => 'charrestore',
+        'snapshot_dir' => (string) get_module_setting('snapshot_dir', 'charrestore'),
+        'filename_strategy' => 'charrestore',
+        'log_category' => 'charrestore',
+        'privacy_filter' => true,
+        'deletion_notification' => true,
+        'excluded_modules_hook' => true,
+        'email_search' => true,
+    );
+}
+
+/** Load the module-owned shared snapshot and restore API. */
+function charrestore_load_library(): bool
+{
+    $snapshotLibrary = __DIR__ . '/charrestore/lib/snapshot.php';
+    $restoreLibrary = __DIR__ . '/charrestore/lib/restore.php';
+    if (!is_file($snapshotLibrary) || !is_file($restoreLibrary)) {
+        return false;
+    }
+    require_once $snapshotLibrary;
+    require_once $restoreLibrary;
+    return function_exists('charrestore_snapshot_create') && function_exists('charrestore_restore_admin_flow');
+}
+
+/** Create a privacy-filtered Character Restorer snapshot. */
 function charrestore_create_snapshot(int $acctid): bool
 {
-    $conn    = Database::getDoctrineConnection();
-    $table   = Database::prefix('accounts');
-    $account = $conn->fetchAssociative(
-        "SELECT * FROM {$table} WHERE acctid = :acctid",
-        ['acctid' => $acctid],
-        ['acctid' => ParameterType::INTEGER]
-    );
-    if (! $account) {
+    if (!charrestore_load_library()) {
+        GameLog::log('Character Restorer shared library is unavailable.', 'charrestore');
         return false;
     }
+    return charrestore_snapshot_create($acctid, charrestore_context());
+}
 
-    $user = array("account" => array(), "prefs" => array());
-
-    //set up the user's account table fields
-    //reduces storage footprint.
-    //id and ip are not necessary and also related to identify persons (stripped)
-    $nosavefields = array("output" => true, "allowednavs" => true, "lastip" => true, "uniqueid" => true);
-    foreach ($account as $key => $val) {
-        if (! isset($nosavefields[$key])) {
-            $user['account'][$key] = $val;
-        }
-    }
-
-    //time to remove personal data so we can store a copy indefinitely
-    $user_email = $user['account']['emailaddress'];
-    $user['account']['emailaddress'] = charrestore_gethash($user['account']['emailaddress']);
-    $user['account']['replaceemail'] = charrestore_gethash($user['account']['replaceemail']);
-
-    //set up the user's module preferences
-    //add a hook for module to not include themselves (data privacy issue)
-    $nosavemodules = modulehook('charrestore_nosavemodules', array());
-    $prefsTable = Database::prefix('module_userprefs');
-    $prefs = $conn->fetchAllAssociative(
-        "SELECT * FROM {$prefsTable} WHERE userid = :acctid",
-        ['acctid' => $acctid],
-        ['acctid' => ParameterType::INTEGER]
-    );
-    foreach ($prefs as $pref) {
-        if (! isset($user['prefs'][$pref['modulename']])) {
-            $user['prefs'][$pref['modulename']] = array();
-        }
-        if (! isset($nosavemodules[$pref['modulename']])) {
-            $user['prefs'][$pref['modulename']][$pref['setting']] = $pref['value'];
-        }
-    }
-
-    //write the file
-    $path = charrestore_getstorepath();
-    if (! is_dir($path)) {
-        charrestore_notify_admin_snapshot_failure($path, 'Snapshot directory does not exist.');
-        return false;
-    }
-    if (! is_writable($path)) {
-        charrestore_notify_admin_snapshot_failure($path, 'Snapshot directory is not writable.');
-        return false;
-    }
-
-    $filename = $path . str_replace(" ", "_", $user['account']['login']) . "|" . $user['account']['acctid'] . "|" . date("Ymd");
-    $fp = @fopen($filename, "w+");
-    if (! $fp) {
-        charrestore_notify_admin_snapshot_failure($filename, 'Snapshot file could not be opened.');
-        return false;
-    }
-
-    if (fwrite($fp, serialize($user)) === false) {
-        fclose($fp);
-        charrestore_notify_admin_snapshot_failure($filename, 'Snapshot file could not be written.');
-        return false;
-    }
-
-    fclose($fp);
-
-    $targetid = $user['account']['acctid'];
-    $targetmail = $user_email;
-    $subject = translate_mail(array("Your character %s", sanitize($user['account']['login'])), $targetid);
-    $body = translate_mail(
-        array(
-            "Your character %s has been deleted by you or has expired on the game. `nIf you choose to reactivate this account in the future, note that it will be archived but without personal data. `n`nThis means, your email address and other personal data will be removed from the copy. If you want it restored, you need to recall your email adress or your password,only this will work!`n`nRegards,\nStaff of %s",
-            sanitize($user['account']['login']), get_module_setting('adminname', 'charrestore')
-        ),
-        $targetid
-    );
-    $body = str_replace("`n", "</br>", $body);
-    $result = charrestore_sendmail($targetmail, $body, $subject, get_module_setting('adminmail', 'charrestore'), get_module_setting('adminname', 'charrestore'));
-    if ($result) {
-        output("`\$The notification message has been sent!`n");
-    } else {
-        output("`\$There has been an error! The notification message was NOT sent!`n");
-    }
-
-    return true;
+/** Send the historical deletion notification after a successful snapshot. */
+function charrestore_send_deletion_notification(array $snapshot, string $targetmail): void
+{
+    $account = $snapshot['account'];
+    $targetid = (int) ($account['acctid'] ?? 0);
+    $login = (string) ($account['login'] ?? '');
+    $subject = translate_mail(array('Your character %s', sanitize($login)), $targetid);
+    $body = translate_mail(array(
+        "Your character %s has been deleted by you or has expired on the game. `nIf you choose to reactivate this account in the future, note that it will be archived but without personal data. `n`nThis means, your email address and other personal data will be removed from the copy. If you want it restored, you need to recall your email adress or your password,only this will work!`n`nRegards,
+Staff of %s",
+        sanitize($login),
+        get_module_setting('adminname', 'charrestore'),
+    ), $targetid);
+    $sent = charrestore_sendmail($targetmail, str_replace('`n', '</br>', $body), $subject,
+        get_module_setting('adminmail', 'charrestore'), get_module_setting('adminname', 'charrestore'));
+    output($sent ? '`$The notification message has been sent!`n' : '`$There has been an error! The notification message was NOT sent!`n');
 }
 
 function charrestore_notify_admin_snapshot_failure(string $path, string $reason): void
@@ -358,414 +323,37 @@ function charrestore_run(): void
            addnav("Legacy Converts");
            addnav("Convert Email to Hash", "runmodule.php?module=charrestore&op=hashconvert" . $retnav);
 
-    if (httpget("op") == "list") {
-        output("Please note that only characters who have reached at least level %s in DK %s will have been saved!`n`n", get_module_setting("lvl_threshold", "charrestore"), get_module_setting("dk_threshold", "charrestore"));
-
-        output("Search by login, email or both:`n");
-        rawoutput("<form action='runmodule.php?module=charrestore&op=list$retnav' method='POST'>");
-        addnav("", "runmodule.php?module=charrestore&op=list" . $retnav);
-        rawoutput("<table><tr><td>");
-        output("Character Login: ");
-        $login = httppost('login');
-        $login = is_string($login) ? stripslashes($login) : '';
-        rawoutput("<input name='login' value=\"" . htmlentities($login, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
-        rawoutput("</td><td>");
-        output("Character Email: ");
-        $email = httppost('email');
-        $email = is_string($email) ? stripslashes($email) : '';
-        rawoutput("<input name='email' value=\"" . htmlentities($email, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
-        rawoutput("</td><td>");
-        output("Display hash value for which email: ");
-        $emailHashCheck = httppost('email_hashcheck');
-        $emailHashCheck = is_string($emailHashCheck) ? stripslashes($emailHashCheck) : '';
-        rawoutput("<input name='email_hashcheck' placeholder='for information only' value=\"" . htmlentities($emailHashCheck, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
-        rawoutput("</td></tr><tr><td>");
-        output("After date: ");
-        $startDate = httppost('start');
-        $startDate = is_string($startDate) ? stripslashes($startDate) : '';
-        rawoutput("<input name='start' placeholder='YYYY-MM-DD format' value=\"" . htmlentities($startDate, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
-        rawoutput("</td><td>");
-        output("Before date: ");
-        $endDate = httppost('end');
-        $endDate = is_string($endDate) ? stripslashes($endDate) : '';
-        rawoutput("<input name='end' placeholder='YYYY-MM-DD format' value=\"" . htmlentities($endDate, ENT_COMPAT, getsetting('charset', 'UTF-8')) . "\"><br>");
-        rawoutput("</td></tr></table>");
-        $submit = translate_inline("Submit");
-        rawoutput("<input type='submit' value='$submit' class='button'>");
-        rawoutput("</form>");
-        //do the search.
-        $login = httppost("login");
-        $email = httppost("email");
-        $email_hash = httppost("email_hashcheck");
-        $start = httppost("start");
-        $end = httppost("end");
-        if ($start > "") {
-            $start = strtotime($start);
-        }
-        if ($end > "") {
-            $end = strtotime($end);
-        }
-        //save the findings
-        $found = array();
-        if ($email . $login . $start . $end > "") {
-            if ($email_hash != "") {
-                output("Informational hash: %s`n", charrestore_gethash($email_hash));
-                output("Informational hash (lowercased): %s`n", charrestore_gethash(strtolower($email_hash)));
-            }
-            output("Informational hash (empty): %s`n", charrestore_gethash(""));
-            if ($email != "") {
-                $email = charrestore_gethash($email); // search for the hash
-            }
-            $path = charrestore_getstorepath();
-            output("Chars saved in %s`n`n", $path);
-            $d = dir($path);
-            $count = 0;
-            //fetch them to sort the directory
-            while (($entry = $d->read()) !== false) {
-                $new[] = $entry;
-            }
-            sort($new);
-            //          while (($entry = $d->read())!==false){
-            foreach ($new as $entry) {
-                $e = explode("|", $entry);
-                if (count($e) < 2) {
-                    continue;
-                }
-                $name = str_replace("_", " ", $e[0]);
-                if (count($e) == 2) {
-                    $date = strtotime($e[1]);
-                } else {
-                    $date = strtotime($e[2]);
-                }
-                if ($start > "") {
-                    if ($date < $start) {
-                        continue;
-                    }
-                }
-                if ($end > "") {
-                    if ($date > $end) {
-                        continue;
-                    }
-                }
-                if ($login > "") {
-                    if (strpos(strtolower($name), strtolower($login)) === false) {
-                        continue;
-                    }
-                }
-                //read the file
-                $content = file_get_contents($path . "/" . $entry);
-                //unpack
-                $content = unserialize($content);
-                $email_acc = $content['account']['emailaddress'];
-                $acctid_acc = $content['account']['acctid'];
-                $dks_acc = $content['account']['dragonkills'];
-                if ($email > "") {
-                    if (strpos(strtolower($email_acc), strtolower($email)) === false) {
-                        continue;
-                    }
-                }
-                //found one hit, now read the file - please leave this last entry
-                $count++;
-                $found[$name . "--" . $date] = array("name" => $name,"entry" => $entry,"date" => $date,"email" => $email_acc,"acctid" => $acctid_acc,"dragonkills" => $dks_acc);
-                //              rawoutput("<a href='runmodule.php?module=charrestore&op=beginrestore&file=".rawurlencode($entry)."'>$name</a> (".date("M d, Y",$date).")<br>");
-                //              addnav("","runmodule.php?module=charrestore&op=beginrestore&file=".rawurlencode($entry));
-            }
-            if ($count == 0) {
-                output("No characters matching the specified criteria were found.");
-            } else {
-                //sort and output the findings
-                ksort($found);
-                foreach ($found as $row) {
-                    rawoutput("<a href='runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode($row['entry']) . $retnav . "'>" . $row['name'] . "</a> (" . date("M d, Y", $row['date']) . ") (" . $row['email'] . ") " . $row['dragonkills'] . " DKs ID " . $row['acctid'] . "<br>");
-                    addnav("", "runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode($row['entry']) . $retnav);
-                }
-            }
-        }
-    } elseif (httpget('op') == "hashtest") {
-        output("Emailaddress to convert:`n");
-        rawoutput("<form action='runmodule.php?module=charrestore&op=hashtest$retnav' method='POST'>");
-        addnav("", "runmodule.php?module=charrestore&op=hashtest" . $retnav);
-        rawoutput("<table><tr><td>");
-        output("String: ");
-        rawoutput("<input name='teststring'\"><br>");
-        rawoutput("</td><td></tr></table>");
-        $submit = translate_inline("Submit");
-        rawoutput("<input type='submit' value='$submit' class='button'>");
-        rawoutput("</form>");
-        output("Hashed String: `\$%s", charrestore_gethash(httppost('teststring')));
-    } elseif (httpget('op') == 'backup') {
-        $acctid = (int) httpget('userid');
-        if ($acctid > 0 && charrestore_create_snapshot($acctid)) {
-            output('`^Character backup created successfully.`0');
+    $operation = (string) httpget('op');
+    if (in_array($operation, array('list', 'beginrestore', 'finishrestore'), true)) {
+        if (!charrestore_load_library()) {
+            GameLog::log('Character Restorer shared library is unavailable.', 'charrestore');
+            output('`$Character Restorer shared services are unavailable.`0');
         } else {
-            output('`$Failed to create character backup.`0');
-        }
-    } elseif (httpget("op") == "beginrestore") {
-        $file = httpget('file');
-        $file = is_string($file) ? stripslashes($file) : '';
-        $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
-        $conn = Database::getDoctrineConnection();
-        $table = Database::prefix('accounts');
-        $row = $conn->fetchAssociative(
-            "SELECT COUNT(acctid) AS c FROM {$table} WHERE login = :login",
-            ['login' => (string) ($user['account']['login'] ?? '')],
-            ['login' => ParameterType::STRING]
-        );
-        $countExistingLogin = (int) ($row['c'] ?? 0);
-        rawoutput("<form action='runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode($file) . $retnav . "' method='POST'>");
-        addnav("", "runmodule.php?module=charrestore&op=finishrestore&file=" . rawurlencode($file) . $retnav);
-        if ($countExistingLogin > 0) {
-            output("`\$The user's login conflicts with an existing login in the system.");
-            output("You will have to provide a new one, and you should probably think about giving them a new name after the restore.`n");
-            output("`^New Login: ");
-            rawoutput("<input name='newlogin'><br>");
-            output("`#Note: New Login is used only for full account restores.`n");
-        }
-
-        $row = $conn->fetchAssociative(
-            "SELECT COUNT(acctid) AS c FROM {$table} WHERE acctid = :acctid",
-            ['acctid' => (int) ($user['account']['acctid'] ?? 0)],
-            ['acctid' => ParameterType::INTEGER]
-        );
-        $acctidExists = ((int) ($row['c'] ?? 0) > 0);
-        if ($acctidExists) {
-            output("`\$The snapshot account ID already exists on this server.`n");
-            output("`\$Default behavior is unchanged: if you do nothing, you must delete that account before doing a full restore.`n`n");
-            output("`^Optional action: ");
-            rawoutput("<label><input type='checkbox' name='overwriteprefs' value='1'>Overwrite prefs</label><br>");
-            output("`#Overwrite prefs semantics: overwrites matching pref keys only; does not remove extra prefs.`0`n");
-            output("`#When Overwrite prefs is selected, New Login is ignored because no full account restore is performed.`0`n");
-        }
-
-        $yes = translate_inline("Do the restore");
-        rawoutput("<input type='submit' value='$yes' class='button'>");
-
-        output("`n`#Some user info:`0`n");
-        $vars = array(
-                "login" => "Login",
-                "name" => "Name",
-                "acctid" => "Account ID",
-                "laston" => "Last On",
-                "emailaddress" => "Email Passcode",
-                "dragonkills" => "DKs",
-                "level" => "Level",
-                "gentimecount" => "Total hits",
-                 );
-        foreach ($vars as $key => $val) {
-            output("`^$val: `#%s`n", $user['account'][$key]);
-        }
-        rawoutput("<input type='submit' value='$yes' class='button'>");
-        rawoutput("</form>");
-    } elseif (httpget("op") == "finishrestore") {
-        $file = httpget('file');
-        $file = is_string($file) ? stripslashes($file) : '';
-        $user = unserialize(join("", file(charrestore_getstorepath() . $file)));
-        // Defensive normalization: malformed/legacy snapshots may omit prefs.
-        $snapshotPrefs = (isset($user['prefs']) && is_array($user['prefs'])) ? $user['prefs'] : [];
-        $overwritePrefs = ((int) httppost('overwriteprefs') === 1);
-        $snapshotAcctid = (int) ($user['account']['acctid'] ?? 0);
-        $conn = Database::getDoctrineConnection();
-        $table = Database::prefix('accounts');
-        $row = $conn->fetchAssociative(
-            "SELECT COUNT(acctid) AS c FROM {$table} WHERE acctid = :acctid",
-            ['acctid' => $snapshotAcctid],
-            ['acctid' => ParameterType::INTEGER]
-        );
-        $acctidExists = ((int) ($row['c'] ?? 0) > 0);
-
-        if ($acctidExists && ! $overwritePrefs) {
-            output("`\$The user has already a char here ... you want to maybe restore an older version of it.`n`nYou have to DELETE it first in order to restore this one.");
-            output("`#Tip: choose `^Overwrite prefs`# on the restore form to only merge backed up prefs into the existing account.`0");
-            page_footer();
-            return;
-        }
-
-        if ($acctidExists && $overwritePrefs) {
-            output("`#Account ID `^%s`# already exists. Running preference-only overwrite.`n", $snapshotAcctid);
-            $prefRestoreResult = charrestore_restore_prefs_upsert($conn, $snapshotAcctid, $snapshotPrefs);
-            if ($prefRestoreResult['applied']) {
-                output("`#The preferences were restored for the existing account.`n");
-            } else {
-                output("`\$The preferences could not be restored for the existing account.`0`n");
-            }
-            if ($prefRestoreResult['used_fallback']) {
-                output("`#Notice: upsert preconditions were unavailable, so legacy preference restore was used as a safe fallback.`0`n");
-            }
-            output("`#Overwrite prefs semantics: overwrites matching pref keys only; does not remove extra prefs.`0`n");
-            page_footer();
-            return;
-        }
-
-        $newlogin = (httppost('newlogin') > '' ? httppost('newlogin') : $user['account']['login']);
-        $rows = $conn->fetchAllAssociative(
-            "SELECT acctid FROM {$table} WHERE login = :login",
-            ['login' => (string) $newlogin],
-            ['login' => ParameterType::STRING]
-        );
-        $count = count($rows);
-        if ($count > 0) {
-            $ids = array();
-            foreach ($rows as $row) {
-                $ids[] = $row['acctid'];
-            }
-            $link = "runmodule.php?module=charrestore&op=beginrestore&file=" . rawurlencode($file);
-            output(
-                "Hm. Login '%s' seems to exist already as Account-ID %s. If you want to go on, you need to give out a new login <a href='%s'>here</a>",
-                $newlogin,
-                implode(',', $ids),
-                $link,
-                true
+            charrestore_restore_admin_flow(
+                charrestore_context(),
+                $operation,
+                'runmodule.php?module=charrestore' . $retnav
             );
-        } else {
-            if (httppost("newlogin") > "") {
-                $user['account']['login'] = httppost('newlogin');
-            }
-            $result = $conn->executeQuery('DESCRIBE ' . $table);
-            $known_columns = array();
-            $column_types = array();
-            while ($row = $result->fetchAssociative()) {
-                $known_columns[$row['Field']] = true;
-                $column_types[$row['Field']] = $row['Type'];
-            }
-
-            //sanity fill ups due to empty values and no default values set
-            $default_fill = array(
-                    "allowednavs",
-                    "lastip",
-                    );
-            foreach ($default_fill as $defval) {
-                if (!array_key_exists($defval, $user['account'])) {
-                    //set
-                    $known_columns[$defval] = true;
-                    $user['account'][$defval] = "";
-                }
-            }
-            //end
-            $em       = \Lotgd\Doctrine\Bootstrap::getEntityManager();
-            $account  = new \Lotgd\Entity\Account();
-            $metadata = $em->getClassMetadata(\Lotgd\Entity\Account::class);
-            $desiredId = $user['account']['acctid'] ?? null;
-
-            foreach ($user['account'] as $key => $val) {
-                if (! isset($known_columns[$key])) {
-                    output("`2Dropping the column `^%s`n", $key);
-                    continue;
-                }
-
-                if (! $metadata->hasField($key)) {
-                    continue;
-                }
-
-                if ($key === 'acctid') {
-                    continue;
-                }
-
-                if ($key === 'laston') {
-                    $metadata->setFieldValue($account, $key, new \DateTime('-1 day'));
-                    continue;
-                }
-
-                if ($key === 'sex') {
-                    $val = (int) $val;
-                    if (! in_array($val, [SEX_MALE, SEX_FEMALE], true)) {
-                        $val = SEX_MALE;
-                    }
-                    $metadata->setFieldValue($account, $key, $val);
-                    continue;
-                }
-
-                if (str_contains($column_types[$key], 'date') || str_contains($column_types[$key], 'time')) {
-                    if ($val < DATETIME_DATEMIN) {
-                        $val = DATETIME_DATEMIN; // fix old time stamps
-                    }
-                    $metadata->setFieldValue($account, $key, new \DateTime($val));
-                    continue;
-                }
-
-                if (str_contains($column_types[$key], 'int')) {
-                    $metadata->setFieldValue($account, $key, (int) $val);
-                    continue;
-                }
-
-                $metadata->setFieldValue($account, $key, $val);
-            }
-
-            $em->persist($account);
-            $em->flush();
-
-            $id = (int) $account->getAcctid();
-            $idReassigned = false;
-            $originalId   = (int) $desiredId;
-            if (is_numeric($desiredId) && (int) $desiredId !== $id) {
-                $conn = Database::getDoctrineConnection();
-                try {
-                    $rows = $conn->update(
-                        Database::prefix('accounts'),
-                        ['acctid' => (int) $desiredId],
-                        ['acctid' => $id]
-                    );
-                    if ($rows > 0) {
-                        $id = (int) $desiredId;
-                    } else {
-                        $idReassigned = true;
-                    }
-                } catch (UniqueConstraintViolationException $e) {
-                    // old ID already taken; keep $id
-                    $idReassigned = true;
-                }
-                if ((int) $desiredId !== $id) {
-                    $idReassigned = true;
-                }
-            }
-
-            if ($id > 0) {
-                if ($session['user']['superuser'] & SU_EDIT_USERS == SU_EDIT_USERS) {
-                    addnav("Edit the restored user", "user.php?op=edit&userid=$id" . $retnav);
-                }
-                output("`#The account was restored.`n");
-                output("`#Now working on module preferences.`n");
-                $prefRestoreResult = charrestore_restore_prefs_upsert($conn, $id, $snapshotPrefs);
-                if ($prefRestoreResult['applied']) {
-                    output("`#The preferences were restored.`n");
-                } else {
-                    output("`\$The preferences could not be restored completely.`0`n");
-                }
-                if ($prefRestoreResult['used_fallback']) {
-                    output("`#Notice: upsert preconditions were unavailable, so legacy preference restore was used as a safe fallback.`0`n");
-                }
-                output("`#Overwrite prefs semantics: overwrites matching pref keys only; does not remove extra prefs.`0`n");
-                if ($idReassigned) {
-                    output("`#The original account ID `^%s`# could not be used.`n", $originalId);
-                    output("`#A new account ID `^%s`# has been assigned.`n", $id);
-                    output("`#Preferences have been applied to the new ID.`n");
-                }
-                // sadly not possible anymore. we do not know the emailaddress (data privacy regulation)
-                /*                  $targetid=$user['account']['acctid'];
-                                    $targetmail=$user['account']['emailaddress'];
-                                    $subject=translate_mail(array("Your character %s",sanitize($user['account']['login'])),$targetid);
-                                    $body=translate_mail(array(
-                                    "Your character %s has been restored. You may now login to our site and the restored character.`n`nIf you do not remember your password, use the 'Forgotten Password' link on the homepage to get login and change it.`n`nRegards,\nStaff",
-                                    sanitize($user['account']['login'])),
-                                    $targetid);
-                                    $body = str_replace("`n","\n",$body);
-                                    if (get_module_setting('notifymail')) {
-                                    $result=charrestore_sendmail($targetmail,$body,$subject,get_module_setting('adminmail'),get_module_setting('adminname'));
-                                    if ($result) {
-                                    output("`\$The notification message has been sent!`n");
-                                    } else {
-                                    output("`\$There has been an error! The notification message was NOT sent!`n");
-                                    }
-                                    }
-                 */
-                rawoutput("<h2>");
-                output("`\$Please keep in mind the restored email address is not usable and you need to set it or tell the petitioner to login and set it.`nA \"Forgotten Password\"-Request won't enable access to the account!`n`0");
-                rawoutput("</h2>");
-            } else {
-                output("`\$Something funky has happened, preventing this account from correctly being created.");
-                output("I'm sorry, you may have to recreate this account by hand.");
-            }
         }
-    } elseif (httpget('op') == "hashconvert") {
+    } elseif ($operation === 'hashtest') {
+        output('Emailaddress to convert:`n');
+        rawoutput("<form action='runmodule.php?module=charrestore&op=hashtest{$retnav}' method='POST'>");
+        addnav('', 'runmodule.php?module=charrestore&op=hashtest' . $retnav);
+        rawoutput("<input name='teststring'><input type='submit' class='button'></form>");
+        output('Hashed String: `$%s', charrestore_gethash((string) httppost('teststring')));
+    } elseif ($operation === 'backup') {
+        $acctid = (int) httpget('userid');
+        output($acctid > 0 && charrestore_create_snapshot($acctid)
+            ? '`^Character backup created successfully.`0' : '`$Failed to create character backup.`0');
+    } elseif ($operation === 'hashconvert') {
+        // Hash conversion also consumes validated snapshots, so it must establish
+        // the shared API independently of the list/preview/restore operations.
+        if (!charrestore_load_library()) {
+            GameLog::log('Character Restorer shared library is unavailable.', 'charrestore');
+            output('`$Character Restorer shared services are unavailable.`0');
+            page_footer();
+            return;
+        }
         $convert = (int)httpget('convert'); // == 1 if we want to convert
         $path = charrestore_getstorepath();
         $d = dir($path);
@@ -789,11 +377,11 @@ function charrestore_run(): void
             } else {
                 $date = strtotime($e[2]);
             }
-            //read the file
-            $content = file_get_contents($path . "/" . $entry);
-            //unpack
-            $content = unserialize($content);
-            $email_acc = $content['account']['emailaddress'];
+            $content = charrestore_snapshot_load($entry, charrestore_context());
+            if ($content === null) {
+                continue;
+            }
+            $email_acc = (string) ($content['account']['emailaddress'] ?? '');
             if (strlen($email_acc) == strlen(charrestore_gethash('test')) && strpos($email_acc, '@') === false) {
                 continue; //already hashed and salted or superlong email
             } else {
@@ -802,21 +390,9 @@ function charrestore_run(): void
                 if ($convert == 1) {
                     //convert this one
                     $content['account']['emailaddress'] = charrestore_gethash($email_acc);
-                    $fp = @fopen($path . "/" . $entry, "w+");
-                    if ($fp) {
-                        if (
-                            fwrite(
-                                $fp,
-                                serialize($content)
-                            ) !== false
-                        ) {
-                            $failure = false;
-                        } else {
-                            $failure = true;
-                        }
-                        fclose($fp);
-                    }
-                    if ($failure == true || !is_writeable($parth . "/" . $entry)) {
+                    $payload = serialize($content);
+                    $written = file_put_contents($path . $entry, $payload, LOCK_EX);
+                    if ($written !== strlen($payload)) {
                         output("Could not be written: %s`n", $entry);
                     }
                 }
