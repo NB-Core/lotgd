@@ -124,7 +124,7 @@ $polling_script .= "function lotgdShouldNotify() { lotgdUpdateWindowFocusState()
 
 // Add missing notification functions and clean AJAX polling implementation
 $polling_script .= "
-// Notification functions (previously in ajax_polling.js)
+// Notification functions
 function lotgdShowNotification(title, message) {
     if (!('Notification' in window)) {
         return;
@@ -283,7 +283,7 @@ $polling_script .= "<div id='notify'></div>";
 
 $pre_headscript .= $polling_script;
 
-// Load jQuery but skip the old ajax_polling.js
+// Load jQuery. Polling is emitted inline above; there is no separate polling asset.
 Output::requireVendorAsset('jquery', 'js');
 
 addnav("", "async/process.php");

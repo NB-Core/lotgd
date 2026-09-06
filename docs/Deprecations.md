@@ -39,6 +39,10 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Status: Deprecated
   - Replacement: Jaxon-based async calls under `async/`
   - Migration: Wrap Ajax actions with Jaxon controllers; adhere to rate limiting.
+- `async/js/ajax_polling.js`
+  - Status: Removed
+  - Replacement: The polling client emitted inline by `async/setup.php`
+  - Migration: Custom templates or modules that still add a `<script>` tag for this file must drop it. The asset had not been loaded by core for some time; loading it after `async/setup.php` started a second polling loop.
 - `Lotgd\UserLookup::lookup()`
   - Status: Deprecated in 2.9.0
   - Replacement: `Lotgd\PlayerSearch::legacyLookup()` and other `PlayerSearch` helpers

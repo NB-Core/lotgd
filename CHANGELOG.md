@@ -10,7 +10,11 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 
-_No unreleased changes yet._
+### Performance
+- Release the PHP session lock before dispatching read-only async callables (commentary/mail/timeout polling and ban lookups). The polling loop previously held the session file lock for the entire request, serialising every concurrent page load of the same player behind it. Callables that must persist session state, including the passkey ceremonies and any module-supplied handler, keep the lock and are unaffected.
+
+### Removed
+- Delete the unused `async/js/ajax_polling.js`. The polling client has been emitted inline by `async/setup.php` for some time and the file was no longer loaded by anything; keeping it around risked a second, duplicate polling loop in custom templates that still referenced it.
 
 ## [2.0.5] – 2026-04-10
 

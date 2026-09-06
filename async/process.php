@@ -216,6 +216,75 @@ function lotgd_async_is_unauth_allowlisted(array $requestContext): bool
 }
 
 /**
+ * Determine whether an async callable can run without persisting session state.
+ *
+ * The PHP session file is locked for the whole lifetime of a request. Polling
+ * callables run every few seconds for every open tab, so holding that lock until
+ * script shutdown serialises all concurrent page loads of the same player behind
+ * the poll. Normal page loads already release the lock in
+ * {@see \Lotgd\Page\Footer::pageFooter()}; the async entry point never reaches
+ * that code path.
+ *
+ * The callables listed here only read session data. The single write they perform
+ * (the cached `laston` value in the timeout handler) is paired with an
+ * authoritative database UPDATE and is re-read from the accounts row by
+ * {@see \Lotgd\ForcedNavigation::doForcedNav()} on the next request, so dropping
+ * the in-session copy is behaviour neutral.
+ *
+ * Default-deny: anything not listed keeps the session open and behaves exactly as
+ * before. This deliberately covers module-supplied handlers registered through the
+ * Jaxon callable directory as well as the passkey ceremonies, which must persist
+ * their challenge state across requests.
+ *
+ * @param array{class:string,method:string} $requestContext
+ */
+function lotgd_async_is_session_readonly_callable(array $requestContext): bool
+{
+    static $readOnlyCallables = [
+        'Lotgd.Async.Handler.Bans' => ['affectedUsers'],
+        // commentaryText is deliberately absent: it runs Commentary::viewCommentary(),
+        // which persists last_comment_section/last_comment_scriptname/lastcommentid
+        // for the next request.
+        'Lotgd.Async.Handler.Commentary' => ['commentaryRefresh', 'pollUpdates', 'test'],
+        'Lotgd.Async.Handler.Mail' => ['mailStatus'],
+        'Lotgd.Async.Handler.Timeout' => ['timeoutStatus'],
+    ];
+
+    $className = $requestContext['class'] ?? '';
+    $methodName = $requestContext['method'] ?? '';
+    if ($className === '' || $methodName === '') {
+        return false;
+    }
+
+    return isset($readOnlyCallables[$className])
+        && in_array($methodName, $readOnlyCallables[$className], true);
+}
+
+/**
+ * Release the PHP session lock before dispatching a read-only async callable.
+ *
+ * $_SESSION stays readable afterwards; only further writes stop being persisted.
+ *
+ * @param array{class:string,method:string} $requestContext
+ *
+ * @return bool True when the session lock was released.
+ */
+function lotgd_async_release_session_lock(array $requestContext): bool
+{
+    if (!lotgd_async_is_session_readonly_callable($requestContext)) {
+        return false;
+    }
+
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return false;
+    }
+
+    session_write_close();
+
+    return true;
+}
+
+/**
  * Evaluate async authorization policy for the requested callable.
  *
  * @param array{class:string,method:string} $requestContext
@@ -474,6 +543,10 @@ function lotgd_async_process_entrypoint(): void
         }
 
         $_SESSION['lastrequest'] = $now;
+
+        // Release the session lock before dispatch so read-only polling callables
+        // stop serialising concurrent page loads of the same player.
+        lotgd_async_release_session_lock($requestContext);
 
         try {
             $jaxon->processRequest();
