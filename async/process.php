@@ -333,9 +333,17 @@ function lotgd_async_is_session_readonly_callable(array $requestContext): bool
  *
  * $_SESSION stays readable afterwards; only further writes stop being persisted.
  *
+ * Note on the return value: session_write_close() reports whether there was a
+ * session to close, not whether the data reached the save handler. A failing
+ * handler still returns true (it only raises a warning), while a call without an
+ * active session returns false. The guard above already covers that case, so in
+ * practice this returns false only when no release was attempted. Do not read a
+ * false result as "the session data was lost".
+ *
  * @param array{class:string,method:string} $requestContext
  *
- * @return bool True when the session lock was released.
+ * @return bool True when the session was closed, false when no release was attempted
+ *              or PHP reported that there was no session to close.
  */
 function lotgd_async_release_session_lock(array $requestContext): bool
 {
@@ -347,9 +355,7 @@ function lotgd_async_release_session_lock(array $requestContext): bool
         return false;
     }
 
-    session_write_close();
-
-    return true;
+    return session_write_close();
 }
 
 /**
