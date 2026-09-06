@@ -10,6 +10,9 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 
+### Changed
+- Rename the async setting `mail_debug` to `debug_console` and give it the behaviour its name implies. The old flag overrode `check_mail_timeout_seconds` with 500 — a poll interval in *seconds* — so switching it on throttled polling from every 10 seconds to roughly every eight minutes, which is hard to tell apart from a broken async layer. `debug_console` only enables verbose browser-console logging (prefixed `[LotGD async]`) and leaves every interval untouched; informational client logging is now gated behind it, while error output stays unconditional. The legacy key is still honoured when a configuration file has not been migrated, but no longer changes timing.
+
 ### Security
 - Resolve the async authorization target from Jaxon's canonical `jxncall` descriptor instead of separate legacy class/method fields. A Jaxon 5 client never sends those legacy fields, so `async/process.php` evaluated every production request against an empty callable context: the passkey method restriction (`callable_not_allowed`) never engaged, and the unauthenticated allowlist could not match either. Whenever a `jxncall` field is present it now decides the callable on its own; if it cannot be used (malformed JSON, a non-class descriptor, missing name/method) the request is treated as an unknown callable rather than falling back to the legacy fields. Those fields are still read when a payload carries no descriptor at all — a shape Jaxon does not dispatch — where they only feed diagnostics. A request can therefore no longer describe one callable to the policy layer and a different one to Jaxon.
 
