@@ -20,7 +20,7 @@ namespace Lotgd\Tests\Async {
     #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class AsyncSettingsDebugConsoleTest extends TestCase
     {
-        private string $fixtureFile;
+        private string $fixtureFile = '';
 
         protected function setUp(): void
         {
@@ -32,7 +32,18 @@ namespace Lotgd\Tests\Async {
              * then deleted with no way to restore it. The fixture lives in a temp file that
              * async/common/settings.php is pointed at through LOTGD_ASYNC_SETTINGS_FILE.
              */
-            $this->fixtureFile = tempnam(sys_get_temp_dir(), 'lotgd_async_settings_') . '.php';
+            $fixtureFile = tempnam(sys_get_temp_dir(), 'lotgd_async_settings_');
+            if ($fixtureFile === false) {
+                // Deliberately a failure rather than a skip: this whole test file exists
+                // because a skip silently disabled it for everyone with a local config.
+                // An unwritable temp directory is a broken environment, not an unsupported
+                // one, and should be loud.
+                self::fail('Could not create an async settings fixture in ' . sys_get_temp_dir() . '.');
+            }
+
+            // No '.php' suffix: require() does not care about the extension, and appending
+            // one would leave the zero-byte file tempnam() itself creates lying around.
+            $this->fixtureFile = $fixtureFile;
 
             if (!defined('LOTGD_ASYNC_SETTINGS_FILE')) {
                 define('LOTGD_ASYNC_SETTINGS_FILE', $this->fixtureFile);
@@ -41,10 +52,8 @@ namespace Lotgd\Tests\Async {
 
         protected function tearDown(): void
         {
-            foreach ([$this->fixtureFile, substr($this->fixtureFile, 0, -4)] as $path) {
-                if ($path !== '' && file_exists($path)) {
-                    unlink($path);
-                }
+            if ($this->fixtureFile !== '' && file_exists($this->fixtureFile)) {
+                unlink($this->fixtureFile);
             }
 
             DebugMode::setEnabled(false);
