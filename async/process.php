@@ -149,18 +149,27 @@ function lotgd_async_jxncall_context(): ?array
  */
 function lotgd_async_request_context(): array
 {
-    // The `jxncall` descriptor is authoritative. When it is present the legacy fields
-    // are ignored outright: honouring both would let a crafted payload describe one
-    // callable to this policy layer and a different one to Jaxon, so authorization and
-    // the session-lock decision could be taken for a handler that never runs.
+    // The `jxncall` descriptor is authoritative whenever the field is present at all.
+    // Honouring both sources would let a crafted payload describe one callable to this
+    // policy layer and a different one to Jaxon, so authorization and the session-lock
+    // decision could be taken for a handler that never runs.
     $jxncall = lotgd_async_jxncall_context();
     if ($jxncall !== null) {
         return $jxncall;
     }
 
-    // Fallback for payload shapes without a `jxncall` descriptor. Jaxon refuses to
-    // dispatch those (ComponentPlugin::canProcessRequest() requires the attribute), so
-    // this only ever feeds diagnostics.
+    // A `jxncall` field that is present but unusable (malformed JSON, a non-class
+    // descriptor, missing name/method) yields an unknown callable rather than falling
+    // through to the legacy fields, which the same request could have set to anything.
+    // An unknown callable is denied a lock release and logged as such.
+    if (isset($_POST['jxncall']) || isset($_GET['jxncall'])) {
+        return ['class' => '', 'method' => ''];
+    }
+
+    // Only reached when the payload carries no descriptor at all. Jaxon does not
+    // dispatch such a request (both ComponentPlugin::canProcessRequest() and
+    // FunctionPlugin::canProcessRequest() require the attribute), so these fields
+    // never decide anything and only feed diagnostics.
     $class = '';
     $method = '';
 

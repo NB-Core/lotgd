@@ -105,20 +105,55 @@ namespace Lotgd\Tests\Async {
             $this->assertFalse(lotgd_async_is_session_readonly_callable($context));
         }
 
-        public function testNonClassDescriptorsAreIgnored(): void
+        /**
+         * A `func` descriptor is dispatchable by Jaxon's FunctionPlugin, so it must not
+         * be reinterpreted through the legacy fields either.
+         */
+        public function testNonClassDescriptorsYieldAnUnknownCallable(): void
         {
             $this->postJxncall([
                 'type' => 'func',
                 'name' => 'Lotgd.Async.Handler.Commentary',
                 'method' => 'pollUpdates',
             ]);
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.Commentary';
+            $_POST['jxnmthd'] = 'pollUpdates';
 
             $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
         }
 
-        public function testMalformedJxncallFallsBackToLegacyFields(): void
+        /**
+         * Presence of the field is what makes it authoritative: an unusable descriptor
+         * must not hand control back to fields the same request also controls.
+         */
+        public function testMalformedJxncallDoesNotFallBackToLegacyFields(): void
         {
             $_POST['jxncall'] = '{not valid json';
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
+            $_POST['jxnmthd'] = 'mailStatus';
+
+            $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
+        }
+
+        public function testDescriptorWithNonStringKeysDoesNotFallBackToLegacyFields(): void
+        {
+            $this->postJxncall([
+                'type' => 'class',
+                'name' => ['Lotgd.Async.Handler.Commentary'],
+                'method' => 'pollUpdates',
+            ]);
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.Commentary';
+            $_POST['jxnmthd'] = 'pollUpdates';
+
+            $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
+        }
+
+        /**
+         * The legacy scan is only reachable when no descriptor is present at all, which
+         * is a payload shape Jaxon refuses to dispatch.
+         */
+        public function testLegacyFieldsAreUsedOnlyWithoutAnyDescriptor(): void
+        {
             $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
             $_POST['jxnmthd'] = 'mailStatus';
 
@@ -126,6 +161,15 @@ namespace Lotgd\Tests\Async {
                 ['class' => 'Lotgd.Async.Handler.Mail', 'method' => 'mailStatus'],
                 lotgd_async_request_context()
             );
+        }
+
+        public function testEmptyJxncallStringDoesNotFallBackToLegacyFields(): void
+        {
+            $_POST['jxncall'] = '';
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
+            $_POST['jxnmthd'] = 'mailStatus';
+
+            $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
         }
 
         public function testControlCharactersAreStrippedFromTheDescriptor(): void
