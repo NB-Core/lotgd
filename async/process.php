@@ -93,6 +93,53 @@ function lotgd_async_sanitize_token(string $value): string
 }
 
 /**
+ * Decode the canonical Jaxon dispatch target from the request payload.
+ *
+ * Jaxon 5 encodes the target as a single JSON object in the `jxncall` field
+ * ({@see \Jaxon\Request\Handler\ParameterReader::setRequestParameter()}) and
+ * dispatches on its `name`/`method` keys
+ * ({@see \Jaxon\Plugin\Request\CallableComponent\ComponentPlugin::makeCallableAction()}).
+ * It does not understand any of the separate legacy fields, so this is the only
+ * source that is guaranteed to describe the callable Jaxon will actually run.
+ *
+ * @return array{class:string,method:string}|null Null when no usable descriptor is present.
+ */
+function lotgd_async_jxncall_context(): ?array
+{
+    $raw = $_POST['jxncall'] ?? $_GET['jxncall'] ?? null;
+    if (!is_string($raw) || $raw === '') {
+        return null;
+    }
+
+    // Mirror ParameterReader::decodeStr(): the client only url-encodes parameters
+    // when the request carries file uploads.
+    $contentType = (string) ($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '');
+    $multipart = 'multipart/form-data';
+    if (strncmp($contentType, $multipart, strlen($multipart)) === 0) {
+        $raw = urldecode($raw);
+    }
+
+    $call = json_decode($raw, true);
+    if (!is_array($call) || ($call['type'] ?? '') !== 'class') {
+        return null;
+    }
+
+    $className = $call['name'] ?? null;
+    $methodName = $call['method'] ?? null;
+    if (!is_string($className) || !is_string($methodName)) {
+        return null;
+    }
+
+    // Jaxon applies trim() to both values. lotgd_async_sanitize_token() additionally
+    // strips control characters so they cannot reach error_log(); a name that differs
+    // between the two is rejected by Jaxon's own validator and never dispatched.
+    return [
+        'class' => lotgd_async_sanitize_token($className),
+        'method' => lotgd_async_sanitize_token($methodName),
+    ];
+}
+
+/**
  * Build best-effort async callable context from incoming request payload.
  *
  * Different Jaxon versions can use different keys for class/method metadata. We capture
@@ -102,6 +149,18 @@ function lotgd_async_sanitize_token(string $value): string
  */
 function lotgd_async_request_context(): array
 {
+    // The `jxncall` descriptor is authoritative. When it is present the legacy fields
+    // are ignored outright: honouring both would let a crafted payload describe one
+    // callable to this policy layer and a different one to Jaxon, so authorization and
+    // the session-lock decision could be taken for a handler that never runs.
+    $jxncall = lotgd_async_jxncall_context();
+    if ($jxncall !== null) {
+        return $jxncall;
+    }
+
+    // Fallback for payload shapes without a `jxncall` descriptor. Jaxon refuses to
+    // dispatch those (ComponentPlugin::canProcessRequest() requires the attribute), so
+    // this only ever feeds diagnostics.
     $class = '';
     $method = '';
 

@@ -10,6 +10,9 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ## [Unreleased]
 
+### Security
+- Resolve the async authorization target from Jaxon's canonical `jxncall` descriptor instead of separate legacy class/method fields. A Jaxon 5 client never sends those legacy fields, so `async/process.php` evaluated every production request against an empty callable context: the passkey method restriction (`callable_not_allowed`) never engaged, and the unauthenticated allowlist could not match either. The legacy fields are now only consulted when no `jxncall` descriptor is present — a payload shape Jaxon refuses to dispatch — so a request can no longer describe one callable to the policy layer and a different one to Jaxon.
+
 ### Performance
 - Release the PHP session lock before dispatching read-only async callables (commentary/mail/timeout polling and ban lookups). The polling loop previously held the session file lock for the entire request, serialising every concurrent page load of the same player behind it. Callables that must persist session state, including the passkey ceremonies and any module-supplied handler, keep the lock and are unaffected.
 

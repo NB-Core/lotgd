@@ -237,6 +237,83 @@ namespace Lotgd\Tests\Async {
             ];
         }
 
+        /**
+         * Regression guard: the policy layer used to read only the legacy class/method
+         * fields, which a real Jaxon 5 client never sends. Every production request
+         * therefore arrived with an empty context and slipped past the passkey
+         * restrictions below.
+         */
+        public function testPasskeyHelperCallableIsDeniedWithARealisticJxncallPayload(): void
+        {
+            global $jaxon, $ajax_rate_limit_seconds;
+
+            $ajax_rate_limit_seconds = 1.0;
+            $_SESSION['session']['user']['loggedin'] = true;
+            $_POST['jxncall'] = json_encode([
+                'type' => 'class',
+                'name' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
+                'method' => 'deleteCredential',
+                'args' => [],
+            ], JSON_THROW_ON_ERROR);
+
+            $jaxon = new class {
+                public int $processCount = 0;
+
+                public function canProcessRequest(): bool
+                {
+                    return true;
+                }
+
+                public function processRequest(): void
+                {
+                    $this->processCount++;
+                }
+            };
+
+            ob_start();
+            lotgd_async_process_entrypoint();
+            $body = (string) ob_get_clean();
+
+            $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertSame(403, http_response_code());
+            $this->assertSame(0, $jaxon->processCount);
+            $this->assertSame('callable_not_allowed', $payload['error'] ?? null);
+        }
+
+        public function testUnauthenticatedPasskeyAuthIsAllowlistedWithARealisticJxncallPayload(): void
+        {
+            global $jaxon, $ajax_rate_limit_seconds;
+
+            $ajax_rate_limit_seconds = 1.0;
+            $_POST['jxncall'] = json_encode([
+                'type' => 'class',
+                'name' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
+                'method' => 'beginAuthentication',
+                'args' => [],
+            ], JSON_THROW_ON_ERROR);
+
+            $jaxon = new class {
+                public int $processCount = 0;
+
+                public function canProcessRequest(): bool
+                {
+                    return true;
+                }
+
+                public function processRequest(): void
+                {
+                    $this->processCount++;
+                }
+            };
+
+            ob_start();
+            lotgd_async_process_entrypoint();
+            ob_end_clean();
+
+            $this->assertSame(1, $jaxon->processCount);
+        }
+
         public function testAbuseKeyIgnoresSessionIdWhenNoCookieIsPresent(): void
         {
             $_SERVER['REMOTE_ADDR'] = '198.51.100.24';

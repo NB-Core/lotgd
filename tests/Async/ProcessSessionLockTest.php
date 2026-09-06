@@ -20,6 +20,10 @@ namespace Lotgd\Tests\Async {
     {
         protected function setUp(): void
         {
+            $_GET = [];
+            $_POST = [];
+            unset($_SERVER['CONTENT_TYPE'], $_SERVER['HTTP_CONTENT_TYPE']);
+
             if (!defined('LOTGD_ASYNC_PROCESS_TEST_MODE')) {
                 define('LOTGD_ASYNC_PROCESS_TEST_MODE', true);
             }
@@ -164,6 +168,47 @@ namespace Lotgd\Tests\Async {
             $this->assertSame(PHP_SESSION_NONE, $jaxon->statusDuringDispatch);
             // The rate-limit timestamp is still written before the lock is released.
             $this->assertArrayHasKey('lastrequest', $_SESSION);
+        }
+
+        /**
+         * End-to-end shape check with the payload a real Jaxon 5 client sends. Without
+         * `jxncall` parsing the context stayed empty and the lock was never released in
+         * production, so this is the test that proves the optimisation actually applies.
+         */
+        public function testEntrypointReleasesTheLockForARealisticJxncallPayload(): void
+        {
+            global $jaxon, $ajax_rate_limit_seconds;
+
+            $ajax_rate_limit_seconds = 1.0;
+            $_POST['jxncall'] = json_encode([
+                'type' => 'class',
+                'name' => 'Lotgd.Async.Handler.Commentary',
+                'method' => 'pollUpdates',
+                'args' => ['village', 0],
+            ], JSON_THROW_ON_ERROR);
+
+            session_start();
+            $_SESSION['session']['user']['loggedin'] = true;
+
+            $jaxon = new class {
+                public ?int $statusDuringDispatch = null;
+
+                public function canProcessRequest(): bool
+                {
+                    return true;
+                }
+
+                public function processRequest(): void
+                {
+                    $this->statusDuringDispatch = session_status();
+                }
+            };
+
+            ob_start();
+            lotgd_async_process_entrypoint();
+            ob_end_clean();
+
+            $this->assertSame(PHP_SESSION_NONE, $jaxon->statusDuringDispatch);
         }
 
         public function testEntrypointKeepsTheLockForSessionWritingCallables(): void
