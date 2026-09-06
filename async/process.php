@@ -93,6 +93,53 @@ function lotgd_async_sanitize_token(string $value): string
 }
 
 /**
+ * Decode the canonical Jaxon dispatch target from the request payload.
+ *
+ * Jaxon 5 encodes the target as a single JSON object in the `jxncall` field
+ * ({@see \Jaxon\Request\Handler\ParameterReader::setRequestParameter()}) and
+ * dispatches on its `name`/`method` keys
+ * ({@see \Jaxon\Plugin\Request\CallableComponent\ComponentPlugin::makeCallableAction()}).
+ * It does not understand any of the separate legacy fields, so this is the only
+ * source that is guaranteed to describe the callable Jaxon will actually run.
+ *
+ * @return array{class:string,method:string}|null Null when no usable descriptor is present.
+ */
+function lotgd_async_jxncall_context(): ?array
+{
+    $raw = $_POST['jxncall'] ?? $_GET['jxncall'] ?? null;
+    if (!is_string($raw) || $raw === '') {
+        return null;
+    }
+
+    // Mirror ParameterReader::decodeStr(): the client only url-encodes parameters
+    // when the request carries file uploads.
+    $contentType = (string) ($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '');
+    $multipart = 'multipart/form-data';
+    if (strncmp($contentType, $multipart, strlen($multipart)) === 0) {
+        $raw = urldecode($raw);
+    }
+
+    $call = json_decode($raw, true);
+    if (!is_array($call) || ($call['type'] ?? '') !== 'class') {
+        return null;
+    }
+
+    $className = $call['name'] ?? null;
+    $methodName = $call['method'] ?? null;
+    if (!is_string($className) || !is_string($methodName)) {
+        return null;
+    }
+
+    // Jaxon applies trim() to both values. lotgd_async_sanitize_token() additionally
+    // strips control characters so they cannot reach error_log(); a name that differs
+    // between the two is rejected by Jaxon's own validator and never dispatched.
+    return [
+        'class' => lotgd_async_sanitize_token($className),
+        'method' => lotgd_async_sanitize_token($methodName),
+    ];
+}
+
+/**
  * Build best-effort async callable context from incoming request payload.
  *
  * Different Jaxon versions can use different keys for class/method metadata. We capture
@@ -102,6 +149,27 @@ function lotgd_async_sanitize_token(string $value): string
  */
 function lotgd_async_request_context(): array
 {
+    // The `jxncall` descriptor is authoritative whenever the field is present at all.
+    // Honouring both sources would let a crafted payload describe one callable to this
+    // policy layer and a different one to Jaxon, so authorization and the session-lock
+    // decision could be taken for a handler that never runs.
+    $jxncall = lotgd_async_jxncall_context();
+    if ($jxncall !== null) {
+        return $jxncall;
+    }
+
+    // A `jxncall` field that is present but unusable (malformed JSON, a non-class
+    // descriptor, missing name/method) yields an unknown callable rather than falling
+    // through to the legacy fields, which the same request could have set to anything.
+    // An unknown callable is denied a lock release and logged as such.
+    if (isset($_POST['jxncall']) || isset($_GET['jxncall'])) {
+        return ['class' => '', 'method' => ''];
+    }
+
+    // Only reached when the payload carries no descriptor at all. Jaxon does not
+    // dispatch such a request (both ComponentPlugin::canProcessRequest() and
+    // FunctionPlugin::canProcessRequest() require the attribute), so these fields
+    // never decide anything and only feed diagnostics.
     $class = '';
     $method = '';
 
@@ -213,6 +281,81 @@ function lotgd_async_is_unauth_allowlisted(array $requestContext): bool
     }
 
     return isset($allowlist[$className]) && in_array($methodName, $allowlist[$className], true);
+}
+
+/**
+ * Determine whether an async callable can run without persisting session state.
+ *
+ * The PHP session file is locked for the whole lifetime of a request. Polling
+ * callables run every few seconds for every open tab, so holding that lock until
+ * script shutdown serialises all concurrent page loads of the same player behind
+ * the poll. Normal page loads already release the lock in
+ * {@see \Lotgd\Page\Footer::pageFooter()}; the async entry point never reaches
+ * that code path.
+ *
+ * The callables listed here only read session data. The single write they perform
+ * (the cached `laston` value in the timeout handler) is paired with an
+ * authoritative database UPDATE and is re-read from the accounts row by
+ * {@see \Lotgd\ForcedNavigation::doForcedNav()} on the next request, so dropping
+ * the in-session copy is behaviour neutral.
+ *
+ * Default-deny: anything not listed keeps the session open and behaves exactly as
+ * before. This deliberately covers module-supplied handlers registered through the
+ * Jaxon callable directory as well as the passkey ceremonies, which must persist
+ * their challenge state across requests.
+ *
+ * @param array{class:string,method:string} $requestContext
+ */
+function lotgd_async_is_session_readonly_callable(array $requestContext): bool
+{
+    static $readOnlyCallables = [
+        'Lotgd.Async.Handler.Bans' => ['affectedUsers'],
+        // commentaryText is deliberately absent: it runs Commentary::viewCommentary(),
+        // which persists last_comment_section/last_comment_scriptname/lastcommentid
+        // for the next request.
+        'Lotgd.Async.Handler.Commentary' => ['commentaryRefresh', 'pollUpdates', 'test'],
+        'Lotgd.Async.Handler.Mail' => ['mailStatus'],
+        'Lotgd.Async.Handler.Timeout' => ['timeoutStatus'],
+    ];
+
+    $className = $requestContext['class'] ?? '';
+    $methodName = $requestContext['method'] ?? '';
+    if ($className === '' || $methodName === '') {
+        return false;
+    }
+
+    return isset($readOnlyCallables[$className])
+        && in_array($methodName, $readOnlyCallables[$className], true);
+}
+
+/**
+ * Release the PHP session lock before dispatching a read-only async callable.
+ *
+ * $_SESSION stays readable afterwards; only further writes stop being persisted.
+ *
+ * Note on the return value: session_write_close() reports whether there was a
+ * session to close, not whether the data reached the save handler. A failing
+ * handler still returns true (it only raises a warning), while a call without an
+ * active session returns false. The guard above already covers that case, so in
+ * practice this returns false only when no release was attempted. Do not read a
+ * false result as "the session data was lost".
+ *
+ * @param array{class:string,method:string} $requestContext
+ *
+ * @return bool True when the session was closed, false when no release was attempted
+ *              or PHP reported that there was no session to close.
+ */
+function lotgd_async_release_session_lock(array $requestContext): bool
+{
+    if (!lotgd_async_is_session_readonly_callable($requestContext)) {
+        return false;
+    }
+
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return false;
+    }
+
+    return session_write_close();
 }
 
 /**
@@ -474,6 +617,10 @@ function lotgd_async_process_entrypoint(): void
         }
 
         $_SESSION['lastrequest'] = $now;
+
+        // Release the session lock before dispatch so read-only polling callables
+        // stop serialising concurrent page loads of the same player.
+        lotgd_async_release_session_lock($requestContext);
 
         try {
             $jaxon->processRequest();
