@@ -20,22 +20,33 @@ namespace Lotgd\Tests\Async {
     #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class AsyncSettingsDebugConsoleTest extends TestCase
     {
-        private string $customFile;
+        private string $fixtureFile;
 
         protected function setUp(): void
         {
             require_once __DIR__ . '/../bootstrap.php';
-            $this->customFile = dirname(__DIR__, 2) . '/config/async.settings.php';
-            if (file_exists($this->customFile)) {
-                $this->markTestSkipped('A local config/async.settings.php would shadow the fixture.');
+
+            /*
+             * Never write to config/async.settings.php: it is gitignored, so a developer
+             * running the suite locally would have their real configuration overwritten and
+             * then deleted with no way to restore it. The fixture lives in a temp file that
+             * async/common/settings.php is pointed at through LOTGD_ASYNC_SETTINGS_FILE.
+             */
+            $this->fixtureFile = tempnam(sys_get_temp_dir(), 'lotgd_async_settings_') . '.php';
+
+            if (!defined('LOTGD_ASYNC_SETTINGS_FILE')) {
+                define('LOTGD_ASYNC_SETTINGS_FILE', $this->fixtureFile);
             }
         }
 
         protected function tearDown(): void
         {
-            if (file_exists($this->customFile)) {
-                unlink($this->customFile);
+            foreach ([$this->fixtureFile, substr($this->fixtureFile, 0, -4)] as $path) {
+                if ($path !== '' && file_exists($path)) {
+                    unlink($path);
+                }
             }
+
             DebugMode::setEnabled(false);
         }
 
@@ -44,7 +55,10 @@ namespace Lotgd\Tests\Async {
          */
         private function loadSettings(array $settings): void
         {
-            file_put_contents($this->customFile, '<?php return ' . var_export($settings, true) . ';');
+            file_put_contents(
+                (string) LOTGD_ASYNC_SETTINGS_FILE,
+                '<?php return ' . var_export($settings, true) . ';'
+            );
             require dirname(__DIR__, 2) . '/async/common/settings.php';
         }
 
@@ -98,6 +112,27 @@ namespace Lotgd\Tests\Async {
             $this->loadSettings(['debug_console' => 0, 'mail_debug' => 1]);
 
             $this->assertFalse(DebugMode::isEnabled());
+        }
+
+        /**
+         * Regression guard: an earlier revision of this test wrote the fixture to the real
+         * config/async.settings.php and removed it in tearDown, which deleted a developer's
+         * gitignored configuration on every suite run - including when the test skipped,
+         * because PHPUnit still calls tearDown after a skip in setUp.
+         */
+        public function testTheRealConfigurationFileIsNeverTouched(): void
+        {
+            $realConfig = dirname(__DIR__, 2) . '/config/async.settings.php';
+            $existedBefore = file_exists($realConfig);
+            $contentBefore = $existedBefore ? file_get_contents($realConfig) : null;
+
+            $this->loadSettings(['debug_console' => 1]);
+
+            $this->assertSame($existedBefore, file_exists($realConfig));
+            if ($existedBefore) {
+                $this->assertSame($contentBefore, file_get_contents($realConfig));
+            }
+            $this->assertNotSame($realConfig, (string) LOTGD_ASYNC_SETTINGS_FILE);
         }
 
         public function testDistributedDefaultsShipWithDebugConsoleDisabled(): void

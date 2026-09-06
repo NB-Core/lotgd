@@ -11,7 +11,16 @@ declare(strict_types=1);
  */
 
 $defaultsFile = __DIR__ . '/../../config/async.settings.php.dist';
-$customFile   = __DIR__ . '/../../config/async.settings.php';
+
+/*
+ * LOTGD_ASYNC_SETTINGS_FILE lets tests point at a fixture instead of the real
+ * config/async.settings.php, which is gitignored and would otherwise have to be
+ * written and deleted by the test run. Mirrors the LOTGD_ASYNC_PROCESS_TEST_MODE
+ * seam in async/process.php. Unset in normal operation.
+ */
+$customFile = defined('LOTGD_ASYNC_SETTINGS_FILE')
+    ? (string) LOTGD_ASYNC_SETTINGS_FILE
+    : __DIR__ . '/../../config/async.settings.php';
 
 if (is_readable($defaultsFile)) {
     $defaults = require $defaultsFile;
