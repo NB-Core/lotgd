@@ -39,6 +39,12 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Status: Deprecated
   - Replacement: Jaxon-based async calls under `async/`
   - Migration: Wrap Ajax actions with Jaxon controllers; adhere to rate limiting.
+- Async setting `mail_debug` (`config/async.settings.php`)
+  - Status: Deprecated, still honoured in 2.x
+  - Replacement: `debug_console`
+  - Migration: Rename the key. Mind the behaviour change: `mail_debug` also forced `check_mail_timeout_seconds` to 500 seconds and `start_timeout_show_seconds` to 999. `debug_console` does neither — it only enables verbose browser-console logging. Installations that relied on the slow interval must now set `check_mail_timeout_seconds` explicitly.
+  - Removal target: Next major release (3.0)
+
 - `async/js/ajax_polling.js`
   - Status: Removed
   - Replacement: The polling client emitted inline by `async/setup.php`

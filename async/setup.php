@@ -112,7 +112,14 @@ if ($clear_script_execution > 0 && $clear_script_execution < $login_timeout) {
     $polling_script .= "var lotgd_clear_delay_ms = null;"; // Disable auto-clear
 }
 
-$polling_script .= "console.log('AJAX polling initialized:', {interval: lotgd_poll_interval_ms + 'ms', section: lotgd_comment_section});";
+// Verbose client logging is opt-in via `debug_console` in config/async.settings.php.
+// Error output below is never gated: a broken poll must be visible without a config change.
+$polling_script .= "var lotgd_async_debug = " . (\Lotgd\Async\DebugMode::isEnabled() ? 'true' : 'false') . ";";
+$polling_script .= "function lotgdDebug() {"
+    . "if (!lotgd_async_debug) { return; }"
+    . "console.log.apply(console, ['[LotGD async]'].concat(Array.prototype.slice.call(arguments)));"
+    . "}";
+$polling_script .= "lotgdDebug('polling initialised', {intervalMs: lotgd_poll_interval_ms, section: lotgd_comment_section, lastCommentId: lotgd_lastCommentId, enabled: lotgd_background_polling_enabled});";
 
 // Track window focus/visibility state for consistent notification behaviour
 $polling_script .= "var lotgd_windowHasFocus = document.hasFocus();";
@@ -143,6 +150,8 @@ function lotgdShowNotification(title, message) {
 function lotgdMailNotify(lastId, count) {
     var baselineId = lotgd_lastUnreadMailId;
     var baselineCount = lotgd_lastUnreadMailCount;
+
+    lotgdDebug('mail status', {lastId: lastId, count: count, baselineId: baselineId, baselineCount: baselineCount, willNotify: (lastId > baselineId || count > baselineCount) && lotgdShouldNotify()});
 
     if ((lastId > baselineId || count > baselineCount) && lotgdShouldNotify()) {
         var msg = count === 1 ? 'You have 1 unread message' :
@@ -199,6 +208,7 @@ function pollForUpdates() {
             var section = (typeof lotgd_comment_section === 'string' && lotgd_comment_section.trim() !== '')
                 ? lotgd_comment_section
                 : 'village';
+            lotgdDebug('poll ->', {section: section, lastCommentId: lotgd_lastCommentId || 0});
             var response = handlers.Commentary.pollUpdates(
                 section,
                 lotgd_lastCommentId || 0
@@ -242,7 +252,7 @@ function startAjaxPolling() {
     }
     pollingRoot.__lotgdPollingInitialized = true;
     pollingRoot.__lotgdPollingPaused = false;
-    console.log('AJAX: Starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
+    lotgdDebug('starting polling every ' + (lotgd_poll_interval_ms / 1000) + ' seconds');
     
     // Regular polling: keep the interval handle on the shared root so parse-failure
     // handling can cancel future ticks deterministically.
