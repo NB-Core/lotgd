@@ -14,3 +14,16 @@ vendor/
 data/cache/
 var/cache/
 cache/
+
+# Documentation and QA tooling that the runtime never reads. Excluding them
+# keeps the image (and therefore the document root) smaller; the vhost denies
+# them as well for development bind mounts. LICENSE.txt must stay: the
+# installer verifies its checksum.
+docs/
+*.md
+phpcs.xml
+phpstan.neon
+phpstan-baseline.neon
+docker-compose.yml
+docker-compose.dev.yml
+.env.example

@@ -6,6 +6,14 @@ the default Compose file is production-oriented, while
 The image uses PHP 8.3 with Apache, OPcache, optimized production Composer
 dependencies, and MySQL 8.4.
 
+Both containers drop every default capability, run with `no-new-privileges`,
+publish only on loopback, and serve a document root that is read-only to the web
+user. Start with [Initial configuration](#initial-configuration) for a new
+deployment; if you are auditing an existing one, the two sections worth reading
+first are [Status as of 2026-09](#status-as-of-2026-09) (how current the pinned
+images are) and [HTTP access boundary](#http-access-boundary) (what the web
+server refuses to serve).
+
 ## Pinned multi-architecture images
 
 All external images retain a readable tag and are pinned to a reviewed,
@@ -24,10 +32,86 @@ Docker CI job verifies native `linux/amd64` and `linux/arm64` entries. If an
 update is made manually, change every location in the relevant table row and
 the displayed digest in this section in the same maintenance PR.
 
+### Checking whether a pin is still current
+
+A digest pin is only as good as the review behind it: it keeps builds
+reproducible, but it also freezes the operating-system packages inside the
+image. A pin that is never refreshed silently ages out of security support.
+Check the state of all three pins without pulling anything:
+
+```bash
+# What the tag points at today, and when it was last rebuilt.
+docker buildx imagetools inspect composer:2 --format '{{json .Manifest.Digest}}'
+docker buildx imagetools inspect thecodingmachine/php:8.3-v4-apache --format '{{json .Manifest.Digest}}'
+docker buildx imagetools inspect mysql:8.4 --format '{{json .Manifest.Digest}}'
+
+# Compare against the pins recorded above.
+grep -n 'sha256:' Dockerfile docker-compose.yml
+```
+
+If a digest differs, look at *why*: a moving tag that has been rebuilt usually
+means the upstream base picked up distribution security updates. A tag that has
+**not** moved for many months usually means the upstream line is no longer
+maintained, which is the more serious of the two cases — no Dependabot PR will
+ever appear for it, because the digest it would propose is the digest already
+pinned.
+
+### Status as of 2026-09
+
+| Pin | Upstream state | Action |
+| --- | --- | --- |
+| `mysql:8.4` | Current; the pinned digest is the one `mysql:8.4` resolves to (rebuilt 2026-07-28). MySQL 8.4 is the LTS series, so staying on it is correct — do not move to a 9.x innovation release. | None. |
+| `composer:2` | Behind. The `2` tag has been rebuilt several times since the pinned digest was reviewed and now resolves to Composer 2.10.x. | Refresh the digest in a maintenance PR. Build-stage only, so the runtime is unaffected. |
+| `thecodingmachine/php:8.3-v4-apache` | **Frozen.** The upstream `v4` line has not been rebuilt since 2025-06-09; the `v5` line is the one that still receives monthly rebuilds. The pinned digest is therefore over a year of Debian and PHP patch releases behind, and monthly Dependabot runs cannot detect this because the tag itself never moves. | Plan the migration below. |
+
+The frozen runtime is the single most important maintenance item in this
+deployment. Nothing in it is exploitable by configuration alone — the container
+drops capabilities, runs the document root read-only for `www-data`, and is not
+meant to be published without a reverse proxy — but it does mean the image
+ships an unpatched PHP 8.3 point release and unpatched system libraries.
+
+### Migrating to the maintained runtime line
+
+`thecodingmachine/php` publishes `<php>-v5-apache` images for PHP 8.1 through
+8.5 with the same interfaces this deployment relies on (`a2enmod`, `a2ensite`,
+`apache2-foreground`, `/usr/local/etc/php/conf.d`, `/etc/apache2`, and the
+`PHP_EXTENSION_*` entrypoint contract). PHP 8.4 is the conservative target: it
+is a released, actively supported branch, and `composer.json` already declares
+a `php: 8.3.0` platform floor rather than an upper bound.
+
+Treat this as scheduled maintenance in its own PR:
+
+1. Pick the tag and resolve its manifest digest:
+   ```bash
+   docker buildx imagetools inspect thecodingmachine/php:8.4-v5-apache \
+       --format '{{json .Manifest}}' | jq '.digest, [.manifests[].platform]'
+   ```
+2. Confirm the manifest carries native `linux/amd64` **and** `linux/arm64`
+   entries (the Raspberry Pi guide depends on the latter).
+3. Update the digest in `Dockerfile`, `.github/workflows/ci.yml`, the table at
+   the top of this document, and `tests/Docker/compose-security.sh`, whose
+   regular expression pins the tag text as well.
+4. Raise the CI matrix and `config.platform.php` in `composer.json` together
+   with the image, then run `composer update --lock` so the lock file is
+   resolved against the new platform.
+5. Verify the extension contract on the new image before merging — the fat
+   runtime enables extensions through `PHP_EXTENSION_*`, and the set differs
+   between major image lines:
+   ```bash
+   docker run --rm thecodingmachine/php:8.4-v5-apache php -m
+   ```
+6. Run the full Docker CI path locally: `docker build`, `tests/Docker/smoke.sh`,
+   `tests/Docker/compose-security.sh`.
+
+Do not combine a runtime bump with application changes; keeping it isolated is
+what makes a rollback (restoring the previous digest) a one-line change.
+
 ## PHP runtime image
 
-The application stage uses the maintained, multiarch
-`thecodingmachine/php:8.3-v4-apache` fat image. It is pinned to the immutable
+The application stage uses the multiarch
+`thecodingmachine/php:8.3-v4-apache` fat image (see
+[Status as of 2026-09](#status-as-of-2026-09): this tag is on the frozen `v4`
+line and should move to `8.4-v5-apache`). It is pinned to the immutable
 manifest-list digest
 `sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7`,
 not merely to its moving tag. The same manifest contains native `linux/amd64`
@@ -76,6 +160,7 @@ generate two independent database secrets locally (do not commit `.env`):
 
 ```bash
 cp .env.example .env
+chmod 600 .env
 sed -i "s|^MYSQL_PASSWORD=$|MYSQL_PASSWORD=$(openssl rand -base64 32)|" .env
 sed -i "s|^MYSQL_ROOT_PASSWORD=$|MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)|" .env
 ```
@@ -84,6 +169,29 @@ Compose refuses to render the deployment when either secret is missing or
 empty. As a second, early runtime boundary, the web container rejects the
 documented legacy/example password values (including case variants) before it
 modifies persistent state. The two generated values must be independent.
+
+`.env` holds both database secrets in plain text; `chmod 600` keeps it readable
+only by the account that runs Compose. It is already listed in `.gitignore` and
+`.dockerignore`, so it never reaches a commit or an image layer.
+
+### Which container sees which secret
+
+`.env` is read by Compose for interpolation only. The web service does **not**
+use `env_file`, and every value it needs is listed individually in
+`docker-compose.yml`:
+
+| Variable | `web` | `db` | Why |
+| --- | --- | --- | --- |
+| `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_DATABASE` | yes | yes | The installer pre-fills the connection form from them. |
+| `MYSQL_PASSWORD` | yes | yes | The game's own, non-administrative database account. |
+| `MYSQL_ROOT_PASSWORD` | **no** | yes | Only MySQL's own entrypoint and health check need the administrative account. The game never authenticates as `root`, so a file-disclosure or code-execution bug in PHP cannot read it out of the environment. |
+| `LOTGD_HTTP_PORT` | no | no | Consumed by Compose when publishing the port. |
+
+After installation the game reads its credentials from `dbconnect.php` in the
+state volume rather than from the environment; the variables above matter mainly
+during first-run setup. Adding custom variables to `.env` no longer forwards
+them into the container automatically — add them to the `environment:` block of
+the service that needs them.
 
 ### Rotating legacy Docker example passwords
 
@@ -222,6 +330,97 @@ the reduced capability/no-new-privileges boundary limits the remaining root
 startup process. Re-evaluate `read_only: true` when adopting a runtime whose
 extension configuration is completely fixed at image-build time.
 
+### HTTP access boundary
+
+The legacy layout has no separate `public/` directory: entry points, Composer
+dependencies, application classes, page fragments, migrations, and the image's
+own build files all live under the document root. The virtual host therefore
+denies everything that is not web content, because `AllowOverride None` means
+the `.htaccess` files shipped in the checkout are never consulted inside the
+container.
+
+| Denied | Reason |
+| --- | --- |
+| `/bin`, `/config`, `/docker`, `/docs`, `/logs`, `/migrations`, `/scripts`, `/tests`, `/vendor` | No web-reachable entry point. `/logs` would otherwise serve `bootstrap.log`, and `/docker` carries a second copy of the readiness probe plus the entrypoint and PHP ini files. |
+| `/src`, except `*.js` | Application classes. The tree also ships two browser scripts that legacy modules load by their current URL — `EDom::includeScript()` emits `<script src='src/Lotgd/e_dom.js'>`, and modules may reference `src/Lotgd/md5.js` — so JavaScript stays reachable there and everything else is denied. |
+| `*.php` under `/lib`, `/modules`, `/pages`, `/async/common` | Include-only code that depends on the bootstrap of a root entry point. Non-PHP assets in those trees stay reachable. |
+| `cron.php` | A CLI maintenance entry point. Depending on `register_argc_argv`, an HTTP request can supply the execution bitmask through the query string and start a newday or database-cleanup run. |
+| Dotfiles and `*.bak` | `.env`, `.git` metadata, editor state, and stray backups. |
+| `*.dist`, `*.htm`, `*.ini`, `*.lock`, `*.log`, `*.neon`, `*.sh`, `*.sql`, `*.twig`, `*.yml`, `*.yaml`, `*.md`, `composer.json`, `Dockerfile`, `phpunit.xml`, `phpcs.xml` | Sources and metadata that PHP or the build reads, but that must not be downloadable verbatim. |
+| `/install`, `/installer.php` | Denied unless installation is explicitly enabled and not yet completed (see above). |
+| `/_health/ready` | `Require local`; reachable only from inside the container. |
+
+`LICENSE.txt` stays readable on purpose — the installer verifies its checksum.
+`robots.txt`, template assets, and module assets are unaffected.
+
+Server-wide hardening lives in `docker/apache/hardening.conf`, which is copied
+into `conf-enabled/` after the base image's own `security.conf`: `ServerTokens
+Prod` and `ServerSignature Off` stop advertising the exact Apache build, and
+`TraceEnable Off` disables the TRACE method. Static files and error documents
+also receive `X-Content-Type-Options: nosniff`; PHP responses get their security
+headers from the application's runtime hardening bootstrap (see
+[SECURITY.md](../SECURITY.md)), so the vhost deliberately does not set a second,
+possibly conflicting copy.
+
+`tests/Docker/smoke.sh` asserts each of these boundaries against a running
+container, so a regression in the vhost fails CI rather than a production audit.
+
+The same rules exist for non-Docker deployments in the repository's root
+`.htaccess`, together with an equivalent Nginx snippet in its trailing comment.
+
+### Optional Compose overrides
+
+The shipped Compose file deliberately sets no resource or log limits, because
+sensible values depend on the host. Both are worth adding for an
+internet-facing deployment. Put them in a small override file and start the
+stack with `-f docker-compose.yml -f docker-compose.limits.yml`:
+
+```yaml
+# docker-compose.limits.yml
+services:
+  web:
+    # Bound a runaway PHP process and cap container log growth.
+    pids_limit: 512
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 768M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+  db:
+    pids_limit: 512
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+```
+
+Compose v2 honours `deploy.resources.limits` outside Swarm. Start generously and
+tighten after watching `docker stats`; MySQL in particular fails in confusing
+ways when its buffer pool does not fit the limit. Omit the `logging` block if
+the Docker daemon already applies log rotation globally in `daemon.json`.
+
+Two further hardening options are available but are deployment decisions rather
+than defaults:
+
+- **File-based secrets.** The MySQL image supports `MYSQL_PASSWORD_FILE` and
+  `MYSQL_ROOT_PASSWORD_FILE`, so both credentials can come from Docker secrets
+  instead of the environment. The web container currently reads
+  `MYSQL_PASSWORD` from the environment during installation only; a `_FILE`
+  variant would need a small change in `docker/entrypoint.sh`.
+- **`read_only: true` for the web service.** Still blocked by the runtime's own
+  entrypoint, which writes PHP extension configuration at container start; see
+  the paragraph above.
+
 ### SSL/TLS is not included
 
 This stack intentionally does **not** configure TLS or advertise port 443.
@@ -231,6 +430,87 @@ the image. Terminate HTTPS in a reverse proxy such as Caddy, Nginx, Traefik, or
 a managed load balancer and proxy plain HTTP to this service. That proxy can
 obtain and renew a trusted certificate through Let's Encrypt or another
 certificate authority.
+
+#### Minimal reverse-proxy example
+
+Caddy needs the least configuration because it obtains and renews certificates
+on its own. Run it on the host and point it at the loopback port:
+
+```caddyfile
+# /etc/caddy/Caddyfile
+game.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8080
+}
+```
+
+To run the proxy as a container instead, attach it to the `web-proxy` network
+and address the service by name — never join it to the `database` network:
+
+```yaml
+# docker-compose.proxy.yml
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - web-proxy
+volumes:
+  caddy_data:
+  caddy_config:
+networks:
+  web-proxy:
+    external: true
+    name: lotgd_web-proxy
+```
+
+With a containerised proxy, `reverse_proxy web:80` replaces the loopback
+address, and the host port publication in `docker-compose.yml` can be dropped
+entirely.
+
+#### Tell the application it is behind a proxy
+
+Apache in this container always speaks plain HTTP, so PHP sees
+`HTTPS` as unset and would emit non-`Secure` session cookies and absolute
+`http://` URLs. After installation, set the following keys in `dbconnect.php`
+(inside the `lotgd_state` volume) so the game trusts the proxy's forwarded
+protocol — and only the proxy's:
+
+```php
+'SECURITY_TRUST_FORWARDED_PROTO' => true,
+// Comma-separated list, matched as exact literal addresses — CIDR ranges are
+// not expanded. Use the proxy's address as the container sees it.
+'SECURITY_TRUSTED_PROXIES' => '172.18.0.5',
+'SECURITY_HSTS_ENABLED' => true,
+```
+
+Read the proxy's actual source address instead of guessing it; Docker assigns
+it from the network's subnet and it changes if the network is recreated:
+
+```bash
+docker compose logs web | tail -n 5   # the client IP is the first log field
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' <proxy-container>
+```
+
+Never enable `SECURITY_TRUST_FORWARDED_PROTO` with an empty trusted-proxy list:
+the allowlist is skipped entirely when it is empty, so any client could then
+claim HTTPS by sending `X-Forwarded-Proto`. For a proxy with a changing address,
+give the container a static IP on the `web-proxy` network rather than leaving
+the list blank. The full list of keys, their defaults, and the HSTS rollout
+advice are in [SECURITY.md](../SECURITY.md#runtime-hardening-defaults). Restart
+the web service after editing `dbconnect.php`; OPcache runs with
+`validate_timestamps=0` and will otherwise keep serving the cached version:
+
+```bash
+docker compose restart web
+```
 
 ## Development
 
@@ -250,6 +530,14 @@ Rebuild after changing Composer dependencies or the image configuration:
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --force-recreate
 ```
+
+The bind mount puts the *whole* checkout into the document root, including
+`.git/`, `.env`, and the test suite, which the production image excludes through
+`.dockerignore`. The virtual host denies all of them (see
+[HTTP access boundary](#http-access-boundary)), and the development port stays
+on loopback — but the override is still meant for a workstation, never for a
+host that is reachable from the internet. Displayed errors are enabled there and
+will happily print file paths and query fragments to whoever asks.
 
 ## Persistent volumes and permissions
 
@@ -336,6 +624,111 @@ curl --compressed -sSI "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/templates_twig
 curl -sSI "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/index.php"
 ```
 
+Spot-check the access boundary of a running deployment — every path below must
+answer `403`, and it is worth repeating through the reverse proxy once one is in
+front of the stack:
+
+```bash
+for path in /cron.php /vendor/autoload.php /src/Lotgd/Settings.php /config/ \
+            /logs/bootstrap.log /docker/health/ready.php /composer.json \
+            /.env /_health/ready /pages/about/about_default.php; do
+    printf '%s %s\n' \
+        "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}${path}")" \
+        "$path"
+done
+```
+
+## Backups
+
+Two volumes must be captured together to have a restorable deployment: the
+database and `lotgd_state`. A database dump without `dbconnect.php` leaves you
+guessing the configuration; `lotgd_state` without the database restores an
+installation that points at nothing. `lotgd_cache` is disposable and is
+regenerated on demand.
+
+Compose prefixes volume names with the project name (the directory name unless
+`COMPOSE_PROJECT_NAME` is set), so confirm them first:
+
+```bash
+docker volume ls --filter name=lotgd
+```
+
+A consistent logical dump plus the state volume:
+
+```bash
+set -a; . ./.env; set +a
+stamp=$(date +%Y%m%d-%H%M%S)
+
+docker compose exec -T -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" db \
+    mysqldump --user=root --single-transaction --routines --events \
+    --default-character-set=utf8mb4 "$MYSQL_DATABASE" \
+    | gzip > "lotgd-db-$stamp.sql.gz"
+
+docker run --rm \
+    -v lotgd_lotgd_state:/state:ro \
+    -v "$PWD:/backup" \
+    busybox tar czf "/backup/lotgd-state-$stamp.tar.gz" -C /state .
+```
+
+`--single-transaction` keeps the InnoDB dump consistent without locking players
+out. Store the two files together, keep them off the game host, and treat them
+as secrets: the dump contains player e-mail addresses and password hashes, and
+the state archive contains the database password.
+
+Restoring into a fresh stack:
+
+```bash
+docker compose up -d db
+set -a; . ./.env; set +a
+gunzip -c lotgd-db-<stamp>.sql.gz \
+    | docker compose exec -T -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" db \
+      mysql --user=root "$MYSQL_DATABASE"
+
+docker run --rm \
+    -v lotgd_lotgd_state:/state \
+    -v "$PWD:/backup" \
+    busybox sh -c 'tar xzf /backup/lotgd-state-<stamp>.tar.gz -C /state'
+
+docker compose up -d
+```
+
+If the restored `dbconnect.php` carries a different password than the restored
+database, follow
+[Rotating legacy Docker example passwords](#rotating-legacy-docker-example-passwords)
+— the same procedure realigns any mismatched credential pair.
+
+Verify a backup occasionally by restoring it into a throwaway project
+(`COMPOSE_PROJECT_NAME=lotgd-restore-test docker compose up -d`) rather than
+discovering during an outage that it was never readable.
+
+## Updating the deployment
+
+Application updates are image rebuilds; nothing is patched in place, because the
+document root is read-only to `www-data` and OPcache never revalidates
+timestamps.
+
+```bash
+# 1. Back up first (see above) — migrations are not reversible in general.
+git pull
+# 2. Rebuild and restart. Only the web service changes; the database keeps running.
+docker compose up -d --build web
+# 3. Apply schema changes.
+docker compose exec -T --user www-data web php bin/doctrine migrations:migrate --no-interaction
+# 4. Confirm the container reports healthy again.
+docker compose ps
+```
+
+Check `UPGRADING.md` and `CHANGELOG.md` before every update; some releases add
+configuration keys to `dbconnect.php` that the installer would normally write.
+
+Base-image and dependency updates follow the separate, deliberate path in
+[Pinned multi-architecture images](#pinned-multi-architecture-images); do not
+fold them into an application update.
+
+To roll back, check out the previous tag and rebuild. A schema migration that
+has already run is *not* undone by rebuilding an older image, which is why the
+database backup in step 1 is not optional.
+
 ## Operations and troubleshooting
 
 ```bash
@@ -356,3 +749,22 @@ Installer failures are logged outside the document root at
 of whether installation is enabled. Production PHP
 errors are available through `docker compose logs web` and are never displayed
 to clients.
+
+Both services log to the container runtime, so `docker compose logs` is the only
+place to look; nothing is written into the image or the document root. Docker's
+default `json-file` driver never rotates on its own — see
+[Optional Compose overrides](#optional-compose-overrides) if the host has no
+global rotation policy in `daemon.json`.
+
+A `403` on a path that used to work is almost always the
+[HTTP access boundary](#http-access-boundary). Custom themes or modules that
+load assets from a denied tree (`vendor/`, `src/`, or a `.twig` file requested
+directly by the browser) must move those assets under `templates_twig/`,
+`images/`, or their own module directory; do not widen the vhost rules to serve
+code paths. A `403` for the whole site instead points at file ownership — the
+document root must stay root-owned and readable.
+
+Modules that ship their own `.htaccess` have no effect in the container:
+`AllowOverride None` is set deliberately so that access rules cannot be changed
+by anything inside the document root. Port such a rule into
+`docker/apache/lotgd.conf` and rebuild.

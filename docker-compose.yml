@@ -23,7 +23,10 @@ services:
       - SETUID
     ports:
       - "127.0.0.1:${LOTGD_HTTP_PORT:-8080}:80"
-    env_file: .env
+    # Deliberately no env_file: every value the application needs is listed
+    # below. Injecting the whole .env would also hand the PHP runtime the MySQL
+    # administrative password, which it never uses; any code-execution or
+    # file-disclosure bug in the game would then leak it through getenv().
     environment:
       APP_ENV: production
       MYSQL_USEDATACACHE: "1"
@@ -34,7 +37,6 @@ services:
       # Required interpolation prevents Compose from creating a container with
       # an absent or empty database credential.
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       LOTGD_INSTALL_ENABLED: ${LOTGD_INSTALL_ENABLED:-0}
       LOTGD_DATA_DIR: /var/lib/lotgd/logs
       LOTGD_STATE_PATH: /var/lib/lotgd

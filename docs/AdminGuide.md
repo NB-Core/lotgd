@@ -52,28 +52,35 @@ Omit the argument for the full run (`1|2|4|8 = 15`). To customize, combine bit v
 
 Every routine writes its activity to the Game Log (`gamelog.php`, available from the Superuser
 navigation). Review that log after a cron run to confirm each maintenance step completed; bootstrap
-failures are additionally written to `logs/bootstrap.log`.
+failures are additionally written to `logs/bootstrap.log`. In the Docker image that directory is
+root-owned and not writable by the web user on purpose — there, bootstrap and PHP errors go to the
+container log instead, so use `docker compose logs web` (the file is denied over HTTP either way).
 
-> ⚠️ **Security reminder:** Keep `cron.php` outside the document root or restrict it in your web
-> server configuration. On Apache, add the rule below to the root [`.htaccess`](../.htaccess) file to
-> deny direct access:
+> ⚠️ **Security reminder:** `cron.php` must never be reachable over HTTP. Depending on the
+> `register_argc_argv` setting, a web request can supply the execution bitmask through the query
+> string and start a newday or database-cleanup run without any authentication.
 >
-> ```apache
-> <Files "cron.php">
->     Require all denied
-> </Files>
+> The rule now ships with the project: the root [`.htaccess`](../.htaccess) denies it, and the Docker
+> virtual host (`docker/apache/lotgd.conf`) denies it independently — Docker deployments set
+> `AllowOverride None`, so `.htaccess` files inside the document root are never read there and every
+> access rule has to live in the virtual host.
+>
+> Verify it after every deployment or web-server change; the request must answer `403 Forbidden`:
+>
+> ```bash
+> curl -s -o /dev/null -w '%{http_code}\n' https://your.game/cron.php
 > ```
 >
-> Apply the same protection in other servers (for example, returning `403` from an Nginx `location`
-> block) or remove the script from the public directory so that only CLI cron jobs can invoke it.
-> After deploying the rule, test that your web server responds with `403 Forbidden` (or equivalent)
-> when requesting `/cron.php` directly.
+> If your server ignores `.htaccess` (Nginx, or Apache with `AllowOverride None`), port the rules
+> from the comment block at the end of `.htaccess` into the server configuration, or move the script
+> out of the document root so only CLI cron jobs can invoke it.
 
 ## SMTP and Email
 
-Configure SMTP credentials in `config/configuration.php` or your environment to send reliable
-email. Use authenticated TLS connections and monitor logs for delivery failures. Avoid running an
-open relay. The SMTP test in the configuration panel now surfaces the underlying PHPMailer error
+Configure SMTP credentials in the in-game settings editor ([`configuration.php`](../configuration.php),
+reachable from the Superuser navigation); the values are stored as game settings (`gamemailsmtp*`),
+not in a file under `config/`. Use authenticated TLS connections and monitor logs for delivery
+failures. Avoid running an open relay. The SMTP test in the configuration panel now surfaces the underlying PHPMailer error
 message whenever delivery fails, making troubleshooting significantly easier.
 
 For translation details, consult the [Translations guide](TranslationsGuide.md).

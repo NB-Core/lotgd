@@ -213,6 +213,39 @@ assert_status /_health/ready 403
 assert_status /.env 403
 assert_status /lib/dbwrapper.php 403
 assert_status /modules/cities.php 403
+# Include-only trees and CLI entry points must not be reachable over HTTP.
+assert_status /pages/about/about_default.php 403
+assert_status /async/common/jaxon.php 403
+assert_status /cron.php 403
+assert_status /vendor/autoload.php 403
+assert_status /src/Lotgd/Settings.php 403
+assert_status /config/async.settings.php.dist 403
+assert_status /logs/bootstrap.log 403
+assert_status /migrations/Version20250724000000.php 403
+assert_status /composer.json 403
+assert_status /composer.lock 403
+# The image also carries its own build files inside the document root; the
+# second copy of the readiness probe must not become a public database oracle.
+assert_status /docker/health/ready.php 403
+assert_status /docker/entrypoint.sh 403
+# Regular game entry points and static assets stay reachable. A 200 is not
+# required here (an uninstalled game may redirect), only a non-denied status.
+for public_path in /index.php /templates_twig/aurora/assets/style.css /src/Lotgd/e_dom.js; do
+    status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+        "http://127.0.0.1:${LOTGD_HTTP_PORT}${public_path}")
+    case "$status" in
+        403|404)
+            echo "Public entry point ${public_path} was denied (got $status)" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# The web container must not carry the MySQL administrative credential.
+if docker compose exec -T web printenv MYSQL_ROOT_PASSWORD >/dev/null 2>&1; then
+    echo "MYSQL_ROOT_PASSWORD is exposed to the web container" >&2
+    exit 1
+fi
 
 # Seed a log sentinel before recreation. Together with dbconnect.php this proves
 # the state volume retains both installer output and database configuration.

@@ -67,6 +67,21 @@ for name, capabilities in expected_caps.items():
     if set(service.get("cap_add", [])) != capabilities:
         raise SystemExit(f"{name} capability allowlist changed without review")
 
+# The game never authenticates as the MySQL administrative account. Keeping
+# that credential out of the web container limits what a PHP-side disclosure
+# bug can reveal, so the rendered model must not carry it in any form.
+web_environment = services["web"].get("environment", {})
+if isinstance(web_environment, list):
+    web_environment = dict(
+        entry.split("=", 1) if "=" in entry else (entry, None) for entry in web_environment
+    )
+if "MYSQL_ROOT_PASSWORD" in web_environment:
+    raise SystemExit("web must not receive the MySQL administrative password")
+if services["web"].get("env_file"):
+    raise SystemExit("web must not import .env wholesale; list required values explicitly")
+if "MYSQL_PASSWORD" not in web_environment:
+    raise SystemExit("web is missing its application database credential")
+
 web_networks = set(services["web"]["networks"])
 db_networks = set(services["db"]["networks"])
 if web_networks != {"web-proxy", "database"} or db_networks != {"database"}:

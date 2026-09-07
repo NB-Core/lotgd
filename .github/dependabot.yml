@@ -24,3 +24,12 @@ updates:
         update-types:
           - minor
           - patch
+  # Workflow actions are pinned by major tag, so the base images and the CI
+  # that verifies them are updated through the same review path.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - security

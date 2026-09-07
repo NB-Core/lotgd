@@ -15,15 +15,49 @@ ErrorDocument 508 /errors/5xx.html
 # Disable directory listing
 Options -Indexes
 
-# Protect sensitive files
-<FilesMatch "^(\.env|.*\.bak)$">
+# Protect sensitive files. Apache's own configuration already denies .ht*
+# files; this adds every other dotfile (.env, .git metadata) and backup copies.
+<FilesMatch "^\.|.*\.bak$">
     Require all denied
 </FilesMatch>
 
-# Protect the installer directory when installer.php is missing
+# Sources that PHP reads but that must never be downloadable verbatim.
+<FilesMatch "\.(dist|htm|ini|lock|log|neon|sh|sql|twig|ya?ml)$">
+    Require all denied
+</FilesMatch>
+
+# Project metadata that ships with the checkout but is not web content.
+<FilesMatch "^(composer\.json|Dockerfile|phpunit\.xml|phpcs\.xml)$|\.md$">
+    Require all denied
+</FilesMatch>
+
+# cron.php is a CLI maintenance entry point. An HTTP request can start a full
+# newday/database-cleanup run, so deny it here instead of expecting every
+# administrator to add the rule by hand (see docs/AdminGuide.md).
+<Files "cron.php">
+    Require all denied
+</Files>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteCond %{REQUEST_URI} ^/install/ [NC]
+
+    # src/ is not web content either, but it ships two browser scripts that
+    # legacy modules load by their current URL (EDom emits
+    # <script src='src/Lotgd/e_dom.js'>, and modules may reference
+    # src/Lotgd/md5.js). Let JavaScript through before the directory denial.
+    RewriteRule ^src/.*\.js$ - [L]
+
+    # Directories without any web-reachable entry point. The legacy layout
+    # keeps them inside the document root, so deny them explicitly. Patterns
+    # are relative to this directory and therefore also work when the game is
+    # installed in a subdirectory.
+    RewriteRule ^(bin|config|docker|docs|logs|migrations|scripts|src|tests|vendor)(/|$) - [F,L]
+
+    # Page fragments and async includes are loaded by entry points, never
+    # requested directly. Non-PHP assets in those trees stay reachable.
+    RewriteRule ^(pages|async/common)/.*\.php$ - [F,L]
+
+    # Protect the installer directory when installer.php is missing
     RewriteCond %{DOCUMENT_ROOT}/installer.php !-f
     RewriteRule ^install/ - [F,L]
 </IfModule>
@@ -36,4 +70,12 @@ Options -Indexes
 #   location /install/ {
 #       if (!-f $document_root/installer.php) { return 403; }
 #   }
+#   location ~ ^/src/.*\.js$ { }   # EDom/md5 browser scripts stay reachable
+#   location ~ ^/(bin|config|docker|docs|logs|migrations|scripts|src|tests|vendor)(/|$) { return 403; }
+#   location ~ ^/(lib|modules|pages|async/common)/.*\.php$ { return 403; }
+#   location = /cron.php { return 403; }
+#   # Keep /.well-known reachable so ACME HTTP-01 challenges still work.
+#   location ~ /\.(?!well-known) { return 403; }
+#   location ~ \.(bak|dist|htm|ini|lock|log|md|neon|sh|sql|twig|ya?ml)$ { return 403; }
+#   location ~ ^/(composer\.json|Dockerfile|phpunit\.xml|phpcs\.xml)$ { return 403; }
 # ----------------------------------------------------------------------
