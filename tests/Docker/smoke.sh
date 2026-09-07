@@ -183,10 +183,25 @@ assert_header() {
     fi
 }
 
+# Match the complete header value, not a substring: the distribution default
+# "Server: Apache/2.4.x (Ubuntu)" contains "Server: Apache" and would satisfy a
+# substring check while proving the opposite of what this asserts.
+assert_header_value() {
+    path="$1"
+    expected="$2"
+    headers=$(curl --silent --show-error --head "http://127.0.0.1:${LOTGD_HTTP_PORT}${path}" | tr -d '\r')
+    if ! printf '%s\n' "$headers" | grep -Fxiq "$expected"; then
+        echo "Header '$expected' is not present verbatim on ${path}" >&2
+        printf '%s\n' "$headers" >&2
+        exit 1
+    fi
+}
+
 assert_header /templates_twig/aurora/assets/style.css 'X-Content-Type-Options: nosniff'
 assert_header /index.php 'Cache-Control: no-store, private'
-# docker/apache/hardening.conf replaces the distribution's "ServerTokens OS".
-assert_header /index.php 'Server: Apache'
+# docker/apache/hardening.conf replaces the distribution's "ServerTokens OS",
+# so nothing may follow the product name.
+assert_header_value /index.php 'Server: Apache'
 
 # PHP's scan directory is version- and SAPI-specific on this runtime, so a
 # wrong path would leave the production settings silently unapplied rather
