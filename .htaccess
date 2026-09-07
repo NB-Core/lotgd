@@ -41,6 +41,12 @@ Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # src/ is not web content either, but it ships two browser scripts that
+    # legacy modules load by their current URL (EDom emits
+    # <script src='src/Lotgd/e_dom.js'>, and modules may reference
+    # src/Lotgd/md5.js). Let JavaScript through before the directory denial.
+    RewriteRule ^src/.*\.js$ - [L]
+
     # Directories without any web-reachable entry point. The legacy layout
     # keeps them inside the document root, so deny them explicitly. Patterns
     # are relative to this directory and therefore also work when the game is
@@ -64,6 +70,7 @@ Options -Indexes
 #   location /install/ {
 #       if (!-f $document_root/installer.php) { return 403; }
 #   }
+#   location ~ ^/src/.*\.js$ { }   # EDom/md5 browser scripts stay reachable
 #   location ~ ^/(bin|config|docker|docs|logs|migrations|scripts|src|tests|vendor)(/|$) { return 403; }
 #   location ~ ^/(lib|modules|pages|async/common)/.*\.php$ { return 403; }
 #   location = /cron.php { return 403; }

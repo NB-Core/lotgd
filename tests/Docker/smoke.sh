@@ -230,7 +230,7 @@ assert_status /docker/health/ready.php 403
 assert_status /docker/entrypoint.sh 403
 # Regular game entry points and static assets stay reachable. A 200 is not
 # required here (an uninstalled game may redirect), only a non-denied status.
-for public_path in /index.php /templates_twig/aurora/assets/style.css; do
+for public_path in /index.php /templates_twig/aurora/assets/style.css /src/Lotgd/e_dom.js; do
     status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
         "http://127.0.0.1:${LOTGD_HTTP_PORT}${public_path}")
     case "$status" in

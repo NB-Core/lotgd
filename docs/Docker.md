@@ -341,7 +341,8 @@ container.
 
 | Denied | Reason |
 | --- | --- |
-| `/bin`, `/config`, `/docker`, `/docs`, `/logs`, `/migrations`, `/scripts`, `/src`, `/tests`, `/vendor` | No web-reachable entry point. `/logs` would otherwise serve `bootstrap.log`, and `/docker` carries a second copy of the readiness probe plus the entrypoint and PHP ini files. |
+| `/bin`, `/config`, `/docker`, `/docs`, `/logs`, `/migrations`, `/scripts`, `/tests`, `/vendor` | No web-reachable entry point. `/logs` would otherwise serve `bootstrap.log`, and `/docker` carries a second copy of the readiness probe plus the entrypoint and PHP ini files. |
+| `/src`, except `*.js` | Application classes. The tree also ships two browser scripts that legacy modules load by their current URL — `EDom::includeScript()` emits `<script src='src/Lotgd/e_dom.js'>`, and modules may reference `src/Lotgd/md5.js` — so JavaScript stays reachable there and everything else is denied. |
 | `*.php` under `/lib`, `/modules`, `/pages`, `/async/common` | Include-only code that depends on the bootstrap of a root entry point. Non-PHP assets in those trees stay reachable. |
 | `cron.php` | A CLI maintenance entry point. Depending on `register_argc_argv`, an HTTP request can supply the execution bitmask through the query string and start a newday or database-cleanup run. |
 | Dotfiles and `*.bak` | `.env`, `.git` metadata, editor state, and stray backups. |
