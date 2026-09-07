@@ -71,7 +71,7 @@ jobs:
             jq -e 'any(.manifests[]; .platform.os == "linux" and .platform.architecture == "arm64")' /tmp/image-manifest.json
           done
       - name: Build and load AMD64 application image once
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
