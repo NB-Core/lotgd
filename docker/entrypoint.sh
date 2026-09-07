@@ -18,9 +18,20 @@ esac
 
 # Fail before modifying persistent state when database credentials are absent or
 # match values previously published as usable examples.
+#
+# Pass "optional" for a credential the web container does not need: an absent
+# variable is then accepted, while a present one is still held to the same
+# standard. The database service keeps its own required interpolation in
+# docker-compose.yml, so a missing root password still fails the deployment.
 validate_secret() {
     variable_name="$1"
-    secret_value=$(printenv "$variable_name" 2>/dev/null || true)
+    optional="${2:-}"
+    if ! secret_value=$(printenv "$variable_name"); then
+        if [ "$optional" = optional ]; then
+            return 0
+        fi
+        secret_value=""
+    fi
     # Normalize only for comparison, so case variants of published placeholders
     # cannot bypass the guard while the original secret reaches the application.
     normalized_secret=$(printf '%s' "$secret_value" | tr '[:upper:]' '[:lower:]')
@@ -33,7 +44,10 @@ validate_secret() {
 }
 
 validate_secret MYSQL_PASSWORD
-validate_secret MYSQL_ROOT_PASSWORD
+# The application never uses the MySQL administrative account. Compose no
+# longer injects it here, but a hand-rolled deployment that still does must not
+# get away with a published example value.
+validate_secret MYSQL_ROOT_PASSWORD optional
 
 # Runtime directories live outside the document root. Re-apply ownership and
 # restrictive modes on every start because named volumes retain old metadata.

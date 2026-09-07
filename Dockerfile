@@ -37,6 +37,9 @@ RUN a2enmod deflate expires headers rewrite \
     && a2dissite 000-default
 COPY docker/apache/lotgd.conf /etc/apache2/sites-available/lotgd.conf
 RUN a2ensite lotgd
+# Read after the base image's security.conf, so its ServerTokens/TraceEnable
+# defaults are replaced rather than merged.
+COPY docker/apache/hardening.conf /etc/apache2/conf-enabled/zz-lotgd-hardening.conf
 COPY docker/health/ready.php /var/www/lotgd-health/ready.php
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-lotgd.ini
 COPY docker/entrypoint.sh /usr/local/bin/lotgd-entrypoint
@@ -73,5 +76,15 @@ ENV APP_ENV=production \
     MYSQL_DATACACHEPATH=/var/cache/lotgd
 
 EXPOSE 80
+
+# Compose overrides this with its own definition; keeping it in the image means
+# a plain `docker run` also reports readiness instead of only liveness. The
+# probe is container-local by Apache configuration and performs a
+# side-effect-free SELECT 1 without starting a game session.
+# The exec form keeps the PHP variables out of a shell, which would expand
+# them to the empty string.
+HEALTHCHECK --interval=15s --timeout=3s --start-period=60s --retries=4 \
+    CMD ["php", "-r", "$c = get_headers('http://127.0.0.1/_health/ready'); exit($c !== false && str_contains($c[0], '204') ? 0 : 1);"]
+
 ENTRYPOINT ["lotgd-entrypoint"]
 CMD ["apache2-foreground"]

@@ -53,20 +53,23 @@ See [AGENTS.md](AGENTS.md) for full contributor guidelines. Highlights:
 
 ## Table of Contents
 - [Join the Community](#join-the-community)
+- [Demo](#demo)
 - [Contributing](#contributing)
 - [Read Me First](#read-me-first)
 - [System Requirements](#system-requirements)
-- [Quick Install](#quick-install)
 - [Getting Started](#getting-started)
+- [Maintenance](#maintenance)
+- [What’s new in 2.0](#whats-new-in-20)
+- [Further Reading](#further-reading)
+- [Twig Templates](#twig-templates)
 - [Install from Release Archive](#install-from-release-archive)
+- [Release Workflow](#release-workflow)
 - [Cron Job Setup](#cron-job-setup)
 - [SMTP Mail Setup](#smtp-mail-setup)
 - [Beta Setup](#beta-setup)
 - [After Upgrading](#after-upgrading)
-- [Upgrading](#upgrading)
-- [Installation](#installation)
-- [Post Installation](#post-installation)
-- [Composer Local Setup](#composer-local-setup)
+- [UPGRADING](#upgrading)
+- [Docker](#docker)
 
 ## Read Me First
 
@@ -88,8 +91,9 @@ To run Legend of the Green Dragon on a typical web host you will need:
 
 - **Web server:** Apache 2 (or another server capable of running PHP)
 - **PHP:** version 8.3 or newer
-- **Database:** MySQL 5.0 or later. MariaDB is a compatible alternative.
+- **Database:** MySQL 8.0 or later (8.4 LTS is what the Docker stack ships and what CI exercises). MariaDB 10.6 or later is a compatible alternative. Older servers may still work, but they are neither tested nor supported by their own vendors any more.
 - The database user must have the `LOCK TABLES` privilege.
+- The web server must be able to deny access to files that are not entry points. The shipped `.htaccess` does this on Apache when `AllowOverride` permits it; on Nginx or a locked-down Apache, port the rules from the comment block at the end of `.htaccess`.
 
 ## Getting Started
 1. Clone the repository.
@@ -104,7 +108,7 @@ Regular upkeep tasks:
 - Run `composer update` to update dependencies.
 - Run `composer test` to execute the unit tests and `composer static` to run PHPStan or other static analyzers; ensure both pass before committing.
 - Schedule `cron.php` via cron for automated jobs.
-- Configure SMTP settings in `config/configuration.php`.
+- Configure SMTP settings in the in-game settings editor (`configuration.php`, Superuser navigation); they are stored as game settings, not in a file.
 - If you change `DB_PREFIX`, clear the cache directory to avoid reusing metadata from the previous prefix.
 
 ## What’s new in 2.0
@@ -218,15 +222,15 @@ dependencies while omitting development files such as the `tests/` directory.
 
 `cron.php` handles automated tasks such as daily resets. Run it from the command line with `php cron.php` and schedule it in your system's crontab. The script automatically determines its installation directory, so no manual configuration or `$GAME_DIR` value is required.
 
-> ⚠️ **Do not leave `cron.php` publicly reachable.** Remove it from the web root or block direct requests. When using Apache, add the following rule to the project’s root [`.htaccess`](./.htaccess):
+> ⚠️ **`cron.php` must not be reachable over HTTP.** Depending on the `register_argc_argv` setting, a plain web request can pass the execution bitmask through the query string and start a newday or database-cleanup run. The rule is now shipped by default — the project's root [`.htaccess`](./.htaccess) and the Docker virtual host both deny it — so nothing needs to be added by hand on Apache.
 >
-> ```apache
-> <Files "cron.php">
->     Require all denied
-> </Files>
+> Verify it after deployment; a request must answer `403`:
+>
+> ```bash
+> curl -s -o /dev/null -w '%{http_code}\n' https://your.game/cron.php
 > ```
 >
-> Apply the equivalent protection in other servers (for example, an Nginx `location` block that returns `403`) or move the script outside the document root so it can only be executed from the CLI.
+> On other servers apply the equivalent protection (for example, an Nginx `location = /cron.php { return 403; }` block); the commented Nginx translation at the end of `.htaccess` lists all of the project's access rules. Moving the script outside the document root also works.
 
 | Constant               | Bit value | Routine              | Notes |
 | ---------------------- | --------- | -------------------- | ----- |
@@ -343,8 +347,14 @@ cd lotgd
 cp .env.example .env
 ```
 
-Before starting either deployment, edit `.env` and replace every sample
-database password.
+`.env.example` ships with **empty** password fields on purpose; Compose refuses
+to start until both are set to independently generated values:
+
+```bash
+chmod 600 .env
+sed -i "s|^MYSQL_PASSWORD=$|MYSQL_PASSWORD=$(openssl rand -base64 32)|" .env
+sed -i "s|^MYSQL_ROOT_PASSWORD=$|MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)|" .env
+```
 
 Build and start the default production configuration:
 
@@ -365,5 +375,12 @@ replacements. Production serves only HTTP on the chosen `LOTGD_HTTP_PORT`;
 deploy it behind a TLS-terminating reverse proxy for HTTPS.
 TLS is intentionally not bundled because each deployment must supply and renew
 certificates for its own domain, for example through Let's Encrypt.
+The installer is denied by default; enable it deliberately for the setup window
+as described in the guide.
+
 See [the Docker guide](docs/Docker.md) for cache behavior, verification, and
-troubleshooting.
+troubleshooting — in particular
+[backups](docs/Docker.md#backups), the
+[update procedure](docs/Docker.md#updating-the-deployment), the
+[reverse-proxy setup](docs/Docker.md#ssltls-is-not-included), and the
+[state of the pinned base images](docs/Docker.md#status-as-of-2026-09).

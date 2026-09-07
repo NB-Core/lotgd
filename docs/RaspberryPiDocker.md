@@ -1,8 +1,15 @@
-# Legend of the Green Dragon on Raspberry Pi 4 (Docker-first)
+# Legend of the Green Dragon on Raspberry Pi (Docker-first)
 
-This guide targets **Raspberry Pi 4 with Raspberry Pi OS Lite 64-bit**. The
+This guide targets **Raspberry Pi 4 or 5 with Raspberry Pi OS Lite 64-bit**. The
 production images are checked for native ARM64 support in CI, so emulation is
-not required.
+not required. Any other ARM64 single-board computer running a current Debian or
+Ubuntu works the same way.
+
+A Pi 4 with 2 GB of RAM is enough for a small game, but MySQL 8.4 and PHP
+together leave little headroom: use a 4 GB board (or a Pi 5) if you expect more
+than a handful of concurrent players, put the data on an SSD rather than an SD
+card, and enable swap. SD cards wear out quickly under a database write load and
+are the most common cause of a Pi deployment dying after a few months.
 
 ## 1. Install Docker and Compose
 
@@ -23,7 +30,7 @@ docker compose version
 ## 2. Clone and create private configuration
 
 ```bash
-git clone https://github.com/lotgd/lotgd.git
+git clone https://github.com/NB-Core/lotgd.git
 cd lotgd
 cp .env.example .env
 chmod 600 .env
@@ -82,6 +89,17 @@ docker compose exec web sh         # diagnostic shell
 
 Back up the `db_data` and `lotgd_state` volumes together. The latter contains
 `dbconnect.php`, installer logs, and the completion marker; deleting it can
-lose configuration and installer-lock state. For the non-Docker alternative,
-install the requirements from `composer.json` with Apache/PHP and a compatible
-database, but this path is more fragile and is not recommended.
+lose configuration and installer-lock state. [Backups](Docker.md#backups) has
+copy-paste commands, including the `mysqldump` invocation — take them off the Pi
+itself, since the SD card is the component most likely to fail.
+
+Keep the deployment current: the image is rebuilt, never patched in place. See
+[Updating the deployment](Docker.md#updating-the-deployment) for application
+updates and
+[Pinned multi-architecture images](Docker.md#pinned-multi-architecture-images)
+for the base-image maintenance path — both matter on a Pi that is exposed to the
+internet through a home connection.
+
+For the non-Docker alternative, install the requirements from `composer.json`
+with Apache/PHP and a compatible database, but this path is more fragile and is
+not recommended.
