@@ -90,7 +90,7 @@ If you need more legacy **templates** / skins for the game, [go there](https://g
 To run Legend of the Green Dragon on a typical web host you will need:
 
 - **Web server:** Apache 2 (or another server capable of running PHP)
-- **PHP:** version 8.3 or newer
+- **PHP:** version 8.3 or newer (the Docker image ships 8.4; CI tests both)
 - **Database:** MySQL 8.0 or later (8.4 LTS is what the Docker stack ships and what CI exercises). MariaDB 10.6 or later is a compatible alternative. Older servers may still work, but they are neither tested nor supported by their own vendors any more.
 - The database user must have the `LOCK TABLES` privilege.
 - The web server must be able to deny access to files that are not entry points. The shipped `.htaccess` does this on Apache when `AllowOverride` permits it; on Nginx or a locked-down Apache, port the rules from the comment block at the end of `.htaccess`.

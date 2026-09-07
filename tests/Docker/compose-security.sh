@@ -45,7 +45,7 @@ dockerfile = pathlib.Path("Dockerfile").read_text()
 
 pins = {
     "composer": r"FROM composer:2@sha256:[0-9a-f]{64} AS composer",
-    "runtime": r"FROM thecodingmachine/php:8\.3-v4-apache@sha256:[0-9a-f]{64}",
+    "runtime": r"FROM thecodingmachine/php:8\.4-v5-apache@sha256:[0-9a-f]{64}",
     "database": r"image: mysql:8\.4@sha256:[0-9a-f]{64}",
 }
 for name, pattern in pins.items():

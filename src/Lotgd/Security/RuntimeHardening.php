@@ -326,16 +326,111 @@ class RuntimeHardening
             $trustedProxies = [];
         }
 
-        if ($trustedProxies === []) {
-            // No allowlist configured — trust all sources.
-            return true;
-        }
-
         $remoteAddr = trim((string) ($server['REMOTE_ADDR'] ?? ''));
         if ($remoteAddr === '') {
             return false;
         }
 
-        return in_array($remoteAddr, $trustedProxies, true);
+        if ($trustedProxies === []) {
+            // Without an explicit allowlist, only believe a peer that cannot be
+            // an ordinary client: a reverse proxy reaches the application over
+            // loopback or a private network (a container network, for
+            // instance). Trusting every source here would let any visitor
+            // claim HTTPS by sending X-Forwarded-Proto, which decides whether
+            // session cookies get the Secure flag.
+            return self::isPrivateOrLoopbackAddress($remoteAddr);
+        }
+
+        foreach ($trustedProxies as $trustedProxy) {
+            if (self::proxyMatches($remoteAddr, (string) $trustedProxy)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Match a peer address against one allowlist entry.
+     *
+     * Entries are literal addresses or CIDR blocks; a proxy's address inside a
+     * container network is rarely stable enough to write down literally.
+     */
+    private static function proxyMatches(string $remoteAddr, string $entry): bool
+    {
+        $entry = trim($entry);
+        if ($entry === '') {
+            return false;
+        }
+
+        if (! str_contains($entry, '/')) {
+            if ($entry === $remoteAddr) {
+                return true;
+            }
+
+            // Compare numerically as well, so that equivalent spellings of the
+            // same address (an abbreviated IPv6 block, say) still match.
+            $entryBinary = @inet_pton($entry);
+            $remoteBinary = @inet_pton($remoteAddr);
+
+            return $entryBinary !== false
+                && $remoteBinary !== false
+                && $entryBinary === $remoteBinary;
+        }
+
+        [$subnet, $prefix] = explode('/', $entry, 2);
+        if (! preg_match('/^\d{1,3}$/', trim($prefix))) {
+            return false;
+        }
+
+        $prefixLength = (int) trim($prefix);
+        $subnetBinary = @inet_pton(trim($subnet));
+        $remoteBinary = @inet_pton($remoteAddr);
+        if ($subnetBinary === false || $remoteBinary === false) {
+            return false;
+        }
+
+        // Never compare an IPv4 address against an IPv6 block or vice versa.
+        if (strlen($subnetBinary) !== strlen($remoteBinary)) {
+            return false;
+        }
+
+        $maximumPrefix = strlen($subnetBinary) * 8;
+        if ($prefixLength > $maximumPrefix) {
+            return false;
+        }
+
+        $wholeBytes = intdiv($prefixLength, 8);
+        $remainingBits = $prefixLength % 8;
+
+        if ($wholeBytes > 0 && strncmp($subnetBinary, $remoteBinary, $wholeBytes) !== 0) {
+            return false;
+        }
+
+        if ($remainingBits === 0) {
+            return true;
+        }
+
+        $mask = ~((1 << (8 - $remainingBits)) - 1) & 0xFF;
+
+        return (ord($subnetBinary[$wholeBytes]) & $mask) === (ord($remoteBinary[$wholeBytes]) & $mask);
+    }
+
+    /**
+     * Determine whether an address belongs to a private or reserved range.
+     */
+    private static function isPrivateOrLoopbackAddress(string $address): bool
+    {
+        if (filter_var($address, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+
+        // FILTER_FLAG_NO_PRIV_RANGE|NO_RES_RANGE rejects exactly the ranges a
+        // reverse proxy uses, so a failed validation here is the positive case.
+        return filter_var(
+            $address,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) === false;
     }
 }

@@ -168,6 +168,39 @@ docker compose exec -T web php -r '
     exit($body === "" && str_contains($status, "204") ? 0 : 1);
 '
 
+# The runtime re-runs a2enmod/a2dismod from its own default list on every
+# start, and that list does not contain mod_headers. If the image ever stops
+# asking for it, these headers vanish silently: game pages become cacheable by
+# shared caches and static files lose their content-type guard.
+assert_header() {
+    path="$1"
+    expected="$2"
+    headers=$(curl --silent --show-error --head "http://127.0.0.1:${LOTGD_HTTP_PORT}${path}")
+    if ! printf '%s' "$headers" | grep -Fiq "$expected"; then
+        echo "Missing header '$expected' on ${path}" >&2
+        printf '%s\n' "$headers" >&2
+        exit 1
+    fi
+}
+
+assert_header /templates_twig/aurora/assets/style.css 'X-Content-Type-Options: nosniff'
+assert_header /index.php 'Cache-Control: no-store, private'
+# docker/apache/hardening.conf replaces the distribution's "ServerTokens OS".
+assert_header /index.php 'Server: Apache'
+
+# PHP's scan directory is version- and SAPI-specific on this runtime, so a
+# wrong path would leave the production settings silently unapplied rather
+# than failing anything. The Apache SAPI is the one serving the game.
+docker compose exec -T web sh -c '
+    set -eu
+    conf="/etc/php/${PHP_VERSION}/apache2/conf.d/zz-lotgd.ini"
+    test -f "$conf"
+    grep -q "display_errors = Off" "$conf"
+' || {
+    echo "Production PHP settings are not installed in the Apache scan directory" >&2
+    exit 1
+}
+
 assert_status() {
     path="$1"
     expected="$2"

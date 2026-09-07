@@ -35,6 +35,59 @@ Before doing anything:
 2. Keep your `config` folder (but update as noted below).  
 3. Run `composer install` to pull required dependencies.
 
+### Docker deployments: the runtime image now serves PHP 8.4
+
+The container image moved from `thecodingmachine/php:8.3-v4-apache` to
+`8.4-v5-apache`, because the `v4` line stopped receiving upstream rebuilds in
+June 2025 and no longer carries PHP or distribution security patches.
+
+For most deployments this is a rebuild and nothing else: `docker compose up -d
+--build web`. The application's supported floor is unchanged at PHP 8.3, so
+non-Docker installations are unaffected, and CI runs the test suite on 8.3 and
+8.4 alike.
+
+Two things are worth checking if you maintain custom modules or a custom image:
+
+- **Custom modules** now run on PHP 8.4. Code removed in 8.4 or relying on
+  behaviour deprecated in 8.3 will surface in the container log
+  (`docker compose logs web`). The core itself is clean on 8.4.
+- **A derived image or extra ini files.** The new runtime is Ubuntu-based, so
+  PHP's configuration directory is `/etc/php/8.4/apache2/conf.d`, not
+  `/usr/local/etc/php/conf.d`. A file dropped into the old path is not an
+  error — PHP just never reads it. The development override's ini mount moved
+  to `/etc/lotgd/php-development.ini` accordingly; if you copied that mount
+  into your own Compose file, update it.
+
+The full list of runtime assumptions is in [Docker deployment: PHP runtime
+image](docs/Docker.md#php-runtime-image).
+
+### Forwarded-protocol headers are no longer trusted from public peers
+
+`X-Forwarded-Proto` (and the other forwarded protocol headers) decide whether
+the application considers a request HTTPS, which in turn decides whether
+session cookies carry the `Secure` flag and whether HSTS is sent. Previously an
+empty `SECURITY_TRUSTED_PROXIES` list meant *every* source was trusted, so any
+visitor could assert the header for their own request.
+
+Now, with no explicit allowlist, those headers are honoured only from loopback
+and private network ranges and ignored from public addresses. A reverse proxy
+on the same host or on a container network is unaffected.
+
+Action is needed only if **your proxy reaches the application from a public IP
+address** — a TLS terminator on a different machine, for example. Set the peer
+explicitly; the list now accepts CIDR blocks as well as literal addresses:
+
+```php
+// dbconnect.php
+'SECURITY_TRUST_FORWARDED_PROTO' => true,
+'SECURITY_TRUSTED_PROXIES' => '198.51.100.7, 203.0.113.0/24',
+```
+
+The symptom of a missed configuration is a site that works but issues
+non-`Secure` session cookies and stops sending HSTS. An explicit list replaces
+the private-range default rather than extending it, so include every peer that
+terminates TLS.
+
 ### Docker deployments using legacy example passwords
 
 The hardened Compose configuration rejects the previously documented

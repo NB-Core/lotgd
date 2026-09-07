@@ -73,6 +73,21 @@ if [ -f "$state_path/installation-complete" ]; then
     rm -f /var/www/html/installer.php
 fi
 
+# The development override mounts its PHP settings at a fixed path so that
+# docker-compose.dev.yml does not have to name the runtime's PHP version. The
+# scan directory is version-specific on this Ubuntu-based runtime, so link the
+# file into it here, where PHP_VERSION is known.
+development_ini="/etc/lotgd/php-development.ini"
+php_conf_dir="/etc/php/${PHP_VERSION:-}/apache2/conf.d"
+if [ -f "$development_ini" ]; then
+    if [ -d "$php_conf_dir" ]; then
+        ln -sf "$development_ini" "$php_conf_dir/zzz-lotgd-development.ini"
+    else
+        echo "Cannot apply $development_ini: PHP scan directory '$php_conf_dir' does not exist" >&2
+        exit 1
+    fi
+fi
+
 # Preserve the runtime image's extension/Apache initialization after applying
 # the application-specific volume and secret checks above.
 exec /usr/local/bin/docker-entrypoint.sh "$@"

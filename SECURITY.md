@@ -77,11 +77,12 @@ These keys are optional and allow phased rollout:
 - `SECURITY_HSTS_INCLUDE_SUBDOMAINS` (default `false`)
 - `SECURITY_HSTS_PRELOAD` (default `false`)
 - `SECURITY_TRUST_FORWARDED_PROTO` (default `false`)
-- `SECURITY_TRUSTED_PROXIES` (comma-separated IP allowlist, default empty)
+- `SECURITY_TRUSTED_PROXIES` (comma-separated allowlist of literal IP addresses and/or CIDR blocks, default empty)
 
 ### Deployment notes
 
-- If you run behind a reverse proxy/load balancer, enable `SECURITY_TRUST_FORWARDED_PROTO` and set `SECURITY_TRUSTED_PROXIES` so only trusted peers can influence HTTPS detection.
+- If you run behind a reverse proxy/load balancer, enable `SECURITY_TRUST_FORWARDED_PROTO` and set `SECURITY_TRUSTED_PROXIES` so only trusted peers can influence HTTPS detection. With the list left empty, forwarded protocol headers are accepted only from loopback and private network ranges (`127.0.0.0/8`, `10/8`, `172.16/12`, `192.168/16`, `::1`, `fc00::/7`) and ignored from public addresses — enough for a proxy on the same host or container network, but set the list explicitly if your proxy reaches the application from a public address. An explicit list replaces that default instead of extending it, so include every peer that terminates TLS.
+- Forwarded-header trust decides whether session cookies are issued with the `Secure` flag and whether HSTS is emitted, so a client that can spoof it can influence its own cookie protection. That is why an unlisted public peer is never believed.
 - Do not enable `SameSite=None` unless TLS is enforced and `Secure` is enabled.
 - Roll out HSTS carefully (start with low `max-age`) and enable preload only after confirming all subdomains are HTTPS-ready.
 ## Secure coding baseline
