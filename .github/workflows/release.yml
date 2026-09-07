@@ -36,7 +36,7 @@ jobs:
           zip -r "dist/lotgd-${VERSION}.zip" . \
               -x '*.git*' -x '.github/*' -x 'tests/*' -x 'phpunit.xml' -x '.phpunit.result.cache' -x 'dist/*'
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lotgd-${{ steps.vars.outputs.VERSION }}
           # Keep release workflow artifacts briefly to reduce billable storage.
