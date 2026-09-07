@@ -3,7 +3,7 @@
 The Docker configuration shares one production image between deployment modes:
 the default Compose file is production-oriented, while
 `docker-compose.dev.yml` adds live source mounts and development PHP settings.
-The image uses PHP 8.3 with Apache, OPcache, optimized production Composer
+The image uses PHP 8.4 with Apache, OPcache, optimized production Composer
 dependencies, and MySQL 8.4.
 
 Both containers drop every default capability, run with `no-new-privileges`,
@@ -21,8 +21,8 @@ immutable multi-architecture manifest digest:
 
 | Purpose | Pinned image | Authoritative locations |
 | --- | --- | --- |
-| Composer build stage | `composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040` | `Dockerfile`, `.github/workflows/ci.yml` |
-| PHP/Apache runtime | `thecodingmachine/php:8.3-v4-apache@sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7` | `Dockerfile`, `.github/workflows/ci.yml` |
+| Composer build stage | `composer:2@sha256:d8f6343d3fae98107426bc49163ccad46ef85aabd4a27d80a74401fab4aba332` | `Dockerfile`, `.github/workflows/ci.yml` |
+| PHP/Apache runtime | `thecodingmachine/php:8.4-v5-apache@sha256:d04b2b76c615c9af90cdc66b54cf4e4d09eba64ee74f9bbbd79b78b06d902a66` | `Dockerfile`, `.github/workflows/ci.yml`, `tests/Docker/compose-security.sh` |
 | MySQL database | `mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb` | `docker-compose.yml`, `.github/workflows/ci.yml` |
 
 Dependabot's Docker ecosystem entry proposes monthly digest updates while
@@ -42,7 +42,7 @@ Check the state of all three pins without pulling anything:
 ```bash
 # What the tag points at today, and when it was last rebuilt.
 docker buildx imagetools inspect composer:2 --format '{{json .Manifest.Digest}}'
-docker buildx imagetools inspect thecodingmachine/php:8.3-v4-apache --format '{{json .Manifest.Digest}}'
+docker buildx imagetools inspect thecodingmachine/php:8.4-v5-apache --format '{{json .Manifest.Digest}}'
 docker buildx imagetools inspect mysql:8.4 --format '{{json .Manifest.Digest}}'
 
 # Compare against the pins recorded above.
@@ -61,25 +61,20 @@ pinned.
 | Pin | Upstream state | Action |
 | --- | --- | --- |
 | `mysql:8.4` | Current; the pinned digest is the one `mysql:8.4` resolves to (rebuilt 2026-07-28). MySQL 8.4 is the LTS series, so staying on it is correct — do not move to a 9.x innovation release. | None. |
-| `composer:2` | Behind. The `2` tag has been rebuilt several times since the pinned digest was reviewed and now resolves to Composer 2.10.x. | Refresh the digest in a maintenance PR. Build-stage only, so the runtime is unaffected. |
-| `thecodingmachine/php:8.3-v4-apache` | **Frozen.** The upstream `v4` line has not been rebuilt since 2025-06-09; the `v5` line is the one that still receives monthly rebuilds. The pinned digest is therefore over a year of Debian and PHP patch releases behind, and monthly Dependabot runs cannot detect this because the tag itself never moves. | Plan the migration below. |
+| `composer:2` | Current; the pinned digest is the one `composer:2` resolves to (rebuilt 2026-09-03, Composer 2.10.x). Build stage only — nothing from this image reaches the runtime except the resolved `vendor/` tree. | None. |
+| `thecodingmachine/php:8.4-v5-apache` | Current, and on the maintained line (rebuilt monthly, last 2026-08-30). | None. |
 
-The frozen runtime is the single most important maintenance item in this
-deployment. Nothing in it is exploitable by configuration alone — the container
-drops capabilities, runs the document root read-only for `www-data`, and is not
-meant to be published without a reverse proxy — but it does mean the image
-ships an unpatched PHP 8.3 point release and unpatched system libraries.
+The runtime previously sat on `8.3-v4-apache`, a line upstream stopped
+rebuilding on 2025-06-09. That is the failure mode this section exists to
+catch, and it is one Dependabot cannot report: when an upstream line is
+abandoned its tag stops moving, so the digest a bot would propose is the digest
+already pinned. **A pin that never produces an update PR deserves suspicion,
+not comfort.** Re-check the rebuild dates here at least twice a year.
 
-### Migrating to the maintained runtime line
+### Migrating to another runtime line
 
-`thecodingmachine/php` publishes `<php>-v5-apache` images for PHP 8.1 through
-8.5 with the same interfaces this deployment relies on (`a2enmod`, `a2ensite`,
-`apache2-foreground`, `/usr/local/etc/php/conf.d`, `/etc/apache2`, and the
-`PHP_EXTENSION_*` entrypoint contract). PHP 8.4 is the conservative target: it
-is a released, actively supported branch, and `composer.json` already declares
-a `php: 8.3.0` platform floor rather than an upper bound.
-
-Treat this as scheduled maintenance in its own PR:
+The v4 → v5 migration was not a digest swap, and a future one probably will not
+be either. Treat it as scheduled maintenance in its own PR:
 
 1. Pick the tag and resolve its manifest digest:
    ```bash
@@ -91,16 +86,16 @@ Treat this as scheduled maintenance in its own PR:
 3. Update the digest in `Dockerfile`, `.github/workflows/ci.yml`, the table at
    the top of this document, and `tests/Docker/compose-security.sh`, whose
    regular expression pins the tag text as well.
-4. Raise the CI matrix and `config.platform.php` in `composer.json` together
-   with the image, then run `composer update --lock` so the lock file is
-   resolved against the new platform.
-5. Verify the extension contract on the new image before merging — the fat
-   runtime enables extensions through `PHP_EXTENSION_*`, and the set differs
-   between major image lines:
-   ```bash
-   docker run --rm thecodingmachine/php:8.4-v5-apache php -m
-   ```
-6. Run the full Docker CI path locally: `docker build`, `tests/Docker/smoke.sh`,
+4. Read the new line's `Dockerfile` and entrypoint scripts before assuming any
+   path still holds — see [PHP runtime image](#php-runtime-image) for the
+   assumptions this deployment makes and what broke last time.
+5. If the PHP major/minor version changes, run the test suite on it locally
+   (`php vendor/bin/phpunit`, `php vendor/bin/phpstan analyse`) and add the
+   version to the CI matrix in `.github/workflows/ci.yml`. Leave
+   `config.platform.php` in `composer.json` at the **lowest** supported
+   version: it is the floor for non-Docker installations, not the runtime
+   version.
+6. Run the full Docker CI path: `docker build`, `tests/Docker/smoke.sh`,
    `tests/Docker/compose-security.sh`.
 
 Do not combine a runtime bump with application changes; keeping it isolated is
@@ -108,18 +103,39 @@ what makes a rollback (restoring the previous digest) a one-line change.
 
 ## PHP runtime image
 
-The application stage uses the multiarch
-`thecodingmachine/php:8.3-v4-apache` fat image (see
-[Status as of 2026-09](#status-as-of-2026-09): this tag is on the frozen `v4`
-line and should move to `8.4-v5-apache`). It is pinned to the immutable
-manifest-list digest
-`sha256:7bc852ed28adb908d245ef4a71b2c2d19fd9626c1975af61ba5a8f958a035ec7`,
-not merely to its moving tag. The same manifest contains native `linux/amd64`
-and `linux/arm64` variants. The image retains the official PHP/Apache-compatible
-interfaces used here: `a2enmod`, `a2ensite`, `apache2-foreground`, the
-`/usr/local/etc/php/conf.d` scan directory, and the Apache configuration below
-`/etc/apache2`. The application explicitly runs Apache as `www-data` and chains
-the runtime's entrypoint so its binary-module configuration still runs.
+The application stage uses the multiarch `thecodingmachine/php:8.4-v5-apache`
+fat image, pinned to the immutable manifest-list digest
+`sha256:d04b2b76c615c9af90cdc66b54cf4e4d09eba64ee74f9bbbd79b78b06d902a66`, not
+merely to its moving tag. The same manifest contains native `linux/amd64` and
+`linux/arm64` variants.
+
+The fat variant is chosen deliberately: it ships every extension this game
+needs as a pre-built module, so the application image never compiles anything.
+A CI guard (`tests/Docker/no-build-toolchain.sh`) rejects extension compilers
+in the Dockerfile, and builds stay in the minutes-not-hours range.
+
+### What this runtime is, and what it expects
+
+The `v5` line is built on **Ubuntu with the ondrej PHP packages** — not on the
+official `php:*-apache` Debian images. Anything that assumes the official
+layout is wrong here, which is what makes a line change more than a digest
+swap. The assumptions this deployment makes, all of them load-bearing:
+
+| Assumption | Why it matters |
+| --- | --- |
+| PHP's scan directory is `/etc/php/${PHP_VERSION}/apache2/conf.d`, **not** `/usr/local/etc/php/conf.d` | `docker/php/production.ini` is installed there as `zz-lotgd.ini`, sorting after the runtime's own generated config. A wrong path does not fail: PHP simply never reads the file and the production settings silently vanish. The build resolves the path from the image's own `PHP_VERSION` and fails if the directory is absent. |
+| The scan directory is per-SAPI | `php` on the command line reads `cli/conf.d` and does **not** see the Apache settings. Verify web-facing PHP configuration through HTTP or by reading the file, never with `docker compose exec web php -i`. |
+| `TEMPLATE_PHP_INI` selects the stock `php.ini` linked in at startup | It defaults to `development`, which would enable displayed errors. The image sets it to `production`. |
+| The entrypoint runs `a2enmod`/`a2dismod` on **every start** from its own default list | That list does not include `mod_headers`, so a build-time `a2enmod headers` is undone at runtime. `APACHE_EXTENSION_HEADERS=1` keeps it on; without it the `no-store` and `nosniff` headers disappear with no error anywhere. The smoke test asserts both headers over HTTP. |
+| `PHP_EXTENSION_*` enables pre-built modules at startup | `PHP_EXTENSION_GD=1` is the only one this game adds; the rest are on by default in the fat image. |
+| `DOCKER_USER` skips an ownership heuristic | Unset, the entrypoint probes the working directory by creating and deleting a scratch directory in the document root on every start. |
+| `/usr/bin/php` is a wrapper script | It sudo-chowns a cache file and can regenerate PHP configuration before exec'ing the real binary. The health checks therefore use `curl`, not `php`. |
+| Apache keeps the Debian layout | `a2enmod`, `a2ensite`, `a2enconf`, `apache2-foreground`, `/etc/apache2/{sites,conf}-available`, and `conf-enabled` all work as usual. |
+| `APACHE_RUN_USER`/`APACHE_RUN_GROUP` default to `docker` | The image sets both to `www-data` explicitly; upstream even flags its own default as unsuitable for production. |
+
+The application chains the runtime's entrypoint (`docker/entrypoint.sh` ends in
+`exec /usr/local/bin/docker-entrypoint.sh "$@"`) so all of that initialization
+still runs after the deployment's own volume and secret checks.
 
 The production runtime contract is derived from `Dockerfile`,
 `docker/health/ready.php`, Composer's platform requirements, and the production
@@ -140,13 +156,23 @@ Composer also requires the standard/core modules `ctype`, `dom`, `fileinfo`,
 test verifies the seven explicit runtime extensions and the runtime build runs
 Composer against the resulting platform.
 
-To update the runtime, inspect the tag with `docker buildx imagetools inspect`,
-verify that its manifest still contains both required architectures, and run the commands in
+To update the runtime, follow
+[Migrating to another runtime line](#migrating-to-another-runtime-line) and
+finish with the commands in
 [Health and performance verification](#health-and-performance-verification).
-Runtime updates are scheduled
-maintenance or definition/security changes; ordinary application PRs must not
-refresh the base. The static CI guard rejects extension compilers and native
-build toolchains in the application Dockerfile.
+Runtime updates are scheduled maintenance or definition/security changes;
+ordinary application PRs must not refresh the base. The static CI guard rejects
+extension compilers and native build toolchains in the application Dockerfile.
+
+### PHP version policy
+
+The image serves **PHP 8.4**. The application's floor is still **8.3**:
+`config.platform.php` in `composer.json` pins dependency resolution to 8.3.0,
+the README documents 8.3 as the minimum, and CI runs the unit tests and static
+analysis on both versions. Non-Docker installations on 8.3 therefore stay
+supported, while the container gets an actively maintained branch. Raise the
+floor only in a deliberate PR that also updates the README, the Composer
+platform config, and the CI matrix.
 
 The Docker CI job has a target wall-clock budget of **at most five minutes**.
 It therefore builds and loads the AMD64 application image once, passes that
@@ -320,15 +346,21 @@ join `web-proxy`, never `database`.
 The web service uses `tmpfs` for `/tmp`, Apache PID state, and Apache locks with
 `nosuid`, `nodev`, and `noexec`; cache and state remain in their named volumes.
 A fully read-only root filesystem was evaluated but is not enabled for this
-runtime image: its inherited `/usr/local/bin/docker-entrypoint.sh` materializes
-PHP extension configuration under `/usr/local/etc/php/conf.d` at container
-startup (including the requested GD module). That write happens before Apache
-starts and cannot be redirected to the Apache/PHP transient paths without
-masking the image's production INI files. The document root therefore remains
-root-owned with group/other writes removed, `www-data` cannot modify code, and
-the reduced capability/no-new-privileges boundary limits the remaining root
-startup process. Re-evaluate `read_only: true` when adopting a runtime whose
-extension configuration is completely fixed at image-build time.
+runtime image. Its inherited `/usr/local/bin/docker-entrypoint.sh` configures
+the container at every start rather than at build time: it regenerates PHP's
+`generated_conf.ini`, enables and disables PHP extensions (including the
+requested GD module) and Apache modules through `phpenmod`/`a2enmod`, links the
+selected stock `php.ini` into place, and writes `conf-enabled/expose-env.conf`
+so environment variables reach Apache. All of that lands in `/etc/php` and
+`/etc/apache2` before Apache starts, and none of it can be redirected to a
+transient path without masking the image's own configuration.
+
+The document root therefore remains root-owned with group/other writes removed,
+`www-data` cannot modify code, and the reduced capability/no-new-privileges
+boundary limits the remaining root startup process. Re-evaluate `read_only:
+true` only for a runtime whose configuration is fixed at image-build time —
+which is the opposite of what this image's environment-variable interface is
+built for.
 
 ### HTTP access boundary
 
@@ -485,27 +517,32 @@ protocol — and only the proxy's:
 
 ```php
 'SECURITY_TRUST_FORWARDED_PROTO' => true,
-// Comma-separated list, matched as exact literal addresses — CIDR ranges are
-// not expanded. Use the proxy's address as the container sees it.
-'SECURITY_TRUSTED_PROXIES' => '172.18.0.5',
+// Comma-separated literal addresses and/or CIDR blocks, matched against the
+// peer address as the container sees it.
+'SECURITY_TRUSTED_PROXIES' => '172.18.0.0/16',
 'SECURITY_HSTS_ENABLED' => true,
 ```
 
-Read the proxy's actual source address instead of guessing it; Docker assigns
-it from the network's subnet and it changes if the network is recreated:
+A container's address is assigned from the network's subnet and changes when
+the network is recreated, which is why the allowlist accepts blocks. Read the
+subnet rather than guessing it:
 
 ```bash
-docker compose logs web | tail -n 5   # the client IP is the first log field
-docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' <proxy-container>
+docker network inspect lotgd_web-proxy -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+docker compose logs web | tail -n 5   # the peer address is the first log field
 ```
 
-Never enable `SECURITY_TRUST_FORWARDED_PROTO` with an empty trusted-proxy list:
-the allowlist is skipped entirely when it is empty, so any client could then
-claim HTTPS by sending `X-Forwarded-Proto`. For a proxy with a changing address,
-give the container a static IP on the `web-proxy` network rather than leaving
-the list blank. The full list of keys, their defaults, and the HSTS rollout
-advice are in [SECURITY.md](../SECURITY.md#runtime-hardening-defaults). Restart
-the web service after editing `dbconnect.php`; OPcache runs with
+Leaving `SECURITY_TRUSTED_PROXIES` empty is safe by default but blunt: with no
+list, a forwarded protocol is accepted only from loopback and private network
+ranges, and ignored from any public address. That covers this Compose
+deployment, where the proxy is either on the host's loopback interface or on
+the `web-proxy` network. Set an explicit list when the proxy reaches the
+container from a public address, or when you want to name exactly one peer;
+an explicit list replaces the private-range default rather than extending it.
+
+The full list of keys, their defaults, and the HSTS rollout advice are in
+[SECURITY.md](../SECURITY.md#runtime-hardening-defaults). Restart the web
+service after editing `dbconnect.php`; OPcache runs with
 `validate_timestamps=0` and will otherwise keep serving the cached version:
 
 ```bash
@@ -524,6 +561,12 @@ The override sets `APP_ENV=development`, enables displayed errors and PHP/Twig
 timestamp checks, and mounts the checkout at `/var/www/html`. Named volumes mask
 `vendor/` and `/var/cache/lotgd`, so dependencies and generated files remain
 container-local rather than being written into the host checkout.
+
+`docker/php/development.ini` is mounted at `/etc/lotgd/php-development.ini`
+rather than directly into PHP's scan directory, because that directory's path
+contains the runtime's PHP version. The entrypoint links the file into it as
+`zzz-lotgd-development.ini`, sorting after the production settings, so the
+Compose file never has to be edited when the PHP version changes.
 
 Rebuild after changing Composer dependencies or the image configuration:
 
@@ -578,9 +621,26 @@ Validate and inspect the running deployment:
 docker compose config
 docker compose ps
 docker run --rm <image> php -m
-docker compose exec web php -i | grep -E 'opcache.enable =>|opcache.validate_timestamps =>'
 docker compose exec --user www-data web sh -c 'test -w /var/cache/lotgd/twig && test -w /var/cache/lotgd/doctrine'
 docker compose exec web find /var/cache/lotgd -mindepth 1 -maxdepth 2 -type f -print
+```
+
+PHP's configuration is per-SAPI on this runtime, so `docker compose exec web
+php -i` reports the **command-line** settings and not the ones Apache serves
+with. Read the web-facing configuration from the file instead:
+
+```bash
+docker compose exec web sh -c 'cat /etc/php/${PHP_VERSION}/apache2/conf.d/zz-lotgd.ini'
+docker compose exec web sh -c 'ls /etc/php/${PHP_VERSION}/apache2/conf.d/'
+```
+
+Confirm that the response headers survived the runtime's module handling — the
+image asks for `mod_headers` through `APACHE_EXTENSION_HEADERS`, and without it
+these two headers disappear silently:
+
+```bash
+curl -sSI "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/index.php" | grep -i 'cache-control\|^server'
+curl -sSI "http://127.0.0.1:${LOTGD_HTTP_PORT:-8080}/templates_twig/aurora/assets/style.css" | grep -i 'x-content-type-options'
 ```
 
 The web service becomes healthy only after PHP can read `dbconnect.php`, all

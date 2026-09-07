@@ -98,6 +98,95 @@ class RuntimeHardeningTest extends TestCase
         ], $trustedOptions));
     }
 
+    /**
+     * Without an explicit allowlist a forwarded protocol is only believed from
+     * a peer that cannot be an ordinary visitor. Otherwise anyone could decide
+     * whether their own session cookie carries the Secure flag.
+     *
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('provideUnlistedProxyPeers')]
+    public function testForwardedProtoWithoutAllowlistIsLimitedToPrivatePeers(
+        string $remoteAddress,
+        bool $expected
+    ): void {
+        $options = RuntimeHardening::buildOptions([
+            'SECURITY_TRUST_FORWARDED_PROTO' => true,
+        ]);
+
+        self::assertSame($expected, RuntimeHardening::isHttpsRequest([
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => '80',
+            'REMOTE_ADDR' => $remoteAddress,
+        ], $options));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: bool}>
+     */
+    public static function provideUnlistedProxyPeers(): array
+    {
+        return [
+            'loopback' => ['127.0.0.1', true],
+            'container network' => ['172.18.0.5', true],
+            'private class A' => ['10.1.2.3', true],
+            'private class C' => ['192.168.1.10', true],
+            'IPv6 loopback' => ['::1', true],
+            'IPv6 unique local' => ['fd00::1', true],
+            'public IPv4 client' => ['203.0.113.7', false],
+            'public IPv6 client' => ['2001:db8::1', false],
+            'missing address' => ['', false],
+            'not an address' => ['not-an-ip', false],
+        ];
+    }
+
+    /**
+     * A proxy's address on a container network is rarely stable enough to
+     * write down literally, so allowlist entries accept CIDR blocks.
+     *
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('provideTrustedProxyAllowlists')]
+    public function testTrustedProxyAllowlistSupportsLiteralsAndCidrBlocks(
+        string $allowlist,
+        string $remoteAddress,
+        bool $expected
+    ): void {
+        $options = RuntimeHardening::buildOptions([
+            'SECURITY_TRUST_FORWARDED_PROTO' => true,
+            'SECURITY_TRUSTED_PROXIES' => $allowlist,
+        ]);
+
+        self::assertSame($expected, RuntimeHardening::isHttpsRequest([
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => '80',
+            'REMOTE_ADDR' => $remoteAddress,
+        ], $options));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string, 2: bool}>
+     */
+    public static function provideTrustedProxyAllowlists(): array
+    {
+        return [
+            'literal hit' => ['10.0.0.1,10.0.0.2', '10.0.0.2', true],
+            'literal miss' => ['10.0.0.1,10.0.0.2', '10.0.0.3', false],
+            'IPv4 block hit' => ['172.18.0.0/16', '172.18.4.5', true],
+            'IPv4 block miss' => ['172.18.0.0/16', '172.19.4.5', false],
+            'narrow block hit' => ['10.0.0.0/31', '10.0.0.1', true],
+            'narrow block miss' => ['10.0.0.0/31', '10.0.0.2', false],
+            'mixed list' => ['127.0.0.1, 192.168.5.0/24', '192.168.5.77', true],
+            'IPv6 block hit' => ['fd00::/8', 'fd00::abcd', true],
+            'IPv6 spelled out' => ['fd00:0:0:0:0:0:0:1', 'fd00::1', true],
+            'IPv4 peer against IPv6 block' => ['fd00::/8', '10.0.0.1', false],
+            'malformed entry' => ['not-an-ip', '10.0.0.1', false],
+            'malformed prefix' => ['10.0.0.0/999', '10.0.0.1', false],
+            // An explicit list replaces the private-peer default entirely.
+            'private peer outside the list' => ['10.0.0.1', '10.9.9.9', false],
+        ];
+    }
+
     public function testPrivilegeElevationSnapshotIsTracked(): void
     {
         $session = [

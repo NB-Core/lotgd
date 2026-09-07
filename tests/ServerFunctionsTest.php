@@ -69,30 +69,84 @@ final class ServerFunctionsTest extends TestCase
 
     public function testIsHttpsRequestUnderstandsForwardedProto(): void
     {
-        $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+        // A forwarded protocol is only read from a peer that can plausibly be
+        // a reverse proxy, so every fixture below needs one.
+        $proxy = ['REMOTE_ADDR' => '127.0.0.1'];
+
+        $_SERVER = $proxy + ['HTTP_X_FORWARDED_PROTO' => 'https'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
-        $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https,http';
+        $_SERVER = $proxy + ['HTTP_X_FORWARDED_PROTO' => 'https,http'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
-        $_SERVER = ['X_FORWARDED_PROTO' => 'https'];
+        $_SERVER = $proxy + ['X_FORWARDED_PROTO' => 'https'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
-        $_SERVER = ['HTTP_X_FORWARDED_PROTOCOL' => 'https'];
+        $_SERVER = $proxy + ['HTTP_X_FORWARDED_PROTOCOL' => 'https'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
-        $_SERVER = ['HTTP_FORWARDED_PROTO' => 'https'];
+        $_SERVER = $proxy + ['HTTP_FORWARDED_PROTO' => 'https'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
-        $_SERVER = ['HTTP_FORWARDED' => 'for=1.2.3.4;proto=https;by=5.6.7.8'];
+        $_SERVER = $proxy + ['HTTP_FORWARDED' => 'for=1.2.3.4;proto=https;by=5.6.7.8'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
-        $_SERVER = ['FORWARDED_PROTO' => 'https'];
+        $_SERVER = $proxy + ['FORWARDED_PROTO' => 'https'];
         $this->assertTrue(ServerFunctions::isHttpsRequest());
 
-        $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'http';
-        $_SERVER['HTTPS'] = 'off';
-        $_SERVER['SERVER_PORT'] = 80;
+        $_SERVER = $proxy + [
+            'HTTP_X_FORWARDED_PROTO' => 'http',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => 80,
+        ];
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+    }
+
+    public function testIsHttpsRequestIgnoresForwardedProtoFromUntrustedPeers(): void
+    {
+        // No allowlist is configured (see setUp), so the forwarded protocol is
+        // believed only from loopback or a private network. Otherwise any
+        // visitor could decide whether their own session cookie is Secure.
+        $request = [
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => 80,
+        ];
+
+        $_SERVER = $request + ['REMOTE_ADDR' => '203.0.113.7'];
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+
+        $_SERVER = $request + ['REMOTE_ADDR' => '2001:db8::1'];
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+
+        // A request without a peer address cannot be attributed to a proxy.
+        $_SERVER = $request;
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+
+        $_SERVER = $request + ['REMOTE_ADDR' => '172.18.0.5'];
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+    }
+
+    public function testIsHttpsRequestAcceptsCidrTrustedProxyRanges(): void
+    {
+        putenv('LOTGD_TRUST_FORWARDED_HEADERS=1');
+        putenv('LOTGD_TRUSTED_PROXY_IPS=172.18.0.0/16');
+
+        $request = [
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => 80,
+        ];
+
+        $_SERVER = $request + ['REMOTE_ADDR' => '172.18.4.9'];
+        $this->assertTrue(ServerFunctions::isHttpsRequest());
+
+        $_SERVER = $request + ['REMOTE_ADDR' => '172.19.4.9'];
+        $this->assertFalse(ServerFunctions::isHttpsRequest());
+
+        // An explicit list replaces the private-peer default rather than
+        // extending it.
+        $_SERVER = $request + ['REMOTE_ADDR' => '127.0.0.1'];
         $this->assertFalse(ServerFunctions::isHttpsRequest());
     }
 

@@ -54,8 +54,11 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      # Compose uses $$ to pass a literal $ through to the PHP process.
-      test: ["CMD", "php", "-r", "$$c=get_headers('http://127.0.0.1/_health/ready'); exit($$c !== false && str_contains($$c[0], '204') ? 0 : 1);"]
+      # curl rather than php: /usr/bin/php is a wrapper script on this runtime
+      # that sudo-chowns a cache file and can regenerate the PHP configuration
+      # before running anything. --fail maps the probe's 503 to a non-zero exit
+      # while its 204 stays a success.
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--output", "/dev/null", "http://127.0.0.1/_health/ready"]
       interval: 15s
       timeout: 3s
       retries: 4

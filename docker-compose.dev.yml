@@ -7,7 +7,9 @@ services:
       # Keep dependencies and generated cache inside Docker, not on the host.
       - lotgd_vendor:/var/www/html/vendor
       - lotgd_cache:/var/cache/lotgd
-      - ./docker/php/development.ini:/usr/local/etc/php/conf.d/zzz-lotgd-development.ini:ro
+      # The entrypoint links this into the runtime's version-specific PHP scan
+      # directory, so this path does not have to track the PHP version.
+      - ./docker/php/development.ini:/etc/lotgd/php-development.ini:ro
 
 volumes:
   lotgd_vendor:
