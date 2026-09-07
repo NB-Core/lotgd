@@ -65,7 +65,7 @@ jobs:
       - name: Verify pinned base images support AMD64 and ARM64
         run: |
           for image in \
-            'composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040' \
+            'composer:2@sha256:d8f6343d3fae98107426bc49163ccad46ef85aabd4a27d80a74401fab4aba332' \
             'thecodingmachine/php:8.4-v5-apache@sha256:d04b2b76c615c9af90cdc66b54cf4e4d09eba64ee74f9bbbd79b78b06d902a66' \
             'mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb'
           do

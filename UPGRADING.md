@@ -39,7 +39,12 @@ Before doing anything:
 
 The container image moved from `thecodingmachine/php:8.3-v4-apache` to
 `8.4-v5-apache`, because the `v4` line stopped receiving upstream rebuilds in
-June 2025 and no longer carries PHP or distribution security patches.
+June 2025 and no longer carries PHP or distribution security patches. The
+Composer build-stage image was refreshed to the current `composer:2` digest in
+the same change; it only produces the `vendor/` tree and never ships in the
+runtime, so it needs no action from operators. All three pinned images —
+runtime, Composer, and MySQL — are now current; see [Docker deployment: Status
+as of 2026-09](docs/Docker.md#status-as-of-2026-09).
 
 For most deployments this is a rebuild and nothing else: `docker compose up -d
 --build web`. The application's supported floor is unchanged at PHP 8.3, so

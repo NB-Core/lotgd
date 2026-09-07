@@ -21,7 +21,7 @@ immutable multi-architecture manifest digest:
 
 | Purpose | Pinned image | Authoritative locations |
 | --- | --- | --- |
-| Composer build stage | `composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040` | `Dockerfile`, `.github/workflows/ci.yml` |
+| Composer build stage | `composer:2@sha256:d8f6343d3fae98107426bc49163ccad46ef85aabd4a27d80a74401fab4aba332` | `Dockerfile`, `.github/workflows/ci.yml` |
 | PHP/Apache runtime | `thecodingmachine/php:8.4-v5-apache@sha256:d04b2b76c615c9af90cdc66b54cf4e4d09eba64ee74f9bbbd79b78b06d902a66` | `Dockerfile`, `.github/workflows/ci.yml`, `tests/Docker/compose-security.sh` |
 | MySQL database | `mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb` | `docker-compose.yml`, `.github/workflows/ci.yml` |
 
@@ -61,7 +61,7 @@ pinned.
 | Pin | Upstream state | Action |
 | --- | --- | --- |
 | `mysql:8.4` | Current; the pinned digest is the one `mysql:8.4` resolves to (rebuilt 2026-07-28). MySQL 8.4 is the LTS series, so staying on it is correct — do not move to a 9.x innovation release. | None. |
-| `composer:2` | Behind. The `2` tag has been rebuilt several times since the pinned digest was reviewed and now resolves to Composer 2.10.x. | Refresh the digest in a maintenance PR. Build-stage only, so the runtime is unaffected. |
+| `composer:2` | Current; the pinned digest is the one `composer:2` resolves to (rebuilt 2026-09-03, Composer 2.10.x). Build stage only — nothing from this image reaches the runtime except the resolved `vendor/` tree. | None. |
 | `thecodingmachine/php:8.4-v5-apache` | Current, and on the maintained line (rebuilt monthly, last 2026-08-30). | None. |
 
 The runtime previously sat on `8.3-v4-apache`, a line upstream stopped
