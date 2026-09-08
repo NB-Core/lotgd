@@ -69,6 +69,14 @@ if ($op == "vote") {
     exit();
 }
 if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_POST_MOTD)) {
+    // SU_POST_MOTD says who may edit, not that this request was meant. Both
+    // ops write, so both need the editing token and a POST.
+    if (!Csrf::validatePostRequest(Csrf::SCOPE_MOTD_EDIT)) {
+        debuglog('Rejected MoTD save with an invalid CSRF token.');
+        http_response_code(400);
+        header('Location: motd.php');
+        exit();
+    }
     if (Http::post('preview')) {
         $title = Http::post('motdtitle');
         $body = Nltoappon::convert((string) Http::post('motdbody'));
@@ -91,6 +99,17 @@ if ($op == "add" || $op == "addpoll" || $op == "del") {
         } elseif ($op == "addpoll") {
             Motd::motdPollForm($id);
         } elseif ($op == "del") {
+            // This was a plain GET link. The navigation allowlist narrowed it
+            // -- the URL is only valid until the next page view consumes the
+            // list -- but an admin sitting on the MoTD page who followed a
+            // crafted link deleted the entry, because SameSite=Lax sends the
+            // cookie on a top-level GET navigation.
+            if (!Csrf::validatePostRequest(Csrf::SCOPE_MOTD_EDIT)) {
+                debuglog('Rejected MoTD deletion with an invalid CSRF token.');
+                http_response_code(400);
+                header('Location: motd.php');
+                exit();
+            }
             Motd::motdDel($id);
             $output->output("`^Entry deleted.`0`n");
             $return = Translator::translateInline("Return to MoTD");

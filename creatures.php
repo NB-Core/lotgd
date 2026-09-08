@@ -334,10 +334,13 @@ if ($op == "" || $op == "search") {
         module_editor_navs("prefs-creatures", "creatures.php?op=edit&subop=module&creatureid=$id&module=");
         if ($subop == "module") {
             $module = Http::get("module");
-            $output->rawOutput("<form action='creatures.php?op=save&subop=module&creatureid=$id&module=$module' method='POST'>");
+            // See companions.php: the raw name goes to the module lookup, the
+            // encoded one into anything that is a URL.
+            $moduleParam = rawurlencode((string) $module);
+            $output->rawOutput("<form action='creatures.php?op=save&subop=module&creatureid=$id&module=$moduleParam' method='POST'>");
             module_objpref_edit("creatures", $module, $id);
             $output->rawOutput("</form>");
-            Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
+            Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$moduleParam");
         } else {
             if ($op == "edit" && $id != "") {
                 $conn = Database::getDoctrineConnection();
@@ -441,10 +444,15 @@ if ($op == "" || $op == "search") {
         }
     } else {
         $module = Http::get("module");
-        $output->rawOutput("<form action='mounts.php?op=save&subop=module&creatureid=$id&module=$module' method='POST'>");
+        $moduleParam = rawurlencode((string) $module);
+        // The action points at mounts.php while the navigation entry below
+        // registers creatures.php, so a submit from here cannot pass the
+        // allowlist. Left as it is: making the two agree would switch on a
+        // path that has apparently never run, which is a separate change.
+        $output->rawOutput("<form action='mounts.php?op=save&subop=module&creatureid=$id&module=$moduleParam' method='POST'>");
         module_objpref_edit("creatures", $module, $id);
         $output->rawOutput("</form>");
-        Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$module");
+        Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$moduleParam");
     }
     Nav::add("Navigation");
     Nav::add("Return to the creature editor", "creatures.php?level=$level");

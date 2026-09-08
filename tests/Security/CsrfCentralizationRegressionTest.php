@@ -127,16 +127,23 @@ final class CsrfCentralizationRegressionTest extends TestCase
     }
 
     /**
-     * Async code must never call the generating methods. async/process.php
-     * releases the session lock before dispatch for read-only callables, so a
-     * token created there is returned once and then lost — which shows up as an
-     * intermittent mismatch rather than an obvious failure.
+     * Async *request handling* must never call the generating methods.
+     * async/process.php releases the session lock before dispatch for
+     * read-only callables, so a token created there is returned once and then
+     * lost — which shows up as an intermittent mismatch rather than an obvious
+     * failure.
+     *
+     * The rule is about the request-handling path, not about the directory.
+     * async/setup.php also lives under async/ but runs during a normal page
+     * render, included from the page footer with the session open, and issuing
+     * the token is exactly its job. Scanning by directory would have made that
+     * legitimate call look like a violation.
      */
-    public function testAsyncCodeNeverGeneratesAToken(): void
+    public function testAsyncRequestHandlingNeverGeneratesAToken(): void
     {
         $root = dirname(__DIR__, 2);
-        $files = [];
-        foreach (['/async', '/src/Lotgd/Async'] as $directory) {
+        $files = [$root . '/async/process.php'];
+        foreach (['/async/common', '/src/Lotgd/Async'] as $directory) {
             $iterator = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($root . $directory, \FilesystemIterator::SKIP_DOTS)
             );
@@ -148,6 +155,7 @@ final class CsrfCentralizationRegressionTest extends TestCase
         }
 
         self::assertNotSame([], $files, 'expected async sources to scan');
+        self::assertContains($root . '/async/process.php', $files);
 
         foreach ($files as $file) {
             $source = (string) file_get_contents($file);
@@ -159,6 +167,46 @@ final class CsrfCentralizationRegressionTest extends TestCase
                 );
             }
         }
+    }
+
+    /**
+     * The other half of that rule: the page-render side must issue the token,
+     * or the endpoint check has nothing to compare against.
+     */
+    public function testAsyncSetupIssuesTheToken(): void
+    {
+        self::assertStringContainsString(
+            'Csrf::token(\\Lotgd\\Security\\Csrf::SCOPE_ASYNC)',
+            $this->source('async/setup.php')
+        );
+    }
+
+    /**
+     * The header must go to this origin only.
+     *
+     * Matching the path alone attaches the session token to any host that
+     * serves /async/process.php — including a protocol-relative
+     * '//host/async/process.php', which reads like a path. Verified by running
+     * the predicate out of the file itself against a foreign origin; asserted
+     * here because the project has no JavaScript test harness, so this pins the
+     * check against removal rather than re-deriving the behaviour.
+     */
+    public function testAsyncCsrfHeaderIsScopedToTheCurrentOrigin(): void
+    {
+        $source = $this->source('async/js/lotgd.jaxon.js');
+
+        self::assertStringContainsString(
+            'target.origin === window.location.origin',
+            $source,
+            'the async CSRF header must be restricted to this origin'
+        );
+        self::assertStringContainsString("target.pathname === '/async/process.php'", $source);
+
+        // The shape that leaked: a path comparison standing on its own.
+        self::assertStringNotContainsString(
+            "return new URL(url, window.location.origin).pathname === '/async/process.php';",
+            $source
+        );
     }
 
     private function source(string $relativePath): string

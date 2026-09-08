@@ -190,6 +190,25 @@ modules.
   - Config is in `config/async.settings.php`.  
   - Default rate limit: ~1 request/second.  
   - Requests beyond this return HTTP 429. Adjust if needed.
+  - **New: `csrf_mode`** — `off`, `log` (new default) or `enforce`. The async
+    endpoint now issues a per-session CSRF token and expects it back in an
+    `X-LotGD-Csrf` header. Existing installs pick the default up automatically,
+    because the loader merges `config/async.settings.php` over the shipped
+    `.dist` defaults, so **no action is required to upgrade**.
+  - Why it ships as `log` rather than `enforce`: the token travels through the
+    Jaxon client runtime, which is loaded from a CDN rather than vendored and
+    therefore cannot be verified in CI. Polling runs every few seconds for
+    every player with the Ajax preference on, so enforcing a check that never
+    receives its token would stop polling for all of them at once, with a
+    symptom that looks nothing like the cause.
+  - What to do: after upgrading, grep `error_log` for `Jaxon csrf`. Nothing
+    there over a release means the transport works — set `'csrf_mode' =>
+    'enforce'`. Lines there name the handler and whether the token was
+    `missing` or a `mismatch`. Expect roughly one line per poll per active
+    session if the transport is broken, so watch log volume during the first
+    day.
+  - Gameplay is unaffected in every mode: async carries commentary, mail and
+    timeout polling, never a game action.
 
 - **Mail**  
   - Uses **PHPMailer** via Composer.  

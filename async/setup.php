@@ -79,6 +79,12 @@ if (! empty($session['user']['acctid'])) {
 }
 
 $polling_script = "<script>";
+// Emitted unconditionally, above the polling gate below: the 2FA challenge
+// page force-loads this file with polling disabled and still needs the token.
+// This is page-render context, so generating here is correct -- the request
+// handler must never do it, see \Lotgd\Security\Csrf.
+$polling_script .= "var lotgd_async_csrf_token = "
+    . (json_encode(\Lotgd\Security\Csrf::token(\Lotgd\Security\Csrf::SCOPE_ASYNC)) ?: '""') . ";";
 $polling_script .= "var lotgd_comment_section = " . json_encode($session['last_comment_section'] ?? '') . ";";
 $polling_script .= "var lotgd_lastCommentId = " . (int)($session['lastcommentid'] ?? 0) . ";";
 $polling_script .= "var lotgd_lastUnreadMailId = " . json_encode($lastUnreadMailId) . ";";

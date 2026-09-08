@@ -124,9 +124,9 @@ be trusted. It does not apply to:
   authenticated by the session cookie alone. What constrains it is
   `async/process.php` itself — the callable allowlist, the default-deny check
   for unauthenticated callers, and the per-callable superuser requirements in
-  `lotgd_async_required_superuser_bits()`. A Jaxon call also carries its
-  arguments in the request body, so the note about request bodies applies here
-  too.
+  `lotgd_async_required_superuser_bits()`, and the CSRF token described below.
+  A Jaxon call also carries its arguments in the request body, so the note
+  about request bodies applies here too.
 
   A handler is not reached through the page that renders its trigger, so a
   page-level `SuAccess::check()` does not protect it. Anything a handler does
@@ -140,6 +140,39 @@ be trusted. It does not apply to:
   `Nav::add()` URL widens it. Normalize such values (cast, `rawurlencode()`, or
   a sanitizer) before they reach a link, as `healer.php` and `user.php` already
   do.
+
+### The async CSRF token
+
+`async/setup.php` issues a per-session token in `Csrf::SCOPE_ASYNC` when it
+renders the polling client, and `async/js/lotgd.jaxon.js` attaches it as an
+`X-LotGD-Csrf` header to any request aimed at `/async/process.php`. The endpoint
+compares it in `lotgd_async_csrf_state()`.
+
+Three things about this are worth knowing before changing it.
+
+**It ships in log-only mode.** `csrf_mode` in `config/async.settings.php`
+defaults to `log`: failures go to `error_log` and the request proceeds.
+The token has to survive a transport this project cannot verify in CI — the
+Jaxon runtime is loaded from a CDN rather than vendored — and polling runs
+every few seconds for every player with the AJAX preference on, so enforcing a
+check that silently never receives its token would break all of them at once.
+Read the log over a release, then switch to `enforce`.
+
+**It is a defence in depth, not a plugged hole.** `common.php` configures the
+session cookie before the AJAX branch and defaults it to `SameSite=Lax`, so a
+cross-site POST does not carry the cookie at all. The gap becomes live only if
+an operator sets `SESSION_COOKIE_SAMESITE` to `None`.
+
+**The unauthenticated passkey pair is exempt.** `beginAuthentication` and
+`verifyAuthentication` run before a login exists, so there is no session-scoped
+token for them to carry; they keep their own check inside the handler, against
+the token the challenge view seeds.
+
+Async code must never call `Csrf::token()` or the other issuing methods.
+`async/process.php` releases the session lock before dispatch for read-only
+callables, so a token minted there is handed out once and lost — an
+intermittent mismatch rather than a clear failure. Issuing belongs to
+`async/setup.php`, which runs during a page render with the session open.
 
 ### What this means for review
 

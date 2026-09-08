@@ -93,6 +93,7 @@ These rules apply to all directories unless a more specific file overrides them.
 
 - New Ajax features should use Jaxon. Respect configured rate limits (HTTP 429 on excess).
 - Validate session/auth for async endpoints; avoid exposing privileged actions via unauthenticated calls.
+- The endpoint carries a CSRF token (`Csrf::SCOPE_ASYNC`), issued by `async/setup.php` and sent as an `X-LotGD-Csrf` header by `async/js/lotgd.jaxon.js`. Request-handling code checks it and must never issue it: the session lock may already be released, so a token minted there is lost. `csrf_mode` in `config/async.settings.php` selects `off`/`log`/`enforce`.
 - Authentication is not authorization. A handler is reached directly, so the `SuAccess::check()` on the page that renders its trigger never runs. A handler that needs rights needs an entry in `lotgd_async_required_superuser_bits()` in `async/process.php`. Do not call `SuAccess::check()` from a handler — it renders a page and kills the character on failure.
 - Prefer small payloads and incremental updates (mail/commentary patterns) over full-page refreshes.
 

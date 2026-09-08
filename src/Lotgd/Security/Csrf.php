@@ -49,8 +49,22 @@ final class Csrf
     public const SCOPE_MOUNT_EDITOR = 'mount_editor';
     public const SCOPE_COMPANION_EDITOR = 'companion_editor';
     public const SCOPE_MOTD_VOTE = 'motd_vote';
+
+    /**
+     * Deliberately separate from SCOPE_MOTD_VOTE. The vote token is rendered
+     * for every logged-in player who sees a poll; the editing token belongs to
+     * SU_POST_MOTD holders and has no business being emitted that widely.
+     */
+    public const SCOPE_MOTD_EDIT = 'motd_edit';
     public const SCOPE_TWOFACTORAUTH = 'twofactorauth';
     public const SCOPE_CHARRESTORE = 'charrestore_restore';
+
+    /**
+     * The async endpoint. Issued once per session when async/setup.php renders
+     * the polling client, and carried back in the {@see self::HEADER} request
+     * header, because the Jaxon client serialises its own request body.
+     */
+    public const SCOPE_ASYNC = 'async';
 
     /**
      * 32 bytes, so every scope gets the same strength. The 2FA module used 16;

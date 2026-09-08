@@ -262,11 +262,17 @@ if ($op == "") {
         $subop = Http::get("subop");
         if ($subop == "module") {
             $module = Http::get("module");
-            $output->rawOutput("<form action='companions.php?op=save&subop=module&id=$id&module=$module' method='POST'>");
+            // The raw value keeps going to the hook, which looks the module up
+            // by name; the encoded one is what may appear in a URL. Unencoded
+            // it carried a quote straight out of the single-quoted action
+            // attribute, and widened the navigation allowlist through the
+            // Nav::add() below.
+            $moduleParam = rawurlencode((string) $module);
+            $output->rawOutput("<form action='companions.php?op=save&subop=module&id=$id&module=$moduleParam' method='POST'>");
             $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_COMPANION_EDITOR));
             HookHandler::objprefEdit("companions", $module, $id);
             $output->rawOutput("</form>");
-            Nav::add("", "companions.php?op=save&subop=module&id=$id&module=$module");
+            Nav::add("", "companions.php?op=save&subop=module&id=$id&module=$moduleParam");
         } else {
             $output->output("Companion Editor:`n");
             $abilities = unserialize((string) $row['abilities'], ['allowed_classes' => false]);
