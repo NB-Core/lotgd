@@ -30,7 +30,7 @@ class Censor
         global $session;
         $output = Output::getInstance();
         $final_output = $input;
-        $sanitized = Sanitize::fullSanitize($input);
+        $sanitized = Sanitize::stripAllColorCodes($input);
         $mix_mask = str_pad('', strlen($sanitized), 'X');
         $settings = Settings::getInstance();
         if ($settings->getSetting('soap', 1)) {

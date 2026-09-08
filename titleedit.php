@@ -31,7 +31,8 @@ Translator::getInstance()->setSchema("retitle");
 
 Header::pageHeader("Title Editor");
 $op = Http::get('op');
-$id = Http::get('id');
+// Every other use in this file already casts; line 215 did not.
+$id = (int) Http::get('id');
 $editarray = array(
     "Titles,title",
     //"titleid"=>"Title Id,hidden",

@@ -24,6 +24,12 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: Doctrine ORM/DBAL repositories and migrations  
   - Migration: Move writes/reads into services or repositories; create migrations instead of ad‑hoc SQL.
 
+- `Lotgd\Sanitize::fullSanitize()`  
+  - Status: Deprecated alias, still supported in 2.x  
+  - Replacement: `Lotgd\Sanitize::stripAllColorCodes()` (identical behaviour)  
+  - Reason: The name suggested general purpose sanitization. The method removes LotGD colour codes and nothing else — it does not escape quotes and never made a value safe to interpolate into SQL. A confirmed injection reached a query through a value that had passed through it.  
+  - Migration: Rename the call. The legacy global function `full_sanitize()` in `lib/sanitize.php` keeps its name for modules and now delegates to the new method.
+
 - Legacy database wrapper (`Lotgd\MySQL\Database::query()` / `Database::fetchAssoc()` loops)  
   - Status: Legacy compatibility (modules), discouraged for new core code  
   - Replacement: `Database::getDoctrineConnection()` with `Result::fetchAssociative()` / `fetchAllAssociative()`  

@@ -190,7 +190,7 @@ if ($op == "") {
     Nav::add("Navigation");
     Nav::add("Return to the camp", "mercenarycamp.php?skip=1");
 } elseif ($op == "buy") {
-    $id = Http::get('id');
+    $id = (int) Http::get('id');
     $sql = "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid = $id";
     $result = Database::query($sql);
     if ($row = Database::fetchAssoc($result)) {

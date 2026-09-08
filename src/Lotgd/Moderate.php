@@ -421,7 +421,7 @@ class Moderate
             Navigation::add('', $link);
             $auth[$i] = $row['author'];
             if (isset($rawc[$i])) {
-                $rawc[$i] = Sanitize::fullSanitize($rawc[$i]);
+                $rawc[$i] = Sanitize::stripAllColorCodes($rawc[$i]);
                 $rawc[$i] = htmlentities($rawc[$i], ENT_QUOTES,);
             }
         }

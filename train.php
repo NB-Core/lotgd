@@ -43,7 +43,9 @@ $sep = $settings->getSetting('moneythousandssep', ',');
 
 $output->output("`b`cBluspring's Warrior Training`c`b");
 
-$mid = Http::get("master");
+// Cast at the source: a master id is an integer, and it is interpolated
+// into the query below.
+$mid = (int) Http::get("master");
 if ($mid) {
     $sql = "SELECT * FROM " . Database::prefix("masters") . " WHERE creatureid=$mid";
 } else {

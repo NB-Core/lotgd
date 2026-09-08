@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
@@ -149,13 +150,24 @@ if ($op == "add2") {
     // ok to execute when this is the current user, they'll overwrite the
     // value at the end of their page hit, and this will allow the display
     // table to update in real time.
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET donation=donation+'$points' WHERE acctid='$id'";
-    Database::query($sql);
+    // $points may come from a module through the donation_adjustments hook,
+    // and $txnid straight from the request without validation, so both are
+    // bound rather than interpolated. $id is already an integer here.
+    Database::getDoctrineConnection()->executeStatement(
+        "UPDATE " . Database::prefix("accounts")
+            . " SET donation = donation + :points WHERE acctid = :acctid",
+        ['points' => (int) $points, 'acctid' => $id],
+        ['points' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+    );
     HookHandler::hook("donation", array("id" => $id, "amt" => $points, "manual" => ($txnid > "" ? false : true)));
 
     if ($txnid > "") {
-        $sql = "UPDATE " . Database::prefix("paylog") . " SET acctid='$id', processed=1 WHERE txnid='$txnid'";
-        Database::query($sql);
+        Database::getDoctrineConnection()->executeStatement(
+            "UPDATE " . Database::prefix("paylog")
+                . " SET acctid = :acctid, processed = 1 WHERE txnid = :txnid",
+            ['acctid' => $id, 'txnid' => (string) $txnid],
+            ['acctid' => ParameterType::INTEGER, 'txnid' => ParameterType::STRING]
+        );
         debuglog("Received donator points for donating -- Credited manually [$reason]", false, $id, "donation", $points, false);
         redirect("paylog.php");
     } else {

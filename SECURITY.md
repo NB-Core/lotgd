@@ -85,6 +85,54 @@ These keys are optional and allow phased rollout:
 - Forwarded-header trust decides whether session cookies are issued with the `Secure` flag and whether HSTS is emitted, so a client that can spoof it can influence its own cookie protection. That is why an unlisted public peer is never believed.
 - Do not enable `SameSite=None` unless TLS is enforced and `Secure` is enabled.
 - Roll out HSTS carefully (start with low `max-age`) and enable preload only after confirming all subdomains are HTTPS-ready.
+## Navigation allowlist (`allownav`)
+
+The game validates that a request corresponds to a link it actually offered.
+This is not only a usability or anti-cheat feature — it is a security control,
+and several code paths depend on it, so its exact reach matters when reviewing
+them.
+
+### How it works
+
+`Nav::add()` records every rendered link in `$session['allowednavs']`, keyed by
+the link **including its query string**. On the next request,
+`ForcedNavigation::doForcedNav()` — called from `common.php` for every logged-in
+request — looks up `$_SERVER['REQUEST_URI']` in that set. A URI that is not
+present sends the player to `badnav.php`.
+
+The practical effect is that a player cannot invent a URL. Parameter values are
+limited to the ones the server itself put into a link, which is why crafted
+query strings do not reach most page code — and why the same mechanism makes
+value tampering hard.
+
+### What it does not cover
+
+Treat the allowlist as a second line of defence, never as the reason a value may
+be trusted. It does not apply to:
+
+- **Request bodies.** The key is the URI. Anything in a POST body is
+  unconstrained, so `Http::post()` values reach page code regardless of the
+  allowlist. Validate and bind them like any other untrusted input.
+- **Pages that opt out.** The check sits inside the logged-in branch, and pages
+  defining `OVERRIDE_FORCED_NAV` skip it. `ALLOW_ANONYMOUS` pages are reached
+  without it entirely.
+- **Async endpoints.** `async/common/bootstrap.php` runs the same check, but a
+  Jaxon call carries its arguments in the request body, so the note about
+  request bodies applies there too. `async/process.php` enforces its own
+  callable allowlist; that is what constrains async, not the nav list.
+- **Values the application itself puts into a link.** The allowlist grows from
+  rendered navs, so a request-derived value that is interpolated into a
+  `Nav::add()` URL widens it. Normalize such values (cast, `rawurlencode()`, or
+  a sanitizer) before they reach a link, as `healer.php` and `user.php` already
+  do.
+
+### What this means for review
+
+A query built from `Http::get()` is not safe because the allowlist would stop a
+crafted URL. Bind the parameter. The allowlist reduces the reachability of a
+mistake; it does not make the mistake harmless, and the exemptions above are
+exactly where reachability comes back.
+
 ## Secure coding baseline
 
 When changing security-sensitive code paths, align implementation and review notes with these project references:

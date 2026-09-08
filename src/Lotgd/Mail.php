@@ -110,7 +110,7 @@ class Mail
             ) ?: [];
 
             if (($fromRow['name'] ?? '') !== '') {
-                $fromline = Sanitize::fullSanitize($fromRow['name']);
+                $fromline = Sanitize::stripAllColorCodes($fromRow['name']);
             } else {
                 $fromline = Translator::translateInline('The Green Dragon', 'mail');
             }
@@ -120,10 +120,10 @@ class Mail
                 ['acctid' => ParameterType::INTEGER]
             ) ?: [];
 
-            $toline = Sanitize::fullSanitize($toRow['name'] ?? '');
+            $toline = Sanitize::stripAllColorCodes($toRow['name'] ?? '');
             $body = preg_replace("'[`]n'", "\n", $body);
-            $body = Sanitize::fullSanitize($body);
-            $subject = htmlentities(Sanitize::fullSanitize($subject), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
+            $body = Sanitize::stripAllColorCodes($body);
+            $subject = htmlentities(Sanitize::stripAllColorCodes($subject), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
             $original = Settings::getInstance();
             $settings_extended = new Settings('settings_extended');
             $subj = Translator::translateMail($settings_extended->getSetting('notificationmailsubject'), $to);
