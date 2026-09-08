@@ -308,7 +308,11 @@ If you maintain custom overrides of any migrated page, update those overrides to
 
 The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) remains empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage in `pages/` or `src/` will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.
 
-A companion guard (`src/Lotgd/QA/InterpolatedDatabaseQueryCheck.php`) now flags new dynamic `Database::query(...)` usage under `src/Lotgd` except for explicitly whitelisted legacy-heavy paths (`Modules.php`, `Commentary.php`, `Newday.php`, `Pvp.php`) that are still under staged migration.
+A companion guard, `src/Lotgd/QA/SqlValueInterpolationCheck.php`, flags request values interpolated into the **value** position of an SQL string. It replaces an earlier `InterpolatedDatabaseQueryCheck` that required `Database::query()` to receive a string literal: 193 of 194 call sites in this codebase pass a previously assembled `$sql` variable, so that rule could never be switched on, and it never ran anywhere.
+
+The new rule follows the value instead of the shape of the call. Identifier interpolation (a table name after `FROM`/`UPDATE`, or in backticks) is not reported, because identifiers cannot be bound. An `(int)` cast — at the query or at the assignment — is accepted; a `(string)` cast is not, since it changes the type and nothing about the content.
+
+In CI it runs only over the lines a change actually adds (`--changed-since=<ref>`), so it blocks new cases in about a tenth of a second without touching the historical ones. Run `composer qa:sql-interpolation` for a full audit of the tree; that reports the existing findings too and is not part of `composer static`.
 
 Recent hardening pass migration status:
 

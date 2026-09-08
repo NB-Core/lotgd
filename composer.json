@@ -31,6 +31,7 @@
     "scripts": {
         "qa:http-wrappers": "php scripts/check-legacy-http-wrappers.php",
         "qa:sql-addslashes": "php scripts/check-sql-addslashes.php",
+        "qa:sql-interpolation": "php scripts/check-sql-value-interpolation.php",
         "static": [
             "@qa:http-wrappers",
             "@qa:sql-addslashes",

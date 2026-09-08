@@ -64,8 +64,10 @@ if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
         DataCache::getInstance()->invalidatedatacache("clandata-$detail");
     }
 }
-    $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanid='$detail'";
-    $result1 = Database::queryCached($sql, "clandata-$detail", 3600);
+    // queryCached() takes no bound parameters, so the integer nature of the id
+    // is made visible here rather than relying on the cast in clan.php.
+    $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanid=" . (int) $detail;
+    $result1 = Database::queryCached($sql, "clandata-" . (int) $detail, 3600);
     $row1 = Database::fetchAssoc($result1);
 if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     $output->rawOutput("<div id='hidearea'>");
@@ -111,8 +113,12 @@ if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
     $output->rawOutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$dk</td><td>$jd</td></tr>");
     $i = 0;
-    $sql = "SELECT acctid,name,login,clanrank,clanjoindate,dragonkills FROM " . Database::prefix("accounts") . " WHERE clanid=$detail ORDER BY clanrank DESC,clanjoindate";
-    $result = Database::query($sql);
+    $result = Database::getDoctrineConnection()->executeQuery(
+        "SELECT acctid,name,login,clanrank,clanjoindate,dragonkills FROM " . Database::prefix("accounts")
+            . " WHERE clanid = :clanid ORDER BY clanrank DESC,clanjoindate",
+        ['clanid' => $detail],
+        ['clanid' => ParameterType::INTEGER]
+    );
     $tot = 0;
     //little hack with the hook...can't think of any other way
     $ranks = array(CLAN_APPLICANT => "`!Applicant`0",CLAN_MEMBER => "`#Member`0",CLAN_OFFICER => "`^Officer`0",CLAN_LEADER => "`&Leader`0", CLAN_FOUNDER => "`\$Founder");

@@ -51,6 +51,30 @@ jobs:
       - name: Run tests
         run: composer test
 
+  sql-guard:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout code
+        # Full history so the merge base with the target branch is available.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: none
+      # Only the lines this change adds are examined, so the historical
+      # findings in untouched code do not block anything and the job costs
+      # a git diff plus a tokenizer pass over the changed files.
+      - name: Reject new SQL value interpolation
+        run: |
+          base="origin/${{ github.base_ref || github.event.repository.default_branch }}"
+          git fetch --quiet origin "${{ github.base_ref || github.event.repository.default_branch }}"
+          php scripts/check-sql-value-interpolation.php --changed-since="$base"
+
   docker:
     runs-on: ubuntu-latest
     env:
