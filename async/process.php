@@ -427,6 +427,45 @@ function lotgd_async_release_session_lock(array $requestContext): bool
 }
 
 /**
+ * Evaluate the CSRF token the request carries, without deciding what to do.
+ *
+ * Never generates one: async/process.php may already have released the session
+ * lock, so a token minted here would be handed out once and lost, which shows
+ * up as an intermittent mismatch rather than a clear failure. See
+ * {@see \Lotgd\Security\Csrf} on that invariant.
+ *
+ * @param array{class:string,method:string} $requestContext
+ *
+ * @return array{required:bool,valid:bool,reason:string}
+ */
+function lotgd_async_csrf_state(array $requestContext): array
+{
+    if (!\Lotgd\Async\CsrfMode::isChecked()) {
+        return ['required' => false, 'valid' => true, 'reason' => 'disabled'];
+    }
+
+    // The unauthenticated passkey pair runs before a login exists, so there is
+    // no session-scoped token for it to carry. Those two keep their own check
+    // inside the handler, against the module's token that the challenge view
+    // seeds. Widening the endpoint check over the login path is a separate
+    // change and the one with the largest blast radius in the game.
+    if (lotgd_async_is_unauth_allowlisted($requestContext)) {
+        return ['required' => false, 'valid' => true, 'reason' => 'unauth_allowlisted'];
+    }
+
+    $token = \Lotgd\Security\Csrf::requestToken();
+    if ($token === '') {
+        return ['required' => true, 'valid' => false, 'reason' => 'missing'];
+    }
+
+    if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_ASYNC, $token)) {
+        return ['required' => true, 'valid' => false, 'reason' => 'mismatch'];
+    }
+
+    return ['required' => true, 'valid' => true, 'reason' => ''];
+}
+
+/**
  * Evaluate async authorization policy for the requested callable.
  *
  * @param array{class:string,method:string} $requestContext
@@ -452,6 +491,21 @@ function lotgd_async_authorization_policy(array $requestContext): array
                 'error' => 'insufficient_privileges',
                 'message' => 'Forbidden',
             ];
+        }
+
+        $csrf = lotgd_async_csrf_state($requestContext);
+        if (!$csrf['valid']) {
+            $handler = ($requestContext['class'] ?? '') . '::' . ($requestContext['method'] ?? '');
+            error_log(sprintf('Jaxon csrf %s [handler=%s mode=%s]', $csrf['reason'], $handler, \Lotgd\Async\CsrfMode::mode()));
+
+            if (\Lotgd\Async\CsrfMode::isEnforced()) {
+                return [
+                    'allowed' => false,
+                    'status' => 403,
+                    'error' => 'csrf_invalid',
+                    'message' => 'Forbidden',
+                ];
+            }
         }
 
         return ['allowed' => true, 'status' => 200];

@@ -16,6 +16,21 @@ return [
     // read for backwards compatibility but no longer changes timing.
     'debug_console' => 0,
 
+    // How async/process.php treats a missing or wrong CSRF token.
+    //
+    //   'off'     - do not look at it
+    //   'log'     - check it, record failures via error_log, let the request through
+    //   'enforce' - refuse the request with HTTP 403
+    //
+    // Ships as 'log'. The token travels in an X-LotGD-Csrf header added by
+    // async/js/lotgd.jaxon.js, and the Jaxon runtime that carries it is loaded
+    // from a CDN rather than vendored, so the transport cannot be verified in
+    // CI. Polling runs every few seconds for every player with the AJAX
+    // preference on: enforcing a check that never receives its token would
+    // break all of them at once. Watch error_log for "Jaxon csrf" over a
+    // release; if it stays quiet, switch this to 'enforce'.
+    'csrf_mode' => 'log',
+
     // Prevent session timeout while the browser remains open.
     'never_timeout_if_browser_open' => 0,
 

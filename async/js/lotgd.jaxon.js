@@ -73,6 +73,95 @@
         }
     };
 
+    /**
+     * Attach the session's CSRF token to requests aimed at the async endpoint.
+     *
+     * Jaxon's own CSRF support is not used: its behaviour, including which
+     * header it sets, lives in the jaxon-js runtime, which this project loads
+     * from a CDN rather than vendoring. A security control should not depend on
+     * an asset that cannot be reviewed or diffed here, so the header is added
+     * by wrapping fetch and XMLHttpRequest instead.
+     *
+     * The token is read at send time, not when the hook is installed:
+     * async/setup.php emits the variable *after* this file, and a page that
+     * refreshes the value does not have to reinstall the hook.
+     *
+     * A custom header is also a CSRF defence in its own right -- a cross-origin
+     * caller cannot set one without a CORS preflight, which this endpoint does
+     * not answer.
+     */
+    const CSRF_HEADER = 'X-LotGD-Csrf';
+
+    const lotgdDebugSafe = function () {
+        if (typeof window.lotgdDebug === 'function') {
+            window.lotgdDebug.apply(null, arguments);
+        }
+    };
+
+    const isAsyncEndpoint = function (url) {
+        if (!url) {
+            return false;
+        }
+        try {
+            return new URL(url, window.location.origin).pathname === '/async/process.php';
+        } catch (error) {
+            // A URL we cannot parse is not our endpoint; never guess true here,
+            // or the token would leak to whatever host it actually points at.
+            return false;
+        }
+    };
+
+    const currentCsrfToken = function () {
+        return typeof window.lotgd_async_csrf_token === 'string' ? window.lotgd_async_csrf_token : '';
+    };
+
+    const installCsrfHeader = function () {
+        if (window.__lotgdAsyncCsrfHooked) {
+            return;
+        }
+        window.__lotgdAsyncCsrfHooked = true;
+
+        if (typeof window.fetch === 'function') {
+            const nativeFetch = window.fetch;
+            window.fetch = function (input, init) {
+                const url = typeof input === 'string' ? input : (input && input.url);
+                const token = currentCsrfToken();
+                if (token && isAsyncEndpoint(url)) {
+                    init = Object.assign({}, init);
+                    const headers = new Headers((init && init.headers) || (input && input.headers) || {});
+                    headers.set(CSRF_HEADER, token);
+                    init.headers = headers;
+                }
+                return nativeFetch.call(this, input, init);
+            };
+        }
+
+        if (window.XMLHttpRequest && XMLHttpRequest.prototype) {
+            const nativeOpen = XMLHttpRequest.prototype.open;
+            const nativeSend = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.open = function (method, url) {
+                this.__lotgdAsyncTarget = isAsyncEndpoint(url);
+                return nativeOpen.apply(this, arguments);
+            };
+            XMLHttpRequest.prototype.send = function (body) {
+                const token = currentCsrfToken();
+                if (this.__lotgdAsyncTarget && token) {
+                    try {
+                        this.setRequestHeader(CSRF_HEADER, token);
+                    } catch (error) {
+                        // Header already sent or the request is in a state that
+                        // forbids it. The server is in log mode, so a missed
+                        // header is a log line, not a broken page.
+                        lotgdDebugSafe('could not attach the async CSRF header', error);
+                    }
+                }
+                return nativeSend.call(this, body);
+            };
+        }
+    };
+
+    installCsrfHeader();
+
     enforceRequestUri();
     jaxon.config.statusMessages = false;
     jaxon.config.waitCursor = true;

@@ -206,6 +206,7 @@ class Motd
         }
         $output = Output::getInstance();
         $output->output('<form action="motd.php?op=save&id=' . (int)$id . '" method="post">', true);
+        $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT));
         $defaults = [
             'motdtitle'    => $title,
             'motdbody'     => $body,
@@ -235,6 +236,7 @@ class Motd
         $charset  = $settings->getSetting('charset', 'UTF-8');
         $output->output('`$NOTE:`^ Polls cannot be edited after creation.`0`n`n');
         $output->rawOutput("<form action='motd.php?op=savenew' method='post'>");
+        $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT));
         $output->output('Subject: ');
         $output->rawOutput("<input type='text' size='50' name='motdtitle' value=\"" . HTMLEntities(stripslashes((string)$title), ENT_COMPAT, $charset) . "\"><br/>");
         $output->output('Body:`n');
@@ -377,7 +379,18 @@ class Motd
             $del    = Translator::translateInline('Del');
             $conf   = Translator::translateInline('Are you sure you wish to delete this entry?');
             $editop = $poll ? 'addpoll' : 'add';
-            $output->rawOutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | <a href='motd.php?op=del&id=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
+            // Edit stays a link: it only renders a form. Delete does not --
+            // it used to be a plain GET, so anything that made the browser
+            // follow a crafted URL removed the entry. It is a POST carrying the
+            // editing token now, rendered as a button in the same bracketed row.
+            $confJs = json_encode($conf, JSON_HEX_APOS | JSON_HEX_QUOT);
+            $output->rawOutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | ");
+            $output->rawOutput(
+                "<form action='motd.php?op=del&id=$id' method='POST' style='display:inline'"
+                . " onsubmit='return confirm($confJs);'>"
+                . Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT)
+                . "<button type='submit' class='motd-del'>$del</button></form> ]"
+            );
             Nav::add('', "motd.php?op=$editop&id=$id");
             Nav::add('', "motd.php?op=del&id=$id");
         }
