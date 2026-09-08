@@ -496,6 +496,16 @@ function lotgd_async_authorization_policy(array $requestContext): array
         ];
     }
 
+    // Evaluated once, before the branches, so the pre-login passkey pair is
+    // observed too. It never reaches the authenticated branch below, so a check
+    // that lived only in there would have collected no evidence at all about
+    // the callables it was added for.
+    $csrf = lotgd_async_csrf_state($requestContext);
+    if (!$csrf['valid'] || $csrf['observed']) {
+        $handler = ($requestContext['class'] ?? '') . '::' . ($requestContext['method'] ?? '');
+        error_log(sprintf('Jaxon csrf %s [handler=%s mode=%s]', $csrf['reason'], $handler, \Lotgd\Async\CsrfMode::mode()));
+    }
+
     if (lotgd_async_is_authenticated()) {
         if (!lotgd_async_has_required_privileges($requestContext)) {
             return [
@@ -506,19 +516,13 @@ function lotgd_async_authorization_policy(array $requestContext): array
             ];
         }
 
-        $csrf = lotgd_async_csrf_state($requestContext);
-        if (!$csrf['valid'] || ($csrf['observed'] ?? false)) {
-            $handler = ($requestContext['class'] ?? '') . '::' . ($requestContext['method'] ?? '');
-            error_log(sprintf('Jaxon csrf %s [handler=%s mode=%s]', $csrf['reason'], $handler, \Lotgd\Async\CsrfMode::mode()));
-
-            if (\Lotgd\Async\CsrfMode::isEnforced() && !$csrf['valid']) {
-                return [
-                    'allowed' => false,
-                    'status' => 403,
-                    'error' => 'csrf_invalid',
-                    'message' => 'Forbidden',
-                ];
-            }
+        if (\Lotgd\Async\CsrfMode::isEnforced() && !$csrf['valid']) {
+            return [
+                'allowed' => false,
+                'status' => 403,
+                'error' => 'csrf_invalid',
+                'message' => 'Forbidden',
+            ];
         }
 
         return ['allowed' => true, 'status' => 200];

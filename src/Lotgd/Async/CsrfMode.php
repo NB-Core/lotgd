@@ -33,8 +33,14 @@ namespace Lotgd\Async;
  * release shipped on LOG for exactly that reason and would have logged a
  * failure on every poll. The client now sets `same-origin`, the Jaxon runtime
  * is served from the tree rather than a CDN, and the header was confirmed to
- * arrive in a real browser against those files, so the shipped default is
- * ENFORCE.
+ * arrive in a real browser against those files.
+ *
+ * The shipped default is still LOG, for a second reason that the transport
+ * check does not address: the client is inlined into each page, so a page
+ * rendered before an upgrade keeps the old one — no `same-origin`, and no
+ * recovery handler. Enforcing at upgrade time would strand those tabs. The
+ * promotion to ENFORCE belongs to the operator, once the tabs have aged out
+ * and `error_log` is quiet.
  *
  * Static holder rather than a variable for the same reason as
  * {@see DebugMode}: `async/common/settings.php` is pulled in with
@@ -52,7 +58,7 @@ final class CsrfMode
     /** Check it and refuse the request when it does not match. */
     public const ENFORCE = 'enforce';
 
-    private static string $mode = self::ENFORCE;
+    private static string $mode = self::LOG;
 
     /**
      * Unknown values fall back to LOG rather than to OFF or ENFORCE: a typo in

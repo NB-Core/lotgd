@@ -159,8 +159,11 @@ that reason and would have recorded a failure on every poll.
 `async/js/lotgd.jaxon.js` now sets `same-origin`, the Jaxon runtime is served
 from `async/js/vendor/jaxon` rather than a CDN so it can be read and pinned,
 and the header was confirmed to arrive in a real browser against those files.
-`csrf_mode` therefore defaults to `enforce`; `log` remains for installations
-carrying local changes to the async client.
+`csrf_mode` nonetheless still defaults to `log`, for a second reason the
+transport check does not address: the client is inlined into each page, so a
+page rendered before an upgrade keeps the old one — no `same-origin`, and no
+recovery handler. Promotion to `enforce` belongs to the operator, once open
+tabs have aged out and the log is quiet.
 
 **It is a defence in depth, not a plugged hole.** `common.php` configures the
 session cookie before the AJAX branch and defaults it to `SameSite=Lax`, so a

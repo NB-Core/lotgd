@@ -195,10 +195,10 @@ modules.
     `X-LotGD-Csrf` header. Existing installs pick the default up automatically,
     because the loader merges `config/async.settings.php` over the shipped
     `.dist` defaults, so **no action is required to upgrade**.
-  - **Now ships as `enforce`.** The previous release shipped `log` because the
-    transport could not be checked. It can now: the Jaxon client runtime is
-    served from `async/js/vendor/jaxon` instead of a CDN, and the header was
-    confirmed to reach the server in a real browser against those files.
+  - **Still ships as `log`**, and the reason has changed. The transport is now
+    verified — the Jaxon client runtime is served from `async/js/vendor/jaxon`
+    instead of a CDN, and the header was confirmed to reach the server in a
+    real browser against those files. What remains is the upgrade itself.
   - That check found a real defect, which is why the earlier release would have
     logged a failure on every poll: Jaxon defaults `httpRequestOptions.mode` to
     `no-cors`, under which the browser silently drops every non-safelisted
@@ -207,9 +207,19 @@ modules.
   - Set `'csrf_mode' => 'log'` if you carry local modifications to the async
     client and want evidence first. Failures are recorded as
     `Jaxon csrf <reason>` in `error_log`, naming the handler.
-  - A browser tab left open across the upgrade holds an older inlined client.
-    Its poll is refused once, and the client then stops polling and reloads the
-    page a single time to pick up a fresh token.
+  - A browser tab left open across the upgrade holds the **old** inlined client,
+    which has neither the `same-origin` fix nor the recovery handler added here.
+    Enforcing immediately would leave those tabs polling into a 403 with nothing
+    but a manual reload to fix it, which is why this stays on `log` for now.
+  - **When to promote:** deploy, let open tabs age out (any page load delivers
+    the new client), confirm `error_log` carries no `Jaxon csrf` lines, then set
+    `'csrf_mode' => 'enforce'` at a time of your choosing. Clients rendered
+    after the upgrade recover on their own: a refusal stops the polling loop and
+    reloads the page once, guarded in `sessionStorage` so a persistent failure
+    cannot turn into a reload loop.
+  - Lines naming `TwoFactorAuthPasskey` are the deliberately observe-only
+    pre-login pair and never refuse anything; other handlers are the ones to act
+    on.
   - Gameplay is unaffected in every mode: async carries commentary, mail and
     timeout polling, never a game action.
 

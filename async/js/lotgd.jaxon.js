@@ -136,10 +136,26 @@
         if (!response || response.status !== 403 || !isAsyncEndpoint(url)) {
             return;
         }
-        if (window.__lotgdAsyncCsrfReloaded) {
+        // The guard has to outlive the reload it triggers. On `window` alone it
+        // is discarded by the reload, so a failure that persists across page
+        // loads -- a proxy stripping the header, say -- would reload, poll,
+        // fail, reload again, forever. That is worse than the stale tab this
+        // recovery exists for.
+        //
+        // sessionStorage is scoped to the tab and survives the reload. If it is
+        // unavailable (private mode, storage disabled) the fallback is to not
+        // reload at all: a tab that stops polling is recoverable by hand, a
+        // reload loop is not.
+        var guardKey = 'lotgd.async.csrfReloaded';
+        try {
+            if (window.sessionStorage.getItem(guardKey)) {
+                return;
+            }
+            window.sessionStorage.setItem(guardKey, '1');
+        } catch (error) {
+            lotgdDebugSafe('async token rejected, but sessionStorage is unavailable; not reloading', error);
             return;
         }
-        window.__lotgdAsyncCsrfReloaded = true;
 
         if (pollingRootInterval() !== null) {
             window.clearInterval(pollingRootInterval());

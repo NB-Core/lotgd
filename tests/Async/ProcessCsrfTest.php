@@ -197,6 +197,43 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
+         * The wiring, not the function.
+         *
+         * The first version of this test called lotgd_async_csrf_state()
+         * directly and passed, while the policy only reached it inside its
+         * authenticated branch -- which a pre-login passkey call never enters.
+         * The evidence this pair was added to collect would never have been
+         * written. Assert through the entry point instead.
+         */
+        public function testPasskeyPathIsObservedThroughThePolicy(): void
+        {
+            // Capture what the policy writes. Calling the state function again
+            // afterwards would prove nothing: it reports the same thing whether
+            // or not the policy ever reached it, which is precisely how the
+            // first version of this test passed against the broken wiring.
+            $log = tempnam(sys_get_temp_dir(), 'lotgd-csrf-log-');
+            self::assertIsString($log);
+            $previous = (string) ini_get('error_log');
+            ini_set('error_log', $log);
+
+            try {
+                $policy = lotgd_async_authorization_policy([
+                    'class' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
+                    'method' => 'beginAuthentication',
+                ]);
+            } finally {
+                ini_set('error_log', $previous);
+            }
+
+            $written = (string) file_get_contents($log);
+            unlink($log);
+
+            self::assertTrue($policy['allowed'], 'the login path must not be blocked');
+            self::assertStringContainsString('Jaxon csrf missing', $written);
+            self::assertStringContainsString('TwoFactorAuthPasskey::beginAuthentication', $written);
+        }
+
+        /**
          * Not refusing is not the same as not looking: the state function
          * reports what it saw, which is what reaches error_log.
          */
@@ -226,13 +263,17 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
-         * The shipped default. Verified in a browser against the vendored
-         * runtime before it was changed from log.
+         * The shipped default stays 'log' through this release.
+         *
+         * The transport is verified, but the client is inlined into each page,
+         * so a tab rendered before an upgrade keeps a client with neither the
+         * same-origin fix nor the recovery handler. Enforcing at upgrade time
+         * would strand it. Promotion is the operator's call.
          */
-        public function testEnforceIsTheDefaultMode(): void
+        public function testLogRemainsTheShippedDefault(): void
         {
             self::assertSame(
-                'enforce',
+                'log',
                 (string) (require dirname(__DIR__, 2) . '/config/async.settings.php.dist')['csrf_mode']
             );
         }
