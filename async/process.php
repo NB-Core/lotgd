@@ -215,6 +215,16 @@ function lotgd_async_is_allowed_callable(array $requestContext): bool
     $className = $requestContext['class'] ?? '';
     $methodName = $requestContext['method'] ?? '';
 
+    // Debug seams that are excluded from the Jaxon export in
+    // async/common/jaxon.php. Repeated here so the refusal does not depend on
+    // the registration options staying correct.
+    static $deniedMethods = [
+        'Lotgd.Async.Handler.Commentary' => ['test'],
+    ];
+    if (in_array($methodName, $deniedMethods[$className] ?? [], true)) {
+        return false;
+    }
+
     if ($className !== 'Lotgd.Async.Handler.TwoFactorAuthPasskey') {
         return true;
     }
@@ -225,6 +235,64 @@ function lotgd_async_is_allowed_callable(array $requestContext): bool
         'beginAuthentication',
         'verifyAuthentication',
     ], true);
+}
+
+/**
+ * Superuser bits a callable requires beyond a valid login.
+ *
+ * Authentication is not authorization. The pages that trigger these calls gate
+ * themselves — bans.php:24 runs SuAccess::check(SU_EDIT_BANS) — but the async
+ * entry point reaches the handler directly, so the page-level gate never runs.
+ * Anything listed here is refused unless the account carries the bits.
+ *
+ * Constant names rather than values: constants.php is loaded by common.php, and
+ * this file is also required standalone (LOTGD_ASYNC_PROCESS_TEST_MODE), so the
+ * value is resolved when the request is evaluated rather than when this file is
+ * parsed. An unresolvable name denies, see lotgd_async_has_required_privileges().
+ *
+ * @return array<string, array<string, string>>
+ */
+function lotgd_async_required_superuser_bits(): array
+{
+    return [
+        'Lotgd.Async.Handler.Bans' => [
+            'affectedUsers' => 'SU_EDIT_BANS',
+        ],
+    ];
+}
+
+/**
+ * Check the account's superuser bits against the requirement for this callable.
+ *
+ * Deliberately a plain bitmask test rather than SuAccess::check(): that helper
+ * renders a page, calls pageHeader()/pageFooter() and, on failure, zeroes the
+ * character's gold and hitpoints and posts to the news. Reaching it from a JSON
+ * endpoint would turn an unauthorized async call into character destruction.
+ *
+ * @param array{class:string,method:string} $requestContext
+ */
+function lotgd_async_has_required_privileges(array $requestContext): bool
+{
+    global $session;
+
+    $required = lotgd_async_required_superuser_bits();
+    $className = $requestContext['class'] ?? '';
+    $methodName = $requestContext['method'] ?? '';
+
+    $constantName = $required[$className][$methodName] ?? null;
+    if ($constantName === null) {
+        return true;
+    }
+
+    if (!defined($constantName)) {
+        error_log("Jaxon authorization: $constantName is not defined; denying $className.$methodName");
+
+        return false;
+    }
+
+    $bits = (int) constant($constantName);
+
+    return ($bits & (int) ($session['user']['superuser'] ?? 0)) !== 0;
 }
 
 /**
@@ -377,10 +445,22 @@ function lotgd_async_authorization_policy(array $requestContext): array
     }
 
     if (lotgd_async_is_authenticated()) {
+        if (!lotgd_async_has_required_privileges($requestContext)) {
+            return [
+                'allowed' => false,
+                'status' => 403,
+                'error' => 'insufficient_privileges',
+                'message' => 'Forbidden',
+            ];
+        }
+
         return ['allowed' => true, 'status' => 200];
     }
 
-    if (lotgd_async_is_unauth_allowlisted($requestContext)) {
+    // The privilege check runs here too: a callable that is both unauth
+    // allowlisted and privilege-gated would be a contradiction, and this makes
+    // that contradiction deny rather than grant.
+    if (lotgd_async_is_unauth_allowlisted($requestContext) && lotgd_async_has_required_privileges($requestContext)) {
         return ['allowed' => true, 'status' => 200];
     }
 

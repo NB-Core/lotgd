@@ -92,6 +92,7 @@ These rules apply to all directories unless a more specific file overrides them.
 
 - New Ajax features should use Jaxon. Respect configured rate limits (HTTP 429 on excess).
 - Validate session/auth for async endpoints; avoid exposing privileged actions via unauthenticated calls.
+- Authentication is not authorization. A handler is reached directly, so the `SuAccess::check()` on the page that renders its trigger never runs. A handler that needs rights needs an entry in `lotgd_async_required_superuser_bits()` in `async/process.php`. Do not call `SuAccess::check()` from a handler — it renders a page and kills the character on failure.
 - Prefer small payloads and incremental updates (mail/commentary patterns) over full-page refreshes.
 
 ### Data Access

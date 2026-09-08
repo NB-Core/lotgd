@@ -117,10 +117,24 @@ be trusted. It does not apply to:
 - **Pages that opt out.** The check sits inside the logged-in branch, and pages
   defining `OVERRIDE_FORCED_NAV` skip it. `ALLOW_ANONYMOUS` pages are reached
   without it entirely.
-- **Async endpoints.** `async/common/bootstrap.php` runs the same check, but a
-  Jaxon call carries its arguments in the request body, so the note about
-  request bodies applies there too. `async/process.php` enforces its own
-  callable allowlist; that is what constrains async, not the nav list.
+- **Async endpoints.** `async/common/bootstrap.php` calls `doForcedNav()`, but
+  `async/process.php` defines `OVERRIDE_FORCED_NAV` first, and with that flag
+  set both branches of the check are no-ops: the allowlist is neither consulted
+  nor consumed, and there is no `badnav.php` redirect. An async request is
+  authenticated by the session cookie alone. What constrains it is
+  `async/process.php` itself — the callable allowlist, the default-deny check
+  for unauthenticated callers, and the per-callable superuser requirements in
+  `lotgd_async_required_superuser_bits()`. A Jaxon call also carries its
+  arguments in the request body, so the note about request bodies applies here
+  too.
+
+  A handler is not reached through the page that renders its trigger, so a
+  page-level `SuAccess::check()` does not protect it. Anything a handler does
+  that requires rights needs an entry in that registry. Note that
+  `SuAccess::check()` cannot be used from a handler: it renders a page and, on
+  failure, zeroes the character's gold and hitpoints and posts to the news —
+  reaching it from a JSON endpoint would turn an unauthorized call into
+  character destruction. Compare the bits directly instead.
 - **Values the application itself puts into a link.** The allowlist grows from
   rendered navs, so a request-derived value that is interpolated into a
   `Nav::add()` URL widens it. Normalize such values (cast, `rawurlencode()`, or
