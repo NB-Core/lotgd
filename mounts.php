@@ -18,6 +18,7 @@ use Lotgd\Mounts;
 // translator ready
 use Lotgd\Output;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Security\Csrf;
 
 require_once __DIR__ . "/common.php";
 
@@ -58,18 +59,10 @@ if ($op == "xml") {
 
 SuAccess::check(SU_EDIT_MOUNTS);
 
-if (!isset($session['mount_editor_csrf']) || !is_string($session['mount_editor_csrf'])) {
-    $session['mount_editor_csrf'] = bin2hex(random_bytes(32));
-}
-$csrfToken = $session['mount_editor_csrf'];
+$csrfToken = Csrf::token(Csrf::SCOPE_MOUNT_EDITOR);
 
 if (in_array($op, ['activate', 'deactivate', 'del', 'give', 'save'], true)) {
-    $postedToken = Http::post('csrf_token');
-    if (
-        ($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST'
-        || !is_string($postedToken)
-        || !hash_equals($csrfToken, $postedToken)
-    ) {
+    if (!Csrf::validatePostRequest(Csrf::SCOPE_MOUNT_EDITOR)) {
         error_log('Denied mount editor state change: invalid method or CSRF token');
         $op = '';
         Http::set('op', '');
@@ -377,7 +370,7 @@ if ($op == "") {
         if ($subop == "module") {
             $module = Http::get("module");
             $output->rawOutput("<form action='mounts.php?op=save&subop=module&module=" . rawurlencode((string) $module) . "' method='POST'>");
-            $output->rawOutput("<input type='hidden' name='id' value='$id'><input type='hidden' name='csrf_token' value='" . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . "'>");
+            $output->rawOutput("<input type='hidden' name='id' value='$id'>" . Csrf::hiddenField(Csrf::SCOPE_MOUNT_EDITOR));
             module_objpref_edit("mounts", $module, $id);
             $output->rawOutput("</form>");
             Nav::add("", "mounts.php?op=save&subop=module&id=$id&module=$module");
@@ -515,7 +508,7 @@ function mountform($mount)
 
     $output->rawOutput("<form action='mounts.php?op=save' method='POST'>");
     $output->rawOutput("<input type='hidden' name='id' value='" . (int) $mount['mountid'] . "'>");
-    $output->rawOutput("<input type='hidden' name='csrf_token' value='" . htmlspecialchars($session['mount_editor_csrf'], ENT_QUOTES, 'UTF-8') . "'>");
+    $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_MOUNT_EDITOR));
     $output->rawOutput("<input type='hidden' name='mount[mountactive]' value=\"" . $mount['mountactive'] . "\">");
     Nav::add("", "mounts.php?op=save&id={$mount['mountid']}");
     $output->rawOutput("<table>");

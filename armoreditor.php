@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\SuAccess;
 use Lotgd\Translator;
+use Lotgd\Security\Csrf;
 
 require_once __DIR__ . '/common.php';
 
@@ -46,11 +47,7 @@ if (is_string($postedOp) && in_array($postedOp, ['save', 'del'], true)) {
     $op = $postedOp;
 }
 
-if (!isset($session['armor_editor_csrf']) || !is_string($session['armor_editor_csrf']) || $session['armor_editor_csrf'] === '') {
-    $session['armor_editor_csrf'] = bin2hex(random_bytes(32));
-}
-$csrfToken = $session['armor_editor_csrf'];
-$csrfField = htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8');
+$csrfField = Csrf::escapedToken(Csrf::SCOPE_ARMOR_EDITOR);
 
 SuperuserNav::render();
 Nav::add('Armor Editor');
@@ -94,8 +91,7 @@ if ($op === 'edit' || $op === 'add') {
         $output->rawOutput('</form>');
     }
 } elseif ($op === 'del' || $op === 'save') {
-    $postedCsrf = Http::post('csrf_token');
-    if (!is_string($postedCsrf) || !hash_equals($csrfToken, $postedCsrf)) {
+    if (!Csrf::validatePost(Csrf::SCOPE_ARMOR_EDITOR)) {
         debuglog('Rejected armor editor state change with an invalid CSRF token.');
         http_response_code(400);
     } elseif ($op === 'del') {

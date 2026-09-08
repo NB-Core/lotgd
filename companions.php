@@ -16,6 +16,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Translator;
 use Lotgd\Output;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Security\Csrf;
 
 // addnews ready
 // mail ready
@@ -169,8 +170,7 @@ if ($op == "deactivate" && $id !== null) {
     } elseif ($subop == "module") {
         // Save modules settings
         $module = Http::get("module");
-        $post = Http::allPost();
-        unset($post['csrf_token']);
+        $post = Csrf::stripFrom(Http::allPost());
         reset($post);
         foreach ($post as $key => $val) {
             HookHandler::setObjPref("companions", $id, $key, $val, $module);
@@ -262,9 +262,8 @@ if ($op == "") {
         $subop = Http::get("subop");
         if ($subop == "module") {
             $module = Http::get("module");
-            $csrfToken = htmlspecialchars(companionEditorCsrfToken(), ENT_QUOTES, 'UTF-8');
             $output->rawOutput("<form action='companions.php?op=save&subop=module&id=$id&module=$module' method='POST'>");
-            $output->rawOutput("<input type='hidden' name='csrf_token' value='$csrfToken'>");
+            $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_COMPANION_EDITOR));
             HookHandler::objprefEdit("companions", $module, $id);
             $output->rawOutput("</form>");
             Nav::add("", "companions.php?op=save&subop=module&id=$id&module=$module");
@@ -368,11 +367,10 @@ function companionform($companion)
         $companion['allowintrain'] = 0;
     }
 
-    $csrfToken = htmlspecialchars(companionEditorCsrfToken(), ENT_QUOTES, 'UTF-8');
     $output->rawOutput("<form action='companions.php' method='POST'>");
     $output->rawOutput("<input type='hidden' name='op' value='save'>");
     $output->rawOutput("<input type='hidden' name='id' value='" . (int) $companion['companionid'] . "'>");
-    $output->rawOutput("<input type='hidden' name='csrf_token' value='$csrfToken'>");
+    $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_COMPANION_EDITOR));
     $output->rawOutput("<input type='hidden' name='companion[companionactive]' value=\"" . $companion['companionactive'] . "\">");
     Nav::add("", "companions.php?op=save&id={$companion['companionid']}");
     $output->rawOutput("<table width='100%'>");
@@ -578,37 +576,31 @@ function companionEditorNormalizeFields(array $fields): ?array
     return $params === [] ? null : ['params' => $params, 'types' => $types];
 }
 
-/** Return the per-session CSRF token used by companion editor forms. */
+/**
+ * Return the per-session CSRF token used by companion editor forms.
+ *
+ * Kept as a named function because companion modules may call it.
+ */
 function companionEditorCsrfToken(): string
 {
-    global $session;
-    if (!isset($session['companion_editor_csrf']) || !is_string($session['companion_editor_csrf'])) {
-        $session['companion_editor_csrf'] = bin2hex(random_bytes(32));
-    }
-
-    return $session['companion_editor_csrf'];
+    return Csrf::token(Csrf::SCOPE_COMPANION_EDITOR);
 }
 
 /** Return whether the current request is POST and carries the session CSRF token. */
 function companionEditorValidPostRequest(): bool
 {
-    $provided = Http::post('csrf_token');
-
-    return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
-        && is_string($provided)
-        && hash_equals(companionEditorCsrfToken(), $provided);
+    return Csrf::validatePostRequest(Csrf::SCOPE_COMPANION_EDITOR);
 }
 
 /** Render a POST-only, CSRF-protected button for a state-changing companion action. */
 function companionEditorActionButton(string $operation, int $id, string $label): void
 {
     $output = Output::getInstance();
-    $token = htmlspecialchars(companionEditorCsrfToken(), ENT_QUOTES, 'UTF-8');
     $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
     $output->rawOutput("<form action='companions.php' method='POST' style='display:inline'>");
     $output->rawOutput("<input type='hidden' name='op' value='$operation'>");
     $output->rawOutput("<input type='hidden' name='id' value='$id'>");
-    $output->rawOutput("<input type='hidden' name='csrf_token' value='$token'>");
+    $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_COMPANION_EDITOR));
     $output->rawOutput("<button type='submit' class='button'>$safeLabel</button> | </form>");
 }
 

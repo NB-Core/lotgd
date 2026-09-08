@@ -54,6 +54,16 @@ $passkeyRuntimeMethods = [
 $jaxon->register(Jaxon::CALLABLE_DIR, __DIR__ . '/../../src/Lotgd/Async/Handler', [
     'namespace' => 'Lotgd\\Async\\Handler',
     'classes' => [
+        // A debug echo that reports "AJAX test successful" into the notify
+        // element. Useful locally, but it has no caller and no business being
+        // invokable on a production install.
+        'Lotgd\\Async\\Handler\\Commentary' => [
+            'functions' => [
+                'test' => [
+                    'excluded' => true,
+                ],
+            ],
+        ],
         'Lotgd\\Async\\Handler\\TwoFactorAuthPasskey' => [
             'export' => [
                 'only' => $passkeyRuntimeMethods,

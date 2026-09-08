@@ -9,6 +9,12 @@ This project aims to preserve legacy compatibility while moving to a modern stac
 
 ### Current Deprecations
 
+- Per-page CSRF session keys (`$session['weapon_editor_csrf']` and its six siblings)
+  - Status: Read for compatibility in 2.x, no longer written
+  - Replacement: `Lotgd\Security\Csrf`, which stores tokens under `$session['csrf'][<scope>]`
+  - Reason: Seven pages had grown their own copy of the same token recipe, each slightly different — one used 16 bytes instead of 32, one skipped the empty-string check, one generated the token in a different file from the one that validated it. None was wrong; the risk was the eighth copy.
+  - Migration: Call `Csrf::hiddenField()` / `Csrf::escapedToken()` where the form is rendered and `Csrf::validatePost()` / `Csrf::validatePostRequest()` where it is handled. A token stored under the old flat key is still honoured and is moved to the new location the next time the form renders, so sessions survive the deploy. The fallback is removed in the next major release.
+
 - Legacy template system (`templates/*.htm`)  
   - Status: Deprecated, still supported in 2.x  
   - Replacement: Twig templates under `templates_twig/<skin>/`  

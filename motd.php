@@ -17,6 +17,7 @@ use Lotgd\Page\Header;
 use Lotgd\Settings;
 use Lotgd\Translator;
 use Lotgd\Nltoappon;
+use Lotgd\Security\Csrf;
 
 // addnews ready
 // translator ready
@@ -47,18 +48,14 @@ if ($op == "vote") {
     $motditem = Motd::validatePollVoteIdentifier(Http::post('motditem'));
     $choice = Motd::validatePollVoteChoice(Http::post('choice'));
     $account = (int)($session['user']['acctid'] ?? 0);
-    $postedCsrf = Http::post('csrf_token');
-    $expectedCsrf = $session['motd_vote_csrf'] ?? null;
-
+    // The token check is its own clause: folded into the value checks it was
+    // hard to see which of the eight conditions was the security one.
     if (
-        $motditem === null
+        !Csrf::validatePost(Csrf::SCOPE_MOTD_VOTE)
+        || $motditem === null
         || $choice === null
         || $account <= 0
         || empty($session['user']['loggedin'])
-        || !is_string($postedCsrf)
-        || !is_string($expectedCsrf)
-        || $expectedCsrf === ''
-        || !hash_equals($expectedCsrf, $postedCsrf)
     ) {
         debuglog('Rejected invalid or unauthorized MoTD poll vote request.');
         http_response_code(400);

@@ -926,13 +926,7 @@ function twofactorauth_resolve_resume_target(string $target, array $allowedNavs)
  */
 function twofactorauth_csrf_token(): string
 {
-    global $session;
-
-    if (!isset($session['twofactorauth_csrf']) || !is_string($session['twofactorauth_csrf']) || $session['twofactorauth_csrf'] === '') {
-        $session['twofactorauth_csrf'] = bin2hex(random_bytes(16));
-    }
-
-    return (string) $session['twofactorauth_csrf'];
+    return \Lotgd\Security\Csrf::token(\Lotgd\Security\Csrf::SCOPE_TWOFACTORAUTH);
 }
 
 /**
@@ -1172,13 +1166,7 @@ function twofactorauth_read_json_request_body(): array
  */
 function twofactorauth_extract_request_csrf_token(): string
 {
-    $requestBody = twofactorauth_read_json_request_body();
-    $csrf = (string) ($requestBody['csrf_token'] ?? '');
-    if ($csrf !== '') {
-        return $csrf;
-    }
-
-    return (string) Http::post('csrf_token');
+    return \Lotgd\Security\Csrf::requestToken(twofactorauth_read_json_request_body());
 }
 
 /**
@@ -1326,7 +1314,7 @@ function twofactorauth_handle_begin_passkey_registration(): void
 
         twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
-        if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
+        if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_TWOFACTORAUTH, $csrf)) {
             twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'post-csrf', $acctId);
             twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-output', $acctId);
             twofactorauth_output_json(twofactorauth_setup_async_error_payload('csrf'));
@@ -1392,7 +1380,7 @@ function twofactorauth_handle_finish_passkey_registration(): void
 
         twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-csrf', $acctId);
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
-        if (!hash_equals(twofactorauth_csrf_token(), $csrf)) {
+        if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_TWOFACTORAUTH, $csrf)) {
             twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-csrf', $acctId);
             twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-output', $acctId);
             twofactorauth_output_json(twofactorauth_setup_async_error_payload('csrf'));
@@ -1478,7 +1466,7 @@ function twofactorauth_handle_begin_passkey_auth(): void
     }
 
     $csrf = twofactorauth_extract_request_csrf_token();
-    if ($csrf === '' || !hash_equals(twofactorauth_csrf_token(), $csrf)) {
+    if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_TWOFACTORAUTH, $csrf)) {
         twofactorauth_output_json(twofactorauth_challenge_async_error_payload('csrf'));
 
         return;
@@ -1532,7 +1520,7 @@ function twofactorauth_handle_passkey_verification(): void
 
         $requestBody = twofactorauth_read_json_request_body();
         $csrf = (string) ($requestBody['csrf_token'] ?? '');
-        if ($csrf === '' || !hash_equals(twofactorauth_csrf_token(), $csrf)) {
+        if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_TWOFACTORAUTH, $csrf)) {
             twofactorauth_output_json(twofactorauth_challenge_async_error_payload('csrf'));
 
             return;
