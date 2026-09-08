@@ -126,7 +126,7 @@ if ($op == "") {
         $output->rawOutput("</label>");
         $output->rawOutput("<select name='to' id='bank_to' class='input'>");
         foreach ($matches as $row) {
-            $label = HTMLEntities(Sanitize::fullSanitize($row['name']), ENT_COMPAT, $charset);
+            $label = HTMLEntities(Sanitize::stripAllColorCodes($row['name']), ENT_COMPAT, $charset);
             $value = HTMLEntities($row['login'], ENT_COMPAT, $charset);
             $output->rawOutput("<option value='$value'>$label</option>");
         }

@@ -118,7 +118,32 @@ class Sanitize
     }
 
     /**
+     * Remove all colour codes from a string, including text formatting.
+     *
+     * Unlike colorSanitize(), which keeps formatting markers, this strips every
+     * backtick sequence. It is display sanitization only: the result is not
+     * escaped for SQL, HTML or any other context.
+     *
+     * @param string|null $in Input value
+     *
+     * @return string Value without colour codes
+     */
+    public static function stripAllColorCodes(?string $in): string
+    {
+        if ($in == '' || $in === null) {
+            return '';
+        }
+        $out = preg_replace('/[`]./', '', $in);
+        return $out;
+    }
+
+    /**
      * Remove all colour codes from a string.
+     *
+     * @deprecated 2.x Use stripAllColorCodes(). The old name suggested general
+     *             purpose sanitization and led to values being treated as safe
+     *             for SQL, which this has never provided. Kept as an alias so
+     *             existing modules keep working.
      *
      * @param string|null $in Input value
      *
@@ -126,11 +151,7 @@ class Sanitize
      */
     public static function fullSanitize(?string $in): string
     {
-        if ($in == '' || $in === null) {
-            return '';
-        }
-        $out = preg_replace('/[`]./', '', $in);
-        return $out;
+        return self::stripAllColorCodes($in);
     }
 
     /**

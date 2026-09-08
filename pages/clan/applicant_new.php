@@ -22,12 +22,12 @@ if ($apply == 1) {
     $ocn = Http::post('clanname');
     $ocs = Http::post('clanshort');
     $clanname = stripslashes($ocn);
-    $clanname = Sanitize::fullSanitize($clanname);
+    $clanname = Sanitize::stripAllColorCodes($clanname);
     if ($settings->getSetting('clannamesanitize', 0)) {
         $clanname = preg_replace("'[^[:alpha:] \\'-]'", "", $clanname);
     }
     Http::postSet('clanname', $clanname);
-    $clanshort = Sanitize::fullSanitize($ocs);
+    $clanshort = Sanitize::stripAllColorCodes($ocs);
     if ($settings->getSetting('clanshortnamesanitize', 0)) {
         $clanshort = preg_replace("'[^[:alpha:]]'", "", $clanshort);
     }

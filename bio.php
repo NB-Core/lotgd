@@ -59,7 +59,7 @@ if ($target = Database::fetchAssoc($result)) {
     $id = $target['acctid'];
     $target['return_link'] = $return;
 
-    Header::pageHeader("Character Biography: %s", Sanitize::fullSanitize($target['name']));
+    Header::pageHeader("Character Biography: %s", Sanitize::stripAllColorCodes($target['name']));
 
     $translator->setSchema("nav");
     Nav::add("Return");

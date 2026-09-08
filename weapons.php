@@ -150,7 +150,7 @@ if ($op == "") {
     $output->rawOutput("</table>");
     VillageNav::render();
 } elseif ($op == "buy") {
-    $id = Http::get("id");
+    $id = (int) Http::get("id");
     $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
     $result = Database::query($sql);
     if (Database::numRows($result) == 0) {

@@ -323,7 +323,7 @@ function renderRecipientSelection(
                 "<option value=\"" . htmlentities($candidate['login'], ENT_COMPAT, $charset) . "\">",
                 true
             );
-            $output->outputNotl('%s', Sanitize::fullSanitize($candidate['name']));
+            $output->outputNotl('%s', Sanitize::stripAllColorCodes($candidate['name']));
             if (($candidate['superuser'] & SU_GIVES_YOM_WARNING) && !($candidate['superuser'] & SU_OVERRIDE_YOM_WARNING)) {
                 $superusers[] = $candidate['login'];
             }

@@ -48,7 +48,9 @@ $apply_subj = array($apply_short, $session['user']['name']);
 
 $op = Http::get('op');
 
-$detail = Http::get('detail');
+// Normalized here because it reaches SQL, a cache key and generated URLs in
+// pages/clan/detail.php. A clan id is an integer; anything else is not one.
+$detail = (int) Http::get('detail');
 if ($detail > 0) {
         require_once __DIR__ . "/pages/clan/detail.php";
 } elseif ($op == "list") {

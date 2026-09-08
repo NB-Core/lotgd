@@ -83,7 +83,7 @@ if ($row['c'] == 1) {
                 $output->outputNotl(
                     "&#149; <a href='clan.php?op=apply&to=%s'>%s</a> %s`n",
                     $row['clanid'],
-                    Sanitize::fullSanitize(htmlentities($row['clanname'], ENT_COMPAT, $charset)),
+                    Sanitize::stripAllColorCodes(htmlentities($row['clanname'], ENT_COMPAT, $charset)),
                     $memb,
                     true
                 );

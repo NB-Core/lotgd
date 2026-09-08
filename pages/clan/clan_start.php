@@ -6,7 +6,7 @@ use Lotgd\Page\Header;
 use Lotgd\Nav;
 use Lotgd\Sanitize;
 
-    Header::pageHeader("Clan Hall for %s", Sanitize::fullSanitize($claninfo['clanname']));
+    Header::pageHeader("Clan Hall for %s", Sanitize::stripAllColorCodes($claninfo['clanname']));
     Nav::add("Clan Options");
 if ($op == "") {
         require("pages/clan/clan_default.php");

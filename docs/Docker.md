@@ -56,6 +56,26 @@ maintained, which is the more serious of the two cases — no Dependabot PR will
 ever appear for it, because the digest it would propose is the digest already
 pinned.
 
+That second case is checked automatically. `tests/Docker/check-image-pins.sh`
+reads the pins straight out of `Dockerfile` and `docker-compose.yml`, asks
+Docker Hub when each tag was last rebuilt, and **fails** when one has been
+quiet for more than 120 days (`STALE_AFTER_DAYS` overrides it, and is rejected
+unless it is a non-negative integer — a threshold the shell cannot compare
+would silently skip every staleness test). Drift is only
+reported, since Dependabot already proposes those. The
+`Image pin freshness` workflow runs it weekly, on demand, and on pull requests
+that touch the pins:
+
+```bash
+tests/Docker/check-image-pins.sh
+STALE_AFTER_DAYS=30 tests/Docker/check-image-pins.sh   # stricter, for a manual audit
+```
+
+Against the runtime this deployment used until 2026-09 the check printed
+`pin is current` **and** `STALE: not rebuilt for 455 days` — which is the whole
+problem in two lines: the pin was perfectly valid and the line behind it was
+dead.
+
 ### Status as of 2026-09
 
 | Pin | Upstream state | Action |
@@ -404,42 +424,25 @@ The same rules exist for non-Docker deployments in the repository's root
 
 The shipped Compose file deliberately sets no resource or log limits, because
 sensible values depend on the host. Both are worth adding for an
-internet-facing deployment. Put them in a small override file and start the
-stack with `-f docker-compose.yml -f docker-compose.limits.yml`:
+internet-facing deployment, and `docker-compose.limits.yml` provides a starting
+point:
 
-```yaml
-# docker-compose.limits.yml
-services:
-  web:
-    # Bound a runaway PHP process and cap container log growth.
-    pids_limit: 512
-    deploy:
-      resources:
-        limits:
-          cpus: "1.5"
-          memory: 768M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-  db:
-    pids_limit: 512
-    deploy:
-      resources:
-        limits:
-          memory: 1g
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
+```bash
+docker compose -f docker-compose.yml -f docker-compose.limits.yml up -d
 ```
 
-Compose v2 honours `deploy.resources.limits` outside Swarm. Start generously and
-tighten after watching `docker stats`; MySQL in particular fails in confusing
-ways when its buffer pool does not fit the limit. Omit the `logging` block if
-the Docker daemon already applies log rotation globally in `daemon.json`.
+It caps CPU, memory and process count for both services and rotates the
+container logs. A limit is a ceiling rather than a reservation, so the two
+services may add up to more than the host has. Start generously and tighten after watching `docker stats`;
+MySQL in particular fails in confusing ways when its buffer pool does not fit
+the limit. Drop the `logging` blocks if the Docker daemon already applies
+rotation globally in `daemon.json` — declaring a driver per service overrides
+that.
+
+Compose v2 honours `deploy.resources.limits` outside Swarm. Note that the
+process cap is declared as `deploy.resources.limits.pids` rather than the
+top-level `pids_limit`: Compose maps both onto the same field and refuses a
+model that sets them separately.
 
 Two further hardening options are available but are deployment decisions rather
 than defaults:

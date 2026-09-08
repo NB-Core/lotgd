@@ -641,7 +641,7 @@ class PageParts
             $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">" .
                 "<input type='hidden' name='cmd' value='_xclick'>" .
                 "<input type='hidden' name='business' value='logd@mightye.org'>" .
-                "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from " . Sanitize::fullSanitize($session['user']['name']) . "'>" .
+                "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from " . Sanitize::stripAllColorCodes($session['user']['name']) . "'>" .
                 "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'UTF-8') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>" .
                 "<input type='hidden' name='no_shipping' value='1'>" .
                 "<input type='hidden' name='notify_url' value='http://lotgd.net/payment.php'>" .
@@ -658,7 +658,7 @@ class PageParts
             $paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">'
                 . "<input type='hidden' name='cmd' value='_xclick'>"
                 . "<input type='hidden' name='business' value='$paysite'>"
-                . "<input type='hidden' name='item_name' value='" . $settings->getSetting('paypaltext', 'Legend of the Green Dragon Site Donation from') . " " . Sanitize::fullSanitize($session['user']['name']) . "'>"
+                . "<input type='hidden' name='item_name' value='" . $settings->getSetting('paypaltext', 'Legend of the Green Dragon Site Donation from') . " " . Sanitize::stripAllColorCodes($session['user']['name']) . "'>"
                 . "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>"
                 . "<input type='hidden' name='no_shipping' value='1'>";
             if (file_exists('payment.php')) {

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Http;
 use Lotgd\Sanitize;
 use Lotgd\MySQL\Database;
@@ -21,33 +22,52 @@ $charset = $settings->getSetting('charset', 'UTF-8');
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     $clanname = Http::post('clanname');
     if ($clanname) {
-        $clanname = Sanitize::fullSanitize($clanname);
+        $clanname = Sanitize::stripAllColorCodes($clanname);
     }
     $clanshort = Http::post('clanshort');
     if ($clanshort) {
-        $clanshort = Sanitize::fullSanitize($clanshort);
+        $clanshort = Sanitize::stripAllColorCodes($clanshort);
     }
     if ($clanname > "" && $clanshort > "") {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET clanname='$clanname',clanshort='$clanshort' WHERE clanid='$detail'";
+        // Both values arrive from the request body. Sanitize::stripAllColorCodes()
+        // removes LotGD colour markup and nothing else, so they are bound here
+        // rather than interpolated.
+        Database::getDoctrineConnection()->executeStatement(
+            "UPDATE " . Database::prefix("clans")
+                . " SET clanname = :clanname, clanshort = :clanshort WHERE clanid = :clanid",
+            ['clanname' => $clanname, 'clanshort' => $clanshort, 'clanid' => $detail],
+            ['clanname' => ParameterType::STRING, 'clanshort' => ParameterType::STRING, 'clanid' => ParameterType::INTEGER]
+        );
         $output->output("Updating clan names`n");
-        Database::query($sql);
         DataCache::getInstance()->invalidatedatacache("clandata-$detail");
     }
     if (Http::post('block') > "") {
+        // Translated text is editable through the translation tool and may
+        // legitimately contain an apostrophe.
         $blockdesc = Translator::translateInline("Description blocked for inappropriate usage.");
-        $sql = "UPDATE " . Database::prefix("clans") . " SET descauthor=4294967295, clandesc='$blockdesc' where clanid='$detail'";
+        Database::getDoctrineConnection()->executeStatement(
+            "UPDATE " . Database::prefix("clans")
+                . " SET descauthor = 4294967295, clandesc = :clandesc WHERE clanid = :clanid",
+            ['clandesc' => $blockdesc, 'clanid' => $detail],
+            ['clandesc' => ParameterType::STRING, 'clanid' => ParameterType::INTEGER]
+        );
         $output->output("Blocking public description`n");
-        Database::query($sql);
         DataCache::getInstance()->invalidatedatacache("clandata-$detail");
     } elseif (Http::post('unblock') > "") {
-        $sql = "UPDATE " . Database::prefix("clans") . " SET descauthor=0, clandesc='' where clanid='$detail'";
+        Database::getDoctrineConnection()->executeStatement(
+            "UPDATE " . Database::prefix("clans")
+                . " SET descauthor = 0, clandesc = '' WHERE clanid = :clanid",
+            ['clanid' => $detail],
+            ['clanid' => ParameterType::INTEGER]
+        );
         $output->output("UNblocking public description`n");
-        Database::query($sql);
         DataCache::getInstance()->invalidatedatacache("clandata-$detail");
     }
 }
-    $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanid='$detail'";
-    $result1 = Database::queryCached($sql, "clandata-$detail", 3600);
+    // queryCached() takes no bound parameters, so the integer nature of the id
+    // is made visible here rather than relying on the cast in clan.php.
+    $sql = "SELECT * FROM " . Database::prefix("clans") . " WHERE clanid=" . (int) $detail;
+    $result1 = Database::queryCached($sql, "clandata-" . (int) $detail, 3600);
     $row1 = Database::fetchAssoc($result1);
 if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     $output->rawOutput("<div id='hidearea'>");
@@ -84,7 +104,7 @@ if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
         $output->output("`n`n");
     }
     $output->output("`0This is the current clan membership of %s < %s >:`n", $row1['clanname'], $row1['clanshort']);
-    Header::pageHeader("Clan Membership for %s &lt;%s&gt;", Sanitize::fullSanitize($row1['clanname']), Sanitize::fullSanitize($row1['clanshort']));
+    Header::pageHeader("Clan Membership for %s &lt;%s&gt;", Sanitize::stripAllColorCodes($row1['clanname']), Sanitize::stripAllColorCodes($row1['clanshort']));
     Nav::add("Clan Options");
     $rank = Translator::translateInline("Rank");
     $name = Translator::translateInline("Name");
@@ -93,8 +113,12 @@ if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
     $output->rawOutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$dk</td><td>$jd</td></tr>");
     $i = 0;
-    $sql = "SELECT acctid,name,login,clanrank,clanjoindate,dragonkills FROM " . Database::prefix("accounts") . " WHERE clanid=$detail ORDER BY clanrank DESC,clanjoindate";
-    $result = Database::query($sql);
+    $result = Database::getDoctrineConnection()->executeQuery(
+        "SELECT acctid,name,login,clanrank,clanjoindate,dragonkills FROM " . Database::prefix("accounts")
+            . " WHERE clanid = :clanid ORDER BY clanrank DESC,clanjoindate",
+        ['clanid' => $detail],
+        ['clanid' => ParameterType::INTEGER]
+    );
     $tot = 0;
     //little hack with the hook...can't think of any other way
     $ranks = array(CLAN_APPLICANT => "`!Applicant`0",CLAN_MEMBER => "`#Member`0",CLAN_OFFICER => "`^Officer`0",CLAN_LEADER => "`&Leader`0", CLAN_FOUNDER => "`\$Founder");

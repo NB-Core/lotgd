@@ -26,4 +26,5 @@ phpstan.neon
 phpstan-baseline.neon
 docker-compose.yml
 docker-compose.dev.yml
+docker-compose.limits.yml
 .env.example

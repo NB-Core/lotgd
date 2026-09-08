@@ -1,0 +1,49 @@
+# Optional resource and logging limits.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.limits.yml up -d
+#
+# Not part of the default deployment because sensible values depend on the
+# host: a Raspberry Pi and a dedicated server want different numbers, and a
+# limit that is too low makes MySQL fail in confusing ways. Start from these,
+# watch `docker stats`, and tighten afterwards.
+#
+# Compose v2 honours deploy.resources.limits outside Swarm.
+services:
+  web:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 768M
+          # A runaway PHP process cannot take the host down with it. Declared
+          # here rather than as the top-level pids_limit: Compose maps the two
+          # onto the same field and rejects having both.
+          pids: 512
+    # Docker's default json-file driver never rotates on its own. Drop this
+    # block if the daemon already applies rotation globally in daemon.json,
+    # or if the host ships logs somewhere else — setting a driver here
+    # overrides that.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  db:
+    deploy:
+      resources:
+        limits:
+          # A limit is a ceiling, not a reservation, so web and db may add up
+          # to more than the host has. Without this one a runaway query can
+          # still saturate every core, which is the case this file exists to
+          # bound.
+          cpus: "1.0"
+          # MySQL 8.4 wants room for its buffer pool. Below roughly 512M it
+          # starts failing in ways that do not obviously point at memory.
+          memory: 1g
+          pids: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

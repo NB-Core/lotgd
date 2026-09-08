@@ -61,7 +61,7 @@ if ($commentId > 0) {
             $commentText = HTMLEntities($commentRow['comment'] ?? '', ENT_COMPAT, $charset);
             $commentText = str_replace('&amp;', '&', $commentText);
             $compiled = "`&{$name}`3 says, \"`#{$commentText}`3\"`0`n";
-            $compiled = Sanitize::fullSanitize($compiled);
+            $compiled = Sanitize::stripAllColorCodes($compiled);
             $reason = htmlentities($compiled, ENT_QUOTES, $charset);
         }
     }

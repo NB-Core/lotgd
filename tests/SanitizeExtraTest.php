@@ -29,9 +29,34 @@ final class SanitizeExtraTest extends TestCase
         $this->assertSame('HelloWorld', Sanitize::newlineSanitize("Hello`nWorld"));
     }
 
-    public function testFullSanitize(): void
+    public function testStripAllColorCodes(): void
     {
-        $this->assertSame('HelloWorld', Sanitize::fullSanitize('Hello`xWorld'));
+        $this->assertSame('HelloWorld', Sanitize::stripAllColorCodes('Hello`xWorld'));
+    }
+
+    /**
+     * The old name stays available for modules; it must keep delegating to the
+     * same implementation rather than drifting into a second one.
+     */
+    public function testFullSanitizeRemainsAnAliasOfStripAllColorCodes(): void
+    {
+        foreach (['Hello`xWorld', '', '`b`iBold`i`b', 'plain text'] as $input) {
+            $this->assertSame(
+                Sanitize::stripAllColorCodes($input),
+                Sanitize::fullSanitize($input)
+            );
+        }
+    }
+
+    /**
+     * Guards the misunderstanding that gave the method its old name: it removes
+     * colour markup and nothing else. Quotes survive, so a value that went
+     * through it is not safe to interpolate into SQL.
+     */
+    public function testStripAllColorCodesDoesNotEscapeQuotes(): void
+    {
+        $this->assertSame("O'Brien", Sanitize::stripAllColorCodes("O'Brien"));
+        $this->assertSame("' OR 1=1 --", Sanitize::stripAllColorCodes("`4' OR 1=1 --"));
     }
 
     public function testCmdSanitize(): void

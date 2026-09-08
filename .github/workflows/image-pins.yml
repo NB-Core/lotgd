@@ -1,0 +1,43 @@
+name: Image pin freshness
+
+# Digest pins keep builds reproducible, but they also freeze the operating
+# system inside the image. Dependabot reports the case where a tag has moved on;
+# it structurally cannot report the opposite one, where an upstream line is
+# abandoned and its tag stops moving, because then the digest it would propose
+# is the digest already pinned. That case cost this repository fourteen months
+# of unpatched PHP and Debian releases, so it is checked on a schedule instead.
+on:
+  schedule:
+    # Mondays, early. Weekly is plenty: this detects a line going quiet over
+    # months, not a release that happened yesterday.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      stale_after_days:
+        description: "Fail when a pinned tag has not been rebuilt for this many days"
+        required: false
+        default: "120"
+        type: string
+  # Also run when the pins themselves change, so a new pin is checked before it
+  # is merged rather than up to a week later.
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'tests/Docker/check-image-pins.sh'
+      - '.github/workflows/image-pins.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  pins:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      STALE_AFTER_DAYS: ${{ inputs.stale_after_days || '120' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Check pinned image freshness
+        run: tests/Docker/check-image-pins.sh

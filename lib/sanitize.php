@@ -34,7 +34,7 @@ function logdnet_sanitize($in)
 
 function full_sanitize($in)
 {
-    return Sanitize::fullSanitize($in);
+    return Sanitize::stripAllColorCodes($in);
 }
 
 function cmd_sanitize($in)

@@ -8,6 +8,7 @@ use Lotgd\Commentary;
 use Lotgd\DataCache;
 use Lotgd\Http;
 use Lotgd\Motd;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Output;
@@ -124,9 +125,13 @@ if ($op == "") {
     if (!is_string($month_post)) {
         $month_post = '';
     }
-    //SQL Injection attack possible -> kill it off after 7 letters as format is i.e. "2000-05"
+    // This parameter was exploited in the past. The length cut plus an
+    // unanchored pattern happened to be enough, but only by the interaction of
+    // two independent lines: raise the limit and the hole is back. The pattern
+    // is anchored and the values are bound below, so neither line is load
+    // bearing on its own any more.
     $month_post = substr($month_post, 0, 7);
-    if (preg_match("/[0-9][0-9][0-9][0-9]-[0-9][0-9]/", $month_post) !== 1) {
+    if (preg_match('/^[0-9]{4}-[0-9]{2}$/', $month_post) !== 1) {
         //hack attack
         $month_post = "";
     }
@@ -135,12 +140,17 @@ if ($op == "") {
         $p_year = $date_array[0];
         $p_month = $date_array[1];
         $month_post_end = date("Y-m-t", strtotime($p_year . "-" . $p_month . "-" . "01")); // get last day of month this way, it's a valid DATETIME now
-        $sql = "SELECT " . Database::prefix("motd") . ".*,name AS motdauthorname FROM " . Database::prefix("motd") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid = " . Database::prefix("motd") . ".motdauthor WHERE motddate >= '{$month_post}-01' AND motddate <= '{$month_post_end}' ORDER BY motddate DESC";
-                $result = Database::queryCached($sql, "motd-$month_post");
-                $result = Database::query($sql);
+        $result = Database::getDoctrineConnection()->executeQuery(
+            "SELECT " . Database::prefix("motd") . ".*,name AS motdauthorname FROM " . Database::prefix("motd")
+                . " LEFT JOIN " . Database::prefix("accounts")
+                . " ON " . Database::prefix("accounts") . ".acctid = " . Database::prefix("motd") . ".motdauthor"
+                . " WHERE motddate >= :monthstart AND motddate <= :monthend ORDER BY motddate DESC",
+            ['monthstart' => $month_post . '-01', 'monthend' => $month_post_end],
+            ['monthstart' => ParameterType::STRING, 'monthend' => ParameterType::STRING]
+        );
     } else {
         $sql = "SELECT " . Database::prefix("motd") . ".*,name AS motdauthorname FROM " . Database::prefix("motd") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid = " . Database::prefix("motd") . ".motdauthor ORDER BY motddate DESC limit $newcount," . ($newcount + $count);
-        if ($newcount = 0) { //cache only the last x items
+        if ($newcount == 0) { //cache only the last x items
             $result = Database::queryCached($sql, "motd");
         } else {
             $result = Database::query($sql);
