@@ -33,3 +33,12 @@ updates:
     labels:
       - dependencies
       - security
+    # One PR for all of them. Action majors move in lockstep -- the whole
+    # ecosystem migrated to Node 24 at once -- and reviewing five identical
+    # runtime bumps separately costs five CI runs to learn one thing. Grouping
+    # is deliberately not applied to the docker ecosystem below: a base image
+    # bump changes what the application runs on and is worth its own review.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
