@@ -21,6 +21,19 @@ set -eu
 
 STALE_AFTER_DAYS="${STALE_AFTER_DAYS:-120}"
 
+# Validate before anything else. A non-numeric threshold makes the [ -gt ]
+# below fail with "Illegal number", and because that comparison is an if
+# condition, set -e does not stop the script: every staleness test would be
+# skipped and the run would end with a reassuring success message while an
+# abandoned pin sat in the output. A check that silently stops checking is
+# worse than no check.
+case "$STALE_AFTER_DAYS" in
+    ''|*[!0-9]*)
+        echo "STALE_AFTER_DAYS must be a non-negative integer, got '$STALE_AFTER_DAYS'" >&2
+        exit 1
+        ;;
+esac
+
 for tool in curl jq; do
     command -v "$tool" >/dev/null 2>&1 || {
         echo "$tool is required to run this check" >&2
@@ -110,4 +123,4 @@ if [ "$failures" -ne 0 ]; then
     exit 1
 fi
 
-echo "All ${checked} pinned images are on lines that are still being rebuilt."
+echo "All ${checked} pinned images were rebuilt within ${STALE_AFTER_DAYS} days."

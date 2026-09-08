@@ -33,6 +33,11 @@ services:
     deploy:
       resources:
         limits:
+          # A limit is a ceiling, not a reservation, so web and db may add up
+          # to more than the host has. Without this one a runaway query can
+          # still saturate every core, which is the case this file exists to
+          # bound.
+          cpus: "1.0"
           # MySQL 8.4 wants room for its buffer pool. Below roughly 512M it
           # starts failing in ways that do not obviously point at memory.
           memory: 1g

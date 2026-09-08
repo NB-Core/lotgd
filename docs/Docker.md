@@ -59,7 +59,9 @@ pinned.
 That second case is checked automatically. `tests/Docker/check-image-pins.sh`
 reads the pins straight out of `Dockerfile` and `docker-compose.yml`, asks
 Docker Hub when each tag was last rebuilt, and **fails** when one has been
-quiet for more than 120 days (`STALE_AFTER_DAYS` overrides it). Drift is only
+quiet for more than 120 days (`STALE_AFTER_DAYS` overrides it, and is rejected
+unless it is a non-negative integer — a threshold the shell cannot compare
+would silently skip every staleness test). Drift is only
 reported, since Dependabot already proposes those. The
 `Image pin freshness` workflow runs it weekly, on demand, and on pull requests
 that touch the pins:
@@ -430,7 +432,8 @@ docker compose -f docker-compose.yml -f docker-compose.limits.yml up -d
 ```
 
 It caps CPU, memory and process count for both services and rotates the
-container logs. Start generously and tighten after watching `docker stats`;
+container logs. A limit is a ceiling rather than a reservation, so the two
+services may add up to more than the host has. Start generously and tighten after watching `docker stats`;
 MySQL in particular fails in confusing ways when its buffer pool does not fit
 the limit. Drop the `logging` blocks if the Docker daemon already applies
 rotation globally in `daemon.json` — declaring a driver per service overrides
