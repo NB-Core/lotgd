@@ -44,7 +44,8 @@ Recommended commit convention: follow Conventional Commits (`feat:`, `fix:`, `pe
 For any PR touching **authentication, session handling, admin/superuser flows, async endpoints, or SQL execution**, include a short security review note in the PR description that confirms all of the following:
 
 - Input validation boundary is defined (where untrusted input enters and where it is validated/cast).
-- CSRF coverage is present for all state-changing requests.
+- CSRF coverage is present for all state-changing requests. Tokens come from `Lotgd\Security\Csrf`: render with `Csrf::hiddenField()` or `Csrf::escapedToken()`, validate with `Csrf::validatePost()` or `Csrf::validatePostRequest()`, and do not add a new per-page session key. Only the issuing methods create a token — validation paths must not, so a mistyped scope fails closed and async code, where the session lock may already be released, cannot mint one it then discards.
+- A page that hands its whole POST body to a settings or preference writer runs it through `Csrf::stripFrom()` first, or the token is persisted as data.
 - Prepared statements are used for SQL writes/reads; do not introduce new `addslashes`-based SQL patterns.
 - Authorization checks exist for superuser and module-privileged actions.
 - Security-relevant outcomes are logged (for example: auth failures, privilege changes, denied admin actions, suspicious async activity).

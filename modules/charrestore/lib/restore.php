@@ -144,20 +144,13 @@ function charrestore_restore_account(array $account, array $context): int
 /** Return the per-session CSRF token used by shared synchronous restore forms. */
 function charrestore_restore_csrf_token(): string
 {
-    global $session;
-    // Core verification needed: repository usage exposes no generic synchronous-form CSRF API;
-    // use a module-scoped session token until the host's canonical helper is confirmed.
-    if (empty($session['charrestore_restore_csrf']) || !is_string($session['charrestore_restore_csrf'])) {
-        $session['charrestore_restore_csrf'] = bin2hex(random_bytes(32));
-    }
-    return $session['charrestore_restore_csrf'];
+    return \Lotgd\Security\Csrf::token(\Lotgd\Security\Csrf::SCOPE_CHARRESTORE);
 }
 
 /** Validate the shared restore form's CSRF token. */
 function charrestore_restore_csrf_valid(): bool
 {
-    $posted = (string) httppost('csrf_token');
-    return $posted !== '' && hash_equals(charrestore_restore_csrf_token(), $posted);
+    return \Lotgd\Security\Csrf::validatePost(\Lotgd\Security\Csrf::SCOPE_CHARRESTORE);
 }
 
 /**
@@ -237,7 +230,7 @@ function charrestore_restore_render_preview(array $context, string $file, string
     }
     $conflicts = charrestore_restore_conflicts($snapshot['account']);
     $url = $baseUrl . '&op=finishrestore&file=' . rawurlencode($file);
-    rawoutput("<form action='{$url}' method='POST'><input type='hidden' name='csrf_token' value='" . htmlentities(charrestore_restore_csrf_token(), ENT_QUOTES, 'UTF-8') . "'>");
+    rawoutput("<form action='{$url}' method='POST'>" . \Lotgd\Security\Csrf::hiddenField(\Lotgd\Security\Csrf::SCOPE_CHARRESTORE));
     addnav('', $url);
     if ($conflicts['login_ids'] !== array()) {
         output("`\$The user's login conflicts with an existing login in the system.`n`^New Login: ");

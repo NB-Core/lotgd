@@ -27,8 +27,9 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
     {
         $source = $this->source('mounts.php');
 
-        self::assertStringContainsString("(\$_SERVER['REQUEST_METHOD'] ?? '') !== 'POST'", $source);
-        self::assertStringContainsString("Http::post('csrf_token')", $source);
+        // POST-only and the token check now come from the shared helper; the
+        // guarantee is unchanged, the recipe is no longer copied here.
+        self::assertStringContainsString('Csrf::validatePostRequest(Csrf::SCOPE_MOUNT_EDITOR)', $source);
         self::assertStringContainsString("WHERE mountid = :mountId", $source);
         self::assertStringContainsString("WHERE hashorse = :mountId", $source);
         self::assertStringNotContainsString("mountid='\$id'", $source);
@@ -44,7 +45,7 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
         self::assertStringContainsString('$normalizedValue = serialize($abilities);', $source);
         self::assertStringNotContainsString('addslashes(serialize(', $source);
         self::assertStringContainsString("['id' => ParameterType::INTEGER]", $source);
-        self::assertStringContainsString("(\$_SERVER['REQUEST_METHOD'] ?? '') === 'POST'", $source);
+        self::assertStringContainsString('Csrf::validatePostRequest(Csrf::SCOPE_COMPANION_EDITOR)', $source);
     }
 
     public function testEquipmentEditorsValidateIndicesAndBindNames(): void
@@ -55,7 +56,8 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
             self::assertStringContainsString("Http::post('$stat'), 1, count(\$values)", $source);
             self::assertStringContainsString("'name' => ParameterType::STRING", $source);
             self::assertStringContainsString("'$stat' => ParameterType::INTEGER", $source);
-            self::assertStringContainsString("Http::post('csrf_token')", $source);
+            $scope = $file === 'armoreditor.php' ? 'SCOPE_ARMOR_EDITOR' : 'SCOPE_WEAPON_EDITOR';
+            self::assertStringContainsString("Csrf::validatePost(Csrf::$scope)", $source);
             self::assertStringContainsString("method='POST'", $source);
             self::assertStringNotContainsString("\$values[(int)", $source);
         }
