@@ -25,6 +25,24 @@ $jaxon->setOption('core.request.uri', '/async/process.php');
 // Use empty prefix to get clean namespace: Lotgd.Async.Handler.*
 $jaxon->setOption('core.prefix.class', '');
 
+// Serve the Jaxon client runtime from this installation instead of the CDN
+// that jaxon-core defaults to (AssetManager::JS_LIB_URL points at
+// cdn.jsdelivr.net). Three reasons, in order of weight:
+//
+//   1. It carries a security control. async/js/lotgd.jaxon.js attaches the
+//      async CSRF header, and its behaviour depends on how this runtime builds
+//      its fetch call -- which is exactly what a file nobody here can read or
+//      diff must not decide.
+//   2. Supply chain. A third party serving executable code into every player's
+//      browser is a dependency like any other and belongs in the tree, where a
+//      change shows up in a diff.
+//   3. Availability. A CDN outage or a blocked network takes the whole async
+//      layer down.
+//
+// The version is pinned by the directory content, and tests/Async/check-jaxon-assets.sh
+// verifies both integrity and freshness against upstream.
+$jaxon->setOption('js.lib.uri', '/async/js/vendor/jaxon');
+
 // Configure the Jaxon client library - disable auto-export since we manage our own JS files
 $jaxon->setOption('js.app.export', false);
 $jaxon->setOption('js.app.dir', __DIR__ . '/../js');

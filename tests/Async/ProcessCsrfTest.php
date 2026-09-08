@@ -180,17 +180,61 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
-         * beginAuthentication runs before a login exists, so there is no
-         * session-scoped token for it to carry. It keeps its own check inside
-         * the handler.
+         * The pre-login passkey pair is checked but never refused, even under
+         * enforce. Refusing there would mean nobody completes two-factor login
+         * if any entry point turns out not to load async/setup.php; the gain
+         * would be defence in depth on a path that already validates its own
+         * token inside the handler. The failure is recorded so a release of
+         * evidence can promote it.
          */
-        public function testUnauthenticatedPasskeyPathStaysReachableWithoutAToken(): void
+        public function testUnauthenticatedPasskeyPathIsNeverRefused(): void
         {
             $jaxon = $this->installJaxonDouble();
 
             $this->dispatch('Lotgd.Async.Handler.TwoFactorAuthPasskey', 'beginAuthentication');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $jaxon->processCount, 'the login path must not be blocked');
+        }
+
+        /**
+         * Not refusing is not the same as not looking: the state function
+         * reports what it saw, which is what reaches error_log.
+         */
+        public function testPasskeyPathStillReportsAMissingToken(): void
+        {
+            $state = lotgd_async_csrf_state([
+                'class' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
+                'method' => 'beginAuthentication',
+            ]);
+
+            self::assertTrue($state['valid'], 'must not refuse');
+            self::assertTrue($state['observed'], 'must still be recorded');
+            self::assertSame('missing', $state['reason']);
+        }
+
+        public function testPasskeyPathReportsNothingWhenTheTokenIsRight(): void
+        {
+            $_SERVER['HTTP_X_LOTGD_CSRF'] = Csrf::token(Csrf::SCOPE_ASYNC);
+
+            $state = lotgd_async_csrf_state([
+                'class' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
+                'method' => 'beginAuthentication',
+            ]);
+
+            self::assertTrue($state['valid']);
+            self::assertFalse($state['observed']);
+        }
+
+        /**
+         * The shipped default. Verified in a browser against the vendored
+         * runtime before it was changed from log.
+         */
+        public function testEnforceIsTheDefaultMode(): void
+        {
+            self::assertSame(
+                'enforce',
+                (string) (require dirname(__DIR__, 2) . '/config/async.settings.php.dist')['csrf_mode']
+            );
         }
 
         /**

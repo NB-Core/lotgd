@@ -22,14 +22,21 @@ return [
     //   'log'     - check it, record failures via error_log, let the request through
     //   'enforce' - refuse the request with HTTP 403
     //
-    // Ships as 'log'. The token travels in an X-LotGD-Csrf header added by
-    // async/js/lotgd.jaxon.js, and the Jaxon runtime that carries it is loaded
-    // from a CDN rather than vendored, so the transport cannot be verified in
-    // CI. Polling runs every few seconds for every player with the AJAX
-    // preference on: enforcing a check that never receives its token would
-    // break all of them at once. Watch error_log for "Jaxon csrf" over a
-    // release; if it stays quiet, switch this to 'enforce'.
-    'csrf_mode' => 'log',
+    // Ships as 'enforce'. The token travels in an X-LotGD-Csrf header added by
+    // async/js/lotgd.jaxon.js, and that transport is now verifiable: the Jaxon
+    // runtime is served from async/js/vendor/jaxon instead of a CDN, and the
+    // header was confirmed to reach the server in a real browser against those
+    // exact files.
+    //
+    // That check also turned up why it could not have worked before: Jaxon
+    // defaults httpRequestOptions.mode to 'no-cors', under which the browser
+    // silently drops every non-safelisted header. lotgd.jaxon.js now sets
+    // 'same-origin'.
+    //
+    // Set to 'log' if you carry local modifications to the async client and
+    // want a release of evidence first; failures are then recorded via
+    // error_log as "Jaxon csrf <reason>" and the request proceeds.
+    'csrf_mode' => 'enforce',
 
     // Prevent session timeout while the browser remains open.
     'never_timeout_if_browser_open' => 0,

@@ -436,33 +436,46 @@ function lotgd_async_release_session_lock(array $requestContext): bool
  *
  * @param array{class:string,method:string} $requestContext
  *
- * @return array{required:bool,valid:bool,reason:string}
+ * `valid` false means refuse where the mode enforces; `observed` true means a
+ * failure worth logging that must not refuse regardless of the mode.
+ *
+ * @return array{required:bool,valid:bool,reason:string,observed:bool}
  */
 function lotgd_async_csrf_state(array $requestContext): array
 {
     if (!\Lotgd\Async\CsrfMode::isChecked()) {
-        return ['required' => false, 'valid' => true, 'reason' => 'disabled'];
-    }
-
-    // The unauthenticated passkey pair runs before a login exists, so there is
-    // no session-scoped token for it to carry. Those two keep their own check
-    // inside the handler, against the module's token that the challenge view
-    // seeds. Widening the endpoint check over the login path is a separate
-    // change and the one with the largest blast radius in the game.
-    if (lotgd_async_is_unauth_allowlisted($requestContext)) {
-        return ['required' => false, 'valid' => true, 'reason' => 'unauth_allowlisted'];
+        return ['required' => false, 'valid' => true, 'reason' => 'disabled', 'observed' => false];
     }
 
     $token = \Lotgd\Security\Csrf::requestToken();
+    $reason = '';
     if ($token === '') {
-        return ['required' => true, 'valid' => false, 'reason' => 'missing'];
+        $reason = 'missing';
+    } elseif (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_ASYNC, $token)) {
+        $reason = 'mismatch';
     }
 
-    if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_ASYNC, $token)) {
-        return ['required' => true, 'valid' => false, 'reason' => 'mismatch'];
+    // The pre-login passkey pair is checked but never refused, whatever the
+    // configured mode says.
+    //
+    // It used to be skipped entirely, on the assumption that no session-scoped
+    // token exists before a login. That is not so: every page that can reach
+    // these two calls twofactorauth_force_async_bootstrap(), which loads
+    // async/setup.php, which issues the token. So the check runs and its
+    // result is recorded.
+    //
+    // Refusing on it is a different question, and the asymmetry decides it.
+    // The gain is defence in depth on a path that already validates a token of
+    // its own inside the handler; the loss, if any entry point turns out not
+    // to bootstrap, is that nobody completes two-factor login. Evidence first:
+    // a release without "Jaxon csrf" lines naming these two is what should
+    // promote them, the same way the no-cors problem was found rather than
+    // guessed.
+    if (lotgd_async_is_unauth_allowlisted($requestContext)) {
+        return ['required' => false, 'valid' => true, 'reason' => $reason, 'observed' => $reason !== ''];
     }
 
-    return ['required' => true, 'valid' => true, 'reason' => ''];
+    return ['required' => true, 'valid' => $reason === '', 'reason' => $reason, 'observed' => false];
 }
 
 /**
@@ -494,11 +507,11 @@ function lotgd_async_authorization_policy(array $requestContext): array
         }
 
         $csrf = lotgd_async_csrf_state($requestContext);
-        if (!$csrf['valid']) {
+        if (!$csrf['valid'] || ($csrf['observed'] ?? false)) {
             $handler = ($requestContext['class'] ?? '') . '::' . ($requestContext['method'] ?? '');
             error_log(sprintf('Jaxon csrf %s [handler=%s mode=%s]', $csrf['reason'], $handler, \Lotgd\Async\CsrfMode::mode()));
 
-            if (\Lotgd\Async\CsrfMode::isEnforced()) {
+            if (\Lotgd\Async\CsrfMode::isEnforced() && !$csrf['valid']) {
                 return [
                     'allowed' => false,
                     'status' => 403,

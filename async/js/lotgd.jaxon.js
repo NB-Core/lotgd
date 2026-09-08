@@ -120,6 +120,47 @@
         return typeof window.lotgd_async_csrf_token === 'string' ? window.lotgd_async_csrf_token : '';
     };
 
+    /**
+     * Recover a tab whose token no longer matches.
+     *
+     * The realistic case is a page left open across a deploy or a logout: its
+     * inlined token belongs to a session that is gone, so every poll is
+     * refused. The refusal is valid JSON, so the existing parse-error pause
+     * never sees it and the tab would keep asking every few seconds forever.
+     *
+     * A reload re-renders the page with a fresh token, which is the only thing
+     * that actually fixes it. Guarded so it happens at most once: a reload loop
+     * would be worse than the stale tab.
+     */
+    const handleCsrfRejection = function (response, url) {
+        if (!response || response.status !== 403 || !isAsyncEndpoint(url)) {
+            return;
+        }
+        if (window.__lotgdAsyncCsrfReloaded) {
+            return;
+        }
+        window.__lotgdAsyncCsrfReloaded = true;
+
+        if (pollingRootInterval() !== null) {
+            window.clearInterval(pollingRootInterval());
+        }
+        lotgdDebugSafe('async token rejected, reloading once to obtain a fresh one');
+        window.location.reload();
+    };
+
+    /**
+     * The polling loop stores its interval id on the window that owns it, which
+     * is the opener for a popup. Mirrors what async/setup.php does.
+     */
+    const pollingRootInterval = function () {
+        try {
+            const root = window.opener && !window.opener.closed ? window.opener : window;
+            return typeof root.__lotgdPollingIntervalId === 'number' ? root.__lotgdPollingIntervalId : null;
+        } catch (error) {
+            return null;
+        }
+    };
+
     const installCsrfHeader = function () {
         if (window.__lotgdAsyncCsrfHooked) {
             return;
@@ -137,7 +178,10 @@
                     headers.set(CSRF_HEADER, token);
                     init.headers = headers;
                 }
-                return nativeFetch.call(this, input, init);
+                return nativeFetch.call(this, input, init).then(function (response) {
+                    handleCsrfRejection(response, url);
+                    return response;
+                });
             };
         }
 
@@ -174,6 +218,20 @@
     jaxon.config.defaultMode = 'asynchronous';
     jaxon.config.defaultMethod = 'POST';
     jaxon.config.responseType = 'JSON';
+
+    // Jaxon ships httpRequestOptions.mode = 'no-cors'. Under that mode the
+    // browser applies the "request-no-cors" header guard and silently drops
+    // every header that is not CORS-safelisted -- including X-LotGD-Csrf, and
+    // including on same-origin requests. Verified in Chromium: with 'no-cors'
+    // the header never reaches the server, with 'same-origin' it does.
+    //
+    // 'same-origin' is also the honest description of what this client does.
+    // enforceRequestUri() pins the transport to /async/process.php on this
+    // origin, so a cross-origin request is a bug; under 'no-cors' one would be
+    // sent anyway and answered opaquely, under 'same-origin' it fails loudly.
+    jaxon.config.httpRequestOptions = Object.assign({}, jaxon.config.httpRequestOptions, {
+        mode: 'same-origin',
+    });
 
     jaxon.dialogs = jaxon.dialogs || {};
 

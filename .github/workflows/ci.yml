@@ -79,6 +79,8 @@ jobs:
         uses: actions/checkout@v7
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+      - name: Verify the vendored Jaxon client runtime
+        run: tests/Async/check-jaxon-assets.sh
       - name: Reject application-image build toolchains
         run: tests/Docker/no-build-toolchain.sh
       - name: Verify pinned base images support AMD64 and ARM64

@@ -373,7 +373,7 @@ if ($op == "") {
             $output->rawOutput("<input type='hidden' name='id' value='$id'>" . Csrf::hiddenField(Csrf::SCOPE_MOUNT_EDITOR));
             module_objpref_edit("mounts", $module, $id);
             $output->rawOutput("</form>");
-            Nav::add("", "mounts.php?op=save&subop=module&id=$id&module=$module");
+            Nav::add("", "mounts.php?op=save&subop=module&id=$id&module=" . rawurlencode((string) $module));
         } else {
             $output->output("Mount Editor:`n");
             $preparedBuff = Mounts::prepareBuffForEditor($row['mountbuff'] ?? null, (int) $row['mountid']);

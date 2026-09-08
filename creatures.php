@@ -445,11 +445,13 @@ if ($op == "" || $op == "search") {
     } else {
         $module = Http::get("module");
         $moduleParam = rawurlencode((string) $module);
-        // The action points at mounts.php while the navigation entry below
-        // registers creatures.php, so a submit from here cannot pass the
-        // allowlist. Left as it is: making the two agree would switch on a
-        // path that has apparently never run, which is a separate change.
-        $output->rawOutput("<form action='mounts.php?op=save&subop=module&creatureid=$id&module=$moduleParam' method='POST'>");
+        // Was pointing at mounts.php: a copy of the mount editor's block that
+        // kept the target file. It could not work -- mounts.php reads `id`,
+        // not `creatureid`, and the URL is not in the allowlist, so the submit
+        // ended at badnav.php. creatures.php is what the navigation entry
+        // below already registers, what reads `creatureid` (see the save
+        // branch above), and what handles subop=module.
+        $output->rawOutput("<form action='creatures.php?op=save&subop=module&creatureid=$id&module=$moduleParam' method='POST'>");
         module_objpref_edit("creatures", $module, $id);
         $output->rawOutput("</form>");
         Nav::add("", "creatures.php?op=save&subop=module&creatureid=$id&module=$moduleParam");

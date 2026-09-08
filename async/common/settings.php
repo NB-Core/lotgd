@@ -32,7 +32,7 @@ if (is_readable($defaultsFile)) {
 
     $defaults = [
         'debug_console'               => 0,
-        'csrf_mode'                   => 'log',
+        'csrf_mode'                   => 'enforce',
         'never_timeout_if_browser_open' => 0,
         'ajax_rate_limit_seconds'     => 1.0,
         'check_mail_timeout_seconds'  => 10,
@@ -90,9 +90,9 @@ $clearScriptExecutionSeconds = (int) ($clear_script_execution_seconds ?? -1);
 $debugConsole = $debug_console ?? 0;
 \Lotgd\Async\DebugMode::setEnabled((int) $debugConsole === 1);
 
-// Unknown values resolve to 'log' inside setMode(), so a typo here neither
-// disables the check nor starts rejecting live traffic.
-\Lotgd\Async\CsrfMode::setMode((string) ($csrf_mode ?? \Lotgd\Async\CsrfMode::LOG));
+// Unknown values resolve to 'log' inside setMode(): a typo should neither
+// disable the check nor start rejecting live traffic.
+\Lotgd\Async\CsrfMode::setMode((string) ($csrf_mode ?? \Lotgd\Async\CsrfMode::ENFORCE));
 
 $timeout->setNeverTimeoutIfBrowserOpen($neverTimeoutIfBrowserOpen === 1);
 $timeout->setStartTimeoutShowSeconds($startTimeoutShowSeconds);
