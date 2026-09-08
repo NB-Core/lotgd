@@ -34,10 +34,9 @@ jobs:
   pins:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       STALE_AFTER_DAYS: ${{ inputs.stale_after_days || '120' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check pinned image freshness
         run: tests/Docker/check-image-pins.sh
