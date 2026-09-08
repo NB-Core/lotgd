@@ -24,7 +24,7 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction
 # configuration lives under /etc/php/${PHP_VERSION} rather than the
 # /usr/local/etc/php of the official php images. Read
 # docs/Docker.md#php-runtime-image before changing anything below.
-FROM thecodingmachine/php:8.4-v5-apache@sha256:d04b2b76c615c9af90cdc66b54cf4e4d09eba64ee74f9bbbd79b78b06d902a66
+FROM thecodingmachine/php:8.5-v5-apache@sha256:e645baf886c1d7d7209257f61391f521b317867fed662c9a6090bc516e625cfd
 
 USER root
 
