@@ -165,12 +165,17 @@
     };
 
     /**
-     * The polling loop stores its interval id on the window that owns it, which
-     * is the opener for a popup. Mirrors what async/setup.php does.
+     * Where the polling loop keeps its interval id.
+     *
+     * async/setup.php uses `window.top || window` in all five places it
+     * touches __lotgdPollingIntervalId, so this has to resolve the same window
+     * or the clearInterval() below silently no-ops and polling keeps running.
+     * The try/catch is for a cross-origin frame, where reading window.top
+     * throws; setup.php does not guard that, but nothing is lost by doing so.
      */
     const pollingRootInterval = function () {
         try {
-            const root = window.opener && !window.opener.closed ? window.opener : window;
+            const root = window.top || window;
             return typeof root.__lotgdPollingIntervalId === 'number' ? root.__lotgdPollingIntervalId : null;
         } catch (error) {
             return null;
