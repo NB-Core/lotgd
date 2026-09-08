@@ -103,10 +103,15 @@
             return false;
         }
         try {
-            return new URL(url, window.location.origin).pathname === '/async/process.php';
+            const target = new URL(url, window.location.origin);
+            // Origin as well as path. Matching the path alone sends the token
+            // to any host that happens to serve /async/process.php -- including
+            // a protocol-relative '//host/async/process.php', which reads like
+            // a path at a glance. Never guess true here, and that includes a
+            // URL that cannot be parsed below.
+            return target.origin === window.location.origin
+                && target.pathname === '/async/process.php';
         } catch (error) {
-            // A URL we cannot parse is not our endpoint; never guess true here,
-            // or the token would leak to whatever host it actually points at.
             return false;
         }
     };

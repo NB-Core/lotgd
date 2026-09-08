@@ -181,6 +181,34 @@ final class CsrfCentralizationRegressionTest extends TestCase
         );
     }
 
+    /**
+     * The header must go to this origin only.
+     *
+     * Matching the path alone attaches the session token to any host that
+     * serves /async/process.php — including a protocol-relative
+     * '//host/async/process.php', which reads like a path. Verified by running
+     * the predicate out of the file itself against a foreign origin; asserted
+     * here because the project has no JavaScript test harness, so this pins the
+     * check against removal rather than re-deriving the behaviour.
+     */
+    public function testAsyncCsrfHeaderIsScopedToTheCurrentOrigin(): void
+    {
+        $source = $this->source('async/js/lotgd.jaxon.js');
+
+        self::assertStringContainsString(
+            'target.origin === window.location.origin',
+            $source,
+            'the async CSRF header must be restricted to this origin'
+        );
+        self::assertStringContainsString("target.pathname === '/async/process.php'", $source);
+
+        // The shape that leaked: a path comparison standing on its own.
+        self::assertStringNotContainsString(
+            "return new URL(url, window.location.origin).pathname === '/async/process.php';",
+            $source
+        );
+    }
+
     private function source(string $relativePath): string
     {
         return (string) file_get_contents(dirname(__DIR__, 2) . '/' . $relativePath);
