@@ -85,6 +85,7 @@ These keys are optional and allow phased rollout:
 - Forwarded-header trust decides whether session cookies are issued with the `Secure` flag and whether HSTS is emitted, so a client that can spoof it can influence its own cookie protection. That is why an unlisted public peer is never believed.
 - Do not enable `SameSite=None` unless TLS is enforced and `Secure` is enabled.
 - Roll out HSTS carefully (start with low `max-age`) and enable preload only after confirming all subdomains are HTTPS-ready.
+
 ## Navigation allowlist (`allownav`)
 
 The game validates that a request corresponds to a link it actually offered.
