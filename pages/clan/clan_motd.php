@@ -22,6 +22,15 @@ use Lotgd\Forms;
     $charset = $settings->getSetting('charset', 'UTF-8');
     $charsetIso = $settings->getSetting('charset', 'ISO-8859-1');
 if ($session['user']['clanrank'] >= CLAN_OFFICER) {
+    // The writes below are triggered by posted fields rather than by $op, so
+    // the guard sits here. A module posting its own fields to clan.php is not
+    // affected: nothing it sends matches these names.
+    if (Forms::isUnverifiedPost() && (Http::postIsset('clanmotd') || Http::postIsset('clandesc') || Http::postIsset('customsay'))) {
+        debuglog('Rejected a clan state change with an invalid CSRF token.');
+        http_response_code(400);
+        $_POST = [];
+    }
+
     $connection = Database::getDoctrineConnection();
     $clanmotd = stripslashes(Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, $charsetIso)));
     if (

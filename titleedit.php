@@ -32,12 +32,16 @@ Translator::getInstance()->setSchema("retitle");
 Header::pageHeader("Title Editor");
 $op = Http::get('op');
 
-// One shape on every page that changes state: a POST that does not carry this
-// page's form token is treated as if nothing had been sent. It sits here, after
-// $op is read, rather than in each branch -- a delete keys off $op with its id
-// in the query string, so blanking the body alone would not stop it, and the
-// next branch someone adds is the one that would forget its own check.
-if (Forms::isUnverifiedPost()) {
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+if (Forms::isUnverifiedCoreOp($op, ['add', 'delete', 'reset', 'save'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';

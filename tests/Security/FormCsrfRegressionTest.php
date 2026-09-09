@@ -184,41 +184,102 @@ final class FormCsrfRegressionTest extends TestCase
     }
 
     /**
-     * Every page that changes state carries the entry guard, exactly once.
+     * Every page that changes state guards its own operations, exactly once.
      *
-     * One shape, not one per branch. A per-branch check is one somebody can
-     * forget, which is how a dozen editors came to write with no token at all;
-     * and it has to be repeated for every branch a page grows. The guard sits
-     * after the page reads `$op` and turns an unverified POST into a plain page
-     * view, which every branch already handles.
+     * One shape, not one per branch: a per-branch check is one somebody can
+     * forget, which is how a dozen editors came to write with no token at all.
      *
-     * The list is the point: it is what "everywhere" means, and adding a
-     * state-changing page without the guard fails here.
+     * The list is the point twice over. It is what "everywhere" means, so a new
+     * state-changing page without a guard fails here; and each page's own list
+     * of operations is what keeps the core out of modules' way — see
+     * testAnOperationTheCoreDoesNotKnowIsLeftAlone().
      */
-    public function testEveryStateChangingPageCarriesTheEntryGuard(): void
+    public function testEveryStateChangingPageGuardsItsOwnOperations(): void
     {
         $pages = [
-            'badword.php', 'configuration.php', 'deathmessages.php', 'donators.php',
-            'masters.php', 'moderate.php', 'modules.php', 'prefs.php', 'taunt.php',
-            'titleedit.php', 'translatortool.php', 'untranslated.php', 'user.php',
-            'viewpetition.php',
+            'badword.php', 'bans.php', 'configuration.php', 'deathmessages.php',
+            'donators.php', 'mail.php', 'masters.php', 'moderate.php', 'modules.php',
+            'prefs.php', 'taunt.php', 'titleedit.php', 'translatortool.php',
+            'untranslated.php', 'user.php',
         ];
 
         foreach ($pages as $page) {
             $code = $this->code($page);
             self::assertSame(
                 1,
-                substr_count($code, 'Forms::isUnverifiedPost()'),
-                $page . ' must carry the entry guard exactly once'
+                substr_count($code, 'Forms::isUnverifiedCoreOp($op, ['),
+                $page . ' must guard its own operations exactly once'
             );
             // It has to clear both: a delete keys off $op with its id in the
             // query string, so emptying the body alone would not stop it.
             self::assertMatchesRegularExpression(
-                '/isUnverifiedPost\(\)\) \{.*?\$op = \x27\x27;.*?\$_POST = \[\];.*?\}/s',
+                '/isUnverifiedCoreOp\(.*?\) \{.*?\$op = \x27\x27;.*?\$_POST = \[\];.*?\}/s',
                 $code,
                 $page . ' must clear both $op and the body'
             );
         }
+    }
+
+    /**
+     * Pages whose writes key off a posted field rather than $op guard at the
+     * write instead. Same question, asked where the core decides to change
+     * something.
+     */
+    public function testBodyDrivenWritesGuardAtTheWrite(): void
+    {
+        foreach ([
+            'viewpetition.php',
+            'pages/clan/clan_motd.php',
+            'pages/clan/clan_membership.php',
+            'pages/clan/detail.php',
+        ] as $page) {
+            self::assertStringContainsString(
+                'Forms::isUnverifiedPost()',
+                $this->code($page),
+                $page . ' must guard its write'
+            );
+        }
+    }
+
+    /**
+     * The guarantee for modules, which is why the op list exists.
+     *
+     * Modules render into prefs.php, clan.php, mail.php and moderate.php
+     * through hooks and may post forms of their own. An old module cannot carry
+     * a token it has never heard of, and `runmodule.php` is not guarded at all,
+     * so an operation the core page does not implement must pass through
+     * untouched — otherwise this release silently breaks working modules.
+     */
+    public function testAnOperationTheCoreDoesNotKnowIsLeftAlone(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['SCRIPT_NAME'] = '/prefs.php';
+        $_POST = ['mymodulefield' => 'x'];
+        $GLOBALS['session'] = [];
+
+        // No token anywhere, which is exactly an old module's POST.
+        self::assertFalse(
+            Forms::isUnverifiedCoreOp('mymoduleop', ['save', 'suicide']),
+            "a module's own operation must not be refused"
+        );
+
+        // And the core's own operation is still guarded in the same call.
+        self::assertTrue(
+            Forms::isUnverifiedCoreOp('suicide', ['save', 'suicide']),
+            "the core's operation must still be refused"
+        );
+    }
+
+    /**
+     * runmodule.php is the module entry point and carries no guard, so a
+     * module's own pages are untouched by any of this.
+     */
+    public function testRunmoduleIsNotGuarded(): void
+    {
+        $code = $this->code('runmodule.php');
+
+        self::assertStringNotContainsString('isUnverifiedCoreOp', $code);
+        self::assertStringNotContainsString('isUnverifiedPost', $code);
     }
 
     /**

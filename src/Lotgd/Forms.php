@@ -92,6 +92,35 @@ class Forms
      */
     public static function isUnverifiedPost(?string $scope = null): bool
     {
+        return self::isUnverifiedPostInternal($scope);
+    }
+
+    /**
+     * The same question, asked only about an operation the core page owns.
+     *
+     * Modules render into these pages through hooks and may post forms of their
+     * own -- `prefs.php`, `clan.php`, `mail.php` and `moderate.php` all run
+     * module hooks that can emit arbitrary HTML. An old module cannot be
+     * expected to carry a token it has never heard of, so an `$op` this page
+     * does not itself handle is none of the core's business and passes through
+     * untouched. The core guards the operations it owns, named here, and the
+     * list doubles as the page's inventory of what changes state.
+     *
+     * @param string        $op      The operation this request asked for.
+     * @param array<string> $coreOps The operations this page implements.
+     * @param ?string       $scope   A narrower scope, as above.
+     */
+    public static function isUnverifiedCoreOp(string $op, array $coreOps, ?string $scope = null): bool
+    {
+        if (!in_array($op, $coreOps, true)) {
+            return false;
+        }
+
+        return self::isUnverifiedPostInternal($scope);
+    }
+
+    private static function isUnverifiedPostInternal(?string $scope): bool
+    {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             return false;
         }

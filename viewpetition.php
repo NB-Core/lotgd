@@ -52,17 +52,6 @@ $statuses = Translator::translateInline($statuses);
 
 $op = Http::get("op") ?? "";
 
-// One shape on every page that changes state: a POST that does not carry this
-// page's form token is treated as if nothing had been sent. It sits here, after
-// $op is read, rather than in each branch -- a delete keys off $op with its id
-// in the query string, so blanking the body alone would not stop it, and the
-// next branch someone adds is the one that would forget its own check.
-if (Forms::isUnverifiedPost()) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
-    http_response_code(400);
-    $op = '';
-    $_POST = [];
-}
 
 /**
  * Lotgd\Http returns raw request payloads; normalize petition IDs before
@@ -78,6 +67,15 @@ if ($invalidViewRequest) {
 }
 $connection = Database::getDoctrineConnection();
 $insertCommentary = (string) Http::post('insertcommentary');
+// This page writes on a posted field rather than on $op, so the guard sits at
+// the write instead of the entry. Same question, asked where the core decides
+// to change something -- a module posting its own fields here is untouched.
+if ($insertCommentary !== '' && Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $insertCommentary = '';
+    $_POST = [];
+}
 if (!empty(trim($insertCommentary)) && $id !== null) {
     /* Update the bug if someone adds comments as well */
     $connection->executeStatement(

@@ -21,6 +21,15 @@ $settings = Settings::getInstance();
 $charset = $settings->getSetting('charset', 'UTF-8');
 
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
+    // Same shape: the writes here key off posted fields.
+    if (Forms::isUnverifiedPost()
+        && (Http::postIsset('clanname') || Http::postIsset('clanshort')
+            || Http::postIsset('block') || Http::postIsset('unblock'))
+    ) {
+        debuglog('Rejected a clan detail change with an invalid CSRF token.');
+        http_response_code(400);
+        $_POST = [];
+    }
     $clanname = Http::post('clanname');
     if ($clanname) {
         $clanname = Sanitize::stripAllColorCodes($clanname);
