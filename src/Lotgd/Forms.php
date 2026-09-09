@@ -115,8 +115,14 @@ class Forms
      * makes an unverified POST indistinguishable from a plain page view, which
      * is the behaviour every branch already handles.
      *
-     * A GET is never a state change here, so it passes untouched: the pages
-     * that search or filter with a GET form keep working.
+     * A GET is unverified too -- see isUnverifiedRequestInternal() for why the
+     * opposite reasoning, which this docblock used to carry, reopened the very
+     * hole the previous release closed. What keeps the pages that search or
+     * filter with a GET form working is not the method but *where* the question
+     * is asked: an operation the core does not own is never asked about, and a
+     * page whose write keys off a posted field asks only when that field is
+     * present. A guard added here must satisfy one of those two, not assume a
+     * GET is safe.
      *
      * @param ?string $scope A narrower scope than the page's, for an editor
      *                       whose token must not be interchangeable with one

@@ -18,7 +18,6 @@ use Doctrine\DBAL\ParameterType;
 // mail ready
 // translator ready
 use Lotgd\Output;
-use Lotgd\Security\Escape;
 use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";

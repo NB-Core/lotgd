@@ -265,6 +265,74 @@ final class EscapeAndPostButtonTest extends TestCase
     }
 
     /**
+     * A file that imports the escaper must actually use it.
+     *
+     * This is bookkeeping, not security, but it has now been reported three
+     * times across three review rounds -- creatures.php, deathmessages.php,
+     * modules.php, taunt.php, clan_membership.php -- because converting a
+     * hand-written confirm() to Forms::postButton() moves the escaping inside
+     * the helper and leaves the import behind. Cheaper to assert than to keep
+     * noticing one file at a time.
+     *
+     * The match deliberately requires a non-word character before `Escape::`,
+     * or `Lotgd\SafeEscape` -- an unrelated class -- would count as a use and
+     * clan_membership.php would have passed while carrying a dead import.
+     */
+    public function testNoFileImportsTheEscaperWithoutUsingIt(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $unused = [];
+
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root));
+        foreach ($it as $file) {
+            $path = $file->getPathname();
+            if (!str_ends_with($path, '.php') || str_contains($path, '/vendor/')) {
+                continue;
+            }
+
+            $code = (string) file_get_contents($path);
+            if (!str_contains($code, 'use Lotgd\Security\Escape;')) {
+                continue;
+            }
+            if (self::usesTheEscaper($code)) {
+                continue;
+            }
+
+            $unused[] = substr($path, strlen($root) + 1);
+        }
+
+        self::assertSame(
+            [],
+            $unused,
+            "these import Escape without using it:\n" . implode("\n", $unused)
+        );
+    }
+
+    /**
+     * True when `Escape::` appears as its own class, not as a suffix.
+     *
+     * Written with string operations rather than a regex on purpose: the first
+     * version of this used one, and PHP string escaping turned `\S` and `\E`
+     * into regex escapes rather than a literal backslash, so the pattern
+     * matched nothing and the test skipped every file. It passed its own
+     * controls by never looking at anything.
+     */
+    private static function usesTheEscaper(string $code): bool
+    {
+        $offset = 0;
+        while (($at = strpos($code, 'Escape::', $offset)) !== false) {
+            $before = $at === 0 ? '' : $code[$at - 1];
+            // `SafeEscape::` and `Security\Escape::` are somebody else.
+            if ($before === '' || (!ctype_alnum($before) && $before !== '_' && $before !== '\\')) {
+                return true;
+            }
+            $offset = $at + 1;
+        }
+
+        return false;
+    }
+
+    /**
      * Nothing in the tree may build one of these by hand again.
      */
     public function testNoHandWrittenConfirmSurvives(): void

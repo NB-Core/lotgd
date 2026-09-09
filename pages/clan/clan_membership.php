@@ -11,7 +11,6 @@ use Lotgd\SafeEscape;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\Output;
-use Lotgd\Security\Escape;
 use Lotgd\Forms;
 
 /**
