@@ -40,6 +40,11 @@ return [
     // So: deploy, let the tabs age out, confirm error_log carries no
     // "Jaxon csrf" lines, then set this to 'enforce' at a time of your
     // choosing. Every client rendered after the upgrade can recover on its own.
+    //
+    // Only logged-in callers are recorded, so that signal stays about players:
+    // an unauthenticated request is refused on authentication whatever its
+    // token says, and a timed-out tab polling on -- or anyone POSTing to the
+    // endpoint -- would otherwise keep the log from ever going quiet.
     'csrf_mode' => 'log',
 
     // Prevent session timeout while the browser remains open.

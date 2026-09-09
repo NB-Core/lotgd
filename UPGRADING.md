@@ -220,6 +220,12 @@ modules.
   - Lines naming `TwoFactorAuthPasskey` are the deliberately observe-only
     pre-login pair and never refuse anything; other handlers are the ones to act
     on.
+  - Only logged-in callers are recorded, so the log stays about players. An
+    unauthenticated request is refused on authentication whatever its token
+    says, and logging it would mean the signal never falls quiet: a tab whose
+    session timed out keeps polling with the token inlined into the page it came
+    from, and a bare POST to the endpoint carries no token at all. Neither says
+    anything about whether the transport works.
   - Gameplay is unaffected in every mode: async carries commentary, mail and
     timeout polling, never a game action.
 

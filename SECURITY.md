@@ -180,6 +180,15 @@ handler, while the loss, if any entry point turns out not to bootstrap, is that
 nobody completes two-factor login. A release without `Jaxon csrf` lines naming
 those two is what should promote them.
 
+**Only logged-in callers are recorded**, plus that observe-only pair. An
+unauthenticated request is refused on authentication whatever its token says,
+so its token is not evidence about the transport — and two ordinary things
+would otherwise produce an endless stream of lines: a tab whose session timed
+out keeps polling with the token inlined into the page it was rendered from,
+and a bare POST to the endpoint carries none at all. The log an operator is
+told to watch before promoting has to be about players, or it never falls
+quiet and means nothing when it does.
+
 Async code must never call `Csrf::token()` or the other issuing methods.
 `async/process.php` releases the session lock before dispatch for read-only
 callables, so a token minted there is handed out once and lost — an

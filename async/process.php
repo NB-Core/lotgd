@@ -501,12 +501,27 @@ function lotgd_async_authorization_policy(array $requestContext): array
     // that lived only in there would have collected no evidence at all about
     // the callables it was added for.
     $csrf = lotgd_async_csrf_state($requestContext);
-    if (!$csrf['valid'] || $csrf['observed']) {
+    $authenticated = lotgd_async_is_authenticated();
+
+    // Two cases are worth a line, and only those two: a logged-in caller whose
+    // token did not check out -- a real player's poll, which is what the
+    // promotion signal in UPGRADING.md is about -- and the observe-only passkey
+    // pair, which is recorded precisely because it is never refused.
+    //
+    // An unauthenticated non-passkey request is deliberately not logged. Its
+    // token is irrelevant: it is refused on authentication a few lines below
+    // whatever the token says. Logging it would mean an idle tab whose session
+    // timed out writes a "mismatch" line on every poll from then on, and a
+    // bare POST to the endpoint writes a "missing" line for anyone who cares
+    // to send one -- into the very log an operator is told must fall quiet
+    // before setting `enforce`. The signal has to be about players, or it
+    // never goes quiet and says nothing when it does.
+    if (($authenticated && !$csrf['valid']) || $csrf['observed']) {
         $handler = ($requestContext['class'] ?? '') . '::' . ($requestContext['method'] ?? '');
         error_log(sprintf('Jaxon csrf %s [handler=%s mode=%s]', $csrf['reason'], $handler, \Lotgd\Async\CsrfMode::mode()));
     }
 
-    if (lotgd_async_is_authenticated()) {
+    if ($authenticated) {
         if (!lotgd_async_has_required_privileges($requestContext)) {
             return [
                 'allowed' => false,

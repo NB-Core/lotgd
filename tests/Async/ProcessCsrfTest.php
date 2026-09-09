@@ -100,6 +100,37 @@ namespace Lotgd\Tests\Async {
             $session['user']['loggedin'] = true;
         }
 
+        /**
+         * Run the policy and capture what it wrote to error_log.
+         *
+         * Asking the state function afterwards would prove nothing: it reports
+         * the same thing whether or not the policy ever reached it, which is
+         * precisely how the first version of the passkey test passed against
+         * broken wiring. Only the log says what the policy actually did.
+         *
+         * @param array{class:string,method:string} $context
+         *
+         * @return array{policy: array<string, mixed>, log: string}
+         */
+        private function capturePolicyLog(array $context): array
+        {
+            $log = tempnam(sys_get_temp_dir(), 'lotgd-csrf-log-');
+            self::assertIsString($log);
+            $previous = (string) ini_get('error_log');
+            ini_set('error_log', $log);
+
+            try {
+                $policy = lotgd_async_authorization_policy($context);
+            } finally {
+                ini_set('error_log', $previous);
+            }
+
+            $written = (string) file_get_contents($log);
+            unlink($log);
+
+            return ['policy' => $policy, 'log' => $written];
+        }
+
         public function testCorrectHeaderTokenIsDispatched(): void
         {
             $jaxon = $this->installJaxonDouble();
@@ -207,30 +238,87 @@ namespace Lotgd\Tests\Async {
          */
         public function testPasskeyPathIsObservedThroughThePolicy(): void
         {
-            // Capture what the policy writes. Calling the state function again
-            // afterwards would prove nothing: it reports the same thing whether
-            // or not the policy ever reached it, which is precisely how the
-            // first version of this test passed against the broken wiring.
-            $log = tempnam(sys_get_temp_dir(), 'lotgd-csrf-log-');
-            self::assertIsString($log);
-            $previous = (string) ini_get('error_log');
-            ini_set('error_log', $log);
+            $result = $this->capturePolicyLog([
+                'class' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
+                'method' => 'beginAuthentication',
+            ]);
 
-            try {
-                $policy = lotgd_async_authorization_policy([
-                    'class' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
-                    'method' => 'beginAuthentication',
-                ]);
-            } finally {
-                ini_set('error_log', $previous);
+            self::assertTrue($result['policy']['allowed'], 'the login path must not be blocked');
+            self::assertStringContainsString('Jaxon csrf missing', $result['log']);
+            self::assertStringContainsString('TwoFactorAuthPasskey::beginAuthentication', $result['log']);
+        }
+
+        /**
+         * The signal the promotion decision rests on.
+         *
+         * UPGRADING.md tells an operator to set `enforce` once error_log carries
+         * no "Jaxon csrf" lines. That instruction is only worth following if a
+         * real player's failing poll still produces one.
+         */
+        public function testAnAuthenticatedFailureIsStillRecorded(): void
+        {
+            $this->login();
+            Csrf::seed(Csrf::SCOPE_ASYNC, str_repeat('b', 64));
+            $_SERVER['HTTP_X_LOTGD_CSRF'] = str_repeat('a', 64);
+
+            $result = $this->capturePolicyLog([
+                'class' => 'Lotgd.Async.Handler.Mail',
+                'method' => 'mailStatus',
+            ]);
+
+            self::assertStringContainsString('Jaxon csrf mismatch', $result['log']);
+            self::assertStringContainsString('Mail::mailStatus', $result['log']);
+        }
+
+        public function testAnAuthenticatedSuccessIsSilent(): void
+        {
+            $this->login();
+            $_SERVER['HTTP_X_LOTGD_CSRF'] = Csrf::token(Csrf::SCOPE_ASYNC);
+
+            $result = $this->capturePolicyLog([
+                'class' => 'Lotgd.Async.Handler.Mail',
+                'method' => 'mailStatus',
+            ]);
+
+            self::assertTrue($result['policy']['allowed']);
+            self::assertSame('', $result['log'], 'a working poll must leave the signal alone');
+        }
+
+        /**
+         * The counterpart: what must NOT reach that log.
+         *
+         * An unauthenticated non-passkey request is refused on authentication
+         * whatever its token says, so its token is not evidence about anything.
+         * Two very ordinary things produce a stream of them -- a tab whose
+         * session timed out, or was left open after a logout, keeps polling with
+         * the token inlined into the page it was rendered from; and a bare POST
+         * to the endpoint carries no token at all. Recording either would mean
+         * the log an operator is told to watch never falls quiet, and says
+         * nothing about players when it does.
+         *
+         * @return iterable<string, array{0: string|null}>
+         */
+        public static function unauthenticatedTokenProvider(): iterable
+        {
+            yield 'a timed-out tab still polling with its stale token' => [str_repeat('c', 64)];
+            yield 'a bare POST to the endpoint' => [null];
+        }
+
+        #[\PHPUnit\Framework\Attributes\DataProvider('unauthenticatedTokenProvider')]
+        public function testAnUnauthenticatedNonPasskeyRequestIsNotRecorded(?string $token): void
+        {
+            if ($token !== null) {
+                $_SERVER['HTTP_X_LOTGD_CSRF'] = $token;
             }
 
-            $written = (string) file_get_contents($log);
-            unlink($log);
+            $result = $this->capturePolicyLog([
+                'class' => 'Lotgd.Async.Handler.Mail',
+                'method' => 'mailStatus',
+            ]);
 
-            self::assertTrue($policy['allowed'], 'the login path must not be blocked');
-            self::assertStringContainsString('Jaxon csrf missing', $written);
-            self::assertStringContainsString('TwoFactorAuthPasskey::beginAuthentication', $written);
+            self::assertFalse($result['policy']['allowed']);
+            self::assertSame(401, $result['policy']['status'], 'refused on authentication, not on the token');
+            self::assertSame('', $result['log'], 'must not pollute the promotion signal');
         }
 
         /**
