@@ -299,6 +299,92 @@ final class FormCsrfRegressionTest extends TestCase
     }
 
     /**
+     * A page scope must never be passed as an explicit scope argument.
+     *
+     * The two paths through the guard read *different fields*. A scopeless call
+     * goes to `validateCsrf()`, which reads `FORM_FIELD` -- what
+     * `Forms::csrfField()` renders. An explicit scope goes straight to
+     * `Csrf::validatePostRequest($scope)`, which defaults to `FIELD` -- what a
+     * narrower `postButton()` scope renders.
+     *
+     * `pages/clan/applicant_new.php` passed `'form:clan.php'`, which names the
+     * right scope and reads the wrong field, so no clan application could ever
+     * pass. The scope matching is what makes it look correct at a glance.
+     */
+    public function testAPageScopePassedExplicitlyReadsTheWrongField(): void
+    {
+        $_SERVER['SCRIPT_NAME'] = '/clan.php';
+        $scope = Forms::csrfScope();
+        Csrf::seed($scope, str_repeat('a', 64));
+
+        // What clanform() renders is the page token, in FORM_FIELD.
+        $_POST = [Csrf::FORM_FIELD => str_repeat('a', 64)];
+
+        // The control: the explicit-scope path reads FIELD and finds nothing.
+        self::assertTrue(
+            Forms::isUnverifiedRequest($scope),
+            'the explicit-scope path reads csrf_token -- this is the bug'
+        );
+        // The scopeless path reads FORM_FIELD and accepts it.
+        self::assertFalse(
+            Forms::isUnverifiedRequest(),
+            'the page path must accept the token the page rendered'
+        );
+
+        // So no caller may name a page scope. A real narrower scope is fine --
+        // its button renders FIELD to match.
+        $callers = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(dirname(__DIR__, 2)));
+        foreach ($it as $file) {
+            $path = $file->getPathname();
+            if (!str_ends_with($path, '.php')) {
+                continue;
+            }
+            if (str_contains($path, '/vendor/') || str_contains($path, '/tests/')) {
+                continue;
+            }
+            if (preg_match_all('/isUnverifiedRequest\(\s*[\x27"]([^\x27"]+)[\x27"]/', (string) file_get_contents($path), $m)) {
+                foreach ($m[1] as $literal) {
+                    $callers[] = basename($path) . ": '" . $literal . "'";
+                }
+            }
+        }
+
+        self::assertSame(
+            [],
+            $callers,
+            "a scope passed as a string literal reads the wrong field:\n" . implode("\n", $callers)
+        );
+    }
+
+    /**
+     * The shared commentary form carries the page token.
+     *
+     * `Commentary::talkForm()` renders the comment box on every page that has
+     * one, and it emitted no token at all -- so the guard on viewpetition.php,
+     * which keys off `insertcommentary` in the body, refused every legitimate
+     * petition response. The form posts back to the page it was rendered on, so
+     * the page scope is the right one for it to carry.
+     */
+    public function testTheCommentaryFormCarriesTheToken(): void
+    {
+        $code = $this->code('src/Lotgd/Commentary.php');
+
+        // Immediately inside the form tag, not merely somewhere in the file.
+        $formTag = '$output->outputNotl("<form action=\\"$req\\" method=\'POST\' autocomplete=\'false\'>", true);';
+        $position = strpos($code, $formTag);
+        self::assertIsInt($position, 'the commentary form tag must still exist');
+        self::assertStringStartsWith(
+            '$output->rawOutput(Forms::csrfField());',
+            ltrim(substr($code, $position + strlen($formTag))),
+            'the token must be the first thing inside the form'
+        );
+        // And it is the page token, which is what the guard reading the body
+        // on viewpetition.php accepts.
+        self::assertStringContainsString('Forms::isUnverifiedRequest()', $this->code('viewpetition.php'));
+    }
+
+    /**
      * No guarded operation may also be a link somebody can click.
      *
      * This is the shape of the mistake the guard itself created. Once a listed

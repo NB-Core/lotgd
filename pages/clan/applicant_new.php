@@ -21,7 +21,15 @@ use Doctrine\DBAL\ParameterType;
 // Creating a clan writes, and it keys off `apply=1` with the names in the body
 // rather than off $op, so the guard sits here. clanform() in clan.php renders
 // the token this checks.
-if ($apply == 1 && \Lotgd\Forms::isUnverifiedRequest('form:clan.php')) {
+//
+// No scope argument, and that is the whole point: an explicit scope goes to
+// Csrf::validatePostRequest(), which reads the default `csrf_token` field,
+// while clanform() renders Forms::csrfField() -- the *page* token, in
+// `form_csrf_token`. Passing 'form:clan.php' named the right scope but read the
+// wrong field, so no application could ever pass. The scopeless call takes the
+// page path, and this file runs with SCRIPT_NAME=clan.php because clan.php
+// includes it, so it resolves to the same 'form:clan.php'.
+if ($apply == 1 && \Lotgd\Forms::isUnverifiedRequest()) {
     debuglog('Rejected a clan application with an invalid CSRF token.');
     http_response_code(400);
     $apply = 0;
